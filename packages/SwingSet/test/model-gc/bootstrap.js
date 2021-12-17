@@ -1,20 +1,104 @@
-import { Far } from '@agoric/marshal';
 import { E } from '@agoric/eventual-send';
+// import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@agoric/marshal';
+// import { assert, details as X } from '@agoric/assert';
 
 /*
+TODO: del this comment
 # Command:
 
 ./bin/runner-alt --adversarialScriptFilename counterexample1.json --init\
  --memdb --config demo/aaAdversarial/swingset.json run demo/aaAdversarial;
 */
 
-console.log('READING/LOADING bootstrap.js');
+function getScript() {
+
+  trace = {
+    "init": [],
+    "transitions": [
+      {
+        "type": "transferControl",
+        "actor": "boot",
+        "targetVat": "vt1"
+      },
+      {
+        "type": "storeSelfRef",
+        "actor": "vt1",
+        "awaits": [],
+        "itemId": 0
+      },
+      {
+        "type": "storeSelfRef",
+        "actor": "vt1",
+        "awaits": [],
+        "itemId": 1
+      },
+      {
+        "type": "storeSelfRef",
+        "actor": "vt1",
+        "awaits": [],
+        "itemId": 2
+      },
+      {
+        "type": "transferControl",
+        "actor": "boot",
+        "awaits": [],
+        "targetVat": "vt0"
+      },
+      {
+        "type": "storeSelfRef",
+        "actor": "vt0",
+        "awaits": [],
+        "itemId": 3
+      },
+      {
+        "type": "transferControl",
+        "actor": "boot",
+        "awaits": [],
+        "targetVat": "vt2"
+      },
+      {
+        "type": "transferControl",
+        "actor": "boot",
+        "awaits": [],
+        "targetVat": "vt0"
+      },
+      {
+        "type": "transferControl",
+        "actor": "boot",
+        "awaits": [],
+        "targetVat": "vt1"
+      },
+      {
+        "type": "transferControl",
+        "actor": "boot",
+        "awaits": [],
+        "targetVat": "vt2"
+      }
+    ],
+    "actions": [
+      "transferControl",
+      "storeSelfRef",
+      "storeSelfRef",
+      "storeSelfRef",
+      "transferControl",
+      "storeSelfRef",
+      "transferControl",
+      "transferControl",
+      "transferControl",
+      "transferControl"
+    ]
+  }
+
+  return { trace, name: "3n4u10_1" }
+
+}
 
 export function buildRootObject(_vatPowers) {
 
-  console.log(`bootstrap.js buildRootObject start`);
+  const log = vatPowers.testLog;
 
-  let { scriptGetter } = _vatPowers
+  log(`bootstrap.js buildRootObject start`);
 
   let script;
 
@@ -24,16 +108,16 @@ export function buildRootObject(_vatPowers) {
 
       // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       // Basic init info
-      console.log('BOOTSTRAP method start');
-      console.log('VAT LIST:', vats);
+      log('BOOTSTRAP method start');
+      log('VAT LIST:', vats);
 
       // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       // These steps don't relate to the object model (behind the scenes wiring only)
-      script = scriptGetter.getScript()
+      script = getScript()
 
-      console.log(`Boostrap.js running script:`);
-      console.log(`script name: `, scriptGetter.getFilename());
-      console.log(`script content: `, script);
+      log(`Boostrap.js running script:`);
+      log(`script name: `, scriptGetter.getFilename());
+      log(`script content: `, script);
 
       async function init() {
 
@@ -80,11 +164,11 @@ export function buildRootObject(_vatPowers) {
           const v = transition.targetVat
           await E(vats[v]).transferControl()
         } catch (error) {
-          console.log(`error (bootstrap): `, error);
+          log(`error (bootstrap): `, error);
         }
       }
 
-      console.log(`Bootstrap Done.`);
+      log(`Bootstrap Done.`);
 
     }
   })
