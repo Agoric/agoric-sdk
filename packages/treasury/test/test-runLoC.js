@@ -11,6 +11,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { ParamType } from '@agoric/governance';
+import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
 
 import { CreditTerms } from '../src/runLoC.js';
 import * as testCases from './runLoC-test-case-sheet.js';
@@ -87,6 +88,7 @@ const genesisBldBalances = {
 
 /**
  * @param {Brand} stakingBrand
+ * @returns {StakingAuthority}
  */
 const mockBridge = stakingBrand => {
   /** @param { bigint } v */
@@ -106,6 +108,8 @@ const mockBridge = stakingBrand => {
         total: ubld(balance + 5n),
         bonded: ubld(balance),
         locked: ubld(0n),
+        liened: ubld(0n),
+        unbonding: ubld(0n),
         currentTime,
       });
     },
@@ -144,81 +148,36 @@ test('RUN mint access', async t => {
   t.truthy(feeMintAccess);
 });
 
-/**
- * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
- * @template T
- */
-
-/**
- * @param {Bundle} bundle
- * @param {ERef<ZoeService>} zoe
- * @param {{issuer: Issuer, brand: Brand}} bld
- * @param {ReturnType<typeof mockBridge>} reporter
- *
- * @typedef {Unpromise<
- *   ReturnType<typeof import('@agoric/zoe/src/contracts/attestation/attestation.js').start>
- * >} StartAttestationResult
- */
-const bootstrapAttestation = async (bundle, zoe, bld, reporter) => {
-  const installation = await E(zoe).install(bundle);
-  /** @type {StartAttestationResult & { instance: Instance }} */
-  const { publicFacet, creatorFacet, instance } = await E(zoe).startInstance(
-    installation,
-    harden({ Underlying: bld.issuer }),
-    harden({
-      expiringAttName: 'BldAttGov',
-      returnableAttName: 'BldAttLoC',
-    }),
-  );
-
-  await E(creatorFacet).addAuthority(reporter);
-
-  const [
-    { returnable: attIssuer },
-    { returnable: attBrand },
-  ] = await Promise.all([
-    E(publicFacet).getIssuers(),
-    E(publicFacet).getBrands(),
-  ]);
-
-  /** @param { string } address */
-  const provision = address => ({
-    attMaker: E(creatorFacet).getAttMaker(address),
-  });
-
-  return {
-    installations: { Attestation: installation },
-    instances: { Attestation: instance },
-    issuers: { Attestation: attIssuer },
-    brands: { Attestation: attBrand },
-    provision,
-  };
-};
-
 test('start attestation', async t => {
   const { zoe } = await bootstrapZoeAndRun();
   const micro = harden({ decimalPlaces: 6 });
   const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
 
   const { attestation: bundle } = theBundles(t);
-  const { issuers, brands, provision } = await bootstrapAttestation(
+  const { issuer, brand, creatorFacet } = await bootstrapAttestation(
     bundle,
     zoe,
-    bld,
+    bld.issuer,
     mockBridge(bld.brand),
+    { expiringAttName: 'BldAttGov', returnableAttName: 'BldAttLoC' },
   );
 
-  const attMaker = provision('agoric3k').attMaker;
+  const attMaker = E(creatorFacet).getAttMaker('agoric3k');
   const expiration = 120n;
   const amountLiened = AmountMath.make(bld.brand, 5n);
   const pmt = E.get(E(attMaker).makeAttestations(amountLiened, expiration))
     .returnable;
-  const amt = await E(issuers.Attestation).getAmountOf(pmt);
+  const amt = await E(issuer).getAmountOf(pmt);
   t.deepEqual(amt, {
-    brand: brands.Attestation,
+    brand,
     value: [{ address: 'agoric3k', amountLiened }],
   });
 });
+
+/**
+ * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
+ * @template T
+ */
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -345,14 +304,15 @@ const testLoC = (
 
     // start attestation contract
     const {
-      brands: { Attestation: attBrand },
-      issuers: { Attestation: attIssuer },
-      provision,
+      brand: attBrand,
+      issuer: attIssuer,
+      creatorFacet,
     } = await bootstrapAttestation(
       bundles.attestation,
       zoe,
-      bld,
+      bld.issuer,
       mockBridge(bld.brand),
+      { expiringAttName: 'BldAttGov', returnableAttName: 'BldAttLoC' },
     );
 
     // start RUN LoC
@@ -380,7 +340,7 @@ const testLoC = (
     const [addrFromStake, _b] =
       entries(genesisBldBalances).find(([_addr, bal]) => bal === staked) ||
       assert.fail(X`no matching account: ${staked}`);
-    const attMaker = provision(addrFromStake).attMaker;
+    const attMaker = E(creatorFacet).getAttMaker(addrFromStake);
     const expiration = 61n;
 
     // @ts-ignore governance wrapper obscures publicFace type :-/
