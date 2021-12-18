@@ -16,9 +16,17 @@ async function writeSourceBundle(contractFilename, outputPath) {
 }
 
 async function main() {
-  const contractFilename = `${dirname}/../src/contractFacet/vatRoot.js`;
-  const outputPath = `${dirname}/../bundles/bundle-contractFacet.js`;
-  await writeSourceBundle(contractFilename, outputPath);
+  for await (const { src, bundle } of [
+    { src: 'contractFacet/vatRoot.js', bundle: 'bundle-contractFacet.js' },
+    {
+      src: 'contracts/attestation/attestation.js',
+      bundle: 'bundle-attestation.js',
+    },
+  ]) {
+    const contractFilename = `${dirname}/../src/${src}`;
+    const outputPath = `${dirname}/../bundles/${bundle}`;
+    await writeSourceBundle(contractFilename, outputPath);
+  }
 }
 
 main().then(
