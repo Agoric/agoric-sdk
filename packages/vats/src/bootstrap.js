@@ -9,6 +9,8 @@ import { E, Far } from '@agoric/far';
 import { makeStore } from '@agoric/store';
 import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain.js';
+import attestationBundle from '@agoric/zoe/src/contracts/attestation/install-on-chain.js';
+import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
 
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { assert, details as X } from '@agoric/assert';
@@ -27,6 +29,7 @@ import {
   BLD_ISSUER_ENTRY,
 } from './issuers';
 import { feeIssuerConfig } from './core/behaviors.js';
+import { makeStakeReporter } from './my-lien.js';
 
 const { multiply, floorDivide } = natSafeMath;
 
@@ -578,6 +581,35 @@ export function buildRootObject(vatPowers, vatParameters) {
       }),
     );
 
+    let attMakerFor;
+    if (bridgeManager) {
+      const [_n, bldRec] =
+        issuerEntries.find(([n, _r]) => n === BLD_ISSUER_ENTRY[0]) ||
+        assert.fail('need @@bLD!');
+      // start attestation contract
+      assert(
+        bridgeManager,
+        X`@@TODO: handle lack of bridge manager for attestations`,
+      );
+      const {
+        // brand: attBrand, // TODO: runLoC will want these
+        // issuer: attIssuer,
+        creatorFacet: attestationCreatorFacet,
+      } = await bootstrapAttestation(
+        attestationBundle,
+        zoeWUnlimitedPurse,
+        bldRec.issuer || assert.fail('bld issuer!?!@@'),
+        makeStakeReporter(
+          bridgeManager,
+          bldRec.brand || assert.fail('bld brand!?!@@'),
+        ),
+        { expiringAttName: 'BldAttGov', returnableAttName: 'BldAttLoC' },
+      );
+      attMakerFor = address => E(attestationCreatorFacet).getAttMaker(address);
+    } else {
+      attMakerFor = a => assert.fail(X`no bridge manager@@@ ${a}`);
+    }
+
     // This needs to happen after creating all the services.
     // eslint-disable-next-line no-use-before-define
     await registerNetworkProtocols(
@@ -767,8 +799,12 @@ export function buildRootObject(vatPowers, vatParameters) {
           }),
         );
 
+        const attestationMaker = attMakerFor(address);
+
         const bundle = harden({
           ...additionalPowers,
+          bridgeManager, // @@@@for experimenting with lien / attestation
+          attestationMaker,
           agoricNames,
           bank,
           chainTimerService,
