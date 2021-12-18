@@ -186,3 +186,15 @@
  * @typedef {{getTime: () => Timestamp, updateTime: (currentTime:
  * Timestamp) => void}} StoredTime
  */
+
+/**
+ * @typedef {Object} StakingAuthority
+ * @property {(address: string, brand: Brand) => ERef<AccountState> } getAccountState
+ * @typedef {Object} AccountState
+ * @property {Amount} bonded
+ * @property {Amount} liened
+ * @property {Amount} locked
+ * @property {Amount} total
+ * @property {Amount} unbonding
+ * @property {bigint} currentTime
+ */
