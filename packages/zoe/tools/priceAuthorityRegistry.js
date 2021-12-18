@@ -12,9 +12,10 @@ import { Far } from '@agoric/marshal';
 
 /**
  * @typedef {Object} PriceAuthorityRegistryAdmin
- * @property {(pa: ERef<PriceAuthority>, brandIn: Brand, brandOut: Brand, force:
- * boolean | undefined)
- * => Deleter} registerPriceAuthority Add a unique price authority for a given
+ * @property {(pa: ERef<PriceAuthority>,
+ *             brandIn: Brand,
+ *             brandOut: Brand,
+ *             force?: boolean) => Deleter} registerPriceAuthority Add a unique price authority for a given
  * pair
  */
 

@@ -6,25 +6,23 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import '../../../exported.js';
-import { setupAttestation as setupExpiringAttestation } from './expiring/expiringNFT.js';
 import { setupAttestation as setupReturnableAttestation } from './returnable/returnableNFT.js';
 import { makeStoredTime } from './storedTime.js';
-import { max } from './helpers.js';
 import { assertPrerequisites } from './prerequisites.js';
 import { makeGetAttMaker } from './attMaker.js';
 
 const { details: X } = assert;
 
 /**
- * @type {ContractStartFn}
+ * @param {ContractFacet} zcf
+ * @param {Brand} underlyingBrand
+ * @param {string} returnableAttName
  */
-const start = async zcf => {
-  const {
-    brands: { Underlying: underlyingBrand },
-    expiringAttName,
-    returnableAttName,
-  } = zcf.getTerms();
-
+export const makeAttestationFacets = async (
+  zcf,
+  underlyingBrand,
+  returnableAttName,
+) => {
   const authorityPromiseKit = makePromiseKit();
 
   const { assetKind: underlyingAssetKind } = await E(
@@ -35,20 +33,11 @@ const start = async zcf => {
   const storedTime = makeStoredTime();
   const empty = AmountMath.makeEmpty(underlyingBrand, underlyingAssetKind);
 
-  const expiringAttManagerP = setupExpiringAttestation(
-    expiringAttName, // e.g. 'BldAttGov'
-    empty,
-    zcf,
-  );
-  const returnableAttManagerP = setupReturnableAttestation(
+  const returnableAttManager = await setupReturnableAttestation(
     returnableAttName, // e.g. 'BldAttLoc'
     empty,
     zcf,
   );
-  const [expiringAttManager, returnableAttManager] = await Promise.all([
-    expiringAttManagerP,
-    returnableAttManagerP,
-  ]);
   // AWAIT ///
 
   /** @type {GetLiened} */
@@ -58,32 +47,8 @@ const start = async zcf => {
       X`This contract can only make attestations for ${brand}`,
     );
     storedTime.updateTime(currentTime);
-    const expiringLienAmount = expiringAttManager.getLienAmount(
-      address,
-      currentTime,
-    );
-    const returnableLienAmount = returnableAttManager.getLienAmount(address);
-    return max(expiringLienAmount, returnableLienAmount);
+    return returnableAttManager.getLienAmount(address);
   };
-
-  /** @type {Slashed} */
-  const slashed = (addresses, currentTime) => {
-    storedTime.updateTime(currentTime);
-    addresses.forEach(address => {
-      const lienAmount = getLiened(address, currentTime, underlyingBrand);
-      if (AmountMath.isEmpty(lienAmount)) {
-        return; // If there is no lien, do nothing
-      }
-      expiringAttManager.disallowExtensions(address);
-    });
-  };
-
-  /** @type {MakeExtendAttInvitation} */
-  const makeExtendAttInvitation = newExpiration =>
-    expiringAttManager.makeExtendAttInvitation(
-      newExpiration,
-      storedTime.getTime(),
-    );
 
   // IMPORTANT: only expose this function to the owner of the address.
   // This request *must* come from the owner of the address. Merely
@@ -91,14 +56,12 @@ const start = async zcf => {
   // The owner must consent to adding a lien, and non-owners must not
   // be able to initiate a lien for another account.
 
-  /** @type {MakeAttestationsInternal} */
-  const makeAttestationsInternal = async (
-    address,
-    amountToLien,
-    expiration,
-  ) => {
+  /**
+   * @param {string} address
+   * @param {Amount} amountToLien
+   */
+  const makeAttestationsInternal = async (address, amountToLien) => {
     amountToLien = AmountMath.coerce(underlyingBrand, amountToLien);
-    assert.typeof(expiration, 'bigint');
 
     await assertPrerequisites(
       authorityPromiseKit.promise,
@@ -107,41 +70,21 @@ const start = async zcf => {
       underlyingBrand,
       address,
       amountToLien,
-      expiration,
     );
     // AWAIT ///
 
-    const expiringAttPayment = expiringAttManager.addExpiringLien(
-      address,
-      amountToLien,
-      expiration,
-    );
     const returnableAttPayment = returnableAttManager.addReturnableLien(
       address,
       amountToLien,
     );
 
-    return harden({
-      expiring: expiringAttPayment,
-      returnable: returnableAttPayment,
-    });
+    return harden(returnableAttPayment);
   };
 
   const publicFacet = Far('attestation publicFacet', {
     makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
-    makeExtendAttInvitation,
-    getIssuers: () => {
-      return harden({
-        returnable: returnableAttManager.getIssuer(),
-        expiring: expiringAttManager.getIssuer(),
-      });
-    },
-    getBrands: () => {
-      return harden({
-        returnable: returnableAttManager.getBrand(),
-        expiring: expiringAttManager.getBrand(),
-      });
-    },
+    getIssuer: () => returnableAttManager.getIssuer(),
+    getBrand: () => returnableAttManager.getBrand(),
   });
 
   // IMPORTANT: The AttMaker should only be given to the owner of the
@@ -152,10 +95,9 @@ const start = async zcf => {
   const makeAttMaker = address => {
     /** @type {AttMaker} */
     return Far('attMaker', {
-      makeAttestations: (amountToLien, expiration) =>
-        makeAttestationsInternal(address, amountToLien, expiration),
+      makeAttestation: amountToLien =>
+        makeAttestationsInternal(address, amountToLien),
       makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
-      makeExtendAttInvitation,
     });
   };
 
@@ -167,11 +109,22 @@ const start = async zcf => {
   const creatorFacet = Far('attestation creatorFacet', {
     getLiened,
     getAttMaker,
-    slashed,
     addAuthority,
   });
 
   return harden({ creatorFacet, publicFacet });
 };
+
+/**
+ * @param {ContractFacet} zcf
+ */
+const start = async zcf => {
+  const {
+    brands: { Underlying: underlyingBrand },
+    returnableAttName,
+  } = zcf.getTerms();
+  return makeAttestationFacets(zcf, underlyingBrand, returnableAttName);
+};
+harden(start);
 
 export { start };
