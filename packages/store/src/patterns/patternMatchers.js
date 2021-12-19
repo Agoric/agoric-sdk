@@ -685,9 +685,9 @@ export const makePatternKit = () => {
           break;
         }
         case 'remotable': {
-          // This does not make for a tighter rankCover, but if the
-          // rankStore internally further optimizes, for example with
-          // an identityHash of a virtual object it, then this might
+          // This does not make for a tighter rankCover, but if an
+          // underlying table internally further optimizes, for example with
+          // an identityHash of a virtual object, then this might
           // help it take advantage of that.
           leftBound = encodeKey(rightOperand);
           break;
@@ -775,9 +775,9 @@ export const makePatternKit = () => {
           break;
         }
         case 'remotable': {
-          // This does not make for a tighter rankCover, but if the
-          // rankStore internally further optimizes, for example with
-          // an identityHash of a virtual object it, then this might
+          // This does not make for a tighter rankCover, but if an
+          // underlying table internally further optimizes, for example with
+          // an identityHash of a virtual object, then this might
           // help it take advantage of that.
           rightBound = encodeKey(rightOperand);
           break;

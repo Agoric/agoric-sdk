@@ -139,28 +139,6 @@
  */
 
 /**
- * @typedef {Object} ReadOnlyRankStore
- * @property {() => Passable[]} snapshot
- * @property {() => ReadOnlyRankStore} readOnlyView
- * @property {(rankCover?: RankCover) => Iterable<[number, Passable]>} entries
- * @property {(rankCover?: RankCover) => Iterable<number>} keys
- * @property {(rankCover?: RankCover) => Iterable<Passable>} values
- */
-
-/**
- * @typedef {Object} RankStore
- * @property {(passable: Passable) => void} add
- * TODO need some kind of deletion
- *
- * TODO I should be able to share supertype rather than repeat
- * @property {() => Passable[]} snapshot
- * @property {() => ReadOnlyRankStore} readOnlyView
- * @property {(rankCover?: RankCover) => Iterable<[number, Passable]>} entries
- * @property {(rankCover?: RankCover) => Iterable<number>} keys
- * @property {(rankCover?: RankCover) => Iterable<Passable>} values
- */
-
-/**
  * @typedef {[string, string]} RankCover
  */
 
