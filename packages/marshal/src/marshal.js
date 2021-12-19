@@ -142,7 +142,7 @@ export function makeMarshal(
      * Must encode `val` into plain JSON data *canonically*, such that
      * `JSON.stringify(encode(v1)) === JSON.stringify(encode(v1))`
      * For each copyRecord, we only accept string property names,
-     * not symbols. On the encoded form the sort
+     * not symbols. The encoded form the sort
      * order of these names must be the same as their enumeration
      * order, so a `JSON.stringify` of the encoded form agrees with
      * a canonical-json stringify of the encoded form.
