@@ -10,7 +10,7 @@ export {
   matches,
   assertMatches,
 } from './patterns/patternMatchers.js';
-export { compareRank } from './patterns/rankOrder.js';
+// export { compareRank } from './patterns/rankOrder.js';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';

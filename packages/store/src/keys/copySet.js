@@ -7,7 +7,7 @@ import {
   passStyleOf,
 } from '@agoric/marshal';
 import {
-  compareRank,
+  compareAntiRank,
   isRankSorted,
   sortByRank,
 } from '../patterns/rankOrder.js';
@@ -29,8 +29,7 @@ export const checkCopySetKeys = (keys, check = x => x) => {
       X`The keys of a copySet or copyMap must be a copyArray: ${keys}`,
     );
   }
-  const reverseKeys = harden([...keys].reverse());
-  if (!isRankSorted(reverseKeys, compareRank)) {
+  if (!isRankSorted(keys, compareAntiRank)) {
     return check(
       false,
       X`The keys of a copySet or copyMap must be sorted in reverse rank order: ${keys}`,
@@ -86,5 +85,5 @@ harden(everyCopySetKey);
  * @returns {CopySet}
  */
 export const makeCopySet = elements =>
-  makeTagged('copySet', [...sortByRank(elements, compareRank)].reverse());
+  makeTagged('copySet', sortByRank(elements, compareAntiRank));
 harden(makeCopySet);

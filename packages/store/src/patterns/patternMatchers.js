@@ -274,16 +274,8 @@ const makePatternKit = () => {
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
           );
         }
-        const specNames = harden(
-          ownKeys(specimen)
-            .sort()
-            .reverse(),
-        );
-        const pattNames = harden(
-          ownKeys(patt)
-            .sort()
-            .reverse(),
-        );
+        const specNames = harden(ownKeys(specimen).sort());
+        const pattNames = harden(ownKeys(patt).sort());
         if (!keyEQ(specNames, pattNames)) {
           return check(
             false,

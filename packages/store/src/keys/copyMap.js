@@ -6,7 +6,7 @@ import {
   makeTagged,
   passStyleOf,
 } from '@agoric/marshal';
-import { compareRank, sortByRank } from '../patterns/rankOrder.js';
+import { compareAntiRank, sortByRank } from '../patterns/rankOrder.js';
 import { checkCopySetKeys } from './copySet.js';
 
 // eslint-disable-next-line spaced-comment
@@ -105,7 +105,7 @@ export const makeCopyMap = entries => {
   // could solve the copyMap cover issue explained in patternMatchers.js.
   // But only if we include this criteria in our validation of copyMaps,
   // which we currently do not.
-  const sortedEntries = [...sortByRank(entries, compareRank)].reverse();
+  const sortedEntries = sortByRank(entries, compareAntiRank);
   const keys = sortedEntries.map(([k, _v]) => k);
   const values = sortedEntries.map(([_k, v]) => v);
   return makeTagged('copyMap', { keys, values });
