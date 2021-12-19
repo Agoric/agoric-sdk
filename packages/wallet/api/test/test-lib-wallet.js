@@ -147,9 +147,9 @@ test('lib-wallet issuer and purse methods', async t => {
   t.deepEqual(
     wallet.getIssuers(),
     [
-      ['zoe invite', inviteIssuer],
       ['moola', moolaBundle.issuer],
       ['rpg', rpgBundle.issuer],
+      ['zoe invite', inviteIssuer],
     ],
     `two issuers added`,
   );
@@ -1472,15 +1472,15 @@ test('stamps from dateNow', async t => {
   t.deepEqual(paymentMeta, [
     {
       creationStamp: date0,
-      updatedStamp: date0,
-      id: 6,
-      status: 'deposited',
-    },
-    {
-      creationStamp: date0,
       updatedStamp: date1,
       id: 7,
       status: undefined,
+    },
+    {
+      creationStamp: date0,
+      updatedStamp: date0,
+      id: 6,
+      status: 'deposited',
     },
     {
       creationStamp: date1,

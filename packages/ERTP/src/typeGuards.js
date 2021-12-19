@@ -1,5 +1,6 @@
 import { isNat } from '@agoric/nat';
-import { passStyleOf, isStructure } from '@agoric/marshal';
+import { passStyleOf } from '@agoric/marshal';
+import { isKey } from '@agoric/store';
 
 /**
  * Returns true if value is a Nat bigint.
@@ -20,7 +21,7 @@ harden(isNatValue);
  * @returns {value is SetValue}
  */
 const isSetValue = value => {
-  return passStyleOf(value) === 'copyArray' && isStructure(value);
+  return passStyleOf(value) === 'copyArray' && isKey(value);
 };
 harden(isSetValue);
 
