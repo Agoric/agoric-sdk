@@ -147,9 +147,9 @@ test('lib-wallet issuer and purse methods', async t => {
   t.deepEqual(
     wallet.getIssuers(),
     [
-      ['zoe invite', inviteIssuer],
       ['moola', moolaBundle.issuer],
       ['rpg', rpgBundle.issuer],
+      ['zoe invite', inviteIssuer],
     ],
     `two issuers added`,
   );
