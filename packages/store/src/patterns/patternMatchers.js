@@ -50,7 +50,7 @@ export const makePatternKit = () => {
     // eslint-disable-next-line no-use-before-define
     HelpersByMatchTag[tag];
 
-  // /////////////////////// isPattern ///////////////////////////////////////////
+  // /////////////////////// isPattern /////////////////////////////////////////
 
   /** @type {CheckPattern} */
   const checkPattern = (patt, check = x => x) => {
@@ -160,12 +160,13 @@ export const makePatternKit = () => {
     checkPattern(patt, assertChecker);
   };
 
-  // /////////////////////// isKeyPattern ///////////////////////////////////////////
+  // /////////////////////// isKeyPattern //////////////////////////////////////
 
   /** @type {CheckKeyPattern} */
   const checkKeyPattern = (patt, check = x => x) => {
     if (isKey(patt)) {
-      // In principle, all keys are patterns, but only scalars are currently supported as keys.
+      // In principle, all keys are patterns, but only scalars are currently
+      // supported as keys.
       return check(isScalarKey(patt), X`non-scalar keys are not yet supported`);
     }
     // eslint-disable-next-line no-use-before-define
@@ -233,7 +234,7 @@ export const makePatternKit = () => {
     checkKeyPattern(patt, assertChecker);
   };
 
-  // /////////////////////// matches /////////////////////////////////////////////
+  // /////////////////////// matches ///////////////////////////////////////////
 
   /** @type {CheckMatches} */
   const checkMatches = (specimen, patt, check = x => x) => {
@@ -372,7 +373,7 @@ export const makePatternKit = () => {
     checkMatches(specimen, patt, assertChecker);
   };
 
-  // /////////////////////// getRankCover ////////////////////////////////////////
+  // /////////////////////// getRankCover //////////////////////////////////////
 
   /** @type {GetRankCover} */
   const getRankCover = (patt, encodeKey) => {
@@ -390,10 +391,12 @@ export const makePatternKit = () => {
         ]);
       }
       case 'copyRecord': {
-        // XXX this doesn't get along with the world of cover === pair of strings
+        // XXX this doesn't get along with the world of cover === pair of
+        // strings
         // const pattKeys = ownKeys(patt);
         // const pattEntries = harden(pattKeys.map(key => [key, patt[key]]));
-        // const [leftEntriesLimit, rightEntriesLimit] = getRankCover(pattEntries);
+        // const [leftEntriesLimit, rightEntriesLimit] =
+        //   getRankCover(pattEntries);
         // return harden([
         //   fromEntries(leftEntriesLimit),
         //   fromEntries(rightEntriesLimit),
@@ -408,10 +411,11 @@ export const makePatternKit = () => {
         }
         switch (tag) {
           case 'copySet': {
-            // XXX this doesn't get along with the world of cover === pair of strings
+            // XXX this doesn't get along with the world of cover === pair of
+            // strings
             // // Should already be validated by checkPattern. But because this
-            // // is a check that may loosen over time, we also assert everywhere
-            // // we still rely on the restriction.
+            // // is a check that may loosen over time, we also assert
+            // // everywhere we still rely on the restriction.
             // assert(
             //   patt.payload.length === 1,
             //   X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
@@ -463,7 +467,7 @@ export const makePatternKit = () => {
     return getPassStyleCover(passStyle);
   };
 
-  // /////////////////////// Match Helpers ///////////////////////////////////////
+  // /////////////////////// Match Helpers /////////////////////////////////////
 
   /** @type {MatchHelper} */
   const matchAnyHelper = Far('M.any helper', {
@@ -655,7 +659,8 @@ export const makePatternKit = () => {
           break;
         }
         case 'copyRecord': {
-          // XXX this doesn't get along with the world of cover === pair of strings
+          // XXX this doesn't get along with the world of cover === pair of
+          // strings
           // leftBound = harden(
           //   fromEntries(entries(rightOperand).map(([k, _v]) => [k, null])),
           // );
@@ -742,9 +747,12 @@ export const makePatternKit = () => {
           break;
         }
         case 'copyRecord': {
-          // XXX this doesn't get along with the world of cover === pair of strings
+          // XXX this doesn't get along with the world of cover === pair of
+          // strings
           // rightBound = harden(
-          //   fromEntries(entries(rightOperand).map(([k, _v]) => [k, undefined])),
+          //   fromEntries(
+          //     entries(rightOperand).map(([k, _v]) => [k, undefined]),
+          //   ),
           // );
           break;
         }
