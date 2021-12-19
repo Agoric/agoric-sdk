@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import './types.js';
+import '../types.js';
 
 /**
  * See doccomment in the closely related `legacyMap.js` module.
