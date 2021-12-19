@@ -38,7 +38,7 @@ const patternMemo = new WeakSet();
 /**
  * @returns {Object}
  */
-export const makePatternKit = () => {
+const makePatternKit = () => {
   /**
    * If this is a recognized match tag, return the MatchHelper.
    * Otherwise result undefined.
@@ -442,7 +442,7 @@ export const makePatternKit = () => {
             // rank covers. TODO POSSIBLE SILENT CORRECTNESS BUG
             //
             // If this is a bug, it probably affects the getRankCover
-            // cases if matchLTEHelper and matchGTEHelper on copyMap as
+            // cases of matchLTEHelper and matchGTEHelper on copyMap as
             // well. See makeCopyMap for an idea on fixing
             // this bug.
             const [leftPayloadLimit, rightPayloadLimit] = getRankCover(
@@ -891,3 +891,19 @@ export const makePatternKit = () => {
     M,
   });
 };
+
+// Only include those whose meaning is independent of an imputed sort order
+// of remotables, or of encoding of passable as sortable strings. Thus,
+// getRankCover is omitted. To get one, you'd need to instantiate
+// `makePatternKit()` yourself. Since there are currently no external
+// uses of `getRankCover`, for clarity during development, `makePatternKit`
+// is not currently exported.
+export const {
+  matches,
+  assertMatches,
+  assertPattern,
+  isPattern,
+  assertKeyPattern,
+  isKeyPattern,
+  M,
+} = makePatternKit();

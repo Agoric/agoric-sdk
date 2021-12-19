@@ -3,9 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeCopySet } from '../src/keys/copySet.js';
-import { makePatternKit } from '../src/patterns/patternMatchers.js';
-
-const { assertMatches, matches, M } = makePatternKit(x => x);
+import { assertMatches, matches, M } from '../src/patterns/patternMatchers.js';
 
 /**
  * @typedef MatchTest
