@@ -1,69 +1,90 @@
 // @ts-check
 
-import { filterIterable } from '@agoric/marshal';
-import { matches } from '../patterns/patternMatchers.js';
-import { assertRankSorted } from '../patterns/rankOrder.js';
-
 const { details: X, quote: q } = assert;
 
-export const makeCursorKit = (
+/**
+ * @template K,V
+ * @typedef {Object} CurrentKeysKit
+ * @property {(k: K, v?: V) => void} assertUpdateOnAdd
+ * @property {(k: K) => void} assertUpdateOnDelete
+ * @property {Iterable<K>} iterableKeys
+ */
+
+/**
+ * @template K,V
+ * @param {() => Iterable<K>} getRawKeys
+ * @param {CompareRank} compare
+ * @param {(k: K, v?: V) => void} assertOkToAdd
+ * @param {((k: K) => void)=} assertOkToDelete
+ * @param {string=} keyName
+ * @returns {CurrentKeysKit<K,V>}
+ */
+export const makeCurrentKeysKit = (
+  getRawKeys,
   compare,
-  assertOkToWrite,
+  assertOkToAdd,
   assertOkToDelete = undefined,
   keyName = 'key',
 ) => {
   let updateCount = 0;
+  let sortedKeysMemo;
 
-  const cursorKit = harden({
-    assertUpdateOnWrite: (k, v) => {
-      assertOkToWrite(k, v);
-      updateCount += 1;
-    },
+  const assertUpdateOnAdd = (k, v = undefined) => {
+    assertOkToAdd(k, v);
+    updateCount += 1;
+    sortedKeysMemo = undefined;
+  };
 
-    assertUpdateOnDelete: assertOkToDelete
-      ? k => {
+  const assertUpdateOnDelete =
+    assertOkToDelete === undefined
+      ? _k => {
+          updateCount += 1;
+          sortedKeysMemo = undefined;
+        }
+      : k => {
           assertOkToDelete(k);
           updateCount += 1;
-        }
-      : () => {
-          updateCount += 1;
+          sortedKeysMemo = undefined;
+        };
+
+  const getSortedKeys = () => {
+    if (sortedKeysMemo === undefined) {
+      sortedKeysMemo = harden([...getRawKeys()].sort(compare));
+    }
+    return sortedKeysMemo;
+  };
+
+  const iterableKeys = harden({
+    [Symbol.iterator]: () => {
+      const generation = updateCount;
+      getSortedKeys();
+      const len = sortedKeysMemo.length;
+      let i = 0;
+      return harden({
+        next: () => {
+          assert.equal(
+            generation,
+            updateCount,
+            X`Store ${q(keyName)} cursor stale`,
+          );
+          // If they're equal, then the sortedKeyMemo is the same one
+          // we started with.
+          if (i < len) {
+            const result = harden({ done: false, value: sortedKeysMemo[i] });
+            i += 1;
+            return result;
+          } else {
+            return harden({ done: true, value: undefined });
+          }
         },
-
-    makeArray: (baseIterable, pattern = undefined) => {
-      const filter = pattern ? val => matches(harden(val), pattern) : harden;
-      const filtered = filterIterable(baseIterable, filter);
-      const sorted = harden([...filtered].sort(compare));
-      assertRankSorted(sorted, compare);
-      return sorted;
-    },
-
-    makeCursor: (baseIterable, pattern = undefined) => {
-      const currentUpdateCount = updateCount;
-      const notStaleFilter = () => {
-        assert.equal(
-          currentUpdateCount,
-          updateCount,
-          X`MapStore ${q(keyName)} cursor stale`,
-        );
-        return true;
-      };
-
-      // TODO In an implementation where the baseIterable returns its data
-      // already rank sorted, `makeCursor` would use the following
-      // code to make a cursor, and makeArray would be a snapshot of that.
-      // However,
-      // to get the correct external behavior on non-ordered representation,
-      // we sort in makeArray instead and then makeCursor return a cursor built
-      // from that.
-      // const filter = pattern
-      //   ? val => notStaleFilter() && matches(val, pattern)
-      //   : notStaleFilter;
-      // return filterIterable(baseIterable, filter);
-
-      const sorted = cursorKit.makeArray(baseIterable, pattern);
-      return filterIterable(sorted, notStaleFilter);
+      });
     },
   });
-  return cursorKit;
+
+  return harden({
+    assertUpdateOnAdd,
+    assertUpdateOnDelete,
+    iterableKeys,
+  });
 };
-harden(makeCursorKit);
+harden(makeCurrentKeysKit);

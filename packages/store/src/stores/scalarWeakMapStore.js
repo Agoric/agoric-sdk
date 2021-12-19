@@ -8,15 +8,17 @@ const { details: X, quote: q } = assert;
 /**
  * @template K,V
  * @param {WeakMap<K & Object,V>} jsmap
- * @param {(k: K, v: V) => void} assertKVOkToWrite
+ * @param {(k: K, v: V) => void} assertKVOkToAdd
+ * @param {(k: K, v: V) => void} assertKVOkToSet
  * @param {((k: K) => void)=} assertKeyOkToDelete
  * @param {string=} keyName
  * @returns {WeakMapStore<K,V>}
  */
 export const makeWeakMapStoreMethods = (
   jsmap,
-  assertKVOkToWrite,
-  assertKeyOkToDelete = () => {},
+  assertKVOkToAdd,
+  assertKVOkToSet,
+  assertKeyOkToDelete = undefined,
   keyName = 'key',
 ) => {
   const assertKeyDoesNotExist = key =>
@@ -40,33 +42,44 @@ export const makeWeakMapStoreMethods = (
 
     init: (key, value) => {
       assertKeyDoesNotExist(key);
-      assertKVOkToWrite(key, value);
+      assertKVOkToAdd(key, value);
       jsmap.set(key, value);
     },
     set: (key, value) => {
       assertKeyExists(key);
-      assertKVOkToWrite(key, value);
+      assertKVOkToSet(key, value);
       jsmap.set(key, value);
     },
     delete: key => {
       assertKeyExists(key);
-      assertKeyOkToDelete(key);
+      if (assertKeyOkToDelete !== undefined) {
+        assertKeyOkToDelete(key);
+      }
       jsmap.delete(key);
+    },
+
+    addAll: entries => {
+      for (const [key, value] of entries) {
+        // Don't assert that the key either does or does not exist.
+        assertKVOkToAdd(key, value);
+        jsmap.set(key, value);
+      }
     },
   });
 };
 
 /**
- * This is a *scalar* map in that the keys can only be atomic values, primitives
- * or remotables. Other storeMaps will accept, for example, copyArrays and
- * copyRecords, as keys and look them up based on equality of their contents.
+ * This is a *scalar* mapStore in that the keys can only be atomic values:
+ * primitives or remotables.
+ * Other mapStores will accept, for example, copyArrays and
+ * copyRecords as keys and look them up based on equality of their contents.
  *
  * TODO For now, this scalarWeakMap accepts only remotables, reflecting the
  * constraints of the underlying JavaScript WeakMap it uses internally. But
  * it should accept the primitives as well, storing them in a separate internal
  * map. What makes it "weak" is that it provides no API for enumerating what's
  * there. Though note that this would only enables collection of the
- * remotables, since the other primitives may always appear.
+ * remotables, since the other primitives may always reappear.
  *
  * @template K,V
  * @param {string} [keyName='key'] - the column name for the key
@@ -75,30 +88,50 @@ export const makeWeakMapStoreMethods = (
  */
 export const makeScalarWeakMapStore = (
   keyName = 'key',
-  { longLived = true, schema = undefined } = {},
+  { longLived = true, keySchema = undefined, valueSchema = undefined } = {},
 ) => {
   const jsmap = new (longLived ? WeakMap : Map)();
-  if (schema) {
-    assertPattern(schema);
+  if (keySchema !== undefined) {
+    assertPattern(keySchema);
   }
-  const assertKVOkToWrite = (key, value) => {
+  if (valueSchema !== undefined) {
+    assertPattern(valueSchema);
+  }
+
+  const assertKVOkToSet = (_key, value) => {
+    // TODO: Just a transition kludge. Remove when possible.
+    // See https://github.com/Agoric/agoric-sdk/issues/3606
+    harden(value);
+
+    assertPassable(value);
+    if (valueSchema !== undefined) {
+      fit(value, valueSchema);
+    }
+  };
+
+  const assertKVOkToAdd = (key, value) => {
     // TODO: Just a transition kludge. Remove when possible.
     // See https://github.com/Agoric/agoric-sdk/issues/3606
     harden(key);
-    harden(value);
 
     assert(
       passStyleOf(key) === 'remotable',
       X`Only remotables can be keys of scalar WeakMapStores: ${key}`,
     );
-    assertPassable(value);
-    if (schema) {
-      fit(harden([key, value]), schema);
+    if (keySchema !== undefined) {
+      fit(key, keySchema);
     }
+    assertKVOkToSet(key, value);
   };
-  const weakMapStore = Far(`scalar WeakMapStore of ${q(keyName)}`, {
-    ...makeWeakMapStoreMethods(jsmap, assertKVOkToWrite, undefined, keyName),
+
+  return Far(`scalar WeakMapStore of ${q(keyName)}`, {
+    ...makeWeakMapStoreMethods(
+      jsmap,
+      assertKVOkToAdd,
+      assertKVOkToSet,
+      undefined,
+      keyName,
+    ),
   });
-  return weakMapStore;
 };
 harden(makeScalarWeakMapStore);

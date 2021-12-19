@@ -1,74 +1,74 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far, filterIterable } from '@agoric/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertScalarKey } from '../keys/checkKey.js';
 import { makeCopySet } from '../keys/copySet.js';
-import { fit, assertPattern } from '../patterns/patternMatchers.js';
+import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
-import { makeCursorKit } from './store-utils.js';
+import { makeCurrentKeysKit } from './store-utils.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q } = assert;
 
 /**
  * @template K
  * @param {Set<K>} jsset
- * @param {(k: K) => void} assertKeyOkToWrite
+ * @param {(k: K) => void} assertKeyOkToAdd
  * @param {((k: K) => void)=} assertKeyOkToDelete
  * @param {string=} keyName
  * @returns {SetStore<K>}
  */
 export const makeSetStoreMethods = (
   jsset,
-  assertKeyOkToWrite,
+  assertKeyOkToAdd,
   assertKeyOkToDelete = undefined,
   keyName = 'key',
 ) => {
   const {
-    assertUpdateOnWrite,
+    assertUpdateOnAdd,
     assertUpdateOnDelete,
-    makeCursor,
-    makeArray,
-  } = makeCursorKit(
+    iterableKeys,
+  } = makeCurrentKeysKit(
+    () => jsset.keys(),
     compareRank,
-    assertKeyOkToWrite,
+    assertKeyOkToAdd,
     assertKeyOkToDelete,
     keyName,
   );
 
-  const methods = harden({
+  /**
+   * @param {Pattern=} keyPatt
+   * @returns {Iterable<K>}
+   */
+  const keys = (keyPatt = undefined) =>
+    keyPatt === undefined
+      ? iterableKeys
+      : filterIterable(iterableKeys, k => matches(k, keyPatt));
+
+  return harden({
     ...makeWeakSetStoreMethods(
       jsset,
-      assertUpdateOnWrite,
+      assertUpdateOnAdd,
       assertUpdateOnDelete,
       keyName,
     ),
 
-    cursor: (keyPatt = undefined, direction = 'forward') => {
-      assert.equal(
-        direction,
-        'forward',
-        X`Non-forward cursors are not yet implemented: map ${q(keyName)}`,
-      );
-      return makeCursor(jsset.keys(), keyPatt);
-    },
+    keys,
 
-    keys: (keyPatt = undefined) => makeArray(jsset.keys(), keyPatt),
+    snapshot: (keyPatt = undefined) => makeCopySet(keys(keyPatt)),
 
-    snapshot: (keyPatt = undefined) => makeCopySet(methods.cursor(keyPatt)),
+    getSize: (keyPatt = undefined) =>
+      keyPatt === undefined ? jsset.size : [...keys(keyPatt)].length,
 
-    addAll: copySet => {
-      const { payload: keys } = copySet;
-      const { length } = keys;
-      for (let i = 0; i < length; i += 1) {
-        const key = keys[i];
-        // Don't assert that the key either does or does not exist.
-        assertKeyOkToWrite(key);
-        jsset.add(key);
+    clear: (keyPatt = undefined) => {
+      if (keyPatt === undefined) {
+        jsset.clear();
+      }
+      for (const key of keys(keyPatt)) {
+        jsset.delete(key);
       }
     },
   });
-  return methods;
 };
 
 /**
@@ -89,25 +89,26 @@ export const makeSetStoreMethods = (
  */
 export const makeScalarSetStore = (
   keyName = 'key',
-  { schema = undefined } = {},
+  { keySchema = undefined } = {},
 ) => {
   const jsset = new Set();
-  if (schema) {
-    assertPattern(schema);
+  if (keySchema !== undefined) {
+    assertPattern(keySchema);
   }
-  const assertKeyOkToWrite = key => {
+
+  const assertKeyOkToAdd = key => {
     // TODO: Just a transition kludge. Remove when possible.
     // See https://github.com/Agoric/agoric-sdk/issues/3606
     harden(key);
 
     assertScalarKey(key);
-    if (schema) {
-      fit(key, schema);
+    if (keySchema !== undefined) {
+      fit(key, keySchema);
     }
   };
-  const setStore = Far(`scalar SetStore of ${q(keyName)}`, {
-    ...makeSetStoreMethods(jsset, assertKeyOkToWrite, undefined, keyName),
+
+  return Far(`scalar SetStore of ${q(keyName)}`, {
+    ...makeSetStoreMethods(jsset, assertKeyOkToAdd, undefined, keyName),
   });
-  return setStore;
 };
 harden(makeScalarSetStore);
