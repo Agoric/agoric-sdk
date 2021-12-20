@@ -222,6 +222,8 @@ jobs:
       run: cd packages/store && yarn test
     - name: yarn test (swing-store)
       run: cd packages/swing-store && yarn test
+    - name: yarn test (web-components)
+      run: cd packages/web-components && yarn test
     - name: yarn test (wallet-connection)
       run: cd packages/wallet-connection && yarn test
 

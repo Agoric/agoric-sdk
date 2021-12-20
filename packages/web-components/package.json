@@ -1,0 +1,66 @@
+{
+  "name": "@agoric/web-components",
+  "description": "Webcomponents for Agoric dapps",
+  "license": "MIT",
+  "author": "Agoric",
+  "version": "0.1.2",
+  "main": "index.js",
+  "module": "index.js",
+  "scripts": {
+    "build": "exit 0",
+    "test": "web-test-runner --coverage",
+    "test:c8": "exit 0",
+    "test:xs": "exit 0",
+    "test:watch": "web-test-runner --watch",
+    "pretty-fix": "prettier --write '**/*.js'",
+    "pretty-check": "prettier --check '**/*.js'",
+    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-check": "yarn lint",
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint:eslint": "eslint --ext .js,.html . --ignore-path .gitignore",
+    "analyze": "cem analyze --litelement",
+    "start": "web-dev-server --port 8100"
+  },
+  "dependencies": {
+    "@agoric/assert": "^0.3.15",
+    "@agoric/captp": "^1.10.7",
+    "@agoric/marshal": "^0.5.0",
+    "@agoric/promise-kit": "^0.2.29",
+    "robot3": "^0.2.19"
+  },
+  "devDependencies": {
+    "@agoric/eventual-send": "^0.14.0",
+    "@agoric/install-ses": "^0.5.29",
+    "@custom-elements-manifest/analyzer": "^0.4.17",
+    "@lit-labs/react": "^1.0.1",
+    "@open-wc/eslint-config": "^4.3.0",
+    "@open-wc/testing": "next",
+    "@web/dev-server": "^0.1.22",
+    "@web/test-runner": "^0.13.16",
+    "eslint": "^7.32.0",
+    "eslint-plugin-lit": "^1.5.1",
+    "eslint-plugin-lit-a11y": "^1.0.1",
+    "eslint-plugin-wc": "^1.3.1",
+    "lint-staged": "^10.5.4",
+    "lit": "^2.0.2",
+    "mock-socket": "^9.0.4"
+  },
+  "customElements": "custom-elements.json",
+  "eslintConfig": {
+    "extends": [
+      "@open-wc",
+      "@endo"
+    ],
+    "rules": {
+      "import/no-extraneous-dependencies": "off"
+    }
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
