@@ -66,15 +66,6 @@ export function buildRootObject(_vatPowers, vatParameters) {
 
         for (const { vat, itemId } of giveItemCmds) {
           await E(vats[vat]).sendItem(itemId, tempStore[itemId])
-          /*
-          TODO:
-          I left off trying to figure out how to instruct each vat without
-          sending them a live object....
-
-          I also need to debug the kernel gc model because the retireImports step wasn't working
-
-          I also need to apply MBT to the comms GC
-          */
         }
 
       }
