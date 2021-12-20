@@ -14,39 +14,48 @@ function createPromiseParts() {
   return { promise, res, rej }
 }
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(vatPowers, vatParameters) {
 
-  let { scriptGetter } = _vatPowers
+  const log = vatPowers.testLog;
 
   let selfRef = null
   let selfName = null
   let items = new Map()
+
+  let transitions = vatParameters.transitions;
+
+  let transitionIx = 0;
 
   return Far('root', {
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     /* Special methods only supposed to called by self or bootstrapper */
     async init(ref, name) {
-      console.log(`[${name}] init`);
+      log(`[${name}] init`);
       selfRef = ref
       selfName = name
     },
 
     async meNextTransition() {
 
-      if (!scriptGetter.notExhaustedAndNextActorMatch(selfName)) {
-        return
+      while (transitionIx < transitions.length && transitions[transitionIx] != selfName) {
+        transitionIx++;
+      }
+      if (transitions.length <= transitionIx) {
+        return;
       }
 
-      const t = scriptGetter.nextTransition()
+      const t = transitions[transitionIx];
+
       assert(t.actor === selfName)
-      console.log(`[${selfName}] exec`, t);
+
+      log(`[${selfName}] exec`, t);
 
       for (const { read, write } of t.awaits) {
         const promise = items.get(read)
-        console.log(`[${selfName}] read promise `, promise);
+        log(`[${selfName}] read promise `, promise);
         const newValue = await promise
-        console.log(`[${selfName}] write newValue `, newValue);
+        log(`[${selfName}] write newValue `, newValue);
         items.set(write, newValue)
       }
 
@@ -66,7 +75,7 @@ export function buildRootObject(_vatPowers) {
         await this.meResolve(t.resolveItemId, t.resolverId)
       }
       else {
-        console.log("UNKNOWN ACTION.")
+        log("UNKNOWN ACTION.")
         assert(false)
       }
 
@@ -79,27 +88,27 @@ export function buildRootObject(_vatPowers) {
     async meSendItem(targetVatId, itemId) {
       const v = items.get(targetVatId)
       const item = items.get(itemId)
-      console.log(`[${selfName}] send item ${item} with id ${itemId} to ${v}`);
+      log(`[${selfName}] send item ${item} with id ${itemId} to ${v}`);
       await E(v).sendItem(itemId, item)
     },
 
     async meStoreSelfRef(itemId) {
-      console.log(`[${selfName}] store selfRef at id ${itemId}`);
+      log(`[${selfName}] store selfRef at id ${itemId}`);
       items.set(itemId, selfRef)
     },
 
     async meDropItem(itemId) {
-      console.log(`[${selfName}] drop ids ${itemId}`);
+      log(`[${selfName}] drop ids ${itemId}`);
       items.delete(itemId)
     },
 
     async meStorePromise(promiseId, resolverId) {
-      console.log(`[${selfName}] store resolver at id ${resolverId} and promise at id ${promiseId}`);
+      log(`[${selfName}] store resolver at id ${resolverId} and promise at id ${promiseId}`);
       const { promise, res } = createPromiseParts()
       items.set(promiseId, promise)
       items.set(resolverId, Far('', {
         fun: (resolveItem) => {
-          console.log(`[${selfName}] execute resolver`);
+          log(`[${selfName}] execute resolver`);
           res(resolveItem)
         }
       }))
@@ -108,7 +117,7 @@ export function buildRootObject(_vatPowers) {
     async meResolve(resolveItemId, resolverId) {
       const resolver = items.get(resolverId)
       const resolveItem = items.get(resolveItemId)
-      console.log(`[${selfName}] resolve ${resolver} to item ${resolveItem}`);
+      log(`[${selfName}] resolve ${resolver} to item ${resolveItem}`);
       await E(resolver).fun(resolveItem)
     },
 
@@ -120,7 +129,7 @@ export function buildRootObject(_vatPowers) {
     },
 
     async sendItem(itemId, item) {
-      console.log(`[${selfName}] receive item ${item} with id ${itemId}`);
+      log(`[${selfName}] receive item ${item} with id ${itemId}`);
       items.set(itemId, item)
     },
 

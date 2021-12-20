@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 // import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export function buildRootObject(vatPowers, vatParameters) {
 
   const log = vatPowers.testLog;
 
