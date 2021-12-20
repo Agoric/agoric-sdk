@@ -531,7 +531,7 @@ export function makeVatKeeper(
   }
 
   /**
-   * MapStore a snapshot, if given a snapStore.
+   * Store a snapshot, if given a snapStore.
    *
    * @param { VatManager } manager
    * @returns { Promise<boolean> }
