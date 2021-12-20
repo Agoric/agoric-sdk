@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle';
@@ -29,8 +29,8 @@ const { ceilDivide } = natSafeMath;
  *  @type {ContractStartFn}
  */
 const start = zcf => {
-  /** @type {Store<Handle<'Question'>, QuestionRecord>} */
-  const allQuestions = makeStore('Question');
+  /** @type {MapStore<Handle<'Question'>, QuestionRecord>} */
+  const allQuestions = makeScalarMapStore('Question');
   const { subscription, publication } = makeSubscriptionKit();
 
   const makeCommitteeVoterInvitation = index => {

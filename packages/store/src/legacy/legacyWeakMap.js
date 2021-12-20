@@ -6,10 +6,12 @@ import '../types.js';
 /**
  * See doccomment in the closely related `legacyMap.js` module.
  *
- * @deprecated switch to ScalarWeakMap if possible, WeakMap otherwise
+ * @deprecated switch to ScalarWeakMapStore if possible, WeakMap otherwise
+ * @template K,V
  * @param {string} [keyName='key'] - the column name for the key
+ * @returns {LegacyWeakMapStore<K,V>}
  */
-export const makeLegacyWeakMap = (keyName = 'key') => {
+export const makeLegacyWeakMapStore = (keyName = 'key') => {
   const wm = new WeakMap();
   const assertKeyDoesNotExist = key =>
     assert(!wm.has(key), X`${q(keyName)} already registered: ${key}`);
@@ -41,4 +43,4 @@ export const makeLegacyWeakMap = (keyName = 'key') => {
   });
   return legacyWeakMap;
 };
-harden(makeLegacyWeakMap);
+harden(makeLegacyWeakMapStore);

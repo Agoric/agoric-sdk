@@ -544,7 +544,7 @@ test.serial('VO lifecycle 1', async t => {
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
 
-  // Lerv -> LerV  Store VO reference virtually
+  // Lerv -> LerV  MapStore VO reference virtually
   rp = await dispatchMessage('storeHeld');
   validateStore(v, rp);
 
@@ -571,7 +571,7 @@ test.serial('VO lifecycle 2', async t => {
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
 
-  // Lerv -> LerV  Store VO reference virtually (permanent for now)
+  // Lerv -> LerV  MapStore VO reference virtually (permanent for now)
   rp = await dispatchMessage('storeHeld');
   validateStore(v, rp);
 
@@ -641,7 +641,7 @@ test.serial('VO lifecycle 3', async t => {
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
 
-  // Lerv -> LerV  Store VO reference virtually (permanent for now)
+  // Lerv -> LerV  MapStore VO reference virtually (permanent for now)
   rp = await dispatchMessage('storeHeld');
   validateStore(v, rp);
 
@@ -733,7 +733,7 @@ test.serial('VO lifecycle 6', async t => {
   await dispatchDropExports('o+1/2');
   validateDropExport(v);
 
-  // LeRv -> LeRV  Store VO reference virtually
+  // LeRv -> LeRV  MapStore VO reference virtually
   rp = await dispatchMessage('storeHeld');
   validateStore(v, rp);
 
@@ -741,7 +741,7 @@ test.serial('VO lifecycle 6', async t => {
   rp = await dispatchMessage('dropStored');
   validateDropStore(v, rp, false);
 
-  // LeRv -> LeRV  Store VO reference virtually again
+  // LeRv -> LeRV  MapStore VO reference virtually again
   rp = await dispatchMessage('storeHeld');
   validateStore(v, rp);
 
@@ -795,7 +795,7 @@ test.serial('VO lifecycle 8', async t => {
   rp = await dispatchMessage('exportHeld');
   validateExport(v, rp);
 
-  // LERv -> LERV  Store VO reference virtually
+  // LERv -> LERV  MapStore VO reference virtually
   rp = await dispatchMessage('storeHeld');
   validateStore(v, rp);
 
@@ -803,7 +803,7 @@ test.serial('VO lifecycle 8', async t => {
   rp = await dispatchMessage('dropStored');
   validateDropStore(v, rp, false);
 
-  // LERv -> LERV  Store VO reference virtually
+  // LERv -> LERV  MapStore VO reference virtually
   rp = await dispatchMessage('storeHeld');
   validateStore(v, rp);
 

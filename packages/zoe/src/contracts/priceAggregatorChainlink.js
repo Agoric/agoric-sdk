@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
-import makeStore from '@agoric/store';
+import { makeLegacyMapStore } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
@@ -58,14 +58,14 @@ const start = async zcf => {
   /** @type {bigint} */
   let reportingRoundId = 0n;
 
-  /** @type {Store<Instance, ReturnType<typeof makeOracleStatus>>} */
-  const oracleStatuses = makeStore('oracleStatus');
+  /** @type {LegacyMapStore<Instance, ReturnType<typeof makeOracleStatus>>} */
+  const oracleStatuses = makeLegacyMapStore('oracleStatus');
 
-  /** @type {Store<bigint, ReturnType<typeof makeRound>>} */
-  const rounds = makeStore('rounds');
+  /** @type {LegacyMapStore<bigint, ReturnType<typeof makeRound>>} */
+  const rounds = makeLegacyMapStore('rounds');
 
-  /** @type {Store<bigint, ReturnType<typeof makeRoundDetails>>} */
-  const details = makeStore('details');
+  /** @type {LegacyMapStore<bigint, ReturnType<typeof makeRoundDetails>>} */
+  const details = makeLegacyMapStore('details');
 
   /** @type {bigint} */
   const ROUND_MAX = BigInt(2 ** 32 - 1);
@@ -154,8 +154,8 @@ const start = async zcf => {
    * @property {number} lastSample
    */
 
-  /** @type {Store<Instance, Set<OracleRecord>>} */
-  const instanceToRecords = makeStore('oracleInstance');
+  /** @type {LegacyMapStore<Instance, Set<OracleRecord>>} */
+  const instanceToRecords = makeLegacyMapStore('oracleInstance');
 
   /**
    * @param {Object} param0

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeWeakStore } from '@agoric/store';
+import { makeScalarWeakMapStore } from '@agoric/store';
 import { Far } from '@agoric/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
@@ -122,8 +122,8 @@ const start = zcf => {
   const getPoolFeeBP = () => getNat(POOL_FEE_KEY);
   const getProtocolFeeBP = () => getNat(PROTOCOL_FEE_KEY);
 
-  /** @type {WeakStore<Brand,XYKPool>} */
-  const secondaryBrandToPool = makeWeakStore('secondaryBrand');
+  /** @type {WeakMapStore<Brand,XYKPool>} */
+  const secondaryBrandToPool = makeScalarWeakMapStore('secondaryBrand');
   const getPool = secondaryBrandToPool.get;
   const initPool = secondaryBrandToPool.init;
   const isSecondary = secondaryBrandToPool.has;

@@ -19,7 +19,7 @@ import { assert, details as X, q } from '@agoric/assert';
  * // Legacy because...
  * ```
  * comment explaining the problem inhibiting conversion to the new
- * system. Some of these problems as if this writing:
+ * system. Some of these problems as of this writing:
  *    * A promiseKit used as a value, even though a promiseKit is not
  *      a passable. Solutions are to make it a passable, or to convert
  *      the container back to a conventional JavaScript Map.
@@ -28,10 +28,12 @@ import { assert, details as X, q } from '@agoric/assert';
  *      the subsequent mutation. Using a far object wrapping an array would
  *      likely work fine.
  *
- * @deprecated switch to ScalarMap if possible, Map otherwise
+ * @deprecated switch to ScalarMapStore if possible, Map otherwise
+ * @template K,V
  * @param {string} [keyName='key'] - the column name for the key
+ * @returns {LegacyMapStore<K,V>}
  */
-export const makeLegacyMap = (keyName = 'key') => {
+export const makeLegacyMapStore = (keyName = 'key') => {
   const m = new Map();
   const assertKeyDoesNotExist = key =>
     assert(!m.has(key), X`${q(keyName)} already registered: ${key}`);
@@ -66,4 +68,4 @@ export const makeLegacyMap = (keyName = 'key') => {
   });
   return legacyMap;
 };
-harden(makeLegacyMap);
+harden(makeLegacyMapStore);

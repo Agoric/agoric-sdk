@@ -40,7 +40,7 @@ const startCounter = async (
   return { creatorFacet, publicFacet, instance, deadline, questionHandle };
 };
 
-/** @param {Store<Handle<'Question'>, QuestionRecord>} questionStore */
+/** @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore */
 const getOpenQuestions = async questionStore => {
   const isOpenPQuestions = questionStore
     .entries()
@@ -56,7 +56,7 @@ const getOpenQuestions = async questionStore => {
 
 /**
  * @param {ERef<Handle<'Question'>>} questionHandleP
- * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
+ * @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore
  */
 const getQuestion = (questionHandleP, questionStore) =>
   E.when(questionHandleP, questionHandle =>

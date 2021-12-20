@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeMarshal } from '@agoric/marshal';
-import { makeLegacyMap, makeScalarMap } from '@agoric/store';
+import { makeLegacyMapStore, makeScalarMapStore } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
 /**
@@ -32,14 +32,14 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   let unnamedCount = initialUnnamedCount;
 
   // Legacy because Mappings mix functions and data
-  const petnameKindToMapping = makeLegacyMap('petnameKind');
+  const petnameKindToMapping = makeLegacyMapStore('petnameKind');
 
   /** @type {string[]} */
   const searchOrder = [];
 
   // Paths are kept across all kinds.
-  /** @type {Store<any, Path[]>} */
-  const valToPaths = makeScalarMap('value');
+  /** @type {MapStore<any, Path[]>} */
+  const valToPaths = makeScalarMapStore('value');
 
   /**
    * @param {string} data
@@ -93,10 +93,10 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
    */
   const makeMapping = (kind, { useLegacyMap = false } = {}) => {
     assert.typeof(kind, 'string', X`kind ${kind} must be a string`);
-    const makeMap = useLegacyMap ? makeLegacyMap : makeScalarMap;
-    /** @type {Store<T, string>} */
+    const makeMap = useLegacyMap ? makeLegacyMapStore : makeScalarMapStore;
+    /** @type {MapStore<T, string>} */
     const rawValToPetname = makeMap('value');
-    /** @type {Store<T, string | Path>} */
+    /** @type {MapStore<T, string | Path>} */
     const valToPetname = {
       ...rawValToPetname,
       set(key, val) {
@@ -117,9 +117,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return rawValToPetname.values().map(val => explode(val));
       },
     };
-    /** @type {Store<string, T>} */
-    const rawPetnameToVal = makeScalarMap('petname');
-    /** @type {Store<Path | string, T>} */
+    /** @type {MapStore<string, T>} */
+    const rawPetnameToVal = makeScalarMapStore('petname');
+    /** @type {MapStore<Path | string, T>} */
     const petnameToVal = {
       ...rawPetnameToVal,
       init(key, val) {

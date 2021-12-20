@@ -4,8 +4,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { ALLOW_IMPLICIT_REMOTABLES, Far, passStyleOf } from '@agoric/marshal';
-import { makeLegacyMap } from '../src/legacy/legacyMap.js';
-import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
+import { makeLegacyMapStore } from '../src/legacy/legacyMap.js';
+import { makeLegacyWeakMapStore } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
 import { makeScalarWeakMapStore } from '../src/stores/scalarWeakMapStore.js';
 
@@ -87,12 +87,12 @@ function check(t, mode, objMaker) {
 }
 
 test('store', t => {
-  // makeScalarMap
+  // makeScalarMapStore
   check(t, 'strong', count => count); // simple numeric keys
   check(t, 'strong', count => `${count}`); // simple strings
   check(t, 'strong', () => Far('handle', {}));
 
-  // makeScalarWeakMap
+  // makeScalarWeakMapStore
   check(t, 'weak', () => Far('handle', {}));
 });
 
@@ -122,10 +122,12 @@ test('passability of stores', t => {
   t.is(passStyleOf(makeScalarMapStore('foo')), 'remotable');
   t.is(passStyleOf(makeScalarWeakMapStore('foo')), 'remotable');
   if (ALLOW_IMPLICIT_REMOTABLES) {
-    t.is(passStyleOf(makeLegacyMap('foo')), 'remotable');
-    t.is(passStyleOf(makeLegacyWeakMap('foo')), 'remotable');
+    t.is(passStyleOf(makeLegacyMapStore('foo')), 'remotable');
+    t.is(passStyleOf(makeLegacyWeakMapStore('foo')), 'remotable');
   } else {
-    t.throws(() => passStyleOf(makeLegacyMap('foo')), { message: /x/ });
-    t.throws(() => passStyleOf(makeLegacyWeakMap('foo')), { message: /x/ });
+    t.throws(() => passStyleOf(makeLegacyMapStore('foo')), { message: /x/ });
+    t.throws(() => passStyleOf(makeLegacyWeakMapStore('foo')), {
+      message: /x/,
+    });
   }
 });

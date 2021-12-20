@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 
 import {
@@ -34,8 +34,8 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
 
   // Amount in `lienedAmounts` is of the brand `externalBrand`
 
-  /** @type {Store<Address,Amount>} */
-  const lienedAmounts = makeStore('address');
+  /** @type {MapStore<Address,Amount>} */
+  const lienedAmounts = makeScalarMapStore('address');
 
   // IMPORTANT: only expose this function to the owner of the address.
   // This request *must* come from the owner of the address. Merely

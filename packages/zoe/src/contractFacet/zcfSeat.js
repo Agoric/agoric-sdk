@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { makeWeakStore, makeStore } from '@agoric/store';
+import { makeScalarWeakMapStore, makeScalarMapStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
@@ -17,13 +17,13 @@ export const createSeatManager = (
   getAssetKindByBrand,
   shutdownWithFailure,
 ) => {
-  /** @type {WeakStore<ZCFSeat, Allocation>}  */
-  let activeZCFSeats = makeWeakStore('zcfSeat');
-  /** @type {Store<ZCFSeat, Allocation>} */
-  const zcfSeatToStagedAllocations = makeStore('zcfSeat');
+  /** @type {WeakMapStore<ZCFSeat, Allocation>}  */
+  let activeZCFSeats = makeScalarWeakMapStore('zcfSeat');
+  /** @type {MapStore<ZCFSeat, Allocation>} */
+  const zcfSeatToStagedAllocations = makeScalarMapStore('zcfSeat');
 
-  /** @type {WeakStore<ZCFSeat, SeatHandle>} */
-  let zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
+  /** @type {WeakMapStore<ZCFSeat, SeatHandle>} */
+  let zcfSeatToSeatHandle = makeScalarWeakMapStore('zcfSeat');
 
   /** @type {(zcfSeat: ZCFSeat) => boolean} */
   const hasExited = zcfSeat => !activeZCFSeats.has(zcfSeat);
@@ -341,8 +341,8 @@ export const createSeatManager = (
 
   /** @type {DropAllReferences} */
   const dropAllReferences = () => {
-    activeZCFSeats = makeWeakStore('zcfSeat');
-    zcfSeatToSeatHandle = makeWeakStore('zcfSeat');
+    activeZCFSeats = makeScalarWeakMapStore('zcfSeat');
+    zcfSeatToSeatHandle = makeScalarWeakMapStore('zcfSeat');
   };
 
   return harden({

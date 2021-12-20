@@ -12,7 +12,11 @@
  */
 
 import { assert, details as X, q } from '@agoric/assert';
-import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
+import {
+  makeLegacyMapStore,
+  makeScalarMapStore,
+  makeScalarWeakMapStore,
+} from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
@@ -124,8 +128,8 @@ export function makeWallet({
   const installationMapping = makeMapping('installation');
 
   const brandTable = makeIssuerTable();
-  /** @type {WeakStore<Issuer, string>} */
-  const issuerToBoardId = makeScalarWeakMap('issuer');
+  /** @type {WeakMapStore<Issuer, string>} */
+  const issuerToBoardId = makeScalarWeakMapStore('issuer');
 
   /** @type {Petname} */
   let feePursePetname;
@@ -149,22 +153,24 @@ export function makeWallet({
     return issuerBoardId;
   };
 
-  /** @type {WeakStore<Purse, Brand>} */
-  const purseToBrand = makeScalarWeakMap('purse');
-  /** @type {Store<Brand, string>} */
-  const brandToDepositFacetId = makeScalarMap('brand');
-  /** @type {Store<Brand, Purse>} */
-  const brandToAutoDepositPurse = makeScalarMap('brand');
+  /** @type {WeakMapStore<Purse, Brand>} */
+  const purseToBrand = makeScalarWeakMapStore('purse');
+  /** @type {MapStore<Brand, string>} */
+  const brandToDepositFacetId = makeScalarMapStore('brand');
+  /** @type {MapStore<Brand, Purse>} */
+  const brandToAutoDepositPurse = makeScalarMapStore('brand');
 
   // Offers that the wallet knows about (the inbox).
-  const idToOffer = makeScalarMap('offerId');
-  const idToNotifierP = makeScalarMap('offerId');
-  /** @type {Store<string, PromiseRecord<any>>} */
+  const idToOffer = makeScalarMapStore('offerId');
+  const idToNotifierP = makeScalarMapStore('offerId');
+  /** @type {LegacyMapStore<string, PromiseRecord<any>>} */
   // Legacy because promise kits are not passables
-  const idToOfferResultPromiseKit = makeLegacyMap('id');
+  const idToOfferResultPromiseKit = makeLegacyMapStore('id');
 
-  /** @type {WeakStore<Handle<'invitation'>, any>} */
-  const invitationHandleToOfferResult = makeScalarWeakMap('invitationHandle');
+  /** @type {WeakMapStore<Handle<'invitation'>, any>} */
+  const invitationHandleToOfferResult = makeScalarWeakMapStore(
+    'invitationHandle',
+  );
 
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
@@ -916,8 +922,8 @@ export function makeWallet({
     };
   };
 
-  /** @type {Store<string, DappRecord>} */
-  const dappOrigins = makeScalarMap('dappOrigin');
+  /** @type {MapStore<string, DappRecord>} */
+  const dappOrigins = makeScalarMapStore('dappOrigin');
   const {
     notifier: dappsNotifier,
     updater: dappsUpdater,
@@ -1195,8 +1201,8 @@ export function makeWallet({
     return ret;
   }
 
-  /** @type {Store<number, PaymentRecord>} */
-  const idToPaymentRecord = makeScalarMap('paymentId');
+  /** @type {MapStore<number, PaymentRecord>} */
+  const idToPaymentRecord = makeScalarMapStore('paymentId');
   const {
     updater: paymentsUpdater,
     notifier: paymentsNotifier,
@@ -1288,7 +1294,7 @@ export function makeWallet({
     await updateAllPurseState();
   }
 
-  const pendingEnableAutoDeposits = makeScalarMap('brand');
+  const pendingEnableAutoDeposits = makeScalarMapStore('brand');
   async function doEnableAutoDeposit(pursePetname, updateState) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     const brand = purseToBrand.get(purse);

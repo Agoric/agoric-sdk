@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 import { Far, assertCopyArray } from '@agoric/marshal';
-import { makeWeakStore } from '@agoric/store';
+import { makeScalarWeakMapStore } from '@agoric/store';
 
 import { AmountMath } from './amountMath.js';
 import { makePayment } from './payment.js';
@@ -45,8 +45,8 @@ export const makePaymentLedger = (
     throw reason;
   };
 
-  /** @type {WeakStore<Payment, Amount>} */
-  const paymentLedger = makeWeakStore('payment');
+  /** @type {WeakMapStore<Payment, Amount>} */
+  const paymentLedger = makeScalarWeakMapStore('payment');
 
   /** @type {(left: Amount, right: Amount) => Amount } */
   const add = (left, right) => AmountMath.add(left, right, brand);

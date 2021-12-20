@@ -155,8 +155,8 @@ export function makeCache(size, fetch, store) {
  *    maker function that will produce new virtualized instances of the defined
  *    object type on demand.
  *
- * - `makeVirtualScalarWeakMap` creates an instance of WeakStore that can be keyed by these
- *    virtual objects.
+ * - `makeVirtualScalarWeakMap` creates an instance of WeakMapStore that can
+ *    be keyed by these virtual objects.
  *
  * - `flushCache` will empty the object manager's cache of in-memory object
  *    instances, writing any changed state to the persistent store.  This
@@ -337,11 +337,13 @@ export function makeVirtualObjectManager(
 
   /**
    * Map of all Remotables which are reachable by our virtualized data, e.g.
-   * `makeWeakStore().set(key, remotable)` or `virtualObject.state.foo =
-   * remotable`. The serialization process stores the Remotable's vref to disk,
+   * `makeScalarWeakMapStore().set(key, remotable)` or
+   * `virtualObject.state.foo = remotable`.
+   * The serialization process stores the Remotable's vref to disk,
    * but doesn't actually retain the Remotable. To correctly unserialize that
    * offline data later, we must ensure the Remotable remains alive. This Map
-   * keeps a strong reference to the Remotable along with its (virtual) refcount.
+   * keeps a strong reference to the Remotable along with its (virtual)
+   * refcount.
    */
   /** @type {Map<Object, number>} Remotable->refcount */
   const remotableRefCounts = new Map();
@@ -456,15 +458,19 @@ export function makeVirtualObjectManager(
    * imported Presences or virtual objects (Remotables do not participate in
    * this as they are not keyed by vref but by the actual Remotable objects
    * themselves). We add to a vref's recognizer set whenever we use a Presence
-   * or virtual object as a key into a makeVirtualScalarWeakMap() instance or an
+   * or virtual object as a key into a makeVirtualScalarWeakMap() instance or
+   * an
    * instance of VirtualObjectAwareWeakMap or VirtualObjectAwareWeakSet.  We
    * remove it whenever that key (or the whole collection containing it) is
    * deleted.
    *
    * A recognizer is one of:
-   *   Map - the map contained within a VirtualObjectAwareWeakMap to point to its vref-keyed entries.
-   *   Set - the set contained within a VirtualObjectAwareWeakSet to point to its vref-keyed entries.
-   *   deleter - a function within a WeakStore that can be called to remove an entry from that store.
+   *   Map - the map contained within a VirtualObjectAwareWeakMap to point to
+   *     its vref-keyed entries.
+   *   Set - the set contained within a VirtualObjectAwareWeakSet to point to
+   *     its vref-keyed entries.
+   *   deleter - a function within a WeakMapStore that can be called to remove
+   *     an entry from that store.
    *
    * It is critical that each collection have exactly one recognizer that is
    * unique to that collection, because the recognizers themselves will be
@@ -596,7 +602,7 @@ export function makeVirtualObjectManager(
    *
    * @param {string} [keyName='key']
    *
-   * @returns {WeakStore<K, V>}
+   * @returns {WeakMapStore<K, V>}
    */
   function makeVirtualScalarWeakMap(keyName = 'key') {
     const backingMap = new WeakMap();
@@ -687,6 +693,21 @@ export function makeVirtualObjectManager(
           backingMap.delete(key);
         }
       },
+      addAll: copyMap => {
+        const {
+          payload: { keys, values },
+        } = copyMap;
+        const { length } = keys;
+        for (let i = 0; i < length; i += 1) {
+          const key = keys[i];
+          const value = values[i];
+          if (result.has(key)) {
+            result.set(key, value);
+          } else {
+            result.init(key, value);
+          }
+        }
+      },
     });
     droppedCollectionRegistry.register(
       result,
@@ -710,7 +731,7 @@ export function makeVirtualObjectManager(
       }
     } else if (typeof body === 'object') {
       // XXX oops, need to iterate vatstore keys and the API doesn't support that
-      console.log(`can't finalize WeakStore ${body} yet`);
+      console.log(`can't finalize WeakMapStore ${body} yet`);
     }
   }
 

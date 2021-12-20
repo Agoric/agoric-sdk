@@ -16,7 +16,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { E } from '@agoric/eventual-send';
 import '@agoric/governance/src/exported';
 
-import { makeScalarMap } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountOut,
@@ -99,13 +99,13 @@ export async function start(zcf, privateArgs) {
     }
   }
 
-  /** @type {Store<Brand,VaultManager>} */
-  const collateralTypes = makeScalarMap('brand');
+  /** @type {MapStore<Brand,VaultManager>} */
+  const collateralTypes = makeScalarMapStore('brand');
 
   const zoe = zcf.getZoeService();
 
-  /** @type { Store<Brand, VaultParamManager> } */
-  const vaultParamManagers = makeScalarMap('brand');
+  /** @type { MapStore<Brand, VaultParamManager> } */
+  const vaultParamManagers = makeScalarMapStore('brand');
 
   async function addVaultType(collateralIssuer, collateralKeyword, rates) {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);

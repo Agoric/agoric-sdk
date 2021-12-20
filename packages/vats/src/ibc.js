@@ -5,7 +5,7 @@ import {
   dataToBase64,
   base64ToBytes,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
-import { makeStore, makeLegacyMap } from '@agoric/store';
+import { makeScalarMapStore, makeLegacyMapStore } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@agoric/far';
@@ -57,9 +57,9 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     return rawCallIBCDevice(method, params);
   };
   /**
-   * @type {Store<string, Promise<Connection>>}
+   * @type {MapStore<string, Promise<Connection>>}
    */
-  const channelKeyToConnP = makeStore('CHANNEL:PORT');
+  const channelKeyToConnP = makeScalarMapStore('CHANNEL:PORT');
 
   /**
    * @typedef {Object} Counterparty
@@ -79,35 +79,35 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    */
 
   /**
-   * @type {Store<string, Array<Outbound>>}
+   * @type {MapStore<string, Array<Outbound>>}
    */
-  const srcPortToOutbounds = makeStore('SRC-PORT');
+  const srcPortToOutbounds = makeScalarMapStore('SRC-PORT');
 
   /**
-   * @type {Store<string, ConnectingInfo>}
+   * @type {MapStore<string, ConnectingInfo>}
    */
-  const channelKeyToInfo = makeStore('CHANNEL:PORT');
+  const channelKeyToInfo = makeScalarMapStore('CHANNEL:PORT');
 
   /**
-   * @type {Store<string, OnConnectP>}
+   * @type {MapStore<string, OnConnectP>}
    */
-  const channelKeyToOnConnectP = makeStore('CHANNEL:PORT');
+  const channelKeyToOnConnectP = makeScalarMapStore('CHANNEL:PORT');
 
   /**
-   * @type {Store<string, Promise<InboundAttempt>>}
+   * @type {MapStore<string, Promise<InboundAttempt>>}
    */
-  const channelKeyToAttemptP = makeStore('CHANNEL:PORT');
+  const channelKeyToAttemptP = makeScalarMapStore('CHANNEL:PORT');
 
   /**
-   * @type {Store<string, Store<number, PromiseRecord<Bytes>>>}
+   * @type {MapStore<string, MapStore<number, PromiseRecord<Bytes>>>}
    */
-  const channelKeyToSeqAck = makeStore('CHANNEL:PORT');
+  const channelKeyToSeqAck = makeScalarMapStore('CHANNEL:PORT');
 
   /**
    * Send a packet out via the IBC device.
    *
    * @param {IBCPacket} packet
-   * @param {Store<number, PromiseRecord<Bytes>>} seqToAck
+   * @param {MapStore<number, PromiseRecord<Bytes>>} seqToAck
    */
   async function ibcSendPacket(packet, seqToAck) {
     // Make a kernel call to do the send.
@@ -145,7 +145,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     order,
   ) {
     const channelKey = `${channelID}:${portID}`;
-    const seqToAck = makeStore('SEQUENCE');
+    const seqToAck = makeScalarMapStore('SEQUENCE');
     channelKeyToSeqAck.init(channelKey, seqToAck);
 
     /**
@@ -228,18 +228,18 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    */
 
   /**
-   * @type {Store<Port, OutboundCircuitRecord[]>}
+   * @type {MapStore<Port, OutboundCircuitRecord[]>}
    */
-  const portToCircuits = makeStore('Port');
+  const portToCircuits = makeScalarMapStore('Port');
 
   /**
-   * @type {Store<Port, Set<PromiseRecord<ConnectionHandler>>>}
+   * @type {LegacyMapStore<Port, Set<PromiseRecord<ConnectionHandler>>>}
    */
   // Legacy because it holds a raw JavaScript Set
-  const portToPendingConns = makeLegacyMap('Port');
+  const portToPendingConns = makeLegacyMapStore('Port');
 
-  /** @type {Store<Endpoint, Endpoint>} */
-  const remoteAddrToLocalSuffix = makeStore('endpoint');
+  /** @type {MapStore<Endpoint, Endpoint>} */
+  const remoteAddrToLocalSuffix = makeScalarMapStore('endpoint');
 
   /**
    * @type {ProtocolHandler}

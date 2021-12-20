@@ -11,7 +11,7 @@
  * @param {QuestionSpec} questionSpec
  * @param {unknown} quorumThreshold
  * @param {ERef<Installation>} voteCounter
- * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
+ * @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore
  * @param {IterationObserver<unknown>} publication
  * @returns {AddQuestionReturn}
  */

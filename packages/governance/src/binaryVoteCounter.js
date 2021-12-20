@@ -3,7 +3,7 @@
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { sameStructure } from '@agoric/same-structure';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 
 import {
   ChoiceMethod,
@@ -75,8 +75,8 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
    * @property {Position} chosen
    * @property {bigint} shares
    */
-  /** @type {Store<Handle<'Voter'>,RecordedBallot> } */
-  const allBallots = makeStore('voterHandle');
+  /** @type {MapStore<Handle<'Voter'>,RecordedBallot> } */
+  const allBallots = makeScalarMapStore('voterHandle');
 
   /** @type {SubmitVote} */
   const submitVote = (voterHandle, chosenPositions, shares = 1n) => {

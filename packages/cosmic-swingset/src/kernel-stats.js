@@ -1,7 +1,7 @@
 import { MeterProvider } from '@opentelemetry/metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
-import { makeLegacyMap } from '@agoric/store';
+import { makeLegacyMapStore } from '@agoric/store';
 
 import {
   KERNEL_STATS_SUM_METRICS,
@@ -54,7 +54,7 @@ const recordToKey = record =>
 
 export function makeSlogCallbacks({ metricMeter, labels }) {
   // Legacy because ValueRecorder thing Does not seem to be a passable
-  const nameToBaseMetric = makeLegacyMap('baseMetricName');
+  const nameToBaseMetric = makeLegacyMapStore('baseMetricName');
   nameToBaseMetric.init(
     'swingset_vat_startup',
     metricMeter.createValueRecorder('swingset_vat_startup', {
@@ -77,7 +77,7 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
     }),
   );
   // Legacy because legacyMaps are not passable
-  const groupToMetrics = makeLegacyMap('metricGroup');
+  const groupToMetrics = makeLegacyMapStore('metricGroup');
 
   /**
    * This function reuses or creates per-group named metrics.
@@ -103,13 +103,13 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
           }
           // Refresh the metric group.
           // Legacy because Metric thing does not seem to be a passable
-          nameToMetric = makeLegacyMap('metricName');
+          nameToMetric = makeLegacyMapStore('metricName');
           groupToMetrics.set(groupKey, [nameToMetric, instanceKey]);
         }
       }
     } else {
       // Legacy because Metric thing does not seem to be a passable
-      nameToMetric = makeLegacyMap('metricName');
+      nameToMetric = makeLegacyMapStore('metricName');
       groupToMetrics.init(groupKey, [nameToMetric, instanceKey]);
     }
 

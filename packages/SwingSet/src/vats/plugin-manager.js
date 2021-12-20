@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeCapTP } from '@agoric/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E, HandledPromise } from '@agoric/eventual-send';
@@ -71,9 +71,9 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
    */
 
   /**
-   * @type {Store<number, AbortDispatch>}
+   * @type {MapStore<number, AbortDispatch>}
    */
-  const modConnection = makeStore('moduleIndex');
+  const modConnection = makeScalarMapStore('moduleIndex');
 
   // Dispatch object to the right index.
   D(pluginDevice).registerReceiver(

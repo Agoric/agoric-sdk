@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { makeLegacyMap } from '@agoric/store';
+import { makeLegacyMapStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { Far } from '@agoric/marshal';
@@ -22,9 +22,9 @@ import { makePromiseKit } from '@agoric/promise-kit';
 export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   let ticks = Nat(startValue);
 
-  /** @type {Store<Timestamp, Array<ERef<TimerWaker>>>} */
+  /** @type {LegacyMapStore<Timestamp, Array<ERef<TimerWaker>>>} */
   // Legacy because the value is mutated after it is stored.
-  const schedule = makeLegacyMap('Timestamp');
+  const schedule = makeLegacyMapStore('Timestamp');
 
   const makeRepeater = (delay, interval, timer) => {
     assert.typeof(delay, 'bigint');

@@ -6,7 +6,7 @@ import {
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { E, Far } from '@agoric/far';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain.js';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain.js';
 
@@ -145,8 +145,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     async function installEconomy(bootstrapPaymentValue) {
       // Create a mapping from all the nameHubs we create to their corresponding
       // nameAdmin.
-      /** @type {Store<NameHub, NameAdmin>} */
-      const nameAdmins = makeStore('nameHub');
+      /** @type {MapStore<NameHub, NameAdmin>} */
+      const nameAdmins = makeScalarMapStore('nameHub');
       await Promise.all(
         ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].map(
           async nm => {
@@ -302,10 +302,10 @@ export function buildRootObject(vatPowers, vatParameters) {
     }
 
     /**
-     * @type {Store<Brand, Payment>} A store containing payments that weren't
+     * @type {MapStore<Brand, Payment>} A store containing payments that weren't
      * used by the bank and can be used for other purposes.
      */
-    const unusedBankPayments = makeStore('brand');
+    const unusedBankPayments = makeScalarMapStore('brand');
 
     /* Prime the bank vat with our bootstrap payment. */
     const centralBootstrapPayment = await E(

@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import {
   startCounter,
@@ -31,8 +31,8 @@ const start = zcf => {
   } = zcf.getTerms();
   const empty = AmountMath.makeEmpty(attestationBrand, AssetKind.SET);
 
-  /** @type {Store<Handle<'Question'>, QuestionRecord>} */
-  const allQuestions = makeStore('Question');
+  /** @type {MapStore<Handle<'Question'>, QuestionRecord>} */
+  const allQuestions = makeScalarMapStore('Question');
   const { subscription, publication } = makeSubscriptionKit();
 
   /** @param { SetValue } attestations */

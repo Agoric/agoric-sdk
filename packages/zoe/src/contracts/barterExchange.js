@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Far } from '@agoric/marshal';
-import { makeLegacyMap } from '@agoric/store';
+import { makeLegacyMapStore } from '@agoric/store';
 import '../../exported.js';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
@@ -27,7 +27,7 @@ const start = zcf => {
   // store its handle and the amounts for `give` and `want`.
   //
   // Legacy Because we're storing a genuine JS Map
-  const bookOrders = makeLegacyMap('bookOrders');
+  const bookOrders = makeLegacyMapStore('bookOrders');
 
   function lookupBookOrders(brandIn, brandOut) {
     if (!bookOrders.has(brandIn)) {

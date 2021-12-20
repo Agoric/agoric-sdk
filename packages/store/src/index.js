@@ -14,20 +14,12 @@ export {
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';
-export {
-  makeScalarWeakMapStore,
-  makeScalarWeakMapStore as makeScalarWeakMap, // Deprecated legacy
-  makeScalarWeakMapStore as makeWeakStore, // Deprecated legacy
-} from './stores/scalarWeakMapStore.js';
-export {
-  makeScalarMapStore,
-  makeScalarMapStore as makeScalarMap, // Deprecated legacy
-  makeScalarMapStore as makeStore, // Deprecated legacy
-} from './stores/scalarMapStore.js';
+export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
+export { makeScalarMapStore } from './stores/scalarMapStore.js';
 
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 
 // export default as well as makeLegacy* only for compatibility
 // during the transition.
-export { makeLegacyMap, makeLegacyMap as default } from './legacy/legacyMap.js';
-export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';
+export { makeLegacyMapStore } from './legacy/legacyMap.js';
+export { makeLegacyWeakMapStore } from './legacy/legacyWeakMap.js';

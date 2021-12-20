@@ -6,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
 import { makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 
 import {
@@ -48,7 +48,7 @@ const ParamType = {
 
 /** @type {(zoe?:ERef<ZoeService>) => ParamManagerBuilder} */
 const makeParamManagerBuilder = zoe => {
-  const namesToParams = makeStore('Parameter Name');
+  const namesToParams = makeScalarMapStore('Parameter Name');
   const { publication, subscription } = makeSubscriptionKit();
   const updateFns = {};
 

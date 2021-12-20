@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { updateLien } from '../../../../../src/contracts/attestation/expiring/updateLien.js';
@@ -10,8 +10,8 @@ import { makeAttestationElem } from '../../../../../src/contracts/attestation/ex
 import { makeHandle } from '../../../../../src/makeHandle.js';
 
 test(`store doesn't have address`, async t => {
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  /** @type {MapStore<Address,Array<ExpiringAttElem>>} */
+  const store = makeScalarMapStore('address');
 
   // @ts-ignore AttestationElem mocked for test
   const newAttestationElem = makeAttestationElem('address');
@@ -22,8 +22,8 @@ test(`store doesn't have address`, async t => {
 });
 
 test(`no old records`, async t => {
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  /** @type {MapStore<Address,Array<ExpiringAttElem>>} */
+  const store = makeScalarMapStore('address');
 
   const address = 'address';
 
@@ -45,8 +45,8 @@ test(`no old records`, async t => {
 });
 
 test(`old records don't match`, async t => {
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  /** @type {MapStore<Address,Array<ExpiringAttElem>>} */
+  const store = makeScalarMapStore('address');
 
   const address = 'address';
   const handle = makeHandle('Attestation');
@@ -69,8 +69,8 @@ test(`old records don't match`, async t => {
 });
 
 test(`happy path`, async t => {
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
-  const store = makeStore('address');
+  /** @type {MapStore<Address,Array<ExpiringAttElem>>} */
+  const store = makeScalarMapStore('address');
 
   const address = 'address';
   const handle = makeHandle('Attestation');

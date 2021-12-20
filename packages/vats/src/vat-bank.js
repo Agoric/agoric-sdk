@@ -3,7 +3,7 @@ import { assert, details as X } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@agoric/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore, makeWeakStore } from '@agoric/store';
+import { makeScalarMapStore, makeScalarWeakMapStore } from '@agoric/store';
 
 import { makeVirtualPurse } from './virtual-purse.js';
 
@@ -100,11 +100,11 @@ export function buildRootObject(_vatPowers) {
      * (such as on sim-chain), we just use local purses.
      */
     async makeBankManager(bankBridgeManager = undefined) {
-      /** @type {WeakStore<Brand, AssetRecord>} */
-      const brandToAssetRecord = makeWeakStore('brand');
+      /** @type {WeakMapStore<Brand, AssetRecord>} */
+      const brandToAssetRecord = makeScalarWeakMapStore('brand');
 
-      /** @type {Store<string, Store<string, BalanceUpdater>>} */
-      const denomToAddressUpdater = makeStore('denom');
+      /** @type {MapStore<string, MapStore<string, BalanceUpdater>>} */
+      const denomToAddressUpdater = makeScalarMapStore('denom');
 
       const updateBalances = obj => {
         switch (obj && obj.type) {
@@ -168,8 +168,8 @@ export function buildRootObject(_vatPowers) {
         publication: assetPublication,
       } = makeSubscriptionKit();
 
-      /** @type {Store<string, Bank>} */
-      const addressToBank = makeStore('address');
+      /** @type {MapStore<string, Bank>} */
+      const addressToBank = makeScalarMapStore('address');
 
       /**
        * Create a new personal bank interface for a given address.
@@ -183,8 +183,8 @@ export function buildRootObject(_vatPowers) {
           return addressToBank.get(address);
         }
 
-        /** @type {WeakStore<Brand, VirtualPurse>} */
-        const brandToVPurse = makeWeakStore('brand');
+        /** @type {WeakMapStore<Brand, VirtualPurse>} */
+        const brandToVPurse = makeScalarWeakMapStore('brand');
 
         /** @type {Bank} */
         const bank = Far('bank', {
@@ -331,7 +331,7 @@ export function buildRootObject(_vatPowers) {
             brand,
           });
           brandToAssetRecord.init(brand, assetRecord);
-          denomToAddressUpdater.init(denom, makeStore('address'));
+          denomToAddressUpdater.init(denom, makeScalarMapStore('address'));
           assetPublication.updateState(
             harden({
               brand,

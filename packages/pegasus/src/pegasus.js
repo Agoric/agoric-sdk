@@ -2,7 +2,7 @@
 
 import { assert, details, q } from '@agoric/assert';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeLegacyWeakMap, makeStore } from '@agoric/store';
+import { makeLegacyWeakMapStore, makeScalarMapStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Nat } from '@agoric/nat';
 import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr.js';
@@ -250,16 +250,16 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
   /**
    * @typedef {Object} LocalDenomState
-   * @property {Store<DenomUri, Courier>} denomUriToCourier
+   * @property {MapStore<DenomUri, Courier>} denomUriToCourier
    * @property {Set<Peg>} pegs
    * @property {number} lastDenomNonce
    */
 
   /**
-   * @type {WeakStore<Connection, LocalDenomState>}
+   * @type {LegacyWeakMapStore<Connection, LocalDenomState>}
    */
   // Legacy because the value contains a JS Set
-  const connectionToLocalDenomState = makeLegacyWeakMap('Connection');
+  const connectionToLocalDenomState = makeLegacyWeakMapStore('Connection');
 
   let lastLocalIssuerNonce = 0;
   /**
@@ -273,9 +273,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
   };
 
   /**
-   * @type {Store<Peg, Connection>}
+   * @type {MapStore<Peg, Connection>}
    */
-  const pegToConnection = makeStore('Peg');
+  const pegToConnection = makeScalarMapStore('Peg');
 
   /**
    * Create a fresh Peg associated with a descriptor.
@@ -319,9 +319,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
      */
     makePegConnectionHandler() {
       /**
-       * @type {Store<DenomUri, Courier>}
+       * @type {MapStore<DenomUri, Courier>}
        */
-      const denomUriToCourier = makeStore('Denomination');
+      const denomUriToCourier = makeScalarMapStore('Denomination');
       /**
        * @type {Set<Peg>}
        */

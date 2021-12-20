@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeWeakStore } from '@agoric/store';
+import { makeScalarWeakMapStore } from '@agoric/store';
 
 /**
  * @param {ChargeZoeFee} chargeZoeFee
@@ -10,8 +10,8 @@ export const makeInstanceAdminStorage = (
   chargeZoeFee,
   getPublicFacetFeeAmount,
 ) => {
-  /** @type {WeakStore<Instance,InstanceAdmin>} */
-  const instanceToInstanceAdmin = makeWeakStore('instance');
+  /** @type {WeakMapStore<Instance,InstanceAdmin>} */
+  const instanceToInstanceAdmin = makeScalarWeakMapStore('instance');
 
   /** @type {GetPublicFacetFeePurseRequired} */
   const getPublicFacet = async (instance, feePurse) => {

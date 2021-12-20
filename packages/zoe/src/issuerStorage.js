@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeWeakStore } from '@agoric/store';
+import { makeScalarWeakMapStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
@@ -12,10 +12,10 @@ import { makeIssuerRecord } from './issuerRecord.js';
  *  Make the Issuer Storage.
  */
 export const makeIssuerStorage = () => {
-  /** @type {WeakStore<Brand,IssuerRecord>} */
-  const brandToIssuerRecord = makeWeakStore('brand');
-  /** @type {WeakStore<Issuer,IssuerRecord>} */
-  const issuerToIssuerRecord = makeWeakStore('issuer');
+  /** @type {WeakMapStore<Brand,IssuerRecord>} */
+  const brandToIssuerRecord = makeScalarWeakMapStore('brand');
+  /** @type {WeakMapStore<Issuer,IssuerRecord>} */
+  const issuerToIssuerRecord = makeScalarWeakMapStore('issuer');
 
   let instantiated = false;
   const assertInstantiated = () =>
@@ -42,7 +42,7 @@ export const makeIssuerStorage = () => {
    *
    * The reason why we need the `has` check below is for the 4th case
    * above, in which we store an issuer record in ZCF that we obtained
-   * from Zoe. `WeakStore.init` errors if the key is already present,
+   * from Zoe. `WeakMapStore.init` errors if the key is already present,
    * and because an issuer can be used more than once in the same
    * contract, we need to make sure we aren't trying to `init` twice.
    * If the issuer and its record are already present, we do not need

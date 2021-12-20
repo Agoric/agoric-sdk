@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeScalarMap, makeLegacyMap } from '@agoric/store';
+import { makeScalarMapStore, makeLegacyMapStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -217,22 +217,22 @@ export function getPrefixes(addr) {
  * @returns {Protocol} the local capability for connecting and listening
  */
 export function makeNetworkProtocol(protocolHandler) {
-  /** @type {Store<Port, Set<Closable>>} */
+  /** @type {LegacyMapStore<Port, Set<Closable>>} */
   // Legacy because we're storing a JS Set
-  const currentConnections = makeLegacyMap('port');
+  const currentConnections = makeLegacyMapStore('port');
 
   /**
    * Currently must be a single listenHandler.
    * TODO: Do something sensible with multiple handlers?
    *
-   * @type {Store<Endpoint, [Port, ListenHandler]>}
+   * @type {MapStore<Endpoint, [Port, ListenHandler]>}
    */
-  const listening = makeScalarMap('localAddr');
+  const listening = makeScalarMapStore('localAddr');
 
   /**
-   * @type {Store<string, Port>}
+   * @type {MapStore<string, Port>}
    */
-  const boundPorts = makeScalarMap('localAddr');
+  const boundPorts = makeScalarMapStore('localAddr');
 
   /**
    * @param {Endpoint} localAddr
@@ -541,9 +541,9 @@ export function makeLoopbackProtocolHandler(
   onInstantiate = makeNonceMaker('nonce/'),
 ) {
   /**
-   * @type {Store<string, [Port, ListenHandler]>}
+   * @type {MapStore<string, [Port, ListenHandler]>}
    */
-  const listeners = makeScalarMap('localAddr');
+  const listeners = makeScalarMapStore('localAddr');
 
   const makePortID = makeNonceMaker('port');
 

@@ -3,7 +3,7 @@
 import { generateSparseInts } from '@agoric/sparse-ints';
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@agoric/far';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { crc6 } from './crc.js';
 
 import './types.js';
@@ -36,8 +36,8 @@ const calcCrc = num => {
  * @returns {Board}
  */
 function makeBoard(seed = 0) {
-  const idToVal = makeStore('boardId');
-  const valToId = makeStore('value');
+  const idToVal = makeScalarMapStore('boardId');
+  const valToId = makeScalarMapStore('value');
   const sparseInts = generateSparseInts(seed);
 
   /** @type {Board} */

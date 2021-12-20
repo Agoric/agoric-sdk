@@ -194,20 +194,8 @@
 
 /**
  * @template K,V
- * @typedef {WeakMapStore<K,V>} WeakStore
- * Deprecated type name `WeakStore`. Use `WeakMapStore` instead.
- */
-
-/**
- * @template K,V
- * @typedef {MapStore<K,V>} Store
- * Deprecated type name `Store`. Use `MapStore` instead.
- */
-
-/**
- * @template K,V
- * @typedef {Object} LegacyWeakMap
- * LegacyWeakMap is deprecated. Use WeakMapStore instead.
+ * @typedef {Object} LegacyWeakMapStore
+ * LegacyWeakMapStore is deprecated. Use WeakMapStore instead.
  * @property {(key: K) => boolean} has
  * Check if a key exists
  * @property {(key: K) => V} get
@@ -223,9 +211,22 @@
 
 /**
  * @template K,V
- * @callback MakeLegacyWeakMap
- * @param {string} [keyName='key'] - the column name for the key
- * @returns {LegacyWeakMap}
+ * @typedef {Object} LegacyMapStore
+ * LegacyWeakMapStore is deprecated. Use WeakMapStore instead.
+ * @property {(key: K) => boolean} has
+ * Check if a key exists
+ * @property {(key: K) => V} get
+ * Return a value for the key. Throws if not found.
+ * @property {(key: K, value: V) => void} init
+ * Initialize the key only if it
+ * doesn't already exist
+ * @property {(key: K, value: V) => void} set
+ * Set the key. Throws if not found.
+ * @property {(key: K) => void} delete
+ * Remove the key. Throws if not found.
+ * @property {() => K[]} keys
+ * @property {() => V[]} values
+ * @property {() => [K,V][]} entries
  */
 
 // /////////////////////////////////////////////////////////////////////////////
