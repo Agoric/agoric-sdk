@@ -219,7 +219,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
 
   /**
-   * MapStore a value for a given key.  The value will replace any prior value if
+   * Store a value for a given key.  The value will replace any prior value if
    * there was one.
    *
    * @param {string} key  The key whose value is being set.

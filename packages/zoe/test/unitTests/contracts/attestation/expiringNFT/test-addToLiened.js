@@ -9,7 +9,7 @@ import { addToLiened } from '../../../../../src/contracts/attestation/expiring/e
 import { makeHandle } from '../../../../../src/makeHandle.js';
 
 test('add for same address', async t => {
-  /** @type {MapStore<Address,Array<ExpiringAttElem>>} */
+  /** @type {LegacyMapStore<Address,Array<ExpiringAttElem>>} */
   // Legacy because stored array is pushed onto
   const store = makeLegacyMapStore('address');
 
