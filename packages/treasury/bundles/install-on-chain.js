@@ -37,8 +37,16 @@ const DEFAULT_PROTOCOL_FEE = 6n;
  * @param {Installation} governorInstallation
  * @param {NatValue} poolFee
  * @param {NatValue} protocolFee
- * @return {Promise<
- * {amm:{governedInstance:Instance, ammCreatorFacet:unknown, ammPublicFacet:XYKAMMPublicFacet}, governor:{ammGovernorCreatorFacet, ammGovernorInstance:Instance, ammGovernorPublicFacet:GovernorPublic}}>}
+ * @return {Promise<{
+ * amm:{
+ *   governedInstance:Instance,
+ *   ammCreatorFacet:unknown,
+ *   ammPublicFacet:XYKAMMPublicFacet},
+ * governor:{
+ *   ammGovernorCreatorFacet,
+ *   ammGovernorInstance:Instance,
+ *   ammGovernorPublicFacet:GovernorPublic}
+ * }>}
  */
 async function setupAmm(
   timer,

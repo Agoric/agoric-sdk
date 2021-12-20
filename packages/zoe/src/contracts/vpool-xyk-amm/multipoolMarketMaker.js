@@ -4,10 +4,7 @@ import { makeWeakStore } from '@agoric/store';
 import { Far, sameStructure } from '@agoric/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import {
-  CONTRACT_ELECTORATE,
-  handleParamGovernance,
-} from '@agoric/governance/src';
+import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeAddPool } from './pool.js';

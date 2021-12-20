@@ -71,6 +71,7 @@ export async function start(zcf, privateArgs) {
     runIssuerRecord: runMint.getIssuerRecord(),
   }));
 
+  /** a powerful object; can modify the invitation */
   const electorateParamManager = await makeElectorateParamManager(
     zcf.getZoeService(),
     initialPoserInvitation,
@@ -128,6 +129,7 @@ export async function start(zcf, privateArgs) {
       chargingPeriod: loanParams[CHARGING_PERIOD_KEY].value,
       recordingPeriod: loanParams[RECORDING_PERIOD_KEY].value,
     };
+    /** a powerful object; can modify parameters */
     const vaultParamManager = makeVaultParamManager(loanPeriods, rates);
     vaultParamManagers.init(collateralBrand, vaultParamManager);
 

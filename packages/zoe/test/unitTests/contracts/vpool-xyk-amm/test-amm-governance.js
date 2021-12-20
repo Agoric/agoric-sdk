@@ -6,7 +6,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@agoric/eventual-send';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { CONTRACT_ELECTORATE } from '@agoric/governance/src/paramGovernance/governParam.js';
+import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
 // noinspection ES6PreferShortImport
 import buildManualTimer from '../../../../tools/manualTimer.js';

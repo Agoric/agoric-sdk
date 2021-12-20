@@ -14,8 +14,10 @@ import {
 
 const { details: X, quote: q } = assert;
 
-// The electorate that governs changes to the contract's parameters. It must
-// be declared in the governed contract.
+/**
+ * The electorate that governs changes to the contract's parameters. It must be
+ * declared in the governed contract.
+ */
 const CONTRACT_ELECTORATE = 'Electorate';
 
 /** @type {MakeParamChangePositions} */

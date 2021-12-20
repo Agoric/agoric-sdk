@@ -6,7 +6,7 @@ electorates and different ways of tallying votes.
 
 The electorates and VoteCounters are self-describing and reveal what they are
 connected to so that voters can verify that their votes mean what they say and
-will be tabulated as expected.
+will therefore be tabulated as expected.
 
 Any occasion of governance starts with the creation of an Electorate. Two kinds
 exist currently that represent committees (elected or appointed) and
@@ -15,10 +15,10 @@ many questions governing many things, so the electorate has to exist before any
 questions can be posed.
 
 The next piece to be created is an ElectionManager. (Contract Governor, one
-implementation, is discussed below). An ElectionManager is tied to a particular
-Electorate. It supports creation of questions, can manage what happens with the
-results, and may limit the kinds of questions it can handle. The ElectionManager
-is also responsible for specifying which VoteCounter will be used with any
+implementation, is discussed below). An ElectionManager deals with a
+particular Electorate. It supports creation of questions, and can manage
+what happens with the results. The ElectionManager
+is responsible for specifying which VoteCounter will be used with any
 particular question. Different VoteCounters will handle elections with two
 positions or more. The architecture supports vote counters for
 [majority decisions](https://en.wikipedia.org/wiki/Majority_rule),
@@ -36,20 +36,20 @@ structured objects. Method is one of UNRANKED and ORDER, which is sufficient to
 describe all the most common kinds of votes. A vote between two candidates or
 positions uses UNRANKED with a limit of one vote. ORDER will be useful for
 Single Transferable Vote or Instant Runoff Voting. ElectionType distinguishes
-PARAM_CHANGE, which has structured questions, from others where the issue is a
-string.
+PARAM_CHANGE, which has structured questions, from others where the issue is
+represented by a string.
 
-When posing a particular question to be voted on, the closingRule also has to be
+When posing a particular question to be voted on, the closingRule has to be
 specified. When voters are presented with a question to vote on, they have
 access to QuestionDetails, which includes information from the QuestionSpec, the
 closingRule, and the VoteCounter instance. The VoteCounter has the Electorate
-in its terms, so voters can verify it.
+in its `terms`, so voters can verify it.
 
-Voters get a voting facet via an invitation, so they're sure they're connected
-to the Electorate that's responsible for this vote. They can subscribe with the
-electorate to get a list of new questions. They can use the questionHandle from
-the notifier to get the questionDetails. Voters cast their vote by sending their
-selected list of positions to their electorate, which they know and trust.
+Voters get a voting facet via an invitation, so they can reliably identify the
+Electorate. They can subscribe with the electorate to get a list of new
+questions. They can use the questionHandle from each update from the
+subscription to get the questionDetails. Voters cast their vote by sending their
+selected position(s) to their electorate, which they know and trust.
 
 This structure of Electorates and VoteCounters allows voters and observers to
 verify how votes will be counted, and who can vote on them, but doesn't
@@ -76,7 +76,7 @@ has control, and how those changes can happen. To do so, the contract will
 use a ParamManager to hold its mutable state. ParamManager has facets for
 accessing the param values and for setting them. The governed contract would use
 the access facet internally, and make that visible to anyone who should be able
-to see the values, while ensuring that the private facet, which can control the
+to see the values, while ensuring that the private facet, which can change the
 values, is only accessible to a visible ContractGovernor. The ContractGovernor
 makes the Electorate visible, while tightly controlling the process of
 creating new questions and presenting them to the electorate.
@@ -89,7 +89,7 @@ to governance, but that's too many meta-levels at this point.
 
 The party that has the question-creating facet of the ContractGovernor can
 create a question that asks about changing a particular parameter on the
-contract instance. The electorate creates new questions, and makes a new
+contract instance. The electorate object creates new questions, and makes a new
 instance of a VoteCounter so everyone can see how questions will be counted.
 
 Electorates have a public method to get from the questionHandle to a question.
@@ -106,9 +106,12 @@ held in a ParamManager, and that a ContractGovernor can cleanly start it up and
 have exclusive access to the facet that allows the values to be set. The
 contract would also make the read-only facet visible, so others can see the
 current values. The initial values of the parameters, along with their types
-remain visible in the contract's terms.
+remain visible in the contract's `terms`. Contracts should be written so that
+it's easy to tell that the ParamManager, with its ability to change the
+parameter values (and access any powerful invitations) is only used in limited
+ways, and is only passed to objects that treat it as a sensitive resource.
 
-By using ContractHelper, the governed contract returns a (powerful) creatorFacet
+The governed contract uses a ContractHelper to return a (powerful) creatorFacet
 with two methods: `getParamMgrRetriever` (which provides access to read and
 modify parameters), and `getLimitedCreatorFacet`, which has the creator facet
 provided by the governed contract and doesn't include any powerful governance
@@ -118,17 +121,20 @@ shouldn't share it. So the contractGovernor's creatorFacet provides access to
 the governed contract's publicFacet, creatorFacet, instance, and
 `voteOnParamChange()`, which the contract's owner should treat as powerful. 
 
+### Governing Electorates
+
 In order to allow the Electorate that controls the ContractGovernor to change,
 the Electorate is a required parameter in all governed contracts. Invitations
 are an unusual kind of managed parameter. Most parameters are copy-objects that
-don't carry any power. Since invitations convey rights, their representation in
-the terms object is only as the invitation's amount. The actual invitation must
-be passed as a private argument to the contract. This combination makes it
+don't carry any power. Since invitations convey rights, only the
+invitation's amount appears in `terms`. The actual invitation must
+be passed  to the contract using `privateArg`. This combination makes it
 possible for clients to see what the invitation is for, but only the contract
 has the ability to exercise it. Similarly, when there will be a vote to change
 the Electorate (or any other Invitation-valued parameter), observers can see the
-amount, and reviewers can see that the actual invitation will only be exercised
-if/when the vote is successful.
+amount. When contracts are written so the handling of the ParamManager is
+clearly limited, reviewers can see that the actual invitation will only be
+exercised if/when the vote is successful.
 
 ### ParamManager
 
@@ -169,7 +175,7 @@ call cascade. At the end, `.build()` is called. One of the calls,
 
 The parameter values are retrieved by name. A separate facet of the paramManager
 allows the holder to call `updateFoo()` to change the value. ContractGovernor
-wraps that facet up so that usage can be monitored.
+wraps that facet up so its usage is visible.
 
 Current supported methods for adding parameters include 'addAmount', 'addBrand',
 'addInstance', 'addInstallation', 'addInvitation', 'addNat', 'addRatio',
@@ -177,32 +183,41 @@ Current supported methods for adding parameters include 'addAmount', 'addBrand',
 that contracts want to manage. (If you find yourself using 'addUnknown', let us
 know, as that's a sign that we should support a new type). 
 
+### Governed Contracts
+
 `contractHelper` provides support for the vast majority of expected clients that
 will have a single set of parameters to manage. A contract only has to define
-the parameters in a call to `handleParamGovernance()`, and add any needed
-methods to the public and creator facets. This will
- * validate that the declaration of the parameters is included in its terms,
+the parameters (including `CONTRACT_ELECTORATE`) in a call to
+`handleParamGovernance()`, and add any needed methods to the public and creator
+facets. This will
+ * validate that the declaration of the parameters is included in its `terms`,
  * add the parameter retriever appropriately to the publicFacet and creatorFacet
 
 It's convenient for the contract to export a function (e.g. `makeParamTerms`)
-for the use of those starting up the contract to insert in the terms. They would
-otherwise need to write boilerplate functions to declare all the required
+for the use of those starting up the contract to insert in the `terms`. They
+would otherwise need to write boilerplate functions to declare all the required
 parameters.
 
 When a governed contract starts up, it should get the parameter declarations
-from the terms, use them to create a paramManager, and pass that to
-`handleParamGovernance`. `handleParamGovernance()` returns functions that add
+from `terms`, use them to create a paramManager, and pass that to
+`handleParamGovernance`. `handleParamGovernance()` returns functions
+(`wrapPublicFacet()` and `wrapCreatorFacet()`) that add
 required methods to the public and creator facets. Since the governed contract
-uses the values passed in terms to create the paramManager, reviewers of the
+uses the values passed in `terms` to create the paramManager, reviewers of the
 contract can verify that all and only the declared parameters are under the
 control of the paramManager and made visible to the contract's clients.
+
+When a contract is written without benefit of `contractHelper`, it is
+responsible for adding `getSubscription`, `getContractGovernor`, and
+`getGovernedParams` to its `PublicFacet`, and `getParamMgrRetriever`,
+`getInvitation` and `getLimitedCreatorFacet` to the `CreatorFacet`.
 
 ## Scenarios
 
 ### Examining a Contract before use
 
 Governed contracts will make their governor and parameters visible, either
-through the terms or the public facet. The governor, in turn, publicly shares
+through `terms` or the public facet. The governor, in turn, publicly shares
 the electorate, which makes the list of questions visible. The questions show
 their voteCounters, which makes it possible to tell how the counting will be
 done.
@@ -213,8 +228,8 @@ Currently, the ability to create new governance questions is provided as a
 private facet that contains only the method `voteOnParamChange()`. 
 
 When a prospective user of a contract receives a link to an instance of a
-contract, they can check the terms to see if the contract names a governor.  The
-governor's public facet will also refer to the contract it governs. Once you
+contract, they can check the `terms` to see if the contract names a governor.
+The governor's public facet will also refer to the contract it governs. Once you
 have the instance you can retrieve the installation from Zoe which allows you to
 examine the source.
 

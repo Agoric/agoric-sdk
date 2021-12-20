@@ -625,7 +625,7 @@
 
 /**
  * @callback SetupGovernance
- * @param {ZoeService} zoe
+ * @param {ERef<ZoeService>} zoe
  * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
  * @param {Instance} contractInstance
  * @param {Timer} timer
