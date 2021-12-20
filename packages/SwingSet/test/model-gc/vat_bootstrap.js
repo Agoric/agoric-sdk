@@ -3,14 +3,6 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 // import { assert, details as X } from '@agoric/assert';
 
-/*
-TODO: del this comment
-# Command:
-
-./bin/runner-alt --adversarialScriptFilename counterexample1.json --init\
- --memdb --config demo/aaAdversarial/swingset.json run demo/aaAdversarial;
-*/
-
 export function buildRootObject(_vatPowers, vatParameters) {
 
   const log = vatPowers.testLog;
@@ -18,6 +10,8 @@ export function buildRootObject(_vatPowers, vatParameters) {
   log(`vat_bootstrap.js buildRootObject start`);
 
   let script = vatParameters.script;
+
+  let transitionIx = 0;
 
   return Far('root', {
 
@@ -28,18 +22,12 @@ export function buildRootObject(_vatPowers, vatParameters) {
       log('BOOTSTRAP method start');
       log('VAT LIST:', vats);
 
-      // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      // These steps don't relate to the object model (behind the scenes wiring only)
-      script = getScript()
-
-      log(`Boostrap.js running script:`);
-      log(`script name: `, scriptGetter.getFilename());
-      log(`script content: `, script);
+      log(`vat_boostrap.js running script:`);
 
       async function init() {
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // These steps don't relate to the object model (behind the scenes wiring only)
+        // These steps initialize vats
 
         const modelVatNames = [
           "vt0",
@@ -54,7 +42,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
         }
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // These steps relate to the object model
+        // These steps set up the object model
 
         const createVatRefCmds = script.init.filter(({ type }) => type === "initCreateVatRef")
         const giveItemCmds = script.init.filter(({ type }) => type === "initGiveItem")
@@ -72,20 +60,20 @@ export function buildRootObject(_vatPowers, vatParameters) {
 
       await init()
 
-      while (scriptGetter.notExhaustedAndNextActorMatch("boot")) {
-
-        let transition = scriptGetter.nextTransition()
-        assert(transition.type == "transferControl")
-
-        try {
-          const v = transition.targetVat
-          await E(vats[v]).transferControl()
-        } catch (error) {
-          log(`error (bootstrap): `, error);
+      while (transitionIx < script.transitions.length) {
+        let transition = script.transitions[transitionIx++];
+        if (transition.actor == "boot") {
+          assert(transition.type == "transferControl")
+          try {
+            const v = transition.targetVat
+            await E(vats[v]).transferControl()
+          } catch (error) {
+            log(`error (bootstrap): `, error);
+          }
         }
       }
 
-      log(`Bootstrap Done.`);
+      log(`[vat_bootstrap complete]`);
 
     }
   })
