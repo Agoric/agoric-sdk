@@ -139,6 +139,12 @@
  */
 
 /**
+ * @typedef {Object} ComparatorKit
+ * @property {CompareRank} comparator
+ * @property {CompareRank} antiComparator
+ */
+
+/**
  * @typedef {[string, string]} RankCover
  */
 
@@ -272,15 +278,18 @@
  */
 
 /**
- * @callback KeyToDBKey
+ * @callback KeyToDBKeyMaybe
+ * If this key can be encoded as a DBKey string which sorts correctly,
+ * return that string. Else return `undefined`. For example, a scalar-only
+ * encodeKey would return `undefined` for all non-scalar keys.
  * @param {Passable} key
- * @returns {string}
+ * @returns {string=}
  */
 
 /**
  * @callback GetRankCover
  * @param {Pattern} pattern
- * @param {KeyToDBKey} encodeKey
+ * @param {KeyToDBKeyMaybe} encodeKey
  * @returns {RankCover}
  */
 
@@ -317,7 +326,10 @@
  * Assuming a valid Matcher of this type with `matcherPayload` as its
  * payload, does this specimen match that Matcher?
  *
- * @property {(payload: Passable, encodeKey: KeyToDBKey) => RankCover} getRankCover
+ * @property {(
+ *   payload: Passable,
+ *   encodeKey: KeyToDBKeyMaybe
+ * ) => RankCover} getRankCover
  * Assumes this is the payload of a CopyTagged with the corresponding
  * matchTag. Return a RankCover to bound from below and above,
  * in rank order, all possible Passables that would match this Matcher.

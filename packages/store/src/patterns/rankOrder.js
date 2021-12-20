@@ -57,7 +57,7 @@ const memoOfSorted = new Map();
  * assigned to remotables. This defaults to a comparator that
  * always returns `0`, meaning that all remotables are tied
  * for the same rank.
- * @returns {{comparator: CompareRank, antiComparator: CompareRank}}
+ * @returns {ComparatorKit}
  */
 const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
   /** @type {CompareRank} */
@@ -365,3 +365,46 @@ export const {
   comparator: compareRank,
   antiComparator: compareAntiRank,
 } = makeComparatorKit();
+
+/**
+ * Create a comparator kit in which remotables are fully ordered
+ * by the order in which they are first seen by *this* comparator kit.
+ * BEWARE: This is observable mutable state, so such a comparator kit
+ * should never be shared among subsystems that should not be able
+ * to communicate.
+ *
+ * Note that this order does not meet the requirements for store
+ * ordering, since it has no memory of deleted keys.
+ *
+ * These full order comparator kit is strictly more precise that the
+ * rank order comparator kits above. As a result, any array which is
+ * sorted by such a full order will pass the isRankSorted test with
+ * a corresponding rank order.
+ *
+ * An array which is sorted by a *fresh* full order comparator, i.e.,
+ * one that has not yet seen any remotables, will of course remain
+ * sorted by according to *that* full order comparator. An array *of
+ * scalars* sorted by a fresh full order will remain sorted even
+ * according to a new fresh full order comparator, since it will see
+ * the remotables in the same order again. Unfortunately, this is
+ * not true of arrays of passables in general.
+ *
+ * @returns {ComparatorKit}
+ */
+export const makeFullOrderComparatorKit = () => {
+  let numSeen = 0;
+  // Could be a WeakMap but would perform poorly. There are a dynamic
+  // number of these created, and each typically has a short lifetime.
+  const seen = new Map();
+  const tag = r => {
+    if (seen.has(r)) {
+      return seen.get(r);
+    }
+    numSeen += 1;
+    seen.set(r, numSeen);
+    return numSeen;
+  };
+  const compareRemotables = (x, y) => compareRank(tag(x), tag(y));
+  return makeComparatorKit(compareRemotables);
+};
+harden(makeFullOrderComparatorKit);
