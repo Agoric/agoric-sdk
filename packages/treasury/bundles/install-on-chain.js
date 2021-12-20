@@ -5,6 +5,12 @@ import '@agoric/governance/exported.js';
 
 import { Far } from '@agoric/far';
 import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from '@agoric/zoe/src/contracts/vpool-xyk-amm/params';
+import {
+  makeGovernedInvitation,
+  CONTRACT_ELECTORATE,
+  makeGovernedNat,
+} from '@agoric/governance';
+import { makeRatio } from '@agoric/zoe/src/contractSupport';
 
 import liquidateBundle from './bundle-liquidateMinimum.js';
 import ammBundle from './bundle-amm.js';
@@ -12,15 +18,36 @@ import stablecoinBundle from './bundle-stablecoinMachine.js';
 import contractGovernorBundle from './bundle-contractGovernor.js';
 import noActionElectorateBundle from './bundle-noActionElectorate.js';
 import binaryVoteCounterBundle from './bundle-binaryVoteCounter.js';
-import { governedParameterTerms } from '../src/params';
-import { makeGovernedNat } from '@agoric/governance/src/paramGovernance/paramMakers';
+import { makeGovernedTerms } from '../src/params.js';
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
+const BASIS_POINTS = 10_000n;
 const DEFAULT_POOL_FEE = 24n;
 const DEFAULT_PROTOCOL_FEE = 6n;
 
+/**
+ *
+ * @param {ERef<TimerService>} timer
+ * @param {Instance} electorateInstance
+ * @param {ERef<ZoeService>} zoe
+ * @param {ElectorateCreatorFacet} committeeCreator
+ * @param {Installation} ammInstallation
+ * @param {Installation} governorInstallation
+ * @param {NatValue} poolFee
+ * @param {NatValue} protocolFee
+ * @return {Promise<{
+ * amm:{
+ *   governedInstance:Instance,
+ *   ammCreatorFacet:unknown,
+ *   ammPublicFacet:XYKAMMPublicFacet},
+ * governor:{
+ *   ammGovernorCreatorFacet,
+ *   ammGovernorInstance:Instance,
+ *   ammGovernorPublicFacet:GovernorPublic}
+ * }>}
+ */
 async function setupAmm(
   timer,
   electorateInstance,
@@ -31,6 +58,12 @@ async function setupAmm(
   poolFee,
   protocolFee,
 ) {
+  const poserInvitationP = E(committeeCreator).getPoserInvitation();
+  const [poserInvitation, poserInvitationAmount] = await Promise.all([
+    poserInvitationP,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+  ]);
+
   const ammTerms = {
     timer,
     poolFeeBP: poolFee,
@@ -38,6 +71,7 @@ async function setupAmm(
     main: {
       [PROTOCOL_FEE_KEY]: makeGovernedNat(protocolFee),
       [POOL_FEE_KEY]: makeGovernedNat(poolFee),
+      [CONTRACT_ELECTORATE]: makeGovernedInvitation(poserInvitationAmount),
     },
   };
 
@@ -48,7 +82,7 @@ async function setupAmm(
     governed: {
       terms: ammTerms,
       issuerKeywordRecord: { Central: E(zoe).getFeeIssuer() },
-      privateArgs: {},
+      privateArgs: { initialPoserInvitation: poserInvitation },
     },
   };
   const {
@@ -182,14 +216,36 @@ export async function installOnChain({
     recordingPeriod: SECONDS_PER_DAY,
   };
 
-  const treasuryTerms = harden({
-    liquidationInstall,
+  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
+  const [initialPoserInvitation, invitationAmount] = await Promise.all([
+    poserInvitationP,
+    E(E(zoeWPurse).getInvitationIssuer()).getAmountOf(poserInvitationP),
+  ]);
+
+  const centralIssuerP = E(zoeWPurse).getFeeIssuer();
+  const [centralIssuer, centralBrand] = await Promise.all([
+    centralIssuerP,
+    E(centralIssuerP).getBrand(),
+  ]);
+
+  // declare governed params for the treasury; addVaultType() sets actual rates
+  const rates = {
+    initialMargin: makeRatio(120n, centralBrand),
+    liquidationMargin: makeRatio(105n, centralBrand),
+    interestRate: makeRatio(250n, centralBrand, BASIS_POINTS),
+    loanFee: makeRatio(200n, centralBrand, BASIS_POINTS),
+  }
+
+  const treasuryTerms = makeGovernedTerms(
     priceAuthority,
     loanParams,
-    timerService: chainTimerService,
-    governedParams: governedParameterTerms,
+    liquidationInstall,
+    chainTimerService,
+    invitationAmount,
+    rates,
+    amm.ammPublicFacet,
     bootstrapPaymentValue,
-  });
+  );
   const governorTerms = harden({
     timer: chainTimerService,
     electorateInstance,
@@ -197,7 +253,7 @@ export async function installOnChain({
     governed: {
       terms: treasuryTerms,
       issuerKeywordRecord: {},
-      privateArgs: harden({ feeMintAccess }),
+      privateArgs: harden({ feeMintAccess, initialPoserInvitation }),
     },
   });
 
@@ -214,8 +270,8 @@ export async function installOnChain({
   const [
     invitationIssuer,
     {
-      issuers: { Governance: govIssuer, RUN: centralIssuer },
-      brands: { Governance: govBrand, RUN: centralBrand },
+      issuers: { Governance: govIssuer },
+      brands: { Governance: govBrand },
     },
     treasuryCreator,
   ] = await Promise.all([

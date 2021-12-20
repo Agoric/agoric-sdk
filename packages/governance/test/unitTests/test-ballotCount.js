@@ -6,8 +6,8 @@ import { E } from '@agoric/eventual-send';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
-import { makeBinaryVoteCounter } from '../../src/binaryVoteCounter.js';
 import {
+  makeBinaryVoteCounter,
   ChoiceMethod,
   ElectionType,
   QuorumRule,

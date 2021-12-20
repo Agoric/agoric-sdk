@@ -5,7 +5,6 @@ import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { sameStructure } from '@agoric/same-structure';
 
-import { q } from '@agoric/assert';
 import {
   ChoiceMethod,
   QuorumRule,
@@ -13,7 +12,13 @@ import {
   looksLikeQuestionSpec,
 } from '../question.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
+
+/**
+ * The electorate that governs changes to the contract's parameters. It must be
+ * declared in the governed contract.
+ */
+const CONTRACT_ELECTORATE = 'Electorate';
 
 /** @type {MakeParamChangePositions} */
 const makeParamChangePositions = (paramSpec, proposedValue) => {
@@ -58,13 +63,32 @@ const assertBallotConcernsQuestion = (paramName, questionDetails) => {
 
 /** @type {SetupGovernance} */
 const setupGovernance = async (
+  zoe,
   paramManagerRetriever,
-  poserFacet,
   contractInstance,
   timer,
 ) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
+  let poserFacet;
+  let currentInvitation;
+
+  const getUpdatedPoserFacet = async () => {
+    const newInvitation = await E(
+      E(paramManagerRetriever).get({ key: 'main' }),
+    ).getInternalParamValue(CONTRACT_ELECTORATE);
+
+    if (newInvitation === currentInvitation) {
+      return poserFacet;
+    }
+
+    poserFacet = E(E(zoe).offer(newInvitation)).getOfferResult();
+    currentInvitation = newInvitation;
+    return poserFacet;
+  };
+  await getUpdatedPoserFacet();
+
+  assert(poserFacet, X`question poser facet must be initialized`);
 
   /** @type {VoteOnParamChange} */
   const voteOnParamChange = async (
@@ -74,17 +98,20 @@ const setupGovernance = async (
     deadline,
   ) => {
     const paramMgr = E(paramManagerRetriever).get(paramSpec);
-    const paramName = paramSpec.parameterName;
     const outcomeOfUpdateP = makePromiseKit();
+    const visibleValue = await E(paramMgr).getVisibleValue(
+      paramSpec.parameterName,
+      proposedValue,
+    );
 
     const { positive, negative } = makeParamChangePositions(
       paramSpec,
-      proposedValue,
+      visibleValue,
     );
     const issue = harden({
       paramSpec,
       contract: contractInstance,
-      proposedValue,
+      proposedValue: visibleValue,
     });
     const questionSpec = looksLikeQuestionSpec({
       method: ChoiceMethod.UNRANKED,
@@ -97,8 +124,9 @@ const setupGovernance = async (
       tieOutcome: negative,
     });
 
+    const updatedPoserFacet = await getUpdatedPoserFacet();
     const { publicFacet: counterPublicFacet, instance: voteCounter } = await E(
-      poserFacet,
+      updatedPoserFacet,
     ).addQuestion(voteCounterInstallation, questionSpec);
 
     voteCounters.add(voteCounter);
@@ -116,7 +144,7 @@ const setupGovernance = async (
       .then(outcome => {
         if (sameStructure(positive, outcome)) {
           E(paramMgr)
-            [`update${paramName}`](proposedValue)
+            [`update${(paramSpec.parameterName)}`](proposedValue)
             .then(newValue => outcomeOfUpdateP.resolve(newValue))
             .catch(e => {
               outcomeOfUpdateP.reject(e);
@@ -151,4 +179,5 @@ export {
   makeParamChangePositions,
   validateParamChangeQuestion,
   assertBallotConcernsQuestion,
+  CONTRACT_ELECTORATE,
 };

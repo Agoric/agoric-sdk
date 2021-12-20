@@ -1,10 +1,10 @@
 // @ts-check
 
 import { makeWeakStore } from '@agoric/store';
-import { Far } from '@agoric/marshal';
+import { Far, sameStructure } from '@agoric/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { handleParamGovernance } from '@agoric/governance/src';
+import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '../../contractSupport';
 import { makeAddPool } from './pool.js';
@@ -90,7 +90,7 @@ const { details: X } = assert;
  *
  * @type {ContractStartFn}
  */
-const start = zcf => {
+const start = async (zcf, privateArgs) => {
   /**
    * This contract must have a "Central" keyword and issuer in the
    * IssuerKeywordRecord.
@@ -110,15 +110,33 @@ const start = zcf => {
     main: {
       [POOL_FEE_KEY]: poolFeeParam,
       [PROTOCOL_FEE_KEY]: protocolFeeParam,
+      [CONTRACT_ELECTORATE]: electorateParam,
     },
   } = /** @type { Terms & AMMTerms } */ (zcf.getTerms());
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
+  const { initialPoserInvitation } = privateArgs;
 
-  const { wrapPublicFacet, wrapCreatorFacet, getNat } = handleParamGovernance(
-    zcf,
-    makeParamManager(poolFeeParam.value, protocolFeeParam.value),
+  const paramManager = await makeParamManager(
+    zcf.getZoeService(),
+    poolFeeParam.value,
+    protocolFeeParam.value,
+    initialPoserInvitation,
   );
+  const {
+    wrapPublicFacet,
+    wrapCreatorFacet,
+    getNat,
+    getInvitationAmount,
+  } = handleParamGovernance(zcf, paramManager);
+
+  const electorateInvAmt = getInvitationAmount(CONTRACT_ELECTORATE);
+  assert(
+    sameStructure(electorateInvAmt, electorateParam.value),
+    X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
+  );
+
+  // Every access to these values will get them from the paramManager
   const getPoolFeeBP = () => getNat(POOL_FEE_KEY);
   const getProtocolFeeBP = () => getNat(PROTOCOL_FEE_KEY);
 
@@ -143,7 +161,6 @@ const start = zcf => {
     centralBrand,
     timer,
     quoteIssuerKit,
-    // @ts-ignore returns a bigint
     getProtocolFeeBP,
     getPoolFeeBP,
     protocolSeat,
@@ -173,7 +190,6 @@ const start = zcf => {
         zcf,
         getPool(brandIn),
         getPool(brandOut),
-        // @ts-ignore returns a bigint
         getProtocolFeeBP,
         getPoolFeeBP,
         protocolSeat,

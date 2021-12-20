@@ -6,7 +6,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { makeParamChangePositions } from '../../src/paramGovernance/governParam.js';
+import { makeParamChangePositions } from '../../src/index.js';
 
 const positive = (name, val) => {
   return { changeParam: name, proposedValue: val };

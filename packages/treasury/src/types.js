@@ -35,12 +35,24 @@
  */
 
 /**
- * @typedef  {Object} StablecoinMachine
+ * @typedef  {Object} StablecoinPublicFacet - the public facet
+ * @property {() => Promise<Invitation>} makeLoanInvitation
+ * @property {() => Promise<Array<Collateral>>} getCollaterals
+ * @property {() => Issuer} getRunIssuer
+ * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
+ * @property {(paramDescription: ParamDescription) => Ratio} getRatioParamState
+ * @property {() => Record<Keyword,ParamShortDescription>} getGovernedParams
+ * @property {() => Promise<GovernorPublic>} getContractGovernor
+ * @property {(name: string) => Amount} getInvitationAmount
+ */
+
+/**
+ * @typedef  {Object} StablecoinMachine - the creator facet
  * @property {AddVaultType} addVaultType
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation,
  * @property {() => ERef<Payment>} getBootstrapPayment
- * @property {() => Governor} getContractGovernor
+ * @property {() => Instance} getContractGovernor
  * @property {() => Invitation} makeCollectFeesInvitation
  */
 
@@ -154,13 +166,13 @@
  */
 
 /**
- * @typedef {Object} liquidationCreatorFacet
+ * @typedef {Object} LiquidationCreatorFacet
  * @property {(runDebt: Amount) => Promise<Invitation>} makeDebtorInvitation
  */
 
 /**
  * @callback MakeLiquidationStrategy
- * @param {liquidationCreatorFacet} creatorFacet
+ * @param {LiquidationCreatorFacet} creatorFacet
  * @returns {LiquidationStrategy}
  */
 
@@ -234,6 +246,14 @@
  */
 
 /**
+ * @typedef {Object} ElectorateParamManager
+ * @property {GetParams} getParams
+ * @property {(name: string) => Amount} getInvitationAmount
+ * @property {(name: string) => Invitation} getInternalParamValue
+ * @property {(invitation: Invitation) => void} updateElectorate
+ */
+
+/**
  * @callback MakeVaultParamManager
  * @param {LoanParams} loanParams
  * @param {Rates} rates
@@ -241,12 +261,56 @@
  */
 
 /**
+ * @callback MakeElectorateParamManager
+ * @param {ERef<ZoeService>} zoe
+ * @param {Invitation} electorateInvitation
+ * @returns {ElectorateParamManager}
+ */
+
+/**
  * @callback TreasuryLiquidate
- * @param {ContractFacet} zcf,
- * @param {VaultKit} vaultKit,
+ * @param {ContractFacet} zcf
+ * @param {VaultKit} vaultKit
  * @param {(losses: AmountKeywordRecord,
- *             zcfSeat: ZCFSeat,
- *            ) => void} burnLosses,
- * @param {LiquidationStrategy} strategy,
- * @param {Brand} collateralBrand,
+ *             zcfSeat: ZCFSeat
+ *            ) => void} burnLosses
+ * @param {LiquidationStrategy} strategy
+ * @param {Brand} collateralBrand
+ */
+
+/**
+ * @callback MakeElectorateParams
+ * @param {Amount} electorateInvitationAmount
+ * @returns {Record<string,ParamShortDescription>}
+ */
+
+/**
+ * @callback MakeLoanParams
+ * @param {LoanParams} loanParams
+ * @param {Rates} rates
+ * @returns {Record<string,ParamShortDescription>}
+ */
+
+/**
+ * @typedef {Object} GovernedTreasuryTerms
+ * @property {XYKAMMPublicFacet} ammPublicFacet
+ * @property {ERef<PriceAuthority>} priceAuthority
+ * @property {Record<Keyword,ParamShortDescription>} loanParams
+ * @property {ERef<TimerService>} timerService
+ * @property {Installation} liquidationInstall
+ * @property {Record<Keyword,ParamShortDescription>} main
+ * @property {bigint} bootstrapPaymentValue
+ */
+
+/**
+ * @callback MakeGovernedTerms
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {LoanParams} loanParams
+ * @param {Installation} liquidationInstall
+ * @param {ERef<TimerService>} timerService
+ * @param {Amount} invitationAmount
+ * @param {Rates} rates
+ * @param {XYKAMMPublicFacet} ammPublicFacet
+ * @param {bigint=} bootstrapPaymentValue
+ * @returns {GovernedTreasuryTerms}
  */

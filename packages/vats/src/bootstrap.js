@@ -292,7 +292,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         .buildDistributor(
           E(vats.distributeFees).makeFeeCollector(zoeWUnlimitedPurse, [
             treasuryCreator,
-            ammFacets.creatorFacet,
+            ammFacets.ammCreatorFacet,
           ]),
           feeCollectorDepositFacet,
           epochTimerService,

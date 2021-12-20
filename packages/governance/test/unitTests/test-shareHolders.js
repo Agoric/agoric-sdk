@@ -19,7 +19,7 @@ import {
   ChoiceMethod,
   QuorumRule,
   looksLikeQuestionSpec,
-} from '../../src/question.js';
+} from '../../src/index.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
