@@ -650,7 +650,10 @@ const makePatternKit = () => {
       // eslint-disable-next-line prefer-const
       let [leftBound, rightBound] = getPassStyleCover(passStyle);
       const newRightBound = encodeKey(rightOperand);
-      return [leftBound, newRightBound ?? rightBound];
+      if (newRightBound !== undefined) {
+        rightBound = newRightBound;
+      }
+      return [leftBound, rightBound];
     },
 
     checkKeyPattern: (rightOperand, check = x => x) =>
@@ -690,8 +693,10 @@ const makePatternKit = () => {
       // eslint-disable-next-line prefer-const
       let [leftBound, rightBound] = getPassStyleCover(passStyle);
       const newLeftBound = encodeKey(rightOperand);
-
-      return [newLeftBound ?? leftBound, rightBound];
+      if (newLeftBound !== undefined) {
+        leftBound = newLeftBound;
+      }
+      return [leftBound, rightBound];
     },
 
     checkKeyPattern: (rightOperand, check = x => x) =>
