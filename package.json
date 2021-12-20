@@ -47,6 +47,7 @@
     "packages/xsnap",
     "packages/deploy-script-support",
     "packages/eslint-config",
+    "packages/web-components",
     "packages/wallet-connection"
   ],
   "devDependencies": {
