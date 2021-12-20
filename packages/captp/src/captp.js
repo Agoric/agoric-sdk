@@ -484,7 +484,7 @@ export const makeCapTP = (
         }
       };
 
-      // MapStore the next result promise.
+      // Store the next result promise.
       const nextResultP = getNextResultP();
       trapIteratorResultP.set(questionID, nextResultP);
 
