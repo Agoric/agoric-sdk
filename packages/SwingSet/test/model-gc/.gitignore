@@ -2,3 +2,5 @@
 traces_pretty.json
 # Ignore dump
 kernel_log_dump.json
+# Ignore JSON conversion tool
+tla2json*
