@@ -11,8 +11,6 @@ export function buildRootObject(vatPowers, vatParameters) {
 
   let traces = vatParameters.traces;
 
-  log("traces[0]", traces[0])
-
   let transitionIx = 0;
 
   let trace = undefined;
@@ -62,9 +60,9 @@ export function buildRootObject(vatPowers, vatParameters) {
 
       }
 
-      for (const s of traces) {
+      for (const t of traces) {
 
-        trace = s;
+        trace = t.script;
 
         await init()
 

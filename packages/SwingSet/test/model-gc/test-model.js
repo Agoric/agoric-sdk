@@ -13,11 +13,8 @@ test('check userspace', async t => {
   var traces;
 
   try {
-    // traces = JSON.parse(fs.readFileSync("./traces/traces.json"));
-    // traces = JSON.parse(fs.readFileSync("../../test/model-gc/traces.json"))
     traces = JSON.parse(fs.readFileSync("/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/traces.json"))
   } catch (err) {
-    // handle your file not found (or other error) here
     console.log(`error reading file`, err);
   }
 
@@ -46,10 +43,10 @@ test('check userspace', async t => {
     await c.run(); // start kernel, send bootstrap message, wait until halt
   } catch (err) {
     const log = c.dump().log
-    fs.writeFileSync('"/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/kerlog.json"', JSON.stringify(log), 'utf8');
+    fs.writeFileSync('/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/kernel_log_dump.json', JSON.stringify(log), 'utf8');
     t.fail()
   }
   const log = c.dump().log
-  fs.writeFileSync('"/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/kerlog.json"', JSON.stringify(log), 'utf8');
+  fs.writeFileSync('/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/kernel_log_dump.json', JSON.stringify(log), 'utf8');
   t.deepEqual(log, ['message one', 'message two']);
 });

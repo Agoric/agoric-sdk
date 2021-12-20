@@ -1,0 +1,4 @@
+# Ignore result of `jq . traces.json > traces_pretty.json`
+traces_pretty.json
+# Ignore dump
+kernel_log_dump.json
