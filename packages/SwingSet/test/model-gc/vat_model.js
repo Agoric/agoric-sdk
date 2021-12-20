@@ -14,26 +14,26 @@ function createPromiseParts() {
   return { promise, res, rej }
 }
 
-export function buildRootObject(vatPowers, vatParameters) {
+export function buildRootObject(vatPowers) {
 
   const log = vatPowers.testLog;
 
-  let selfRef = null
-  let selfName = null
-  let items = new Map()
-
-  let transitions = vatParameters.transitions;
-
-  let transitionIx = 0;
+  let selfRef = undefined
+  let selfName = undefined
+  let items = undefined
+  let transitions = undefined;
+  let transitionIx = undefined;
 
   return Far('root', {
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     /* Special methods only supposed to called by self or bootstrapper */
-    async init(ref, name) {
-      log(`[${name}] init`);
-      selfRef = ref
-      selfName = name
+    async init(_selfRef, _selfName, _transitions) {
+      log(`[${_selfName}] init`);
+      selfRef = _selfRef
+      selfName = _selfName
+      transitions = _transitions
+      transitionIx = 0
 
       // Allows items from previous runs to be garbage collected
       items = new Map()

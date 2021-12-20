@@ -3,117 +3,53 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { buildVatController } from '../../src/index.js';
 
+import fs from 'fs';
+
 /*
 cd packages/SwingSet && yarn test --verbose test/model-gc/test-model.js
 */
 
-const script = {
-  "init": [
-    {
-      "type": "initCreateVatRef",
-      "vat": "vt0",
-      "itemId": 0
-    },
-    {
-      "type": "initGiveItem",
-      "vat": "vt0",
-      "itemId": 0
-    }
-  ],
-  "transitions": [
-    {
-      "type": "transferControl",
-      "actor": "boot",
-      "targetVat": "vt1"
-    },
-    {
-      "type": "storeSelfRef",
-      "actor": "vt1",
-      "awaits": [],
-      "itemId": 1
-    },
-    {
-      "type": "storeSelfRef",
-      "actor": "vt1",
-      "awaits": [],
-      "itemId": 2
-    },
-    {
-      "type": "transferControl",
-      "actor": "boot",
-      "awaits": [],
-      "targetVat": "vt0"
-    },
-    {
-      "type": "storeSelfRef",
-      "actor": "vt0",
-      "awaits": [],
-      "itemId": 3
-    },
-    {
-      "type": "transferControl",
-      "actor": "boot",
-      "awaits": [],
-      "targetVat": "vt1"
-    },
-    {
-      "type": "transferControl",
-      "actor": "boot",
-      "awaits": [],
-      "targetVat": "vt0"
-    },
-    {
-      "type": "transferControl",
-      "actor": "boot",
-      "awaits": [],
-      "targetVat": "vt2"
-    },
-    {
-      "type": "transferControl",
-      "actor": "boot",
-      "awaits": [],
-      "targetVat": "vt1"
-    }
-  ],
-  "actions": [
-    "transferControl",
-    "storeSelfRef",
-    "storeSelfRef",
-    "transferControl",
-    "storeSelfRef",
-    "transferControl",
-    "transferControl",
-    "transferControl",
-    "transferControl"
-  ]
-}
-
 test('check userspace', async t => {
+  var traces;
+
+  try {
+    // traces = JSON.parse(fs.readFileSync("./traces/traces.json"));
+    // traces = JSON.parse(fs.readFileSync("../../test/model-gc/traces.json"))
+    traces = JSON.parse(fs.readFileSync("/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/traces.json"))
+  } catch (err) {
+    // handle your file not found (or other error) here
+    console.log(`error reading file`, err);
+  }
+
+
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
         sourceSpec: new URL('vat_bootstrap.js', import.meta.url).pathname,
-        parameters: { script }
+        parameters: { traces }
       },
       vt0: {
-        sourceSpec: new URL('vat_model.js', import.meta.url).pathname,
-        parameters: { transitions: script.transitions }
+        sourceSpec: new URL('vat_model.js', import.meta.url).pathname
       },
       vt1: {
-        sourceSpec: new URL('vat_model.js', import.meta.url).pathname,
-        parameters: { transitions: script.transitions }
+        sourceSpec: new URL('vat_model.js', import.meta.url).pathname
       },
       vt2: {
-        sourceSpec: new URL('vat_model.js', import.meta.url).pathname,
-        parameters: { transitions: script.transitions }
-      },
+        sourceSpec: new URL('vat_model.js', import.meta.url).pathname
+      }
     },
   };
-  const c = await buildVatController(config, [{
-    "[this is]": "argv[0]"
-  }]);
-  await c.run(); // start kernel, send bootstrap message, wait until halt
+
+  const c = await buildVatController(config);
+  try {
+    await c.run(); // start kernel, send bootstrap message, wait until halt
+  } catch (err) {
+    const log = c.dump().log
+    fs.writeFileSync('"/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/kerlog.json"', JSON.stringify(log), 'utf8');
+    t.fail()
+  }
   const log = c.dump().log
+  fs.writeFileSync('"/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/kerlog.json"', JSON.stringify(log), 'utf8');
   t.deepEqual(log, ['message one', 'message two']);
 });

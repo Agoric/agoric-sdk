@@ -9,9 +9,13 @@ export function buildRootObject(vatPowers, vatParameters) {
 
   log(`vat_bootstrap.js buildRootObject start`);
 
-  let script = vatParameters.script;
+  let traces = vatParameters.traces;
+
+  log("traces[0]", traces[0])
 
   let transitionIx = 0;
+
+  let trace = undefined;
 
   return Far('root', {
 
@@ -22,7 +26,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       log('BOOTSTRAP method start');
       log('VAT LIST:', vats);
 
-      log(`vat_boostrap.js running script:`);
+      log(`vat_boostrap.js running:`);
 
       async function init() {
 
@@ -38,14 +42,14 @@ export function buildRootObject(vatPowers, vatParameters) {
         for (const it of modelVatNames) {
           const ref = vats[it]
           const name = it
-          await E(vats[it]).init(ref, name)
+          await E(vats[it]).init(ref, name, trace.transitions)
         }
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // These steps set up the object model
 
-        const createVatRefCmds = script.init.filter(({ type }) => type === "initCreateVatRef")
-        const giveItemCmds = script.init.filter(({ type }) => type === "initGiveItem")
+        const createVatRefCmds = trace.init.filter(({ type }) => type === "initCreateVatRef")
+        const giveItemCmds = trace.init.filter(({ type }) => type === "initGiveItem")
 
         let tempStore = {}
         for (const { vat, itemId } of createVatRefCmds) {
@@ -58,22 +62,28 @@ export function buildRootObject(vatPowers, vatParameters) {
 
       }
 
-      await init()
+      for (const s of traces) {
 
-      while (transitionIx < script.transitions.length) {
-        let transition = script.transitions[transitionIx++];
-        if (transition.actor == "boot") {
-          assert(transition.type == "transferControl")
-          try {
-            const v = transition.targetVat
-            await E(vats[v]).transferControl()
-          } catch (error) {
-            log(`error (bootstrap): `, error);
+        trace = s;
+
+        await init()
+
+        while (transitionIx < trace.transitions.length) {
+          let transition = trace.transitions[transitionIx++];
+          if (transition.actor == "boot") {
+            assert(transition.type == "transferControl")
+            try {
+              const v = transition.targetVat
+              await E(vats[v]).transferControl()
+            } catch (error) {
+              log(`error (bootstrap): `, error);
+            }
           }
         }
-      }
 
-      log(`[vat_bootstrap complete]`);
+        log(`[vat_bootstrap trace complete]`);
+
+      }
 
     }
   })
