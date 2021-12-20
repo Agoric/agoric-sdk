@@ -34,6 +34,9 @@ export function buildRootObject(vatPowers, vatParameters) {
       log(`[${name}] init`);
       selfRef = ref
       selfName = name
+
+      // Allows items from previous runs to be garbage collected
+      items = new Map()
     },
 
     async meNextTransition() {
