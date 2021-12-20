@@ -1,7 +1,2 @@
-import { AgoricWalletConnection } from './src/AgoricWalletConnection.js';
-import './src/agoric-iframe-messenger.js';
-
-window.customElements.define(
-  'agoric-wallet-connection',
-  AgoricWalletConnection,
-);
+export * from '@agoric/web-components/agoric-wallet-connection.js';
+console.warn('This package is deprecated. Use @agoric/web-components instead of @agoric/wallet-connection.');
