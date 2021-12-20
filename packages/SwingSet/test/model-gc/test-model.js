@@ -7,6 +7,7 @@ import fs from 'fs';
 
 /*
 cd packages/SwingSet && yarn test --verbose test/model-gc/test-model.js
+yarn test --verbose --timeout=120m test/model-gc/test-model.js
 */
 
 test('check userspace', async t => {
@@ -17,7 +18,6 @@ test('check userspace', async t => {
   } catch (err) {
     console.log(`error reading file`, err);
   }
-
 
   const config = {
     bootstrap: 'bootstrap',
@@ -48,5 +48,26 @@ test('check userspace', async t => {
   }
   const log = c.dump().log
   fs.writeFileSync('/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/kernel_log_dump.json', JSON.stringify(log), 'utf8');
-  t.deepEqual(log, ['message one', 'message two']);
+
+  function logArrIsValid(arr) {
+
+    function correctNumberTerminations() {
+      const TERMINATION_STR = "[vat_bootstrap trace complete]"
+      const cnt = arr.reduce((acc, curr) => {
+        curr == TERMINATION_STR ? acc + 1 : acc
+      }, 0)
+      return cnt == traces.length
+    }
+
+    function errorDetected() {
+      const MATCH = ["err", "kernel", "panic"]
+      return arr.some(
+        str => MATCH.some(it => str.includes(it))
+      )
+    }
+
+    return correctNumberTerminations && !errorDetected()
+  }
+
+  t.is(logArrIsValid(log), true);
 });
