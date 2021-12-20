@@ -56,17 +56,6 @@ export const makeSetStoreMethods = (
     keys: (keyPatt = undefined) => makeArray(jsset.keys(), keyPatt),
 
     snapshot: (keyPatt = undefined) => makeCopySet(methods.cursor(keyPatt)),
-
-    addAll: copySet => {
-      const { payload: keys } = copySet;
-      const { length } = keys;
-      for (let i = 0; i < length; i += 1) {
-        const key = keys[i];
-        // Don't assert that the key either does or does not exist.
-        assertKeyOkToWrite(key);
-        jsset.add(key);
-      }
-    },
   });
   return methods;
 };

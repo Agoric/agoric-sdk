@@ -53,20 +53,35 @@ export const makeWeakMapStoreMethods = (
       assertKeyOkToDelete(key);
       jsmap.delete(key);
     },
+
+    addAll: copyMap => {
+      const {
+        payload: { keys, values },
+      } = copyMap;
+      const { length } = keys;
+      for (let i = 0; i < length; i += 1) {
+        const key = keys[i];
+        const value = values[i];
+        // Don't assert that the key either does or does not exist.
+        assertKVOkToWrite(key, value);
+        jsmap.set(key, value);
+      }
+    },
   });
 };
 
 /**
- * This is a *scalar* map in that the keys can only be atomic values, primitives
- * or remotables. Other storeMaps will accept, for example, copyArrays and
- * copyRecords, as keys and look them up based on equality of their contents.
+ * This is a *scalar* mapStore in that the keys can only be atomic values:
+ * primitives or remotables.
+ * Other mapStores will accept, for example, copyArrays and
+ * copyRecords as keys and look them up based on equality of their contents.
  *
  * TODO For now, this scalarWeakMap accepts only remotables, reflecting the
  * constraints of the underlying JavaScript WeakMap it uses internally. But
  * it should accept the primitives as well, storing them in a separate internal
  * map. What makes it "weak" is that it provides no API for enumerating what's
  * there. Though note that this would only enables collection of the
- * remotables, since the other primitives may always appear.
+ * remotables, since the other primitives may always reappear.
  *
  * @template K,V
  * @param {string} [keyName='key'] - the column name for the key

@@ -25,6 +25,17 @@
 /** @typedef {"forward" | "reverse"} Direction */
 
 /**
+ * Most store methods are in one of three categories
+ *   * lookup methods (`has`,`get`)
+ *   * update methods (`add`,`init`,`set`,`delete`,`addAll`)
+ *   * query methods (`snapshot`,`keys`,`values`,`entries`,`cursor`)
+ *
+ * WeakStores have the lookup and update methods but not the query methods.
+ * non-weak Stores and like their corresponding WeakStore, but with the
+ * additional query methods.
+ */
+
+/**
  * @template K
  * @typedef {Object} WeakSetStore
  * @property {(key: K) => boolean} has
@@ -37,6 +48,7 @@
  * allows primitives and remotables.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
+ * @property {(copySet: CopySet) => void} addAll
  */
 
 /**
@@ -52,12 +64,10 @@
  * allows primitives and remotables.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
- * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(keyPattern?: Pattern) => CopySet} snapshot
  * @property {(copySet: CopySet) => void} addAll
- * @property {(keyPattern?: Pattern,
- *             direction?: Direction
- * ) => Iterable<K>} cursor
+ * @property {(keyPatt?: Pattern) => CopySet} snapshot
+ * @property {(keyPatt?: Pattern) => K[]} keys
+ * @property {(keyPatt?: Pattern, direction?: Direction) => Iterable<K>} cursor
  */
 
 /**
@@ -76,6 +86,7 @@
  * Set the key. Throws if not found.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
+ * @property {(copyMap: CopyMap) => void} addAll
  */
 
 /**
@@ -94,17 +105,17 @@
  * Set the key. Throws if not found.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
- * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(valuePattern?: Pattern) => V[]} values
- * @property {(entryPattern?: Pattern) => [K,V][]} entries
- * @property {(entryPattern?: Pattern) => CopyMap} snapshot
  * @property {(copyMap: CopyMap) => void} addAll
- * @property {(entryPattern?: Pattern,
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => CopyMap} snapshot
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => K[]} keys
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => V[]} values
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => [K,V][]} entries
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern,
  *             direction?: Direction
  * ) => Iterable<[K,V]>} cursor
  */
 
-// //// Rank types
+// ////////////////////// Rank types (should be internal-types) ///////////
 
 /**
  * @callback CompareRank
@@ -189,24 +200,8 @@
 
 /**
  * @template K,V
- * @typedef {Object} Store
+ * @typedef {MapStore<K,V>} Store
  * Deprecated type name `Store`. Use `MapStore` instead.
- * @property {(key: K) => boolean} has
- * Check if a key exists. The key can be any JavaScript value, though the
- * answer will always be false for keys that cannot be found in this map
- * @property {(key: K) => V} get
- * Return a value for the key. Throws if not found.
- * @property {(key: K, value: V) => void} init
- * Initialize the key only if it doesn't already exist.
- * The key must be one allowed by this store. For example a scalar store only
- * allows primitives and remotables.
- * @property {(key: K, value: V) => void} set
- * Set the key. Throws if not found.
- * @property {(key: K) => void} delete
- * Remove the key. Throws if not found.
- * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(valuePattern?: Pattern) => V[]} values
- * @property {(entryPattern?: Pattern) => [K,V][]} entries
  */
 
 /**
