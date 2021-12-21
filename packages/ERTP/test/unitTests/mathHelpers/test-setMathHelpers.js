@@ -24,8 +24,8 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
   t.deepEqual(
     m.make(mockBrand, harden([a, b])),
-    { brand: mockBrand, value: harden([a, b]) },
-    `[a, b] is a valid set`,
+    { brand: mockBrand, value: harden([b, a]) },
+    `[b, a] is a valid set`,
   );
   t.deepEqual(
     m.make(mockBrand, harden([])),
@@ -39,7 +39,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
   t.deepEqual(
     m.make(mockBrand, harden(['a', 'b'])),
-    { brand: mockBrand, value: harden(['a', 'b']) },
+    { brand: mockBrand, value: harden(['b', 'a']) },
     'anything comparable is a valid element',
   );
   t.throws(
@@ -64,7 +64,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
   t.deepEqual(
     m.coerce(mockBrand, harden({ brand: mockBrand, value: harden([a, b]) })),
-    { brand: mockBrand, value: harden([a, b]) },
+    { brand: mockBrand, value: harden([b, a]) },
     `[a, b] is a valid set`,
   );
   t.deepEqual(
@@ -79,7 +79,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   );
   t.deepEqual(
     m.coerce(mockBrand, m.make(mockBrand, harden(['a', 'b']))),
-    { brand: mockBrand, value: harden(['a', 'b']) },
+    { brand: mockBrand, value: harden(['b', 'a']) },
     'anything comparable is a valid element',
   );
   t.throws(
@@ -274,7 +274,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a] }),
         harden({ brand: mockBrand, value: [a] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /Sets must not have common elements: .*/ },
     `overlap between left and right of add should throw`,
   );
   t.deepEqual(
@@ -282,7 +282,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
       harden({ brand: mockBrand, value: [] }),
       harden({ brand: mockBrand, value: [b, c] }),
     ),
-    { brand: mockBrand, value: [b, c] },
+    { brand: mockBrand, value: [c, b] },
     `anything + identity stays same`,
   );
   t.deepEqual(
@@ -290,7 +290,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
       harden({ brand: mockBrand, value: [b, c] }),
       harden({ brand: mockBrand, value: [] }),
     ),
-    { brand: mockBrand, value: [b, c] },
+    { brand: mockBrand, value: [c, b] },
     `anything + identity stays same`,
   );
   if (a2 !== undefined) {
@@ -338,7 +338,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
         harden({ brand: mockBrand, value: [a, b] }),
         harden({ brand: mockBrand, value: [c] }),
       ),
-    { message: /was not in left/ },
+    { message: /right element .* was not in left/ },
     `elements in right but not in left of subtract should throw`,
   );
   t.deepEqual(
@@ -346,7 +346,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
       harden({ brand: mockBrand, value: [b, c] }),
       harden({ brand: mockBrand, value: [] }),
     ),
-    { brand: mockBrand, value: [b, c] },
+    { brand: mockBrand, value: [c, b] },
     `anything - identity stays same`,
   );
   t.deepEqual(
