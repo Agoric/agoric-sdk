@@ -16,7 +16,7 @@ test('check userspace', async t => {
 
   // The number of traces to check against a single kernel lifetime
   // before checking the log.
-  const BATCH_SIZE = 1000;
+  const BATCH_SIZE = 100;
 
   let all_traces;
 
@@ -36,7 +36,7 @@ test('check userspace', async t => {
       vats: {
         bootstrap: {
           sourceSpec: new URL('vat_bootstrap.js', import.meta.url).pathname,
-          parameters: { traces: traces.map(it => it.script) }
+          parameters: { traces: traces }
         },
         vt0: {
           sourceSpec: new URL('vat_model.js', import.meta.url).pathname

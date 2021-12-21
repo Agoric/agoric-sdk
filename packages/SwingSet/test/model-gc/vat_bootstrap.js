@@ -13,7 +13,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
   let transitionIx = 0;
 
-  let trace = undefined;
+  let script = undefined;
 
   return Far('root', {
 
@@ -40,14 +40,14 @@ export function buildRootObject(vatPowers, vatParameters) {
         for (const it of modelVatNames) {
           const ref = vats[it]
           const name = it
-          await E(vats[it]).init(ref, name, trace.transitions)
+          await E(vats[it]).init(ref, name, script.transitions)
         }
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // These steps set up the object model
 
-        const createVatRefCmds = trace.init.filter(({ type }) => type === "initCreateVatRef")
-        const giveItemCmds = trace.init.filter(({ type }) => type === "initGiveItem")
+        const createVatRefCmds = script.init.filter(({ type }) => type === "initCreateVatRef")
+        const giveItemCmds = script.init.filter(({ type }) => type === "initGiveItem")
 
         let tempStore = {}
         for (const { vat, itemId } of createVatRefCmds) {
@@ -62,13 +62,14 @@ export function buildRootObject(vatPowers, vatParameters) {
 
       for (const t of traces) {
 
-        trace = t;
+        script = t.script;
+        log(`[TRACE:${t.name}:${t.num}]`)
         transitionIx = 0;
 
         await init()
 
-        while (transitionIx < trace.transitions.length) {
-          let transition = trace.transitions[transitionIx];
+        while (transitionIx < script.transitions.length) {
+          let transition = script.transitions[transitionIx];
           transitionIx++;
           if (transition.actor == "boot") {
             assert(transition.type == "transferControl")
@@ -81,7 +82,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           }
         }
 
-        log(`[vat_bootstrap trace complete]`);
+        log(`[vat_bootstrap script complete]`);
 
       }
 
