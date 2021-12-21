@@ -41,7 +41,7 @@ export function buildRootObject(vatPowers) {
 
     async meNextTransition() {
 
-      while (transitionIx < transitions.length && transitions[transitionIx] != selfName) {
+      while (transitionIx < transitions.length && transitions[transitionIx].actor != selfName) {
         transitionIx++;
       }
       if (transitions.length <= transitionIx) {
@@ -49,10 +49,11 @@ export function buildRootObject(vatPowers) {
       }
 
       const t = transitions[transitionIx];
+      transitionIx++;
 
       assert(t.actor === selfName)
 
-      log(`[${selfName}] exec`, t);
+      log(`[${selfName}](exec)`);
 
       for (const { read, write } of t.awaits) {
         const promise = items.get(read)

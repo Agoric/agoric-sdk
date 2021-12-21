@@ -6,7 +6,7 @@ import { buildVatController } from '../../src/index.js';
 import fs from 'fs';
 
 /*
-cd packages/SwingSet && yarn test --verbose test/model-gc/test-model.js
+cd packages/SwingSet && yarn test --verbose --timeout=120m test/model-gc/test-model.js
 yarn test --verbose --timeout=120m test/model-gc/test-model.js
 */
 
@@ -16,7 +16,7 @@ test('check userspace', async t => {
 
   // The number of traces to check against a single kernel lifetime
   // before checking the log.
-  const BATCH_SIZE = 100;
+  const BATCH_SIZE = 5;
 
   let all_traces;
 
@@ -27,6 +27,8 @@ test('check userspace', async t => {
     t.fail()
   }
 
+  all_traces = all_traces.slice(0, 1);
+
   for (let i = 0; i < all_traces.length; i += BATCH_SIZE) {
 
     const traces = all_traces.slice(i, i + BATCH_SIZE);
@@ -36,7 +38,7 @@ test('check userspace', async t => {
       vats: {
         bootstrap: {
           sourceSpec: new URL('vat_bootstrap.js', import.meta.url).pathname,
-          parameters: { traces }
+          parameters: { traces: traces.map(it => it.script) }
         },
         vt0: {
           sourceSpec: new URL('vat_model.js', import.meta.url).pathname
@@ -61,27 +63,34 @@ test('check userspace', async t => {
     const log = c.dump().log
     fs.writeFileSync(pathPrefix + 'kernel_log_dump.json', JSON.stringify(log), 'utf8');
 
-    function logArrIsValid(arr) {
 
-      function correctNumberTerminations() {
-        const TERMINATION_STR = "[vat_bootstrap trace complete]"
-        const cnt = arr.reduce((acc, curr) => {
-          curr == TERMINATION_STR ? acc + 1 : acc
-        }, 0)
-        return cnt == traces.length
-      }
-
-      function errorDetected() {
-        const MATCH = ["err", "kernel", "panic"]
-        return arr.some(
-          str => MATCH.some(it => str.includes(it))
-        )
-      }
-
-      return correctNumberTerminations && !errorDetected()
+    function correctNumberTerminations(arr) {
+      const TERMINATION_STR = "[vat_bootstrap trace complete]"
+      const cnt = arr.filter(str => str == TERMINATION_STR).length;
+      return cnt == traces.length
     }
 
-    t.is(logArrIsValid(log), true);
+    function errorDetected(arr) {
+      const MATCH = ["err", "kernel", "panic"]
+      return arr.some(
+        str => MATCH.some(it => str.includes(it))
+      )
+    }
+
+    function correctActorCnts(arr) {
+      const allActors = traces.map(it => it.script.transitions).flat().map(it => it.actor)
+      return ["vt0", "vt1", "vt2"].every(vat =>
+        // Number of actions taken by vat
+        arr.filter(it => it == `[${vat}](exec)`).length ==
+        // is equal to the number of actions it should have taken
+        allActors.filter(it => it == vat).length
+      )
+
+    }
+
+    t.true(correctNumberTerminations(log))
+    t.true(correctActorCnts(log))
+    t.false(errorDetected(log))
 
   }
 

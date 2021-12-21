@@ -62,12 +62,14 @@ export function buildRootObject(vatPowers, vatParameters) {
 
       for (const t of traces) {
 
-        trace = t.script;
+        trace = t;
+        transitionIx = 0;
 
         await init()
 
         while (transitionIx < trace.transitions.length) {
-          let transition = trace.transitions[transitionIx++];
+          let transition = trace.transitions[transitionIx];
+          transitionIx++;
           if (transition.actor == "boot") {
             assert(transition.type == "transferControl")
             try {
