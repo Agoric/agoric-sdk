@@ -38,7 +38,7 @@ const trace = makeTracer(' VM ');
 // collateral is provided in exchange for borrowed RUN.
 
 /** @type {MakeVaultManager} */
-export function makeVaultManager(
+export const makeVaultManager = (
   zcf,
   runMint,
   collateralBrand,
@@ -47,7 +47,7 @@ export function makeVaultManager(
   reallocateReward,
   timerService,
   liquidationStrategy,
-) {
+) => {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const getLoanParamValue = key => getLoanParams()[key].value;
@@ -106,8 +106,10 @@ export function makeVaultManager(
   // A Map from vaultKits to their most recent ratio of debt to
   // collateralization. (This representation won't be optimized; when we need
   // better performance, use virtual objects.)
-  // eslint-disable-next-line no-use-before-define
-  const sortedVaultKits = makePrioritizedVaults(reschedulePriceCheck);
+  //
+  // sortedVaultKits should only be set once, but can't be set until after the
+  // definition of reschedulePriceCheck, which refers to sortedVaultKits
+  let sortedVaultKits;
   let outstandingQuote;
 
   // When any Vault's debt ratio is higher than the current high-water level,
@@ -118,7 +120,7 @@ export function makeVaultManager(
   // we won't reschedule the priceAuthority requests to reduce churn. Instead,
   // when a priceQuote is received, we'll only reschedule if the high-water
   // level when the request was made matches the current high-water level.
-  async function reschedulePriceCheck() {
+  const reschedulePriceCheck = async () => {
     const highestDebtRatio = sortedVaultKits.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -179,9 +181,10 @@ export function makeVaultManager(
     });
     outstandingQuote = undefined;
     reschedulePriceCheck();
-  }
+  };
+  sortedVaultKits = makePrioritizedVaults(reschedulePriceCheck);
 
-  function liquidateAll() {
+  const liquidateAll = () => {
     const promises = sortedVaultKits.map(({ vaultKit }) =>
       liquidate(
         zcf,
@@ -192,9 +195,9 @@ export function makeVaultManager(
       ),
     );
     return Promise.all(promises);
-  }
+  };
 
-  async function chargeAllVaults(updateTime, poolIncrementSeat) {
+  const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
     const poolIncrement = sortedVaultKits.reduce(
       (total, vaultPair) =>
         AmountMath.add(
@@ -207,7 +210,7 @@ export function makeVaultManager(
     reschedulePriceCheck();
     runMint.mintGains(harden({ RUN: poolIncrement }), poolIncrementSeat);
     reallocateReward(poolIncrement, poolIncrementSeat);
-  }
+  };
 
   const periodNotifier = E(timerService).makeNotifier(
     0n,
@@ -240,7 +243,7 @@ export function makeVaultManager(
   });
 
   /** @param {ZCFSeat} seat */
-  async function makeLoanKit(seat) {
+  const makeLoanKit = async seat => {
     assertProposalShape(seat, {
       give: { Collateral: null },
       want: { RUN: null },
@@ -269,7 +272,7 @@ export function makeVaultManager(
       }),
       vault,
     });
-  }
+  };
 
   /** @type {VaultManager} */
   return Far('vault manager', {
@@ -277,4 +280,4 @@ export function makeVaultManager(
     makeLoanKit,
     liquidateAll,
   });
-}
+};

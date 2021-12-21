@@ -17,7 +17,13 @@ const trace = makeTracer('LIQ');
  *
  * @type {TreasuryLiquidate}
  */
-async function liquidate(zcf, vaultKit, burnLosses, strategy, collateralBrand) {
+const liquidate = async (
+  zcf,
+  vaultKit,
+  burnLosses,
+  strategy,
+  collateralBrand,
+) => {
   vaultKit.liquidating();
   const runDebt = vaultKit.vault.getDebtAmount();
   const { brand: runBrand } = runDebt;
@@ -57,7 +63,7 @@ async function liquidate(zcf, vaultKit, burnLosses, strategy, collateralBrand) {
   vaultSeat.exit();
   liquidationSeat.exit();
   vaultKit.liquidationPromiseKit.resolve('Liquidated');
-}
+};
 
 /**
  * The default strategy converts of all the collateral to RUN using autoswap,
@@ -65,20 +71,18 @@ async function liquidate(zcf, vaultKit, burnLosses, strategy, collateralBrand) {
  *
  * @type {(XYKAMMPublicFacet) => LiquidationStrategy}
  */
-function makeDefaultLiquidationStrategy(amm) {
-  function keywordMapping() {
-    return harden({
+const makeDefaultLiquidationStrategy = amm => {
+  const keywordMapping = () =>
+    harden({
       Collateral: 'In',
       RUN: 'Out',
     });
-  }
 
-  function makeProposal(collateral, run) {
-    return harden({
+  const makeProposal = (collateral, run) =>
+    harden({
       give: { In: collateral },
       want: { Out: AmountMath.makeEmptyFromAmount(run) },
     });
-  }
 
   trace(`return from makeDefault`);
 
@@ -87,7 +91,7 @@ function makeDefaultLiquidationStrategy(amm) {
     keywordMapping,
     makeProposal,
   };
-}
+};
 
 harden(makeDefaultLiquidationStrategy);
 harden(liquidate);

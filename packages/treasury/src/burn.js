@@ -8,9 +8,9 @@ import { E } from '@agoric/eventual-send';
  * @param {ZCFMint} zcfMint
  * @param {Amount} amount
  */
-export async function paymentFromZCFMint(zcf, zcfMint, amount) {
+export const paymentFromZCFMint = async (zcf, zcfMint, amount) => {
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
   zcfMint.mintGains(harden({ Temp: amount }), zcfSeat);
   zcfSeat.exit();
   return E(userSeat).getPayout('Temp');
-}
+};

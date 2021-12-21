@@ -48,7 +48,7 @@ import {
 const { details: X } = assert;
 
 /** @type {ContractStartFn} */
-export async function start(zcf, privateArgs) {
+export const start = async (zcf, privateArgs) => {
   // loanParams has time limits for charging interest
   const {
     ammPublicFacet,
@@ -93,7 +93,7 @@ export async function start(zcf, privateArgs) {
    *
    * @type {ReallocateReward}
    */
-  function reallocateReward(amount, fromSeat, otherSeat = undefined) {
+  const reallocateReward = (amount, fromSeat, otherSeat = undefined) => {
     rewardPoolSeat.incrementBy(
       fromSeat.decrementBy(
         harden({
@@ -106,7 +106,7 @@ export async function start(zcf, privateArgs) {
     } else {
       zcf.reallocate(rewardPoolSeat, fromSeat);
     }
-  }
+  };
 
   /** @type {Store<Brand,VaultManager>} */
   const collateralTypes = makeScalarMap('brand');
@@ -116,7 +116,7 @@ export async function start(zcf, privateArgs) {
   /** @type { Store<Brand, VaultParamManager> } */
   const vaultParamManagers = makeScalarMap('brand');
 
-  async function addVaultType(collateralIssuer, collateralKeyword, rates) {
+  const addVaultType = async (collateralIssuer, collateralKeyword, rates) => {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     // We create only one vault per collateralType.
@@ -152,12 +152,12 @@ export async function start(zcf, privateArgs) {
     );
     collateralTypes.init(collateralBrand, vm);
     return vm;
-  }
+  };
 
   /** Make a loan in the vaultManager based on the collateral type. */
-  function makeLoanInvitation() {
+  const makeLoanInvitation = () => {
     /** @param {ZCFSeat} seat */
-    async function makeLoanHook(seat) {
+    const makeLoanHook = async seat => {
       assertProposalShape(seat, {
         give: { Collateral: null },
         want: { RUN: null },
@@ -173,7 +173,7 @@ export async function start(zcf, privateArgs) {
       /** @type {VaultManager} */
       const mgr = collateralTypes.get(brandIn);
       return mgr.makeLoanKit(seat);
-    }
+    };
 
     return zcf.makeInvitation(
       makeLoanHook,
@@ -182,9 +182,9 @@ export async function start(zcf, privateArgs) {
       HIGH_FEE,
       LONG_EXP,
     );
-  }
+  };
 
-  async function getCollaterals() {
+  const getCollaterals = async () => {
     // should be collateralTypes.map((vm, brand) => ({
     return harden(
       Promise.all(
@@ -204,16 +204,14 @@ export async function start(zcf, privateArgs) {
         }),
       ),
     );
-  }
+  };
 
   // Eventually the reward pool will live elsewhere. For now it's here for
   // bookkeeping. It's needed in tests.
-  function getRewardAllocation() {
-    return rewardPoolSeat.getCurrentAllocation();
-  }
+  const getRewardAllocation = () => rewardPoolSeat.getCurrentAllocation();
 
   // TODO(#4021) remove this method
-  function mintBootstrapPayment() {
+  const mintBootstrapPayment = () => {
     const {
       zcfSeat: bootstrapZCFSeat,
       userSeat: bootstrapUserSeat,
@@ -232,7 +230,7 @@ export async function start(zcf, privateArgs) {
      * @param {Amount=} expectedAmount - if provided, assert that the bootstrap
      * payment is at least the expected amount
      */
-    function getBootstrapPayment(expectedAmount) {
+    const getBootstrapPayment = expectedAmount => {
       if (expectedAmount) {
         assert(
           AmountMath.isGTE(bootstrapAmount, expectedAmount),
@@ -240,9 +238,9 @@ export async function start(zcf, privateArgs) {
         );
       }
       return bootstrapPayment;
-    }
+    };
     return getBootstrapPayment;
-  }
+  };
 
   const getRatioParamState = paramDesc => {
     return vaultParamManagers
@@ -309,4 +307,4 @@ export async function start(zcf, privateArgs) {
     creatorFacet: stablecoinMachineWrapper,
     publicFacet,
   });
-}
+};

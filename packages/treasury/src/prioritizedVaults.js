@@ -16,7 +16,7 @@ const { multiply, isGTE } = natSafeMath;
 // debtToCollateral (which is not the collateralizationRatio) is updated using
 // an observer on the UIState.
 
-function ratioGTE(left, right) {
+const ratioGTE = (left, right) => {
   assert(
     left.numerator.brand === right.numerator.brand &&
       left.denominator.brand === right.denominator.brand,
@@ -26,9 +26,9 @@ function ratioGTE(left, right) {
     multiply(left.numerator.value, right.denominator.value),
     multiply(right.numerator.value, left.denominator.value),
   );
-}
+};
 
-function calculateDebtToCollateral(debtAmount, collateralAmount) {
+const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
   if (AmountMath.isEmpty(collateralAmount)) {
     return makeRatioFromAmounts(
       debtAmount,
@@ -36,16 +36,15 @@ function calculateDebtToCollateral(debtAmount, collateralAmount) {
     );
   }
   return makeRatioFromAmounts(debtAmount, collateralAmount);
-}
+};
 
-function currentDebtToCollateral(vaultKit) {
-  return calculateDebtToCollateral(
+const currentDebtToCollateral = vaultKit =>
+  calculateDebtToCollateral(
     vaultKit.vault.getDebtAmount(),
     vaultKit.vault.getCollateralAmount(),
   );
-}
 
-function compareVaultKits(leftVaultPair, rightVaultPair) {
+const compareVaultKits = (leftVaultPair, rightVaultPair) => {
   const leftVaultRatio = leftVaultPair.debtToCollateral;
   const rightVaultRatio = rightVaultPair.debtToCollateral;
   const leftGTERight = ratioGTE(leftVaultRatio, rightVaultRatio);
@@ -58,12 +57,12 @@ function compareVaultKits(leftVaultPair, rightVaultPair) {
     return 1;
   }
   throw Error("The vault's collateral ratios are not comparable");
-}
+};
 
 // makePrioritizedVaults() takes a function parameter, which will be called when
 // there is a new least-collateralized vault.
 
-export function makePrioritizedVaults(reschedulePriceCheck) {
+export const makePrioritizedVaults = reschedulePriceCheck => {
   // Each entry is [Vault, debtToCollateralRatio]. The array must be resorted on
   // every insert, and whenever any vault's ratio changes. We can remove an
   // arbitrary number of vaults from the front of the list without resorting. We
@@ -81,7 +80,7 @@ export function makePrioritizedVaults(reschedulePriceCheck) {
   // Check if this ratio of debt to collateral would be the highest known. If
   // so, reset our highest and invoke the callback. This can be called on new
   // vaults and when we get a state update for a vault changing balances.
-  function rescheduleIfHighest(collateralToDebt) {
+  const rescheduleIfHighest = collateralToDebt => {
     if (
       !highestDebtToCollateral ||
       !ratioGTE(highestDebtToCollateral, collateralToDebt)
@@ -89,68 +88,66 @@ export function makePrioritizedVaults(reschedulePriceCheck) {
       highestDebtToCollateral = collateralToDebt;
       reschedulePriceCheck();
     }
-  }
+  };
 
-  function highestRatio() {
+  const highestRatio = () => {
     const mostIndebted = vaultsWithDebtRatio[0];
     return mostIndebted ? mostIndebted.debtToCollateral : undefined;
-  }
+  };
 
-  function removeVault(vaultKit) {
+  const removeVault = vaultKit => {
     vaultsWithDebtRatio = vaultsWithDebtRatio.filter(
       v => v.vaultKit !== vaultKit,
     );
     // don't call reschedulePriceCheck, but do reset the highest.
     highestDebtToCollateral = highestRatio();
-  }
+  };
 
-  function updateDebtRatio(vaultKit, debtRatio) {
+  const updateDebtRatio = (vaultKit, debtRatio) => {
     vaultsWithDebtRatio.forEach((vaultPair, index) => {
       if (vaultPair.vaultKit === vaultKit) {
         vaultsWithDebtRatio[index].debtToCollateral = debtRatio;
       }
     });
-  }
+  };
 
   // called after charging interest, which changes debts without affecting sort
-  function updateAllDebts() {
+  const updateAllDebts = () => {
     vaultsWithDebtRatio.forEach((vaultPair, index) => {
       const debtToCollateral = currentDebtToCollateral(vaultPair.vaultKit);
       vaultsWithDebtRatio[index].debtToCollateral = debtToCollateral;
     });
     highestDebtToCollateral = highestRatio();
-  }
+  };
 
-  function makeObserver(vaultKit) {
-    return {
-      updateState: state => {
-        if (AmountMath.isEmpty(state.locked)) {
-          return;
-        }
-        const debtToCollateral = currentDebtToCollateral(vaultKit);
-        updateDebtRatio(vaultKit, debtToCollateral);
-        vaultsWithDebtRatio.sort(compareVaultKits);
-        rescheduleIfHighest(debtToCollateral);
-      },
-      finish: _ => {
-        removeVault(vaultKit);
-      },
-      fail: _ => {
-        removeVault(vaultKit);
-      },
-    };
-  }
+  const makeObserver = vaultKit => ({
+    updateState: state => {
+      if (AmountMath.isEmpty(state.locked)) {
+        return;
+      }
+      const debtToCollateral = currentDebtToCollateral(vaultKit);
+      updateDebtRatio(vaultKit, debtToCollateral);
+      vaultsWithDebtRatio.sort(compareVaultKits);
+      rescheduleIfHighest(debtToCollateral);
+    },
+    finish: _ => {
+      removeVault(vaultKit);
+    },
+    fail: _ => {
+      removeVault(vaultKit);
+    },
+  });
 
-  function addVaultKit(vaultKit, notifier) {
+  const addVaultKit = (vaultKit, notifier) => {
     const debtToCollateral = currentDebtToCollateral(vaultKit);
     vaultsWithDebtRatio.push({ vaultKit, debtToCollateral });
     vaultsWithDebtRatio.sort(compareVaultKits);
     observeNotifier(notifier, makeObserver(vaultKit));
     rescheduleIfHighest(debtToCollateral);
-  }
+  };
 
   // Invoke a function for vaults with debt to collateral at or above the ratio
-  function forEachRatioGTE(ratio, func) {
+  const forEachRatioGTE = (ratio, func) => {
     // vaults are sorted with highest ratios first
     let index;
     for (index = 0; index < vaultsWithDebtRatio.length; index += 1) {
@@ -171,15 +168,12 @@ export function makePrioritizedVaults(reschedulePriceCheck) {
       }
     }
     highestDebtToCollateral = highestRatio();
-  }
+  };
 
-  function map(func) {
-    return vaultsWithDebtRatio.map(func);
-  }
+  const map = func => vaultsWithDebtRatio.map(func);
 
-  function reduce(func, init = undefined) {
-    return vaultsWithDebtRatio.reduce(func, init);
-  }
+  const reduce = (func, init = undefined) =>
+    vaultsWithDebtRatio.reduce(func, init);
 
   return harden({
     addVaultKit,
@@ -190,4 +184,4 @@ export function makePrioritizedVaults(reschedulePriceCheck) {
     highestRatio: () => highestDebtToCollateral,
     updateAllDebts,
   });
-}
+};
