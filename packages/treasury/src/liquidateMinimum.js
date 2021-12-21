@@ -19,12 +19,12 @@ const trace = makeTracer('LM');
  */
 
 /** @type {ContractStartFn} */
-async function start(zcf) {
+const start = async zcf => {
   const { amm } = zcf.getTerms();
 
-  function makeDebtorHook(runDebt) {
+  const makeDebtorHook = runDebt => {
     const runBrand = runDebt.brand;
-    return async function debtorHook(debtorSeat) {
+    return async debtorSeat => {
       const {
         give: { In: amountIn },
       } = debtorSeat.getProposal();
@@ -54,7 +54,7 @@ async function start(zcf) {
       await E(liqSeat).getOfferResult();
 
       // if swapOut failed to make the trade, we'll sell it all
-      async function sellAllIfUnsold() {
+      const sellAllIfUnsold = async () => {
         if (
           !AmountMath.isEqual(inBefore, debtorSeat.getAmountAllocated('In'))
         ) {
@@ -80,12 +80,12 @@ async function start(zcf) {
         ]).catch(sellAllError => {
           throw Error(`Unable to liquidate ${sellAllError}`);
         });
-      }
+      };
       await sellAllIfUnsold();
 
       debtorSeat.exit();
     };
-  }
+  };
 
   const creatorFacet = Far('debtorInvitationCreator', {
     makeDebtorInvitation: runDebt =>
@@ -93,34 +93,31 @@ async function start(zcf) {
   });
 
   return harden({ creatorFacet });
-}
+};
 
 /** @type {MakeLiquidationStrategy} */
-function makeLiquidationStrategy(creatorFacet) {
-  async function makeInvitation(runDebt) {
-    return E(creatorFacet).makeDebtorInvitation(runDebt);
-  }
+const makeLiquidationStrategy = creatorFacet => {
+  const makeInvitation = async runDebt =>
+    E(creatorFacet).makeDebtorInvitation(runDebt);
 
-  function keywordMapping() {
-    return harden({
+  const keywordMapping = () =>
+    harden({
       Collateral: 'In',
       RUN: 'Out',
     });
-  }
 
-  function makeProposal(collateral, run) {
-    return harden({
+  const makeProposal = (collateral, run) =>
+    harden({
       give: { In: collateral },
       want: { Out: AmountMath.makeEmptyFromAmount(run) },
     });
-  }
 
   return {
     makeInvitation,
     keywordMapping,
     makeProposal,
   };
-}
+};
 
 harden(start);
 harden(makeLiquidationStrategy);

@@ -37,13 +37,13 @@ export const VaultState = {
 };
 
 /** @type {MakeVaultKit} */
-export function makeVaultKit(
+export const makeVaultKit = (
   zcf,
   manager,
   runMint,
   priceAuthority,
   startTimeStamp,
-) {
+) => {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
   const {
     zcfSeat: liquidationZcfSeat,
@@ -54,9 +54,9 @@ export function makeVaultKit(
   /** @type {VAULT_STATE} */
   let vaultState = VaultState.ACTIVE;
 
-  function assertVaultIsOpen() {
+  const assertVaultIsOpen = () => {
     assert(vaultState === VaultState.ACTIVE, X`vault must still be active`);
-  }
+  };
 
   const collateralBrand = manager.getCollateralBrand();
   // timestamp of most recent update to interest
@@ -78,21 +78,18 @@ export function makeVaultKit(
     manager.getRecordingPeriod(),
   );
 
-  function getCollateralAllocated(seat) {
-    return seat.getAmountAllocated('Collateral', collateralBrand);
-  }
-  function getRunAllocated(seat) {
-    return seat.getAmountAllocated('RUN', runBrand);
-  }
+  const getCollateralAllocated = seat =>
+    seat.getAmountAllocated('Collateral', collateralBrand);
+  const getRunAllocated = seat => seat.getAmountAllocated('RUN', runBrand);
 
-  function assertVaultHoldsNoRun() {
+  const assertVaultHoldsNoRun = () => {
     assert(
       AmountMath.isEmpty(getRunAllocated(vaultSeat)),
       X`Vault should be empty of RUN`,
     );
-  }
+  };
 
-  async function maxDebtFor(collateralAmount) {
+  const maxDebtFor = async collateralAmount => {
     const quoteAmount = await E(priceAuthority).quoteGiven(
       collateralAmount,
       runBrand,
@@ -103,24 +100,24 @@ export function makeVaultKit(
       getAmountOut(quoteAmount),
       manager.getLiquidationMargin(),
     );
-  }
+  };
 
-  async function assertSufficientCollateral(collateralAmount, wantedRun) {
+  const assertSufficientCollateral = async (collateralAmount, wantedRun) => {
     const maxRun = await maxDebtFor(collateralAmount);
     assert(
       AmountMath.isGTE(maxRun, wantedRun, runBrand),
       X`Requested ${q(wantedRun)} exceeds max ${q(maxRun)}`,
     );
-  }
+  };
 
-  function getCollateralAmount() {
+  const getCollateralAmount = () => {
     // getCollateralAllocated would return final allocations
     return vaultSeat.hasExited()
       ? AmountMath.makeEmpty(collateralBrand)
       : getCollateralAllocated(vaultSeat);
-  }
+  };
 
-  async function getCollateralizationRatio() {
+  const getCollateralizationRatio = async () => {
     const collateralAmount = getCollateralAmount();
 
     const quoteAmount = await E(priceAuthority).quoteGiven(
@@ -134,10 +131,10 @@ export function makeVaultKit(
     }
     const collateralValueInRun = getAmountOut(quoteAmount);
     return makeRatioFromAmounts(collateralValueInRun, runDebt);
-  }
+  };
 
   // call this whenever anything changes!
-  async function updateUiState() {
+  const updateUiState = async () => {
     // TODO(123): track down all calls and ensure that they all update a
     // lastKnownCollateralizationRatio (since they all know) so we don't have to
     // await quoteGiven() here
@@ -165,21 +162,21 @@ export function makeVaultKit(
       default:
         throw Error(`unreachable vaultState: ${vaultState}`);
     }
-  }
+  };
 
-  function liquidated(newDebt) {
+  const liquidated = newDebt => {
     runDebt = newDebt;
     vaultState = VaultState.CLOSED;
     updateUiState();
-  }
+  };
 
-  function liquidating() {
+  const liquidating = () => {
     vaultState = VaultState.LIQUIDATING;
     updateUiState();
-  }
+  };
 
   /** @type {OfferHandler} */
-  async function closeHook(seat) {
+  const closeHook = async seat => {
     assertVaultIsOpen();
     assertProposalShape(seat, {
       give: { RUN: null },
@@ -224,19 +221,18 @@ export function makeVaultKit(
     liquidationPromiseKit.resolve('Closed');
 
     return 'your loan is closed, thank you for your business';
-  }
+  };
 
-  function makeCloseInvitation() {
+  const makeCloseInvitation = () => {
     assertVaultIsOpen();
     return zcf.makeInvitation(closeHook, 'CloseVault');
-  }
+  };
 
   // The proposal is not allowed to include any keys other than these,
   // usually 'Collateral' and 'RUN'.
-  function assertOnlyKeys(proposal, keys) {
-    function onlyKeys(clause) {
-      return Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
-    }
+  const assertOnlyKeys = (proposal, keys) => {
+    const onlyKeys = clause =>
+      Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
 
     assert(
       onlyKeys(proposal.give),
@@ -246,13 +242,13 @@ export function makeVaultKit(
       onlyKeys(proposal.want),
       X`extraneous terms in want: ${proposal.want}`,
     );
-  }
+  };
 
   // Calculate the target level for Collateral for the vaultSeat and
   // clientSeat implied by the proposal. If the proposal wants Collateral,
   // transfer that amount from vault to client. If the proposal gives
   // Collateral, transfer the opposite direction. Otherwise, return the current level.
-  function TargetCollateralLevels(seat) {
+  const TargetCollateralLevels = seat => {
     const proposal = seat.getProposal();
     const startVaultAmount = getCollateralAllocated(vaultSeat);
     const startClientAmount = getCollateralAllocated(seat);
@@ -275,9 +271,9 @@ export function makeVaultKit(
         client: startClientAmount,
       };
     }
-  }
+  };
 
-  function transferCollateral(seat) {
+  const transferCollateral = seat => {
     const proposal = seat.getProposal();
     if (proposal.want.Collateral) {
       seat.incrementBy(
@@ -288,7 +284,7 @@ export function makeVaultKit(
         seat.decrementBy(harden({ Collateral: proposal.give.Collateral })),
       );
     }
-  }
+  };
 
   // Calculate the target RUN level for the vaultSeat and clientSeat implied
   // by the proposal. If the proposal wants collateral, transfer that amount
@@ -297,7 +293,7 @@ export function makeVaultKit(
   //
   // Since we don't allow the debt to go negative, we will reduce the amount we
   // accept when the proposal says to give more RUN than are owed.
-  function targetRunLevels(seat) {
+  const targetRunLevels = seat => {
     const clientAllocation = getRunAllocated(seat);
     const proposal = seat.getProposal();
     if (proposal.want.RUN) {
@@ -321,9 +317,9 @@ export function makeVaultKit(
         client: clientAllocation,
       };
     }
-  }
+  };
 
-  function transferRun(seat) {
+  const transferRun = seat => {
     const proposal = seat.getProposal();
     if (proposal.want.RUN) {
       seat.incrementBy(
@@ -337,10 +333,10 @@ export function makeVaultKit(
 
       vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: acceptedRun })));
     }
-  }
+  };
 
   // Calculate the fee, the amount to mint and the resulting debt.
-  function loanFee(proposal, runAfter) {
+  const loanFee = (proposal, runAfter) => {
     let newDebt;
     let toMint = AmountMath.makeEmpty(runBrand);
     let fee = AmountMath.makeEmpty(runBrand);
@@ -354,10 +350,10 @@ export function makeVaultKit(
       newDebt = runDebt;
     }
     return { newDebt, toMint, fee };
-  }
+  };
 
   /** @param {ZCFSeat} clientSeat */
-  async function adjustBalancesHook(clientSeat) {
+  const adjustBalancesHook = async clientSeat => {
     assertVaultIsOpen();
     const proposal = clientSeat.getProposal();
 
@@ -426,15 +422,15 @@ export function makeVaultKit(
     clientSeat.exit();
 
     return 'We have adjusted your balances, thank you for your business';
-  }
+  };
 
-  function makeAdjustBalancesInvitation() {
+  const makeAdjustBalancesInvitation = () => {
     assertVaultIsOpen();
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
-  }
+  };
 
   /** @type {OfferHandler} */
-  async function openLoan(seat) {
+  const openLoan = async seat => {
     assert(AmountMath.isEmpty(runDebt), X`vault must be empty initially`);
     // get the payout to provide access to the collateral if the
     // contract abandons
@@ -466,9 +462,9 @@ export function makeVaultKit(
     updateUiState();
 
     return { notifier };
-  }
+  };
 
-  function accrueInterestAndAddToPool(currentTime) {
+  const accrueInterestAndAddToPool = currentTime => {
     const interestKit = interestCalculator.calculateReportingPeriod(
       {
         latestInterestUpdate,
@@ -485,11 +481,9 @@ export function makeVaultKit(
     ({ latestInterestUpdate, newDebt: runDebt } = interestKit);
     updateUiState();
     return interestKit.interest;
-  }
+  };
 
-  function getDebtAmount() {
-    return runDebt;
-  }
+  const getDebtAmount = () => runDebt;
 
   /** @type {Vault} */
   const vault = Far('vault', {
@@ -513,4 +507,4 @@ export function makeVaultKit(
     liquidationPromiseKit,
     liquidationZcfSeat,
   });
-}
+};
