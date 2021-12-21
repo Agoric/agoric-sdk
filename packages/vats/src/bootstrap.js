@@ -1028,7 +1028,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       D(devices.mailbox).registerInboundHandler(vats.vattp);
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
 
-      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+      const vatAdminSvc = E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
 
