@@ -8,3 +8,5 @@ tla2json*
 tlc_out/
 # Ingore TLC chunk
 states/
+# Debugging files
+debug*

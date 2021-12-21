@@ -21,7 +21,7 @@ test('check userspace', async t => {
   let all_traces;
 
   try {
-    all_traces = JSON.parse(fs.readFileSync(pathPrefix + "traces.json"))
+    all_traces = JSON.parse(fs.readFileSync(pathPrefix + "debug_traces.json"))
   } catch (err) {
     console.log(`error reading traces.json file`, err);
     t.fail()
@@ -63,7 +63,7 @@ test('check userspace', async t => {
 
 
     function correctNumberTerminations(arr) {
-      const TERMINATION_STR = "[vat_bootstrap trace complete]"
+      const TERMINATION_STR = "[vat_bootstrap script complete]"
       const cnt = arr.filter(str => str == TERMINATION_STR).length;
       return cnt == traces.length
     }
