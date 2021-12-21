@@ -1,7 +1,8 @@
 // @ts-check
 
 import { makeWeakStore } from '@agoric/store';
-import { Far, sameStructure } from '@agoric/marshal';
+import { Far } from '@agoric/marshal';
+import { sameStructure } from '@agoric/same-structure';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
