@@ -1033,10 +1033,6 @@ export function buildRootObject(vatPowers, vatParameters) {
       );
 
       console.debug(`${ROLE} bootstrap starting`);
-      // scenario #1: Cloud has: multi-node chain, controller solo node,
-      // provisioning server (python). New clients run provisioning
-      // client (python) on localhost, which creates client solo node on
-      // localhost, with HTML frontend. Multi-player mode.
       switch (ROLE) {
         // REAL VALIDATORS run this.
         case 'chain': {
