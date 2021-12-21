@@ -282,35 +282,6 @@ def convert_trace_states_to_test_driver(states):
 
     return ret
 
-
-def niceify_tlc_json(t):
-    """
-    Transform a single trace to an easier to deal with form.
-    """
-
-    def state(s):
-        def bank(b):
-            """
-            Obtain an array representation of the model bank.
-            The TLA+ uses a function representation which results in a
-            json object representation after translation from TLC output to JSON.
-            We transform the json object to an array.
-            """
-            numerical = {int(k): v for k, v in b.items()}
-            return [numerical[i] for i in range(len(numerical))]
-
-        ret = {}
-        ret["step"] = s["step"]
-        ret["curr"] = s["curr"]
-        ret["resolve_target"] = s["resolve_target"]
-        ret["cnt_promise"] = s["cnt_promise"]
-        ret["step_cnt"] = s["step_cnt"]
-        ret["bank"] = bank(s["bank"])
-        return ret
-
-    return [state(s) for s in t]
-
-
 def get_json_traces_from_json_lists_of_states():
     """
     tla2json will produce a list of states when it is given
@@ -318,7 +289,7 @@ def get_json_traces_from_json_lists_of_states():
     split the states into separate traces.
     """
 
-    DIR_NAME = "tlc_outputs"
+    DIR_NAME = "tlc_out"
     fns = [f for f in listdir(DIR_NAME) if isfile(join(DIR_NAME, f))]
     fns = [fn for fn in fns if fn.endswith(".json")]
     print(fns)
@@ -338,7 +309,7 @@ def get_json_traces_from_json_lists_of_states():
                         dmp = json.dumps(trace)
                         if not dmp in seen:
                             seen.add(dmp)
-                            all_traces[(fn, i)] = niceify_tlc_json(trace)
+                            all_traces[(fn, i)] = trace
                     trace = []
                 trace.append(state["state"])
 
@@ -370,5 +341,5 @@ if __name__ == "__main__":
     scripts.sort(key=lambda s: cnt(s["script"]["actions"]))
     print(len(scripts))
     scripts = scripts[:50000]
-    with open("restricted.json", "w") as f:
+    with open("debug_set.json", "w") as f:
         f.write(json.dumps(scripts))

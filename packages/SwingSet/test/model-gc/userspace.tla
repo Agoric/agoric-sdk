@@ -24,6 +24,7 @@ EXTENDS Integers, FiniteSets, Sequences, TLC, tlcFolds, typedefs
 
 \* VATS == {"vt0", "vt1", "vt2"}
 VATS == {"vt0", "vt1"}
+\* Perms == Permutations(VATS)
 NUM_SLITS == 5
 
 \* POSSIBLE_INIT_WATCHER_SETS == {{"vt0", "vt1", "vt2"}, {"vt0", "vt1"}, {"vt0", "vt2"}, {"vt2", "vt1"}, {"vt0"}, {"vt1"}, {"vt2"}}
@@ -106,7 +107,7 @@ ConnectedVatBanks ==
         watchers : POSSIBLE_INIT_WATCHER_SETS,
         creator : VATS
         ]
-    IN [(0..(NUM_SLITS-1)) -> PossibleSlits]
+    IN [1..NUM_SLITS -> PossibleSlits]
 
 Init ==
     /\ step_cnt = 0

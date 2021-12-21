@@ -4,3 +4,7 @@ traces_pretty.json
 kernel_log_dump.json
 # Ignore JSON conversion tool
 tla2json*
+# Ignore TLC outputs
+tlc_out/
+# Ingore TLC chunk
+states/
