@@ -16,7 +16,7 @@ test('check userspace', async t => {
 
   // The number of traces to check against a single kernel lifetime
   // before checking the log.
-  const BATCH_SIZE = 5;
+  const BATCH_SIZE = 1000;
 
   let all_traces;
 
@@ -26,8 +26,6 @@ test('check userspace', async t => {
     console.log(`error reading traces.json file`, err);
     t.fail()
   }
-
-  all_traces = all_traces.slice(0, 1);
 
   for (let i = 0; i < all_traces.length; i += BATCH_SIZE) {
 
