@@ -58,10 +58,6 @@ function makeVattpFrom(vats) {
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
-  async function setupCommandDevice(httpVat, cmdDevice, roles) {
-    await E(httpVat).setCommandDevice(cmdDevice, roles);
-    D(cmdDevice).registerInboundHandler(httpVat);
-  }
 
   // Make services that are provided on the real or virtual chain side
   async function makeChainBundler(
@@ -1075,9 +1071,10 @@ export function buildRootObject(vatPowers, vatParameters) {
           const addLocalPresences = async () => {
             await registerNetworkProtocols(vats, bridgeManager, null);
 
-            await setupCommandDevice(vats.http, devices.command, {
+            await E(vats.http).setCommandDevice(devices.command, {
               client: true,
             });
+            D(devices.command).registerInboundHandler(vats.http);
             localBundle = await createLocalBundle(vats, devices, vatAdminSvc);
 
             // TODO: Remove this alias when we can.
