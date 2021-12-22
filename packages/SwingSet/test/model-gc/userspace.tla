@@ -169,9 +169,6 @@ ResolveStep ==
             /\ resolveItemIx # promiseIx
             \* Cannot resolve a promise to another promise object (banned by JS)
             /\ bank[resolveItemIx].type # "promise"
-    IN
-    LET 
-
         ResolvePromiseAction(resolverIx, promiseIx, resolveItemIx) == 
         LET
             Mapped(k) ==
