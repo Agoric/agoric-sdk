@@ -11,9 +11,8 @@ export function buildRootObject(vatPowers, vatParameters) {
 
   let traces = vatParameters.traces;
 
-  let transitionIx = 0;
-
   let script = undefined;
+  let transitions = undefined;
 
   return Far('root', {
 
@@ -62,23 +61,19 @@ export function buildRootObject(vatPowers, vatParameters) {
 
       for (const t of traces) {
 
-        script = t.script;
         log(`[TRACE:${t.name}:${t.num}]`)
-        transitionIx = 0;
+        script = t.script;
+        transitions = script.transitions.filter(it => it.actor == "boot")
 
         await init()
 
-        while (transitionIx < script.transitions.length) {
-          let transition = script.transitions[transitionIx];
-          transitionIx++;
-          if (transition.actor == "boot") {
-            assert(transition.type == "transferControl")
-            try {
-              const v = transition.targetVat
-              await E(vats[v]).transferControl()
-            } catch (error) {
-              log(`error (bootstrap): `, error);
-            }
+        for (const transition of transitions) {
+          try {
+            const v = transition.targetVat
+            log(`[boot] transferControl ${v}`)
+            await E(vats[v]).transferControl()
+          } catch (error) {
+            log(`error (bootstrap): `, error);
           }
         }
 

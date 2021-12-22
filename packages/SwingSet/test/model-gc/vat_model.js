@@ -83,6 +83,12 @@ export function buildRootObject(vatPowers) {
         assert(false)
       }
 
+      if (transitions[transitionIx].actor == "boot") {
+        // Relinquish control
+        transitionIx++;
+        return;
+      }
+
       await this.meNextTransition()
     },
 
