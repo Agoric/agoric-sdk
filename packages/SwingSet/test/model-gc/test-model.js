@@ -20,12 +20,12 @@ test('check userspace', async t => {
 
   // The number of traces to check against a single kernel lifetime
   // before checking the log.
-  const BATCH_SIZE = 100;
+  const BATCH_SIZE = 10;
 
   let all_traces;
 
   try {
-    all_traces = JSON.parse(fs.readFileSync(pathPrefix + "debug_traces.json"))
+    all_traces = JSON.parse(fs.readFileSync(pathPrefix + "traces.json"))
   } catch (err) {
     console.log(`error reading traces.json file`, err);
     t.fail()
