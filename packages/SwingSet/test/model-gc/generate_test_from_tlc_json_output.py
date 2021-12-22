@@ -45,7 +45,8 @@ class Bank:
         """
         Map vat names to a list of store await overwrites that it must do
         A store await overwrite means that a promise was resolved, and that promise lives
-        in the vat's store. The vat should await that promise, overwr
+        in the vat's store. The vat should await that promise, overwriting the
+        id to the result.
 
         An await cmd looks like {read: Int, write:Int}
         """
