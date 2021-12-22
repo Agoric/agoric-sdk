@@ -5,7 +5,6 @@
 
   This is the main model file, which is complemented by:
     - typedefs.tla (defines types and auxiliary operators)
-    - MC_userspace.tla (defines constants and Apalache trace views)
 
   The model has been constructed in the scope of audit & verification services
   provided by Informal Systems (https://informal.systems)
