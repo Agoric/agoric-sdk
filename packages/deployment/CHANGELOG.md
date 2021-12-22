@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.30.0...@agoric/deployment@2.0.0) (2021-12-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deployment:** optional first block argument to `crunch.mjs`
+
+### Features
+
+* **deployment:** optional first block argument to `crunch.mjs` ([c03646d](https://github.com/Agoric/agoric-sdk/commit/c03646d7387200c3664e7aa03113514363a4611a))
+
+
+### Bug Fixes
+
+* **deployment:** use Docker `Cgroup Version` to init volumes ([3fa95e7](https://github.com/Agoric/agoric-sdk/commit/3fa95e77a0c79f4dfbf9651d5f295795ce7dc5df))
+
+
+
 ## [1.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.29.1...@agoric/deployment@1.30.0) (2021-12-02)
 
 

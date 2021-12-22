@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.33](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.32...@agoric/spawner@0.4.33) (2021-12-22)
+
+
+### Bug Fixes
+
+* **liveSlots:** reflect return value marshalling failures ([fd17b22](https://github.com/Agoric/agoric-sdk/commit/fd17b22874927540f0bad7fb081c9a7e56c901e9))
+
+
+
 ### [0.4.32](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.4.31...@agoric/spawner@0.4.32) (2021-12-02)
 
 

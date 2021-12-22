@@ -1,6 +1,6 @@
 {
   "name": "@agoric/ertp",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
   "type": "module",
   "main": "src/index.js",
@@ -43,14 +43,14 @@
     "@agoric/eventual-send": "^0.14.0",
     "@agoric/marshal": "^0.5.0",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.32",
+    "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
     "@agoric/same-structure": "^0.1.29",
-    "@agoric/store": "^0.6.7"
+    "@agoric/store": "^0.6.8"
   },
   "devDependencies": {
     "@agoric/bundle-source": "^2.0.1",
-    "@agoric/swingset-vat": "^0.24.0",
+    "@agoric/swingset-vat": "^0.24.1",
     "ava": "^3.12.1"
   },
   "files": [
