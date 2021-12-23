@@ -416,6 +416,10 @@ test('amm doubleSwap', async t => {
   const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(4000n));
   const bobMoolaPayment = moolaR.mint.mintPayment(moola(5000n));
 
+  // Setup Carol, who will add liquidity to the Moola pool at a different ratio
+  const carolMoolaPayment = moolaR.mint.mintPayment(moola(20000n));
+  const carolCentralPayment = centralR.mint.mintPayment(centralTokens(20000n));
+
   const ammInstance = await amm.instance;
 
   const aliceAddLiquidityInvitation = E(
@@ -517,6 +521,31 @@ test('amm doubleSwap', async t => {
     `Alice added simoleans and central liquidity`,
   );
 
+  const carolAddLiquidityInvitation = E(
+    amm.ammPublicFacet,
+  ).makeAddLiquidityInvitation();
+  const carolProposal = harden({
+    want: { Liquidity: moolaLiquidity(14000n) },
+    give: { Secondary: moola(20000n), Central: centralTokens(20000n) },
+  });
+  const carolPayments = {
+    Secondary: carolMoolaPayment,
+    Central: carolCentralPayment,
+  };
+
+  const carolAddLiquiditySeat = await E(zoe).offer(
+    carolAddLiquidityInvitation,
+    carolProposal,
+    carolPayments,
+  );
+
+  t.is(
+    await E(carolAddLiquiditySeat).getOfferResult(),
+    'Added liquidity.',
+    `Alice added moola and central liquidity`,
+  );
+  await E(carolAddLiquiditySeat).getPayout('Liquidity');
+
   // Bob swaps moola for simoleans
 
   // Bob looks up the value of 4000 simoleans in moola
@@ -545,8 +574,8 @@ test('amm doubleSwap', async t => {
 
   t.deepEqual(
     await moolaR.issuer.getAmountOf(bobMoolaPayout),
-    moola(7234n),
-    `bob gets 7234 moola`,
+    moola(6332n),
+    `bob gets 6332 moola`,
   );
 
   let runningFees = AmountMath.make(centralR.brand, 6n);
@@ -579,8 +608,8 @@ test('amm doubleSwap', async t => {
 
   t.deepEqual(
     await simoleanR.issuer.getAmountOf(bobSimoleanPayout),
-    simoleans(2868n),
-    `bob gets 2880 simoleans`,
+    simoleans(3212n),
+    `bob gets 3212 simoleans`,
   );
 
   runningFees = AmountMath.add(
