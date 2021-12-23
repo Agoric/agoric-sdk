@@ -32,7 +32,9 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.15",
-    "@agoric/marshal": "^0.5.0"
+    "@agoric/marshal": "^0.5.0",
+    "@agoric/eventual-send": "^0.14.0",
+    "@agoric/promise-kit": "^0.2.29"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.24.0",
