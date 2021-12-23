@@ -3,7 +3,7 @@
 import { observeNotifier } from '@agoric/notifier';
 import { E, Far } from '@agoric/far';
 
-// wrapper to take the treasury or AMM's creatorFacet, and make a function that
+// wrapper to take the vaultFactory or AMM's creatorFacet, and make a function that
 // will request an invitation and return a promise for a payment.
 export function makeFeeCollector(zoe, creatorFacet) {
   /** @type {FeeCollector} */
@@ -17,7 +17,7 @@ export function makeFeeCollector(zoe, creatorFacet) {
 }
 
 /**
- * A distributor of fees from treasury or AMM to the Bank module. Each time the
+ * A distributor of fees from vaultFactory or AMM to the Bank module. Each time the
  * epochTimer signals the end of an Epoch, it will ask the contracts for fees
  * that have been collected to date and send that payment to the depositFacet.
  *
@@ -49,10 +49,10 @@ export async function buildDistributor(
         throw e;
       }),
     fail: reason => {
-      throw Error(`Treasury epoch timer failed: ${reason}`);
+      throw Error(`VaultFactory epoch timer failed: ${reason}`);
     },
     finish: done => {
-      throw Error(`Treasury epoch timer died: ${done}`);
+      throw Error(`VaultFactory epoch timer died: ${done}`);
     },
   };
 

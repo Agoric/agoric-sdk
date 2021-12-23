@@ -36,7 +36,7 @@
     "@agoric/sparse-ints": "^0.1.24",
     "@agoric/store": "^0.6.8",
     "@agoric/swingset-vat": "^0.24.1",
-    "@agoric/treasury": "^0.7.1",
+    "@agoric/run-protocol": "^0.7.1",
     "@agoric/wallet-backend": "^0.10.7",
     "@agoric/zoe": "^0.21.1"
   },

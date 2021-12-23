@@ -242,8 +242,8 @@ jobs:
     # END-TEST-BOILERPLATE
     - name: yarn test (cosmos)
       run: cd golang/cosmos && yarn test
-    - name: yarn test (treasury)
-      run: cd packages/treasury && yarn test
+    - name: yarn test (run-protocol)
+      run: cd packages/run-protocol && yarn test
     - name: yarn test (pegasus)
       run: cd packages/pegasus && yarn test
     - name: yarn test (vats)

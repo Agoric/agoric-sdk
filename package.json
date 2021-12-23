@@ -38,7 +38,7 @@
     "packages/wallet",
     "packages/wallet/api",
     "packages/wallet/ui",
-    "packages/treasury",
+    "packages/run-protocol",
     "packages/pegasus",
     "packages/cosmic-swingset",
     "packages/agoric-cli",
