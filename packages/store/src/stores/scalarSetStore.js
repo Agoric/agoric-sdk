@@ -4,12 +4,11 @@ import { Far } from '@agoric/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertScalarKey } from '../keys/checkKey.js';
 import { makeCopySet } from '../keys/copySet.js';
-import { makePatternKit } from '../patterns/patternMatchers.js';
+import { assertMatches, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCursorKit } from './store-utils.js';
 
 const { details: X, quote: q } = assert;
-const { assertMatches, assertPattern } = makePatternKit();
 
 /**
  * @template K

@@ -13,10 +13,12 @@
  */
 
 /**
+ * @template K
  * @typedef {CopyTagged} CopySet
  */
 
 /**
+ * @template K,V
  * @typedef {CopyTagged} CopyMap
  */
 
@@ -74,8 +76,8 @@
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
  * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(keyPattern?: Pattern) => CopySet} snapshot
- * @property {(copySet: CopySet) => void} addAll
+ * @property {(keyPattern?: Pattern) => CopySet<K>} snapshot
+ * @property {(copySet: CopySet<K>) => void} addAll
  * @property {(keyPattern?: Pattern,
  *             direction?: Direction
  * ) => Iterable<K>} cursor
@@ -118,8 +120,8 @@
  * @property {(keyPattern?: Pattern) => K[]} keys
  * @property {(valuePattern?: Pattern) => V[]} values
  * @property {(entryPattern?: Pattern) => [K,V][]} entries
- * @property {(entryPattern?: Pattern) => CopyMap} snapshot
- * @property {(copyMap: CopyMap) => void} addAll
+ * @property {(entryPattern?: Pattern) => CopyMap<K,V>} snapshot
+ * @property {(copyMap: CopyMap<K,V>) => void} addAll
  * @property {(entryPattern?: Pattern,
  *             direction?: Direction
  * ) => Iterable<[K,V]>} cursor
@@ -213,6 +215,12 @@
  * @returns {-1 | 0 | 1}
  */
 
+/**
+ * @typedef {Object} ComparatorKit
+ * @property {CompareRank} comparator
+ * @property {CompareRank} antiComparator
+ */
+
 // ///////////////////// Should be internal only types /////////////////////////
 
 /**
@@ -273,8 +281,11 @@
 
 /**
  * @callback KeyToDBKey
+ * If this key can be encoded as a DBKey string which sorts correctly,
+ * return that string. Else return `undefined`. For example, a scalar-only
+ * encodeKey would return `undefined` for all non-scalar keys.
  * @param {Passable} key
- * @returns {string}
+ * @returns {string=}
  */
 
 /**

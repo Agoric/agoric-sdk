@@ -9,6 +9,7 @@ import {
   passStyleOf,
 } from '@agoric/marshal';
 import {
+  compareAntiRank,
   compareRank,
   getPassStyleCover,
   intersectRankCovers,
@@ -38,7 +39,7 @@ const patternMemo = new WeakSet();
 /**
  * @returns {Object}
  */
-export const makePatternKit = () => {
+const makePatternKit = () => {
   /**
    * If this is a recognized match tag, return the MatchHelper.
    * Otherwise result undefined.
@@ -274,16 +275,8 @@ export const makePatternKit = () => {
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
           );
         }
-        const specNames = harden(
-          ownKeys(specimen)
-            .sort()
-            .reverse(),
-        );
-        const pattNames = harden(
-          ownKeys(patt)
-            .sort()
-            .reverse(),
-        );
+        const specNames = harden(ownKeys(specimen).sort(compareAntiRank));
+        const pattNames = harden(ownKeys(patt).sort(compareAntiRank));
         if (!keyEQ(specNames, pattNames)) {
           return check(
             false,
@@ -379,20 +372,29 @@ export const makePatternKit = () => {
   const getRankCover = (patt, encodeKey) => {
     if (isKey(patt)) {
       const encoded = encodeKey(patt);
-      return [encoded, `${encoded}~`];
+      if (encoded !== undefined) {
+        return [encoded, `${encoded}~`];
+      }
     }
     const passStyle = passStyleOf(patt);
     switch (passStyle) {
       case 'copyArray': {
-        const rankCovers = patt.map(p => getRankCover(p, encodeKey));
-        return harden([
-          rankCovers.map(([left, _right]) => left),
-          rankCovers.map(([_left, right]) => right),
-        ]);
+        // XXX this doesn't get along with the world of cover === pair of
+        // strings. In the meantime, fall through to the default which
+        // returns a cover that covers all copyArrays.
+        //
+        // const rankCovers = patt.map(p => getRankCover(p, encodeKey));
+        // return harden([
+        //   rankCovers.map(([left, _right]) => left),
+        //   rankCovers.map(([_left, right]) => right),
+        // ]);
+        break;
       }
       case 'copyRecord': {
         // XXX this doesn't get along with the world of cover === pair of
-        // strings
+        // strings. In the meantime, fall through to the default which
+        // returns a cover that covers all copyRecords.
+        //
         // const pattKeys = ownKeys(patt);
         // const pattEntries = harden(pattKeys.map(key => [key, patt[key]]));
         // const [leftEntriesLimit, rightEntriesLimit] =
@@ -401,18 +403,22 @@ export const makePatternKit = () => {
         //   fromEntries(leftEntriesLimit),
         //   fromEntries(rightEntriesLimit),
         // ]);
-        assert.fail('not supporting copyRecord patterns yet'); // XXX TEMP
+        break;
       }
       case 'tagged': {
         const tag = getTag(patt);
         const matchHelper = maybeMatchHelper(tag);
         if (matchHelper) {
+          // Buried here is the important case, where we process
+          // the various patternNodes
           return matchHelper.getRankCover(patt.payload, encodeKey);
         }
         switch (tag) {
           case 'copySet': {
             // XXX this doesn't get along with the world of cover === pair of
-            // strings
+            // strings. In the meantime, fall through to the default which
+            // returns a cover that covers all copySets.
+            //
             // // Should already be validated by checkPattern. But because this
             // // is a check that may loosen over time, we also assert
             // // everywhere we still rely on the restriction.
@@ -428,31 +434,36 @@ export const makePatternKit = () => {
             //   makeCopySet([leftElementLimit]),
             //   makeCopySet([rightElementLimit]),
             // ]);
-            assert.fail('not supporting copySet patterns yet'); // XXX TEMP
+            break;
           }
           case 'copyMap': {
-            // A matching copyMap must have the same keys, or at most one
-            // non-key key pattern. Thus we can assume that value positions
-            // match 1-to-1.
+            // XXX this doesn't get along with the world of cover === pair of
+            // strings. In the meantime, fall through to the default which
+            // returns a cover that covers all copyMaps.
             //
-            // TODO I may be overlooking that the less precise rankOrder
-            // equivalence class may cause values to be out of order,
-            // making this rankCover not actually cover. In that case, for
-            // all the values for keys at the same rank, we should union their
-            // rank covers. TODO POSSIBLE SILENT CORRECTNESS BUG
-            //
-            // If this is a bug, it probably affects the getRankCover
-            // cases if matchLTEHelper and matchGTEHelper on copyMap as
-            // well. See makeCopyMap for an idea on fixing
-            // this bug.
-            const [leftPayloadLimit, rightPayloadLimit] = getRankCover(
-              patt.payload,
-              encodeKey,
-            );
-            return harden([
-              makeTagged('copyMap', leftPayloadLimit),
-              makeTagged('copyMap', rightPayloadLimit),
-            ]);
+            // // A matching copyMap must have the same keys, or at most one
+            // // non-key key pattern. Thus we can assume that value positions
+            // // match 1-to-1.
+            // //
+            // // TODO I may be overlooking that the less precise rankOrder
+            // // equivalence class may cause values to be out of order,
+            // // making this rankCover not actually cover. In that case, for
+            // // all the values for keys at the same rank, we should union their
+            // // rank covers. TODO POSSIBLE SILENT CORRECTNESS BUG
+            // //
+            // // If this is a bug, it probably affects the getRankCover
+            // // cases of matchLTEHelper and matchGTEHelper on copyMap as
+            // // well. See makeCopyMap for an idea on fixing
+            // // this bug.
+            // const [leftPayloadLimit, rightPayloadLimit] = getRankCover(
+            //   patt.payload,
+            //   encodeKey,
+            // );
+            // return harden([
+            //   makeTagged('copyMap', leftPayloadLimit),
+            //   makeTagged('copyMap', rightPayloadLimit),
+            // ]);
+            break;
           }
           default: {
             break; // fall through to default
@@ -521,30 +532,19 @@ export const makePatternKit = () => {
       ),
 
     getRankCover: (kind, _encodeKey) => {
+      let style;
       switch (kind) {
-        case 'copySet': {
-          // The bounds in the cover are not valid copySets, which is fine.
-          // They only need to be valid copyTagged that bound all possible
-          // copySets. Thus, we need to call makeTagged directly, rather
-          // than using makeCopySet.
-          return [
-            makeTagged('copySet', null),
-            makeTagged('copySet', undefined),
-          ];
-        }
+        case 'copySet':
         case 'copyMap': {
-          // The bounds in the cover are not valid copyMaps, which is fine.
-          // They only need to be valid copyTagged that bound all possible
-          // copyMaps.
-          return [
-            makeTagged('copyMap', null),
-            makeTagged('copyMap', undefined),
-          ];
+          style = 'tagged';
+          break;
         }
         default: {
-          return getPassStyleCover(/** @type {PassStyle} */ (kind));
+          style = kind;
+          break;
         }
       }
+      return getPassStyleCover(style);
     },
 
     checkKeyPattern: (kind, check = x => x) => {
@@ -649,54 +649,12 @@ export const makePatternKit = () => {
       // The prefer-const makes no sense when some of the variables need
       // to be `let`
       // eslint-disable-next-line prefer-const
-      let [leftBound, _rightBound] = getPassStyleCover(passStyle);
-      switch (passStyle) {
-        case 'number': {
-          if (Number.isNaN(rightOperand)) {
-            // leftBound = NaN;
-            leftBound = 'f'; // XXX BOGUS
-          }
-          break;
-        }
-        case 'copyRecord': {
-          // XXX this doesn't get along with the world of cover === pair of
-          // strings
-          // leftBound = harden(
-          //   fromEntries(entries(rightOperand).map(([k, _v]) => [k, null])),
-          // );
-          break;
-        }
-        case 'tagged': {
-          leftBound = makeTagged(getTag(rightOperand), null);
-          switch (getTag(rightOperand)) {
-            case 'copyMap': {
-              const { keys } = rightOperand.payload;
-              const values = keys.map(_ => null);
-              // See note in getRankCover for copyMap about why we
-              // may need to take variable values orders into account
-              // to be correct.
-              leftBound = makeTagged('copyMap', harden({ keys, values }));
-              break;
-            }
-            default: {
-              break;
-            }
-          }
-          break;
-        }
-        case 'remotable': {
-          // This does not make for a tighter rankCover, but if an
-          // underlying table internally further optimizes, for example with
-          // an identityHash of a virtual object, then this might
-          // help it take advantage of that.
-          leftBound = encodeKey(rightOperand);
-          break;
-        }
-        default: {
-          break;
-        }
+      let [leftBound, rightBound] = getPassStyleCover(passStyle);
+      const newRightBound = `${encodeKey(rightOperand)}~`;
+      if (newRightBound !== undefined) {
+        rightBound = newRightBound;
       }
-      return [leftBound, `${encodeKey(rightOperand)}~`];
+      return [leftBound, rightBound];
     },
 
     checkKeyPattern: (rightOperand, check = x => x) =>
@@ -734,59 +692,12 @@ export const makePatternKit = () => {
       // The prefer-const makes no sense when some of the variables need
       // to be `let`
       // eslint-disable-next-line prefer-const
-      let [_leftBound, rightBound] = getPassStyleCover(passStyle);
-      switch (passStyle) {
-        case 'number': {
-          if (Number.isNaN(rightOperand)) {
-            // rightBound = NaN;
-            rightBound = 'f';
-          } else {
-            // rightBound = Infinity;
-            rightBound = 'f~';
-          }
-          break;
-        }
-        case 'copyRecord': {
-          // XXX this doesn't get along with the world of cover === pair of
-          // strings
-          // rightBound = harden(
-          //   fromEntries(
-          //     entries(rightOperand).map(([k, _v]) => [k, undefined]),
-          //   ),
-          // );
-          break;
-        }
-        case 'tagged': {
-          rightBound = makeTagged(getTag(rightOperand), undefined);
-          switch (getTag(rightOperand)) {
-            case 'copyMap': {
-              const { keys } = rightOperand.payload;
-              const values = keys.map(_ => undefined);
-              // See note in getRankCover for copyMap about why we
-              // may need to take variable values orders into account
-              // to be correct.
-              rightBound = makeTagged('copyMap', harden({ keys, values }));
-              break;
-            }
-            default: {
-              break;
-            }
-          }
-          break;
-        }
-        case 'remotable': {
-          // This does not make for a tighter rankCover, but if an
-          // underlying table internally further optimizes, for example with
-          // an identityHash of a virtual object, then this might
-          // help it take advantage of that.
-          rightBound = encodeKey(rightOperand);
-          break;
-        }
-        default: {
-          break;
-        }
+      let [leftBound, rightBound] = getPassStyleCover(passStyle);
+      const newLeftBound = encodeKey(rightOperand);
+      if (newLeftBound !== undefined) {
+        leftBound = newLeftBound;
       }
-      return [encodeKey(rightOperand), rightBound];
+      return [leftBound, rightBound];
     },
 
     checkKeyPattern: (rightOperand, check = x => x) =>
@@ -891,3 +802,19 @@ export const makePatternKit = () => {
     M,
   });
 };
+
+// Only include those whose meaning is independent of an imputed sort order
+// of remotables, or of encoding of passable as sortable strings. Thus,
+// getRankCover is omitted. To get one, you'd need to instantiate
+// `makePatternKit()` yourself. Since there are currently no external
+// uses of `getRankCover`, for clarity during development, `makePatternKit`
+// is not currently exported.
+export const {
+  matches,
+  assertMatches,
+  assertPattern,
+  isPattern,
+  assertKeyPattern,
+  isKeyPattern,
+  M,
+} = makePatternKit();

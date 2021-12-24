@@ -6,7 +6,7 @@ import {
   makeTagged,
   passStyleOf,
 } from '@agoric/marshal';
-import { compareRank, sortByRank } from '../patterns/rankOrder.js';
+import { compareAntiRank, sortByRank } from '../patterns/rankOrder.js';
 import { checkCopySetKeys } from './copySet.js';
 
 // eslint-disable-next-line spaced-comment
@@ -15,7 +15,7 @@ import { checkCopySetKeys } from './copySet.js';
 const { details: X } = assert;
 const { ownKeys } = Reflect;
 
-/** @type WeakSet<CopyMap> */
+/** @type WeakSet<CopyMap<any,any>> */
 const copyMapMemo = new WeakSet();
 
 /**
@@ -63,30 +63,84 @@ export const assertCopyMap = m => checkCopyMap(m, assertChecker);
 harden(assertCopyMap);
 
 /**
- * @param {CopyMap} m
- * @param {(v: Passable, i: number) => boolean} fn
+ * @template K,V
+ * @param {CopyMap<K,V>} m
+ * @returns {K[]}
+ */
+export const getCopyMapKeys = m => {
+  assertCopyMap(m);
+  return m.payload.keys;
+};
+harden(getCopyMapKeys);
+
+/**
+ * @template K,V
+ * @param {CopyMap<K,V>} m
+ * @returns {V[]}
+ */
+export const getCopyMapValues = m => {
+  assertCopyMap(m);
+  return m.payload.values;
+};
+harden(getCopyMapValues);
+
+/**
+ * @template K,V
+ * @param {CopyMap<K,V>} m
+ * @returns {Iterable<[K,V]>}
+ */
+export const getCopyMapEntries = m => {
+  assertCopyMap(m);
+  const {
+    payload: { keys, values },
+  } = m;
+  const { length } = keys;
+  return harden({
+    [Symbol.iterator]: () => {
+      let i = 0;
+      return harden({
+        next: () => {
+          /** @type {IteratorResult<[K,V],void>} */
+          let result;
+          if (i < length) {
+            result = harden({ done: false, value: [keys[i], values[i]] });
+            i += 1;
+            return result;
+          } else {
+            result = harden({ done: true, value: undefined });
+          }
+          return result;
+        },
+      });
+    },
+  });
+};
+harden(getCopyMapEntries);
+
+/**
+ * @template K,V
+ * @param {CopyMap<K,V>} m
+ * @param {(key: K, index: number) => boolean} fn
  * @returns {boolean}
  */
-export const everyCopyMapKey = (m, fn) => {
-  assertCopyMap(m);
-  return m.payload.keys.every((v, i) => fn(v, i));
-};
+export const everyCopyMapKey = (m, fn) =>
+  getCopyMapKeys(m).every((key, index) => fn(key, index));
 harden(everyCopyMapKey);
 
 /**
- * @param {CopyMap} m
- * @param {(v: Passable, i: number) => boolean} fn
+ * @template K,V
+ * @param {CopyMap<K,V>} m
+ * @param {(value: V, index: number) => boolean} fn
  * @returns {boolean}
  */
-export const everyCopyMapValue = (m, fn) => {
-  assertCopyMap(m);
-  return m.payload.values.every((v, i) => fn(v, i));
-};
+export const everyCopyMapValue = (m, fn) =>
+  getCopyMapValues(m).every((value, index) => fn(value, index));
 harden(everyCopyMapValue);
 
 /**
- * @param {CopyMap} m
- * @returns {CopySet}
+ * @template K,V
+ * @param {CopyMap<K,V>} m
+ * @returns {CopySet<K>}
  */
 export const copyMapKeySet = m =>
   // A copyMap's keys are already in the internal form used by copySets.
@@ -94,18 +148,20 @@ export const copyMapKeySet = m =>
 harden(copyMapKeySet);
 
 /**
- * @param {Iterable<[Passable, Passable]>} entries
- * @returns {CopyMap}
+ * @template K,V
+ * @param {Iterable<[K, V]>} entries
+ * @returns {CopyMap<K,V>}
  */
 export const makeCopyMap = entries => {
   // This is weird, but reverse rank sorting the entries is a good first step
   // for getting the rank sorted keys together with the values
   // organized by those keys. Also, among values associated with
-  // keys in the same equivalence class, those are rank sorted. This
+  // keys in the same equivalence class, those are rank sorted.
+  // TODO This
   // could solve the copyMap cover issue explained in patternMatchers.js.
   // But only if we include this criteria in our validation of copyMaps,
   // which we currently do not.
-  const sortedEntries = [...sortByRank(entries, compareRank)].reverse();
+  const sortedEntries = sortByRank(entries, compareAntiRank);
   const keys = sortedEntries.map(([k, _v]) => k);
   const values = sortedEntries.map(([_k, v]) => v);
   return makeTagged('copyMap', { keys, values });

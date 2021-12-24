@@ -7,7 +7,7 @@ import {
   passStyleOf,
 } from '@agoric/marshal';
 import {
-  compareRank,
+  compareAntiRank,
   isRankSorted,
   sortByRank,
 } from '../patterns/rankOrder.js';
@@ -29,8 +29,7 @@ export const checkCopySetKeys = (keys, check = x => x) => {
       X`The keys of a copySet or copyMap must be a copyArray: ${keys}`,
     );
   }
-  const reverseKeys = harden([...keys].reverse());
-  if (!isRankSorted(reverseKeys, compareRank)) {
+  if (!isRankSorted(keys, compareAntiRank)) {
     return check(
       false,
       X`The keys of a copySet or copyMap must be sorted in reverse rank order: ${keys}`,
@@ -40,7 +39,7 @@ export const checkCopySetKeys = (keys, check = x => x) => {
 };
 harden(checkCopySetKeys);
 
-/** @type WeakSet<CopySet> */
+/** @type WeakSet<CopySet<any>> */
 const copySetMemo = new WeakSet();
 
 /**
@@ -71,20 +70,31 @@ export const assertCopySet = s => checkCopySet(s, assertChecker);
 harden(assertCopySet);
 
 /**
- * @param {CopySet} s
- * @param {(v: Passable, i: number) => boolean} fn
+ * @template K
+ * @param {CopySet<K>} s
+ * @returns {K[]}
+ */
+export const getCopySetKeys = s => {
+  assertCopySet(s);
+  return s.payload;
+};
+harden(getCopySetKeys);
+
+/**
+ * @template K
+ * @param {CopySet<K>} s
+ * @param {(key: K, index: number) => boolean} fn
  * @returns {boolean}
  */
-export const everyCopySetKey = (s, fn) => {
-  assertCopySet(s);
-  return s.payload.every((v, i) => fn(v, i));
-};
+export const everyCopySetKey = (s, fn) =>
+  getCopySetKeys(s).every((key, index) => fn(key, index));
 harden(everyCopySetKey);
 
 /**
- * @param {Iterable<Passable>} elements
- * @returns {CopySet}
+ * @template K
+ * @param {Iterable<K>} elements
+ * @returns {CopySet<K>}
  */
 export const makeCopySet = elements =>
-  makeTagged('copySet', [...sortByRank(elements, compareRank)].reverse());
+  makeTagged('copySet', sortByRank(elements, compareAntiRank));
 harden(makeCopySet);
