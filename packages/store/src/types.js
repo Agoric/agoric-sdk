@@ -13,10 +13,12 @@
  */
 
 /**
+ * @template K
  * @typedef {CopyTagged} CopySet
  */
 
 /**
+ * @template K,V
  * @typedef {CopyTagged} CopyMap
  */
 
@@ -74,8 +76,8 @@
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
  * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(keyPattern?: Pattern) => CopySet} snapshot
- * @property {(copySet: CopySet) => void} addAll
+ * @property {(keyPattern?: Pattern) => CopySet<K>} snapshot
+ * @property {(copySet: CopySet<K>) => void} addAll
  * @property {(keyPattern?: Pattern,
  *             direction?: Direction
  * ) => Iterable<K>} cursor
@@ -118,8 +120,8 @@
  * @property {(keyPattern?: Pattern) => K[]} keys
  * @property {(valuePattern?: Pattern) => V[]} values
  * @property {(entryPattern?: Pattern) => [K,V][]} entries
- * @property {(entryPattern?: Pattern) => CopyMap} snapshot
- * @property {(copyMap: CopyMap) => void} addAll
+ * @property {(entryPattern?: Pattern) => CopyMap<K,V>} snapshot
+ * @property {(copyMap: CopyMap<K,V>) => void} addAll
  * @property {(entryPattern?: Pattern,
  *             direction?: Direction
  * ) => Iterable<[K,V]>} cursor
@@ -213,6 +215,12 @@
  * @returns {-1 | 0 | 1}
  */
 
+/**
+ * @typedef {Object} ComparatorKit
+ * @property {CompareRank} comparator
+ * @property {CompareRank} antiComparator
+ */
+
 // ///////////////////// Should be internal only types /////////////////////////
 
 /**
@@ -273,8 +281,11 @@
 
 /**
  * @callback KeyToDBKey
+ * If this key can be encoded as a DBKey string which sorts correctly,
+ * return that string. Else return `undefined`. For example, a scalar-only
+ * encodeKey would return `undefined` for all non-scalar keys.
  * @param {Passable} key
- * @returns {string}
+ * @returns {string=}
  */
 
 /**
@@ -287,6 +298,102 @@
 /**
  * @typedef {Object} PatternMatcher
  * @property {GetRankCover} getRankCover
+ */
+
+/**
+ * @typedef {Object} MatcherNamespace
+ * @property {() => Matcher} any
+ * Matches any passable
+ * @property {(...patts: Pattern[]) => Matcher} and
+ * Only if it matches all the sub-patterns
+ * @property {(...patts: Pattern[]) => Matcher} or
+ * Only if it matches at least one subPattern
+ * @property {(subPatt: Pattern) => Matcher} not
+ * Only if it does not match the sub-pattern
+ *
+ * @property {() => Matcher} scalar
+ * The scalars are the primitive values and Remotables.
+ * All scalars are keys.
+ * @property {() => Matcher} key
+ * Can be in a copySet or the key in a CopyMap.
+ * (Will eventually be able to a key is a MapStore.)
+ * All keys are patterns that match only themselves.
+ * @property {() => Matcher} pattern
+ * If it matches M.pattern(), the it is itself a pattern used
+ * to match other passables. A pattern cannot contain errors
+ * or promises, as these are not stable enough to usefully match.
+ * @property {(kind: string) => Matcher} kind
+ * @property {() => Matcher} boolean
+ * @property {() => Matcher} number Only floating point numbers
+ * @property {() => Matcher} bigint
+ * @property {() => Matcher} nat
+ * @property {() => Matcher} string
+ * @property {() => Matcher} symbol
+ * Only registered and well-known symbols are passable
+ * @property {() => Matcher} record A CopyRecord
+ * @property {() => Matcher} array A CopyArray
+ * @property {() => Matcher} set A CopySet
+ * @property {() => Matcher} map A CopyMap
+ * @property {() => Matcher} remotable A far object or its remote presence
+ * @property {() => Matcher} error
+ * Error objects are passable, but are neither keys nor symbols.
+ * They do not have a useful identity.
+ * @property {() => Matcher} promise
+ * Promises are passable, but are neither keys nor symbols.
+ * They do not have a useful identity.
+ * @property {() => Matcher} undefined
+ * All keys including `undefined` are already valid patterns and
+ * so can validly represent themselves. But optional pattern arguments
+ * `(pattern = undefined) => ...`
+ * cannot distinguish between `undefined` passed as a pattern vs
+ * omission of the argument. It will interpret the first as the
+ * second. Thus, when a passed pattern does not also need to be a key,
+ * we recommend passing `M.undefined()` instead of `undefined`.
+ *
+ * @property {() => null} null
+ *
+ * @property {(rightOperand :Key) => Matcher} lt
+ * Matches if < the right operand by compareKeys
+ * @property {(rightOperand :Key) => Matcher} lte
+ * Matches if <= the right operand by compareKeys
+ * @property {(key :Key) => Matcher} eq
+ * @property {(key :Key) => Matcher} neq
+ * @property {(rightOperand :Key) => Matcher} gte
+ * Matches if >= the right operand by compareKeys
+ * @property {(rightOperand :Key) => Matcher} gt
+ * Matches if > the right operand by compareKeys
+ *
+ * @property {(subPatt?: Pattern) => Matcher} arrayOf
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} recordOf
+ * @property {(keyPatt?: Pattern) => Matcher} setOf
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} mapOf
+ * @property {(
+ *   base: CopyRecord<*> | CopyArray<*>,
+ *   rest?: Pattern
+ * ) => Matcher} split
+ * An array or record is split into the first part that matches the
+ * base pattern, and the remainder, which matches against the optional
+ * rest pattern if present.
+ * @property {(
+ *   base: CopyRecord<*> | CopyArray<*>,
+ *   rest?: Pattern
+ * ) => Matcher} partial
+ * An array or record is split into the first part that matches the
+ * base pattern, and the remainder, which matches against the optional
+ * rest pattern if present.
+ * Unlike `M.split`, `M.partial` ignores properties on the base
+ * pattern that are not present on the specimen.
+ */
+
+/**
+ * @typedef {Object} PatternKit
+ * @property {(specimen: Passable, patt: Pattern) => boolean} matches
+ * @property {(specimen: Passable, patt: Pattern) => void} fit
+ * @property {(patt: Pattern) => void} assertPattern
+ * @property {(patt: Passable) => boolean} isPattern
+ * @property {(patt: Pattern) => void} assertKeyPattern
+ * @property {(patt: Passable) => boolean} isKeyPattern
+ * @property {MatcherNamespace} M
  */
 
 // /////////////////////////////////////////////////////////////////////////////

@@ -4,12 +4,11 @@ import { Far, assertPassable } from '@agoric/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertScalarKey } from '../keys/checkKey.js';
 import { makeCopyMap } from '../keys/copyMap.js';
-import { makePatternKit } from '../patterns/patternMatchers.js';
+import { fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCursorKit } from './store-utils.js';
 
 const { details: X, quote: q } = assert;
-const { assertMatches, assertPattern } = makePatternKit();
 
 /**
  * @template K,V
@@ -110,7 +109,7 @@ export const makeScalarMapStore = (
     assertScalarKey(key);
     assertPassable(value);
     if (schema) {
-      assertMatches(harden([key, value]), schema);
+      fit(harden([key, value]), schema);
     }
   };
   const mapStore = Far(`scalar MapStore of ${q(keyName)}`, {
