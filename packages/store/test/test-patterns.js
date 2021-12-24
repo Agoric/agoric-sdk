@@ -3,9 +3,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeCopySet } from '../src/keys/copySet.js';
-import { makePatternKit } from '../src/patterns/patternMatchers.js';
-
-const { assertMatches, matches, M } = makePatternKit(x => x);
+import { fit, matches, M } from '../src/patterns/patternMatchers.js';
+import '../src/types.js';
 
 /**
  * @typedef MatchTest
@@ -29,20 +28,24 @@ const matchTests = harden([
       M.and(3, 3),
       M.or(3, 4),
       M.and(),
+
+      M.scalar(),
+      M.key(),
+      M.pattern(),
     ],
     noPatterns: [
-      [4, /3 - Must be equivalent to the literal pattern: 4/],
+      [4, /3 - Must be equivalent to: 4/],
       [M.not(3), /3 - must fail negated pattern: 3/],
       [M.not(M.any()), /3 - must fail negated pattern: "\[match:any\]"/],
       [M.string(), /3 - Must have passStyle or tag "string"/],
-      [[3, 4], /3 - Must be equivalent to the literal pattern: \[3,4\]/],
+      [[3, 4], /3 - Must be equivalent to: \[3,4\]/],
       [M.gte(7), /3 - Must be >= 7/],
       [M.lte(2), /3 - Must be <= 2/],
       // incommensurate comparisons are neither <= nor >=
       [M.lte('x'), /3 - Must be <= "x"/],
       [M.gte('x'), /3 - Must be >= "x"/],
-      [M.and(3, 4), /3 - Must be equivalent to the literal pattern: 4/],
-      [M.or(4, 4), /3 - Must be equivalent to the literal pattern: 4/],
+      [M.and(3, 4), /3 - Must be equivalent to: 4/],
+      [M.or(4, 4), /3 - Must match one of \[4,4\]/],
       [M.or(), /3 - no pattern disjuncts to match: \[\]/],
     ],
   },
@@ -57,15 +60,38 @@ const matchTests = harden([
       M.lte([4, 4]),
       M.gte([3]),
       M.lte([3, 4, 1]),
+
+      M.split([3], [4]),
+      M.split([3]),
+      M.split([3], M.array()),
+      M.split([3, 4], []),
+      M.split([], [3, 4]),
+
+      M.partial([3], [4]),
+      M.partial([3, 4, 5, 6]),
+      M.partial([3, 4, 5, 6], []),
+
+      M.array(),
+      M.key(),
+      M.pattern(),
     ],
     noPatterns: [
-      [[4, 3], /\[3,4\] - Must be equivalent to the literal pattern: \[4,3\]/],
-      [[3], /\[3,4\] - Must be equivalent to the literal pattern: \[3\]/],
+      [[4, 3], /\[3,4\] - Must be equivalent to: \[4,3\]/],
+      [[3], /\[3,4\] - Must be equivalent to: \[3\]/],
       [[M.string(), M.any()], /3 - Must have passStyle or tag "string"/],
       [M.lte([3, 3]), /\[3,4\] - Must be <= \[3,3\]/],
       [M.gte([4, 4]), /\[3,4\] - Must be >= \[4,4\]/],
       [M.lte([3]), /\[3,4\] - Must be <= \[3\]/],
       [M.gte([3, 4, 1]), /\[3,4\] - Must be >= \[3,4,1\]/],
+
+      [M.split([3, 4, 5, 6]), /\[3,4\] - Must be equivalent to: \[3,4,5,6\]/],
+      [M.split([5]), /\[3\] - Must be equivalent to: \[5\]/],
+      [M.split({}), /\[3,4\] - Must have shape of base: "copyRecord"/],
+      [M.split([3], 'x'), /\[4\] - Must be equivalent to: "x"/],
+
+      [M.partial([5]), /\[3\] - Must be equivalent to: \[5\]/],
+
+      [M.scalar(), /A "copyArray" cannot be a scalar key: \[3,4\]/],
     ],
   },
   {
@@ -77,11 +103,26 @@ const matchTests = harden([
       // Records compare pareto
       M.gte({ foo: 3, bar: 3 }),
       M.lte({ foo: 4, bar: 4 }),
+
+      M.split({ foo: 3 }, { bar: 4 }),
+      M.split({ bar: 4 }, { foo: 3 }),
+      M.split({ foo: 3 }),
+      M.split({ foo: 3 }, M.record()),
+      M.split({}, { foo: 3, bar: 4 }),
+      M.split({ foo: 3, bar: 4 }, {}),
+
+      M.partial({ zip: 5, zap: 6 }),
+      M.partial({ zip: 5, zap: 6 }, { foo: 3, bar: 4 }),
+      M.partial({ foo: 3, zip: 5 }, { bar: 4 }),
+
+      M.record(),
+      M.key(),
+      M.pattern(),
     ],
     noPatterns: [
       [
         { foo: 4, bar: 3 },
-        /{"foo":3,"bar":4} - Must be equivalent to the literal pattern: {"foo":4,"bar":3}/,
+        /{"foo":3,"bar":4} - Must be equivalent to: {"foo":4,"bar":3}/,
       ],
       [
         { foo: M.string(), bar: M.any() },
@@ -109,6 +150,22 @@ const matchTests = harden([
       ],
       [M.lte({ baz: 3 }), /{"foo":3,"bar":4} - Must be <= {"baz":3}/],
       [M.gte({ baz: 3 }), /{"foo":3,"bar":4} - Must be >= {"baz":3}/],
+
+      [M.split([]), /{"foo":3,"bar":4} - Must have shape of base: "copyArray"/],
+      [
+        M.split({ foo: 3, z: 4 }),
+        /{"foo":3} - Must be equivalent to: {"foo":3,"z":4}/,
+      ],
+      [
+        M.split({ foo: 3 }, { foo: 3, bar: 4 }),
+        /{"bar":4} - Must be equivalent to: {"foo":3,"bar":4}/,
+      ],
+      [
+        M.partial({ foo: 7, zip: 5 }, { bar: 4 }),
+        /{"foo":3} - Must be equivalent to: {"foo":7}/,
+      ],
+
+      [M.scalar(), /A "copyRecord" cannot be a scalar key: {"foo":3,"bar":4}/],
     ],
   },
   {
@@ -119,13 +176,10 @@ const matchTests = harden([
       M.lte(makeCopySet([3, 4, 5])),
     ],
     noPatterns: [
-      [
-        makeCopySet([]),
-        /"\[copySet\]" - Must be equivalent to the literal pattern: "\[copySet\]"/,
-      ],
+      [makeCopySet([]), /"\[copySet\]" - Must be equivalent to: "\[copySet\]"/],
       [
         makeCopySet([3, 4, 5]),
-        /"\[copySet\]" - Must be equivalent to the literal pattern: "\[copySet\]"/,
+        /"\[copySet\]" - Must be equivalent to: "\[copySet\]"/,
       ],
       [M.lte(makeCopySet([])), /"\[copySet\]" - Must be <= "\[copySet\]"/],
       [
@@ -139,12 +193,12 @@ const matchTests = harden([
 test('test simple matches', t => {
   for (const { specimen, yesPatterns, noPatterns } of matchTests) {
     for (const yesPattern of yesPatterns) {
-      t.notThrows(() => assertMatches(specimen, yesPattern), `${yesPattern}`);
+      t.notThrows(() => fit(specimen, yesPattern), `${yesPattern}`);
       t.assert(matches(specimen, yesPattern), `${yesPattern}`);
     }
     for (const [noPattern, msg] of noPatterns) {
       t.throws(
-        () => assertMatches(specimen, noPattern),
+        () => fit(specimen, noPattern),
         { message: msg },
         `${noPattern}`,
       );

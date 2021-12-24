@@ -1,10 +1,9 @@
 // @ts-check
 
 import { Far, assertPassable, passStyleOf } from '@agoric/marshal';
-import { makePatternKit } from '../patterns/patternMatchers.js';
+import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
 const { details: X, quote: q } = assert;
-const { assertMatches, assertPattern } = makePatternKit();
 
 /**
  * @template K,V
@@ -94,7 +93,7 @@ export const makeScalarWeakMapStore = (
     );
     assertPassable(value);
     if (schema) {
-      assertMatches(harden([key, value]), schema);
+      fit(harden([key, value]), schema);
     }
   };
   const weakMapStore = Far(`scalar WeakMapStore of ${q(keyName)}`, {

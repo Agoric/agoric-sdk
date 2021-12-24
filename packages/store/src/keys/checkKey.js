@@ -6,7 +6,6 @@
 import {
   assertChecker,
   assertPassable,
-  everyPassableChild,
   getTag,
   isObject,
   passStyleOf,
@@ -94,10 +93,13 @@ const checkKeyInternal = (val, check = x => x) => {
 
   const passStyle = passStyleOf(val);
   switch (passStyle) {
-    case 'copyRecord':
+    case 'copyRecord': {
+      // A copyRecord is a key iff all its children are keys
+      return Object.values(val).every(checkIt);
+    }
     case 'copyArray': {
-      // A copyRecord or copyArray is a key iff all its children are keys
-      return everyPassableChild(val, checkIt);
+      // A copyArray is a key iff all its children are keys
+      return val.every(checkIt);
     }
     case 'tagged': {
       const tag = getTag(val);

@@ -46,132 +46,158 @@ export const getPassStyleCover = passStyle =>
   PassStyleRankAndCover[PassStyleRank[passStyle]][1];
 harden(getPassStyleCover);
 
-/** @type {CompareRank} */
-export const compareRank = (left, right) => {
-  if (sameValueZero(left, right)) {
-    return 0;
-  }
-  const leftStyle = passStyleOf(left);
-  const rightStyle = passStyleOf(right);
-  if (leftStyle !== rightStyle) {
-    return compareRank(PassStyleRank[leftStyle], PassStyleRank[rightStyle]);
-  }
-  switch (leftStyle) {
-    case 'undefined':
-    case 'null':
-    case 'remotable':
-    case 'error':
-    case 'promise': {
-      // For each of these passStyles, all members of that passStyle are tied
-      // for the same rank.
+/**
+ * @type {WeakMap<CompareRank,WeakSet<Passable[]>>}
+ */
+const memoOfSorted = new WeakMap();
+
+/**
+ * @type {WeakMap<CompareRank,CompareRank>}
+ */
+const comparatorMirrorImages = new WeakMap();
+
+/**
+ * @param {CompareRank=} compareRemotables
+ * An option to create a comparator in which an internal order is
+ * assigned to remotables. This defaults to a comparator that
+ * always returns `0`, meaning that all remotables are tied
+ * for the same rank.
+ * @returns {ComparatorKit}
+ */
+const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
+  /** @type {CompareRank} */
+  const comparator = (left, right) => {
+    if (sameValueZero(left, right)) {
       return 0;
     }
-    case 'boolean':
-    case 'bigint':
-    case 'string': {
-      // Within each of these passStyles, the rank ordering agrees with
-      // JavaScript's relational operators `<` and `>`.
-      if (left < right) {
-        return -1;
-      } else {
-        assert(left > right);
-        return 1;
-      }
+    const leftStyle = passStyleOf(left);
+    const rightStyle = passStyleOf(right);
+    if (leftStyle !== rightStyle) {
+      return comparator(PassStyleRank[leftStyle], PassStyleRank[rightStyle]);
     }
-    case 'symbol': {
-      return compareRank(
-        nameForPassableSymbol(left),
-        nameForPassableSymbol(right),
-      );
-    }
-    case 'number': {
-      // `NaN`'s rank is after all other numbers.
-      if (Number.isNaN(left)) {
-        assert(!Number.isNaN(right));
-        return 1;
-      } else if (Number.isNaN(right)) {
-        return -1;
+    switch (leftStyle) {
+      case 'remotable': {
+        return compareRemotables(left, right);
       }
-      // The rank ordering of non-NaN numbers agrees with JavaScript's
-      // relational operators '<' and '>'.
-      if (left < right) {
-        return -1;
-      } else {
-        assert(left > right);
-        return 1;
+      case 'undefined':
+      case 'null':
+      case 'error':
+      case 'promise': {
+        // For each of these passStyles, all members of that passStyle are tied
+        // for the same rank.
+        return 0;
       }
-    }
-    case 'copyRecord': {
-      // Lexicographic by inverse sorted order of property names, then
-      // lexicographic by corresponding values in that same inverse
-      // order of their property names. Comparing names by themselves first,
-      // all records with the exact same set of property names sort next to
-      // each other in a rank-sort of copyRecords.
+      case 'boolean':
+      case 'bigint':
+      case 'string': {
+        // Within each of these passStyles, the rank ordering agrees with
+        // JavaScript's relational operators `<` and `>`.
+        if (left < right) {
+          return -1;
+        } else {
+          assert(left > right);
+          return 1;
+        }
+      }
+      case 'symbol': {
+        return comparator(
+          nameForPassableSymbol(left),
+          nameForPassableSymbol(right),
+        );
+      }
+      case 'number': {
+        // `NaN`'s rank is after all other numbers.
+        if (Number.isNaN(left)) {
+          assert(!Number.isNaN(right));
+          return 1;
+        } else if (Number.isNaN(right)) {
+          return -1;
+        }
+        // The rank ordering of non-NaN numbers agrees with JavaScript's
+        // relational operators '<' and '>'.
+        if (left < right) {
+          return -1;
+        } else {
+          assert(left > right);
+          return 1;
+        }
+      }
+      case 'copyRecord': {
+        // Lexicographic by inverse sorted order of property names, then
+        // lexicographic by corresponding values in that same inverse
+        // order of their property names. Comparing names by themselves first,
+        // all records with the exact same set of property names sort next to
+        // each other in a rank-sort of copyRecords.
 
-      // The copyRecord invariants enforced by passStyleOf ensure that
-      // all the property names are strings. We need the reverse sorted order
-      // of these names, which we then compare lexicographically. This ensures
-      // that if the names of record X are a subset of the names of record Y,
-      // then record X will have an earlier rank and sort to the left of Y.
-      const leftNames = harden(
-        ownKeys(left)
-          .sort()
-          // TODO Measure which is faster: a reverse sort by sorting and
-          // reversing, or by sorting with an inverse comparison function.
-          // If it makes a significant difference, use the faster one.
-          .reverse(),
-      );
-      const rightNames = harden(
-        ownKeys(right)
-          .sort()
-          .reverse(),
-      );
-      const result = compareRank(leftNames, rightNames);
-      if (result !== 0) {
-        return result;
-      }
-      const leftValues = harden(leftNames.map(name => left[name]));
-      const rightValues = harden(rightNames.map(name => right[name]));
-      return compareRank(leftValues, rightValues);
-    }
-    case 'copyArray': {
-      // Lexicographic
-      const len = Math.min(left.length, right.length);
-      for (let i = 0; i < len; i += 1) {
-        const result = compareRank(left[i], right[i]);
+        // The copyRecord invariants enforced by passStyleOf ensure that
+        // all the property names are strings. We need the reverse sorted order
+        // of these names, which we then compare lexicographically. This ensures
+        // that if the names of record X are a subset of the names of record Y,
+        // then record X will have an earlier rank and sort to the left of Y.
+        const leftNames = harden(
+          ownKeys(left)
+            .sort()
+            // TODO Measure which is faster: a reverse sort by sorting and
+            // reversing, or by sorting with an inverse comparison function.
+            // If it makes a significant difference, use the faster one.
+            .reverse(),
+        );
+        const rightNames = harden(
+          ownKeys(right)
+            .sort()
+            .reverse(),
+        );
+        const result = comparator(leftNames, rightNames);
         if (result !== 0) {
           return result;
         }
+        const leftValues = harden(leftNames.map(name => left[name]));
+        const rightValues = harden(rightNames.map(name => right[name]));
+        return comparator(leftValues, rightValues);
       }
-      // If all matching elements were tied, then according to their lengths.
-      // If array X is a prefix of array Y, then X has an earlier rank than Y.
-      return compareRank(left.length, right.length);
-    }
-    case 'tagged': {
-      // Lexicographic by `[Symbol.toStringTag]` then `.payload`.
-      const labelComp = compareRank(getTag(left), getTag(right));
-      if (labelComp !== 0) {
-        return labelComp;
+      case 'copyArray': {
+        // Lexicographic
+        const len = Math.min(left.length, right.length);
+        for (let i = 0; i < len; i += 1) {
+          const result = comparator(left[i], right[i]);
+          if (result !== 0) {
+            return result;
+          }
+        }
+        // If all matching elements were tied, then according to their lengths.
+        // If array X is a prefix of array Y, then X has an earlier rank than Y.
+        return comparator(left.length, right.length);
       }
-      return compareRank(left.payload, right.payload);
+      case 'tagged': {
+        // Lexicographic by `[Symbol.toStringTag]` then `.payload`.
+        const labelComp = comparator(getTag(left), getTag(right));
+        if (labelComp !== 0) {
+          return labelComp;
+        }
+        return comparator(left.payload, right.payload);
+      }
+      default: {
+        assert.fail(X`Unrecognized passStyle: ${q(leftStyle)}`);
+      }
     }
-    default: {
-      assert.fail(X`Unrecognized passStyle: ${q(leftStyle)}`);
-    }
-  }
+  };
+
+  /** @type {CompareRank} */
+  const antiComparator = (x, y) => comparator(y, x);
+
+  memoOfSorted.set(comparator, new WeakSet());
+  memoOfSorted.set(antiComparator, new WeakSet());
+  comparatorMirrorImages.set(comparator, antiComparator);
+  comparatorMirrorImages.set(antiComparator, comparator);
+
+  return harden({ comparator, antiComparator });
 };
-harden(compareRank);
-
-/** @type {CompareRank} */
-export const compareAntiRank = (x, y) => compareRank(y, x);
-
 /**
- * @type {Map<CompareRank,WeakSet<Passable[]>>}
+ * @param {CompareRank} comparator
+ * @returns {CompareRank=}
  */
-const memoOfSorted = new Map([
-  [compareRank, new WeakSet()],
-  [compareAntiRank, new WeakSet()],
-]);
+export const comparatorMirrorImage = comparator =>
+  comparatorMirrorImages.get(comparator);
 
 /**
  * @param {Passable[]} passables
@@ -347,3 +373,51 @@ export const intersectRankCovers = (compare, covers) => {
   ];
   return covers.reduce(intersectRankCoverPair, ['', '{']);
 };
+
+export const {
+  comparator: compareRank,
+  antiComparator: compareAntiRank,
+} = makeComparatorKit();
+
+/**
+ * Create a comparator kit in which remotables are fully ordered
+ * by the order in which they are first seen by *this* comparator kit.
+ * BEWARE: This is observable mutable state, so such a comparator kit
+ * should never be shared among subsystems that should not be able
+ * to communicate.
+ *
+ * Note that this order does not meet the requirements for store
+ * ordering, since it has no memory of deleted keys.
+ *
+ * These full order comparator kit is strictly more precise that the
+ * rank order comparator kits above. As a result, any array which is
+ * sorted by such a full order will pass the isRankSorted test with
+ * a corresponding rank order.
+ *
+ * An array which is sorted by a *fresh* full order comparator, i.e.,
+ * one that has not yet seen any remotables, will of course remain
+ * sorted by according to *that* full order comparator. An array *of
+ * scalars* sorted by a fresh full order will remain sorted even
+ * according to a new fresh full order comparator, since it will see
+ * the remotables in the same order again. Unfortunately, this is
+ * not true of arrays of passables in general.
+ *
+ * @returns {ComparatorKit}
+ */
+export const makeFullOrderComparatorKit = () => {
+  let numSeen = 0;
+  // Could be a WeakMap but would perform poorly. There are a dynamic
+  // number of these created, and each typically has a short lifetime.
+  const seen = new Map();
+  const tag = r => {
+    if (seen.has(r)) {
+      return seen.get(r);
+    }
+    numSeen += 1;
+    seen.set(r, numSeen);
+    return numSeen;
+  };
+  const compareRemotables = (x, y) => compareRank(tag(x), tag(y));
+  return makeComparatorKit(compareRemotables);
+};
+harden(makeFullOrderComparatorKit);
