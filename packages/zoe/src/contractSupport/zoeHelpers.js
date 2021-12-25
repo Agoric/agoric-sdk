@@ -101,6 +101,18 @@ export const swapExact = (zcf, leftSeat, rightSeat) => {
  */
 
 /**
+ * Check the seat's proposal against `proposalPattern`.
+ * If the client submits an offer which does not match
+ * these expectations, the seat will be exited (and payments refunded).
+ *
+ * @param {ZCFSeat} seat
+ * @param {Pattern} proposalPattern
+ */
+export const fitProposalPattern = (seat, proposalPattern) =>
+  // TODO remove this harden, obligating our caller to harden.
+  fit(seat.getProposal(), harden(proposalPattern));
+
+/**
  * Check the seat's proposal against an `expected` record that says
  * what shape of proposal is acceptable.
  *

@@ -602,7 +602,7 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   );
 });
 
-test(`zcf/zoeHelper - fitProposalPattern w/bad Expected`, async t => {
+test(`zcf/zoeHelper - fit proposal pattern w/bad Expected`, async t => {
   const { moola, simoleans } = setup();
 
   const proposal = harden({
