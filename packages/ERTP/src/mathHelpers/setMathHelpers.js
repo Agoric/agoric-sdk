@@ -1,6 +1,7 @@
 // @ts-check
 
-import { passStyleOf, assertStructure, sameStructure } from '@agoric/marshal';
+import { passStyleOf } from '@agoric/marshal';
+import { assertKey, keyEQ } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 
 import '../types.js';
@@ -80,7 +81,7 @@ const assertNoDuplicates = buckets => {
     for (let i = 0; i < maybeMatches.length; i += 1) {
       for (let j = i + 1; j < maybeMatches.length; j += 1) {
         assert(
-          !sameStructure(maybeMatches[i], maybeMatches[j]),
+          !keyEQ(maybeMatches[i], maybeMatches[j]),
           X`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
         );
       }
@@ -101,7 +102,7 @@ const hasElement = (buckets, elem) => {
   }
   const maybeMatches = buckets.get(badHash);
   assert(maybeMatches);
-  return maybeMatches.some(maybeMatch => sameStructure(maybeMatch, elem));
+  return maybeMatches.some(maybeMatch => keyEQ(maybeMatch, elem));
 };
 
 // get a string of string keys and string values as a fuzzy hash for
@@ -121,7 +122,7 @@ const setMathHelpers = harden({
     //   * pass-by-copy primitives,
     //   * pass-by-copy containers,
     //   * remotables.
-    assertStructure(list);
+    assertKey(list);
     assertNoDuplicates(makeBuckets(list));
     return list;
   },

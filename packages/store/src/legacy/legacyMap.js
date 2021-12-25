@@ -60,9 +60,9 @@ export const makeLegacyMap = (keyName = 'key') => {
       assertKeyExists(key);
       m.delete(key);
     },
-    keys: () => Array.from(m.keys()),
-    values: () => Array.from(m.values()),
-    entries: () => Array.from(m.entries()),
+    keys: () => [...m.keys()],
+    values: () => [...m.values()],
+    entries: () => [...m.entries()],
   });
   return legacyMap;
 };

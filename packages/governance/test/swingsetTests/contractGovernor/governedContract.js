@@ -1,6 +1,6 @@
 // @ts-check
 
-import { sameStructure } from '@agoric/marshal';
+import { sameStructure } from '@agoric/same-structure';
 
 import { handleParamGovernance } from '../../../src/contractHelper.js';
 import { makeParamManagerBuilder } from '../../../src/paramGovernance/paramManager.js';
