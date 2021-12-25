@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.7](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.10.6...@agoric/wallet-backend@0.10.7) (2021-12-22)
+
+
+### Bug Fixes
+
+* **wallet:** properly get the first timerService value ([636e099](https://github.com/Agoric/agoric/commit/636e0994761998b0857232f9bdd6f0b3ac451b31))
+
+
+
 ### 0.10.6 (2021-12-02)
 
 **Note:** Version bump only for package @agoric/wallet-backend

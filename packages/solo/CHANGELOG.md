@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.3...@agoric/solo@0.5.4) (2021-12-22)
+
+
+### Bug Fixes
+
+* **solo:** take a dependency on `esm` to reenable plugins ([16e9f9b](https://github.com/Agoric/agoric-sdk/commit/16e9f9b08edeb412fb722adab593f22fde1e29a8))
+* **wallet:** allow wallet app deep linking ([96d372e](https://github.com/Agoric/agoric-sdk/commit/96d372e781d3ce405fc82edea78a0633b0d61b9f))
+
+
+
 ### [0.5.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.2...@agoric/solo@0.5.3) (2021-12-02)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Peg-as-us contract",
   "type": "module",
   "main": "./src/pegasus.js",
@@ -32,19 +32,19 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/bundle-source": "^2.0.1",
-    "@agoric/captp": "^1.10.7",
-    "@agoric/deploy-script-support": "^0.6.0",
-    "@agoric/ertp": "^0.13.0",
+    "@agoric/captp": "^1.10.8",
+    "@agoric/deploy-script-support": "^0.6.1",
+    "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
     "@agoric/install-ses": "^0.5.29",
     "@agoric/marshal": "^0.5.0",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.32",
+    "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
-    "@agoric/store": "^0.6.7",
-    "@agoric/swingset-vat": "^0.24.0",
-    "@agoric/vats": "^0.5.0",
-    "@agoric/zoe": "^0.21.0"
+    "@agoric/store": "^0.6.8",
+    "@agoric/swingset-vat": "^0.24.1",
+    "@agoric/vats": "^0.5.1",
+    "@agoric/zoe": "^0.21.1"
   },
   "devDependencies": {
     "ava": "^3.12.1",
