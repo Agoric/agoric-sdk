@@ -40,7 +40,7 @@ const matchTests = harden([
       [M.lte('x'), /3 - Must be <= "x"/],
       [M.gte('x'), /3 - Must be >= "x"/],
       [M.and(3, 4), /3 - Must be equivalent to the literal pattern: 4/],
-      [M.or(4, 4), /3 - Must be equivalent to the literal pattern: 4/],
+      [M.or(4, 4), /3 - Must match one of \[4,4\]/],
       [M.or(), /3 - no pattern disjuncts to match: \[\]/],
     ],
   },

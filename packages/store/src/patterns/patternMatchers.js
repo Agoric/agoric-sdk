@@ -605,7 +605,7 @@ const makePatternKit = () => {
       if (patts.some(patt => matches(specimen, patt))) {
         return true;
       }
-      return check(false, X`${specimen} must match one of ${patts}`);
+      return check(false, X`${specimen} - Must match one of ${patts}`);
     },
 
     getRankCover: (patts, encodeKey) =>

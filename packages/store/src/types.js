@@ -307,7 +307,7 @@
  * @property {(...patts: Pattern[]) => Matcher} and
  * @property {(...patts: Pattern[]) => Matcher} or
  * @property {(subPatt: Pattern) => Matcher} not
- * @property {(kind: String) => Matcher} kind
+ * @property {(kind: string) => Matcher} kind
  * @property {() => Matcher} boolean
  * @property {() => Matcher} number
  * @property {() => Matcher} bigint
