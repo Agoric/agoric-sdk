@@ -8,7 +8,7 @@ export {
   isPattern,
   assertPattern,
   matches,
-  assertMatches,
+  fit,
 } from './patterns/patternMatchers.js';
 // export { compareRank } from './patterns/rankOrder.js';
 

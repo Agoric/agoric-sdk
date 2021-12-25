@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Far, passStyleOf } from '@agoric/marshal';
-import { assertMatches, assertPattern } from '../patterns/patternMatchers.js';
+import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
 const { details: X, quote: q } = assert;
 
@@ -77,7 +77,7 @@ export const makeScalarWeakSetStore = (
       X`Only remotables can be keys of scalar WeakStores: ${key}`,
     );
     if (schema) {
-      assertMatches(key, schema);
+      fit(key, schema);
     }
   };
   const weakSetStore = Far(`scalar WeakSetStore of ${q(keyName)}`, {

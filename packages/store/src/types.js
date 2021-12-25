@@ -300,6 +300,51 @@
  * @property {GetRankCover} getRankCover
  */
 
+/**
+ * @typedef {Object} MatcherNamespace
+ * @property {() => Matcher} any
+ * @property {() => Matcher} scalar
+ * @property {(...patts: Pattern[]) => Matcher} and
+ * @property {(...patts: Pattern[]) => Matcher} or
+ * @property {(subPatt: Pattern) => Matcher} not
+ * @property {(kind: String) => Matcher} kind
+ * @property {() => Matcher} boolean
+ * @property {() => Matcher} number
+ * @property {() => Matcher} bigint
+ * @property {() => Matcher} string
+ * @property {() => Matcher} symbol
+ * @property {() => Matcher} record
+ * @property {() => Matcher} array
+ * @property {() => Matcher} set
+ * @property {() => Matcher} map
+ * @property {() => Matcher} remotable
+ * @property {() => Matcher} error
+ * @property {() => Matcher} promise
+ * @property {() => Matcher} undefined
+ * @property {() => null} null
+ * @property {(rightOperand :Key) => Matcher} lt
+ * @property {(rightOperand :Key) => Matcher} lte
+ * @property {(key :Key) => Matcher} eq
+ * @property {(key :Key) => Matcher} neq
+ * @property {(rightOperand :Key) => Matcher} gte
+ * @property {(rightOperand :Key) => Matcher} gt
+ * @property {(keyPatt: Pattern) => Matcher} arrayOf
+ * @property {(keyPatt: Pattern, valuePatt: Pattern) => Matcher} recordOf
+ * @property {(keyPatt: Pattern) => Matcher} setOf
+ * @property {(keyPatt: Pattern, valuePatt: Pattern) => Matcher} mapOf
+ */
+
+/**
+ * @typedef {Object} PatternKit
+ * @property {(specimen: Passable, patt: Pattern) => boolean} matches
+ * @property {(specimen: Passable, patt: Pattern) => void} fit
+ * @property {(patt: Pattern) => void} assertPattern
+ * @property {(patt: Passable) => boolean} isPattern
+ * @property {(patt: Pattern) => void} assertKeyPattern
+ * @property {(patt: Passable) => boolean} isKeyPattern
+ * @property {MatcherNamespace} M
+ */
+
 // /////////////////////////////////////////////////////////////////////////////
 
 // TODO

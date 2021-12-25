@@ -37,7 +37,7 @@ const { quote: q, details: X } = assert;
 const patternMemo = new WeakSet();
 
 /**
- * @returns {Object}
+ * @returns {PatternKit}
  */
 const makePatternKit = () => {
   /**
@@ -362,7 +362,7 @@ const makePatternKit = () => {
    * @param {Passable} specimen
    * @param {Pattern} patt
    */
-  const assertMatches = (specimen, patt) => {
+  const fit = (specimen, patt) => {
     checkMatches(specimen, patt, assertChecker);
   };
 
@@ -595,12 +595,17 @@ const makePatternKit = () => {
     checkIsMatcherPayload: matchAndHelper.checkIsMatcherPayload,
 
     checkMatches: (specimen, patts, check = x => x) => {
-      return (
-        (check(
-          patts.length >= 1,
+      const { length } = patts;
+      if (length === 0) {
+        return check(
+          false,
           X`${specimen} - no pattern disjuncts to match: ${patts}`,
-        ) && !patts.every(patt => !checkMatches(specimen, patt, check)))
-      );
+        );
+      }
+      if (patts.some(patt => matches(specimen, patt))) {
+        return true;
+      }
+      return check(false, X`${specimen} must match one of ${patts}`);
     },
 
     getRankCover: (patts, encodeKey) =>
@@ -741,6 +746,7 @@ const makePatternKit = () => {
     return p;
   };
 
+  /** @type {MatcherNamespace} */
   const M = harden({
     any: () => patt(makeTagged('match:any', undefined)),
     scalar: () => patt(makeTagged('match:scalar', undefined)),
@@ -774,26 +780,26 @@ const makePatternKit = () => {
     undefined: () => M.kind('undefined'),
     null: () => null,
 
-    lt: rightSide => patt(makeTagged('match:lt', rightSide)),
-    lte: rightSide => patt(makeTagged('match:lte', rightSide)),
+    lt: rightOperand => patt(makeTagged('match:lt', rightOperand)),
+    lte: rightOperand => patt(makeTagged('match:lte', rightOperand)),
     eq: key => {
       assertKey(key);
       return key === undefined ? M.undefined() : key;
     },
     neq: key => M.not(M.eq(key)),
-    gte: rightSide => patt(makeTagged('match:gte', rightSide)),
-    gt: rightSide => patt(makeTagged('match:gt', rightSide)),
+    gte: rightOperand => patt(makeTagged('match:gte', rightOperand)),
+    gt: rightOperand => patt(makeTagged('match:gt', rightOperand)),
 
     // TODO make more precise
-    arrayOf: _elementPatt => M.array(),
-    recordOf: _entryPatt => M.record(),
-    setOf: _elementPatt => M.set(),
-    mapOf: _entryPatt => M.map(),
+    arrayOf: _keyPatt => M.array(),
+    recordOf: (_keyPatt, _valuePatt) => M.record(),
+    setOf: _keyPatt => M.set(),
+    mapOf: (_keyPatt, _valuePatt) => M.map(),
   });
 
   return harden({
     matches,
-    assertMatches,
+    fit,
     assertPattern,
     isPattern,
     assertKeyPattern,
@@ -811,7 +817,7 @@ const makePatternKit = () => {
 // is not currently exported.
 export const {
   matches,
-  assertMatches,
+  fit,
   assertPattern,
   isPattern,
   assertKeyPattern,
