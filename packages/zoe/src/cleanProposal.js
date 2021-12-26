@@ -1,20 +1,19 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { assertRecord } from '@agoric/marshal';
+import { assertPattern } from '@agoric/store';
 import {
   isOnDemandExitRule,
   isWaivedExitRule,
   isAfterDeadlineExitRule,
 } from './typeGuards.js';
+import { arrayToObj, assertSubset } from './objArrayConversion.js';
 
 import '../exported.js';
 import './internal-types.js';
-
-import { arrayToObj, assertSubset } from './objArrayConversion.js';
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 
@@ -177,7 +176,7 @@ const rootKeysAllowed = harden(['want', 'give', 'exit']);
  * @returns {ProposalRecord}
  */
 export const cleanProposal = (proposal, getAssetKindByBrand) => {
-  mustBeComparable(proposal);
+  assertPattern(proposal);
   assertKeysAllowed(rootKeysAllowed, proposal);
 
   // We fill in the default values if the keys are undefined.

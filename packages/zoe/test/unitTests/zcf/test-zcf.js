@@ -401,8 +401,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message:
-      'The assetKind "whatever" must be either AssetKind.NAT or AssetKind.SET',
+    message: /"whatever" - Must match one of \["nat","set"\]/,
   });
 });
 
