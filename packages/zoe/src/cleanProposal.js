@@ -9,7 +9,6 @@ import {
   isOnDemandExitRule,
   isWaivedExitRule,
   isAfterDeadlineExitRule,
-  ProposalPattern,
 } from './typeGuards.js';
 import { arrayToObj, assertSubset } from './objArrayConversion.js';
 
