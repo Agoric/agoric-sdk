@@ -11,7 +11,7 @@ export const ExitAfterDeadlinePattern = harden({
   afterDeadline: { timer: M.remotable(), deadline: M.bigint() },
 });
 
-export const ExitTermsPattern = M.or(
+export const ExitRulePattern = M.or(
   ExitOnDemandPattern,
   ExitWaivedPattern,
   ExitAfterDeadlinePattern,
@@ -28,26 +28,30 @@ export const ProposalPattern = M.partial(
   {
     want: M.or(undefined, PatternKeywordRecordPattern),
     give: M.or(undefined, AmountKeywordRecordPattern),
-    exit: M.or(undefined, ExitTermsPattern),
+    exit: M.or(undefined, ExitRulePattern),
   },
   {},
 );
 
-/**
- * @param {ExitRule} exit
- * @returns {exit is OnDemandExitRule}
- */
-export const isOnDemandExitRule = exit => matches(exit, ExitOnDemandPattern);
+export const isOnDemandExitRule = exit => {
+  const [exitKey] = Object.getOwnPropertyNames(exit);
+  return exitKey === 'onDemand';
+};
 
 /**
  * @param {ExitRule} exit
  * @returns {exit is WaivedExitRule}
  */
-export const isWaivedExitRule = exit => matches(exit, ExitWaivedPattern);
+export const isWaivedExitRule = exit => {
+  const [exitKey] = Object.getOwnPropertyNames(exit);
+  return exitKey === 'waived';
+};
 
 /**
  * @param {ExitRule} exit
  * @returns {exit is AfterDeadlineExitRule}
  */
-export const isAfterDeadlineExitRule = exit =>
-  matches(exit, ExitAfterDeadlinePattern);
+export const isAfterDeadlineExitRule = exit => {
+  const [exitKey] = Object.getOwnPropertyNames(exit);
+  return exitKey === 'afterDeadline';
+};
