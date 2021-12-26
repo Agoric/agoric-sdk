@@ -1,20 +1,19 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { mustBeComparable } from '@agoric/same-structure';
 import { isNat } from '@agoric/nat';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { assertRecord } from '@agoric/marshal';
+import { assertPattern } from '@agoric/store';
 import {
   isOnDemandExitRule,
   isWaivedExitRule,
   isAfterDeadlineExitRule,
 } from './typeGuards.js';
+import { arrayToObj, assertSubset } from './objArrayConversion.js';
 
 import '../exported.js';
 import './internal-types.js';
-
-import { arrayToObj, assertSubset } from './objArrayConversion.js';
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 
@@ -33,7 +32,7 @@ export const assertKeywordName = keyword => {
     firstCapASCII.test(keyword),
     X`keyword ${q(
       keyword,
-    )} must be ascii and must start with a capital letter.`,
+    )} must be an ascii identifier starting with upper case.`,
   );
   assert(
     keyword !== 'NaN' && keyword !== 'Infinity',
@@ -48,6 +47,7 @@ const assertKeysAllowed = (allowedKeys, record) => {
   const keys = Object.getOwnPropertyNames(record);
   assertSubset(allowedKeys, keys);
   // assert that there are no symbol properties.
+  // TODO unreachable: already rejected as unpassable
   assert(
     Object.getOwnPropertySymbols(record).length === 0,
     X`no symbol properties allowed`,
@@ -95,6 +95,7 @@ export const cleanKeywords = keywordRecord => {
   const keywords = Object.getOwnPropertyNames(keywordRecord);
 
   // Insist that there are no symbol properties.
+  // TODO unreachable: already rejected as unpassable
   assert(
     Object.getOwnPropertySymbols(keywordRecord).length === 0,
     X`no symbol properties allowed`,
@@ -177,7 +178,7 @@ const rootKeysAllowed = harden(['want', 'give', 'exit']);
  * @returns {ProposalRecord}
  */
 export const cleanProposal = (proposal, getAssetKindByBrand) => {
-  mustBeComparable(proposal);
+  assertPattern(proposal);
   assertKeysAllowed(rootKeysAllowed, proposal);
 
   // We fill in the default values if the keys are undefined.
