@@ -60,9 +60,7 @@ test('cleanProposal - repeated brands', t => {
   });
 
   const expected = harden({
-    want: {
-      Asset2: simoleans(1n),
-    },
+    want: { Asset2: simoleans(1n) },
     give: { Price2: moola(3n) },
     exit: { afterDeadline: { timer, deadline: 100n } },
   });

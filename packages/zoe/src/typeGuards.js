@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AmountPattern } from '@agoric/ertp';
-import { M, matches } from '@agoric/store';
+import { M } from '@agoric/store';
 
 export const ExitOnDemandPattern = harden({ onDemand: null });
 
