@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 import { Far, assertCopyArray } from '@agoric/marshal';
-import { makeWeakStore } from '@agoric/store';
+import { makeWeakStore, fit } from '@agoric/store';
 
 import { AmountMath } from './amountMath.js';
 import { makePayment } from './payment.js';
@@ -61,22 +61,20 @@ export const makePaymentLedger = (
   const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
 
   /**
-   * Methods like deposit() have an optional second parameter `amount`
-   * which, if present, is supposed to be equal to the balance of the
+   * Methods like deposit() have an optional second parameter
+   * `optAmountPattern`
+   * which, if present, is supposed to match the balance of the
    * payment. This helper function does that check.
    *
-   * Note: `amount` is user-supplied with no previous validation.
+   * Note: `optAmountPattern` is user-supplied with no previous validation.
    *
    * @param {Amount} paymentBalance
-   * @param {Amount | undefined} amount
+   * @param {Pattern=} optAmountPattern
    * @returns {void}
    */
-  const assertAmountConsistent = (paymentBalance, amount) => {
-    if (amount !== undefined) {
-      assert(
-        isEqual(amount, paymentBalance),
-        X`payment balance ${paymentBalance} must equal amount ${amount}`,
-      );
+  const assertAmountConsistent = (paymentBalance, optAmountPattern) => {
+    if (optAmountPattern !== undefined) {
+      fit(paymentBalance, optAmountPattern);
     }
   };
 
@@ -170,11 +168,11 @@ export const makePaymentLedger = (
   };
 
   /** @type {IssuerBurn} */
-  const burn = (paymentP, optAmount = undefined) => {
+  const burn = (paymentP, optAmountPattern = undefined) => {
     return E.when(paymentP, payment => {
       assertLivePayment(payment);
       const paymentBalance = paymentLedger.get(payment);
-      assertAmountConsistent(paymentBalance, optAmount);
+      assertAmountConsistent(paymentBalance, optAmountPattern);
       try {
         // COMMIT POINT.
         paymentLedger.delete(payment);
@@ -187,11 +185,11 @@ export const makePaymentLedger = (
   };
 
   /** @type {IssuerClaim} */
-  const claim = (paymentP, optAmount = undefined) => {
+  const claim = (paymentP, optAmountPattern = undefined) => {
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertAmountConsistent(srcPaymentBalance, optAmount);
+      assertAmountConsistent(srcPaymentBalance, optAmountPattern);
       // Note COMMIT POINT within moveAssets.
       const [payment] = moveAssets(
         harden([srcPayment]),
@@ -266,14 +264,14 @@ export const makePaymentLedger = (
    * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
    * commit the purse balance
    * @param {Payment} srcPayment
-   * @param {Amount=} optAmount
+   * @param {Pattern=} optAmountPattern
    * @returns {Amount}
    */
   const deposit = (
     currentBalance,
     updatePurseBalance,
     srcPayment,
-    optAmount = undefined,
+    optAmountPattern = undefined,
   ) => {
     assert(
       !isPromise(srcPayment),
@@ -282,7 +280,7 @@ export const makePaymentLedger = (
     );
     assertLivePayment(srcPayment);
     const srcPaymentBalance = paymentLedger.get(srcPayment);
-    assertAmountConsistent(srcPaymentBalance, optAmount);
+    assertAmountConsistent(srcPaymentBalance, optAmountPattern);
     const newPurseBalance = add(srcPaymentBalance, currentBalance);
     try {
       // COMMIT POINT

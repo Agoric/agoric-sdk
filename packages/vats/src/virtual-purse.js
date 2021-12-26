@@ -48,17 +48,18 @@ function makeVirtualPurse(vpc, kit) {
 
   /** @type {(amt: Amount) => Promise<Payment>} */
   let redeem;
-  /** @type {(pmt: Payment, optAmount: Amount | undefined) => Promise<Amount>} */
+  /** @type {(pmt: Payment, optAmountPattern?: Pattern) => Promise<Amount>} */
   let retain;
 
   if (mint) {
-    retain = (payment, optAmount) => E(issuer).burn(payment, optAmount);
+    retain = (payment, optAmountPattern) =>
+      E(issuer).burn(payment, optAmountPattern);
     redeem = amount => E(mint).mintPayment(amount);
   } else {
     // If we can't mint, then we need to escrow.
     const myEscrowPurse = escrowPurse || E(issuer).makeEmptyPurse();
-    retain = (payment, optAmount) =>
-      E(myEscrowPurse).deposit(payment, optAmount);
+    retain = (payment, optAmountPattern) =>
+      E(myEscrowPurse).deposit(payment, optAmountPattern);
     redeem = amount => E(myEscrowPurse).withdraw(amount);
   }
 
@@ -93,13 +94,13 @@ function makeVirtualPurse(vpc, kit) {
 
   /** @type {EOnly<DepositFacet>} */
   const depositFacet = Far('Virtual Deposit Facet', {
-    async receive(payment, optAmount = undefined) {
+    async receive(payment, optAmountPattern = undefined) {
       if (isPromise(payment)) {
         throw TypeError(
           `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
         );
       }
-      const amt = await retain(payment, optAmount);
+      const amt = await retain(payment, optAmountPattern);
 
       // The push must always succeed.
       //
