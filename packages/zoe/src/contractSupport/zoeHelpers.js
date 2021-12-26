@@ -5,7 +5,6 @@ import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { fit } from '@agoric/store';
 
 import { AssetKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
