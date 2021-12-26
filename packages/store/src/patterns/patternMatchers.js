@@ -1013,11 +1013,11 @@ const makePatternKit = () => {
     gte: rightOperand => patt(makeTagged('match:gte', rightOperand)),
     gt: rightOperand => patt(makeTagged('match:gt', rightOperand)),
 
-    arrayOf: subPatt => patt(makeTagged('match:arrayOf', subPatt)),
-    recordOf: (keyPatt, valuePatt) =>
+    arrayOf: (subPatt = M.any()) => patt(makeTagged('match:arrayOf', subPatt)),
+    recordOf: (keyPatt = M.any(), valuePatt = M.any()) =>
       patt(makeTagged('match:recordOf', [keyPatt, valuePatt])),
-    setOf: keyPatt => patt(makeTagged('match:setOf', keyPatt)),
-    mapOf: (keyPatt, valuePatt) =>
+    setOf: (keyPatt = M.any()) => patt(makeTagged('match:setOf', keyPatt)),
+    mapOf: (keyPatt = M.any(), valuePatt = M.any()) =>
       patt(makeTagged('match:mapOf', [keyPatt, valuePatt])),
     split: (base, rest = undefined) =>
       patt(

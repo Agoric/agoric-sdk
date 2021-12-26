@@ -363,10 +363,10 @@
  * @property {(rightOperand :Key) => Matcher} gt
  * Matches if > the right operand by compareKeys
  *
- * @property {(subPatt: Pattern) => Matcher} arrayOf
- * @property {(keyPatt: Pattern, valuePatt: Pattern) => Matcher} recordOf
- * @property {(keyPatt: Pattern) => Matcher} setOf
- * @property {(keyPatt: Pattern, valuePatt: Pattern) => Matcher} mapOf
+ * @property {(subPatt?: Pattern) => Matcher} arrayOf
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} recordOf
+ * @property {(keyPatt?: Pattern) => Matcher} setOf
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} mapOf
  * @property {(
  *   base: CopyRecord<*> | CopyArray<*>,
  *   rest?: Pattern
