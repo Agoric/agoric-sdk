@@ -2,8 +2,8 @@
 
 import { AmountMath } from '@agoric/ertp';
 
-import { natSafeMath } from '../../contractSupport/index.js';
-import { makeRatioFromAmounts } from '../../contractSupport/ratio.js';
+import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { getXY } from './getXY.js';
 
 const { details: X } = assert;

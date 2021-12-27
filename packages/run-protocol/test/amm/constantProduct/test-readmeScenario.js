@@ -3,13 +3,13 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   calcDeltaXSellingX,
   calcDeltaYSellingX,
   swapInNoFees,
-} from '../../../../src/contracts/constantProduct/core.js';
-import { makeRatio } from '../../../../src/contractSupport/index.js';
-import { pricesForStatedInput } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
+} from '../../../src/vpool-xyk-amm/constantProduct/core.js';
+import { pricesForStatedInput } from '../../../src/vpool-xyk-amm/constantProduct/calcSwapPrices.js';
 
 const BASIS_POINTS = 10000n;
 
@@ -47,6 +47,7 @@ test('pricesForStatedInput  README example', async t => {
   const protocolFeeRatio = makeRatio(5n, moolaKit.brand, BASIS_POINTS);
   const poolFeeRatio = makeRatio(25n, bucksKit.brand, BASIS_POINTS);
 
+  // @ts-ignore
   const noFeesResult = swapInNoFees({ amountGiven, poolAllocation });
   t.deepEqual(noFeesResult.amountIn, moola(29996n));
   t.deepEqual(noFeesResult.amountOut, bucks(2248n));

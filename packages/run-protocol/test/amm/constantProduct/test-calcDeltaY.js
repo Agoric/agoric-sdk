@@ -4,7 +4,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 
-import { calcDeltaYSellingX } from '../../../../src/contracts/constantProduct/core.js';
+import { calcDeltaYSellingX } from '../../../src/vpool-xyk-amm/constantProduct/core.js';
 import { setupMintKits } from './setupMints.js';
 
 const doTest = (t, x, y, deltaX, expectedDeltaY) => {

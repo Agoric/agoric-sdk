@@ -2,15 +2,24 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
-import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
 import { setupMintKits } from './setupMints.js';
-import { makeRatio } from '../../../../src/contractSupport/index.js';
 import {
   pricesForStatedInput,
   pricesForStatedOutput,
-} from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
-import { checkKInvariantSellingX } from '../../../../src/contracts/constantProduct/invariants.js';
-import { getXY } from '../../../../src/contracts/constantProduct/getXY.js';
+} from '../../../src/vpool-xyk-amm/constantProduct/calcSwapPrices.js';
+import { checkKInvariantSellingX } from '../../../src/vpool-xyk-amm/constantProduct/invariants.js';
+import { getXY } from '../../../src/vpool-xyk-amm/constantProduct/getXY.js';
+
+/**
+ * @typedef {Object} SwapPriceArgs
+ * @property {Amount} amountGiven
+ * @property {PoolAllocation} poolAllocation
+ * @property {Amount=} amountWanted
+ * @property {Ratio} protocolFeeRatio
+ * @property {Ratio} poolFeeRatio
+ */
 
 const prepareRUNInTest = ({
   inputReserve,
@@ -110,6 +119,7 @@ function checkGetOutput(t, args, result) {
 
 const testGetInputPrice = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
+  // @ts-ignore
   const result = pricesForStatedInput(...args);
   checkGetInput(t, args, result);
 };
@@ -118,6 +128,7 @@ const testGetInputPriceThrows = (t, inputs, message, runIn) => {
   t.throws(
     _ => {
       const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
+      // @ts-ignore
       return pricesForStatedInput(...args);
     },
     {
@@ -128,6 +139,7 @@ const testGetInputPriceThrows = (t, inputs, message, runIn) => {
 
 const testGetInputPriceNoTrade = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
+  // @ts-ignore
   const result = pricesForStatedInput(...args);
   t.truthy(AmountMath.isEmpty(result.swapperGets));
   t.truthy(AmountMath.isEmpty(result.swapperGives));
@@ -135,6 +147,7 @@ const testGetInputPriceNoTrade = (t, inputs, runIn) => {
 
 const testGetOutputPrice = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
+  // @ts-ignore
   const result = pricesForStatedOutput(...args);
   checkGetOutput(t, args, result);
 };
@@ -143,6 +156,7 @@ const getOutputPriceThrows = (t, inputs, message, runIn) => {
   t.throws(
     _ => {
       const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
+      // @ts-ignore
       return pricesForStatedOutput(...args);
     },
     {
@@ -153,6 +167,7 @@ const getOutputPriceThrows = (t, inputs, message, runIn) => {
 
 const testGetOutputPriceNoTrade = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
+  // @ts-ignore
   const result = pricesForStatedOutput(...args);
   t.truthy(AmountMath.isEmpty(result.swapperGets));
   t.truthy(AmountMath.isEmpty(result.swapperGives));

@@ -2,16 +2,16 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import {
+  makeRatio,
+  natSafeMath,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import {
   BASIS_POINTS,
   DEFAULT_PROTOCOL_FEE,
   DEFAULT_POOL_FEE,
-} from '../../../../src/contracts/constantProduct/defaults.js';
+} from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
 import { setupMintKits } from './setupMints.js';
-import {
-  makeRatio,
-  natSafeMath,
-} from '../../../../src/contractSupport/index.js';
-import { pricesForStatedInput } from '../../../../src/contracts/constantProduct/calcSwapPrices.js';
+import { pricesForStatedInput } from '../../../src/vpool-xyk-amm/constantProduct/calcSwapPrices.js';
 
 const { multiply, ceilDivide } = natSafeMath;
 
@@ -51,6 +51,7 @@ const prepareSwapInTest = ({
 
 const testGetPrice = (t, inputs, expectedOutput) => {
   const { args, run, bld } = prepareSwapInTest(inputs);
+  // @ts-ignore
   const result = pricesForStatedInput(...args);
   const expected = harden({
     protocolFee: run(expectedOutput.protocolFee),

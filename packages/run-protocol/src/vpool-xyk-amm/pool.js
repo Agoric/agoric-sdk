@@ -9,9 +9,9 @@ import {
   calcLiqValueToMint,
   calcValueToRemove,
   calcSecondaryRequired,
-} from '../../contractSupport/index.js';
+} from '@agoric/zoe/src/contractSupport/index.js';
 
-import '../../../exported.js';
+import '@agoric/zoe/exported.js';
 import { makePriceAuthority } from './priceAuthority.js';
 import { makeSinglePool } from './singlePool.js';
 

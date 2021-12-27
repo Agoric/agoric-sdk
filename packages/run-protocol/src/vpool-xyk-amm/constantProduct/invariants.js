@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { natSafeMath } from '../../contractSupport/index.js';
+import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 
 /**
  * xy <= (x + deltaX)(y - deltaY)

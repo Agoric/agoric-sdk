@@ -7,12 +7,12 @@ import { sameStructure } from '@agoric/same-structure';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 
-import { assertIssuerKeywords } from '../../contractSupport';
+import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeAddPool } from './pool.js';
 import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 
-import '../../../exported.js';
+import '@agoric/zoe/exported.js';
 import { makeMakeCollectFeesInvitation } from './collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';

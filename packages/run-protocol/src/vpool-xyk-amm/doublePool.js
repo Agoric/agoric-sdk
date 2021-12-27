@@ -2,11 +2,11 @@
 
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
-import { makeFeeRatio } from '../constantProduct/calcFees';
+import { makeFeeRatio } from './constantProduct/calcFees';
 import {
   pricesForStatedInput,
   pricesForStatedOutput,
-} from '../constantProduct/calcSwapPrices.js';
+} from './constantProduct/calcSwapPrices.js';
 
 const { details: X } = assert;
 

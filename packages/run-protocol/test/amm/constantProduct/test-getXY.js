@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { getXY } from '../../../../src/contracts/constantProduct/getXY.js';
+import { getXY } from '../../../src/vpool-xyk-amm/constantProduct/getXY.js';
 import { setupMintKits } from './setupMints.js';
 
 test('swap Central for Secondary', t => {
