@@ -860,7 +860,11 @@ const makePatternKit = () => {
       harden(specR);
       return (
         (checkMatches(specB, base, check) &&
-        (rest === undefined || checkMatches(specR, rest, check)))
+        (rest === undefined ||
+          check(
+            matches(specR, rest),
+            X`Remainder ${specR} - Must match ${rest}`,
+          )))
       );
     },
 
@@ -935,7 +939,11 @@ const makePatternKit = () => {
       harden(newBase);
       return (
         (checkMatches(specB, newBase, check) &&
-        (rest === undefined || checkMatches(specR, rest, check)))
+        (rest === undefined ||
+          check(
+            matches(specR, rest),
+            X`Remainder ${specR} - Must match ${rest}`,
+          )))
       );
     },
 

@@ -101,6 +101,21 @@ test('cleanProposal - other wrong stuff', t => {
     });
 
   proposeBad(
+    'foo',
+    'nat',
+    /"proposal" "foo" must be a pass-by-copy record, not "string"/,
+  );
+  proposeBad(
+    { want: 'foo' },
+    'nat',
+    /"keywordRecord" "foo" must be a pass-by-copy record, not "string"/,
+  );
+  proposeBad(
+    { give: 'foo' },
+    'nat',
+    /"keywordRecord" "foo" must be a pass-by-copy record, not "string"/,
+  );
+  proposeBad(
     { want: { lowercase: simoleans(1n) } },
     'nat',
     /keyword "lowercase" must be an ascii identifier starting with upper case./,
@@ -116,9 +131,9 @@ test('cleanProposal - other wrong stuff', t => {
     /keyword "Not Ident" must be an ascii identifier starting with upper case./,
   );
   proposeBad(
-    { what: { 'Not Ident': simoleans(1n) } },
+    { what: { A: simoleans(1n) } },
     'nat',
-    /key "what" was not one of the expected keys \["want","give","exit"\]/,
+    /.* - Must only have want:, give:, exit: properties: {"what":.*}/,
   );
   proposeBad(
     { [Symbol.for('what')]: { 'Not Ident': simoleans(1n) } },
@@ -131,14 +146,59 @@ test('cleanProposal - other wrong stuff', t => {
     /cannot serialize Remotables with non-methods like "Symbol\(S\)" in {}/,
   );
   proposeBad(
+    { exit: 'foo' },
+    'nat',
+    /"foo" - Must have shape of base: "copyRecord"/,
+  );
+  proposeBad(
+    { exit: { onDemand: 'foo' } },
+    'nat',
+    /{"onDemand":"foo"} - Must be equivalent to: {"onDemand":null}/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: 'foo' } },
+    'nat',
+    /"foo" - Must be a copyRecord to match a copyRecord pattern: {"timer":.*/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: { timer: 'foo', deadline: 3n } } },
+    'nat',
+    /"foo" - Must have passStyle or tag "remotable"/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: { timer, deadline: 'foo' } } },
+    'nat',
+    /"foo" - Must be >= "\[0n\]"/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: { timer: 'foo', deadline: 3n } } },
+    'nat',
+    /"foo" - Must have passStyle or tag "remotable"/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: { timer, deadline: 3n, extra: 'foo' } } },
+    'nat',
+    /.* - Must have same property names as record pattern:.*/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: { timer } } },
+    'nat',
+    /.* - Must have same property names as record pattern:.*/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: { deadline: 3n } } },
+    'nat',
+    /.* - Must have same property names as record pattern:.*/,
+  );
+  proposeBad(
     { exit: { afterDeadline: { timer, deadline: 3 } } },
     'nat',
-    /deadline must be a Nat BigInt/,
+    /3 - Must be >= "\[0n\]"/,
   );
   proposeBad(
     { exit: { afterDeadline: { timer, deadline: -3n } } },
     'nat',
-    /deadline must be a Nat BigInt/,
+    /"\[-3n\]" - Must be >= "\[0n\]"/,
   );
   proposeBad({ exit: {} }, 'nat', /exit {} should only have one key/);
   proposeBad(
