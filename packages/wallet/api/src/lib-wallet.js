@@ -804,7 +804,7 @@ export function makeWallet({
   const makeEmptyPurse = (
     brandPetname,
     petnameForPurse,
-    defaultAutoDeposit = false,
+    defaultAutoDeposit = true,
   ) =>
     internalUnsafeImportPurse(
       brandPetname,
