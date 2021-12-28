@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.21.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.0...@agoric/zoe@0.21.1) (2021-12-22)
+
+
+### Features
+
+* refactor parameter governance support to allow for Invitations ([#4121](https://github.com/Agoric/agoric-sdk/issues/4121)) ([159596b](https://github.com/Agoric/agoric-sdk/commit/159596b8d44b8cbdaf6e19513cb3e716febfae7b))
+
+
+
 ## [0.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.20.0...@agoric/zoe@0.21.0) (2021-12-02)
 
 

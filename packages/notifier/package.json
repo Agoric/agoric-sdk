@@ -1,6 +1,6 @@
 {
   "name": "@agoric/notifier",
-  "version": "0.3.32",
+  "version": "0.3.33",
   "description": "Notifier allows services to update clients about state changes using a stream of promises",
   "type": "module",
   "main": "src/index.js",
@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.29",
-    "@agoric/swingset-vat": "^0.24.0",
+    "@agoric/swingset-vat": "^0.24.1",
     "@endo/ses-ava": "^0.2.8",
     "ava": "^3.12.1",
     "c8": "^7.7.2"

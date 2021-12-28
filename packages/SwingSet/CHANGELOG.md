@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.24.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.24.0...@agoric/swingset-vat@0.24.1) (2021-12-22)
+
+
+### Features
+
+* add vatstoreGetAfter syscall to enable iterating vatstore keys ([63c7d97](https://github.com/Agoric/agoric-sdk/commit/63c7d9759875574fc8b78b5ca8a5646da0604cc7))
+* support vatstore iteration over explicit key bounds ([f220dd8](https://github.com/Agoric/agoric-sdk/commit/f220dd8d89a6ca9ae61093d7613720a4454b62b6))
+
+
+### Bug Fixes
+
+* **liveSlots:** reflect return value marshalling failures ([fd17b22](https://github.com/Agoric/agoric-sdk/commit/fd17b22874927540f0bad7fb081c9a7e56c901e9))
+* changes based on review comments ([e723855](https://github.com/Agoric/agoric-sdk/commit/e7238550829b5ff6bbec015e2a66263118a2716b))
+* tweaks based on review comments ([f0e42b1](https://github.com/Agoric/agoric-sdk/commit/f0e42b11046469bf29394c1bdd7ef1fb772f6474))
+
+
+
 ## [0.24.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.23.0...@agoric/swingset-vat@0.24.0) (2021-12-02)
 
 
