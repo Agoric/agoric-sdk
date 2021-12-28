@@ -61,7 +61,7 @@ test('getPursesNotifier', async t => {
   } = await setup();
   const pursesNotifier = wallet.getPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
-  t.is(update.updateCount, 7);
+  t.is(update.updateCount, 6);
   // Has the default Zoe invitation purse and a moola purse
   t.is(update.value.length, 2);
   const moolaPurseInfo = update.value[1];
@@ -101,7 +101,7 @@ test('getAttenuatedPursesNotifier', async t => {
   } = await setup();
   const pursesNotifier = wallet.getAttenuatedPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
-  t.is(update.updateCount, 7);
+  t.is(update.updateCount, 6);
   // Has the default Zoe invitation purse and a moola purse
   t.is(update.value.length, 2);
   const moolaPurseInfo = update.value[1];
