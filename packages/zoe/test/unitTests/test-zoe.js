@@ -465,15 +465,6 @@ test(`zoe.getConfiguration`, async t => {
       initialFunds: 0n,
       name: 'RUN',
     },
-    meteringConfig: {
-      incrementBy: 25000000n,
-      initial: 75000000n,
-      price: {
-        computronDenominator: 1n,
-        feeNumerator: 1n,
-      },
-      threshold: 25000000n,
-    },
     zoeFeesConfig: {
       getPublicFacetFee: 0n,
       highFee: 10000000n,

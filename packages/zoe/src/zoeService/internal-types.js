@@ -102,7 +102,6 @@
  * @param {Object} customTerms
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
- * @param {ERef<FeePurse>} feePurse
  * @returns {ZoeInstanceStorageManager}
  */
 
@@ -127,7 +126,7 @@
  * ZCF bundle
  *
  * @callback CreateZCFVat
- * @returns {Promise<RootAndAdminNodeAndMeter>}
+ * @returns {Promise<RootAndAdminNode>}
  */
 
 /**
@@ -145,32 +144,6 @@
  * @param {ERef<Purse>} feePurse
  * @param {Amount} feeAmount
  * @returns {Promise<void>}
- */
-
-/**
- * @typedef {bigint} Computrons
- */
-
-/**
- * @typedef {Object} Meter
- *
- * All `bigint` units here are in computrons.
- *
- * @property {(delta: Computrons) => void} addRemaining
- * @property {(newThreshold: Computrons) => void} setThreshold
- * @property {() => Computrons} get
- * @property {() => Notifier<Computrons>} getNotifier
- */
-
-/**
- * @callback ChargeForComputrons
- *
- * Charges the feePurse argument for a set number of computrons (This
- * number is returned by the function and can now be added to the
- * meter).
- *
- * @param {ERef<FeePurse>} feePurse
- * @returns {Promise<bigint>}
  */
 
 /**

@@ -7,26 +7,25 @@ import zcfContractBundle from '../../bundles/bundle-contractFacet.js';
  * ZCF Vats can be created.
  *
  * @param {VatAdminSvc} vatAdminSvc
- * @param {Computrons} initial
- * @param {Computrons} threshold
+ * @param {'poison'} _initial
+ * @param {'poison'} _threshold
  * @param {string=} zcfBundleName
  * @returns {CreateZCFVat}
  */
 export const setupCreateZCFVat = (
   vatAdminSvc,
-  initial,
-  threshold,
+  _initial,
+  _threshold,
   zcfBundleName = undefined,
 ) => {
   /** @type {CreateZCFVat} */
   const createZCFVat = async () => {
-    const meter = await E(vatAdminSvc).createMeter(initial, threshold);
     const rootAndAdminNodeP =
       typeof zcfBundleName === 'string'
-        ? E(vatAdminSvc).createVatByName(zcfBundleName, { meter })
-        : E(vatAdminSvc).createVat(zcfContractBundle, { meter });
+        ? E(vatAdminSvc).createVatByName(zcfBundleName)
+        : E(vatAdminSvc).createVat(zcfContractBundle);
     const rootAndAdminNode = await rootAndAdminNodeP;
-    return harden({ meter, ...rootAndAdminNode });
+    return rootAndAdminNode;
   };
   return createZCFVat;
 };

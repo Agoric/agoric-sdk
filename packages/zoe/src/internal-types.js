@@ -228,13 +228,6 @@
  */
 
 /**
- * @typedef RootAndAdminNodeAndMeter
- * @property {Object} root
- * @property {AdminNode} adminNode
- * @property {Meter} meter
- */
-
-/**
  * @typedef {Object} AdminNode
  * A powerful object that can be used to terminate the vat in which a contract
  * is running, to get statistics, or to be notified when it terminates.

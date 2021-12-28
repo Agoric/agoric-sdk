@@ -79,7 +79,6 @@
  * @returns {{
  *   feeIssuerConfig: FeeIssuerConfig,
  *   zoeFeesConfig: ZoeFeesConfig,
- *   meteringConfig: MeteringConfig
  * }}
  */
 
@@ -406,18 +405,4 @@
  * @property {bigint} lowFee
  * @property {bigint} shortExp
  * @property {bigint} longExp
- */
-
-/**
- * @typedef {Object} MeteringConfig
- * @property {Computrons} initial
- * The amount of computrons a meter starts with
- * @property {Computrons} incrementBy
- * When a meter is refilled, this amount will be added
- * @property {Computrons} threshold
- * Zoe will be notified when the meter drops below this amount
- * @property {{ feeNumerator: bigint,
- *              computronDenominator: bigint
- * }} price
- * The price of computrons in RUN
  */

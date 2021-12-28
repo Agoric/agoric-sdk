@@ -27,7 +27,6 @@ import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
 import { bindDefaultFeePurse, setupMakeFeePurse } from './feePurse.js';
-import { makeChargeForComputrons } from './chargeForComputrons.js';
 import { HIGH_FEE, LONG_EXP, LOW_FEE, SHORT_EXP } from '../constants.js';
 
 const { details: X } = assert;
@@ -42,7 +41,7 @@ const { details: X } = assert;
  * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ZoeFeesConfig} zoeFeesConfig
- * @param {MeteringConfig} meteringConfig
+ * @param {'poison'} _meteringConfig
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {{
  *   zoeService: ZoeService,
@@ -71,15 +70,7 @@ const makeZoeKit = (
     shortExp: 1000n * 60n * 5n, // 5 min in milliseconds
     longExp: 1000n * 60n * 60n * 24n * 1n, // 1 day in milliseconds
   },
-  meteringConfig = {
-    incrementBy: 25_000_000n,
-    initial: 75_000_000n, // executeContract for treasury is 13.5M
-    threshold: 25_000_000n,
-    price: {
-      feeNumerator: 1n,
-      computronDenominator: 1n, // default is just one-to-one
-    },
-  },
+  _meteringConfig = 'poison',
   zcfBundleName = undefined,
 ) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
@@ -127,15 +118,9 @@ const makeZoeKit = (
   // be created. We severely restrict access to vatAdminSvc for this reason.
   const createZCFVat = setupCreateZCFVat(
     vatAdminSvc,
-    meteringConfig.initial,
-    meteringConfig.threshold,
+    'poison',
+    'poison',
     zcfBundleName,
-  );
-
-  const chargeForComputrons = makeChargeForComputrons(
-    meteringConfig,
-    feeBrand,
-    chargeZoeFee,
   );
 
   /** @type {TranslateFee} */
@@ -189,7 +174,7 @@ const makeZoeKit = (
     chargeZoeFee,
     getPublicFacetFeeAmount,
     installFeeAmount,
-    chargeForComputrons,
+    'poison',
     zoeFeesConfig.timeAuthority,
     translateFee,
     translateExpiry,
@@ -229,7 +214,6 @@ const makeZoeKit = (
     return harden({
       feeIssuerConfig,
       zoeFeesConfig,
-      meteringConfig,
     });
   };
 
