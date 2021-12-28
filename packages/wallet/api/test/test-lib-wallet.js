@@ -197,7 +197,7 @@ test('lib-wallet issuer and purse methods', async t => {
     AmountMath.make(moolaBundle.brand, 100n),
     `deposit successful`,
   );
-  t.is(pursesStateChangeLog.length, 6, `pursesStateChangeLog length`);
+  t.is(pursesStateChangeLog.length, 5, `pursesStateChangeLog length`);
   const purseLog = JSON.parse(
     pursesStateChangeLog[pursesStateChangeLog.length - 1],
   );
@@ -231,6 +231,7 @@ test('lib-wallet issuer and purse methods', async t => {
         brand: purseLog[1].brand,
         brandBoardId: '727995140',
         brandPetname: 'moola',
+        depositBoardId: '604346717',
         displayInfo: {
           assetKind: 'nat',
         },
@@ -814,6 +815,7 @@ test('lib-wallet offer methods', async t => {
         assetKind: 'nat',
       },
       pursePetname: 'Fun budget',
+      depositBoardId: '604346717',
       value: 100,
       currentAmountSlots: {
         body:
