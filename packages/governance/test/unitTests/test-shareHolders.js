@@ -76,9 +76,7 @@ const makeDefaultBallotSpec = (issue, positions, timer, deadline) => {
   return questionSpec;
 };
 
-const { zoeService } = makeZoeKit(fakeVatAdmin);
-const feePurse = E(zoeService).makeFeePurse();
-const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
 const electorateInstall = makeInstall(shareHoldersRoot, zoe);
 const counterInstall = makeInstall(binaryCounterRoot, zoe);

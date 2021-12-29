@@ -29,9 +29,7 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
     testJig = jig;
   };
   const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
-  const { zoeService } = makeZoeKit(fakeVatAdminSvc);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdminSvc);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
@@ -45,7 +43,7 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
   });
 
   // eslint-disable-next-line no-unused-vars
-  const { creatorFacet } = await E(zoe).startInstance(
+  const { _creatorFacet } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
   );

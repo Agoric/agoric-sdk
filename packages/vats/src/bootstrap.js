@@ -84,34 +84,13 @@ export function buildRootObject(vatPowers, vatParameters) {
       displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
       initialFunds: 1_000_000_000_000_000_000n,
     };
-    const zoeFeesConfig = {
-      getPublicFacetFee: 50n,
-      installFee: 65_000n,
-      startInstanceFee: 5_000_000n,
-      offerFee: 65_000n,
-      timeAuthority: chainTimerServiceP,
-      lowFee: 500_000n,
-      highFee: 5_000_000n,
-      shortExp: 1000n * 60n * 5n, // 5 min in milliseconds
-      longExp: 1000n * 60n * 60n * 24n * 1n, // 1 day in milliseconds
-    };
-    const meteringConfig = {
-      incrementBy: 25_000_000n,
-      initial: 50_000_000n,
-      threshold: 25_000_000n,
-      price: {
-        feeNumerator: 1n,
-        computronDenominator: 1n, // default is just one-to-one
-      },
-    };
-
     // Create singleton instances.
     const [
       bankManager,
       sharingService,
       board,
       chainTimerService,
-      { zoeService: zoe, feeMintAccess, feeCollectionPurse },
+      { zoeService: zoe, feeMintAccess },
       { priceAuthority, adminFacet: priceAuthorityAdmin },
       walletManager,
     ] = await Promise.all([
@@ -119,15 +98,14 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.sharing).getSharingService(),
       E(vats.board).getBoard(),
       chainTimerServiceP,
-      /** @type {Promise<{ zoeService: ZoeServiceFeePurseRequired, feeMintAccess:
-       * FeeMintAccess, feeCollectionPurse: FeePurse }>} */ (E(
-        vats.zoe,
-      ).buildZoe(vatAdminSvc, feeIssuerConfig, zoeFeesConfig, meteringConfig)),
+      /** @type {Promise<{ zoeService: ZoeService, feeMintAccess:
+       * FeeMintAccess }>} */ (E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        feeIssuerConfig,
+      )),
       E(vats.priceAuthority).makePriceAuthority(),
       E(vats.walletManager).buildWalletManager(vatAdminSvc),
     ]);
-
-    const zoeWUnlimitedPurse = E(zoe).bindDefaultFeePurse(feeCollectionPurse);
 
     const {
       nameHub: agoricNames,
@@ -170,7 +148,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           chainTimerService,
           nameAdmins,
           priceAuthority,
-          zoeWPurse: zoeWUnlimitedPurse,
+          zoeWPurse: zoe,
           bootstrapPaymentValue,
           feeMintAccess,
         }),
@@ -179,7 +157,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           board,
           nameAdmins,
           namesByAddress,
-          zoeWPurse: zoeWUnlimitedPurse,
+          zoeWPurse: zoe,
         }),
       ]);
       return treasuryInstallResults;
@@ -290,7 +268,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       // Only distribute fees if there is a collector.
       E(vats.distributeFees)
         .buildDistributor(
-          E(vats.distributeFees).makeFeeCollector(zoeWUnlimitedPurse, [
+          E(vats.distributeFees).makeFeeCollector(zoe, [
             treasuryCreator,
             ammFacets.ammCreatorFacet,
           ]),
@@ -474,7 +452,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             give: { Secondary: secondaryAmount, Central: centralAmount },
           });
 
-          E(zoeWUnlimitedPurse).offer(
+          E(zoe).offer(
             E(ammFacets.ammPublicFacet).makeAddLiquidityInvitation(),
             proposal,
             harden({
@@ -518,7 +496,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     const [ammPublicFacet, pegasus] = await Promise.all(
       [ammInstance, pegasusInstance].map(instance =>
-        E(zoeWUnlimitedPurse).getPublicFacet(instance),
+        E(zoe).getPublicFacet(instance),
       ),
     );
     await addAllCollateral();
@@ -728,16 +706,10 @@ export function buildRootObject(vatPowers, vatParameters) {
           }),
         );
 
-        const userFeePurse = await E(zoe).makeFeePurse();
-        const zoeWUserFeePurse = await E(zoe).bindDefaultFeePurse(userFeePurse);
-
         const faucet = Far('faucet', {
           // A method to reap the spoils of our on-chain provisioning.
           async tapFaucet() {
             return faucetPaymentInfo;
-          },
-          getFeePurse() {
-            return userFeePurse;
           },
         });
 
@@ -760,11 +732,10 @@ export function buildRootObject(vatPowers, vatParameters) {
         const makeChainWallet = () =>
           E(walletManager).makeWallet({
             bank,
-            feePurse: userFeePurse,
             agoricNames,
             namesByAddress,
             myAddressNameAdmin,
-            zoe: zoeWUserFeePurse,
+            zoe,
             board,
             timerDevice,
             timerDeviceScale: CHAIN_TIMER_DEVICE_SCALE,
@@ -806,7 +777,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           namesByAddress,
           priceAuthority,
           board,
-          zoe: zoeWUserFeePurse,
+          zoe,
         });
 
         return bundle;

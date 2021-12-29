@@ -80,14 +80,6 @@
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
- * @property {TransferFeeToCreator} transferFeeToCreator
- */
-
-/**
- * @callback TransferFeeToCreator
- * @param {ERef<FeePurse>} userFeePurse
- * @param {Amount} fee
- * @returns {Promise<Amount>}
  */
 
 /**
@@ -107,8 +99,6 @@
  * @param {InvitationHandle} invitationHandle
  * @param {string} description
  * @param {Record<string, any>=} customProperties
- * @param {FeeChoice=} relativeFee
- * @param {ExpiryChoice=} relativeExpiry
  * @returns {Payment}
  */
 
@@ -201,7 +191,6 @@
  * @param {InstanceRecord} instanceRecordFromZoe
  * @param {IssuerRecords} issuerStorageFromZoe
  * @param {Object=} privateArgs
- * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<ExecuteContractResult>}
  */
 

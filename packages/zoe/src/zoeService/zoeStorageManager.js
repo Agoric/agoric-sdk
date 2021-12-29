@@ -28,13 +28,13 @@ import { makeInstallationStorage } from './installationStorage.js';
  * ZCF Vat
  * @param {GetFeeIssuerKit} getFeeIssuerKit
  * @param {ShutdownWithFailure} shutdownZoeVat
- * @param {ChargeZoeFee} chargeZoeFee
- * @param {Amount} getPublicFacetFeeAmount
- * @param {Amount} installFeeAmount
+ * @param {'poison'} _chargeZoeFee
+ * @param {'poison'} _getPublicFacetFeeAmount
+ * @param {'poison'} _installFeeAmount
  * @param {'poison'} _chargeForComputrons
- * @param {ERef<TimerService> | undefined} timeAuthority
- * @param {TranslateFee} translateFee
- * @param {TranslateExpiry} translateExpiry
+ * @param {'poison'} _timeAuthority
+ * @param {'poison'} _translateFee
+ * @param {'poison'} _translateExpiry
  * @param {Issuer} feeIssuer
  * @param {Brand} feeBrand
  * @returns {ZoeStorageManager}
@@ -43,13 +43,13 @@ export const makeZoeStorageManager = (
   createZCFVat,
   getFeeIssuerKit,
   shutdownZoeVat,
-  chargeZoeFee,
-  getPublicFacetFeeAmount,
-  installFeeAmount,
+  _chargeZoeFee,
+  _getPublicFacetFeeAmount,
+  _installFeeAmount,
   _chargeForComputrons,
-  timeAuthority,
-  translateFee,
-  translateExpiry,
+  _timeAuthority,
+  _translateFee,
+  _translateExpiry,
   feeIssuer,
   feeBrand,
 ) => {
@@ -77,9 +77,6 @@ export const makeZoeStorageManager = (
   // contains the mint capability for invitations.
   const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
     shutdownZoeVat,
-    timeAuthority,
-    translateFee,
-    translateExpiry,
   );
 
   // Every new instance of a contract creates a corresponding
@@ -95,15 +92,12 @@ export const makeZoeStorageManager = (
     getInstanceAdmin,
     initInstanceAdmin,
     deleteInstanceAdmin,
-  } = makeInstanceAdminStorage(chargeZoeFee, getPublicFacetFeeAmount);
+  } = makeInstanceAdminStorage();
 
   // Zoe stores "installations" - identifiable bundles of contract
   // code that can be reused again and again to create new contract
   // instances
-  const { install, unwrapInstallation } = makeInstallationStorage(
-    chargeZoeFee,
-    installFeeAmount,
-  );
+  const { install, unwrapInstallation } = makeInstallationStorage();
 
   /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (

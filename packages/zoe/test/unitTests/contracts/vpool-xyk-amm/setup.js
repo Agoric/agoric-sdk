@@ -36,13 +36,9 @@ const voteCounterBundleP = makeBundle(voteCounterRoot);
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const {
-    zoeService: nonFarZoeService,
-    feeMintAccess: nonFarFeeMintAccess,
-  } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
-  const feePurse = E(nonFarZoeService).makeFeePurse();
-
-  const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+    makeFakeVatAdmin(() => {}).admin,
+  );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
   const feeMintAccess = await makeFar(nonFarFeeMintAccess);

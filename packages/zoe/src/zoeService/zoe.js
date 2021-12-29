@@ -15,10 +15,9 @@ import '@agoric/store/exported.js';
 import '../../exported.js';
 import '../internal-types.js';
 
-import { AmountMath, AssetKind } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { E } from '@agoric/eventual-send';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -26,10 +25,6 @@ import { makeOffer } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
-import { bindDefaultFeePurse, setupMakeFeePurse } from './feePurse.js';
-import { HIGH_FEE, LONG_EXP, LOW_FEE, SHORT_EXP } from '../constants.js';
-
-const { details: X } = assert;
 
 /**
  * Create an instance of Zoe.
@@ -40,14 +35,12 @@ const { details: X } = assert;
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {ZoeFeesConfig} zoeFeesConfig
+ * @param {'poison'} _zoeFeesConfig
  * @param {'poison'} _meteringConfig
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {{
  *   zoeService: ZoeService,
  *   feeMintAccess: FeeMintAccess,
- *   initialFeeFunds: Payment,
- *   feeCollectionPurse: Purse,
  * }}
  */
 const makeZoeKit = (
@@ -59,17 +52,7 @@ const makeZoeKit = (
     displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
     initialFunds: 0n,
   },
-  zoeFeesConfig = {
-    getPublicFacetFee: 0n,
-    installFee: 0n,
-    startInstanceFee: 0n,
-    offerFee: 0n,
-    timeAuthority: undefined,
-    lowFee: 500_000n,
-    highFee: 10_000_000n,
-    shortExp: 1000n * 60n * 5n, // 5 min in milliseconds
-    longExp: 1000n * 60n * 60n * 24n * 1n, // 1 day in milliseconds
-  },
+  _zoeFeesConfig = 'poison',
   _meteringConfig = 'poison',
   zcfBundleName = undefined,
 ) => {
@@ -78,39 +61,9 @@ const makeZoeKit = (
   /** @type {PromiseRecord<ZoeService>} */
   const zoeServicePromiseKit = makePromiseKit();
 
-  const {
-    feeMintAccess,
-    getFeeIssuerKit,
-    feeIssuer,
-    feeBrand,
-    initialFeeFunds,
-  } = createFeeMint(feeIssuerConfig, shutdownZoeVat);
-
-  // The initial funds should be enough to pay for launching the
-  // Agoric economy.
-  assert(
-    AmountMath.isGTE(
-      AmountMath.make(feeBrand, feeIssuerConfig.initialFunds),
-      AmountMath.add(
-        AmountMath.make(feeBrand, zoeFeesConfig.installFee),
-        AmountMath.make(feeBrand, zoeFeesConfig.startInstanceFee),
-      ),
-    ),
-  );
-
-  const getPublicFacetFeeAmount = AmountMath.make(
-    feeBrand,
-    zoeFeesConfig.getPublicFacetFee,
-  );
-  const installFeeAmount = AmountMath.make(feeBrand, zoeFeesConfig.installFee);
-  const startInstanceFeeAmount = AmountMath.make(
-    feeBrand,
-    zoeFeesConfig.startInstanceFee,
-  );
-  const offerFeeAmount = AmountMath.make(feeBrand, zoeFeesConfig.offerFee);
-
-  const { makeFeePurse, chargeZoeFee, feeCollectionPurse } = setupMakeFeePurse(
-    feeIssuer,
+  const { feeMintAccess, getFeeIssuerKit, feeIssuer, feeBrand } = createFeeMint(
+    feeIssuerConfig,
+    shutdownZoeVat,
   );
 
   // This method contains the power to create a new ZCF Vat, and must
@@ -122,35 +75,6 @@ const makeZoeKit = (
     'poison',
     zcfBundleName,
   );
-
-  /** @type {TranslateFee} */
-  const translateFee = relativeFee => {
-    if (!relativeFee) {
-      return undefined;
-    }
-    if (relativeFee === LOW_FEE) {
-      return AmountMath.make(feeBrand, zoeFeesConfig.lowFee);
-    } else if (relativeFee === HIGH_FEE) {
-      return AmountMath.make(feeBrand, zoeFeesConfig.highFee);
-    }
-    assert.fail(X`relativeFee ${relativeFee} was not recognized`);
-  };
-
-  /** @type {TranslateExpiry} */
-  const translateExpiry = async relativeExpiry => {
-    if (!zoeFeesConfig.timeAuthority || !relativeExpiry) {
-      return undefined;
-    }
-    const currentTime = await E(
-      zoeFeesConfig.timeAuthority,
-    ).getCurrentTimestamp();
-    if (relativeExpiry === SHORT_EXP) {
-      return currentTime + zoeFeesConfig.shortExp;
-    } else if (relativeExpiry === LONG_EXP) {
-      return currentTime + zoeFeesConfig.longExp;
-    }
-    assert.fail(X`relativeExpiry ${relativeExpiry} was not recognized`);
-  };
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
@@ -171,13 +95,13 @@ const makeZoeKit = (
     createZCFVat,
     getFeeIssuerKit,
     shutdownZoeVat,
-    chargeZoeFee,
-    getPublicFacetFeeAmount,
-    installFeeAmount,
     'poison',
-    zoeFeesConfig.timeAuthority,
-    translateFee,
-    translateExpiry,
+    'poison',
+    'poison',
+    'poison',
+    'poison',
+    'poison',
+    'poison',
     feeIssuer,
     feeBrand,
   );
@@ -187,8 +111,6 @@ const makeZoeKit = (
     zoeServicePromiseKit.promise,
     makeZoeInstanceStorageManager,
     unwrapInstallation,
-    chargeZoeFee,
-    startInstanceFeeAmount,
   );
 
   // Pass the capabilities necessary to create E(zoe).offer
@@ -197,9 +119,6 @@ const makeZoeKit = (
     getInstanceAdmin,
     depositPayments,
     getAssetKindByBrand,
-    chargeZoeFee,
-    offerFeeAmount,
-    zoeFeesConfig.timeAuthority,
   );
 
   // Make the methods that allow users to easily and credibly get
@@ -213,18 +132,14 @@ const makeZoeKit = (
   const getConfiguration = () => {
     return harden({
       feeIssuerConfig,
-      zoeFeesConfig,
     });
   };
 
-  /** @type {ZoeServiceFeePurseRequired} */
-  const zoeService = Far('zoeServiceFeePurseRequired', {
+  /** @type {ZoeService} */
+  const zoeService = Far('zoeService', {
     install,
     startInstance,
     offer,
-    makeFeePurse: async () => makeFeePurse(),
-    bindDefaultFeePurse: defaultFeePurse =>
-      bindDefaultFeePurse(zoeService, defaultFeePurse),
     getPublicFacet,
 
     // The functions below are getters only and have no impact on
@@ -249,8 +164,6 @@ const makeZoeKit = (
   return harden({
     zoeService,
     feeMintAccess,
-    initialFeeFunds,
-    feeCollectionPurse,
   });
 };
 

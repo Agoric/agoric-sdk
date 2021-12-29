@@ -249,9 +249,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 test('zoe - secondPriceAuction - alice tries to exit', async t => {
   t.plan(12);
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1n));
@@ -405,9 +403,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
 test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   t.plan(10);
   const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1n));

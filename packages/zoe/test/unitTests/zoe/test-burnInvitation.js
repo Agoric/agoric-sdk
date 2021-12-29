@@ -24,8 +24,6 @@ test('burnInvitation', async t => {
   t.deepEqual(await burnInvitation(mockInvitationKit.issuer, invitation), {
     instanceHandle,
     invitationHandle,
-    fee: undefined,
-    expiry: undefined,
   });
 });
 
@@ -55,8 +53,6 @@ test('burnInvitation - invitation already used', async t => {
   t.deepEqual(await burnInvitation(mockInvitationKit.issuer, invitation), {
     instanceHandle,
     invitationHandle,
-    fee: undefined,
-    expiry: undefined,
   });
 
   await t.throwsAsync(

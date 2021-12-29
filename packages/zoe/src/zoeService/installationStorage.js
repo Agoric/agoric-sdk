@@ -5,10 +5,9 @@ import { Far } from '@agoric/marshal';
 import { E } from '@agoric/eventual-send';
 
 /**
- * @param {ChargeZoeFee} chargeZoeFee
- * @param {Amount} installFeeAmount
+ *
  */
-export const makeInstallationStorage = (chargeZoeFee, installFeeAmount) => {
+export const makeInstallationStorage = () => {
   /** @type {WeakSet<Installation>} */
   const installations = new WeakSet();
 
@@ -16,10 +15,9 @@ export const makeInstallationStorage = (chargeZoeFee, installFeeAmount) => {
    * Create an installation by permanently storing the bundle. It will be
    * evaluated each time it is used to make a new instance of a contract.
    */
-  /** @type {InstallFeePurseRequired} */
-  const install = async (bundle, feePurse) => {
+  /** @type {Install} */
+  const install = async bundle => {
     assert.typeof(bundle, 'object', X`a bundle must be provided`);
-    await chargeZoeFee(feePurse, installFeeAmount);
     /** @type {Installation} */
     const installation = Far('Installation', {
       getBundle: () => bundle,

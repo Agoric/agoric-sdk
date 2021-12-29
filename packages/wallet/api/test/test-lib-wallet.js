@@ -45,9 +45,7 @@ async function setupTest() {
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   // Create AutomaticRefund instance
@@ -335,9 +333,6 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         handle: inviteHandle2,
         instance,
         installation,
-        fee: undefined,
-        expiry: undefined,
-        zoeTimeAuthority: undefined,
       },
     ],
     `a single invite in zoe purse`,
@@ -370,7 +365,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       ],
       currentAmountSlots: {
         body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","expiry":{"@qclass":"undefined"},"fee":{"@qclass":"undefined"},"handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3},"zoeTimeAuthority":{"@qclass":"undefined"}}]}',
+          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
@@ -456,7 +451,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       ],
       currentAmountSlots: {
         body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","expiry":{"@qclass":"undefined"},"fee":{"@qclass":"undefined"},"handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3},"zoeTimeAuthority":{"@qclass":"undefined"}}]}',
+          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
@@ -553,9 +548,6 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         handle: inviteHandle2,
         instance,
         installation,
-        fee: undefined,
-        expiry: undefined,
-        zoeTimeAuthority: undefined,
       },
     ],
     `a single invite in zoe purse`,
@@ -594,7 +586,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       ],
       currentAmountSlots: {
         body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","expiry":{"@qclass":"undefined"},"fee":{"@qclass":"undefined"},"handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3},"zoeTimeAuthority":{"@qclass":"undefined"}}]}',
+          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
@@ -721,12 +713,9 @@ test('lib-wallet offer methods', async t => {
         rawId: '1588645041696',
         invitationDetails: {
           description: 'getRefund',
-          expiry: undefined,
-          fee: undefined,
           handle: inviteHandle,
           installation,
           instance,
-          zoeTimeAuthority: undefined,
         },
         inviteHandleBoardId: '727995140',
         instance,
@@ -1308,9 +1297,7 @@ test('addOffer offer.invitation', async t => {
 });
 
 test('addOffer makeContinuingInvitation', async t => {
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   // Create ContinuingInvitationExample instance
@@ -1394,9 +1381,7 @@ test('addOffer makeContinuingInvitation', async t => {
 });
 
 test('getZoe, getBoard', async t => {
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};
@@ -1416,9 +1401,7 @@ test('getZoe, getBoard', async t => {
 });
 
 test('stamps from dateNow', async t => {
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   const startDateMS = new Date(2020, 0, 1).valueOf();

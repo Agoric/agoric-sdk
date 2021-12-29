@@ -138,22 +138,3 @@
  * @param {FeeMintAccess} feeMintAccess
  * @returns {IssuerKit}
  */
-
-/**
- * @callback ChargeZoeFee
- * @param {ERef<Purse>} feePurse
- * @param {Amount} feeAmount
- * @returns {Promise<void>}
- */
-
-/**
- * @callback TranslateFee
- * @param {FeeChoice | undefined} relativeFee
- * @returns {Amount | undefined}
- */
-
-/**
- * @callback TranslateExpiry
- * @param {ExpiryChoice | undefined} relativeExpiry
- * @returns {Timestamp | undefined}
- */

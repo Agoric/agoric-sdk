@@ -39,8 +39,6 @@
  * Return an object with the instance, installation, description, invitation
  * handle, and any custom properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
- * @property {MakeFeePurse} makeFeePurse
- * @property {BindDefaultFeePurse} bindDefaultFeePurse
  * @property {GetConfiguration} getConfiguration
  */
 
@@ -55,44 +53,15 @@
  */
 
 /**
- * @typedef {Purse} FeePurse
- */
-
-/**
- * @callback MakeFeePurseInternal
- * @returns {FeePurse}
- */
-
-/**
- * @callback MakeFeePurse
- * @returns {Promise<FeePurse>}
- */
-
-/**
- * @callback BindDefaultFeePurse
- * @param {ERef<FeePurse>} defaultFeePurse
- * @returns {ZoeService}
- */
-
-/**
  * @callback GetConfiguration
  * @returns {{
  *   feeIssuerConfig: FeeIssuerConfig,
- *   zoeFeesConfig: ZoeFeesConfig,
  * }}
  */
 
 /**
  * @callback GetPublicFacet
  * @param {Instance} instance
- * @param {ERef<FeePurse>=} feePurse
- * @returns {Promise<Object>}
- */
-
-/**
- * @callback GetPublicFacetFeePurseRequired
- * @param {Instance} instance
- * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<Object>}
  */
 
@@ -145,17 +114,6 @@
  * registering it with Zoe. Returns an installation.
  *
  * @param {SourceBundle} bundle
- * @param {ERef<FeePurse>=} feePurse
- * @returns {Promise<Installation>}
- */
-
-/**
- * @callback InstallFeePurseRequired
- *
- * See Install for comments.
- *
- * @param {SourceBundle} bundle
- * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<Installation>}
  */
 
@@ -184,20 +142,6 @@
  * An optional configuration object
  * that can be used to pass in arguments that should not be in the
  * public terms
- * @param {ERef<FeePurse>=} feePurse
- * @returns {Promise<StartInstanceResult>}
- */
-
-/**
- * @callback StartInstanceFeePurseRequired
- *
- * See StartInstance for comments.
- *
- * @param {ERef<Installation>} installation
- * @param {IssuerKeywordRecord=} issuerKeywordRecord
- * @param {Object=} terms
- * @param {Object=} privateArgs
- * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<StartInstanceResult>}
  */
 
@@ -222,20 +166,6 @@
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} paymentKeywordRecord
  * @param {Object=} offerArgs
- * @param {ERef<FeePurse>=} feePurse
- * @returns {Promise<UserSeat>} seat
- */
-
-/**
- * @callback OfferFeePurseRequired
- *
- * See Offer for comments.
- *
- * @param {ERef<Invitation>} invitation
- * @param {Proposal=} proposal
- * @param {PaymentPKeywordRecord=} paymentKeywordRecord
- * @param {Object=} offerArgs
- * @param {ERef<FeePurse>} feePurse
  * @returns {Promise<UserSeat>} seat
  */
 
@@ -372,37 +302,6 @@
  */
 
 /**
- * @typedef {Object} ZoeServiceFeePurseRequired
- *
- * See ZoeService for further comments and explanation (not copied here).
- *
- * @property {GetInvitationIssuer} getInvitationIssuer
- * @property {InstallFeePurseRequired} install
- * @property {StartInstanceFeePurseRequired} startInstance
- * @property {OfferFeePurseRequired} offer
- * @property {GetPublicFacetFeePurseRequired} getPublicFacet
- * @property {GetIssuers} getIssuers
- * @property {GetBrands} getBrands
- * @property {GetTerms} getTerms
- * @property {GetInstallationForInstance} getInstallationForInstance
- * @property {GetInstance} getInstance
- * @property {GetInstallation} getInstallation
- * @property {GetInvitationDetails} getInvitationDetails
- * @property {GetFeeIssuer} getFeeIssuer
- * @property {MakeFeePurse} makeFeePurse
- * @property {BindDefaultFeePurse} bindDefaultFeePurse
- * @property {GetConfiguration} getConfiguration
- */
-
-/**
  * @typedef {Object} ZoeFeesConfig
  * @property {NatValue} getPublicFacetFee
- * @property {NatValue} installFee
- * @property {NatValue} startInstanceFee
- * @property {NatValue} offerFee
- * @property {ERef<TimerService> | undefined} timeAuthority
- * @property {bigint} highFee
- * @property {bigint} lowFee
- * @property {bigint} shortExp
- * @property {bigint} longExp
  */

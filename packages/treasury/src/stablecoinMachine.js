@@ -28,7 +28,6 @@ import {
   getAmountOut,
   getAmountIn,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { HIGH_FEE, LONG_EXP } from '@agoric/zoe/src/constants.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { sameStructure } from '@agoric/same-structure';
@@ -175,13 +174,7 @@ export const start = async (zcf, privateArgs) => {
       return mgr.makeLoanKit(seat);
     };
 
-    return zcf.makeInvitation(
-      makeLoanHook,
-      'MakeLoan',
-      undefined,
-      HIGH_FEE,
-      LONG_EXP,
-    );
+    return zcf.makeInvitation(makeLoanHook, 'MakeLoan', undefined);
   };
 
   const getCollaterals = async () => {

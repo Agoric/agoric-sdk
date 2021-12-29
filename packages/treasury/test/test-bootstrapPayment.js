@@ -56,12 +56,9 @@ const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
 
 const setUpZoeForTest = async setJig => {
   const { makeFar } = makeLoopback('zoeTest');
-  const {
-    zoeService: nonFarZoeService,
-    feeMintAccess: nonFarFeeMintAccess,
-  } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
-  const feePurse = E(nonFarZoeService).makeFeePurse();
-  const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+    makeFakeVatAdmin(setJig).admin,
+  );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
   const feeMintAccess = await makeFar(nonFarFeeMintAccess);

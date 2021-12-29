@@ -18,9 +18,7 @@ const root = `${dirname}/../minimalMakeKindContract.js`;
 
 test('makeKind non-swingset', async t => {
   const bundle = await bundleSource(root);
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const installation = await E(zoe).install(bundle);
   t.notThrows(() => makeKind());
   t.notThrows(() => makeVirtualScalarWeakMap());
