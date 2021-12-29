@@ -6,7 +6,6 @@ import { assert } from '@agoric/assert';
 
 import path from 'path';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 

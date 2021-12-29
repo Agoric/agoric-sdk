@@ -7,7 +7,6 @@ import { makeLoopback } from '@agoric/captp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '../../../../tools/fakeVatAdmin.js';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 import { makeAmmTerms } from '../../../../src/contracts/vpool-xyk-amm/params.js';

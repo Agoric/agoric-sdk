@@ -8,7 +8,6 @@ import path from 'path';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';

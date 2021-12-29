@@ -2,7 +2,6 @@
 
 import { Far } from '@agoric/marshal';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '@agoric/zoe';
 
 export function buildRootObject(vatPowers) {

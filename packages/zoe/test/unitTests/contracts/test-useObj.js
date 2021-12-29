@@ -6,7 +6,6 @@ import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 
-// noinspection ES6PreferShortImport
 import { E } from '@agoric/eventual-send';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';

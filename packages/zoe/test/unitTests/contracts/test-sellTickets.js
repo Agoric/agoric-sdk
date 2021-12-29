@@ -10,7 +10,6 @@ import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
 

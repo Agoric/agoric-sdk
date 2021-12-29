@@ -8,7 +8,6 @@ import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
-// noinspection ES6PreferShortImport
 import buildManualTimer from '../../../../tools/manualTimer.js';
 import {
   POOL_FEE_KEY,
