@@ -7,7 +7,6 @@ import { makeLoopback } from '@agoric/captp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '../../../../tools/fakeVatAdmin.js';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 import { makeAmmTerms } from '../../../../src/contracts/vpool-xyk-amm/params.js';
@@ -36,13 +35,9 @@ const voteCounterBundleP = makeBundle(voteCounterRoot);
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const {
-    zoeService: nonFarZoeService,
-    feeMintAccess: nonFarFeeMintAccess,
-  } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
-  const feePurse = E(nonFarZoeService).makeFeePurse();
-
-  const zoeService = await E(nonFarZoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+    makeFakeVatAdmin(() => {}).admin,
+  );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
   const feeMintAccess = await makeFar(nonFarFeeMintAccess);

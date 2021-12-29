@@ -27,9 +27,7 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   const setJig = jig => {
     instanceToZCF.set(jig.instance, jig.zcf);
   };
-  const { zoeService } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

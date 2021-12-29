@@ -393,9 +393,6 @@ test(`zoe.getInvitationDetails`, async t => {
     handle: details.handle,
     installation,
     instance,
-    fee: undefined,
-    expiry: undefined,
-    zoeTimeAuthority: undefined,
   });
 });
 
@@ -405,30 +402,6 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
     message: /A Zoe invitation is required, not "\[undefined\]"/,
   });
-});
-
-test(`zoe.makeFeePurse`, async t => {
-  const { zoe, zcf, feeMintAccess } = await setupZCFTest();
-
-  const feePurse = E(zoe).makeFeePurse();
-  const feeIssuer = E(zoe).getFeeIssuer();
-  const feeBrand = await E(feeIssuer).getBrand();
-
-  const zcfMint = await zcf.registerFeeMint('RUN', feeMintAccess);
-  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
-
-  const fee1000 = AmountMath.make(feeBrand, 1000n);
-  zcfMint.mintGains(harden({ Fee: fee1000 }), zcfSeat);
-
-  zcfSeat.exit();
-  const payment = await E(userSeat).getPayout('Fee');
-  await E(feePurse).deposit(payment);
-
-  t.true(AmountMath.isEqual(await E(feePurse).getCurrentAmount(), fee1000));
-
-  await E(feePurse).withdraw(fee1000);
-
-  t.true(AmountMath.isEmpty(await E(feePurse).getCurrentAmount()));
 });
 
 test(`zcf.registerFeeMint twice`, async t => {
@@ -462,28 +435,7 @@ test(`zoe.getConfiguration`, async t => {
         assetKind: 'nat',
         decimalPlaces: 6,
       },
-      initialFunds: 0n,
       name: 'RUN',
-    },
-    meteringConfig: {
-      incrementBy: 25000000n,
-      initial: 75000000n,
-      price: {
-        computronDenominator: 1n,
-        feeNumerator: 1n,
-      },
-      threshold: 25000000n,
-    },
-    zoeFeesConfig: {
-      getPublicFacetFee: 0n,
-      highFee: 10000000n,
-      installFee: 0n,
-      longExp: 86400000n,
-      lowFee: 500000n,
-      offerFee: 0n,
-      shortExp: 300000n,
-      startInstanceFee: 0n,
-      timeAuthority: undefined,
     },
   });
 });

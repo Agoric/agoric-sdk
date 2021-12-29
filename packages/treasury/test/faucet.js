@@ -2,7 +2,6 @@
 
 import { Far } from '@agoric/marshal';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport';
-import { LOW_FEE, SHORT_EXP } from '@agoric/zoe/src/constants';
 
 // A Faucet providing RUN so we can provide initial liquidity to the AMM so the
 // Treasury can reliably liquidate.
@@ -25,13 +24,7 @@ export async function start(zcf, privateArgs) {
       return `success ${runAmount.value}`;
     }
 
-    return zcf.makeInvitation(
-      faucetHook,
-      'provide RUN',
-      undefined,
-      LOW_FEE,
-      SHORT_EXP,
-    );
+    return zcf.makeInvitation(faucetHook, 'provide RUN');
   }
 
   const creatorFacet = Far('faucetInvitationMaker', { makeFaucetInvitation });

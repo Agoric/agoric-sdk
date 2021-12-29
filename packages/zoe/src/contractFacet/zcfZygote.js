@@ -30,7 +30,6 @@ export const makeZCFZygote = (
   zoeService,
   invitationIssuer,
   testJigSetter,
-  feePurse,
 ) => {
   /** @type {PromiseRecord<ZoeInstanceAdmin>} */
   const zoeInstanceAdminPromiseKit = makePromiseKit();
@@ -260,8 +259,6 @@ export const makeZCFZygote = (
       offerHandler = Far('default offer handler', () => {}),
       description,
       customProperties = harden({}),
-      relativeFee = undefined,
-      relativeExpiry = undefined,
     ) => {
       assert.typeof(
         description,
@@ -275,8 +272,6 @@ export const makeZCFZygote = (
         invitationHandle,
         description,
         customProperties,
-        relativeFee,
-        relativeExpiry,
       );
       return invitationP;
     },
@@ -295,7 +290,7 @@ export const makeZCFZygote = (
     makeEmptySeatKit,
 
     // The methods below are pure and have no side-effects //
-    getZoeService: () => E(zoeService).bindDefaultFeePurse(feePurse),
+    getZoeService: () => zoeService,
     getInvitationIssuer: () => invitationIssuer,
     getTerms,
     getBrandForIssuer,

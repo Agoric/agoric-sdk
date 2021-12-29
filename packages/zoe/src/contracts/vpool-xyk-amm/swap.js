@@ -3,7 +3,6 @@
 import { assertProposalShape } from '../../contractSupport/index.js';
 
 import '../../../exported.js';
-import { LOW_FEE, SHORT_EXP } from '../../constants.js';
 
 /**
  * @param {ContractFacet} zcf
@@ -40,22 +39,10 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
   };
 
   const makeSwapInInvitation = () =>
-    zcf.makeInvitation(
-      swapIn,
-      'autoswap swapIn',
-      undefined,
-      LOW_FEE,
-      SHORT_EXP,
-    );
+    zcf.makeInvitation(swapIn, 'autoswap swapIn');
 
   const makeSwapOutInvitation = () =>
-    zcf.makeInvitation(
-      swapOut,
-      'autoswap swapOut',
-      undefined,
-      LOW_FEE,
-      SHORT_EXP,
-    );
+    zcf.makeInvitation(swapOut, 'autoswap swapOut');
 
   return { makeSwapInInvitation, makeSwapOutInvitation };
 };

@@ -130,7 +130,7 @@ async function setupAmm(
  * @param {ERef<TimerService>} param0.chainTimerService
  * @param {Store<NameHub, NameAdmin>} param0.nameAdmins
  * @param {ERef<PriceAuthority>} param0.priceAuthority
- * @param {ERef<ZoeService>} param0.zoeWPurse
+ * @param {ERef<ZoeService>} param0.zoe
  * @param {Handle<'feeMintAccess'>} param0.feeMintAccess
  * @param {NatValue} param0.bootstrapPaymentValue
  * @param {NatValue} [param0.poolFee]
@@ -143,7 +143,7 @@ export async function installOnChain({
   chainTimerService,
   nameAdmins,
   priceAuthority,
-  zoeWPurse,
+  zoe,
   feeMintAccess,
   bootstrapPaymentValue,
   poolFee = DEFAULT_POOL_FEE,
@@ -185,7 +185,7 @@ export async function installOnChain({
   ] = await Promise.all(
     nameBundles.map(async ([name, bundle]) => {
       // Install the bundle in Zoe.
-      const install = await E(zoeWPurse).install(bundle);
+      const install = await E(zoe).install(bundle);
       // Advertise the installation in agoricNames.
       await E(installAdmin).update(name, install);
       // Return for variable assignment.
@@ -198,12 +198,12 @@ export async function installOnChain({
   const {
     creatorFacet: electorateCreatorFacet,
     instance: electorateInstance,
-  } = await E(zoeWPurse).startInstance(noActionElectorateInstall);
+  } = await E(zoe).startInstance(noActionElectorateInstall);
 
   const { amm } = await setupAmm(
     chainTimerService,
     electorateInstance,
-    zoeWPurse,
+    zoe,
     electorateCreatorFacet,
     ammInstall,
     contractGovernorInstall,
@@ -219,10 +219,10 @@ export async function installOnChain({
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
   const [initialPoserInvitation, invitationAmount] = await Promise.all([
     poserInvitationP,
-    E(E(zoeWPurse).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
-  const centralIssuerP = E(zoeWPurse).getFeeIssuer();
+  const centralIssuerP = E(zoe).getFeeIssuer();
   const [centralIssuer, centralBrand] = await Promise.all([
     centralIssuerP,
     E(centralIssuerP).getBrand(),
@@ -259,7 +259,7 @@ export async function installOnChain({
 
   const {
     creatorFacet: governorCreatorFacet,
-  } = await E(zoeWPurse).startInstance(
+  } = await E(zoe).startInstance(
     contractGovernorInstall,
     undefined,
     governorTerms,
@@ -275,8 +275,8 @@ export async function installOnChain({
     },
     treasuryCreator,
   ] = await Promise.all([
-    E(zoeWPurse).getInvitationIssuer(),
-    E(zoeWPurse).getTerms(treasuryInstance),
+    E(zoe).getInvitationIssuer(),
+    E(zoe).getTerms(treasuryInstance),
     E(governorCreatorFacet).getCreatorFacet()
   ]);
 

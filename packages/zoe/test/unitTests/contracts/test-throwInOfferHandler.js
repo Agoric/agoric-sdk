@@ -16,9 +16,7 @@ const dirname = path.dirname(filename);
 const contractRoot = `${dirname}/throwInOfferHandler.js`;
 
 test('throw in offerHandler', async t => {
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
