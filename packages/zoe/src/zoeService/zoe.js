@@ -153,6 +153,20 @@ const makeZoeKit = (
     getInstance,
     getInstallation,
     getInvitationDetails,
+    /**
+     * @deprecated Useless but provided during transition to keep old
+     * code from breaking.
+     */
+    makeFeePurse: async () =>
+      // @ts-ignore It is deprecated and useless, provided just for old
+      // code to feed into bindDefaultFeePurse, which ignores it.
+      Promise.resolve(harden({})),
+    /**
+     * @deprecated Useless but provided during transition to keep old
+     * code from breaking.
+     * @param {ERef<Purse>} _defaultFeePurse
+     */
+    bindDefaultFeePurse: _defaultFeePurse => zoeService,
     getConfiguration,
   });
 
