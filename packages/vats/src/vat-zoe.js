@@ -5,22 +5,15 @@ export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
     buildZoe: async (adminVat, feeIssuerConfig) => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      const {
-        zoeService,
-        initialFeeFunds,
-        feeMintAccess,
-        feeCollectionPurse,
-      } = makeZoeKit(
+      const { zoeService, feeMintAccess } = makeZoeKit(
         adminVat,
         shutdownZoeVat,
         feeIssuerConfig,
         vatParameters.zcfBundleName,
       );
-      await E(feeCollectionPurse).deposit(initialFeeFunds);
       return harden({
         zoeService,
         feeMintAccess,
-        feeCollectionPurse,
       });
     },
   });

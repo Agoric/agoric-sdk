@@ -124,6 +124,17 @@ const makeZoeKit = (
     install,
     startInstance,
     offer,
+    /**
+     * @deprecated Useless but provided during transition to keep old
+     * code from breaking.
+     */
+    makeFeePurse: async () => feeIssuer.makeEmptyPurse(),
+    /**
+     * @deprecated Useless but provided during transition to keep old
+     * code from breaking.
+     * @param {ERef<Purse>} _defaultFeePurse
+     */
+    bindDefaultFeePurse: _defaultFeePurse => zoeService,
     getPublicFacet,
 
     // The functions below are getters only and have no impact on
@@ -137,17 +148,6 @@ const makeZoeKit = (
     getInstance,
     getInstallation,
     getInvitationDetails,
-    /**
-     * @deprecated Useless but provided during transition to keep old
-     * code from breaking.
-     */
-    makeFeePurse: async () => Promise.resolve(harden({})),
-    /**
-     * @deprecated Useless but provided during transition to keep old
-     * code from breaking.
-     * @param {ERef<Purse>} _defaultFeePurse
-     */
-    bindDefaultFeePurse: _defaultFeePurse => zoeService,
     getConfiguration,
   });
 

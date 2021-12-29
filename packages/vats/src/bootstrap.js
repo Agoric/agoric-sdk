@@ -706,10 +706,15 @@ export function buildRootObject(vatPowers, vatParameters) {
           }),
         );
 
+        const userFeePurse = await E(zoe).makeFeePurse();
+
         const faucet = Far('faucet', {
           // A method to reap the spoils of our on-chain provisioning.
           async tapFaucet() {
             return faucetPaymentInfo;
+          },
+          getFeePurse() {
+            return userFeePurse;
           },
         });
 
