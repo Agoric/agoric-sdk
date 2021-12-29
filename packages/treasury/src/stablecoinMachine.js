@@ -174,7 +174,7 @@ export const start = async (zcf, privateArgs) => {
       return mgr.makeLoanKit(seat);
     };
 
-    return zcf.makeInvitation(makeLoanHook, 'MakeLoan', undefined);
+    return zcf.makeInvitation(makeLoanHook, 'MakeLoan');
   };
 
   const getCollaterals = async () => {

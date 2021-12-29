@@ -82,7 +82,6 @@ export function buildRootObject(vatPowers, vatParameters) {
       name: CENTRAL_ISSUER_NAME,
       assetKind: AssetKind.NAT,
       displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
-      initialFunds: 1_000_000_000_000_000_000n,
     };
     // Create singleton instances.
     const [
@@ -148,7 +147,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           chainTimerService,
           nameAdmins,
           priceAuthority,
-          zoeWPurse: zoe,
+          zoe,
           bootstrapPaymentValue,
           feeMintAccess,
         }),
@@ -157,7 +156,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           board,
           nameAdmins,
           namesByAddress,
-          zoeWPurse: zoe,
+          zoe,
         }),
       ]);
       return treasuryInstallResults;

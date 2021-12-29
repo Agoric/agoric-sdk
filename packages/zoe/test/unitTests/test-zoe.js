@@ -435,7 +435,6 @@ test(`zoe.getConfiguration`, async t => {
         assetKind: 'nat',
         decimalPlaces: 6,
       },
-      initialFunds: 0n,
       name: 'RUN',
     },
   });

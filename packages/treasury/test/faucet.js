@@ -24,7 +24,7 @@ export async function start(zcf, privateArgs) {
       return `success ${runAmount.value}`;
     }
 
-    return zcf.makeInvitation(faucetHook, 'provide RUN', undefined);
+    return zcf.makeInvitation(faucetHook, 'provide RUN');
   }
 
   const creatorFacet = Far('faucetInvitationMaker', { makeFaucetInvitation });

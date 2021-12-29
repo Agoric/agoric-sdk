@@ -39,10 +39,10 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
   };
 
   const makeSwapInInvitation = () =>
-    zcf.makeInvitation(swapIn, 'autoswap swapIn', undefined);
+    zcf.makeInvitation(swapIn, 'autoswap swapIn');
 
   const makeSwapOutInvitation = () =>
-    zcf.makeInvitation(swapOut, 'autoswap swapOut', undefined);
+    zcf.makeInvitation(swapOut, 'autoswap swapOut');
 
   return { makeSwapInInvitation, makeSwapOutInvitation };
 };

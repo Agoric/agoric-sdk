@@ -304,7 +304,6 @@
  * @property {string} name
  * @property {AssetKind} assetKind
  * @property {DisplayInfo} displayInfo
- * @property {Value} initialFunds
  */
 
 /**
