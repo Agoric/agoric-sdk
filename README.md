@@ -88,7 +88,7 @@ To run the unit tests of just a single package (e.g. `eventual-send`):
 
 ## Run the larger demo
 
-Visit https://agoric.com/documentation/ for getting started instructions.
+Visit [https://agoric.com/documentation/](https://agoric.com/documentation/getting-started/before-using-agoric.html) for getting started instructions.
 
 TL;DR:
 
