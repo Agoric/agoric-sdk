@@ -7,17 +7,10 @@ import zcfContractBundle from '../../bundles/bundle-contractFacet.js';
  * ZCF Vats can be created.
  *
  * @param {VatAdminSvc} vatAdminSvc
- * @param {'poison'} _initial
- * @param {'poison'} _threshold
  * @param {string=} zcfBundleName
  * @returns {CreateZCFVat}
  */
-export const setupCreateZCFVat = (
-  vatAdminSvc,
-  _initial,
-  _threshold,
-  zcfBundleName = undefined,
-) => {
+export const setupCreateZCFVat = (vatAdminSvc, zcfBundleName = undefined) => {
   /** @type {CreateZCFVat} */
   const createZCFVat = async () => {
     const rootAndAdminNodeP =

@@ -3,12 +3,7 @@ import { makeZoeKit } from '@agoric/zoe';
 
 export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
-    buildZoe: async (
-      adminVat,
-      feeIssuerConfig,
-      zoeFeesConfig,
-      meteringConfig,
-    ) => {
+    buildZoe: async (adminVat, feeIssuerConfig) => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
       const {
         zoeService,
@@ -19,8 +14,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         adminVat,
         shutdownZoeVat,
         feeIssuerConfig,
-        zoeFeesConfig,
-        meteringConfig,
         vatParameters.zcfBundleName,
       );
       await E(feeCollectionPurse).deposit(initialFeeFunds);

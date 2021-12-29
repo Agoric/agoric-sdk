@@ -35,8 +35,6 @@ import { createFeeMint } from './feeMint.js';
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {'poison'} _zoeFeesConfig
- * @param {'poison'} _meteringConfig
  * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {{
  *   zoeService: ZoeService,
@@ -52,8 +50,6 @@ const makeZoeKit = (
     displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
     initialFunds: 0n,
   },
-  _zoeFeesConfig = 'poison',
-  _meteringConfig = 'poison',
   zcfBundleName = undefined,
 ) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
@@ -69,12 +65,7 @@ const makeZoeKit = (
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
-  const createZCFVat = setupCreateZCFVat(
-    vatAdminSvc,
-    'poison',
-    'poison',
-    zcfBundleName,
-  );
+  const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfBundleName);
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
@@ -95,13 +86,6 @@ const makeZoeKit = (
     createZCFVat,
     getFeeIssuerKit,
     shutdownZoeVat,
-    'poison',
-    'poison',
-    'poison',
-    'poison',
-    'poison',
-    'poison',
-    'poison',
     feeIssuer,
     feeBrand,
   );
@@ -157,10 +141,7 @@ const makeZoeKit = (
      * @deprecated Useless but provided during transition to keep old
      * code from breaking.
      */
-    makeFeePurse: async () =>
-      // @ts-ignore It is deprecated and useless, provided just for old
-      // code to feed into bindDefaultFeePurse, which ignores it.
-      Promise.resolve(harden({})),
+    makeFeePurse: async () => Promise.resolve(harden({})),
     /**
      * @deprecated Useless but provided during transition to keep old
      * code from breaking.

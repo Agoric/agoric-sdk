@@ -28,13 +28,6 @@ import { makeInstallationStorage } from './installationStorage.js';
  * ZCF Vat
  * @param {GetFeeIssuerKit} getFeeIssuerKit
  * @param {ShutdownWithFailure} shutdownZoeVat
- * @param {'poison'} _chargeZoeFee
- * @param {'poison'} _getPublicFacetFeeAmount
- * @param {'poison'} _installFeeAmount
- * @param {'poison'} _chargeForComputrons
- * @param {'poison'} _timeAuthority
- * @param {'poison'} _translateFee
- * @param {'poison'} _translateExpiry
  * @param {Issuer} feeIssuer
  * @param {Brand} feeBrand
  * @returns {ZoeStorageManager}
@@ -43,13 +36,6 @@ export const makeZoeStorageManager = (
   createZCFVat,
   getFeeIssuerKit,
   shutdownZoeVat,
-  _chargeZoeFee,
-  _getPublicFacetFeeAmount,
-  _installFeeAmount,
-  _chargeForComputrons,
-  _timeAuthority,
-  _translateFee,
-  _translateExpiry,
   feeIssuer,
   feeBrand,
 ) => {
