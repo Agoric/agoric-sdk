@@ -39,7 +39,7 @@ const prepareSwapInTest = ({ inputReserve, outputReserve, inputValue }) => {
 
 const testInputGetPrice = (t, inputs, expectedOutput) => {
   const { args, bld } = prepareSwapInTest(inputs);
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   const result = pricesForStatedInput(...args);
   t.deepEqual(result.swapperGets, bld(expectedOutput));
 };
@@ -48,7 +48,7 @@ const getInputPriceThrows = (t, inputs, message) => {
   t.throws(
     _ => {
       const { args } = prepareSwapInTest(inputs);
-      // @ts-ignore
+      // @ts-ignore typescript doesn't like param list built by destructuring
       return pricesForStatedInput(...args);
     },
     {
@@ -87,14 +87,14 @@ const prepareSwapOutTest = ({ inputReserve, outputReserve, outputValue }) => {
 
 const testGetOutputPrice = (t, inputs, expectedInput) => {
   const { args, run } = prepareSwapOutTest(inputs);
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   const result = pricesForStatedOutput(...args);
   t.deepEqual(result.swapperGives, run(expectedInput));
 };
 
 const getOutputPriceThrows = (t, inputs, message) => {
   const { args } = prepareSwapOutTest(inputs);
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   t.throws(_ => pricesForStatedOutput(...args), {
     message,
   });

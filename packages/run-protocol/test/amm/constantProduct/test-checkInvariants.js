@@ -119,7 +119,7 @@ function checkGetOutput(t, args, result) {
 
 const testGetInputPrice = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   const result = pricesForStatedInput(...args);
   checkGetInput(t, args, result);
 };
@@ -128,7 +128,7 @@ const testGetInputPriceThrows = (t, inputs, message, runIn) => {
   t.throws(
     _ => {
       const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-      // @ts-ignore
+      // @ts-ignore typescript doesn't like param list built by destructuring
       return pricesForStatedInput(...args);
     },
     {
@@ -139,7 +139,7 @@ const testGetInputPriceThrows = (t, inputs, message, runIn) => {
 
 const testGetInputPriceNoTrade = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   const result = pricesForStatedInput(...args);
   t.truthy(AmountMath.isEmpty(result.swapperGets));
   t.truthy(AmountMath.isEmpty(result.swapperGives));
@@ -147,7 +147,7 @@ const testGetInputPriceNoTrade = (t, inputs, runIn) => {
 
 const testGetOutputPrice = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   const result = pricesForStatedOutput(...args);
   checkGetOutput(t, args, result);
 };
@@ -156,7 +156,7 @@ const getOutputPriceThrows = (t, inputs, message, runIn) => {
   t.throws(
     _ => {
       const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-      // @ts-ignore
+      // @ts-ignore typescript doesn't like param list built by destructuring
       return pricesForStatedOutput(...args);
     },
     {
@@ -167,7 +167,7 @@ const getOutputPriceThrows = (t, inputs, message, runIn) => {
 
 const testGetOutputPriceNoTrade = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   const result = pricesForStatedOutput(...args);
   t.truthy(AmountMath.isEmpty(result.swapperGets));
   t.truthy(AmountMath.isEmpty(result.swapperGives));

@@ -47,7 +47,7 @@ test('pricesForStatedInput  README example', async t => {
   const protocolFeeRatio = makeRatio(5n, moolaKit.brand, BASIS_POINTS);
   const poolFeeRatio = makeRatio(25n, bucksKit.brand, BASIS_POINTS);
 
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   const noFeesResult = swapInNoFees({ amountGiven, poolAllocation });
   t.deepEqual(noFeesResult.amountIn, moola(29996n));
   t.deepEqual(noFeesResult.amountOut, bucks(2248n));

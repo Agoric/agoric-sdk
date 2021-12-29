@@ -51,7 +51,7 @@ const prepareSwapInTest = ({
 
 const testGetPrice = (t, inputs, expectedOutput) => {
   const { args, run, bld } = prepareSwapInTest(inputs);
-  // @ts-ignore
+  // @ts-ignore typescript doesn't like param list built by destructuring
   const result = pricesForStatedInput(...args);
   const expected = harden({
     protocolFee: run(expectedOutput.protocolFee),
