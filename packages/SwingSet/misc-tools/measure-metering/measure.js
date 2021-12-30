@@ -47,7 +47,6 @@ async function run() {
   const bootFn = new URL('measurement-bootstrap.js', import.meta.url).pathname;
   const targetFn = new URL('measurement-target.js', import.meta.url).pathname;
   const zoeFn = new URL('measurement-zoe.js', import.meta.url).pathname;
-  // const treasuryFn = new URL('measurement-zoe.js', import.meta.url).pathname;
   const autoswapFn = new URL(
     '../../../zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js',
     import.meta.url,
@@ -134,8 +133,8 @@ async function run() {
     const counted = p.counted();
     return Number(counted);
   }
-  const zoeInstallTreasury = await doCounted('zoeInstallTreasury');
-  console.log(`zoe install (treasury): ${zoeInstallTreasury}`);
+  const zoeInstallVaultFactory = await doCounted('zoeInstallVaultFactory');
+  console.log(`zoe install (vaultFactory): ${zoeInstallVaultFactory}`);
 
   const zoeInstallAMM = await doCounted('zoeInstallBundle', [autoswapBundle]);
   console.log(`zoe install (AMM): ${zoeInstallAMM}`);

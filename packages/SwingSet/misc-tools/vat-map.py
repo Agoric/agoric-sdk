@@ -9,7 +9,7 @@ from pprint import pprint
 # description on each vat. Static vats get a name from their bundle, e.g.
 # "bank" or "mints" or "zoe". Dynamic contract vats find the agoric-sdk
 # -relative filename of the entry point of the contract, e.g.
-# "packages/treasury/src/stablecointMachine.js", and emit an abbreviation
+# "packages/run-protocol/src/vaultFactory/vaultFactory.js", and emit an abbreviation
 # (for known contracts) or the full string.
 
 unknown_vats = set() # vatID
@@ -17,10 +17,10 @@ vats = {} # vatID -> { name, managerType, cranks }
 unnamed_zcf_vats = set()
 
 abbreviations = {
-    "packages/treasury/src/stablecoinMachine.js": "treasury",
+    "packages/run-protocol/src/vaultFactory/vaultFactory.js": "vaultFactory",
     "packages/pegasus/src/pegasus.js": "pegasus",
     "packages/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap.js": "amm",
-    "packages/treasury/src/liquidateMinimum.js": "liquidate",
+    "packages/run-protocol/src/vaultFactory/liquidateMinimum.js": "liquidate",
     }
 
 EPRE = re.compile(r'const entrypoint = "([^"]+)"')

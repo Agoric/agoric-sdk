@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies,no-unused-vars,no-empty-function */
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
-import stablecoinBundle from '@agoric/treasury/bundles/bundle-stablecoinMachine.js';
+import vaultFactoryBundle from '@agoric/run-protocol/bundles/bundle-vaultFactory.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 export function buildRootObject() {
@@ -30,8 +30,8 @@ export function buildRootObject() {
       return Number(start.remaining - finish.remaining);
     },
 
-    async zoeInstallTreasury() {
-      installation = await E(zoe).install(stablecoinBundle);
+    async zoeInstallVaultFactory() {
+      installation = await E(zoe).install(vaultFactoryBundle);
     },
     async zoeInstallBundle(bundle) {
       installation = await E(zoe).install(bundle);
