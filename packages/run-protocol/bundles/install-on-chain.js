@@ -276,7 +276,7 @@ export async function installOnChain({
     vaultFactoryCreator,
   ] = await Promise.all([
     E(zoe).getInvitationIssuer(),
-    E(zoe).getTerms(treasuryInstance),
+    E(zoe).getTerms(vaultFactoryInstance),
     E(governorCreatorFacet).getCreatorFacet()
   ]);
 
