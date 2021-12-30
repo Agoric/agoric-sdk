@@ -13,7 +13,6 @@ import { makeEscrowStorage } from './escrowStorage.js';
 import { createInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
-import { refillMeter } from './refillMeter.js';
 
 /**
  * The Zoe Storage Manager encapsulates and composes important
@@ -29,13 +28,6 @@ import { refillMeter } from './refillMeter.js';
  * ZCF Vat
  * @param {GetFeeIssuerKit} getFeeIssuerKit
  * @param {ShutdownWithFailure} shutdownZoeVat
- * @param {ChargeZoeFee} chargeZoeFee
- * @param {Amount} getPublicFacetFeeAmount
- * @param {Amount} installFeeAmount
- * @param {ChargeForComputrons} chargeForComputrons
- * @param {ERef<TimerService> | undefined} timeAuthority
- * @param {TranslateFee} translateFee
- * @param {TranslateExpiry} translateExpiry
  * @param {Issuer} feeIssuer
  * @param {Brand} feeBrand
  * @returns {ZoeStorageManager}
@@ -44,13 +36,6 @@ export const makeZoeStorageManager = (
   createZCFVat,
   getFeeIssuerKit,
   shutdownZoeVat,
-  chargeZoeFee,
-  getPublicFacetFeeAmount,
-  installFeeAmount,
-  chargeForComputrons,
-  timeAuthority,
-  translateFee,
-  translateExpiry,
   feeIssuer,
   feeBrand,
 ) => {
@@ -78,9 +63,6 @@ export const makeZoeStorageManager = (
   // contains the mint capability for invitations.
   const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
     shutdownZoeVat,
-    timeAuthority,
-    translateFee,
-    translateExpiry,
   );
 
   // Every new instance of a contract creates a corresponding
@@ -96,15 +78,12 @@ export const makeZoeStorageManager = (
     getInstanceAdmin,
     initInstanceAdmin,
     deleteInstanceAdmin,
-  } = makeInstanceAdminStorage(chargeZoeFee, getPublicFacetFeeAmount);
+  } = makeInstanceAdminStorage();
 
   // Zoe stores "installations" - identifiable bundles of contract
   // code that can be reused again and again to create new contract
   // instances
-  const { install, unwrapInstallation } = makeInstallationStorage(
-    chargeZoeFee,
-    installFeeAmount,
-  );
+  const { install, unwrapInstallation } = makeInstallationStorage();
 
   /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
@@ -112,7 +91,6 @@ export const makeZoeStorageManager = (
     customTerms,
     uncleanIssuerKeywordRecord,
     instance,
-    feePurse,
   ) => {
     // Clean the issuerKeywordRecord we receive in `startInstance`
     // from the user, and save the issuers in Zoe if they are not
@@ -232,9 +210,7 @@ export const makeZoeStorageManager = (
 
     const makeInvitation = setupMakeInvitation(instance, installation);
 
-    const { root, adminNode, meter } = await createZCFVat();
-
-    refillMeter(meter, chargeForComputrons, feePurse);
+    const { root, adminNode } = await createZCFVat();
 
     return harden({
       getTerms: instanceRecordManager.getTerms,

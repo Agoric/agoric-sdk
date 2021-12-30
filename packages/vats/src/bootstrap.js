@@ -7,7 +7,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { E, Far } from '@agoric/far';
 import { makeStore } from '@agoric/store';
-import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain.js';
+import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain.js';
 
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
@@ -82,36 +82,14 @@ export function buildRootObject(vatPowers, vatParameters) {
       name: CENTRAL_ISSUER_NAME,
       assetKind: AssetKind.NAT,
       displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
-      initialFunds: 1_000_000_000_000_000_000n,
     };
-    const zoeFeesConfig = {
-      getPublicFacetFee: 50n,
-      installFee: 65_000n,
-      startInstanceFee: 5_000_000n,
-      offerFee: 65_000n,
-      timeAuthority: chainTimerServiceP,
-      lowFee: 500_000n,
-      highFee: 5_000_000n,
-      shortExp: 1000n * 60n * 5n, // 5 min in milliseconds
-      longExp: 1000n * 60n * 60n * 24n * 1n, // 1 day in milliseconds
-    };
-    const meteringConfig = {
-      incrementBy: 25_000_000n,
-      initial: 50_000_000n,
-      threshold: 25_000_000n,
-      price: {
-        feeNumerator: 1n,
-        computronDenominator: 1n, // default is just one-to-one
-      },
-    };
-
     // Create singleton instances.
     const [
       bankManager,
       sharingService,
       board,
       chainTimerService,
-      { zoeService: zoe, feeMintAccess, feeCollectionPurse },
+      { zoeService: zoe, feeMintAccess },
       { priceAuthority, adminFacet: priceAuthorityAdmin },
       walletManager,
     ] = await Promise.all([
@@ -119,15 +97,14 @@ export function buildRootObject(vatPowers, vatParameters) {
       E(vats.sharing).getSharingService(),
       E(vats.board).getBoard(),
       chainTimerServiceP,
-      /** @type {Promise<{ zoeService: ZoeServiceFeePurseRequired, feeMintAccess:
-       * FeeMintAccess, feeCollectionPurse: FeePurse }>} */ (E(
-        vats.zoe,
-      ).buildZoe(vatAdminSvc, feeIssuerConfig, zoeFeesConfig, meteringConfig)),
+      /** @type {Promise<{ zoeService: ZoeService, feeMintAccess:
+       * FeeMintAccess }>} */ (E(vats.zoe).buildZoe(
+        vatAdminSvc,
+        feeIssuerConfig,
+      )),
       E(vats.priceAuthority).makePriceAuthority(),
       E(vats.walletManager).buildWalletManager(vatAdminSvc),
     ]);
-
-    const zoeWUnlimitedPurse = E(zoe).bindDefaultFeePurse(feeCollectionPurse);
 
     const {
       nameHub: agoricNames,
@@ -155,22 +132,22 @@ export function buildRootObject(vatPowers, vatParameters) {
             nameAdmins.init(nameHub, nameAdmin);
             if (nm === 'uiConfig') {
               // Reserve the Treasury's config until we've populated it.
-              nameAdmin.reserve('Treasury');
+              nameAdmin.reserve('vaultFactory');
             }
           },
         ),
       );
 
       // Install the economy, giving the components access to the name admins we made.
-      const [treasuryInstallResults] = await Promise.all([
-        installTreasuryOnChain({
+      const [vaultFactoryInstallResults] = await Promise.all([
+        installVaultFactoryOnChain({
           agoricNames,
           board,
           centralName: CENTRAL_ISSUER_NAME,
           chainTimerService,
           nameAdmins,
           priceAuthority,
-          zoeWPurse: zoeWUnlimitedPurse,
+          zoe,
           bootstrapPaymentValue,
           feeMintAccess,
         }),
@@ -179,10 +156,10 @@ export function buildRootObject(vatPowers, vatParameters) {
           board,
           nameAdmins,
           namesByAddress,
-          zoeWPurse: zoeWUnlimitedPurse,
+          zoe,
         }),
       ]);
-      return treasuryInstallResults;
+      return vaultFactoryInstallResults;
     }
 
     const demoIssuers = demoIssuerEntries(noFakeCurrencies);
@@ -252,13 +229,15 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     // Now we can bootstrap the economy!
     const bankBootstrapSupply = Nat(BigInt(centralBootstrapSupply.amount));
-    // Ask the treasury for enough RUN to fund both AMM and bank.
+    // Ask the vaultFactory for enough RUN to fund both AMM and bank.
     const bootstrapPaymentValue = bankBootstrapSupply + ammDepositValue;
     // NOTE: no use of the voteCreator. We'll need it to initiate votes on
-    // changing Treasury parameters.
-    const { treasuryCreator, _voteCreator, ammFacets } = await installEconomy(
-      bootstrapPaymentValue,
-    );
+    // changing VaultFactory parameters.
+    const {
+      vaultFactoryCreator,
+      _voteCreator,
+      ammFacets,
+    } = await installEconomy(bootstrapPaymentValue);
 
     const [
       centralIssuer,
@@ -290,8 +269,8 @@ export function buildRootObject(vatPowers, vatParameters) {
       // Only distribute fees if there is a collector.
       E(vats.distributeFees)
         .buildDistributor(
-          E(vats.distributeFees).makeFeeCollector(zoeWUnlimitedPurse, [
-            treasuryCreator,
+          E(vats.distributeFees).makeFeeCollector(zoe, [
+            vaultFactoryCreator,
             ammFacets.ammCreatorFacet,
           ]),
           feeCollectorDepositFacet,
@@ -309,7 +288,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     /* Prime the bank vat with our bootstrap payment. */
     const centralBootstrapPayment = await E(
-      treasuryCreator,
+      vaultFactoryCreator,
     ).getBootstrapPayment(AmountMath.make(centralBrand, bootstrapPaymentValue));
 
     const [ammBootstrapPayment, bankBootstrapPayment] = await E(
@@ -474,7 +453,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             give: { Secondary: secondaryAmount, Central: centralAmount },
           });
 
-          E(zoeWUnlimitedPurse).offer(
+          E(zoe).offer(
             E(ammFacets.ammPublicFacet).makeAddLiquidityInvitation(),
             proposal,
             harden({
@@ -483,7 +462,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             }),
           );
 
-          return E(treasuryCreator).addVaultType(
+          return E(vaultFactoryCreator).addVaultType(
             record.issuer,
             config.keyword,
             rates,
@@ -518,7 +497,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     const [ammPublicFacet, pegasus] = await Promise.all(
       [ammInstance, pegasusInstance].map(instance =>
-        E(zoeWUnlimitedPurse).getPublicFacet(instance),
+        E(zoe).getPublicFacet(instance),
       ),
     );
     await addAllCollateral();
@@ -729,7 +708,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         );
 
         const userFeePurse = await E(zoe).makeFeePurse();
-        const zoeWUserFeePurse = await E(zoe).bindDefaultFeePurse(userFeePurse);
 
         const faucet = Far('faucet', {
           // A method to reap the spoils of our on-chain provisioning.
@@ -760,11 +738,10 @@ export function buildRootObject(vatPowers, vatParameters) {
         const makeChainWallet = () =>
           E(walletManager).makeWallet({
             bank,
-            feePurse: userFeePurse,
             agoricNames,
             namesByAddress,
             myAddressNameAdmin,
-            zoe: zoeWUserFeePurse,
+            zoe,
             board,
             timerDevice,
             timerDeviceScale: CHAIN_TIMER_DEVICE_SCALE,
@@ -777,7 +754,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           ['chainWallet', () => makeChainWallet()],
           ['pegasusConnections', pegasusConnections],
           ['priceAuthorityAdmin', priceAuthorityAdmin],
-          ['treasuryCreator', treasuryCreator],
+          ['vaultFactoryCreator', vaultFactoryCreator],
           ['vattp', () => makeVattpFrom(vats)],
         ];
         await Promise.all(
@@ -806,7 +783,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           namesByAddress,
           priceAuthority,
           board,
-          zoe: zoeWUserFeePurse,
+          zoe,
         });
 
         return bundle;

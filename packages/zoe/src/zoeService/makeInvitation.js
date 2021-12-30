@@ -4,16 +4,8 @@ import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 /**
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
- * @param {ERef<TimerService> | undefined} timeAuthorityP
- * @param {TranslateFee | (() => undefined)} translateFee
- * @param {TranslateExpiry | (() => undefined)} translateExpiry
  */
-export const createInvitationKit = (
-  shutdownZoeVat = undefined,
-  timeAuthorityP,
-  translateFee = () => undefined,
-  translateExpiry = () => undefined,
-) => {
+export const createInvitationKit = (shutdownZoeVat = undefined) => {
   const invitationKit = makeIssuerKit(
     'Zoe Invitation',
     AssetKind.SET,
@@ -35,8 +27,6 @@ export const createInvitationKit = (
       invitationHandle,
       description,
       customProperties,
-      relativeFee = undefined,
-      relativeExpiry = undefined,
     ) => {
       assert.typeof(invitationHandle, 'object');
       assert.typeof(
@@ -44,18 +34,10 @@ export const createInvitationKit = (
         'string',
         X`The description ${description} must be a string`,
       );
-      const absoluteFee = translateFee(relativeFee);
-      const absoluteExpiry = await translateExpiry(relativeExpiry);
-      const timeAuthority = await timeAuthorityP;
 
-      const feeInfo = {
-        fee: absoluteFee,
-        expiry: absoluteExpiry,
-        zoeTimeAuthority: timeAuthority,
-      };
       // If the contract-provided customProperties include the
       // properties 'description', 'handle', 'instance',
-      // 'installation', 'fee', or 'expiry', their corresponding
+      // 'installation', their corresponding
       // values will be overwritten with the actual values. For
       // example, the value for `instance` will always be the actual
       // instance for the contract, even if customProperties includes
@@ -69,7 +51,6 @@ export const createInvitationKit = (
             handle: invitationHandle,
             instance,
             installation,
-            ...feeInfo, // will override customProperties if they exist
           },
         ]),
       );

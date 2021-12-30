@@ -3,19 +3,14 @@
 import { makeWeakStore } from '@agoric/store';
 
 /**
- * @param {ChargeZoeFee} chargeZoeFee
- * @param {Amount} getPublicFacetFeeAmount
+ *
  */
-export const makeInstanceAdminStorage = (
-  chargeZoeFee,
-  getPublicFacetFeeAmount,
-) => {
+export const makeInstanceAdminStorage = () => {
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeWeakStore('instance');
 
-  /** @type {GetPublicFacetFeePurseRequired} */
-  const getPublicFacet = async (instance, feePurse) => {
-    await chargeZoeFee(feePurse, getPublicFacetFeeAmount);
+  /** @type {GetPublicFacet} */
+  const getPublicFacet = async instance => {
     return instanceToInstanceAdmin.get(instance).getPublicFacet();
   };
 

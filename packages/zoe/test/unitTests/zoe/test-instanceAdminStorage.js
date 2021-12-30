@@ -8,8 +8,6 @@ import { Far } from '@agoric/marshal';
 import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage.js';
 
 test('makeInstanceAdminStorage', async t => {
-  const chargeZoeFee = () => {};
-
   const {
     getPublicFacet,
     getBrands,
@@ -19,7 +17,7 @@ test('makeInstanceAdminStorage', async t => {
     getInstanceAdmin,
     initInstanceAdmin,
     deleteInstanceAdmin,
-  } = makeInstanceAdminStorage(chargeZoeFee);
+  } = makeInstanceAdminStorage();
 
   const mockInstance1 = Far('mockInstance1', {});
   const mockInstance2 = Far('mockInstance2', {});
@@ -77,8 +75,7 @@ test('makeInstanceAdminStorage', async t => {
 });
 
 test('add another instance admin for same instance', async t => {
-  const chargeZoeFee = () => {};
-  const { initInstanceAdmin } = makeInstanceAdminStorage(chargeZoeFee);
+  const { initInstanceAdmin } = makeInstanceAdminStorage();
 
   const mockInstance1 = Far('mockInstance1', {});
   const mockInstanceAdmin1 = Far('mockInstanceAdmin1', {});

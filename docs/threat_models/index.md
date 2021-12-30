@@ -27,7 +27,7 @@
 
 [![./smart_contracts/multipool_autoswap/mpas_sequence_003.png](./smart_contracts/multipool_autoswap/mpas_sequence_003.png)](./smart_contracts/multipool_autoswap/mpas_sequence_003.png)
 
-## ./treasury/treasury.png
+## ./vaultFactory/vaultFactory.png
 
-[![./treasury/treasury.png](./treasury/treasury.png)](./treasury/treasury.png)
+[![./vaultFactory/vaultFactory.png](./vaultFactory/vaultFactory.png)](./vaultFactory/vaultFactory.png)
 

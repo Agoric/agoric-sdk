@@ -12,8 +12,6 @@ test('setupCreateZCFVat', async t => {
   // creates a new vat
 
   const fakeVatAdminSvc = Far('fakeVatAdminSvc', {
-    createMeter: () => {},
-    createUnlimitedMeter: () => {},
     createVatByName: _name => {
       return harden({ adminNode: undefined, root: undefined });
     },
@@ -24,13 +22,11 @@ test('setupCreateZCFVat', async t => {
 
   // @ts-ignore fakeVatAdminSvc is mocked
   t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, undefined)(), {
-    meter: undefined,
     adminNode: undefined,
     root: undefined,
   });
   // @ts-ignore fakeVatAdminSvc is mocked
   t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, 'myVat')(), {
-    meter: undefined,
     adminNode: undefined,
     root: undefined,
   });

@@ -18,7 +18,7 @@ export const DappsWithoutContext = ({ dapps }) => {
 
   const remove = ({ actions }) => E(actions).delete();
 
-  const DappCard = dapp => {
+  const DappCard = ({ dapp }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const handleClick = event => {
       setAnchorEl(event.currentTarget);
@@ -29,7 +29,7 @@ export const DappsWithoutContext = ({ dapps }) => {
     const isPopoverOpen = Boolean(anchorEl);
 
     return (
-      <div className="Dapp" key={dapp.id}>
+      <div className="Dapp">
         <Card>
           <div className="DappContent">
             <IconButton
@@ -67,7 +67,8 @@ export const DappsWithoutContext = ({ dapps }) => {
     );
   };
 
-  const dappCards = (dapps && dapps.map(DappCard)) ?? (
+  const dappCards = (dapps &&
+    dapps.map(dapp => <DappCard dapp={dapp} key={dapp.id} />)) ?? (
     <CircularProgress style={{ margin: 'auto' }} />
   );
 

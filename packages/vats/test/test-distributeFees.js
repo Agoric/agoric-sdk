@@ -62,14 +62,14 @@ test('fee distribution', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
-  const treasury = makeFakeFeeProducer();
+  const vaultFactory = makeFakeFeeProducer();
   const amm = makeFakeFeeProducer();
   const epochTimer = buildManualTimer(console.log);
   const distributorParams = {
     epochInterval: 1n,
   };
   buildDistributor(
-    [treasury, amm],
+    [vaultFactory, amm],
     feeDepositFacet,
     epochTimer,
     distributorParams,
@@ -77,7 +77,7 @@ test('fee distribution', async t => {
     t.fail(e.stack);
   });
 
-  treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
+  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
   amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 270n)));
 
   t.deepEqual(getPayments(), []);
@@ -92,20 +92,20 @@ test('fee distribution, leftovers', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
-  const treasury = makeFakeFeeProducer();
+  const vaultFactory = makeFakeFeeProducer();
   const amm = makeFakeFeeProducer();
   const epochTimer = buildManualTimer(console.log);
   const distributorParams = {
     epochInterval: 1n,
   };
   buildDistributor(
-    [treasury, amm],
+    [vaultFactory, amm],
     feeDepositFacet,
     epochTimer,
     distributorParams,
   );
 
-  treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 12n)));
+  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 12n)));
   amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 8n)));
 
   t.deepEqual(getPayments(), []);
@@ -116,7 +116,7 @@ test('fee distribution, leftovers', async t => {
   assertPaymentArray(t, getPayments(), 2, [12n, 8n], issuer, brand);
 
   // Pay them again
-  treasury.pushFees(runMint.mintPayment(AmountMath.make(brand, 13n)));
+  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 13n)));
   amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 7n)));
 
   await epochTimer.tick();
