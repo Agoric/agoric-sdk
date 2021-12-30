@@ -62,6 +62,8 @@
  * @property {(brand: Brand) => {toCentral: PriceAuthority, fromCentral: PriceAuthority}} getPriceAuthorities
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
  * Prices and notifications about changing prices.
+ * @property {() => Brand[]} getAllPoolBrands
+ * @property {() => Allocation} getProtocolPoolBalance
  */
 
 /**

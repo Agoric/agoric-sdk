@@ -5,14 +5,13 @@ import { E } from '@agoric/eventual-send';
 import { makeLoopback } from '@agoric/captp';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeFakeVatAdmin } from '../../../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 
-import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
-import buildManualTimer from '../../../../tools/manualTimer.js';
-import { makeAmmTerms } from '../../../../src/contracts/vpool-xyk-amm/params.js';
+import { makeZoeKit } from '@agoric/zoe';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeAmmTerms } from '../../../src/vpool-xyk-amm/params.js';
 
-const ammRoot =
-  '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
+const ammRoot = '../../../src/vpool-xyk-amm/multipoolMarketMaker.js';
 
 const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
 const committeeRoot = '@agoric/governance/src/committee.js';

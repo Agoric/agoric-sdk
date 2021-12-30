@@ -28,8 +28,7 @@ const dirname = path.dirname(pathname);
 
 const vaultFactoryRoot = `${dirname}/../../src/vaultFactory/vaultFactory.js`;
 const liquidationRoot = `${dirname}/../../src/vaultFactory/liquidateMinimum.js`;
-const autoswapRoot =
-  '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
+const autoswapRoot = `${dirname}/../../src/vpool-xyk-amm/multipoolMarketMaker.js`;
 const governanceRoot = '@agoric/governance/src/contractGovernor.js';
 const electorateRoot = '@agoric/governance/src/committee.js';
 

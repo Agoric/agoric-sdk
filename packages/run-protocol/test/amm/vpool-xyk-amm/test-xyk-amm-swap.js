@@ -11,19 +11,19 @@ import {
   updatePoolState,
   priceFromTargetOutput,
   outputFromInputPrice,
-} from '../../../autoswapJig.js';
-import buildManualTimer from '../../../../tools/manualTimer.js';
+} from '@agoric/zoe/test/autoswapJig.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   getAmountOut,
   makeRatio,
   ceilMultiplyBy,
   natSafeMath,
-} from '../../../../src/contractSupport/index.js';
+} from '@agoric/zoe/src/contractSupport/index.js';
 import {
   assertAmountsEqual,
   assertPayoutAmount,
-} from '../../../zoeTestHelpers.js';
-import { BASIS_POINTS } from '../../../../src/contracts/constantProduct/defaults.js';
+} from '@agoric/zoe/test/zoeTestHelpers.js';
+import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
 import { setupAmmServices } from './setup.js';
 
 const { quote: q } = assert;
@@ -793,6 +793,7 @@ test('amm jig - swapOut uneven', async t => {
   );
   sPoolState = updatePoolState(sPoolState, initSimLiqExpected);
 
+  // @ts-ignore
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
 
   // trade for central specifying 30000 output: moola price 15092

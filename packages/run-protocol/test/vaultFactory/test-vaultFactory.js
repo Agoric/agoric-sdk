@@ -18,11 +18,11 @@ import {
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { makeParamManagerBuilder } from '@agoric/governance';
 import {
   setUpZoeForTest,
   setupAmmServices,
-} from '@agoric/zoe/test/unitTests/contracts/vpool-xyk-amm/setup.js';
-import { makeParamManagerBuilder } from '@agoric/governance';
+} from '../amm/vpool-xyk-amm/setup.js';
 
 import { makeTracer } from '../../src/makeTracer.js';
 import { SECONDS_PER_YEAR } from '../../src/vaultFactory/interest.js';
@@ -33,8 +33,7 @@ import {
   RECORDING_PERIOD_KEY,
 } from '../../src/vaultFactory/params.js';
 
-const ammRoot =
-  '@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js';
+const ammRoot = '../../src/vpool-xyk-amm/multipoolMarketMaker.js';
 const vaultFactoryRoot = '../../src/vaultFactory/vaultFactory.js';
 const liquidationRoot = '../../src/vaultFactory/liquidateMinimum.js';
 

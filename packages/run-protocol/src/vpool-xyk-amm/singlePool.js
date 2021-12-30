@@ -1,11 +1,11 @@
 // @ts-check
 
 import { Far } from '@agoric/marshal';
-import { makeFeeRatio } from '../constantProduct/calcFees';
+import { makeFeeRatio } from './constantProduct/calcFees';
 import {
   pricesForStatedInput,
   pricesForStatedOutput,
-} from '../constantProduct/calcSwapPrices.js';
+} from './constantProduct/calcSwapPrices.js';
 
 /**
  * @param {ContractFacet} zcf

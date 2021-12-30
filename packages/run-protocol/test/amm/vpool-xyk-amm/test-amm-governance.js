@@ -8,12 +8,12 @@ import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
-import buildManualTimer from '../../../../tools/manualTimer.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   POOL_FEE_KEY,
   PROTOCOL_FEE_KEY,
-} from '../../../../src/contracts/vpool-xyk-amm/params.js';
-import { amountGT } from '../../../../src/contracts/constantProduct/calcFees.js';
+} from '../../../src/vpool-xyk-amm/params.js';
+import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
 
 import { setupAmmServices } from './setup.js';
 

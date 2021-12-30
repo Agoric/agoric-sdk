@@ -2,9 +2,10 @@
 import { E } from '@agoric/eventual-send';
 
 import '@agoric/governance/exported.js';
+import '../exported.js';
 
 import { Far } from '@agoric/far';
-import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from '@agoric/zoe/src/contracts/vpool-xyk-amm/params';
+import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from '../src/vpool-xyk-amm/params.js';
 import {
   makeGovernedInvitation,
   CONTRACT_ELECTORATE,

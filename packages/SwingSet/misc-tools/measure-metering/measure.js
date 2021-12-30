@@ -48,7 +48,7 @@ async function run() {
   const targetFn = new URL('measurement-target.js', import.meta.url).pathname;
   const zoeFn = new URL('measurement-zoe.js', import.meta.url).pathname;
   const autoswapFn = new URL(
-    '../../../zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js',
+    '../../../run-protocol/src/vpool-xyk-amm/multipoolMarketMaker.js',
     import.meta.url,
   ).pathname;
   const autoswapBundle = await bundleSource(autoswapFn);

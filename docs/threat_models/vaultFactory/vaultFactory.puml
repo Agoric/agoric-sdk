@@ -1,13 +1,13 @@
 @startuml
 header Agoric Systems Operating Company.
 footer v0.0.1
-title Treasury
+title VaultFactory
 
 skinparam componentStyle rectangle
 skinparam defaultTextAlignment center
 
 
-actor "TreasuryCreator aka Governance" as tc
+actor "VaultFactoryCreator aka Governance" as vfc
 
 actor Borrower
 
@@ -19,7 +19,7 @@ node LiquidationSeat {
     circle getPayouts
 }
 node "Vat" {
-    node Treasury {
+    node VaultFactory {
         node AMM
         node "publicAPI" {
             circle getCollaterals
@@ -52,7 +52,7 @@ Borrower -u-> getPayouts: retrieve any proceeds
 Borrower -d-> LiquidationPromise: did loan get liquidated?
 Borrower -> AdjustBalancesInvitation: add or remove collateral or \nincrease or decrease the loan balance
 Borrower -l-> CloseVaultInvitation: close loan and withdraw \nany remaining collateral
-tc -d-> makeAddTypeInvitation
+vfc -d-> makeAddTypeInvitation
 Borrower -d-> getDebtAmount: how much do I owe
 Borrower -d-> getCollateralAmount: how much did I \ndeposit as collateral
 

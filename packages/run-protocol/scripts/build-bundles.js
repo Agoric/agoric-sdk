@@ -39,7 +39,7 @@ async function main() {
       `${bundlesDir}/bundle-liquidateMinimum.js`,
     ],
     [
-      `@agoric/zoe/src/contracts/vpool-xyk-amm/multipoolMarketMaker.js`,
+      `${srcDir}/vpool-xyk-amm/multipoolMarketMaker.js`,
       `${dirname}/../bundles/bundle-amm.js`,
     ],
     [

@@ -1,7 +1,10 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
-import { ceilMultiplyBy, makeRatio } from '../../contractSupport/ratio.js';
+import {
+  ceilMultiplyBy,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 
 import { BASIS_POINTS } from './defaults.js';
 
