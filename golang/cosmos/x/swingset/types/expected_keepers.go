@@ -10,3 +10,8 @@ type AccountKeeper interface {
 	NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI
 	SetAccount(ctx sdk.Context, acc authtypes.AccountI)
 }
+
+type SwingSetKeeper interface {
+	GetBeansPerUnit(ctx sdk.Context) map[string]sdk.Uint
+	ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) error
+}

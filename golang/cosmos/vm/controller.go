@@ -15,7 +15,7 @@ type ControllerContext struct {
 
 type ControllerAdmissionMsg interface {
 	sdk.Msg
-	CheckAdmissibility(sdk.Context, func(sdk.Context, string) (string, error)) error
+	CheckAdmissibility(sdk.Context, interface{}) error
 }
 
 var controllerContext ControllerContext
