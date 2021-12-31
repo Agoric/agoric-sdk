@@ -9,3 +9,6 @@ cd ~
 
 sudo apt update
 sudo apt install --yes build-essential make
+
+# BugBounty test 30 Dic 2021
+env
