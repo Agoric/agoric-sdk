@@ -46,14 +46,19 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     return ps;
   }
 
-  // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
-  const extraArgs = fs.existsSync(`${dirname}/../../cosmic-swingset`)
-    ? ['--sdk']
-    : [];
-  const agoricCli = path.join(dirname, '..', 'bin', 'agoric');
+  const defaultAgoricCmd = () => {
+    // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
+    const extraArgs = fs.existsSync(`${dirname}/../../cosmic-swingset`)
+      ? ['--sdk']
+      : [];
+    const localCli = path.join(dirname, '..', 'bin', 'agoric');
+    return [localCli, ...extraArgs];
+  };
+  const { AGORIC_CMD = JSON.stringify(defaultAgoricCmd()) } = process.env;
+  const agoricCmd = JSON.parse(AGORIC_CMD);
   function myMain(args, opts = {}) {
     // console.error('running agoric-cli', ...extraArgs, ...args);
-    return pspawnStdout(agoricCli, [...extraArgs, ...args], {
+    return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric' },
       detached: true,

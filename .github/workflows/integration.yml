@@ -10,6 +10,9 @@ jobs:
   # It should be kept in sync with https://agoric.com/documentation/getting-started/
   getting-started:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cli: [ link-cli, local-npm ]
     steps:
     - uses: actions/checkout@v2
 
@@ -51,11 +54,44 @@ jobs:
     # cross-package symlinks
     - run: yarn install
     - run: yarn build
-    - run: yarn link-cli ~/bin/agoric
+
+    - name: Link Agoric CLI from SDK
+      if: ${{ matrix.cli == 'link-cli' }}
+      run: |
+        yarn link-cli "$HOME/bin/agoric"
+        echo "AGORIC_CMD=[\"$HOME/bin/agoric\"]" >> $GITHUB_ENV
+
+    - name: Start local NPM registry
+      if: ${{ matrix.cli == 'local-npm' }}
+      run: |
+        tmp_registry_log=`mktemp`
+        nohup npx verdaccio@^5.4.0 &>$tmp_registry_log &
+        # Wait for `verdaccio` to boot
+        grep -q 'http address' <(tail -f $tmp_registry_log)
+
+        # Set registry to local registry
+        npm set registry http://localhost:4873
+        yarn config set registry http://localhost:4873
+
+        # Login so we can publish packages
+        npx npm-cli-login@^1.0.0 -u user -p password -e user@example.com \
+          -r http://localhost:4873 --quotes
+
+        npm whoami
+
+        yarn lerna publish --conventional-prerelease --canary --exact \
+          --dist-tag=blah --preid=dev-$(git rev-parse --short=7 HEAD) \
+          --no-push --no-verify-access --yes
+
+        yarn global add agoric@blah </dev/null
+
+        # Use the locally-installed dist-tag.
+        echo 'AGORIC_INSTALL_OPTIONS=["blah"]' >> $GITHUB_ENV
+        echo 'AGORIC_CMD=["agoric"]' >> $GITHUB_ENV
 
     - name: run agoric-cli integration-test
       working-directory: ./packages/agoric-cli
-      run: PATH="$PATH:$HOME/bin" yarn integration-test
+      run: PATH="$HOME/bin:$PATH" yarn integration-test
       env:
         AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
         # Try to avoid hitting a pessimal Actions output rate-limitation.
