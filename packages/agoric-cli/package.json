@@ -4,9 +4,9 @@
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "src/main.js",
-  "bin": "bin/agoric",
+  "bin": "src/entrypoint.js",
   "files": [
-    "lib",
+    "src",
     "exported.js"
   ],
   "scripts": {
