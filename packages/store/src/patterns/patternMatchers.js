@@ -2,13 +2,14 @@
 
 import {
   assertChecker,
-  everyPassableChild,
   Far,
   getTag,
   makeTagged,
   passStyleOf,
+  hasOwnPropertyOf,
 } from '@agoric/marshal';
 import {
+  compareAntiRank,
   compareRank,
   getPassStyleCover,
   intersectRankCovers,
@@ -36,9 +37,9 @@ const { quote: q, details: X } = assert;
 const patternMemo = new WeakSet();
 
 /**
- * @returns {Object}
+ * @returns {PatternKit}
  */
-export const makePatternKit = () => {
+const makePatternKit = () => {
   /**
    * If this is a recognized match tag, return the MatchHelper.
    * Otherwise result undefined.
@@ -82,11 +83,15 @@ export const makePatternKit = () => {
 
     const passStyle = passStyleOf(patt);
     switch (passStyle) {
-      case 'copyRecord':
-      case 'copyArray': {
-        // A copyRecord or copyArray is a pattern iff all its children are
+      case 'copyRecord': {
+        // A copyRecord is a pattern iff all its children are
         // patterns
-        return everyPassableChild(patt, checkIt);
+        return Object.values(patt).every(checkIt);
+      }
+      case 'copyArray': {
+        // A copyArray is a pattern iff all its children are
+        // patterns
+        return patt.every(checkIt);
       }
       case 'tagged': {
         const tag = getTag(patt);
@@ -243,9 +248,10 @@ export const makePatternKit = () => {
       // logic can assume patterns that are not key.
       return check(
         keyEQ(specimen, patt),
-        X`${specimen} - Must be equivalent to the literal pattern: ${patt}`,
+        X`${specimen} - Must be equivalent to: ${patt}`,
       );
     }
+    assertPattern(patt);
     const specStyle = passStyleOf(specimen);
     const pattStyle = passStyleOf(patt);
     switch (pattStyle) {
@@ -260,12 +266,10 @@ export const makePatternKit = () => {
         if (specimen.length !== length) {
           return check(
             false,
-            X`Array ${specimen} - must be as long as copyArray pattern: ${patt}`,
+            X`Array ${specimen} - Must be as long as copyArray pattern: ${patt}`,
           );
         }
-        return everyPassableChild(patt, (p, i) =>
-          checkMatches(specimen[i], p, check),
-        );
+        return patt.every((p, i) => checkMatches(specimen[i], p, check));
       }
       case 'copyRecord': {
         if (specStyle !== 'copyRecord') {
@@ -274,16 +278,8 @@ export const makePatternKit = () => {
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
           );
         }
-        const specNames = harden(
-          ownKeys(specimen)
-            .sort()
-            .reverse(),
-        );
-        const pattNames = harden(
-          ownKeys(patt)
-            .sort()
-            .reverse(),
-        );
+        const specNames = harden(ownKeys(specimen).sort(compareAntiRank));
+        const pattNames = harden(ownKeys(patt).sort(compareAntiRank));
         if (!keyEQ(specNames, pattNames)) {
           return check(
             false,
@@ -369,7 +365,7 @@ export const makePatternKit = () => {
    * @param {Passable} specimen
    * @param {Pattern} patt
    */
-  const assertMatches = (specimen, patt) => {
+  const fit = (specimen, patt) => {
     checkMatches(specimen, patt, assertChecker);
   };
 
@@ -379,20 +375,29 @@ export const makePatternKit = () => {
   const getRankCover = (patt, encodeKey) => {
     if (isKey(patt)) {
       const encoded = encodeKey(patt);
-      return [encoded, `${encoded}~`];
+      if (encoded !== undefined) {
+        return [encoded, `${encoded}~`];
+      }
     }
     const passStyle = passStyleOf(patt);
     switch (passStyle) {
       case 'copyArray': {
-        const rankCovers = patt.map(p => getRankCover(p, encodeKey));
-        return harden([
-          rankCovers.map(([left, _right]) => left),
-          rankCovers.map(([_left, right]) => right),
-        ]);
+        // XXX this doesn't get along with the world of cover === pair of
+        // strings. In the meantime, fall through to the default which
+        // returns a cover that covers all copyArrays.
+        //
+        // const rankCovers = patt.map(p => getRankCover(p, encodeKey));
+        // return harden([
+        //   rankCovers.map(([left, _right]) => left),
+        //   rankCovers.map(([_left, right]) => right),
+        // ]);
+        break;
       }
       case 'copyRecord': {
         // XXX this doesn't get along with the world of cover === pair of
-        // strings
+        // strings. In the meantime, fall through to the default which
+        // returns a cover that covers all copyRecords.
+        //
         // const pattKeys = ownKeys(patt);
         // const pattEntries = harden(pattKeys.map(key => [key, patt[key]]));
         // const [leftEntriesLimit, rightEntriesLimit] =
@@ -401,18 +406,22 @@ export const makePatternKit = () => {
         //   fromEntries(leftEntriesLimit),
         //   fromEntries(rightEntriesLimit),
         // ]);
-        assert.fail('not supporting copyRecord patterns yet'); // XXX TEMP
+        break;
       }
       case 'tagged': {
         const tag = getTag(patt);
         const matchHelper = maybeMatchHelper(tag);
         if (matchHelper) {
+          // Buried here is the important case, where we process
+          // the various patternNodes
           return matchHelper.getRankCover(patt.payload, encodeKey);
         }
         switch (tag) {
           case 'copySet': {
             // XXX this doesn't get along with the world of cover === pair of
-            // strings
+            // strings. In the meantime, fall through to the default which
+            // returns a cover that covers all copySets.
+            //
             // // Should already be validated by checkPattern. But because this
             // // is a check that may loosen over time, we also assert
             // // everywhere we still rely on the restriction.
@@ -428,31 +437,36 @@ export const makePatternKit = () => {
             //   makeCopySet([leftElementLimit]),
             //   makeCopySet([rightElementLimit]),
             // ]);
-            assert.fail('not supporting copySet patterns yet'); // XXX TEMP
+            break;
           }
           case 'copyMap': {
-            // A matching copyMap must have the same keys, or at most one
-            // non-key key pattern. Thus we can assume that value positions
-            // match 1-to-1.
+            // XXX this doesn't get along with the world of cover === pair of
+            // strings. In the meantime, fall through to the default which
+            // returns a cover that covers all copyMaps.
             //
-            // TODO I may be overlooking that the less precise rankOrder
-            // equivalence class may cause values to be out of order,
-            // making this rankCover not actually cover. In that case, for
-            // all the values for keys at the same rank, we should union their
-            // rank covers. TODO POSSIBLE SILENT CORRECTNESS BUG
-            //
-            // If this is a bug, it probably affects the getRankCover
-            // cases if matchLTEHelper and matchGTEHelper on copyMap as
-            // well. See makeCopyMap for an idea on fixing
-            // this bug.
-            const [leftPayloadLimit, rightPayloadLimit] = getRankCover(
-              patt.payload,
-              encodeKey,
-            );
-            return harden([
-              makeTagged('copyMap', leftPayloadLimit),
-              makeTagged('copyMap', rightPayloadLimit),
-            ]);
+            // // A matching copyMap must have the same keys, or at most one
+            // // non-key key pattern. Thus we can assume that value positions
+            // // match 1-to-1.
+            // //
+            // // TODO I may be overlooking that the less precise rankOrder
+            // // equivalence class may cause values to be out of order,
+            // // making this rankCover not actually cover. In that case, for
+            // // all the values for keys at the same rank, we should union their
+            // // rank covers. TODO POSSIBLE SILENT CORRECTNESS BUG
+            // //
+            // // If this is a bug, it probably affects the getRankCover
+            // // cases of matchLTEHelper and matchGTEHelper on copyMap as
+            // // well. See makeCopyMap for an idea on fixing
+            // // this bug.
+            // const [leftPayloadLimit, rightPayloadLimit] = getRankCover(
+            //   patt.payload,
+            //   encodeKey,
+            // );
+            // return harden([
+            //   makeTagged('copyMap', leftPayloadLimit),
+            //   makeTagged('copyMap', rightPayloadLimit),
+            // ]);
+            break;
           }
           default: {
             break; // fall through to default
@@ -471,13 +485,13 @@ export const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchAnyHelper = Far('M.any helper', {
+    checkMatches: (_specimen, _matcherPayload, _check = x => x) => true,
+
     checkIsMatcherPayload: (matcherPayload, check = x => x) =>
       check(
         matcherPayload === undefined,
-        X`An M.any matcher's .payload must be undefined: ${matcherPayload}`,
+        X`Payload must be undefined: ${matcherPayload}`,
       ),
-
-    checkMatches: (_specimen, _matcherPayload, _check = x => x) => true,
 
     getRankCover: (_matchPayload, _encodeKey) => ['', '{'],
 
@@ -485,15 +499,111 @@ export const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
-  const matchScalarHelper = Far('M.scalar helper', {
-    checkIsMatcherPayload: (matcherPayload, check = x => x) =>
-      check(
-        matcherPayload === undefined,
-        X`An M.scalar matcher's .payload must be undefined: ${matcherPayload}`,
+  const matchAndHelper = Far('match:and helper', {
+    checkMatches: (specimen, patts, check = x => x) => {
+      return patts.every(patt => checkMatches(specimen, patt, check));
+    },
+
+    checkIsMatcherPayload: (allegedPatts, check = x => x) => {
+      const checkIt = patt => checkPattern(patt, check);
+      return (
+        (check(
+          passStyleOf(allegedPatts) === 'copyArray',
+          X`Needs array of sub-patterns: ${allegedPatts}`,
+        ) && allegedPatts.every(checkIt))
+      );
+    },
+
+    getRankCover: (patts, encodeKey) =>
+      intersectRankCovers(
+        compareRank,
+        patts.map(p => getRankCover(p, encodeKey)),
       ),
 
+    checkKeyPattern: (patts, check = x => x) => {
+      return patts.every(patt => checkKeyPattern(patt, check));
+    },
+  });
+
+  /** @type {MatchHelper} */
+  const matchOrHelper = Far('match:or helper', {
+    checkMatches: (specimen, patts, check = x => x) => {
+      const { length } = patts;
+      if (length === 0) {
+        return check(
+          false,
+          X`${specimen} - no pattern disjuncts to match: ${patts}`,
+        );
+      }
+      if (patts.some(patt => matches(specimen, patt))) {
+        return true;
+      }
+      return check(false, X`${specimen} - Must match one of ${patts}`);
+    },
+
+    checkIsMatcherPayload: matchAndHelper.checkIsMatcherPayload,
+
+    getRankCover: (patts, encodeKey) =>
+      unionRankCovers(
+        compareRank,
+        patts.map(p => getRankCover(p, encodeKey)),
+      ),
+
+    checkKeyPattern: (patts, check = x => x) => {
+      return patts.every(patt => checkKeyPattern(patt, check));
+    },
+  });
+
+  /** @type {MatchHelper} */
+  const matchNotHelper = Far('match:not helper', {
+    checkMatches: (specimen, patt, check = x => x) => {
+      if (matches(specimen, patt)) {
+        return check(
+          false,
+          X`${specimen} - must fail negated pattern: ${patt}`,
+        );
+      } else {
+        return true;
+      }
+    },
+
+    checkIsMatcherPayload: checkPattern,
+
+    getRankCover: (_patt, _encodeKey) => ['', '{'],
+
+    checkKeyPattern: (patt, check = x => x) => checkKeyPattern(patt, check),
+  });
+
+  /** @type {MatchHelper} */
+  const matchScalarHelper = Far('M.scalar helper', {
     checkMatches: (specimen, _matcherPayload, check = x => x) =>
       checkScalarKey(specimen, check),
+
+    checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
+
+    getRankCover: (_matchPayload, _encodeKey) => ['a', 'z~'],
+
+    checkKeyPattern: (_matcherPayload, _check = x => x) => true,
+  });
+
+  /** @type {MatchHelper} */
+  const matchKeyHelper = Far('M.key helper', {
+    checkMatches: (specimen, _matcherPayload, check = x => x) =>
+      checkKey(specimen, check),
+
+    checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
+
+    getRankCover: (_matchPayload, _encodeKey) => ['a', 'z~'],
+
+    checkKeyPattern: (_matcherPayload, _check = x => x) => true,
+  });
+
+  /** @type {MatchHelper} */
+  const matchPatternHelper = Far('M.pattern helper', {
+    checkMatches: (specimen, _matcherPayload, check = x => x) =>
+      checkPattern(specimen, check),
+
+    checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
 
     getRankCover: (_matchPayload, _encodeKey) => ['a', 'z~'],
 
@@ -502,6 +612,13 @@ export const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchKindHelper = Far('M.kind helper', {
+    checkMatches: (specimen, kind, check = x => x) =>
+      check(
+        passStyleOf(specimen) === kind ||
+          (passStyleOf(specimen) === 'tagged' && getTag(specimen) === kind),
+        X`${specimen} - Must have passStyle or tag ${q(kind)}`,
+      ),
+
     checkIsMatcherPayload: (allegedKeyKind, check = x => x) =>
       check(
         // We cannot further restrict this to only possible passStyles
@@ -513,38 +630,20 @@ export const makePatternKit = () => {
         X`A kind name must be a string: ${allegedKeyKind}`,
       ),
 
-    checkMatches: (specimen, kind, check = x => x) =>
-      check(
-        passStyleOf(specimen) === kind ||
-          (passStyleOf(specimen) === 'tagged' && getTag(specimen) === kind),
-        X`${specimen} - Must have passStyle or tag ${q(kind)}`,
-      ),
-
     getRankCover: (kind, _encodeKey) => {
+      let style;
       switch (kind) {
-        case 'copySet': {
-          // The bounds in the cover are not valid copySets, which is fine.
-          // They only need to be valid copyTagged that bound all possible
-          // copySets. Thus, we need to call makeTagged directly, rather
-          // than using makeCopySet.
-          return [
-            makeTagged('copySet', null),
-            makeTagged('copySet', undefined),
-          ];
-        }
+        case 'copySet':
         case 'copyMap': {
-          // The bounds in the cover are not valid copyMaps, which is fine.
-          // They only need to be valid copyTagged that bound all possible
-          // copyMaps.
-          return [
-            makeTagged('copyMap', null),
-            makeTagged('copyMap', undefined),
-          ];
+          style = 'tagged';
+          break;
         }
         default: {
-          return getPassStyleCover(/** @type {PassStyle} */ (kind));
+          style = kind;
+          break;
         }
       }
+      return getPassStyleCover(style);
     },
 
     checkKeyPattern: (kind, check = x => x) => {
@@ -564,139 +663,26 @@ export const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
-  const matchAndHelper = Far('match:and helper', {
-    checkIsMatcherPayload: (allegedPatts, check = x => x) => {
-      const checkIt = patt => checkPattern(patt, check);
-      return (
-        (check(
-          passStyleOf(allegedPatts) === 'copyArray',
-          X`Needs array of sub-patterns: ${allegedPatts}`,
-        ) && everyPassableChild(allegedPatts, checkIt))
-      );
-    },
-
-    checkMatches: (specimen, patts, check = x => x) => {
-      return patts.every(patt => checkMatches(specimen, patt, check));
-    },
-
-    getRankCover: (patts, encodeKey) =>
-      intersectRankCovers(
-        compareRank,
-        patts.map(p => getRankCover(p, encodeKey)),
-      ),
-
-    checkKeyPattern: (patts, check = x => x) => {
-      return patts.every(patt => checkKeyPattern(patt, check));
-    },
-  });
-
-  /** @type {MatchHelper} */
-  const matchOrHelper = Far('match:or helper', {
-    checkIsMatcherPayload: matchAndHelper.checkIsMatcherPayload,
-
-    checkMatches: (specimen, patts, check = x => x) => {
-      return (
-        (check(
-          patts.length >= 1,
-          X`${specimen} - no pattern disjuncts to match: ${patts}`,
-        ) && !patts.every(patt => !checkMatches(specimen, patt, check)))
-      );
-    },
-
-    getRankCover: (patts, encodeKey) =>
-      unionRankCovers(
-        compareRank,
-        patts.map(p => getRankCover(p, encodeKey)),
-      ),
-
-    checkKeyPattern: (patts, check = x => x) => {
-      return patts.every(patt => checkKeyPattern(patt, check));
-    },
-  });
-
-  /** @type {MatchHelper} */
-  const matchNotHelper = Far('match:not helper', {
-    checkIsMatcherPayload: checkPattern,
-
-    checkMatches: (specimen, patt, check = x => x) => {
-      if (matches(specimen, patt)) {
-        return check(
-          false,
-          X`${specimen} - must fail negated pattern: ${patt}`,
-        );
-      } else {
-        return true;
-      }
-    },
-
-    getRankCover: (_patt, _encodeKey) => ['', '{'],
-
-    checkKeyPattern: (patt, check = x => x) => checkKeyPattern(patt, check),
-  });
-
-  /** @type {MatchHelper} */
   const matchLTEHelper = Far('match:lte helper', {
-    checkIsMatcherPayload: checkKey,
-
     checkMatches: (specimen, rightOperand, check = x => x) =>
       check(
         keyLTE(specimen, rightOperand),
         X`${specimen} - Must be <= ${rightOperand}`,
       ),
 
+    checkIsMatcherPayload: checkKey,
+
     getRankCover: (rightOperand, encodeKey) => {
       const passStyle = passStyleOf(rightOperand);
       // The prefer-const makes no sense when some of the variables need
       // to be `let`
       // eslint-disable-next-line prefer-const
-      let [leftBound, _rightBound] = getPassStyleCover(passStyle);
-      switch (passStyle) {
-        case 'number': {
-          if (Number.isNaN(rightOperand)) {
-            // leftBound = NaN;
-            leftBound = 'f'; // XXX BOGUS
-          }
-          break;
-        }
-        case 'copyRecord': {
-          // XXX this doesn't get along with the world of cover === pair of
-          // strings
-          // leftBound = harden(
-          //   fromEntries(entries(rightOperand).map(([k, _v]) => [k, null])),
-          // );
-          break;
-        }
-        case 'tagged': {
-          leftBound = makeTagged(getTag(rightOperand), null);
-          switch (getTag(rightOperand)) {
-            case 'copyMap': {
-              const { keys } = rightOperand.payload;
-              const values = keys.map(_ => null);
-              // See note in getRankCover for copyMap about why we
-              // may need to take variable values orders into account
-              // to be correct.
-              leftBound = makeTagged('copyMap', harden({ keys, values }));
-              break;
-            }
-            default: {
-              break;
-            }
-          }
-          break;
-        }
-        case 'remotable': {
-          // This does not make for a tighter rankCover, but if an
-          // underlying table internally further optimizes, for example with
-          // an identityHash of a virtual object, then this might
-          // help it take advantage of that.
-          leftBound = encodeKey(rightOperand);
-          break;
-        }
-        default: {
-          break;
-        }
+      let [leftBound, rightBound] = getPassStyleCover(passStyle);
+      const newRightBound = `${encodeKey(rightOperand)}~`;
+      if (newRightBound !== undefined) {
+        rightBound = newRightBound;
       }
-      return [leftBound, `${encodeKey(rightOperand)}~`];
+      return [leftBound, rightBound];
     },
 
     checkKeyPattern: (rightOperand, check = x => x) =>
@@ -705,13 +691,13 @@ export const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchLTHelper = Far('match:lt helper', {
-    checkIsMatcherPayload: checkKey,
-
     checkMatches: (specimen, rightOperand, check = x => x) =>
       check(
         keyLT(specimen, rightOperand),
         X`${specimen} - Must be < ${rightOperand}`,
       ),
+
+    checkIsMatcherPayload: checkKey,
 
     getRankCover: matchLTEHelper.getRankCover,
 
@@ -721,72 +707,25 @@ export const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchGTEHelper = Far('match:gte helper', {
-    checkIsMatcherPayload: checkKey,
-
     checkMatches: (specimen, rightOperand, check = x => x) =>
       check(
         keyGTE(specimen, rightOperand),
         X`${specimen} - Must be >= ${rightOperand}`,
       ),
 
+    checkIsMatcherPayload: checkKey,
+
     getRankCover: (rightOperand, encodeKey) => {
       const passStyle = passStyleOf(rightOperand);
       // The prefer-const makes no sense when some of the variables need
       // to be `let`
       // eslint-disable-next-line prefer-const
-      let [_leftBound, rightBound] = getPassStyleCover(passStyle);
-      switch (passStyle) {
-        case 'number': {
-          if (Number.isNaN(rightOperand)) {
-            // rightBound = NaN;
-            rightBound = 'f';
-          } else {
-            // rightBound = Infinity;
-            rightBound = 'f~';
-          }
-          break;
-        }
-        case 'copyRecord': {
-          // XXX this doesn't get along with the world of cover === pair of
-          // strings
-          // rightBound = harden(
-          //   fromEntries(
-          //     entries(rightOperand).map(([k, _v]) => [k, undefined]),
-          //   ),
-          // );
-          break;
-        }
-        case 'tagged': {
-          rightBound = makeTagged(getTag(rightOperand), undefined);
-          switch (getTag(rightOperand)) {
-            case 'copyMap': {
-              const { keys } = rightOperand.payload;
-              const values = keys.map(_ => undefined);
-              // See note in getRankCover for copyMap about why we
-              // may need to take variable values orders into account
-              // to be correct.
-              rightBound = makeTagged('copyMap', harden({ keys, values }));
-              break;
-            }
-            default: {
-              break;
-            }
-          }
-          break;
-        }
-        case 'remotable': {
-          // This does not make for a tighter rankCover, but if an
-          // underlying table internally further optimizes, for example with
-          // an identityHash of a virtual object, then this might
-          // help it take advantage of that.
-          rightBound = encodeKey(rightOperand);
-          break;
-        }
-        default: {
-          break;
-        }
+      let [leftBound, rightBound] = getPassStyleCover(passStyle);
+      const newLeftBound = encodeKey(rightOperand);
+      if (newLeftBound !== undefined) {
+        leftBound = newLeftBound;
       }
-      return [encodeKey(rightOperand), rightBound];
+      return [leftBound, rightBound];
     },
 
     checkKeyPattern: (rightOperand, check = x => x) =>
@@ -795,8 +734,6 @@ export const makePatternKit = () => {
 
   /** @type {MatchHelper} */
   const matchGTHelper = Far('match:gt helper', {
-    getMatchTag: () => 'gt',
-
     checkMatches: (specimen, rightOperand, check = x => x) =>
       check(
         keyGT(specimen, rightOperand),
@@ -811,78 +748,308 @@ export const makePatternKit = () => {
       checkKeyPattern(rightOperand, check),
   });
 
+  /** @type {MatchHelper} */
+  const matchArrayOfHelper = Far('match:arrayOf helper', {
+    checkMatches: (specimen, subPatt, check = x => x) =>
+      check(
+        passStyleOf(specimen) === 'copyArray',
+        X`${specimen} - Must be an array`,
+      ) && specimen.every(el => checkMatches(el, subPatt, check)),
+
+    checkIsMatcherPayload: checkPattern,
+
+    getRankCover: () => getPassStyleCover('copyArray'),
+
+    checkKeyPattern: (_, check = x => x) =>
+      check(false, X`Arrays not yet supported as keys`),
+  });
+
+  /** @type {MatchHelper} */
+  const matchRecordOfHelper = Far('match:recordOf helper', {
+    checkMatches: (specimen, entryPatt, check = x => x) =>
+      check(
+        passStyleOf(specimen) === 'copyRecord',
+        X`${specimen} - Must be a record`,
+      ) &&
+      Object.entries(specimen).every(el =>
+        checkMatches(harden(el), entryPatt, check),
+      ),
+
+    checkIsMatcherPayload: (entryPatt, check = x => x) =>
+      check(
+        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
+        X`${entryPatt} - Must be an pair of patterns`,
+      ) && checkPattern(entryPatt, check),
+
+    getRankCover: _entryPatt => getPassStyleCover('copyRecord'),
+
+    checkKeyPattern: (_entryPatt, check = x => x) =>
+      check(false, X`Records not yet supported as keys`),
+  });
+
+  /** @type {MatchHelper} */
+  const matchSetOfHelper = Far('match:setOf helper', {
+    checkMatches: (specimen, keyPatt, check = x => x) =>
+      check(
+        passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copySet',
+        X`${specimen} - Must be a a CopySet`,
+      ) && specimen.payload.every(el => checkMatches(el, keyPatt)),
+
+    checkIsMatcherPayload: checkPattern,
+
+    getRankCover: () => getPassStyleCover('tagged'),
+
+    checkKeyPattern: (_, check = x => x) =>
+      check(false, X`CopySets not yet supported as keys`),
+  });
+
+  /** @type {MatchHelper} */
+  const matchMapOfHelper = Far('match:mapOf helper', {
+    checkMatches: (specimen, [keyPatt, valuePatt], check = x => x) =>
+      check(
+        passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyMap',
+        X`${specimen} - Must be a CopyMap`,
+      ) &&
+      specimen.payload.keys.every(k => checkMatches(k, keyPatt, check)) &&
+      specimen.payload.values.every(v => checkMatches(v, valuePatt, check)),
+
+    checkIsMatcherPayload: (entryPatt, check = x => x) =>
+      check(
+        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
+        X`${entryPatt} - Must be an pair of patterns`,
+      ) && checkPattern(entryPatt, check),
+
+    getRankCover: _entryPatt => getPassStyleCover('tagged'),
+
+    checkKeyPattern: (_entryPatt, check = x => x) =>
+      check(false, X`CopyMap not yet supported as keys`),
+  });
+
+  /** @type {MatchHelper} */
+  const matchSplitHelper = Far('match:split helper', {
+    checkMatches: (specimen, [base, rest = undefined], check = x => x) => {
+      const specimenStyle = passStyleOf(specimen);
+      const baseStyle = passStyleOf(base);
+      if (specimenStyle !== baseStyle) {
+        return check(
+          false,
+          X`${specimen} - Must have shape of base: ${q(baseStyle)}`,
+        );
+      }
+      let specB;
+      let specR;
+      if (baseStyle === 'copyArray') {
+        const { length: baseLen } = base;
+        // Frozen below
+        specB = specimen.slice(0, baseLen);
+        specR = specimen.slice(baseLen);
+      } else {
+        assert(baseStyle === 'copyRecord');
+        // Not yet frozen! Mutated in place
+        specB = {};
+        specR = {};
+        for (const [name, value] of Object.entries(specimen)) {
+          if (hasOwnPropertyOf(base, name)) {
+            specB[name] = value;
+          } else {
+            specR[name] = value;
+          }
+        }
+      }
+      harden(specB);
+      harden(specR);
+      return (
+        (checkMatches(specB, base, check) &&
+        (rest === undefined || checkMatches(specR, rest, check)))
+      );
+    },
+
+    checkIsMatcherPayload: (splitArgs, check = x => x) => {
+      if (
+        passStyleOf(splitArgs) === 'copyArray' &&
+        (splitArgs.length === 1 || splitArgs.length === 2)
+      ) {
+        const [base, rest = undefined] = splitArgs;
+        const baseStyle = passStyleOf(base);
+        if (
+          isPattern(base) &&
+          (baseStyle === 'copyArray' || baseStyle === 'copyRecord') &&
+          (rest === undefined || isPattern(rest))
+        ) {
+          return true;
+        }
+      }
+      return check(
+        false,
+        X`Must be an array of a base structure and an optional rest pattern: ${splitArgs}`,
+      );
+    },
+
+    getRankCover: ([base, _rest = undefined]) =>
+      getPassStyleCover(passStyleOf(base)),
+
+    checkKeyPattern: ([base, _rest = undefined], check = x => x) =>
+      check(false, X`${q(passStyleOf(base))} not yet supported as keys`),
+  });
+
+  /** @type {MatchHelper} */
+  const matchPartialHelper = Far('match:partial helper', {
+    checkMatches: (specimen, [base, rest = undefined], check = x => x) => {
+      const specimenStyle = passStyleOf(specimen);
+      const baseStyle = passStyleOf(base);
+      if (specimenStyle !== baseStyle) {
+        return check(
+          false,
+          X`${specimen} - Must have shape of base: ${q(baseStyle)}`,
+        );
+      }
+      let specB;
+      let specR;
+      let newBase = base;
+      if (baseStyle === 'copyArray') {
+        const { length: specLen } = specimen;
+        const { length: baseLen } = base;
+        if (specLen < baseLen) {
+          newBase = harden(base.slice(0, specLen));
+        }
+        // Frozen below
+        specB = specimen.slice(0, baseLen);
+        specR = specimen.slice(baseLen);
+      } else {
+        assert(baseStyle === 'copyRecord');
+        // Not yet frozen! Mutated in place
+        specB = {};
+        specR = {};
+        newBase = {};
+        for (const [name, value] of Object.entries(specimen)) {
+          if (hasOwnPropertyOf(base, name)) {
+            specB[name] = value;
+            newBase[name] = base[name];
+          } else {
+            specR[name] = value;
+          }
+        }
+      }
+      harden(specB);
+      harden(specR);
+      harden(newBase);
+      return (
+        (checkMatches(specB, newBase, check) &&
+        (rest === undefined || checkMatches(specR, rest, check)))
+      );
+    },
+
+    checkIsMatcherPayload: matchSplitHelper.checkIsMatcherPayload,
+
+    getRankCover: matchSplitHelper.getRankCover,
+
+    checkKeyPattern: matchSplitHelper.checkKeyPattern,
+  });
+
   /** @type {Record<string, MatchHelper>} */
   const HelpersByMatchTag = harden({
     'match:any': matchAnyHelper,
-    'match:scalar': matchScalarHelper,
-    'match:kind': matchKindHelper,
     'match:and': matchAndHelper,
     'match:or': matchOrHelper,
     'match:not': matchNotHelper,
+
+    'match:scalar': matchScalarHelper,
+    'match:key': matchKeyHelper,
+    'match:pattern': matchPatternHelper,
+    'match:kind': matchKindHelper,
+
     'match:lt': matchLTHelper,
     'match:lte': matchLTEHelper,
     'match:gte': matchGTEHelper,
     'match:gt': matchGTHelper,
+
+    'match:arrayOf': matchArrayOfHelper,
+    'match:recordOf': matchRecordOfHelper,
+    'match:setOf': matchSetOfHelper,
+    'match:mapOf': matchMapOfHelper,
+    'match:split': matchSplitHelper,
+    'match:partial': matchPartialHelper,
   });
 
-  const patt = p => {
-    assertPattern(p);
-    return p;
+  const makeMatcher = (tag, payload) => {
+    const matcher = makeTagged(tag, payload);
+    assertPattern(matcher);
+    return matcher;
   };
 
+  const makeKindMatcher = kind => makeMatcher('match:kind', kind);
+
+  const theAnyPattern = makeMatcher('match:any', undefined);
+  const theScalarPattern = makeMatcher('match:scalar', undefined);
+  const theKeyPattern = makeMatcher('match:key', undefined);
+  const thePatternPattern = makeMatcher('match:pattern', undefined);
+  const theBooleanPattern = makeKindMatcher('boolean');
+  const theNumberPattern = makeKindMatcher('number');
+  const theBigintPattern = makeKindMatcher('bigint');
+  const theNatPattern = makeMatcher('match:gte', 0n);
+  const theStringPattern = makeKindMatcher('string');
+  const theSymbolPattern = makeKindMatcher('symbol');
+  const theRecordPattern = makeKindMatcher('copyRecord');
+  const theArrayPattern = makeKindMatcher('copyArray');
+  const theSetPattern = makeKindMatcher('copySet');
+  const theMapPattern = makeKindMatcher('copyMap');
+  const theRemotablePattern = makeKindMatcher('remotable');
+  const theErrorPattern = makeKindMatcher('error');
+  const thePromisePattern = makeKindMatcher('promise');
+  const theUndefinedPattern = makeKindMatcher('undefined');
+
+  /** @type {MatcherNamespace} */
   const M = harden({
-    any: () => patt(makeTagged('match:any', undefined)),
-    scalar: () => patt(makeTagged('match:scalar', undefined)),
-    and: (...patts) => patt(makeTagged('match:and', patts)),
-    or: (...patts) => patt(makeTagged('match:or', patts)),
-    not: subPatt => patt(makeTagged('match:not', subPatt)),
+    any: () => theAnyPattern,
+    and: (...patts) => makeMatcher('match:and', patts),
+    or: (...patts) => makeMatcher('match:or', patts),
+    not: subPatt => makeMatcher('match:not', subPatt),
 
-    kind: kind => patt(makeTagged('match:kind', kind)),
-    boolean: () => M.kind('boolean'),
-    number: () => M.kind('number'),
-    bigint: () => M.kind('bigint'),
-    string: () => M.kind('string'),
-    symbol: () => M.kind('symbol'),
-    record: () => M.kind('copyRecord'),
-    array: () => M.kind('copyArray'),
-    set: () => M.kind('copySet'),
-    map: () => M.kind('copyMap'),
-    remotable: () => M.kind('remotable'),
-    error: () => M.kind('error'),
-    promise: () => M.kind('promise'),
-
-    /**
-     * All keys including `undefined` are already valid patterns and
-     * so can validly represent themselves. But optional pattern arguments
-     * `(pattern = undefined) => ...`
-     * cannot distinguish between `undefined` passed as a pattern vs
-     * omission of the argument. It will interpret the first as the
-     * second. Thus, when a passed pattern does not also need to be a key,
-     * we recommend passing `M.undefined()` instead of `undefined`.
-     */
-    undefined: () => M.kind('undefined'),
+    scalar: () => theScalarPattern,
+    key: () => theKeyPattern,
+    pattern: () => thePatternPattern,
+    kind: makeKindMatcher,
+    boolean: () => theBooleanPattern,
+    number: () => theNumberPattern,
+    bigint: () => theBigintPattern,
+    nat: () => theNatPattern,
+    string: () => theStringPattern,
+    symbol: () => theSymbolPattern,
+    record: () => theRecordPattern,
+    array: () => theArrayPattern,
+    set: () => theSetPattern,
+    map: () => theMapPattern,
+    remotable: () => theRemotablePattern,
+    error: () => theErrorPattern,
+    promise: () => thePromisePattern,
+    undefined: () => theUndefinedPattern,
     null: () => null,
 
-    lt: rightSide => patt(makeTagged('match:lt', rightSide)),
-    lte: rightSide => patt(makeTagged('match:lte', rightSide)),
+    lt: rightOperand => makeMatcher('match:lt', rightOperand),
+    lte: rightOperand => makeMatcher('match:lte', rightOperand),
     eq: key => {
       assertKey(key);
       return key === undefined ? M.undefined() : key;
     },
     neq: key => M.not(M.eq(key)),
-    gte: rightSide => patt(makeTagged('match:gte', rightSide)),
-    gt: rightSide => patt(makeTagged('match:gt', rightSide)),
+    gte: rightOperand => makeMatcher('match:gte', rightOperand),
+    gt: rightOperand => makeMatcher('match:gt', rightOperand),
 
-    // TODO make more precise
-    arrayOf: _elementPatt => M.array(),
-    recordOf: _entryPatt => M.record(),
-    setOf: _elementPatt => M.set(),
-    mapOf: _entryPatt => M.map(),
+    arrayOf: (subPatt = M.any()) => makeMatcher('match:arrayOf', subPatt),
+    recordOf: (keyPatt = M.any(), valuePatt = M.any()) =>
+      makeMatcher('match:recordOf', [keyPatt, valuePatt]),
+    setOf: (keyPatt = M.any()) => makeMatcher('match:setOf', keyPatt),
+    mapOf: (keyPatt = M.any(), valuePatt = M.any()) =>
+      makeMatcher('match:mapOf', [keyPatt, valuePatt]),
+    split: (base, rest = undefined) =>
+      makeMatcher('match:split', rest === undefined ? [base] : [base, rest]),
+    partial: (base, rest = undefined) =>
+      makeMatcher('match:partial', rest === undefined ? [base] : [base, rest]),
   });
 
   return harden({
     matches,
-    assertMatches,
+    fit,
     assertPattern,
     isPattern,
     assertKeyPattern,
@@ -891,3 +1058,19 @@ export const makePatternKit = () => {
     M,
   });
 };
+
+// Only include those whose meaning is independent of an imputed sort order
+// of remotables, or of encoding of passable as sortable strings. Thus,
+// getRankCover is omitted. To get one, you'd need to instantiate
+// `makePatternKit()` yourself. Since there are currently no external
+// uses of `getRankCover`, for clarity during development, `makePatternKit`
+// is not currently exported.
+export const {
+  matches,
+  fit,
+  assertPattern,
+  isPattern,
+  assertKeyPattern,
+  isKeyPattern,
+  M,
+} = makePatternKit();
