@@ -1,6 +1,13 @@
-import { isNat } from '@agoric/nat';
-import { passStyleOf } from '@agoric/marshal';
-import { isKey } from '@agoric/store';
+import { M, matches } from '@agoric/store';
+
+const NatValueShape = M.nat();
+const SetValueShape = M.arrayOf(M.key());
+const AmountValueShape = M.or(NatValueShape, SetValueShape);
+
+export const AmountShape = harden({
+  brand: M.remotable(),
+  value: AmountValueShape,
+});
 
 /**
  * Returns true if value is a Nat bigint.
@@ -8,9 +15,7 @@ import { isKey } from '@agoric/store';
  * @param {Value} value
  * @returns {value is NatValue}
  */
-const isNatValue = value => {
-  return typeof value === 'bigint' && isNat(value);
-};
+const isNatValue = value => matches(value, NatValueShape);
 harden(isNatValue);
 
 /**
@@ -20,9 +25,7 @@ harden(isNatValue);
  * @param {Value} value
  * @returns {value is SetValue}
  */
-const isSetValue = value => {
-  return passStyleOf(value) === 'copyArray' && isKey(value);
-};
+const isSetValue = value => matches(value, SetValueShape);
 harden(isSetValue);
 
 export { isNatValue, isSetValue };
