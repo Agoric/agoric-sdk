@@ -27,7 +27,11 @@ const dirname = new URL('./', import.meta.url).pathname;
 // cd ui && yarn start
 
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
-  const { init: initOptions = [], testUnsafePlugins = false } = options;
+  const {
+    init: initOptions = [],
+    install: installOptions = [],
+    testUnsafePlugins = false,
+  } = options;
   // FIXME: Do a search for an unused port or allow specification.
   const PORT = '7999';
   process.env.PORT = PORT;
@@ -108,7 +112,11 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // agoric install
-    t.is(await myMain(['install']), 0, 'install works');
+    if (process.env.AGORIC_INSTALL_OPTIONS) {
+      const opts = JSON.parse(process.env.AGORIC_INSTALL_OPTIONS);
+      installOptions.push(...opts);
+    }
+    t.is(await myMain(['install', ...installOptions]), 0, 'install works');
 
     // ==============
     // agoric start --reset

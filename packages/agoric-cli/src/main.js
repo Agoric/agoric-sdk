@@ -52,11 +52,7 @@ const main = async (progname, rawArgs, powers) => {
   program
     .option('--sdk', 'use the Agoric SDK containing this program')
     .option('--no-sdk', 'do not use the Agoric SDK containing this program')
-    .option(
-      '--docker-tag <tag>',
-      'image tag to use for Docker containers',
-      'latest',
-    )
+    .option('--docker-tag <tag>', 'image tag to use for Docker containers')
     .option(
       '-v, --verbose',
       'verbosity that can be increased',

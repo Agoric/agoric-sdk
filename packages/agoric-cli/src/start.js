@@ -1,6 +1,7 @@
 /* global process setTimeout */
 import chalk from 'chalk';
 import { createHash } from 'crypto';
+import path from 'path';
 
 import {
   CENTRAL_DENOM,
@@ -60,9 +61,16 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     nodeDebugEnv.SWINGSET_WORKER_TYPE = 'local';
   }
 
+  const agServersPrefix = opts.sdk
+    ? undefined
+    : path.resolve(`_agstate/agoric-servers/node_modules/@agoric`);
+  const getBinaries = opts.sdk
+    ? getSDKBinaries
+    : () => getSDKBinaries({ goPfx: agServersPrefix, jsPfx: agServersPrefix });
+
   let keysSpawn;
-  if (opts.sdk) {
-    const { cosmosHelper } = getSDKBinaries();
+  if (!opts.dockerTag) {
+    const { cosmosHelper } = getBinaries();
     keysSpawn = (args, ...rest) =>
       pspawn(cosmosHelper, [`--home=_agstate/keys`, ...args], ...rest);
   } else {
@@ -129,10 +137,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   };
 
   let agSolo;
-  if (opts.sdk) {
-    ({ agSolo } = getSDKBinaries());
-  } else {
+  if (opts.dockerTag) {
     agSolo = `ag-solo`;
+  } else {
+    ({ agSolo } = getBinaries());
   }
 
   async function startFakeChain(profileName, _startArgs, popts) {
@@ -147,7 +155,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       await pspawn('rm', ['-rf', agServer]);
     }
 
-    if (!opts.sdk) {
+    if (!opts.dockerTag) {
       if (
         !(await exists('node_modules/@agoric/solo')) &&
         !(await exists('_agstate/agoric-servers/node_modules/@agoric/solo'))
@@ -200,10 +208,21 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 1;
     }
 
-    if (popts.pull) {
-      const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
-      if (exitStatus) {
-        return exitStatus;
+    const { cosmosChain, cosmosChainBuild } = getBinaries();
+    if (popts.pull || popts.rebuild) {
+      if (popts.dockerTag) {
+        const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
+        if (exitStatus) {
+          return exitStatus;
+        }
+      } else if (cosmosChainBuild) {
+        const exitStatus = await pspawn(
+          cosmosChainBuild[0],
+          cosmosChainBuild.slice(1),
+        );
+        if (exitStatus) {
+          return exitStatus;
+        }
       }
     }
 
@@ -215,8 +234,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     let chainSpawn;
-    if (popts.sdk) {
-      const { cosmosChain } = getSDKBinaries();
+    if (!popts.dockerTag) {
       chainSpawn = (args, spawnOpts = undefined) => {
         return pspawn(cosmosChain, [...args, `--home=${agServer}`], spawnOpts);
       };
@@ -294,9 +312,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         return exitStatus;
       }
 
-      const keysHome = opts.sdk
-        ? `_agstate/keys`
-        : `/usr/src/dapp/_agstate/keys`;
+      const keysHome = opts.dockerTag
+        ? `/usr/src/dapp/_agstate/keys`
+        : `_agstate/keys`;
       exitStatus = await chainSpawn([
         'gentx',
         'delegate0',
@@ -382,7 +400,25 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const agServer = `_agstate/agoric-servers/${profileName}-${portNum}`;
 
-    if (popts.pull) {
+    const { cosmosClientBuild } = getBinaries();
+    if (popts.pull || popts.rebuild) {
+      if (popts.dockerTag) {
+        const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
+        if (exitStatus) {
+          return exitStatus;
+        }
+      } else if (cosmosClientBuild) {
+        const exitStatus = await pspawn(
+          cosmosClientBuild[0],
+          cosmosClientBuild.slice(1),
+        );
+        if (exitStatus) {
+          return exitStatus;
+        }
+      }
+    }
+
+    if (popts.dockerTag && popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
       if (exitStatus) {
         return exitStatus;
@@ -396,7 +432,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     let soloSpawn;
-    if (popts.sdk) {
+    if (!popts.dockerTag) {
       soloSpawn = (args, spawnOpts = undefined) =>
         pspawn(agSolo, args, spawnOpts);
     } else {
@@ -447,7 +483,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     // Initialise the solo directory and key.
     if (!(await exists(agServer))) {
       const initArgs = [`--webport=${portNum}`];
-      if (!opts.sdk) {
+      if (opts.dockerTag) {
         initArgs.push(`--webhost=0.0.0.0`);
       }
       const exitStatus = await soloSpawn(
@@ -461,12 +497,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     const spawnOpts = {};
-    if (popts.sdk) {
+    if (!popts.dockerTag) {
       spawnOpts.cwd = agServer;
     }
 
     const rpcAddrs = [`localhost:${CHAIN_PORT}`];
-    if (!popts.sdk) {
+    if (popts.dockerTag) {
       rpcAddrs.push(`host.docker.internal:${CHAIN_PORT}`);
     }
 
@@ -578,7 +614,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   async function startTestnetDocker(profileName, startArgs, popts) {
-    if (popts.pull) {
+    if (popts.dockerTag && popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', SOLO_IMAGE]);
       if (exitStatus) {
         return exitStatus;
@@ -635,7 +671,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     dev: startFakeChain,
     'local-chain': startLocalChain,
     'local-solo': startLocalSolo,
-    testnet: opts.sdk ? startTestnetSdk : startTestnetDocker,
+    testnet: opts.dockerTag ? startTestnetDocker : startTestnetSdk,
   };
 
   const popts = opts;
