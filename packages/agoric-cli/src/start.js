@@ -63,7 +63,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   const agServersPrefix = opts.sdk
     ? undefined
-    : path.resolve(`_agstate/agoric-servers/node_modules/@agoric`);
+    : path.resolve(`node_modules/@agoric`);
   const getBinaries = opts.sdk
     ? getSDKBinaries
     : () => getSDKBinaries({ goPfx: agServersPrefix, jsPfx: agServersPrefix });
@@ -156,10 +156,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     if (!opts.dockerTag) {
-      if (
-        !(await exists('node_modules/@agoric/solo')) &&
-        !(await exists('_agstate/agoric-servers/node_modules/@agoric/solo'))
-      ) {
+      if (!(await exists('node_modules/@agoric/solo'))) {
         log.error(`you must first run '${progname} install'`);
         return 1;
       }
