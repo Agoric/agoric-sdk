@@ -136,6 +136,9 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
         }
       });
     }
+    startP.childProcess.on('close', code =>
+      startResult.reject(Error(`early termination: ${code}`)),
+    );
 
     const timeout = setTimeout(
       startResult.reject,
