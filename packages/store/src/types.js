@@ -5,11 +5,59 @@
 
 /**
  * @typedef {Passable} Key
+ * Keys are pass-by-copy structures (CopyArray, CopyRecord,
+ * CopySet, CopyMap) that end in either passable primitive data or
+ * Remotables (Far objects or their remote presences.) Keys are so named
+ * because they can be used as keys in MapStores and CopyMaps, as well as
+ * the elements of CopySets.
+ *
+ * Keys cannot contain promises or errors, as these do not have a useful
+ * distributed equality semantics. Keys also cannot contain any CopyTagged
+ * except for those recognized as CopySets and CopyMaps.
+ *
+ * Distributed equality is location independent.
+ * The same two keys, passed to another location, will be equal there iff
+ * they are equal here.
  */
 
 /**
  * @typedef {Passable} Pattern
- * Patterns can be either Keys or Matchers
+ * Patterns are pass-by-copy structures (CopyArray, CopyRecord,
+ * CopySet, CopyMap) that end in either Keys or Matchers. Each pattern
+ * acts as a declarative passable predicate over passables, where each passable
+ * either passes a given pattern, or does not. Every key is also a pattern.
+ * Used as a pattern, a key matches only "itself", i.e., keys that are equal
+ * to it according to the key distributed equality semantics.
+ *
+ * Patterns cannot contain promises or errors, as these do
+ * not have a useful distributed equality or matching semantics. Likewise,
+ * no pattern can distinguish among promises, or distinguish among errors.
+ * Patterns also cannot contain any CopyTaggeds except for those recognized as
+ * CopySets, CopyMaps, or Matchers.
+ *
+ * Whether a passable matches a given pattern is location independent.
+ * For a passable and a pattern, both passed to another location, the passable
+ * will match the pattern there iff the passable matches that pattern here.
+ *
+ * Patterns are often used in a type-like manner, to represent the category
+ * of passables that are intended* to match that pattern. To keep this
+ * distinction clear, we often use the suffix "Shape" rather than "Pattern"
+ * to avoid the levels confusion when the pattern itself represents
+ * some category of pattern. For example, an "AmountShape" represents the
+ * category of Amounts. And "AmountPatternShape" represents the
+ * category of patterns over Amounts.
+ *
+ * * I say "indended" above because Patterns, in order to be declarative
+ * and passable, cannot have the generality of predicates written in a
+ * Turing-universal programming language. Rather, to represent the category of
+ * things intended to be a Foo, a FooShape should reliably
+ * accept all Foos and reject only non-Foos. However, a FooShape may also accept
+ * non-Foos that "look like" or have "the same shape as" genuine Foos. To write
+ * as accurate predicate, for use, for example, for input validation, would
+ * need to supplement the pattern check with code to check for the residual
+ * cases.
+ * We hope the "Shape" metaphore helps remind us of this type-like imprecision
+ * of patterns.
  */
 
 /**
@@ -296,11 +344,6 @@
  */
 
 /**
- * @typedef {Object} PatternMatcher
- * @property {GetRankCover} getRankCover
- */
-
-/**
  * @typedef {Object} MatcherNamespace
  * @property {() => Matcher} any
  * Matches any passable
@@ -399,7 +442,7 @@
 // /////////////////////////////////////////////////////////////////////////////
 
 // TODO
-// The following commented out type should be in internal-types.js, since the
+// The following type should be in internal-types.js, since the
 // `MatchHelper` type is purely internal to this package. However,
 // in order to get the governance and solo packages both to pass lint,
 // I moved the type declaration itself to types.js. See the comments in
