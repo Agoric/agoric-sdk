@@ -87,11 +87,12 @@ jobs:
 
         # Use the locally-installed dist-tag.
         echo 'AGORIC_INSTALL_OPTIONS=["blah"]' >> $GITHUB_ENV
+        echo 'AGORIC_START_OPTIONS=["--rebuild"]' >> $GITHUB_ENV
         echo 'AGORIC_CMD=["agoric"]' >> $GITHUB_ENV
 
     - name: run agoric-cli integration-test
       working-directory: ./packages/agoric-cli
-      run: PATH="$HOME/bin:$PATH" yarn integration-test
+      run: yarn integration-test
       env:
         AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
         # Try to avoid hitting a pessimal Actions output rate-limitation.

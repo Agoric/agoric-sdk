@@ -9,8 +9,10 @@ export const getSDKBinaries = ({
 } = {}) => {
   const myUrl = import.meta.url;
   const cosmosBuild = ['make', '-C', `${goPfx}/cosmos`, 'all'];
+  const xsnap = new URL(`${jsPfx}/xsnap`, myUrl).pathname;
   return {
     agSolo: new URL(`${jsPfx}/solo/src/entrypoint.js`, myUrl).pathname,
+    agSoloBuild: ['yarn', '--cwd', xsnap, `build:from-env`],
     cosmosChain: new URL(`${jsPfx}/cosmic-swingset/bin/ag-chain-cosmos`, myUrl)
       .pathname,
     cosmosChainBuild: cosmosBuild,

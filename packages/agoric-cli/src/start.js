@@ -137,10 +137,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   };
 
   let agSolo;
+  let agSoloBuild;
   if (opts.dockerTag) {
     agSolo = `ag-solo`;
   } else {
-    ({ agSolo } = getBinaries());
+    ({ agSolo, agSoloBuild } = getBinaries());
   }
 
   async function startFakeChain(profileName, _startArgs, popts) {
@@ -159,6 +160,15 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       if (!(await exists('node_modules/@agoric/solo'))) {
         log.error(`you must first run '${progname} install'`);
         return 1;
+      }
+    }
+
+    if (opts.pull || opts.rebuild) {
+      if (!opts.dockerTag && agSoloBuild) {
+        const exitStatus = await pspawn(agSoloBuild[0], agSoloBuild.slice(1));
+        if (exitStatus) {
+          return exitStatus;
+        }
       }
     }
 
@@ -209,15 +219,15 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     if (popts.pull || popts.rebuild) {
       if (popts.dockerTag) {
         const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
-        if (exitStatus) {
+        if (exitStatus !== 0) {
           return exitStatus;
         }
-      } else if (cosmosChainBuild) {
+      } else {
         const exitStatus = await pspawn(
           cosmosChainBuild[0],
           cosmosChainBuild.slice(1),
         );
-        if (exitStatus) {
+        if (exitStatus !== 0) {
           return exitStatus;
         }
       }
@@ -401,15 +411,15 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     if (popts.pull || popts.rebuild) {
       if (popts.dockerTag) {
         const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
-        if (exitStatus) {
+        if (exitStatus !== 0) {
           return exitStatus;
         }
-      } else if (cosmosClientBuild) {
+      } else {
         const exitStatus = await pspawn(
           cosmosClientBuild[0],
           cosmosClientBuild.slice(1),
         );
-        if (exitStatus) {
+        if (exitStatus !== 0) {
           return exitStatus;
         }
       }

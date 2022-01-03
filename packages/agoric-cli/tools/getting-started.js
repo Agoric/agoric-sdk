@@ -30,6 +30,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   const {
     init: initOptions = [],
     install: installOptions = [],
+    start: startOptions = [],
     testUnsafePlugins = false,
   } = options;
   // FIXME: Do a search for an unused port or allow specification.
@@ -122,8 +123,13 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     // agoric start --reset
     const startResult = makePromiseKit();
 
+    if (process.env.AGORIC_START_OPTIONS) {
+      const opts = JSON.parse(process.env.AGORIC_START_OPTIONS);
+      startOptions.push(...opts);
+    }
+
     // TODO: Allow this to work even if the port is already used.
-    const startP = myMain(['start', '--reset']);
+    const startP = myMain(['start', '--reset', ...startOptions]);
     finalizers.push(() => pkill(startP.childProcess, 'SIGINT'));
 
     let stdoutStr = '';
