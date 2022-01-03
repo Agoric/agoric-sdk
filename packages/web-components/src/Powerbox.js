@@ -4,16 +4,16 @@ class Powerbox {
   constructor() {
     this.loaded = false;
     window.addEventListener('load', () => {
+      if (typeof powerbox === 'undefined') {
+        console.warn('Powerbox extension not found.');
+      }
       this.loaded = true;
       this.expandPetdata();
     });
   }
 
   expandPetdata() {
-    if (!this.loaded) return;
-    if (typeof powerbox === 'undefined') {
-      throw new Error('powerbox not found');
-    }
+    if (!this.loaded || typeof powerbox === 'undefined') return;
     powerbox.expandPetdata();
   }
 }
