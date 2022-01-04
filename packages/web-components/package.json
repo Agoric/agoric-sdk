@@ -8,7 +8,7 @@
   "module": "index.js",
   "scripts": {
     "build": "exit 0",
-    "test": "web-test-runner --coverage",
+    "test": "if test \"$SKIP_BROWSER_TESTS\" != \"true\" ; then web-test-runner --coverage ; fi",
     "test:c8": "exit 0",
     "test:xs": "exit 0",
     "test:watch": "web-test-runner --watch",
