@@ -1,7 +1,15 @@
 // @ts-check
 
 export { isKey, assertKey } from './keys/checkKey.js';
-export { keyLT, keyLTE, keyEQ, keyGTE, keyGT } from './keys/compareKeys.js';
+export {
+  compareKeys,
+  keyLT,
+  keyLTE,
+  keyEQ,
+  keyGTE,
+  keyGT,
+} from './keys/compareKeys.js';
+export { makeSetOps } from './keys/merge-set-operators.js';
 
 export {
   M,
@@ -10,7 +18,7 @@ export {
   matches,
   fit,
 } from './patterns/patternMatchers.js';
-// export { compareRank } from './patterns/rankOrder.js';
+export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';

@@ -64,7 +64,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
         {
           show: 'Steven Universe, the Opera',
           start: 'Wed, March 25th 2020 at 8pm',
-          number: 1,
+          number: 3,
         },
         {
           show: 'Steven Universe, the Opera',
@@ -74,7 +74,7 @@ test(`mint and sell tickets for multiple shows`, async t => {
         {
           show: 'Steven Universe, the Opera',
           start: 'Wed, March 25th 2020 at 8pm',
-          number: 3,
+          number: 1,
         },
       ],
     },
@@ -103,12 +103,12 @@ test(`mint and sell tickets for multiple shows`, async t => {
         {
           show: 'Reserved for private party',
           start: 'Tues May 12, 2020 at 8pm',
-          number: 1,
+          number: 2,
         },
         {
           show: 'Reserved for private party',
           start: 'Tues May 12, 2020 at 8pm',
-          number: 2,
+          number: 1,
         },
       ],
     },

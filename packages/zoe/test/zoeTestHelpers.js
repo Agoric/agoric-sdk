@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 
 import '../exported.js';
-import setMathHelpers from '@agoric/ertp/src/mathHelpers/setMathHelpers.js';
+import { setMathHelpers } from '@agoric/ertp/src/mathHelpers/setMathHelpers.js';
 import { AmountMath, isNatValue, isSetValue } from '@agoric/ertp';
 
 import { q } from '@agoric/assert';

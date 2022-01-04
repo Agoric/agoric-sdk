@@ -402,13 +402,16 @@ export const {
  * the remotables in the same order again. Unfortunately, this is
  * not true of arrays of passables in general.
  *
+ * @param {boolean=} longLived
  * @returns {ComparatorKit}
  */
-export const makeFullOrderComparatorKit = () => {
+export const makeFullOrderComparatorKit = (longLived = false) => {
   let numSeen = 0;
-  // Could be a WeakMap but would perform poorly. There are a dynamic
-  // number of these created, and each typically has a short lifetime.
-  const seen = new Map();
+  // When dynamically created with short lifetimes (the default) a WeakMap
+  // would perform poorly, and the leak created by a Map only lasts as long
+  // as the Map.
+  const MapConstructor = longLived ? WeakMap : Map;
+  const seen = new MapConstructor();
   const tag = r => {
     if (seen.has(r)) {
       return seen.get(r);
