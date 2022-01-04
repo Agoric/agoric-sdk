@@ -1,10 +1,11 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
+import { M, fit } from '@agoric/store';
 import '../../exported.js';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { assertProposalShape, swapExact } from '../contractSupport/index.js';
+import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
 
 /**
@@ -27,8 +28,10 @@ import { isAfterDeadlineExitRule } from '../typeGuards.js';
  * different brands can be escrowed under different keywords. The
  * proposal must have an exit record with the key "afterDeadline":
  * {
- *    give: { ... }, want: { ... }, exit: {afterDeadline: { deadline:
- *    time, timer: myTimer }
+ *    give: { ... },
+ *    want: { ... },
+ *    exit: {
+ *      afterDeadline: { deadline: time, timer: myTimer }
  *    },
  * }
  *
@@ -70,7 +73,7 @@ const start = zcf => {
 
   /** @type {OfferHandler} */
   const makeOption = sellSeat => {
-    assertProposalShape(sellSeat, { exit: { afterDeadline: null } });
+    fit(sellSeat.getProposal(), M.split({ exit: { afterDeadline: M.any() } }));
     const sellSeatExitRule = sellSeat.getProposal().exit;
     assert(
       isAfterDeadlineExitRule(sellSeatExitRule),

@@ -979,50 +979,50 @@ const makePatternKit = () => {
 
   const makeKindMatcher = kind => makeMatcher('match:kind', kind);
 
-  const theAnyPattern = makeMatcher('match:any', undefined);
-  const theScalarPattern = makeMatcher('match:scalar', undefined);
-  const theKeyPattern = makeMatcher('match:key', undefined);
-  const thePatternPattern = makeMatcher('match:pattern', undefined);
-  const theBooleanPattern = makeKindMatcher('boolean');
-  const theNumberPattern = makeKindMatcher('number');
-  const theBigintPattern = makeKindMatcher('bigint');
-  const theNatPattern = makeMatcher('match:gte', 0n);
-  const theStringPattern = makeKindMatcher('string');
-  const theSymbolPattern = makeKindMatcher('symbol');
-  const theRecordPattern = makeKindMatcher('copyRecord');
-  const theArrayPattern = makeKindMatcher('copyArray');
-  const theSetPattern = makeKindMatcher('copySet');
-  const theMapPattern = makeKindMatcher('copyMap');
-  const theRemotablePattern = makeKindMatcher('remotable');
-  const theErrorPattern = makeKindMatcher('error');
-  const thePromisePattern = makeKindMatcher('promise');
-  const theUndefinedPattern = makeKindMatcher('undefined');
+  const AnyShape = makeMatcher('match:any', undefined);
+  const ScalarShape = makeMatcher('match:scalar', undefined);
+  const KeyShape = makeMatcher('match:key', undefined);
+  const PatternShape = makeMatcher('match:pattern', undefined);
+  const BooleanShape = makeKindMatcher('boolean');
+  const NumberShape = makeKindMatcher('number');
+  const BigintShape = makeKindMatcher('bigint');
+  const NatShape = makeMatcher('match:gte', 0n);
+  const StringShape = makeKindMatcher('string');
+  const SymbolShape = makeKindMatcher('symbol');
+  const RecordShape = makeKindMatcher('copyRecord');
+  const ArrayShape = makeKindMatcher('copyArray');
+  const SetShape = makeKindMatcher('copySet');
+  const MapShape = makeKindMatcher('copyMap');
+  const RemotableShape = makeKindMatcher('remotable');
+  const ErrorShape = makeKindMatcher('error');
+  const PromiseShape = makeKindMatcher('promise');
+  const UndefinedShape = makeKindMatcher('undefined');
 
   /** @type {MatcherNamespace} */
   const M = harden({
-    any: () => theAnyPattern,
+    any: () => AnyShape,
     and: (...patts) => makeMatcher('match:and', patts),
     or: (...patts) => makeMatcher('match:or', patts),
     not: subPatt => makeMatcher('match:not', subPatt),
 
-    scalar: () => theScalarPattern,
-    key: () => theKeyPattern,
-    pattern: () => thePatternPattern,
+    scalar: () => ScalarShape,
+    key: () => KeyShape,
+    pattern: () => PatternShape,
     kind: makeKindMatcher,
-    boolean: () => theBooleanPattern,
-    number: () => theNumberPattern,
-    bigint: () => theBigintPattern,
-    nat: () => theNatPattern,
-    string: () => theStringPattern,
-    symbol: () => theSymbolPattern,
-    record: () => theRecordPattern,
-    array: () => theArrayPattern,
-    set: () => theSetPattern,
-    map: () => theMapPattern,
-    remotable: () => theRemotablePattern,
-    error: () => theErrorPattern,
-    promise: () => thePromisePattern,
-    undefined: () => theUndefinedPattern,
+    boolean: () => BooleanShape,
+    number: () => NumberShape,
+    bigint: () => BigintShape,
+    nat: () => NatShape,
+    string: () => StringShape,
+    symbol: () => SymbolShape,
+    record: () => RecordShape,
+    array: () => ArrayShape,
+    set: () => SetShape,
+    map: () => MapShape,
+    remotable: () => RemotableShape,
+    error: () => ErrorShape,
+    promise: () => PromiseShape,
+    undefined: () => UndefinedShape,
     null: () => null,
 
     lt: rightOperand => makeMatcher('match:lt', rightOperand),

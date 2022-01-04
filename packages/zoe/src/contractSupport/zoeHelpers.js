@@ -5,7 +5,7 @@ import { assert, details as X } from '@agoric/assert';
 import { sameStructure } from '@agoric/same-structure';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-
+import { fit } from '@agoric/store';
 import { AssetKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
@@ -99,6 +99,18 @@ export const swapExact = (zcf, leftSeat, rightSeat) => {
  * @property {Record<Keyword, null>} [give]
  * @property {Partial<Record<keyof ProposalRecord['exit'], null>>} [exit]
  */
+
+/**
+ * Check the seat's proposal against `proposalShape`.
+ * If the client submits an offer which does not match
+ * these expectations, the seat will be exited (and payments refunded).
+ *
+ * @param {ZCFSeat} seat
+ * @param {Pattern} proposalShape
+ */
+export const fitProposalShape = (seat, proposalShape) =>
+  // TODO remove this harden, obligating our caller to harden.
+  fit(seat.getProposal(), harden(proposalShape));
 
 /**
  * Check the seat's proposal against an `expected` record that says
