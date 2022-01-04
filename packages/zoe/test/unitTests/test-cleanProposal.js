@@ -60,9 +60,7 @@ test('cleanProposal - repeated brands', t => {
   });
 
   const expected = harden({
-    want: {
-      Asset2: simoleans(1n),
-    },
+    want: { Asset2: simoleans(1n) },
     give: { Price2: moola(3n) },
     exit: { afterDeadline: { timer, deadline: 100n } },
   });
@@ -91,4 +89,69 @@ test('cleanProposal - wrong assetKind', t => {
   t.throws(() => cleanProposal(proposal, getAssetKind), {
     message: /The amount .* did not have the assetKind of the brand .*/,
   });
+});
+
+test('cleanProposal - other wrong stuff', t => {
+  const { moola, simoleans } = setup();
+  const timer = buildManualTimer(console.log);
+
+  const proposeBad = (proposal, assetKind, message) =>
+    t.throws(() => cleanProposal(harden(proposal), () => assetKind), {
+      message,
+    });
+
+  proposeBad(
+    { want: { lowercase: simoleans(1n) } },
+    'nat',
+    /keyword "lowercase" must be an ascii identifier starting with upper case./,
+  );
+  proposeBad(
+    { give: { lowercase: simoleans(1n) } },
+    'nat',
+    /keyword "lowercase" must be an ascii identifier starting with upper case./,
+  );
+  proposeBad(
+    { want: { 'Not Ident': simoleans(1n) } },
+    'nat',
+    /keyword "Not Ident" must be an ascii identifier starting with upper case./,
+  );
+  proposeBad(
+    { what: { 'Not Ident': simoleans(1n) } },
+    'nat',
+    /key "what" was not one of the expected keys \["want","give","exit"\]/,
+  );
+  proposeBad(
+    { [Symbol.for('what')]: { 'Not Ident': simoleans(1n) } },
+    'nat',
+    /cannot serialize Remotables with non-methods like "Symbol\(what\)" in {}/,
+  );
+  proposeBad(
+    { want: { [Symbol.for('S')]: simoleans(1n) } },
+    'nat',
+    /cannot serialize Remotables with non-methods like "Symbol\(S\)" in {}/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: { timer, deadline: 3 } } },
+    'nat',
+    /deadline must be a Nat BigInt/,
+  );
+  proposeBad(
+    { exit: { afterDeadline: { timer, deadline: -3n } } },
+    'nat',
+    /deadline must be a Nat BigInt/,
+  );
+  proposeBad({ exit: {} }, 'nat', /exit {} should only have one key/);
+  proposeBad(
+    { exit: { onDemand: null, waived: null } },
+    'nat',
+    /exit {"onDemand":null,"waived":null} should only have one key/,
+  );
+  proposeBad(
+    {
+      want: { Asset: simoleans(1n) },
+      give: { Asset: moola(3n) },
+    },
+    'nat',
+    /a keyword cannot be in both 'want' and 'give'/,
+  );
 });

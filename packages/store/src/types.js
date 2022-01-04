@@ -5,18 +5,68 @@
 
 /**
  * @typedef {Passable} Key
+ * Keys are pass-by-copy structures (CopyArray, CopyRecord,
+ * CopySet, CopyMap) that end in either passable primitive data or
+ * Remotables (Far objects or their remote presences.) Keys are so named
+ * because they can be used as keys in MapStores and CopyMaps, as well as
+ * the elements of CopySets.
+ *
+ * Keys cannot contain promises or errors, as these do not have a useful
+ * distributed equality semantics. Keys also cannot contain any CopyTagged
+ * except for those recognized as CopySets and CopyMaps.
+ *
+ * Distributed equality is location independent.
+ * The same two keys, passed to another location, will be equal there iff
+ * they are equal here.
  */
 
 /**
  * @typedef {Passable} Pattern
- * Patterns can be either Keys or Matchers
+ * Patterns are pass-by-copy structures (CopyArray, CopyRecord,
+ * CopySet, CopyMap) that end in either Keys or Matchers. Each pattern
+ * acts as a declarative passable predicate over passables, where each passable
+ * either passes a given pattern, or does not. Every key is also a pattern.
+ * Used as a pattern, a key matches only "itself", i.e., keys that are equal
+ * to it according to the key distributed equality semantics.
+ *
+ * Patterns cannot contain promises or errors, as these do
+ * not have a useful distributed equality or matching semantics. Likewise,
+ * no pattern can distinguish among promises, or distinguish among errors.
+ * Patterns also cannot contain any CopyTaggeds except for those recognized as
+ * CopySets, CopyMaps, or Matchers.
+ *
+ * Whether a passable matches a given pattern is location independent.
+ * For a passable and a pattern, both passed to another location, the passable
+ * will match the pattern there iff the passable matches that pattern here.
+ *
+ * Patterns are often used in a type-like manner, to represent the category
+ * of passables that are intended* to match that pattern. To keep this
+ * distinction clear, we often use the suffix "Shape" rather than "Pattern"
+ * to avoid the levels confusion when the pattern itself represents
+ * some category of pattern. For example, an "AmountShape" represents the
+ * category of Amounts. And "AmountPatternShape" represents the
+ * category of patterns over Amounts.
+ *
+ * * I say "indended" above because Patterns, in order to be declarative
+ * and passable, cannot have the generality of predicates written in a
+ * Turing-universal programming language. Rather, to represent the category of
+ * things intended to be a Foo, a FooShape should reliably
+ * accept all Foos and reject only non-Foos. However, a FooShape may also accept
+ * non-Foos that "look like" or have "the same shape as" genuine Foos. To write
+ * as accurate predicate, for use, for example, for input validation, would
+ * need to supplement the pattern check with code to check for the residual
+ * cases.
+ * We hope the "Shape" metaphore helps remind us of this type-like imprecision
+ * of patterns.
  */
 
 /**
+ * @template K
  * @typedef {CopyTagged} CopySet
  */
 
 /**
+ * @template K,V
  * @typedef {CopyTagged} CopyMap
  */
 
@@ -74,8 +124,8 @@
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
  * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(keyPattern?: Pattern) => CopySet} snapshot
- * @property {(copySet: CopySet) => void} addAll
+ * @property {(keyPattern?: Pattern) => CopySet<K>} snapshot
+ * @property {(copySet: CopySet<K>) => void} addAll
  * @property {(keyPattern?: Pattern,
  *             direction?: Direction
  * ) => Iterable<K>} cursor
@@ -118,8 +168,8 @@
  * @property {(keyPattern?: Pattern) => K[]} keys
  * @property {(valuePattern?: Pattern) => V[]} values
  * @property {(entryPattern?: Pattern) => [K,V][]} entries
- * @property {(entryPattern?: Pattern) => CopyMap} snapshot
- * @property {(copyMap: CopyMap) => void} addAll
+ * @property {(entryPattern?: Pattern) => CopyMap<K,V>} snapshot
+ * @property {(copyMap: CopyMap<K,V>) => void} addAll
  * @property {(entryPattern?: Pattern,
  *             direction?: Direction
  * ) => Iterable<[K,V]>} cursor
@@ -213,6 +263,12 @@
  * @returns {-1 | 0 | 1}
  */
 
+/**
+ * @typedef {Object} ComparatorKit
+ * @property {CompareRank} comparator
+ * @property {CompareRank} antiComparator
+ */
+
 // ///////////////////// Should be internal only types /////////////////////////
 
 /**
@@ -273,8 +329,11 @@
 
 /**
  * @callback KeyToDBKey
+ * If this key can be encoded as a DBKey string which sorts correctly,
+ * return that string. Else return `undefined`. For example, a scalar-only
+ * encodeKey would return `undefined` for all non-scalar keys.
  * @param {Passable} key
- * @returns {string}
+ * @returns {string=}
  */
 
 /**
@@ -285,14 +344,105 @@
  */
 
 /**
- * @typedef {Object} PatternMatcher
- * @property {GetRankCover} getRankCover
+ * @typedef {Object} MatcherNamespace
+ * @property {() => Matcher} any
+ * Matches any passable
+ * @property {(...patts: Pattern[]) => Matcher} and
+ * Only if it matches all the sub-patterns
+ * @property {(...patts: Pattern[]) => Matcher} or
+ * Only if it matches at least one subPattern
+ * @property {(subPatt: Pattern) => Matcher} not
+ * Only if it does not match the sub-pattern
+ *
+ * @property {() => Matcher} scalar
+ * The scalars are the primitive values and Remotables.
+ * All scalars are keys.
+ * @property {() => Matcher} key
+ * Can be in a copySet or the key in a CopyMap.
+ * (Will eventually be able to a key is a MapStore.)
+ * All keys are patterns that match only themselves.
+ * @property {() => Matcher} pattern
+ * If it matches M.pattern(), the it is itself a pattern used
+ * to match other passables. A pattern cannot contain errors
+ * or promises, as these are not stable enough to usefully match.
+ * @property {(kind: string) => Matcher} kind
+ * @property {() => Matcher} boolean
+ * @property {() => Matcher} number Only floating point numbers
+ * @property {() => Matcher} bigint
+ * @property {() => Matcher} nat
+ * @property {() => Matcher} string
+ * @property {() => Matcher} symbol
+ * Only registered and well-known symbols are passable
+ * @property {() => Matcher} record A CopyRecord
+ * @property {() => Matcher} array A CopyArray
+ * @property {() => Matcher} set A CopySet
+ * @property {() => Matcher} map A CopyMap
+ * @property {() => Matcher} remotable A far object or its remote presence
+ * @property {() => Matcher} error
+ * Error objects are passable, but are neither keys nor symbols.
+ * They do not have a useful identity.
+ * @property {() => Matcher} promise
+ * Promises are passable, but are neither keys nor symbols.
+ * They do not have a useful identity.
+ * @property {() => Matcher} undefined
+ * All keys including `undefined` are already valid patterns and
+ * so can validly represent themselves. But optional pattern arguments
+ * `(pattern = undefined) => ...`
+ * cannot distinguish between `undefined` passed as a pattern vs
+ * omission of the argument. It will interpret the first as the
+ * second. Thus, when a passed pattern does not also need to be a key,
+ * we recommend passing `M.undefined()` instead of `undefined`.
+ *
+ * @property {() => null} null
+ *
+ * @property {(rightOperand :Key) => Matcher} lt
+ * Matches if < the right operand by compareKeys
+ * @property {(rightOperand :Key) => Matcher} lte
+ * Matches if <= the right operand by compareKeys
+ * @property {(key :Key) => Matcher} eq
+ * @property {(key :Key) => Matcher} neq
+ * @property {(rightOperand :Key) => Matcher} gte
+ * Matches if >= the right operand by compareKeys
+ * @property {(rightOperand :Key) => Matcher} gt
+ * Matches if > the right operand by compareKeys
+ *
+ * @property {(subPatt?: Pattern) => Matcher} arrayOf
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} recordOf
+ * @property {(keyPatt?: Pattern) => Matcher} setOf
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} mapOf
+ * @property {(
+ *   base: CopyRecord<*> | CopyArray<*>,
+ *   rest?: Pattern
+ * ) => Matcher} split
+ * An array or record is split into the first part that matches the
+ * base pattern, and the remainder, which matches against the optional
+ * rest pattern if present.
+ * @property {(
+ *   base: CopyRecord<*> | CopyArray<*>,
+ *   rest?: Pattern
+ * ) => Matcher} partial
+ * An array or record is split into the first part that matches the
+ * base pattern, and the remainder, which matches against the optional
+ * rest pattern if present.
+ * Unlike `M.split`, `M.partial` ignores properties on the base
+ * pattern that are not present on the specimen.
+ */
+
+/**
+ * @typedef {Object} PatternKit
+ * @property {(specimen: Passable, patt: Pattern) => boolean} matches
+ * @property {(specimen: Passable, patt: Pattern) => void} fit
+ * @property {(patt: Pattern) => void} assertPattern
+ * @property {(patt: Passable) => boolean} isPattern
+ * @property {(patt: Pattern) => void} assertKeyPattern
+ * @property {(patt: Passable) => boolean} isKeyPattern
+ * @property {MatcherNamespace} M
  */
 
 // /////////////////////////////////////////////////////////////////////////////
 
 // TODO
-// The following commented out type should be in internal-types.js, since the
+// The following type should be in internal-types.js, since the
 // `MatchHelper` type is purely internal to this package. However,
 // in order to get the governance and solo packages both to pass lint,
 // I moved the type declaration itself to types.js. See the comments in

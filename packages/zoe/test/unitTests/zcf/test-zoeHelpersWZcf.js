@@ -2,6 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { M, fit } from '@agoric/store';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints.js';
 import {
@@ -291,6 +292,43 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
   t.notThrows(() => assertIssuerKeywords(zcf, ['A', 'B']));
 });
 
+test(`zoeHelper with zcf - fit proposal patterns`, async t => {
+  const { moola, simoleans } = setup();
+
+  const proposal = harden({
+    want: { A: moola(20n) },
+    give: { B: simoleans(3n) },
+  });
+
+  // @ts-ignore invalid arguments for testing
+  t.throws(() => fit(proposal, harden([])), {
+    message: /.* - Must be equivalent to: \[\]/,
+  });
+  t.throws(
+    () => fit(proposal, M.split({ want: { C: M.any() } })),
+    {
+      message: /Must have same property names as record pattern: {"C":"\[match:any\]"}/,
+    },
+    'empty keywordRecord does not match',
+  );
+  t.notThrows(() => fit(proposal, M.split({ want: { A: M.any() } })));
+  t.notThrows(() => fit(proposal, M.split({ give: { B: M.any() } })));
+  t.throws(
+    () => fit(proposal, M.split({ give: { c: M.any() } })),
+    {
+      message: /Must have same property names as record pattern: {"c":"\[match:any\]"}/,
+    },
+    'wrong key in keywordRecord does not match',
+  );
+  t.throws(
+    () => fit(proposal, M.split({ exit: { onDemaind: M.any() } })),
+    {
+      message: /Must have same property names as record pattern: {"exit":{"onDemaind":"\[match:any\]"}}/,
+    },
+    'missing exit rule',
+  );
+});
+
 test(`zoeHelper with zcf - assertProposalShape`, async t => {
   const {
     moolaIssuer,
@@ -564,6 +602,19 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   );
 });
 
+test(`zcf/zoeHelper - fit proposal pattern w/bad Expected`, async t => {
+  const { moola, simoleans } = setup();
+
+  const proposal = harden({
+    want: { A: moola(20n) },
+    give: { B: simoleans(3n) },
+  });
+
+  t.throws(() => fit(proposal, M.split({ give: { B: moola(3n) } })), {
+    message: /.* - Must be equivalent to: .*/,
+  });
+});
+
 test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
   const {
     moolaIssuer,
@@ -582,7 +633,6 @@ test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3n)) },
   );
 
-  // @ts-ignore invalid arguments for testing
   t.throws(() => assertProposalShape(zcfSeat, { give: { B: moola(3n) } }), {
     message: /The value of the expected record must be null but was .*/,
   });

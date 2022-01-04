@@ -1,11 +1,10 @@
 // @ts-check
 
 import { filterIterable } from '@agoric/marshal';
-import { makePatternKit } from '../patterns/patternMatchers.js';
+import { matches } from '../patterns/patternMatchers.js';
 import { assertRankSorted } from '../patterns/rankOrder.js';
 
 const { details: X, quote: q } = assert;
-const { matches } = makePatternKit();
 
 export const makeCursorKit = (
   compare,

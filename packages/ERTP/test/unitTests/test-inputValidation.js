@@ -104,7 +104,8 @@ test('brand.isMyIssuer bad issuer', async t => {
   t.false(result);
 });
 
-// Tested in the context of an issuer.claim call, as assertLivePayment is not exported
+// Tested in the context of an issuer.claim call, as assertLivePayment is not
+// exported
 test('assertLivePayment', async t => {
   const { issuer, mint, brand } = makeIssuerKit('fungible');
   const { mint: mintB, brand: brandB } = makeIssuerKit('fungibleB');

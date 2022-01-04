@@ -1,7 +1,14 @@
 // @ts-check
 
-import { passStyleOf } from '@agoric/marshal';
-import { assertKey, keyEQ } from '@agoric/store';
+import { assertChecker, passStyleOf } from '@agoric/marshal';
+import {
+  assertKey,
+  makeSetOps,
+  isRankSorted,
+  sortByRank,
+  compareKeys,
+  keyEQ,
+} from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 
 import '../types.js';
@@ -12,107 +19,51 @@ import '../types.js';
 const empty = harden([]);
 
 /**
- * @param {Object} record
- * @returns {string}
+ * TODO This creates observable mutable static state, in the
+ * history-based ordering of remotables.
  */
-const getKeyForRecord = record => {
-  const keys = Object.getOwnPropertyNames(record);
-  keys.sort();
-  const values = Object.values(record).filter(
-    value => typeof value === 'string',
-  );
-  values.sort();
-  return [...keys, ...values].join();
-};
+const { fullCompare, isSuperset, disjointUnion, disjointSubtract } = makeSetOps(
+  true,
+);
 
 /**
- * Cut down the number of sameStructure comparisons to only the ones
- * that don't fail basic equality tests
- * TODO: better name?
- *
- * @param {SetValueElem} thing
- * @returns {SetValueElem}
- */
-const hashBadly = thing => {
-  const type = typeof thing;
-  const allowableNonObjectValues = ['string', 'number', 'bigint', 'boolean'];
-  if (allowableNonObjectValues.includes(type)) {
-    return thing;
-  }
-  if (passStyleOf(thing) === 'remotable') {
-    return thing;
-  }
-  if (passStyleOf(thing) === 'copyRecord') {
-    return getKeyForRecord(thing);
-  }
-  assert.fail(
-    X`typeof ${typeof thing} is not allowed in an amount of AssetKind.SET`,
-  );
-};
-
-/**
- * @typedef {Map<SetValueElem, SetValueElem[]>} Buckets
- */
-
-/**
- * @param {SetValueElem[]} list
- * @returns {Buckets}
- */
-const makeBuckets = list => {
-  const buckets = new Map();
-  list.forEach(elem => {
-    const badHash = hashBadly(elem);
-    if (!buckets.has(badHash)) {
-      buckets.set(badHash, []);
-    }
-    const soFar = buckets.get(badHash);
-    soFar.push(elem);
-  });
-  return buckets;
-};
-
-/**
- * Based on bucket sort
- *
- * @param {Buckets} buckets
- */
-const assertNoDuplicates = buckets => {
-  for (const maybeMatches of buckets.values()) {
-    for (let i = 0; i < maybeMatches.length; i += 1) {
-      for (let j = i + 1; j < maybeMatches.length; j += 1) {
-        assert(
-          !keyEQ(maybeMatches[i], maybeMatches[j]),
-          X`value has duplicates: ${maybeMatches[i]} and ${maybeMatches[j]}`,
-        );
-      }
-    }
-  }
-};
-
-/**
- *
- * @param {Buckets} buckets
- * @param {SetValueElem} elem
+ * @param {Key[]} list
+ * @param {Checker=} check
  * @returns {boolean}
  */
-const hasElement = (buckets, elem) => {
-  const badHash = hashBadly(elem);
-  if (!buckets.has(badHash)) {
-    return false;
+const checkNoDuplicates = (list, check = x => x) => {
+  if (!isRankSorted(list, fullCompare)) {
+    return check(false, X`Must be fully ordered: ${list}`);
   }
-  const maybeMatches = buckets.get(badHash);
-  assert(maybeMatches);
-  return maybeMatches.some(maybeMatch => keyEQ(maybeMatch, elem));
+  const { length } = list;
+  for (let i = 1; i < length; i += 1) {
+    const k0 = list[i - 1];
+    const k1 = list[i];
+    if (fullCompare(k0, k1) === 0) {
+      return check(false, X`value has duplicates: ${k0}`);
+    }
+    const keyComp = compareKeys(k0, k1);
+    // As symptoms of internal confusion, these are not check failures
+    // but simple assertion failures.
+    // TODO: should these be kill-the-vat errors instead? Probably.
+    assert(
+      keyComp !== 0,
+      X`Internal: key equivalence should not be possible here: ${list}`,
+    );
+    assert(
+      !(keyComp < 0),
+      X`Internal: key descending order should not be possible here: ${list}`,
+    );
+  }
+  return true;
 };
 
-// get a string of string keys and string values as a fuzzy hash for
-// bucketing.
-// only use sameStructure within that bucket.
+const assertNoDuplicates = list => checkNoDuplicates(list, assertChecker);
 
 /**
  * @type {SetMathHelpers}
  */
-const setMathHelpers = harden({
+export const setMathHelpers = harden({
   doCoerce: list => {
     assert(
       passStyleOf(list) === 'copyArray',
@@ -120,43 +71,19 @@ const setMathHelpers = harden({
     );
     // Assert that list contains only
     //   * pass-by-copy primitives,
-    //   * pass-by-copy containers,
+    //   * pass-by-copy containers containing keys,
     //   * remotables.
     assertKey(list);
-    assertNoDuplicates(makeBuckets(list));
+    list = sortByRank(list, fullCompare);
+    // As a coercion, should we also deduplicate here? Might mask bugs
+    // elsewhere though, so probably not.
+    assertNoDuplicates(list);
     return list;
   },
   doMakeEmpty: () => empty,
   doIsEmpty: list => passStyleOf(list) === 'copyArray' && list.length === 0,
-  doIsGTE: (left, right) => {
-    const leftBuckets = makeBuckets(left);
-    return right.every(rightElem => hasElement(leftBuckets, rightElem));
-  },
-  doIsEqual: (left, right) => {
-    return left.length === right.length && setMathHelpers.doIsGTE(left, right);
-  },
-  doAdd: (left, right) => {
-    const combined = harden([...left, ...right]);
-    assertNoDuplicates(makeBuckets(combined));
-    return combined;
-  },
-  doSubtract: (left, right) => {
-    const leftBuckets = makeBuckets(left);
-    const rightBuckets = makeBuckets(right);
-    right.forEach(rightElem => {
-      assert(
-        hasElement(leftBuckets, rightElem),
-        X`right element ${rightElem} was not in left`,
-      );
-    });
-    /**
-     * @param {SetValueElem} leftElem
-     * @returns {boolean}
-     */
-    const leftElemNotInRight = leftElem => !hasElement(rightBuckets, leftElem);
-    return harden(left.filter(leftElemNotInRight));
-  },
+  doIsGTE: isSuperset,
+  doIsEqual: keyEQ,
+  doAdd: disjointUnion,
+  doSubtract: disjointSubtract,
 });
-
-harden(setMathHelpers);
-export default setMathHelpers;
