@@ -341,10 +341,7 @@ export default async function start(basedir, argv) {
     await importMetaResolve(`${wallet}/package.json`, import.meta.url),
   ).pathname;
   const {
-    'agoric-wallet': {
-      htmlBasedir = 'ui/build',
-      deploy = ['contract/deploy.js', 'api/deploy.js'],
-    } = {},
+    'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {},
   } = JSON.parse(fs.readFileSync(pjs, 'utf-8'));
 
   const agWallet = path.dirname(pjs);
@@ -409,51 +406,53 @@ export default async function start(basedir, argv) {
   }
 
   const deploys = typeof deploy === 'string' ? [deploy] : deploy;
-  // TODO: Shell-quote the deploy list.
-  const agWalletDeploy = deploys
-    .map(dep => path.resolve(agWallet, dep))
-    .join(' ');
+  if (deploys.length > 0) {
+    // TODO: Shell-quote the deploy list.
+    const agWalletDeploy = deploys
+      .map(dep => path.resolve(agWallet, dep))
+      .join(' ');
 
-  const agoricCli = new URL(
-    await importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
-  ).pathname;
+    const agoricCli = new URL(
+      await importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
+    ).pathname;
 
-  // Use the same verbosity as our caller did for us.
-  let verbosity;
-  if (process.env.DEBUG === undefined) {
-    verbosity = [];
-  } else if (process.env.DEBUG.includes('agoric')) {
-    verbosity = ['-vv'];
-  } else {
-    verbosity = ['-v'];
+    // Use the same verbosity as our caller did for us.
+    let verbosity;
+    if (process.env.DEBUG === undefined) {
+      verbosity = [];
+    } else if (process.env.DEBUG.includes('agoric')) {
+      verbosity = ['-vv'];
+    } else {
+      verbosity = ['-v'];
+    }
+
+    // Launch the agoric wallet deploys (if any).  The assumption is that the CLI
+    // runs correctly under the same version of the JS engine we're currently
+    // using.
+
+    // We turn off NODE_OPTIONS in case the user is debugging.
+    const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
+    const cp = fork(
+      agoricCli,
+      [
+        `deploy`,
+        ...verbosity,
+        `--provide=wallet`,
+        `--hostport=${hostport}`,
+        `${agWalletDeploy}`,
+      ],
+      { stdio: 'inherit', env: noOptionsEnv },
+      err => {
+        if (err) {
+          console.error(err);
+        }
+        // eslint-disable-next-line no-use-before-define
+        process.off('exit', killDeployment);
+      },
+    );
+    const killDeployment = () => cp.kill('SIGINT');
+    process.on('exit', killDeployment);
   }
 
-  // Launch the agoric wallet deploys (if any).  The assumption is that the CLI
-  // runs correctly under the same version of the JS engine we're currently
-  // using.
-
-  // We turn off NODE_OPTIONS in case the user is debugging.
-  const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
-  const cp = fork(
-    agoricCli,
-    [
-      `deploy`,
-      ...verbosity,
-      `--provide=wallet`,
-      `--hostport=${hostport}`,
-      `${agWalletDeploy}`,
-    ],
-    { stdio: 'inherit', env: noOptionsEnv },
-    err => {
-      if (err) {
-        console.error(err);
-      }
-      // eslint-disable-next-line no-use-before-define
-      process.off('exit', killDeployment);
-    },
-  );
-  const killDeployment = () => cp.kill('SIGINT');
-  process.on('exit', killDeployment);
-
-  return whenHellFreezesOver.then(() => cp.kill('SIGINT'));
+  return whenHellFreezesOver;
 }
