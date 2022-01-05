@@ -79,3 +79,34 @@
  * @param {DistributorParams} params
  * @returns {Promise<void>}
  */
+
+/** @typedef { import('@agoric/eventual-send').EProxy } EProxy */
+
+/**
+ * SwingSet types
+ *
+ * @typedef { ERef<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/devices/mailbox-src.js').buildRootDeviceNode>> } MailboxDevice
+ * @typedef { ERef<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/vats/vat-tp.js').buildRootObject>> } VattpVat
+ * @typedef { ERef<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdminWrapper.js').buildRootObject>> } VatAdminVat
+ * @typedef { ERef<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/vats/vat-timerWrapper.js').buildRootObject>> } TimerVat
+ *
+ * See deliverToController in packages/SwingSet/src/vats/comms/controller.js
+ * @typedef {ERef<{
+ *   addRemote: (name: string, tx: unknown, rx: unknown) => void,
+ *   addEgress: (addr: string, ix: number, provider: unknown) => ERef<ChainBundler>,
+ * }>} CommsVatRoot
+ *
+ * @typedef {{
+ *   vattp: VattpVat,
+ *   comms: CommsVatRoot,
+ *   vatAdmin: VatAdminVat,
+ * }} SwingsetVats
+ * @typedef {{
+ *   mailbox: MailboxDevice,
+ *   vatAdmin: unknown,
+ * }} SwingsetDevices
+ */

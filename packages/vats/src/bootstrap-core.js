@@ -6,32 +6,10 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { feeIssuerConfig } from './bootstrap-zoe-config';
 
 /**
- * @typedef { import('@agoric/eventual-send').EProxy } EProxy
- * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/mailbox-src.js').buildRootDeviceNode>> } MailboxDevice
- * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/vats/vat-tp.js').buildRootObject>> } VattpVat
- * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdminWrapper.js').buildRootObject>> } VatAdminVat
- * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/vats/vat-timerWrapper.js').buildRootObject>> } TimerVat
- */
-
-/**
- * @typedef {ERef<ReturnType<import('./vat-zoe').buildRootObject>>} ZoeVat
- */
-
-/**
  * @param {{
- *   vatPowers: {
- *     D: EProxy // approximately
- *   },
- *   vats: {
- *     vattp: VattpVat,
- *   },
- *   devices: {
- *     mailbox: MailboxDevice,
- *   },
+ *   vatPowers: { D: EProxy }, // D type is approximate
+ *   vats: { vattp: VattpVat },
+ *   devices: { mailbox: MailboxDevice },
  * }} powers
  */
 const connectVattpWithMailbox = ({
@@ -43,13 +21,9 @@ const connectVattpWithMailbox = ({
   return E(vattp).registerMailboxDevice(mailbox);
 };
 
-const PROVISIONER_INDEX = 1;
-
 /**
  * @param {{
- *   vatParameters: {
- *     argv: Record<string, unknown>,
- *   },
+ *   vatParameters: { argv: Record<string, unknown> },
  *   vats: {
  *     vattp: VattpVat,
  *     comms: CommsVatRoot,
@@ -58,14 +32,10 @@ const PROVISIONER_INDEX = 1;
  * }} powers
  *
  * @typedef {{ getChainBundle: () => unknown }} ChainBundler
- *
- * See deliverToController in packages/SwingSet/src/vats/comms/controller.js
- * @typedef {ERef<{
- *   addRemote: (name: string, tx: unknown, rx: unknown) => void,
- *   addEgress: (addr: string, ix: number, provider: unknown) => ERef<ChainBundler>,
- * }>} CommsVatRoot
  */
 const installSimEgress = async ({ vatParameters, vats, workspace }) => {
+  const PROVISIONER_INDEX = 1;
+
   const { argv } = vatParameters;
   const addRemote = async addr => {
     const { transmitter, setReceiver } = await E(vats.vattp).addRemote(addr);
@@ -93,29 +63,28 @@ const installSimEgress = async ({ vatParameters, vats, workspace }) => {
     ),
   );
 
-  workspace.allClients = {
+  workspace.allClients = harden({
     assign: newProperties => {
       bundle = { ...bundle, ...newProperties };
       updater.updateState(bundle);
     },
-  };
+  });
 };
 
 /**
  * @param {{
- *   vats: {
- *     vatAdmin: VatAdminVat,
- *   },
- *   devices: {
- *     vatAdmin: unknown,
- *   },
+ *   vats: { vatAdmin: VatAdminVat },
+ *   devices: { vatAdmin: unknown },
  *   workspace: Record<string, ERef<any>>,
  * }} powers
+ *
+ * @typedef {ERef<ReturnType<import('./vat-zoe').buildRootObject>>} ZoeVat
  */
 const buildZoe = async ({ vats, devices, workspace }) => {
   // TODO: what else do we need vatAdminSvc for? can we let it go out of scope?
   const vatAdminSvc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
 
+  /** @type {{ root: ZoeVat }} */
   const { root } = await E(vatAdminSvc).createVatByName('zoe');
   const { zoeService: zoe, feeMintAccess: _2 } = await E(root).buildZoe(
     vatAdminSvc,
@@ -126,8 +95,13 @@ const buildZoe = async ({ vats, devices, workspace }) => {
   E(workspace.allClients).assign({ zoe });
 };
 
-const steps = [connectVattpWithMailbox, installSimEgress, buildZoe];
-
+/**
+ * Make an object `s` where every `s.name` is a promise and setting `s.name = v` resolves it.
+ *
+ * @returns {PromiseSpace}
+ *
+ * @typedef { Record<string, Promise<unknown>> } PromiseSpace
+ */
 const makePromiseSpace = () => {
   /** @type {Map<string, PromiseRecord<unknown>} */
   const state = new Map();
@@ -164,6 +138,8 @@ const makePromiseSpace = () => {
   return space;
 };
 
+const bootstrapSteps = [connectVattpWithMailbox, installSimEgress, buildZoe];
+
 /**
  * Build root object of the bootstrap vat.
  *
@@ -181,19 +157,12 @@ export function buildRootObject(vatPowers, vatParameters) {
     /**
      * Bootstrap vats and devices.
      *
-     * @param {{
-     *   vattp: VattpVat,
-     *   comms: CommsVatRoot,
-     *   vatAdmin: VatAdminVat,
-     * }} vats
-     * @param {{
-     *   mailbox: MailboxDevice,
-     *   vatAdmin: unknown,
-     * }} devices
+     * @param {SwingsetVats} vats
+     * @param {SwingsetDevices} devices
      */
     bootstrap: (vats, devices) =>
       Promise.all(
-        steps.map(step =>
+        bootstrapSteps.map(step =>
           step({ vatPowers, vatParameters, vats, devices, workspace }),
         ),
       ),
