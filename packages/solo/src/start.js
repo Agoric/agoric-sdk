@@ -45,7 +45,6 @@ let swingSetRunning = false;
 const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
 const rename = promisify(fs.rename);
-const symlink = promisify(fs.symlink);
 const unlink = promisify(fs.unlink);
 
 async function atomicReplaceFile(filename, contents) {
@@ -337,7 +336,7 @@ export default async function start(basedir, argv) {
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
-  // Symlink the wallet.
+  // Find the wallet.
   const pjs = new URL(
     await importMetaResolve(`${wallet}/package.json`, import.meta.url),
   ).pathname;
@@ -350,9 +349,6 @@ export default async function start(basedir, argv) {
 
   const agWallet = path.dirname(pjs);
   const agWalletHtml = path.resolve(agWallet, htmlBasedir);
-  await symlink(agWalletHtml, 'html/wallet', 'junction').catch(e => {
-    console.error('Cannot link html/wallet:', e);
-  });
 
   let hostport;
   await Promise.all(
@@ -394,6 +390,7 @@ export default async function start(basedir, argv) {
             c.port,
             c.host,
             deliverInboundCommand,
+            agWalletHtml,
           );
           break;
         default:
