@@ -350,7 +350,7 @@ export default async function start(basedir, argv) {
 
   const agWallet = path.dirname(pjs);
   const agWalletHtml = path.resolve(agWallet, htmlBasedir);
-  symlink(agWalletHtml, 'html/wallet', 'junction').catch(e => {
+  await symlink(agWalletHtml, 'html/wallet', 'junction').catch(e => {
     console.error('Cannot link html/wallet:', e);
   });
 
@@ -418,7 +418,7 @@ export default async function start(basedir, argv) {
     .join(' ');
 
   const agoricCli = new URL(
-    await importMetaResolve('agoric/bin/agoric', import.meta.url),
+    await importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
   ).pathname;
 
   // Use the same verbosity as our caller did for us.
