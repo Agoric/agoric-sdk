@@ -1,5 +1,6 @@
 // @ts-check
 import { E, Far } from '@agoric/far';
+import { makeNotifierKit } from '@agoric/notifier';
 
 import { feeIssuerConfig } from './bootstrap-zoe-config';
 
@@ -41,6 +42,60 @@ const connectVattpWithMailbox = ({
   return E(vattp).registerMailboxDevice(mailbox);
 };
 
+const PROVISIONER_INDEX = 1;
+
+/**
+ * @param {{
+ *   vatParameters: {
+ *     argv: Record<string, unknown>,
+ *   },
+ *   vats: {
+ *     vattp: VattpVat,
+ *     comms: CommsVatRoot,
+ *   },
+ * }} powers
+ *
+ * @typedef {{ getChainBundle: () => unknown }} ChainBundler
+ *
+ * See deliverToController in packages/SwingSet/src/vats/comms/controller.js
+ * @typedef {ERef<{
+ *   addRemote: (name: string, tx: unknown, rx: unknown) => void,
+ *   addEgress: (addr: string, ix: number, provider: unknown) => ERef<ChainBundler>,
+ * }>} CommsVatRoot
+ */
+const installSimEgress = async ({ vatParameters, vats, workspace }) => {
+  const { argv } = vatParameters;
+  const addRemote = async addr => {
+    const { transmitter, setReceiver } = await E(vats.vattp).addRemote(addr);
+    await E(vats.comms).addRemote(addr, transmitter, setReceiver);
+  };
+
+  const { notifier, updater } = makeNotifierKit();
+
+  updater.updateState(
+    harden({
+      echoer: Far('echoObj', { echo: message => message }),
+      // TODO: echo: Far('echoFn', message => message),
+    }),
+  );
+
+  const chainProvider = Far('chainProvider', {
+    getChainBundle: () => notifier.getUpdateSince().then(({ value }) => value),
+    getChainBundleNotifier: () => notifier,
+  });
+
+  await Promise.all(
+    /** @type { string[] } */ (argv.hardcodedClientAddresses).map(
+      async addr => {
+        await addRemote(addr);
+        await E(vats.comms).addEgress(addr, PROVISIONER_INDEX, chainProvider);
+      },
+    ),
+  );
+
+  // TODO: stuff the notifier in init thingy
+};
+
 /**
  * @param {{
  *   vats: {
@@ -62,7 +117,7 @@ const buildZoe = async ({ vats, devices }) => {
   );
 };
 
-const steps = [connectVattpWithMailbox, buildZoe];
+const steps = [connectVattpWithMailbox, installSimEgress, buildZoe];
 
 /**
  * Build root object of the bootstrap vat.
@@ -70,15 +125,18 @@ const steps = [connectVattpWithMailbox, buildZoe];
  * @param {{
  *   D: EProxy // approximately
  * }} vatPowers
- * @param {Record<string, unknown>} _vatParameters
+ * @param {{
+ *   argv: Record<string, unknown>,
+ * }} vatParameters
  */
-export function buildRootObject(vatPowers, _vatParameters) {
+export function buildRootObject(vatPowers, vatParameters) {
   return Far('bootstrap', {
     /**
      * Bootstrap vats and devices.
      *
      * @param {{
      *   vattp: VattpVat,
+     *   comms: CommsVatRoot,
      *   vatAdmin: VatAdminVat,
      * }} vats
      * @param {{
@@ -87,6 +145,8 @@ export function buildRootObject(vatPowers, _vatParameters) {
      * }} devices
      */
     bootstrap: (vats, devices) =>
-      Promise.all(steps.map(step => step({ vatPowers, vats, devices }))),
+      Promise.all(
+        steps.map(step => step({ vatPowers, vatParameters, vats, devices })),
+      ),
   });
 }
