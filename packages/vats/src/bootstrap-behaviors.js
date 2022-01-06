@@ -1,6 +1,9 @@
 // @ts-check
-import { E } from '@agoric/far';
+import { E, Far } from '@agoric/far';
 import { AssetKind } from '@agoric/ertp';
+import { makeNotifierKit } from '@agoric/notifier';
+
+const { entries, fromEntries } = Object;
 
 // TODO: phase out ./issuers.js
 export const CENTRAL_ISSUER_NAME = 'RUN';
@@ -35,7 +38,7 @@ export const bootstrapManifest = harden({
       workspace: true,
     },
     makeBoard: {
-      workspace: { vatAdminSvc: true, allClients: true },
+      workspace: { vatAdminSvc: true, client: true },
     },
   },
 });
@@ -87,19 +90,19 @@ const buildZoe = async ({ workspace }) => {
   );
 
   workspace.zoe = zoe;
-  E(workspace.allClients).assign({ zoe });
+  E(workspace.client).assignBundle({ zoe: _addr => zoe });
 };
 
 /**
  * @param {{
- *   workspace: { vatAdminSvc: VatAdminSvc, allClients: Record<string, unknown> }
+ *   workspace: { vatAdminSvc: VatAdminSvc, client: Record<string, unknown> }
  * }} powers
  */
-const makeBoard = async ({ workspace: { vatAdminSvc, allClients } }) => {
+const makeBoard = async ({ workspace: { vatAdminSvc, client } }) => {
   const { root } = await E(vatAdminSvc).createVatByName('board');
 
   const board = E(root).getBoard();
-  E(allClients).assign({ board });
+  return E(client).assignBundle({ board: _addr => board });
 };
 
 /* TODO
@@ -107,6 +110,61 @@ const makeBoard = async ({ workspace: { vatAdminSvc, allClients } }) => {
     namesByAddress,
     myAddressNameAdmin,
  */
+const callProperties = (obj, ...args) =>
+  fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
 
-harden({ connectVattpWithMailbox, makeVatAdminService, buildZoe, makeBoard });
-export { connectVattpWithMailbox, makeVatAdminService, buildZoe, makeBoard };
+/**
+ * @param { string } addr
+ * @param {{
+ *   vats: {
+ *     vattp: VattpVat,
+ *     comms: CommsVatRoot,
+ *   },
+ *   workspace: Record<string, ERef<unknown>>,
+ * }} powers
+ *
+ * @typedef {{ getChainBundle: () => unknown }} ChainBundler
+ */
+const installClientEgress = async (addr, { vats, workspace }) => {
+  const PROVISIONER_INDEX = 1;
+
+  // TODO: get rid of echoObj?
+  let bundle = harden({
+    echoer: Far('echoObj', { echo: message => message }),
+    // TODO: echo: Far('echoFn', message => message),
+  });
+  const { notifier, updater } = makeNotifierKit({ bundle });
+
+  const chainProvider = Far('chainProvider', {
+    getChainBundle: () =>
+      notifier.getUpdateSince().then(({ value: { bundle: b } }) => b),
+    getChainConfigNotifier: () => notifier,
+  });
+
+  const { transmitter, setReceiver } = await E(vats.vattp).addRemote(addr);
+  await E(vats.comms).addRemote(addr, transmitter, setReceiver);
+  await E(vats.comms).addEgress(addr, PROVISIONER_INDEX, chainProvider);
+
+  workspace.client = harden({
+    assignBundle: newPropertyMakers => {
+      const newProperties = callProperties(newPropertyMakers, addr);
+      bundle = { ...bundle, ...newProperties };
+      updater.updateState({ bundle });
+    },
+  });
+};
+
+harden({
+  connectVattpWithMailbox,
+  makeVatAdminService,
+  buildZoe,
+  makeBoard,
+  installClientEgress,
+});
+export {
+  connectVattpWithMailbox,
+  makeVatAdminService,
+  buildZoe,
+  makeBoard,
+  installClientEgress,
+};

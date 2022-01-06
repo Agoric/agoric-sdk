@@ -1,7 +1,8 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
-import { makeNotifierKit } from '@agoric/notifier';
-import { bootstrapManifest } from './bootstrap-behaviors.js';
+import {
+  bootstrapManifest,
+  installClientEgress,
+} from './bootstrap-behaviors.js';
 
 export const simBootstrapManifest = harden({
   behaviors: { installSimEgress: true, ...bootstrapManifest.behaviors },
@@ -27,45 +28,14 @@ export const simBootstrapManifest = harden({
  *   },
  *   workspace: Record<string, ERef<unknown>>,
  * }} powers
- *
- * @typedef {{ getChainBundle: () => unknown }} ChainBundler
  */
 const installSimEgress = async ({ vatParameters, vats, workspace }) => {
-  const PROVISIONER_INDEX = 1;
-
   const { argv } = vatParameters;
-  const addRemote = async addr => {
-    const { transmitter, setReceiver } = await E(vats.vattp).addRemote(addr);
-    await E(vats.comms).addRemote(addr, transmitter, setReceiver);
-  };
-
-  // TODO: chainProvider per address
-  let bundle = harden({
-    echoer: Far('echoObj', { echo: message => message }),
-    // TODO: echo: Far('echoFn', message => message),
-  });
-  const { notifier, updater } = makeNotifierKit(bundle);
-
-  const chainProvider = Far('chainProvider', {
-    getChainBundle: () => notifier.getUpdateSince().then(({ value }) => value),
-    getChainBundleNotifier: () => notifier,
-  });
-
-  await Promise.all(
-    /** @type { string[] } */ (argv.hardcodedClientAddresses).map(
-      async addr => {
-        await addRemote(addr);
-        await E(vats.comms).addEgress(addr, PROVISIONER_INDEX, chainProvider);
-      },
+  return Promise.all(
+    /** @type { string[] } */ (argv.hardcodedClientAddresses).map(addr =>
+      installClientEgress(addr, { vats, workspace }),
     ),
   );
-
-  workspace.allClients = harden({
-    assign: newProperties => {
-      bundle = { ...bundle, ...newProperties };
-      updater.updateState(bundle);
-    },
-  });
 };
 
 harden({ installSimEgress });
