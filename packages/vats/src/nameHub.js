@@ -3,6 +3,7 @@
 import { assert } from '@agoric/assert';
 import { E, Far } from '@agoric/far';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { mapIterable } from '@agoric/marshal';
 import { makeLegacyMap } from '@agoric/store';
 
 import './types.js';
@@ -12,7 +13,7 @@ import './types.js';
  */
 export const makeNameHubKit = () => {
   /** @typedef {Partial<PromiseRecord<unknown> & { value: unknown }>} NameRecord */
-  /** @type {Store<string, NameRecord>} */
+  /** @type {LegacyMap<string, NameRecord>} */
   // Legacy because a promiseKit is not a passable
   const keyToRecord = makeLegacyMap('nameKey');
 
@@ -32,12 +33,16 @@ export const makeNameHubKit = () => {
       return E(firstValue).lookup(...remaining);
     },
     entries() {
-      return keyToRecord
-        .entries()
-        .map(([key, record]) => [key, record.promise || record.value]);
+      return mapIterable(keyToRecord.entries(), ([key, record]) => [
+        key,
+        record.promise || record.value,
+      ]);
     },
     values() {
-      return keyToRecord.values().map(record => record.promise || record.value);
+      return mapIterable(
+        keyToRecord.values(),
+        record => record.promise || record.value,
+      );
     },
     keys() {
       return keyToRecord.keys();

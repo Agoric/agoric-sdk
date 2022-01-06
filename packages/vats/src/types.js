@@ -18,11 +18,11 @@
  * @property {(...path: Array<string>) => Promise<any>} lookup Look up a
  * path of keys starting from the current NameHub.  Wait on any reserved
  * promises.
- * @property {() => Array<[string, unknown]>} entries get all the entries
+ * @property {() => Iterable<[string, unknown]>} entries get all the entries
  * available in the current NameHub
- * @property {() => Array<string>} keys get all names available in the current
- * NameHub
- * @property {() => Array<unknown>} values get all values available in the
+ * @property {() => Iterable<string>} keys get all names available in the
+ * current NameHub
+ * @property {() => Iterable<unknown>} values get all values available in the
  * current NameHub
  */
 

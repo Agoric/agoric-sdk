@@ -87,26 +87,28 @@ const start = zcf => {
       /** @type {Store<ZCFSeat, Amount>} */
       const sumBySeat = makeStore();
 
-      storedAttestations
-        .values()
-        .forEach(({ seat, expiration, amountLiened }) => {
-          // Only add the weight if the expiration is later than the
-          // currentTime.
-          if (expiration > currentTime) {
-            const weight = amountLiened;
-            if (sumBySeat.has(seat)) {
-              const weightSoFar = sumBySeat.get(seat);
-              sumBySeat.set(seat, AmountMath.add(weightSoFar, weight));
-            } else {
-              sumBySeat.init(seat, weight);
-            }
+      for (const {
+        seat,
+        expiration,
+        amountLiened,
+      } of storedAttestations.values()) {
+        // Only add the weight if the expiration is later than the
+        // currentTime.
+        if (expiration > currentTime) {
+          const weight = amountLiened;
+          if (sumBySeat.has(seat)) {
+            const weightSoFar = sumBySeat.get(seat);
+            sumBySeat.set(seat, AmountMath.add(weightSoFar, weight));
+          } else {
+            sumBySeat.init(seat, weight);
           }
-        });
+        }
+      }
 
       /** @type {Store<string, Amount>} */
       const weightedAnswers = makeStore('answers');
 
-      recordedVotes.entries().forEach(([seat, answer]) => {
+      for (const [seat, answer] of recordedVotes.entries()) {
         // The seat may no longer have a weight if an extended
         // expiration attestation was used that replaced a previous
         // attestation
@@ -119,11 +121,12 @@ const start = zcf => {
             weightedAnswers.init(answer, weight);
           }
         }
-      });
+      }
 
-      return weightedAnswers
-        .entries()
-        .map(([answer, amount]) => [answer, amount.value]);
+      return [...weightedAnswers.entries()].map(([answer, amount]) => [
+        answer,
+        amount.value,
+      ]);
     },
   });
 

@@ -7,15 +7,15 @@ test('makeNameHubKit - lookup paths', async t => {
   const { nameAdmin: na2, nameHub: nh2 } = makeNameHubKit();
   const { nameAdmin: na3, nameHub: nh3 } = makeNameHubKit();
 
-  t.deepEqual(nh1.keys(), []);
-  t.deepEqual(nh1.values(), []);
-  t.deepEqual(nh1.entries(), []);
-  t.deepEqual(nh2.keys(), []);
-  t.deepEqual(nh2.values(), []);
-  t.deepEqual(nh2.entries(), []);
-  t.deepEqual(nh3.keys(), []);
-  t.deepEqual(nh3.values(), []);
-  t.deepEqual(nh3.entries(), []);
+  t.deepEqual([...nh1.keys()], []);
+  t.deepEqual([...nh1.values()], []);
+  t.deepEqual([...nh1.entries()], []);
+  t.deepEqual([...nh2.keys()], []);
+  t.deepEqual([...nh2.values()], []);
+  t.deepEqual([...nh2.entries()], []);
+  t.deepEqual([...nh3.keys()], []);
+  t.deepEqual([...nh3.values()], []);
+  t.deepEqual([...nh3.entries()], []);
 
   na1.update('path1', nh2);
   t.is(await nh1.lookup('path1'), nh2);
@@ -24,15 +24,15 @@ test('makeNameHubKit - lookup paths', async t => {
   na3.update('path3', 'finish');
   t.is(await nh3.lookup('path3'), 'finish');
 
-  t.deepEqual(nh1.keys(), ['path1']);
-  t.deepEqual(nh1.values(), [nh2]);
-  t.deepEqual(nh1.entries(), [['path1', nh2]]);
-  t.deepEqual(nh2.keys(), ['path2']);
-  t.deepEqual(nh2.values(), [nh3]);
-  t.deepEqual(nh2.entries(), [['path2', nh3]]);
-  t.deepEqual(nh3.keys(), ['path3']);
-  t.deepEqual(nh3.values(), ['finish']);
-  t.deepEqual(nh3.entries(), [['path3', 'finish']]);
+  t.deepEqual([...nh1.keys()], ['path1']);
+  t.deepEqual([...nh1.values()], [nh2]);
+  t.deepEqual([...nh1.entries()], [['path1', nh2]]);
+  t.deepEqual([...nh2.keys()], ['path2']);
+  t.deepEqual([...nh2.values()], [nh3]);
+  t.deepEqual([...nh2.entries()], [['path2', nh3]]);
+  t.deepEqual([...nh3.keys()], ['path3']);
+  t.deepEqual([...nh3.values()], ['finish']);
+  t.deepEqual([...nh3.entries()], [['path3', 'finish']]);
 
   t.is(await nh1.lookup(), nh1);
   t.is(await nh1.lookup('path1'), nh2);
@@ -50,9 +50,9 @@ test('makeNameHubKit - reserve and update', async t => {
     message: /"nameKey" not found: .*/,
   });
 
-  t.deepEqual(nameHub.keys(), []);
-  t.deepEqual(nameHub.values(), []);
-  t.deepEqual(nameHub.entries(), []);
+  t.deepEqual([...nameHub.keys()], []);
+  t.deepEqual([...nameHub.values()], []);
+  t.deepEqual([...nameHub.entries()], []);
 
   // Try reserving and looking up.
   nameAdmin.reserve('hello');
@@ -61,16 +61,16 @@ test('makeNameHubKit - reserve and update', async t => {
   const lookupHelloP = nameHub
     .lookup('hello')
     .finally(() => (lookedUpHello = true));
-  t.deepEqual(nameHub.keys(), ['hello']);
-  const helloP = nameHub.values()[0];
+  t.deepEqual([...nameHub.keys()], ['hello']);
+  const helloP = [...nameHub.values()][0];
   t.assert(helloP instanceof Promise);
-  t.deepEqual(nameHub.entries(), [['hello', helloP]]);
+  t.deepEqual([...nameHub.entries()], [['hello', helloP]]);
 
   t.falsy(lookedUpHello);
   nameAdmin.update('hello', 'foo');
-  t.deepEqual(nameHub.keys(), ['hello']);
-  t.deepEqual(nameHub.values(), ['foo']);
-  t.deepEqual(nameHub.entries(), [['hello', 'foo']]);
+  t.deepEqual([...nameHub.keys()], ['hello']);
+  t.deepEqual([...nameHub.values()], ['foo']);
+  t.deepEqual([...nameHub.entries()], [['hello', 'foo']]);
   t.is(await lookupHelloP, 'foo');
   t.truthy(lookedUpHello);
 
@@ -85,9 +85,9 @@ test('makeNameHubKit - reserve and delete', async t => {
     message: /"nameKey" not found: .*/,
   });
 
-  t.deepEqual(nameHub.keys(), []);
-  t.deepEqual(nameHub.values(), []);
-  t.deepEqual(nameHub.entries(), []);
+  t.deepEqual([...nameHub.keys()], []);
+  t.deepEqual([...nameHub.values()], []);
+  t.deepEqual([...nameHub.entries()], []);
 
   nameAdmin.reserve('goodbye');
   let lookedUpGoodbye = false;
@@ -96,15 +96,15 @@ test('makeNameHubKit - reserve and delete', async t => {
     .finally(() => (lookedUpGoodbye = true));
 
   t.falsy(lookedUpGoodbye);
-  t.deepEqual(nameHub.keys(), ['goodbye']);
-  const goodbyeP = nameHub.values()[0];
+  t.deepEqual([...nameHub.keys()], ['goodbye']);
+  const goodbyeP = [...nameHub.values()][0];
   t.assert(goodbyeP instanceof Promise);
-  t.deepEqual(nameHub.entries(), [['goodbye', goodbyeP]]);
+  t.deepEqual([...nameHub.entries()], [['goodbye', goodbyeP]]);
 
   nameAdmin.delete('goodbye');
-  t.deepEqual(nameHub.keys(), []);
-  t.deepEqual(nameHub.values(), []);
-  t.deepEqual(nameHub.entries(), []);
+  t.deepEqual([...nameHub.keys()], []);
+  t.deepEqual([...nameHub.values()], []);
+  t.deepEqual([...nameHub.entries()], []);
   await t.throwsAsync(lookupGoodbyeP, {
     message: /"nameKey" not found: .*/,
   });

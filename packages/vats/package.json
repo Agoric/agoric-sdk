@@ -27,6 +27,7 @@
     "@agoric/far": "^0.1.1",
     "@agoric/import-bundle": "^0.2.33",
     "@agoric/install-ses": "^0.5.29",
+    "@agoric/marshal": "^0.5.0",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/pegasus": "^0.5.1",

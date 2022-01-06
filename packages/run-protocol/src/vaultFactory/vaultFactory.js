@@ -180,7 +180,7 @@ export const start = async (zcf, privateArgs) => {
     // should be collateralTypes.map((vm, brand) => ({
     return harden(
       Promise.all(
-        collateralTypes.entries().map(async ([brand, vm]) => {
+        [...collateralTypes.entries()].map(async ([brand, vm]) => {
           const priceQuote = await vm.getCollateralQuote();
           return {
             brand,
