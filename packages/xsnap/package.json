@@ -14,7 +14,9 @@
     "repl": "node src/xsrepl.js",
     "build:bundle": "rollup --config rollup.config.js",
     "build:bin": "node src/build.js",
-    "build": "yarn build:bin && yarn build:bundle",
+    "build:env": "node src/build.js --show-env > dist/build-env",
+    "build:from-env": "{ cat dist/build-env; echo node src/build.js; } | xargs env",
+    "build": "yarn build:bin && yarn build:bundle && yarn build:env",
     "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "yarn lint:js && yarn lint:types",
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' api.js",
@@ -46,7 +48,7 @@
     "LICENSE*",
     "lib",
     "api.js",
-    "makefiles",
+    "dist",
     "src"
   ],
   "publishConfig": {
