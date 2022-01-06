@@ -5,18 +5,15 @@ import {
 } from './bootstrap-behaviors.js';
 
 export const simBootstrapManifest = harden({
-  behaviors: { installSimEgress: true, ...bootstrapManifest.behaviors },
-  endowments: {
-    installSimEgress: {
-      vatParameters: { argv: { hardcodedClientAddresses: true } },
-      vats: {
-        vattp: true,
-        comms: true,
-      },
-      workspace: true,
+  installSimEgress: {
+    vatParameters: { argv: { hardcodedClientAddresses: true } },
+    vats: {
+      vattp: true,
+      comms: true,
     },
-    ...bootstrapManifest.endowments,
+    workspace: true,
   },
+  ...bootstrapManifest,
 });
 
 /**

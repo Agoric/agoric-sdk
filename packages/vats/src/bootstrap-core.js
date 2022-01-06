@@ -5,7 +5,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import * as behaviors from './bootstrap-behaviors-sim.js';
 import { simBootstrapManifest } from './bootstrap-behaviors-sim.js';
 
-const { entries, fromEntries, keys } = Object;
+const { entries, fromEntries } = Object;
 const { details: X, quote: q } = assert;
 
 /**
@@ -98,9 +98,8 @@ const buildRootObject = (vatPowers, vatParameters) => {
     bootstrap: (vats, devices) =>
       Promise.all(
         // TODO: choose simBootstrapManifest based on runtime config
-        keys(simBootstrapManifest.behaviors).map(name =>
+        entries(simBootstrapManifest).map(([name, permit]) =>
           Promise.resolve().then(() => {
-            const permit = simBootstrapManifest.endowments[name];
             const endowments = extract(permit, {
               vatPowers,
               vatParameters,

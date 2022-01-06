@@ -16,30 +16,21 @@ export const feeIssuerConfig = {
 };
 
 export const bootstrapManifest = harden({
-  // TODO: get rid of (redundant) behaviors. collapse manifest
-  behaviors: {
-    connectVattpWithMailbox: true,
-    makeVatAdminService: true,
-    buildZoe: true,
-    makeBoard: true,
+  connectVattpWithMailbox: {
+    vatPowers: { D: true },
+    vats: { vattp: true },
+    devices: { mailbox: true },
   },
-  endowments: {
-    connectVattpWithMailbox: {
-      vatPowers: { D: true },
-      vats: { vattp: true },
-      devices: { mailbox: true },
-    },
-    makeVatAdminService: {
-      vats: { vatAdmin: true },
-      devices: { vatAdmin: true },
-      workspace: true,
-    },
-    buildZoe: {
-      workspace: true,
-    },
-    makeBoard: {
-      workspace: { vatAdminSvc: true, client: true },
-    },
+  makeVatAdminService: {
+    vats: { vatAdmin: true },
+    devices: { vatAdmin: true },
+    workspace: true,
+  },
+  buildZoe: {
+    workspace: true,
+  },
+  makeBoard: {
+    workspace: { vatAdminSvc: true, client: true },
   },
 });
 
