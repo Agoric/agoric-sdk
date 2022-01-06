@@ -26,11 +26,7 @@ import {
   fromCosmosIssuerEntries,
   BLD_ISSUER_ENTRY,
 } from './issuers';
-import {
-  feeIssuerConfig,
-  zoeFeesConfig,
-  meteringConfig,
-} from './bootstrap-zoe-config';
+import { feeIssuerConfig } from './bootstrap-behaviors.js';
 
 const { multiply, floorDivide } = natSafeMath;
 

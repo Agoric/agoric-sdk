@@ -1,99 +1,12 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
-import { makeNotifierKit } from '@agoric/notifier';
+import { Far } from '@agoric/far';
 import { makePromiseKit } from '@agoric/promise-kit';
+// TODO: choose sim behaviors based on runtime config
+import * as behaviors from './bootstrap-behaviors-sim.js';
+import { simBootstrapManifest } from './bootstrap-behaviors-sim.js';
 
-import { feeIssuerConfig } from './bootstrap-zoe-config';
-
-/**
- * @param {{
- *   vatPowers: { D: EProxy }, // D type is approximate
- *   vats: { vattp: VattpVat },
- *   devices: { mailbox: MailboxDevice },
- * }} powers
- */
-const connectVattpWithMailbox = ({
-  vatPowers: { D },
-  vats: { vattp },
-  devices: { mailbox },
-}) => {
-  D(mailbox).registerInboundHandler(vattp);
-  return E(vattp).registerMailboxDevice(mailbox);
-};
-
-/**
- * @param {{
- *   vatParameters: { argv: Record<string, unknown> },
- *   vats: {
- *     vattp: VattpVat,
- *     comms: CommsVatRoot,
- *   },
- *   workspace: Record<string, ERef<unknown>>,
- * }} powers
- *
- * @typedef {{ getChainBundle: () => unknown }} ChainBundler
- */
-const installSimEgress = async ({ vatParameters, vats, workspace }) => {
-  const PROVISIONER_INDEX = 1;
-
-  const { argv } = vatParameters;
-  const addRemote = async addr => {
-    const { transmitter, setReceiver } = await E(vats.vattp).addRemote(addr);
-    await E(vats.comms).addRemote(addr, transmitter, setReceiver);
-  };
-
-  // TODO: chainProvider per address
-  let bundle = harden({
-    echoer: Far('echoObj', { echo: message => message }),
-    // TODO: echo: Far('echoFn', message => message),
-  });
-  const { notifier, updater } = makeNotifierKit(bundle);
-
-  const chainProvider = Far('chainProvider', {
-    getChainBundle: () => notifier.getUpdateSince().then(({ value }) => value),
-    getChainBundleNotifier: () => notifier,
-  });
-
-  await Promise.all(
-    /** @type { string[] } */ (argv.hardcodedClientAddresses).map(
-      async addr => {
-        await addRemote(addr);
-        await E(vats.comms).addEgress(addr, PROVISIONER_INDEX, chainProvider);
-      },
-    ),
-  );
-
-  workspace.allClients = harden({
-    assign: newProperties => {
-      bundle = { ...bundle, ...newProperties };
-      updater.updateState(bundle);
-    },
-  });
-};
-
-/**
- * @param {{
- *   vats: { vatAdmin: VatAdminVat },
- *   devices: { vatAdmin: unknown },
- *   workspace: Record<string, ERef<any>>,
- * }} powers
- *
- * @typedef {ERef<ReturnType<import('./vat-zoe').buildRootObject>>} ZoeVat
- */
-const buildZoe = async ({ vats, devices, workspace }) => {
-  // TODO: what else do we need vatAdminSvc for? can we let it go out of scope?
-  const vatAdminSvc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-
-  /** @type {{ root: ZoeVat }} */
-  const { root } = await E(vatAdminSvc).createVatByName('zoe');
-  const { zoeService: zoe, feeMintAccess: _2 } = await E(root).buildZoe(
-    vatAdminSvc,
-    feeIssuerConfig,
-  );
-
-  workspace.zoe = zoe;
-  E(workspace.allClients).assign({ zoe });
-};
+const { entries, fromEntries, keys } = Object;
+const { details: X, quote: q } = assert;
 
 /**
  * Make an object `s` where every `s.name` is a promise and setting `s.name = v` resolves it.
@@ -138,7 +51,29 @@ const makePromiseSpace = () => {
   return space;
 };
 
-const bootstrapSteps = [connectVattpWithMailbox, installSimEgress, buildZoe];
+/**
+ * @param {unknown} template
+ * @param {unknown} specimen
+ */
+const extract = (template, specimen) => {
+  if (template === true) {
+    return specimen;
+  } else if (typeof template === 'object' && template !== null) {
+    if (typeof specimen !== 'object' || specimen === null) {
+      assert.fail(X`object template requires object specimen, not ${specimen}`);
+    }
+    return harden(
+      fromEntries(
+        entries(template).map(([propName, subTemplate]) => [
+          propName,
+          extract(subTemplate, specimen[propName]),
+        ]),
+      ),
+    );
+  } else {
+    assert.fail(X`unexpected template: ${q(template)}`);
+  }
+};
 
 /**
  * Build root object of the bootstrap vat.
@@ -150,7 +85,7 @@ const bootstrapSteps = [connectVattpWithMailbox, installSimEgress, buildZoe];
  *   argv: Record<string, unknown>,
  * }} vatParameters
  */
-export function buildRootObject(vatPowers, vatParameters) {
+const buildRootObject = (vatPowers, vatParameters) => {
   const workspace = makePromiseSpace();
 
   return Far('bootstrap', {
@@ -162,9 +97,24 @@ export function buildRootObject(vatPowers, vatParameters) {
      */
     bootstrap: (vats, devices) =>
       Promise.all(
-        bootstrapSteps.map(step =>
-          step({ vatPowers, vatParameters, vats, devices, workspace }),
+        // TODO: choose simBootstrapManifest based on runtime config
+        keys(simBootstrapManifest.behaviors).map(name =>
+          Promise.resolve().then(() => {
+            const permit = simBootstrapManifest.endowments[name];
+            const endowments = extract(permit, {
+              vatPowers,
+              vatParameters,
+              vats,
+              devices,
+              workspace,
+            });
+            console.info(`bootstrap: ${name}(${q(permit)})`);
+            return behaviors[name](endowments);
+          }),
         ),
       ),
   });
-}
+};
+
+harden({ buildRootObject, extract });
+export { buildRootObject, extract };
