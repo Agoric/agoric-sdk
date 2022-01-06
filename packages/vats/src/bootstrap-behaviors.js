@@ -2,6 +2,7 @@
 import { E, Far } from '@agoric/far';
 import { AssetKind } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
+import { makeNameHubKit } from './nameHub';
 
 const { entries, fromEntries } = Object;
 
@@ -32,6 +33,7 @@ export const bootstrapManifest = harden({
   makeBoard: {
     workspace: { vatAdminSvc: true, client: true },
   },
+  makeAddressNameHubs: { workspace: true },
 });
 
 /**
@@ -96,11 +98,46 @@ const makeBoard = async ({ workspace: { vatAdminSvc, client } }) => {
   return E(client).assignBundle({ board: _addr => board });
 };
 
-/* TODO
-    agoricNames,
-    namesByAddress,
-    myAddressNameAdmin,
+/**
+ * @param {{ workspace: Record<string, unknown> }} powers
  */
+const makeAddressNameHubs = async ({ workspace }) => {
+  const {
+    nameHub: agoricNames,
+    nameAdmin: agoricNamesAdmin,
+  } = makeNameHubKit();
+  workspace.agoricNamesAdmin = agoricNamesAdmin;
+
+  const {
+    nameHub: namesByAddress,
+    nameAdmin: namesByAddressAdmin,
+  } = makeNameHubKit();
+
+  const perAddress = address => {
+    // Create a name hub for this address.
+    const {
+      nameHub: myAddressNameHub,
+      nameAdmin: rawMyAddressNameAdmin,
+    } = makeNameHubKit();
+    // Register it with the namesByAddress hub.
+    namesByAddressAdmin.update(address, myAddressNameHub);
+
+    /** @type {MyAddressNameAdmin} */
+    const myAddressNameAdmin = Far('myAddressNameAdmin', {
+      ...rawMyAddressNameAdmin,
+      getMyAddress: () => address,
+    });
+    return myAddressNameAdmin;
+  };
+
+  /* @ts-ignore TODO: cast client? */
+  return E(workspace.client).assignBundle({
+    agoricNames: _ => agoricNames,
+    namesByAddress: _ => namesByAddress,
+    myAddressNameAdmin: perAddress,
+  });
+};
+
 const callProperties = (obj, ...args) =>
   fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
 
@@ -150,6 +187,7 @@ harden({
   makeVatAdminService,
   buildZoe,
   makeBoard,
+  makeAddressNameHubs,
   installClientEgress,
 });
 export {
@@ -157,5 +195,6 @@ export {
   makeVatAdminService,
   buildZoe,
   makeBoard,
+  makeAddressNameHubs,
   installClientEgress,
 };
