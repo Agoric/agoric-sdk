@@ -13,9 +13,12 @@ export const feeIssuerConfig = {
 };
 
 export const bootstrapManifest = harden({
+  // TODO: get rid of (redundant) behaviors. collapse manifest
   behaviors: {
     connectVattpWithMailbox: true,
+    makeVatAdminService: true,
     buildZoe: true,
+    makeBoard: true,
   },
   endowments: {
     connectVattpWithMailbox: {
@@ -23,10 +26,16 @@ export const bootstrapManifest = harden({
       vats: { vattp: true },
       devices: { mailbox: true },
     },
-    buildZoe: {
+    makeVatAdminService: {
       vats: { vatAdmin: true },
       devices: { vatAdmin: true },
       workspace: true,
+    },
+    buildZoe: {
+      workspace: true,
+    },
+    makeBoard: {
+      workspace: { vatAdminSvc: true, allClients: true },
     },
   },
 });
@@ -48,18 +57,28 @@ const connectVattpWithMailbox = ({
 };
 
 /**
+ *
  * @param {{
  *   vats: { vatAdmin: VatAdminVat },
  *   devices: { vatAdmin: unknown },
+ *   workspace: import('./bootstrap-core').PromiseSpace,
+ * }} powers
+ */
+const makeVatAdminService = async ({ vats, devices, workspace }) => {
+  workspace.vatAdminSvc = E(vats.vatAdmin).createVatAdminService(
+    devices.vatAdmin,
+  );
+};
+
+/**
+ * @param {{
  *   workspace: Record<string, ERef<any>>,
  * }} powers
  *
  * @typedef {ERef<ReturnType<import('./vat-zoe').buildRootObject>>} ZoeVat
  */
-const buildZoe = async ({ vats, devices, workspace }) => {
-  // TODO: what else do we need vatAdminSvc for? can we let it go out of scope?
-  const vatAdminSvc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-
+const buildZoe = async ({ workspace }) => {
+  const { vatAdminSvc } = workspace;
   /** @type {{ root: ZoeVat }} */
   const { root } = await E(vatAdminSvc).createVatByName('zoe');
   const { zoeService: zoe, feeMintAccess: _2 } = await E(root).buildZoe(
@@ -71,5 +90,23 @@ const buildZoe = async ({ vats, devices, workspace }) => {
   E(workspace.allClients).assign({ zoe });
 };
 
-harden({ connectVattpWithMailbox, buildZoe });
-export { connectVattpWithMailbox, buildZoe };
+/**
+ * @param {{
+ *   workspace: { vatAdminSvc: VatAdminSvc, allClients: Record<string, unknown> }
+ * }} powers
+ */
+const makeBoard = async ({ workspace: { vatAdminSvc, allClients } }) => {
+  const { root } = await E(vatAdminSvc).createVatByName('board');
+
+  const board = E(root).getBoard();
+  E(allClients).assign({ board });
+};
+
+/* TODO
+    agoricNames,
+    namesByAddress,
+    myAddressNameAdmin,
+ */
+
+harden({ connectVattpWithMailbox, makeVatAdminService, buildZoe, makeBoard });
+export { connectVattpWithMailbox, makeVatAdminService, buildZoe, makeBoard };
