@@ -35,7 +35,6 @@ const makePromiseSpace = () => {
       get: (_target, name) => {
         assert.typeof(name, 'string');
         const kit = findOrCreateKit(name);
-        console.info(name, ': resolve');
         return kit.promise;
       },
     },
@@ -46,7 +45,8 @@ const makePromiseSpace = () => {
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
-        const { resolve } = findOrCreateKit(name);
+        const { resolve, promise } = findOrCreateKit(name);
+        promise.then(() => console.info(name, ': resolve'));
         // Note: repeated resolves() are noops.
         return harden({ resolve });
       },
