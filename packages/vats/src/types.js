@@ -101,9 +101,10 @@
  * }>} CommsVatRoot
  *
  * @typedef {{
- *   vattp: VattpVat,
  *   comms: CommsVatRoot,
+ *   timer: TimerVat,
  *   vatAdmin: VatAdminVat,
+ *   vattp: VattpVat,
  * }} SwingsetVats
  * @typedef {{
  *   mailbox: MailboxDevice,

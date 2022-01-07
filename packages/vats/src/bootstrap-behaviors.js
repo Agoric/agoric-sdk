@@ -2,6 +2,9 @@
 import { E, Far } from '@agoric/far';
 import { AssetKind } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
+import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
+
+import { makeStore } from '@agoric/store';
 import { makeNameHubKit } from './nameHub';
 
 const { entries, fromEntries } = Object;
@@ -33,10 +36,11 @@ export const bootstrapManifest = harden({
   },
   makeBoard: {
     consume: { loadVat: true, client: true },
+    produce: { board: true },
   },
   makeAddressNameHubs: {
     consume: { client: true },
-    produce: { agoricNamesAdmin: true },
+    produce: { agoricNames: true, agoricNamesAdmin: true, nameAdmins: true },
   },
   makeClientBanks: {
     consume: {
@@ -45,6 +49,21 @@ export const bootstrapManifest = harden({
       bridgeManager: true,
     },
     produce: { bankManager: true },
+  },
+});
+
+export const governanceActions = harden({
+  startVaultFactory: {
+    devices: { timer: true },
+    vats: { timer: true },
+    consume: {
+      agoricNames: true,
+      nameAdmins: true,
+      board: true,
+      loadVat: true,
+      zoe: true,
+      feeMintAccess: true,
+    },
   },
 });
 
@@ -82,6 +101,7 @@ const makeVatsFromBundles = ({
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
   vatAdminSvc.resolve(svc);
   // TODO: getVat? do we need to memoize this by name?
+  // TODO: rename loadVat to createVatByName?
   loadVat.resolve(bundleName => {
     console.info(`createVatByName(${bundleName})`);
     const root = E(svc)
@@ -117,33 +137,64 @@ const buildZoe = async ({
 };
 
 /**
+ * TODO: rename this to getBoard?
+ *
  * @param {{
- *   consume: { loadVat: ERef<VatLoader<BoardVat>>, client: ERef<ClientConfig> }
+ *   consume: { loadVat: ERef<VatLoader<BoardVat>>, client: ERef<ClientConfig> },
+ *   produce: { board: Producer<ERef<Board>> },
  * }} powers
  * @typedef {ERef<ReturnType<import('./vat-board').buildRootObject>>} BoardVat
  */
-const makeBoard = async ({ consume: { loadVat, client } }) => {
+const makeBoard = async ({
+  consume: { loadVat, client },
+  produce: {
+    board: { resolve: resolveBoard },
+  },
+}) => {
   const board = E(E(loadVat)('board')).getBoard();
+  resolveBoard(board);
   return E(client).assignBundle({ board: _addr => board });
 };
 
 /**
  * @param {{
  *   consume: { client: ERef<ClientConfig> },
- *   produce: { agoricNamesAdmin: Producer<NameAdmin> },
+ *   produce: {
+ *     agoricNames: Producer<NameHub>,
+ *     agoricNamesAdmin: Producer<NameAdmin>,
+ *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
+ *   },
  * }} powers
  */
-const makeAddressNameHubs = async ({
-  consume: { client },
-  produce: { agoricNamesAdmin },
-}) => {
-  const { nameHub: agoricNames, nameAdmin } = makeNameHubKit();
-  agoricNamesAdmin.resolve(nameAdmin);
+const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
+  const {
+    nameHub: agoricNames,
+    nameAdmin: agoricNamesAdmin,
+  } = makeNameHubKit();
+  produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const {
     nameHub: namesByAddress,
     nameAdmin: namesByAddressAdmin,
   } = makeNameHubKit();
+
+  /** @type {Store<NameHub, NameAdmin>} */
+  const nameAdmins = makeStore('nameHub');
+  await Promise.all(
+    ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].map(
+      async nm => {
+        const { nameHub, nameAdmin } = makeNameHubKit();
+        await E(agoricNamesAdmin).update(nm, nameHub);
+        nameAdmins.init(nameHub, nameAdmin);
+        if (nm === 'uiConfig') {
+          // Reserve the Vault Factory's config until we've populated it.
+          nameAdmin.reserve('vaultFactory');
+        }
+      },
+    ),
+  );
+  produce.nameAdmins.resolve(nameAdmins);
 
   const perAddress = address => {
     // Create a name hub for this address.
@@ -234,6 +285,58 @@ const makeClientBanks = async ({
   });
 };
 
+/**
+ * @param {{
+ *   devices: { timer: unknown },
+ *   vats: { timer: TimerVat },
+ *   consume: {
+ *    agoricNames: ERef<NameHub>,
+ *    nameAdmins: ERef<Store<NameHub, NameAdmin>>,
+ *    board: ERef<Board>,
+ *    loadVat: ERef<VatLoader<unknown>>,
+ *    zoe: ERef<ZoeService>,
+ *    feeMintAccess: ERef<FeeMintAccess>,
+ *   }
+ * }} powers
+ */
+const startVaultFactory = async ({
+  devices: { timer: timerDevice },
+  vats: { timer: timerVat },
+  consume: {
+    agoricNames,
+    nameAdmins: nameAdminsP,
+    board,
+    loadVat,
+    zoe,
+    feeMintAccess: feeMintAccessP,
+  },
+}) => {
+  // TODO: Zoe should accept a promise, since the value is in that vat.
+  const [feeMintAccess, nameAdmins] = await Promise.all([
+    feeMintAccessP,
+    nameAdminsP,
+  ]);
+
+  const chainTimerService = E(timerVat).createTimerService(timerDevice);
+
+  /** @typedef { any } PriceAuthorityVat todo */
+  const { priceAuthority, adminFacet: priceAuthorityAdmin } = await E(
+    /** @type { PriceAuthorityVat } */ (E(loadVat)('priceAuthority')),
+  ).makePriceAuthority();
+
+  return installVaultFactoryOnChain({
+    agoricNames,
+    board,
+    centralName: CENTRAL_ISSUER_NAME,
+    chainTimerService,
+    nameAdmins,
+    priceAuthority,
+    zoe,
+    bootstrapPaymentValue: 0n, // TODO: this is obsolete, right?
+    feeMintAccess,
+  });
+};
+
 harden({
   connectVattpWithMailbox,
   makeVatsFromBundles,
@@ -242,6 +345,7 @@ harden({
   makeAddressNameHubs,
   installClientEgress,
   makeClientBanks,
+  startVaultFactory,
 });
 export {
   connectVattpWithMailbox,
@@ -251,4 +355,5 @@ export {
   makeAddressNameHubs,
   installClientEgress,
   makeClientBanks,
+  startVaultFactory,
 };

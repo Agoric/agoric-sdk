@@ -3,6 +3,7 @@ import { Far } from '@agoric/far';
 import { makePromiseKit } from '@agoric/promise-kit';
 // TODO: choose sim behaviors based on runtime config
 import * as behaviors from './bootstrap-behaviors-sim.js';
+import { governanceActions } from './bootstrap-behaviors.js';
 import { simBootstrapManifest } from './bootstrap-behaviors-sim.js';
 
 const { entries, fromEntries } = Object;
@@ -109,23 +110,25 @@ const buildRootObject = (vatPowers, vatParameters) => {
      * @param {SwingsetVats} vats
      * @param {SwingsetDevices} devices
      */
-    bootstrap: (vats, devices) =>
-      Promise.all(
-        entries(manifest).map(([name, permit]) =>
+    bootstrap: (vats, devices) => {
+      const powers = {
+        vatPowers,
+        vatParameters,
+        vats,
+        devices,
+        produce,
+        consume,
+      };
+      return Promise.all(
+        entries({ ...manifest, ...governanceActions }).map(([name, permit]) =>
           Promise.resolve().then(() => {
-            const endowments = extract(permit, {
-              vatPowers,
-              vatParameters,
-              vats,
-              devices,
-              produce,
-              consume,
-            });
+            const endowments = extract(permit, powers);
             console.info(`bootstrap: ${name}(${q(permit)})`);
             return behaviors[name](endowments);
           }),
         ),
-      ),
+      );
+    },
   });
 };
 
