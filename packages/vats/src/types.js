@@ -116,6 +116,10 @@
  * @template T
  */
 /**
+ * @typedef {(name: string) => T} VatLoader<T>
+ * @template T
+ */
+/**
  * @typedef {{
  *   consume: Record<string, Promise<unknown>>,
  *   produce: Record<string, Producer<unknown>>,

@@ -22,17 +22,17 @@ export const bootstrapManifest = harden({
     vats: { vattp: true },
     devices: { mailbox: true },
   },
-  makeVatAdminService: {
+  makeVatsFromBundles: {
     vats: { vatAdmin: true },
     devices: { vatAdmin: true },
-    produce: { vatAdminSvc: true },
+    produce: { vatAdminSvc: true, loadVat: true },
   },
   buildZoe: {
-    consume: { vatAdminSvc: true, client: true },
+    consume: { vatAdminSvc: true, loadVat: true, client: true },
     produce: { zoe: true, feeMintAccess: true },
   },
   makeBoard: {
-    consume: { vatAdminSvc: true, client: true },
+    consume: { loadVat: true, client: true },
   },
   makeAddressNameHubs: {
     consume: { client: true },
@@ -40,7 +40,7 @@ export const bootstrapManifest = harden({
   },
   makeClientBanks: {
     consume: {
-      vatAdminSvc: true,
+      loadVat: true,
       client: true,
       bridgeManager: true,
     },
@@ -65,40 +65,51 @@ const connectVattpWithMailbox = ({
 };
 
 /**
- * TODO: { dynamicVats: { bank: true }} thingy?
- *
  * @param {{
  *   vats: { vatAdmin: VatAdminVat },
  *   devices: { vatAdmin: unknown },
- *   produce: { vatAdminSvc: Producer<ERef<VatAdminSvc>> },
+ *   produce: {
+ *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
+ *     loadVat: Producer<VatLoader<unknown>>,
+ *   },
  * }} powers
  */
-const makeVatAdminService = async ({
+const makeVatsFromBundles = ({
   vats,
   devices,
-  produce: { vatAdminSvc },
+  produce: { vatAdminSvc, loadVat },
 }) => {
-  vatAdminSvc.resolve(E(vats.vatAdmin).createVatAdminService(devices.vatAdmin));
+  const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+  vatAdminSvc.resolve(svc);
+  // TODO: getVat? do we need to memoize this by name?
+  loadVat.resolve(bundleName => {
+    console.info(`createVatByName(${bundleName})`);
+    const root = E(svc)
+      .createVatByName(bundleName)
+      .then(r => r.root);
+    return root;
+  });
 };
 
 /**
  * @param {{
- *   consume: { vatAdminSvc: ERef<VatAdminSvc>, client: ERef<ClientConfig> },
+ *   consume: {
+ *     vatAdminSvc: ERef<VatAdminSvc>,
+ *     loadVat: ERef<VatLoader<ZoeVat>>,
+ *     client: ERef<ClientConfig>
+ *   },
  *   produce: { zoe: Producer<ZoeService>, feeMintAccess: Producer<FeeMintAccess> },
  * }} powers
  *
  * @typedef {ERef<ReturnType<import('./vat-zoe').buildRootObject>>} ZoeVat
  */
 const buildZoe = async ({
-  consume: { vatAdminSvc, client },
+  consume: { vatAdminSvc, loadVat, client },
   produce: { zoe, feeMintAccess },
 }) => {
-  /** @type {{ root: ZoeVat }} */
-  const { root } = await E(vatAdminSvc).createVatByName('zoe');
-  const { zoeService, feeMintAccess: fma } = await E(root).buildZoe(
-    vatAdminSvc,
-    feeIssuerConfig,
-  );
+  const { zoeService, feeMintAccess: fma } = await E(
+    E(loadVat)('zoe'),
+  ).buildZoe(vatAdminSvc, feeIssuerConfig);
 
   zoe.resolve(zoeService);
   feeMintAccess.resolve(fma);
@@ -107,13 +118,12 @@ const buildZoe = async ({
 
 /**
  * @param {{
- *   consume: { vatAdminSvc: ERef<VatAdminSvc>, client: ERef<ClientConfig> }
+ *   consume: { loadVat: ERef<VatLoader<BoardVat>>, client: ERef<ClientConfig> }
  * }} powers
+ * @typedef {ERef<ReturnType<import('./vat-board').buildRootObject>>} BoardVat
  */
-const makeBoard = async ({ consume: { vatAdminSvc, client } }) => {
-  const { root } = await E(vatAdminSvc).createVatByName('board');
-
-  const board = E(root).getBoard();
+const makeBoard = async ({ consume: { loadVat, client } }) => {
+  const board = E(E(loadVat)('board')).getBoard();
   return E(client).assignBundle({ board: _addr => board });
 };
 
@@ -208,20 +218,20 @@ const installClientEgress = async (addr, { vats, produce: { client } }) => {
 /**
  * @param {{
  *   consume: {
- *     vatAdminSvc: ERef<VatAdminSvc>,
+ *     loadVat: ERef<VatLoader<BankVat>>,
  *     client: ERef<ClientConfig>,
  *     bridgeManager: import('./bridge').BridgeManager,
  *   },
  *   produce: { bankManager: Producer<unknown> },
  * }} powers
+ * @typedef {ERef<ReturnType<import('./vat-bank').buildRootObject>>} BankVat
  */
 const makeClientBanks = async ({
-  consume: { vatAdminSvc, client, bridgeManager },
+  consume: { loadVat, client, bridgeManager },
   produce: { bankManager },
 }) => {
-  const { root: bankVat } = await E(vatAdminSvc).createVatByName('bank');
   const settledBridge = await bridgeManager;
-  const mgr = E(bankVat).makeBankManager(settledBridge);
+  const mgr = E(E(loadVat)('bank')).makeBankManager(settledBridge);
   bankManager.resolve(mgr);
   return E(client).assignBundle({
     bank: address => E(mgr).getBankForAddress(address),
@@ -230,7 +240,7 @@ const makeClientBanks = async ({
 
 harden({
   connectVattpWithMailbox,
-  makeVatAdminService,
+  makeVatsFromBundles,
   buildZoe,
   makeBoard,
   makeAddressNameHubs,
@@ -239,7 +249,7 @@ harden({
 });
 export {
   connectVattpWithMailbox,
-  makeVatAdminService,
+  makeVatsFromBundles,
   buildZoe,
   makeBoard,
   makeAddressNameHubs,
