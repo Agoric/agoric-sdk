@@ -16,7 +16,7 @@ const { details: X, quote: q } = assert;
  * @typedef { Record<string, Promise<unknown>> } PromiseSpace
  */
 const makePromiseSpace = () => {
-  /** @type {Map<string, PromiseRecord<unknown>} */
+  /** @type {Map<string, PromiseRecord<unknown>>} */
   const state = new Map();
 
   const findOrCreateKit = name => {
