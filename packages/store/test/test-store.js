@@ -129,3 +129,16 @@ test('passability of stores', t => {
     t.throws(() => passStyleOf(makeLegacyWeakMap('foo')), { message: /x/ });
   }
 });
+
+test('passability of store iters', t => {
+  // See test 'copyMap - iters are passable'
+  const m = makeScalarMapStore('bar');
+  m.init('x', 8);
+  m.init('y', 7);
+  const keys = m.keys();
+  t.is(passStyleOf(keys), 'remotable');
+  const iter = keys[Symbol.iterator]();
+  t.is(passStyleOf(iter), 'remotable');
+  const iterResult = iter.next();
+  t.is(passStyleOf(iterResult), 'copyRecord');
+});

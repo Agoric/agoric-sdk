@@ -2,6 +2,7 @@
 
 import {
   assertChecker,
+  Far,
   getTag,
   makeTagged,
   passStyleOf,
@@ -111,10 +112,10 @@ export const getCopyMapEntries = m => {
     payload: { keys, values },
   } = m;
   const { length } = keys;
-  return harden({
+  return Far('CopyMap entries iterable', {
     [Symbol.iterator]: () => {
       let i = 0;
-      return harden({
+      return Far('CopyMap entries iterator', {
         next: () => {
           /** @type {IteratorResult<[K,V],void>} */
           let result;
