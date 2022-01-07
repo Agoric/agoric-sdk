@@ -1,4 +1,5 @@
 // @ts-check
+import { E, Far } from '@agoric/far';
 import {
   bootstrapManifest,
   installClientEgress,
@@ -13,6 +14,7 @@ export const simBootstrapManifest = harden({
     },
     workspace: true,
   },
+  connectFaucet: { workspace: true },
   ...bootstrapManifest,
 });
 
@@ -35,6 +37,23 @@ const installSimEgress = async ({ vatParameters, vats, workspace }) => {
   );
 };
 
-harden({ installSimEgress });
-export { installSimEgress };
+const connectFaucet = async ({ workspace }) => {
+  const { zoe, client } = workspace;
+  workspace.bridgeManager = undefined; // no bridge in the sim chain
+
+  const makeFaucet = async _address => {
+    const userFeePurse = await E(zoe).makeFeePurse();
+
+    return Far('faucet', {
+      tapFaucet: () => [],
+      // TODO: obsolete getFeePurse, now that zoe fees are gone?
+      getFeePurse: () => userFeePurse,
+    });
+  };
+
+  return E(client).assignBundle({ faucet: makeFaucet });
+};
+
+harden({ installSimEgress, connectFaucet });
+export { installSimEgress, connectFaucet };
 export * from './bootstrap-behaviors.js';

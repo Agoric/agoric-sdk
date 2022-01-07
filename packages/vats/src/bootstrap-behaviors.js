@@ -34,6 +34,10 @@ export const bootstrapManifest = harden({
     workspace: { vatAdminSvc: true, client: true },
   },
   makeAddressNameHubs: { workspace: true },
+  makeClientBanks: {
+    // TODO: separate workspace read / write powers
+    workspace: true,
+  },
 });
 
 /**
@@ -53,6 +57,7 @@ const connectVattpWithMailbox = ({
 };
 
 /**
+ * TODO: { dynamicVats: { bank: true }} thingy?
  *
  * @param {{
  *   vats: { vatAdmin: VatAdminVat },
@@ -182,6 +187,25 @@ const installClientEgress = async (addr, { vats, workspace }) => {
   });
 };
 
+/**
+ * @param {{ workspace: {
+ *   vatAdminSvc: VatAdminSvc,
+ *   client: any, // TODO
+ *   bridgeManager: import('./bridge').BridgeManager
+ *   bankManager: unknown,
+ * }}} powers
+ */
+const makeClientBanks = async ({ workspace }) => {
+  const { vatAdminSvc, client, bridgeManager } = workspace;
+  const { root: bankVat } = await E(vatAdminSvc).createVatByName('bank');
+  const settledBridge = await bridgeManager;
+  const bankManager = E(bankVat).makeBankManager(settledBridge);
+  workspace.bankManager = bankManager;
+  return E(client).assignBundle({
+    bank: address => E(bankManager).getBankForAddress(address),
+  });
+};
+
 harden({
   connectVattpWithMailbox,
   makeVatAdminService,
@@ -189,6 +213,7 @@ harden({
   makeBoard,
   makeAddressNameHubs,
   installClientEgress,
+  makeClientBanks,
 });
 export {
   connectVattpWithMailbox,
@@ -197,4 +222,5 @@ export {
   makeBoard,
   makeAddressNameHubs,
   installClientEgress,
+  makeClientBanks,
 };

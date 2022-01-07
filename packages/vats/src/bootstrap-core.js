@@ -75,6 +75,9 @@ const extract = (template, specimen) => {
   }
 };
 
+const manifestByRole = {
+  'sim-chain': simBootstrapManifest,
+};
 /**
  * Build root object of the bootstrap vat.
  *
@@ -88,6 +91,12 @@ const extract = (template, specimen) => {
 const buildRootObject = (vatPowers, vatParameters) => {
   const workspace = makePromiseSpace();
 
+  const { ROLE } = vatParameters.argv;
+  console.debug(`${ROLE} bootstrap starting`);
+
+  const manifest = manifestByRole[ROLE];
+  assert(manifest, X`no manifest for ${ROLE}`);
+
   return Far('bootstrap', {
     /**
      * Bootstrap vats and devices.
@@ -97,8 +106,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
      */
     bootstrap: (vats, devices) =>
       Promise.all(
-        // TODO: choose simBootstrapManifest based on runtime config
-        entries(simBootstrapManifest).map(([name, permit]) =>
+        entries(manifest).map(([name, permit]) =>
           Promise.resolve().then(() => {
             const endowments = extract(permit, {
               vatPowers,
