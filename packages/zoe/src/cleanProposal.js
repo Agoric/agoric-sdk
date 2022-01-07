@@ -1,19 +1,16 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { isNat } from '@agoric/nat';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { assertRecord } from '@agoric/marshal';
-import { assertPattern } from '@agoric/store';
-import {
-  isOnDemandExitRule,
-  isWaivedExitRule,
-  isAfterDeadlineExitRule,
-} from './typeGuards.js';
-import { arrayToObj, assertSubset } from './objArrayConversion.js';
+import { assertKey, assertPattern, fit, isKey } from '@agoric/store';
+import { ProposalShape } from './typeGuards.js';
+import { arrayToObj } from './objArrayConversion.js';
 
 import '../exported.js';
 import './internal-types.js';
+
+const { ownKeys } = Reflect;
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 
@@ -40,116 +37,83 @@ export const assertKeywordName = keyword => {
   );
 };
 
-// Assert that the keys of `record` are all in `allowedKeys`. If a key
-// of `record` is not in `allowedKeys`, throw an error. If a key in
-// `allowedKeys` is not a key of record, we do not throw an error.
-const assertKeysAllowed = (allowedKeys, record) => {
-  const keys = Object.getOwnPropertyNames(record);
-  assertSubset(allowedKeys, keys);
-  // assert that there are no symbol properties.
-  // TODO unreachable: already rejected as unpassable
-  assert(
-    Object.getOwnPropertySymbols(record).length === 0,
-    X`no symbol properties allowed`,
-  );
+/**
+ * @param {{[name: string]: any}} uncleanKeywordRecord
+ * @returns {string[]}
+ */
+export const cleanKeywords = uncleanKeywordRecord => {
+  harden(uncleanKeywordRecord);
+  assertRecord(uncleanKeywordRecord, 'keywordRecord');
+  const keywords = ownKeys(uncleanKeywordRecord);
+
+  // Assert all names are ascii identifiers starting with
+  // an upper case letter.
+  keywords.forEach(assertKeywordName);
+
+  return /** @type {string[]} */ (keywords);
 };
 
-const cleanKeys = (allowedKeys, record) => {
-  assertKeysAllowed(allowedKeys, record);
-  return harden(Object.getOwnPropertyNames(record));
-};
-
-export const getKeywords = keywordRecord =>
-  harden(Object.getOwnPropertyNames(keywordRecord));
-
-export const coerceAmountKeywordRecord = (
+export const coerceAmountPatternKeywordRecord = (
   allegedAmountKeywordRecord,
   getAssetKindByBrand,
 ) => {
-  assertRecord(allegedAmountKeywordRecord, 'amountKeywordRecord');
-  const keywords = getKeywords(allegedAmountKeywordRecord);
-  keywords.forEach(assertKeywordName);
+  const keywords = cleanKeywords(allegedAmountKeywordRecord);
 
   const amounts = Object.values(allegedAmountKeywordRecord);
   // Check that each value can be coerced using the AmountMath
   // indicated by brand. `AmountMath.coerce` throws if coercion fails.
   const coercedAmounts = amounts.map(amount => {
-    const brandAssetKind = getAssetKindByBrand(amount.brand);
-    const assetKind = getAssetKind(amount);
-    // TODO: replace this assertion with a check of the assetKind
-    // property on the brand, when that exists.
-    assert(
-      assetKind === brandAssetKind,
-      X`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`,
-    );
-    return AmountMath.coerce(amount.brand, amount);
+    if (isKey(amount)) {
+      const brandAssetKind = getAssetKindByBrand(amount.brand);
+      const assetKind = getAssetKind(amount);
+      // TODO: replace this assertion with a check of the assetKind
+      // property on the brand, when that exists.
+      assert(
+        assetKind === brandAssetKind,
+        X`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`,
+      );
+      return AmountMath.coerce(amount.brand, amount);
+    } else {
+      assertPattern(amount);
+      return amount;
+    }
   });
 
   // Recreate the amountKeywordRecord with coercedAmounts.
   return harden(arrayToObj(coercedAmounts, keywords));
 };
 
-export const cleanKeywords = keywordRecord => {
-  // `getOwnPropertyNames` returns all the non-symbol properties
-  // (both enumerable and non-enumerable).
-  const keywords = Object.getOwnPropertyNames(keywordRecord);
-
-  // Insist that there are no symbol properties.
-  // TODO unreachable: already rejected as unpassable
-  assert(
-    Object.getOwnPropertySymbols(keywordRecord).length === 0,
-    X`no symbol properties allowed`,
+export const coerceAmountKeywordRecord = (
+  allegedAmountKeywordRecord,
+  getAssetKindByBrand,
+) => {
+  const result = coerceAmountPatternKeywordRecord(
+    allegedAmountKeywordRecord,
+    getAssetKindByBrand,
   );
-
-  // Assert all key characters are ascii and keys start with a
-  // capital letter.
-  keywords.forEach(assertKeywordName);
-
-  return keywords;
+  assertKey(result);
+  return result;
 };
 
-const expectedAfterDeadlineKeys = harden(['timer', 'deadline']);
-
-const assertAfterDeadlineExitRule = exit => {
-  assertKeysAllowed(expectedAfterDeadlineKeys, exit.afterDeadline);
-  assert(exit.afterDeadline.timer !== undefined, X`timer must be defined`);
-  assert(
-    typeof exit.afterDeadline.deadline === 'bigint' &&
-      isNat(exit.afterDeadline.deadline),
-    X`deadline must be a Nat BigInt`,
-  );
-};
-
-const assertExitValueNull = (exit, exitKey) =>
-  assert(exit[exitKey] === null, `exit value must be null for key ${exitKey}`);
-
-// We expect the single exit key to be one of the following:
-const allowedExitKeys = harden(['onDemand', 'afterDeadline', 'waived']);
-
-const assertExit = exit => {
-  assert(
-    Object.getOwnPropertyNames(exit).length === 1,
-    X`exit ${exit} should only have one key`,
-  );
-
-  const [exitKey] = cleanKeys(allowedExitKeys, exit);
-  if (isOnDemandExitRule(exit) || isWaivedExitRule(exit)) {
-    assertExitValueNull(exit, exitKey);
-  }
-  if (isAfterDeadlineExitRule(exit)) {
-    assertAfterDeadlineExitRule(exit);
-  }
-};
+/**
+ * Just checks residual issues after matching ProposalShape.
+ * Only known residual issue is verifying that it only has one of the
+ * optional properties.
+ *
+ * @param {ExitRule} exit
+ */
+const assertExit = exit =>
+  assert(ownKeys(exit).length === 1, X`exit ${exit} should only have one key`);
 
 /**
  * check that keyword is not in both 'want' and 'give'.
  *
- * @param {Proposal["want"]} want
- * @param {Proposal["give"]} give
+ * @param {ProposalRecord["want"]} want
+ * @param {ProposalRecord["give"]} give
  */
 const assertKeywordNotInBoth = (want, give) => {
-  const wantKeywordSet = new Set(Object.getOwnPropertyNames(want));
-  const giveKeywords = Object.getOwnPropertyNames(give);
+  const wantKeywordSet = new Set(ownKeys(want));
+  const giveKeywords = ownKeys(give);
 
   giveKeywords.forEach(keyword => {
     assert(
@@ -158,8 +122,6 @@ const assertKeywordNotInBoth = (want, give) => {
     );
   });
 };
-
-const rootKeysAllowed = harden(['want', 'give', 'exit']);
 
 /**
  * cleanProposal checks the keys and values of the proposal, including
@@ -178,22 +140,32 @@ const rootKeysAllowed = harden(['want', 'give', 'exit']);
  * @returns {ProposalRecord}
  */
 export const cleanProposal = (proposal, getAssetKindByBrand) => {
-  assertPattern(proposal);
-  assertKeysAllowed(rootKeysAllowed, proposal);
-
-  // We fill in the default values if the keys are undefined.
-  let { want = harden({}), give = harden({}) } = proposal;
-
+  assertRecord(proposal, 'proposal');
+  // We fill in the default values if the keys are absent or undefined.
   const {
-    /** @type {ExitRule} */ exit = harden({ onDemand: null }),
+    want = harden({}),
+    give = harden({}),
+    exit = harden({ onDemand: null }),
+    ...rest
   } = proposal;
+  assert(
+    ownKeys(rest).length === 0,
+    X`${proposal} - Must only have want:, give:, exit: properties: ${rest}`,
+  );
 
-  want = coerceAmountKeywordRecord(want, getAssetKindByBrand);
-  give = coerceAmountKeywordRecord(give, getAssetKindByBrand);
+  const cleanedWant = coerceAmountPatternKeywordRecord(
+    want,
+    getAssetKindByBrand,
+  );
+  const cleanedGive = coerceAmountKeywordRecord(give, getAssetKindByBrand);
 
+  const cleanedProposal = harden({
+    want: cleanedWant,
+    give: cleanedGive,
+    exit,
+  });
+  fit(cleanedProposal, ProposalShape);
   assertExit(exit);
-
-  assertKeywordNotInBoth(want, give);
-
-  return harden({ want, give, exit });
+  assertKeywordNotInBoth(cleanedWant, cleanedGive);
+  return cleanedProposal;
 };
