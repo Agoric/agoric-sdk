@@ -33,19 +33,26 @@ export const makeNameHubKit = () => {
       return E(firstValue).lookup(...remaining);
     },
     entries() {
-      return mapIterable(keyToRecord.entries(), ([key, record]) => [
-        key,
-        record.promise || record.value,
-      ]);
+      return [
+        ...mapIterable(
+          keyToRecord.entries(),
+          ([key, record]) => /** @type {[string, ERef<unknown>]} */ ([
+            key,
+            record.promise || record.value,
+          ]),
+        ),
+      ];
     },
     values() {
-      return mapIterable(
-        keyToRecord.values(),
-        record => record.promise || record.value,
-      );
+      return [
+        ...mapIterable(
+          keyToRecord.values(),
+          record => record.promise || record.value,
+        ),
+      ];
     },
     keys() {
-      return keyToRecord.keys();
+      return [...keyToRecord.keys()];
     },
   });
 
