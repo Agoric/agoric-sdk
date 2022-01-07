@@ -184,11 +184,7 @@ const makeAddressNameHubs = async ({
 const installClientEgress = async (addr, { vats, produce: { client } }) => {
   const PROVISIONER_INDEX = 1;
 
-  // TODO: get rid of echoObj?
-  let bundle = harden({
-    echoer: Far('echoObj', { echo: message => message }),
-    // TODO: echo: Far('echoFn', message => message),
-  });
+  let bundle = harden({});
   const { notifier, updater } = makeNotifierKit({ bundle });
 
   const chainProvider = Far('chainProvider', {
