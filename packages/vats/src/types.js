@@ -110,3 +110,18 @@
  *   vatAdmin: unknown,
  * }} SwingsetDevices
  */
+
+/**
+ * @typedef {{ resolve: (v: T) => void }} Producer<T>
+ * @template T
+ */
+/**
+ * @typedef {{
+ *   consume: Record<string, Promise<unknown>>,
+ *   produce: Record<string, Producer<unknown>>,
+ * }} PromiseSpace
+ *
+ * @typedef {{
+ *   assignBundle: (ps: Record<string, (addr: string) => void>) => void
+ * }} ClientConfig
+ */

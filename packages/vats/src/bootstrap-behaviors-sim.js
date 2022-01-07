@@ -12,9 +12,12 @@ export const simBootstrapManifest = harden({
       vattp: true,
       comms: true,
     },
-    workspace: true,
+    produce: { client: true },
   },
-  connectFaucet: { workspace: true },
+  connectFaucet: {
+    consume: { zoe: true, client: true },
+    produce: { bridgeManager: true },
+  },
   ...bootstrapManifest,
 });
 
@@ -25,21 +28,33 @@ export const simBootstrapManifest = harden({
  *     vattp: VattpVat,
  *     comms: CommsVatRoot,
  *   },
- *   workspace: Record<string, ERef<unknown>>,
+ *   produce: { client: Producer<ClientConfig> },
  * }} powers
  */
-const installSimEgress = async ({ vatParameters, vats, workspace }) => {
+const installSimEgress = async ({
+  vatParameters,
+  vats,
+  produce: { client },
+}) => {
   const { argv } = vatParameters;
   return Promise.all(
     /** @type { string[] } */ (argv.hardcodedClientAddresses).map(addr =>
-      installClientEgress(addr, { vats, workspace }),
+      installClientEgress(addr, { vats, produce: { client } }),
     ),
   );
 };
 
-const connectFaucet = async ({ workspace }) => {
-  const { zoe, client } = workspace;
-  workspace.bridgeManager = undefined; // no bridge in the sim chain
+/**
+ * @param {{
+ *   consume: { zoe: ERef<ZoeService>, client: ERef<ClientConfig> },
+ *   produce: { bridgeManager: Producer<undefined> }
+ * }} powers
+ */
+const connectFaucet = async ({
+  consume: { zoe, client },
+  produce: { bridgeManager },
+}) => {
+  bridgeManager.resolve(undefined); // no bridge in the sim chain
 
   const makeFaucet = async _address => {
     const userFeePurse = await E(zoe).makeFeePurse();

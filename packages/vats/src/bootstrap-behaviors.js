@@ -25,18 +25,26 @@ export const bootstrapManifest = harden({
   makeVatAdminService: {
     vats: { vatAdmin: true },
     devices: { vatAdmin: true },
-    workspace: true,
+    produce: { vatAdminSvc: true },
   },
   buildZoe: {
-    workspace: true,
+    consume: { vatAdminSvc: true, client: true },
+    produce: { zoe: true, feeMintAccess: true },
   },
   makeBoard: {
-    workspace: { vatAdminSvc: true, client: true },
+    consume: { vatAdminSvc: true, client: true },
   },
-  makeAddressNameHubs: { workspace: true },
+  makeAddressNameHubs: {
+    consume: { client: true },
+    produce: { agoricNamesAdmin: true },
+  },
   makeClientBanks: {
-    // TODO: separate workspace read / write powers
-    workspace: true,
+    consume: {
+      vatAdminSvc: true,
+      client: true,
+      bridgeManager: true,
+    },
+    produce: { bankManager: true },
   },
 });
 
@@ -62,41 +70,47 @@ const connectVattpWithMailbox = ({
  * @param {{
  *   vats: { vatAdmin: VatAdminVat },
  *   devices: { vatAdmin: unknown },
- *   workspace: import('./bootstrap-core').PromiseSpace,
+ *   produce: { vatAdminSvc: Producer<ERef<VatAdminSvc>> },
  * }} powers
  */
-const makeVatAdminService = async ({ vats, devices, workspace }) => {
-  workspace.vatAdminSvc = E(vats.vatAdmin).createVatAdminService(
-    devices.vatAdmin,
-  );
+const makeVatAdminService = async ({
+  vats,
+  devices,
+  produce: { vatAdminSvc },
+}) => {
+  vatAdminSvc.resolve(E(vats.vatAdmin).createVatAdminService(devices.vatAdmin));
 };
 
 /**
  * @param {{
- *   workspace: Record<string, ERef<any>>,
+ *   consume: { vatAdminSvc: ERef<VatAdminSvc>, client: ERef<ClientConfig> },
+ *   produce: { zoe: Producer<ZoeService>, feeMintAccess: Producer<FeeMintAccess> },
  * }} powers
  *
  * @typedef {ERef<ReturnType<import('./vat-zoe').buildRootObject>>} ZoeVat
  */
-const buildZoe = async ({ workspace }) => {
-  const { vatAdminSvc } = workspace;
+const buildZoe = async ({
+  consume: { vatAdminSvc, client },
+  produce: { zoe, feeMintAccess },
+}) => {
   /** @type {{ root: ZoeVat }} */
   const { root } = await E(vatAdminSvc).createVatByName('zoe');
-  const { zoeService: zoe, feeMintAccess: _2 } = await E(root).buildZoe(
+  const { zoeService, feeMintAccess: fma } = await E(root).buildZoe(
     vatAdminSvc,
     feeIssuerConfig,
   );
 
-  workspace.zoe = zoe;
-  E(workspace.client).assignBundle({ zoe: _addr => zoe });
+  zoe.resolve(zoeService);
+  feeMintAccess.resolve(fma);
+  E(client).assignBundle({ zoe: _addr => zoeService });
 };
 
 /**
  * @param {{
- *   workspace: { vatAdminSvc: VatAdminSvc, client: Record<string, unknown> }
+ *   consume: { vatAdminSvc: ERef<VatAdminSvc>, client: ERef<ClientConfig> }
  * }} powers
  */
-const makeBoard = async ({ workspace: { vatAdminSvc, client } }) => {
+const makeBoard = async ({ consume: { vatAdminSvc, client } }) => {
   const { root } = await E(vatAdminSvc).createVatByName('board');
 
   const board = E(root).getBoard();
@@ -104,14 +118,17 @@ const makeBoard = async ({ workspace: { vatAdminSvc, client } }) => {
 };
 
 /**
- * @param {{ workspace: Record<string, unknown> }} powers
+ * @param {{
+ *   consume: { client: ERef<ClientConfig> },
+ *   produce: { agoricNamesAdmin: Producer<NameAdmin> },
+ * }} powers
  */
-const makeAddressNameHubs = async ({ workspace }) => {
-  const {
-    nameHub: agoricNames,
-    nameAdmin: agoricNamesAdmin,
-  } = makeNameHubKit();
-  workspace.agoricNamesAdmin = agoricNamesAdmin;
+const makeAddressNameHubs = async ({
+  consume: { client },
+  produce: { agoricNamesAdmin },
+}) => {
+  const { nameHub: agoricNames, nameAdmin } = makeNameHubKit();
+  agoricNamesAdmin.resolve(nameAdmin);
 
   const {
     nameHub: namesByAddress,
@@ -135,16 +152,12 @@ const makeAddressNameHubs = async ({ workspace }) => {
     return myAddressNameAdmin;
   };
 
-  /* @ts-ignore TODO: cast client? */
-  return E(workspace.client).assignBundle({
+  return E(client).assignBundle({
     agoricNames: _ => agoricNames,
     namesByAddress: _ => namesByAddress,
     myAddressNameAdmin: perAddress,
   });
 };
-
-const callProperties = (obj, ...args) =>
-  fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
 
 /**
  * @param { string } addr
@@ -153,12 +166,12 @@ const callProperties = (obj, ...args) =>
  *     vattp: VattpVat,
  *     comms: CommsVatRoot,
  *   },
- *   workspace: Record<string, ERef<unknown>>,
+ *   produce: { client: Producer<ClientConfig> },
  * }} powers
  *
  * @typedef {{ getChainBundle: () => unknown }} ChainBundler
  */
-const installClientEgress = async (addr, { vats, workspace }) => {
+const installClientEgress = async (addr, { vats, produce: { client } }) => {
   const PROVISIONER_INDEX = 1;
 
   // TODO: get rid of echoObj?
@@ -178,31 +191,40 @@ const installClientEgress = async (addr, { vats, workspace }) => {
   await E(vats.comms).addRemote(addr, transmitter, setReceiver);
   await E(vats.comms).addEgress(addr, PROVISIONER_INDEX, chainProvider);
 
-  workspace.client = harden({
-    assignBundle: newPropertyMakers => {
-      const newProperties = callProperties(newPropertyMakers, addr);
-      bundle = { ...bundle, ...newProperties };
-      updater.updateState({ bundle });
-    },
-  });
+  const callProperties = (obj, ...args) =>
+    fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
+
+  client.resolve(
+    harden({
+      assignBundle: newPropertyMakers => {
+        const newProperties = callProperties(newPropertyMakers, addr);
+        bundle = { ...bundle, ...newProperties };
+        updater.updateState({ bundle });
+      },
+    }),
+  );
 };
 
 /**
- * @param {{ workspace: {
- *   vatAdminSvc: VatAdminSvc,
- *   client: any, // TODO
- *   bridgeManager: import('./bridge').BridgeManager
- *   bankManager: unknown,
- * }}} powers
+ * @param {{
+ *   consume: {
+ *     vatAdminSvc: ERef<VatAdminSvc>,
+ *     client: ERef<ClientConfig>,
+ *     bridgeManager: import('./bridge').BridgeManager,
+ *   },
+ *   produce: { bankManager: Producer<unknown> },
+ * }} powers
  */
-const makeClientBanks = async ({ workspace }) => {
-  const { vatAdminSvc, client, bridgeManager } = workspace;
+const makeClientBanks = async ({
+  consume: { vatAdminSvc, client, bridgeManager },
+  produce: { bankManager },
+}) => {
   const { root: bankVat } = await E(vatAdminSvc).createVatByName('bank');
   const settledBridge = await bridgeManager;
-  const bankManager = E(bankVat).makeBankManager(settledBridge);
-  workspace.bankManager = bankManager;
+  const mgr = E(bankVat).makeBankManager(settledBridge);
+  bankManager.resolve(mgr);
   return E(client).assignBundle({
-    bank: address => E(bankManager).getBankForAddress(address),
+    bank: address => E(mgr).getBankForAddress(address),
   });
 };
 

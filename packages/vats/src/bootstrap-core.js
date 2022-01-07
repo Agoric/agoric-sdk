@@ -9,11 +9,9 @@ const { entries, fromEntries } = Object;
 const { details: X, quote: q } = assert;
 
 /**
- * Make an object `s` where every `s.name` is a promise and setting `s.name = v` resolves it.
+ * Make { produce, consume } where for each name, `consume[name]` is a promise and `produce[name].resolve` resolves it.
  *
  * @returns {PromiseSpace}
- *
- * @typedef { Record<string, Promise<unknown>> } PromiseSpace
  */
 const makePromiseSpace = () => {
   /** @type {Map<string, PromiseRecord<unknown>>} */
@@ -24,31 +22,38 @@ const makePromiseSpace = () => {
     if (kit) {
       return kit;
     } else {
-      console.info('workspace: allocating', name);
+      console.info(name, ': new Promise');
       kit = makePromiseKit();
       state.set(name, kit);
       return kit;
     }
   };
 
-  const space = new Proxy(
+  const consume = new Proxy(
     {},
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
         const kit = findOrCreateKit(name);
+        console.info(name, ': resolve');
         return kit.promise;
-      },
-      set: (_target, name, value) => {
-        // Note: repeated resolves() are noops.
-        findOrCreateKit(name).resolve(value);
-        console.info('workspace: resolved', name);
-        return true;
       },
     },
   );
 
-  return space;
+  const produce = new Proxy(
+    {},
+    {
+      get: (_target, name) => {
+        assert.typeof(name, 'string');
+        const { resolve } = findOrCreateKit(name);
+        // Note: repeated resolves() are noops.
+        return harden({ resolve });
+      },
+    },
+  );
+
+  return harden({ produce, consume });
 };
 
 /**
@@ -89,7 +94,7 @@ const manifestByRole = {
  * }} vatParameters
  */
 const buildRootObject = (vatPowers, vatParameters) => {
-  const workspace = makePromiseSpace();
+  const { produce, consume } = makePromiseSpace();
 
   const { ROLE } = vatParameters.argv;
   console.debug(`${ROLE} bootstrap starting`);
@@ -113,7 +118,8 @@ const buildRootObject = (vatPowers, vatParameters) => {
               vatParameters,
               vats,
               devices,
-              workspace,
+              produce,
+              consume,
             });
             console.info(`bootstrap: ${name}(${q(permit)})`);
             return behaviors[name](endowments);
