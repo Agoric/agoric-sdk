@@ -1,11 +1,2 @@
-import { createComponent } from '@lit-labs/react';
-
-import { AgoricWalletConnection } from './index.js';
-
-// Upgrade the tags.
-import './agoric-wallet-connection.js';
-
-export const makeReactAgoricWalletConnection = React =>
-  createComponent(React, 'agoric-wallet-connection', AgoricWalletConnection, {
-    onState: 'state',
-  });
+export { makeReactAgoricWalletConnection } from '@agoric/web-components/react.js';
+console.warn('This package is deprecated. Use @agoric/web-components instead of @agoric/wallet-connection.');

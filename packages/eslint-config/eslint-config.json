@@ -11,7 +11,19 @@
     // Bump the 1's to 2's to get errors.
     // "jsdoc/valid-types": 1,
     // "jsdoc/no-undefined-types": [1, {"definedTypes": ["never", "unknown"]}],
-    "jsdoc/tag-lines": "off"
+    "jsdoc/tag-lines": "off",
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": [
+          "**/*.config.js",
+          "**/*.config.*.js",
+          "**/*test*/**/*.js",
+          "**/demo*/**/*.js",
+          "**/scripts/**/*.js"
+        ]
+      }
+    ]
   },
   "settings": {
     "jsdoc": {

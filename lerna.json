@@ -12,9 +12,8 @@
     ".",
     "golang/cosmos",
     "packages/*",
-    "packages/dapp-*/api",
-    "packages/dapp-*/contract",
-    "packages/dapp-*/ui"
+    "packages/wallet/api",
+    "packages/wallet/ui"
   ],
   "version": "independent"
 }

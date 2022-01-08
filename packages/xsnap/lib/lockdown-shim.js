@@ -1,2 +1,0 @@
-// @ts-nocheck
-lockdown();

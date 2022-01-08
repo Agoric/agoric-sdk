@@ -30,7 +30,6 @@ export const makeZCFZygote = (
   zoeService,
   invitationIssuer,
   testJigSetter,
-  feePurse,
 ) => {
   /** @type {PromiseRecord<ZoeInstanceAdmin>} */
   const zoeInstanceAdminPromiseKit = makePromiseKit();
@@ -260,8 +259,6 @@ export const makeZCFZygote = (
       offerHandler = Far('default offer handler', () => {}),
       description,
       customProperties = harden({}),
-      relativeFee = undefined,
-      relativeExpiry = undefined,
     ) => {
       assert.typeof(
         description,
@@ -275,8 +272,6 @@ export const makeZCFZygote = (
         invitationHandle,
         description,
         customProperties,
-        relativeFee,
-        relativeExpiry,
       );
       return invitationP;
     },
@@ -295,7 +290,7 @@ export const makeZCFZygote = (
     makeEmptySeatKit,
 
     // The methods below are pure and have no side-effects //
-    getZoeService: () => E(zoeService).bindDefaultFeePurse(feePurse),
+    getZoeService: () => zoeService,
     getInvitationIssuer: () => invitationIssuer,
     getTerms,
     getBrandForIssuer,
@@ -337,7 +332,17 @@ export const makeZCFZygote = (
 
   let contractCode;
 
-  /** @type {ZCFZygote} */
+  /**
+   * A zygote is a pre-image of a vat that can quickly be instantiated because
+   * the code has already been evaluated. SwingSet doesn't support zygotes yet.
+   * Once it does the code will be evaluated once when creating the zcfZygote,
+   * then the start() function will be called each time an instance is started.
+   *
+   * Currently, Zoe's buildRootObject calls makeZCFZygote, evaluateContract, and
+   * startContract every time a contract instance is created.
+   *
+   * @type {ZCFZygote}
+   * */
   const zcfZygote = {
     evaluateContract: bundle => {
       contractCode = evalContractBundle(bundle);

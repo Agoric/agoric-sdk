@@ -228,7 +228,7 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 // makeTestKit creates a minimal Keeper and Context for use in testing.
 func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
 	encodingConfig := params.MakeEncodingConfig()
-	cdc := encodingConfig.Marshaller
+	cdc := encodingConfig.Marshaler
 	callToController := func(ctx sdk.Context, str string) (string, error) {
 		return "", nil
 	}

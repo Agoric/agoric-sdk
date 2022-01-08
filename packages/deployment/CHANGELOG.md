@@ -3,6 +3,47 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.30.0...@agoric/deployment@2.0.0) (2021-12-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deployment:** optional first block argument to `crunch.mjs`
+
+### Features
+
+* **deployment:** optional first block argument to `crunch.mjs` ([c03646d](https://github.com/Agoric/agoric-sdk/commit/c03646d7387200c3664e7aa03113514363a4611a))
+
+
+### Bug Fixes
+
+* **deployment:** use Docker `Cgroup Version` to init volumes ([3fa95e7](https://github.com/Agoric/agoric-sdk/commit/3fa95e77a0c79f4dfbf9651d5f295795ce7dc5df))
+
+
+
+## [1.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.29.1...@agoric/deployment@1.30.0) (2021-12-02)
+
+
+### Features
+
+* **deployment:** add scripts to help find nondeterminism ([a1065c0](https://github.com/Agoric/agoric-sdk/commit/a1065c043dc721d967065fe1098ad5a0cb59a3fa))
+* **deployment:** enable `ag-setup-cosmos init --noninteractive` ([e866975](https://github.com/Agoric/agoric-sdk/commit/e866975fcda19afdf14adbd1ad59fc2b353c8b06))
+* **deployment:** trace KVStore activity during integration test ([a915950](https://github.com/Agoric/agoric-sdk/commit/a915950241aedd406a0df1018f22f8a517a64a26))
+* replace internal usage of ag-chain-cosmos with agd ([d4e1128](https://github.com/Agoric/agoric-sdk/commit/d4e1128b8542c48b060ed1be9778e5779668d5b5))
+
+
+### Bug Fixes
+
+* **deployment:** accomodate `$GOBIN` ([d75868b](https://github.com/Agoric/agoric-sdk/commit/d75868b9c05b5ede14af92f78f1ddeef95e915d8))
+* **deployment:** adapt to new cosmic-swingset `install` target ([02e4f4f](https://github.com/Agoric/agoric-sdk/commit/02e4f4f4fe6c8c3a32ff4715f912e5344985722f))
+* **deployment:** change token send timeout from 10m to ~3m ([1791164](https://github.com/Agoric/agoric-sdk/commit/179116480de42d032c0607c40494b40fc20832eb))
+* **deployment:** get `install-deps.sh` working under Linux ([1c2effe](https://github.com/Agoric/agoric-sdk/commit/1c2effe98df72e8a2d2be917f60fbc1bb74afbb0))
+* **deployment:** properly detect faucet address in faucet-helper.sh ([3b9e8b1](https://github.com/Agoric/agoric-sdk/commit/3b9e8b1d72822d373021a36a45921b42e347899e))
+* **deployment:** work around bundling divergence in Dockerfile.sdk ([1170879](https://github.com/Agoric/agoric-sdk/commit/11708793b1fe174a4411c0b7f72f439e751421b6))
+* **faucet:** don't fail if `cosmos-delegates.txt` doesn't exist ([f650334](https://github.com/Agoric/agoric-sdk/commit/f65033489cb824d115a6c6dc5811868e5b53aeae))
+
+
+
 ### [1.29.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.29.0...@agoric/deployment@1.29.1) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/deployment

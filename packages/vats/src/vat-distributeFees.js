@@ -1,9 +1,9 @@
-import { Far } from '@agoric/marshal';
-import {
-  buildDistributor,
-  makeTreasuryFeeCollector,
-} from './distributeFees.js';
+import { Far } from '@agoric/far';
+import { buildDistributor, makeFeeCollector } from './distributeFees.js';
 
 export function buildRootObject(_vatPowers) {
-  return Far('feeDistributor', { buildDistributor, makeTreasuryFeeCollector });
+  return Far('feeDistributor', {
+    buildDistributor,
+    makeFeeCollector,
+  });
 }

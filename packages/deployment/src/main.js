@@ -479,7 +479,8 @@ show-config      display the client connection parameters
           'play',
           'install',
           `-eexecline=${shellEscape(
-            '/usr/local/bin/ag-chain-cosmos start --log_level=warn',
+            `/usr/local/bin/ag-chain-cosmos start ${env.AG_COSMOS_START_ARGS ??
+              '--log_level=warn'}`,
           )}`,
           ...agChainCosmosEnvironment,
         ]),

@@ -3,6 +3,66 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [12.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@11.0.0...@agoric/sdk@12.0.0) (2021-12-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deployment:** optional first block argument to `crunch.mjs`
+
+### Features
+
+* refactor parameter governance support to allow for Invitations ([#4121](https://github.com/Agoric/agoric-sdk/issues/4121)) ([159596b](https://github.com/Agoric/agoric-sdk/commit/159596b8d44b8cbdaf6e19513cb3e716febfae7b))
+* **agoric-cli:** `install <TAG>` forces redownload of <TAG> ([c41be9d](https://github.com/Agoric/agoric-sdk/commit/c41be9d2c9d5808d836bdf8d2def290567e91e32))
+* **cosmos:** adapt Agoric changes to new `gaiad` ([29535de](https://github.com/Agoric/agoric-sdk/commit/29535ded86ca87db70b2fa59d85dc4394bbba761))
+* **cosmos:** upgrade to `gaia/releases/v6.0.0` ([2fe7008](https://github.com/Agoric/agoric-sdk/commit/2fe7008ed699bb543db0ad8c3fb750dfd8c6c425))
+* **deployment:** optional first block argument to `crunch.mjs` ([c03646d](https://github.com/Agoric/agoric-sdk/commit/c03646d7387200c3664e7aa03113514363a4611a))
+* **wallet:** add help link to documentation ([977262e](https://github.com/Agoric/agoric-sdk/commit/977262e596259788a773f0fe17eb61fb03d30ea4))
+* add vatstoreGetAfter syscall to enable iterating vatstore keys ([63c7d97](https://github.com/Agoric/agoric-sdk/commit/63c7d9759875574fc8b78b5ca8a5646da0604cc7))
+* support vatstore iteration over explicit key bounds ([f220dd8](https://github.com/Agoric/agoric-sdk/commit/f220dd8d89a6ca9ae61093d7613720a4454b62b6))
+* **dist-tag:** add script and instructions to manipulate NPM tags ([241c10a](https://github.com/Agoric/agoric-sdk/commit/241c10a113ccccce379d37803080a0a776530d40))
+
+
+### Bug Fixes
+
+* **agoric-cli:** make `agoric --no-sdk install` work as well ([e852ee5](https://github.com/Agoric/agoric-sdk/commit/e852ee5aaf87d31a9c5e68b212ffc0c345d2b9d0))
+* **cosmos:** add `upgradegaia.sh` to apply Gaia source upgrades ([b9669c5](https://github.com/Agoric/agoric-sdk/commit/b9669c5dfe80c9942aed620fdaa19b164c9f3600))
+* **cosmos:** also look for `ag-chain-cosmos` in the `agd` directory ([f598d40](https://github.com/Agoric/agoric-sdk/commit/f598d40e0f55814bd17fc021503fbb45bddcfd67))
+* **cosmos:** don't twiddle the genesis params, set them explicitly ([c9c8d81](https://github.com/Agoric/agoric-sdk/commit/c9c8d81f476a0df7559eae35c0dd323cd26a9d7b))
+* **cosmos:** properly put `x/capability` in `SetOrderBeginBlockers` ([823f4fe](https://github.com/Agoric/agoric-sdk/commit/823f4fe86a8f2109f87746f00ffbd3eeb4bf1e38))
+* **deployment:** use Docker `Cgroup Version` to init volumes ([3fa95e7](https://github.com/Agoric/agoric-sdk/commit/3fa95e77a0c79f4dfbf9651d5f295795ce7dc5df))
+* **liveSlots:** reflect return value marshalling failures ([fd17b22](https://github.com/Agoric/agoric-sdk/commit/fd17b22874927540f0bad7fb081c9a7e56c901e9))
+* **solo:** take a dependency on `esm` to reenable plugins ([16e9f9b](https://github.com/Agoric/agoric-sdk/commit/16e9f9b08edeb412fb722adab593f22fde1e29a8))
+* **treasury:** use liquidationMargin for maxDebt calculation ([#4163](https://github.com/Agoric/agoric-sdk/issues/4163)) ([c749af8](https://github.com/Agoric/agoric-sdk/commit/c749af86232029c0abc8b031366251a05e482930))
+* **wallet:** allow wallet app deep linking ([96d372e](https://github.com/Agoric/agoric-sdk/commit/96d372e781d3ce405fc82edea78a0633b0d61b9f))
+* **wallet:** properly get the first timerService value ([636e099](https://github.com/Agoric/agoric-sdk/commit/636e0994761998b0857232f9bdd6f0b3ac451b31))
+* **wallet:** render issuer brand correctly ([f648c19](https://github.com/Agoric/agoric-sdk/commit/f648c19bbf397e9b322e7b990025157c124d2156))
+* changes based on review comments ([e723855](https://github.com/Agoric/agoric-sdk/commit/e7238550829b5ff6bbec015e2a66263118a2716b))
+* tweaks based on review comments ([f0e42b1](https://github.com/Agoric/agoric-sdk/commit/f0e42b11046469bf29394c1bdd7ef1fb772f6474))
+
+
+
+## [11.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@11.0.0-stage.4...@agoric/sdk@11.0.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **repl:** add `@agoric/far` exports to REPL, remove `ui-agent`
+
+### Features
+
+* **far:** export `ERef<T>` ([180149e](https://github.com/Agoric/agoric-sdk/commit/180149ea1406e0c548fa4e2aeddabe5f16f6089b))
+* **far:** new package `@agoric/far` ([8be558c](https://github.com/Agoric/agoric-sdk/commit/8be558c5dc9a4acef43d0f28d5e207cbbd11a019))
+* **repl:** add `@agoric/far` exports to REPL, remove `ui-agent` ([3f41296](https://github.com/Agoric/agoric-sdk/commit/3f41296865dadbf7d7fe50291b86d972bc3caabd))
+* tweak fictional BLD price to suggest early phase ([472912e](https://github.com/Agoric/agoric-sdk/commit/472912e507a4d83b41734b9110e3127b1bd40755))
+
+
+### Bug Fixes
+
+* represent storage in same order in genesis state ([f584cd1](https://github.com/Agoric/agoric-sdk/commit/f584cd1a1256d4b27cf05a1b46bda1fb6aa591af))
+
+
+
 ## [10.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@9.1.0...@agoric/sdk@10.0.0) (2021-10-13)
 
 

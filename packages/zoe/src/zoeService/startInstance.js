@@ -14,26 +14,20 @@ import { handlePKitWarning } from '../handleWarning.js';
  * @param {Promise<ZoeService>} zoeServicePromise
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
- * @param {ChargeZoeFee} chargeZoeFee
- * @param {Amount} startInstanceFeeAmount
  * @returns {StartInstance}
  */
 export const makeStartInstance = (
   zoeServicePromise,
   makeZoeInstanceStorageManager,
   unwrapInstallation,
-  chargeZoeFee,
-  startInstanceFeeAmount,
 ) => {
-  /** @type {StartInstanceFeePurseRequired} */
+  /** @type {StartInstance} */
   const startInstance = async (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
     customTerms = harden({}),
     privateArgs = undefined,
-    feePurse,
   ) => {
-    await chargeZoeFee(feePurse, startInstanceFeeAmount);
     /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
     const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
 
@@ -57,7 +51,6 @@ export const makeStartInstance = (
       customTerms,
       uncleanIssuerKeywordRecord,
       instance,
-      feePurse,
     );
     // AWAIT ///
 
@@ -163,10 +156,6 @@ export const makeStartInstance = (
           seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
           return { userSeat, notifier, zoeSeatAdmin };
         },
-        transferFeeToCreator: async (userFeePurse, fee) => {
-          const payment = await E(userFeePurse).withdraw(fee);
-          return E(feePurse).deposit(payment);
-        },
       });
       return instanceAdmin;
     };
@@ -222,7 +211,6 @@ export const makeStartInstance = (
       zoeInstanceStorageManager.getInstanceRecord(),
       zoeInstanceStorageManager.getIssuerRecords(),
       privateArgs,
-      feePurse,
     );
 
     handleOfferObjPromiseKit.resolve(handleOfferObj);

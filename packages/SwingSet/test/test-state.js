@@ -5,8 +5,6 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { createHash } from 'crypto';
 import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 import { createSHA256 } from '../src/hasher.js';
-import { buildHostDBInMemory } from '../src/hostStorage.js';
-import { buildBlockBuffer } from '../src/blockBuffer.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import {
   buildCrankBuffer,
@@ -72,52 +70,6 @@ test('storageInMemory', t => {
   testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
 });
 
-function buildHostDBAndGetState() {
-  const store = initSwingStore(null);
-  const hostDB = buildHostDBInMemory(store.kvStore);
-  return { hostDB, getState: () => getAllState(store).kvStuff };
-}
-
-test('hostDBInMemory', t => {
-  const { hostDB, getState } = buildHostDBAndGetState();
-
-  t.falsy(hostDB.has('missing'));
-  t.is(hostDB.get('missing'), undefined);
-
-  hostDB.applyBatch([{ op: 'set', key: 'foo', value: 'f' }]);
-  t.truthy(hostDB.has('foo'));
-  t.is(hostDB.get('foo'), 'f');
-
-  hostDB.applyBatch([
-    { op: 'set', key: 'foo2', value: 'f2' },
-    { op: 'set', key: 'foo1', value: 'f1' },
-    { op: 'set', key: 'foo3', value: 'f3' },
-  ]);
-  t.deepEqual(Array.from(hostDB.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
-  t.deepEqual(Array.from(hostDB.getKeys('foo1', 'foo4')), [
-    'foo1',
-    'foo2',
-    'foo3',
-  ]);
-
-  hostDB.applyBatch([{ op: 'delete', key: 'foo2' }]);
-  t.falsy(hostDB.has('foo2'));
-  t.is(hostDB.get('foo2'), undefined);
-  t.deepEqual(Array.from(hostDB.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
-
-  checkState(t, getState, [
-    ['foo', 'f'],
-    ['foo1', 'f1'],
-    ['foo3', 'f3'],
-  ]);
-});
-
-test('blockBuffer fulfills storage API', t => {
-  const { hostDB, getState } = buildHostDBAndGetState();
-  const { blockBuffer, commitBlock } = buildBlockBuffer(hostDB);
-  testStorage(t, blockBuffer, getState, commitBlock);
-});
-
 test('crankBuffer fulfills storage API', t => {
   const store = initSwingStore(null);
   const { crankBuffer, commitCrank } = buildCrankBuffer(
@@ -127,11 +79,58 @@ test('crankBuffer fulfills storage API', t => {
   testStorage(t, crankBuffer, () => getAllState(store).kvStuff, commitCrank);
 });
 
+test('crankBuffer handles key iteration properly even with intra-crank data changes', t => {
+  const store = initSwingStore(null);
+  const { crankBuffer: s, commitCrank } = buildCrankBuffer(
+    store.kvStore,
+    createSHA256,
+  );
+
+  s.set('k8', '8');
+  s.set('k7', '7');
+  s.set('k6', '6');
+  s.set('k5', '5');
+  s.set('k4', '4');
+  s.set('k3', '3');
+  s.set('k2', '2');
+  s.set('k1', '1');
+  commitCrank();
+
+  let keys = Array.from(s.getKeys('k', 'k~'));
+  t.deepEqual(keys, ['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k7', 'k8']);
+  t.deepEqual(
+    keys.map(k => s.get(k)),
+    ['1', '2', '3', '4', '5', '6', '7', '8'],
+  );
+  s.set('k0', '0 added');
+  s.set('k4', '4 revised');
+  s.set('k8', '8 revised');
+  s.set('k9', '9 added');
+  s.delete('k3');
+  s.delete('k5');
+  s.delete('k7');
+  keys = Array.from(s.getKeys('k', 'k~'));
+  t.deepEqual(keys, ['k0', 'k1', 'k2', 'k4', 'k6', 'k8', 'k9']);
+  t.deepEqual(
+    keys.map(k => s.get(k)),
+    ['0 added', '1', '2', '4 revised', '6', '8 revised', '9 added'],
+  );
+  commitCrank();
+
+  keys = Array.from(s.getKeys('k', 'k~'));
+  t.deepEqual(keys, ['k0', 'k1', 'k2', 'k4', 'k6', 'k8', 'k9']);
+  t.deepEqual(
+    keys.map(k => s.get(k)),
+    ['0 added', '1', '2', '4 revised', '6', '8 revised', '9 added'],
+  );
+});
+
 test('crankBuffer can abortCrank', t => {
-  const { hostDB, getState } = buildHostDBAndGetState();
-  const { blockBuffer, commitBlock } = buildBlockBuffer(hostDB);
+  const store = initSwingStore(null);
+  const getState = () => getAllState(store).kvStuff;
+
   const { crankBuffer: s, commitCrank, abortCrank } = buildCrankBuffer(
-    blockBuffer,
+    store.kvStore,
     createSHA256,
   );
 
@@ -150,13 +149,9 @@ test('crankBuffer can abortCrank', t => {
   t.is(s.get('foo2'), undefined);
   t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
 
-  commitBlock();
   checkState(t, getState, []);
 
   commitCrank();
-  checkState(t, getState, []);
-
-  commitBlock();
   checkState(t, getState, [
     ['foo', 'f'],
     ['foo1', 'f1'],
@@ -165,7 +160,7 @@ test('crankBuffer can abortCrank', t => {
 
   s.set('foo4', 'f4');
   abortCrank();
-  commitBlock();
+
   checkState(t, getState, [
     ['foo', 'f'],
     ['foo1', 'f1'],
@@ -174,7 +169,6 @@ test('crankBuffer can abortCrank', t => {
 
   s.set('foo5', 'f5');
   commitCrank();
-  commitBlock();
   checkState(t, getState, [
     ['foo', 'f'],
     ['foo1', 'f1'],

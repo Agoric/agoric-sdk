@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Description forthcoming.",
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -14,7 +14,9 @@
     "repl": "node src/xsrepl.js",
     "build:bundle": "rollup --config rollup.config.js",
     "build:bin": "node src/build.js",
-    "build": "yarn build:bin && yarn build:bundle",
+    "build:env": "node src/build.js --show-env > dist/build-env",
+    "build:from-env": "{ cat dist/build-env; echo node src/build.js; } | xargs env",
+    "build": "yarn build:bin && yarn build:bundle && yarn build:env",
     "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "yarn lint:js && yarn lint:types",
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' api.js",
@@ -26,17 +28,17 @@
     "test:xs": "exit 0"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.14",
+    "@agoric/assert": "^0.3.15",
     "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/bundle-source": "^2.0.0",
-    "@agoric/eventual-send": "^0.13.30",
-    "@agoric/install-ses": "^0.5.28",
-    "@endo/netstring": "^0.2.8",
-    "glob": "^7.1.6",
-    "ses": "^0.14.3"
+    "@agoric/bundle-source": "^2.0.1",
+    "@agoric/eventual-send": "^0.14.0",
+    "@agoric/install-ses": "^0.5.29",
+    "@endo/netstring": "^0.2.13",
+    "glob": "^7.1.6"
   },
   "devDependencies": {
-    "@endo/base64": "^0.2.8",
+    "@endo/base64": "^0.2.13",
+    "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-node-resolve": "^6.1.0",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
@@ -46,7 +48,7 @@
     "LICENSE*",
     "lib",
     "api.js",
-    "makefiles",
+    "dist",
     "src"
   ],
   "publishConfig": {

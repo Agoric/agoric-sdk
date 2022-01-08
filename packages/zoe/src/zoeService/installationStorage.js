@@ -5,21 +5,22 @@ import { Far } from '@agoric/marshal';
 import { E } from '@agoric/eventual-send';
 
 /**
- * @param {ChargeZoeFee} chargeZoeFee
- * @param {Amount} installFeeAmount
+ *
  */
-export const makeInstallationStorage = (chargeZoeFee, installFeeAmount) => {
+export const makeInstallationStorage = () => {
   /** @type {WeakSet<Installation>} */
   const installations = new WeakSet();
 
   /**
-   * Create an installation by permanently storing the bundle. It will be
-   * evaluated each time it is used to make a new instance of a contract.
+   * Create an installation by permanently storing the bundle. The code is
+   * currently evaluated each time it is used to make a new instance of a
+   * contract. When SwingSet supports zygotes, the code will be evaluated once
+   * when creating a zcfZygote, then the start() function will be called each
+   * time an instance is started.
    */
-  /** @type {InstallFeePurseRequired} */
-  const install = async (bundle, feePurse) => {
+  /** @type {Install} */
+  const install = async bundle => {
     assert.typeof(bundle, 'object', X`a bundle must be provided`);
-    await chargeZoeFee(feePurse, installFeeAmount);
     /** @type {Installation} */
     const installation = Far('Installation', {
       getBundle: () => bundle,

@@ -1,0 +1,84 @@
+{
+  "name": "@agoric/run-protocol",
+  "version": "0.7.1",
+  "description": "Core cryptoeconomy contracts",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=11.0"
+  },
+  "scripts": {
+    "build": "yarn build:bundles",
+    "build:bundles": "node scripts/build-bundles.js",
+    "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-check": "yarn lint",
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint:eslint": "eslint '**/*.js'",
+    "lint:types": "tsc -p jsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/assert": "^0.3.15",
+    "@agoric/bundle-source": "^2.0.1",
+    "@agoric/captp": "^1.10.8",
+    "@agoric/deploy-script-support": "^0.6.1",
+    "@agoric/ertp": "^0.13.1",
+    "@agoric/eventual-send": "^0.14.0",
+    "@agoric/far": "^0.1.1",
+    "@agoric/governance": "^0.4.1",
+    "@agoric/marshal": "^0.5.0",
+    "@agoric/nat": "^4.1.0",
+    "@agoric/notifier": "^0.3.33",
+    "@agoric/promise-kit": "^0.2.29",
+    "@agoric/same-structure": "^0.1.29",
+    "@agoric/store": "^0.6.8",
+    "@agoric/swingset-vat": "^0.24.1",
+    "@agoric/zoe": "^0.21.1"
+  },
+  "devDependencies": {
+    "@agoric/babel-standalone": "^7.14.3",
+    "@agoric/install-ses": "^0.5.29",
+    "ava": "^3.12.1",
+    "c8": "^7.7.2",
+    "import-meta-resolve": "^1.1.1"
+  },
+  "files": [
+    "bundles/",
+    "src/",
+    "exported.js",
+    "NEWS.md"
+  ],
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "timeout": "10m"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "eslintIgnore": [
+    "bundle-*.js"
+  ],
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

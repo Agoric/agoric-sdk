@@ -1,7 +1,9 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { assertKeywordName, getKeywords } from './cleanProposal.js';
+import { assertKeywordName } from './cleanProposal.js';
+
+const { ownKeys } = Reflect;
 
 /**
  * The InstanceRecord stores the installation, customTerms, issuers,
@@ -75,7 +77,7 @@ export const makeInstanceRecordStorage = () => {
     assertInstantiated();
     assertKeywordName(keyword);
     assert(
-      !getKeywords(instanceRecord.terms.issuers).includes(keyword),
+      !ownKeys(instanceRecord.terms.issuers).includes(keyword),
       X`keyword ${q(keyword)} must be unique`,
     );
   };

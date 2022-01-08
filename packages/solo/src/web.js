@@ -61,7 +61,13 @@ const verifyToken = (actual, expected) => {
   return !failed;
 };
 
-export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
+export async function makeHTTPListener(
+  basedir,
+  port,
+  host,
+  rawInboundCommand,
+  walletHtmlDir = undefined,
+) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
@@ -102,6 +108,7 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   };
 
   const app = express();
+
   // HTTP logging.
   app.use(
     morgan(`:method :url :status :res[content-length] - :response-time ms`, {
@@ -120,6 +127,16 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
   app.use(express.static(new URL('../public', import.meta.url).pathname));
+
+  if (walletHtmlDir) {
+    // Serve the wallet directory.
+    app.use('/wallet', express.static(walletHtmlDir));
+
+    // Default GETs to /wallet/index.html for history routing.
+    app.get('/wallet/*', (_, res) =>
+      res.sendFile(path.resolve(walletHtmlDir, 'index.html')),
+    );
+  }
 
   // The rules for validation:
   //

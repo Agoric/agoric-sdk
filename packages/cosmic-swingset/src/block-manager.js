@@ -42,30 +42,15 @@ const parseParams = params => {
     beans_per_unit: rawBeansPerUnit,
     fee_unit_price: rawFeeUnitPrice,
   } = params;
-  assert.equal(
-    Object(rawBeansPerUnit),
-    rawBeansPerUnit,
-    X`beansPerUnit must be an object, not ${rawBeansPerUnit}`,
+  assert(
+    Array.isArray(rawBeansPerUnit),
+    X`beansPerUnit must be an array, not ${rawBeansPerUnit}`,
   );
   const beansPerUnit = Object.fromEntries(
-    Object.keys(rawBeansPerUnit)
-      .sort()
-      .map(key => {
-        assert.typeof(key, 'string', X`Key ${key} must be a string`);
-        const beans = rawBeansPerUnit[key];
-        assert.equal(
-          Object(beans),
-          beans,
-          X`${key} beans must be an object, not ${beans}`,
-        );
-        const { whole, ...rest } = beans;
-        assert.equal(
-          Object.keys(rest).length,
-          0,
-          X`${key} beans must have no unexpected properties; had ${rest}`,
-        );
-        return [key, stringToNat(whole)];
-      }),
+    rawBeansPerUnit.sort().map(({ key, beans }) => {
+      assert.typeof(key, 'string', X`Key ${key} must be a string`);
+      return [key, stringToNat(beans)];
+    }),
   );
 
   assert(
@@ -224,18 +209,19 @@ export default function makeBlockManager({
         verboseBlocks && console.info('block', action.blockHeight, 'begin');
 
         // Start a new block, or possibly replay the prior one.
-        for (const a of currentActions) {
-          // FIXME: This is a problem, apparently with Cosmos SDK.
-          // Need to diagnose.
-          if (a.blockHeight !== action.blockHeight) {
-            console.debug(
-              'Block',
-              action.blockHeight,
-              'begun with a leftover uncommitted action:',
-              a.type,
-            );
-          }
+        const leftoverActions = currentActions.filter(
+          a => a.blockHeight !== action.blockHeight,
+        );
+        if (leftoverActions.length) {
+          // Leftover actions happen if queries or simulation are incorrectly
+          // resulting in accidental VM messages.
+          const leftoverTypes = leftoverActions.map(a => a.type).join(', ');
+          decohered = Error(
+            `Block ${action.blockHeight} begun with leftover uncommitted actions: ${leftoverTypes}`,
+          );
+          throw decohered;
         }
+
         currentActions = [];
         runTime = 0;
         currentActions.push(action);

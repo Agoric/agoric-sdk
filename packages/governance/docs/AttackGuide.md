@@ -156,3 +156,13 @@ These effectively count as contract bugs. If the contract is written so that
 some contract updates would cause it to be inoperable, then it's incumbent on
 the operators to ensure that those parameter values aren't proposed unless the
 goal is shutdown.
+
+## Contracts that don't use ContractHelper have to be more careful
+
+There are methods they are required to provide, and they need to treat the
+paramManager delicately. If there are invitations among the parameters, they
+could access the invitation rather than the amount.
+
+## Electorates can change a contract's electorate
+
+Can an Electorate replace itself with something that doesn't have legibility?

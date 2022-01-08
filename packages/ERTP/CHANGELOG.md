@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.13.0...@agoric/ertp@0.13.1) (2021-12-22)
+
+**Note:** Version bump only for package @agoric/ertp
+
+
+
+
+
+## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.12.2...@agoric/ertp@0.13.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ERTP:** NatValues now only accept bigints, lower-case amountMath is removed, and AmountMath methods always follow the order of: brand, value
+
+* chore: fix up INPUT_VALIDATON.md
+
+* chore: address PR comments
+
+### Miscellaneous Chores
+
+* **ERTP:** additional input validation and clean up ([#3892](https://github.com/Agoric/agoric-sdk/issues/3892)) ([067ea32](https://github.com/Agoric/agoric-sdk/commit/067ea32b069596202d7f8e7c5e09d5ea7821f6b2))
+
+
+
 ### [0.12.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.12.1...@agoric/ertp@0.12.2) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/ertp

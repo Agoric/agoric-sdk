@@ -151,8 +151,8 @@ test(`zcf.assertUniqueKeyword`, async t => {
       // disclosure bug is fixed. See
       // https://github.com/endojs/endo/pull/640
       //
-      // 'keyword "a" must be ascii and must start with a capital letter.',
-      /keyword .* must be ascii and must start with a capital letter./,
+      // 'keyword "a" must be an ascii identifier starting with upper case.',
+      /keyword .* must be an ascii identifier starting with upper case./,
   });
   t.throws(() => zcf.assertUniqueKeyword('3'), {
     message:
@@ -160,8 +160,8 @@ test(`zcf.assertUniqueKeyword`, async t => {
       // disclosure bug is fixed. See
       // https://github.com/endojs/endo/pull/640
       //
-      // 'keyword "3" must be ascii and must start with a capital letter.',
-      /keyword .* must be ascii and must start with a capital letter./,
+      // 'keyword "3" must be an ascii identifier starting with upper case.',
+      /keyword .* must be an ascii identifier starting with upper case./,
   });
   zcf.assertUniqueKeyword('MyKeyword');
 });
@@ -234,8 +234,8 @@ test(`zcf.saveIssuer - bad keyword`, async t => {
         // disclosure bug is fixed. See
         // https://github.com/endojs/endo/pull/640
         //
-        // `keyword "bad keyword" must be ascii and must start with a capital letter.`,
-        /keyword .* must be ascii and must start with a capital letter./,
+        // `keyword "bad keyword" must be an ascii identifier starting with upper case.`,
+        /keyword .* must be an ascii identifier starting with upper case./,
     },
   );
 });
@@ -315,9 +315,6 @@ test(`zcf.makeInvitation - no customProperties`, async t => {
     handle: details.handle,
     installation,
     instance,
-    fee: undefined,
-    expiry: undefined,
-    zoeTimeAuthority: undefined,
   });
 });
 
@@ -336,9 +333,6 @@ test(`zcf.makeInvitation - customProperties`, async t => {
     instance,
     timer,
     whatever: 'whatever',
-    fee: undefined,
-    expiry: undefined,
-    zoeTimeAuthority: undefined,
   });
 });
 
@@ -355,9 +349,6 @@ test(`zcf.makeInvitation - customProperties overwritten`, async t => {
     handle: details.handle,
     installation,
     instance,
-    fee: undefined,
-    expiry: undefined,
-    zoeTimeAuthority: undefined,
   });
   t.falsy(typeof details.handle === 'string');
 });
@@ -392,8 +383,8 @@ test(`zcf.makeZCFMint - bad keyword`, async t => {
       // disclosure bug is fixed. See
       // https://github.com/endojs/endo/pull/640
       //
-      // 'keyword "a" must be ascii and must start with a capital letter.',
-      /keyword .* must be ascii and must start with a capital letter./,
+      // 'keyword "a" must be an ascii identifier starting with upper case.',
+      /keyword .* must be an ascii identifier starting with upper case./,
   });
 });
 
@@ -439,7 +430,7 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
     message:
-      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -465,7 +456,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
     message:
-      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -475,7 +466,7 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
     message:
-      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -486,7 +477,7 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
     message:
-      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 

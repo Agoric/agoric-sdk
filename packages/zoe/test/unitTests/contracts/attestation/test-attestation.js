@@ -22,9 +22,7 @@ const attestationRoot = `${dirname}/../../../../src/contracts/attestation/attest
 test('attestation contract basic tests', async t => {
   const bundle = await bundleSource(attestationRoot);
 
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const installation = await E(zoe).install(bundle);
 
   const bldIssuerKit = makeIssuerKit(

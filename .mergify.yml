@@ -5,7 +5,7 @@ queue_rules:
       - base=master
 
 pull_request_rules:
-  - name: automerge to master with label automerge:merge and branch protection passing
+  - name: merge to master
     conditions:
       - label=automerge:merge
       - or:
@@ -19,7 +19,7 @@ pull_request_rules:
       queue:
         name: main
         method: merge
-  - name: automerge to master with label automerge:rebase and branch protection passing
+  - name: rebase updates then merge to master
     conditions:
       - label=automerge:rebase
       - or:
@@ -32,8 +32,9 @@ pull_request_rules:
     actions:
       queue:
         name: main
-        method: rebase
-  - name: automerge to master with label automerge:squash and branch protection passing
+        method: merge
+        update_method: rebase
+  - name: squash to master
     conditions:
       - label=automerge:squash
       - or:

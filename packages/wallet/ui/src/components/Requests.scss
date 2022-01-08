@@ -1,0 +1,38 @@
+.Requests {
+  min-height: 380px;
+}
+
+.RequestsHeader {
+  margin-bottom: 16px;
+}
+
+.Splash-image {
+  opacity: 0.6;
+  max-width: 100%;
+}
+
+.Empty {
+  border-radius: 16px;
+  background-image: linear-gradient(to bottom, #f1f1f1, #ffffff);
+  padding: 16px 0;
+  animation: fadeIn 1s;
+  text-align: center;
+  font-size: 16px;
+  width: 420px;
+  max-width: 100%;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@media screen and (max-width: 1280px) {
+  .Empty {
+    background-image: none;
+  }
+}

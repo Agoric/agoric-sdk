@@ -7,7 +7,7 @@ export const CENTRAL_ISSUER_NAME = 'RUN';
 /**
  * @typedef {Object} CollateralConfig
  * @property {string} keyword
- * @property {NatValue} collateralValue the initial price of this collateral is
+ * @property {bigint} collateralValue the initial price of this collateral is
  * provided by tradesGivenCentral[0]
  * @property {bigint} initialMarginPercent
  * @property {bigint} liquidationMarginPercent
@@ -24,8 +24,8 @@ export const CENTRAL_ISSUER_NAME = 'RUN';
  * @property {string} [bankDenom]
  * @property {string} [bankPurse]
  * @property {Payment} [bankPayment]
- * @property {Array<[string, bigint | number]>} [defaultPurses]
- * @property {Array<[bigint | number, bigint | number]>} [tradesGivenCentral]
+ * @property {Array<[string, bigint]>} [defaultPurses]
+ * @property {Array<[bigint, bigint]>} [tradesGivenCentral]
  */
 
 /**
@@ -66,6 +66,32 @@ export const scaleMicro = makeScaler(6);
 export const scaleEth = makeScaler(18);
 export const scaleCentral = scaleMicro;
 
+/** @type {[string, IssuerInitializationRecord]} */
+const BLD_ISSUER_ENTRY = [
+  'BLD',
+  {
+    issuerArgs: [undefined, { decimalPlaces: 6 }],
+    defaultPurses: [['Agoric staking token', scaleMicro(5000)]],
+    bankDenom: 'ubld',
+    bankPurse: 'Agoric staking token',
+    collateralConfig: {
+      keyword: 'BLD',
+      collateralValue: scaleMicro(20_000_000n),
+      initialMarginPercent: 150n,
+      liquidationMarginPercent: 125n,
+      interestRateBasis: 250n,
+      loanFeeBasis: 1n,
+    },
+    tradesGivenCentral: [
+      [scaleCentral(1.23, 2), scaleMicro(1)],
+      [scaleCentral(1.21, 2), scaleMicro(1)],
+      [scaleCentral(1.22, 2), scaleMicro(1)],
+    ],
+  },
+];
+harden(BLD_ISSUER_ENTRY);
+export { BLD_ISSUER_ENTRY };
+
 /** @type {(centralRecord: Partial<IssuerInitializationRecord>) => Array<[string, IssuerInitializationRecord]>} */
 const fromCosmosIssuerEntries = centralRecord => [
   [
@@ -74,32 +100,11 @@ const fromCosmosIssuerEntries = centralRecord => [
       issuerArgs: [undefined, { decimalPlaces: 6 }],
       defaultPurses: [['Agoric RUN currency', scaleMicro(53)]],
       bankPurse: 'Agoric RUN currency',
-      tradesGivenCentral: [[1, 1]],
+      tradesGivenCentral: [[1n, 1n]],
       ...centralRecord,
     },
   ],
-  [
-    'BLD',
-    {
-      issuerArgs: [undefined, { decimalPlaces: 6 }],
-      defaultPurses: [['Agoric staking token', scaleMicro(62)]],
-      bankDenom: 'ubld',
-      bankPurse: 'Agoric staking token',
-      collateralConfig: {
-        keyword: 'BLD',
-        collateralValue: scaleMicro(20_000_000n),
-        initialMarginPercent: 150n,
-        liquidationMarginPercent: 125n,
-        interestRateBasis: 250n,
-        loanFeeBasis: 1n,
-      },
-      tradesGivenCentral: [
-        [scaleCentral(27.9, 1), scaleMicro(1)],
-        [scaleCentral(25.7, 1), scaleMicro(1)],
-        [scaleCentral(26.8, 1), scaleMicro(1)],
-      ],
-    },
-  ],
+  BLD_ISSUER_ENTRY,
 ];
 
 harden(fromCosmosIssuerEntries);
@@ -195,24 +200,24 @@ export const demoIssuerEntries = noObviouslyFakeCurrencies => {
     [
       'moola',
       {
-        defaultPurses: doFakePurses && [['Fun budget', 1900]],
+        defaultPurses: doFakePurses && [['Fun budget', 1900n]],
         tradesGivenCentral: [
-          [scaleCentral(1), 1],
-          [scaleCentral(1.3, 1), 1],
-          [scaleCentral(1.2, 1), 1],
-          [scaleCentral(1.8, 1), 1],
-          [scaleCentral(1.5, 1), 1],
+          [scaleCentral(1), 1n],
+          [scaleCentral(1.3, 1), 1n],
+          [scaleCentral(1.2, 1), 1n],
+          [scaleCentral(1.8, 1), 1n],
+          [scaleCentral(1.5, 1), 1n],
         ],
       },
     ],
     [
       'simolean',
       {
-        defaultPurses: doFakePurses && [['Nest egg', 970]],
+        defaultPurses: doFakePurses && [['Nest egg', 970n]],
         tradesGivenCentral: [
-          [scaleCentral(21.35, 2), 1],
-          [scaleCentral(21.72, 2), 1],
-          [scaleCentral(21.24, 2), 1],
+          [scaleCentral(21.35, 2), 1n],
+          [scaleCentral(21.72, 2), 1n],
+          [scaleCentral(21.24, 2), 1n],
         ],
       },
     ],

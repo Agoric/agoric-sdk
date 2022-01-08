@@ -1,7 +1,13 @@
-/* global process Buffer */
+/* global process AggregateError Buffer */
 import path from 'path';
 import chalk from 'chalk';
 import { makePspawn } from './helpers.js';
+import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
+
+const REQUIRED_AGORIC_START_PACKAGES = [
+  '@agoric/solo',
+  '@agoric/cosmic-swingset',
+];
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -10,14 +16,21 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
 
+  const forceSdkVersion = rawArgs[1];
+
   // Notify the preinstall guard that we are running.
   process.env.AGORIC_INSTALL = 'true';
+
+  // Node 16 requires this to be set for C++ addons to compile.
+  if (process.env.CXXFLAGS === undefined) {
+    process.env.CXXFLAGS = '-std=c++14';
+  }
 
   const pspawn = makePspawn({ log, spawn, chalk });
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
 
-  async function workspaceDirectories(cwd = '.') {
+  async function getWorktreePackagePaths(cwd = '.', map = new Map()) {
     // run `yarn workspaces info` to get the list of directories to
     // use, instead of a hard-coded list
     const p = pspawn('yarn', ['workspaces', '--silent', 'info'], {
@@ -28,18 +41,190 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     p.childProcess.stdout.on('data', out => stdout.push(out));
     await p;
     const d = JSON.parse(Buffer.concat(stdout).toString('utf-8'));
-    const subdirs = Object.values(d).map(v => v.location);
-    return subdirs;
+    Object.entries(d).forEach(([name, { location }]) =>
+      map.set(name, path.resolve(cwd, location)),
+    );
+    return map;
   }
 
   let subdirs;
+  const workTrees = ['.'];
+  let sdkWorktree;
+  /** @type {Map<string, string>} */
+  const sdkPackageToPath = new Map();
+  const linkFolder = path.resolve(`_agstate/yarn-links`);
+  const linkFlags = [];
+  if (opts.sdk) {
+    linkFlags.push(`--link-folder=${linkFolder}`);
+  }
+
+  const yarnInstallEachWorktree = async (phase, ...flags) => {
+    for (const workTree of workTrees) {
+      log.info(`yarn install ${phase} in ${workTree}`);
+      // eslint-disable-next-line no-await-in-loop
+      const yarnInstall = await pspawn(
+        'yarn',
+        [...linkFlags, 'install', ...flags],
+        {
+          stdio: 'inherit',
+          cwd: workTree,
+        },
+      );
+      if (yarnInstall) {
+        throw Error(`yarn install ${phase} failed in ${workTree}`);
+      }
+    }
+  };
+
+  const updateSdkVersion = async forceVersion => {
+    // Prune the old version (removing potentially stale on-disk and yarn.lock
+    // packages), and update on-disk and yarn.lock packages to the new version.
+    // This is the most efficient way to fetch `forceVersion` fresh from the NPM
+    // registry, in case it has changed (dist-tags are wont to point to
+    // different packages over time).
+    const addPackagesTodo = [];
+    const prunePackagesTodo = [];
+
+    await Promise.all(
+      subdirs.map(async subdir => {
+        // Prune, then update all the SDK package versions.
+        const pjson = `${subdir}/package.json`;
+        const packageJSON = await fs
+          .readFile(pjson, 'utf-8')
+          .catch(_ => undefined);
+        if (!packageJSON) {
+          return;
+        }
+        const updatedPackageDescriptor = JSON.parse(packageJSON);
+        const prunedPackageDescriptor = { ...updatedPackageDescriptor };
+        let needsPruning = false;
+        for (const depSection of ['dependencies', 'devDependencies']) {
+          const updatedDeps = updatedPackageDescriptor[depSection];
+          if (updatedDeps) {
+            const prunedDeps = { ...updatedDeps };
+            prunedPackageDescriptor[depSection] = prunedDeps;
+            for (const pkg of Object.keys(updatedDeps)) {
+              if (sdkPackageToPath.has(pkg)) {
+                if (updatedDeps[pkg] === forceVersion) {
+                  // We need to remove the old package and `yarn install` to
+                  // prune the old dependencies both from disk and also the
+                  // `yarn.lock`.  Only after that can we write the new deps and
+                  // run `yarn install` again to update disk and `yarn.lock`.
+                  delete prunedDeps[pkg];
+                  needsPruning = true;
+                }
+                updatedDeps[pkg] = forceVersion;
+              }
+            }
+          }
+        }
+        // Ensure the top-level package has the `agoric start` dependencies.
+        if (subdir === '.') {
+          for (const pkg of REQUIRED_AGORIC_START_PACKAGES) {
+            const updatedDevDeps =
+              updatedPackageDescriptor.devDependencies || {};
+            if (!updatedDevDeps[pkg]) {
+              updatedDevDeps[pkg] = forceVersion;
+              updatedPackageDescriptor.devDependencies = updatedDevDeps;
+            }
+          }
+        }
+
+        // Ensure we update the package.json before exiting.
+        const updatePackageJson = async () => {
+          // Don't update on exit anymore.
+          // eslint-disable-next-line no-use-before-define
+          process.off('beforeExit', updatePackageJsonOnExit);
+          log.info(`updating ${pjson}`);
+          await fs.writeFile(
+            pjson,
+            `${JSON.stringify(updatedPackageDescriptor, null, 2)}\n`,
+          );
+        };
+        const updatePackageJsonOnExit = () => {
+          // Prevent unhandled rejections.
+          updatePackageJson().catch(e =>
+            log.error(`Cannot update ${pjson}:`, e),
+          );
+        };
+        addPackagesTodo.push(updatePackageJson);
+        if (needsPruning) {
+          prunePackagesTodo.push(async () => {
+            // Update on exit, in case we are interrupted.
+            process.on('beforeExit', updatePackageJsonOnExit);
+            // Remove the old packages.
+            log.info(`pruning ${pjson}`);
+            await fs.writeFile(
+              pjson,
+              `${JSON.stringify(prunedPackageDescriptor, null, 2)}\n`,
+            );
+          });
+        }
+      }),
+    );
+
+    let prunedP;
+    if (prunePackagesTodo.length) {
+      // Run all the package+yarn.lock removal tasks in parallel.
+      prunedP = Promise.allSettled(
+        prunePackagesTodo.map(async prune => prune()),
+      )
+        .then(results => {
+          // After all have settled, throw any errors.
+          const failures = results.filter(
+            ({ status }) => status !== 'fulfilled',
+          );
+          if (failures.length) {
+            if (typeof AggregateError !== 'function') {
+              throw failures[0].reason;
+            }
+            throw AggregateError(
+              failures.map(({ reason }) => reason),
+              'Failed to prune',
+            );
+          }
+        })
+        .then(async () =>
+          yarnInstallEachWorktree('pruning', '--ignore-scripts'),
+        );
+    } else {
+      // Nothing to prune, so just skip this step.
+      prunedP = Promise.resolve();
+    }
+
+    // Ensure we do all the package.json+yarn.lock additions after any necessary
+    // pruning, even if there are failures.
+    await prunedP.finally(() =>
+      // Ensure the package.jsons are installed with the fresh version information.
+      Promise.allSettled(addPackagesTodo.map(async update => update())),
+    );
+  };
+
   const dappPackageJSON = await fs
     .readFile(`package.json`, 'utf-8')
     .then(data => JSON.parse(data))
-    .catch(err => log('error reading', `package.json`, err));
+    .catch(err => {
+      log('error reading', `package.json`, err);
+      throw err;
+    });
   if (dappPackageJSON.useWorkspaces) {
-    subdirs = await workspaceDirectories();
-    subdirs.unshift('.');
+    const workdirs = await getWorktreePackagePaths().then(pp => [
+      ...pp.values(),
+    ]);
+    sdkWorktree = workdirs.find(subd => subd === 'agoric-sdk');
+    subdirs = ['.', ...workdirs.filter(subd => subd !== 'agoric-sdk')];
+
+    // Add 'ui' directory by default, if it exists.
+    if (!subdirs.find(subd => subd === 'ui')) {
+      const uiPackageJSON = await fs.readFile(`ui/package.json`, 'utf-8').then(
+        data => JSON.parse(data),
+        _err => ({}),
+      );
+      if (uiPackageJSON.name) {
+        subdirs.push('ui');
+        workTrees.push('ui');
+      }
+    }
   } else {
     const existingSubdirs = await Promise.all(
       ['.', '_agstate/agoric-servers', 'contract', 'api', 'ui']
@@ -54,42 +239,20 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     subdirs = existingSubdirs.filter(subd => subd);
   }
 
-  const linkFolder = path.resolve(`_agstate/yarn-links`);
-  const linkFlags = [`--link-folder=${linkFolder}`];
-
-  const packages = new Map();
-  const versions = new Map();
-  const dirPackages = [];
   if (opts.sdk) {
+    const sdkRoot = path.resolve(dirname, `../../..`);
+    await getWorktreePackagePaths(sdkRoot, sdkPackageToPath);
+
     // We remove all the links to prevent `yarn install` below from corrupting
     // them.
     log('removing', linkFolder);
     await rimraf(linkFolder);
 
-    const sdkRoot = path.resolve(dirname, `../../..`);
-    const sdkDirs = await workspaceDirectories(sdkRoot);
-    await Promise.all(
-      sdkDirs.map(async location => {
-        const dir = `${sdkRoot}/${location}`;
-        const packageJSON = await fs
-          .readFile(`${dir}/package.json`, 'utf-8')
-          .catch(err => log('error reading', `${dir}/package.json`, err));
-        if (!packageJSON) {
-          return;
-        }
-
-        const pj = JSON.parse(packageJSON);
-        if (pj.private) {
-          log('not linking private package', pj.name);
-          return;
-        }
-
-        // Save our metadata.
-        dirPackages.push([dir, pj.name]);
-        packages.set(dir, pj.name);
-        versions.set(pj.name, pj.version);
-      }),
-    );
+    // Link the SDK.
+    if (sdkWorktree) {
+      await fs.unlink(sdkWorktree).catch(_ => {});
+      await fs.symlink(sdkRoot, sdkWorktree);
+    }
 
     await Promise.all(
       subdirs.map(async subdir => {
@@ -101,90 +264,52 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         // This is needed to prevent yarn errors when installing new versions of
         // linked modules (like `@agoric/zoe`).
         await Promise.all(
-          dirPackages.map(async ([_dir, pjName]) =>
+          [...sdkPackageToPath.keys()].map(async pjName =>
             fs.unlink(`${nm}/${pjName}`).catch(_ => {}),
           ),
         );
-
-        // Mark all the SDK package dependencies as wildcards.
-        const pjson = `${subdir}/package.json`;
-        const packageJSON = await fs
-          .readFile(pjson, 'utf-8')
-          .catch(_ => undefined);
-        if (!packageJSON) {
-          return;
-        }
-        const pj = JSON.parse(packageJSON);
-        for (const section of ['dependencies', 'devDependencies']) {
-          const deps = pj[section];
-          if (deps) {
-            for (const pkg of Object.keys(deps)) {
-              if (versions.has(pkg)) {
-                deps[pkg] = `*`;
-              }
-            }
-          }
-        }
-        log.info(`updating ${pjson}`);
-        await fs.writeFile(pjson, `${JSON.stringify(pj, null, 2)}\n`);
-      }),
-    );
-  }
-
-  const yarnInstall = await pspawn('yarn', [...linkFlags, 'install'], {
-    stdio: 'inherit',
-  });
-  if (yarnInstall) {
-    // Try to install via Yarn.
-    log.error('Cannot yarn install');
-    return 1;
-  }
-
-  // Try to install via Yarn.
-  const yarnInstallUi = await (subdirs.includes('ui') &&
-    pspawn('yarn', [...linkFlags, 'install'], {
-      stdio: 'inherit',
-      cwd: 'ui',
-    }));
-  if (yarnInstallUi) {
-    log.error('Cannot yarn install in ui directory');
-    return 1;
-  }
-
-  if (opts.sdk) {
-    await Promise.all(
-      dirPackages.map(async ([dir, pjName]) => {
-        const SUBOPTIMAL = false;
-        if (SUBOPTIMAL) {
-          // This use of yarn is noisy and slow.
-          await pspawn('yarn', [...linkFlags, 'unlink', pjName]);
-          return pspawn('yarn', [...linkFlags, 'link'], {
-            stdio: 'inherit',
-            cwd: dir,
-          });
-        }
-
-        // This open-coding of the above yarn command is quiet and fast.
-        const linkName = `${linkFolder}/${pjName}`;
-        const linkDir = path.dirname(linkName);
-        log('linking', linkName);
-        return fs
-          .mkdir(linkDir, { recursive: true })
-          .then(_ => fs.symlink(path.relative(linkDir, dir), linkName));
       }),
     );
   } else {
-    // Delete all old node_modules.
-    await Promise.all(
-      subdirs.map(subdir => {
-        const nm = `${subdir}/node_modules`;
-        log(chalk.bold.green(`removing ${nm}`));
-        return rimraf(nm);
-      }),
-    );
+    DEFAULT_SDK_PACKAGE_NAMES.forEach(name => sdkPackageToPath.set(name, null));
   }
 
-  const sdkPackages = [...packages.values()].sort();
+  if (forceSdkVersion !== undefined) {
+    // We need to update the SDK version in the package.jsons and `yarn.lock`.
+    await updateSdkVersion(forceSdkVersion);
+  }
+
+  await yarnInstallEachWorktree('updates');
+
+  if (sdkWorktree || !opts.sdk) {
+    log.info(chalk.bold.green('Done installing without SDK links'));
+    return 0;
+  }
+
+  // Create symlinks to the SDK packages.
+  await Promise.all(
+    [...sdkPackageToPath.entries()].map(async ([pjName, dir]) => {
+      const SUBOPTIMAL = false;
+      if (SUBOPTIMAL) {
+        // This use of yarn is noisy and slow.
+        await pspawn('yarn', [...linkFlags, 'unlink', pjName]);
+        return pspawn('yarn', [...linkFlags, 'link'], {
+          stdio: 'inherit',
+          cwd: dir,
+        });
+      }
+
+      // This open-coding of the above yarn command is quiet and fast.
+      const linkName = `${linkFolder}/${pjName}`;
+      const linkDir = path.dirname(linkName);
+      log('linking', linkName);
+      return fs
+        .mkdir(linkDir, { recursive: true })
+        .then(_ => fs.symlink(path.relative(linkDir, dir), linkName));
+    }),
+  );
+
+  const sdkPackages = [...sdkPackageToPath.keys()].sort();
   for (const subdir of subdirs) {
     // eslint-disable-next-line no-await-in-loop
     const exists = await fs.stat(`${subdir}/package.json`).catch(_ => false);
@@ -201,6 +326,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     }
   }
 
-  log.info(chalk.bold.green('Done installing'));
+  log.info(chalk.bold.green('Done installing with SDK links'));
   return 0;
 }

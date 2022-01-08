@@ -14,6 +14,43 @@ import { insistStorageAPI } from '../../storageAPI.js';
 // xenophobia.
 
 /**
+ * Given two iterators over ordered sequences, produce a new iterator that will
+ * iterate in order over the merged output of the two iterators.
+ *
+ * @param { Iterator } it1
+ * @param { Iterator } it2
+ *
+ * @yields any
+ */
+function* mergeSortedIterators(it1, it2) {
+  let v1 = it1.next();
+  let v2 = it2.next();
+  while (!v1.done && !v2.done) {
+    if (v1.value < v2.value) {
+      const result = v1.value;
+      v1 = it1.next();
+      yield result;
+    } else if (v1.value === v2.value) {
+      const result = v1.value;
+      v1 = it1.next();
+      v2 = it2.next();
+      yield result;
+    } else {
+      const result = v2.value;
+      v2 = it2.next();
+      yield result;
+    }
+  }
+  const itrest = v1.done ? it2 : it1;
+  let v = v1.done ? v2 : v1;
+  while (!v.done) {
+    const result = v.value;
+    v = itrest.next();
+    yield result;
+  }
+}
+
+/**
  * Create and return a crank buffer, which wraps a storage object with logic
  * that buffers any mutations until told to commit them.
  *
@@ -54,18 +91,43 @@ export function buildCrankBuffer(
     },
 
     *getKeys(start, end) {
+      // Warning: this function introduces a consistency risk that callers must
+      // take into account in their usage of it.  If keys are added to the store
+      // within the range from `start` to `end` while iteration is in progress,
+      // these additions will not be visible to this iterator and thus not
+      // reflected in the stream of keys it returns.  Callers who might be
+      // vulnerable to any resulting data inconsistencies thus introduced must
+      // take measures to protect themselves, either by avoiding making such
+      // changes while iterating or by arranging to invalidate and reconstruct
+      // the iterator when such changes are made.  At this layer of abstraction,
+      // the store does not possess the necessary knowledge to protect the
+      // caller from these kinds of risks, as the nature of the risks themselves
+      // varies depending on what the caller is trying to do.  This API should
+      // not be made available to user (i.e., vat) code.  Rather, it is intended
+      // as a low-level mechanism to use in implementating higher level storage
+      // abstractions that are expected to provide their own consistency
+      // protections as appropriate to their own circumstances.
+
       assert.typeof(start, 'string');
       assert.typeof(end, 'string');
-      const keys = new Set(kvStore.getKeys(start, end));
+
+      // Find additions within the query range for use during iteration.
+      const added = [];
       for (const k of additions.keys()) {
-        keys.add(k);
-      }
-      for (const k of deletions.keys()) {
-        keys.delete(k);
-      }
-      for (const k of Array.from(keys).sort()) {
         if ((start === '' || start <= k) && (end === '' || k < end)) {
-          yield k;
+          added.push(k);
+        }
+      }
+      added.sort();
+
+      for (const k of mergeSortedIterators(
+        added.values(),
+        kvStore.getKeys(start, end),
+      )) {
+        if ((start === '' || start <= k) && (end === '' || k < end)) {
+          if (!deletions.has(k)) {
+            yield k;
+          }
         }
       }
     },

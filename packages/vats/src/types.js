@@ -2,7 +2,7 @@
 
 /**
  * @template T
- * @typedef {import('@agoric/eventual-send').EOnly<T>} EOnly
+ * @typedef {import('@agoric/far').EOnly<T>} EOnly
  */
 
 /**
@@ -15,14 +15,19 @@
 
 /**
  * @typedef {Object} NameHub
+ *
+ * NOTE: We need to return arrays, not iterables, because even if marshal could
+ * allow passing a remote iterable, there would be an inordinate number of round
+ * trips for the contents of even the simplest nameHub.
+ *
  * @property {(...path: Array<string>) => Promise<any>} lookup Look up a
  * path of keys starting from the current NameHub.  Wait on any reserved
  * promises.
- * @property {() => Array<[string, unknown]>} entries get all the entries
+ * @property {() => [string, unknown][]} entries get all the entries
  * available in the current NameHub
- * @property {() => Array<string>} keys get all names available in the current
- * NameHub
- * @property {() => Array<unknown>} values get all values available in the
+ * @property {() => string[]} keys get all names available in the
+ * current NameHub
+ * @property {() => unknown[]} values get all values available in the
  * current NameHub
  */
 
@@ -65,9 +70,9 @@
 /**
  * @callback BuildFeeDistributor
  *
- * @param {ERef<FeeCollector>} treasuryCollector - an object with a
- *  collectFees() method, which will return a payment. can be populated with
- *  makeTreasuryFeeCollector(zoe, treasuryCreatorFacet)
+ * @param {ERef<FeeCollector>[]} collectors - an array of objects with
+ *   collectFees() methods, each of which will return a payment. Can
+ *   be populated with the results of makeFeeCollector(zoe, creatorFacet)
  * @param {EOnly<DepositFacet>} feeDepositFacet - object with receive()
  * @param {ERef<TimerService>} epochTimer - timer that notifies at the end of
  *  each Epoch. The epochInterval parameter controls the interval.

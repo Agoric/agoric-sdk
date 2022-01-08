@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
+import '@agoric/install-ses/pre-bundle-source.js';
 import '@agoric/install-ses';
 import process from 'process';
 import repl from 'repl';

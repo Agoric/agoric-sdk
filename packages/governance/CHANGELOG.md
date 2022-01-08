@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.4.0...@agoric/governance@0.4.1) (2021-12-22)
+
+
+### Features
+
+* refactor parameter governance support to allow for Invitations ([#4121](https://github.com/Agoric/agoric-sdk/issues/4121)) ([159596b](https://github.com/Agoric/agoric-sdk/commit/159596b8d44b8cbdaf6e19513cb3e716febfae7b))
+
+
+
+## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.3.0...@agoric/governance@0.4.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **zoe:** must harden `amountKeywordRecord` before passing to ZCF objects
+
+* chore: fix treasury errors, etc.
+
+Co-authored-by: mergify[bot] <37929162+mergify[bot]@users.noreply.github.com>
+* **ERTP:** NatValues now only accept bigints, lower-case amountMath is removed, and AmountMath methods always follow the order of: brand, value
+
+* chore: fix up INPUT_VALIDATON.md
+
+* chore: address PR comments
+
+### Bug Fixes
+
+* **zoe:** assert that amountKeywordRecord is a copyRecord ([#4069](https://github.com/Agoric/agoric-sdk/issues/4069)) ([fe9a9ff](https://github.com/Agoric/agoric-sdk/commit/fe9a9ff3de86608a0b1f8f9547059f89d45b948d))
+
+
+### Miscellaneous Chores
+
+* **ERTP:** additional input validation and clean up ([#3892](https://github.com/Agoric/agoric-sdk/issues/3892)) ([067ea32](https://github.com/Agoric/agoric-sdk/commit/067ea32b069596202d7f8e7c5e09d5ea7821f6b2))
+
+
+
 ## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.2.3...@agoric/governance@0.3.0) (2021-10-13)
 
 

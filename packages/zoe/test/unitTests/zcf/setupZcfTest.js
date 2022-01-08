@@ -6,7 +6,6 @@ import { assert } from '@agoric/assert';
 
 import path from 'path';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
@@ -34,9 +33,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   };
   // The contract provides the `zcf` via `setTestJig` upon `start`.
   const fakeVatAdmin = makeFakeVatAdmin(setZCF);
-  const { zoeService, feeMintAccess } = makeZoeKit(fakeVatAdmin.admin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe, feeMintAccess } = makeZoeKit(fakeVatAdmin.admin);
   const bundle = await bundleSource(contractRoot);
   const installation = await E(zoe).install(bundle);
   const { creatorFacet, instance } = await E(zoe).startInstance(
@@ -61,6 +58,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     feeMintAccess,
 
     // Additional ZCF
+    // @ts-ignore zcf2 is accessible before it is set
     zcf2,
     creatorFacet2,
     instance2,

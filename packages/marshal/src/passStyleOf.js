@@ -4,15 +4,17 @@
 /// <reference types="ses"/>
 
 import { isPromise } from '@agoric/promise-kit';
-import { isObject, PASS_STYLE } from './helpers/passStyleHelpers.js';
+import { isObject, PASS_STYLE } from './helpers/passStyle-helpers.js';
 
 import { CopyArrayHelper } from './helpers/copyArray.js';
 import { CopyRecordHelper } from './helpers/copyRecord.js';
-import { ErrorHelper } from './helpers/error.js';
+import { TaggedHelper } from './helpers/tagged.js';
 import { RemotableHelper } from './helpers/remotable.js';
+import { ErrorHelper } from './helpers/error.js';
 
 import './types.js';
 import './helpers/internal-types.js';
+import { assertPassableSymbol } from './helpers/symbol.js';
 
 const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
@@ -26,15 +28,16 @@ const { isFrozen } = Object;
  * does what it is supposed to do. `makePassStyleOf` is not trying to defend
  * itself against malicious helpers, though it does defend against some
  * accidents.
- * @returns {{passStyleOf: PassStyleOf, HelperTable: any}}
+ * @returns {PassStyleOf}
  */
-const makePassStyleOfKit = passStyleHelpers => {
+const makePassStyleOf = passStyleHelpers => {
   const HelperTable = {
     __proto__: null,
     copyArray: undefined,
     copyRecord: undefined,
-    error: undefined,
+    tagged: undefined,
     remotable: undefined,
+    error: undefined,
   };
   for (const helper of passStyleHelpers) {
     const { styleName } = helper;
@@ -114,9 +117,12 @@ const makePassStyleOfKit = passStyleHelpers => {
         case 'string':
         case 'boolean':
         case 'number':
-        case 'bigint':
-        case 'symbol': {
+        case 'bigint': {
           return typestr;
+        }
+        case 'symbol': {
+          assertPassableSymbol(inner);
+          return 'symbol';
         }
         case 'object': {
           if (inner === null) {
@@ -173,25 +179,18 @@ const makePassStyleOfKit = passStyleHelpers => {
 
     return passStyleOfRecur(passable);
   };
-  return harden({ passStyleOf, HelperTable });
+  return harden(passStyleOf);
 };
 
-const { passStyleOf, HelperTable } = makePassStyleOfKit([
+export const passStyleOf = makePassStyleOf([
   CopyArrayHelper,
   CopyRecordHelper,
-  ErrorHelper,
+  TaggedHelper,
   RemotableHelper,
+  ErrorHelper,
 ]);
-export { passStyleOf };
 
-export const everyPassableChild = (passable, fn) => {
-  const passStyle = passStyleOf(passable);
-  const helper = HelperTable[passStyle];
-  if (helper) {
-    // everyPassable guards .every so that each helper only gets a
-    // genuine passable of its own flavor.
-    return helper.every(passable, fn);
-  }
-  return true;
+export const assertPassable = val => {
+  passStyleOf(val); // throws if val is not a passable
 };
-harden(everyPassableChild);
+harden(assertPassable);

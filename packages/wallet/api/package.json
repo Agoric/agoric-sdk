@@ -1,0 +1,64 @@
+{
+  "name": "@agoric/wallet-backend",
+  "version": "0.10.7",
+  "description": "Wallet backend",
+  "type": "module",
+  "scripts": {
+    "build": "yarn build:bundles",
+    "build:bundles": "node scripts/build-bundles.js",
+    "test": "ava",
+    "test:xs": "exit 0",
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-check": "yarn lint",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint:eslint": "eslint '**/*.js'"
+  },
+  "devDependencies": {
+    "@agoric/bundle-source": "^2.0.1",
+    "@agoric/install-ses": "^0.5.29",
+    "@agoric/vats": "^0.5.1",
+    "ava": "^3.12.1"
+  },
+  "dependencies": {
+    "@agoric/assert": "^0.3.15",
+    "@agoric/ertp": "^0.13.1",
+    "@agoric/eventual-send": "^0.14.0",
+    "@agoric/marshal": "^0.5.0",
+    "@agoric/nat": "^4.1.0",
+    "@agoric/notifier": "^0.3.33",
+    "@agoric/promise-kit": "^0.2.29",
+    "@agoric/store": "^0.6.8",
+    "@agoric/zoe": "^0.21.1",
+    "import-meta-resolve": "^1.1.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric"
+  },
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric#readme",
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "timeout": "2m"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

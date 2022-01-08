@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
-import makeStore from '@agoric/store';
+import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
@@ -58,14 +58,14 @@ const start = async zcf => {
   /** @type {bigint} */
   let reportingRoundId = 0n;
 
-  /** @type {Store<Instance, ReturnType<typeof makeOracleStatus>>} */
-  const oracleStatuses = makeStore('oracleStatus');
+  /** @type {LegacyMap<Instance, ReturnType<typeof makeOracleStatus>>} */
+  const oracleStatuses = makeLegacyMap('oracleStatus');
 
-  /** @type {Store<bigint, ReturnType<typeof makeRound>>} */
-  const rounds = makeStore('rounds');
+  /** @type {LegacyMap<bigint, ReturnType<typeof makeRound>>} */
+  const rounds = makeLegacyMap('rounds');
 
-  /** @type {Store<bigint, ReturnType<typeof makeRoundDetails>>} */
-  const details = makeStore('details');
+  /** @type {LegacyMap<bigint, ReturnType<typeof makeRoundDetails>>} */
+  const details = makeLegacyMap('details');
 
   /** @type {bigint} */
   const ROUND_MAX = BigInt(2 ** 32 - 1);
@@ -154,8 +154,8 @@ const start = async zcf => {
    * @property {number} lastSample
    */
 
-  /** @type {Store<Instance, Set<OracleRecord>>} */
-  const instanceToRecords = makeStore('oracleInstance');
+  /** @type {LegacyMap<Instance, Set<OracleRecord>>} */
+  const instanceToRecords = makeLegacyMap('oracleInstance');
 
   /**
    * @param {Object} param0
@@ -395,7 +395,7 @@ const start = async zcf => {
   /**
    */
   const oracleCount = () => {
-    return oracleStatuses.keys().length;
+    return oracleStatuses.getSize();
   };
 
   /**
@@ -589,7 +589,7 @@ const start = async zcf => {
           /* lastReportedRound = */ 0n,
           /* lastStartedRound = */ 0n,
           /* latestSubmission = */ 0n,
-          /* index = */ oracleStatuses.keys().length,
+          /* index = */ oracleStatuses.getSize(),
         );
         oracleStatuses.init(oracleInstance, oracleStatus);
       }

@@ -19,7 +19,7 @@ import {
   ChoiceMethod,
   QuorumRule,
   looksLikeQuestionSpec,
-} from '../../src/question.js';
+} from '../../src/index.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -59,26 +59,26 @@ const attest = (addr, amountLiened, expiration) => {
  * @param {Timestamp} deadline
  */
 const makeDefaultBallotSpec = (issue, positions, timer, deadline) => {
-  const questionSpec = looksLikeQuestionSpec({
-    method: ChoiceMethod.UNRANKED,
-    issue,
-    positions,
-    electionType: ElectionType.ELECTION,
-    maxChoices: 1,
-    closingRule: {
-      timer,
-      deadline,
-    },
-    quorumRule: QuorumRule.NO_QUORUM,
-    tieOutcome: positions[1],
-  });
+  const questionSpec = looksLikeQuestionSpec(
+    harden({
+      method: ChoiceMethod.UNRANKED,
+      issue,
+      positions,
+      electionType: ElectionType.ELECTION,
+      maxChoices: 1,
+      closingRule: {
+        timer,
+        deadline,
+      },
+      quorumRule: QuorumRule.NO_QUORUM,
+      tieOutcome: positions[1],
+    }),
+  );
 
   return questionSpec;
 };
 
-const { zoeService } = makeZoeKit(fakeVatAdmin);
-const feePurse = E(zoeService).makeFeePurse();
-const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
 const electorateInstall = makeInstall(shareHoldersRoot, zoe);
 const counterInstall = makeInstall(binaryCounterRoot, zoe);
@@ -94,9 +94,13 @@ const offerToVoteSeat = (attestationMint, publicElectorate, attestation) => {
     give: { Attestation: attestation },
     want: {},
   });
-  return E(zoe).offer(E(publicElectorate).makeVoterInvitation(), proposal, {
-    Attestation: attestation1,
-  });
+  return E(zoe).offer(
+    E(publicElectorate).makeVoterInvitation(),
+    proposal,
+    harden({
+      Attestation: attestation1,
+    }),
+  );
 };
 
 /**
@@ -114,10 +118,10 @@ const voterFacet = (mint, publicFacet, attestAmmount) => {
  */
 const addDeposeQuestion = async (timer, creatorFacet) => {
   const depose = harden({ text: 'Replace the CEO?' });
-  const deposePositions = [
+  const deposePositions = harden([
     harden({ text: 'Yes, replace' }),
     harden({ text: 'no change' }),
-  ];
+  ]);
   const deposeSpec = makeDefaultBallotSpec(depose, deposePositions, timer, 2n);
   const { publicFacet: deposeCounter, questionHandle } = await E(
     creatorFacet,

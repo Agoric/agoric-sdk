@@ -1,6 +1,7 @@
 /* global process setTimeout */
 import chalk from 'chalk';
 import { createHash } from 'crypto';
+import path from 'path';
 
 import {
   CENTRAL_DENOM,
@@ -11,6 +12,13 @@ import {
 } from './chain-config.js';
 
 import { makePspawn, getSDKBinaries } from './helpers.js';
+
+const terminalOnlyFlags = (...flags) => {
+  if (process.stdout.isTTY && process.stdin.isTTY) {
+    return flags;
+  }
+  return [];
+};
 
 const PROVISION_COINS = `100000000${STAKING_DENOM},500000000000000${CENTRAL_DENOM},100provisionpass,100sendpacketpass`;
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
@@ -53,9 +61,16 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     nodeDebugEnv.SWINGSET_WORKER_TYPE = 'local';
   }
 
+  const agServersPrefix = opts.sdk
+    ? undefined
+    : path.resolve(`node_modules/@agoric`);
+  const getBinaries = opts.sdk
+    ? getSDKBinaries
+    : () => getSDKBinaries({ goPfx: agServersPrefix, jsPfx: agServersPrefix });
+
   let keysSpawn;
-  if (opts.sdk) {
-    const { cosmosHelper } = getSDKBinaries();
+  if (!opts.dockerTag) {
+    const { cosmosHelper } = getBinaries();
     keysSpawn = (args, ...rest) =>
       pspawn(cosmosHelper, [`--home=_agstate/keys`, ...args], ...rest);
   } else {
@@ -66,7 +81,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           'run',
           `--volume=${process.cwd()}:/usr/src/dapp`,
           `--rm`,
-          // `-it`,
+          ...terminalOnlyFlags(`-it`),
           `--entrypoint=agd`,
           SDK_IMAGE,
           `--home=/usr/src/dapp/_agstate/keys`,
@@ -122,10 +137,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   };
 
   let agSolo;
-  if (opts.sdk) {
-    ({ agSolo } = getSDKBinaries());
-  } else {
+  let agSoloBuild;
+  if (opts.dockerTag) {
     agSolo = `ag-solo`;
+  } else {
+    ({ agSolo, agSoloBuild } = getBinaries());
   }
 
   async function startFakeChain(profileName, _startArgs, popts) {
@@ -140,13 +156,19 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       await pspawn('rm', ['-rf', agServer]);
     }
 
-    if (!opts.sdk) {
-      if (
-        !(await exists('node_modules/@agoric/solo')) &&
-        !(await exists('_agstate/agoric-servers/node_modules/@agoric/solo'))
-      ) {
+    if (!opts.dockerTag) {
+      if (!(await exists('node_modules/@agoric/solo'))) {
         log.error(`you must first run '${progname} install'`);
         return 1;
+      }
+    }
+
+    if (opts.pull || opts.rebuild) {
+      if (!opts.dockerTag && agSoloBuild) {
+        const exitStatus = await pspawn(agSoloBuild[0], agSoloBuild.slice(1));
+        if (exitStatus) {
+          return exitStatus;
+        }
       }
     }
 
@@ -193,10 +215,21 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return 1;
     }
 
-    if (popts.pull) {
-      const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
-      if (exitStatus) {
-        return exitStatus;
+    const { cosmosChain, cosmosChainBuild } = getBinaries();
+    if (popts.pull || popts.rebuild) {
+      if (popts.dockerTag) {
+        const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
+        if (exitStatus !== 0) {
+          return exitStatus;
+        }
+      } else {
+        const exitStatus = await pspawn(
+          cosmosChainBuild[0],
+          cosmosChainBuild.slice(1),
+        );
+        if (exitStatus !== 0) {
+          return exitStatus;
+        }
       }
     }
 
@@ -208,8 +241,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     let chainSpawn;
-    if (popts.sdk) {
-      const { cosmosChain } = getSDKBinaries();
+    if (!popts.dockerTag) {
       chainSpawn = (args, spawnOpts = undefined) => {
         return pspawn(cosmosChain, [...args, `--home=${agServer}`], spawnOpts);
       };
@@ -222,7 +254,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             `--volume=${process.cwd()}:/usr/src/dapp`,
             `--rm`,
             ...dockerArgs,
-            // `-it`,
+            ...terminalOnlyFlags(`-it`),
             SDK_IMAGE,
             ...args,
             `--home=/usr/src/dapp/${agServer}`,
@@ -287,9 +319,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         return exitStatus;
       }
 
-      const keysHome = opts.sdk
-        ? `_agstate/keys`
-        : `/usr/src/dapp/_agstate/keys`;
+      const keysHome = opts.dockerTag
+        ? `/usr/src/dapp/_agstate/keys`
+        : `_agstate/keys`;
       exitStatus = await chainSpawn([
         'gentx',
         'delegate0',
@@ -375,7 +407,25 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const agServer = `_agstate/agoric-servers/${profileName}-${portNum}`;
 
-    if (popts.pull) {
+    const { cosmosClientBuild } = getBinaries();
+    if (popts.pull || popts.rebuild) {
+      if (popts.dockerTag) {
+        const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
+        if (exitStatus !== 0) {
+          return exitStatus;
+        }
+      } else {
+        const exitStatus = await pspawn(
+          cosmosClientBuild[0],
+          cosmosClientBuild.slice(1),
+        );
+        if (exitStatus !== 0) {
+          return exitStatus;
+        }
+      }
+    }
+
+    if (popts.dockerTag && popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', SDK_IMAGE]);
       if (exitStatus) {
         return exitStatus;
@@ -389,7 +439,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     let soloSpawn;
-    if (popts.sdk) {
+    if (!popts.dockerTag) {
       soloSpawn = (args, spawnOpts = undefined) =>
         pspawn(agSolo, args, spawnOpts);
     } else {
@@ -402,7 +452,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             `--volume=${process.env.HOME}/.agoric:/root/.agoric`,
             `-eAG_SOLO_BASEDIR=/usr/src/dapp/${agServer}`,
             `--rm`,
-            // `-it`,
+            ...terminalOnlyFlags(`-it`),
             `--entrypoint=ag-solo`,
             ...dockerArgs,
             SOLO_IMAGE,
@@ -440,7 +490,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     // Initialise the solo directory and key.
     if (!(await exists(agServer))) {
       const initArgs = [`--webport=${portNum}`];
-      if (!opts.sdk) {
+      if (opts.dockerTag) {
         initArgs.push(`--webhost=0.0.0.0`);
       }
       const exitStatus = await soloSpawn(
@@ -454,12 +504,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     const spawnOpts = {};
-    if (popts.sdk) {
+    if (!popts.dockerTag) {
       spawnOpts.cwd = agServer;
     }
 
     const rpcAddrs = [`localhost:${CHAIN_PORT}`];
-    if (!popts.sdk) {
+    if (popts.dockerTag) {
       rpcAddrs.push(`host.docker.internal:${CHAIN_PORT}`);
     }
 
@@ -571,7 +621,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   async function startTestnetDocker(profileName, startArgs, popts) {
-    if (popts.pull) {
+    if (popts.dockerTag && popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', SOLO_IMAGE]);
       if (exitStatus) {
         return exitStatus;
@@ -595,7 +645,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         `--volume=${process.cwd()}:/usr/src/dapp`,
         `-eAG_SOLO_BASEDIR=/usr/src/dapp/${agServer}`,
         `--rm`,
-        `-it`,
+        ...terminalOnlyFlags(`-it`),
         SOLO_IMAGE,
         `--webport=${port}`,
         `--webhost=0.0.0.0`,
@@ -628,7 +678,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     dev: startFakeChain,
     'local-chain': startLocalChain,
     'local-solo': startLocalSolo,
-    testnet: opts.sdk ? startTestnetSdk : startTestnetDocker,
+    testnet: opts.dockerTag ? startTestnetDocker : startTestnetSdk,
   };
 
   const popts = opts;

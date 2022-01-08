@@ -98,10 +98,49 @@ const expectedcontractGovernorStartLog = [
   'updated to "[299792458n]"',
   'MalleableNumber was changed to "[602214090000000000000000n]"',
   'current value of MalleableNumber is 299792458',
+  'Electorate was changed to {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}',
+  'MalleableNumber was changed to "[299792458n]"',
   'Voter Alice validated all the things',
 ];
 
-test('zoe - contract governance', async t => {
+test.serial('contract governance', async t => {
   const dump = await main(t, ['contractGovernorStart']);
   t.deepEqual(dump.log, expectedcontractGovernorStartLog);
+});
+
+const expectedChangeElectorateLog = [
+  '=> voter and electorate vats are set up',
+  '@@ schedule task for:2, currently: 0 @@',
+  'Voter Alice voted for {"noChange":{"key":"main","parameterName":"Electorate"}}',
+  'Voter Bob voted for {"changeParam":{"key":"main","parameterName":"Electorate"},"proposedValue":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}}',
+  'Voter Carol voted for {"changeParam":{"key":"main","parameterName":"Electorate"},"proposedValue":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}}',
+  'Voter Dave voted for {"changeParam":{"key":"main","parameterName":"Electorate"},"proposedValue":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}}',
+  'Voter Emma voted for {"noChange":{"key":"main","parameterName":"Electorate"}}',
+  '@@ tick:1 @@',
+  '@@ tick:2 @@',
+  '&& running a task scheduled for 2. &&',
+  'vote outcome: {"changeParam":{"key":"main","parameterName":"Electorate"},"proposedValue":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}}',
+  'updated to {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}',
+  'Validation complete: true',
+  '@@ schedule task for:4, currently: 2 @@',
+  'Voter Alice voted for {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
+  'Voter Bob voted for {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
+  'Voter Carol voted for {"noChange":{"key":"main","parameterName":"MalleableNumber"}}',
+  'Voter Dave voted for {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
+  'Voter Emma voted for {"noChange":{"key":"main","parameterName":"MalleableNumber"}}',
+  '@@ tick:3 @@',
+  '@@ tick:4 @@',
+  '&& running a task scheduled for 4. &&',
+  'vote outcome: {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
+  'updated to "[299792458n]"',
+  'MalleableNumber was changed to "[602214090000000000000000n]"',
+  'current value of MalleableNumber is 299792458',
+  'Electorate was changed to {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}',
+  'Electorate was changed to {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}',
+  'MalleableNumber was changed to "[299792458n]"',
+];
+
+test.serial('change electorate', async t => {
+  const dump = await main(t, ['changeElectorateStart']);
+  t.deepEqual(dump.log, expectedChangeElectorateLog);
 });

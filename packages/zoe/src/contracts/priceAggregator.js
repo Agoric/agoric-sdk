@@ -70,7 +70,7 @@ const start = async zcf => {
   /** @type {Set<OracleRecord>} */
   const oracleRecords = new Set();
 
-  /** @type {Store<Instance, Set<OracleRecord>>} */
+  /** @type {LegacyMap<Instance, Set<OracleRecord>>} */
   // Legacy because we're storing a raw JS Set
   const instanceToRecords = makeLegacyMap('oracleInstance');
 

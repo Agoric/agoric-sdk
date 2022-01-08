@@ -10,6 +10,7 @@ import {
   validateQuestionDetails,
   assertBallotConcernsQuestion,
 } from '../../../src/index.js';
+import { MALLEABLE_NUMBER } from './governedContract.js';
 
 const { details: X, quote: q } = assert;
 
@@ -45,7 +46,6 @@ const build = async (log, zoe) => {
           );
 
           const [
-            governedParam,
             questionDetails,
             electorateInstallation,
             voteCounterInstallation,
@@ -54,7 +54,6 @@ const build = async (log, zoe) => {
             validatedQuestion,
             contractGovernance,
           ] = await Promise.all([
-            E.get(E(zoe).getTerms(governedInstance)).main,
             E(E(zoe).getPublicFacet(counterInstance)).getDetails(),
             E(zoe).getInstallationForInstance(electorateInstance),
             E(zoe).getInstallationForInstance(counterInstance),
@@ -64,7 +63,7 @@ const build = async (log, zoe) => {
             contractGovernanceP,
           ]);
 
-          assertBallotConcernsQuestion(governedParam[0].name, questionDetails);
+          assertBallotConcernsQuestion(MALLEABLE_NUMBER, questionDetails);
           assert(installations.binaryVoteCounter === voteCounterInstallation);
           assert(installations.governedContract === governedInstallation);
           assert(installations.contractGovernor === governorInstallation);

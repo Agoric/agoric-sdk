@@ -27,7 +27,12 @@ const dirname = new URL('./', import.meta.url).pathname;
 // cd ui && yarn start
 
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
-  const { init: initOptions = [] } = options;
+  const {
+    init: initOptions = [],
+    install: installOptions = [],
+    start: startOptions = [],
+    testUnsafePlugins = false,
+  } = options;
   // FIXME: Do a search for an unused port or allow specification.
   const PORT = '7999';
   process.env.PORT = PORT;
@@ -46,17 +51,23 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     return ps;
   }
 
-  // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
-  const extraArgs = fs.existsSync(`${dirname}/../../cosmic-swingset`)
-    ? ['--sdk']
-    : [];
-  const agoricCli = path.join(dirname, '..', 'bin', 'agoric');
-  function myMain(args) {
+  const defaultAgoricCmd = () => {
+    // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
+    const extraArgs = fs.existsSync(`${dirname}/../../cosmic-swingset`)
+      ? ['--sdk']
+      : [];
+    const localCli = path.join(dirname, '..', 'bin', 'agoric');
+    return [localCli, ...extraArgs];
+  };
+  const { AGORIC_CMD = JSON.stringify(defaultAgoricCmd()) } = process.env;
+  const agoricCmd = JSON.parse(AGORIC_CMD);
+  function myMain(args, opts = {}) {
     // console.error('running agoric-cli', ...extraArgs, ...args);
-    return pspawnStdout(agoricCli, [...extraArgs, ...args], {
+    return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric' },
       detached: true,
+      ...opts,
     });
   }
 
@@ -102,14 +113,23 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // agoric install
-    t.is(await myMain(['install']), 0, 'install works');
+    if (process.env.AGORIC_INSTALL_OPTIONS) {
+      const opts = JSON.parse(process.env.AGORIC_INSTALL_OPTIONS);
+      installOptions.push(...opts);
+    }
+    t.is(await myMain(['install', ...installOptions]), 0, 'install works');
 
     // ==============
     // agoric start --reset
     const startResult = makePromiseKit();
 
+    if (process.env.AGORIC_START_OPTIONS) {
+      const opts = JSON.parse(process.env.AGORIC_START_OPTIONS);
+      startOptions.push(...opts);
+    }
+
     // TODO: Allow this to work even if the port is already used.
-    const startP = myMain(['start', '--reset']);
+    const startP = myMain(['start', '--reset', ...startOptions]);
     finalizers.push(() => pkill(startP.childProcess, 'SIGINT'));
 
     let stdoutStr = '';
@@ -122,8 +142,11 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
         }
       });
     }
+    startP.childProcess.on('close', code =>
+      startResult.reject(Error(`early termination: ${code}`)),
+    );
 
-    let timeout = setTimeout(
+    const timeout = setTimeout(
       startResult.reject,
       TIMEOUT_SECONDS * 1000,
       'timeout',
@@ -131,25 +154,35 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     t.is(await startResult.promise, true, `swingset running before timeout`);
     clearTimeout(timeout);
 
+    const testDeploy = async (deployCmd, opts = {}) => {
+      const deployResult = makePromiseKit();
+      const deployP = myMain(
+        ['deploy', `--hostport=127.0.0.1:${PORT}`, ...deployCmd],
+        {
+          stdio: [opts.stdin ? 'pipe' : 'ignore', 'pipe', 'inherit'],
+        },
+      );
+
+      if (opts.stdin) {
+        // Write the input to stdin.
+        deployP.childProcess.stdin.write(opts.stdin);
+        deployP.childProcess.stdin.end();
+      }
+
+      finalizers.push(() => pkill(deployP.childProcess, 'SIGINT'));
+      const to = setTimeout(
+        deployResult.resolve,
+        TIMEOUT_SECONDS * 1000,
+        'timeout',
+      );
+      const done = await Promise.race([deployResult.promise, deployP]);
+      t.is(done, 0, `deploy ${deployCmd.join(' ')} successful before timeout`);
+      clearTimeout(to);
+    };
+
     // ==============
     // agoric deploy ./contract/deploy.js ./api/deploy.js
-    const deployResult = makePromiseKit();
-    const deployP = myMain([
-      'deploy',
-      `--hostport=127.0.0.1:${PORT}`,
-      './contract/deploy.js',
-      './api/deploy.js',
-    ]);
-    finalizers.push(() => pkill(deployP.childProcess, 'SIGINT'));
-
-    timeout = setTimeout(
-      deployResult.resolve,
-      TIMEOUT_SECONDS * 1000,
-      'timeout',
-    );
-    const done = await Promise.race([deployResult.promise, deployP]);
-    t.is(done, 0, `deploy successful before timeout`);
-    clearTimeout(timeout);
+    await testDeploy(['./contract/deploy.js', './api/deploy.js']);
 
     for (const [suffix, code] of [
       ['/notthere', 404],
@@ -215,9 +248,18 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       `cd ui && yarn start succeeded`,
     );
     clearInterval(ival);
+
+    // Test that the Node.js `-r esm`-dependent plugin works.
+    await (testUnsafePlugins &&
+      testDeploy(
+        ['--allow-unsafe-plugins', `${dirname}/resm-plugin/deploy.js`],
+        { stdin: 'yes\n' },
+      ));
+
+    // TODO: When it exists, Test that the Node.js native ESM plugin works.
   } finally {
-    process.off('SIGINT', runFinalizers);
     runFinalizers();
+    process.off('SIGINT', runFinalizers);
     process.chdir(olddir);
     removeCallback();
   }

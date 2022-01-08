@@ -15,9 +15,10 @@ var (
 	ParamStoreKeyFeeUnitPrice = []byte("fee_unit_price")
 )
 
-func NewBeans(u sdk.Uint) Beans {
-	return Beans{
-		Whole: u,
+func NewStringBeans(key string, beans sdk.Uint) StringBeans {
+	return StringBeans{
+		Key:   key,
+		Beans: beans,
 	}
 }
 
@@ -60,14 +61,14 @@ func (p Params) ValidateBasic() error {
 }
 
 func validateBeansPerUnit(i interface{}) error {
-	v, ok := i.(map[string]Beans)
+	v, ok := i.([]StringBeans)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
-	for unit := range v {
-		if unit == "" {
-			return fmt.Errorf("unit must not be empty")
+	for _, sb := range v {
+		if sb.Key == "" {
+			return fmt.Errorf("key must not be empty")
 		}
 	}
 

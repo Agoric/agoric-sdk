@@ -279,9 +279,9 @@ test.serial('zoe - autoswap - valid inputs', async t => {
 
 const expectedSellTicketsOkLog = [
   '=> alice, bob, carol and dave are set up',
-  'availableTickets: {"brand":{},"value":[{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
+  'availableTickets: {"brand":{},"value":[{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
   'boughtTicketAmount: {"brand":{},"value":[{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
-  'after ticket1 purchased: {"brand":{},"value":[{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
+  'after ticket1 purchased: {"brand":{},"value":[{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
   'alice earned: {"brand":{},"value":22}',
 ];
 test.serial('zoe - sellTickets - valid inputs', async t => {

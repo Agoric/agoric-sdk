@@ -20,14 +20,33 @@ export {
 export { handleParamGovernance } from './contractHelper.js';
 
 export {
-  makeParamChangePositions,
-  validateParamChangeQuestion,
   assertBallotConcernsQuestion,
-} from './governParam.js';
+  makeParamChangePositions,
+  setupGovernance,
+  validateParamChangeQuestion,
+  CONTRACT_ELECTORATE,
+} from './paramGovernance/governParam.js';
 
-export { ParamType, buildParamManager, assertType } from './paramManager.js';
+export {
+  ParamType,
+  makeParamManagerBuilder,
+} from './paramGovernance/paramManager.js';
 
 export {
   assertContractGovernance,
   assertContractElectorate,
 } from './validators.js';
+
+export {
+  makeGovernedAmount,
+  makeGovernedBrand,
+  makeGovernedInstallation,
+  makeGovernedInstance,
+  makeGovernedInvitation,
+  makeGovernedNat,
+  makeGovernedRatio,
+  makeGovernedString,
+  makeGovernedUnknown,
+} from './paramGovernance/paramMakers.js';
+
+export { makeBinaryVoteCounter } from './binaryVoteCounter.js';

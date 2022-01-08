@@ -7,6 +7,8 @@ import { promisify } from 'util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 
+import createRequire from 'esm';
+
 import anylogger from 'anylogger';
 
 // import connect from 'lotion-connect';
@@ -35,12 +37,14 @@ import { connectToChain } from './chain-cosmos-sdk.js';
 
 const log = anylogger('start');
 
+// FIXME: Needed for legacy plugins.
+const esmRequire = createRequire({});
+
 let swingSetRunning = false;
 
 const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
 const rename = promisify(fs.rename);
-const symlink = promisify(fs.symlink);
 const unlink = promisify(fs.unlink);
 
 async function atomicReplaceFile(filename, contents) {
@@ -107,7 +111,9 @@ async function buildSwingset(
       X`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`,
     );
 
-    return import(pluginFile);
+    // TODO: Detect the module type and use the appropriate loader, just like
+    // `agoric deploy`.
+    return esmRequire(pluginFile);
   };
 
   const plugin = buildPlugin(pluginDir, importPlugin, queueThunkForKernel);
@@ -330,7 +336,7 @@ export default async function start(basedir, argv) {
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
-  // Symlink the wallet.
+  // Find the wallet.
   const pjs = new URL(
     await importMetaResolve(`${wallet}/package.json`, import.meta.url),
   ).pathname;
@@ -343,9 +349,6 @@ export default async function start(basedir, argv) {
 
   const agWallet = path.dirname(pjs);
   const agWalletHtml = path.resolve(agWallet, htmlBasedir);
-  symlink(agWalletHtml, 'html/wallet', 'junction').catch(e => {
-    console.error('Cannot link html/wallet:', e);
-  });
 
   let hostport;
   await Promise.all(
@@ -387,6 +390,7 @@ export default async function start(basedir, argv) {
             c.port,
             c.host,
             deliverInboundCommand,
+            agWalletHtml,
           );
           break;
         default:
@@ -411,7 +415,7 @@ export default async function start(basedir, argv) {
     .join(' ');
 
   const agoricCli = new URL(
-    await importMetaResolve('agoric/bin/agoric', import.meta.url),
+    await importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
   ).pathname;
 
   // Use the same verbosity as our caller did for us.

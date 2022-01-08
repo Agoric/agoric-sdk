@@ -26,6 +26,7 @@ export * from './statistics.js';
 export {
   defaultAcceptanceMsg,
   swap,
+  fitProposalShape,
   assertProposalShape,
   assertIssuerKeywords,
   satisfies,

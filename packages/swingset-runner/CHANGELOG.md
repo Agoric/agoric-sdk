@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.0...@agoric/swingset-runner@0.18.1) (2021-12-22)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+## [0.18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.17.2...@agoric/swingset-runner@0.18.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ERTP:** NatValues now only accept bigints, lower-case amountMath is removed, and AmountMath methods always follow the order of: brand, value
+
+* chore: fix up INPUT_VALIDATON.md
+
+* chore: address PR comments
+
+### Features
+
+* implement Bring Out Your Dead as a kernel-driven operation ([a1310e0](https://github.com/Agoric/agoric-sdk/commit/a1310e0f51348f8d6c7f4d7281f96cbe8e72b134))
+
+
+### Bug Fixes
+
+* **deps:** remove explicit `@agoric/babel-standalone` ([4f22453](https://github.com/Agoric/agoric-sdk/commit/4f22453a6f2de1a2c27ae8ad0d11b13116890dab))
+* prune metering rewrite from swingset-runner ([d42043f](https://github.com/Agoric/agoric-sdk/commit/d42043fd79ab5c982e8188d4b1409bfdf4038ed8))
+
+
+### Miscellaneous Chores
+
+* **ERTP:** additional input validation and clean up ([#3892](https://github.com/Agoric/agoric-sdk/issues/3892)) ([067ea32](https://github.com/Agoric/agoric-sdk/commit/067ea32b069596202d7f8e7c5e09d5ea7821f6b2))
+
+
+
 ### [0.17.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.17.1...@agoric/swingset-runner@0.17.2) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/swingset-runner

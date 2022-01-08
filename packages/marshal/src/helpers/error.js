@@ -6,7 +6,7 @@
 import '../types.js';
 import './internal-types.js';
 import '@agoric/assert/exported.js';
-import { assertChecker } from './passStyleHelpers.js';
+import { assertChecker } from './passStyle-helpers.js';
 
 const { details: X } = assert;
 const { getPrototypeOf, getOwnPropertyDescriptors } = Object;
@@ -95,8 +95,6 @@ export const ErrorHelper = harden({
   assertValid: candidate => {
     ErrorHelper.canBeValid(candidate, assertChecker);
   },
-
-  every: (_passable, _fn) => true,
 });
 
 /**

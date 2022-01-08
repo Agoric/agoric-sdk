@@ -6,7 +6,7 @@
 import '../types.js';
 import './internal-types.js';
 import '@agoric/assert/exported.js';
-import { assertChecker, checkNormalProperty } from './passStyleHelpers.js';
+import { assertChecker, checkNormalProperty } from './passStyle-helpers.js';
 
 const { details: X } = assert;
 const { getPrototypeOf } = Object;
@@ -44,11 +44,6 @@ export const CopyArrayHelper = harden({
       TypeError,
     );
     // Recursively validate that each member is passable.
-    CopyArrayHelper.every(candidate, v => !!passStyleOfRecur(v));
+    candidate.every(v => !!passStyleOfRecur(v));
   },
-
-  every: (passable, fn) =>
-    // Note that we explicitly call `fn` with only the arguments we want
-    // to provide.
-    passable.every((v, i) => fn(v, i)),
 });

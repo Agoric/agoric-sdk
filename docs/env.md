@@ -34,6 +34,17 @@ declarations.
 Lifetime: until all sources (including dapps) conform to using `Far`
 declarations for all remote objects
 
+## CXXFLAGS
+
+Affects: yarn, agoric install
+
+Purpose: add compilation flags to Node.js C++ addons
+
+Description: defaults to `-std=c++14` if not set (empty string doesn't default)
+
+Lifetime: probably forever (until all supported Node versions work with
+`CXXFLAGS=''`)
+
 ## DEBUG
 
 Affects: agoric (CLI), ag-chain-cosmos, ag-solo
@@ -105,6 +116,17 @@ Lifetime: until we decide not to support Prometheus for metrics export
 Same as SLOGFILE, but for solo instead of chain.
 
 Lifetime: ?
+
+## SOLO_MAX_DEBUG_LENGTH
+
+Affects: solo
+
+Purpose: reduce the size of each individual `console.debug` output
+
+Description: defaults to no limit, set to a decimal byte count to reduce the
+output
+
+Lifetime: Until CI no longer balks on long output, or our source bundles aren't delivered via messages to the sim-chain
 
 ## SLOGFILE
 

@@ -24,13 +24,15 @@ class "ContractGovernor\n(an ElectionManager)" as ContractGovernor {
     <i>verifiable</i>: governedInstance, electorateInstance
     --
     +getElectorate()
-    +getGovernedContract()
+    +getGovernedContract() - the governed instance
     +validateVoteCounter()
     +validateElectorate()
     +validateTimer()
-    -startGovernedInstance(electorate, governed, ...)
+    --
+    -voteOnParamChange()
+    -getCreatorFacet() - The unrestricted part of the governed contract's creatorFacet
 }
-note left : ContractGovernor starts GovernedContract\nstartGovernedInstance() returns a tightly held facet\n   with voteOnParamChange() for the creator.
+note left : ContractGovernor starts GovernedContract.\nvoteOnParamChange() should be tightly held.\ngetCreatorFacet() is for the contract's creator.
 
 class Electorate {
     Questions

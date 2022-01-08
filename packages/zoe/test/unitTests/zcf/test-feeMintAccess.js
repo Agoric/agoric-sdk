@@ -10,7 +10,6 @@ import { AmountMath } from '@agoric/ertp';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
-// noinspection ES6PreferShortImport
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
@@ -20,9 +19,7 @@ const dirname = path.dirname(filename);
 const contractRoot = `${dirname}/registerFeeMintContract.js`;
 
 test(`feeMintAccess`, async t => {
-  const { zoeService, feeMintAccess } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = await E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe, feeMintAccess } = makeZoeKit(fakeVatAdmin);
   const bundle = await bundleSource(contractRoot);
   const installation = await E(zoe).install(bundle);
   const { creatorFacet } = await E(zoe).startInstance(

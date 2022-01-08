@@ -27,9 +27,15 @@ AGC_START_ARGS =
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
-all: build-chain install install-agd install-helper
+# This probably shouldn't install, but that's what published instructions
+# expect.
+all: build-chain install-nobuild
 
-client: build-helper install install-agd install-helper
+client: build-helper install-nobuild
+
+install-nobuild: install-local install-agd install-helper
+
+install: all install-nobuild
 
 scenario0-setup:
 	mkdir -p t9
@@ -217,7 +223,7 @@ install-agd:
 install-helper:
 	install -c $(GOSRC)/build/ag-cosmos-helper "$(BIN)/ag-cosmos-helper"
 
-install:
+install-local:
 	mkdir -p "$(BIN)"
 	ln -sf "$$PWD/bin/ag-chain-cosmos" "$$PWD/bin/ag-nchainz" "$(BIN)/"
 

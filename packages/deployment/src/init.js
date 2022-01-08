@@ -108,18 +108,27 @@ const genericAskDatacenter = ({ inquirer }) => async (
 
 const DOCKER_DATACENTER = 'default';
 
-const makeProviders = ({ env, inquirer, wr, setup, fetch }) => ({
+const makeProviders = ({ env, inquirer, wr, setup, fetch, needBacktick }) => ({
   docker: {
     name: 'Docker instances',
     value: 'docker',
     askDetails: async (_provider, _myDetails) => {
-      let vspec = '/sys/fs/cgroup:/sys/fs/cgroup';
+      let vspec = '';
+
+      const dockerInfo = await needBacktick(`docker info`);
+      const cgroupMatch = dockerInfo.match(/^\s*Cgroup\sVersion:\s*(\d+)/im);
+      if (!cgroupMatch || Number(cgroupMatch[1]) < 2) {
+        // Older cgroup version, we need to mount `/sys/fs/cgroup` explicitly
+        // for our Agoric deployment Docker containers' systemd.
+        vspec += ',/sys/fs/cgroup:/sys/fs/cgroup';
+      }
       if (env.DOCKER_VOLUMES) {
         vspec += `,${env.DOCKER_VOLUMES}`;
       }
       return {
         VOLUMES: vspec
           .split(',')
+          .filter(vol => vol.trim())
           .map(vol => vol.split(':'))
           // eslint-disable-next-line camelcase
           .map(([host_path, container_path]) => ({
@@ -276,11 +285,21 @@ const doInit = ({
   fetch,
   parseArgs,
 }) => async (progname, args) => {
-  const { needDoRun, cwd, chdir } = running;
-  const PROVIDERS = makeProviders({ env, inquirer, wr, setup, fetch });
-  let {
-    _: [dir, overrideNetworkName],
-  } = parseArgs(args.slice(1));
+  const { needDoRun, needBacktick, cwd, chdir } = running;
+  const PROVIDERS = makeProviders({
+    env,
+    inquirer,
+    wr,
+    setup,
+    fetch,
+    needBacktick,
+  });
+
+  const { _: parsedArgs, noninteractive } = parseArgs(args.slice(1), {
+    boolean: ['noninteractive'],
+  });
+  let [dir, overrideNetworkName] = parsedArgs;
+
   if (!dir) {
     dir = setup.SETUP_HOME;
   }
@@ -323,8 +342,7 @@ const doInit = ({
   });
   config.NETWORK_NAME = overrideNetworkName;
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  while (!noninteractive) {
     // eslint-disable-next-line no-await-in-loop
     const { ROLE, ...rest } = await askPlacement({ inquirer })(
       config.PLACEMENTS,

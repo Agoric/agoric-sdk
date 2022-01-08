@@ -3,6 +3,57 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.21.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.0...@agoric/zoe@0.21.1) (2021-12-22)
+
+
+### Features
+
+* refactor parameter governance support to allow for Invitations ([#4121](https://github.com/Agoric/agoric-sdk/issues/4121)) ([159596b](https://github.com/Agoric/agoric-sdk/commit/159596b8d44b8cbdaf6e19513cb3e716febfae7b))
+
+
+
+## [0.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.20.0...@agoric/zoe@0.21.0) (2021-12-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove newSwap; replace with constantProduct AMM where needed (#4097)
+* **zoe:** must harden `amountKeywordRecord` before passing to ZCF objects
+
+* chore: fix treasury errors, etc.
+
+Co-authored-by: mergify[bot] <37929162+mergify[bot]@users.noreply.github.com>
+* METER_TYPE -> xs-meter-12
+
+  - update metering tests
+* **ERTP:** NatValues now only accept bigints, lower-case amountMath is removed, and AmountMath methods always follow the order of: brand, value
+
+* chore: fix up INPUT_VALIDATON.md
+
+* chore: address PR comments
+
+### Features
+
+* Add displayInfo for the liquidity tokens created in the AMM ([#4102](https://github.com/Agoric/agoric-sdk/issues/4102)) ([aa8e3c3](https://github.com/Agoric/agoric-sdk/commit/aa8e3c3a4374f90f3e12929d842a378bd5c51e38))
+* expose XS the->currentHeapCount to metering/delivery results ([a031d79](https://github.com/Agoric/agoric-sdk/commit/a031d7900440ee3717c15e7c5be4ae8226ef5530)), closes [#3910](https://github.com/Agoric/agoric-sdk/issues/3910)
+* remove newSwap; replace with constantProduct AMM where needed ([#4097](https://github.com/Agoric/agoric-sdk/issues/4097)) ([aaea050](https://github.com/Agoric/agoric-sdk/commit/aaea0503b369e4d0b4d9cbb1e00ee02109470060))
+* **zoe/contracts:** Support first-price auction, fix wakeup timer in current contract ([#4046](https://github.com/Agoric/agoric-sdk/issues/4046)) ([4fdfe82](https://github.com/Agoric/agoric-sdk/commit/4fdfe829f2fb040540a44d7d16de06dc066759b4))
+
+
+### Bug Fixes
+
+* **zoe:** assert that amountKeywordRecord is a copyRecord ([#4069](https://github.com/Agoric/agoric-sdk/issues/4069)) ([fe9a9ff](https://github.com/Agoric/agoric-sdk/commit/fe9a9ff3de86608a0b1f8f9547059f89d45b948d))
+* default to disallowing implicit remotables ([#3736](https://github.com/Agoric/agoric-sdk/issues/3736)) ([d14a665](https://github.com/Agoric/agoric-sdk/commit/d14a66548f3981334f9738bbca3b906901c2e657))
+* fix missing Fars in pools ([#3975](https://github.com/Agoric/agoric-sdk/issues/3975)) ([b5bfb3e](https://github.com/Agoric/agoric-sdk/commit/b5bfb3eec26bf1230ad8680f17045b17e3e305c6))
+* if `makeEmptyPurse` fails, then `startInstance` and `saveIssuer` should fail ([#4070](https://github.com/Agoric/agoric-sdk/issues/4070)) ([c8c4aa9](https://github.com/Agoric/agoric-sdk/commit/c8c4aa92a7c11a58247d3784d573a2d05743ea72))
+
+
+### Miscellaneous Chores
+
+* **ERTP:** additional input validation and clean up ([#3892](https://github.com/Agoric/agoric-sdk/issues/3892)) ([067ea32](https://github.com/Agoric/agoric-sdk/commit/067ea32b069596202d7f8e7c5e09d5ea7821f6b2))
+
+
+
 ## [0.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.19.1...@agoric/zoe@0.20.0) (2021-10-13)
 
 

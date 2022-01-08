@@ -1,7 +1,6 @@
 // @ts-check
 
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
 
@@ -25,9 +24,7 @@ const setupNonFungible = () => {
   function createRpgItem(name, power, desc = undefined) {
     return harden([{ name, description: desc || name, power }]);
   }
-  const { zoeService } = makeZoeKit(fakeVatAdmin);
-  const feePurse = E(zoeService).makeFeePurse();
-  const zoe = E(zoeService).bindDefaultFeePurse(feePurse);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const ccIssuer = ccBundle.issuer;
   const rpgIssuer = rpgBundle.issuer;

@@ -4,10 +4,10 @@ name: ag-solo on xs
 # default
 
 on:
- push:
-   branches: [$default-branch]
- pull_request:
-   branches: [$default-branch]
+  push:
+    branches: [ master ] # $default-branch
+  pull_request:
+    branches: [ master ] # $default-branch
 
 jobs:
   xs-build:

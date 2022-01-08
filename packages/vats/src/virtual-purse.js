@@ -1,6 +1,5 @@
 // @ts-check
-import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { E, Far } from '@agoric/far';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
@@ -9,10 +8,7 @@ import '@agoric/notifier/exported.js';
 
 /**
  * @template T
- * @typedef {import('@agoric/eventual-send').EOnly<T>} EOnly An object roughly
- * of type T that is only allowed to be consumed via eventual-send.  This allows
- * the object to return Promises wherever it wants to, even when T demands a
- * synchronous return value.
+ * @typedef {import('@agoric/far').EOnly<T>} EOnly
  */
 
 /**
@@ -52,17 +48,18 @@ function makeVirtualPurse(vpc, kit) {
 
   /** @type {(amt: Amount) => Promise<Payment>} */
   let redeem;
-  /** @type {(pmt: Payment, optAmount: Amount | undefined) => Promise<Amount>} */
+  /** @type {(pmt: Payment, optAmountShape?: Pattern) => Promise<Amount>} */
   let retain;
 
   if (mint) {
-    retain = (payment, optAmount) => E(issuer).burn(payment, optAmount);
+    retain = (payment, optAmountShape) =>
+      E(issuer).burn(payment, optAmountShape);
     redeem = amount => E(mint).mintPayment(amount);
   } else {
     // If we can't mint, then we need to escrow.
     const myEscrowPurse = escrowPurse || E(issuer).makeEmptyPurse();
-    retain = (payment, optAmount) =>
-      E(myEscrowPurse).deposit(payment, optAmount);
+    retain = (payment, optAmountShape) =>
+      E(myEscrowPurse).deposit(payment, optAmountShape);
     redeem = amount => E(myEscrowPurse).withdraw(amount);
   }
 
@@ -97,13 +94,13 @@ function makeVirtualPurse(vpc, kit) {
 
   /** @type {EOnly<DepositFacet>} */
   const depositFacet = Far('Virtual Deposit Facet', {
-    async receive(payment, optAmount = undefined) {
+    async receive(payment, optAmountShape = undefined) {
       if (isPromise(payment)) {
         throw TypeError(
           `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
         );
       }
-      const amt = await retain(payment, optAmount);
+      const amt = await retain(payment, optAmountShape);
 
       // The push must always succeed.
       //

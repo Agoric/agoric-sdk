@@ -12,6 +12,7 @@ import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage } from '../message.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
+import { insistValidVatstoreKey } from './vatTranslator.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -672,7 +673,14 @@ function build(
     function collect(promiseID, rejected, value) {
       doneResolutions.add(promiseID);
       meterControl.assertIsMetered(); // else userspace getters could escape
-      const valueSer = m.serialize(value);
+      let valueSer;
+      try {
+        valueSer = m.serialize(value);
+      } catch (e) {
+        // Serialization failure.
+        valueSer = m.serialize(e);
+        rejected = true;
+      }
       valueSer.slots.map(retainExportedVref);
       resolutions.push([promiseID, rejected, valueSer]);
       scanSlots(valueSer.slots);
@@ -1080,16 +1088,44 @@ function build(
     if (enableVatstore) {
       vpow.vatstore = harden({
         get: key => {
-          assert.typeof(key, 'string');
+          insistValidVatstoreKey(key);
           return syscall.vatstoreGet(`vvs.${key}`);
         },
         set: (key, value) => {
-          assert.typeof(key, 'string');
+          insistValidVatstoreKey(key);
           assert.typeof(value, 'string');
           syscall.vatstoreSet(`vvs.${key}`, value);
         },
+        getAfter: (priorKey, lowerBound, upperBound) => {
+          let scopedPriorKey = '';
+          if (priorKey !== '') {
+            insistValidVatstoreKey(priorKey);
+            assert(priorKey >= lowerBound, 'priorKey must be >= lowerBound');
+            scopedPriorKey = `vvs.${priorKey}`;
+          }
+          insistValidVatstoreKey(lowerBound);
+          const scopedLowerBound = `vvs.${lowerBound}`;
+          let scopedUpperBound;
+          if (upperBound) {
+            insistValidVatstoreKey(upperBound);
+            assert(upperBound > lowerBound, 'upperBound must be > lowerBound');
+            scopedUpperBound = `vvs.${upperBound}`;
+          }
+          const fetched = syscall.vatstoreGetAfter(
+            scopedPriorKey,
+            scopedLowerBound,
+            scopedUpperBound,
+          );
+          if (fetched) {
+            const [key, value] = fetched;
+            assert(key.startsWith('vvs.'));
+            return [key.slice(4), value];
+          } else {
+            return undefined;
+          }
+        },
         delete: key => {
-          assert.typeof(key, 'string');
+          insistValidVatstoreKey(key);
           syscall.vatstoreDelete(`vvs.${key}`);
         },
       });
@@ -1292,10 +1328,10 @@ export function makeLiveSlots(
 }
 
 // for tests
-export function makeMarshaller(syscall, gcTools) {
+export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
   const { m } = build(
     syscall,
-    'forVatID',
+    vatID,
     DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
     false,
     false,

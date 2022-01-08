@@ -41,7 +41,15 @@ REFERENCES TO YOUR TAGS.
 ./scripts/get-released-tags git push origin
 ```
 
-To make validators' lives easier, create a tag for the chain-id:
+If you want to update an NPM dist-tag for the current checked-out Agoric SDK's
+packages (to enable `agoric install <TAG>`), use:
+
+```sh
+# Use "beta" for <TAG> for example.
+./scripts/npm-dist-tag.sh lerna add <TAG>
+```
+
+To make validators' lives easier, create a Git tag for the chain-id:
 
 ```sh
 CHAIN_ID=agoricstage-8 # Change this as necessary

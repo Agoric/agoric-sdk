@@ -44,13 +44,7 @@ test('bad display info', t => {
   const displayInfo = harden({ somethingUnexpected: 3 });
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => makeIssuerKit('fungible', AssetKind.NAT, displayInfo), {
-    message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /key "somethingUnexpected" was not one of the expected keys \["decimalPlaces"\]/,
-      /key .* was not one of the expected keys .*/,
+    message: /key "somethingUnexpected" was not one of the expected keys \["decimalPlaces","assetKind"\]/,
   });
 });
 
