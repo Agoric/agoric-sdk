@@ -69,7 +69,7 @@ serves as the ZCF vat's main connection to Zoe.
 Zoe then calls `E(zcfRoot).executeContract()` to start the contract.
 The parameters include a promise for the Zoe Service, the source
 bundle, the invitation Issuer, `zoeInstanceAdminForZcf`, the instance
-record, issuer records, any private arguments, and the fee purse.
+record, issuer records, and any private arguments.
 
 The code in the ZCF Vat evaluates the contract bundle, makes a ZCF
 object for the contract's use, and calls the contract's `start`
