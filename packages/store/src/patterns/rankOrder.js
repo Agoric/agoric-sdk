@@ -26,9 +26,9 @@ const PassStyleRankAndCover = harden([
   /* np */ ['bigint', ['n', 'p~']],
   /* r  */ ['remotable', ['r', 'r~']],
   /* s  */ ['string', ['s', 't']],
-  /* u  */ ['undefined', ['u', 'v']],
+  /* v  */ ['null', ['v', 'v~']],
   /* y  */ ['symbol', ['y', 'z']],
-  /* z  */ ['null', ['z', 'z~']],
+  /* z  */ ['undefined', ['z', '{']],
   /* | remotable->ordinal mapping prefix: This is not used in covers but it is
        reserved from the same set of strings. Note that the prefix is > any
        prefix used by any cover so that ordinal mapping keys are always outside
