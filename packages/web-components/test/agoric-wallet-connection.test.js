@@ -2,7 +2,7 @@
 import '../demo/install-ses-lockdown.js';
 import { E } from '@agoric/eventual-send';
 import { html } from 'lit';
-import { fixture, expect } from '@open-wc/testing';
+import { fixture, expect, nextFrame } from '@open-wc/testing';
 
 import { Server } from 'mock-socket/dist/mock-socket.es';
 import { makeAgoricWalletConnection } from '../src/AgoricWalletConnection.js';
@@ -110,8 +110,12 @@ describe('AgoricWalletConnection', () => {
   describe('on getAdminBootstrap', () => {
     let el;
     let adminBootstrap;
+    let stateResolvers;
 
     const onState = ev => {
+      if (ev.detail.state in stateResolvers) {
+        stateResolvers[ev.detail.state]();
+      }
       switch (ev.detail.state) {
         case 'idle': {
           adminBootstrap = E(ev.detail.walletConnection).getAdminBootstrap(
@@ -123,7 +127,19 @@ describe('AgoricWalletConnection', () => {
       }
     };
 
+    const createStatePromise = state => {
+      const statePromise = new Promise(
+        resolve => (stateResolvers[state] = resolve),
+      );
+
+      return Promise.race([
+        statePromise,
+        new Promise(resolve => setTimeout(() => resolve('timeout'), 2000)),
+      ]);
+    };
+
     beforeEach(async () => {
+      stateResolvers = {};
       el = await fixture(
         html`
           <agoric-wallet-connection
@@ -146,45 +162,40 @@ describe('AgoricWalletConnection', () => {
     it('goes to admin state once connected', async () => {
       iframeOnMessage('http://localhost:8000');
 
-      // Connecting happens instantly with the mock socket,
-      // just need to let the event loop run once.
-      await new Promise(resolve => setTimeout(resolve, 30));
+      await createStatePromise('bridged');
+      await nextFrame();
+      await nextFrame();
+
       expect(el.state).to.equal('bridged');
     });
 
     it('lets the websocket dispatch messages through capTP', async () => {
       iframeOnMessage('http://localhost:8000');
-      await new Promise(resolve => setTimeout(resolve, 30));
 
       socket.send(JSON.stringify({ foo: 'bar' }));
-      await new Promise(resolve => setTimeout(resolve, 30));
 
       expect(captpInnards.lastDispatched).to.deep.equal({ foo: 'bar' });
     });
 
     it('lets capTP send messages through the websocket', async () => {
       iframeOnMessage('http://localhost:8000');
-      await new Promise(resolve => setTimeout(resolve, 30));
 
       captpInnards.send({ foo: 'bar2' });
-      await new Promise(resolve => setTimeout(resolve, 30));
+      await nextFrame();
 
       expect(lastMessage).to.equal(JSON.stringify({ foo: 'bar2' }));
     });
 
     it('aborts capTP when the socket disconnects', async () => {
       iframeOnMessage('http://localhost:8000');
-      await new Promise(resolve => setTimeout(resolve, 30));
 
       socket.close();
 
-      await new Promise(resolve => setTimeout(resolve, 30));
       expect(captpInnards.isAborted).to.equal(true);
     });
 
     it('returns the admin bootstrap', async () => {
       iframeOnMessage('http://localhost:8000');
-      await new Promise(resolve => setTimeout(resolve, 30));
 
       expect(await adminBootstrap).to.deep.equal({ isAdmin: true });
     });
