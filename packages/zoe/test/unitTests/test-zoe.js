@@ -140,8 +140,8 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
         // disclosure bug is fixed. See
         // https://github.com/endojs/endo/pull/640
         //
-        // /keyword "something" must be ascii and must start with a capital letter./
-        /keyword .* must be ascii and must start with a capital letter./,
+        // /keyword "something" must be an ascii identifier starting with upper case./
+        /keyword .* must be an ascii identifier starting with upper case./,
     },
   );
 });

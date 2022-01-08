@@ -52,11 +52,7 @@ const main = async (progname, rawArgs, powers) => {
   program
     .option('--sdk', 'use the Agoric SDK containing this program')
     .option('--no-sdk', 'do not use the Agoric SDK containing this program')
-    .option(
-      '--docker-tag <tag>',
-      'image tag to use for Docker containers',
-      'latest',
-    )
+    .option('--docker-tag <tag>', 'image tag to use for Docker containers')
     .option(
       '-v, --verbose',
       'verbosity that can be increased',
@@ -201,6 +197,7 @@ const main = async (progname, rawArgs, powers) => {
     .option('--reset', 'clear all VM state before starting')
     .option('--no-restart', 'do not actually start the VM')
     .option('--pull', 'for Docker-based VM, pull the image before running')
+    .option('--rebuild', 'rebuild VM dependencies before running')
     .option(
       '--delay [seconds]',
       'delay for simulated chain to process messages',

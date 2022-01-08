@@ -1,23 +1,22 @@
 // @ts-check
 
 import { Far, passStyleOf } from '@agoric/marshal';
-import { makePatternKit } from '../patterns/patternMatchers.js';
+import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
 const { details: X, quote: q } = assert;
-const { assertMatches, assertPattern } = makePatternKit();
 
 /**
  * @template K
  * @param {WeakSet<K & Object>} jsset
- * @param {(k: K) => void} assertKeyOkToWrite
+ * @param {(k: K) => void} assertKeyOkToAdd
  * @param {((k: K) => void)=} assertKeyOkToDelete
  * @param {string=} keyName
  * @returns {WeakSetStore<K>}
  */
 export const makeWeakSetStoreMethods = (
   jsset,
-  assertKeyOkToWrite,
-  assertKeyOkToDelete = () => {},
+  assertKeyOkToAdd,
+  assertKeyOkToDelete = undefined,
   keyName = 'key',
 ) => {
   const assertKeyExists = key =>
@@ -32,13 +31,22 @@ export const makeWeakSetStoreMethods = (
     },
 
     add: key => {
-      assertKeyOkToWrite(key);
+      assertKeyOkToAdd(key);
       jsset.add(key);
     },
     delete: key => {
       assertKeyExists(key);
-      assertKeyOkToDelete(key);
+      if (assertKeyOkToDelete !== undefined) {
+        assertKeyOkToDelete(key);
+      }
       jsset.delete(key);
+    },
+
+    addAll: keys => {
+      for (const key of keys) {
+        assertKeyOkToAdd(key);
+        jsset.add(key);
+      }
     },
   });
 };
@@ -62,13 +70,14 @@ export const makeWeakSetStoreMethods = (
  */
 export const makeScalarWeakSetStore = (
   keyName = 'key',
-  { longLived = true, schema = undefined } = {},
+  { longLived = true, keySchema = undefined } = {},
 ) => {
   const jsset = new (longLived ? WeakSet : Set)();
-  if (schema) {
-    assertPattern(schema);
+  if (keySchema !== undefined) {
+    assertPattern(keySchema);
   }
-  const assertKeyOkToWrite = key => {
+
+  const assertKeyOkToAdd = key => {
     // TODO: Just a transition kludge. Remove when possible.
     // See https://github.com/Agoric/agoric-sdk/issues/3606
     harden(key);
@@ -77,13 +86,13 @@ export const makeScalarWeakSetStore = (
       passStyleOf(key) === 'remotable',
       X`Only remotables can be keys of scalar WeakStores: ${key}`,
     );
-    if (schema) {
-      assertMatches(key, schema);
+    if (keySchema !== undefined) {
+      fit(key, keySchema);
     }
   };
-  const weakSetStore = Far(`scalar WeakSetStore of ${q(keyName)}`, {
-    ...makeWeakSetStoreMethods(jsset, assertKeyOkToWrite, undefined, keyName),
+
+  return Far(`scalar WeakSetStore of ${q(keyName)}`, {
+    ...makeWeakSetStoreMethods(jsset, assertKeyOkToAdd, undefined, keyName),
   });
-  return weakSetStore;
 };
 harden(makeScalarWeakSetStore);

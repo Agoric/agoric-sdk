@@ -58,7 +58,7 @@ const { ownKeys } = Reflect;
  * @param {Key} right
  * @returns {-1 | 0 | 1 | NaN}
  */
-const compareKeys = (left, right) => {
+export const compareKeys = (left, right) => {
   assertKey(left);
   assertKey(right);
   const leftStyle = passStyleOf(left);

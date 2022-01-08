@@ -43,7 +43,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
 
   // Note: `amountLiened` in ExpiringAttElem is of the brand `externalBrand`
 
-  /** @type {Store<Address,Array<ExpiringAttElem>>} */
+  /** @type {LegacyMap<Address,Array<ExpiringAttElem>>} */
   // Legacy because stored array is pushed onto
   const lienedAmounts = makeLegacyMap('address');
 

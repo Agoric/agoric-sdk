@@ -4,8 +4,8 @@ import { assert, details as X } from '@agoric/assert';
 import { passStyleOf, assertRemotable, assertRecord } from '@agoric/marshal';
 
 import './types.js';
-import natMathHelpers from './mathHelpers/natMathHelpers.js';
-import setMathHelpers from './mathHelpers/setMathHelpers.js';
+import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
+import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 
 /**
  * Constants for the kinds of assets we support.

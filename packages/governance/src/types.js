@@ -436,7 +436,7 @@
  */
 
 /**
- * @typedef {Array<ParamDescription>} ParamDescriptions
+ * @typedef {Iterable<ParamDescription>} ParamDescriptions
  */
 
 /**

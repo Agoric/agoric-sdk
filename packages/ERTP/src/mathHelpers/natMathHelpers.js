@@ -19,7 +19,7 @@ const empty = 0n;
  *
  * @type {NatMathHelpers}
  */
-const natMathHelpers = {
+export const natMathHelpers = harden({
   doCoerce: nat => {
     // TODO: tighten the definition of Nat in @agoric/nat to throw on `number`
     assert.typeof(nat, 'bigint');
@@ -33,7 +33,4 @@ const natMathHelpers = {
   // BigInts don't observably overflow
   doAdd: (left, right) => left + right,
   doSubtract: (left, right) => Nat(left - right),
-};
-
-harden(natMathHelpers);
-export default natMathHelpers;
+});
