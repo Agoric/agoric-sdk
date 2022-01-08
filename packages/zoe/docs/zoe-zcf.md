@@ -1,7 +1,7 @@
 # Zoe and ZCF
 
 Zoe, the package, is split into two parts: the Zoe Service (what users
-interact with) and the Zoe Contract Facet (akaZCF, an API exposed to
+interact with) and the Zoe Contract Facet (aka ZCF, an API exposed to
 contract code that interacts with the Zoe Service). The Zoe service is
 in a single, continuously-running vat on its own. Each time a contract
 is instantiated with `E(zoe).startInstance()`, a new vat is created
@@ -56,7 +56,7 @@ installation is an object that can be used for its identity to compare
 whether the code used in different contract instances is the same. In
 the future
 ([Issue](https://github.com/Agoric/agoric-sdk/issues/3871)), a user
-will be able to get the hash from an installation, so that a user can
+will be able to get the hash of the code from an installation, so that a user can
 compare the hash with the hash of code hosted off-chain.
 
 Anyone with an `installation` can ask the Zoe Service to create a new
@@ -87,7 +87,7 @@ The Zoe Service creates and holds the mint for invitations. The Zoe
 Service freely shares the corresponding issuer, so everyone can verify
 invitations.
 
-When an invitation is exercised (`E(zoe).offer(invitation, ...)`), Zoe
+When an invitation is exercised (`E(zoe).offer(invitation, ..., payments, ...)`), Zoe
 burns the invitation, escrows the payments, calls
 `E(handleOfferObj).handleOffer`, which informs ZCF that a new offer
 has been made, and returns a newly created `userSeat`. `handleOffer`
@@ -97,10 +97,11 @@ records what it needs to know about the offer, then returns two things
 to Zoe: a promise for the offerResult (the return value from the
 `offerHandler`) and an `exitObj` that Zoe saves for later use.
 
-In order to ensure that the `zcf` object in the contract vat has the
-most up-to-date information about the seats that have exited
-synchronously accessible, if a user calls `userSeat.tryExit()`, the
-Zoe Service calls `E(exitObj).exit()`, making sure that even if the
+```suggestion
+In order to ensure that the `zcf` object in the contract vat has
+synchronous access to the most up-to-date information about
+seats that have exited, if a user calls `userSeat.tryExit()`, the
+Zoe Service calls `E(exitObj).exit()`. This ensures that even when the
 user originates the request, the exit process always goes through the
 contract vat first.
 
