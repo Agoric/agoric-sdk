@@ -1,8 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { allComparable } from '@agoric/same-structure';
-import { Far } from '@agoric/marshal';
+import { deeplyFulfilled, Far } from '@agoric/marshal';
 
 /**
  * Start up a new Counter for a question
@@ -48,7 +47,7 @@ const getOpenQuestions = async questionStore => {
     },
   );
 
-  const isOpenQuestions = await allComparable(harden(isOpenPQuestions));
+  const isOpenQuestions = await deeplyFulfilled(harden(isOpenPQuestions));
   return isOpenQuestions
     .filter(([open, _key]) => open)
     .map(([_open, key]) => key);

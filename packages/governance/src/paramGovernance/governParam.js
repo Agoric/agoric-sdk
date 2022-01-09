@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ } from '@agoric/store';
 
 import {
   ChoiceMethod,
@@ -142,7 +142,7 @@ const setupGovernance = async (
     E(counterPublicFacet)
       .getOutcome()
       .then(outcome => {
-        if (sameStructure(positive, outcome)) {
+        if (keyEQ(positive, outcome)) {
           E(paramMgr)
             [`update${(paramSpec.parameterName)}`](proposedValue)
             .then(newValue => outcomeOfUpdateP.resolve(newValue))

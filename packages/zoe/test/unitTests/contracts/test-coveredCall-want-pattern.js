@@ -6,9 +6,8 @@ import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { M, fit } from '@agoric/store';
+import { M, fit, keyEQ } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { sameStructure } from '@agoric/same-structure';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
@@ -161,7 +160,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   // Is this swap for the correct issuers and has no other terms? Yes
   t.truthy(
-    sameStructure(
+    keyEQ(
       daveSwapIssuers,
       harden({
         Asset: invitationIssuer,
