@@ -14,7 +14,7 @@ test('makeIssuerKit bad allegedName', async t => {
 test('makeIssuerKit bad assetKind', async t => {
   // @ts-ignore Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
-    message: `The assetKind "somethingWrong" must be either AssetKind.NAT or AssetKind.SET`,
+    message: /The assetKind "somethingWrong" must be one of \["nat","set","copySet"\]/,
   });
 });
 

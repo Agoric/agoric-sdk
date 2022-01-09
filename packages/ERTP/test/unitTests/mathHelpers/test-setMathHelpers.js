@@ -45,7 +45,9 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.make(mockBrand, 'a'),
-    { message: 'value "a" must be a bigint or an array, not "string"' },
+    {
+      message: 'value "a" must be a bigint, copySet, or an array, not "string"',
+    },
     'strings are not valid',
   );
   if (a2 !== undefined) {
@@ -85,7 +87,9 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: 'a' })),
-    { message: 'value "a" must be a bigint or an array, not "string"' },
+    {
+      message: 'value "a" must be a bigint, copySet, or an array, not "string"',
+    },
     'strings are not valid',
   );
   if (a2 !== undefined) {
@@ -118,7 +122,10 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.isEmpty(harden({ brand: mockBrand, value: {} })),
-    { message: 'value {} must be a bigint or an array, not "copyRecord"' },
+    {
+      message:
+        'value {} must be a bigint, copySet, or an array, not "copyRecord"',
+    },
     `m.isEmpty({}) throws`,
   );
   t.falsy(

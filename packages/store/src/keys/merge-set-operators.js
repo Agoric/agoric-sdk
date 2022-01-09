@@ -1,9 +1,11 @@
 // @ts-check
 
+import { sortByRank } from '../patterns/rankOrder.js';
 import {
-  makeFullOrderComparatorKit,
-  sortByRank,
-} from '../patterns/rankOrder.js';
+  getCopySetKeys,
+  makeCheckNoDuplicates,
+  makeCopySet,
+} from './copySet.js';
 
 const { details: X } = assert;
 
@@ -88,7 +90,7 @@ const merge = (xs, ys, fullCompare) => {
 };
 harden(merge);
 
-const isSupersetOp = xyi => {
+const isIterSuperset = xyi => {
   for (const [x, _yr] of xyi) {
     if (x === PUMPKIN) {
       // something in y is not in x, so x is not a superset of y
@@ -98,7 +100,7 @@ const isSupersetOp = xyi => {
   return true;
 };
 
-const isDisjointOp = xyi => {
+const isIterDisjoint = xyi => {
   for (const [x, y] of xyi) {
     if (x !== PUMPKIN && y !== PUMPKIN) {
       // Something in both, so not disjoint
@@ -108,7 +110,7 @@ const isDisjointOp = xyi => {
   return true;
 };
 
-const unionOp = xyi => {
+const iterUnion = xyi => {
   const result = [];
   for (const [x, y] of xyi) {
     if (x !== PUMPKIN) {
@@ -124,7 +126,7 @@ const unionOp = xyi => {
   return result;
 };
 
-const disjointUnionOp = xyi => {
+const iterDisjointUnion = xyi => {
   const result = [];
   for (const [x, y] of xyi) {
     assert(
@@ -141,7 +143,7 @@ const disjointUnionOp = xyi => {
   return result;
 };
 
-const intersectionOp = xyi => {
+const iterIntersection = xyi => {
   const result = [];
   for (const [x, y] of xyi) {
     if (x !== PUMPKIN && y !== PUMPKIN) {
@@ -152,7 +154,7 @@ const intersectionOp = xyi => {
   return result;
 };
 
-const disjointSubtractOp = xyi => {
+const iterDisjointSubtract = xyi => {
   const result = [];
   for (const [x, y] of xyi) {
     assert(x !== PUMPKIN, X`right element ${y} was not in left`);
@@ -167,36 +169,69 @@ const disjointSubtractOp = xyi => {
 /**
  * @template T
  * @typedef {Object} SetOps
- * @property {CompareRank} fullCompare
- * @property {(xlist: T[], ylist: T[]) => boolean} isSuperset
- * @property {(xlist: T[], ylist: T[]) => boolean} isDisjoint
- * @property {(xlist: T[], ylist: T[]) => T[]} union
- * @property {(xlist: T[], ylist: T[]) => T[]} disjointUnion
- * @property {(xlist: T[], ylist: T[]) => T[]} intersection
- * @property {(xlist: T[], ylist: T[]) => T[]} disjointSubtract
+ *
+ * @property {(keys: Key[], check?: Checker) => boolean} checkNoDuplicates
+ *
+ * @property {(xlist: T[], ylist: T[]) => boolean} isListSuperset
+ * @property {(xlist: T[], ylist: T[]) => boolean} isListDisjoint
+ * @property {(xlist: T[], ylist: T[]) => T[]} listUnion
+ * @property {(xlist: T[], ylist: T[]) => T[]} listDisjointUnion
+ * @property {(xlist: T[], ylist: T[]) => T[]} listIntersection
+ * @property {(xlist: T[], ylist: T[]) => T[]} listDisjointSubtract
+ *
+ * @property {(x: CopySet<T>, y: CopySet<T>) => boolean} isSetSuperset
+ * @property {(x: CopySet<T>, y: CopySet<T>) => boolean} isSetDisjoint
+ * @property {(x: CopySet<T>, y: CopySet<T>) => CopySet<T>} setUnion
+ * @property {(x: CopySet<T>, y: CopySet<T>) => CopySet<T>} setDisjointUnion
+ * @property {(x: CopySet<T>, y: CopySet<T>) => CopySet<T>} setIntersection
+ * @property {(x: CopySet<T>, y: CopySet<T>) => CopySet<T>} setDisjointSubtract
  */
 
 /**
  * @template T
- * @param {boolean=} longLived
+ * @param {CompareRank} fullCompare Must be a total order, not just a
+ * rank order. See makeFullOrderComparatorKit.
  * @returns {SetOps<T>}
  */
-export const makeSetOps = (longLived = false) => {
-  const { antiComparator: fullCompare } = makeFullOrderComparatorKit(longLived);
-  const composeOp = op => (xlist, ylist) => {
+export const makeSetOps = fullCompare => {
+  const checkNoDuplicates = makeCheckNoDuplicates(fullCompare);
+
+  const listify = iterOp => (xlist, ylist) => {
     const xs = sortByRank(xlist, fullCompare);
     const ys = sortByRank(ylist, fullCompare);
     const xyi = merge(xs, ys, fullCompare);
-    return op(xyi);
+    return iterOp(xyi);
   };
+
+  const isListSuperset = listify(isIterSuperset);
+  const isListDisjoint = listify(isIterDisjoint);
+  const listUnion = listify(iterUnion);
+  const listDisjointUnion = listify(iterDisjointUnion);
+  const listIntersection = listify(iterIntersection);
+  const listDisjointSubtract = listify(iterDisjointSubtract);
+
+  const rawSetify = listOp => (xset, yset) =>
+    listOp(getCopySetKeys(xset), getCopySetKeys(yset));
+
+  const setify = listOp => (xset, yset) =>
+    makeCopySet(listOp(getCopySetKeys(xset), getCopySetKeys(yset)));
+
   return harden({
-    fullCompare,
-    isSuperset: composeOp(isSupersetOp),
-    isDisjoint: composeOp(isDisjointOp),
-    union: composeOp(unionOp),
-    disjointUnion: composeOp(disjointUnionOp),
-    intersection: composeOp(intersectionOp),
-    disjointSubtract: composeOp(disjointSubtractOp),
+    checkNoDuplicates,
+
+    isListSuperset,
+    isListDisjoint,
+    listUnion,
+    listDisjointUnion,
+    listIntersection,
+    listDisjointSubtract,
+
+    isSetSuperset: rawSetify(isListSuperset),
+    isSetDisjoint: rawSetify(isListDisjoint),
+    setUnion: setify(listUnion),
+    setDisjointUnion: setify(listDisjointUnion),
+    setIntersection: setify(listIntersection),
+    setDisjointSubtract: setify(listDisjointSubtract),
   });
 };
 harden(makeSetOps);

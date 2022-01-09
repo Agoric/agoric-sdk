@@ -392,8 +392,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message:
-      'The assetKind "whatever" must be either AssetKind.NAT or AssetKind.SET',
+    message: /The assetKind "whatever" must be one of \["nat","set","copySet"\]/,
   });
 });
 
@@ -724,7 +723,7 @@ test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
  * @param {Keyword} zcfMintKeyword
  * @param {ZCFSeat} zcfSeat
  * @param {Keyword} gainsKeyword
- * @param {Value} gainsValue
+ * @param {AmountValue} gainsValue
  * @returns {Promise<IssuerRecord>}
  */
 const allocateEasy = async (
