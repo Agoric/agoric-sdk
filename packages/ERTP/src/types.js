@@ -23,12 +23,12 @@
 
 /**
  * @typedef {NatValue | SetValue} Value
- * Values describe the value of something that can be owned or shared.
- * Fungible values are normally represented by natural numbers. Other
- * values may be represented as strings naming a particular right, or
- * an arbitrary object that sensibly represents the rights at issue.
- *
- * Value must be Comparable. (Would be nice to type this correctly.)
+ * Values describe a set or quantity of something that can be owned or shared.
+ * Fungible values use a non-negative bigint to represent a quantity.
+ * Non-fungible values use an array of `Key`s to represent a set of
+ * whatever each key represents. A `Key` is a passable value that can
+ * be used as an key an element in a set (SetStore or CopySet) or as the
+ * key in a map (MapStore or CopyMap).
  */
 
 /**
@@ -515,7 +515,7 @@
  */
 
 /**
- * @typedef {Comparable} SetValueElem
+ * @typedef {Key} SetValueElem
  */
 
 /**

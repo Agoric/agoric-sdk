@@ -32,7 +32,7 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/marshal": "^0.5.0",
-    "@agoric/store": "^0.6.7"
+    "@agoric/store": "^0.6.8"
   },
   "devDependencies": {
     "ava": "^3.12.1"

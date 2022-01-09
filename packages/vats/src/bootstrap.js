@@ -1,5 +1,5 @@
 // @ts-check
-import { allComparable } from '@agoric/same-structure';
+import { deeplyFulfilled } from '@agoric/marshal';
 import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
@@ -959,7 +959,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       },
     });
 
-    return allComparable(
+    return deeplyFulfilled(
       harden({
         ...(plugin ? { plugin } : {}),
         scratch,

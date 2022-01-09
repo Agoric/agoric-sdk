@@ -40,7 +40,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   t.deepEqual(
     m.make(mockBrand, harden(['a', 'b'])),
     { brand: mockBrand, value: harden(['b', 'a']) },
-    'anything comparable is a valid element',
+    'any key is a valid element',
   );
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
@@ -80,7 +80,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
   t.deepEqual(
     m.coerce(mockBrand, m.make(mockBrand, harden(['a', 'b']))),
     { brand: mockBrand, value: harden(['b', 'a']) },
-    'anything comparable is a valid element',
+    'any key is a valid element',
   );
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Far } from '@agoric/marshal';
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ } from '@agoric/store';
 
 const { details: X, quote: q } = assert;
 
@@ -26,7 +26,7 @@ const handleParamGovernance = (zcf, paramManager) => {
   const { electionManager } = terms;
 
   assert(
-    sameStructure(governedParams, paramManager.getParams()),
+    keyEQ(governedParams, paramManager.getParams()),
     X`Terms must include ${q(paramManager.getParams())}, but were ${q(
       governedParams,
     )}`,
