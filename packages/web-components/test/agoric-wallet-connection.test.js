@@ -2,7 +2,7 @@
 import '../demo/install-ses-lockdown.js';
 import { E } from '@agoric/eventual-send';
 import { html } from 'lit';
-import { fixture, expect, nextFrame } from '@open-wc/testing';
+import { fixture, expect } from '@open-wc/testing';
 
 import { Server } from 'mock-socket/dist/mock-socket.es';
 import { makeAgoricWalletConnection } from '../src/AgoricWalletConnection.js';
@@ -163,8 +163,7 @@ describe('AgoricWalletConnection', () => {
       iframeOnMessage('http://localhost:8000');
 
       await createStatePromise('bridged');
-      await nextFrame();
-      await nextFrame();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(el.state).to.equal('bridged');
     });
@@ -179,9 +178,10 @@ describe('AgoricWalletConnection', () => {
 
     it('lets capTP send messages through the websocket', async () => {
       iframeOnMessage('http://localhost:8000');
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       captpInnards.send({ foo: 'bar2' });
-      await nextFrame();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(lastMessage).to.equal(JSON.stringify({ foo: 'bar2' }));
     });
