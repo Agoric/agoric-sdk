@@ -1,7 +1,7 @@
 import { M, matches } from '@agoric/store';
 
 /**
- * When the Value of an Amount fits the NatValueShape, i.e., when it is
+ * When the AmountValue of an Amount fits the NatValueShape, i.e., when it is
  * a non-negative bigint, then it represents that many units of the
  * fungible asset represented by that amount. The brand of that amount
  * should indeed represent a kind of asset consisting of a countable
@@ -10,22 +10,13 @@ import { M, matches } from '@agoric/store';
 const NatValueShape = M.nat();
 
 /**
- * When the Value of an Amount fits the SetValueShape, i.e., when it
- * is a CopyArray of passable Keys, then it represents the set of those
+ * When the AmountValue of an Amount fits the CopySetValueShape, i.e., when it
+ * is a CopySet, then it represents the set of those
  * keys, where each key represents some individual non fungible
  * item, like a concert ticket, from the non-fungible asset class
  * represented by that amount's brand. The amount itself represents
  * the set of these items, as opposed to any of the other items
  * from the same asset class.
- *
- * Currently, this set can only be represented by an array in this
- * position. However, we intend to replace this with a direct use
- * of a CopySet. As a transitional measure, at some stage we will
- * accept both and deprecate the array representation. At some
- * later stage, we intend to stop supporting the array representation,
- * but such transitions are difficult. We might instead phase in
- * the CopySet representation as a third kind of Value, in addition
- * to Nat and CopyArray.
  *
  * If a given value class represents concert tickets, it seems bizarre
  * that we can form amounts of any key. The hard constraint is that
@@ -36,8 +27,18 @@ const NatValueShape = M.nat();
  * will never be minted. That want will never be satisfied.
  * "You can't always get..."
  */
+const CopySetValueShape = M.set();
+
+/**
+ * When the AmountValue of an Amount fits the SetValueShape, i.e., when it
+ * is a CopyArray of passable Keys. This representation is deprecated.
+ *
+ * @deprecated Please change from using array-based SetValues to CopySet-based
+ * CopySetValues.
+ */
 const SetValueShape = M.arrayOf(M.key());
-const AmountValueShape = M.or(NatValueShape, SetValueShape);
+
+const AmountValueShape = M.or(NatValueShape, CopySetValueShape, SetValueShape);
 
 export const AmountShape = harden({
   brand: M.remotable(),
@@ -47,20 +48,29 @@ export const AmountShape = harden({
 /**
  * Returns true if value is a Nat bigint.
  *
- * @param {Value} value
+ * @param {AmountValue} value
  * @returns {value is NatValue}
  */
-const isNatValue = value => matches(value, NatValueShape);
+export const isNatValue = value => matches(value, NatValueShape);
 harden(isNatValue);
+
+/**
+ * Returns true if value is a CopySet
+ *
+ * @param {AmountValue} value
+ * @returns {value is CopySetValue}
+ */
+export const isCopySetValue = value => matches(value, CopySetValueShape);
+harden(isCopySetValue);
 
 /**
  * Returns true if value is a pass by copy array structure. Does not
  * check for duplicates. To check for duplicates, use setMathHelpers.coerce.
  *
- * @param {Value} value
+ * @deprecated Please change from using array-based SetValues to CopySet-based
+ * CopySetValues.
+ * @param {AmountValue} value
  * @returns {value is SetValue}
  */
-const isSetValue = value => matches(value, SetValueShape);
+export const isSetValue = value => matches(value, SetValueShape);
 harden(isSetValue);
-
-export { isNatValue, isSetValue };

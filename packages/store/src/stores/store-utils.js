@@ -13,7 +13,7 @@ const { details: X, quote: q } = assert;
 /**
  * @template K,V
  * @param {() => Iterable<K>} getRawKeys
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @param {(k: K, v?: V) => void} assertOkToAdd
  * @param {((k: K) => void)=} assertOkToDelete
  * @param {string=} keyName

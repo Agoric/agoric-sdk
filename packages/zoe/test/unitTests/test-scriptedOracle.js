@@ -34,7 +34,7 @@ const bountyContractPath = `${dirname}/bounty.js`;
  * @property {Installation} bountyInstallation
  * @property {Mint} moolaMint
  * @property {Issuer} moolaIssuer
- * @property {(value: Value) => Amount} moola
+ * @property {(value: AmountValue) => Amount} moola
  *
  * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */

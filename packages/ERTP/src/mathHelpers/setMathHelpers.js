@@ -4,13 +4,10 @@ import { assertChecker, passStyleOf } from '@agoric/marshal';
 import {
   assertKey,
   makeSetOps,
-  isRankSorted,
   sortByRank,
-  compareKeys,
   keyEQ,
+  makeFullOrderComparatorKit,
 } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
-
 import '../types.js';
 
 // Operations for arrays with unique objects identifying and providing
@@ -19,48 +16,23 @@ import '../types.js';
 const empty = harden([]);
 
 /**
- * TODO This creates observable mutable static state, in the
+ * TODO SECURITY BUG: https://github.com/Agoric/agoric-sdk/issues/4261
+ * This creates observable mutable static state, in the
  * history-based ordering of remotables.
  */
-const { fullCompare, isSuperset, disjointUnion, disjointSubtract } = makeSetOps(
-  true,
-);
+const fullCompare = makeFullOrderComparatorKit(true).antiComparator;
 
-/**
- * @param {Key[]} list
- * @param {Checker=} check
- * @returns {boolean}
- */
-const checkNoDuplicates = (list, check = x => x) => {
-  if (!isRankSorted(list, fullCompare)) {
-    return check(false, X`Must be fully ordered: ${list}`);
-  }
-  const { length } = list;
-  for (let i = 1; i < length; i += 1) {
-    const k0 = list[i - 1];
-    const k1 = list[i];
-    if (fullCompare(k0, k1) === 0) {
-      return check(false, X`value has duplicates: ${k0}`);
-    }
-    const keyComp = compareKeys(k0, k1);
-    // As symptoms of internal confusion, these are not check failures
-    // but simple assertion failures.
-    // TODO: should these be kill-the-vat errors instead? Probably.
-    assert(
-      keyComp !== 0,
-      X`Internal: key equivalence should not be possible here: ${list}`,
-    );
-    assert(
-      !(keyComp < 0),
-      X`Internal: key descending order should not be possible here: ${list}`,
-    );
-  }
-  return true;
-};
+const {
+  checkNoDuplicates,
+  isListSuperset,
+  listDisjointUnion,
+  listDisjointSubtract,
+} = makeSetOps(fullCompare);
 
 const assertNoDuplicates = list => checkNoDuplicates(list, assertChecker);
 
 /**
+ * @deprecated Replace array-based SetMath with CopySet-based CopySetMath
  * @type {SetMathHelpers}
  */
 export const setMathHelpers = harden({
@@ -82,8 +54,8 @@ export const setMathHelpers = harden({
   },
   doMakeEmpty: () => empty,
   doIsEmpty: list => passStyleOf(list) === 'copyArray' && list.length === 0,
-  doIsGTE: isSuperset,
+  doIsGTE: isListSuperset,
   doIsEqual: keyEQ,
-  doAdd: disjointUnion,
-  doSubtract: disjointSubtract,
+  doAdd: listDisjointUnion,
+  doSubtract: listDisjointSubtract,
 });
