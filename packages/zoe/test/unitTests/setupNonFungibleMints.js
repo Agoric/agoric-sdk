@@ -30,9 +30,9 @@ const setupNonFungible = () => {
   const rpgIssuer = rpgBundle.issuer;
   const ccMint = ccBundle.mint;
   const rpgMint = rpgBundle.mint;
-  /** @param {Value} value */
+  /** @param {AmountValue} value */
   const cryptoCats = value => AmountMath.make(allBundles.cc.brand, value);
-  /** @param {Value} value */
+  /** @param {AmountValue} value */
   const rpgItems = value => AmountMath.make(allBundles.rpg.brand, value);
   return {
     ccIssuer,

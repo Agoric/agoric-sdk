@@ -22,7 +22,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
   let ticks = Nat(startValue);
 
-  /** @type {Store<Timestamp, Array<ERef<TimerWaker>>>} */
+  /** @type {LegacyMap<Timestamp, Array<ERef<TimerWaker>>>} */
   // Legacy because the value is mutated after it is stored.
   const schedule = makeLegacyMap('Timestamp');
 

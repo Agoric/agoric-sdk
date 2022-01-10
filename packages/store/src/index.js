@@ -18,7 +18,12 @@ export {
   matches,
   fit,
 } from './patterns/patternMatchers.js';
-export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
+export {
+  compareRank,
+  isRankSorted,
+  sortByRank,
+  makeFullOrderComparatorKit,
+} from './patterns/rankOrder.js';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';
@@ -39,3 +44,5 @@ export {
 // during the transition.
 export { makeLegacyMap, makeLegacyMap as default } from './legacy/legacyMap.js';
 export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';
+
+export { makeCopySet, getCopySetKeys } from './keys/copySet.js';

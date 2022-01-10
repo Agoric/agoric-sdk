@@ -2,6 +2,12 @@
 import path from 'path';
 import chalk from 'chalk';
 import { makePspawn } from './helpers.js';
+import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
+
+const REQUIRED_AGORIC_START_PACKAGES = [
+  '@agoric/solo',
+  '@agoric/cosmic-swingset',
+];
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -24,7 +30,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
 
-  async function workspaceDirectories(cwd = '.') {
+  async function getWorktreePackagePaths(cwd = '.', map = new Map()) {
     // run `yarn workspaces info` to get the list of directories to
     // use, instead of a hard-coded list
     const p = pspawn('yarn', ['workspaces', '--silent', 'info'], {
@@ -35,14 +41,17 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     p.childProcess.stdout.on('data', out => stdout.push(out));
     await p;
     const d = JSON.parse(Buffer.concat(stdout).toString('utf-8'));
-    const subdirs = Object.values(d).map(v => v.location);
-    return subdirs;
+    Object.entries(d).forEach(([name, { location }]) =>
+      map.set(name, path.resolve(cwd, location)),
+    );
+    return map;
   }
 
   let subdirs;
   const workTrees = ['.'];
   let sdkWorktree;
-  const versions = new Map();
+  /** @type {Map<string, string>} */
+  const sdkPackageToPath = new Map();
   const linkFolder = path.resolve(`_agstate/yarn-links`);
   const linkFlags = [];
   if (opts.sdk) {
@@ -95,7 +104,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
             const prunedDeps = { ...updatedDeps };
             prunedPackageDescriptor[depSection] = prunedDeps;
             for (const pkg of Object.keys(updatedDeps)) {
-              if (versions.has(pkg)) {
+              if (sdkPackageToPath.has(pkg)) {
                 if (updatedDeps[pkg] === forceVersion) {
                   // We need to remove the old package and `yarn install` to
                   // prune the old dependencies both from disk and also the
@@ -109,6 +118,18 @@ export default async function installMain(progname, rawArgs, powers, opts) {
             }
           }
         }
+        // Ensure the top-level package has the `agoric start` dependencies.
+        if (subdir === '.') {
+          for (const pkg of REQUIRED_AGORIC_START_PACKAGES) {
+            const updatedDevDeps =
+              updatedPackageDescriptor.devDependencies || {};
+            if (!updatedDevDeps[pkg]) {
+              updatedDevDeps[pkg] = forceVersion;
+              updatedPackageDescriptor.devDependencies = updatedDevDeps;
+            }
+          }
+        }
+
         // Ensure we update the package.json before exiting.
         const updatePackageJson = async () => {
           // Don't update on exit anymore.
@@ -187,13 +208,19 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       throw err;
     });
   if (dappPackageJSON.useWorkspaces) {
-    const workdirs = await workspaceDirectories();
+    const workdirs = await getWorktreePackagePaths().then(pp => [
+      ...pp.values(),
+    ]);
     sdkWorktree = workdirs.find(subd => subd === 'agoric-sdk');
     subdirs = ['.', ...workdirs.filter(subd => subd !== 'agoric-sdk')];
 
     // Add 'ui' directory by default, if it exists.
     if (!subdirs.find(subd => subd === 'ui')) {
-      if (await fs.stat(`ui/package.json`).catch(_ => false)) {
+      const uiPackageJSON = await fs.readFile(`ui/package.json`, 'utf-8').then(
+        data => JSON.parse(data),
+        _err => ({}),
+      );
+      if (uiPackageJSON.name) {
         subdirs.push('ui');
         workTrees.push('ui');
       }
@@ -212,34 +239,10 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     subdirs = existingSubdirs.filter(subd => subd);
   }
 
-  /** @type {Map<string, string>} */
-  const packages = new Map();
-
-  const sdkRoot = path.resolve(dirname, `../../..`);
-  const sdkDirs = await workspaceDirectories(sdkRoot);
-  await Promise.all(
-    sdkDirs.map(async location => {
-      const dir = `${sdkRoot}/${location}`;
-      const packageJSON = await fs
-        .readFile(`${dir}/package.json`, 'utf-8')
-        .catch(err => log('error reading', `${dir}/package.json`, err));
-      if (!packageJSON) {
-        return;
-      }
-
-      const pj = JSON.parse(packageJSON);
-      if (pj.private) {
-        log('not linking private package', pj.name);
-        return;
-      }
-
-      // Save our metadata.
-      packages.set(dir, pj.name);
-      versions.set(pj.name, pj.version);
-    }),
-  );
-
   if (opts.sdk) {
+    const sdkRoot = path.resolve(dirname, `../../..`);
+    await getWorktreePackagePaths(sdkRoot, sdkPackageToPath);
+
     // We remove all the links to prevent `yarn install` below from corrupting
     // them.
     log('removing', linkFolder);
@@ -261,12 +264,14 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         // This is needed to prevent yarn errors when installing new versions of
         // linked modules (like `@agoric/zoe`).
         await Promise.all(
-          [...packages.values()].map(async pjName =>
+          [...sdkPackageToPath.keys()].map(async pjName =>
             fs.unlink(`${nm}/${pjName}`).catch(_ => {}),
           ),
         );
       }),
     );
+  } else {
+    DEFAULT_SDK_PACKAGE_NAMES.forEach(name => sdkPackageToPath.set(name, null));
   }
 
   if (forceSdkVersion !== undefined) {
@@ -283,7 +288,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
   // Create symlinks to the SDK packages.
   await Promise.all(
-    [...packages.entries()].map(async ([dir, pjName]) => {
+    [...sdkPackageToPath.entries()].map(async ([pjName, dir]) => {
       const SUBOPTIMAL = false;
       if (SUBOPTIMAL) {
         // This use of yarn is noisy and slow.
@@ -304,7 +309,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     }),
   );
 
-  const sdkPackages = [...packages.values()].sort();
+  const sdkPackages = [...sdkPackageToPath.keys()].sort();
   for (const subdir of subdirs) {
     // eslint-disable-next-line no-await-in-loop
     const exists = await fs.stat(`${subdir}/package.json`).catch(_ => false);

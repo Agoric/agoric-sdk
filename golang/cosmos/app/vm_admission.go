@@ -17,11 +17,11 @@ var ErrAdmissionRefused = sdkerrors.ErrMempoolIsFull
 // temporarily rejecting inbound messages.  If CheckAdmissibility passes for all
 // messages, decorator calls next AnteHandler in chain.
 type AdmissionDecorator struct {
-	CallToController func(sdk.Context, string) (string, error)
+	data interface{}
 }
 
-func NewAdmissionDecorator(callToController func(sdk.Context, string) (string, error)) AdmissionDecorator {
-	return AdmissionDecorator{CallToController: callToController}
+func NewAdmissionDecorator(data interface{}) AdmissionDecorator {
+	return AdmissionDecorator{data: data}
 }
 
 // AnteHandle calls CheckAdmissibility for all messages that implement the
@@ -31,12 +31,12 @@ func (ad AdmissionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 	msgs := tx.GetMsgs()
 	errors := make([]error, 0, len(msgs))
 
-	if !simulate {
-		// Ask the controller if we are rejecting messages.
-		for _, msg := range tx.GetMsgs() {
-			if camsg, ok := msg.(vm.ControllerAdmissionMsg); ok {
-				if err := camsg.CheckAdmissibility(ctx, ad.CallToController); err != nil {
-					errors = append(errors, err)
+	// Ask the controller if we are rejecting messages.
+	for _, msg := range tx.GetMsgs() {
+		if camsg, ok := msg.(vm.ControllerAdmissionMsg); ok {
+			if err := camsg.CheckAdmissibility(ctx, ad.data); err != nil {
+				errors = append(errors, err)
+				if !simulate {
 					defer func() {
 						telemetry.IncrCounterWithLabels(
 							[]string{"tx", "ante", "admission_refused"},

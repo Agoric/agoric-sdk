@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Far, passStyleOf } from '@agoric/marshal';
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Nat } from '@agoric/nat';
 
@@ -101,8 +101,7 @@ const looksLikeIssueForType = (electionType, issue) => {
 };
 
 /** @type {PositionIncluded} */
-const positionIncluded = (positions, p) =>
-  positions.some(e => sameStructure(e, p));
+const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
 
 // QuestionSpec contains the subset of QuestionDetails that can be specified before
 /** @type {LooksLikeClosingRule} */

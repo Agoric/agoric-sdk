@@ -1,6 +1,6 @@
 // @ts-check
 
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ } from '@agoric/store';
 
 import { handleParamGovernance } from '../../../src/contractHelper.js';
 import { makeParamManagerBuilder } from '../../../src/paramGovernance/paramManager.js';
@@ -51,7 +51,7 @@ const start = async (zcf, privateArgs) => {
 
   const invitationAmount = getInvitationAmount(CONTRACT_ELECTORATE);
   assert(
-    sameStructure(invitationAmount, electorateParam.value),
+    keyEQ(invitationAmount, electorateParam.value),
     X`electorate amount ${electorateParam.amount} didn't match ${invitationAmount}`,
   );
 

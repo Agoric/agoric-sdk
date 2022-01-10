@@ -45,6 +45,7 @@
   },
   "files": [
     "src/",
+    "bundles/",
     "NEWS.md"
   ],
   "eslintConfig": {

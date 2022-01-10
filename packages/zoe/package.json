@@ -52,7 +52,6 @@
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
-    "@agoric/same-structure": "^0.1.29",
     "@agoric/store": "^0.6.8",
     "@agoric/swingset-vat": "^0.24.1"
   },

@@ -13,7 +13,7 @@ import { stringifySet } from './setValue/stringifySet.js';
  * @param {string} str - string to parse as a value
  * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the left
- * @returns {Value}
+ * @returns {AmountValue}
  */
 export const parseAsValue = (
   str,
@@ -47,7 +47,7 @@ export const parseAsAmount = (
 
 /**
  *
- * @param {Value} value - value to stringify
+ * @param {AmountValue} value - value to stringify
  * @param {AssetKind} [assetKind] - assetKind of the value
  * @param {number} [decimalPlaces] - places to move the decimal to the
  * right in the string
@@ -61,11 +61,11 @@ export const stringifyValue = (
   placesToShow = 2,
 ) => {
   if (assetKind === AssetKind.NAT) {
-    // @ts-ignore Value is a Nat
+    // @ts-ignore AmountValue is a Nat
     return stringifyNat(value, decimalPlaces, placesToShow);
   }
   if (assetKind === AssetKind.SET) {
-    // @ts-ignore Value is a SetValue
+    // @ts-ignore AmountValue is a SetValue
     return stringifySet(value);
   }
   assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);

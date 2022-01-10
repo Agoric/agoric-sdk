@@ -332,7 +332,17 @@ export const makeZCFZygote = (
 
   let contractCode;
 
-  /** @type {ZCFZygote} */
+  /**
+   * A zygote is a pre-image of a vat that can quickly be instantiated because
+   * the code has already been evaluated. SwingSet doesn't support zygotes yet.
+   * Once it does the code will be evaluated once when creating the zcfZygote,
+   * then the start() function will be called each time an instance is started.
+   *
+   * Currently, Zoe's buildRootObject calls makeZCFZygote, evaluateContract, and
+   * startContract every time a contract instance is created.
+   *
+   * @type {ZCFZygote}
+   * */
   const zcfZygote = {
     evaluateContract: bundle => {
       contractCode = evalContractBundle(bundle);

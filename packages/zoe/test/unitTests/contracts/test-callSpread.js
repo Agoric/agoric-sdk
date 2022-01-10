@@ -32,7 +32,7 @@ const makeTestPriceAuthority = (brands, priceList, timer) =>
   });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
-// Value is in Moola. The price oracle takes an amount in Underlying, and
+// AmountValue is in Moola. The price oracle takes an amount in Underlying, and
 // gives the value in Moola.
 test('fundedCallSpread below Strike1', async t => {
   const {
@@ -136,7 +136,7 @@ test('fundedCallSpread below Strike1', async t => {
 });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
-// Value is in Moola.
+// AmountValue is in Moola.
 test('fundedCallSpread above Strike2', async t => {
   const {
     moolaIssuer,
@@ -232,7 +232,7 @@ test('fundedCallSpread above Strike2', async t => {
 });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
-// Value is in Moola.
+// AmountValue is in Moola.
 test('fundedCallSpread, mid-strike', async t => {
   const {
     moolaIssuer,
@@ -327,7 +327,7 @@ test('fundedCallSpread, mid-strike', async t => {
 });
 
 // Underlying is in Simoleans. Collateral, strikePrice and Payout are in bucks.
-// Value is in Moola. Carol waits to collect until after settlement
+// AmountValue is in Moola. Carol waits to collect until after settlement
 test('fundedCallSpread, late exercise', async t => {
   const {
     moolaIssuer,

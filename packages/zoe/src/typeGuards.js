@@ -3,35 +3,29 @@
 import { AmountShape } from '@agoric/ertp';
 import { M } from '@agoric/store';
 
-export const ExitOnDemandShape = harden({ onDemand: null });
+export const AmountRecordKeywordShape = M.recordOf(M.string(), AmountShape);
 
-export const ExitWaivedShape = harden({ waived: null });
-
-export const ExitAfterDeadlineShape = harden({
-  afterDeadline: { timer: M.remotable(), deadline: M.nat() },
+/**
+ * After defaults are filled in
+ */
+export const ProposalShape = harden({
+  want: M.recordOf(M.string(), M.pattern()),
+  give: AmountRecordKeywordShape,
+  // To accept only one, we could use M.or rather than M.partial,
+  // but the error messages would have been worse. Rather,
+  // cleanProposal's assertExit checks that there's exactly one.
+  exit: M.partial(
+    {
+      onDemand: null,
+      waived: null,
+      afterDeadline: {
+        timer: M.remotable(),
+        deadline: M.nat(),
+      },
+    },
+    {},
+  ),
 });
-
-export const ExitRuleShape = M.or(
-  ExitOnDemandShape,
-  ExitWaivedShape,
-  ExitAfterDeadlineShape,
-);
-
-export const KeywordRecordPatternOf = valuePatt =>
-  M.recordOf(M.string(), valuePatt);
-
-export const AmountKeywordRecordShape = KeywordRecordPatternOf(AmountShape);
-
-export const PatternKeywordRecordShape = KeywordRecordPatternOf(M.pattern());
-
-export const ProposalShape = M.partial(
-  {
-    want: M.or(undefined, PatternKeywordRecordShape),
-    give: M.or(undefined, AmountKeywordRecordShape),
-    exit: M.or(undefined, ExitRuleShape),
-  },
-  {},
-);
 
 export const isOnDemandExitRule = exit => {
   const [exitKey] = Object.getOwnPropertyNames(exit);

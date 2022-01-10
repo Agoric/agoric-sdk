@@ -111,6 +111,9 @@
     ".cache",
     "node_modules"
   ],
+  "files": [
+    "build/"
+  ],
   "staticFiles": {
     "staticPath": [
       {

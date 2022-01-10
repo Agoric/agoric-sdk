@@ -42,6 +42,7 @@
     "@agoric/vats": "^0.5.1",
     "@agoric/wallet": "^0.11.7",
     "@agoric/xsnap": "^0.11.0",
+    "agoric": "^0.13.21",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",

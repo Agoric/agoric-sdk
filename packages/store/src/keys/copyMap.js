@@ -2,6 +2,7 @@
 
 import {
   assertChecker,
+  Far,
   getTag,
   makeTagged,
   passStyleOf,
@@ -56,10 +57,26 @@ export const checkCopyMap = (m, check = x => x) => {
 };
 harden(checkCopyMap);
 
+/**
+ * @callback IsCopyMap
+ * @param {Passable} m
+ * @returns {m is CopyMap<Key, Passable>}
+ */
+
+/** @type {IsCopyMap} */
 export const isCopyMap = m => checkCopyMap(m);
 harden(isCopyMap);
 
-export const assertCopyMap = m => checkCopyMap(m, assertChecker);
+/**
+ * @callback AssertCopyMap
+ * @param {Passable} m
+ * @returns {asserts m is CopyMap<Key, Passable>}
+ */
+
+/** @type {AssertCopyMap} */
+export const assertCopyMap = m => {
+  checkCopyMap(m, assertChecker);
+};
 harden(assertCopyMap);
 
 /**
@@ -95,10 +112,10 @@ export const getCopyMapEntries = m => {
     payload: { keys, values },
   } = m;
   const { length } = keys;
-  return harden({
+  return Far('CopyMap entries iterable', {
     [Symbol.iterator]: () => {
       let i = 0;
-      return harden({
+      return Far('CopyMap entries iterator', {
         next: () => {
           /** @type {IteratorResult<[K,V],void>} */
           let result;

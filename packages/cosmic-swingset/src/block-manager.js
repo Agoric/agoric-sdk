@@ -1,70 +1,19 @@
+// @ts-check
 /* global process */
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
 import { isObject } from '@agoric/marshal';
-import { Nat } from '@agoric/nat';
+
+import * as ActionType from './action-types.js';
+import { parseParams } from './params.js';
 
 const console = anylogger('block-manager');
-
-const BOOTSTRAP_BLOCK = 'BOOTSTRAP_BLOCK';
-const BEGIN_BLOCK = 'BEGIN_BLOCK';
-const DELIVER_INBOUND = 'DELIVER_INBOUND';
-const END_BLOCK = 'END_BLOCK';
-const COMMIT_BLOCK = 'COMMIT_BLOCK';
-const IBC_EVENT = 'IBC_EVENT';
-const PLEASE_PROVISION = 'PLEASE_PROVISION';
-const VBANK_BALANCE_UPDATE = 'VBANK_BALANCE_UPDATE';
 
 // Artificially create load if set.
 const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
   ? parseInt(process.env.END_BLOCK_SPIN_MS, 10)
   : 0;
-
-const stringToNat = s => {
-  assert.typeof(s, 'string', X`${s} must be a string`);
-  const bint = BigInt(s);
-  const nat = Nat(bint);
-  assert.equal(
-    `${nat}`,
-    s,
-    X`${s} must be the canonical representation of ${nat}`,
-  );
-  return nat;
-};
-
-// Map the SwingSet parameters to a deterministic data structure.
-//
-// NOTE: `params` is JSON-marshalled by Protobuf 3, so it is already
-// deterministic (though maybe ordered differently than alphabetical).
-const parseParams = params => {
-  const {
-    beans_per_unit: rawBeansPerUnit,
-    fee_unit_price: rawFeeUnitPrice,
-  } = params;
-  assert(
-    Array.isArray(rawBeansPerUnit),
-    X`beansPerUnit must be an array, not ${rawBeansPerUnit}`,
-  );
-  const beansPerUnit = Object.fromEntries(
-    rawBeansPerUnit.sort().map(({ key, beans }) => {
-      assert.typeof(key, 'string', X`Key ${key} must be a string`);
-      return [key, stringToNat(beans)];
-    }),
-  );
-
-  assert(
-    Array.isArray(rawFeeUnitPrice),
-    X`feeUnitPrice ${rawFeeUnitPrice} must be an array`,
-  );
-  const feeUnitPrice = rawFeeUnitPrice.map(({ denom, amount }) => {
-    assert.typeof(denom, 'string', X`denom ${denom} must be a string`);
-    assert(denom, X`denom ${denom} must be non-empty`);
-    return { denom, amount: stringToNat(amount) };
-  });
-
-  return { beansPerUnit, feeUnitPrice };
-};
 
 export default function makeBlockManager({
   deliverInbound,
@@ -86,23 +35,25 @@ export default function makeBlockManager({
   async function kernelPerformAction(action) {
     // TODO warner we could change this to run the kernel only during END_BLOCK
     const start = Date.now();
-    function finish() {
+    const finish = res => {
       // console.error('Action', action.type, action.blockHeight, 'is done!');
       runTime += Date.now() - start;
-    }
+      return res;
+    };
 
     // console.error('Performing action', action);
     let p;
     switch (action.type) {
-      case BEGIN_BLOCK:
+      case ActionType.BEGIN_BLOCK: {
         p = beginBlock(
           action.blockHeight,
           action.blockTime,
           parseParams(action.params),
         );
         break;
+      }
 
-      case DELIVER_INBOUND:
+      case ActionType.DELIVER_INBOUND: {
         p = deliverInbound(
           action.peer,
           action.messages,
@@ -112,23 +63,24 @@ export default function makeBlockManager({
           parseParams(action.params),
         );
         break;
+      }
 
-      case VBANK_BALANCE_UPDATE: {
+      case ActionType.VBANK_BALANCE_UPDATE: {
         p = doBridgeInbound('bank', action);
         break;
       }
 
-      case IBC_EVENT: {
+      case ActionType.IBC_EVENT: {
         p = doBridgeInbound('dibc', action);
         break;
       }
 
-      case PLEASE_PROVISION: {
+      case ActionType.PLEASE_PROVISION: {
         p = doBridgeInbound('provision', action);
         break;
       }
 
-      case END_BLOCK: {
+      case ActionType.END_BLOCK: {
         p = endBlock(
           action.blockHeight,
           action.blockTime,
@@ -145,8 +97,9 @@ export default function makeBlockManager({
         break;
       }
 
-      default:
+      default: {
         assert.fail(X`${action.type} not recognized`);
+      }
     }
     // Just attach some callbacks, but don't use the resulting neutered result
     // promise.
@@ -171,7 +124,7 @@ export default function makeBlockManager({
 
     // console.warn('FIGME: blockHeight', action.blockHeight, 'received', action.type)
     switch (action.type) {
-      case BOOTSTRAP_BLOCK: {
+      case ActionType.BOOTSTRAP_BLOCK: {
         // This only runs for the very first block on the chain.
         verboseBlocks && console.info('block bootstrap');
         if (computedHeight !== 0) {
@@ -183,7 +136,7 @@ export default function makeBlockManager({
         break;
       }
 
-      case COMMIT_BLOCK: {
+      case ActionType.COMMIT_BLOCK: {
         verboseBlocks && console.info('block', action.blockHeight, 'commit');
         if (action.blockHeight !== computedHeight) {
           throw Error(
@@ -205,7 +158,7 @@ export default function makeBlockManager({
         break;
       }
 
-      case BEGIN_BLOCK: {
+      case ActionType.BEGIN_BLOCK: {
         verboseBlocks && console.info('block', action.blockHeight, 'begin');
 
         // Start a new block, or possibly replay the prior one.
@@ -228,7 +181,7 @@ export default function makeBlockManager({
         break;
       }
 
-      case END_BLOCK: {
+      case ActionType.END_BLOCK: {
         currentActions.push(action);
 
         // eslint-disable-next-line no-use-before-define

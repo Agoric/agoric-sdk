@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { observeIteration } from '@agoric/notifier';
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ } from '@agoric/store';
 
 const { quote: q } = assert;
 
@@ -14,7 +14,7 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
     return E(question).getDetails();
   });
   const detailsPlural = await Promise.all(detailsP);
-  const details = detailsPlural.find(d => sameStructure(d.issue, issue));
+  const details = detailsPlural.find(d => keyEQ(d.issue, issue));
 
   const { positions, method, issue: iss, maxChoices } = details;
   log(`verify question from instance: ${q(issue)}, ${q(positions)}, ${method}`);
