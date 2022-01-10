@@ -1,5 +1,7 @@
 // @ts-check
 
+import { Far } from '@agoric/marshal';
+
 const { details: X, quote: q } = assert;
 
 /**
@@ -54,13 +56,13 @@ export const makeCurrentKeysKit = (
     return sortedKeysMemo;
   };
 
-  const iterableKeys = harden({
+  const iterableKeys = Far('Iterable of keys', {
     [Symbol.iterator]: () => {
       const generation = updateCount;
       getSortedKeys();
       const len = sortedKeysMemo.length;
       let i = 0;
-      return harden({
+      return Far('Iterator of keys', {
         next: () => {
           assert.equal(
             generation,
