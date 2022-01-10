@@ -40,7 +40,7 @@ Once an object passes `assertRecord(r)`, we are guaranteed that all of these agr
 
 # Like Records from Records & Tuples.
 
-Taken together, the security, robustness, and simplicity guarantees of `assertRecord(r)` are similar to that provided by the "records" of the TC39 "Records and Tuples" proposal. (TODO need link) These are close enough that, for many purposes, we can take CopyRecord as a shim for that portion of the Records and Tuples proposal. We can equally well take CopyArray as a shim for the "tuples" of the "Records and Tuples" proposal.
+Taken together, the security, robustness, and simplicity guarantees of `assertRecord(r)` are similar to that provided by the "records" of the TC39 "Records and Tuples" proposal. (TODO need link) These are close enough that, for many purposes, we can take CopyRecord as a shim for that portion of the Records and Tuples proposal. We can equally well take [CopyArray](./copyArray-guarantees.md) as a shim for the "tuples" of the "Records and Tuples" proposal.
 
 # Where CopyRecord fits in the Passable taxonomy
 
