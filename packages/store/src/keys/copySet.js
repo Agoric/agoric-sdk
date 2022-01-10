@@ -19,7 +19,7 @@ import {
 const { details: X } = assert;
 
 /**
- * @param {CompareRank} fullCompare
+ * @param {FullCompare} fullCompare
  * @returns {(keys: Key[], check?: Checker) => boolean}
  */
 export const makeCheckNoDuplicates = fullCompare => (keys, check = x => x) => {

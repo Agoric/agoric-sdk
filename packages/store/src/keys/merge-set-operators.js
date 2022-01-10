@@ -25,7 +25,7 @@ const PUMPKIN = Symbol('pumpkin');
  * @template T
  * @param {Iterable<T>} xs
  * @param {Iterable<T>} ys
- * @param {CompareRank} fullCompare
+ * @param {FullCompare} fullCompare
  * @returns {Iterable<[Opt<T>,Opt<T>]>}
  */
 const merge = (xs, ys, fullCompare) => {
@@ -189,8 +189,8 @@ const iterDisjointSubtract = xyi => {
 
 /**
  * @template T
- * @param {CompareRank} fullCompare Must be a total order, not just a
- * rank order. See makeFullOrderComparatorKit.
+ * @param {FullCompare} fullCompare
+ * Must be a total order, not just a rank order. See makeFullOrderComparatorKit.
  * @returns {SetOps<T>}
  */
 export const makeSetOps = fullCompare => {

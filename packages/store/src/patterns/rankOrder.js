@@ -47,25 +47,25 @@ export const getPassStyleCover = passStyle =>
 harden(getPassStyleCover);
 
 /**
- * @type {WeakMap<CompareRank,WeakSet<Passable[]>>}
+ * @type {WeakMap<RankCompare,WeakSet<Passable[]>>}
  */
 const memoOfSorted = new WeakMap();
 
 /**
- * @type {WeakMap<CompareRank,CompareRank>}
+ * @type {WeakMap<RankCompare,RankCompare>}
  */
 const comparatorMirrorImages = new WeakMap();
 
 /**
- * @param {CompareRank=} compareRemotables
+ * @param {RankCompare=} compareRemotables
  * An option to create a comparator in which an internal order is
  * assigned to remotables. This defaults to a comparator that
  * always returns `0`, meaning that all remotables are tied
  * for the same rank.
- * @returns {ComparatorKit}
+ * @returns {RankComparatorKit}
  */
 const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
-  /** @type {CompareRank} */
+  /** @type {RankCompare} */
   const comparator = (left, right) => {
     if (sameValueZero(left, right)) {
       return 0;
@@ -182,7 +182,7 @@ const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
     }
   };
 
-  /** @type {CompareRank} */
+  /** @type {RankCompare} */
   const antiComparator = (x, y) => comparator(y, x);
 
   memoOfSorted.set(comparator, new WeakSet());
@@ -193,15 +193,15 @@ const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
   return harden({ comparator, antiComparator });
 };
 /**
- * @param {CompareRank} comparator
- * @returns {CompareRank=}
+ * @param {RankCompare} comparator
+ * @returns {RankCompare=}
  */
 export const comparatorMirrorImage = comparator =>
   comparatorMirrorImages.get(comparator);
 
 /**
  * @param {Passable[]} passables
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @returns {boolean}
  */
 export const isRankSorted = (passables, compare) => {
@@ -223,7 +223,7 @@ harden(isRankSorted);
 
 /**
  * @param {Passable[]} sorted
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  */
 export const assertRankSorted = (sorted, compare) =>
   assert(
@@ -245,7 +245,7 @@ harden(assertRankSorted);
  * in reverse order by passing a reversed rank comparison function.
  *
  * @param {Iterable<Passable>} passables
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @returns {Passable[]}
  */
 export const sortByRank = (passables, compare) => {
@@ -273,7 +273,7 @@ harden(sortByRank);
  * https://en.wikipedia.org/wiki/Binary_search_algorithm#Procedure_for_finding_the_leftmost_element
  *
  * @param {Passable[]} sorted
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @param {Passable} key
  * @param {("leftMost" | "rightMost")=} bias
  * @returns {number}
@@ -331,7 +331,7 @@ export const coveredEntries = (sorted, [leftIndex, rightIndex]) => {
 harden(coveredEntries);
 
 /**
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @param {Passable} a
  * @param {Passable} b
  * @returns {Passable}
@@ -339,7 +339,7 @@ harden(coveredEntries);
 const maxRank = (compare, a, b) => (compare(a, b) >= 0 ? a : b);
 
 /**
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @param {Passable} a
  * @param {Passable} b
  * @returns {Passable}
@@ -347,7 +347,7 @@ const maxRank = (compare, a, b) => (compare(a, b) >= 0 ? a : b);
 const minRank = (compare, a, b) => (compare(a, b) <= 0 ? a : b);
 
 /**
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @param {RankCover[]} covers
  * @returns {RankCover}
  */
@@ -366,7 +366,7 @@ export const unionRankCovers = (compare, covers) => {
 harden(unionRankCovers);
 
 /**
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @param {RankCover[]} covers
  * @returns {RankCover}
  */
@@ -412,7 +412,7 @@ export const {
  * not true of arrays of passables in general.
  *
  * @param {boolean=} longLived
- * @returns {ComparatorKit}
+ * @returns {FullComparatorKit}
  */
 export const makeFullOrderComparatorKit = (longLived = false) => {
   let numSeen = 0;
