@@ -58,8 +58,8 @@ harden(checkCopyMap);
 
 /**
  * @callback IsCopyMap
- * @param {Passable} s
- * @returns {s is CopyMap<Key, Passable>}
+ * @param {Passable} m
+ * @returns {m is CopyMap<Key, Passable>}
  */
 
 /** @type {IsCopyMap} */
@@ -68,8 +68,8 @@ harden(isCopyMap);
 
 /**
  * @callback AssertCopyMap
- * @param {Passable} s
- * @returns {asserts s is CopyMap<Key, Passable>}
+ * @param {Passable} m
+ * @returns {asserts m is CopyMap<Key, Passable>}
  */
 
 /** @type {AssertCopyMap} */

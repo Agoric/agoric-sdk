@@ -20,7 +20,7 @@ const AssetKind = harden({
   SET: 'set',
   COPY_SET: 'copySet',
 });
-const assetKindNames = harden(Object.values(AssetKind));
+const assetKindNames = harden(Object.values(AssetKind).sort());
 
 /** @type {AssertAssetKind} */
 const assertAssetKind = allegedAK =>

@@ -43,7 +43,6 @@ harden(isRemotable);
 /** @type {AssertArray} */
 const assertCopyArray = (array, optNameOfArray = 'Alleged array') => {
   const passStyle = passStyleOf(array);
-  // TODO Why does typescript want me to say "return" here?
   return assert(
     passStyle === 'copyArray',
     X`${q(

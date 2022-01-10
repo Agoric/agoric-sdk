@@ -23,14 +23,14 @@
 
 /**
  * @typedef {NatValue | SetValue | CopySetValue} AmountValue
- * A `AmountValue` describes a set or quantity of assets that can be owned or
+ * An `AmountValue` describes a set or quantity of assets that can be owned or
  * shared.
  *
  * A fungible `AmountValue` uses a non-negative bigint to represent a quantity
  * of that many assets.
  *
- * A non-fungible `AmountValue` uses an array or CopySet of `Key`s to represent a
- * set of whatever asset each key represents. A `Key` is a passable value
+ * A non-fungible `AmountValue` uses an array or CopySet of `Key`s to represent
+ * a set of whatever asset each key represents. A `Key` is a passable value
  * that can be used as an element in a set (SetStore or CopySet) or as the
  * key in a map (MapStore or CopyMap).
  *
@@ -43,6 +43,12 @@
  * element of a bag can be present once or more times, i.e., some positive
  * bigint number of times, representing that quantity of the asset represented
  * by that key.
+ */
+
+/**
+ * @typedef {AmountValue} Value
+ * "Value" is a deprecated alias for "AmountValue". Please use
+ * "AmountValue" instead.
  */
 
 /**
