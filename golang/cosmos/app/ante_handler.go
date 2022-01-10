@@ -14,8 +14,7 @@ type HandlerOptions struct {
 	ante.HandlerOptions
 
 	IBCChannelkeeper channelkeeper.Keeper
-	// Also supply the Agoric VM controller.
-	CallToController func(sdk.Context, string) (string, error)
+	AdmissionData    interface{}
 }
 
 func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
@@ -28,8 +27,8 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	if options.SignModeHandler == nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
 	}
-	if options.CallToController == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "call to controller is required for AnteHandler")
+	if options.AdmissionData == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "admission data is required for AnteHandler")
 	}
 
 	var sigGasConsumer = options.SigGasConsumer
@@ -51,7 +50,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, sigGasConsumer),
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
-		NewAdmissionDecorator(options.CallToController),
+		NewAdmissionDecorator(options.AdmissionData),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewAnteDecorator(options.IBCChannelkeeper),
 	}
