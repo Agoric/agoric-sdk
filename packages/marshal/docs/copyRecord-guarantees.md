@@ -1,7 +1,8 @@
 # Why validate that an object is a CopyRecord?
 
 The input validation check `assertRecord(r)` asserts that `passStyleOf(r) === 'copyRecord'`. Done early enough, it protects against many dangers. After this test passes, we are guaranteed that `r` is
-   * an object that inherits from either `Object.prototype` or `null`,
+   * an object for which `Array.isArray(arr) === false`, and therefore considered not to be a JavaScript array.
+   * an object that inherits directly from either `Object.prototype` or `null`,
       * Since SES has already hardened `Object.prototype`, this guarantees that `r` inherits nothing enumerable or otherwise surprising.
    * frozen, and therefore
       * all its own properties are non-configurable, and if data properties, non-writable.
@@ -24,13 +25,13 @@ If `r` is a proxy, then, if this plan goes as we expect, this test will throw wi
 # How do I enumerate thee, let me list the ways
 
 Why only string-named own enumerable data properties? JavaScript has a tremendous number of different constructs for enumerating the properties of an object, with different semantics of what subset they choose to enumerate:
-   * Object.keys, Object.values, Object.entries, { ... }, Object.assign on the non-first arguments
+   * `Object.keys`, `Object.values`, `Object.entries`, `{ ... }`, `[...]`, and all but the first argument to `Object.assign`.
       * Only string-named enumerable own. But does a GET on accessor properties.
-   * Reflect.ownKeys
+   * `Reflect.ownKeys`
       * all own property names. Nothing inherited
-   * Object.getOwnPropertyNames
+   * `Object.getOwnPropertyNames`
       * own, string-named, whether or not enumerable
-   * Object.getOwnPropertyDescriptors
+   * `Object.getOwnPropertyDescriptors`
       * own, whether named by string or symbol, whether or not enumerable
    * `for/in` loop (thankfully banned by eslint)
       * all enumerable string named, whether own or inherited.
