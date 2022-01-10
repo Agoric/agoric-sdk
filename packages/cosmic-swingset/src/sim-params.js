@@ -3,7 +3,7 @@ import { Nat } from '@agoric/nat';
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
 
 // This should roughly match the values in
-// `agoric-sdk/golang/cosmos/x/swingset/types/sim-params.go`.
+// `agoric-sdk/golang/cosmos/x/swingset/types/default-params.go`.
 //
 // Nothing bad happens if they diverge, but it makes for a truer simulation
 // experience if they don't.
