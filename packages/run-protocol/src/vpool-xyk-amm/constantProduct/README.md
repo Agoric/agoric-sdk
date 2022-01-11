@@ -106,7 +106,7 @@ changes in pool balances, and what the trader will receive. As before, &Delta;X
 reflects a balance that will be growing, and &Delta;Y one that will be
 shrinking.
 
-![AMM Diagram](./AMM-trade.jpeg)
+![AMM Diagram](./AMM-Trade.jpeg)
 
 When RUN is specified (in or out), we adjust by the protocol Fee to get the
 change to the RUN balance (which gives X' or Y'); use that to calculate the
