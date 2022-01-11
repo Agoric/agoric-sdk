@@ -61,7 +61,7 @@ export const makePspawn = ({
       return args.join(' ');
     };
 
-    log.log(color('blueBright', cmd, ...cargs));
+    log.warn(color('blueBright', cmd, ...cargs));
     const cp = spawn(cmd, cargs, { stdio, env, ...rest });
     const pr = new Promise((resolve, _reject) => {
       cp.on('exit', resolve);
