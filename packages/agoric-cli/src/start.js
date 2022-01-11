@@ -462,6 +462,25 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         );
     }
 
+    // Initialise the solo directory and key.
+    if (!(await exists(agServer))) {
+      const initArgs = [`--webport=${portNum}`];
+      if (opts.dockerTag) {
+        initArgs.push(`--webhost=0.0.0.0`);
+      }
+      const exitStatus = await soloSpawn(
+        ['init', agServer, ...initArgs],
+        undefined,
+        [`--workdir=/usr/src/dapp`],
+      );
+      if (exitStatus) {
+        return exitStatus;
+      }
+    }
+    if (!opts.restart) {
+      return 0;
+    }
+
     const gciFile = `_agstate/agoric-servers/local-chain-${CHAIN_PORT}/config/genesis.json.sha256`;
     process.stdout.write(`Waiting for local-chain-${CHAIN_PORT} to start...`);
     let hasGci = false;
@@ -486,22 +505,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       });
     }
     process.stdout.write('\n');
-
-    // Initialise the solo directory and key.
-    if (!(await exists(agServer))) {
-      const initArgs = [`--webport=${portNum}`];
-      if (opts.dockerTag) {
-        initArgs.push(`--webhost=0.0.0.0`);
-      }
-      const exitStatus = await soloSpawn(
-        ['init', agServer, ...initArgs],
-        undefined,
-        [`--workdir=/usr/src/dapp`],
-      );
-      if (exitStatus) {
-        return exitStatus;
-      }
-    }
 
     const spawnOpts = {};
     if (!popts.dockerTag) {
