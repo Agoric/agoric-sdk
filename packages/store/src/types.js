@@ -47,7 +47,7 @@
  * category of Amounts. And "AmountPatternShape" represents the
  * category of patterns over Amounts.
  *
- * * I say "indended" above because Patterns, in order to be declarative
+ * * I say "intended" above because Patterns, in order to be declarative
  * and passable, cannot have the generality of predicates written in a
  * Turing-universal programming language. Rather, to represent the category of
  * things intended to be a Foo, a FooShape should reliably
@@ -281,8 +281,9 @@
 
 /**
  * @typedef {RankCompare} FullCompare
- * A `FullCompare` function satisfies all the invariants stated above for
- * `RankCompare`. In addition, its equality is as precise as the `KeyCompare`
+ * A `FullCompare` function satisfies all the invariants stated below for
+ * `RankCompare`'s relation with KeyCompare.
+ * In addition, its equality is as precise as the `KeyCompare`
  * comparison defined below, in that, for all Keys `x` and `y`,
  * `FullCompare(x, y) === 0` iff `KeyCompare(x, y) === 0`.
  *

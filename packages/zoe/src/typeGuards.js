@@ -3,14 +3,18 @@
 import { AmountShape } from '@agoric/ertp';
 import { M } from '@agoric/store';
 
-export const AmountRecordKeywordShape = M.recordOf(M.string(), AmountShape);
+export const AmountKeywordRecordShape = M.recordOf(M.string(), AmountShape);
+export const AmountPatternKeywordRecordShape = M.recordOf(
+  M.string(),
+  M.pattern(),
+);
 
 /**
  * After defaults are filled in
  */
 export const ProposalShape = harden({
-  want: M.recordOf(M.string(), M.pattern()),
-  give: AmountRecordKeywordShape,
+  want: AmountPatternKeywordRecordShape,
+  give: AmountKeywordRecordShape,
   // To accept only one, we could use M.or rather than M.partial,
   // but the error messages would have been worse. Rather,
   // cleanProposal's assertExit checks that there's exactly one.
