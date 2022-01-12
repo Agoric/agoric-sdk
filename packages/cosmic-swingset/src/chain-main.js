@@ -243,7 +243,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
     const vatconfig = new URL(
       await importMetaResolve(
-        argv.bootMsg.params.bootstrap_vat_config,
+        env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+          argv.bootMsg.params.bootstrap_vat_config,
         import.meta.url,
       ),
     ).pathname;
