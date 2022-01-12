@@ -11,8 +11,9 @@ import (
 
 // Parameter keys
 var (
-	ParamStoreKeyBeansPerUnit = []byte("beans_per_unit")
-	ParamStoreKeyFeeUnitPrice = []byte("fee_unit_price")
+	ParamStoreKeyBeansPerUnit       = []byte("beans_per_unit")
+	ParamStoreKeyBootstrapVatConfig = []byte("bootstrap_vat_config")
+	ParamStoreKeyFeeUnitPrice       = []byte("fee_unit_price")
 )
 
 func NewStringBeans(key string, beans sdk.Uint) StringBeans {
@@ -30,8 +31,9 @@ func ParamKeyTable() paramtypes.KeyTable {
 // DefaultParams returns default swingset parameters
 func DefaultParams() Params {
 	return Params{
-		BeansPerUnit: DefaultBeansPerUnit,
-		FeeUnitPrice: DefaultFeeUnitPrice,
+		BeansPerUnit:       DefaultBeansPerUnit,
+		BootstrapVatConfig: DefaultBootstrapVatConfig,
+		FeeUnitPrice:       DefaultFeeUnitPrice,
 	}
 }
 
@@ -45,6 +47,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyBeansPerUnit, &p.BeansPerUnit, validateBeansPerUnit),
 		paramtypes.NewParamSetPair(ParamStoreKeyFeeUnitPrice, &p.FeeUnitPrice, validateFeeUnitPrice),
+		paramtypes.NewParamSetPair(ParamStoreKeyBootstrapVatConfig, &p.BootstrapVatConfig, validateBootstrapVatConfig),
 	}
 }
 
@@ -54,6 +57,9 @@ func (p Params) ValidateBasic() error {
 		return err
 	}
 	if err := validateFeeUnitPrice(p.FeeUnitPrice); err != nil {
+		return err
+	}
+	if err := validateBootstrapVatConfig(p.BootstrapVatConfig); err != nil {
 		return err
 	}
 
@@ -88,6 +94,19 @@ func validateFeeUnitPrice(i interface{}) error {
 		if coin.Amount.IsNegative() {
 			return fmt.Errorf("fee unit price %s must not be negative: %s", coin.Denom, coin.Amount)
 		}
+	}
+
+	return nil
+}
+
+func validateBootstrapVatConfig(i interface{}) error {
+	v, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if v == "" {
+		return fmt.Errorf("bootstrap vat config must not be empty")
 	}
 
 	return nil

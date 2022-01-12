@@ -659,13 +659,14 @@ func NewAgoricApp(
 }
 
 type cosmosInitAction struct {
-	Type        string    `json:"type"`
-	ChainID     string    `json:"chainID"`
-	StoragePort int       `json:"storagePort"`
-	SupplyCoins sdk.Coins `json:"supplyCoins"`
-	VibcPort    int       `json:"vibcPort"`
-	VbankPort   int       `json:"vbankPort"`
-	LienPort    int       `json:"lienPort"`
+	Type        string          `json:"type"`
+	ChainID     string          `json:"chainID"`
+	Params      swingset.Params `json:"params"`
+	StoragePort int             `json:"storagePort"`
+	SupplyCoins sdk.Coins       `json:"supplyCoins"`
+	VibcPort    int             `json:"vibcPort"`
+	VbankPort   int             `json:"vbankPort"`
+	LienPort    int             `json:"lienPort"`
 }
 
 // Name returns the name of the App
@@ -681,6 +682,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
+		Params:      app.SwingSetKeeper.GetParams(ctx),
 		StoragePort: vm.GetPort("storage"),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
 		VibcPort:    app.vibcPort,

@@ -17,9 +17,6 @@ message Params {
     // These values are used by SwingSet to normalize named per-resource charges
     // (maybe rent) in a single Nat usage unit, the "bean".
     //
-    // The structure and interpretation of this map and the units therein is
-    // entirely determined by the JS-level code.
-    //
     // There is no required order to this list of entries, but all the chain
     // nodes must all serialize and deserialize the existing order without
     // permuting it.
@@ -35,6 +32,11 @@ message Params {
       (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
       (gogoproto.nullable) = false
     ];
+
+    // The SwingSet bootstrap vat configuration file.  Not usefully modifiable
+    // via governance as it is only referenced by the chain's initial
+    // construction.
+    string bootstrap_vat_config = 3;
 }
 
 // Map element of a string key to a Nat bean count.
