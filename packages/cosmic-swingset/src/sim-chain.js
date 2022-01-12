@@ -53,12 +53,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
   const mailboxStorage = await makeMapStorage(mailboxFile);
 
-  const vatconfig = new URL(
-    await importMetaResolve(
-      '@agoric/vats/decentral-config.json',
-      import.meta.url,
-    ),
-  ).pathname;
   const argv = {
     ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,
@@ -69,8 +63,16 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
         { denom: 'ubld', amount: `${50_000n * 10n ** 6n}` },
         { denom: 'urun', amount: `${1_000_000n * 10n ** 6n}` },
       ],
+      params: DEFAULT_SIM_SWINGSET_PARAMS,
     },
   };
+
+  const vatconfig = new URL(
+    await importMetaResolve(
+      argv.bootMsg.params.bootstrap_vat_config,
+      import.meta.url,
+    ),
+  ).pathname;
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function flushChainSends(replay) {
     assert(!replay, X`Replay not implemented`);

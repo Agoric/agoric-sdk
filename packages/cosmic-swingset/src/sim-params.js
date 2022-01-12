@@ -57,7 +57,10 @@ export const defaultFeeUnitPrice = [
   },
 ];
 
+export const defaultBootstrapVatConfig = '@agoric/vats/decentral-config.json';
+
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,
   fee_unit_price: defaultFeeUnitPrice,
+  bootstrap_vat_config: defaultBootstrapVatConfig,
 };
