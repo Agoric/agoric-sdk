@@ -1,9 +1,12 @@
 import chalk from 'chalk';
+import path from 'path';
 import { makePspawn, getSDKBinaries } from './helpers.js';
+
+const filename = new URL(import.meta.url).pathname;
 
 export default async function cosmosMain(progname, rawArgs, powers, opts) {
   const IMAGE = `agoric/agoric-sdk`;
-  const { anylogger, spawn, process } = powers;
+  const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:cosmos');
 
   const popts = opts;
@@ -20,9 +23,47 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
   const pspawn = makePspawn({ env: pspawnEnv, log, spawn, chalk });
 
   function helper(args, hopts = undefined) {
-    if (opts.sdk) {
-      const { cosmosHelper } = getSDKBinaries();
-      return pspawn(cosmosHelper, args, hopts);
+    if (!opts.dockerTag) {
+      const sdkPrefixes = {};
+      if (!opts.sdk) {
+        const agoricPrefix = path.resolve(`node_modules/@agoric`);
+        sdkPrefixes.goPfx = agoricPrefix;
+        sdkPrefixes.jsPfx = agoricPrefix;
+      }
+
+      // Use the locally-built binaries.
+      const { cosmosHelper, cosmosClientBuild } = getSDKBinaries(sdkPrefixes);
+      return fs
+        .stat(cosmosHelper)
+        .then(
+          () => 0,
+          e => {
+            if (e.code === 'ENOENT') {
+              // Build the client helper.
+              log.warn('Building the Cosmos client helper...');
+              const ps = pspawn(
+                cosmosClientBuild[0],
+                cosmosClientBuild.slice(1),
+                {
+                  cwd: path.dirname(filename),
+                  stdio: ['ignore', 'pipe', 'inherit'],
+                },
+              );
+              // Ensure the build doesn't mess up stdout.
+              ps.childProcess.stdout.pipe(process.stderr);
+              return ps;
+            }
+            throw e;
+          },
+        )
+        .then(code => {
+          if (code !== 0) {
+            throw new Error(
+              `Cosmos client helper build failed with code ${code}`,
+            );
+          }
+          return pspawn(cosmosHelper, args, hopts);
+        });
     }
 
     // Don't allocate a TTY if we're not talking to one.
@@ -36,7 +77,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
         '--rm',
         ttyFlag,
         '--entrypoint=agd',
-        IMAGE,
+        `${IMAGE}:${opts.dockerTag}`,
         ...args,
       ],
       hopts,

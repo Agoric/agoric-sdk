@@ -1,4 +1,5 @@
-/* global Buffer process */
+// @ts-check
+/* global process */
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
@@ -7,22 +8,30 @@ import { assert, details as X } from '@agoric/assert';
 import anylogger from 'anylogger';
 import { HELPER } from './chain-cosmos-sdk.js';
 
-const log = anylogger('ag-solo:init');
+const console = anylogger('ag-solo:init');
 
 const DEFAULT_WALLET = '@agoric/wallet';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
+/**
+ * @param {string} basedir
+ * @param {string} webport
+ * @param {string} webhost
+ * @param {string} _subdir
+ * @param {string[]} egresses
+ * @param {Record<string, any>} opts
+ */
 export default function initBasedir(
   basedir,
   webport,
   webhost,
-  subdir,
+  _subdir,
   egresses,
   opts = {},
 ) {
-  const { env = process.environment } = opts;
+  const { env = process.env } = opts;
   const {
     wallet = DEFAULT_WALLET,
     defaultManagerType = env.SWINGSET_WORKER_TYPE || 'xs-worker',
@@ -71,49 +80,43 @@ export default function initBasedir(
     fs.writeFileSync(path.join(dstHtmldir, gr), revision);
   }
 
-  // cosmos-sdk keypair
+  // cosmos-sdk mnemonic and keypair
   if (egresses.includes('cosmos')) {
     const agchServerDir = path.join(basedir, 'ag-cosmos-helper-statedir');
     if (!fs.existsSync(agchServerDir)) {
-      fs.mkdirSync(agchServerDir);
       const keyName = 'ag-solo';
-      // we suppress stderr because it displays the mnemonic phrase, but
-      // unfortunately that means errors are harder to diagnose
-      execFileSync(
+      const mnemonicFile = path.join(basedir, 'ag-solo-mnemonic');
+
+      console.log('generating mnemonic in', mnemonicFile);
+      const mnemonic = execFileSync(HELPER, ['keys', 'mnemonic'], {
+        stdio: ['ignore', 'pipe', 'inherit'],
+      });
+      fs.writeFileSync(mnemonicFile, mnemonic.toString(), {
+        mode: 0o600,
+      });
+
+      console.log('mnemonic generated, now deriving key');
+      const keyMeta = execFileSync(
         HELPER,
         [
           'keys',
           'add',
           '--keyring-backend=test',
           keyName,
+          '--recover',
+          '--output=json',
           '--home',
           agchServerDir,
         ],
         {
-          input: Buffer.from(''),
-          stdio: ['pipe', 'ignore', 'ignore'],
-        },
-      );
-      log('key generated, now extracting address');
-      const kout = execFileSync(
-        HELPER,
-        [
-          'keys',
-          'show',
-          '--keyring-backend=test',
-          keyName,
-          '--address',
-          '--home',
-          agchServerDir,
-        ],
-        {
-          input: Buffer.from(''),
+          input: mnemonic,
           stdio: ['pipe', 'pipe', 'inherit'],
         },
       );
+      const { address } = JSON.parse(keyMeta.toString());
       fs.writeFileSync(
         path.join(basedir, 'ag-cosmos-helper-address'),
-        kout.toString(),
+        `${address}\n`,
       );
     }
   }
@@ -124,6 +127,6 @@ export default function initBasedir(
     path.join(basedir, 'solo-README.md'),
   );
 
-  log(`ag-solo initialized in ${basedir}`);
-  log(`HTTP/WebSocket will listen on ${webhost}:${webport}`);
+  console.log(`ag-solo initialized in ${basedir}`);
+  console.log(`HTTP/WebSocket will listen on ${webhost}:${webport}`);
 }
