@@ -306,6 +306,13 @@ function build(
     lsdebug(`makeImportedPresence(${slot})`);
     const fulfilledHandler = {
       applyMethod(o, prop, args, returnedP) {
+        let realArgs = args;
+        let realProp = prop;
+        let marshalCorruptHook;
+        if (prop === '_raw') {
+          // E(target)._raw(methodname, corruptHook, ...args) triggers this
+          [ realProp, marshalCorruptHook, ...realArgs] = args;
+        }
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
         if (disavowedPresences.has(o)) {
@@ -314,7 +321,7 @@ function build(
           throw disavowalError;
         }
         // eslint-disable-next-line no-use-before-define
-        return queueMessage(slot, prop, args, returnedP);
+        return queueMessage(slot, realProp, realArgs, returnedP, marshalCorruptHook);
       },
       // FIXME: applyFunction(o, args, returnedP) { },
       get(o, prop) {
@@ -702,7 +709,7 @@ function build(
     };
   }
 
-  function queueMessage(targetSlot, prop, args, returnedP) {
+  function queueMessage(targetSlot, prop, args, returnedP, marshalCorruptHook) {
     if (typeof prop === 'symbol') {
       if (prop === Symbol.asyncIterator) {
         // special-case this Symbol for now, will be replaced in #2481
@@ -713,7 +720,7 @@ function build(
     }
 
     meterControl.assertIsMetered(); // else userspace getters could escape
-    const serArgs = m.serialize(harden(args));
+    const serArgs = m.serialize(harden(args), marshalCorruptHook);
     serArgs.slots.map(retainExportedVref);
     const resultVPID = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
