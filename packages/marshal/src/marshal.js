@@ -65,7 +65,7 @@ export function makeMarshal(
    * @template Slot
    * @type {Serialize<Slot>}
    */
-  const serialize = root => {
+  const serialize = (root, replacer = (_, encoding) => encoding) => {
     const slots = [];
     // maps val (promise or remotable) to index of slots[]
     const slotMap = new Map();
@@ -138,6 +138,13 @@ export function makeMarshal(
       }
     };
 
+    const encode = val =>
+      replacer(
+        val,
+        // eslint-disable-next-line no-use-before-define
+        encodeInternal(val),
+      );
+
     /**
      * Must encode `val` into plain JSON data *canonically*, such that
      * `JSON.stringify(encode(v1)) === JSON.stringify(encode(v1))`
@@ -150,7 +157,7 @@ export function makeMarshal(
      * @param {Passable} val
      * @returns {Encoding}
      */
-    const encode = val => {
+    const encodeInternal = val => {
       if (ErrorHelper.canBeValid(val)) {
         return encodeError(val);
       }

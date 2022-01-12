@@ -190,6 +190,7 @@
  * @template Slot
  * @callback Serialize
  * @param {Passable} val
+ * @param {(val: any, serialized: Encoding) => Encoding} replacer=
  * @returns {CapData<Slot>}
  */
 
