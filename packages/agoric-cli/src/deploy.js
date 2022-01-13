@@ -268,6 +268,7 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
               installUnsafePlugin,
               host,
               port,
+              args: opts.scriptArgs,
             });
           }
         }
