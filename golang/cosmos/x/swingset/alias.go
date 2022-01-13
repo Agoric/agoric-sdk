@@ -28,5 +28,6 @@ type (
 	Egress            = types.Egress
 	MsgDeliverInbound = types.MsgDeliverInbound
 	MsgProvision      = types.MsgProvision
+	Params            = types.Params
 	Storage           = types.Storage
 )

@@ -236,17 +236,18 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     }
 
-    const vatconfig = new URL(
-      await importMetaResolve(
-        '@agoric/vats/decentral-config.json',
-        import.meta.url,
-      ),
-    ).pathname;
     const argv = {
       ROLE: 'chain',
       noFakeCurrencies: !env.FAKE_CURRENCIES,
       bootMsg,
     };
+    const vatconfig = new URL(
+      await importMetaResolve(
+        env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+          argv.bootMsg.params.bootstrap_vat_config,
+        import.meta.url,
+      ),
+    ).pathname;
     const meterProvider = getMeterProvider(console, env);
     const slogFile = env.SLOGFILE;
     const consensusMode = env.DEBUG === undefined;

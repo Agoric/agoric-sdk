@@ -76,6 +76,7 @@ func (m *GenesisState) GetParams() Params {
 	return Params{}
 }
 
+// A storage entry.
 type StorageEntry struct {
 	Key   string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
