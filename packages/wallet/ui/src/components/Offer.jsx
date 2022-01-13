@@ -20,6 +20,7 @@ const statusText = {
   complete: 'Accepted',
   pending: 'Pending',
   proposed: 'Proposed',
+  cancel: 'Cancelled',
 };
 
 const statusColors = {
@@ -29,6 +30,7 @@ const statusColors = {
   pending: 'warning',
   proposed: 'default',
   complete: 'success',
+  cancel: 'default',
 };
 
 const cmp = (a, b) => {
@@ -71,7 +73,7 @@ const OfferWithoutContext = ({
     setPendingOffers({ offerId: id, isPending: true });
   }
 
-  // Eagerly show pending and declined offers states.
+  // Eagerly show pending and declined offers' states.
   if (status === 'proposed' && pendingOffers.has(id)) {
     status = 'pending';
   }
@@ -194,17 +196,15 @@ const OfferWithoutContext = ({
     </div>
   );
 
+  const isOfferCompleted =
+    status === 'accept' ||
+    status === 'decline' ||
+    status === 'complete' ||
+    status === 'rejected' ||
+    status === 'cancel';
+
   return (
-    <Request
-      header="Offer"
-      completed={
-        status === 'accept' ||
-        status === 'decline' ||
-        status === 'complete' ||
-        status === 'rejected'
-      }
-      close={close}
-    >
+    <Request header="Offer" completed={isOfferCompleted} close={close}>
       <Chip
         variant="outlined"
         color={statusColors[status]}
