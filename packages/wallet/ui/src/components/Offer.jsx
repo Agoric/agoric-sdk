@@ -196,12 +196,13 @@ const OfferWithoutContext = ({
     </div>
   );
 
-  const isOfferCompleted =
-    status === 'accept' ||
-    status === 'decline' ||
-    status === 'complete' ||
-    status === 'rejected' ||
-    status === 'cancel';
+  const isOfferCompleted = [
+    'accept',
+    'decline',
+    'complete',
+    'rejected',
+    'cancel',
+  ].includes(status);
 
   return (
     <Request header="Offer" completed={isOfferCompleted} close={close}>
