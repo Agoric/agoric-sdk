@@ -86,9 +86,7 @@ Once you have a `Connection` object, you send data by calling its `send` method:
 connection.send('data');
 ```
 
-`send` actually returns a Promise (for more `Bytes`), which contains the ACK data for this message.  For IBC, if anything but an empty `''` ACK is needed, you must resolve the `onReceive` returned Promise within the same block as the received packet message (i.e. it must not depend upon further input from the chain in order to resolve).  This restriction may be enforced differently or lifted for other network implementations.
-
-NOTE: The type of this data is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
+`send` actually returns a Promise (for more `Bytes`), which contains the ACK data for this message.  NOTE: The type of this data and ACK is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
 
 ## Receiving Data: The ConnectionHandler
 
@@ -104,7 +102,7 @@ The `reason` in `onclose` is optional, as in it may be `undefined`.
 
 `onReceive` is the most important method. Each time the remote end sends a packet, your `onReceive` method will be called with the data inside that packet (currently as a String, but ideally as an ArrayBuffer with a custom `.toString()` method with an optional `encoding` argument (default `'latin1'`), so that it can contain arbitrary bytes).
 
-The return value of `onReceive` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). However the ACK data can only appear in the block which includes the transaction that delivered the message, so there is a limited time window during which this data can be successfully delivered, and there is no guarantee that `onReceive` will return a Promise that resolves in time.  If the promise does not resolve in time, the implementation will automatically send an empty `''` ACK.  Because ACKs with data in them are difficult for your handler to get right, it is better to avoid them, where possible.
+The return value of `onReceive` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\1'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
 
 ## Closing the Connection
 
