@@ -89,11 +89,11 @@ export const makeSetStoreMethods = (
  */
 export const makeScalarSetStore = (
   keyName = 'key',
-  { keySchema = undefined } = {},
+  { keyPattern = undefined } = {},
 ) => {
   const jsset = new Set();
-  if (keySchema !== undefined) {
-    assertPattern(keySchema);
+  if (keyPattern !== undefined) {
+    assertPattern(keyPattern);
   }
 
   const assertKeyOkToAdd = key => {
@@ -102,8 +102,8 @@ export const makeScalarSetStore = (
     harden(key);
 
     assertScalarKey(key);
-    if (keySchema !== undefined) {
-      fit(key, keySchema);
+    if (keyPattern !== undefined) {
+      fit(key, keyPattern);
     }
   };
 

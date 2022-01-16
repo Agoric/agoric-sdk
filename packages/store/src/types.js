@@ -84,8 +84,8 @@
  * case we internally may use a JavaScript `WeakMap`. Otherwise we internally
  * may use a JavaScript `Map`.
  * Defaults to true, so please mark short lived stores explicitly.
- * @property {Pattern=} keySchema
- * @property {Pattern=} valueSchema
+ * @property {Pattern=} keyPattern
+ * @property {Pattern=} valuePattern
  */
 
 /**
