@@ -3,7 +3,10 @@
   "bundles": {
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"
-    },
+    }
+  },
+  "defaultManagerType": "xs-worker",
+  "vats": {
     "bank": {
       "sourceSpec": "./src/vat-bank.js"
     },
@@ -39,12 +42,9 @@
       "parameters": {
         "zcfBundleName": "zcf"
       }
-    }
-  },
-  "defaultManagerType": "xs-worker",
-  "vats": {
+    },
     "bootstrap": {
-      "sourceSpec": "./src/bootstrap-core.js"
+      "sourceSpec": "./src/bootstrap.js"
     }
   }
 }
