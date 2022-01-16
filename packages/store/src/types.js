@@ -267,12 +267,12 @@
  * used directly as a comparison with useful semantics. However, it must be
  * closely enough related to such comparisons to aid in implementing
  * lookups based on those comparisons. For example, in order to get a total
- * order among ranks, we put `NaN` after all other JavaScript "number" values.
- * But otherwise, we order JavaScript numbers by magnitude,
- * with `-0` tied with `0`. A semantically useful ordering of JavaScript number
- * values, i.e., IEEE floating point values, would compare magnitudes, and
- * so agree with the rank ordering everywhere except `NaN`. An array sorted by
- * rank would enable range queries by magnitude.
+ * order among ranks, we put `NaN` after all other JavaScript "number" values
+ * (i.e., IEEE 754 floating-point values). But otherwise, we rank JavaScript
+ * numbers by signed magnitude, with `0` and `-0` tied. A semantically useful
+ * ordering would also compare magnitudes, and so agree with the rank ordering
+ * of all values other than `NaN`. An array sorted by rank would enable range
+ * queries by magnitude.
  * @param {Passable} left
  * @param {Passable} right
  * @returns {RankComparison}
