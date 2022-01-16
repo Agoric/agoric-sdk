@@ -2,7 +2,7 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { getTag, passStyleOf } from '@agoric/marshal';
-import { getCopyMapEntries, makeCopyMap } from '../src/keys/copyMap.js';
+import { getCopyMapEntries, makeCopyMap } from '../src/keys/checkKey.js';
 import '../src/types.js';
 
 test('copyMap - iters are passable', t => {

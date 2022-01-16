@@ -7,8 +7,7 @@ import {
   mapIterable,
 } from '@agoric/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
-import { assertScalarKey } from '../keys/checkKey.js';
-import { makeCopyMap } from '../keys/copyMap.js';
+import { assertScalarKey, makeCopyMap } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';

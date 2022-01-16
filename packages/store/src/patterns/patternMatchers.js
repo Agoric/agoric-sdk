@@ -22,9 +22,10 @@ import {
   isKey,
   checkScalarKey,
   isScalarKey,
+  checkCopySet,
+  checkCopyMap,
+  copyMapKeySet,
 } from '../keys/checkKey.js';
-import { checkCopySet /* , makeCopySet XXX TEMP */ } from '../keys/copySet.js';
-import { checkCopyMap, copyMapKeySet } from '../keys/copyMap.js';
 
 /// <reference types="ses"/>
 

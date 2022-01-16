@@ -5,6 +5,7 @@
 import { passStyleOf, getTag } from '@agoric/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertKey } from './checkKey.js';
+import { setCompare } from './merge-set-operators.js';
 
 const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
@@ -124,62 +125,7 @@ export const compareKeys = (left, right) => {
           // TODO to get something working, I am currently implementing
           // only the special case where there are no rank-order ties.
 
-          let result = 0; // start with the hypothesis they are keyEQ.
-          const xs = left.payload;
-          const ys = right.payload;
-          const xlen = xs.length;
-          const ylen = ys.length;
-          let xi = 0;
-          let yi = 0;
-          while (xi < xlen && yi < ylen) {
-            const x = xs[xi];
-            const y = ys[yi];
-            if (xi + 1 < xlen && compareRank(x, xs[xi + 1]) === 0) {
-              assert.fail(X`sets with rank ties not yet implemented: ${left}`);
-            }
-            if (yi + 1 < ylen && compareRank(y, ys[yi + 1]) === 0) {
-              assert.fail(X`sets with rank ties not yet implemented: ${right}`);
-            }
-            const comp = compareKeys(x, y);
-            if (Number.isNaN(comp)) {
-              // If they are incommensurate, then each element is not in the
-              // other set, so the sets are incommensurate.
-              return NaN;
-            } else if (comp === 0) {
-              //
-              xi += 1;
-              yi += 1;
-            } else {
-              if (result !== comp) {
-                if (result === 0) {
-                  result = comp;
-                } else {
-                  assert(
-                    (result === -1 && comp === 1) ||
-                      (result === 1 && comp === -1),
-                  );
-                  return NaN;
-                }
-              }
-              if (comp === 1) {
-                xi += 1;
-              } else {
-                assert(comp === -1);
-                yi += 1;
-              }
-            }
-          }
-          const comp = compareKeys(xlen, ylen);
-          if (comp === 0) {
-            return result;
-          } else if (result === 0 || result === comp) {
-            return comp;
-          } else {
-            assert(
-              (result === -1 && comp === 1) || (result === 1 && comp === -1),
-            );
-            return NaN;
-          }
+          return setCompare(left, right);
         }
         case 'copyMap': {
           // Two copyMaps that have different keys (according to keyEQ) are

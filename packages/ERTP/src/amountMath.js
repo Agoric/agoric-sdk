@@ -107,10 +107,13 @@ const assertValueGetAssetKind = value => {
  *
  * Asserts that value is a valid AmountMath and returns the appropriate helpers.
  *
+ * Made available only for testing, but it is harmless for other uses.
+ *
  * @param {AmountValue} value
  * @returns {MathHelpers<*>}
  */
-const assertValueGetHelpers = value => helpers[assertValueGetAssetKind(value)];
+export const assertValueGetHelpers = value =>
+  helpers[assertValueGetAssetKind(value)];
 
 /** @type {(allegedBrand: Brand, brand?: Brand) => void} */
 const optionalBrandCheck = (allegedBrand, brand) => {
