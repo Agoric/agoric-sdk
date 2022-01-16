@@ -242,8 +242,8 @@
 /**
  * @typedef {-1 | 0 | 1} RankComparison
  * The result of a `RankCompare` function that defines a rank-order, i.e.,
- * a total order in which different elements can be tied for the same
- * rank. See `RankCompare`.
+ * a total preorder in which different elements are always comparable but
+ * can be tied for the same rank. See `RankCompare`.
  */
 
 /**
@@ -252,13 +252,13 @@
  * is before, tied-with, or after the rank of `right`.
  *
  * This comparison function is valid as argument to
- * `Array.prototype.sort`. This is often described as a "total order"
- * but, depending on your definitions, this is technically incorrect
- * because it may return `0` to indicate that two distinguishable elements,
- * like `-0` and `0`, are tied, i.e., are in the same equivalence class
- * as far as this ordering is concerned. If each such equivalence class is
+ * `Array.prototype.sort`. This is sometimes described as a "total order"
+ * but, depending on your definitions, this is technically incorrect because
+ * it may return `0` to indicate that two distinguishable elements such as
+ * `-0` and `0` are tied (i.e., are in the same equivalence class
+ * for the purposes of this ordering). If each such equivalence class is
  * a *rank* and ranks are disjoint, then this "rank order" is a
- * total order among these ranks. In mathematics this goes by several
+ * true total order over these ranks. In mathematics this goes by several
  * other names such as "total preorder".
  *
  * This function establishes a total rank order over all passables.
@@ -326,7 +326,7 @@
  * `compareKeys(left, right) >= 0` iff `left` is greater than or
  * equivalent to `right` in the partial ordering.
  *
- * Key order (a partial order) and rank order (a full order) are
+ * Key order (a partial order) and rank order (a total preorder) are
  * co-designed so that we store passables in rank order and index into them
  * with keys for key-based queries. To keep these distinct, when speaking
  * informally about rank, we talk about "earlier" and "later". When speaking
