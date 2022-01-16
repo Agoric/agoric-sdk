@@ -1,25 +1,24 @@
 // @ts-check
 import { E, Far } from '@agoric/far';
-import {
-  bootstrapManifest,
-  installClientEgress,
-} from './bootstrap-behaviors.js';
+import { installClientEgress, governanceActions } from './behaviors.js';
 
-export const simBootstrapManifest = harden({
-  installSimEgress: {
-    vatParameters: { argv: { hardcodedClientAddresses: true } },
-    vats: {
-      vattp: true,
-      comms: true,
+export const makeSimBootstrapManifest = bootstrapManifest =>
+  harden({
+    ...bootstrapManifest,
+    ...governanceActions,
+    installSimEgress: {
+      vatParameters: { argv: { hardcodedClientAddresses: true } },
+      vats: {
+        vattp: true,
+        comms: true,
+      },
+      produce: { client: true },
     },
-    produce: { client: true },
-  },
-  connectFaucet: {
-    consume: { zoe: true, client: true },
-    produce: { bridgeManager: true },
-  },
-  ...bootstrapManifest,
-});
+    connectFaucet: {
+      consume: { zoe: true, client: true },
+      produce: { bridgeManager: true },
+    },
+  });
 
 /**
  * @param {{
@@ -32,11 +31,10 @@ export const simBootstrapManifest = harden({
  * }} powers
  */
 const installSimEgress = async ({
-  vatParameters,
+  vatParameters: { argv },
   vats,
   produce: { client },
 }) => {
-  const { argv } = vatParameters;
   return Promise.all(
     /** @type { string[] } */ (argv.hardcodedClientAddresses).map(addr =>
       installClientEgress(addr, { vats, produce: { client } }),
@@ -71,4 +69,4 @@ const connectFaucet = async ({
 
 harden({ installSimEgress, connectFaucet });
 export { installSimEgress, connectFaucet };
-export * from './bootstrap-behaviors.js';
+export * from './behaviors.js';

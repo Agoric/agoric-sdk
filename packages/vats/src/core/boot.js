@@ -1,16 +1,21 @@
 // @ts-check
 import { Far } from '@agoric/far';
 import { makePromiseKit } from '@agoric/promise-kit';
-// TODO: choose sim behaviors based on runtime config
-import * as behaviors from './bootstrap-behaviors-sim.js';
-import { governanceActions } from './bootstrap-behaviors.js';
-import { simBootstrapManifest } from './bootstrap-behaviors-sim.js';
+import * as behaviors from './sim-behaviors.js';
+import { makeSimBootstrapManifest } from './sim-behaviors.js';
 
 const { entries, fromEntries } = Object;
 const { details: X, quote: q } = assert;
 
+// Choose a manifest maker based on runtime configured argv.ROLE.
+const roleToManifestMaker = new Map([
+  ['chain', manifest => manifest],
+  ['sim-chain', makeSimBootstrapManifest],
+]);
+
 /**
- * Make { produce, consume } where for each name, `consume[name]` is a promise and `produce[name].resolve` resolves it.
+ * Make { produce, consume } where for each name, `consume[name]` is a promise
+ * and `produce[name].resolve` resolves it.
  *
  * @returns {PromiseSpace}
  */
@@ -20,14 +25,12 @@ const makePromiseSpace = () => {
 
   const findOrCreateKit = name => {
     let kit = state.get(name);
-    if (kit) {
-      return kit;
-    } else {
+    if (!kit) {
       // console.info(name, ': new Promise');
       kit = makePromiseKit();
       state.set(name, kit);
-      return kit;
     }
+    return kit;
   };
 
   const consume = new Proxy(
@@ -81,9 +84,6 @@ const extract = (template, specimen) => {
   }
 };
 
-const manifestByRole = {
-  'sim-chain': simBootstrapManifest,
-};
 /**
  * Build root object of the bootstrap vat.
  *
@@ -91,17 +91,22 @@ const manifestByRole = {
  *   D: EProxy // approximately
  * }} vatPowers
  * @param {{
- *   argv: Record<string, unknown>,
+ *   argv: { ROLE: string },
+ *   bootstrapManifest: unknown,
  * }} vatParameters
  */
 const buildRootObject = (vatPowers, vatParameters) => {
   const { produce, consume } = makePromiseSpace();
 
-  const { ROLE } = vatParameters.argv;
+  const {
+    argv: { ROLE },
+    bootstrapManifest,
+  } = vatParameters;
   console.debug(`${ROLE} bootstrap starting`);
 
-  const manifest = manifestByRole[ROLE];
-  assert(manifest, X`no manifest for ${ROLE}`);
+  const makeManifest = roleToManifestMaker.get(ROLE);
+  assert(makeManifest, X`no configured manifest maker for role ${ROLE}`);
+  const actualManifest = makeManifest(bootstrapManifest);
 
   return Far('bootstrap', {
     /**
@@ -120,7 +125,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
         consume,
       };
       return Promise.all(
-        entries({ ...manifest, ...governanceActions }).map(([name, permit]) =>
+        entries(actualManifest).map(([name, permit]) =>
           Promise.resolve().then(() => {
             const endowments = extract(permit, powers);
             console.info(`bootstrap: ${name}(${q(permit)})`);

@@ -5,7 +5,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 
 import { makeStore } from '@agoric/store';
-import { makeNameHubKit } from './nameHub';
+import { makeNameHubKit } from '../nameHub.js';
 
 const { entries, fromEntries } = Object;
 
@@ -18,39 +18,6 @@ export const feeIssuerConfig = {
   assetKind: AssetKind.NAT,
   displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
 };
-
-export const bootstrapManifest = harden({
-  connectVattpWithMailbox: {
-    vatPowers: { D: true },
-    vats: { vattp: true },
-    devices: { mailbox: true },
-  },
-  makeVatsFromBundles: {
-    vats: { vatAdmin: true },
-    devices: { vatAdmin: true },
-    produce: { vatAdminSvc: true, loadVat: true },
-  },
-  buildZoe: {
-    consume: { vatAdminSvc: true, loadVat: true, client: true },
-    produce: { zoe: true, feeMintAccess: true },
-  },
-  makeBoard: {
-    consume: { loadVat: true, client: true },
-    produce: { board: true },
-  },
-  makeAddressNameHubs: {
-    consume: { client: true },
-    produce: { agoricNames: true, agoricNamesAdmin: true, nameAdmins: true },
-  },
-  makeClientBanks: {
-    consume: {
-      loadVat: true,
-      client: true,
-      bridgeManager: true,
-    },
-    produce: { bankManager: true },
-  },
-});
 
 export const governanceActions = harden({
   startVaultFactory: {
@@ -121,7 +88,7 @@ const makeVatsFromBundles = ({
  *   produce: { zoe: Producer<ZoeService>, feeMintAccess: Producer<FeeMintAccess> },
  * }} powers
  *
- * @typedef {ERef<ReturnType<import('./vat-zoe').buildRootObject>>} ZoeVat
+ * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
  */
 const buildZoe = async ({
   consume: { vatAdminSvc, loadVat, client },
@@ -143,7 +110,7 @@ const buildZoe = async ({
  *   consume: { loadVat: ERef<VatLoader<BoardVat>>, client: ERef<ClientConfig> },
  *   produce: { board: Producer<ERef<Board>> },
  * }} powers
- * @typedef {ERef<ReturnType<import('./vat-board').buildRootObject>>} BoardVat
+ * @typedef {ERef<ReturnType<import('../vat-board.js').buildRootObject>>} BoardVat
  */
 const makeBoard = async ({
   consume: { loadVat, client },
@@ -229,8 +196,6 @@ const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
  *   },
  *   produce: { client: Producer<ClientConfig> },
  * }} powers
- *
- * @typedef {{ getChainBundle: () => unknown }} ChainBundler
  */
 const installClientEgress = async (addr, { vats, produce: { client } }) => {
   const PROVISIONER_INDEX = 1;
@@ -267,11 +232,11 @@ const installClientEgress = async (addr, { vats, produce: { client } }) => {
  *   consume: {
  *     loadVat: ERef<VatLoader<BankVat>>,
  *     client: ERef<ClientConfig>,
- *     bridgeManager: import('./bridge').BridgeManager,
+ *     bridgeManager: import('../bridge.js').BridgeManager,
  *   },
  *   produce: { bankManager: Producer<unknown> },
  * }} powers
- * @typedef {ERef<ReturnType<import('./vat-bank').buildRootObject>>} BankVat
+ * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  */
 const makeClientBanks = async ({
   consume: { loadVat, client, bridgeManager },
@@ -319,8 +284,8 @@ const startVaultFactory = async ({
 
   const chainTimerService = E(timerVat).createTimerService(timerDevice);
 
-  /** @typedef { any } PriceAuthorityVat todo */
-  const { priceAuthority, adminFacet: priceAuthorityAdmin } = await E(
+  /** @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat todo */
+  const { priceAuthority, adminFacet: _priceAuthorityAdmin } = await E(
     /** @type { PriceAuthorityVat } */ (E(loadVat)('priceAuthority')),
   ).makePriceAuthority();
 
