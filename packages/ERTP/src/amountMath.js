@@ -7,18 +7,20 @@ import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
+import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 const { details: X, quote: q } = assert;
 
 /**
  * Constants for the kinds of assets we support.
  *
- * @type {{ NAT: 'nat', SET: 'set', COPY_SET: 'copySet' }}
+ * @type {{ NAT: 'nat', SET: 'set', COPY_SET: 'copySet', COPY_BAG: 'copyBag' }}
  */
 const AssetKind = harden({
   NAT: 'nat',
   SET: 'set',
   COPY_SET: 'copySet',
+  COPY_BAG: 'copyBag',
 });
 const assetKindNames = harden(Object.values(AssetKind).sort());
 
@@ -72,12 +74,14 @@ harden(assertAssetKind);
 /** @type {{
  *   nat: NatMathHelpers,
  *   set: SetMathHelpers,
- *   copySet: CopySetMathHelpers }
- * } */
+ *   copySet: CopySetMathHelpers,
+ *   copyBag: CopyBagMathHelpers
+ * }} */
 const helpers = {
   nat: natMathHelpers,
   set: setMathHelpers,
   copySet: copySetMathHelpers,
+  copyBag: copyBagMathHelpers,
 };
 
 /** @type {(value: AmountValue) => AssetKind} */
@@ -92,14 +96,16 @@ const assertValueGetAssetKind = value => {
   if (matches(value, M.set())) {
     return 'copySet';
   }
+  if (matches(value, M.bag())) {
+    return 'copyBag';
+  }
   assert.fail(
     // TODO This isn't quite the right error message, in case valuePassStyle
     // is 'tagged'. We would need to distinguish what kind of tagged
     // object it is.
     // Also, this kind of manual listing is a maintenance hazard we
-    // (TODO) will encounter when we extend the math helpers to
-    // include CopyMaps.
-    X`value ${value} must be a bigint, copySet, or an array, not ${passStyle}`,
+    // (TODO) will encounter when we extend the math helpers further.
+    X`value ${value} must be a bigint, copySet, copyBag, or an array, not ${passStyle}`,
   );
 };
 
@@ -107,10 +113,13 @@ const assertValueGetAssetKind = value => {
  *
  * Asserts that value is a valid AmountMath and returns the appropriate helpers.
  *
+ * Made available only for testing, but it is harmless for other uses.
+ *
  * @param {AmountValue} value
  * @returns {MathHelpers<*>}
  */
-const assertValueGetHelpers = value => helpers[assertValueGetAssetKind(value)];
+export const assertValueGetHelpers = value =>
+  helpers[assertValueGetAssetKind(value)];
 
 /** @type {(allegedBrand: Brand, brand?: Brand) => void} */
 const optionalBrandCheck = (allegedBrand, brand) => {

@@ -392,7 +392,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message: /The assetKind "whatever" must be one of \["copySet","nat","set"\]/,
+    message: /The assetKind "whatever" must be one of \["copyBag","copySet","nat","set"\]/,
   });
 });
 

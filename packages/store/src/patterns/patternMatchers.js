@@ -22,9 +22,11 @@ import {
   isKey,
   checkScalarKey,
   isScalarKey,
+  checkCopySet,
+  checkCopyBag,
+  checkCopyMap,
+  copyMapKeySet,
 } from '../keys/checkKey.js';
-import { checkCopySet /* , makeCopySet XXX TEMP */ } from '../keys/copySet.js';
-import { checkCopyMap, copyMapKeySet } from '../keys/copyMap.js';
 
 /// <reference types="ses"/>
 
@@ -117,6 +119,20 @@ const makePatternKit = () => {
             );
             return checkPattern(patt.payload[0], check);
           }
+          case 'copyBag': {
+            if (!checkCopyBag(patt, check)) {
+              return false;
+            }
+            // If it is a CopyBag, then it must also be a key and we
+            // should never get here.
+            if (isKey(patt)) {
+              assert.fail(
+                X`internal: The key case should have been dealt with earlier: ${patt}`,
+              );
+            } else {
+              assert.fail(X`A CopyMap must be a Key but was not: ${patt}`);
+            }
+          }
           case 'copyMap': {
             return (
               checkCopyMap(patt, check) &&
@@ -134,7 +150,7 @@ const makePatternKit = () => {
           default: {
             return check(
               false,
-              X`A passable tagged ${q(tag)} is not a key: ${patt}`,
+              X`A passable tagged ${q(tag)} is not a pattern: ${patt}`,
             );
           }
         }
@@ -803,6 +819,23 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
+  const matchBagOfHelper = Far('match:bagOf helper', {
+    checkMatches: (specimen, keyPatt, check = x => x) =>
+      check(
+        passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyBag',
+        X`${specimen} - Must be a a CopyBag`,
+      ) &&
+      specimen.payload.every(([key, _count]) => checkMatches(key, keyPatt)),
+
+    checkIsMatcherPayload: checkPattern,
+
+    getRankCover: () => getPassStyleCover('tagged'),
+
+    checkKeyPattern: (_, check = x => x) =>
+      check(false, X`CopySets not yet supported as keys`),
+  });
+
+  /** @type {MatchHelper} */
   const matchMapOfHelper = Far('match:mapOf helper', {
     checkMatches: (specimen, [keyPatt, valuePatt], check = x => x) =>
       check(
@@ -973,6 +1006,7 @@ const makePatternKit = () => {
     'match:arrayOf': matchArrayOfHelper,
     'match:recordOf': matchRecordOfHelper,
     'match:setOf': matchSetOfHelper,
+    'match:bagOf': matchBagOfHelper,
     'match:mapOf': matchMapOfHelper,
     'match:split': matchSplitHelper,
     'match:partial': matchPartialHelper,
@@ -999,6 +1033,7 @@ const makePatternKit = () => {
   const RecordShape = makeKindMatcher('copyRecord');
   const ArrayShape = makeKindMatcher('copyArray');
   const SetShape = makeKindMatcher('copySet');
+  const BagShape = makeKindMatcher('copyBag');
   const MapShape = makeKindMatcher('copyMap');
   const RemotableShape = makeKindMatcher('remotable');
   const ErrorShape = makeKindMatcher('error');
@@ -1025,6 +1060,7 @@ const makePatternKit = () => {
     record: () => RecordShape,
     array: () => ArrayShape,
     set: () => SetShape,
+    bag: () => BagShape,
     map: () => MapShape,
     remotable: () => RemotableShape,
     error: () => ErrorShape,
@@ -1046,6 +1082,7 @@ const makePatternKit = () => {
     recordOf: (keyPatt = M.any(), valuePatt = M.any()) =>
       makeMatcher('match:recordOf', [keyPatt, valuePatt]),
     setOf: (keyPatt = M.any()) => makeMatcher('match:setOf', keyPatt),
+    bagOf: (keyPatt = M.any()) => makeMatcher('match:bagOf', keyPatt),
     mapOf: (keyPatt = M.any(), valuePatt = M.any()) =>
       makeMatcher('match:mapOf', [keyPatt, valuePatt]),
     split: (base, rest = undefined) =>

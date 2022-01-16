@@ -1,6 +1,18 @@
 // @ts-check
 
-export { isKey, assertKey } from './keys/checkKey.js';
+export {
+  isKey,
+  assertKey,
+  makeCopySet,
+  getCopySetKeys,
+  makeCopyBag,
+  makeCopyBagFromElements,
+  getCopyBagEntries,
+  makeCopyMap,
+  getCopyMapEntries,
+} from './keys/checkKey.js';
+export { coerceToElements } from './keys/copySet.js';
+export { coerceToBagEntries } from './keys/copyBag.js';
 export {
   compareKeys,
   keyLT,
@@ -9,7 +21,30 @@ export {
   keyGTE,
   keyGT,
 } from './keys/compareKeys.js';
-export { makeSetOps } from './keys/merge-set-operators.js';
+export {
+  elementsIsSuperset,
+  elementsIsDisjoint,
+  elementsCompare,
+  elementsUnion,
+  elementsDisjointUnion,
+  elementsIntersection,
+  elementsDisjointSubtract,
+  setIsSuperset,
+  setIsDisjoint,
+  setCompare,
+  setUnion,
+  setDisjointUnion,
+  setIntersection,
+  setDisjointSubtract,
+} from './keys/merge-set-operators.js';
+
+export {
+  bagIsSuperbag,
+  bagCompare,
+  bagUnion,
+  bagIntersection,
+  bagDisjointSubtract,
+} from './keys/merge-bag-operators.js';
 
 export {
   M,
@@ -18,12 +53,7 @@ export {
   matches,
   fit,
 } from './patterns/patternMatchers.js';
-export {
-  compareRank,
-  isRankSorted,
-  sortByRank,
-  makeFullOrderComparatorKit,
-} from './patterns/rankOrder.js';
+export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';
@@ -44,5 +74,3 @@ export {
 // during the transition.
 export { makeLegacyMap, makeLegacyMap as default } from './legacy/legacyMap.js';
 export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';
-
-export { makeCopySet, getCopySetKeys } from './keys/copySet.js';

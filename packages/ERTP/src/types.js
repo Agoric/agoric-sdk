@@ -21,7 +21,7 @@
  */
 
 /**
- * @typedef {NatValue | SetValue | CopySetValue} AmountValue
+ * @typedef {NatValue | SetValue | CopySetValue | CopyBagValue} AmountValue
  * An `AmountValue` describes a set or quantity of assets that can be owned or
  * shared.
  *
@@ -37,7 +37,7 @@
  * to represent the array of its elements. `CopySetValue` is the proper
  * representation using a CopySet.
  *
- * TODO Eventually add `CopyBagValue` for semi-fungible rights represented as a
+ * A semi-fungible `CopyBagValue` is represented as a
  * `CopyBag` of `Key` objects. "Bag" is synonymous with MultiSet, where an
  * element of a bag can be present once or more times, i.e., some positive
  * bigint number of times, representing that quantity of the asset represented
@@ -51,7 +51,7 @@
  */
 
 /**
- * @typedef {'nat' | 'set' | 'copySet' } AssetKind
+ * @typedef {'nat' | 'set' | 'copySet' | 'copyBag' } AssetKind
  *
  * See doc-comment for `AmountValue`.
  */
@@ -554,6 +554,14 @@
 
 /**
  * @typedef {MathHelpers<CopySetValue>} CopySetMathHelpers
+ */
+
+/**
+ * @typedef {CopyBag<Key>} CopyBagValue
+ */
+
+/**
+ * @typedef {MathHelpers<CopyBagValue>} CopyBagMathHelpers
  */
 
 /**
