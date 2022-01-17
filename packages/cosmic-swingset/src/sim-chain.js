@@ -16,7 +16,7 @@ import { makeWithQueue } from '@agoric/vats/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
-import { getMeterProvider } from './kernel-stats.js';
+import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS } from './sim-params.js';
 
 const console = anylogger('fake-chain');
@@ -79,7 +79,10 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     assert(!replay, X`Replay not implemented`);
   }
 
-  const meterProvider = getMeterProvider(console, process.env);
+  const { metricsProvider } = getTelemetryProviders({
+    console,
+    env: process.env,
+  });
   const s = await launch(
     stateDBdir,
     mailboxStorage,
@@ -88,7 +91,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     vatconfig,
     argv,
     GCI, // debugName
-    meterProvider,
+    metricsProvider,
   );
 
   const { savedHeight, savedActions, savedChainSends } = s;

@@ -10,7 +10,7 @@ import { assert, details as X } from '@agoric/assert';
 
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
-import { getMeterProvider } from './kernel-stats.js';
+import { getTelemetryProviders } from './kernel-stats.js';
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
@@ -248,7 +248,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         import.meta.url,
       ),
     ).pathname;
-    const meterProvider = getMeterProvider(console, env);
+    const { metricsProvider } = getTelemetryProviders({ console, env });
     const slogFile = env.SLOGFILE;
     const consensusMode = env.DEBUG === undefined;
     const s = await launch(
@@ -259,7 +259,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       vatconfig,
       argv,
       undefined,
-      meterProvider,
+      metricsProvider,
       slogFile,
       consensusMode,
     );
