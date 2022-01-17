@@ -34,6 +34,7 @@ export default [
   "@agoric/swing-store",
   "@agoric/swingset-runner",
   "@agoric/swingset-vat",
+  "@agoric/telemetry",
   "@agoric/ui-components",
   "@agoric/vats",
   "@agoric/wallet",
