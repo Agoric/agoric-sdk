@@ -250,6 +250,8 @@ jobs:
       run: cd packages/vats && yarn test
     - name: yarn test (swingset-runner)
       run: cd packages/swingset-runner && yarn test
+    - name: yarn test (telemetry)
+      run: cd packages/telemetry && yarn test
     - name: yarn test (deploy-script-support)
       run: cd packages/deploy-script-support && yarn test
     - name: yarn test (ui-components)
