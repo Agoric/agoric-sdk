@@ -3,7 +3,6 @@ import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
-import { HIGH_FEE, LONG_EXP } from '@agoric/zoe/src/constants.js';
 import {
   assertIsRatio,
   assertProposalShape,
@@ -263,8 +262,6 @@ const start = async (zcf, { feeMintAccess }) => {
           makeLineOfCreditHook,
           'make line of credit',
           undefined,
-          HIGH_FEE,
-          LONG_EXP,
         ),
     }),
   );
