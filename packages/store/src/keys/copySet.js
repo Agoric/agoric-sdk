@@ -13,7 +13,6 @@ import {
   sortByRank,
 } from '../patterns/rankOrder.js';
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 const { details: X } = assert;

@@ -1,5 +1,4 @@
 // @ts-check
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 import { E } from '@agoric/eventual-send';
