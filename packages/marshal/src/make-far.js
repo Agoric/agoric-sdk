@@ -1,9 +1,7 @@
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import { assert, details as X, q } from '@agoric/assert';
 import { assertChecker, PASS_STYLE } from './helpers/passStyle-helpers.js';
 import {
   assertIface,
@@ -11,6 +9,8 @@ import {
   RemotableHelper,
 } from './helpers/remotable.js';
 import { pureCopy } from './pureCopy.js';
+
+const { quote: q, details: X } = assert;
 
 const { prototype: functionPrototype } = Function;
 const {

@@ -687,6 +687,15 @@ export function makeVirtualObjectManager(
           backingMap.delete(key);
         }
       },
+      addAll: entries => {
+        for (const [key, value] of entries) {
+          if (result.has(key)) {
+            result.set(key, value);
+          } else {
+            result.init(key, value);
+          }
+        }
+      },
     });
     droppedCollectionRegistry.register(
       result,

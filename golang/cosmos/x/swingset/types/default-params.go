@@ -35,11 +35,13 @@ var (
 	// Fees are denominated in units of $1 RUN.
 	DefaultFeeUnitPrice = sdk.NewCoins(sdk.NewInt64Coin("urun", 1000000))
 
-	DefaultBeansPerFeeUnit     = sdk.NewUint(1000000000000)                        // $1
-	DefaultBeansPerInboundTx   = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(100000))   // $0.00001
-	DefaultBeansPerMessage     = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(1000000))  // $0.000001
-	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50000000)) // $0.0000002
-	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(4))        // $0.25
+	// TODO: create the cost model we want, and update these to be more principled.
+	// These defaults currently make deploying an ag-solo cost less than $1.00.
+	DefaultBeansPerFeeUnit     = sdk.NewUint(1000000000000)                     // $1
+	DefaultBeansPerInboundTx   = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(100))   // $0.01
+	DefaultBeansPerMessage     = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(1000))  // $0.001
+	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50000)) // $0.0002
+	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))     // $0.2
 
 	DefaultBeansPerUnit = []StringBeans{
 		NewStringBeans(BeansPerBlockComputeLimit, DefaultBeansPerBlockComputeLimit),
@@ -51,4 +53,6 @@ var (
 		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
 		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
 	}
+
+	DefaultBootstrapVatConfig = "@agoric/vats/decentral-config.json"
 )

@@ -21,12 +21,15 @@ test('set with strings make', t => {
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.make(mockBrand, 'abc'),
-    { message: 'value "abc" must be a bigint or an array, not "string"' },
+    {
+      message:
+        'value "abc" must be a bigint, copySet, or an array, not "string"',
+    },
     `'abc' is not a valid string array`,
   );
   t.throws(
     () => m.make(mockBrand, harden(['a', 'a'])),
-    { message: /value has duplicates/ },
+    { message: /value has duplicates: "a"/ },
     `duplicates in make throw`,
   );
 });
@@ -44,12 +47,14 @@ test('set with strings coerce', t => {
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: '6' })),
-    { message: 'value "6" must be a bigint or an array, not "string"' },
+    {
+      message: 'value "6" must be a bigint, copySet, or an array, not "string"',
+    },
     `'6' is not a valid array`,
   );
   t.throws(
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: ['a', 'a'] })),
-    { message: /value has duplicates/ },
+    { message: /value has duplicates: "a"/ },
     `duplicates should throw`,
   );
 });
@@ -79,7 +84,7 @@ test('set with strings makeEmpty', t => {
   );
   t.throws(
     () => m.isEmpty(harden({ brand: mockBrand, value: ['a', 'a'] })),
-    { message: /value has duplicates: .* and .*/ },
+    { message: /value has duplicates: "a"/ },
     `duplicates in isEmpty throw`,
   );
 });
@@ -133,7 +138,7 @@ test('set with strings isEqual', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['a'] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicates: "a"/ },
     `duplicates in left of isEqual should throw`,
   );
   t.throws(
@@ -142,7 +147,7 @@ test('set with strings isEqual', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['a', 'a'] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicates: "a"/ },
     `duplicates in right of isEqual should throw`,
   );
   t.assert(
@@ -175,7 +180,7 @@ test('set with strings add', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['b'] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicates: "a"/ },
     `duplicates in left of add should throw`,
   );
   t.throws(
@@ -184,7 +189,7 @@ test('set with strings add', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['b', 'b'] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicates: "b"/ },
     `duplicates in right of add should throw`,
   );
   t.throws(
@@ -193,7 +198,9 @@ test('set with strings add', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['a'] }),
       ),
-    { message: /value has duplicates: .* and .*/ },
+    {
+      message: /Sets must not have common elements: "a"/,
+    },
     `overlap between left and right of add should throw`,
   );
   t.deepEqual(
@@ -201,7 +208,7 @@ test('set with strings add', t => {
       harden({ brand: mockBrand, value: ['a'] }),
       harden({ brand: mockBrand, value: ['b'] }),
     ),
-    { brand: mockBrand, value: harden(['a', 'b']) },
+    { brand: mockBrand, value: harden(['b', 'a']) },
     `['a'] + ['b'] = ['a', 'b']`,
   );
 });
@@ -213,7 +220,7 @@ test('set with strings subtract', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['b'] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicates: "a"/ },
     `duplicates in left of subtract should throw`,
   );
   t.throws(
@@ -222,7 +229,7 @@ test('set with strings subtract', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['b', 'b'] }),
       ),
-    { message: /value has duplicates/ },
+    { message: /value has duplicates: "b"/ },
     `duplicates in right of subtract should throw`,
   );
   t.deepEqual(
@@ -239,7 +246,7 @@ test('set with strings subtract', t => {
         harden({ brand: mockBrand, value: ['a', 'b'] }),
         harden({ brand: mockBrand, value: ['c'] }),
       ),
-    { message: /right element .* was not in left/ },
+    { message: /right element "c" was not in left/ },
     `elements in right but not in left of subtract should throw`,
   );
   t.deepEqual(

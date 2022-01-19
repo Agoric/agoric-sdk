@@ -1,10 +1,8 @@
 /* eslint-disable no-use-before-define */
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isObject } from './helpers/passStyle-helpers.js';
 import { getInterfaceOf } from './helpers/remotable.js';
@@ -14,6 +12,7 @@ import { passStyleOf } from './passStyleOf.js';
 
 const { fromEntries } = Object;
 const { ownKeys } = Reflect;
+const { details: X } = assert;
 
 const makeConverter = (mirrorConverter = undefined) => {
   /** @type {WeakMap<any,any>=} */

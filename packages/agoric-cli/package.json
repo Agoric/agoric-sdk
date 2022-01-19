@@ -4,13 +4,13 @@
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "src/main.js",
-  "bin": "bin/agoric",
+  "bin": "src/entrypoint.js",
   "files": [
-    "lib",
+    "src",
     "exported.js"
   ],
   "scripts": {
-    "build": "exit 0",
+    "build": "./scripts/get-sdk-package-names.js > src/sdk-package-names.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
@@ -35,7 +35,7 @@
     "@agoric/install-ses": "^0.5.29",
     "@agoric/nat": "^4.1.0",
     "@agoric/promise-kit": "^0.2.29",
-    "@endo/compartment-mapper": "^0.5.3",
+    "@endo/compartment-mapper": "^0.6.1",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
     "chalk": "^2.4.2",

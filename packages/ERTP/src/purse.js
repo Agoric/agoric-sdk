@@ -18,13 +18,13 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
 
   /** @type {Purse} */
   const purse = Far(`${allegedName} purse`, {
-    deposit: (srcPayment, optAmount = undefined) => {
+    deposit: (srcPayment, optAmountShape = undefined) => {
       // Note COMMIT POINT within deposit.
       return purseMethods.deposit(
         currentBalance,
         updatePurseBalance,
         srcPayment,
-        optAmount,
+        optAmountShape,
       );
     },
     withdraw: amount =>

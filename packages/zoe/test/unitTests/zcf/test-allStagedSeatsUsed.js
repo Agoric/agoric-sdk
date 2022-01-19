@@ -88,9 +88,8 @@ test(`allStagedSeatsUsed should be asserted`, async t => {
 
   t.true(zcfSeat3.hasStagedAllocation());
 
-  // zcfSeat3 has a staged allocation but was not included in reallocate
-  t.throws(() => zcf.reallocate(zcfSeat1, zcfSeat2), {
-    message:
-      'At least one seat has a staged allocation but was not included in the call to reallocate',
-  });
+  // zcfSeat3 has a staged allocation but was not included in reallocate.
+  // This is now legal, so we now test that this reallocate does
+  // not throw.
+  t.notThrows(() => zcf.reallocate(zcfSeat1, zcfSeat2));
 });

@@ -1,10 +1,8 @@
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 import { Nat } from '@agoric/nat';
-import { assert, details as X, q } from '@agoric/assert';
 import { QCLASS } from './marshal.js';
 
 import './types.js';
@@ -15,6 +13,7 @@ import { AtAtPrefixPattern, passableSymbolForName } from './helpers/symbol.js';
 const { ownKeys } = Reflect;
 const { isArray } = Array;
 const { stringify: quote } = JSON;
+const { quote: q, details: X } = assert;
 
 /**
  * @typedef {Object} Indenter

@@ -61,7 +61,13 @@ const verifyToken = (actual, expected) => {
   return !failed;
 };
 
-export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
+export async function makeHTTPListener(
+  basedir,
+  port,
+  host,
+  rawInboundCommand,
+  walletHtmlDir = undefined,
+) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
@@ -122,9 +128,15 @@ export async function makeHTTPListener(basedir, port, host, rawInboundCommand) {
   app.use(express.static(htmldir));
   app.use(express.static(new URL('../public', import.meta.url).pathname));
 
-  app.get('/wallet/*', (_, res) =>
-    res.sendFile(path.resolve('html', 'wallet', 'index.html')),
-  );
+  if (walletHtmlDir) {
+    // Serve the wallet directory.
+    app.use('/wallet', express.static(walletHtmlDir));
+
+    // Default GETs to /wallet/index.html for history routing.
+    app.get('/wallet/*', (_, res) =>
+      res.sendFile(path.resolve(walletHtmlDir, 'index.html')),
+    );
+  }
 
   // The rules for validation:
   //

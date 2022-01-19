@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { q } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ } from '@agoric/store';
 import {
   validateQuestionFromCounter,
   assertContractElectorate,
@@ -55,7 +55,7 @@ const build = async (log, zoe) => {
             } governor instance`,
           );
 
-          const included = sameStructure(
+          const included = keyEQ(
             ballotDetails.issue.paramSpec,
             issue.paramSpec,
           );

@@ -45,10 +45,9 @@ let swingSetRunning = false;
 const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
 const rename = promisify(fs.rename);
-const symlink = promisify(fs.symlink);
 const unlink = promisify(fs.unlink);
 
-async function atomicReplaceFile(filename, contents) {
+const atomicReplaceFile = async (filename, contents) => {
   const info = await new Promise((resolve, reject) => {
     temp.open(
       {
@@ -78,15 +77,15 @@ async function atomicReplaceFile(filename, contents) {
     }
     throw e;
   }
-}
+};
 
-async function buildSwingset(
+const buildSwingset = async (
   kernelStateDBDir,
   mailboxStateFile,
   argv,
   broadcast,
   defaultManagerType,
-) {
+) => {
   const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
 
   const mbs = buildMailboxStateMap();
@@ -275,9 +274,59 @@ async function buildSwingset(
       return processKernel();
     }),
   };
-}
+};
 
-export default async function start(basedir, argv) {
+const deployWallet = async ({ agWallet, deploys, hostport }) => {
+  if (!hostport || !deploys.length) {
+    return;
+  }
+
+  // This part only runs if there were wallet deploys to do.
+  const resolvedDeploys = deploys.map(dep => path.resolve(agWallet, dep));
+
+  const agoricCli = new URL(
+    await importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
+  ).pathname;
+
+  // Use the same verbosity as our caller did for us.
+  let verbosity;
+  if (process.env.DEBUG === undefined) {
+    verbosity = [];
+  } else if (process.env.DEBUG.includes('agoric')) {
+    verbosity = ['-vv'];
+  } else {
+    verbosity = ['-v'];
+  }
+
+  // Launch the agoric wallet deploys (if any).  The assumption is that the CLI
+  // runs correctly under the same version of the JS engine we're currently
+  // using.
+
+  // We turn off NODE_OPTIONS in case the user is debugging.
+  const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
+  const cp = fork(
+    agoricCli,
+    [
+      `deploy`,
+      ...verbosity,
+      `--provide=wallet`,
+      `--hostport=${hostport}`,
+      ...resolvedDeploys,
+    ],
+    { stdio: 'inherit', env: noOptionsEnv },
+    err => {
+      if (err) {
+        console.error(err);
+      }
+      // eslint-disable-next-line no-use-before-define
+      process.off('exit', killDeployment);
+    },
+  );
+  const killDeployment = () => cp.kill('SIGINT');
+  process.on('exit', killDeployment);
+};
+
+const start = async (basedir, argv) => {
   const mailboxStateFile = path.resolve(
     basedir,
     'swingset-kernel-mailbox.json',
@@ -337,22 +386,16 @@ export default async function start(basedir, argv) {
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
-  // Symlink the wallet.
+  // Find the wallet.
   const pjs = new URL(
     await importMetaResolve(`${wallet}/package.json`, import.meta.url),
   ).pathname;
   const {
-    'agoric-wallet': {
-      htmlBasedir = 'ui/build',
-      deploy = ['contract/deploy.js', 'api/deploy.js'],
-    } = {},
+    'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {},
   } = JSON.parse(fs.readFileSync(pjs, 'utf-8'));
 
   const agWallet = path.dirname(pjs);
   const agWalletHtml = path.resolve(agWallet, htmlBasedir);
-  symlink(agWalletHtml, 'html/wallet', 'junction').catch(e => {
-    console.error('Cannot link html/wallet:', e);
-  });
 
   let hostport;
   await Promise.all(
@@ -385,7 +428,7 @@ export default async function start(basedir, argv) {
           addDeliveryTarget(c.GCI, deliverator);
           break;
         }
-        case 'http':
+        case 'http': {
           log(`adding HTTP/WS listener on ${c.host}:${c.port}`);
           assert(!broadcastJSON, X`duplicate type=http in connections.json`);
           hostport = `${c.host}:${c.port}`;
@@ -394,10 +437,13 @@ export default async function start(basedir, argv) {
             c.port,
             c.host,
             deliverInboundCommand,
+            agWalletHtml,
           );
           break;
-        default:
+        }
+        default: {
           assert.fail(X`unknown connection type in ${c}`);
+        }
       }
     }),
   );
@@ -406,57 +452,11 @@ export default async function start(basedir, argv) {
   swingSetRunning = true;
   deliverOutbound();
 
-  const whenHellFreezesOver = new Promise(() => {});
-  if (!hostport) {
-    return whenHellFreezesOver;
-  }
-
   const deploys = typeof deploy === 'string' ? [deploy] : deploy;
-  // TODO: Shell-quote the deploy list.
-  const agWalletDeploy = deploys
-    .map(dep => path.resolve(agWallet, dep))
-    .join(' ');
+  await deployWallet({ agWallet, deploys, hostport });
 
-  const agoricCli = new URL(
-    await importMetaResolve('agoric/bin/agoric', import.meta.url),
-  ).pathname;
+  const whenHellFreezesOver = new Promise(() => {});
+  return whenHellFreezesOver;
+};
 
-  // Use the same verbosity as our caller did for us.
-  let verbosity;
-  if (process.env.DEBUG === undefined) {
-    verbosity = [];
-  } else if (process.env.DEBUG.includes('agoric')) {
-    verbosity = ['-vv'];
-  } else {
-    verbosity = ['-v'];
-  }
-
-  // Launch the agoric wallet deploys (if any).  The assumption is that the CLI
-  // runs correctly under the same version of the JS engine we're currently
-  // using.
-
-  // We turn off NODE_OPTIONS in case the user is debugging.
-  const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
-  const cp = fork(
-    agoricCli,
-    [
-      `deploy`,
-      ...verbosity,
-      `--provide=wallet`,
-      `--hostport=${hostport}`,
-      `${agWalletDeploy}`,
-    ],
-    { stdio: 'inherit', env: noOptionsEnv },
-    err => {
-      if (err) {
-        console.error(err);
-      }
-      // eslint-disable-next-line no-use-before-define
-      process.off('exit', killDeployment);
-    },
-  );
-  const killDeployment = () => cp.kill('SIGINT');
-  process.on('exit', killDeployment);
-
-  return whenHellFreezesOver.then(() => cp.kill('SIGINT'));
-}
+export default start;

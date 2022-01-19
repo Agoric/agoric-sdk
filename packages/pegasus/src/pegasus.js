@@ -256,7 +256,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
    */
 
   /**
-   * @type {WeakStore<Connection, LocalDenomState>}
+   * @type {LegacyWeakMap<Connection, LocalDenomState>}
    */
   // Legacy because the value contains a JS Set
   const connectionToLocalDenomState = makeLegacyWeakMap('Connection');

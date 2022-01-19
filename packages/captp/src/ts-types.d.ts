@@ -1,5 +1,4 @@
 /* eslint-disable */
-// eslint-disable-next-line spaced-comment
 
 import type { Unpromise } from '@agoric/eventual-send';
 

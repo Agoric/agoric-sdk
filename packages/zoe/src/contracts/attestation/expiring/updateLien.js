@@ -9,7 +9,7 @@ const { details: X } = assert;
  * A helper to actually update the lien record when a lien expiration
  * is extended.
  *
- * @param {Store<Address,Array<ExpiringAttElem>>} store
+ * @param {LegacyMap<Address,Array<ExpiringAttElem>>} store
  * @param {ExpiringAttElem} newAttestationElem
  * @returns {void}
  */

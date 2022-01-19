@@ -2,10 +2,9 @@
 import '../../exported.js';
 
 import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ, fit } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-
 import { AssetKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
@@ -20,7 +19,7 @@ export const assertIssuerKeywords = (zcf, expected) => {
   expected = [...expected]; // in case hardened
   expected.sort();
   assert(
-    sameStructure(actual, harden(expected)),
+    keyEQ(actual, harden(expected)),
     X`keywords: ${actual} were not as expected: ${expected}`,
   );
 };
@@ -101,6 +100,18 @@ export const swapExact = (zcf, leftSeat, rightSeat) => {
  */
 
 /**
+ * Check the seat's proposal against `proposalShape`.
+ * If the client submits an offer which does not match
+ * these expectations, the seat will be exited (and payments refunded).
+ *
+ * @param {ZCFSeat} seat
+ * @param {Pattern} proposalShape
+ */
+export const fitProposalShape = (seat, proposalShape) =>
+  // TODO remove this harden, obligating our caller to harden.
+  fit(seat.getProposal(), harden(proposalShape));
+
+/**
  * Check the seat's proposal against an `expected` record that says
  * what shape of proposal is acceptable.
  *
@@ -136,7 +147,7 @@ export const assertProposalShape = (seat, expected) => {
   const assertKeys = (a, e) => {
     if (e !== undefined) {
       assert(
-        sameStructure(getKeysSorted(a), getKeysSorted(e)),
+        keyEQ(getKeysSorted(a), getKeysSorted(e)),
         X`actual ${a} did not match expected ${e}`,
       );
     }

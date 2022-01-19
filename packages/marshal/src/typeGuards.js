@@ -5,19 +5,11 @@ import { passStyleOf } from './passStyleOf.js';
 const { details: X, quote: q } = assert;
 
 /**
- * @typedef {Array} CopyArray
- */
-
-/**
- * @typedef {Record<string, Passable>} CopyRecord
- */
-
-/**
  * Check whether the argument is a pass-by-copy array, AKA a "copyArray"
  * in @agoric/marshal terms
  *
- * @param {CopyArray} array
- * @returns {boolean}
+ * @param {Passable} array
+ * @returns {array is CopyArray<any>}
  */
 const isCopyArray = array => passStyleOf(array) === 'copyArray';
 harden(isCopyArray);
@@ -26,8 +18,8 @@ harden(isCopyArray);
  * Check whether the argument is a pass-by-copy record, AKA a
  * "copyRecord" in @agoric/marshal terms
  *
- * @param {CopyRecord} record
- * @returns {boolean}
+ * @param {Passable} record
+ * @returns {record is CopyRecord<any>}
  */
 const isRecord = record => passStyleOf(record) === 'copyRecord';
 harden(isRecord);
@@ -35,23 +27,23 @@ harden(isRecord);
 /**
  * Check whether the argument is a remotable.
  *
- * @param {Remotable} remotable
- * @returns {boolean}
+ * @param {Passable} remotable
+ * @returns {remotable is Remotable}
  */
 const isRemotable = remotable => passStyleOf(remotable) === 'remotable';
 harden(isRemotable);
 
 /**
- * Assert that the argument is a pass-by-copy array, AKA a "copyArray"
- * in @agoric/marshal terms
- *
- * @param {CopyArray} array
+ * @callback AssertArray
+ * @param {Passable} array
  * @param {string=} optNameOfArray
- * @returns {void}
+ * @returns {asserts array is CopyArray<any>}
  */
+
+/** @type {AssertArray} */
 const assertCopyArray = (array, optNameOfArray = 'Alleged array') => {
   const passStyle = passStyleOf(array);
-  assert(
+  return assert(
     passStyle === 'copyArray',
     X`${q(
       optNameOfArray,
@@ -61,16 +53,16 @@ const assertCopyArray = (array, optNameOfArray = 'Alleged array') => {
 harden(assertCopyArray);
 
 /**
- * Assert that the argument is a pass-by-copy record, or a
- * "copyRecord" in @agoric/marshal terms
- *
- * @param {CopyRecord} record
+ * @callback AssertRecord
+ * @param {Passable} record
  * @param {string=} optNameOfRecord
- * @returns {void}
+ * @returns {asserts record is CopyRecord<any>}
  */
+
+/** @type {AssertRecord} */
 const assertRecord = (record, optNameOfRecord = 'Alleged record') => {
   const passStyle = passStyleOf(record);
-  assert(
+  return assert(
     passStyle === 'copyRecord',
     X`${q(
       optNameOfRecord,
@@ -80,18 +72,19 @@ const assertRecord = (record, optNameOfRecord = 'Alleged record') => {
 harden(assertRecord);
 
 /**
- * Assert that the argument is a remotable.
- *
- * @param {Remotable} remotable
+ * @callback AssertRemotable
+ * @param {Passable} remotable
  * @param {string=} optNameOfRemotable
- * @returns {void}
+ * @returns {asserts remotable is Remotable}
  */
+
+/** @type {AssertRemotable} */
 const assertRemotable = (
   remotable,
   optNameOfRemotable = 'Alleged remotable',
 ) => {
   const passStyle = passStyleOf(remotable);
-  assert(
+  return assert(
     passStyle === 'remotable',
     X`${q(
       optNameOfRemotable,

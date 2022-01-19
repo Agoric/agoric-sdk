@@ -1,4 +1,3 @@
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 /**
@@ -18,21 +17,43 @@
  * portion.
  *
  * @property {Brand} brand
- * @property {Value} value
+ * @property {AmountValue} value
  */
 
 /**
- * @typedef {NatValue | SetValue} Value
- * Values describe the value of something that can be owned or shared.
- * Fungible values are normally represented by natural numbers. Other
- * values may be represented as strings naming a particular right, or
- * an arbitrary object that sensibly represents the rights at issue.
+ * @typedef {NatValue | SetValue | CopySetValue} AmountValue
+ * An `AmountValue` describes a set or quantity of assets that can be owned or
+ * shared.
  *
- * Value must be Comparable. (Would be nice to type this correctly.)
+ * A fungible `AmountValue` uses a non-negative bigint to represent a quantity
+ * of that many assets.
+ *
+ * A non-fungible `AmountValue` uses an array or CopySet of `Key`s to represent
+ * a set of whatever asset each key represents. A `Key` is a passable value
+ * that can be used as an element in a set (SetStore or CopySet) or as the
+ * key in a map (MapStore or CopyMap).
+ *
+ * `SetValue` is for the deprecated set representation, using an array directly
+ * to represent the array of its elements. `CopySetValue` is the proper
+ * representation using a CopySet.
+ *
+ * TODO Eventually add `CopyBagValue` for semi-fungible rights represented as a
+ * `CopyBag` of `Key` objects. "Bag" is synonymous with MultiSet, where an
+ * element of a bag can be present once or more times, i.e., some positive
+ * bigint number of times, representing that quantity of the asset represented
+ * by that key.
  */
 
 /**
- * @typedef {'nat' | 'set' } AssetKind
+ * @typedef {AmountValue} Value
+ * "Value" is a deprecated alias for "AmountValue". Please use
+ * "AmountValue" instead.
+ */
+
+/**
+ * @typedef {'nat' | 'set' | 'copySet' } AssetKind
+ *
+ * See doc-comment for `AmountValue`.
  */
 
 /**
@@ -48,7 +69,7 @@
  *
  * @callback AmountMake
  * @param {Brand} brand
- * @param {Value} allegedValue
+ * @param {AmountValue} allegedValue
  * @returns {Amount}
  *
  * @callback AmountCoerce
@@ -59,7 +80,7 @@
  * @callback AmountGetValue
  * @param {Brand} brand
  * @param {Amount} allegedAmount
- * @returns {Value}
+ * @returns {AmountValue}
  */
 
 /**
@@ -93,25 +114,41 @@
  * @property {(amount: Amount, brand?: Brand) => boolean} isEmpty
  * Return true if the Amount is empty. Otherwise false.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => boolean} isGTE
+ * @property {(
+ *   leftAmount: Amount,
+ *   rightAmount: Amount,
+ *   brand?: Brand
+ * ) => boolean} isGTE
  * Returns true if the leftAmount is greater than or equal to the
  * rightAmount. For non-scalars, "greater than or equal to" depends
  * on the kind of amount, as defined by the MathHelpers. For example,
  * whether rectangle A is greater than rectangle B depends on whether rectangle
  * A includes rectangle B as defined by the logic in MathHelpers.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => boolean} isEqual
+ * @property {(
+ *   leftAmount: Amount,
+ *   rightAmount: Amount,
+ *   brand?: Brand
+ * ) => boolean} isEqual
  * Returns true if the leftAmount equals the rightAmount. We assume
  * that if isGTE is true in both directions, isEqual is also true
  *
- * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => Amount} add
+ * @property {(
+ *   leftAmount: Amount,
+ *   rightAmount: Amount,
+ *   brand?: Brand
+ * ) => Amount} add
  * Returns a new amount that is the union of both leftAmount and rightAmount.
  *
  * For fungible amount this means adding the values. For other kinds of
  * amount, it usually means including all of the elements from both
  * left and right.
  *
- * @property {(leftAmount: Amount, rightAmount: Amount, brand?: Brand) => Amount} subtract
+ * @property {(
+ *   leftAmount: Amount,
+ *   rightAmount: Amount,
+ *   brand?: Brand
+ * ) => Amount} subtract
  * Returns a new amount that is the leftAmount minus the rightAmount
  * (i.e. everything in the leftAmount that is not in the
  * rightAmount). If leftAmount doesn't include rightAmount
@@ -133,7 +170,8 @@
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
  * @property {AssetKind} assetKind - the kind of asset, either
- *   AssetKind.NAT (fungible) or AssetKind.SET (non-fungible)
+ *   AssetKind.NAT (fungible) or
+ *   AssetKind.SET or AssertKind.COPY_SET (non-fungible)
  */
 
 /**
@@ -148,11 +186,11 @@
  * represents the issuer they intended, since the same brand can be reused by
  * a misbehaving issuer.
  *
- * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer Should be used with
- * `issuer.getBrand` to ensure an issuer and brand match.
+ * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer
+ * Should be used with `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
  * @property {() => DisplayInfo} getDisplayInfo
- *  Give information to UI on how to display the amount.
+ * Give information to UI on how to display the amount.
  */
 
 /**
@@ -168,7 +206,7 @@
  * resolution.
  *
  * @param {ERef<Payment>} payment
- * @param {Amount=} optAmount
+ * @param {Pattern=} optAmountShape
  * @returns {Promise<Amount>}
  */
 
@@ -185,7 +223,7 @@
  * resolution.
  *
  * @param {ERef<Payment>} payment
- * @param {Amount=} optAmount
+ * @param {Pattern=} optAmountShape
  * @returns {Promise<Payment>}
  */
 
@@ -376,7 +414,7 @@
 /**
  * @callback DepositFacetReceive
  * @param {Payment} payment
- * @param {Amount=} optAmount
+ * @param {Pattern=} optAmountShape
  * @returns {Amount}
  */
 
@@ -393,20 +431,20 @@
 /**
  * @callback PurseDeposit
  * @param {Payment} payment
- * @param {Amount=} optAmount
+ * @param {Pattern=} optAmountShape
  * @returns {Amount}
  */
 
 /**
  * @typedef {Object} Purse
- * Purses hold amount of digital assets of the same brand, but unlike Payments, they are
- * not meant to be sent to others. To transfer digital assets, a
+ * Purses hold amount of digital assets of the same brand, but unlike Payments,
+ * they are not meant to be sent to others. To transfer digital assets, a
  * Payment should be withdrawn from a Purse. The amount of digital
  * assets in a purse can change through the action of deposit() and withdraw().
  *
  * The primary use for Purses and Payments is for currency-like and goods-like
- * digital assets, but they can also be used to represent other kinds of rights, such
- * as the right to participate in a particular contract.
+ * digital assets, but they can also be used to represent other kinds of rights,
+ * such as the right to participate in a particular contract.
  *
  * @property {() => Brand} getAllegedBrand Get the alleged Brand for this Purse
  *
@@ -432,18 +470,20 @@
 
 /**
  * @typedef {Object} Payment
- * Payments hold amount of digital assets of the same brand in transit. Payments can
- * be deposited in purses, split into multiple payments, combined, and
+ * Payments hold amount of digital assets of the same brand in transit. Payments
+ * can be deposited in purses, split into multiple payments, combined, and
  * claimed (getting an exclusive payment). Payments are linear, meaning
  * that either a payment has the same amount of digital assets it
- * started with, or it is used up entirely. It is impossible to partially use a payment.
+ * started with, or it is used up entirely. It is impossible to partially use a
+ * payment.
  *
  * Payments are often received from other actors and therefore should
- * not be trusted themselves. To get the amount of digital assets in a payment, use the
- * trusted issuer: issuer.getAmountOf(payment),
+ * not be trusted themselves. To get the amount of digital assets in a payment,
+ * use the trusted issuer: issuer.getAmountOf(payment),
  *
  * Payments can be converted to Purses by getting a trusted issuer and
- * calling `issuer.makeEmptyPurse()` to create a purse, then `purse.deposit(payment)`.
+ * calling `issuer.makeEmptyPurse()` to create a purse, then
+ * `purse.deposit(payment)`.
  *
  * @property {() => Brand} getAllegedBrand
  * Get the allegedBrand, indicating the type of digital asset this
@@ -455,12 +495,12 @@
 /**
  * @template V
  * @typedef {Object} MathHelpers<V>
- * All of the difference in how digital asset amount are manipulated can be reduced to
- * the behavior of the math on values. We extract this
+ * All of the difference in how digital asset amount are manipulated can be
+ * reduced to the behavior of the math on values. We extract this
  * custom logic into mathHelpers. MathHelpers are about value
  * arithmetic, whereas AmountMath is about amounts, which are the
- * values labeled with a brand. AmountMath use mathHelpers to do their value arithmetic,
- * and then brand the results, making a new amount.
+ * values labeled with a brand. AmountMath use mathHelpers to do their value
+ * arithmetic, and then brand the results, making a new amount.
  *
  * The MathHelpers are designed to be called only from AmountMath, and so
  * all methods but coerce can assume their inputs are valid. They only
@@ -497,19 +537,23 @@
  */
 
 /**
- * @typedef {Comparable} SetValueElem
- */
-
-/**
- * @typedef {Array<SetValueElem>} SetValue
- */
-
-/**
  * @typedef {MathHelpers<NatValue>} NatMathHelpers
  */
 
 /**
+ * @typedef {Array<Key>} SetValue
+ */
+
+/**
  * @typedef {MathHelpers<SetValue>} SetMathHelpers
+ */
+
+/**
+ * @typedef {CopySet<Key>} CopySetValue
+ */
+
+/**
+ * @typedef {MathHelpers<CopySetValue>} CopySetMathHelpers
  */
 
 /**

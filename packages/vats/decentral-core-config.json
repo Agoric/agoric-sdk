@@ -1,0 +1,84 @@
+{
+  "bootstrap": "bootstrap",
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "./src/core/boot.js",
+      "parameters": {
+        "bootstrapManifest": {
+          "connectVattpWithMailbox": {
+            "vatPowers": { "D": true },
+            "vats": { "vattp": true },
+            "devices": { "mailbox": true }
+          },
+          "makeVatsFromBundles": {
+            "vats": { "vatAdmin": true },
+            "devices": { "vatAdmin": true },
+            "produce": { "vatAdminSvc": true, "loadVat": true }
+          },
+          "buildZoe": {
+            "consume": { "vatAdminSvc": true, "loadVat": true, "client": true },
+            "produce": { "zoe": true, "feeMintAccess": true }
+          },
+          "makeBoard": {
+            "consume": { "loadVat": true, "client": true },
+            "produce": { "board": true }
+          },
+          "makeAddressNameHubs": {
+            "consume": { "client": true },
+            "produce": { "agoricNames": true, "agoricNamesAdmin": true, "nameAdmins": true }
+          },
+          "makeClientBanks": {
+            "consume": {
+              "loadVat": true,
+              "client": true,
+              "bridgeManager": true
+            },
+            "produce": { "bankManager": true }
+          }
+        }
+      }
+    }
+  },
+  "bundles": {
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "bank": {
+      "sourceSpec": "./src/vat-bank.js"
+    },
+    "board": {
+      "sourceSpec": "./src/vat-board.js"
+    },
+    "distributeFees": {
+      "sourceSpec": "./src/vat-distributeFees.js"
+    },
+    "ibc": {
+      "sourceSpec": "./src/vat-ibc.js"
+    },
+    "mints": {
+      "sourceSpec": "./src/vat-mints.js"
+    },
+    "network": {
+      "sourceSpec": "./src/vat-network.js"
+    },
+    "priceAuthority": {
+      "sourceSpec": "./src/vat-priceAuthority.js"
+    },
+    "provisioning": {
+      "sourceSpec": "./src/vat-provisioning.js"
+    },
+    "sharing": {
+      "sourceSpec": "./src/vat-sharing.js"
+    },
+    "walletManager": {
+      "sourceSpec": "./src/vat-walletManager.js"
+    },
+    "zoe": {
+      "sourceSpec": "./src/vat-zoe.js",
+      "parameters": {
+        "zcfBundleName": "zcf"
+      }
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}

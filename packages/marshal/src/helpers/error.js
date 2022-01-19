@@ -1,11 +1,9 @@
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 import '../types.js';
 import './internal-types.js';
-import '@agoric/assert/exported.js';
 import { assertChecker } from './passStyle-helpers.js';
 
 const { details: X } = assert;
@@ -95,8 +93,6 @@ export const ErrorHelper = harden({
   assertValid: candidate => {
     ErrorHelper.canBeValid(candidate, assertChecker);
   },
-
-  every: (_passable, _fn) => true,
 });
 
 /**

@@ -217,7 +217,7 @@ export function getPrefixes(addr) {
  * @returns {Protocol} the local capability for connecting and listening
  */
 export function makeNetworkProtocol(protocolHandler) {
-  /** @type {Store<Port, Set<Closable>>} */
+  /** @type {LegacyMap<Port, Set<Closable>>} */
   // Legacy because we're storing a JS Set
   const currentConnections = makeLegacyMap('port');
 

@@ -1,10 +1,8 @@
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 import { Nat } from '@agoric/nat';
-import { assert, details as X, q } from '@agoric/assert';
 import { passStyleOf } from './passStyleOf.js';
 
 import './types.js';
@@ -21,6 +19,7 @@ import {
 const { ownKeys } = Reflect;
 const { isArray } = Array;
 const { getOwnPropertyDescriptors, defineProperties, is, fromEntries } = Object;
+const { details: X, quote: q } = assert;
 
 /**
  * Special property name that indicates an encoding that needs special
@@ -396,6 +395,10 @@ export function makeMarshal(
               errorId === undefined
                 ? `Remote${EC.name}`
                 : `Remote${EC.name}(${errorId})`;
+            // Due to a defect in the SES type definition, the next line is
+            // fails a type check.
+            // Pending https://github.com/endojs/endo/issues/977
+            // @ts-ignore-next-line
             const error = assert.error(`${message}`, EC, { errorName });
             return error;
           }

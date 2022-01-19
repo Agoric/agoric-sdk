@@ -2,9 +2,9 @@ import test from 'ava';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import url from 'url';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 function rimraf(dirPath) {
   try {

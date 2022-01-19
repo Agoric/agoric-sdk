@@ -11,9 +11,9 @@
     "test": "exit 0",
     "test:c8": "exit 0",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "exit 0",
+    "lint-check": "exit 0",
+    "lint": "exit 0",
     "lint:types": "exit 0",
     "lint:eslint": "exit 0"
   },

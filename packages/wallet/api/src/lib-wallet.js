@@ -16,7 +16,7 @@ import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
-import { makeMarshal, passStyleOf, Far } from '@agoric/marshal';
+import { makeMarshal, passStyleOf, Far, mapIterable } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';
 import {
   makeNotifierKit,
@@ -159,7 +159,7 @@ export function makeWallet({
   // Offers that the wallet knows about (the inbox).
   const idToOffer = makeScalarMap('offerId');
   const idToNotifierP = makeScalarMap('offerId');
-  /** @type {Store<string, PromiseRecord<any>>} */
+  /** @type {LegacyMap<string, PromiseRecord<any>>} */
   // Legacy because promise kits are not passables
   const idToOfferResultPromiseKit = makeLegacyMap('id');
 
@@ -360,9 +360,9 @@ export function makeWallet({
 
   async function updateAllPurseState() {
     return Promise.all(
-      purseMapping.petnameToVal
-        .entries()
-        .map(([petname, purse]) => updatePursesState(petname, purse)),
+      mapIterable(purseMapping.petnameToVal.entries(), ([petname, purse]) =>
+        updatePursesState(petname, purse),
+      ),
     );
   }
 
@@ -819,7 +819,7 @@ export function makeWallet({
   }
 
   function getPurses() {
-    return purseMapping.petnameToVal.entries();
+    return [...purseMapping.petnameToVal.entries()];
   }
 
   function getPurse(pursePetname) {
@@ -835,8 +835,7 @@ export function makeWallet({
 
   function getOffers({ origin = null } = {}) {
     // return the offers sorted by id
-    return idToOffer
-      .entries()
+    return [...idToOffer.entries()]
       .filter(
         ([_id, offer]) =>
           origin === null ||
@@ -1465,10 +1464,12 @@ export function makeWallet({
       return brandTable.getByBrand(brand).issuer;
     },
     getAll: () => {
-      return brandMapping.petnameToVal.entries().map(([petname, brand]) => {
-        const { issuer } = brandTable.getByBrand(brand);
-        return [petname, issuer];
-      });
+      return [...brandMapping.petnameToVal.entries()].map(
+        ([petname, brand]) => {
+          const { issuer } = brandTable.getByBrand(brand);
+          return [petname, issuer];
+        },
+      );
     },
     add: async (petname, issuerP) => {
       const { brand, issuer } = await brandTable.initIssuer(issuerP, addMeta);

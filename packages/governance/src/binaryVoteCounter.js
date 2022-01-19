@@ -2,8 +2,7 @@
 
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { sameStructure } from '@agoric/same-structure';
-import { makeStore } from '@agoric/store';
+import { keyEQ, makeStore } from '@agoric/store';
 
 import {
   ChoiceMethod,
@@ -103,19 +102,19 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
     let spoiled = 0n;
     const tally = [0n, 0n];
 
-    allBallots.values().forEach(({ chosen, shares }) => {
-      const choice = positions.findIndex(p => sameStructure(p, chosen));
+    for (const { chosen, shares } of allBallots.values()) {
+      const choice = positions.findIndex(p => keyEQ(p, chosen));
       if (choice < 0) {
         spoiled += shares;
       } else {
         tally[choice] += shares;
       }
-    });
+    }
 
     /** @type { VoteStatistics } */
     const stats = {
       spoiled,
-      votes: allBallots.entries().length,
+      votes: allBallots.getSize(),
       results: [
         { position: positions[0], total: tally[0] },
         { position: positions[1], total: tally[1] },

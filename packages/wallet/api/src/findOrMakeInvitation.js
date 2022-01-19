@@ -10,7 +10,9 @@ const assertFirstCapASCII = str => {
   const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
   assert(
     firstCapASCII.test(str),
-    X`The string ${q(str)} must be ascii and must start with a capital letter.`,
+    X`The string ${q(
+      str,
+    )} must be an ascii identifier starting with upper case.`,
   );
   assert(
     str !== 'NaN' && str !== 'Infinity',

@@ -11,7 +11,7 @@ import {
   CONTRACT_ELECTORATE,
   makeGovernedNat,
 } from '@agoric/governance';
-import { makeRatio } from '@agoric/zoe/src/contractSupport';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import liquidateBundle from './bundle-liquidateMinimum.js';
 import ammBundle from './bundle-amm.js';

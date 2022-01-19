@@ -14,7 +14,7 @@ test('makeIssuerKit bad allegedName', async t => {
 test('makeIssuerKit bad assetKind', async t => {
   // @ts-ignore Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
-    message: `The assetKind "somethingWrong" must be either AssetKind.NAT or AssetKind.SET`,
+    message: /The assetKind "somethingWrong" must be one of \["copySet","nat","set"\]/,
   });
 });
 
@@ -104,7 +104,8 @@ test('brand.isMyIssuer bad issuer', async t => {
   t.false(result);
 });
 
-// Tested in the context of an issuer.claim call, as assertLivePayment is not exported
+// Tested in the context of an issuer.claim call, as assertLivePayment is not
+// exported
 test('assertLivePayment', async t => {
   const { issuer, mint, brand } = makeIssuerKit('fungible');
   const { mint: mintB, brand: brandB } = makeIssuerKit('fungibleB');

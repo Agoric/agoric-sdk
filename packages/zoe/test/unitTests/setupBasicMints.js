@@ -23,7 +23,7 @@ const setup = () => {
 
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
-  /** @type {(brand: Brand) => (value: Value) => Amount} */
+  /** @type {(brand: Brand) => (value: AmountValue) => Amount} */
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);
 
   /**
@@ -41,9 +41,9 @@ const setup = () => {
    * @property {IssuerKit} bucksR
    * @property {IssuerKit} bucksKit
    * @property {Store<string, Brand>} brands
-   * @property {(value: Value) => Amount} moola
-   * @property {(value: Value) => Amount} simoleans
-   * @property {(value: Value) => Amount} bucks
+   * @property {(value: AmountValue) => Amount} moola
+   * @property {(value: AmountValue) => Amount} simoleans
+   * @property {(value: AmountValue) => Amount} bucks
    * @property {ERef<ZoeService>} zoe
    */
 

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeMarshal } from '@agoric/marshal';
+import { makeMarshal, mapIterable } from '@agoric/marshal';
 import { makeLegacyMap, makeScalarMap } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 
@@ -26,8 +26,8 @@ export const isPath = x => {
 const IMPLODE_PREFIX = 'IE:';
 
 // Marshalling for the UI should only use the user's petnames. We will
-// call marshalling for the UI "dehydration" and "hydration" to distinguish it from
-// other marshalling.
+// call marshalling for the UI "dehydration" and "hydration" to distinguish it
+// from other marshalling.
 export const makeDehydrator = (initialUnnamedCount = 0) => {
   let unnamedCount = initialUnnamedCount;
 
@@ -38,6 +38,8 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   const searchOrder = [];
 
   // Paths are kept across all kinds.
+  // TODO What about when useLegacyMap is true because contact have
+  // identity?
   /** @type {Store<any, Path[]>} */
   const valToPaths = makeScalarMap('value');
 
@@ -94,9 +96,12 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   const makeMapping = (kind, { useLegacyMap = false } = {}) => {
     assert.typeof(kind, 'string', X`kind ${kind} must be a string`);
     const makeMap = useLegacyMap ? makeLegacyMap : makeScalarMap;
-    /** @type {Store<T, string>} */
+    // These are actually either a LegacyMap or a MapStore depending on
+    // useLegacyMap. Fortunately, the LegacyMap type is approximately the
+    // intersection of these, so we can just use it.
+    /** @type {LegacyMap<T, string>} */
     const rawValToPetname = makeMap('value');
-    /** @type {Store<T, string | Path>} */
+    /** @type {LegacyMap<T, string | Path>} */
     const valToPetname = {
       ...rawValToPetname,
       set(key, val) {
@@ -109,12 +114,13 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return explode(rawValToPetname.get(key));
       },
       entries() {
-        return rawValToPetname
-          .entries()
-          .map(([key, val]) => [key, explode(val)]);
+        return mapIterable(rawValToPetname.entries(), ([key, val]) => [
+          key,
+          explode(val),
+        ]);
       },
       values() {
-        return rawValToPetname.values().map(val => explode(val));
+        return mapIterable(rawValToPetname.values(), val => explode(val));
       },
     };
     /** @type {Store<string, T>} */
@@ -143,12 +149,13 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return rawPetnameToVal.delete(implode(key));
       },
       keys() {
-        return rawPetnameToVal.keys().map(key => explode(key));
+        return mapIterable(rawPetnameToVal.keys(), key => explode(key));
       },
       entries() {
-        return rawPetnameToVal
-          .entries()
-          .map(([key, val]) => [explode(key), val]);
+        return mapIterable(rawPetnameToVal.entries(), ([key, val]) => [
+          explode(key),
+          val,
+        ]);
       },
     };
 
@@ -164,7 +171,8 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         // eslint-disable-next-line no-use-before-define
         edgeMapping.valToPetname.has(path[0])
       ) {
-        // We have a petname for the root of the path, so use it as our strongname.
+        // We have a petname for the root of the path, so use it as our
+        // strongname.
         valToPetname.init(val, path);
       }
 

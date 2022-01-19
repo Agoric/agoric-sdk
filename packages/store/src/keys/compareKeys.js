@@ -1,6 +1,5 @@
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 import { passStyleOf, getTag } from '@agoric/marshal';
@@ -10,55 +9,8 @@ import { assertKey } from './checkKey.js';
 const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
 
-/**
- * `compareKeys` implements a partial order over keys. As with the
- * rank ordering produced by `compareRank`, -1, 0, and 1 mean
- * "less than", "equivalent to", and "greater than" respectively.
- * NaN means "incomparable" --- the first key is not less, equivalent,
- * or greater than the second. For example, subsets over sets is
- * a partial order.
- *
- * By using NaN for "incomparable", the normal equivalence for using
- * the return value in a comparison is preserved.
- * `compareKeys(left, right) >= 0` iff `left` is greater than or
- * equivalent to `right` in the partial ordering.
- * `compareKeys` is currently not exported directly, so its
- * bizarre but convenient return type is not exposed.
- *
- * Key order (a partial order) and rank order (a full order) are
- * co-designed so that we store passables in rank order and index into them
- * with keys for key-based queries. To keep these distinct, when speaking
- * informally about rank, we talk about "earlier" and "later". When speaking
- * informally about keys, we talk about "smaller" and "bigger".
- *
- * In both orders, the return-0 case defines
- * an equivalence class, i.e., those that are tied for the same place in the
- * order. The global invariant that we need between the two orders is that the
- * key order equivalence class is always at least as precise as the
- * rank order equivalence class. IOW, if `compareKeys(X,Y) === 0` then
- * `compareRank(X,Y) === 0`. But not vice versa. For example, two different
- * remotables are the same rank but incommensurate as keys.
- *
- * A further invariant is if `compareKeys(X,Y) < 0` then
- * `compareRank(X,Y) <= 0`, i.e., if X is smaller than Y in key order, then X
- * must be at least as early as Y in rank order. But not vice versa.
- * X can be earlier than Y in rank order and still be incommensurate with Y in
- * key order. For example, the records `{b: 3, a: 5}` is earlier than but
- * incommensurate with the record `{b: 5, a: 3}`.
- *
- * This lets us translate a range search over the
- * partial key order into a range search over rank order followed by filtering
- * out those that don't match. To get this effect, we store the elements of
- * a set in an array sorted in reverse rank order, from later to earlier.
- * Combined with our lexicographic comparison of arrays, if set X is a subset
- * of set Y then the array representing set X will be an earlier rank that the
- * array representing set Y.
- *
- * @param {Key} left
- * @param {Key} right
- * @returns {-1 | 0 | 1 | NaN}
- */
-const compareKeys = (left, right) => {
+/** @type {KeyCompare} */
+export const compareKeys = (left, right) => {
   assertKey(left);
   assertKey(right);
   const leftStyle = passStyleOf(left);

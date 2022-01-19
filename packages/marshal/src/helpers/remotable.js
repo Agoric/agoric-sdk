@@ -1,11 +1,9 @@
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 import '../types.js';
 import './internal-types.js';
-import '@agoric/assert/exported.js';
 import {
   assertChecker,
   canBeMethod,

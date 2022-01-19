@@ -453,6 +453,7 @@ func NewAgoricApp(
 	app.SwingSetKeeper = swingset.NewKeeper(
 		appCodec, keys[swingset.StoreKey], app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper, app.BankKeeper,
+		authtypes.FeeCollectorName,
 		callToController,
 	)
 	vm.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
@@ -622,13 +623,6 @@ func NewAgoricApp(
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
-	callToControllerDuringAnte := func(ctx sdk.Context, str string) (string, error) {
-		// We use SwingSet-level metering to charge the user for the call.
-		app.MustInitController(ctx)
-		defer vm.SetControllerContext(ctx)()
-		return sendToController(true, str)
-	}
-
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			HandlerOptions: ante.HandlerOptions{
@@ -639,7 +633,7 @@ func NewAgoricApp(
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
 			IBCChannelkeeper: app.IBCKeeper.ChannelKeeper,
-			CallToController: callToControllerDuringAnte,
+			AdmissionData:    app.SwingSetKeeper,
 		},
 	)
 	if err != nil {
@@ -665,13 +659,14 @@ func NewAgoricApp(
 }
 
 type cosmosInitAction struct {
-	Type        string    `json:"type"`
-	ChainID     string    `json:"chainID"`
-	StoragePort int       `json:"storagePort"`
-	SupplyCoins sdk.Coins `json:"supplyCoins"`
-	VibcPort    int       `json:"vibcPort"`
-	VbankPort   int       `json:"vbankPort"`
-	LienPort    int       `json:"lienPort"`
+	Type        string          `json:"type"`
+	ChainID     string          `json:"chainID"`
+	Params      swingset.Params `json:"params"`
+	StoragePort int             `json:"storagePort"`
+	SupplyCoins sdk.Coins       `json:"supplyCoins"`
+	VibcPort    int             `json:"vibcPort"`
+	VbankPort   int             `json:"vbankPort"`
+	LienPort    int             `json:"lienPort"`
 }
 
 // Name returns the name of the App
@@ -687,6 +682,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
 		ChainID:     ctx.ChainID(),
+		Params:      app.SwingSetKeeper.GetParams(ctx),
 		StoragePort: vm.GetPort("storage"),
 		SupplyCoins: sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "urun")),
 		VibcPort:    app.vibcPort,

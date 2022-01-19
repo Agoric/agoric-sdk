@@ -112,7 +112,7 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
       // This state machine integration is much like lit-robot, but also raises
       // state events.
       const machine = makeConnectionMachine();
-      const onState = service => {
+      const onState = (service, requestUpdate = true) => {
         this.machine = service.machine;
         const ev = new CustomEvent('state', {
           detail: {
@@ -122,13 +122,15 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
           },
         });
         this.dispatchEvent(ev);
-        this.requestUpdate();
+        if (requestUpdate) {
+          this.requestUpdate();
+        }
       };
       this.service = interpret(machine, onState);
       this.machine = this.service.machine;
 
       // Wait until we load before sending the first state.
-      this.firstUpdated = () => onState(this.service);
+      this.firstUpdated = () => onState(this.service, false);
 
       this._nextEpoch = 0;
       this._bridgePK = makePromiseKit();

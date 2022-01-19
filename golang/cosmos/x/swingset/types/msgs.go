@@ -20,16 +20,28 @@ func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverI
 	}
 }
 
-func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, callToController func(sdk.Context, string) (string, error)) error {
-	// TODO: This is where we would consult the controller for deterministic
-	// advice on whether we are overwhelmed.
+func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	keeper, ok := data.(SwingSetKeeper)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
 	/*
 		// The nondeterministic torture test.  Mark every third message as not inadmissible.
 		if rand.Intn(3) == 0 {
 			return fmt.Errorf("FIGME: MsgDeliverInbound is randomly not admissible")
 		}
 	*/
-	return nil
+
+	// Charge the submitter for the message parameters.
+	beansPerUnit := keeper.GetBeansPerUnit(ctx)
+	beans := beansPerUnit[BeansPerInboundTx]
+	beans = beans.Add(beansPerUnit[BeansPerMessage].Mul(sdk.NewUint(uint64(len(msg.Messages)))))
+	for _, m := range msg.Messages {
+		beans = beans.Add(beansPerUnit[BeansPerMessageByte].Mul(sdk.NewUint(uint64(len(m)))))
+	}
+
+	return keeper.ChargeBeans(ctx, msg.Submitter, beans)
 }
 
 // Route should return the name of the module
@@ -46,16 +58,10 @@ func (msg MsgDeliverInbound) ValidateBasic() error {
 	if len(msg.Messages) != len(msg.Nums) {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
 	}
-	for i, num := range msg.Nums {
-		if len(msg.Messages[i]) == 0 {
+	for _, m := range msg.Messages {
+		if len(m) == 0 {
 			return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages cannot be empty")
 		}
-		if num < 0 {
-			return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nums cannot be negative")
-		}
-	}
-	if msg.Ack < 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Ack cannot be negative")
 	}
 	return nil
 }
@@ -102,9 +108,6 @@ func (msg MsgProvision) ValidateBasic() error {
 	}
 	if len(msg.Nickname) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
-	}
-	if msg.PowerFlags == nil {
-		msg.PowerFlags = []string{}
 	}
 	return nil
 }

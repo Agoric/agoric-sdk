@@ -21,7 +21,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { E } from '@agoric/eventual-send';
 import '@agoric/governance/src/exported';
 
-import { makeScalarMap } from '@agoric/store';
+import { makeScalarMap, keyEQ } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountOut,
@@ -29,7 +29,6 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
-import { sameStructure } from '@agoric/same-structure';
 import { Far } from '@agoric/marshal';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
@@ -79,7 +78,7 @@ export const start = async (zcf, privateArgs) => {
     CONTRACT_ELECTORATE,
   );
   assert(
-    sameStructure(electorateInvAmt, electorateParam.value),
+    keyEQ(electorateInvAmt, electorateParam.value),
     X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
   );
 
@@ -180,7 +179,7 @@ export const start = async (zcf, privateArgs) => {
     // should be collateralTypes.map((vm, brand) => ({
     return harden(
       Promise.all(
-        collateralTypes.entries().map(async ([brand, vm]) => {
+        [...collateralTypes.entries()].map(async ([brand, vm]) => {
           const priceQuote = await vm.getCollateralQuote();
           return {
             brand,

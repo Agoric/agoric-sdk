@@ -1,7 +1,6 @@
 // @ts-nocheck TODO Fix the recursive types to it checks. Will this
 // require a .d.ts file? I don't know.
 
-// eslint-disable-next-line spaced-comment
 /// <reference path="extra-types.d.ts" />
 
 /**
@@ -95,6 +94,16 @@
 /**
  * @typedef {Promise | Remotable} PassableCap
  * The leaves of a Passable's pass-by-copy superstructure.
+ */
+
+/**
+ * @template T
+ * @typedef {T[]} CopyArray
+ */
+
+/**
+ * @template T
+ * @typedef {Record<string, T>} CopyRecord
  */
 
 /**

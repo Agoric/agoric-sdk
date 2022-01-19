@@ -37,7 +37,6 @@
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
-    "@agoric/same-structure": "^0.1.29",
     "@agoric/store": "^0.6.8",
     "@agoric/zoe": "^0.21.1"
   },
@@ -49,7 +48,7 @@
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1",
-    "ses": "^0.14.3"
+    "ses": "^0.15.3"
   },
   "files": [
     "src/",
