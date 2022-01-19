@@ -4,15 +4,17 @@
 const { entries } = Object;
 
 /**
- * @param {Object} graph
- * @param { Set<string> } graph.nodes
- * @param { Array<{ src: string, dest: string}> } graph.edges
+ * @param {Map<string, Set<string>>} neighbors
  * @yields { string }
  */
-function* fmtGraph({ nodes, edges }) {
+function* fmtGraph(neighbors) {
+  const q = txt => JSON.stringify(txt.replace(/\./g, '_'));
   yield 'digraph G {\n';
-  for (const e of edges) {
-    yield `${e.src} -> ${e.dest}\n`; // TODO quoting / escaping
+  yield 'rankdir = LR;';
+  for (const [src, arcs] of neighbors.entries()) {
+    for (const dest of arcs) {
+      yield `${q(src)} -> ${q(dest)}\n`;
+    }
   }
   yield '}\n';
 }
@@ -22,25 +24,47 @@ function* fmtGraph({ nodes, edges }) {
  * @param {Record<string, Permit>} manifest
  * @typedef {{
  *   vatPowers?: Record<string, boolean>
+ *   vats?: Record<string, boolean>
+ *   devices?: Record<string, boolean>
+ *   produce?: Record<string, boolean>
+ *   consume?: Record<string, boolean>
  * }} Permit
  */
 const manifest2graph = manifest => {
   const nodes = new Set();
-  const edges = [];
-  for (const [fnName, permit] of entries(manifest)) {
-    nodes.add(fnName);
-    if (permit.vatPowers) {
-      for (const [powerName, status] of entries(permit.vatPowers)) {
+  const neighbors = new Map();
+
+  const addEdge = (src, dest) => {
+    if (!neighbors.has(src)) {
+      neighbors.set(src, new Set());
+    }
+    neighbors.get(src).add(dest);
+  };
+
+  const level1 = (src, ty, item) => {
+    if (item) {
+      for (const [powerName, status] of entries(item)) {
         if (status) {
-          nodes.add('vatPowers');
-          nodes.add(powerName);
-          edges.push({ src: 'vatPowers', dest: powerName });
-          edges.push({ src: fnName, dest: powerName });
+          nodes.add(ty);
+          // TODO: just powerName for label; use style for ty
+          nodes.add(`${ty}.${powerName}`);
+          addEdge(`${ty}.${powerName}`, ty);
+          addEdge(src, `${ty}.${powerName}`);
         }
       }
     }
+  };
+
+  for (const [fnName, permit] of entries(manifest)) {
+    nodes.add(fnName);
+
+    level1(fnName, 'vatPowers', permit.vatPowers);
+    level1(fnName, 'vats', permit.vats);
+    level1(fnName, 'devices', permit.devices);
+    level1(fnName, 'space', permit.produce); // TODO: different styles for produce / consume
+    level1(fnName, 'space', permit.consume);
   }
-  return { nodes, edges };
+  return neighbors;
 };
 
 /**
