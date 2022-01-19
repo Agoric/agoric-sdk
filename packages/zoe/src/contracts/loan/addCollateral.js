@@ -1,4 +1,7 @@
-import { assertProposalShape } from '../../contractSupport/index.js';
+import {
+  assertProposalShape,
+  atomicTransfer,
+} from '../../contractSupport/index.js';
 
 import { scheduleLiquidation } from './scheduleLiquidation.js';
 
@@ -16,15 +19,17 @@ export const makeAddCollateralInvitation = (zcf, config) => {
       want: {},
     });
 
-    collateralSeat.incrementBy(
-      addCollateralSeat.decrementBy(
-        harden({
-          Collateral: addCollateralSeat.getAmountAllocated('Collateral'),
-        }),
-      ),
+    atomicTransfer(
+      zcf,
+      harden([
+        [
+          addCollateralSeat,
+          collateralSeat,
+          { Collateral: addCollateralSeat.getAmountAllocated('Collateral') },
+        ],
+      ]),
     );
 
-    zcf.reallocate(collateralSeat, addCollateralSeat);
     addCollateralSeat.exit();
 
     // Schedule the new liquidation trigger. The old one will have an

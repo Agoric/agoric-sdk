@@ -1,4 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
+import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
@@ -55,15 +56,30 @@ export const makeDoublePool = (
     const inPoolSeat = collateralInPool.getPoolSeat();
     const outPoolSeat = collateralOutPool.getPoolSeat();
 
-    seat.decrementBy(harden({ In: prices.swapperGives }));
-    inPoolSeat.decrementBy(harden({ Central: prices.inPoolDecrement }));
-    outPoolSeat.decrementBy(harden({ Secondary: prices.outPoolDecrement }));
-    seat.incrementBy(harden({ Out: prices.swapperGets }));
-    inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
-    outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
-    feeSeat.incrementBy(harden({ Fee: prices.protocolFee }));
+    atomicTransfer(
+      zcf,
+      harden([
+        [seat, seat, { In: prices.swapperGives }, { Out: prices.swapperGets }],
+        [
+          inPoolSeat,
+          inPoolSeat,
+          { Central: prices.inPoolDecrement },
+          { Secondary: prices.inPoolIncrement },
+        ],
+        [
+          outPoolSeat,
+          outPoolSeat,
+          { Secondary: prices.outPoolDecrement },
+          { Central: prices.outPoolIncrement },
+        ],
+        // This strange construction is to transfer into without saying at the
+        // same time where this amount was transfered from. But the overall
+        // atomicTransfer still has to be conserved, i.e., balance to
+        // a net zero.
+        [undefined, feeSeat, undefined, { Fee: prices.protocolFee }],
+      ]),
+    );
 
-    zcf.reallocate(outPoolSeat, inPoolSeat, feeSeat, seat);
     seat.exit();
     collateralInPool.updateState();
     collateralOutPool.updateState();

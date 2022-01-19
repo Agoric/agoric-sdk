@@ -31,6 +31,7 @@ import {
   getAmountOut,
   makeRatio,
   makeRatioFromAmounts,
+  atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
@@ -537,12 +538,16 @@ const helperBehavior = {
           // it. We could hold it until it crosses some threshold, then sell it
           // to the AMM, or we could transfer it to the reserve. At least it's
           // visible in the accounting.
-          vaultSeat.decrementBy(
-            state.retainedCollateralSeat.incrementBy({
-              Collateral: collateralPost,
-            }),
+          atomicTransfer(
+            zcf,
+            harden([
+              [
+                vaultSeat,
+                state.retainedCollateralSeat,
+                { Collateral: collateralPost },
+              ],
+            ]),
           );
-          zcf.reallocate(vaultSeat, state.retainedCollateralSeat);
         }
 
         // Reduce totalCollateral by collateralPre, since all the collateral was

@@ -1,7 +1,7 @@
 import { Far } from '@endo/marshal';
 import { makeLegacyMap } from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { satisfies } from '../contractSupport/index.js';
+import { satisfies, atomicTransfer } from '../contractSupport/index.js';
 
 /**
  * This Barter Exchange accepts offers to trade arbitrary goods for other
@@ -63,13 +63,24 @@ const start = zcf => {
     const matchingTrade = findMatchingTrade(offerDetails, orders);
     if (matchingTrade) {
       // reallocate by giving each side what it wants
-      offerDetails.seat.decrementBy(harden({ In: matchingTrade.amountOut }));
-      matchingTrade.seat.incrementBy(harden({ Out: matchingTrade.amountOut }));
+      atomicTransfer(
+        zcf,
+        harden([
+          [
+            offerDetails.seat,
+            matchingTrade.seat,
+            { In: matchingTrade.amountOut },
+            { Out: matchingTrade.amountOut },
+          ],
+          [
+            matchingTrade.seat,
+            offerDetails.seat,
+            { In: offerDetails.amountOut },
+            { Out: offerDetails.amountOut },
+          ],
+        ]),
+      );
 
-      matchingTrade.seat.decrementBy(harden({ In: offerDetails.amountOut }));
-      offerDetails.seat.incrementBy(harden({ Out: offerDetails.amountOut }));
-
-      zcf.reallocate(offerDetails.seat, matchingTrade.seat);
       removeFromOrders(matchingTrade);
       offerDetails.seat.exit();
       matchingTrade.seat.exit();

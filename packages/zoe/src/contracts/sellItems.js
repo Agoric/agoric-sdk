@@ -7,6 +7,7 @@ import {
   defaultAcceptanceMsg,
   assertProposalShape,
   assertNatAssetKind,
+  atomicTransfer,
 } from '../contractSupport/index.js';
 
 const { details: X } = assert;
@@ -101,13 +102,13 @@ const start = zcf => {
       assert.fail(X`More money (${totalCost}) is required to buy these items`);
 
     // Reallocate.
-    sellerSeat.incrementBy(
-      buyerSeat.decrementBy(harden({ Money: providedMoney })),
+    atomicTransfer(
+      zcf,
+      harden([
+        [buyerSeat, sellerSeat, { Money: providedMoney }],
+        [sellerSeat, buyerSeat, { Items: wantedItems }],
+      ]),
     );
-    buyerSeat.incrementBy(
-      sellerSeat.decrementBy(harden({ Items: wantedItems })),
-    );
-    zcf.reallocate(buyerSeat, sellerSeat);
 
     // The buyer's offer has been processed.
     buyerSeat.exit();

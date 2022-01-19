@@ -11,6 +11,7 @@ import {
   assertProposalShape,
   assertNatAssetKind,
   calcSecondaryRequired,
+  atomicTransfer,
 } from '../contractSupport/index.js';
 
 /**
@@ -87,21 +88,23 @@ const start = async zcf => {
   };
 
   function consummate(tradeAmountIn, tradeAmountOut, swapSeat) {
-    swapSeat.decrementBy(harden({ In: tradeAmountIn }));
-    poolSeat.incrementBy(
-      harden({
-        [getPoolKeyword(tradeAmountIn.brand)]: tradeAmountIn,
-      }),
+    atomicTransfer(
+      zcf,
+      harden([
+        [
+          swapSeat,
+          poolSeat,
+          { In: tradeAmountIn },
+          { [getPoolKeyword(tradeAmountIn.brand)]: tradeAmountIn },
+        ],
+        [
+          poolSeat,
+          swapSeat,
+          { [getPoolKeyword(tradeAmountOut.brand)]: tradeAmountOut },
+          { Out: tradeAmountOut },
+        ],
+      ]),
     );
-
-    poolSeat.decrementBy(
-      harden({
-        [getPoolKeyword(tradeAmountOut.brand)]: tradeAmountOut,
-      }),
-    );
-    swapSeat.incrementBy(harden({ Out: tradeAmountOut }));
-
-    zcf.reallocate(swapSeat, poolSeat);
 
     swapSeat.exit();
     return `Swap successfully completed.`;
@@ -201,13 +204,13 @@ const start = async zcf => {
       Central: AmountMath.make(brands.Central, centralIn),
       Secondary: secondaryAmount,
     };
-    poolSeat.incrementBy(seat.decrementBy(harden(liquidityDeposited)));
-    seat.incrementBy(
-      poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
+    atomicTransfer(
+      zcf,
+      harden([
+        [seat, poolSeat, liquidityDeposited],
+        [poolSeat, seat, { Liquidity: liquidityAmountOut }],
+      ]),
     );
-
-    zcf.reallocate(poolSeat, seat);
-
     seat.exit();
     return 'Added liquidity.';
   };
@@ -304,15 +307,13 @@ const start = async zcf => {
       Secondary: newUserSecondaryAmount,
     };
 
-    poolSeat.incrementBy(
-      removeLiqSeat.decrementBy(
-        harden({ Liquidity: userAllocation.Liquidity }),
-      ),
+    atomicTransfer(
+      zcf,
+      harden([
+        [removeLiqSeat, poolSeat, { Liquidity: userAllocation.Liquidity }],
+        [poolSeat, removeLiqSeat, liquidityRemoved],
+      ]),
     );
-
-    removeLiqSeat.incrementBy(poolSeat.decrementBy(harden(liquidityRemoved)));
-
-    zcf.reallocate(poolSeat, removeLiqSeat);
 
     removeLiqSeat.exit();
     return 'Liquidity successfully removed.';

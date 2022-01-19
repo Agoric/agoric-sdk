@@ -1,3 +1,5 @@
+import { atomicTransfer } from '@agoric/zoe/src/contractSupport';
+
 /**
  * Provide shared support for providing access to fees from a service contract.
  *
@@ -14,9 +16,10 @@ export const makeMakeCollectFeesInvitation = (
 ) => {
   const collectFees = seat => {
     const amount = feeSeat.getAmountAllocated(keyword, feeBrand);
-    feeSeat.decrementBy(harden({ [keyword]: amount }));
-    seat.incrementBy(harden({ Fee: amount }));
-    zcf.reallocate(seat, feeSeat);
+    atomicTransfer(
+      zcf,
+      harden([[feeSeat, seat, { [keyword]: amount }, { Fee: amount }]]),
+    );
 
     seat.exit();
     return `paid out ${amount.value}`;

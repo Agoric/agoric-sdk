@@ -21,6 +21,8 @@ export { makeStateMachine } from './stateMachine.js';
 
 export * from './statistics.js';
 
+export { atomicTransfer } from './atomicTransfer.js';
+
 export {
   defaultAcceptanceMsg,
   swap,
@@ -34,7 +36,6 @@ export {
   withdrawFromSeat,
   saveAllIssuers,
   offerTo,
-  checkZCF,
 } from './zoeHelpers.js';
 
 export {

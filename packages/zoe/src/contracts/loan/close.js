@@ -3,7 +3,10 @@ import './types.js';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import { assertProposalShape } from '../../contractSupport/index.js';
+import {
+  assertProposalShape,
+  atomicTransfer,
+} from '../../contractSupport/index.js';
 
 // The debt, the amount which must be repaid, is just the amount
 // loaned plus interest (aka stability fee). All debt must be repaid
@@ -39,20 +42,22 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     // Transfer the collateral to the repaySeat and remove the
     // required Loan amount. Any excess Loan amount is kept by the repaySeat.
     // Transfer the repaid loan amount to the lender
-
-    repaySeat.incrementBy(
-      collateralSeat.decrementBy(
-        harden({
-          Collateral: collateralSeat.getAmountAllocated(
-            'Collateral',
-            collateralBrand,
-          ),
-        }),
-      ),
+    atomicTransfer(
+      zcf,
+      harden([
+        [
+          collateralSeat,
+          repaySeat,
+          {
+            Collateral: collateralSeat.getAmountAllocated(
+              'Collateral',
+              collateralBrand,
+            ),
+          },
+        ],
+        [repaySeat, lenderSeat, { Loan: debt }],
+      ]),
     );
-    lenderSeat.incrementBy(repaySeat.decrementBy(harden({ Loan: debt })));
-
-    zcf.reallocate(repaySeat, collateralSeat, lenderSeat);
 
     repaySeat.exit();
     lenderSeat.exit();

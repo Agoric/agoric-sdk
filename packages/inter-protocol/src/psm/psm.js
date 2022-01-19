@@ -7,6 +7,7 @@ import {
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
+  atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import {
@@ -48,21 +49,6 @@ const { Fail } = assert;
  * @property {Amount<'nat'>} totalMintedProvided  running sum of Minted
  * ever given by this contract
  */
-
-/**
- * Stage a transfer of a single asset from one seat to another, with an optional
- * remapping of the Keywords. Check that the remapping is for the same amount.
- *
- * @param {ZCFSeat} from
- * @param {ZCFSeat} to
- * @param {AmountKeywordRecord} txFrom
- * @param {AmountKeywordRecord} txTo
- */
-const stageTransfer = (from, to, txFrom, txTo = txFrom) => {
-  assert(AmountMath.isEqual(Object.values(txFrom)[0], Object.values(txTo)[0]));
-  from.decrementBy(txFrom);
-  to.incrementBy(txTo);
-};
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -177,24 +163,18 @@ export const start = async (zcf, privateArgs, baggage) => {
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerMinted);
     AmountMath.isGTE(maxAnchor, wanted) ||
       Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
-    try {
-      stageTransfer(seat, stage, { In: afterFee }, { Minted: afterFee });
-      stageTransfer(seat, feePool, { In: fee }, { Minted: fee });
-      stageTransfer(
-        anchorPool,
-        seat,
-        { Anchor: maxAnchor },
-        { Out: maxAnchor },
-      );
-      zcf.reallocate(seat, anchorPool, stage, feePool);
-      burnMinted(afterFee);
-    } catch (e) {
-      stage.clear();
-      anchorPool.clear();
-      feePool.clear();
-      // TODO(#6116) someday, reallocate should guarantee that this case cannot happen
-      throw e;
-    }
+    atomicTransfer(
+      zcf,
+      harden([
+        [seat, stage, { In: afterFee }, { Minted: afterFee }],
+        [seat, feePool, { In: fee }, { Minted: fee }],
+        [anchorPool, seat, { Anchor: maxAnchor }, { Out: maxAnchor }],
+      ]),
+    );
+    // The treatment of `burnMinted` here is different than the
+    // one immediately below. This `burnMinted`
+    // happen only if the `atomicTransfer` does *not* throw.
+    burnMinted(afterFee);
     totalAnchorProvided = AmountMath.add(totalAnchorProvided, maxAnchor);
   };
 
@@ -212,15 +192,18 @@ export const start = async (zcf, privateArgs, baggage) => {
       Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
     mintMinted(asStable);
     try {
-      stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
-      stageTransfer(stage, seat, { Minted: afterFee }, { Out: afterFee });
-      stageTransfer(stage, feePool, { Minted: fee });
-      zcf.reallocate(seat, anchorPool, stage, feePool);
+      atomicTransfer(
+        zcf,
+        harden([
+          [seat, anchorPool, { In: given }, { Anchor: given }],
+          [stage, seat, { Minted: afterFee }, { Out: afterFee }],
+          [stage, feePool, { Minted: fee }],
+        ]),
+      );
     } catch (e) {
-      stage.clear();
-      anchorPool.clear();
-      feePool.clear();
-      // TODO(#6116) someday, reallocate should guarantee that this case cannot happen
+      // The treatment of `burnMinted` here is different than the
+      // one immediately above. This `burnMinted`
+      // happens only if the `atomicTransfer` *does* throw.
       burnMinted(asStable);
       throw e;
     }

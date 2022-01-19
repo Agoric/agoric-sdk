@@ -1,4 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
+import { atomicTransfer } from '../../contractSupport/index.js';
 
 /**
  * @param {ZCF} zcf
@@ -43,13 +44,14 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   }
 
   // Everyone else gets a refund so their values remain the same.
-  highestBidSeat.decrementBy(harden({ Bid: highestBid }));
-  sellSeat.incrementBy(harden({ Ask: highestBid }));
+  atomicTransfer(
+    zcf,
+    harden([
+      [highestBidSeat, sellSeat, { Bid: highestBid }, { Ask: highestBid }],
+      [sellSeat, highestBidSeat, { Asset: assetAmount }],
+    ]),
+  );
 
-  sellSeat.decrementBy(harden({ Asset: assetAmount }));
-  highestBidSeat.incrementBy(harden({ Asset: assetAmount }));
-
-  zcf.reallocate(sellSeat, highestBidSeat);
   sellSeat.exit();
   bidSeats.forEach(bidSeat => {
     if (!bidSeat.hasExited()) {

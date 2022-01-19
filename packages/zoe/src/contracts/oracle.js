@@ -3,6 +3,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 import { E } from '@endo/eventual-send';
+import { atomicTransfer } from '../contractSupport/index.js';
 
 /**
  * This contract provides oracle queries for a fee or for free.
@@ -29,8 +30,8 @@ const start = async zcf => {
           ? feeSeat.getCurrentAllocation()
           : seat.getProposal().want;
 
-        seat.incrementBy(feeSeat.decrementBy(harden(gains)));
-        zcf.reallocate(seat, feeSeat);
+        atomicTransfer(zcf, harden([[feeSeat, seat, gains]]));
+
         seat.exit();
         return 'Successfully withdrawn';
       }, 'withdraw');
@@ -41,10 +42,11 @@ const start = async zcf => {
     makeShutdownInvitation: () => {
       const shutdown = seat => {
         revoked = true;
-        seat.incrementBy(
-          feeSeat.decrementBy(harden(feeSeat.getCurrentAllocation())),
+        atomicTransfer(
+          zcf,
+          harden([[feeSeat, seat, feeSeat.getCurrentAllocation()]]),
         );
-        zcf.reallocate(seat, feeSeat);
+
         zcf.shutdown(revokedMsg);
       };
       return zcf.makeInvitation(shutdown, 'shutdown');
@@ -82,10 +84,10 @@ const start = async zcf => {
           const fee = querySeat.getAmountAllocated('Fee', feeBrand);
           const { requiredFee, reply } = await E(handler).onQuery(query, fee);
           if (requiredFee) {
-            feeSeat.incrementBy(
-              querySeat.decrementBy(harden({ Fee: requiredFee })),
+            atomicTransfer(
+              zcf,
+              harden([[querySeat, feeSeat, { Fee: requiredFee }]]),
             );
-            zcf.reallocate(feeSeat, querySeat);
           }
           querySeat.exit();
           E(handler).onReply(query, reply, requiredFee);

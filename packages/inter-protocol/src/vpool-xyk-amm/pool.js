@@ -7,6 +7,7 @@ import {
   calcLiqValueToMint,
   calcSecondaryRequired,
   calcValueToRemove,
+  atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { E } from '@endo/eventual-send';
@@ -252,18 +253,21 @@ export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
         ),
       );
 
-      poolSeat.incrementBy(
-        userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
+      atomicTransfer(
+        ammPowers.zcf,
+        harden([
+          [userSeat, poolSeat, { Liquidity: liquidityIn }],
+          [
+            poolSeat,
+            userSeat,
+            {
+              Central: centralTokenAmountOut,
+              Secondary: tokenKeywordAmountOut,
+            },
+          ],
+        ]),
       );
-      userSeat.incrementBy(
-        poolSeat.decrementBy(
-          harden({
-            Central: centralTokenAmountOut,
-            Secondary: tokenKeywordAmountOut,
-          }),
-        ),
-      );
-      ammPowers.zcf.reallocate(userSeat, poolSeat);
+
       state.liqTokenSupply -= liquidityValueIn;
 
       userSeat.exit();

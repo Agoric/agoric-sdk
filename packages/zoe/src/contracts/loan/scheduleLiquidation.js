@@ -2,7 +2,11 @@ import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 import { liquidate } from './liquidate.js';
-import { getAmountIn, ceilMultiplyBy } from '../../contractSupport/index.js';
+import {
+  getAmountIn,
+  ceilMultiplyBy,
+  atomicTransfer,
+} from '../../contractSupport/index.js';
 
 /** @type {ScheduleLiquidation} */
 export const scheduleLiquidation = (zcf, configWithBorrower) => {
@@ -51,10 +55,11 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
       // collateral is on the collateral seat. If an error occurs, we
       // reallocate the collateral to the lender and shutdown the
       // contract, kicking out any remaining seats.
-      lenderSeat.incrementBy(
-        collateralSeat.decrementBy(harden({ Collateral: allCollateral })),
+      atomicTransfer(
+        zcf,
+        harden([[collateralSeat, lenderSeat, { Collateral: allCollateral }]]),
       );
-      zcf.reallocate(lenderSeat, collateralSeat);
+
       zcf.shutdownWithFailure(err);
       throw err;
     });

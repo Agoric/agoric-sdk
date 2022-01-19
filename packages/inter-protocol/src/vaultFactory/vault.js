@@ -5,6 +5,7 @@ import {
   makeRatioFromAmounts,
   ceilMultiplyBy,
   floorMultiplyBy,
+  atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import {
@@ -398,15 +399,21 @@ const helperBehavior = {
         Fail`Offer ${given} is not sufficient to pay off debt ${debt}`;
 
       // Return any overpayment
-      seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
-      zcf.reallocate(seat, vaultSeat);
+      atomicTransfer(
+        zcf,
+        harden([[vaultSeat, seat, vaultSeat.getCurrentAllocation()]]),
+      );
+
       state.manager.burnAndRecord(debt, seat);
     } else if (phase === Phase.LIQUIDATED) {
       // Simply reallocate vault assets to the offer seat.
       // Don't take anything from the offer, even if vault is underwater.
       // TODO verify that returning Minted here doesn't mess up debt limits
-      seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
-      zcf.reallocate(seat, vaultSeat);
+
+      atomicTransfer(
+        zcf,
+        harden([[vaultSeat, seat, vaultSeat.getCurrentAllocation()]]),
+      );
     } else {
       throw new Error('only active and liquidated vaults can be closed');
     }

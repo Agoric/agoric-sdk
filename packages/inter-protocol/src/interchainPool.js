@@ -1,6 +1,9 @@
 import { E, Far } from '@endo/far';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  offerTo,
+  atomicTransfer,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { MIN_INITIAL_POOL_LIQUIDITY_KEY } from './vpool-xyk-amm/params.js';
 
 const { Fail, quote: q } = assert;
@@ -87,8 +90,7 @@ export const start = (zcf, { bankManager }) => {
         },
       });
 
-      seat2.incrementBy(seat.decrementBy(harden({ Central: centralAmt })));
-      zcf.reallocate(seat, seat2);
+      atomicTransfer(zcf, harden([[seat, seat2, { Central: centralAmt }]]));
 
       const invitation = await E(ammPub).addPoolInvitation();
       const { userSeatPromise, deposited } = await offerTo(

@@ -9,6 +9,7 @@ import {
   getAmountOut,
   ceilMultiplyBy,
   getTimestamp,
+  atomicTransfer,
 } from '../../contractSupport/index.js';
 
 import { scheduleLiquidation } from './scheduleLiquidation.js';
@@ -75,16 +76,15 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
-    // Transfer the wanted Loan amount to the borrower
-    borrowerSeat.incrementBy(
-      lenderSeat.decrementBy(harden({ Loan: loanWanted })),
+    atomicTransfer(
+      zcf,
+      harden([
+        // Transfer the wanted Loan amount to the borrower
+        [lenderSeat, borrowerSeat, { Loan: loanWanted }],
+        // Transfer *all* collateral to the collateral seat.
+        [borrowerSeat, collateralSeat, { Collateral: collateralGiven }],
+      ]),
     );
-
-    // Transfer *all* collateral to the collateral seat.
-    collateralSeat.incrementBy(
-      borrowerSeat.decrementBy(harden({ Collateral: collateralGiven })),
-    );
-    zcf.reallocate(lenderSeat, borrowerSeat, collateralSeat);
 
     // We now exit the borrower seat so that the borrower gets their
     // loan. However, the borrower gets an object as their offerResult

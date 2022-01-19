@@ -1,3 +1,4 @@
+import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
   pricesForStatedInput,
@@ -17,20 +18,37 @@ export const makeSinglePool = ammPowers => ({
     const { pool } = context.facets;
     const { poolSeat } = context.state;
     const { zcf, protocolSeat } = ammPowers;
-    seat.decrementBy(harden({ In: prices.swapperGives }));
-    seat.incrementBy(harden({ Out: prices.swapperGets }));
-    protocolSeat.incrementBy(harden({ Fee: prices.protocolFee }));
-
     const inBrand = prices.swapperGives.brand;
-    if (inBrand === getSecondaryBrand(pool)) {
-      poolSeat.decrementBy(harden({ Central: prices.yDecrement }));
-      poolSeat.incrementBy(harden({ Secondary: prices.xIncrement }));
-    } else {
-      poolSeat.decrementBy(harden({ Secondary: prices.yDecrement }));
-      poolSeat.incrementBy(harden({ Central: prices.xIncrement }));
-    }
 
-    zcf.reallocate(poolSeat, seat, protocolSeat);
+    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferArgs} */
+    const xfer = harden(
+      inBrand === getSecondaryBrand(pool)
+        ? [
+            poolSeat,
+            poolSeat,
+            { Central: prices.yDecrement },
+            { Secondary: prices.xIncrement },
+          ]
+        : [
+            poolSeat,
+            poolSeat,
+            { Secondary: prices.yDecrement },
+            { Central: prices.xIncrement },
+          ],
+    );
+
+    atomicTransfer(
+      zcf,
+      harden([
+        [seat, seat, { In: prices.swapperGives }, { Out: prices.swapperGets }],
+        // This strange construction is to transfer into without saying at the
+        // same time where this amount was transfered from. But the overall
+        // atomicTransfer still has to be conserved, i.e., balance to
+        // a net zero.
+        [undefined, protocolSeat, undefined, { Fee: prices.protocolFee }],
+        xfer,
+      ]),
+    );
     seat.exit();
     pool.updateState();
     return `Swap successfully completed.`;
