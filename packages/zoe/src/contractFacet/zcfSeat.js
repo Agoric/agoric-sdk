@@ -175,17 +175,6 @@ export const createSeatManager = (
       );
     });
 
-    const zcfSeatsReallocatedOver = new Set(seats);
-
-    // Ensure that all stagings are present in this reallocate call.
-    const allStagedSeatsUsed = [
-      ...zcfSeatToStagedAllocations.keys(),
-    ].every(stagedSeat => zcfSeatsReallocatedOver.has(stagedSeat));
-    assert(
-      allStagedSeatsUsed,
-      X`At least one seat has a staged allocation but was not included in the call to reallocate`,
-    );
-
     // Keep track of seats used so far in this call, to prevent aliasing.
     const zcfSeatsSoFar = new Set();
 
