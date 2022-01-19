@@ -343,9 +343,11 @@
  * A further invariant is if `compareKeys(X,Y) < 0` then
  * `compareRank(X,Y) <= 0`, i.e., if X is smaller than Y in key order, then X
  * must be at least as early as Y in rank order. But not vice versa.
- * X can be earlier than Y in rank order and still be incommensurate with Y in
- * key order. For example, the record `{b: 3, a: 5}` is earlier than
- * the record `{b: 5, a: 3}` in rank order but they are incomparable as keys.
+ * X can be equivalent to or earlier than Y in rank order and still be
+ * incomparable with Y in key order. For example, the record `{b: 3, a: 5}` is
+ * earlier than the record `{b: 5, a: 3}` in rank order but they are
+ * incomparable as keys. And two distinct remotables such as `Far('X', {})` and
+ * `Far('Y', {})` are equivalent in rank order but incomparable as keys.
  *
  * This lets us translate a range search over the
  * partial key order into a range search over rank order followed by filtering
