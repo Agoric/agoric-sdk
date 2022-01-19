@@ -10,7 +10,6 @@ import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeAttestationFacets } from '@agoric/zoe/src/contracts/attestation/attestation.js';
 import {
-  assertIsRatio,
   assertProposalShape,
   ceilMultiplyBy,
   floorMultiplyBy,
@@ -163,17 +162,9 @@ export const makeLineOfCreditKit = (
 
 /**
  * @param {{ RUN: Brand, Attestation: Brand }} brands
- * @param {(name: string) => unknown} getParamValue
+ * @param {(name: string) => Ratio} getRatio
  */
-const makeCreditPolicy = (brands, getParamValue) => {
-  // TODO: consolidate getRatio with updated governance API
-  /** @param { string } name */
-  const getRatio = name => {
-    const x = getParamValue(name);
-    assertIsRatio(x);
-    return /** @type { Ratio } */ (x);
-  };
-
+const makeCreditPolicy = (brands, getRatio) => {
   /**
    * @param {Amount} attestationGiven
    * @param {Amount} runWanted
@@ -230,9 +221,12 @@ const makeCreditPolicy = (brands, getParamValue) => {
 
 /**
  * @param { ContractFacet } zcf
- * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
+ * @param {{
+ *   feeMintAccess: FeeMintAccess,
+ *   initialPoserInvitation: Invitation,
+ * }} privateArgs
  */
-const start = async (zcf, { feeMintAccess }) => {
+const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
   const {
     main: initialValue,
     brands: { Stake: stakeBrand },
@@ -262,7 +256,7 @@ const start = async (zcf, { feeMintAccess }) => {
   const { brand: runBrand, issuer: runIssuer } = runMint.getIssuerRecord();
   const creditPolicy = makeCreditPolicy(
     { Attestation: attestBrand, RUN: runBrand },
-    getParamValue,
+    getRatio,
   );
 
   const revealRunBrandToTest = () => {
