@@ -26,7 +26,6 @@ import {
 import { checkCopySet /* , makeCopySet XXX TEMP */ } from '../keys/copySet.js';
 import { checkCopyMap, copyMapKeySet } from '../keys/copyMap.js';
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 // const { entries, fromEntries } = Object; // XXX TEMP
