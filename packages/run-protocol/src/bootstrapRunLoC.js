@@ -1,7 +1,8 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
-import { ParamType } from '@agoric/governance';
-import { CreditTerms } from './runLoC.js';
+import { makeGovernedRatio, ParamType } from '@agoric/governance';
+import { CreditTerms } from './getRUN.js';
+import { makeElectorateParams } from './vaultFactory/params.js';
 
 const { entries, fromEntries, keys, values } = Object;
 
@@ -45,7 +46,7 @@ export const Collect = {
  * @param {Ratio} terms.collateralizationRatio
  * @param {Issuer} stakeIssuer
  *
- * @typedef {Unpromise<ReturnType<typeof import('../src/runLoC.js').start>>} StartLineOfCredit
+ * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartLineOfCredit
  */
 export const bootstrapRunLoC = async (
   zoe,
@@ -59,19 +60,23 @@ export const bootstrapRunLoC = async (
     creatorFacet: electorateCreatorFacet,
     instance: electorateInstance,
   } = await E(zoe).startInstance(installations.electorate);
-  // t.log({ electorateCreatorFacet, electorateInstance });
-  const main = harden([
-    {
-      name: CreditTerms.CollateralPrice,
-      type: ParamType.RATIO,
-      value: collateralPrice,
-    },
-    {
-      name: CreditTerms.CollateralizationRatio,
-      type: ParamType.RATIO,
-      value: collateralizationRatio,
-    },
+  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
+  const [
+    initialPoserInvitation,
+    electorateInvitationAmount,
+  ] = await Promise.all([
+    poserInvitationP,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
+
+  // t.log({ electorateCreatorFacet, electorateInstance });
+  const main = harden({
+    [CreditTerms.CollateralPrice]: makeGovernedRatio(collateralPrice),
+    [CreditTerms.CollateralizationRatio]: makeGovernedRatio(
+      collateralizationRatio,
+    ),
+    ...makeElectorateParams(electorateInvitationAmount),
+  });
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess}} */
   const governorFacets = await E(zoe).startInstance(
@@ -80,7 +85,7 @@ export const bootstrapRunLoC = async (
     {
       timer,
       electorateInstance,
-      governedContractInstallation: installations.runLoC,
+      governedContractInstallation: installations.getRUN,
       governed: harden({
         terms: { main },
         issuerKeywordRecord: { Stake: stakeIssuer },
