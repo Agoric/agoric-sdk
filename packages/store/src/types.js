@@ -147,7 +147,7 @@
  * allows primitives and remotables.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
- * @property {(keys: Iterable<K>) => void} addAll
+ * @property {(keys: CopySet<K> | Iterable<K>) => void} addAll
  */
 
 /**
@@ -163,7 +163,7 @@
  * allows primitives and remotables.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
- * @property {(keys: Iterable<K>) => void} addAll
+ * @property {(keys: CopySet<K> | Iterable<K>) => void} addAll
  * @property {(keyPatt?: Pattern) => Iterable<K>} keys
  * @property {(keyPatt?: Pattern) => Iterable<K>} values
  * @property {(keyPatt?: Pattern) => CopySet<K>} snapshot
@@ -187,7 +187,7 @@
  * Set the key. Throws if not found.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
- * @property {(entries: Iterable<[K,V]>) => void} addAll
+ * @property {(entries: CopyMap<K,V> | Iterable<[K,V]>) => void} addAll
  */
 
 /**
@@ -206,7 +206,7 @@
  * Set the key. Throws if not found.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
- * @property {(entries: Iterable<[K,V]>) => void} addAll
+ * @property {(entries: CopyMap<K,V> | Iterable<[K,V]>) => void} addAll
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<K>} keys
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<V>} values
  * @property {(

@@ -1,4 +1,5 @@
-import { Far, assertPassable, passStyleOf } from '@endo/marshal';
+import { Far, assertPassable, passStyleOf } from '@agoric/marshal';
+import { getCopyMapEntries, isCopyMap } from '../keys/checkKey.js';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
 const { details: X, quote: q } = assert;
@@ -57,6 +58,9 @@ export const makeWeakMapStoreMethods = (
     },
 
     addAll: entries => {
+      if (isCopyMap(entries)) {
+        entries = getCopyMapEntries(entries);
+      }
       for (const [key, value] of entries) {
         // Don't assert that the key either does or does not exist.
         assertKVOkToAdd(key, value);
