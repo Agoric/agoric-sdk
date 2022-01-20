@@ -1,11 +1,12 @@
 // @ts-check
 import { E, Far } from '@agoric/far';
-import { AssetKind } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 
 import { makeStore } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
+import { BLD_ISSUER_ENTRY } from '../issuers.js';
 
 const { entries, fromEntries } = Object;
 
@@ -252,6 +253,29 @@ const makeClientBanks = async ({
 
 /**
  * @param {{
+ *   consume: {
+ *     bankManager: Promise<BankManager>
+ *   },
+ *   produce: {
+ *     BLDKit: Producer<{ brand: Brand, issuer: Issuer }>
+ *   }
+ * }} powers
+ * @typedef {*} BankManager // TODO
+ */
+const makeBLDKit = async ({
+  consume: { bankManager },
+  produce: { BLDKit },
+}) => {
+  const [issuerName, { bankDenom, bankPurse, issuerArgs }] = BLD_ISSUER_ENTRY;
+  assert(issuerArgs);
+  const kit = makeIssuerKit(issuerName, ...issuerArgs); // TODO: should this live in another vat???
+  await E(bankManager).addAsset(bankDenom, issuerName, bankPurse, kit);
+  const { brand, issuer } = kit;
+  BLDKit.resolve({ brand, issuer });
+};
+
+/**
+ * @param {{
  *   devices: { timer: unknown },
  *   vats: { timer: TimerVat },
  *   consume: {
@@ -310,6 +334,7 @@ harden({
   makeAddressNameHubs,
   installClientEgress,
   makeClientBanks,
+  makeBLDKit,
   startVaultFactory,
 });
 export {
@@ -320,5 +345,6 @@ export {
   makeAddressNameHubs,
   installClientEgress,
   makeClientBanks,
+  makeBLDKit,
   startVaultFactory,
 };

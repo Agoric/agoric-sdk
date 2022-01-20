@@ -34,6 +34,14 @@
               "bridgeManager": true
             },
             "produce": { "bankManager": true }
+          },
+          "makeBLDKit": {
+            "consume": {
+              "bankManager": true
+            },
+            "produce": {
+              "BLDKit": true
+            }
           }
         }
       }
