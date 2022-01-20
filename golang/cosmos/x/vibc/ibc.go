@@ -7,7 +7,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v2/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v2/modules/core/24-host"
@@ -93,22 +92,11 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			return "", fmt.Errorf("unknown sequence number")
 		}
 
-		var absoluteTimeout clienttypes.Height
-		if msg.RelativeTimeout == 0 {
-			absoluteTimeout = msg.Packet.TimeoutHeight
-		} else {
-			// FIXME: Is the current context's blockheight really something we
-			// should use?  Does this need to be the destination's blockheight?
-			version := clienttypes.ParseChainID(ctx.Context.ChainID())
-			blockHeight := uint64(ctx.Context.BlockHeight()) + msg.RelativeTimeout
-			absoluteTimeout = clienttypes.NewHeight(version, blockHeight)
-		}
-
 		packet := channeltypes.NewPacket(
 			msg.Packet.Data, seq,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-			absoluteTimeout, 0,
+			msg.Packet.TimeoutHeight, msg.Packet.TimeoutTimestamp,
 		)
 		err = keeper.SendPacket(ctx.Context, packet)
 		if err == nil {
@@ -125,28 +113,17 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 
 	case "startChannelOpenInit":
-		/* TODO: Find out what is necessary to wake up a passive relayer.
 		err = keeper.ChanOpenInit(
 			ctx.Context, stringToOrder(msg.Order), msg.Hops,
-			msg.Packet.SourcePort, msg.Packet.SourceChannel,
-			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
+			msg.Packet.SourcePort,
+			msg.Packet.DestinationPort,
 			msg.Version,
 		)
-		*/
 		if err == nil {
 			ret = "true"
 		}
-		break
 
-	case "continueChannelOpenTry":
-		/* TODO: Call keeper.ChanOpenTry.
-		 */
-		if err == nil {
-			ret = "true"
-		}
-		break
-
-	case "channelCloseInit":
+	case "startChannelCloseInit":
 		err = keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
 		if err == nil {
 			ret = "true"
@@ -192,19 +169,6 @@ func (AppModule) NegotiateAppVersion(
 	return proposedVersion, err
 }
 
-type channelOpenInitEvent struct {
-	Type           string                    `json:"type"`  // IBC
-	Event          string                    `json:"event"` // channelOpenInit
-	Order          string                    `json:"order"`
-	ConnectionHops []string                  `json:"connectionHops"`
-	PortID         string                    `json:"portID"`
-	ChannelID      string                    `json:"channelID"`
-	Counterparty   channeltypes.Counterparty `json:"counterparty"`
-	Version        string                    `json:"version"`
-	BlockHeight    int64                     `json:"blockHeight"`
-	BlockTime      int64                     `json:"blockTime"`
-}
-
 // Implement IBCModule callbacks
 func (am AppModule) OnChanOpenInit(
 	ctx sdk.Context,
@@ -216,35 +180,10 @@ func (am AppModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) error {
-	event := channelOpenInitEvent{
-		Type:           "IBC_EVENT",
-		Event:          "channelOpenInit",
-		Order:          orderToString(order),
-		ConnectionHops: connectionHops,
-		PortID:         portID,
-		ChannelID:      channelID,
-		Counterparty:   counterparty,
-		Version:        version,
-		BlockHeight:    ctx.BlockHeight(),
-		BlockTime:      ctx.BlockTime().Unix(),
-	}
-
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return err
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
-	if err != nil {
-		return err
-	}
-
-	// Claim channel capability passed back by IBC module
-	if err = am.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
-	}
-
-	return err
+	return sdkerrors.Wrap(
+		channeltypes.ErrChannelNotFound,
+		fmt.Sprintf("vibc does not allow synthetic channelOpenInit for port %s", portID),
+	)
 }
 
 type channelOpenTryEvent struct {
@@ -311,6 +250,7 @@ type channelOpenAckEvent struct {
 	ChannelID           string                    `json:"channelID"`
 	CounterpartyVersion string                    `json:"counterpartyVersion"`
 	Counterparty        channeltypes.Counterparty `json:"counterparty"`
+	ConnectionHops      []string                  `json:"connectionHops"`
 	BlockHeight         int64                     `json:"blockHeight"`
 	BlockTime           int64                     `json:"blockTime"`
 }
@@ -332,6 +272,7 @@ func (am AppModule) OnChanOpenAck(
 		ChannelID:           channelID,
 		CounterpartyVersion: counterpartyVersion,
 		Counterparty:        channel.Counterparty,
+		ConnectionHops:      channel.ConnectionHops,
 		BlockHeight:         ctx.BlockHeight(),
 		BlockTime:           ctx.BlockTime().Unix(),
 	}

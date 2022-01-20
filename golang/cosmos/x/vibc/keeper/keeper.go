@@ -85,7 +85,19 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 		return err
 	}
 	chanCapName := host.ChannelCapabilityPath(portID, channelID)
-	return k.ClaimCapability(ctx, chanCap, chanCapName)
+	err = k.ClaimCapability(ctx, chanCap, chanCapName)
+	if err != nil {
+		return err
+	}
+
+	// We need to emit a channel event to notify the relayer.
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, channeltypes.AttributeValueCategory),
+		),
+	})
+	return nil
 }
 
 // SendPacket defines a wrapper function for the channel Keeper's function
@@ -122,7 +134,19 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
+	err := k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
+	if err != nil {
+		return err
+	}
+
+	// We need to emit a channel event to notify the relayer.
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, channeltypes.AttributeValueCategory),
+		),
+	})
+	return nil
 }
 
 // BindPort defines a wrapper function for the port Keeper's function in
