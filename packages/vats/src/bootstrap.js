@@ -7,7 +7,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { E, Far } from '@agoric/far';
 import { makeStore } from '@agoric/store';
-import { installOnChain as installTreasuryOnChain } from '@agoric/treasury/bundles/install-on-chain.js';
+import { installOnChain as installTreasuryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain.js';
 import attestationBundle from '@agoric/zoe/src/contracts/attestation/install-on-chain.js';
 import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
@@ -242,26 +242,6 @@ async function makeChainBundler(
     displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
     initialFunds: 1_000_000_000_000_000_000n,
   };
-  const zoeFeesConfig = {
-    getPublicFacetFee: 50n,
-    installFee: 65_000n,
-    startInstanceFee: 5_000_000n,
-    offerFee: 65_000n,
-    timeAuthority: chainTimerServiceP,
-    lowFee: 500_000n,
-    highFee: 5_000_000n,
-    shortExp: 1000n * 60n * 5n, // 5 min in milliseconds
-    longExp: 1000n * 60n * 60n * 24n * 1n, // 1 day in milliseconds
-  };
-  const meteringConfig = {
-    incrementBy: 25_000_000n,
-    initial: 50_000_000n,
-    threshold: 25_000_000n,
-    price: {
-      feeNumerator: 1n,
-      computronDenominator: 1n, // default is just one-to-one
-    },
-  };
 
   // Create singleton instances.
   const [
@@ -277,12 +257,7 @@ async function makeChainBundler(
     E(vats.sharing).getSharingService(),
     E(vats.board).getBoard(),
     chainTimerServiceP,
-    E(vats.zoe).buildZoe(
-      vatAdminSvc,
-      feeIssuerConfig,
-      zoeFeesConfig,
-      meteringConfig,
-    ),
+    E(vats.zoe).buildZoe(vatAdminSvc, feeIssuerConfig),
     E(vats.priceAuthority).makePriceAuthority(),
     E(vats.walletManager).buildWalletManager(vatAdminSvc),
   ]);
@@ -333,7 +308,7 @@ async function makeChainBundler(
         chainTimerService,
         nameAdmins,
         priceAuthority,
-        zoeWPurse: zoeWUnlimitedPurse,
+        zoe: zoeWUnlimitedPurse,
         bootstrapPaymentValue,
         feeMintAccess,
       }),
@@ -342,7 +317,7 @@ async function makeChainBundler(
         board,
         nameAdmins,
         namesByAddress,
-        zoeWPurse: zoeWUnlimitedPurse,
+        zoe: zoeWUnlimitedPurse,
       }),
     ]);
 
@@ -479,7 +454,7 @@ async function makeChainBundler(
     // Only distribute fees if there is a collector.
     E(vats.distributeFees)
       .buildDistributor(
-        [treasuryCreator, ammFacets.creatorFacet].map(cf =>
+        [treasuryCreator, ammFacets.ammCreatorFacet].map(cf =>
           E(vats.distributeFees).makeFeeCollector(zoeWUnlimitedPurse, cf),
         ),
         feeCollectorDepositFacet,
