@@ -70,10 +70,8 @@
           },
           "makeBLDKit": {
             "consume": {
-              "bankManager": true
-            },
-            "produce": {
-              "BLDKit": true
+              "bankManager": true,
+              "nameAdmins": true
             }
           }
         }

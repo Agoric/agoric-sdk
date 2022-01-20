@@ -84,6 +84,7 @@ const makeVatsFromBundles = ({
  *   consume: {
  *     vatAdminSvc: ERef<VatAdminSvc>,
  *     loadVat: ERef<VatLoader<ZoeVat>>,
+ *     nameAdmins: ERef<Record<string, NameAdmin>>,
  *     client: ERef<ClientConfig>
  *   },
  *   produce: { zoe: Producer<ZoeService>, feeMintAccess: Producer<FeeMintAccess> },
@@ -92,7 +93,7 @@ const makeVatsFromBundles = ({
  * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
  */
 const buildZoe = async ({
-  consume: { vatAdminSvc, loadVat, client },
+  consume: { vatAdminSvc, loadVat, client, nameAdmins },
   produce: { zoe, feeMintAccess },
 }) => {
   const { zoeService, feeMintAccess: fma } = await E(
@@ -100,6 +101,11 @@ const buildZoe = async ({
   ).buildZoe(vatAdminSvc, feeIssuerConfig);
 
   zoe.resolve(zoeService);
+  const runIssuer = await E(zoeService).getFeeIssuer();
+  const runBrand = await E(runIssuer).getBrand();
+  E(E(nameAdmins).get('issuer')).update('RUN', runIssuer);
+  E(E(nameAdmins).get('brand')).update('RUN', runBrand);
+
   feeMintAccess.resolve(fma);
   E(client).assignBundle({ zoe: _addr => zoeService });
 };
@@ -158,6 +164,9 @@ const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
         if (nm === 'uiConfig') {
           // Reserve the Vault Factory's config until we've populated it.
           nameAdmin.reserve('vaultFactory');
+        } else if (['issuer', 'brand'].includes(nm)) {
+          nameAdmin.reserve('BLD');
+          nameAdmin.reserve('RUN');
         }
       },
     ),
@@ -254,24 +263,21 @@ const makeClientBanks = async ({
 /**
  * @param {{
  *   consume: {
- *     bankManager: Promise<BankManager>
+ *     bankManager: Promise<BankManager>,
+ *     nameAdmins: Promise<Record<string, NameAdmin>>,
  *   },
- *   produce: {
- *     BLDKit: Producer<{ brand: Brand, issuer: Issuer }>
- *   }
  * }} powers
  * @typedef {*} BankManager // TODO
  */
-const makeBLDKit = async ({
-  consume: { bankManager },
-  produce: { BLDKit },
-}) => {
+const makeBLDKit = async ({ consume: { bankManager, nameAdmins } }) => {
   const [issuerName, { bankDenom, bankPurse, issuerArgs }] = BLD_ISSUER_ENTRY;
   assert(issuerArgs);
   const kit = makeIssuerKit(issuerName, ...issuerArgs); // TODO: should this live in another vat???
   await E(bankManager).addAsset(bankDenom, issuerName, bankPurse, kit);
+  // How to be clear that this "kit" has no mint? Do we have a name for brand and issuer?
   const { brand, issuer } = kit;
-  BLDKit.resolve({ brand, issuer });
+  E(E(nameAdmins).get('issuer')).update('BLD', issuer);
+  E(E(nameAdmins).get('brand')).update('BLD', brand);
 };
 
 /**
