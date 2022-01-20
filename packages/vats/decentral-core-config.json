@@ -6,26 +6,57 @@
       "parameters": {
         "bootstrapManifest": {
           "connectVattpWithMailbox": {
-            "vatPowers": { "D": true },
-            "vats": { "vattp": true },
-            "devices": { "mailbox": true }
+            "vatPowers": {
+              "D": true
+            },
+            "vats": {
+              "vattp": true
+            },
+            "devices": {
+              "mailbox": true
+            }
           },
           "makeVatsFromBundles": {
-            "vats": { "vatAdmin": true },
-            "devices": { "vatAdmin": true },
-            "produce": { "vatAdminSvc": true, "loadVat": true }
+            "vats": {
+              "vatAdmin": true
+            },
+            "devices": {
+              "vatAdmin": true
+            },
+            "produce": {
+              "vatAdminSvc": true,
+              "loadVat": true
+            }
           },
           "buildZoe": {
-            "consume": { "vatAdminSvc": true, "loadVat": true, "client": true },
-            "produce": { "zoe": true, "feeMintAccess": true }
+            "consume": {
+              "vatAdminSvc": true,
+              "loadVat": true,
+              "client": true
+            },
+            "produce": {
+              "zoe": true,
+              "feeMintAccess": true
+            }
           },
           "makeBoard": {
-            "consume": { "loadVat": true, "client": true },
-            "produce": { "board": true }
+            "consume": {
+              "loadVat": true,
+              "client": true
+            },
+            "produce": {
+              "board": true
+            }
           },
           "makeAddressNameHubs": {
-            "consume": { "client": true },
-            "produce": { "agoricNames": true, "agoricNamesAdmin": true, "nameAdmins": true }
+            "consume": {
+              "client": true
+            },
+            "produce": {
+              "agoricNames": true,
+              "agoricNamesAdmin": true,
+              "nameAdmins": true
+            }
           },
           "makeClientBanks": {
             "consume": {
@@ -33,7 +64,9 @@
               "client": true,
               "bridgeManager": true
             },
-            "produce": { "bankManager": true }
+            "produce": {
+              "bankManager": true
+            }
           },
           "makeBLDKit": {
             "consume": {
