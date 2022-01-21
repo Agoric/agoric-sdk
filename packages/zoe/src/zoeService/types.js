@@ -177,6 +177,7 @@
 /**
  * @typedef {Object} UserSeat
  * @property {() => Promise<Allocation>} getCurrentAllocation
+ * TODO remove getCurrentAllocation query
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout

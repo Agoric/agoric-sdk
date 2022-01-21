@@ -70,7 +70,7 @@ export const makeEscrowStorage = () => {
    * @param {Amount} amount
    * @returns {Promise<Amount>}
    */
-  const doDepositPayments = (paymentP, amount) => {
+  const doDepositPayment = (paymentP, amount) => {
     const purse = brandToPurse.get(amount.brand);
     return E.when(paymentP, payment => E(purse).deposit(payment, amount));
   };
@@ -88,7 +88,6 @@ export const makeEscrowStorage = () => {
     // keywords. Proposal.give keywords that do not have matching payments will
     // be caught in the deposit step.
     paymentKeywords.forEach(keyword => {
-      assert.typeof(keyword, 'string');
       assert(
         giveKeywords.includes(keyword),
         X`The ${q(
@@ -118,7 +117,7 @@ export const makeEscrowStorage = () => {
             paymentKeywords,
           )}`,
         );
-        return doDepositPayments(payments[keyword], give[keyword]);
+        return doDepositPayment(payments[keyword], give[keyword]);
       }),
     );
 

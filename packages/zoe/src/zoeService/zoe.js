@@ -21,7 +21,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
-import { makeOffer } from './offer/offer.js';
+import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { setupCreateZCFVat } from './createZCFVat.js';
 import { createFeeMint } from './feeMint.js';
@@ -97,7 +97,7 @@ const makeZoeKit = (
   );
 
   // Pass the capabilities necessary to create E(zoe).offer
-  const offer = makeOffer(
+  const offer = makeOfferMethod(
     invitationIssuer,
     getInstanceAdmin,
     depositPayments,
