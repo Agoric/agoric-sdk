@@ -24,9 +24,12 @@ const board = {
   getValue: jest.fn(),
 };
 
-const walletBridge = {
-  getBoard: () => board,
-  addContact: jest.fn(),
+const services = {
+  board,
+};
+
+const schemaActions = {
+  createContact: jest.fn(),
 };
 
 const appTheme = createTheme({
@@ -40,7 +43,12 @@ const appTheme = createTheme({
 const withApplicationContext = (Component, _) => ({ ...props }) => {
   return (
     <ThemeProvider theme={appTheme}>
-      <Component contacts={contacts} walletBridge={walletBridge} {...props} />
+      <Component
+        contacts={contacts}
+        services={services}
+        schemaActions={schemaActions}
+        {...props}
+      />
     </ThemeProvider>
   );
 };
@@ -104,7 +112,7 @@ test('shows the snackbar after successfully importing a contact', async () => {
   board.getValue.mockImplementation(id => id);
   let resolveContactP;
   const contactP = new Promise(res => (resolveContactP = res));
-  walletBridge.addContact.mockImplementation(_ => contactP);
+  schemaActions.createContact.mockImplementation(_ => contactP);
 
   expect(component.find(Snackbar).props().open).toBe(false);
 
@@ -120,7 +128,7 @@ test('shows the snackbar after successfully importing a contact', async () => {
 
   const snackbar = component.find(Snackbar);
   expect(board.getValue).toHaveBeenCalledWith('123');
-  expect(walletBridge.addContact).toHaveBeenCalledWith('foo', '123');
+  expect(schemaActions.createContact).toHaveBeenCalledWith('123', 'foo');
   expect(snackbar.props().open).toBe(true);
   expect(snackbar.props().message).toBe('Successfully imported contact.');
   expect(component.find(CircularProgress).length).toBe(0);
