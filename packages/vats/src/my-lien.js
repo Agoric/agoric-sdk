@@ -21,7 +21,7 @@ const XLien = {
  */
 
 /**
- * @param {import('./bridge').BridgeManager} bridgeManager
+ * @param {ERef<import('./bridge').BridgeManager>} bridgeManager
  * @param {Brand} stake
  * @returns {StakingAuthority}
  */
