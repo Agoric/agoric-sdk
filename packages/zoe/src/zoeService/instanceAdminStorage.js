@@ -1,5 +1,6 @@
 // @ts-check
 
+import { E } from '@agoric/eventual-send';
 import { makeWeakStore } from '@agoric/store';
 
 /**
@@ -10,9 +11,10 @@ export const makeInstanceAdminStorage = () => {
   const instanceToInstanceAdmin = makeWeakStore('instance');
 
   /** @type {GetPublicFacet} */
-  const getPublicFacet = async instance => {
-    return instanceToInstanceAdmin.get(instance).getPublicFacet();
-  };
+  const getPublicFacet = async instanceP =>
+    E.when(instanceP, instance =>
+      instanceToInstanceAdmin.get(instance).getPublicFacet(),
+    );
 
   /** @type {GetBrands} */
   const getBrands = async instance =>

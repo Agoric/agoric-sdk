@@ -66,7 +66,7 @@
 
 /**
  * @callback GetPublicFacet
- * @param {Instance} instance
+ * @param {ERef<Instance>} instanceP
  * @returns {Promise<Object>}
  */
 
