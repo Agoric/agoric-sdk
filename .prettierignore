@@ -1,0 +1,10 @@
+# artifacts
+build
+bundles
+compiled
+dist
+public
+
+# subrepos
+/packages/xsnap/moddable
+/packages/xsnap/xsnap-native
