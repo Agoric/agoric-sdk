@@ -53,7 +53,6 @@ const OfferWithoutContext = ({
   declinedOffers,
   setDeclinedOffers,
   setClosedOffers,
-  walletBridge,
 }) => {
   const {
     instancePetname,
@@ -62,7 +61,6 @@ const OfferWithoutContext = ({
     proposalForDisplay: { give = {}, want = {} } = {},
     invitationDetails: { fee, feePursePetname, expiry } = {},
     id,
-    offerId,
   } = offer;
   let status = offer.status || 'proposed';
 
@@ -81,16 +79,16 @@ const OfferWithoutContext = ({
 
   const approve = () => {
     setPendingOffers({ offerId: id, isPending: true });
-    E(walletBridge).acceptOffer(offerId);
+    E(offer.actions).accept();
   };
 
   const decline = () => {
     setDeclinedOffers({ offerId: id, isDeclined: true });
-    E(walletBridge).declineOffer(offerId);
+    E(offer.actions).decline();
   };
 
   const exit = () => {
-    E(walletBridge).cancelOffer(offerId);
+    E(offer.actions).cancel();
   };
 
   const close = () => {
@@ -240,5 +238,4 @@ export default withApplicationContext(OfferWithoutContext, context => ({
   declinedOffers: context.declinedOffers,
   setDeclinedOffers: context.setDeclinedOffers,
   setClosedOffers: context.setClosedOffers,
-  walletBridge: context.walletBridge,
 }));
