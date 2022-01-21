@@ -75,6 +75,10 @@
   "eslintConfig": {
     "root": true
   },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
   "scripts": {
     "OFF-clean": "yarn workspaces run clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.js",

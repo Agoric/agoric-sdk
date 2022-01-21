@@ -25,10 +25,6 @@
   "files": [
     "eslint-config.json"
   ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "devDependencies": {
     "@endo/eslint-config": "^0.3.20",
     "@jessie.js/eslint-plugin": "^0.1.3",

@@ -55,10 +55,6 @@
       "import/no-extraneous-dependencies": "off"
     }
   },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "publishConfig": {
     "access": "public"
   }

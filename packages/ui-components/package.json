@@ -47,10 +47,6 @@
     "dist",
     "compiled"
   ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "devDependencies": {
     "@babel/cli": "^7.12.13",
     "@babel/core": "^7.12.13",
