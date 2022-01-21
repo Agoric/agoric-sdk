@@ -78,7 +78,6 @@
   "scripts": {
     "OFF-clean": "yarn workspaces run clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.js",
-    "prettier": "yarn workspaces run prettier",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
