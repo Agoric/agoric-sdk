@@ -85,6 +85,8 @@
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
+    "format": "yarn prettier --write 'packages/**/*.js' 'golang/**/*.js'",
+    "format-check": "yarn prettier --check 'packages/**/*.js' 'golang/**/*.js'",
     "lint-fix": "yarn workspaces run lint-fix",
     "lint-check": "yarn workspaces run lint-check",
     "lint": "yarn workspaces run lint-check",
