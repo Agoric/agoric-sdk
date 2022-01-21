@@ -195,6 +195,26 @@ test(`E(zoe).getPublicFacet`, async t => {
   t.is(await E(zoe).getPublicFacet(instance), publicFacet);
 });
 
+test(`E(zoe).getPublicFacet promise for instance`, async t => {
+  const { zoe } = setup();
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installationP = E(zoe).install(bundle);
+  // Note that E.get does not currently pipeline
+  const { publicFacet: publicFacetP, instance: instanceP } = E.get(
+    E(zoe).startInstance(installationP),
+  );
+  const pfp = E(zoe).getPublicFacet(instanceP);
+  const offersCountP = E(publicFacetP).getOffersCount();
+  const [offersCount, publicFacet, pf] = await Promise.all([
+    offersCountP,
+    publicFacetP,
+    pfp,
+  ]);
+  t.is(offersCount, 0n);
+  t.is(pf, publicFacet);
+});
+
 test(`E(zoe).getPublicFacet - no instance`, async t => {
   const { zoe } = setup();
   // @ts-ignore deliberate invalid arguments for testing

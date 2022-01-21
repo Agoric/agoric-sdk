@@ -10,9 +10,7 @@ HandledPromise is defined by eventual send shim.
 */
 /* global __dirname, __filename, HandledPromise, issueCommand, test */
 // @ts-check
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses" />
-// eslint-disable-next-line spaced-comment
 /// <reference types="@agoric/eventual-send" />
 
 const encoder = new TextEncoder();

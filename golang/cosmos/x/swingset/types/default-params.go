@@ -53,4 +53,6 @@ var (
 		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
 		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
 	}
+
+	DefaultBootstrapVatConfig = "@agoric/vats/decentral-config.json"
 )

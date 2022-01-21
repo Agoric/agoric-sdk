@@ -47,9 +47,11 @@ const board = {
   getValue: jest.fn(),
 };
 
-const walletBridge = {
-  getBoard: () => board,
-  addIssuer: jest.fn(),
+const services = {
+  board,
+};
+const schemaActions = {
+  createIssuer: jest.fn(),
 };
 
 const withApplicationContext = (Component, _) => ({ ...props }) => {
@@ -58,7 +60,8 @@ const withApplicationContext = (Component, _) => ({ ...props }) => {
       <Component
         pendingPurseCreations={pendingPurseCreations}
         issuers={issuers}
-        walletBridge={walletBridge}
+        schemaActions={schemaActions}
+        services={services}
         {...props}
       />
     </ThemeProvider>
@@ -117,7 +120,7 @@ test('shows the snackbar after successfully importing an issuer', async () => {
   board.getValue.mockImplementation(id => id);
   let resolveIssuerP;
   const issuerP = new Promise(res => (resolveIssuerP = res));
-  walletBridge.addIssuer.mockImplementation(_ => issuerP);
+  schemaActions.createIssuer.mockImplementation(_ => issuerP);
 
   expect(component.find(Snackbar).props().open).toBe(false);
 
@@ -133,7 +136,7 @@ test('shows the snackbar after successfully importing an issuer', async () => {
 
   const snackbar = component.find(Snackbar);
   expect(board.getValue).toHaveBeenCalledWith('123');
-  expect(walletBridge.addIssuer).toHaveBeenCalledWith('foo', '123', true);
+  expect(schemaActions.createIssuer).toHaveBeenCalledWith('123', 'foo');
   expect(snackbar.props().open).toBe(true);
   expect(snackbar.props().message).toBe('Successfully imported issuer.');
   expect(component.find(CircularProgress).length).toBe(1);

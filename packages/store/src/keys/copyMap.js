@@ -10,7 +10,6 @@ import {
 import { compareAntiRank, sortByRank } from '../patterns/rankOrder.js';
 import { checkCopySetKeys } from './copySet.js';
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 const { details: X } = assert;

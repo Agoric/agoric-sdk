@@ -1,5 +1,5 @@
+// @ts-check
 import { MeterProvider } from '@opentelemetry/metrics';
-import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
 import { makeLegacyMap } from '@agoric/store';
 
@@ -7,6 +7,8 @@ import {
   KERNEL_STATS_SUM_METRICS,
   KERNEL_STATS_UPDOWN_METRICS,
 } from '@agoric/swingset-vat/src/kernel/metrics.js';
+
+export { getTelemetryProviders } from '@agoric/telemetry';
 
 /**
  * TODO Would be nice somehow to label the vats individually, but it's too
@@ -260,39 +262,4 @@ export function exportKernelStats({
     .bind(labels);
 
   return { schedulerCrankTimeHistogram, schedulerBlockTimeHistogram };
-}
-
-/**
- * Interpret the meter provider environment variables.
- *
- * @param {{ log: Console['log'] }} console
- * @param {Record<string, string>} env
- */
-export function getMeterProvider(console, env) {
-  if (
-    !env.OTEL_EXPORTER_PROMETHEUS_HOST &&
-    !env.OTEL_EXPORTER_PROMETHEUS_PORT
-  ) {
-    return undefined;
-  }
-  const host =
-    env.OTEL_EXPORTER_PROMETHEUS_HOST ||
-    PrometheusExporter.DEFAULT_OPTIONS.host ||
-    '0.0.0.0';
-  const port =
-    Number(env.OTEL_EXPORTER_PROMETHEUS_PORT) ||
-    PrometheusExporter.DEFAULT_OPTIONS.port;
-  const exporter = new PrometheusExporter(
-    {
-      startServer: true,
-      host,
-      port,
-    },
-    () => {
-      console.log(
-        `Prometheus scrape endpoint: http://${host}:${port}${PrometheusExporter.DEFAULT_OPTIONS.endpoint}`,
-      );
-    },
-  );
-  return new MeterProvider({ exporter, interval: 1000 });
 }

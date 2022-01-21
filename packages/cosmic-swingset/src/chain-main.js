@@ -10,7 +10,7 @@ import { assert, details as X } from '@agoric/assert';
 
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
-import { getMeterProvider } from './kernel-stats.js';
+import { getTelemetryProviders } from './kernel-stats.js';
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
@@ -236,18 +236,19 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     }
 
-    const vatconfig = new URL(
-      await importMetaResolve(
-        '@agoric/vats/decentral-config.json',
-        import.meta.url,
-      ),
-    ).pathname;
     const argv = {
       ROLE: 'chain',
       noFakeCurrencies: !env.FAKE_CURRENCIES,
       bootMsg,
     };
-    const meterProvider = getMeterProvider(console, env);
+    const vatconfig = new URL(
+      await importMetaResolve(
+        env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+          argv.bootMsg.params.bootstrap_vat_config,
+        import.meta.url,
+      ),
+    ).pathname;
+    const { metricsProvider } = getTelemetryProviders({ console, env });
     const slogFile = env.SLOGFILE;
     const consensusMode = env.DEBUG === undefined;
     const s = await launch(
@@ -258,7 +259,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       vatconfig,
       argv,
       undefined,
-      meterProvider,
+      metricsProvider,
       slogFile,
       consensusMode,
     );

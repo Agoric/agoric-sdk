@@ -23,7 +23,8 @@ const importingIssuersReducer = (state, action) => {
 export const IssuersWithoutContext = ({
   issuers,
   pendingPurseCreations,
-  walletBridge,
+  schemaActions,
+  services,
 }) => {
   const [selectedIssuer, setSelectedIssuer] = useState(null);
   const handleCreatePurse = id => setSelectedIssuer(id);
@@ -54,8 +55,8 @@ export const IssuersWithoutContext = ({
   const handleImport = async (petname, boardId) => {
     incrementImportingIssuers();
     try {
-      const obj = await E(E(walletBridge).getBoard()).getValue(boardId);
-      await E(walletBridge).addIssuer(petname, obj, true);
+      const issuerObj = await E(services.board).getValue(boardId);
+      await E(schemaActions).createIssuer(issuerObj, petname);
       showSnackbar('Successfully imported issuer.');
     } catch {
       showSnackbar('Failed to import issuer.');
@@ -143,5 +144,6 @@ export const IssuersWithoutContext = ({
 export default withApplicationContext(IssuersWithoutContext, context => ({
   issuers: context.issuers,
   pendingPurseCreations: context.pendingPurseCreations,
-  walletBridge: context.walletBridge,
+  schemaActions: context.schemaActions,
+  services: context.services,
 }));

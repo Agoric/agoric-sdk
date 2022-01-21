@@ -16,7 +16,11 @@ const importingContactsReducer = (state, action) => {
 };
 
 // Exported for testing only.
-export const ContactsWithoutContext = ({ contacts, walletBridge }) => {
+export const ContactsWithoutContext = ({
+  contacts,
+  services,
+  schemaActions,
+}) => {
   const [isSnackbarOpen, setIsSnackbarOpen] = useState(false);
   const handleCloseSnackbar = _ => {
     setIsSnackbarOpen(false);
@@ -42,8 +46,8 @@ export const ContactsWithoutContext = ({ contacts, walletBridge }) => {
   const handleImport = async (petname, boardId) => {
     incrementImportingContacts();
     try {
-      const obj = await E(E(walletBridge).getBoard()).getValue(boardId);
-      await E(walletBridge).addContact(petname, obj);
+      const contactObj = await E(services.board).getValue(boardId);
+      await E(schemaActions).createContact(contactObj, petname);
       showSnackbar('Successfully imported contact.');
     } catch {
       showSnackbar('Failed to import contact.');
@@ -104,5 +108,7 @@ export const ContactsWithoutContext = ({ contacts, walletBridge }) => {
 
 export default withApplicationContext(ContactsWithoutContext, context => ({
   contacts: context.contacts,
+  services: context.services,
+  schemaActions: context.schemaActions,
   walletBridge: context.walletBridge,
 }));

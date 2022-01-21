@@ -18,7 +18,7 @@ const { details: X, quote: q } = assert;
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @returns {Offer}
  */
-export const makeOffer = (
+export const makeOfferMethod = (
   invitationIssuer,
   getInstanceAdmin,
   depositPayments,

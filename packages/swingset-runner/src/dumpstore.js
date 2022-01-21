@@ -2,7 +2,7 @@ import fs from 'fs';
 import process from 'process';
 
 /* eslint-disable no-use-before-define */
-export function dumpStore(swingStore, outfile, rawMode) {
+export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
   const streamStore = swingStore.streamStore;
   let out;
   if (outfile) {
@@ -283,7 +283,7 @@ export function dumpStore(swingStore, outfile, rawMode) {
   }
 
   function pkvBig(tag, key, value, maxWidth = 50) {
-    if (value.length > maxWidth) {
+    if (value.length > maxWidth && truncate) {
       pkv(key, `<<${tag} ${value.length}>>`);
     } else {
       pkv(key, value);

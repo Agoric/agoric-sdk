@@ -4,13 +4,14 @@ import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react
 import React, { useCallback } from 'react';
 import clsx from 'clsx';
 import { E } from '@agoric/eventual-send';
-import { observeNotifier } from '@agoric/notifier';
+import { observeIterator } from '@agoric/notifier';
 import { makeStyles } from '@mui/styles';
 import IconButton from '@mui/material/IconButton';
 import Public from '@mui/icons-material/Public';
 import Tooltip from '@mui/material/Tooltip';
 
 import { withApplicationContext } from '../contexts/Application';
+import { makeBackendFromWalletBridge } from '../util/WalletBackendAdapter.js';
 
 const useStyles = makeStyles(_ => ({
   hidden: {
@@ -72,13 +73,7 @@ const getAccessToken = () => {
 const WalletConnection = ({
   setConnectionState,
   connectionState,
-  setInbox,
-  setPurses,
-  setDapps,
-  setContacts,
-  setPayments,
-  setIssuers,
-  setWalletBridge,
+  setBackend,
 }) => {
   const classes = useStyles();
   const onWalletState = useCallback(ev => {
@@ -91,25 +86,8 @@ const WalletConnection = ({
         // It connects asynchronously, but you can use promise pipelining immediately.
         /** @type {ERef<WalletBridge>} */
         const bridge = E(walletConnection).getAdminBootstrap(getAccessToken());
-        // You should reconstruct all state here.
-        setWalletBridge(bridge);
-        observeNotifier(E(bridge).getOffersNotifier(), {
-          updateState: setInbox,
-        });
-        observeNotifier(E(bridge).getPursesNotifier(), {
-          updateState: setPurses,
-        });
-        observeNotifier(E(bridge).getDappsNotifier(), {
-          updateState: setDapps,
-        });
-        observeNotifier(E(bridge).getContactsNotifier(), {
-          updateState: setContacts,
-        });
-        observeNotifier(E(bridge).getPaymentsNotifier(), {
-          updateState: setPayments,
-        });
-        observeNotifier(E(bridge).getIssuersNotifier(), {
-          updateState: setIssuers,
+        observeIterator(makeBackendFromWalletBridge(bridge), {
+          updateState: setBackend,
         });
         break;
       }
@@ -147,11 +125,5 @@ const WalletConnection = ({
 export default withApplicationContext(WalletConnection, context => ({
   setConnectionState: context.setConnectionState,
   connectionState: context.connectionState,
-  setWalletBridge: context.setWalletBridge,
-  setInbox: context.setInbox,
-  setPurses: context.setPurses,
-  setDapps: context.setDapps,
-  setContacts: context.setContacts,
-  setPayments: context.setPayments,
-  setIssuers: context.setIssuers,
+  setBackend: context.setBackend,
 }));

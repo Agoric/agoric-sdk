@@ -107,7 +107,7 @@ an async iteration’s non-final values, as well as the final value.
 
 On the other hand, NotifierKit is a *lossy conveyor* of non-final values, but does also 
 losslessly convey termination. Had the example above started with the following instead 
-of using `makeSubscriberKit()`, 
+of using `makeSubscriptionKit()`, 
 ```js
 const { updater, notifier } = makeNotifierKit();
 ```
@@ -117,7 +117,7 @@ each have missed either or both of the non-final values due to NotifierKit’s l
 
 ## Distributed Operation
 
-Either makeNotifierKit or makeSubscriberKit can be used in a multicast manner with good 
+Either makeNotifierKit or makeSubscriptionKit can be used in a multicast manner with good 
 distributed systems properties, where there is only one producing site but any number of 
 consuming sites. The producer is not vulnerable to the consumers; they cannot cause the kit 
 to malfunction or prevent the code producing values from making progress. The consumers are 
