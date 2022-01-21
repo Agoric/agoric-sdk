@@ -23,7 +23,7 @@ const importingIssuersReducer = (state, action) => {
 export const IssuersWithoutContext = ({
   issuers,
   pendingPurseCreations,
-  schema,
+  schemaActions,
   services,
 }) => {
   const [selectedIssuer, setSelectedIssuer] = useState(null);
@@ -56,7 +56,7 @@ export const IssuersWithoutContext = ({
     incrementImportingIssuers();
     try {
       const issuerObj = await E(services.board).getValue(boardId);
-      await E(schema.issuers.actions).create(issuerObj, petname);
+      await E(schemaActions).createIssuer(issuerObj, petname);
       showSnackbar('Successfully imported issuer.');
     } catch {
       showSnackbar('Failed to import issuer.');
@@ -144,6 +144,6 @@ export const IssuersWithoutContext = ({
 export default withApplicationContext(IssuersWithoutContext, context => ({
   issuers: context.issuers,
   pendingPurseCreations: context.pendingPurseCreations,
-  schema: context.schema,
+  schemaActions: context.schemaActions,
   services: context.services,
 }));

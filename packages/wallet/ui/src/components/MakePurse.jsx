@@ -17,7 +17,7 @@ export const MakePurseWithoutContext = ({
   purses,
   handleClose,
   setPendingPurseCreations,
-  schema,
+  schemaActions,
 }) => {
   const [isSnackbarOpen, setIsSnackbarOpen] = useState(false);
   const handleCloseSnackbar = _ => {
@@ -53,7 +53,7 @@ export const MakePurseWithoutContext = ({
     setPendingPurseCreations({ issuerId, isPending: true });
     close();
     try {
-      await E(schema.purses.actions).create(issuer, petname);
+      await E(schemaActions).createPurse(issuer, petname);
       showSnackbar('Successfully created purse.');
     } catch (e) {
       showSnackbar('Failed to create purse.');
@@ -110,5 +110,5 @@ export default withApplicationContext(MakePurseWithoutContext, context => ({
   issuers: context.issuers,
   purses: context.purses,
   setPendingPurseCreations: context.setPendingPurseCreations,
-  schema: context.schema,
+  schemaActions: context.schemaActions,
 }));

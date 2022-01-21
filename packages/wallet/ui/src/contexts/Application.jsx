@@ -131,19 +131,19 @@ const Provider = ({ children }) => {
   const [payments, setPayments] = useReducer(paymentsReducer, null);
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
   const [services, setServices] = useState(null);
-  const [schema, setSchema] = useState(null);
+  const [schemaActions, setSchemaActions] = useState(null);
 
   const setBackend = backend => {
     observeIterator(backend, {
-      updateState: state => {
-        setSchema(state);
-        observeIterator(state.services.it, { updateState: setServices });
-        observeIterator(state.offers.it, { updateState: setInbox });
-        observeIterator(state.purses.it, { updateState: setPurses });
-        observeIterator(state.dapps.it, { updateState: setDapps });
-        observeIterator(state.contacts.it, { updateState: setContacts });
-        observeIterator(state.payments.it, { updateState: setPayments });
-        observeIterator(state.issuers.it, { updateState: setIssuers });
+      updateState: schema => {
+        setSchemaActions(schema.actions);
+        observeIterator(schema.services, { updateState: setServices });
+        observeIterator(schema.offers, { updateState: setInbox });
+        observeIterator(schema.purses, { updateState: setPurses });
+        observeIterator(schema.dapps, { updateState: setDapps });
+        observeIterator(schema.contacts, { updateState: setContacts });
+        observeIterator(schema.payments, { updateState: setPayments });
+        observeIterator(schema.issuers, { updateState: setIssuers });
       },
     });
   };
@@ -179,7 +179,7 @@ const Provider = ({ children }) => {
   const state = {
     connectionState,
     setConnectionState,
-    schema,
+    schemaActions,
     setBackend,
     services,
     setServices,
@@ -208,7 +208,7 @@ const Provider = ({ children }) => {
   };
 
   useDebugLogging(state, [
-    schema,
+    schemaActions,
     inbox,
     purses,
     dapps,

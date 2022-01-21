@@ -28,12 +28,8 @@ const services = {
   board,
 };
 
-const schema = {
-  contacts: {
-    actions: {
-      create: jest.fn(),
-    },
-  },
+const schemaActions = {
+  createContact: jest.fn(),
 };
 
 const appTheme = createTheme({
@@ -50,7 +46,7 @@ const withApplicationContext = (Component, _) => ({ ...props }) => {
       <Component
         contacts={contacts}
         services={services}
-        schema={schema}
+        schemaActions={schemaActions}
         {...props}
       />
     </ThemeProvider>
@@ -116,7 +112,7 @@ test('shows the snackbar after successfully importing a contact', async () => {
   board.getValue.mockImplementation(id => id);
   let resolveContactP;
   const contactP = new Promise(res => (resolveContactP = res));
-  schema.contacts.actions.create.mockImplementation(_ => contactP);
+  schemaActions.createContact.mockImplementation(_ => contactP);
 
   expect(component.find(Snackbar).props().open).toBe(false);
 
@@ -132,7 +128,7 @@ test('shows the snackbar after successfully importing a contact', async () => {
 
   const snackbar = component.find(Snackbar);
   expect(board.getValue).toHaveBeenCalledWith('123');
-  expect(schema.contacts.actions.create).toHaveBeenCalledWith('123', 'foo');
+  expect(schemaActions.createContact).toHaveBeenCalledWith('123', 'foo');
   expect(snackbar.props().open).toBe(true);
   expect(snackbar.props().message).toBe('Successfully imported contact.');
   expect(component.find(CircularProgress).length).toBe(0);

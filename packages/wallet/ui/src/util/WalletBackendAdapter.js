@@ -25,7 +25,7 @@ export const makeBackendFromWalletBridge = walletBridge => {
   /**
    * @param {AsyncIterator<any[], any[], undefined>} offersMembers
    */
-  const wrapOffersMembers = offersMembers =>
+  const wrapOffersIterator = offersMembers =>
     harden({
       next: async () => {
         const { done, value } = await offersMembers.next();
@@ -50,41 +50,23 @@ export const makeBackendFromWalletBridge = walletBridge => {
     });
 
   const firstSchema = harden({
-    services: {
-      it: iterateNotifier(servicesNotifier),
-    },
-    dapps: {
-      it: iterateNotifier(E(walletBridge).getDappsNotifier()),
-    },
-    contacts: {
-      it: iterateNotifier(E(walletBridge).getContactsNotifier()),
-      actions: Far('contactsActions', {
-        create: (depositFacet, id = newId('Contact')) =>
-          E(walletBridge).addContact(id, depositFacet),
-      }),
-    },
-    issuers: {
-      it: iterateNotifier(E(walletBridge).getIssuersNotifier()),
-      actions: Far('issuersActions', {
-        create: (issuer, id = newId('Issuer')) =>
-          E(walletBridge).addIssuer(id, issuer, true),
-      }),
-    },
-    offers: {
-      it: wrapOffersMembers(
-        iterateNotifier(E(walletBridge).getOffersNotifier()),
-      ),
-    },
-    payments: {
-      it: iterateNotifier(E(walletBridge).getPaymentsNotifier()),
-    },
-    purses: {
-      it: iterateNotifier(E(walletBridge).getPursesNotifier()),
-      actions: Far('pursesActions', {
-        create: (issuer, id = newId('Purse')) =>
-          E(walletBridge).makeEmptyPurse(issuer?.issuerPetname, id),
-      }),
-    },
+    actions: Far('schemaActions', {
+      createPurse: (issuer, id = newId('Purse')) =>
+        E(walletBridge).makeEmptyPurse(issuer?.issuerPetname, id),
+      createContact: (depositFacet, id = newId('Contact')) =>
+        E(walletBridge).addContact(id, depositFacet),
+      createIssuer: (issuer, id = newId('Issuer')) =>
+        E(walletBridge).addIssuer(id, issuer, true),
+    }),
+    services: iterateNotifier(servicesNotifier),
+    dapps: iterateNotifier(E(walletBridge).getDappsNotifier()),
+    contacts: iterateNotifier(E(walletBridge).getContactsNotifier()),
+    issuers: iterateNotifier(E(walletBridge).getIssuersNotifier()),
+    offers: wrapOffersIterator(
+      iterateNotifier(E(walletBridge).getOffersNotifier()),
+    ),
+    payments: iterateNotifier(E(walletBridge).getPaymentsNotifier()),
+    purses: iterateNotifier(E(walletBridge).getPursesNotifier()),
   });
 
   // Just produce a single update for the initial backend.
@@ -95,10 +77,8 @@ export const makeBackendFromWalletBridge = walletBridge => {
   // Finish all the other members iterators.
   observeIterator(backendIt, {
     finish: state => {
-      Object.values(state).forEach(({ it }) => {
-        if (it) {
-          it.return && it.return();
-        }
+      Object.values(state).forEach(it => {
+        typeof it.return === 'function' && it.return();
       });
     },
   });
