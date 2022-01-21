@@ -1,8 +1,9 @@
 import { act } from '@testing-library/react';
 import { mount } from 'enzyme';
-import { observeNotifier } from '@agoric/notifier';
+import { observeIterator } from '@agoric/notifier';
 import Tooltip from '@mui/material/Tooltip';
 import WalletConnection from '../WalletConnection';
+import { makeBackendFromWalletBridge } from '../../util/WalletBackendAdapter.js';
 
 jest.mock('@agoric/eventual-send', () => ({
   E: obj =>
@@ -22,31 +23,38 @@ jest.mock('@agoric/wallet-connection/react.js', () => {
 
 jest.mock('@agoric/notifier', () => {
   return {
-    observeNotifier: jest.fn(),
+    observeIterator: jest.fn(),
+  };
+});
+
+jest.mock('../../util/WalletBackendAdapter.js', () => {
+  return {
+    // FIXME: Why doesn't this mock return the string, just undefined?
+    /*
+    ● WalletConnection › on idle state › with an access token in the url › updates the store with the notifier data
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    - Expected
+    + Received
+
+    - "mockBackendIterator",
+    + undefined,
+      {"updateState": [Function mockConstructor]},
+*/
+    makeBackendFromWalletBridge: jest.fn(() => 'mockBackendIterator'),
   };
 });
 
 const setConnectionState = jest.fn();
-const setInbox = jest.fn();
-const setPurses = jest.fn();
-const setDapps = jest.fn();
-const setContacts = jest.fn();
-const setPayments = jest.fn();
-const setIssuers = jest.fn();
-const setWalletBridge = jest.fn();
+const setBackend = jest.fn();
 let connectionStatus = 'idle';
 const withApplicationContext = (Component, _) => ({ ...props }) => {
   return (
     <Component
       setConnectionState={setConnectionState}
       connectionState={connectionStatus}
-      setInbox={setInbox}
-      setPurses={setPurses}
-      setDapps={setDapps}
-      setContacts={setContacts}
-      setPayments={setPayments}
-      setIssuers={setIssuers}
-      setWalletBridge={setWalletBridge}
+      setBackend={setBackend}
       {...props}
     />
   );
@@ -100,29 +108,10 @@ describe('WalletConnection', () => {
     const accessToken = 'asdf';
     const setItem = jest.fn();
     const getItem = _ => `?accessToken=${accessToken}`;
-    let getOffersNotifier;
-    let getPursesNotifier;
-    let getDappsNotifier;
-    let getContactsNotifier;
-    let getPaymentsNotifier;
-    let getIssuersNotifier;
     let getAdminBootstrap;
 
     beforeEach(() => {
-      getOffersNotifier = jest.fn(() => 'mockOffersNotifier');
-      getPursesNotifier = jest.fn(() => 'mockPursesNotifier');
-      getDappsNotifier = jest.fn(() => 'mockDappsNotifier');
-      getContactsNotifier = jest.fn(() => 'mockContactsNotifier');
-      getPaymentsNotifier = jest.fn(() => 'mockPaymentsNotifier');
-      getIssuersNotifier = jest.fn(() => 'mockIssuersNotifier');
-      getAdminBootstrap = jest.fn(_ => ({
-        getOffersNotifier,
-        getPursesNotifier,
-        getDappsNotifier,
-        getContactsNotifier,
-        getPaymentsNotifier,
-        getIssuersNotifier,
-      }));
+      getAdminBootstrap = jest.fn(_ => ({}));
 
       delete window.localStorage;
       window.localStorage = {
@@ -169,25 +158,12 @@ describe('WalletConnection', () => {
       });
 
       test('updates the store with the notifier data', () => {
-        expect(observeNotifier).toHaveBeenCalledWith('mockOffersNotifier', {
-          updateState: setInbox,
+        expect(makeBackendFromWalletBridge).toHaveBeenCalledWith(
+          getAdminBootstrap(),
+        );
+        expect(observeIterator).toHaveBeenCalledWith('mockBackendIterator', {
+          updateState: setBackend,
         });
-        expect(observeNotifier).toHaveBeenCalledWith('mockDappsNotifier', {
-          updateState: setDapps,
-        });
-        expect(observeNotifier).toHaveBeenCalledWith('mockPursesNotifier', {
-          updateState: setPurses,
-        });
-        expect(observeNotifier).toHaveBeenCalledWith('mockPaymentsNotifier', {
-          updateState: setPayments,
-        });
-        expect(observeNotifier).toHaveBeenCalledWith('mockContactsNotifier', {
-          updateState: setContacts,
-        });
-        expect(observeNotifier).toHaveBeenCalledWith('mockIssuersNotifier', {
-          updateState: setIssuers,
-        });
-        expect(setWalletBridge).toHaveBeenCalledWith(getAdminBootstrap());
       });
     });
 
