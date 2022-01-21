@@ -29,20 +29,7 @@ jest.mock('@agoric/notifier', () => {
 
 jest.mock('../../util/WalletBackendAdapter.js', () => {
   return {
-    // FIXME: Why doesn't this mock return the string, just undefined?
-    /*
-    ● WalletConnection › on idle state › with an access token in the url › updates the store with the notifier data
-
-    expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-    - Expected
-    + Received
-
-    - "mockBackendIterator",
-    + undefined,
-      {"updateState": [Function mockConstructor]},
-*/
-    makeBackendFromWalletBridge: jest.fn(() => 'mockBackendIterator'),
+    makeBackendFromWalletBridge: jest.fn(),
   };
 });
 
@@ -122,6 +109,7 @@ describe('WalletConnection', () => {
 
     describe('with an access token in the url', () => {
       beforeEach(() => {
+        makeBackendFromWalletBridge.mockReturnValue('mockBackendIterator');
         delete window.location;
         window.location = {
           hash: `#accessToken=${accessToken}`,
