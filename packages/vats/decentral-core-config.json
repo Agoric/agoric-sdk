@@ -30,6 +30,8 @@
           },
           "buildZoe": {
             "consume": {
+              "agoricNames": true,
+              "nameAdmins": true,
               "vatAdminSvc": true,
               "loadVat": true,
               "client": true
@@ -70,6 +72,7 @@
           },
           "makeBLDKit": {
             "consume": {
+              "agoricNames": true,
               "bankManager": true,
               "nameAdmins": true
             }

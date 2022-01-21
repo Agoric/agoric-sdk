@@ -5,13 +5,22 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 
 import { makeStore } from '@agoric/store';
+import attestationBundle from '@agoric/zoe/bundles/bundle-attestation.js';
+import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { BLD_ISSUER_ENTRY } from '../issuers.js';
+import { makeStakeReporter } from '../my-lien.js';
 
-const { entries, fromEntries } = Object;
+const { entries, fromEntries, keys } = Object;
 
 // TODO: phase out ./issuers.js
 export const CENTRAL_ISSUER_NAME = 'RUN';
+
+const wellKnownERights = {
+  BLD: 'Agoric staking token',
+  RUN: 'Agoric RUN currency',
+  Attestation: 'Agoric lien attestation',
+};
 
 /** @type { FeeIssuerConfig } */
 export const feeIssuerConfig = {
@@ -31,6 +40,15 @@ export const governanceActions = harden({
       loadVat: true,
       zoe: true,
       feeMintAccess: true,
+    },
+  },
+  startAttestation: {
+    consume: {
+      agoricNames: true,
+      bridgeManager: true,
+      client: true,
+      nameAdmins: true,
+      zoe: true,
     },
   },
 });
@@ -80,11 +98,27 @@ const makeVatsFromBundles = ({
 };
 
 /**
+ * @param {string[]} edges
+ * @param {ERef<NameHub>} agoricNames
+ * @param {ERef<Store<NameHub, NameAdmin>>} nameAdmins
+ * @returns {Promise<NameAdmin[]>}
+ */
+const collectNameAdmins = (edges, agoricNames, nameAdmins) => {
+  return Promise.all(
+    edges.map(async edge => {
+      const hub = /** @type {NameHub} */ (await E(agoricNames).lookup(edge));
+      return E(nameAdmins).get(hub);
+    }),
+  );
+};
+
+/**
  * @param {{
  *   consume: {
+ *     agoricNames: ERef<NameHub>,
  *     vatAdminSvc: ERef<VatAdminSvc>,
  *     loadVat: ERef<VatLoader<ZoeVat>>,
- *     nameAdmins: ERef<Record<string, NameAdmin>>,
+ *     nameAdmins: ERef<Store<NameHub, NameAdmin>>,
  *     client: ERef<ClientConfig>
  *   },
  *   produce: { zoe: Producer<ZoeService>, feeMintAccess: Producer<FeeMintAccess> },
@@ -93,7 +127,7 @@ const makeVatsFromBundles = ({
  * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
  */
 const buildZoe = async ({
-  consume: { vatAdminSvc, loadVat, client, nameAdmins },
+  consume: { agoricNames, vatAdminSvc, loadVat, client, nameAdmins },
   produce: { zoe, feeMintAccess },
 }) => {
   const { zoeService, feeMintAccess: fma } = await E(
@@ -103,11 +137,18 @@ const buildZoe = async ({
   zoe.resolve(zoeService);
   const runIssuer = await E(zoeService).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
-  E(E(nameAdmins).get('issuer')).update('RUN', runIssuer);
-  E(E(nameAdmins).get('brand')).update('RUN', runBrand);
+  const [issuerAdmin, brandAdmin] = await collectNameAdmins(
+    ['issuer', 'brand'],
+    agoricNames,
+    nameAdmins,
+  );
 
   feeMintAccess.resolve(fma);
-  E(client).assignBundle({ zoe: _addr => zoeService });
+  return Promise.all([
+    E(issuerAdmin).update('RUN', runIssuer),
+    E(brandAdmin).update('RUN', runBrand),
+    E(client).assignBundle({ zoe: _addr => zoeService }),
+  ]);
 };
 
 /**
@@ -165,8 +206,7 @@ const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
           // Reserve the Vault Factory's config until we've populated it.
           nameAdmin.reserve('vaultFactory');
         } else if (['issuer', 'brand'].includes(nm)) {
-          nameAdmin.reserve('BLD');
-          nameAdmin.reserve('RUN');
+          keys(wellKnownERights).forEach(k => nameAdmin.reserve(k));
         }
       },
     ),
@@ -252,7 +292,7 @@ const makeClientBanks = async ({
   consume: { loadVat, client, bridgeManager },
   produce: { bankManager },
 }) => {
-  const settledBridge = await bridgeManager;
+  const settledBridge = await bridgeManager; // ISSUE: why await? it's remote, no?
   const mgr = E(E(loadVat)('bank')).makeBankManager(settledBridge);
   bankManager.resolve(mgr);
   return E(client).assignBundle({
@@ -263,21 +303,30 @@ const makeClientBanks = async ({
 /**
  * @param {{
  *   consume: {
+ *     agoricNames: Promise<NameHub>,
  *     bankManager: Promise<BankManager>,
- *     nameAdmins: Promise<Record<string, NameAdmin>>,
+ *     nameAdmins: Promise<Store<NameHub, NameAdmin>>,
  *   },
  * }} powers
  * @typedef {*} BankManager // TODO
  */
-const makeBLDKit = async ({ consume: { bankManager, nameAdmins } }) => {
+const makeBLDKit = async ({
+  consume: { agoricNames, bankManager, nameAdmins },
+}) => {
   const [issuerName, { bankDenom, bankPurse, issuerArgs }] = BLD_ISSUER_ENTRY;
   assert(issuerArgs);
   const kit = makeIssuerKit(issuerName, ...issuerArgs); // TODO: should this live in another vat???
   await E(bankManager).addAsset(bankDenom, issuerName, bankPurse, kit);
-  // How to be clear that this "kit" has no mint? Do we have a name for brand and issuer?
   const { brand, issuer } = kit;
-  E(E(nameAdmins).get('issuer')).update('BLD', issuer);
-  E(E(nameAdmins).get('brand')).update('BLD', brand);
+  const [issuerAdmin, brandAdmin] = await collectNameAdmins(
+    ['issuer', 'brand'],
+    agoricNames,
+    nameAdmins,
+  );
+  return Promise.all([
+    E(issuerAdmin).update(issuerName, issuer),
+    E(brandAdmin).update(issuerName, brand),
+  ]);
 };
 
 /**
@@ -332,6 +381,54 @@ const startVaultFactory = async ({
   });
 };
 
+/**
+ * @param {{
+ *   consume: {
+ *     agoricNames: ERef<NameHub>,
+ *     bridgeManager: ERef<import('../bridge.js').BridgeManager>,
+ *     client: ERef<ClientConfig>,
+ *     nameAdmins: ERef<Store<NameHub, NameAdmin>>,
+ *     zoe: ERef<ZoeService>,
+ *   }
+ * }} powers
+ */
+const startAttestation = async ({
+  consume: { agoricNames, bridgeManager, client, nameAdmins, zoe },
+}) => {
+  const [stakeName] = BLD_ISSUER_ENTRY;
+  const [
+    stakeBrand,
+    stakeIssuer,
+    [brandAdmin, issuerAdmin],
+  ] = await Promise.all([
+    E(agoricNames).lookup('brand', stakeName),
+    E(agoricNames).lookup('issuer', stakeName),
+    collectNameAdmins(['brand', 'issuer'], agoricNames, nameAdmins),
+  ]);
+
+  const reporter = makeStakeReporter(bridgeManager, stakeBrand);
+  const { issuer, brand, creatorFacet } = await bootstrapAttestation(
+    attestationBundle,
+    zoe,
+    stakeIssuer,
+    reporter,
+    {
+      expiringAttName: 'BldAttGov', // ISSUE: passe. get rid of this?
+      returnableAttName: 'BldLienAtt',
+    },
+  );
+
+  return Promise.all([
+    E(brandAdmin).update(wellKnownERights.Attestation, brand),
+    E(issuerAdmin).update(wellKnownERights.Attestation, issuer),
+    E(client).assignBundle({
+      attMaker: address => E(creatorFacet).getAttMaker(address),
+    }),
+  ]);
+};
+
+const startGetRun = async () => {};
+
 harden({
   connectVattpWithMailbox,
   makeVatsFromBundles,
@@ -342,6 +439,7 @@ harden({
   makeClientBanks,
   makeBLDKit,
   startVaultFactory,
+  startAttestation,
 });
 export {
   connectVattpWithMailbox,
@@ -353,4 +451,5 @@ export {
   makeClientBanks,
   makeBLDKit,
   startVaultFactory,
+  startAttestation,
 };
