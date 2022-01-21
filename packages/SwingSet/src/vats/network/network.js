@@ -426,10 +426,12 @@ export function makeNetworkProtocol(protocolHandler) {
             consummated = Error(`Already accepted`);
             current.delete(inboundAttempt);
 
-            const lchandler =
-              /** @type {ConnectionHandler} */
-              // eslint-disable-next-line prettier/prettier
-              (await E(listener).onAccept(port, localAddr, remoteAddr, listener));
+            const lchandler = await E(listener).onAccept(
+              port,
+              localAddr,
+              remoteAddr,
+              listener,
+            );
 
             return crossoverConnection(
               lchandler,

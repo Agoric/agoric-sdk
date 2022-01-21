@@ -305,7 +305,7 @@ export async function main() {
   }
 
   // Prettier demands that the conditional not be parenthesized.  Prettier is wrong.
-  // eslint-disable-next-line prettier/prettier
+  // prettier-ignore
   let basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
   const bootstrapArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
