@@ -125,7 +125,9 @@ export function printBenchmarkStats(stats) {
   const d3 = ` ${''.padStart(w3 - 1, '-')}`;
 
   const cpr = pn(stats.cranksPerRound).trim();
-  log(`In ${stats.cranks} cranks over ${stats.rounds} rounds (${cpr} cranks/round):`);
+  log(
+    `In ${stats.cranks} cranks over ${stats.rounds} rounds (${cpr} cranks/round):`,
+  );
   log(`${h1} ${h2} ${h3}`);
   log(`${d1} ${d2} ${d3}`);
 
