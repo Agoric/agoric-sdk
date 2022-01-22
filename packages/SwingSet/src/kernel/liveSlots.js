@@ -1202,12 +1202,39 @@ function build(
   }
 
   /**
-   * This low-level liveslots code is responsible for deciding when userspace
-   * is done with a crank. Userspace code can use Promises, so it can add as
-   * much as it wants to the ready promise queue. But since userspace never
-   * gets direct access to the timer or IO queues (i.e. setImmediate,
-   * setInterval, setTimeout), then once the promise queue is empty, the vat
-   * has lost "agency" (the ability to initiate further execution).
+   * This 'dispatch' function is the entry point for the vat as a whole: the
+   * vat-worker supervisor gives us VatDeliveryObjects (like
+   * dispatch.deliver) to execute. Here in liveslots, we invoke user-provided
+   * code during this time, which might cause us to make some syscalls. This
+   * userspace code might use Promises to add more turns to the ready promise
+   * queue, but we never give it direct access to the timer or IO queues
+   * (setImmediate, setInterval, setTimeout), so once the promise queue is
+   * empty, the vat userspace loses "agency" (the ability to initiate further
+   * execution), and waitUntilQuiescent fires. At that point we return
+   * control to the supervisor by resolving our return promise.
+   *
+   * Liveslots specifically guards against userspace reacquiring agency after
+   * our return promise is fired: vats are idle between cranks. Metering of
+   * the worker guards against userspace performing a synchronous infinite
+   * loop (`for (;;) {}`, the dreaded cthulu operator) or an async one
+   * (`function again() { return Promise.resolve().then(again); }`), by
+   * killing the vat after too much work. Userspace errors during delivery
+   * are expressed by calling syscall.resolve to reject the
+   * dispatch.deliver(result=) promise ID, which is unrelated to the Promise
+   * that `dispatch` returns.
+   *
+   * Liveslots does the authority to stall a crank indefinitely, by virtue of
+   * having access to `waitUntilQuiescent` and `FinalizationRegistry` (to
+   * retain agency), and the ability to disable metering (to disable worker
+   * termination), but only a buggy liveslots would do this. The kernel is
+   * vulnerable to a buggy liveslots never finishing a crank.
+   *
+   * This `dispatch` function always returns a Promise. It resolves (with
+   * nothing) when the crank completes successfully. If it rejects, that
+   * indicates the delivery has failed, and the worker should send an
+   * ["error", ..] `VatDeliveryResult` back to the kernel (which may elect to
+   * terminate the vat). Userspace should not be able to cause the delivery
+   * to fail: only a bug in liveslots should trigger a failure.
    *
    * @param { VatDeliveryObject } delivery
    * @returns { Promise<void> }
@@ -1221,15 +1248,13 @@ function build(
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for
       // any promise it returns to fire.
-      Promise.resolve(delivery)
-        .then(unmeteredDispatch)
-        .catch(err =>
-          console.log(`liveslots error ${err} during delivery ${delivery}`),
-        );
+      const p = Promise.resolve(delivery).then(unmeteredDispatch);
 
-      // Instead, we wait for userspace to become idle by draining the promise
-      // queue.
-      return gcTools.waitUntilQuiescent();
+      // Instead, we wait for userspace to become idle by draining the
+      // promise queue. We return 'p' so that any bugs in liveslots that
+      // cause an error during unmeteredDispatch will be reported to the
+      // supervisor (but only after userspace is idle).
+      return gcTools.waitUntilQuiescent().then(() => p);
     }
   }
   harden(dispatch);
