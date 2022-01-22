@@ -39,7 +39,7 @@ export const Collect = {
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<TimerService>} timer
  * @param { FeeMintAccess } feeMintAccess
- * @param {Record<string, Bundle>} bundles
+ * @param {Record<string, Installation>} installations
  * @param {Object} terms
  * @param {Ratio} terms.collateralPrice
  * @param {Ratio} terms.collateralizationRatio
@@ -51,16 +51,10 @@ export const bootstrapRunLoC = async (
   zoe,
   timer,
   feeMintAccess,
-  bundles,
+  installations,
   { collateralPrice, collateralizationRatio },
   attIssuer,
 ) => {
-  const installations = await Collect.allValues({
-    governor: E(zoe).install(bundles.governor),
-    electorate: E(zoe).install(bundles.electorate),
-    runLoC: E(zoe).install(bundles.runLoC),
-  });
-
   const {
     creatorFacet: electorateCreatorFacet,
     instance: electorateInstance,
@@ -99,5 +93,5 @@ export const bootstrapRunLoC = async (
   /** @type {ERef<StartLineOfCredit['publicFacet']>} */
   const publicFacet = E(zoe).getPublicFacet(governedInstance);
 
-  return { publicFacet };
+  return { instance: governedInstance, publicFacet };
 };
