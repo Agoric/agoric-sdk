@@ -116,23 +116,29 @@ const buildRootObject = (vatPowers, vatParameters) => {
      * @param {SwingsetDevices} devices
      */
     bootstrap: (vats, devices) => {
-      const powers = {
-        vatPowers,
-        vatParameters,
-        vats,
-        devices,
-        produce,
-        consume,
+      /** @param { Record<string, Record<string, unknown>> } manifest */
+      const runBehaviors = manifest => {
+        const powers = {
+          vatPowers,
+          vatParameters,
+          vats,
+          devices,
+          produce,
+          consume,
+          runBehaviors,
+        };
+        return Promise.all(
+          entries(manifest).map(([name, permit]) =>
+            Promise.resolve().then(() => {
+              const endowments = extract(permit, powers);
+              console.info(`bootstrap: ${name}(${q(permit)})`);
+              return behaviors[name](endowments);
+            }),
+          ),
+        );
       };
-      return Promise.all(
-        entries(actualManifest).map(([name, permit]) =>
-          Promise.resolve().then(() => {
-            const endowments = extract(permit, powers);
-            console.info(`bootstrap: ${name}(${q(permit)})`);
-            return behaviors[name](endowments);
-          }),
-        ),
-      );
+
+      return runBehaviors(actualManifest);
     },
   });
 };

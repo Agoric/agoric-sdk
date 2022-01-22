@@ -6,7 +6,6 @@ import { governanceActions } from './bootEconomy.js';
 export const makeSimBootstrapManifest = bootstrapManifest =>
   harden({
     ...bootstrapManifest,
-    ...governanceActions,
     installSimEgress: {
       vatParameters: { argv: { hardcodedClientAddresses: true } },
       vats: {
@@ -18,6 +17,10 @@ export const makeSimBootstrapManifest = bootstrapManifest =>
     connectFaucet: {
       consume: { zoe: true, client: true },
       produce: { bridgeManager: true },
+    },
+    grantRunBehaviors: {
+      runBehaviors: true,
+      consume: { client: true },
     },
   });
 
@@ -68,7 +71,22 @@ const connectFaucet = async ({
   return E(client).assignBundle({ faucet: makeFaucet });
 };
 
-harden({ installSimEgress, connectFaucet });
-export { installSimEgress, connectFaucet };
+/**
+ * @param {{
+ *   runBehaviors: (manifest:unknown) => Promise<unknown>,
+ *   consume: { client: ERef<ClientConfig> }
+ * }} powers
+ */
+const grantRunBehaviors = async ({ runBehaviors, consume: { client } }) => {
+  const makeBehaviors = _address =>
+    Far('behaviors', { run: manifest => runBehaviors(manifest) });
+  return E(client).assignBundle({
+    behaviors: makeBehaviors,
+    governanceActions: _address => governanceActions,
+  });
+};
+
+harden({ installSimEgress, connectFaucet, grantRunBehaviors });
+export { installSimEgress, connectFaucet, grantRunBehaviors };
 export * from './behaviors.js';
 export * from './bootEconomy.js';
