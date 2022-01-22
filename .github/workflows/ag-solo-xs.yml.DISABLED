@@ -26,8 +26,8 @@ jobs:
         key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
-    - name: yarn install
-      run: yarn install
+    - name: yarn install --frozen-lockfile
+      run: yarn install --frozen-lockfile
     - name: yarn build
       run: yarn build
     - name: install moddable linux CLI SDK ag08
