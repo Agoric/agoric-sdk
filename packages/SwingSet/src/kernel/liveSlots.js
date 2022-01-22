@@ -1065,6 +1065,8 @@ function build(
 
   const testHooks = harden({ ...vom.testHooks });
 
+  let buildRootObjectInvoker;
+
   function setBuildRootObject(buildRootObject) {
     assert(!didRoot);
     didRoot = true;
@@ -1131,23 +1133,43 @@ function build(
       });
     }
 
-    // here we finally invoke the vat code, and get back the root object
-    const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
-    assert.equal(
-      passStyleOf(rootObject),
-      'remotable',
-      X`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`,
-    );
-    assert(
-      getInterfaceOf(rootObject) !== undefined,
-      X`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`,
-    );
+    buildRootObjectInvoker = () => {
+      // here we finally invoke the vat code, and get back the root object
+      try {
+        const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
+        assert.equal(
+          passStyleOf(rootObject),
+          'remotable',
+          X`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`,
+        );
+        assert(
+          getInterfaceOf(rootObject) !== undefined,
+          X`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`,
+        );
 
-    const rootSlot = makeVatSlot('object', true, BigInt(0));
-    valToSlot.set(rootObject, rootSlot);
-    slotToVal.set(rootSlot, new WeakRef(rootObject));
-    retainExportedVref(rootSlot);
-    // we do not use droppedRegistry for exports
+        const rootSlot = makeVatSlot('object', true, BigInt(0));
+        valToSlot.set(rootObject, rootSlot);
+        slotToVal.set(rootSlot, new WeakRef(rootObject));
+        retainExportedVref(rootSlot);
+        // we do not use droppedRegistry for exports
+      } catch (e) {
+        console.log(`buildRootObject threw ${e}`);
+        throw e;
+      }
+    };
+  }
+
+  function doBuildRootObject() {
+    assert.typeof(
+      buildRootObjectInvoker,
+      'function',
+      X`buildRootObjectInvoker absent for vat ${forVatID}`,
+    );
+    try {
+      buildRootObjectInvoker();
+    } finally {
+      buildRootObjectInvoker = 'done';
+    }
   }
 
   /**
@@ -1156,6 +1178,12 @@ function build(
    */
   function dispatchToUserspace(delivery) {
     const [type, ...args] = delivery;
+    if (type !== 'buildRootObject') {
+      assert(
+        buildRootObjectInvoker === 'done',
+        X`delivery to vat ${forVatID} prior to buildRootObject`,
+      );
+    }
     switch (type) {
       case 'message': {
         const [targetSlot, msg] = args;
@@ -1181,6 +1209,10 @@ function build(
       case 'retireImports': {
         const [vrefs] = args;
         retireImports(vrefs);
+        break;
+      }
+      case 'buildRootObject': {
+        doBuildRootObject();
         break;
       }
       default:
@@ -1264,6 +1296,7 @@ function build(
     vatGlobals,
     inescapableGlobalProperties,
     setBuildRootObject,
+    doBuildRootObject,
     dispatch,
     m,
     possiblyDeadSet,
@@ -1339,6 +1372,7 @@ export function makeLiveSlots(
     inescapableGlobalProperties,
     dispatch,
     setBuildRootObject,
+    doBuildRootObject,
     possiblyDeadSet,
     testHooks,
   } = r; // omit 'm'
@@ -1347,6 +1381,7 @@ export function makeLiveSlots(
     inescapableGlobalProperties,
     dispatch,
     setBuildRootObject,
+    doBuildRootObject,
     possiblyDeadSet,
     testHooks,
   });

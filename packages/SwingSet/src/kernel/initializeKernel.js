@@ -86,6 +86,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundle, bundleName }, creationOptions);
       vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
+      if (!creationOptions.enableSetup) {
+        kernelKeeper.addToRunQueue(harden({ type: 'buildRootObject', vatID }));
+      }
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
         // about creation/termination of dynamic vats.

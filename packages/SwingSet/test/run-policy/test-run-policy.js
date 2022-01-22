@@ -90,7 +90,7 @@ async function testCranks(t, mode) {
     // setting a threshold of 4M, we should finish c.run() just after that
     // extra-compute step.
     await c.run(computronCounter(4_000_000n));
-    t.is(elapsedCranks(), 17);
+    t.is(elapsedCranks(), 22);
     const ckey = `${rightID}.vs.vvs.seqnum`;
     const seqnum = parseInt(hostStorage.kvStore.get(ckey), 10);
     t.is(seqnum, 5);

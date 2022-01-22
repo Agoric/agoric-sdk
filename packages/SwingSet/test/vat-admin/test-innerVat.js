@@ -17,11 +17,19 @@ test.before(async t => {
   const newVatBundle = await bundleSource(
     new URL('new-vat.js', import.meta.url).pathname,
   );
-  const brokenVatBundle = await bundleSource(
-    new URL('broken-vat.js', import.meta.url).pathname,
+  const brokenVatModuleBundle = await bundleSource(
+    new URL('broken-vatModule.js', import.meta.url).pathname,
+  );
+  const brokenVatBuildRootObjectBundle = await bundleSource(
+    new URL('broken-vatBuildRootObject.js', import.meta.url).pathname,
   );
   const nonBundle = `${nonBundleFunction}`;
-  const bundles = { newVatBundle, brokenVatBundle, nonBundle };
+  const bundles = {
+    newVatBundle,
+    brokenVatModuleBundle,
+    brokenVatBuildRootObjectBundle,
+    nonBundle,
+  };
   t.context.data = { kernelBundles, bundles };
 });
 
@@ -47,16 +55,25 @@ test('VatAdmin counter test', async t => {
   t.deepEqual(c.dump().log, ['starting counter test', '4', '9', '2']);
 });
 
-test('VatAdmin broken vat creation', async t => {
-  const c = await doTestSetup(t, 'brokenVat');
+test('VatAdmin broken vat creation - bad vat module', async t => {
+  const c = await doTestSetup(t, 'brokenVatModule');
   await c.run();
   const { log } = c.dump();
   t.is(log.length, 2);
-  t.is(log[0], 'starting brokenVat test');
+  t.is(log[0], 'starting brokenVatModule test');
   t.regex(
     log[1],
     /^yay, rejected: Error: Vat Creation Error:.*ReferenceError.*missing/,
   );
+});
+
+test('VatAdmin broken vat creation - bad buildRootObject', async t => {
+  const c = await doTestSetup(t, 'brokenVatBuildRootObject');
+  await c.run();
+  const { log } = c.dump();
+  t.is(log.length, 2);
+  t.is(log[0], 'starting brokenVatBuildRootObject test');
+  t.regex(log[1], /^yay, rejected: Error: .*missing/);
 });
 
 test('error creating vat from non-bundle', async t => {

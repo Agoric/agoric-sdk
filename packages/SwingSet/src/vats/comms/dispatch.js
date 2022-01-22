@@ -184,6 +184,11 @@ export function buildCommsDispatch(
         gcFromKernel({ retireImports: filterMetaObjects(vrefs) });
         break;
       }
+      case 'bringOutYourDead':
+      case 'buildRootObject': {
+        // nothing to see here, move along
+        break;
+      }
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }

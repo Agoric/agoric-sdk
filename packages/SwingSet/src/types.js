@@ -91,8 +91,10 @@
  * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
  * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
+ * @typedef { [tag: 'buildRootObject' ]} VatDeliveryBuildRootObject
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
  *            | VatDeliveryRetireExports | VatDeliveryRetireImports | VatDeliveryBringOutYourDead
+ *            | VatDeliveryBuildRootObject
  *          } VatDeliveryObject
  * @typedef { [tag: 'ok', message: null, usage: { compute: number } | null] |
  *            [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult

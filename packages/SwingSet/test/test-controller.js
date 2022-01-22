@@ -68,6 +68,9 @@ async function simpleCall(t) {
   // vat1:o+0 will map to ko21
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, [
+    { type: 'buildRootObject', vatID: adminVatID },
+    { type: 'buildRootObject', vatID: vattpVatID },
+    { type: 'buildRootObject', vatID: timerVatID },
     {
       msg: {
         method: 'foo',
@@ -112,8 +115,9 @@ test('bootstrap', async t => {
   // the controller automatically runs the bootstrap function.
   // basedir-controller-2/bootstrap.js logs "bootstrap called" and queues a call to
   // left[0].bootstrap
-  const c = await buildVatController(config);
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  const c = await buildVatController(config, []);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called']);
 });
 
 test('XS bootstrap', async t => {
@@ -123,7 +127,8 @@ test('XS bootstrap', async t => {
   config.defaultManagerType = 'xs-worker';
   const hostStorage = provideHostStorage();
   const c = await buildVatController(config, [], { hostStorage });
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called']);
   t.is(
     hostStorage.kvStore.get('kernel.defaultManagerType'),
     'xs-worker',
@@ -156,7 +161,8 @@ test('static vats are unmetered on XS', async t => {
       },
     },
   );
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called']);
   t.deepEqual(limited, [false, false, false, false]);
 });
 
@@ -215,6 +221,12 @@ test.serial('bootstrap export', async t => {
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
+    { type: 'buildRootObject', vatID: leftVatID },
+    { type: 'buildRootObject', vatID: rightVatID },
+    { type: 'buildRootObject', vatID: bootstrapVatID },
+    { type: 'buildRootObject', vatID: vatAdminVatID },
+    { type: 'buildRootObject', vatID: vatTPVatID },
+    { type: 'buildRootObject', vatID: timerVatID },
     {
       msg: {
         result: 'kp40',
@@ -256,6 +268,10 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().log, []);
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
+  for (let i = 0; i < 6; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await stepGC(); // buildRootObject calls
+  }
   await stepGC(); // message bootstrap
   // kernel promise for result of the foo() that bootstrap sends to vat-left
   const fooP = 'kp41';

@@ -67,9 +67,11 @@ test('child termination distinguished from meter exhaustion', async t => {
 
   const msg = { method: 'hang', args: capargs([]) };
   /** @type { VatDeliveryObject } */
-  const delivery = ['message', 'o+0', msg];
+  const delivery1 = ['buildRootObject'];
+  /** @type { VatDeliveryObject } */
+  const delivery2 = ['message', 'o+0', msg];
 
-  const p = m.deliver(delivery); // won't resolve until child dies
+  const p = m.deliver(delivery1).then(() => m.deliver(delivery2)); // won't resolve until child dies
 
   // please excuse ambient authority
   setTimeout(

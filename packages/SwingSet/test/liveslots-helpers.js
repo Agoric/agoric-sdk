@@ -64,7 +64,12 @@ export function makeDispatch(
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl: makeDummyMeterControl(),
   });
-  const { setBuildRootObject, dispatch, testHooks } = makeLiveSlots(
+  const {
+    setBuildRootObject,
+    doBuildRootObject,
+    dispatch,
+    testHooks,
+  } = makeLiveSlots(
     syscall,
     vatID,
     {},
@@ -78,5 +83,6 @@ export function makeDispatch(
     returnTestHooks[0] = testHooks;
   }
   setBuildRootObject(build);
+  doBuildRootObject();
   return dispatch;
 }

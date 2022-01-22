@@ -31,14 +31,28 @@ export function buildRootObject(vatPowers, vatParameters) {
           log(await E(c).ticker());
           return;
         }
-        case 'brokenVat': {
-          log(`starting brokenVat test`);
+        case 'brokenVatModule': {
+          log(`starting brokenVatModule test`);
           E(vatAdminSvc)
-            .createVat(bundles.brokenVatBundle)
+            .createVat(bundles.brokenVatModuleBundle)
             .then(
               result => log(`didn't expect success ${result}`),
               rejection => log(`yay, rejected: ${rejection}`),
             );
+          return;
+        }
+        case 'brokenVatBuildRootObject': {
+          log(`starting brokenVatBuildRootObject test`);
+          const bustedVat = await E(vatAdminSvc).createVat(
+            bundles.brokenVatBuildRootObjectBundle,
+          );
+          const doneP = E(bustedVat.adminNode).done();
+          try {
+            const doneResult = await doneP;
+            log(`didn't expect success ${doneResult}`);
+          } catch (e) {
+            log(`yay, rejected: ${e}`);
+          }
           return;
         }
         case 'non-bundle': {

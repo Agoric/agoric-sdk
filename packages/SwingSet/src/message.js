@@ -65,7 +65,8 @@ export function insistVatDeliveryObject(vdo) {
       }
       break;
     }
-    case 'bringOutYourDead': {
+    case 'bringOutYourDead':
+    case 'buildRootObject': {
       assert(rest.length === 0);
       break;
     }

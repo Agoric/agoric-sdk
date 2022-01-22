@@ -952,8 +952,14 @@ test('dropImports', async t => {
     false,
     gcTools,
   );
-  const { setBuildRootObject, dispatch, possiblyDeadSet } = ls;
+  const {
+    setBuildRootObject,
+    doBuildRootObject,
+    dispatch,
+    possiblyDeadSet,
+  } = ls;
   setBuildRootObject(build);
+  doBuildRootObject();
   const allFRs = gcTools.getAllFRs();
   t.is(allFRs.length, 2);
   const FR = allFRs[0];

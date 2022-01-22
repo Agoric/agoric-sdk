@@ -1,5 +1,5 @@
 // @ts-check
-import { assert } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import '../../types.js';
 import { insistVatDeliveryResult } from '../../message.js';
 import { makeTranscriptManager } from './transcript.js';
@@ -237,6 +237,7 @@ function makeManagerKit(
    * @returns { VatSyscallResult }
    */
   function syscallFromWorker(vso) {
+    assert(deliverToWorker, X`syscall invoked prior to buildRootObject`);
     if (transcriptManager && transcriptManager.inReplay()) {
       // We're replaying old messages to bring the vat's internal state
       // up-to-date. It will make syscalls like a puppy chasing rabbits in

@@ -688,6 +688,36 @@ export default function buildKernel(
    * @param { * } message
    * @returns { Promise<PolicyInput> }
    */
+  async function processBuildRootObject(message) {
+    /** @type { PolicyInput } */
+    let policyInput = ['none'];
+    const { type, vatID } = message;
+    // console.log(`-- processBuildRootObject(${vatID})`);
+    insistVatID(vatID);
+    // eslint-disable-next-line no-use-before-define
+    if (!vatWarehouse.lookup(vatID)) {
+      // Note a bit of weirdness here: if a vat's buildRootObject function
+      // throws an error, the crank in which it was executed will be aborted,
+      // which will leave the 'buildRootObject' delivery on the run queue (since
+      // the removal of the request from the run queue will have been rolled
+      // back by the abort).  This means it will be delivered *again* on the
+      // next crank; that, however, will lead us here: the vat won't exist
+      // (because it was terminated) and the nugatory redundant
+      // 'buildRootObject' will safely render as a no-op and go away.
+      return harden(policyInput);
+    }
+    const kd = harden([type]);
+    // eslint-disable-next-line no-use-before-define
+    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    policyInput = await deliverAndLogToVat(vatID, kd, vd, false);
+    return harden(policyInput);
+  }
+
+  /**
+   *
+   * @param { * } message
+   * @returns { Promise<PolicyInput> }
+   */
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, dynamicOptions } = message;
@@ -702,6 +732,9 @@ export default function buildKernel(
     }
     vatKeeper.setSourceAndOptions(source, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
+    if (!dynamicOptions.enableSetup) {
+      kernelKeeper.addToRunQueue(harden({ type: 'buildRootObject', vatID }));
+    }
 
     function makeSuccessResponse() {
       // build success message, giving admin vat access to the new vat's root
@@ -750,11 +783,17 @@ export default function buildKernel(
       return `@${message.target} <- ${msg.method}(${argList}) : @${result}`;
     } else if (message.type === 'notify') {
       return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
+    } else if (message.type === 'create-vat') {
+      // prettier-ignore
+      return `create-vat ${message.vatID} opts: ${JSON.stringify(message.dynamicOptions)}`;
       // eslint-disable-next-line no-use-before-define
     } else if (gcMessages.includes(message.type)) {
       // prettier-ignore
       return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;
-    } else if (message.type === 'bringOutYourDead') {
+    } else if (
+      message.type === 'bringOutYourDead' ||
+      message.type === 'buildRootObject'
+    ) {
       return `${message.type} ${message.vatID}`;
     } else {
       return `unknown message type ${message.type}`;
@@ -799,6 +838,8 @@ export default function buildKernel(
         policyInput = await processCreateVat(message);
       } else if (message.type === 'bringOutYourDead') {
         policyInput = await processBringOutYourDead(message);
+      } else if (message.type === 'buildRootObject') {
+        policyInput = await processBuildRootObject(message);
       } else if (gcMessages.includes(message.type)) {
         policyInput = await processGCMessage(message);
       } else {
