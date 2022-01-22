@@ -225,11 +225,18 @@ const testLoC = (
     const rate = cr.before;
     const collateralizationRatio = makeRatio(rate[0], runBrand, rate[1]);
     const timer = buildManualTimer(t.log, 0n, 1n);
+
+    const installations = await Collect.allValues({
+      governor: E(zoe).install(bundles.governor),
+      electorate: E(zoe).install(bundles.electorate),
+      getRUN: E(zoe).install(bundles.getRUN),
+    });
+
     const { publicFacet } = await bootstrapRunLoC(
       zoe,
       timer,
       feeMintAccess,
-      bundles,
+      installations,
       { collateralPrice, collateralizationRatio },
       attIssuer,
     );
