@@ -249,7 +249,7 @@ async function makeChainBundler(
     sharingService,
     board,
     chainTimerService,
-    { zoeService: zoe, feeMintAccess, feeCollectionPurse },
+    { zoeService: zoe, feeMintAccess },
     { priceAuthority, adminFacet: priceAuthorityAdmin },
     walletManager,
   ] = await Promise.all([
@@ -261,8 +261,6 @@ async function makeChainBundler(
     E(vats.priceAuthority).makePriceAuthority(),
     E(vats.walletManager).buildWalletManager(vatAdminSvc),
   ]);
-
-  const zoeWUnlimitedPurse = E(zoe).bindDefaultFeePurse(feeCollectionPurse);
 
   const {
     nameHub: agoricNames,
@@ -308,7 +306,7 @@ async function makeChainBundler(
         chainTimerService,
         nameAdmins,
         priceAuthority,
-        zoe: zoeWUnlimitedPurse,
+        zoe,
         bootstrapPaymentValue,
         feeMintAccess,
       }),
@@ -317,7 +315,7 @@ async function makeChainBundler(
         board,
         nameAdmins,
         namesByAddress,
-        zoe: zoeWUnlimitedPurse,
+        zoe,
       }),
     ]);
 
@@ -334,7 +332,7 @@ async function makeChainBundler(
         creatorFacet: attestationCreatorFacet,
       } = await bootstrapAttestation(
         attestationBundle,
-        zoeWUnlimitedPurse,
+        zoe,
         bldIssuer || assert.fail('bld issuer!?!@@'),
         makeStakeReporter(
           bridgeManager,
@@ -455,7 +453,7 @@ async function makeChainBundler(
     E(vats.distributeFees)
       .buildDistributor(
         [treasuryCreator, ammFacets.ammCreatorFacet].map(cf =>
-          E(vats.distributeFees).makeFeeCollector(zoeWUnlimitedPurse, cf),
+          E(vats.distributeFees).makeFeeCollector(zoe, cf),
         ),
         feeCollectorDepositFacet,
         epochTimerService,
@@ -637,7 +635,7 @@ async function makeChainBundler(
           give: { Secondary: secondaryAmount, Central: centralAmount },
         });
 
-        E(zoeWUnlimitedPurse).offer(
+        E(zoe).offer(
           E(ammFacets.ammPublicFacet).makeAddLiquidityInvitation(),
           proposal,
           harden({
@@ -681,7 +679,7 @@ async function makeChainBundler(
 
   const [ammPublicFacet, pegasus] = await Promise.all(
     [ammInstance, pegasusInstance].map(instance =>
-      E(zoeWUnlimitedPurse).getPublicFacet(instance),
+      E(zoe).getPublicFacet(instance),
     ),
   );
   await addAllCollateral();
@@ -889,7 +887,6 @@ async function makeChainBundler(
       );
 
       const userFeePurse = await E(zoe).makeFeePurse();
-      const zoeWUserFeePurse = await E(zoe).bindDefaultFeePurse(userFeePurse);
 
       const faucet = Far('faucet', {
         // A method to reap the spoils of our on-chain provisioning.
@@ -924,7 +921,7 @@ async function makeChainBundler(
           agoricNames,
           namesByAddress,
           myAddressNameAdmin,
-          zoe: zoeWUserFeePurse,
+          zoe,
           board,
           timerDevice,
           timerDeviceScale: CHAIN_TIMER_DEVICE_SCALE,
@@ -971,7 +968,7 @@ async function makeChainBundler(
         namesByAddress,
         priceAuthority,
         board,
-        zoe: zoeWUserFeePurse,
+        zoe,
       });
 
       return bundle;
