@@ -8,7 +8,7 @@ import {
 
 import * as behaviors from './behaviors.js';
 
-const { entries, fromEntries } = Object;
+const { entries, fromEntries, keys } = Object;
 const { details: X, quote: q } = assert;
 
 // Choose a manifest based on runtime configured argv.ROLE.
@@ -26,13 +26,15 @@ const roleToManifest = new Map([
 const makePromiseSpace = () => {
   /** @type {Map<string, PromiseRecord<unknown>>} */
   const state = new Map();
+  const remaining = new Set();
 
   const findOrCreateKit = name => {
     let kit = state.get(name);
     if (!kit) {
-      // console.info(name, ': new Promise');
+      console.info(`${name}: new Promise`);
       kit = makePromiseKit();
       state.set(name, kit);
+      remaining.add(name);
     }
     return kit;
   };
@@ -53,8 +55,19 @@ const makePromiseSpace = () => {
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
-        const { resolve } = findOrCreateKit(name);
-        // promise.then(() => console.info(name, ': resolve'));
+        const { resolve, promise } = findOrCreateKit(name);
+        // promise.then(
+        // () => console.info(name, ': resolve'),
+        // e => console.info(name, ': reject', e),
+        // );
+        promise.finally(() => {
+          remaining.delete(name);
+          console.info(
+            name,
+            'settled; remaining:',
+            [...remaining.keys()].sort(),
+          );
+        });
         // Note: repeated resolves() are noops.
         return harden({ resolve });
       },
@@ -75,7 +88,7 @@ const extract = (template, specimen) => {
     if (typeof specimen !== 'object' || specimen === null) {
       assert.fail(X`object template requires object specimen, not ${specimen}`);
     }
-    return harden(
+    const target = harden(
       fromEntries(
         entries(template).map(([propName, subTemplate]) => [
           propName,
@@ -83,6 +96,17 @@ const extract = (template, specimen) => {
         ]),
       ),
     );
+    return new Proxy(target, {
+      get: (t, propName) => {
+        if (typeof propName !== 'symbol') {
+          assert(
+            propName in t,
+            X`${propName} not permitted, only ${keys(template)}`,
+          );
+        }
+        return t[propName];
+      },
+    });
   } else {
     assert.fail(X`unexpected template: ${q(template)}`);
   }

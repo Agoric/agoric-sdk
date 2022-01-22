@@ -1,7 +1,7 @@
 // @ts-check
 import { E, Far } from '@agoric/far';
-import { installClientEgress } from './utils.js';
-import { GOVERNANCE_OPTIONS_MANIFEST as GOVERNANCE_ACTIONS_MANIFEST } from './manifest.js';
+import { GOVERNANCE_ACTIONS_MANIFEST } from './manifest.js';
+import { addRemote } from './utils.js';
 
 /**
  * @param {{
@@ -10,20 +10,28 @@ import { GOVERNANCE_OPTIONS_MANIFEST as GOVERNANCE_ACTIONS_MANIFEST } from './ma
  *     vattp: VattpVat,
  *     comms: CommsVatRoot,
  *   },
- *   produce: { client: Producer<ClientConfig>, chainBundler: Producer<ChainBundler> },
+ *   consume: { clientCreator: ERef<ClientCreator> },
  * }} powers
  */
 export const installSimEgress = async ({
   vatParameters: { argv },
-  vats,
-  produce: { client, chainBundler },
+  vats: { vattp, comms },
+  consume: { clientCreator },
 }) => {
+  const PROVISIONER_INDEX = 1;
+
   return Promise.all(
-    /** @type { string[] } */ (argv.hardcodedClientAddresses).map(addr =>
-      installClientEgress(addr, {
-        vats,
-        produce: { client, chainBundler },
-      }),
+    /** @type { string[] } */ (argv.hardcodedClientAddresses).map(
+      async (addr, i) => {
+        const clientFacet = await E(clientCreator).createClientFacet(
+          `solo${i}`,
+          addr,
+          ['agoric.ALL_THE_POWERS'],
+        );
+
+        await addRemote(addr, { vats: { comms, vattp } });
+        await E(comms).addEgress(addr, PROVISIONER_INDEX, clientFacet);
+      },
     ),
   );
 };
@@ -31,16 +39,10 @@ harden(installSimEgress);
 
 /**
  * @param {{
- *   consume: { zoe: ERef<ZoeService>, client: ERef<ClientConfig> },
- *   produce: { bridgeManager: Producer<undefined> }
+ *   consume: { zoe: ERef<ZoeService>, client: ERef<ClientManager> },
  * }} powers
  */
-export const connectFaucet = async ({
-  consume: { zoe, client },
-  produce: { bridgeManager },
-}) => {
-  bridgeManager.resolve(undefined); // no bridge in the sim chain
-
+export const connectFaucet = async ({ consume: { zoe, client } }) => {
   const makeFaucet = async _address => {
     const userFeePurse = await E(zoe).makeFeePurse();
 
@@ -58,7 +60,7 @@ harden(connectFaucet);
 /**
  * @param {{
  *   runBehaviors: (manifest:unknown) => Promise<unknown>,
- *   consume: { client: ERef<ClientConfig> }
+ *   consume: { client: ERef<ClientManager> }
  * }} powers
  */
 export const grantRunBehaviors = async ({

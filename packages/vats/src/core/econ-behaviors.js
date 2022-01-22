@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/far';
-import { makeRatio } from '@agoric/zoe/src/contractSupport';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
@@ -68,7 +68,7 @@ harden(startVaultFactory);
  *   consume: {
  *     agoricNames: ERef<NameHub>,
  *     bridgeManager: ERef<import('../bridge.js').BridgeManager>,
- *     client: ERef<ClientConfig>,
+ *     client: ERef<ClientManager>,
  *     nameAdmins: ERef<Store<NameHub, NameAdmin>>,
  *     zoe: ERef<ZoeService>,
  *   }

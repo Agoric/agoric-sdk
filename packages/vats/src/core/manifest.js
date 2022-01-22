@@ -45,6 +45,11 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       board: true,
     },
   },
+  makeBridgeManager: {
+    devices: { bridge: true },
+    vatPowers: { D: true },
+    produce: { bridgeManager: true },
+  },
   makeAddressNameHubs: {
     consume: {
       client: true,
@@ -83,14 +88,29 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       nameAdmins: true,
     },
   },
-  registerProvisioner: {
+  makeProvisioner: {
     consume: {
       loadVat: true,
-      chainBundler: true,
+      clientCreator: true,
+    },
+    produce: {
+      provisioning: true,
     },
     vats: {
       comms: true,
       vattp: true,
+    },
+  },
+  bridgeProvisioner: {
+    consume: {
+      provisioning: true,
+      bridgeManager: true,
+    },
+  },
+  makeClientManager: {
+    produce: {
+      client: true,
+      clientCreator: true,
     },
   },
 });
@@ -103,11 +123,10 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
       vattp: true,
       comms: true,
     },
-    produce: { client: true, chainBundler: true },
+    consume: { clientCreator: true },
   },
   connectFaucet: {
     consume: { zoe: true, client: true },
-    produce: { bridgeManager: true },
   },
   grantRunBehaviors: {
     runBehaviors: true,
@@ -115,7 +134,7 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
 });
 
-export const GOVERNANCE_OPTIONS_MANIFEST = harden({
+export const GOVERNANCE_ACTIONS_MANIFEST = harden({
   startVaultFactory: {
     consume: {
       agoricNames: true,

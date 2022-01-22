@@ -3,10 +3,11 @@ import { E, Far } from '@agoric/far';
 import { makeIssuerKit } from '@agoric/ertp';
 
 import { makeStore } from '@agoric/store';
+
 import { makeNameHubKit } from '../nameHub.js';
 import { BLD_ISSUER_ENTRY } from '../issuers.js';
 
-import { feeIssuerConfig, collectNameAdmins, shared } from './utils';
+import { feeIssuerConfig, collectNameAdmins, shared } from './utils.js';
 
 const { keys } = Object;
 
@@ -17,7 +18,7 @@ const { keys } = Object;
 
 /**
  * @param {{
- *   vatPowers: { D: EProxy }, // D type is approximate
+ *   vatPowers: { D: DProxy }, // D type is approximate
  *   vats: { vattp: VattpVat },
  *   devices: { mailbox: MailboxDevice },
  * }} powers
@@ -68,7 +69,7 @@ harden(makeVatsFromBundles);
  *     vatAdminSvc: ERef<VatAdminSvc>,
  *     loadVat: ERef<VatLoader<ZoeVat>>,
  *     nameAdmins: ERef<Store<NameHub, NameAdmin>>,
- *     client: ERef<ClientConfig>
+ *     client: ERef<ClientManager>
  *   },
  *   produce: { zoe: Producer<ZoeService>, feeMintAccess: Producer<FeeMintAccess> },
  * }} powers
@@ -106,7 +107,7 @@ harden(buildZoe);
  * TODO: rename this to getBoard?
  *
  * @param {{
- *   consume: { loadVat: ERef<VatLoader<BoardVat>>, client: ERef<ClientConfig> },
+ *   consume: { loadVat: ERef<VatLoader<BoardVat>>, client: ERef<ClientManager> },
  *   produce: { board: Producer<ERef<Board>> },
  * }} powers
  * @typedef {ERef<ReturnType<import('../vat-board.js').buildRootObject>>} BoardVat
@@ -125,7 +126,7 @@ harden(makeBoard);
 
 /**
  * @param {{
- *   consume: { client: ERef<ClientConfig> },
+ *   consume: { client: ERef<ClientManager> },
  *   produce: {
  *     agoricNames: Producer<NameHub>,
  *     agoricNamesAdmin: Producer<NameAdmin>,
@@ -138,8 +139,6 @@ export const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
     nameHub: agoricNames,
     nameAdmin: agoricNamesAdmin,
   } = makeNameHubKit();
-  produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const {
     nameHub: namesByAddress,
@@ -166,6 +165,8 @@ export const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
     ),
   );
   produce.nameAdmins.resolve(nameAdmins);
+  produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const perAddress = address => {
     // Create a name hub for this address.
@@ -196,7 +197,7 @@ harden(makeAddressNameHubs);
  * @param {{
  *   consume: {
  *     loadVat: ERef<VatLoader<BankVat>>,
- *     client: ERef<ClientConfig>,
+ *     client: ERef<ClientManager>,
  *     bridgeManager: import('../bridge.js').BridgeManager,
  *   },
  *   produce: { bankManager: Producer<unknown> },
@@ -245,36 +246,3 @@ export const makeBLDKit = async ({
   ]);
 };
 harden(makeBLDKit);
-
-/**
- * @param {{
- *   devices: { timer: unknown },
- *   vats: { timer: TimerVat },
- *   produce: { chainTimerService: Producer<ERef<TimerService>> }
- * }} powers
- */
-export const startTimerService = async ({
-  devices: { timer: timerDevice },
-  vats: { timer: timerVat },
-  produce: { chainTimerService },
-}) => {
-  chainTimerService.resolve(E(timerVat).createTimerService(timerDevice));
-};
-harden(startTimerService);
-
-/**
- * @param {{
- *   consume: {
- *     loadVat: ERef<VatLoader<ProvisioningVat>>,
- *     chainBundler: ERef<ChainBundler>,
- *   },
- *   vats: { comms: CommsVatRoot, vattp: VattpVat },
- * }} powers
- * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
- */
-export const registerProvisioner = async ({
-  consume: { chainBundler, loadVat },
-  vats: { comms, vattp },
-}) => {
-  await E(E(loadVat)('provisioning')).register(chainBundler, comms, vattp);
-};

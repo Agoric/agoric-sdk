@@ -3,9 +3,15 @@
 /** @typedef { import('@agoric/eventual-send').EProxy } EProxy */
 
 /**
+ * @template T
+ * @typedef {'Device' & { __deviceType__: T }} Device
+ */
+/** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
+
+/**
  * SwingSet types
  *
- * @typedef { ERef<ReturnType<typeof
+ * @typedef { Device<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/devices/mailbox-src.js').buildRootDeviceNode>> } MailboxDevice
  * @typedef { ERef<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/vats/vat-tp.js').buildRootObject>> } VattpVat
@@ -33,10 +39,14 @@
  */
 
 /**
+ * @typedef {ReturnType<typeof import('../bridge.js').makeBridgeManager> | undefined} OptionalBridgeManager
+ */
+
+/**
  * @typedef {{
  *   getChainBundle: () => unknown,
  *   getChainConfigNotifier: () => Notifier<unknown>,
- * }} ChainBundler
+ * }} ClientProvider
  */
 
 /**
@@ -55,5 +65,21 @@
  *
  * @typedef {{
  *   assignBundle: (ps: Record<string, (addr: string) => void>) => void
- * }} ClientConfig
+ * }} ClientManager
+ */
+
+/**
+ * @callback CreateUserBundle
+ * @param {string} nickname
+ * @param {string} clientAddress
+ * @param {string[]} powerFlags
+ * @returns {unknown}
+ *
+ * @typedef {Object} ClientFacet
+ * @property {() => unknown} getChainBundle Required for ag-solo, but deprecated in favour of getConfiguration
+ * @property {() => AsyncIterator<unknown>} getConfiguration
+ *
+ * @typedef {Object} ClientCreator
+ * @property {CreateUserBundle} createUserBundle Required for vat-provisioning, but deprecated in favor of {@link createClient}.
+ * @property {(nickname: string, clientAddress: string, powerFlags: string[]) => ClientFacet} createClientFacet
  */

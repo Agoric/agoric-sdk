@@ -1,7 +1,6 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
+import { E } from '@agoric/far';
 import { AssetKind } from '@agoric/ertp';
-import { makeNotifierKit } from '@agoric/notifier';
 
 const { entries, fromEntries } = Object;
 
@@ -44,50 +43,8 @@ export const addRemote = async (addr, { vats: { comms, vattp } }) => {
 };
 harden(addRemote);
 
-/**
- * @param { string } addr
- * @param {{
- *   vats: {
- *     vattp: VattpVat,
- *     comms: CommsVatRoot,
- *   },
- *   produce: { client: Producer<ClientConfig>, chainBundler: Producer<ChainBundler> },
- * }} powers
- */
-export const installClientEgress = async (
-  addr,
-  { vats: { comms, vattp }, produce: { client, chainBundler } },
-) => {
-  const PROVISIONER_INDEX = 1;
-
-  let bundle = harden({});
-  const { notifier, updater } = makeNotifierKit({ bundle });
-
-  /** @type {ChainBundler} */
-  const chainProvider = Far('chainProvider', {
-    getChainBundle: () =>
-      notifier.getUpdateSince().then(({ value: { bundle: b } }) => b),
-    getChainConfigNotifier: () => notifier,
-  });
-  chainBundler.resolve(chainProvider);
-
-  await addRemote(addr, { vats: { comms, vattp } });
-  await E(comms).addEgress(addr, PROVISIONER_INDEX, chainProvider);
-
-  const callProperties = (obj, ...args) =>
-    fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
-
-  client.resolve(
-    harden({
-      assignBundle: newPropertyMakers => {
-        const newProperties = callProperties(newPropertyMakers, addr);
-        bundle = { ...bundle, ...newProperties };
-        updater.updateState({ bundle });
-      },
-    }),
-  );
-};
-harden(installClientEgress);
+export const callProperties = (obj, ...args) =>
+  fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
 
 /**
  * @param {string[]} edges
