@@ -1221,15 +1221,11 @@ function build(
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for
       // any promise it returns to fire.
-      Promise.resolve(delivery)
-        .then(unmeteredDispatch)
-        .catch(err =>
-          console.log(`liveslots error ${err} during delivery ${delivery}`),
-        );
+      const p = Promise.resolve(delivery).then(unmeteredDispatch);
 
       // Instead, we wait for userspace to become idle by draining the promise
       // queue.
-      return gcTools.waitUntilQuiescent();
+      return gcTools.waitUntilQuiescent().then(() => p);
     }
   }
   harden(dispatch);
