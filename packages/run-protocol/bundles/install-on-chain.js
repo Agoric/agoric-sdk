@@ -100,9 +100,7 @@ async function setupAmm(
     ammGovernorCreatorFacet,
   };
 
-  const [ammCreatorFacet,
-    ammPublicFacet,
-    instance] = await Promise.all([
+  const [ammCreatorFacet, ammPublicFacet, instance] = await Promise.all([
     E(ammGovernorCreatorFacet).getCreatorFacet(),
     E(ammGovernorCreatorFacet).getPublicFacet(),
     E(ammGovernorPublicFacet).getGovernedContract(),
@@ -174,7 +172,6 @@ export async function installOnChain({
     ['contractGovernor', contractGovernorBundle],
     ['noActionElectorate', noActionElectorateBundle],
     ['binaryCounter', binaryVoteCounterBundle],
-
   ];
   const [
     liquidationInstall,
@@ -210,7 +207,7 @@ export async function installOnChain({
     contractGovernorInstall,
     poolFee,
     protocolFee,
-  )
+  );
 
   const loanParams = {
     chargingPeriod: SECONDS_PER_HOUR,
@@ -235,7 +232,7 @@ export async function installOnChain({
     liquidationMargin: makeRatio(105n, centralBrand),
     interestRate: makeRatio(250n, centralBrand, BASIS_POINTS),
     loanFee: makeRatio(200n, centralBrand, BASIS_POINTS),
-  }
+  };
 
   const vaultFactoryTerms = makeGovernedTerms(
     priceAuthority,
@@ -258,9 +255,7 @@ export async function installOnChain({
     },
   });
 
-  const {
-    creatorFacet: governorCreatorFacet,
-  } = await E(zoe).startInstance(
+  const { creatorFacet: governorCreatorFacet } = await E(zoe).startInstance(
     contractGovernorInstall,
     undefined,
     governorTerms,
@@ -278,7 +273,7 @@ export async function installOnChain({
   ] = await Promise.all([
     E(zoe).getInvitationIssuer(),
     E(zoe).getTerms(vaultFactoryInstance),
-    E(governorCreatorFacet).getCreatorFacet()
+    E(governorCreatorFacet).getCreatorFacet(),
   ]);
 
   const vaultFactoryUiDefaults = {
@@ -317,7 +312,11 @@ export async function installOnChain({
 
   // Install the names in agoricNames.
   const nameAdminUpdates = [
-    [uiConfigAdmin, vaultFactoryUiDefaults.CONTRACT_NAME, vaultFactoryUiDefaults],
+    [
+      uiConfigAdmin,
+      vaultFactoryUiDefaults.CONTRACT_NAME,
+      vaultFactoryUiDefaults,
+    ],
     [instanceAdmin, vaultFactoryUiDefaults.CONTRACT_NAME, vaultFactoryInstance],
     [instanceAdmin, vaultFactoryUiDefaults.AMM_NAME, amm.governedInstance],
     [brandAdmin, centralName, centralBrand],

@@ -53,10 +53,6 @@
   "eslintIgnore": [
     "bundle-*.js"
   ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "publishConfig": {
     "access": "public"
   },

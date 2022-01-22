@@ -60,6 +60,8 @@ jobs:
 
     - name: lint check
       run: yarn lint-check
+    - name: format check
+      run: yarn format-check
 
   dev-canary:
     if: ${{github.event_name == 'push'}}

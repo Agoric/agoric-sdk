@@ -12,8 +12,6 @@
     "test:c8": "exit 0",
     "test:xs": "exit 0",
     "test:watch": "web-test-runner --watch",
-    "pretty-fix": "prettier --write '**/*.js'",
-    "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
@@ -56,10 +54,6 @@
     "rules": {
       "import/no-extraneous-dependencies": "off"
     }
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   },
   "publishConfig": {
     "access": "public"

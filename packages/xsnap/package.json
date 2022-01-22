@@ -67,9 +67,5 @@
       "test/**/test-*.js"
     ],
     "timeout": "2m"
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   }
 }

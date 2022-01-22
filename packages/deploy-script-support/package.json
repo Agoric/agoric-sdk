@@ -11,8 +11,6 @@
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
-    "pretty-fix": "prettier --write '**/*.js'",
-    "pretty-check": "prettier --check '**/*.js'",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
     "lint:eslint": "eslint '**/*.js'",
@@ -69,10 +67,6 @@
     "extends": [
       "@agoric"
     ]
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   },
   "publishConfig": {
     "access": "public"

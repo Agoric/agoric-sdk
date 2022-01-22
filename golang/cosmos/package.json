@@ -50,10 +50,6 @@
     "third_party",
     "x"
   ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "publishConfig": {
     "access": "public"
   },

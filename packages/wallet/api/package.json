@@ -37,10 +37,6 @@
       "@agoric"
     ]
   },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "keywords": [],
   "repository": {
     "type": "git",
