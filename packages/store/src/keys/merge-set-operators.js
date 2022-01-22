@@ -6,7 +6,7 @@ import {
   makeFullOrderComparatorKit,
   sortByRank,
 } from '../patterns/rankOrder.js';
-import { makeSetOfElements } from './copySet.js';
+import { assertNoDuplicates, makeSetOfElements } from './copySet.js';
 
 const { details: X } = assert;
 
@@ -23,7 +23,7 @@ const { details: X } = assert;
  *
  * @template T
  * @param {T[]} elements
- * @param {FullCompare} rankCompare
+ * @param {RankCompare} rankCompare
  * @param {FullCompare} fullCompare
  * @returns {Iterable<T>}
  */
@@ -58,6 +58,10 @@ const windowResort = (elements, rankCompare, fullCompare) => {
             const similarRun = elements.slice(i, j);
             i = j;
             const resorted = sortByRank(similarRun, fullCompare);
+            // Providing the same `fullCompare` should cause a memo hit
+            // within `assertNoDuplicates` enabling it to avoid a
+            // redundant resorting.
+            assertNoDuplicates(resorted, fullCompare);
             optInnerIterator = resorted[Symbol.iterator]();
             return optInnerIterator.next();
           } else {
