@@ -2,25 +2,37 @@
 import { E, Far } from '@agoric/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
-import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 
 import { makeStore } from '@agoric/store';
-import attestationBundle from '@agoric/zoe/bundles/bundle-attestation.js';
-import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
 import { makeNameHubKit } from '../nameHub.js';
 import { BLD_ISSUER_ENTRY } from '../issuers.js';
-import { makeStakeReporter } from '../my-lien.js';
 
 const { entries, fromEntries, keys } = Object;
+
+/**
+ * TODO: review behaviors carefully for powers that go out of scope,
+ * since we may want/need them later.
+ */
 
 // TODO: phase out ./issuers.js
 export const CENTRAL_ISSUER_NAME = 'RUN';
 
-const wellKnownERights = {
-  BLD: 'Agoric staking token',
-  RUN: 'Agoric RUN currency',
-  Attestation: 'Agoric lien attestation',
-};
+// We reserve these keys in name hubs.
+export const shared = harden({
+  // issuer, brand nameAdmins
+  assets: {
+    BLD: 'Agoric staking token',
+    RUN: 'Agoric RUN currency',
+    Attestation: 'Agoric lien attestation',
+  },
+  // installation, instance nameAdmins
+  contract: {
+    contractGovernor: 'contract governor',
+    committee: 'committee electorate',
+    Attestation: 'Agoric lien attestation',
+    getRUN: 'getRUN',
+  },
+});
 
 /** @type { FeeIssuerConfig } */
 export const feeIssuerConfig = {
@@ -28,30 +40,6 @@ export const feeIssuerConfig = {
   assetKind: AssetKind.NAT,
   displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
 };
-
-export const governanceActions = harden({
-  startVaultFactory: {
-    devices: { timer: true },
-    vats: { timer: true },
-    consume: {
-      agoricNames: true,
-      nameAdmins: true,
-      board: true,
-      loadVat: true,
-      zoe: true,
-      feeMintAccess: true,
-    },
-  },
-  startAttestation: {
-    consume: {
-      agoricNames: true,
-      bridgeManager: true,
-      client: true,
-      nameAdmins: true,
-      zoe: true,
-    },
-  },
-});
 
 /**
  * @param {{
@@ -135,6 +123,7 @@ const buildZoe = async ({
   ).buildZoe(vatAdminSvc, feeIssuerConfig);
 
   zoe.resolve(zoeService);
+
   const runIssuer = await E(zoeService).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   const [issuerAdmin, brandAdmin] = await collectNameAdmins(
@@ -206,7 +195,9 @@ const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
           // Reserve the Vault Factory's config until we've populated it.
           nameAdmin.reserve('vaultFactory');
         } else if (['issuer', 'brand'].includes(nm)) {
-          keys(wellKnownERights).forEach(k => nameAdmin.reserve(k));
+          keys(shared.assets).forEach(k => nameAdmin.reserve(k));
+        } else if (['installation', 'instance'].includes(nm)) {
+          keys(shared.contract).forEach(k => nameAdmin.reserve(k));
         }
       },
     ),
@@ -333,103 +324,19 @@ const makeBLDKit = async ({
  * @param {{
  *   devices: { timer: unknown },
  *   vats: { timer: TimerVat },
- *   consume: {
- *    agoricNames: ERef<NameHub>,
- *    nameAdmins: ERef<Store<NameHub, NameAdmin>>,
- *    board: ERef<Board>,
- *    loadVat: ERef<VatLoader<unknown>>,
- *    zoe: ERef<ZoeService>,
- *    feeMintAccess: ERef<FeeMintAccess>,
- *   }
+ *   produce: { chainTimerService: Producer<ERef<TimerService>> }
  * }} powers
  */
-const startVaultFactory = async ({
+const startTimerService = async ({
   devices: { timer: timerDevice },
   vats: { timer: timerVat },
-  consume: {
-    agoricNames,
-    nameAdmins: nameAdminsP,
-    board,
-    loadVat,
-    zoe,
-    feeMintAccess: feeMintAccessP,
-  },
+  produce: { chainTimerService },
 }) => {
-  // TODO: Zoe should accept a promise, since the value is in that vat.
-  const [feeMintAccess, nameAdmins] = await Promise.all([
-    feeMintAccessP,
-    nameAdminsP,
-  ]);
-
-  const chainTimerService = E(timerVat).createTimerService(timerDevice);
-
-  /** @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat todo */
-  const { priceAuthority, adminFacet: _priceAuthorityAdmin } = await E(
-    /** @type { PriceAuthorityVat } */ (E(loadVat)('priceAuthority')),
-  ).makePriceAuthority();
-
-  return installVaultFactoryOnChain({
-    agoricNames,
-    board,
-    centralName: CENTRAL_ISSUER_NAME,
-    chainTimerService,
-    nameAdmins,
-    priceAuthority,
-    zoe,
-    bootstrapPaymentValue: 0n, // TODO: this is obsolete, right?
-    feeMintAccess,
-  });
+  chainTimerService.resolve(E(timerVat).createTimerService(timerDevice));
 };
-
-/**
- * @param {{
- *   consume: {
- *     agoricNames: ERef<NameHub>,
- *     bridgeManager: ERef<import('../bridge.js').BridgeManager>,
- *     client: ERef<ClientConfig>,
- *     nameAdmins: ERef<Store<NameHub, NameAdmin>>,
- *     zoe: ERef<ZoeService>,
- *   }
- * }} powers
- */
-const startAttestation = async ({
-  consume: { agoricNames, bridgeManager, client, nameAdmins, zoe },
-}) => {
-  const [stakeName] = BLD_ISSUER_ENTRY;
-  const [
-    stakeBrand,
-    stakeIssuer,
-    [brandAdmin, issuerAdmin],
-  ] = await Promise.all([
-    E(agoricNames).lookup('brand', stakeName),
-    E(agoricNames).lookup('issuer', stakeName),
-    collectNameAdmins(['brand', 'issuer'], agoricNames, nameAdmins),
-  ]);
-
-  const reporter = makeStakeReporter(bridgeManager, stakeBrand);
-  const { issuer, brand, creatorFacet } = await bootstrapAttestation(
-    attestationBundle,
-    zoe,
-    stakeIssuer,
-    reporter,
-    {
-      expiringAttName: 'BldAttGov', // ISSUE: passe. get rid of this?
-      returnableAttName: 'BldLienAtt',
-    },
-  );
-
-  return Promise.all([
-    E(brandAdmin).update(wellKnownERights.Attestation, brand),
-    E(issuerAdmin).update(wellKnownERights.Attestation, issuer),
-    E(client).assignBundle({
-      attMaker: address => E(creatorFacet).getAttMaker(address),
-    }),
-  ]);
-};
-
-const startGetRun = async () => {};
 
 harden({
+  collectNameAdmins,
   connectVattpWithMailbox,
   makeVatsFromBundles,
   buildZoe,
@@ -438,10 +345,10 @@ harden({
   installClientEgress,
   makeClientBanks,
   makeBLDKit,
-  startVaultFactory,
-  startAttestation,
+  startTimerService,
 });
 export {
+  collectNameAdmins,
   connectVattpWithMailbox,
   makeVatsFromBundles,
   buildZoe,
@@ -450,6 +357,5 @@ export {
   installClientEgress,
   makeClientBanks,
   makeBLDKit,
-  startVaultFactory,
-  startAttestation,
+  startTimerService,
 };

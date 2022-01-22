@@ -1,6 +1,7 @@
 // @ts-check
 import { E, Far } from '@agoric/far';
-import { installClientEgress, governanceActions } from './behaviors.js';
+import { installClientEgress } from './behaviors.js';
+import { governanceActions } from './bootEconomy.js';
 
 export const makeSimBootstrapManifest = bootstrapManifest =>
   harden({
@@ -70,3 +71,4 @@ const connectFaucet = async ({
 harden({ installSimEgress, connectFaucet });
 export { installSimEgress, connectFaucet };
 export * from './behaviors.js';
+export * from './bootEconomy.js';

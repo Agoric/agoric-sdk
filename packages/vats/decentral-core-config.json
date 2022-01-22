@@ -60,6 +60,17 @@
               "nameAdmins": true
             }
           },
+          "startTimerService": {
+            "devices": {
+              "timer": true
+            },
+            "vats": {
+              "timer": true
+            },
+            "produce": {
+              "chainTimerService": true
+            }
+          },
           "makeClientBanks": {
             "consume": {
               "loadVat": true,
