@@ -52,7 +52,7 @@ jobs:
 
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
-    - run: yarn install
+    - run: yarn install --frozen-lockfile
     - run: yarn build
 
     - name: Link Agoric CLI from SDK

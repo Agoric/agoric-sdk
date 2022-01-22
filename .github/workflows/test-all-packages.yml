@@ -33,7 +33,7 @@ jobs:
     
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
-    - name: yarn install
+    - name: yarn install --frozen-lockfile
       run: yarn install --frozen-lockfile
     - name: check dependencies
       run: yarn check-dependencies

@@ -52,8 +52,8 @@ jobs:
           console.log(branch);
           return branch;
 
-    - name: yarn install
-      run: yarn install
+    - name: yarn install --frozen-lockfile
+      run: yarn install --frozen-lockfile
     # 'yarn build' loops over all workspaces
     - name: yarn build
       run: yarn build
