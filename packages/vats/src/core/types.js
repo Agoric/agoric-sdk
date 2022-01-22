@@ -13,12 +13,11 @@
  *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdminWrapper.js').buildRootObject>> } VatAdminVat
  * @typedef { ERef<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/vats/vat-timerWrapper.js').buildRootObject>> } TimerVat
- * @typedef {{ getChainBundle: () => unknown }} ChainBundler
  *
  * See deliverToController in packages/SwingSet/src/vats/comms/controller.js
  * @typedef {ERef<{
  *   addRemote: (name: string, tx: unknown, rx: unknown) => void,
- *   addEgress: (addr: string, ix: number, provider: unknown) => ERef<ChainBundler>,
+ *   addEgress: (addr: string, ix: number, provider: unknown) => void,
  * }>} CommsVatRoot
  *
  * @typedef {{
@@ -31,6 +30,13 @@
  *   mailbox: MailboxDevice,
  *   vatAdmin: unknown,
  * }} SwingsetDevices
+ */
+
+/**
+ * @typedef {{
+ *   getChainBundle: () => unknown,
+ *   getChainConfigNotifier: () => Notifier<unknown>,
+ * }} ChainBundler
  */
 
 /**

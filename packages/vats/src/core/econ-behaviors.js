@@ -11,47 +11,8 @@ import getRUNBundle from '@agoric/run-protocol/bundles/bundle-getRUN.js';
 import contractGovernorBundle from '@agoric/run-protocol/bundles/bundle-contractGovernor.js';
 import committeeBundle from '@agoric/run-protocol/bundles/bundle-committee.js';
 import { makeStakeReporter } from '../my-lien.js';
-import { CENTRAL_ISSUER_NAME, collectNameAdmins, shared } from './behaviors.js';
+import { CENTRAL_ISSUER_NAME, collectNameAdmins, shared } from './utils.js';
 import { BLD_ISSUER_ENTRY } from '../issuers.js';
-
-export const governanceActions = harden({
-  startVaultFactory: {
-    consume: {
-      agoricNames: true,
-      nameAdmins: true,
-      board: true,
-      chainTimerService: true,
-      loadVat: true,
-      zoe: true,
-      feeMintAccess: true,
-    },
-  },
-  startAttestation: {
-    consume: {
-      agoricNames: true,
-      bridgeManager: true,
-      client: true,
-      nameAdmins: true,
-      zoe: true,
-    },
-  },
-  installEconomicGovernance: {
-    consume: {
-      zoe: true,
-      agoricNames: true,
-      nameAdmins: true,
-    },
-  },
-  startGetRun: {
-    consume: {
-      zoe: true,
-      feeMintAccess: true,
-      agoricNames: true,
-      chainTimerService: true,
-      nameAdmins: true,
-    },
-  },
-});
 
 /**
  * @param {{
@@ -66,7 +27,7 @@ export const governanceActions = harden({
  *   }
  * }} powers
  */
-const startVaultFactory = async ({
+export const startVaultFactory = async ({
   consume: {
     agoricNames,
     nameAdmins: nameAdminsP,
@@ -100,6 +61,7 @@ const startVaultFactory = async ({
     feeMintAccess,
   });
 };
+harden(startVaultFactory);
 
 /**
  * @param {{
@@ -112,7 +74,7 @@ const startVaultFactory = async ({
  *   }
  * }} powers
  */
-const startAttestation = async ({
+export const startAttestation = async ({
   consume: { agoricNames, bridgeManager, client, nameAdmins, zoe },
 }) => {
   const [stakeName] = BLD_ISSUER_ENTRY;
@@ -161,6 +123,7 @@ const startAttestation = async ({
     }),
   ]);
 };
+harden(startAttestation);
 
 /**
  * @param {{ consume: {
@@ -169,7 +132,7 @@ const startAttestation = async ({
  *   nameAdmins: ERef<Store<NameHub, NameAdmin>>,
  * }}} powers
  */
-const installEconomicGovernance = async ({
+export const installEconomicGovernance = async ({
   consume: { zoe, agoricNames, nameAdmins },
 }) => {
   const [contractGovernorInstall, committeeInstall] = await Promise.all([
@@ -190,6 +153,7 @@ const installEconomicGovernance = async ({
     E(installAdmin).update('committee', committeeInstall),
   ]);
 };
+harden(installEconomicGovernance);
 
 /**
  * @param {{ consume: {
@@ -200,7 +164,7 @@ const installEconomicGovernance = async ({
  *   nameAdmins: ERef<Store<NameHub, NameAdmin>>,
  * }}} powers
  */
-const startGetRun = async ({
+export const startGetRun = async ({
   consume: {
     zoe,
     // ISSUE: is there some reason Zoe shouldn't await this???
@@ -260,17 +224,4 @@ const startGetRun = async ({
     E(instanceAdmin).update(key, instance),
   ]);
 };
-
-harden({
-  startVaultFactory,
-  startAttestation,
-  installEconomicGovernance,
-  startGetRun,
-});
-
-export {
-  startVaultFactory,
-  startAttestation,
-  installEconomicGovernance,
-  startGetRun,
-};
+harden(startGetRun);

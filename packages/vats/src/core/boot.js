@@ -1,16 +1,20 @@
 // @ts-check
 import { Far } from '@agoric/far';
 import { makePromiseKit } from '@agoric/promise-kit';
-import * as behaviors from './sim-behaviors.js';
-import { makeSimBootstrapManifest } from './sim-behaviors.js';
+import {
+  CHAIN_BOOTSTRAP_MANIFEST,
+  SIM_CHAIN_BOOTSTRAP_MANIFEST,
+} from './manifest.js';
+
+import * as behaviors from './behaviors.js';
 
 const { entries, fromEntries } = Object;
 const { details: X, quote: q } = assert;
 
-// Choose a manifest maker based on runtime configured argv.ROLE.
-const roleToManifestMaker = new Map([
-  ['chain', manifest => manifest],
-  ['sim-chain', makeSimBootstrapManifest],
+// Choose a manifest based on runtime configured argv.ROLE.
+const roleToManifest = new Map([
+  ['chain', CHAIN_BOOTSTRAP_MANIFEST],
+  ['sim-chain', SIM_CHAIN_BOOTSTRAP_MANIFEST],
 ]);
 
 /**
@@ -92,7 +96,7 @@ const extract = (template, specimen) => {
  * }} vatPowers
  * @param {{
  *   argv: { ROLE: string },
- *   bootstrapManifest: unknown,
+ *   bootstrapManifest?: Record<string, Record<string, unknown>>,
  * }} vatParameters
  */
 const buildRootObject = (vatPowers, vatParameters) => {
@@ -104,9 +108,8 @@ const buildRootObject = (vatPowers, vatParameters) => {
   } = vatParameters;
   console.debug(`${ROLE} bootstrap starting`);
 
-  const makeManifest = roleToManifestMaker.get(ROLE);
-  assert(makeManifest, X`no configured manifest maker for role ${ROLE}`);
-  const actualManifest = makeManifest(bootstrapManifest);
+  const actualManifest = bootstrapManifest || roleToManifest.get(ROLE);
+  assert(actualManifest, X`no configured manifest maker for role ${ROLE}`);
 
   return Far('bootstrap', {
     /**

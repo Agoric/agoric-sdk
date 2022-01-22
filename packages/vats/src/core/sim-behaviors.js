@@ -1,28 +1,7 @@
 // @ts-check
 import { E, Far } from '@agoric/far';
-import { installClientEgress } from './behaviors.js';
-import { governanceActions } from './bootEconomy.js';
-
-export const makeSimBootstrapManifest = bootstrapManifest =>
-  harden({
-    ...bootstrapManifest,
-    installSimEgress: {
-      vatParameters: { argv: { hardcodedClientAddresses: true } },
-      vats: {
-        vattp: true,
-        comms: true,
-      },
-      produce: { client: true },
-    },
-    connectFaucet: {
-      consume: { zoe: true, client: true },
-      produce: { bridgeManager: true },
-    },
-    grantRunBehaviors: {
-      runBehaviors: true,
-      consume: { client: true },
-    },
-  });
+import { installClientEgress } from './utils.js';
+import { GOVERNANCE_OPTIONS_MANIFEST as GOVERNANCE_ACTIONS_MANIFEST } from './manifest.js';
 
 /**
  * @param {{
@@ -31,20 +10,24 @@ export const makeSimBootstrapManifest = bootstrapManifest =>
  *     vattp: VattpVat,
  *     comms: CommsVatRoot,
  *   },
- *   produce: { client: Producer<ClientConfig> },
+ *   produce: { client: Producer<ClientConfig>, chainBundler: Producer<ChainBundler> },
  * }} powers
  */
-const installSimEgress = async ({
+export const installSimEgress = async ({
   vatParameters: { argv },
   vats,
-  produce: { client },
+  produce: { client, chainBundler },
 }) => {
   return Promise.all(
     /** @type { string[] } */ (argv.hardcodedClientAddresses).map(addr =>
-      installClientEgress(addr, { vats, produce: { client } }),
+      installClientEgress(addr, {
+        vats,
+        produce: { client, chainBundler },
+      }),
     ),
   );
 };
+harden(installSimEgress);
 
 /**
  * @param {{
@@ -52,7 +35,7 @@ const installSimEgress = async ({
  *   produce: { bridgeManager: Producer<undefined> }
  * }} powers
  */
-const connectFaucet = async ({
+export const connectFaucet = async ({
   consume: { zoe, client },
   produce: { bridgeManager },
 }) => {
@@ -70,6 +53,7 @@ const connectFaucet = async ({
 
   return E(client).assignBundle({ faucet: makeFaucet });
 };
+harden(connectFaucet);
 
 /**
  * @param {{
@@ -77,16 +61,15 @@ const connectFaucet = async ({
  *   consume: { client: ERef<ClientConfig> }
  * }} powers
  */
-const grantRunBehaviors = async ({ runBehaviors, consume: { client } }) => {
+export const grantRunBehaviors = async ({
+  runBehaviors,
+  consume: { client },
+}) => {
   const makeBehaviors = _address =>
     Far('behaviors', { run: manifest => runBehaviors(manifest) });
   return E(client).assignBundle({
     behaviors: makeBehaviors,
-    governanceActions: _address => governanceActions,
+    governanceActions: _address => GOVERNANCE_ACTIONS_MANIFEST,
   });
 };
-
-harden({ installSimEgress, connectFaucet, grantRunBehaviors });
-export { installSimEgress, connectFaucet, grantRunBehaviors };
-export * from './behaviors.js';
-export * from './bootEconomy.js';
+harden(grantRunBehaviors);
