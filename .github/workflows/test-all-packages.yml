@@ -33,8 +33,10 @@ jobs:
     
     # 'yarn install' must be done at the top level, to build all the
     # cross-package symlinks
-    - name: yarn install --frozen-lockfile
-      run: yarn install --frozen-lockfile
+    - name: yarn install
+      run: yarn install
+    - name: check if git is dirty
+      run: git diff --stat --exit-code
     - name: check dependencies
       run: yarn check-dependencies
     # 'yarn build' loops over all workspaces
