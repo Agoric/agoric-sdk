@@ -127,9 +127,6 @@ export function makeWallet({
   /** @type {WeakStore<Issuer, string>} */
   const issuerToBoardId = makeScalarWeakMap('issuer');
 
-  /** @type {Petname} */
-  let feePursePetname;
-
   // Idempotently initialize the issuer's synchronous boardId mapping.
   const initIssuerToBoardId = async issuer => {
     if (issuerToBoardId.has(issuer)) {
@@ -379,7 +376,6 @@ export function makeWallet({
     const displayInfo = await E(E(zoe).getFeeIssuer()).getDisplayInfo();
     const augmentedDetails = {
       ...invitationDetails,
-      feePursePetname,
       fee: { ...fee, displayInfo },
     };
     return display(augmentedDetails);
@@ -1641,7 +1637,7 @@ export function makeWallet({
   // We don't want to expose this mechanism to the user, in case they shoot
   // themselves in the foot with it by importing an asset/virtual purse they
   // don't really trust.
-  const importBankAssets = async (bank, feePurseP) => {
+  const importBankAssets = async bank => {
     observeIteration(E(bank).getAssetSubscription(), {
       async updateState({ proposedName, issuerName, issuer, brand }) {
         try {
@@ -1664,18 +1660,6 @@ export function makeWallet({
         }
       },
     }).finally(() => console.error('/// This is the end of the bank assets'));
-    if (!feePurseP) {
-      return;
-    }
-    const feePurse = await feePurseP;
-    const feeIssuer = await E(zoe).getFeeIssuer();
-    const issuerName = await addIssuer('RUN', feeIssuer);
-    feePursePetname = await internalUnsafeImportPurse(
-      issuerName,
-      'Zoe fees',
-      false,
-      feePurse,
-    );
   };
   return {
     admin: wallet,
