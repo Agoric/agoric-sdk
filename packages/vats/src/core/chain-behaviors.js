@@ -180,3 +180,19 @@ export const makeBridgeManager = async ({
   bridgeManager.resolve(myBridge);
 };
 harden(makeBridgeManager);
+
+/**
+ * @param {{
+ *   consume: { client: ERef<ClientManager> },
+ * }} powers
+ */
+export const connectChainFaucet = async ({ consume: { client } }) => {
+  const makeFaucet = async _address => {
+    return Far('faucet', {
+      tapFaucet: () => [], // no free lunch on chain
+    });
+  };
+
+  return E(client).assignBundle({ faucet: makeFaucet });
+};
+harden(connectChainFaucet);

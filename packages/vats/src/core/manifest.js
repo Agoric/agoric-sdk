@@ -113,6 +113,11 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       clientCreator: true,
     },
   },
+  connectChainFaucet: {
+    consume: {
+      client: true,
+    },
+  },
 });
 
 export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
