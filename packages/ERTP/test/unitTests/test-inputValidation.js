@@ -135,10 +135,10 @@ test('issuer.combine bad payments array', async t => {
     length: 2,
     split: () => {},
   };
-  // @ts-ignore Intentional wrong type for testing
+  // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => E(issuer).combine(notAnArray), {
     message:
-      'Cannot pass non-frozen objects like {"length":2,"split":"[Function split]"}. Use harden()',
+      'cannot serialize Remotables with non-methods like "length" in {"length":2,"split":"[Function split]"}',
   });
 
   const notAnArray2 = Far('notAnArray2', {
