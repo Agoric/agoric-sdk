@@ -88,7 +88,7 @@ export default async function deployWallet(
   const issuerToPetname = new Map();
   const issuerToPursePetnameP = new Map();
   // AWAIT: Be sure this promise settles before this deploy script exits.
-  const wallet = await E(walletVat).getWallet(bank, E(faucet).getFeePurse());
+  const wallet = await E(walletVat).getWallet(bank);
   const walletAdmin = E(wallet).getAdminFacet();
   await Promise.all(
     paymentInfo.map(async ({ issuerPetname, issuer }) => {

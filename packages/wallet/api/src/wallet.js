@@ -284,8 +284,8 @@ export function buildRootObject(vatPowers) {
   });
   harden(preapprovedBridge);
 
-  async function getWallet(bank, feePurse) {
-    await walletRoot.importBankAssets(bank, feePurse);
+  async function getWallet(bank) {
+    await walletRoot.importBankAssets(bank);
 
     /**
      * This is the complete wallet, including the means to get the
