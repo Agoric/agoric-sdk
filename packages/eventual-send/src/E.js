@@ -35,10 +35,11 @@ function EProxyHandler(x, HandledPromise) {
       // allow the handler to synchronously influence the promise returned
       // by the handled methods, so we must freeze it from the outside. See
       // #95 for details.
-      return (...args) => harden(HandledPromise.applyMethod(x, p, args));
+      return (...args) =>
+        harden(HandledPromise.applyMethod(x, p, harden(args)));
     },
     apply(_target, _thisArg, argArray = []) {
-      return harden(HandledPromise.applyFunction(x, argArray));
+      return harden(HandledPromise.applyFunction(x, harden(argArray)));
     },
     has(_target, _p) {
       // We just pretend everything exists.
@@ -60,12 +61,12 @@ function EsendOnlyProxyHandler(x, HandledPromise) {
     ...baseFreezableProxyHandler,
     get(_target, p, _receiver) {
       return (...args) => {
-        HandledPromise.applyMethodSendOnly(x, p, args);
+        HandledPromise.applyMethodSendOnly(x, p, harden(args));
         return undefined;
       };
     },
     apply(_target, _thisArg, argsArray = []) {
-      HandledPromise.applyFunctionSendOnly(x, argsArray);
+      HandledPromise.applyFunctionSendOnly(x, harden(argsArray));
       return undefined;
     },
     has(_target, _p) {
