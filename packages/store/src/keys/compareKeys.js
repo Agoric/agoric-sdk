@@ -5,6 +5,7 @@
 import { passStyleOf, getTag } from '@agoric/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertKey } from './checkKey.js';
+import { bagCompare } from './merge-bag-operators.js';
 import { setCompare } from './merge-set-operators.js';
 
 const { details: X, quote: q } = assert;
@@ -117,15 +118,12 @@ export const compareKeys = (left, right) => {
         case 'copySet': {
           // copySet X is smaller than copySet Y when every element of X
           // is keyEQ to some element of Y.
-          // The following algorithm is good when there are few elements tied
-          // for the same rank. But it is O(N*M) in the size of these ties.
-          // Sets of remotables are a particularly bad case. For these, some
-          // kind of hash table (scalar set or map) should be used instead.
-
-          // TODO to get something working, I am currently implementing
-          // only the special case where there are no rank-order ties.
-
           return setCompare(left, right);
+        }
+        case 'copyBag': {
+          // TODO write after @gibson042's fix to the copySet text above
+          // is merged.
+          return bagCompare(left, right);
         }
         case 'copyMap': {
           // Two copyMaps that have different keys (according to keyEQ) are

@@ -5,8 +5,14 @@ export {
   assertKey,
   makeCopySet,
   getCopySetKeys,
+  makeCopyBag,
+  makeCopyBagFromElements,
+  getCopyBagEntries,
+  makeCopyMap,
+  getCopyMapEntries,
 } from './keys/checkKey.js';
 export { coerceToElements } from './keys/copySet.js';
+export { coerceToBagEntries } from './keys/copyBag.js';
 export {
   compareKeys,
   keyLT,
@@ -31,6 +37,14 @@ export {
   setIntersection,
   setDisjointSubtract,
 } from './keys/merge-set-operators.js';
+
+export {
+  bagIsSuperbag,
+  bagCompare,
+  bagUnion,
+  bagIntersection,
+  bagDisjointSubtract,
+} from './keys/merge-bag-operators.js';
 
 export {
   M,

@@ -12,7 +12,12 @@ import {
   passStyleOf,
 } from '@agoric/marshal';
 import { checkElements, makeSetOfElements } from './copySet.js';
-import { compareAntiRank, sortByRank } from '../patterns/rankOrder.js';
+import { checkBagEntries, makeBagOfEntries } from './copyBag.js';
+import {
+  compareAntiRank,
+  makeFullOrderComparatorKit,
+  sortByRank,
+} from '../patterns/rankOrder.js';
 
 const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
@@ -219,6 +224,117 @@ export const makeCopySet = elementIter => {
 };
 harden(makeCopySet);
 
+// //////////////////////////// CopyBag ////////////////////////////////////////
+
+// Moved to here so they can check that the copyBag contains only keys
+// without creating an import cycle.
+
+/** @type WeakSet<CopyBag<Key>> */
+const copyBagMemo = new WeakSet();
+
+/**
+ * @param {Passable} b
+ * @param {Checker=} check
+ * @returns {boolean}
+ */
+export const checkCopyBag = (b, check = x => x) => {
+  if (copyBagMemo.has(b)) {
+    return true;
+  }
+  const result =
+    check(
+      passStyleOf(b) === 'tagged' && getTag(b) === 'copyBag',
+      X`Not a copyBag: ${b}`,
+    ) &&
+    checkBagEntries(b.payload, check) &&
+    checkKey(b.payload);
+  if (result) {
+    copyBagMemo.add(b);
+  }
+  return result;
+};
+harden(checkCopyBag);
+
+/**
+ * @callback IsCopyBag
+ * @param {Passable} b
+ * @returns {b is CopyBag<Key>}
+ */
+
+/** @type {IsCopyBag} */
+export const isCopyBag = b => checkCopyBag(b);
+harden(isCopyBag);
+
+/**
+ * @callback AssertCopyBag
+ * @param {Passable} b
+ * @returns {asserts b is CopyBag<Key>}
+ */
+
+/** @type {AssertCopyBag} */
+export const assertCopyBag = b => {
+  checkCopyBag(b, assertChecker);
+};
+harden(assertCopyBag);
+
+/**
+ * @template K
+ * @param {CopyBag<K>} b
+ * @returns {K[]}
+ */
+export const getCopyBagEntries = b => {
+  assertCopyBag(b);
+  return b.payload;
+};
+harden(getCopyBagEntries);
+
+/**
+ * @template K
+ * @param {CopyBag<K>} b
+ * @param {(entry: [K, bigint], index: number) => boolean} fn
+ * @returns {boolean}
+ */
+export const everyCopyBagEntry = (b, fn) =>
+  getCopyBagEntries(b).every((entry, index) => fn(entry, index));
+harden(everyCopyBagEntry);
+
+/**
+ * @template K
+ * @param {Iterable<[K,bigint]>} bagEntryIter
+ * @returns {CopyBag<K>}
+ */
+export const makeCopyBag = bagEntryIter => {
+  const result = makeBagOfEntries(bagEntryIter);
+  assertCopyBag(result);
+  return result;
+};
+harden(makeCopyBag);
+
+/**
+ * @template K
+ * @param {Iterable<K>} elementIter
+ * @returns {CopySet<K>}
+ */
+export const makeCopyBagFromElements = elementIter => {
+  // This fullOrder contains history dependent state. It is specific
+  // to this one call and does not survive it.
+  const fullCompare = makeFullOrderComparatorKit().antiComparator;
+  const sorted = sortByRank(elementIter, fullCompare);
+  /** @type {[K,bigint][]} */
+  const entries = [];
+  for (let i = 0; i < sorted.length; ) {
+    const k = sorted[i];
+    let j = i + 1;
+    while (j < sorted.length && fullCompare(k, sorted[j]) === 0) {
+      j += 1;
+    }
+    entries.push([k, BigInt(j - i)]);
+    i = j;
+  }
+  return makeCopyBag(entries);
+};
+harden(makeCopyBagFromElements);
+
 // //////////////////////////// CopyMap ////////////////////////////////////////
 
 // Moved to here so they can check that the copyMap's keys contains only keys
@@ -420,6 +536,9 @@ const checkKeyInternal = (val, check = x => x) => {
       switch (tag) {
         case 'copySet': {
           return checkCopySet(val, check);
+        }
+        case 'copyBag': {
+          return checkCopyBag(val, check);
         }
         case 'copyMap': {
           return (

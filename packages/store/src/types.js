@@ -5,14 +5,17 @@
 /**
  * @typedef {Passable} Key
  * Keys are pass-by-copy structures (CopyArray, CopyRecord,
- * CopySet, CopyMap) that end in either passable primitive data or
+ * CopySet, CopyBag, CopyMap) that end in either passable primitive data or
  * Remotables (Far objects or their remote presences.) Keys are so named
  * because they can be used as keys in MapStores and CopyMaps, as well as
- * the elements of CopySets.
+ * the elements of CopySets and CopyBags.
  *
  * Keys cannot contain promises or errors, as these do not have a useful
  * distributed equality semantics. Keys also cannot contain any CopyTagged
- * except for those recognized as CopySets and CopyMaps.
+ * except for those recognized as CopySets, CopyBags, and CopyMaps.
+ *
+ * Be aware that we may recognize more CopyTaggeds over time, including
+ * CopyTaggeds recognized as keys.
  *
  * Distributed equality is location independent.
  * The same two keys, passed to another location, will be equal there iff
@@ -22,7 +25,7 @@
 /**
  * @typedef {Passable} Pattern
  * Patterns are pass-by-copy structures (CopyArray, CopyRecord,
- * CopySet, CopyMap) that end in either Keys or Matchers. Each pattern
+ * CopySet, CopyBag, CopyMap) that end in either Keys or Matchers. Each pattern
  * acts as a declarative passable predicate over passables, where each passable
  * either passes a given pattern, or does not. Every key is also a pattern.
  * Used as a pattern, a key matches only "itself", i.e., keys that are equal
@@ -32,7 +35,10 @@
  * not have a useful distributed equality or matching semantics. Likewise,
  * no pattern can distinguish among promises, or distinguish among errors.
  * Patterns also cannot contain any CopyTaggeds except for those recognized as
- * CopySets, CopyMaps, or Matchers.
+ * CopySets, CopyBags, CopyMaps, or Matchers.
+ *
+ * Be aware that we may recognize more CopyTaggeds over time, including
+ * CopyTaggeds recognized as patterns.
  *
  * Whether a passable matches a given pattern is location independent.
  * For a passable and a pattern, both passed to another location, the passable
@@ -62,6 +68,11 @@
 /**
  * @template K
  * @typedef {CopyTagged} CopySet
+ */
+
+/**
+ * @template K
+ * @typedef {CopyTagged} CopyBag
  */
 
 /**
@@ -449,7 +460,7 @@
  * The scalars are the primitive values and Remotables.
  * All scalars are keys.
  * @property {() => Matcher} key
- * Can be in a copySet or the key in a CopyMap.
+ * Can be in a copySet or CopyBag, or the key in a CopyMap.
  * (Will eventually be able to a key is a MapStore.)
  * All keys are patterns that match only themselves.
  * @property {() => Matcher} pattern
@@ -467,6 +478,7 @@
  * @property {() => Matcher} record A CopyRecord
  * @property {() => Matcher} array A CopyArray
  * @property {() => Matcher} set A CopySet
+ * @property {() => Matcher} bag A CopyBag
  * @property {() => Matcher} map A CopyMap
  * @property {() => Matcher} remotable A far object or its remote presence
  * @property {() => Matcher} error
@@ -500,6 +512,7 @@
  * @property {(subPatt?: Pattern) => Matcher} arrayOf
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} recordOf
  * @property {(keyPatt?: Pattern) => Matcher} setOf
+ * @property {(keyPatt?: Pattern) => Matcher} bagOf
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} mapOf
  * @property {(
  *   base: CopyRecord<*> | CopyArray<*>,
