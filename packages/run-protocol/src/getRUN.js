@@ -1,8 +1,14 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
-import { handleParamGovernance } from '@agoric/governance';
+import { E } from '@agoric/far';
+import {
+  CONTRACT_ELECTORATE,
+  handleParamGovernance,
+  makeParamManagerBuilder,
+} from '@agoric/governance';
 import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
+import { makeAttestationFacets } from '@agoric/zoe/src/contracts/attestation/attestation.js';
 import {
   assertIsRatio,
   assertProposalShape,
@@ -229,14 +235,28 @@ const makeCreditPolicy = (brands, getParamValue) => {
 const start = async (zcf, { feeMintAccess }) => {
   const {
     main: initialValue,
-    brands: { Attestation: attestBrand },
+    brands: { Stake: stakeBrand },
+    lienAttestationName = 'BldLienAtt',
   } = zcf.getTerms();
 
-  const {
-    wrapPublicFacet,
-    wrapCreatorFacet,
-    getParamValue,
-  } = handleParamGovernance(zcf, harden(initialValue));
+  const att = await makeAttestationFacets(zcf, stakeBrand, lienAttestationName);
+  const attestBrand = await E(att.publicFacet).getBrand();
+
+  const builder = makeParamManagerBuilder(zcf.getZoeService())
+    .addBrandedRatio(
+      CreditTerms.CollateralPrice,
+      initialValue[CreditTerms.CollateralPrice].value,
+    )
+    .addBrandedRatio(
+      CreditTerms.CollateralizationRatio,
+      initialValue[CreditTerms.CollateralizationRatio].value,
+    );
+  await builder.addInvitation(CONTRACT_ELECTORATE, initialPoserInvitation);
+  const paramManager = builder.build();
+  const { wrapPublicFacet, wrapCreatorFacet, getRatio } = handleParamGovernance(
+    zcf,
+    paramManager,
+  );
 
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
   const { brand: runBrand, issuer: runIssuer } = runMint.getIssuerRecord();
@@ -257,6 +277,9 @@ const start = async (zcf, { feeMintAccess }) => {
 
   const publicFacet = wrapPublicFacet(
     Far('Line of Credit Public API', {
+      getIssuer: att.publicFacet.getIssuer,
+      getBrand: () => att.publicFacet.getBrand,
+      makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
       makeLoanInvitation: () =>
         zcf.makeInvitation(
           makeLineOfCreditHook,
@@ -266,7 +289,7 @@ const start = async (zcf, { feeMintAccess }) => {
     }),
   );
 
-  return { publicFacet, creatorFacet: wrapCreatorFacet(undefined) };
+  return { publicFacet, creatorFacet: wrapCreatorFacet(att.creatorFacet) };
 };
 
 harden(start);
