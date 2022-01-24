@@ -2,6 +2,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
+import '@agoric/install-ses';
+
 import * as proc from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';

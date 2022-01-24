@@ -1,5 +1,8 @@
 /* global performance */
 // @ts-check
+
+import '@agoric/install-ses';
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
