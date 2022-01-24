@@ -4,9 +4,7 @@ import { E } from '@agoric/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
-import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
 import { bootstrapRunLoC } from '@agoric/run-protocol/src/bootstrapRunLoC.js';
-import attestationBundle from '@agoric/zoe/bundles/bundle-attestation.js';
 import getRUNBundle from '@agoric/run-protocol/bundles/bundle-getRUN.js';
 import contractGovernorBundle from '@agoric/run-protocol/bundles/bundle-contractGovernor.js';
 import committeeBundle from '@agoric/run-protocol/bundles/bundle-committee.js';
@@ -64,68 +62,6 @@ export const startVaultFactory = async ({
 harden(startVaultFactory);
 
 /**
- * @param {{
- *   consume: {
- *     agoricNames: ERef<NameHub>,
- *     bridgeManager: ERef<import('../bridge.js').BridgeManager>,
- *     client: ERef<ClientManager>,
- *     nameAdmins: ERef<Store<NameHub, NameAdmin>>,
- *     zoe: ERef<ZoeService>,
- *   }
- * }} powers
- */
-export const startAttestation = async ({
-  consume: { agoricNames, bridgeManager, client, nameAdmins, zoe },
-}) => {
-  const [stakeName] = BLD_ISSUER_ENTRY;
-  const [
-    stakeBrand,
-    stakeIssuer,
-    [brandAdmin, issuerAdmin, installAdmin, instanceAdmin],
-  ] = await Promise.all([
-    E(agoricNames).lookup('brand', stakeName),
-    E(agoricNames).lookup('issuer', stakeName),
-    collectNameAdmins(
-      ['brand', 'issuer', 'installation', 'instance'],
-      agoricNames,
-      nameAdmins,
-    ),
-  ]);
-
-  const reporter = makeStakeReporter(bridgeManager, stakeBrand);
-
-  const {
-    installation,
-    instance,
-    issuer,
-    brand,
-    creatorFacet,
-  } = await bootstrapAttestation(
-    attestationBundle,
-    zoe,
-    stakeIssuer,
-    reporter,
-    {
-      expiringAttName: 'BldAttGov', // ISSUE: passe. get rid of this?
-      returnableAttName: 'BldLienAtt',
-    },
-  );
-
-  const key = 'Attestation';
-  assert(shared.contract[key]);
-  return Promise.all([
-    E(brandAdmin).update(key, brand),
-    E(issuerAdmin).update(key, issuer),
-    E(installAdmin).update(key, installation),
-    E(instanceAdmin).update(key, instance),
-    E(client).assignBundle({
-      attMaker: address => E(creatorFacet).getAttMaker(address),
-    }),
-  ]);
-};
-harden(startAttestation);
-
-/**
  * @param {{ consume: {
  *   zoe: ERef<ZoeService>,
  *   agoricNames: ERef<NameHub>,
@@ -160,6 +96,8 @@ harden(installEconomicGovernance);
  *   zoe: ERef<ZoeService>,
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   agoricNames: ERef<NameHub>,
+ *   bridgeManager: ERef<import('../bridge.js').BridgeManager>,
+ *   client: ERef<ClientManager>,
  *   chainTimerService: ERef<TimerService>,
  *   nameAdmins: ERef<Store<NameHub, NameAdmin>>,
  * }}} powers
@@ -170,13 +108,17 @@ export const startGetRun = async ({
     // ISSUE: is there some reason Zoe shouldn't await this???
     feeMintAccess: feeMintAccessP,
     agoricNames,
+    bridgeManager,
+    client,
     chainTimerService,
     nameAdmins,
   },
 }) => {
+  const [stakeName] = BLD_ISSUER_ENTRY;
+
   const [
     feeMintAccess,
-    attIssuer,
+    bldIssuer,
     bldBrand,
     runBrand,
     governor,
@@ -184,8 +126,8 @@ export const startGetRun = async ({
     installation,
   ] = await Promise.all([
     feeMintAccessP,
-    E(agoricNames).lookup('issuer', 'Attestation'),
-    E(agoricNames).lookup('brand', 'BLD'),
+    E(agoricNames).lookup('issuer', stakeName),
+    E(agoricNames).lookup('brand', stakeName),
     E(agoricNames).lookup('brand', 'RUN'),
     // TODO: manage string constants that need to match
     E(agoricNames).lookup('installation', 'contractGovernor'),
@@ -202,26 +144,45 @@ export const startGetRun = async ({
   };
 
   // TODO: finish renaming bootstrapRunLoC etc.
-  const { instance } = await bootstrapRunLoC(
+  const { instance, publicFacet, creatorFacet } = await bootstrapRunLoC(
     zoe,
     chainTimerService,
     feeMintAccess,
     installations,
     { collateralPrice, collateralizationRatio },
-    attIssuer,
+    bldIssuer,
   );
+  const attIssuer = E(publicFacet).getIssuer();
+  const attBrand = await E(attIssuer).getBrand();
 
-  const [installAdmin, instanceAdmin] = await collectNameAdmins(
-    ['installation', 'instance'],
+  const reporter = makeStakeReporter(bridgeManager, bldBrand);
+
+  const [
+    brandAdmin,
+    issuerAdmin,
+    installAdmin,
+    instanceAdmin,
+  ] = await collectNameAdmins(
+    ['brand', 'issuer', 'installation', 'instance'],
     agoricNames,
     nameAdmins,
   );
 
   const key = 'getRUN';
+  const attKey = 'Attestation';
   assert(shared.contract[key]);
+  assert(shared.assets[attKey]);
   return Promise.all([
     E(installAdmin).update(key, installation),
     E(instanceAdmin).update(key, instance),
+    E(brandAdmin).update(attKey, attBrand),
+    E(issuerAdmin).update(attKey, attIssuer),
+    // @ts-ignore threading types thru governance is WIP
+    E(creatorFacet).addAuthority(reporter),
+    E(client).assignBundle({
+      // @ts-ignore threading types thru governance is WIP
+      attMaker: address => E(creatorFacet).getAttMaker(address),
+    }),
   ]);
 };
 harden(startGetRun);

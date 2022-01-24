@@ -19,7 +19,6 @@ export const shared = harden({
   contract: {
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
-    Attestation: 'Agoric lien attestation',
     getRUN: 'getRUN',
   },
 });

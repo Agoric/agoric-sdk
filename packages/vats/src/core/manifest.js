@@ -151,15 +151,6 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
       feeMintAccess: true,
     },
   },
-  startAttestation: {
-    consume: {
-      agoricNames: true,
-      bridgeManager: true,
-      client: true,
-      nameAdmins: true,
-      zoe: true,
-    },
-  },
   installEconomicGovernance: {
     consume: {
       zoe: true,
@@ -174,6 +165,8 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
       agoricNames: true,
       chainTimerService: true,
       nameAdmins: true,
+      bridgeManager: true,
+      client: true,
     },
   },
 });

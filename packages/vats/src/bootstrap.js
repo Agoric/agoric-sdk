@@ -9,8 +9,6 @@ import { E, Far } from '@agoric/far';
 import { makeStore } from '@agoric/store';
 import { installOnChain as installTreasuryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain.js';
-import attestationBundle from '@agoric/zoe/src/contracts/attestation/install-on-chain.js';
-import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
 
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { assert, details as X } from '@agoric/assert';
@@ -324,22 +322,7 @@ async function makeChainBundler(
         E(agoricNames).lookup('issuer', 'BLD'),
         E(agoricNames).lookup('brand', 'BLD'),
       ]);
-      // start attestation contract
-      const {
-        brand: attBrand,
-        issuer: attIssuer,
-        instance,
-        creatorFacet: attestationCreatorFacet,
-      } = await bootstrapAttestation(
-        attestationBundle,
-        zoe,
-        bldIssuer || assert.fail('bld issuer!?!@@'),
-        makeStakeReporter(
-          bridgeManager,
-          bldBrand || assert.fail('bld brand!?!@@'),
-        ),
-        { expiringAttName: 'BldAttGov', returnableAttName: 'BldAttLoC' },
-      );
+
       // Fetch the nameAdmins we need.
       const [issuerAdmin, brandAdmin, instanceAdmin] = await Promise.all(
         ['issuer', 'brand', 'instance'].map(async edge => {
@@ -349,13 +332,6 @@ async function makeChainBundler(
           return nameAdmins.get(hub);
         }),
       );
-      await Promise.all([
-        E(issuerAdmin).update('Attestation', attIssuer),
-        E(brandAdmin).update('Attestation', attBrand),
-        E(instanceAdmin).update('Attestation', instance),
-      ]);
-
-      attMakerFor = address => E(attestationCreatorFacet).getAttMaker(address);
     }
 
     return treasuryInstallResults;
