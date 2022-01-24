@@ -10,14 +10,12 @@ import bundleSource from '@agoric/bundle-source';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { bootstrapAttestation } from '@agoric/zoe/src/contracts/attestation/bootstrapAttestation.js';
 
 import { bootstrapRunLoC, Collect } from '../src/bootstrapRunLoC.js';
 import * as testCases from './runLoC-test-case-sheet.js';
 
 const contractRoots = {
-  runLoC: '../src/runLoC.js',
-  attestation: '@agoric/zoe/src/contracts/attestation/attestation.js',
+  getRUN: '../src/getRUN.js',
   electorate: '@agoric/governance/src/noActionElectorate.js',
   governor: '@agoric/governance/src/contractGovernor.js',
   faker: './attestationFaker.js',
@@ -121,31 +119,31 @@ test('RUN mint access', async t => {
   t.truthy(feeMintAccess);
 });
 
-test('start attestation', async t => {
-  const { zoe } = await bootstrapZoeAndRun();
-  const micro = harden({ decimalPlaces: 6 });
-  const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
+// test.skip('attestation facets@@@', async t => {
+//   const { zoe } = await bootstrapZoeAndRun();
+//   const micro = harden({ decimalPlaces: 6 });
+//   const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
 
-  const { attestation: bundle } = theBundles(t);
-  const { issuer, brand, creatorFacet } = await bootstrapAttestation(
-    bundle,
-    zoe,
-    bld.issuer,
-    mockBridge(bld.brand),
-    { expiringAttName: 'BldAttGov', returnableAttName: 'BldAttLoC' },
-  );
+//   const { attestation: bundle } = theBundles(t);
+//   const { issuer, brand, creatorFacet } = await bootstrapAttestation(
+//     bundle,
+//     zoe,
+//     bld.issuer,
+//     mockBridge(bld.brand),
+//     { expiringAttName: 'BldAttGov', returnableAttName: 'BldAttLoC' },
+//   );
 
-  const attMaker = E(creatorFacet).getAttMaker('agoric3k');
-  const expiration = 120n;
-  const amountLiened = AmountMath.make(bld.brand, 5n);
-  const pmt = E.get(E(attMaker).makeAttestations(amountLiened, expiration))
-    .returnable;
-  const amt = await E(issuer).getAmountOf(pmt);
-  t.deepEqual(amt, {
-    brand,
-    value: [{ address: 'agoric3k', amountLiened }],
-  });
-});
+//   const attMaker = E(creatorFacet).getAttMaker('agoric3k');
+//   const expiration = 120n;
+//   const amountLiened = AmountMath.make(bld.brand, 5n);
+//   const pmt = E.get(E(attMaker).makeAttestations(amountLiened, expiration))
+//     .returnable;
+//   const amt = await E(issuer).getAmountOf(pmt);
+//   t.deepEqual(amt, {
+//     brand,
+//     value: [{ address: 'agoric3k', amountLiened }],
+//   });
+// });
 
 /**
  * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
@@ -207,19 +205,6 @@ const testLoC = (
     const micro = harden({ decimalPlaces: 6 });
     const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
 
-    // start attestation contract
-    const {
-      brand: attBrand,
-      issuer: attIssuer,
-      creatorFacet,
-    } = await bootstrapAttestation(
-      bundles.attestation,
-      zoe,
-      bld.issuer,
-      mockBridge(bld.brand),
-      { expiringAttName: 'BldAttGov', returnableAttName: 'BldAttLoC' },
-    );
-
     // start RUN LoC
     const collateralPrice = makeRatio(price[0], runBrand, price[1], bld.brand);
     const rate = cr.before;
@@ -232,14 +217,16 @@ const testLoC = (
       getRUN: E(zoe).install(bundles.getRUN),
     });
 
-    const { publicFacet } = await bootstrapRunLoC(
+    const { publicFacet, creatorFacet } = await bootstrapRunLoC(
       zoe,
       timer,
       feeMintAccess,
       installations,
       { collateralPrice, collateralizationRatio },
-      attIssuer,
+      bld.issuer,
     );
+    const attIssuer = await E(publicFacet).getIssuer();
+    const attBrand = await E(attIssuer).getBrand();
 
     /** @type {{ runBrand: Brand, runIssuer: Issuer }} */
     const { runIssuer } = getJig();
@@ -252,8 +239,10 @@ const testLoC = (
     const [addrFromStake, _b] =
       entries(genesisBldBalances).find(([_addr, bal]) => bal === staked) ||
       assert.fail(X`no matching account: ${staked}`);
+    // @ts-ignore threading types thru governance is tricky.
     const attMaker = E(creatorFacet).getAttMaker(addrFromStake);
-    const expiration = 61n;
+    // @ts-ignore threading types thru governance is tricky.
+    await E(creatorFacet).addAuthority(mockBridge(bld.brand));
 
     // @ts-ignore governance wrapper obscures publicFace type :-/
     const lineOfCreditInvitation = await E(publicFacet).makeLoanInvitation();
@@ -263,17 +252,14 @@ const testLoC = (
      * @param {bigint} runValue
      */
     const testOpen = async (bldValue, runValue) => {
-      const tryAttestations = E(attMaker).makeAttestations(
-        ubld(bldValue),
-        expiration,
-      );
+      const tryAttestation = E(attMaker).makeAttestation(ubld(bldValue));
       if (failAttestation) {
-        await t.throwsAsync(tryAttestations);
+        await t.throwsAsync(tryAttestation);
         return undefined;
       }
       /** @returns { Promise<[Amount, Payment]> } */
       const getReturnableAttestation = () =>
-        E.get(tryAttestations).returnable.then(pmt =>
+        tryAttestation.then(pmt =>
           E(attIssuer)
             .getAmountOf(pmt)
             .then(amt => [amt, pmt]),
