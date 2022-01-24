@@ -2,7 +2,6 @@
 import { E, Far } from '@agoric/far';
 import { deeplyFulfilled } from '@agoric/marshal';
 import {
-  makeAsyncIterableFromNotifier,
   makeNotifierKit,
   makeSubscriptionKit,
   observeIteration,
@@ -124,12 +123,11 @@ export const makeClientManager = async ({
       const { notifier, updater } = makeNotifierKit(
         makeUpdatedConfiguration(cachedPropertyMakers),
       );
-      const it = makeAsyncIterableFromNotifier(notifier);
 
       /** @type {ClientFacet} */
       const clientFacet = Far('chainProvisioner', {
         getChainBundle: () => clientHome,
-        getConfiguration: () => it,
+        getConfiguration: () => notifier,
       });
 
       observeIteration(subscription, {

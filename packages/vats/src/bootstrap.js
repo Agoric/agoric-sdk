@@ -18,6 +18,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
+import { observeNotifier } from '@agoric/notifier';
 import { makeBridgeManager } from './bridge.js';
 import { makeNameHubKit } from './nameHub.js';
 import {
@@ -26,7 +27,6 @@ import {
   fromCosmosIssuerEntries,
   BLD_ISSUER_ENTRY,
 } from './issuers';
-import { makeStakeReporter } from './my-lien.js';
 
 const { multiply, floorDivide } = natSafeMath;
 
@@ -274,7 +274,7 @@ async function makeChainBundler(
   } = makeNameHubKit();
 
   /** @type {(a: string) => Promise<AttMaker> } */
-  let attMakerFor = a => assert.fail(X`no bridge manager@@@ ${a}`);
+  const attMakerFor = a => assert.fail(X`no bridge manager@@@ ${a}`);
 
   async function installEconomy(bootstrapPaymentValue) {
     // Create a mapping from all the nameHubs we create to their corresponding
@@ -316,23 +316,6 @@ async function makeChainBundler(
         zoe,
       }),
     ]);
-
-    if (bridgeManager) {
-      const [bldIssuer, bldBrand] = await Promise.all([
-        E(agoricNames).lookup('issuer', 'BLD'),
-        E(agoricNames).lookup('brand', 'BLD'),
-      ]);
-
-      // Fetch the nameAdmins we need.
-      const [issuerAdmin, brandAdmin, instanceAdmin] = await Promise.all(
-        ['issuer', 'brand', 'instance'].map(async edge => {
-          const hub = /** @type {NameHub} */ (await E(agoricNames).lookup(
-            edge,
-          ));
-          return nameAdmins.get(hub);
-        }),
-      );
-    }
 
     return treasuryInstallResults;
   }
@@ -1105,8 +1088,16 @@ export function buildRootObject(vatPowers, vatParameters) {
               FIXME_GCI,
               PROVISIONER_INDEX,
             );
-            chainBundle = await E(chainProvider).getChainBundle();
-            await updatePresences();
+            const notifier = await E(chainProvider).getConfiguration();
+            observeNotifier(notifier, {
+              updateState: async state => {
+                const { clientHome } = await state;
+                // Change what's present in the solo client's `agoric` and
+                // `home`.
+                chainBundle = clientHome;
+                updatePresences();
+              },
+            });
           };
 
           // We race to add presences, regardless of order.  This allows a solo
@@ -1174,7 +1165,6 @@ export function buildRootObject(vatPowers, vatParameters) {
           assert.fail(X`ROLE was not recognized: ${ROLE}`);
       }
 
-      console.debug(`all vats initialized for ${ROLE}`);
     },
   });
 }
