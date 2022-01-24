@@ -43,7 +43,7 @@ export const Collect = {
  * @param {Object} terms
  * @param {Ratio} terms.collateralPrice
  * @param {Ratio} terms.collateralizationRatio
- * @param {Issuer} attIssuer
+ * @param {Issuer} stakeIssuer
  *
  * @typedef {Unpromise<ReturnType<typeof import('../src/runLoC.js').start>>} StartLineOfCredit
  */
@@ -53,7 +53,7 @@ export const bootstrapRunLoC = async (
   feeMintAccess,
   installations,
   { collateralPrice, collateralizationRatio },
-  attIssuer,
+  stakeIssuer,
 ) => {
   const {
     creatorFacet: electorateCreatorFacet,
@@ -73,6 +73,7 @@ export const bootstrapRunLoC = async (
     },
   ]);
 
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess}} */
   const governorFacets = await E(zoe).startInstance(
     installations.governor,
     {},
@@ -82,8 +83,8 @@ export const bootstrapRunLoC = async (
       governedContractInstallation: installations.runLoC,
       governed: harden({
         terms: { main },
-        issuerKeywordRecord: { Attestation: attIssuer },
-        privateArgs: { feeMintAccess },
+        issuerKeywordRecord: { Stake: stakeIssuer },
+        privateArgs: { feeMintAccess, initialPoserInvitation },
       }),
     },
     harden({ electorateCreatorFacet }),
@@ -92,6 +93,7 @@ export const bootstrapRunLoC = async (
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();
   /** @type {ERef<StartLineOfCredit['publicFacet']>} */
   const publicFacet = E(zoe).getPublicFacet(governedInstance);
+  const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
 
-  return { instance: governedInstance, publicFacet };
+  return { instance: governedInstance, publicFacet, creatorFacet };
 };
