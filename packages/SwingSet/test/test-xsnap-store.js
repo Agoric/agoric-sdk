@@ -164,7 +164,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   const h2 = await store.save(vat.snapshot);
   t.is(
     h2,
-    'f32b2b4a91a597cbfcf3bc1a535b1e294f43e0cad01082aa6d933637c2a7c129',
+    '9e11a482f0d4bd25c988a4e102d24c0d239afe332981787a674f84149a63f0a0',
     'after SES boot - sensitive to SES-shim, XS, and supervisor',
   );
 
@@ -172,7 +172,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   const h3 = await store.save(vat.snapshot);
   t.is(
     h3,
-    '885b63a688e32e4cdb7ba97e6b6fdffc325330c9db1d432242e7901a3caa8965',
+    '556ebf0c07a99517e86ddd2fc0b0fadb8c39731de1c14ceaca5741ca246f13d3',
     'after use of harden() - sensitive to SES-shim, XS, and supervisor',
   );
 });

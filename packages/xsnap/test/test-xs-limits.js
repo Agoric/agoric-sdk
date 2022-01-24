@@ -1,5 +1,7 @@
 // XS resource exhaustion tests
 
+import '@agoric/install-ses';
+
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';

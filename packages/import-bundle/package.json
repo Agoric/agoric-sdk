@@ -18,13 +18,13 @@
     "lint": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@endo/base64": "^0.2.13",
-    "@endo/compartment-mapper": "^0.6.1"
+    "@endo/base64": "^0.2.14",
+    "@endo/compartment-mapper": "^0.6.2"
   },
   "devDependencies": {
     "@agoric/bundle-source": "^2.0.1",
     "@agoric/install-ses": "^0.5.29",
-    "@endo/ses-ava": "^0.2.13",
+    "@endo/ses-ava": "^0.2.14",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },
