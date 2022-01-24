@@ -46,6 +46,12 @@ const handleParamGovernance = (zcf, paramManager) => {
     getUnknown: paramManager.getUnknown,
   };
 
+  /**
+   * @param {T} originalPublicFacet
+   * @returns {T & GovernedPublicFacet}
+   * @template T
+   */
+  // @ts-ignore bounded polymorphism doesn't fit well in JSDoc
   const wrapPublicFacet = (originalPublicFacet = {}) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
@@ -58,6 +64,11 @@ const handleParamGovernance = (zcf, paramManager) => {
     });
   };
 
+  /**
+   * @param {T} originalCreatorFacet
+   * @returns {T & LimitedCreatorFacet}
+   * @template T
+   */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
     return Far('governedContract creator facet', {
       ...originalCreatorFacet,
@@ -65,6 +76,12 @@ const handleParamGovernance = (zcf, paramManager) => {
     });
   };
 
+  /**
+   * @param {T} originalCreatorFacet
+   * @returns {GovernedCreatorFacet}
+   * @template T
+   */
+  // @ts-ignore bounded polymorphism doesn't fit well in JSDoc
   const wrapCreatorFacet = (originalCreatorFacet = Far('creatorFacet', {})) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
