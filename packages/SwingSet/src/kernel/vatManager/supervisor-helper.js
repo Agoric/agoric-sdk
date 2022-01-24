@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import {
   insistVatSyscallObject,
   insistVatSyscallResult,
@@ -144,36 +144,21 @@ harden(makeSupervisorSyscall);
 export { makeSupervisorSyscall };
 
 /**
- * Create a vat console, or a no-op if consensusMode is true.
+ * Create a vat console from a log stream maker.
  *
  * TODO: consider other methods per SES VirtualConsole.
  * See https://github.com/Agoric/agoric-sdk/issues/2146
  *
- * @param {Record<'debug' | 'log' | 'info' | 'warn' | 'error', (...args: any[]) => void>} logger
- * the backing log method
- * @param {(logger: any, args: any[]) => void} [wrapper]
+ * @param {(level: string) => (...args: any[]) => void} makeLog
  */
-function makeVatConsole(logger, wrapper) {
-  assert.typeof(
-    wrapper,
-    'function',
-    X`Invalid VatConsole wrapper value ${wrapper}`,
-  );
-  const cons = Object.fromEntries(
-    ['debug', 'log', 'info', 'warn', 'error'].map(level => {
-      const backingLog = logger[level];
-
-      return [
-        level,
-        (...args) => {
-          // Wrap the actual backing log message, in case there is logic to impose.
-          wrapper(backingLog, args);
-        },
-      ];
-    }),
-  );
-
-  return harden(cons);
+function makeVatConsole(makeLog) {
+  return harden({
+    debug: makeLog('debug'),
+    log: makeLog('log'),
+    info: makeLog('info'),
+    warn: makeLog('warn'),
+    error: makeLog('error'),
+  });
 }
 
 harden(makeVatConsole);

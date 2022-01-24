@@ -79,6 +79,27 @@ parentPort.on('message', ([type, ...margs]) => {
       gcAndFinalize: makeGcAndFinalize(engineGC),
       meterControl: makeDummyMeterControl(),
     });
+
+    const makeLogMaker = tag => {
+      const logger = anylogger(tag);
+      const makeLog = level => {
+        const log = logger[level];
+        assert.typeof(log, 'function', X`logger[${level}] must be a function`);
+        return (...args) => {
+          // We have to dynamically wrap the consensus mode so that it can change
+          // during the lifetime of the supervisor (which when snapshotting, is
+          // restored to its current heap across restarts, not actually stopping
+          // until the vat is terminated).
+          if (consensusMode) {
+            return;
+          }
+
+          log(...args);
+        };
+      };
+      return makeLog;
+    };
+
     const ls = makeLiveSlots(
       syscall,
       vatID,
@@ -88,16 +109,12 @@ parentPort.on('message', ([type, ...margs]) => {
       enableDisavow,
       enableVatstore,
       gcTools,
+      makeVatConsole(makeLogMaker(`SwingSet:ls:${vatID}`)),
     );
 
     const endowments = {
       ...ls.vatGlobals,
-      console: makeVatConsole(
-        anylogger(`SwingSet:vat:${vatID}`),
-        (logger, args) => {
-          consensusMode || logger(...args);
-        },
-      ),
+      console: makeVatConsole(makeLogMaker(`SwingSet:vat:${vatID}`)),
       assert,
     };
 
