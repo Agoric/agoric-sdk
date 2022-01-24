@@ -19,11 +19,17 @@ import { BLD_ISSUER_ENTRY } from '../issuers.js';
  *    nameAdmins: ERef<Store<NameHub, NameAdmin>>,
  *    board: ERef<Board>,
  *    chainTimerService: ERef<TimerService>,
- *    loadVat: ERef<VatLoader<unknown>>,
+ *    loadVat: ERef<VatLoader<PriceAuthorityVat>>,
  *    zoe: ERef<ZoeService>,
  *    feeMintAccess: ERef<FeeMintAccess>,
+ *   },
+ *   produce: {
+ *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>
  *   }
  * }} powers
+ *
+ * @typedef { import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin } PriceAuthorityRegistryAdmin
+ * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
  */
 export const startVaultFactory = async ({
   consume: {
@@ -35,6 +41,7 @@ export const startVaultFactory = async ({
     zoe,
     feeMintAccess: feeMintAccessP,
   },
+  produce: { priceAuthorityAdmin },
 }) => {
   // TODO: Zoe should accept a promise, since the value is in that vat.
   const [feeMintAccess, nameAdmins] = await Promise.all([
@@ -42,10 +49,11 @@ export const startVaultFactory = async ({
     nameAdminsP,
   ]);
 
-  /** @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat todo */
-  const { priceAuthority, adminFacet: _priceAuthorityAdmin } = await E(
-    /** @type { PriceAuthorityVat } */ (E(loadVat)('priceAuthority')),
+  const { priceAuthority, adminFacet } = await E(
+    E(loadVat)('priceAuthority'),
   ).makePriceAuthority();
+
+  priceAuthorityAdmin.resolve(adminFacet);
 
   return installVaultFactoryOnChain({
     agoricNames,

@@ -150,6 +150,9 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
       zoe: true,
       feeMintAccess: true,
     },
+    produce: {
+      priceAuthorityAdmin: true,
+    }
   },
   installEconomicGovernance: {
     consume: {
