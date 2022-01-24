@@ -64,8 +64,10 @@
  * }} PromiseSpace
  *
  * @typedef {{
- *   assignBundle: (ps: Record<string, (addr: string) => void>) => void
+ *   assignBundle: (ps: PropertyMakers) => void
  * }} ClientManager
+ *
+ * @typedef {Record<string, (addr: string) => void>} PropertyMakers
  */
 
 /**
@@ -73,13 +75,15 @@
  * @param {string} nickname
  * @param {string} clientAddress
  * @param {string[]} powerFlags
- * @returns {unknown}
+ * @returns {Promise<Record<string, unknown>>}
  *
  * @typedef {Object} ClientFacet
- * @property {() => unknown} getChainBundle Required for ag-solo, but deprecated in favour of getConfiguration
- * @property {() => AsyncIterator<unknown>} getConfiguration
+ * @property {() => Record<string, unknown>} getChainBundle Required for ag-solo, but deprecated in favour of getConfiguration
+ * @property {() => ConsistentAsyncIterable<Configuration>} getConfiguration
+ *
+ * @typedef {{ clientAddress: string, clientHome: Record<string, unknown>}} Configuration
  *
  * @typedef {Object} ClientCreator
  * @property {CreateUserBundle} createUserBundle Required for vat-provisioning, but deprecated in favor of {@link createClient}.
- * @property {(nickname: string, clientAddress: string, powerFlags: string[]) => ClientFacet} createClientFacet
+ * @property {(nickname: string, clientAddress: string, powerFlags: string[]) => Promise<ClientFacet>} createClientFacet
  */

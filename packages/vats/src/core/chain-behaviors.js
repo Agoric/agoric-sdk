@@ -1,3 +1,4 @@
+// @ts-check
 import { E, Far } from '@agoric/far';
 import { deeplyFulfilled } from '@agoric/marshal';
 import {
@@ -79,9 +80,11 @@ export const makeClientManager = async ({
   produce: { client, clientCreator: clientCreatorP },
 }) => {
   // Create a subscription of chain configurations.
+  /** @type {SubscriptionRecord<PropertyMakers>} */
   const { subscription, publication } = makeSubscriptionKit();
 
   // Cache the latest full property maker state.
+  /** @type { PropertyMakers } */
   let cachedPropertyMakers = {};
 
   /** @type {ClientManager} */
@@ -104,6 +107,7 @@ export const makeClientManager = async ({
       return E(c).getChainBundle();
     },
     createClientFacet: async (_nickname, clientAddress, _powerFlags) => {
+      /** @type {Record<string, unknown>} */
       let clientHome = {};
 
       const makeUpdatedConfiguration = (newPropertyMakers = {}) => {
@@ -111,7 +115,9 @@ export const makeClientManager = async ({
         const newProperties = callProperties(newPropertyMakers, clientAddress);
         clientHome = { ...clientHome, ...newProperties };
         const config = harden({ clientAddress, clientHome });
-        return deeplyFulfilled(config);
+        /** @type {typeof config} */
+        const df = deeplyFulfilled(config);
+        return df;
       };
 
       // Publish new configurations.
