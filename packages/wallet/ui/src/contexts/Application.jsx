@@ -134,18 +134,14 @@ const Provider = ({ children }) => {
   const [schemaActions, setSchemaActions] = useState(null);
 
   const setBackend = backend => {
-    observeIterator(backend, {
-      updateState: schema => {
-        setSchemaActions(schema.actions);
-        observeIterator(schema.services, { updateState: setServices });
-        observeIterator(schema.offers, { updateState: setInbox });
-        observeIterator(schema.purses, { updateState: setPurses });
-        observeIterator(schema.dapps, { updateState: setDapps });
-        observeIterator(schema.contacts, { updateState: setContacts });
-        observeIterator(schema.payments, { updateState: setPayments });
-        observeIterator(schema.issuers, { updateState: setIssuers });
-      },
-    });
+    setSchemaActions(backend.actions);
+    observeIterator(backend.services, { updateState: setServices });
+    observeIterator(backend.offers, { updateState: setInbox });
+    observeIterator(backend.purses, { updateState: setPurses });
+    observeIterator(backend.dapps, { updateState: setDapps });
+    observeIterator(backend.contacts, { updateState: setContacts });
+    observeIterator(backend.payments, { updateState: setPayments });
+    observeIterator(backend.issuers, { updateState: setIssuers });
   };
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
