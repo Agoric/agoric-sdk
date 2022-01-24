@@ -565,20 +565,22 @@
 
 /**
  * @callback WrapPublicFacet
- * @param {any} originalPublicFacet
- * @returns {GovernedPublicFacet}
+ * @param {T} originalPublicFacet
+ * @returns {T & GovernedPublicFacet}
+ * @template T
  */
 
 /**
  * @callback WrapCreatorFacet
- * @param {any} originalCreatorFacet
- * @returns {GovernedCreatorFacet}
+ * @param {T} originalCreatorFacet
+ * @returns {T & GovernedCreatorFacet}
+ * @template T
  */
 
 /**
  * @typedef {Object} ParamGovernorBundle
- * @property {WrapPublicFacet} wrapPublicFacet
- * @property {WrapCreatorFacet} wrapCreatorFacet
+ * @property {WrapPublicFacet<P>} wrapPublicFacet
+ * @property {WrapCreatorFacet<C>} wrapCreatorFacet
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -588,13 +590,8 @@
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
  * @property {(name: string) => any} getUnknown
- */
-
-/**
- * @callback HandleParamGovernance
- * @param {ContractFacet} zcf
- * @param {ParamManagerFull} paramManager
- * @returns {ParamGovernorBundle}
+ * @template P
+ * @template C
  */
 
 /**
