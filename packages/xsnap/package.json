@@ -33,11 +33,11 @@
     "@agoric/bundle-source": "^2.0.1",
     "@agoric/eventual-send": "^0.14.0",
     "@agoric/install-ses": "^0.5.29",
-    "@endo/netstring": "^0.2.13",
+    "@endo/netstring": "^0.3.0",
     "glob": "^7.1.6"
   },
   "devDependencies": {
-    "@endo/base64": "^0.2.13",
+    "@endo/base64": "^0.2.14",
     "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-node-resolve": "^6.1.0",
     "ava": "^3.12.1",
