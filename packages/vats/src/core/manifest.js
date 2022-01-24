@@ -1,16 +1,5 @@
 // @ts-check
 export const CHAIN_BOOTSTRAP_MANIFEST = harden({
-  connectVattpWithMailbox: {
-    vatPowers: {
-      D: true,
-    },
-    vats: {
-      vattp: true,
-    },
-    devices: {
-      mailbox: true,
-    },
-  },
   makeVatsFromBundles: {
     vats: {
       vatAdmin: true,
@@ -152,7 +141,7 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
     },
     produce: {
       priceAuthorityAdmin: true,
-    }
+    },
   },
   installEconomicGovernance: {
     consume: {

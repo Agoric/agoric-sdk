@@ -1,5 +1,5 @@
 // @ts-check
-import { Far } from '@agoric/far';
+import { E, Far } from '@agoric/far';
 import { makePromiseKit } from '@agoric/promise-kit';
 import {
   CHAIN_BOOTSTRAP_MANIFEST,
@@ -116,7 +116,7 @@ const extract = (template, specimen) => {
  * Build root object of the bootstrap vat.
  *
  * @param {{
- *   D: EProxy // approximately
+ *   D: DProxy
  * }} vatPowers
  * @param {{
  *   argv: { ROLE: string },
@@ -142,7 +142,12 @@ const buildRootObject = (vatPowers, vatParameters) => {
      * @param {SwingsetVats} vats
      * @param {SwingsetDevices} devices
      */
-    bootstrap: (vats, devices) => {
+    bootstrap: async (vats, devices) => {
+      // Complete SwingSet wiring.
+      const { D } = vatPowers;
+      D(devices.mailbox).registerInboundHandler(vats.vattp);
+      await E(vats.vattp).registerMailboxDevice(devices.mailbox);
+
       /** @param { Record<string, Record<string, unknown>> } manifest */
       const runBehaviors = manifest => {
         const powers = {

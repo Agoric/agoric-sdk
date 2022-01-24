@@ -18,23 +18,6 @@ const { keys } = Object;
 
 /**
  * @param {{
- *   vatPowers: { D: DProxy }, // D type is approximate
- *   vats: { vattp: VattpVat },
- *   devices: { mailbox: MailboxDevice },
- * }} powers
- */
-export const connectVattpWithMailbox = ({
-  vatPowers: { D },
-  vats: { vattp },
-  devices: { mailbox },
-}) => {
-  D(mailbox).registerInboundHandler(vattp);
-  return E(vattp).registerMailboxDevice(mailbox);
-};
-harden(connectVattpWithMailbox);
-
-/**
- * @param {{
  *   vats: { vatAdmin: VatAdminVat },
  *   devices: { vatAdmin: unknown },
  *   produce: {
