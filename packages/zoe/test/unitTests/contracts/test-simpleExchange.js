@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';

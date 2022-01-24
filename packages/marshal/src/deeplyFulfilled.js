@@ -2,10 +2,10 @@
 
 /// <reference types="ses"/>
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 /**
  * @template T
- * @typedef {import('@agoric/eventual-send').ERef<T>} ERef
+ * @typedef {import('@endo/eventual-send').ERef<T>} ERef
  */
 import { isPromise } from '@agoric/promise-kit';
 import { getTag, isObject } from './helpers/passStyle-helpers.js';

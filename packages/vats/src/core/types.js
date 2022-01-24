@@ -1,6 +1,6 @@
 // @ts-check
 
-/** @typedef { import('@agoric/eventual-send').EProxy } EProxy */
+/** @typedef { import('@endo/eventual-send').EProxy } EProxy */
 
 /**
  * SwingSet types

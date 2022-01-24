@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, makeAssert } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far, Remotable } from '@agoric/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';

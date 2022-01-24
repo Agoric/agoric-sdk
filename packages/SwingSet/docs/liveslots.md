@@ -43,7 +43,7 @@ This function returns the "root object". A remote reference to it will be made a
 ## Calling Objects
 
 ```js
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 const p = E(target).foo('arg1');
 p.then(obj2 => E(obj2).bar('arg2'))

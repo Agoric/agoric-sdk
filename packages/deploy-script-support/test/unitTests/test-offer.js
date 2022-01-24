@@ -6,7 +6,7 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import '../../exported.js';
 

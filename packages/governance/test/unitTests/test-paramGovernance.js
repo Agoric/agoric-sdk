@@ -7,7 +7,7 @@ import { makeZoeKit } from '@agoric/zoe';
 import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makeLoopback } from '@agoric/captp';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';

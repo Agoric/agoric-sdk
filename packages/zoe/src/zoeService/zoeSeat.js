@@ -3,7 +3,7 @@
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { assert } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 
 import { handlePKitWarning } from '../handleWarning.js';

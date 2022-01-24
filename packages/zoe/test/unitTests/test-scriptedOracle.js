@@ -6,7 +6,7 @@ import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';

@@ -1,5 +1,5 @@
 // @ts-check
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import pegasusBundle from './bundle-pegasus.js';
 

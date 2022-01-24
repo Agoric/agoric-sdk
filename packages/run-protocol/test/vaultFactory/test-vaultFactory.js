@@ -7,7 +7,7 @@ import '../../src/vaultFactory/types.js';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';

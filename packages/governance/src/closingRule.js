@@ -4,7 +4,7 @@
 // emergency votes that can close as soon as a quorum or other threshold is
 // reached.
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 
 /** @type {CloseVoting} */

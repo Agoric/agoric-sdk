@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { keyEQ } from '@agoric/store';

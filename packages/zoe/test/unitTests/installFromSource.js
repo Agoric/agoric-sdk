@@ -1,7 +1,7 @@
 // @ts-check
 
 import bundleSource from '@agoric/bundle-source';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 /**
  * @param {ZoeService} zoe

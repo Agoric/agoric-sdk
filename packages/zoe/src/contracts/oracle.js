@@ -6,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 
 import '../../exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 /**
  * This contract provides oracle queries for a fee or for free.

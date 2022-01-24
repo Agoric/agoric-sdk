@@ -84,7 +84,7 @@ ag-chain-cosmos init --overwrite <moniker>
   - [security fixes for realms-shim and SES](https://github.com/Agoric/realms-shim/security/advisories/GHSA-6jg8-7333-554w)
   - allow promise property gets with `targetP~.prop~.method()~.`
     (fixes `TypeError: o[optKey] is not a function`), though currently requires a round trip
-  - `import { E } from '@agoric/eventual-send'` to write smart contracts that
+  - `import { E } from '@endo/eventual-send'` to write smart contracts that
     use the `E()` proxy maker compatible with both SwingSet and without it
 * Don't leave behind a corrupt installation if ag-setup-solo provisioning fails
 

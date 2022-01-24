@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/eventual-send": "^0.14.0",
+    "@endo/eventual-send": "^0.14.1",
     "@agoric/marshal": "^0.5.0"
   },
   "devDependencies": {

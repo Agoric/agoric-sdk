@@ -1,5 +1,5 @@
 /* global makeKind */
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 
 export function buildRootObject(_vatPowers) {

@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies,no-unused-vars,no-empty-function */
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 import vaultFactoryBundle from '@agoric/run-protocol/bundles/bundle-vaultFactory.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';

@@ -44,7 +44,7 @@
     "@agoric/assert": "^0.3.15",
     "@agoric/bundle-source": "^2.0.1",
     "@agoric/ertp": "^0.13.1",
-    "@agoric/eventual-send": "^0.14.0",
+    "@endo/eventual-send": "^0.14.1",
     "@agoric/far": "^0.1.1",
     "@agoric/governance": "^0.4.1",
     "@agoric/import-bundle": "^0.2.33",

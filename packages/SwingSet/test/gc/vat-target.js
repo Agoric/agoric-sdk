@@ -1,5 +1,5 @@
 import { Far } from '@agoric/marshal';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 export function buildRootObject() {
   return Far('root', {

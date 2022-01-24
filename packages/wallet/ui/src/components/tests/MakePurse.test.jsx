@@ -6,7 +6,7 @@ import Snackbar from '@mui/material/Snackbar';
 import { createTheme, ThemeProvider } from '@mui/material';
 import MakePurse from '../MakePurse';
 
-jest.mock('@agoric/eventual-send', () => ({
+jest.mock('@endo/eventual-send', () => ({
   E: obj =>
     new Proxy(obj, {
       get(target, propKey) {

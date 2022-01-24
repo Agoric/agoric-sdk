@@ -3,7 +3,7 @@
 import '../../../exported.js';
 import './types.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { getAmountOut, ceilMultiplyBy } from '../../contractSupport/index.js';
 import { Position } from './position.js';

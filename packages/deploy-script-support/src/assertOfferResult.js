@@ -1,6 +1,6 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 /** @type {AssertOfferResult} */
 export const assertOfferResult = async (seat, expectedOfferResult) => {

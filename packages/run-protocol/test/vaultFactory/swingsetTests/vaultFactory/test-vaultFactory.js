@@ -10,7 +10,7 @@ import rawTest from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import liquidateBundle from '../../../../bundles/bundle-liquidateMinimum.js';
 import ammBundle from '../../../../bundles/bundle-amm.js';

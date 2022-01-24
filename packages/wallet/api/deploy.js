@@ -2,7 +2,7 @@
 // Agoric wallet deployment script.
 // FIXME: This is just hacked together for the legacy wallet.
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import path from 'path';
 

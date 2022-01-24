@@ -32,7 +32,7 @@
     "@agoric/marshal": "^0.5.0"
   },
   "devDependencies": {
-    "@agoric/eventual-send": "^0.14.0",
+    "@endo/eventual-send": "^0.14.1",
     "@agoric/swingset-vat": "^0.24.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2"

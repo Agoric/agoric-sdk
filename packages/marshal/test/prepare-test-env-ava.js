@@ -1,5 +1,5 @@
 import '@endo/lockdown';
-import '@agoric/eventual-send/shim.js';
+import '@endo/eventual-send/shim.js';
 import '@endo/lockdown/commit-debug.js';
 
 import { wrapTest } from '@endo/ses-ava';

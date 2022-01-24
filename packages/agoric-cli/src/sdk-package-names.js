@@ -12,7 +12,7 @@ export default [
   "@agoric/deployment",
   "@agoric/ertp",
   "@agoric/eslint-config",
-  "@agoric/eventual-send",
+  "@endo/eventual-send",
   "@agoric/far",
   "@agoric/governance",
   "@agoric/import-bundle",

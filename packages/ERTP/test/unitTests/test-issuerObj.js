@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
 
 test('issuer.getBrand, brand.isMyIssuer', t => {

@@ -5,7 +5,7 @@ import '@agoric/zoe/tools/prepare-test-env-ava.js';
 import test from 'ava'; // TODO ses-ava doesn't yet have test.todo
 import '../../../../exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 import {

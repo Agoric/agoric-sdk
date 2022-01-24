@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle,import/no-extraneous-dependencies */
 import '../demo/install-ses-lockdown.js';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { html } from 'lit';
 import { fixture, expect } from '@open-wc/testing';
 

@@ -3,7 +3,7 @@ import '../../exported.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { keyEQ, fit } from '@agoric/store';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { AssetKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';

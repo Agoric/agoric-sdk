@@ -9,7 +9,7 @@
   "devDependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/captp": "^1.10.8",
-    "@agoric/eventual-send": "^0.14.0",
+    "@endo/eventual-send": "^0.14.1",
     "@agoric/install-ses": "^0.5.29",
     "@agoric/notifier": "^0.3.33",
     "@agoric/ui-components": "^0.2.28",

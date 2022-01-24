@@ -27,7 +27,7 @@
     "@agoric/assert": "^0.3.15",
     "@agoric/captp": "^1.10.8",
     "@agoric/cosmic-swingset": "^0.34.4",
-    "@agoric/eventual-send": "^0.14.0",
+    "@endo/eventual-send": "^0.14.1",
     "@agoric/import-bundle": "^0.2.33",
     "@agoric/install-ses": "^0.5.29",
     "@agoric/marshal": "^0.5.0",

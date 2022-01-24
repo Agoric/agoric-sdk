@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/eventual-send": "^0.14.0",
+    "@endo/eventual-send": "^0.14.1",
     "@endo/lockdown": "^0.1.2"
   },
   "files": [

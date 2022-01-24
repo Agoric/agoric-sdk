@@ -3,7 +3,7 @@
 import { assert, details, q } from '@agoric/assert';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyWeakMap, makeStore } from '@agoric/store';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Nat } from '@agoric/nat';
 import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr.js';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';

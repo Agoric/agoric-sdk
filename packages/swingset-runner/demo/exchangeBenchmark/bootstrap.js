@@ -1,5 +1,5 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */

@@ -1,5 +1,5 @@
 import { makeNotifierKit } from '@agoric/notifier';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { getReplHandler } from '@agoric/vats/src/repl.js';

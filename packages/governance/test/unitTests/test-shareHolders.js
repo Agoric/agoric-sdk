@@ -7,7 +7,7 @@ import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 

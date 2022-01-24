@@ -14,7 +14,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import { makeMarshal, passStyleOf, Far, mapIterable } from '@agoric/marshal';
 import { Nat } from '@agoric/nat';

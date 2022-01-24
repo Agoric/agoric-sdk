@@ -6,7 +6,7 @@ import path from 'path';
 
 import '../../../../exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 

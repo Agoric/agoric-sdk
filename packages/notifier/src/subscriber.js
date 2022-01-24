@@ -2,7 +2,7 @@
 // @ts-check
 /// <reference types="ses"/>
 
-import { HandledPromise, E } from '@agoric/eventual-send';
+import { HandledPromise, E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 

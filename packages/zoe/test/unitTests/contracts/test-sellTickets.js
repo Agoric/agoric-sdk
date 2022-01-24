@@ -7,7 +7,7 @@ import path from 'path';
 import { assert } from '@agoric/assert';
 import bundleSource from '@agoric/bundle-source';
 import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';

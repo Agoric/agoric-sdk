@@ -1,5 +1,5 @@
 /* global makeKind makeVirtualScalarWeakMap */
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 
 const p = console.log;

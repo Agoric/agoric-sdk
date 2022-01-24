@@ -6,7 +6,7 @@ import '@agoric/zoe/exported.js';
 import '../../src/vaultFactory/types.js';
 
 import path from 'path';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import bundleSource from '@agoric/bundle-source';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';

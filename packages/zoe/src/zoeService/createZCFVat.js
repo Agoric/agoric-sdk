@@ -1,4 +1,4 @@
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import zcfContractBundle from '../../bundles/bundle-contractFacet.js';
 

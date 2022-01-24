@@ -1,4 +1,4 @@
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { Far } from '@agoric/marshal';

@@ -3,7 +3,7 @@
 import { makeReactAgoricWalletConnection } from '@agoric/wallet-connection/react.js';
 import React, { useCallback } from 'react';
 import clsx from 'clsx';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { observeIterator } from '@agoric/notifier';
 import { makeStyles } from '@mui/styles';
 import IconButton from '@mui/material/IconButton';

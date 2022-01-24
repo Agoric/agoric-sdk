@@ -1,5 +1,5 @@
 import { Far } from '@agoric/marshal';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 // this takes about 5.7M computrons

@@ -1,7 +1,7 @@
 // @ts-check
 /// <reference types="ses"/>
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 
 import './types.js';

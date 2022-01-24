@@ -10,7 +10,7 @@ import ImportIssuer from '../../components/ImportIssuer';
 
 jest.mock('../../components/MakePurse', () => () => 'MakePurse');
 
-jest.mock('@agoric/eventual-send', () => ({
+jest.mock('@endo/eventual-send', () => ({
   E: obj =>
     new Proxy(obj, {
       get(target, propKey) {

@@ -2,7 +2,7 @@ User-visible changes in marshal:
 
 ## Release 0.1.2 (17-Dec-2019)
 
-* depend on @agoric/eventual-send (#6)
+* depend on @endo/eventual-send (#6)
 
 Moved from https://github.com/Agoric/marshal into the `packages/marshal/`
 directory in the monorepo at https://github.com/Agoric/agoric-sdk .

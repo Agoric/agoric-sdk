@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@agoric/marshal';
 import { observeNotifier } from '@agoric/notifier';
 import {

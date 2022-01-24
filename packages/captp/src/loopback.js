@@ -6,7 +6,7 @@ export { E };
 
 /**
  * @template T
- * @typedef {import('@agoric/eventual-send').ERef<T>} ERef
+ * @typedef {import('@endo/eventual-send').ERef<T>} ERef
  */
 
 /**
