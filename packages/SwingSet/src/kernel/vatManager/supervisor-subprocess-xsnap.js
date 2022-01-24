@@ -250,6 +250,7 @@ function makeWorker(port) {
     const makeLogMaker = dst => {
       /** @param {string} level */
       const makeLog = level => {
+        // Capture the `console.log`, etc.'s `printAll` function.
         const printAll = console[level];
         assert.typeof(printAll, 'function');
         const portSendingPrinter = (...args) => {

@@ -14613,6 +14613,11 @@ node-gyp@^7.1.0:
     tar "^6.0.2"
     which "^2.0.2"
 
+node-inspect-extracted@^1.0.8:
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/node-inspect-extracted/-/node-inspect-extracted-1.0.8.tgz#2d0660c25857f703bde0f73507ed9ad7d0b592d0"
+  integrity sha512-T36kNTyW9aKWc00mQZCDpYt0gnNPhdNL1wnul6xrHRciIZAtw37K3hrUDJjUWUijzm/Q3UTdDDk0TLe5qv1cYA==
+
 node-int64@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/node-int64/-/node-int64-0.4.0.tgz#87a9065cdb355d3182d8f94ce11188b825c68a3b"
