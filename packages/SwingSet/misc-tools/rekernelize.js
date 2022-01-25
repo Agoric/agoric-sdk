@@ -69,7 +69,4 @@ async function main() {
   swingStore.close();
 }
 
-main().then(
-  () => 0,
-  e => console.error(`${e}`, e),
-);
+await main();
