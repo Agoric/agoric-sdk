@@ -58,13 +58,7 @@ export const startVaultFactory = async ({
 };
 harden(startVaultFactory);
 
-/**
- * @param {{ consume: {
- *   zoe: ERef<ZoeService>,
- *   agoricNames: ERef<NameHub>,
- *   nameAdmins: ERef<Store<NameHub, NameAdmin>>,
- * }}} powers
- */
+/** @param {BootstrapPowers} powers */
 export const installEconomicGovernance = async ({
   consume: { zoe, agoricNames, nameAdmins },
 }) => {
@@ -88,17 +82,7 @@ export const installEconomicGovernance = async ({
 };
 harden(installEconomicGovernance);
 
-/**
- * @param {{ consume: {
- *   zoe: ERef<ZoeService>,
- *   feeMintAccess: ERef<FeeMintAccess>,
- *   agoricNames: ERef<NameHub>,
- *   bridgeManager: ERef<import('../bridge.js').BridgeManager>,
- *   client: ERef<ClientManager>,
- *   chainTimerService: ERef<TimerService>,
- *   nameAdmins: ERef<Store<NameHub, NameAdmin>>,
- * }}} powers
- */
+/** @param {BootstrapPowers} powers */
 export const startGetRun = async ({
   consume: {
     zoe,
