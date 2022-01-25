@@ -1,7 +1,8 @@
 {
   "extends": [
     "@endo",
-    "plugin:@jessie.js/recommended"
+    "plugin:@jessie.js/recommended",
+    "plugin:@typescript-eslint/recommended"
   ],
   "rules": {
     "jsdoc/no-multi-asterisks": "off",
@@ -24,6 +25,8 @@
         ]
       }
     ],
+    "@typescript-eslint/ban-ts-comment": "off", // TODO use ts-expect-error instead of ts-ignore
+    "@typescript-eslint/no-empty-function": "warn", // downgrade from "error" in @typescript-eslint/recommended
     "prettier/prettier": "warn" // @jessie.js/recommended errors. This repo checks format separately but keeps warn to maintain that "eslint --fix" prettifies
   },
   "settings": {
