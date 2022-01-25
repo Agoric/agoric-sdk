@@ -2,6 +2,8 @@
 // @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
+import '@agoric/install-ses';
+
 /**
  * @template T
  * @typedef {import('./defer').Deferred<T>} Deferred

@@ -52,6 +52,14 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const SOLO_IMAGE = `agoric/cosmic-swingset-solo:${opts.dockerTag}`;
 
   const pspawnEnv = { ...process.env };
+  if (opts.verbose > 1) {
+    // Loudly verbose logs (nondeterministic).
+    pspawnEnv.DEBUG = 'agoric,SwingSet:vat,SwingSet:ls';
+  } else if (opts.verbose) {
+    // Verbose vat logs (nondeterministic).
+    pspawnEnv.DEBUG = 'SwingSet:vat,SwingSet:ls';
+  }
+
   const pspawn = makePspawn({ env: pspawnEnv, spawn, log, chalk });
 
   // Turn on some debugging options.
@@ -685,14 +693,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   };
 
   const popts = opts;
-
-  if (popts.verbose > 1) {
-    // Enable verbose logs.
-    pspawnEnv.DEBUG = 'agoric';
-  } else if (!popts.verbose) {
-    // Disable more logs.
-    pspawnEnv.DEBUG = '';
-  }
 
   const args = rawArgs.slice(1);
   const profileName = args[0] || 'dev';
