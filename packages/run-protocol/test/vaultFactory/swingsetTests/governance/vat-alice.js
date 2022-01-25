@@ -3,6 +3,8 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@agoric/marshal';
 import { AmountMath } from '@agoric/ertp';
+import { daysForVoting } from './bootstrap';
+import { ONE_DAY } from '../setup';
 
 const { details: X, quote: q } = assert;
 
@@ -12,7 +14,7 @@ const { details: X, quote: q } = assert;
  * @param {ZoeService} zoe
  * @param {Brand[]} brands
  * @param {Payment[]} payments
- * @param {ManualTimer} timer
+ * @param {ManualTimer} timer configured to tick one day (@see setup.js)
  * @returns {Promise<{startTest: Function}>}
  */
 const build = async (log, zoe, brands, payments, timer) => {
@@ -39,10 +41,38 @@ const build = async (log, zoe, brands, payments, timer) => {
       }),
     );
 
-    const { vault } = await E(loanSeat).getOfferResult();
-    log(`Alice owes ${q(await E(vault).getDebtAmount())} after borrowing`);
+    /** @type {LoanKit} */
+    const { vault, uiNotifier } = await E(loanSeat).getOfferResult();
+
+    const timeLog = async msg =>
+      log(
+        `at ${(await E(timer).getCurrentTimestamp()) / ONE_DAY} days: ${msg}`,
+      );
+
+    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+
+    // accrue one day of interest at initial rate
     await E(timer).tick();
-    log(`Alice owes ${q(await E(vault).getDebtAmount())} after interest`);
+    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+
+    // advance time enough that governance updates the interest rate
+    await Promise.all(new Array(daysForVoting).fill(E(timer).tick()));
+    timeLog('vote ready to close');
+    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+
+    await E(timer).tick();
+    timeLog('vote closed');
+    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+
+    const uiDescription = async () => {
+      const current = await E(uiNotifier).getUpdateSince();
+      return `uiNotifier update #${current.updateCount} has interestRate.numerator ${current.value.interestRate.numerator.value}`;
+    };
+
+    timeLog(`1 day after votes cast, ${await uiDescription()}`);
+    await E(timer).tick();
+    timeLog(`2 days after votes cast, ${await uiDescription()}`);
+    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
   };
 
   return Far('build', {

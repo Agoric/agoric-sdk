@@ -71,12 +71,6 @@ export const makeVaultKit = (
 
   const { brand: runBrand } = runMint.getIssuerRecord();
   let runDebt = AmountMath.makeEmpty(runBrand);
-  const interestCalculator = makeInterestCalculator(
-    runBrand,
-    manager.getInterestRate(),
-    manager.getChargingPeriod(),
-    manager.getRecordingPeriod(),
-  );
 
   const getCollateralAllocated = seat =>
     seat.getAmountAllocated('Collateral', collateralBrand);
@@ -472,6 +466,13 @@ export const makeVaultKit = (
    * @returns {Amount} rate of interest used for accrual period
    */
   const accrueInterestAndAddToPool = currentTime => {
+    const interestCalculator = makeInterestCalculator(
+      runBrand,
+      manager.getInterestRate(),
+      manager.getChargingPeriod(),
+      manager.getRecordingPeriod(),
+    );
+
     const debtStatus = interestCalculator.calculateReportingPeriod(
       {
         latestInterestUpdate,
