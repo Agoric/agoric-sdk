@@ -164,6 +164,9 @@ export const makeVaultKit = (
     }
   };
 
+  /**
+   * @param {Amount} newDebt
+   */
   const liquidated = newDebt => {
     runDebt = newDebt;
     vaultState = VaultState.CLOSED;
@@ -464,8 +467,12 @@ export const makeVaultKit = (
     return { notifier };
   };
 
+  /**
+   * @param {bigint} currentTime
+   * @returns {Amount} rate of interest used for accrual period
+   */
   const accrueInterestAndAddToPool = currentTime => {
-    const interestKit = interestCalculator.calculateReportingPeriod(
+    const debtStatus = interestCalculator.calculateReportingPeriod(
       {
         latestInterestUpdate,
         newDebt: runDebt,
@@ -474,13 +481,13 @@ export const makeVaultKit = (
       currentTime,
     );
 
-    if (interestKit.latestInterestUpdate === latestInterestUpdate) {
+    if (debtStatus.latestInterestUpdate === latestInterestUpdate) {
       return AmountMath.makeEmpty(runBrand);
     }
 
-    ({ latestInterestUpdate, newDebt: runDebt } = interestKit);
+    ({ latestInterestUpdate, newDebt: runDebt } = debtStatus);
     updateUiState();
-    return interestKit.interest;
+    return debtStatus.interest;
   };
 
   const getDebtAmount = () => runDebt;

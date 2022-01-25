@@ -6,10 +6,22 @@ import { AmountMath } from '@agoric/ertp';
 
 const { details: X, quote: q } = assert;
 
+/**
+ *
+ * @param {(msg: any)=> void} log
+ * @param {ZoeService} zoe
+ * @param {Brand[]} brands
+ * @param {Payment[]} payments
+ * @param {ManualTimer} timer
+ * @returns {Promise<{startTest: Function}>}
+ */
 const build = async (log, zoe, brands, payments, timer) => {
   const [moolaBrand] = brands;
   const [moolaPayment] = payments;
 
+  /**
+   * @param {VaultFactoryPublicFacet} vaultFactory
+   */
   const oneLoanWithInterest = async vaultFactory => {
     log(`=> alice.oneLoanWithInterest called`);
 
@@ -34,6 +46,11 @@ const build = async (log, zoe, brands, payments, timer) => {
   };
 
   return Far('build', {
+    /**
+     * @param {string} testName
+     * @param {VaultFactoryPublicFacet} vaultFactory
+     * @returns {Promise<void>}
+     */
     startTest: async (testName, vaultFactory) => {
       switch (testName) {
         case 'oneLoanWithInterest': {
@@ -47,8 +64,12 @@ const build = async (log, zoe, brands, payments, timer) => {
   });
 };
 
+/**
+ * @param {VatPowers & {testLog: *}} vatPowers
+ */
 export function buildRootObject(vatPowers) {
   return Far('root', {
-    build: (...args) => build(vatPowers.testLog, ...args),
+    build: (zoe, brands, payments, timer) =>
+      build(vatPowers.testLog, zoe, brands, payments, timer),
   });
 }
