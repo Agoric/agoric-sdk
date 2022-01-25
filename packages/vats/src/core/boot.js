@@ -4,6 +4,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import {
   CHAIN_BOOTSTRAP_MANIFEST,
   SIM_CHAIN_BOOTSTRAP_MANIFEST,
+  GOVERNANCE_ACTIONS_MANIFEST,
 } from './manifest.js';
 
 import * as behaviors from './behaviors.js';
@@ -11,6 +12,7 @@ import * as behaviors from './behaviors.js';
 const { entries, fromEntries, keys } = Object;
 const { details: X, quote: q } = assert;
 
+// TODO: include behaviors in this table; separate sim-behaviors a bit more.
 // Choose a manifest based on runtime configured argv.ROLE.
 const roleToManifest = new Map([
   ['chain', CHAIN_BOOTSTRAP_MANIFEST],
@@ -121,6 +123,7 @@ const extract = (template, specimen) => {
  * @param {{
  *   argv: { ROLE: string },
  *   bootstrapManifest?: Record<string, Record<string, unknown>>,
+ *   governanceActions?: boolean,
  * }} vatParameters
  */
 const buildRootObject = (vatPowers, vatParameters) => {
@@ -170,7 +173,10 @@ const buildRootObject = (vatPowers, vatParameters) => {
         );
       };
 
-      return runBehaviors(actualManifest);
+      await runBehaviors(actualManifest);
+      if (vatParameters.governanceActions) {
+        await runBehaviors(GOVERNANCE_ACTIONS_MANIFEST);
+      }
     },
   });
 };

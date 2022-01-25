@@ -36,6 +36,7 @@ export const startVaultFactory = async ({
 
   priceAuthorityAdmin.resolve(adminFacet);
 
+  // TODO: refactor w.r.t. installEconomicGovernance below
   return installVaultFactoryOnChain({
     agoricNames,
     board,
