@@ -18,7 +18,7 @@
   "dependencies": {
     "@agoric/babel-standalone": "^7.14.3",
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/lockdown": "^0.1.0"
+    "@endo/lockdown": "^0.1.0"
   },
   "files": [
     "*.js",
