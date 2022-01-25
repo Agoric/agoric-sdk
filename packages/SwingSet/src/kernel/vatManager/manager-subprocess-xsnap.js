@@ -61,6 +61,7 @@ export function makeXsSubprocessFactory({
       metered,
       compareSyscalls,
       useTranscript,
+      liveSlotsConsole,
       vatConsole,
     } = managerOptions;
     assert(
@@ -87,12 +88,16 @@ export function makeXsSubprocessFactory({
           insistVatSyscallObject(vso);
           return mk.syscallFromWorker(vso);
         }
+        case 'liveSlotsConsole':
         case 'console': {
           const [level, ...rest] = args;
-          if (typeof level === 'string' && level in vatConsole) {
-            vatConsole[level](...rest);
+          // Choose the right console.
+          const myConsole =
+            (type === 'liveSlotsConsole' && liveSlotsConsole) || vatConsole;
+          if (typeof level === 'string' && level in myConsole) {
+            myConsole[level](...rest);
           } else {
-            console.error('bad console level', level);
+            console.error(`bad ${type} level`, level);
           }
           return ['ok'];
         }

@@ -1,6 +1,6 @@
 /* global globalThis WeakRef FinalizationRegistry */
 // @ts-check
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@agoric/import-bundle';
 import { makeMarshal } from '@agoric/marshal';
 import '../../types.js';
@@ -204,6 +204,9 @@ function makeWorker(port) {
     consensusMode,
     gcEveryCrank,
   ) {
+    // Enable or disable the consensus mode according to current settings.
+    currentConsensusMode = consensusMode;
+
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
     function syscallToManager(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
@@ -243,6 +246,42 @@ function makeWorker(port) {
       meterControl,
     });
 
+    /** @param {string} dst */
+    const makeLogMaker = dst => {
+      /** @param {string} level */
+      const makeLog = level => {
+        // Capture the `console.log`, etc.'s `printAll` function.
+        const printAll = console[level];
+        assert.typeof(printAll, 'function');
+        const portSendingPrinter = (...args) => {
+          port.send([dst, level, ...args]);
+        };
+        return (...args) => {
+          // We have to dynamically wrap the consensus mode so that it can change
+          // during the lifetime of the supervisor (which when snapshotting, is
+          // restored to its current heap across restarts, not actually stopping
+          // until the vat is terminated).
+          if (currentConsensusMode) {
+            return;
+          }
+
+          // Use the causal console, but output to the port.
+          //
+          // FIXME: This is a hack until the start compartment can create
+          // Console objects that log to a different destination than
+          // `globalThis.console`.
+          const { print: savePrinter } = globalThis;
+          try {
+            globalThis.print = portSendingPrinter;
+            printAll(...args);
+          } finally {
+            globalThis.print = savePrinter;
+          }
+        };
+      };
+      return makeLog;
+    };
+
     const ls = makeLiveSlots(
       syscall,
       vatID,
@@ -252,37 +291,12 @@ function makeWorker(port) {
       enableDisavow,
       enableVatstore,
       gcTools,
+      makeVatConsole(makeLogMaker('liveSlotsConsole')),
     );
 
-    const makeLog = level => {
-      return (...args) => {
-        // TODO: use more faithful stringification
-        const jsonSafeArgs = JSON.parse(`${q(args)}`);
-        port.send(['console', level, ...jsonSafeArgs]);
-      };
-    };
-    const forwardingLogger = {
-      debug: makeLog('debug'),
-      log: makeLog('log'),
-      info: makeLog('info'),
-      warn: makeLog('warn'),
-      error: makeLog('error'),
-    };
-
-    // Enable or disable the console accordingly.
-    currentConsensusMode = consensusMode;
     const endowments = {
       ...ls.vatGlobals,
-      console: makeVatConsole(
-        forwardingLogger,
-        // We have to dynamically wrap the consensus mode so that it can change
-        // during the lifetime of the supervisor (which when snapshotting, is
-        // restored to its current heap across restarts, not actually stopping
-        // until the vat is terminated).
-        (logger, args) => {
-          currentConsensusMode || logger(...args);
-        },
-      ),
+      console: makeVatConsole(makeLogMaker('console')),
       assert,
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,

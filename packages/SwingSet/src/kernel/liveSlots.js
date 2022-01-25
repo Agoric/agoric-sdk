@@ -1283,7 +1283,7 @@ function build(
  * @param {boolean} enableDisavow
  * @param {boolean} enableVatstore
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
- * @param {Console} [liveSlotsConsole]
+ * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will

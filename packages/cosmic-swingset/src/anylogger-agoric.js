@@ -3,25 +3,28 @@ import anylogger from 'anylogger';
 
 // Turn on debugging output with DEBUG=agoric
 
+const { DEBUG: debugEnv = '' } = process.env;
 let debugging;
+
 const filterOutPrefixes = [];
+// Mute vat logging unless requested, for determinism.
+if (!debugEnv.includes('SwingSet:vat')) {
+  filterOutPrefixes.push('SwingSet:vat:');
+}
+// Mute liveSlots logging unless requested, for determinism.
+if (!debugEnv.includes('SwingSet:ls')) {
+  filterOutPrefixes.push('SwingSet:ls:');
+}
+
 if (process.env.DEBUG === undefined) {
-  // DEBUG not set, default to log level.
-  debugging = 'log';
+  // DEBUG wasn't set, default to info level; quieter than normal.
+  debugging = 'info';
+} else if (debugEnv.includes('agoric')) {
+  // $DEBUG set and we're enabled; loudly verbose.
+  debugging = 'debug';
 } else {
-  if (!process.env.DEBUG.includes('SwingSet:vat')) {
-    filterOutPrefixes.push('SwingSet:vat:');
-  }
-  if (!process.env.DEBUG.includes('SwingSet:ls')) {
-    filterOutPrefixes.push('SwingSet:ls:');
-  }
-  if (process.env.DEBUG.includes('agoric')) {
-    // DEBUG set and we're enabled; verbose.
-    debugging = 'debug';
-  } else {
-    // DEBUG set but we're not enabled; quieter than normal.
-    debugging = 'info';
-  }
+  // $DEBUG set but we're not enabled; slightly louder than normal.
+  debugging = 'log';
 }
 const defaultLevel = anylogger.levels[debugging];
 
