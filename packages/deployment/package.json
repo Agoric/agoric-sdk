@@ -13,8 +13,8 @@
     "test:xs": "exit 0",
     "build": "exit 0",
     "lint-check": "yarn lint",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "eslint --fix '**/*.{js,jsx,ts}'",
+    "lint": "eslint '**/*.{js,jsx,ts}'"
   },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",

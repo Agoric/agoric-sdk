@@ -13,8 +13,8 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-check": "yarn lint",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "eslint --fix '**/*.{js,jsx,ts}'",
+    "lint": "eslint '**/*.{js,jsx,ts}'"
   },
   "dependencies": {
     "@agoric/assert": "^0.3.15",

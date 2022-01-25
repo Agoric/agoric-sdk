@@ -9,8 +9,8 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint-check": "yarn lint",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "eslint --fix '**/*.{js,jsx,ts}'",
+    "lint": "eslint '**/*.{js,jsx,ts}'"
   },
   "devDependencies": {
     "ava": "^3.12.1"

@@ -12,7 +12,7 @@
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
     "lint:types": "tsc -p jsconfig.json",
-    "lint:eslint": "eslint '**/*.js'"
+    "lint:eslint": "eslint '**/*.{js,jsx,ts}'"
   },
   "devDependencies": {
     "@agoric/bundle-source": "^2.0.1",

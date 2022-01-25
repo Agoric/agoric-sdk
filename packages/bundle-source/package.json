@@ -9,11 +9,11 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-fix": "eslint --fix '**/*.{js,jsx,ts}'",
     "lint-check": "yarn lint",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.{js,jsx,ts}'",
+    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.{js,jsx,ts}'",
+    "lint": "eslint '**/*.{js,jsx,ts}'"
   },
   "devDependencies": {
     "@endo/lockdown": "^0.1.2",

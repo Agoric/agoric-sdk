@@ -12,8 +12,8 @@
     "test": "exit 0",
     "test:xs": "exit 0",
     "lint-check": "yarn lint",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "eslint --fix '**/*.{js,jsx,ts}'",
+    "lint": "eslint '**/*.{js,jsx,ts}'"
   },
   "peerDependencies": {
     "canvas": "^2.6.1",
