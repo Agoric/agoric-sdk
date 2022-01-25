@@ -5,7 +5,7 @@ import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@agoric/marshal';
 
-import { makeDefaultLiquidationStrategy } from './liquidation.js';
+import { makeDefaultLiquidationStrategy } from '../vaultFactory/liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('LM');

@@ -25,7 +25,7 @@ const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 const shareHoldersRoot = `${dirname}/../../src/shareHolders.js`;
-const binaryCounterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
+const binaryCounterRoot = `${dirname}/../../src/contracts/binaryVoteCounter.js`;
 
 /**
  * @param {string} sourceRoot

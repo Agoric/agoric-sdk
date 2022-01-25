@@ -26,11 +26,11 @@ const BASIS_POINTS = 10_000n;
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
-const vaultFactoryRoot = `${dirname}/../../src/vaultFactory/vaultFactory.js`;
-const liquidationRoot = `${dirname}/../../src/vaultFactory/liquidateMinimum.js`;
-const autoswapRoot = `${dirname}/../../src/vpool-xyk-amm/multipoolMarketMaker.js`;
-const governanceRoot = '@agoric/governance/src/contractGovernor.js';
-const electorateRoot = '@agoric/governance/src/committee.js';
+const vaultFactoryRoot = `${dirname}/../../src/vaultFactory/contracts/vaultFactory.js`;
+const liquidationRoot = `${dirname}/../../src/vaultFactory/contracts/liquidateMinimum.js`;
+const autoswapRoot = `${dirname}/../../src/vpool-xyk-amm/contracts/multipoolMarketMaker.js`;
+const governanceRoot = '@agoric/governance/src/contracts/contractGovernor.js';
+const electorateRoot = '@agoric/governance/src/contracts/committee.js';
 
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);

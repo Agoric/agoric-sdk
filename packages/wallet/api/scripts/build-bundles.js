@@ -27,7 +27,7 @@ async function writeSourceBundle(contractFilename, outputPath) {
 
 async function main() {
   const contractOutputs = [
-    [`${srcDir}/wallet.js`, `${bundlesDir}/bundle-wallet.js`],
+    [`${srcDir}/contracts/wallet.js`, `${bundlesDir}/bundle-wallet.js`],
   ];
   for (const [contractFilename, outputPath] of contractOutputs) {
     // eslint-disable-next-line no-await-in-loop

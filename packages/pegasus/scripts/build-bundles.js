@@ -27,7 +27,7 @@ async function writeSourceBundle(contractFilename, outputPath) {
 
 async function main() {
   const contractOutputs = [
-    [`${srcDir}/pegasus.js`, `${bundlesDir}/bundle-pegasus.js`],
+    [`${srcDir}/contracts/pegasus.js`, `${bundlesDir}/bundle-pegasus.js`],
   ];
   for (const [contractFilename, outputPath] of contractOutputs) {
     // eslint-disable-next-line no-await-in-loop

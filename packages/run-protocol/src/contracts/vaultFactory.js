@@ -33,7 +33,7 @@ import { Far } from '@agoric/marshal';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
 import { makeVaultManager } from './vaultManager.js';
-import { makeLiquidationStrategy } from './liquidateMinimum.js';
+import { makeLiquidationStrategy } from '../contracts/liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
 import {
   makeVaultParamManager,

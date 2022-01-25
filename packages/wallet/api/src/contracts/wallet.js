@@ -12,12 +12,15 @@ import { E } from '@agoric/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@agoric/marshal';
 
-import { makeWallet } from './lib-wallet.js';
-import pubsub from './pubsub.js';
-import { bigintStringify } from './bigintStringify.js';
-import { makeTimerDeviceDateNow, makeTimerServiceDateNow } from './date-now.js';
+import { makeWallet } from '../lib-wallet.js';
+import pubsub from '../pubsub.js';
+import { bigintStringify } from '../bigintStringify.js';
+import {
+  makeTimerDeviceDateNow,
+  makeTimerServiceDateNow,
+} from '../date-now.js';
 
-import './internal-types.js';
+import '../internal-types.js';
 
 export function buildRootObject(vatPowers) {
   // See if we have the device vat power.

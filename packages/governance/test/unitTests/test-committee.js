@@ -21,8 +21,8 @@ import {
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const electorateRoot = `${dirname}/../../src/committee.js`;
-const counterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
+const electorateRoot = `${dirname}/../../src/contracts/committee.js`;
+const counterRoot = `${dirname}/../../src/contracts/binaryVoteCounter.js`;
 
 const setupContract = async () => {
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);

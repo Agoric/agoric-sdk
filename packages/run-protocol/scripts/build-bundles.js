@@ -30,31 +30,31 @@ async function writeSourceBundle(contractFilename, outputPath) {
 async function main() {
   const contractOutputs = [
     [
-      `${srcDir}/vaultFactory/vaultFactory.js`,
+      `${srcDir}/vaultFactory/contracts/vaultFactory.js`,
       `${bundlesDir}/bundle-vaultFactory.js`,
     ],
     [
-      `${srcDir}/vaultFactory/liquidateMinimum.js`,
+      `${srcDir}/vaultFactory/contracts/liquidateMinimum.js`,
       `${bundlesDir}/bundle-liquidateMinimum.js`,
     ],
     [
-      `${srcDir}/vpool-xyk-amm/multipoolMarketMaker.js`,
+      `${srcDir}/vpool-xyk-amm/contracts/multipoolMarketMaker.js`,
       `${dirname}/../bundles/bundle-amm.js`,
     ],
     [
-      '@agoric/governance/src/contractGovernor.js',
+      '@agoric/governance/src/contracts/contractGovernor.js',
       `${dirname}/../bundles/bundle-contractGovernor.js`,
     ],
     [
-      '@agoric/governance/src/committee.js',
+      '@agoric/governance/src/contracts/committee.js',
       `${dirname}/../bundles/bundle-committee.js`,
     ],
     [
-      '@agoric/governance/src/noActionElectorate.js',
+      '@agoric/governance/src/contracts/noActionElectorate.js',
       `${dirname}/../bundles/bundle-noActionElectorate.js`,
     ],
     [
-      '@agoric/governance/src/binaryVoteCounter.js',
+      '@agoric/governance/src/contracts/binaryVoteCounter.js',
       `${dirname}/../bundles/bundle-binaryVoteCounter.js`,
     ],
   ];

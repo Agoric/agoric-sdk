@@ -15,7 +15,7 @@ export {
 export {
   validateQuestionDetails,
   validateQuestionFromCounter,
-} from './contractGovernor.js';
+} from './contracts/contractGovernor.js';
 
 export { handleParamGovernance } from './contractHelper.js';
 
@@ -49,4 +49,4 @@ export {
   makeGovernedUnknown,
 } from './paramGovernance/paramMakers.js';
 
-export { makeBinaryVoteCounter } from './binaryVoteCounter.js';
+export { makeBinaryVoteCounter } from './contracts/binaryVoteCounter.js';

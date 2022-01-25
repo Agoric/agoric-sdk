@@ -7,15 +7,19 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeAddPool } from './pool.js';
-import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
-import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
+import { makeAddPool } from '../vpool-xyk-amm/pool.js';
+import { makeMakeAddLiquidityInvitation } from '../vpool-xyk-amm/addLiquidity.js';
+import { makeMakeRemoveLiquidityInvitation } from '../vpool-xyk-amm/removeLiquidity.js';
 
 import '@agoric/zoe/exported.js';
-import { makeMakeCollectFeesInvitation } from './collectFees.js';
-import { makeMakeSwapInvitation } from './swap.js';
-import { makeDoublePool } from './doublePool.js';
-import { makeParamManager, POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
+import { makeMakeCollectFeesInvitation } from '../vpool-xyk-amm/collectFees.js';
+import { makeMakeSwapInvitation } from '../vpool-xyk-amm/swap.js';
+import { makeDoublePool } from '../vpool-xyk-amm/doublePool.js';
+import {
+  makeParamManager,
+  POOL_FEE_KEY,
+  PROTOCOL_FEE_KEY,
+} from '../vpool-xyk-amm/params.js';
 
 const { details: X } = assert;
 

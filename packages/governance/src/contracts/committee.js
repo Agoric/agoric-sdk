@@ -7,13 +7,13 @@ import { makeStore } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle';
-import { QuorumRule } from './question.js';
+import { QuorumRule } from '../question.js';
 import {
   startCounter,
   getOpenQuestions,
   getQuestion,
   getPoserInvitation,
-} from './electorateTools.js';
+} from '../electorateTools.js';
 
 const { ceilDivide } = natSafeMath;
 

@@ -18,10 +18,10 @@ import {
   makeGovernedInvitation,
 } from '../../src/index.js';
 
-const voteCounterRoot = '../../src/binaryVoteCounter.js';
+const voteCounterRoot = '../../src/contracts/binaryVoteCounter.js';
 const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
-const contractGovernorRoot = '../../src/contractGovernor.js';
-const committeeRoot = '../../src/committee.js';
+const contractGovernorRoot = '../../src/contracts/contractGovernor.js';
+const committeeRoot = '../../src/contracts/committee.js';
 
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);

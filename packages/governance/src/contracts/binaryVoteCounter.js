@@ -9,8 +9,8 @@ import {
   buildUnrankedQuestion,
   positionIncluded,
   looksLikeQuestionSpec,
-} from './question.js';
-import { scheduleClose } from './closingRule.js';
+} from '../question.js';
+import { scheduleClose } from '../closingRule.js';
 
 const { details: X } = assert;
 

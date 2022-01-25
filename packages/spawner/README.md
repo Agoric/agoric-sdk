@@ -12,10 +12,10 @@ source retrieval, issuers, invitations, or seats). These callers now do
 something like:
 
 ```js
-  const bundlePath = new URL('src/wallet.js', import.meta.url).pathname;
-  const bundle = await bundleSource(bundlePath);
-  const walletInstall = E(spawner).install(bundle);
-  const walletVat = await E(walletInstall).spawn(args);
+const bundlePath = new URL('src/contracts/wallet.js', import.meta.url).pathname;
+const bundle = await bundleSource(bundlePath);
+const walletInstall = E(spawner).install(bundle);
+const walletVat = await E(walletInstall).spawn(args);
 ```
 
 So the spawner is now a stripped-down dynamic-vat creation frontend with the
@@ -37,7 +37,7 @@ function buildRootObject() {
   return Far('root', {
     buildSpawner(vatAdminSvc) {
       return makeSpawner(vatAdminSvc);
-    }
+    },
   });
 }
 harden(buildRootObject);

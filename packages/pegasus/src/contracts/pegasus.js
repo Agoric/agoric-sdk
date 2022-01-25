@@ -13,7 +13,7 @@ import '@agoric/notifier/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/swingset-vat/src/vats/network/types.js';
 import '@agoric/zoe/exported.js';
-import '../exported.js';
+import '../../exported.js';
 
 const DEFAULT_AMOUNT_MATH_KIND = 'nat';
 const DEFAULT_PROTOCOL = 'ics20-1';

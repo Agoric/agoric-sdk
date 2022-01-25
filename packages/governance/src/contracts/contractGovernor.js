@@ -7,7 +7,7 @@ import {
   setupGovernance,
   validateParamChangeQuestion,
   CONTRACT_ELECTORATE,
-} from './paramGovernance/governParam.js';
+} from '../paramGovernance/governParam.js';
 
 const { details: X } = assert;
 

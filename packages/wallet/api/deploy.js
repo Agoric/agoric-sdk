@@ -31,7 +31,9 @@ export default async function deployWallet(
   let walletVat = await E(scratch).get('wallet/api');
   if (!walletVat) {
     // Bundle the wallet sources.
-    const bundle = await bundleSource(pathResolve(dirname, './src/wallet.js'));
+    const bundle = await bundleSource(
+      pathResolve(dirname, './src/contracts/wallet.js'),
+    );
 
     // Install it on the local spawner.
     const walletInstall = E(spawner).install(bundle);

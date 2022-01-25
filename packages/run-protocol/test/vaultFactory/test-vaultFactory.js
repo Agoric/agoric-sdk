@@ -33,15 +33,16 @@ import {
   RECORDING_PERIOD_KEY,
 } from '../../src/vaultFactory/params.js';
 
-const ammRoot = '../../src/vpool-xyk-amm/multipoolMarketMaker.js';
-const vaultFactoryRoot = '../../src/vaultFactory/vaultFactory.js';
-const liquidationRoot = '../../src/vaultFactory/liquidateMinimum.js';
+const ammRoot = '../../src/contracts/multipoolMarketMaker.js';
+const vaultFactoryRoot = '../../src/contracts/vaultFactory.js';
+const liquidationRoot = '../../src/contracts/liquidateMinimum.js';
 
 const faucetRoot = './faucet.js';
 
-const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
-const committeeRoot = '@agoric/governance/src/committee.js';
-const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
+const contractGovernorRoot =
+  '@agoric/governance/src/contracts/contractGovernor.js';
+const committeeRoot = '@agoric/governance/src/contracts/committee.js';
+const voteCounterRoot = '@agoric/governance/src/contracts/binaryVoteCounter.js';
 
 const trace = makeTracer('TestST');
 

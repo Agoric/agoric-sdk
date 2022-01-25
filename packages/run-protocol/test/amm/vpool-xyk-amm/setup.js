@@ -11,11 +11,12 @@ import { makeZoeKit } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeAmmTerms } from '../../../src/vpool-xyk-amm/params.js';
 
-const ammRoot = '../../../src/vpool-xyk-amm/multipoolMarketMaker.js';
+const ammRoot = '../../../src/contracts/multipoolMarketMaker.js';
 
-const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
-const committeeRoot = '@agoric/governance/src/committee.js';
-const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
+const contractGovernorRoot =
+  '@agoric/governance/src/contracts/contractGovernor.js';
+const committeeRoot = '@agoric/governance/src/contracts/committee.js';
+const voteCounterRoot = '@agoric/governance/src/contracts/binaryVoteCounter.js';
 
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
