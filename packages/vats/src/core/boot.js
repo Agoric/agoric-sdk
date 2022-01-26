@@ -1,17 +1,26 @@
 // @ts-check
-import { Far } from '@agoric/far';
+import { E, Far } from '@agoric/far';
 import { makePromiseKit } from '@agoric/promise-kit';
-import * as behaviors from './sim-behaviors.js';
-import { makeSimBootstrapManifest } from './sim-behaviors.js';
+import {
+  CHAIN_BOOTSTRAP_MANIFEST,
+  SIM_CHAIN_BOOTSTRAP_MANIFEST,
+  GOVERNANCE_ACTIONS_MANIFEST,
+} from './manifest.js';
 
-const { entries, fromEntries } = Object;
+import * as behaviors from './behaviors.js';
+import * as simBehaviors from './sim-behaviors.js';
+
+const { entries, fromEntries, keys } = Object;
 const { details: X, quote: q } = assert;
 
-// Choose a manifest maker based on runtime configured argv.ROLE.
-const roleToManifestMaker = new Map([
-  ['chain', manifest => manifest],
-  ['sim-chain', makeSimBootstrapManifest],
-]);
+// Choose a manifest based on runtime configured argv.ROLE.
+const roleToManifest = harden({
+  chain: CHAIN_BOOTSTRAP_MANIFEST,
+  'sim-chain': SIM_CHAIN_BOOTSTRAP_MANIFEST,
+});
+const roleToBehaviors = harden({
+  'sim-chain': { ...behaviors, ...simBehaviors },
+});
 
 /**
  * Make { produce, consume } where for each name, `consume[name]` is a promise
@@ -22,13 +31,15 @@ const roleToManifestMaker = new Map([
 const makePromiseSpace = () => {
   /** @type {Map<string, PromiseRecord<unknown>>} */
   const state = new Map();
+  const remaining = new Set();
 
   const findOrCreateKit = name => {
     let kit = state.get(name);
     if (!kit) {
-      // console.info(name, ': new Promise');
+      console.info(`${name}: new Promise`);
       kit = makePromiseKit();
       state.set(name, kit);
+      remaining.add(name);
     }
     return kit;
   };
@@ -49,8 +60,19 @@ const makePromiseSpace = () => {
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
-        const { resolve } = findOrCreateKit(name);
-        // promise.then(() => console.info(name, ': resolve'));
+        const { resolve, promise } = findOrCreateKit(name);
+        // promise.then(
+        // () => console.info(name, ': resolve'),
+        // e => console.info(name, ': reject', e),
+        // );
+        promise.finally(() => {
+          remaining.delete(name);
+          console.info(
+            name,
+            'settled; remaining:',
+            [...remaining.keys()].sort(),
+          );
+        });
         // Note: repeated resolves() are noops.
         return harden({ resolve });
       },
@@ -71,7 +93,7 @@ const extract = (template, specimen) => {
     if (typeof specimen !== 'object' || specimen === null) {
       assert.fail(X`object template requires object specimen, not ${specimen}`);
     }
-    return harden(
+    const target = harden(
       fromEntries(
         entries(template).map(([propName, subTemplate]) => [
           propName,
@@ -79,6 +101,17 @@ const extract = (template, specimen) => {
         ]),
       ),
     );
+    return new Proxy(target, {
+      get: (t, propName) => {
+        if (typeof propName !== 'symbol') {
+          assert(
+            propName in t,
+            X`${propName} not permitted, only ${keys(template)}`,
+          );
+        }
+        return t[propName];
+      },
+    });
   } else {
     assert.fail(X`unexpected template: ${q(template)}`);
   }
@@ -88,11 +121,12 @@ const extract = (template, specimen) => {
  * Build root object of the bootstrap vat.
  *
  * @param {{
- *   D: EProxy // approximately
+ *   D: DProxy
  * }} vatPowers
  * @param {{
  *   argv: { ROLE: string },
- *   bootstrapManifest: unknown,
+ *   bootstrapManifest?: Record<string, Record<string, unknown>>,
+ *   governanceActions?: boolean,
  * }} vatParameters
  */
 const buildRootObject = (vatPowers, vatParameters) => {
@@ -104,9 +138,10 @@ const buildRootObject = (vatPowers, vatParameters) => {
   } = vatParameters;
   console.debug(`${ROLE} bootstrap starting`);
 
-  const makeManifest = roleToManifestMaker.get(ROLE);
-  assert(makeManifest, X`no configured manifest maker for role ${ROLE}`);
-  const actualManifest = makeManifest(bootstrapManifest);
+  const bootManifest = bootstrapManifest || roleToManifest[ROLE];
+  const bootBehaviors = roleToBehaviors[ROLE] || behaviors;
+  assert(bootManifest, X`no configured bootstrapManifest for role ${ROLE}`);
+  assert(bootBehaviors, X`no configured bootstrapBehaviors for role ${ROLE}`);
 
   return Far('bootstrap', {
     /**
@@ -115,24 +150,38 @@ const buildRootObject = (vatPowers, vatParameters) => {
      * @param {SwingsetVats} vats
      * @param {SwingsetDevices} devices
      */
-    bootstrap: (vats, devices) => {
-      const powers = {
-        vatPowers,
-        vatParameters,
-        vats,
-        devices,
-        produce,
-        consume,
+    bootstrap: async (vats, devices) => {
+      // Complete SwingSet wiring.
+      const { D } = vatPowers;
+      D(devices.mailbox).registerInboundHandler(vats.vattp);
+      await E(vats.vattp).registerMailboxDevice(devices.mailbox);
+
+      /** @param { Record<string, Record<string, unknown>> } manifest */
+      const runBehaviors = manifest => {
+        const powers = {
+          vatPowers,
+          vatParameters,
+          vats,
+          devices,
+          produce,
+          consume,
+          runBehaviors,
+        };
+        return Promise.all(
+          entries(manifest).map(([name, permit]) =>
+            Promise.resolve().then(() => {
+              const endowments = extract(permit, powers);
+              console.info(`bootstrap: ${name}(${q(permit)})`);
+              return bootBehaviors[name](endowments);
+            }),
+          ),
+        );
       };
-      return Promise.all(
-        entries(actualManifest).map(([name, permit]) =>
-          Promise.resolve().then(() => {
-            const endowments = extract(permit, powers);
-            console.info(`bootstrap: ${name}(${q(permit)})`);
-            return behaviors[name](endowments);
-          }),
-        ),
-      );
+
+      await runBehaviors(bootManifest);
+      if (vatParameters.governanceActions) {
+        await runBehaviors(GOVERNANCE_ACTIONS_MANIFEST);
+      }
     },
   });
 };

@@ -2,7 +2,10 @@
   "bootstrap": "bootstrap",
   "vats": {
     "bootstrap": {
-      "sourceSpec": "./src/core/boot.js"
+      "sourceSpec": "./src/core/boot.js",
+      "parameters": {
+        "governanceActions": true
+      }
     }
   },
   "bundles": {

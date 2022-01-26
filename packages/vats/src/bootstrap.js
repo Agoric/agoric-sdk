@@ -26,7 +26,7 @@ import {
   fromCosmosIssuerEntries,
   BLD_ISSUER_ENTRY,
 } from './issuers';
-import { feeIssuerConfig } from './core/behaviors.js';
+import { feeIssuerConfig } from './core/utils.js';
 
 const { multiply, floorDivide } = natSafeMath;
 
