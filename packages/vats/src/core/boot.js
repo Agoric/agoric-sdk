@@ -8,16 +8,19 @@ import {
 } from './manifest.js';
 
 import * as behaviors from './behaviors.js';
+import * as simBehaviors from './sim-behaviors.js';
 
 const { entries, fromEntries, keys } = Object;
 const { details: X, quote: q } = assert;
 
-// TODO: include behaviors in this table; separate sim-behaviors a bit more.
 // Choose a manifest based on runtime configured argv.ROLE.
-const roleToManifest = new Map([
-  ['chain', CHAIN_BOOTSTRAP_MANIFEST],
-  ['sim-chain', SIM_CHAIN_BOOTSTRAP_MANIFEST],
-]);
+const roleToManifest = harden({
+  chain: CHAIN_BOOTSTRAP_MANIFEST,
+  'sim-chain': SIM_CHAIN_BOOTSTRAP_MANIFEST,
+});
+const roleToBehaviors = harden({
+  'sim-chain': { ...behaviors, ...simBehaviors },
+});
 
 /**
  * Make { produce, consume } where for each name, `consume[name]` is a promise
@@ -135,8 +138,10 @@ const buildRootObject = (vatPowers, vatParameters) => {
   } = vatParameters;
   console.debug(`${ROLE} bootstrap starting`);
 
-  const actualManifest = bootstrapManifest || roleToManifest.get(ROLE);
-  assert(actualManifest, X`no configured manifest maker for role ${ROLE}`);
+  const bootManifest = bootstrapManifest || roleToManifest[ROLE];
+  const bootBehaviors = roleToBehaviors[ROLE] || behaviors;
+  assert(bootManifest, X`no configured bootstrapManifest for role ${ROLE}`);
+  assert(bootBehaviors, X`no configured bootstrapBehaviors for role ${ROLE}`);
 
   return Far('bootstrap', {
     /**
@@ -167,13 +172,13 @@ const buildRootObject = (vatPowers, vatParameters) => {
             Promise.resolve().then(() => {
               const endowments = extract(permit, powers);
               console.info(`bootstrap: ${name}(${q(permit)})`);
-              return behaviors[name](endowments);
+              return bootBehaviors[name](endowments);
             }),
           ),
         );
       };
 
-      await runBehaviors(actualManifest);
+      await runBehaviors(bootManifest);
       if (vatParameters.governanceActions) {
         await runBehaviors(GOVERNANCE_ACTIONS_MANIFEST);
       }
