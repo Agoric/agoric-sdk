@@ -51,6 +51,7 @@
  *   ParamRecord<'invitation'> & { value: Amount } |
  *   ParamRecord<'nat'> & { value: bigint } |
  *   ParamRecord<'ratio'> & { value: Ratio } |
+ *   ParamRecord<'relativeTime'> & { value: RelativeTime } |
  *   ParamRecord<'string'> & { value: string } |
  *   ParamRecord<'unknown'> & { value: unknown }
  * } ParamDescription
@@ -406,7 +407,14 @@
 /**
  * @callback GetParams - getParams() retrieves a Record containing
  *   keyword pairs with descriptions of parameters under governance.
- * @returns {Record<Keyword,ParamShortDescription>}
+ * @returns {Record<Keyword,ParamShortDescription> & {
+ *  'ChargingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
+ *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },
+ *  'InterestRate': ParamRecord<'ratio'> & { value: Ratio },
+ *  'LiquidationMargin': ParamRecord<'ratio'> & { value: Ratio },
+ *  'LoanFee': ParamRecord<'ratio'> & { value: Ratio },
+ *  'RecordingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
+ * }}
  */
 
 /**

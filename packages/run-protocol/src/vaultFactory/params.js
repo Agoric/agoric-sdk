@@ -18,14 +18,27 @@ export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
 export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
 
-/** @type {MakeElectorateParams} */
+/**
+ * @param {Amount} electorateInvitationAmount
+ * @returns {Record<string,ParamShortDescription>}
+ */
 const makeElectorateParams = electorateInvitationAmount => {
   return harden({
     [CONTRACT_ELECTORATE]: makeGovernedInvitation(electorateInvitationAmount),
   });
 };
 
-/** @type {MakeLoanParams} */
+/**
+ * @typedef {Object} LoanParams
+ * @property {RelativeTime} chargingPeriod
+ * @property {RelativeTime} recordingPeriod
+ */
+
+/**
+ * @param {LoanParams} loanParams
+ * @param {Rates} rates
+ * @returns {Record<string,ParamShortDescription>}
+ */
 const makeLoanParams = (loanParams, rates) => {
   return harden({
     [CHARGING_PERIOD_KEY]: makeGovernedNat(loanParams.chargingPeriod),
@@ -58,7 +71,25 @@ const makeElectorateParamManager = async (zoe, electorateInvitation) => {
     .then(builder => builder.build());
 };
 
-/** @type {MakeGovernedTerms} */
+/**
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {LoanParams} loanParams
+ * @param {Installation} liquidationInstall
+ * @param {ERef<TimerService>} timerService
+ * @param {Amount} invitationAmount
+ * @param {Rates} rates
+ * @param {XYKAMMPublicFacet} ammPublicFacet
+ * @param {bigint=} bootstrapPaymentValue
+ * @returns {{
+ *   ammPublicFacet: XYKAMMPublicFacet,
+ *   priceAuthority: ERef<PriceAuthority>,
+ *   loanParams: Record<Keyword,ParamShortDescription>,
+ *   timerService: ERef<TimerService>,
+ *   liquidationInstall: Installation,
+ *   main: Record<Keyword,ParamShortDescription>,
+ *   bootstrapPaymentValue: bigint,
+ * }}
+ */
 const makeGovernedTerms = (
   priceAuthority,
   loanParams,

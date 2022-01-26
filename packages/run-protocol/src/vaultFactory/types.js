@@ -147,12 +147,6 @@
  */
 
 /**
- * @typedef {Object} LoanParams
- * @property {RelativeTime} chargingPeriod
- * @property {RelativeTime} recordingPeriod
- */
-
-/**
  * @typedef {Object} AMMFees
  * @property {bigint} poolFee
  * @property {bigint} protocolFee
@@ -276,41 +270,4 @@
  *            ) => void} burnLosses
  * @param {LiquidationStrategy} strategy
  * @param {Brand} collateralBrand
- */
-
-/**
- * @callback MakeElectorateParams
- * @param {Amount} electorateInvitationAmount
- * @returns {Record<string,ParamShortDescription>}
- */
-
-/**
- * @callback MakeLoanParams
- * @param {LoanParams} loanParams
- * @param {Rates} rates
- * @returns {Record<string,ParamShortDescription>}
- */
-
-/**
- * @typedef {Object} GovernedVaultFactoryTerms
- * @property {XYKAMMPublicFacet} ammPublicFacet
- * @property {ERef<PriceAuthority>} priceAuthority
- * @property {Record<Keyword,ParamShortDescription>} loanParams
- * @property {ERef<TimerService>} timerService
- * @property {Installation} liquidationInstall
- * @property {Record<Keyword,ParamShortDescription>} main
- * @property {bigint} bootstrapPaymentValue
- */
-
-/**
- * @callback MakeGovernedTerms
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {LoanParams} loanParams
- * @param {Installation} liquidationInstall
- * @param {ERef<TimerService>} timerService
- * @param {Amount} invitationAmount
- * @param {Rates} rates
- * @param {XYKAMMPublicFacet} ammPublicFacet
- * @param {bigint=} bootstrapPaymentValue
- * @returns {GovernedVaultFactoryTerms}
  */

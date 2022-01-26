@@ -50,48 +50,16 @@ export const makeVaultManager = (
 ) => {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const getLoanParamValue = key => getLoanParams()[key].value;
-
   /** @type {GetVaultParams} */
   const shared = {
     // loans below this margin may be liquidated
-    getLiquidationMargin() {
-      return (
-        /** @type {Ratio} */
-        (getLoanParamValue(LIQUIDATION_MARGIN_KEY))
-      );
-    },
+    getLiquidationMargin: () => (getLoanParams()[LIQUIDATION_MARGIN_KEY].value),
     // loans must initially have at least 1.2x collateralization
-    getInitialMargin() {
-      return (
-        /** @type {Ratio} */
-        (getLoanParamValue(INITIAL_MARGIN_KEY))
-      );
-    },
-    getLoanFee() {
-      return (
-        /** @type {Ratio} */
-        (getLoanParamValue(LOAN_FEE_KEY))
-      );
-    },
-    getInterestRate() {
-      return (
-        /** @type {Ratio} */
-        (getLoanParamValue(INTEREST_RATE_KEY))
-      );
-    },
-    getChargingPeriod() {
-      return (
-        /** @type {RelativeTime} */
-        (getLoanParamValue(CHARGING_PERIOD_KEY))
-      );
-    },
-    getRecordingPeriod() {
-      return (
-        /** @type {RelativeTime} */
-        (getLoanParamValue(RECORDING_PERIOD_KEY))
-      );
-    },
+    getInitialMargin: () => (getLoanParams()[INITIAL_MARGIN_KEY].value),
+    getLoanFee: () => (getLoanParams()[LOAN_FEE_KEY].value),
+    getInterestRate: () => (getLoanParams()[INTEREST_RATE_KEY].value),
+    getChargingPeriod: () => (getLoanParams()[CHARGING_PERIOD_KEY].value),
+    getRecordingPeriod: () => (getLoanParams()[RECORDING_PERIOD_KEY].value),
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
       const displayInfo = await E(collateralBrand).getDisplayInfo();
@@ -214,7 +182,7 @@ export const makeVaultManager = (
 
   const periodNotifier = E(timerService).makeNotifier(
     0n,
-    /** @type {bigint} */ (getLoanParamValue(RECORDING_PERIOD_KEY)),
+    (getLoanParams()[RECORDING_PERIOD_KEY].value),
   );
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
