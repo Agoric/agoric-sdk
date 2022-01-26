@@ -1,13 +1,10 @@
-/* global process */
 import '@agoric/install-ses';
 
 import fs from 'fs';
 import path from 'path';
-import url from 'url';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import tmp from 'tmp';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { xsnap } from '@agoric/xsnap';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
@@ -151,15 +148,8 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
-  const hashesPath = url.fileURLToPath(
-    new URL('xsnap-store-hashes.json', import.meta.url),
-  );
-  let hashesBytes = await fs.promises.readFile(hashesPath);
-  let hashesText = new TextDecoder().decode(hashesBytes);
-  let expectedHashes = JSON.parse(hashesText);
-
   const h1 = await store.save(vat.snapshot);
-  t.is(h1, expectedHashes.initial, 'initial snapshot');
+  t.snapshot(h1, 'initial snapshot');
 
   const bootScript = await ld.asset(
     '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
@@ -167,33 +157,21 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   await vat.evaluate(bootScript);
 
   const h2 = await store.save(vat.snapshot);
-  t.is(
-    h2,
-    expectedHashes.bootstrap,
-    'after SES boot - sensitive to SES-shim, XS, and supervisor',
-  );
+  t.snapshot(h2, 'after SES boot - sensitive to SES-shim, XS, and supervisor');
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
   const h3 = await store.save(vat.snapshot);
-  t.is(
+  t.snapshot(
     h3,
-    expectedHashes.sanity,
     'after use of harden() - sensitive to SES-shim, XS, and supervisor',
   );
 
   t.log(`\
 This test fails under maintenance of xsnap dependencies.
 If these changes are expected, run:
-  CAPTURE_XSNAP_HASHES=on yarn test test/test-xsnap-store.js
-Which will fail, but update the hashes.
-Then commit ${hashesPath}.
+  yarn test --update-snapshots test/test-xsnap-store.js
+Then commit the changes in .../snapshots/ path.
 `);
-  if (process.env.CAPTURE_XSNAP_HASHES) {
-    expectedHashes = { initial: h1, bootstrap: h2, sanity: h3 };
-    hashesText = `${JSON.stringify(expectedHashes, null, 2)}\n`;
-    hashesBytes = new TextEncoder().encode(hashesText);
-    await fs.promises.writeFile(hashesPath, hashesBytes);
-  }
 });
 
 async function makeTestSnapshot(t) {
