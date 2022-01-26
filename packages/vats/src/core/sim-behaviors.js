@@ -37,11 +37,7 @@ export const installSimEgress = async ({
 };
 harden(installSimEgress);
 
-/**
- * @param {{
- *   consume: { zoe: ERef<ZoeService>, client: ERef<ClientManager> },
- * }} powers
- */
+/** @param {BootstrapPowers} powers */
 export const connectFaucet = async ({ consume: { zoe, client } }) => {
   const makeFaucet = async _address => {
     const userFeePurse = await E(zoe).makeFeePurse();
@@ -57,12 +53,7 @@ export const connectFaucet = async ({ consume: { zoe, client } }) => {
 };
 harden(connectFaucet);
 
-/**
- * @param {{
- *   runBehaviors: (manifest:unknown) => Promise<unknown>,
- *   consume: { client: ERef<ClientManager> }
- * }} powers
- */
+/** @param {BootstrapPowers} powers */
 export const grantRunBehaviors = async ({
   runBehaviors,
   consume: { client },

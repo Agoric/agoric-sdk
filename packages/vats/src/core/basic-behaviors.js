@@ -16,16 +16,7 @@ const { keys } = Object;
  * since we may want/need them later.
  */
 
-/**
- * @param {{
- *   vats: { vatAdmin: VatAdminVat },
- *   devices: { vatAdmin: unknown },
- *   produce: {
- *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
- *     loadVat: Producer<VatLoader<unknown>>,
- *   },
- * }} powers
- */
+/** @param {BootstrapPowers} powers */
 export const makeVatsFromBundles = ({
   vats,
   devices,
@@ -46,15 +37,8 @@ export const makeVatsFromBundles = ({
 harden(makeVatsFromBundles);
 
 /**
- * @param {{
- *   consume: {
- *     agoricNames: ERef<NameHub>,
- *     vatAdminSvc: ERef<VatAdminSvc>,
- *     loadVat: ERef<VatLoader<ZoeVat>>,
- *     nameAdmins: ERef<Store<NameHub, NameAdmin>>,
- *     client: ERef<ClientManager>
- *   },
- *   produce: { zoe: Producer<ZoeService>, feeMintAccess: Producer<FeeMintAccess> },
+ * @param { BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<ZoeVat>> }
  * }} powers
  *
  * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
@@ -89,10 +73,9 @@ harden(buildZoe);
 /**
  * TODO: rename this to getBoard?
  *
- * @param {{
- *   consume: { loadVat: ERef<VatLoader<BoardVat>>, client: ERef<ClientManager> },
- *   produce: { board: Producer<ERef<Board>> },
- * }} powers
+ * @param {BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<BoardVat>>
+ * }}} powers
  * @typedef {ERef<ReturnType<import('../vat-board.js').buildRootObject>>} BoardVat
  */
 export const makeBoard = async ({
@@ -107,16 +90,7 @@ export const makeBoard = async ({
 };
 harden(makeBoard);
 
-/**
- * @param {{
- *   consume: { client: ERef<ClientManager> },
- *   produce: {
- *     agoricNames: Producer<NameHub>,
- *     agoricNamesAdmin: Producer<NameAdmin>,
- *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
- *   },
- * }} powers
- */
+/** @param {BootstrapPowers} powers */
 export const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
   const {
     nameHub: agoricNames,
@@ -177,13 +151,8 @@ export const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
 harden(makeAddressNameHubs);
 
 /**
- * @param {{
- *   consume: {
- *     loadVat: ERef<VatLoader<BankVat>>,
- *     client: ERef<ClientManager>,
- *     bridgeManager: import('../bridge.js').BridgeManager,
- *   },
- *   produce: { bankManager: Producer<unknown> },
+ * @param {BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<BankVat>> },
  * }} powers
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  */
@@ -200,16 +169,7 @@ export const makeClientBanks = async ({
 };
 harden(makeClientBanks);
 
-/**
- * @param {{
- *   consume: {
- *     agoricNames: Promise<NameHub>,
- *     bankManager: Promise<BankManager>,
- *     nameAdmins: Promise<Store<NameHub, NameAdmin>>,
- *   },
- * }} powers
- * @typedef {*} BankManager // TODO
- */
+/** @param {BootstrapPowers} powers */
 export const makeBLDKit = async ({
   consume: { agoricNames, bankManager, nameAdmins },
 }) => {

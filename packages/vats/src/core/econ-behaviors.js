@@ -6,22 +6,10 @@ import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protoc
 import { CENTRAL_ISSUER_NAME } from './utils.js';
 
 /**
- * @param {{
- *   consume: {
- *    agoricNames: ERef<NameHub>,
- *    nameAdmins: ERef<Store<NameHub, NameAdmin>>,
- *    board: ERef<Board>,
- *    chainTimerService: ERef<TimerService>,
- *    loadVat: ERef<VatLoader<PriceAuthorityVat>>,
- *    zoe: ERef<ZoeService>,
- *    feeMintAccess: ERef<FeeMintAccess>,
- *   },
- *   produce: {
- *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>
- *   }
+ * @param {BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<PriceAuthorityVat>>},
  * }} powers
  *
- * @typedef { import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin } PriceAuthorityRegistryAdmin
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
  */
 export const startVaultFactory = async ({

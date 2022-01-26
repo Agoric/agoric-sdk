@@ -14,15 +14,9 @@ import { callProperties } from './utils.js';
 const { details: X } = assert;
 
 /**
- * @param {{
- *   consume: {
- *     loadVat: ERef<VatLoader<ProvisioningVat>>,
- *     clientCreator: ERef<ClientCreator>,
- *   },
- *   produce: { provisioning: Producer<unknown> },
- *   vats: { comms: CommsVatRoot, vattp: VattpVat },
+ * @param {BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<ProvisioningVat>> }
  * }} powers
- * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
  */
 export const makeProvisioner = async ({
   consume: { clientCreator, loadVat },
@@ -35,11 +29,7 @@ export const makeProvisioner = async ({
 };
 harden(makeProvisioner);
 
-/**
- * @param {{
- *  consume: { provisioning: ProvisioningVat, bridgeManager: ERef<OptionalBridgeManager> },
- * }} powers
- */
+/** @param {BootstrapPowers} powers */
 export const bridgeProvisioner = async ({
   consume: { provisioning, bridgeManager: bridgeManagerP },
 }) => {
@@ -69,12 +59,7 @@ export const bridgeProvisioner = async ({
 };
 harden(bridgeProvisioner);
 
-/**
- *
- * @param {{
- *   produce: { client: Producer<ClientManager>, clientCreator: Producer<ClientCreator> }
- * }} param0
- */
+/** @param {BootstrapPowers} powers */
 export const makeClientManager = async ({
   produce: { client, clientCreator: clientCreatorP },
 }) => {
@@ -145,13 +130,7 @@ export const makeClientManager = async ({
 };
 harden(makeClientManager);
 
-/**
- * @param {{
- *   devices: { timer: unknown },
- *   vats: { timer: TimerVat },
- *   produce: { chainTimerService: Producer<ERef<TimerService>> }
- * }} powers
- */
+/** @param {BootstrapPowers} powers */
 export const startTimerService = async ({
   devices: { timer: timerDevice },
   vats: { timer: timerVat },
@@ -161,15 +140,7 @@ export const startTimerService = async ({
 };
 harden(startTimerService);
 
-/**
- * TODO: Make a Powers type we pass everywhere, which has just a subset as permitted.
- *
- * @param {{
- *   devices: { bridge: Device<import('../bridge.js').BridgeDevice> },
- *   vatPowers: { D: DProxy },
- *   produce: { bridgeManager: Producer<OptionalBridgeManager> },
- * }} powers
- */
+/** @param {BootstrapPowers} powers */
 export const makeBridgeManager = async ({
   devices: { bridge },
   vatPowers: { D },
@@ -185,11 +156,7 @@ export const makeBridgeManager = async ({
 };
 harden(makeBridgeManager);
 
-/**
- * @param {{
- *   consume: { client: ERef<ClientManager> },
- * }} powers
- */
+/** @param {BootstrapPowers} powers */
 export const connectChainFaucet = async ({ consume: { client } }) => {
   const makeFaucet = async _address => {
     return Far('faucet', {

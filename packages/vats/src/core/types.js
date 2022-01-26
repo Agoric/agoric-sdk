@@ -87,3 +87,55 @@
  * @property {CreateUserBundle} createUserBundle Required for vat-provisioning, but deprecated in favor of {@link createClient}.
  * @property {(nickname: string, clientAddress: string, powerFlags: string[]) => Promise<ClientFacet>} createClientFacet
  */
+
+/**
+ * @typedef {{
+ *   devices: {
+ *      timer: unknown,
+ *      bridge: Device<import('../bridge.js').BridgeDevice>,
+ *      vatAdmin: unknown,
+ *   },
+ *   vats: {
+ *     comms: CommsVatRoot,
+ *     timer: TimerVat,
+ *     vattp: VattpVat,
+ *     vatAdmin: VatAdminVat,
+ *   },
+ *   vatPowers: { D: DProxy },
+ *   runBehaviors: (manifest: unknown) => Promise<unknown>,
+ *   consume: {
+ *     agoricNames: Promise<NameHub>,
+ *     bankManager: Promise<BankManager>,
+ *     bridgeManager: ERef<OptionalBridgeManager>,
+ *     board: ERef<Board>,
+ *     chainTimerService: ERef<TimerService>,
+ *     client: ERef<ClientManager>,
+ *     clientCreator: ERef<ClientCreator>,
+ *     feeMintAccess: ERef<FeeMintAccess>,
+ *     nameAdmins: Promise<Store<NameHub, NameAdmin>>,
+ *     provisioning: ProvisioningVat,
+ *     vatAdminSvc: ERef<VatAdminSvc>,
+ *     zoe: ERef<ZoeService>,
+ *   },
+ *   produce: {
+ *     agoricNames: Producer<NameHub>,
+ *     agoricNamesAdmin: Producer<NameAdmin>,
+ *     bankManager: Producer<unknown>,
+ *     bridgeManager: Producer<OptionalBridgeManager>,
+ *     board: Producer<ERef<Board>>,
+ *     chainTimerService: Producer<ERef<TimerService>>,
+ *     client: Producer<ClientManager>,
+ *     clientCreator: Producer<ClientCreator>,
+ *     feeMintAccess: Producer<FeeMintAccess>,
+ *     loadVat: Producer<VatLoader<unknown>>,
+ *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
+ *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>,
+ *     provisioning: Producer<unknown>,
+ *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
+ *     zoe: Producer<ZoeService>,
+ *   },
+ * }} BootstrapPowers
+ * @typedef {*} BankManager // TODO
+ * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
+ * @typedef { import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin } PriceAuthorityRegistryAdmin
+ */
