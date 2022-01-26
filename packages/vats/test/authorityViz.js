@@ -1,6 +1,6 @@
 // @ts-check
 import '@agoric/install-ses';
-import { makeSimBootstrapManifest } from '../src/core/sim-behaviors.js';
+import * as manifests from '../src/core/manifest.js';
 
 const { entries } = Object;
 
@@ -112,9 +112,11 @@ const main = async (args, { readFile, stdout }) => {
       },
     },
   } = config;
-  const manifest = opts.includes('--sim-chain')
-    ? makeSimBootstrapManifest(bootstrapManifest)
-    : bootstrapManifest;
+  const manifest =
+    bootstrapManifest ||
+    (opts.includes('--sim-chain')
+      ? manifests.SIM_CHAIN_BOOTSTRAP_MANIFEST
+      : manifests.CHAIN_BOOTSTRAP_MANIFEST);
 
   // console.log(JSON.stringify(bootstrapManifest, null, 2));
   const g = manifest2graph(manifest);
