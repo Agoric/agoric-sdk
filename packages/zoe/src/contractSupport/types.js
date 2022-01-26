@@ -1,3 +1,4 @@
+// @ts-check
 /// <reference types="ses"/>
 
 /**
@@ -146,14 +147,14 @@
  * @callback MultiplyBy
  * @param {Amount} amount
  * @param {Ratio} ratio
- * @returns {amount}
+ * @returns {Amount}
  */
 
 /**
  * @callback DivideBy
  * @param {Amount} amount
  * @param {Ratio} ratio
- * @returns {amount}
+ * @returns {Amount}
  */
 
 /**
@@ -161,8 +162,6 @@
  * @typedef {MultiplyBy} FloorMultiplyBy
  * @typedef {DivideBy} FloorDivideBy
  * @typedef {DivideBy} CeilDivideBy
- * @typedef {MultiplyBy} DivideBy - use floorDivideBy() or ceilDivideBy()
- * @typedef {DivideBy} MultiplyBy - use floorMultiplyBy() or ceilMultiplyBy()
  */
 
 /**
