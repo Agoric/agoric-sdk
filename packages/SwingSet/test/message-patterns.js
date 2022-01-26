@@ -308,7 +308,6 @@ export function buildPatterns(log) {
       return b.bert;
     };
   }
-  // TODO https://github.com/Agoric/agoric-sdk/issues/1631
   out.a51 = ['a51 done, got [object Alleged: bert], match true true'];
   test('a51');
 
