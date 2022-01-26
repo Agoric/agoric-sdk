@@ -5,7 +5,8 @@ import fc from 'fast-check';
 import { AmountMath as m, AssetKind } from '../../src/index.js';
 import { mockBrand } from './mathHelpers/mockBrand.js';
 
-// Perhaps makeCopyBag should coalesce duplicate labels, but for now, it does not.
+// Perhaps makeCopyBag should coalesce duplicate labels, but for now, it does
+// not.
 const distinctLabels = pairs =>
   new Set(pairs.map(([label, _qty]) => label)).size === pairs.length;
 const positiveCounts = pairs =>
@@ -24,6 +25,9 @@ const arbAmount = arbBagContents.map(contents =>
   m.make(mockBrand, harden(makeCopyBag(contents))),
 );
 
+// Note: we write P => Q as !P || Q since JS has no logical => operator
+const implies = (p, q) => !p || q;
+
 test('isEqual is a (total) equivalence relation', t => {
   fc.assert(
     fc.property(
@@ -31,9 +35,9 @@ test('isEqual is a (total) equivalence relation', t => {
       ({ x, y, z }) => {
         t.true([true, false].includes(m.isEqual(x, y))); // Total
         t.true(m.isEqual(x, x)); // Reflexive
-        // Note: we write P => Q as !P || Q since JS has no logical => operator
-        t.true(!m.isEqual(x, y) || m.isEqual(y, x)); // Symmetric
-        t.true(!m.isEqual(x, y) || !m.isEqual(y, z) || m.isEqual(x, z)); // Transitive
+        t.true(implies(m.isEqual(x, y), m.isEqual(y, x))); // Symmetric
+        // Transitive
+        t.true(implies(m.isEqual(x, y) && m.isEqual(y, z), m.isEqual(x, z)));
       },
     ),
   );
@@ -46,7 +50,8 @@ test('isGTE is a partial order with empty as minimum', t => {
       t.true(m.isGTE(x, empty));
       t.true([true, false].includes(m.isGTE(x, y))); // Total
       t.true(m.isGTE(x, x)); // Reflexive
-      t.true(!(m.isGTE(x, y) && m.isGTE(y, x)) || m.isEqual(x, y)); // Antisymmetric
+      // Antisymmetric
+      t.true(implies(m.isGTE(x, y) && m.isGTE(y, x), m.isEqual(x, y)));
     }),
   );
 });
@@ -57,11 +62,13 @@ test('add: closed, commutative, associative, monotonic, with empty identity', t 
     fc.property(
       fc.record({ x: arbAmount, y: arbAmount, z: arbAmount }),
       ({ x, y, z }) => {
-        t.truthy(m.coerce(mockBrand, m.add(x, y))); // note: + for SET is not total.
+        // note: + for SET is not total.
+        t.truthy(m.coerce(mockBrand, m.add(x, y)));
         t.true(m.isEqual(m.add(x, empty), x)); // Identity (right)
         t.true(m.isEqual(m.add(empty, x), x)); // Identity (left)
         t.true(m.isEqual(m.add(x, y), m.add(y, x))); // Commutative
-        t.true(m.isEqual(m.add(m.add(x, y), z), m.add(x, m.add(y, z)))); // Associative
+        // Associative
+        t.true(m.isEqual(m.add(m.add(x, y), z), m.add(x, m.add(y, z))));
         t.true(m.isGTE(m.add(x, y), x)); // Monotonic (left)
         t.true(m.isGTE(m.add(x, y), y)); // Monotonic (right)
       },
