@@ -204,8 +204,6 @@ jobs:
       run: cd packages/import-manager && yarn test
     - name: yarn test (install-ses)
       run: cd packages/install-ses && yarn test
-    - name: yarn test (lockdown)
-      run: cd packages/lockdown && yarn test
     - name: yarn test (marshal)
       run: cd packages/marshal && yarn test
     - name: yarn test (notifier)

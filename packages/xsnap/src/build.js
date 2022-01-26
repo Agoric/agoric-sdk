@@ -176,15 +176,21 @@ async function main(args, { env, stdout, spawn, fs, os }) {
   ];
 
   if (args.includes('--show-env')) {
-    for (const { path, envPrefix } of submodules) {
-      const submodule = makeSubmodule(path, '?', { git });
-      // eslint-disable-next-line no-await-in-loop
-      const [[{ hash }], url] = await Promise.all([
-        submodule.status(),
-        submodule.config('url'),
-      ]);
-      stdout.write(`${envPrefix}URL=${url}\n`);
-      stdout.write(`${envPrefix}COMMIT_HASH=${hash}\n`);
+    for (const submodule of submodules) {
+      const { path, envPrefix, commitHash } = submodule;
+      if (!commitHash) {
+        // We need to glean the commitHash and url from Git.
+        const sm = makeSubmodule(path, '?', { git });
+        // eslint-disable-next-line no-await-in-loop
+        const [[{ hash }], url] = await Promise.all([
+          sm.status(),
+          sm.config('url'),
+        ]);
+        submodule.commitHash = hash;
+        submodule.url = url;
+      }
+      stdout.write(`${envPrefix}URL=${submodule.url}\n`);
+      stdout.write(`${envPrefix}COMMIT_HASH=${submodule.commitHash}\n`);
     }
     return;
   }

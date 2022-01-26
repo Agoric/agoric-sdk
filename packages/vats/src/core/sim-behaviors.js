@@ -1,24 +1,7 @@
 // @ts-check
 import { E, Far } from '@agoric/far';
-import { installClientEgress, governanceActions } from './behaviors.js';
-
-export const makeSimBootstrapManifest = bootstrapManifest =>
-  harden({
-    ...bootstrapManifest,
-    ...governanceActions,
-    installSimEgress: {
-      vatParameters: { argv: { hardcodedClientAddresses: true } },
-      vats: {
-        vattp: true,
-        comms: true,
-      },
-      produce: { client: true },
-    },
-    connectFaucet: {
-      consume: { zoe: true, client: true },
-      produce: { bridgeManager: true },
-    },
-  });
+import { GOVERNANCE_ACTIONS_MANIFEST } from './manifest.js';
+import { addRemote } from './utils.js';
 
 /**
  * @param {{
@@ -27,33 +10,35 @@ export const makeSimBootstrapManifest = bootstrapManifest =>
  *     vattp: VattpVat,
  *     comms: CommsVatRoot,
  *   },
- *   produce: { client: Producer<ClientConfig> },
+ *   consume: { clientCreator: ERef<ClientCreator> },
  * }} powers
  */
-const installSimEgress = async ({
+export const installSimEgress = async ({
   vatParameters: { argv },
-  vats,
-  produce: { client },
+  vats: { vattp, comms },
+  consume: { clientCreator },
 }) => {
+  const PROVISIONER_INDEX = 1;
+
   return Promise.all(
-    /** @type { string[] } */ (argv.hardcodedClientAddresses).map(addr =>
-      installClientEgress(addr, { vats, produce: { client } }),
+    /** @type { string[] } */ (argv.hardcodedClientAddresses).map(
+      async (addr, i) => {
+        const clientFacet = await E(clientCreator).createClientFacet(
+          `solo${i}`,
+          addr,
+          ['agoric.ALL_THE_POWERS'],
+        );
+
+        await addRemote(addr, { vats: { comms, vattp } });
+        await E(comms).addEgress(addr, PROVISIONER_INDEX, clientFacet);
+      },
     ),
   );
 };
+harden(installSimEgress);
 
-/**
- * @param {{
- *   consume: { zoe: ERef<ZoeService>, client: ERef<ClientConfig> },
- *   produce: { bridgeManager: Producer<undefined> }
- * }} powers
- */
-const connectFaucet = async ({
-  consume: { zoe, client },
-  produce: { bridgeManager },
-}) => {
-  bridgeManager.resolve(undefined); // no bridge in the sim chain
-
+/** @param {BootstrapPowers} powers */
+export const connectFaucet = async ({ consume: { zoe, client } }) => {
   const makeFaucet = async _address => {
     const userFeePurse = await E(zoe).makeFeePurse();
 
@@ -66,7 +51,18 @@ const connectFaucet = async ({
 
   return E(client).assignBundle({ faucet: makeFaucet });
 };
+harden(connectFaucet);
 
-harden({ installSimEgress, connectFaucet });
-export { installSimEgress, connectFaucet };
-export * from './behaviors.js';
+/** @param {BootstrapPowers} powers */
+export const grantRunBehaviors = async ({
+  runBehaviors,
+  consume: { client },
+}) => {
+  const makeBehaviors = _address =>
+    Far('behaviors', { run: manifest => runBehaviors(manifest) });
+  return E(client).assignBundle({
+    behaviors: makeBehaviors,
+    governanceActions: _address => GOVERNANCE_ACTIONS_MANIFEST,
+  });
+};
+harden(grantRunBehaviors);

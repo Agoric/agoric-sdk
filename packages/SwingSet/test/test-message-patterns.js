@@ -123,11 +123,6 @@ async function testLocalPattern(t, name) {
 }
 testLocalPattern.title = (_, name) => `test pattern ${name} local`;
 for (const name of Array.from(bp.patterns.keys()).sort()) {
-  if (name === 'a51') {
-    // TODO https://github.com/Agoric/agoric-sdk/issues/1631
-    // eslint-disable-next-line no-continue
-    continue;
-  }
   test.serial('local patterns', testLocalPattern, name);
 }
 
@@ -173,6 +168,5 @@ async function testCommsPattern(t, name) {
 }
 testCommsPattern.title = (_, name) => `test pattern ${name} comms`;
 for (const name of Array.from(bp.patterns.keys()).sort()) {
-  // TODO https://github.com/Agoric/agoric-sdk/issues/1631
   test.serial('comms patterns', testCommsPattern, name);
 }
