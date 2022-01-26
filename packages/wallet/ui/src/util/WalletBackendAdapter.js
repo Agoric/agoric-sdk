@@ -31,15 +31,15 @@ export const makeBackendFromWalletBridge = walletBridge => {
         const { done, value } = await offersMembers.next();
         return harden({
           done,
-          value: value.map(({ offerId, ...rest }) =>
+          value: value.map(({ id, ...rest }) =>
             harden({
-              offerId,
+              id,
               ...rest,
               actions: Far('offerActions', {
                 // Provide these synthetic actions since offers don't have any yet.
-                accept: () => E(walletBridge).acceptOffer(offerId),
-                decline: () => E(walletBridge).declineOffer(offerId),
-                cancel: () => E(walletBridge).cancelOffer(offerId),
+                accept: () => E(walletBridge).acceptOffer(id),
+                decline: () => E(walletBridge).declineOffer(id),
+                cancel: () => E(walletBridge).cancelOffer(id),
               }),
             }),
           ),
