@@ -1,4 +1,5 @@
 import { E, Far } from '@agoric/far';
+import { makeNotifierKit } from '@agoric/notifier';
 
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.
@@ -15,10 +16,15 @@ export function buildRootObject(_vatPowers) {
   }
 
   async function pleaseProvision(nickname, address, powerFlags) {
-    let chainBundle;
+    let clientFacet;
     const fetch = Far('fetch', {
-      getChainBundle() {
-        return chainBundle;
+      async getChainBundle() {
+        console.warn('getting chain bundle');
+        return E(clientFacet).getChainBundle();
+      },
+      getConfiguration() {
+        console.warn('getting configuration');
+        return E(clientFacet).getConfiguration();
       },
     });
 
@@ -31,11 +37,27 @@ export function buildRootObject(_vatPowers) {
 
     // Do this here so that any side-effects don't happen unless
     // the egress has been successfully added.
-    chainBundle = E(bundler).createUserBundle(
-      nickname,
-      address,
-      powerFlags || [],
-    );
+    clientFacet = E(bundler)
+      .createClientFacet(nickname, address, powerFlags || [])
+      .catch(e => {
+        console.warn(`Failed to create client facet:`, e);
+        // Emulate with existing createUserBundle.
+        const chainBundle = E(bundler).createUserBundle(
+          nickname,
+          address,
+          powerFlags || [],
+        );
+        // Update the notifier when the chainBundle resolves.
+        const { notifier, updater } = makeNotifierKit();
+        chainBundle.then(clientHome => {
+          updater(harden({ clientHome, clientAddress: address }));
+        });
+        return Far('emulatedClientFacet', {
+          getChainBundle: () => chainBundle,
+          getConfiguration: () => notifier,
+        });
+      });
+
     return { ingressIndex: INDEX };
   }
 
