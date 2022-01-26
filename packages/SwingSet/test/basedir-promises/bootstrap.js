@@ -10,8 +10,8 @@ export function buildRootObject(vatPowers, vatParameters) {
     bootstrap(vats) {
       const mode = vatParameters.argv[0];
       if (mode === 'flush') {
-        Promise.resolve().then(log('then1'));
-        Promise.resolve().then(log('then2'));
+        Promise.resolve('then1').then(log);
+        Promise.resolve('then2').then(log);
       } else if (mode === 'e-then') {
         E(vats.left)
           .callRight(1, vats.right)
