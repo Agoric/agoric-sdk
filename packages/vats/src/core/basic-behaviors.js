@@ -47,7 +47,7 @@ export const buildZoe = async ({
   consume: { agoricNames, vatAdminSvc, loadVat, client, nameAdmins },
   produce: { zoe, feeMintAccess },
 }) => {
-  const { zoeService, feeMintAccess: fma } = await E(
+  const { zoeService, zoe1, feeMintAccess: fma } = await E(
     E(loadVat)('zoe'),
   ).buildZoe(vatAdminSvc, feeIssuerConfig);
 
@@ -65,7 +65,7 @@ export const buildZoe = async ({
   return Promise.all([
     E(issuerAdmin).update('RUN', runIssuer),
     E(brandAdmin).update('RUN', runBrand),
-    E(client).assignBundle({ zoe: _addr => zoeService }),
+    E(client).assignBundle({ zoe1: _addr => zoe1 }),
   ]);
 };
 harden(buildZoe);

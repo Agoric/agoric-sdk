@@ -66,3 +66,11 @@ export const grantRunBehaviors = async ({
   });
 };
 harden(grantRunBehaviors);
+
+/** @param {BootstrapPowers} powers */
+export const grantUnrestrictedZoe = async ({ consume: { client, zoe } }) => {
+  return E(client).assignBundle({
+    zoe: _address => zoe,
+  });
+};
+harden(grantRunBehaviors);

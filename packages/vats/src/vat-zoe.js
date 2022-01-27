@@ -11,7 +11,16 @@ export function buildRootObject(vatPowers, vatParameters) {
         feeIssuerConfig,
         vatParameters.zcfBundleName,
       );
+
+      const zoe1 = Far('zoe without install/startInstance', {
+        ...zoeService,
+        install: (..._args) => assert.fail('contract installation prohibited'),
+        startInstance: (..._args) =>
+          assert.fail('contract instantiation prohibited'),
+      });
+
       return harden({
+        zoe1,
         zoeService,
         feeMintAccess,
       });

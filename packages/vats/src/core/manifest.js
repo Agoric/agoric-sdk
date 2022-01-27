@@ -126,6 +126,7 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
     runBehaviors: true,
     consume: { client: true },
   },
+  grantUnrestrictedZoe: { consume: { client: true, zoe: true } },
 });
 
 export const GOVERNANCE_ACTIONS_MANIFEST = harden({
