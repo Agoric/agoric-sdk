@@ -145,11 +145,4 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
       priceAuthorityAdmin: true,
     },
   },
-  installEconomicGovernance: {
-    consume: {
-      zoe: true,
-      agoricNames: true,
-      nameAdmins: true,
-    },
-  },
 });
