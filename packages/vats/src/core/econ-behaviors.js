@@ -12,6 +12,40 @@ import { makeStakeReporter } from '../my-lien.js';
 import { CENTRAL_ISSUER_NAME, collectNameAdmins, shared } from './utils.js';
 import { BLD_ISSUER_ENTRY } from '../issuers.js';
 
+/** @param {BootstrapPowers} powers */
+const startEconomicCommittee = async ({
+  consume: { agoricNames, nameAdmins, zoe },
+  produce: { economicCommitteeCreatorFacet },
+}) => {
+  const electorateTerms = {
+    committeeName: 'Initial Economic Committee',
+    committeeSize: 1,
+  };
+
+  const installation = E(zoe).install(committeeBundle);
+
+  const { creatorFacet, instance } = await E(zoe).startInstance(
+    installation,
+    {},
+    electorateTerms,
+  );
+
+  const [installAdmin, instanceAdmin] = await collectNameAdmins(
+    ['installation', 'instance'],
+    agoricNames,
+    nameAdmins,
+  );
+
+  economicCommitteeCreatorFacet.resolve(creatorFacet);
+  return Promise.all([
+    E(installAdmin).update('committee', installation),
+    E(instanceAdmin).update('economicCommittee', instance),
+  ]);
+};
+harden(startEconomicCommittee);
+
+/**
+ *
 /**
  * @param {BootstrapPowers & {
  *   consume: { loadVat: ERef<VatLoader<PriceAuthorityVat>>},
