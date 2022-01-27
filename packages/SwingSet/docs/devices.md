@@ -255,6 +255,51 @@ However the inbound message pathway uses `dispatch.invoke(deviceNodeID,
 method, argsCapdata) -> resultCapdata`, and the outbound pathway uses
 `syscall.sendOnly`.
 
+## Raw Devices
+
+An alternate way to write a device is to use the "raw device API". In this
+mode, there is no deviceSlots layer, and no attempt to provide
+object-capability abstractions. Instead, the device code is given a `syscall`
+object, and is expected to provide a `dispatch` object, and everything else
+is left up to the device.
+
+This mode makes it possible to create new device nodes as part of the normal
+API, because the code can learn the raw device ref (dref) of the target
+device node on each inbound invocation, without needing a pre-registered
+table of JavaScript `Object` instances for every export.
+
+Raw devices have access to a per-device string/string key-value store whose
+API matches the `vatStore` available to vats:
+
+* `syscall.vatstoreGet(key)` -> `string`
+* `syscall.vatstoreSet(key, value)`
+* `syscall.vatstoreDelete(key)`
+
+The mode is enabled by exporting a function named `buildDevice` instead of
+`buildRootDeviceNode`.
+
+```js
+export function buildDevice(tools, endowments) {
+  const { syscall } = tools;
+  const dispatch = {
+    invoke: (dnid, method, argsCapdata) => {
+      ..
+    },
+  };
+  return dispatch;
+}
+```
+
+To make it easier to write a raw device, a helper library named "deviceTools"
+is available in `src/deviceTools.js`. This provides a marshalling layer that
+can parse the incoming `argsCapdata` into representations of different sorts
+of objects, and a reverse direction for serializing the returned results.
+Unlike liveslots and deviceslots, this library makes no attempt to present
+the parsed output as invokable objects. When it parses `o-4` into a
+"Presence", you cannot use `E()` on that presence. However, you can extract
+the `o-4` from it. The library is most useful for building the data structure
+of the return results without manual JSON hacking.
+
 ## Kernel Devices
 
 The kernel automatically configures devices for internal use. Most are paired
