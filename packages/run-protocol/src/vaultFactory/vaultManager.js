@@ -392,3 +392,7 @@ export const makeVaultManager = (
     liquidateAll,
   });
 };
+
+/**
+ * @typedef {ReturnType<makeVaultManager>} VaultManager
+ */

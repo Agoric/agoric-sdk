@@ -29,7 +29,7 @@
  * @param {Issuer} collateralIssuer
  * @param {Keyword} collateralKeyword
  * @param {Rates} rates
- * @returns {Promise<VaultManager>}
+ * @returns {Promise<import('./vaultManager').VaultManager>}
  */
 
 /**

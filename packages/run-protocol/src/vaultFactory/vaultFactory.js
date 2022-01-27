@@ -98,7 +98,7 @@ export const start = async (zcf, privateArgs) => {
     }
   };
 
-  /** @type {Store<Brand,VaultManager>} */
+  /** @type {Store<Brand,import('./vaultManager').VaultManager>} */
   const collateralTypes = makeScalarMap('brand');
 
   const zoe = zcf.getZoeService();
