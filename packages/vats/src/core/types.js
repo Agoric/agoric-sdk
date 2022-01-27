@@ -116,6 +116,7 @@
  *     provisioning: ProvisioningVat,
  *     vatAdminSvc: ERef<VatAdminSvc>,
  *     zoe: ERef<ZoeService>,
+ *     zoeAdmin: ERef<unknown>,
  *   },
  *   produce: {
  *     agoricNames: Producer<NameHub>,
@@ -133,6 +134,7 @@
  *     provisioning: Producer<unknown>,
  *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
  *     zoe: Producer<ZoeService>,
+ *     zoeAdmin: Producer<unknown>,
  *   },
  * }} BootstrapPowers
  * @typedef {*} BankManager // TODO

@@ -22,6 +22,7 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     produce: {
       zoe: true,
+      zoeAdmin: true,
       feeMintAccess: true,
     },
   },
