@@ -7,8 +7,9 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { INTEREST_RATE_KEY } from '../../../../src/vaultFactory/params';
 import { ONE_DAY, createCommittee, installContracts, makeVats } from '../setup';
 
-const { quote: q } = assert;
 const BASIS_POINTS = 10000n;
+
+export const daysForVoting = 3;
 
 const votersVote = async (detailsP, votersP, selections) => {
   const [voters, { positions, questionHandle }] = await Promise.all([
@@ -96,7 +97,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     governor,
     vaultFactory,
     runBrand,
-    timer,
     electorateCreatorFacet,
     electorateInstance,
     brands: [collateralBrand],
@@ -117,7 +117,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   ).getGovernedParams({
     collateralBrand,
   });
-  log(`param values before ${q(feeParamsStateAnte)}`);
+  log(
+    `before vote, InterestRate numerator is ${feeParamsStateAnte.InterestRate.value.numerator.value}`,
+  );
 
   const contracts = {
     vaultFactory,
@@ -132,8 +134,8 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     collateralBrand,
   };
   const counter = await setUpVote(
-    makeRatio(500n, runBrand, BASIS_POINTS),
-    3n * ONE_DAY,
+    makeRatio(4321n, runBrand, BASIS_POINTS),
+    BigInt(daysForVoting) * ONE_DAY,
     votersP,
     votes,
     interestRateParam,
@@ -147,16 +149,10 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         vaultFactory.publicFacet,
       ).getGovernedParams(interestRateParam);
       log(
-        `param values after vote on (${outcome.changeParam.parameterName}) ${q(
-          feeParamsStatePost,
-        )}`,
+        `after vote on (${outcome.changeParam.parameterName}), InterestRate numerator is ${feeParamsStatePost.InterestRate.value.numerator.value}`,
       );
     })
     .catch(e => log(`BOOT fail: ${e}`));
-
-  await E(timer).tick();
-  await E(timer).tick();
-  await E(timer).tick();
 
   await E(aliceP).startTest(testName, vaultFactory.publicFacet);
 };

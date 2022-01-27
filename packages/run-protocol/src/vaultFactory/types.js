@@ -35,7 +35,7 @@
  */
 
 /**
- * @typedef  {Object} vaultFactoryPublicFacet - the public facet
+ * @typedef  {Object} VaultFactoryPublicFacet - the public facet
  * @property {() => Promise<Invitation>} makeLoanInvitation
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Issuer} getRunIssuer
