@@ -37,7 +37,16 @@ const trace = makeTracer(' VM ');
 // some number of outstanding loans, each called a Vault, for which the
 // collateral is provided in exchange for borrowed RUN.
 
-/** @type {MakeVaultManager} */
+/**
+ * @param {ContractFacet} zcf
+ * @param {ZCFMint} runMint
+ * @param {Brand} collateralBrand
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {GetParams} getLoanParams
+ * @param {ReallocateReward} reallocateReward
+ * @param {ERef<TimerService>} timerService
+ * @param {LiquidationStrategy} liquidationStrategy
+ */
 export const makeVaultManager = (
   zcf,
   runMint,
@@ -274,7 +283,6 @@ export const makeVaultManager = (
     });
   };
 
-  /** @type {VaultManager} */
   return Far('vault manager', {
     ...shared,
     makeLoanKit,

@@ -104,12 +104,12 @@
 
 /**
  * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<LoanKit>}  makeLoanKit
+ * @property {(seat: ZCFSeat) => Promise<LoanKit>} makeLoanKit
  * @property {() => void} liquidateAll
  */
 
 /**
- * @typedef {VaultManagerBase & GetVaultParams} VaultManager
+ * @typedef {ReturnType<import("./vaultManager").makeVaultManager>} VaultManager
  */
 
 /**
@@ -174,19 +174,6 @@
  * @callback MakeLiquidationStrategy
  * @param {LiquidationCreatorFacet} creatorFacet
  * @returns {LiquidationStrategy}
- */
-
-/**
- * @callback MakeVaultManager
- * @param {ContractFacet} zcf
- * @param {ZCFMint} runMint
- * @param {Brand} collateralBrand
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {GetParams} getLoanParams
- * @param {ReallocateReward} reallocateReward
- * @param {ERef<TimerService>} timerService
- * @param {LiquidationStrategy} liquidationStrategy
- * @returns {VaultManager}
  */
 
 /**
