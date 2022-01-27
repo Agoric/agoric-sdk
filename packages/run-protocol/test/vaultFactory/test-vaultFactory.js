@@ -426,7 +426,6 @@ test('first', async t => {
 
   // Add a vault that will lend on aeth collateral
   const rates = makeRates(runBrand);
-  /** @type {VaultManager} */
   const aethVaultManager = await E(vaultFactory).addVaultType(
     aethIssuer,
     'AEth',

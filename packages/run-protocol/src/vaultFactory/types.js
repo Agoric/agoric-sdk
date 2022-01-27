@@ -31,7 +31,7 @@
  * @param {Issuer} collateralIssuer
  * @param {Keyword} collateralKeyword
  * @param {Rates} rates
- * @returns {Promise<VaultManager>}
+ * @returns {Promise<import('./vaultManager').VaultManager>}
  */
 
 /**
@@ -106,10 +106,6 @@
  * @typedef {Object} VaultManagerBase
  * @property {(seat: ZCFSeat) => Promise<LoanKit>} makeLoanKit
  * @property {() => void} liquidateAll
- */
-
-/**
- * @typedef {ReturnType<import("./vaultManager").makeVaultManager>} VaultManager
  */
 
 /**
