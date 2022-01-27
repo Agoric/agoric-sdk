@@ -36,7 +36,22 @@ export const VaultState = {
   CLOSED: 'closed',
 };
 
-/** @type {MakeVaultKit} */
+/**
+ * @param {ContractFacet} zcf
+ * @param {{reallocateReward: ReallocateReward;
+    getCollateralBrand: () => Brand;
+    getLiquidationMargin(): Ratio;
+    getInitialMargin(): Ratio;
+    getLoanFee(): Ratio;
+    getInterestRate(): Ratio;
+    getChargingPeriod(): bigint;
+    getRecordingPeriod(): bigint;
+    getCollateralQuote(): Promise<PriceQuote>}} manager
+ * @param {ZCFMint} runMint
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {Timestamp} startTimeStamp
+ * @returns {VaultKit}
+ */
 export const makeVaultKit = (
   zcf,
   manager,

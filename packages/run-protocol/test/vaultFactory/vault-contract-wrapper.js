@@ -45,7 +45,6 @@ export async function start(zcf, privateArgs) {
     }
   }
 
-  /** @type {InnerVaultManager} */
   const managerMock = Far('vault manager mock', {
     getLiquidationMargin() {
       return makeRatio(105n, runBrand);

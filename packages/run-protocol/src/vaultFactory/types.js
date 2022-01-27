@@ -80,35 +80,6 @@
  */
 
 /**
- * @typedef {Object} GetVaultParams
- * @property {() => Ratio} getLiquidationMargin
- * @property {() => Ratio} getLoanFee
- * @property {() => Promise<PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getInitialMargin
- * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
- * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
- *   which interest is charged to the loan.
- * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
- *   at which interest is recorded to the loan.
- */
-
-/**
- * @typedef {Object} InnerVaultManagerBase
- * @property {() => Brand} getCollateralBrand
- * @property {ReallocateReward} reallocateReward
- */
-
-/**
- * @typedef {InnerVaultManagerBase & GetVaultParams} InnerVaultManager
- */
-
-/**
- * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<LoanKit>} makeLoanKit
- * @property {() => void} liquidateAll
- */
-
-/**
  * @typedef {Object} OpenLoanKit
  * @property {Notifier<UIState>} notifier
  * @property {Promise<PaymentPKeywordRecord>} collateralPayoutP
@@ -170,16 +141,6 @@
  * @callback MakeLiquidationStrategy
  * @param {LiquidationCreatorFacet} creatorFacet
  * @returns {LiquidationStrategy}
- */
-
-/**
- * @callback MakeVaultKit
- * @param {ContractFacet} zcf
- * @param {InnerVaultManager} manager
- * @param {ZCFMint} runMint
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {Timestamp} startTimeStamp
- * @returns {VaultKit}
  */
 
 /**

@@ -61,7 +61,6 @@ export const makeVaultManager = (
 
   const getLoanParamValue = key => getLoanParams()[key].value;
 
-  /** @type {GetVaultParams} */
   const shared = {
     // loans below this margin may be liquidated
     getLiquidationMargin() {
@@ -83,18 +82,21 @@ export const makeVaultManager = (
         (getLoanParamValue(LOAN_FEE_KEY))
       );
     },
+    /** The annual interest rate on a loan */
     getInterestRate() {
       return (
         /** @type {Ratio} */
         (getLoanParamValue(INTEREST_RATE_KEY))
       );
     },
+    /** The period (in seconds) at which interest is charged to the loan. */
     getChargingPeriod() {
       return (
         /** @type {RelativeTime} */
         (getLoanParamValue(CHARGING_PERIOD_KEY))
       );
     },
+    /** The period (in seconds) at which interest is recorded to the loan. */
     getRecordingPeriod() {
       return (
         /** @type {RelativeTime} */
@@ -244,7 +246,6 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
-  /** @type {InnerVaultManager} */
   const innerFacet = harden({
     ...shared,
     reallocateReward,
