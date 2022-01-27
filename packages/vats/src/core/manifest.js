@@ -129,6 +129,10 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
 });
 
 export const GOVERNANCE_ACTIONS_MANIFEST = harden({
+  startEconomicCommittee: {
+    consume: { agoricNames: true, nameAdmins: true, zoe: true },
+    produce: { economicCommitteeCreatorFacet: true },
+  },
   startVaultFactory: {
     consume: {
       agoricNames: true,

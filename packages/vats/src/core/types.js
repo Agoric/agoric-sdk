@@ -126,6 +126,7 @@
  *     chainTimerService: Producer<ERef<TimerService>>,
  *     client: Producer<ClientManager>,
  *     clientCreator: Producer<ClientCreator>,
+ *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
  *     feeMintAccess: Producer<FeeMintAccess>,
  *     loadVat: Producer<VatLoader<unknown>>,
  *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
