@@ -23,7 +23,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   // note: XS doesn't appear to print console.log unless an exception happens
   vatPowers.testLog('testLog works');
 
-  const { canCallNow } = vatParameters;
+  const { canCallNow, canVatstore } = vatParameters;
   const precB = makePromiseKit();
   const precC = makePromiseKit();
   let callbackObj;
@@ -36,7 +36,11 @@ export function buildRootObject(vatPowers, vatParameters) {
   //   syscall.dropImports([dropMe])
   //   syscall.send(callbackObj, method="callback", result=rp2, args=[11, 12]);
   //   syscall.subscribe(rp2)
-  //   syscall.fulfillToData(pA, [pB, pC, 3]);
+  //   syscall.vatstoreSet('key', 'vsValue')
+  //   syscall.vatstoreGet('key') -> 'vsValue'
+  //   syscall.vatstoreDelete('key')
+  //   syscall.vatstoreGet('key') -> undefined
+  //   syscall.fulfillToData(pA, [pB, pC, 3, 'vsValue', undefined, 'function', 'function']);
   function zero(obj, pD, pE, adder, dropMe) {
     callbackObj = obj;
     const pF = E(callbackObj).callback(11, 12); // syscall.send
@@ -44,7 +48,21 @@ export function buildRootObject(vatPowers, vatParameters) {
     ignore(pE);
     const three = canCallNow ? vatPowers.D(adder).add(1, 2) : 3;
     vatPowers.disavow(dropMe);
-    return [precB.promise, precC.promise, pF, three]; // syscall.fulfillToData
+    let vs1;
+    let vs2;
+    if (canVatstore) {
+      vatPowers.vatstore.set('key', 'vsValue');
+      vs1 = vatPowers.vatstore.get('key');
+      vatPowers.vatstore.delete('key');
+      vs2 = vatPowers.vatstore.get('key');
+    } else {
+      vs1 = 'vsValue';
+      vs2 = undefined;
+    }
+    const evt = typeof vatPowers.exitVat;
+    const evwft = typeof vatPowers.exitVatWithFailure;
+    // syscall.fulfillToData:
+    return [precB.promise, precC.promise, pF, three, vs1, vs2, evt, evwft];
   }
 
   // crank 2:
