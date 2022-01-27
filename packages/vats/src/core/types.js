@@ -90,6 +90,24 @@
 
 /**
  * @typedef {{
+ *   consume: {
+ *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
+ *     priceAuthority: ERef<PriceAuthority>,
+ *     priceAuthorityAdmin: ERef<PriceAuthorityRegistryAdmin>,
+ *   },
+ *   produce: {
+ *     ammCreatorFacet: Producer<unknown>,
+ *     ammGovernorCreatorFacet: Producer<unknown>,
+ *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
+ *     priceAuthority: Producer<PriceAuthority>,
+ *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>,
+ *     vaultFactoryCreator: Producer<unknown>,
+ *     vaultFactoryGovernorCreator: Producer<unknown>,
+ *     vaultFactoryVoteCreator: Producer<unknown>,
+ *   },
+ * }} EconomyBootstrapPowers
+ *
+ * @typedef {{
  *   devices: {
  *      timer: unknown,
  *      bridge: Device<import('../bridge.js').BridgeDevice>,
@@ -103,7 +121,7 @@
  *   },
  *   vatPowers: { D: DProxy },
  *   runBehaviors: (manifest: unknown) => Promise<unknown>,
- *   consume: {
+ *   consume: EconomyBootstrapPowers['consume'] & {
  *     agoricNames: Promise<NameHub>,
  *     bankManager: Promise<BankManager>,
  *     bridgeManager: ERef<OptionalBridgeManager>,
@@ -117,7 +135,7 @@
  *     vatAdminSvc: ERef<VatAdminSvc>,
  *     zoe: ERef<ZoeService>,
  *   },
- *   produce: {
+ *   produce: EconomyBootstrapPowers['produce'] & {
  *     agoricNames: Producer<NameHub>,
  *     agoricNamesAdmin: Producer<NameAdmin>,
  *     bankManager: Producer<unknown>,
@@ -126,11 +144,9 @@
  *     chainTimerService: Producer<ERef<TimerService>>,
  *     client: Producer<ClientManager>,
  *     clientCreator: Producer<ClientCreator>,
- *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
  *     feeMintAccess: Producer<FeeMintAccess>,
  *     loadVat: Producer<VatLoader<unknown>>,
  *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
- *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>,
  *     provisioning: Producer<unknown>,
  *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
  *     zoe: Producer<ZoeService>,
