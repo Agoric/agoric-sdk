@@ -152,15 +152,4 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
       nameAdmins: true,
     },
   },
-  startGetRun: {
-    consume: {
-      zoe: true,
-      feeMintAccess: true,
-      agoricNames: true,
-      chainTimerService: true,
-      nameAdmins: true,
-      bridgeManager: true,
-      client: true,
-    },
-  },
 });
