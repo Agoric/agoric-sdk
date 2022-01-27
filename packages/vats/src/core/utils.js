@@ -19,6 +19,11 @@ export const shared = harden({
   contract: {
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
+    noActionElectorate: 'no action electorate',
+    binaryCounter: 'binary vote counter',
+    amm: 'Automated Market Maker',
+    vaultFactory: 'vault factory',
+    liquidate: 'liquidate',
     getRUN: 'getRUN',
   },
 });
