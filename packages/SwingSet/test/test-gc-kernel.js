@@ -607,7 +607,7 @@ test('retire before drop is error', async t => {
   t.is(syscallError.name, 'Error');
   t.is(
     syscallError.message,
-    'syscall.retireImports failed, prepare to die: syscall translation error: prepare to die',
+    'syscall.retireImports failed: syscall translation error: prepare to die',
   );
 
   // vat should be terminated

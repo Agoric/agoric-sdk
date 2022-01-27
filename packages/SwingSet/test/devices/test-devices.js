@@ -3,6 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@agoric/bundle-source';
 import { getAllState } from '@agoric/swing-store';
+import { parse } from '@agoric/marshal';
 import { provideHostStorage } from '../../src/hostStorage.js';
 
 import {
@@ -31,6 +32,8 @@ test.before(async t => {
   const bootstrap2 = await bundleSource(dfile('bootstrap-2'));
   const bootstrap3 = await bundleSource(dfile('bootstrap-3'));
   const bootstrap4 = await bundleSource(dfile('bootstrap-4'));
+  const bootstrap5 = await bundleSource(dfile('bootstrap-5'));
+  const bootstrap6 = await bundleSource(dfile('bootstrap-6'));
   t.context.data = {
     kernelBundles,
     bootstrap0,
@@ -38,6 +41,8 @@ test.before(async t => {
     bootstrap2,
     bootstrap3,
     bootstrap4,
+    bootstrap5,
+    bootstrap6,
   };
 });
 
@@ -375,4 +380,76 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
   t.throws(() => c.queueToVatRoot('bootstrap', 'ping', capargs([])), {
     message: /vat name .* must exist, but doesn't/,
   });
+});
+
+test.serial('device errors cause vat-catchable D error', async t => {
+  const hostStorage = provideHostStorage();
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        bundle: t.context.data.bootstrap5,
+      },
+    },
+    devices: {
+      d5: {
+        sourceSpec: dfile('device-5'),
+        creationOptions: { unendowed: true },
+      },
+    },
+  };
+
+  const bootstrapResult = await initializeSwingset(
+    config,
+    [],
+    hostStorage,
+    t.context.data,
+  );
+  const c = await makeSwingsetController(hostStorage, {});
+  await c.run();
+
+  t.is(c.kpStatus(bootstrapResult), 'fulfilled'); // not 'rejected'
+  const r = c.kpResolution(bootstrapResult);
+  const expected = Error(
+    'syscall.callNow failed: device.invoke failed, see logs for details',
+  );
+  t.deepEqual(parse(r.body), ['got', expected]);
+});
+
+test.serial('foreign device nodes cause a catchable error', async t => {
+  const hostStorage = provideHostStorage();
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        bundle: t.context.data.bootstrap6,
+      },
+    },
+    devices: {
+      d6first: {
+        sourceSpec: dfile('device-6'),
+        creationOptions: { unendowed: true },
+      },
+      d6second: {
+        sourceSpec: dfile('device-6'),
+        creationOptions: { unendowed: true },
+      },
+    },
+  };
+
+  const bootstrapResult = await initializeSwingset(
+    config,
+    [],
+    hostStorage,
+    t.context.data,
+  );
+  const c = await makeSwingsetController(hostStorage, {});
+  await c.run();
+
+  t.is(c.kpStatus(bootstrapResult), 'fulfilled'); // not 'rejected'
+  const r = c.kpResolution(bootstrapResult);
+  const expected = Error(
+    'syscall.callNow failed: device.invoke failed, see logs for details',
+  );
+  t.deepEqual(parse(r.body), ['got', expected]);
 });

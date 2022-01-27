@@ -88,7 +88,7 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
       }
       case 'error': {
         const [err] = rest;
-        throw Error(`syscall.${fields[0]} failed, prepare to die: ${err}`);
+        throw Error(`syscall.${fields[0]} failed: ${err}`);
       }
       default:
         throw Error(`unknown result type ${type}`);
