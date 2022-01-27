@@ -55,7 +55,6 @@ const trace = makeTracer('VM');
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {Timestamp} startTimeStamp
- * @returns {VaultManager}
  */
 export const makeVaultManager = (
   zcf,
@@ -387,7 +386,6 @@ export const makeVaultManager = (
     }
   };
 
-  /** @type {VaultManager} */
   return Far('vault manager', {
     ...shared,
     makeVaultKit,

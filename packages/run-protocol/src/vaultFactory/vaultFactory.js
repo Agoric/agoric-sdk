@@ -161,7 +161,6 @@ export const start = async (zcf, privateArgs) => {
         collateralTypes.has(brandIn),
         X`Not a supported collateral type ${brandIn}`,
       );
-      /** @type {VaultManager} */
       const mgr = collateralTypes.get(brandIn);
       return mgr.makeVaultKit(seat);
     };

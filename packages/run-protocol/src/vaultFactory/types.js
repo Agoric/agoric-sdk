@@ -102,12 +102,12 @@
 
 /**
  * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<VaultKit>}  makeVaultKit
+ * @property {(seat: ZCFSeat) => Promise<LoanKit>} makeLoanKit
  * @property {() => void} liquidateAll
  */
 
 /**
- * @typedef {VaultManagerBase & GetVaultParams} VaultManager
+ * @typedef {ReturnType<import("./vaultManager").makeVaultManager>} VaultManager
  */
 
 /**
@@ -136,7 +136,7 @@
  */
 
 /**
- * @typedef {Object} VaultKit
+ * @typedef {Object} LoanKit
  * @property {Vault} vault
  * @property {Notifier<VaultUIState>} uiNotifier
  */
