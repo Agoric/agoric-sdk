@@ -341,8 +341,8 @@
  * remotables are the same rank but incomparable as keys.
  *
  * A further invariant is if `compareKeys(X,Y) < 0` then
- * `compareRank(X,Y) <= 0`, i.e., if X is smaller than Y in key order, then X
- * must be at least as early as Y in rank order. But not vice versa.
+ * `compareRank(X,Y) < 0`, i.e., if X is smaller than Y in key order, then X
+ * must be earlier than Y in rank order. But not vice versa.
  * X can be equivalent to or earlier than Y in rank order and still be
  * incomparable with Y in key order. For example, the record `{b: 3, a: 5}` is
  * earlier than the record `{b: 5, a: 3}` in rank order but they are
