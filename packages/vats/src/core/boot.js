@@ -76,8 +76,9 @@ const buildRootObject = (vatPowers, vatParameters) => {
           entries(manifest).map(([name, permit]) =>
             Promise.resolve().then(() => {
               const endowments = extract(permit, powers);
+              const config = vatParameters[name];
               console.info(`bootstrap: ${name}(${q(permit)})`);
-              return bootBehaviors[name](endowments);
+              return bootBehaviors[name](endowments, config);
             }),
           ),
         );
