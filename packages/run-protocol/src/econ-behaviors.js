@@ -2,39 +2,28 @@
 
 import { E, Far } from '@agoric/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-
-import {
-  bootstrapRunLoC,
-  Collect,
-} from '@agoric/run-protocol/src/bootstrapRunLoC.js';
-
-import contractGovernorBundle from '@agoric/run-protocol/bundles/bundle-contractGovernor.js';
-import committeeBundle from '@agoric/run-protocol/bundles/bundle-committee.js';
-import noActionElectorateBundle from '@agoric/run-protocol/bundles/bundle-noActionElectorate.js';
-import binaryVoteCounterBundle from '@agoric/run-protocol/bundles/bundle-binaryVoteCounter.js';
-import liquidateBundle from '@agoric/run-protocol/bundles/bundle-liquidateMinimum.js';
-import ammBundle from '@agoric/run-protocol/bundles/bundle-amm.js';
-import vaultFactoryBundle from '@agoric/run-protocol/bundles/bundle-vaultFactory.js';
-import getRUNBundle from '@agoric/run-protocol/bundles/bundle-getRUN.js';
-
-import '@agoric/governance/exported.js';
-import '@agoric/run-protocol/exported.js';
-
-import {
-  PROTOCOL_FEE_KEY,
-  POOL_FEE_KEY,
-} from '@agoric/run-protocol/src/vpool-xyk-amm/params.js';
 import {
   makeGovernedInvitation,
   CONTRACT_ELECTORATE,
   makeGovernedNat,
 } from '@agoric/governance';
+import {
+  CENTRAL_ISSUER_NAME,
+  collectNameAdmins,
+  shared,
+} from '@agoric/vats/src/core/utils.js';
+import '@agoric/governance/exported.js';
+import '@agoric/vats/exported.js';
 
-import { makeGovernedTerms } from '@agoric/run-protocol/src/vaultFactory/params.js';
+import { makeGovernedTerms } from './vaultFactory/params.js';
+import { bootstrapRunLoC, Collect } from './bootstrapRunLoC.js';
 
-import { CENTRAL_ISSUER_NAME, collectNameAdmins, shared } from './utils.js';
-import { makeStakeReporter } from '../my-lien.js';
-import { BLD_ISSUER_ENTRY } from '../issuers.js';
+import '../exported.js';
+
+import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
+
+import { makeStakeReporter } from '../../vats/src/my-lien.js';
+import { BLD_ISSUER_ENTRY } from '../../vats/src/issuers.js';
 
 const { entries, keys } = Object;
 
@@ -45,23 +34,16 @@ const BASIS_POINTS = 10_000n;
 const DEFAULT_POOL_FEE = 24n;
 const DEFAULT_PROTOCOL_FEE = 6n;
 
-// TODO: push most of this back to run-protocol package and unit test it.
-/** @param {BootstrapPowers} powers */
-const startEconomicCommittee = async ({
-  consume: { agoricNames, nameAdmins, zoe },
+/** @param {EconomyBootstrapPowers} powers */
+export const startEconomicCommittee = async ({
+  consume: { agoricNames, nameAdmins, zoe, governanceBundles },
   produce: { economicCommitteeCreatorFacet },
 }) => {
   const electorateTerms = {
     committeeName: 'Initial Economic Committee',
     committeeSize: 1,
   };
-  /** @type { Record<string, { moduleFormat: string }>} */
-  const bundles = {
-    contractGovernor: contractGovernorBundle,
-    committee: committeeBundle,
-    noActionElectorate: noActionElectorateBundle,
-    binaryCounter: binaryVoteCounterBundle,
-  };
+  const bundles = await governanceBundles;
   keys(bundles).forEach(key => assert(shared.contract[key]));
 
   const installations = await Collect.allValues(
@@ -182,7 +164,7 @@ export async function setupAmm({
  *   consume: { loadVat: ERef<VatLoader<PriceAuthorityVat>>},
  * }} powers
  *
- * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
+ * @typedef {ERef<ReturnType<import('../../vats/src/vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
  */
 export const startPriceAuthority = async ({
   consume: { loadVat },
@@ -273,7 +255,7 @@ export async function startVaultFactory({
     E(agoricNames).lookup('instance', 'economicCommittee'),
     E(agoricNames).lookup('installation', 'congractGovernor'),
     E(agoricNames).lookup('installation', 'amm'),
-    E(agoricNames).lookup('installation', 'binaryCounter'),
+    E(agoricNames).lookup('installation', 'binaryVoteCounter'),
     E(agoricNames).lookup('installation', 'noActionElectorate'),
   ]);
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);

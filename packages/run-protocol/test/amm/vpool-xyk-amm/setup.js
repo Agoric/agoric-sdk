@@ -9,7 +9,12 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 
 import { makeZoeKit } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import {
+  makeNameAdmins,
+  makePromiseSpace,
+} from '@agoric/vats/src/core/utils.js';
 import { makeAmmTerms } from '../../../src/vpool-xyk-amm/params.js';
+import { Collect } from '../../../src/bootstrapRunLoC.js';
 
 const ammRoot = '../../../src/vpool-xyk-amm/multipoolMarketMaker.js';
 
@@ -44,6 +49,30 @@ const setUpZoeForTest = async () => {
     zoe,
     feeMintAccess,
   };
+};
+
+export const setupBootstrap = async () => {
+  const space = /** @type {any} */ (makePromiseSpace());
+  const { produce, consume } = /** @type { EconomyBootstrapPowers } */ (space);
+  const { agoricNames, agoricNamesAdmin, nameAdmins } = makeNameAdmins();
+  produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+  produce.nameAdmins.resolve(nameAdmins);
+
+  /** @type {Record<string, Promise<{moduleFormat: string}>>} */
+  const governanceBundlePs = {
+    contractGovernor: contractGovernorBundleP,
+    committee: committeeBundleP,
+    binaryVoteCounter: voteCounterBundleP,
+  };
+  const bundles = await Collect.allValues(governanceBundlePs);
+  produce.governanceBundles.resolve(bundles);
+
+  const { zoe, feeMintAccess } = await setUpZoeForTest();
+  produce.zoe.resolve(zoe);
+  produce.feeMintAccess.resolve(feeMintAccess);
+
+  return { produce, consume };
 };
 
 const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
