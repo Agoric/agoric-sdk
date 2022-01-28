@@ -1,7 +1,7 @@
 import '@agoric/install-ses';
 import test from 'ava';
 
-import { extract } from '../src/core/boot.js';
+import { extract } from '../src/core/utils.js';
 
 test('extract picks from specimen based on template', t => {
   const specimen = { a: 1, b: { c: 2 } };
