@@ -2,6 +2,13 @@
 
 /// <reference types="ses"/>
 
+/** @typedef {import('@endo/marshal').Passable} Passable */
+/** @typedef {import('@endo/marshal').PassStyle} PassStyle */
+/** @typedef {import('@endo/marshal').CopyTagged} CopyTagged */
+/** @template T @typedef {import('@endo/marshal').CopyRecord<T>} CopyRecord */
+/** @template T @typedef {import('@endo/marshal').CopyArray<T>} CopyArray */
+/** @typedef {import('@endo/marshal').Checker} Checker */
+
 /**
  * @typedef {Passable} Key
  * Keys are pass-by-copy structures (CopyArray, CopyRecord,

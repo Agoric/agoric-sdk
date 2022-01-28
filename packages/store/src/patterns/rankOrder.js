@@ -8,6 +8,8 @@ import {
   passStyleOf,
 } from '@endo/marshal';
 
+/** @typedef {import('@endo/marshal').PassStyle} PassStyle */
+
 const { fromEntries, entries, setPrototypeOf, is } = Object;
 
 const { ownKeys } = Reflect;
