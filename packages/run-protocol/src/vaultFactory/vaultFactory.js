@@ -249,7 +249,7 @@ export const start = async (zcf, privateArgs) => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
 
-  /** @type {vaultFactoryPublicFacet} */
+  /** @type {VaultFactoryPublicFacet} */
   const publicFacet = Far('vaultFactory public facet', {
     makeLoanInvitation,
     getCollaterals,

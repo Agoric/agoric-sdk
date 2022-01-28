@@ -1,16 +1,16 @@
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava.js';
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@agoric/bundle-source';
 import { getAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../../src/hostStorage.js';
 
 import {
   initializeSwingset,
   makeSwingsetController,
   buildKernelBundles,
-} from '../src/index.js';
-import buildCommand from '../src/devices/command.js';
+} from '../../src/index.js';
+import buildCommand from '../../src/devices/command.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -21,7 +21,7 @@ function capargs(args, slots = []) {
 }
 
 function dfile(name) {
-  return new URL(`./files-devices/${name}`, import.meta.url).pathname;
+  return new URL(`./${name}`, import.meta.url).pathname;
 }
 
 test.before(async t => {
@@ -52,7 +52,7 @@ test.serial('d0', async t => {
     },
     devices: {
       d0: {
-        sourceSpec: new URL('files-devices/device-0', import.meta.url).pathname,
+        sourceSpec: dfile('device-0'),
       },
     },
   };
@@ -98,7 +98,7 @@ test.serial('d1', async t => {
     },
     devices: {
       d1: {
-        sourceSpec: new URL('files-devices/device-1', import.meta.url).pathname,
+        sourceSpec: dfile('device-1'),
       },
     },
   };
@@ -131,13 +131,12 @@ async function test2(t, mode) {
         bundle: t.context.data.bootstrap2,
       },
       left: {
-        sourceSpec: new URL('files-devices/vat-left.js', import.meta.url)
-          .pathname,
+        sourceSpec: dfile('vat-left.js'),
       },
     },
     devices: {
       d2: {
-        sourceSpec: new URL('files-devices/device-2', import.meta.url).pathname,
+        sourceSpec: dfile('device-2'),
         creationOptions: { unendowed: true },
       },
     },
@@ -226,7 +225,7 @@ test.serial('device state', async t => {
     },
     devices: {
       d3: {
-        sourceSpec: new URL('files-devices/device-3', import.meta.url).pathname,
+        sourceSpec: dfile('device-3'),
         creationOptions: { unendowed: true },
       },
     },
@@ -324,7 +323,7 @@ test.serial('liveslots throws when D() gets promise', async t => {
     },
     devices: {
       d0: {
-        sourceSpec: new URL('files-devices/device-0', import.meta.url).pathname,
+        sourceSpec: dfile('device-0'),
         creationOptions: { unendowed: true },
       },
     },
@@ -360,7 +359,7 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
     },
     devices: {
       d0: {
-        sourceSpec: new URL('files-devices/device-0', import.meta.url).pathname,
+        sourceSpec: dfile('device-0'),
         creationOptions: { unendowed: true },
       },
     },

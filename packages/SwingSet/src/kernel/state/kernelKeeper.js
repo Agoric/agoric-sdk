@@ -391,6 +391,13 @@ export default function makeKernelKeeper(
     kvStore.set(`${kernelSlot}.refCount`, `${reachable},${recognizable}`);
   }
 
+  /**
+   * Allocate a new koid.
+   *
+   * @param { string } ownerID
+   * @param { undefined | bigint } id
+   * @returns { string }
+   */
   function addKernelObject(ownerID, id = undefined) {
     // providing id= is only for unit tests
     insistVatID(ownerID);
@@ -737,7 +744,7 @@ export default function makeKernelKeeper(
       X`${kernelSlot} is '${p.state}', not 'unresolved'`,
     );
     const nkey = `${kernelSlot}.queue.nextID`;
-    const nextID = Nat(BigInt(kvStore.get(nkey)));
+    const nextID = Nat(BigInt(getRequired(nkey)));
     kvStore.set(nkey, `${nextID + 1n}`);
     const qid = `${kernelSlot}.queue.${nextID}`;
     kvStore.set(qid, JSON.stringify(msg));
@@ -975,7 +982,7 @@ export default function makeKernelKeeper(
     );
     const { type } = parseKernelSlot(kernelSlot);
     if (type === 'promise') {
-      const refCount = Nat(BigInt(kvStore.get(`${kernelSlot}.refCount`))) + 1n;
+      const refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`))) + 1n;
       // kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
     }
@@ -1012,8 +1019,8 @@ export default function makeKernelKeeper(
     );
     const { type } = parseKernelSlot(kernelSlot);
     if (type === 'promise') {
-      let refCount = Nat(BigInt(kvStore.get(`${kernelSlot}.refCount`)));
-      assert(refCount > 0n, X`refCount underflow {kernelSlot} ${tag}`);
+      let refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`)));
+      assert(refCount > 0n, X`refCount underflow ${kernelSlot} ${tag}`);
       refCount -= 1n;
       // kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
