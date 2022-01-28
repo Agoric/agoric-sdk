@@ -49,6 +49,13 @@
       "@agoric"
     ]
   },
+  "files": [
+    "CHANGELOG.md",
+    "src/",
+    "*.json",
+    "globals.d.ts",
+    "exported.js"
+  ],
   "publishConfig": {
     "access": "public"
   },
