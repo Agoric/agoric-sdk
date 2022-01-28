@@ -7,7 +7,7 @@
  */
 
 /**
- * @typedef {CapData<string>} SwingSetCapData
+ * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  */
 
 /**
@@ -159,7 +159,7 @@
  * @property {string} 0 Kernel slot designating the device node that is the target of
  * the invocation
  * @property {string} 1 A string naming the method to be invoked
- * @property {CapData} 2 A capdata object containing the arguments to the invocation
+ * @property {import('@endo/marshal').CapData<unknown>} 2 A capdata object containing the arguments to the invocation
  * @typedef {[tag: 'ok', data: SwingSetCapData]} DeviceInvocationResultOk
  * @typedef {[tag: 'error', problem: string]} DeviceInvocationResultError
  * @typedef { DeviceInvocationResultOk | DeviceInvocationResultError } DeviceInvocationResult
