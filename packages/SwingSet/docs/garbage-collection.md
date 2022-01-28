@@ -248,7 +248,7 @@ Later, if the vat receives a message from the kernel that references the virtual
 
 If/when this Representative `Object` is no longer referenced by userspace and becomes collected, the `droppedRegistry` finalizer will run, and liveslots will learn of its disappearance. At that point, liveslots checks with the VOM to see if the vref is truly unreachable, and perhaps call `syscall.dropExports`. If the vref is also unrecognizable, it will also call `syscall.retireExports`.
 
-The full flowchart for tracking the reachable/recognizable state of virtual objects is complex, and not yet fully implemented. See ticket [#2724](https://github.com/Agoric/agoric-sdk/issues/2724) for details.
+The full flowchart for tracking the reachable/recognizable state of virtual objects is complex. See ticket [#2724](https://github.com/Agoric/agoric-sdk/issues/2724) for details.
 
 ## deadSet, processDeadSet
 
