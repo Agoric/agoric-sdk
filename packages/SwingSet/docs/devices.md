@@ -1,27 +1,30 @@
 # "Device" Access
 
-Most Vats communicate only in terms of object references, method calls,
-promises, and resolution. Everything outside the Vat is accessed through an
+Most vats communicate only in terms of object references, method calls,
+promises, and resolution. Everything outside the vat is accessed through an
 eventual send, which can deliver pure data and references, but nothing else.
 
-For a Vat to have any influence on the outside world, *something* must go
-beyond this limitation. Some Vat, somewhere, must have a "device": some
-access to authority outside the Vat model.
+A SwingSet application includes a kernel and a collection of vats. These vats
+can talk to each other, but to have any influence on the world outside that
+application, there must be a "device" which provides access to authority
+outside the vat model, and at least one vat must have a reference to
+something within that device.
 
-The simplest such device might just be synchronous access to a shared data
-structure. Since Vats are normally confined to communicating through object
-messages (and even then only through asynchronous access), even a basic
-key-value store must be presented as a "device" if shared with the kernel.
+The simplest such device might just provide synchronous access to a shared
+data structure that lives outside the kernel state database. Since vats are
+normally confined to communicating through object messages (and even then
+only through asynchronous access), even a basic key-value store must be
+presented as a "device" if shared beyond a single vat.
 
-## Vat access to devices
+## Vat Access to Devices
 
 The SwingSet architecture, despite being implemented in Javascript, is
 patterned after lower-level OS kernel layout, hence the distinction between
 "userspace" and "kernelspace", with a "syscall" API from one to the other.
-Following that pattern, we say that certain Vats have extraordinary access to
+Following that pattern, we say that certain vats have extraordinary access to
 one or more "device objects", which allows commands to be sent to a "device
 driver" that has privileged access to functions or data that is outside the
-Vat model.
+vat model.
 
 These device objects are imported into vats just like anything else (such as
 exports from other vats, or kernel promises). They can be included in
@@ -49,21 +52,13 @@ like:
 retval = D(devicenode).method(args)
 ```
 
-## Device access to Vats
+## Device Access to Vats
 
-Devices get access to a special message-delivery queue which is serviced
-before the normal kernel run-queue. This allows e.g. a communication-channel
-device to give inbound messages to a comms vat quickly, without being queued
-on the normal escalators (since the comms vat might determine that the
-message is higher-priority than anything already on the escalators, so it
-must be given the opportunity to make this decision quickly).
-
-We have not yet determined how this access will be expressed. It might simply
-be a special escalator-id which effectively has an infinite budget, or it
-might need to be a separate syscall. Until we implement the escalator
-algorithm (and the associated Meters and Keepers), we simply add a
-`syscall.sendOnly` interface to both vats and devices, and defer the priority
-questions for later. `sendOnly` does not return anything.
+Devices can send messages to vats. In particular, they can perform
+`syscall.sendOnly()`, which pushes a message onto the kernel run-queue.
+Unlike `syscall.send`, `sendOnly` does *not* support a result promise, so the
+device does not get to hear about the results of delivering the message.
+`sendOnly` does not return anything.
 
 The `deviceSlots` wrapper exposes `sendOnly` with a special wrapper:
 
@@ -74,15 +69,13 @@ SO(presence).method(args)
 Unlike the `E` wrapper, this does not return a promise, since `sendOnly` does
 not provide one either.
 
-TODO: `liveSlots` does not yet provide the `SO` send-only wrapper.
-
 ## Devices Don't Promise
 
 For simplicity, we remove the promise APIs from devices and their
-interactions with Vats. Devices cannot create kernel promises, or receive
-them in calls, and `syscall.sendOnly` (which is the only way for the device
-to send messages to vats) does not cause a promise to be created. Vats cannot
-put promises into the arguments of `syscall.callNow`.
+interactions with vats. Devices cannot create kernel promises, and
+`syscall.sendOnly` (which is the only way for the device to send messages to
+vats) does not cause a promise to be created. Vats cannot put promises into
+the arguments of `syscall.callNow`.
 
 We might change this in the future.
 
@@ -92,113 +85,201 @@ Initially, the bootstrap vat holds exclusive access to all devices. They are
 provided as an argument to the `bootstrap()` call, in the same way it gets
 the root object of all other vats. From here, the `bootstrap()` can share
 device access with other vats as it sees fit. Devices can be passed as
-message arguments and promise resolutions just like any other import or
-export.
+message arguments and through promise resolutions just like any other import
+or export.
 
-The function signature is `bootstrap(argv, vats, devices) -> undefined`. The
+The function signature is `bootstrap(vats, devices) -> undefined`. The
 `devices` argument, like `vats`, is a plain object whose keys are the names
-of the devices, with values that contain device references (i.e. `{type:
-'device', id: 4}`).
+of the devices, with values that contain device references.
 
-## Device Configuration
+## Device Configuration and Endowments
 
-There are two kinds of devices: "host devices" and "kernel devices".
+Devices are special because they receive **endowments**, which are functions
+that point outside the kernel. These are provided by the host application, to
+give the device access to IO or storage outside the kernel database
+(`swingstore`).
 
-The `buildVatController()` call is supplied with a `config` object that
+The `initializeSwingset()` call is supplied with a `config` object that
 describes the initial set of vats (including the bootstrap vat). We use
 `config.devices` to define the set of host devices that will be made
-available to `bootstrap()`. `config.devices` is a list (or other iterable),
-in which each value is a 3-item list.
- * the device name,
- * the pathname of the device source (a file which must
-   export a default function whose signature is
-   `function setup(syscall, state, helpers, endowments) -> dispatch`), and
- * an object containing endowments that will be passed into the setup
-   function.
+available to `bootstrap()`. `config.devices` is an object whose keys are
+device names, and values are a description of how the device should be
+created, just like for vats. `sourceSpec` is the most useful parameter: it
+names a file which provides the source code of the device's entry point. This
+file can `import` other files. During initialization, this file (and
+everything it references) will be bundled into a single string, and this
+string will be stored in the database. Every subsequent launch of the kernel
+will use this same source code.
 
-"Kernel devices" do not need to be configured by the host. The only kernel
-device currently envisioned is one which provides the `addVat` call, which
-allows new Vats to be created at runtime.
+Initialization happens exactly once, for the lifetime of the swingset state
+database, using `initializeSwingset()`.
 
-It is an error to provide an entry in `config.devices` which collides with
-the name of a kernel device, or to have two devices with the same name.
+```js
+function initializeApplication() {
+ ..
+ const config = {
+   vats: ..,
+   devices: {
+     myDevice: {
+       sourceSpec: '../my-device.js',
+       creationOptions: {},
+     },
+   },
+   ..,
+ };
+ await initializeSwingset(config, [], hostStorage);
+ ..
+```
 
-### New Vat APIs
+Later, each time the host application restarts, it must call
+`makeSwingsetController` to build the controller object, through which the
+application will drive the kernel. At this time, the application can can
+provide endowments to each device through the `deviceEndowments` argument.
+This object uses the same device names as keys, and each value is provide to
+the corresponding device in the `endowments` parameter.
 
-This feature adds two API calls to Vats:
 
-* `syscall.sendOnly(targetSlot, method, argsString, argsSlots) -> undefined`
-* `syscall.callNow(deviceSlot, method, argsString, argsSlots) -> { args, slots }`
+```js
+function startApplication() {
+ ..
+ const deviceEndowments = {
+   myDevice: { stuff },
+ };
+ const controller = makeSwingsetController(hostStorage, deviceEndowments, runtimeOptions);
+ ..
+ await controller.run();
+```
 
-(although `sendOnly` is not used to interact with devices, and is only added
-for completeness)
+For every device configured during initialization, there must be exactly one
+set of endowments provided to `makeSwingsetController`. It is an error to
+provide an entry in `config.devices` which collides with the name of a kernel
+device (see below).
 
-TODO: Vats do not yet have access to `sendOnly`.
+(For the convenience of unit tests, any configured device that lacks
+endowments will be skipped. You can provide a special
+`creationOptions.unendowed` property during initialization to make the
+runtime instantiate the device anyways).
 
-The `liveSlots` helper for constructing Vats provides both an `E()` wrapper
-(for constructing `syscall.send()` messages to Presences) and a `D()` wrapper
-(for constructing `syscall.callNow` messages to device nodes).
+### Device Construction
 
-### Device API
-
-Devices are very much like Vats, and they way they are constructed reflects
-that. The factory function for each is called with `syscall` object that
-they can use to talk to the kernel, and they return a `dispatch` object
-with which the kernel can invoke them. The specific methods on `syscall`
-and `dispatch` are different for devices:
-
-* `syscall.sendOnly(targetSlot, method, args) -> undefined`
-* `dispatch.invoke(deviceID, method, args) -> results`
-
-Notice that args and results are CapData structures, which look like
-`{ body, slots }`.
-
-#### Device Construction
-
-Devices are built with `makeDeviceSlots(syscall, state, makeRootDevice, name)`.
-`makeDeviceSlots` calls `makeRootDevice`, which should return an object with
-methods that can be called from the kernel.
+The standard device source file should export a function named
+`buildRootDeviceNode`, which acts very much like `buildRootObject` for vats:
 
 ```js
 // exampledevice-src.js
-export default function setup(syscall, state, helpers, endowments) {
+import { Far } from '@agoric/marshal';
+
+export function buildRootDeviceNode(tools) {
+  // tools contains: SO, getDeviceState, setDeviceState, endowments,
+  //                 deviceParameters, serialize
   const { stuff } = endowments;
-  // use stuff
-  function makeRootDeviceNode({ SO, getDeviceState, setDeviceState }) {
-    return harden({
-     // methods using stuff and more
-    });
-  }
-  const dispatch =
-    helpers.makeDeviceSlots(syscall, state, makeRootDeviceNode, helpers.name);
-  return dispatch;
+
+  return Far('root',
+    helloDevice(arg) { return stuff(arg); },
+  });
 }
 ```
 
-This lets the `makeRootDeviceNode` function provide the root device node with
-access to the endowments, and to kernel methods to manage persistent state.
-The `makeDeviceSlots` helper function behaves much like `makeLiveSlots` for
-regular Vat code, except:
+This sort of device code gets an environment similar to the one liveslots
+provides to regular vat code, except:
 
 * It does not provide the `E()` wrapper, since devices cannot manage promises
-  or eventual-sends
-* Instead, it provides an `SO()` wrapper, which exposes `syscall.sendonly`.
+  or perform result-bearing eventual-sends
+* Instead, it provides an `SO()` wrapper, which exposes `syscall.sendOnly`.
 * All pass-by-presence objects returned by device methods are passed as
-  device nodes
-* The dispatch object built by `makeDeviceSlots` is exposed as the root
-  device node to the bootstrap function.
+  new device nodes, not objects
+* The return value of `buildRootDeviceNode` is exposed as the root device
+  node to the bootstrap function (e.g. `devices.myDevice`)
 
-## Device Drivers
+### State Management
 
-Host devices consist of a kernel-realm wrapper function, which closes over
-any host-realm authorities that it needs. The wrapper function is responsible
-for preventing confinement breaches: it must prevent kernel-realm callers
-from accessing host-realm objects, even under adversarial use. In particular,
-any exceptions raised by the host-realm functions must be caught and wrapped
-with kernel-realm replacements. Callbacks must be intercepted too. The
-wrapper function must act as a limited Membrane between the two worlds.
+State management for devices is very different than for vats, because devices
+do not benefit from the orthogonal persistence that vats get. Instead, they
+get `getDeviceState` and `setDeviceState`, which they must call after each
+invocation that changes internal state.
 
-## Initial Device Types
+TODO: examples of safe usage
+
+### Device-Related Vat APIs
+
+Vats get one API to interact with devices:
+
+* `syscall.callNow(deviceSlot, method, argsCapdata) -> resultsCapdata`
+
+The `liveSlots` helper for constructing vats provides both an `E()` wrapper
+(for constructing `syscall.send()` messages to Presences) and a `D()` wrapper
+(for constructing `syscall.callNow()` messages to device nodes). For example,
+the bootstrap vat could do:
+
+```js
+  bootstrap(vats, devices) {
+    const result = D(devices.myDevice).helloDevice('foo');
+```
+
+### Device APIs
+
+Within a device defined by `buildRootDeviceNode`, device node methods can
+receive Presence objects very much like those in vats. However instead of
+using `E(presence).methodname(args)`, device code must use `SO` (for
+`sendOnly`):
+
+```js
+// hello-device-src.js
+import { Far } from '@agoric/marshal';
+export function buildRootDeviceNode(tools) {
+  return Far('root',
+    callMe(callbackObj) { SO(callbackObj).hello('there'); },
+  });
+}
+```
+
+This will push a delivery onto the kernel run-queue.
+
+```js
+// vat does
+  const callbackObj = Far('cb', {
+    hello(arg) {
+      console.log('they called me!', arg);
+    },
+  });
+  E(devices.hello).callMe(callbackObj);
+// and in some upcoming crank, we'll see
+//   'they called me! there'
+```
+
+This is most useful when prompted by external input, through a callback
+established via an endowment. See the timer and mailbox devices for examples.
+
+The low-level device API uses `dispatch` and `syscall` just like with vats.
+However the inbound message pathway uses `dispatch.invoke(deviceNodeID,
+method, argsCapdata) -> resultCapdata`, and the outbound pathway uses
+`syscall.sendOnly`.
+
+## Kernel Devices
+
+The kernel automatically configures devices for internal use. Most are paired
+with vats to expose the functionality for user vats.
+
+* `vats.vatAdmin` works with `devices.vatAdmin` to allow the creation of new
+  "dynamic vats" at runtime.
+
+## Devices in the Swingset Source Tree
+
+The Swingset source tree includes source code for several useful devices.
+
+* Timer Device: this gives vats the ability to set one-shot and repeating
+  timers, and to ask about the current time. Host applications must configure
+  and endow a timer device, and connect it to a wrapper vat. User vats talk
+  to the wrapper vat for access.
+* Mailbox: this enables the Comms/VatTP vats to exchange messages with other
+  kernels, through a host-application provided delivery channel.
+* Command: this facilitates an HTTP or WebSocket -exposed channel into and
+  out of user vats.
+
+Using these devices requires adding the device (and associated wrapper vat)
+to the `config.devices` and `config.vats` object, then endowing the devices
+at runtime. E.g. the Timer Device needs a way to query the current time, and
+to be notified when a particular time has been reached.
 
 ### Mailbox Device
 
@@ -220,51 +301,3 @@ acknowledgment to that remote mailbox, VatTP can use the
 `ackInbound(recipient, msgnum)` method. This ack is written into the state
 vector next to the outbox where it can be delivered to the remote end by the
 same host loop.
-
-### TCP Device
-
-To extend our Vat network across multiple computers, we need a "comms vat"
-which will be given the ability to send and receive data over the internet.
-This vat will be responsible for encryption, the VatTP protocol, managing
-three-party handoff, and distributed garbage collection. It will get a device
-that lets it initiate outbound connections (perhaps through `libp2p`), send
-messages through a connection, and register a callback that will get
-notification of inbound connections and messages.
-
-### Ledger Device
-
-To integrate SwingSet into blockchain hosts (e.g. the application end of a
-Cosmos ABCI connection), inbound signed transactions must be verified and
-turned into entries on the run-queue. These transactions come from relayer
-nodes, who must provide a deposit with each message (to prevent abuse). Their
-deposit is refunded, plus a commission, once the message is validated and
-added to the "escalator" scheduler queues.
-
-To check and manipulate these balances, the kernel state includes a "ledger",
-which maps a public verifier key (used to check the transaction signatures)
-with a balance. Transactions which arrive under a key with insufficient
-balance to meet the deposit will be ignored: this minimizes the work we do in
-response to completely bogus input. If the message has a valid relayer
-signature but the inner contents are invalid, the deposit is forfeit, which
-discourages a solvent relayer from forwarding bad messages.
-
-Since we want to use ERTP protocols to transfer these balances too, we need
-an Issuer. This must live in a Vat with access to the ledger, so that
-object-reference access (Purses) can interact with public-key access. This
-Vat will have access to the "ledger device", where it can get and set balance
-entries.
-
-### Inbound Message Device
-
-The Vat which manages the ledger will (probably) also receive inbound signed
-messages, via a callback registered with the Inbound Message Device. These
-messages won't be delivered through the normal run-queue, since
-higher-priority messages should be delivered earlier, and we won't know the
-priority (e.g. escalator price/bid data) until this vat gets a chance to
-examine it. We need the messages to be delivered to this code immediately.
-
-This Vat will also hold the C-list tables that map (pubkey, index) to an
-object reference. It must also know how to verify the per-machine VatTP layer
-on each message: cryptographic signatures of the sending SoloVat (not just
-the relayer's signature), or chain-specific proofs from vats hosted inside a
-foreign blockchain (i.e. IBC).
