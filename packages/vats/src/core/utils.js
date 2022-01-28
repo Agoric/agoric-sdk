@@ -33,9 +33,12 @@ export const shared = harden({
   instance: {
     economicCommittee: 'Economic Committee',
     amm: 'Automated Market Maker',
+    ammGovernor: 'AMM Governor',
     vaultFactory: 'vault factory',
+    vaultFactoryGovernor: 'vault factory governor',
     liquidate: 'liquidate',
     getRUN: 'getRUN',
+    getRUNGovernor: 'getRUN governor',
   },
 });
 

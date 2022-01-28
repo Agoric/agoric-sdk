@@ -92,6 +92,8 @@
  * @typedef {{
  *   consume: {
  *     agoricNames: Promise<NameHub>,
+ *     ammCreatorFacet: ERef<unknown>,
+ *     ammGovernorCreatorFacet: ERef<unknown>,
  *     board: ERef<Board>,
  *     chainTimerService: ERef<TimerService>,
  *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
