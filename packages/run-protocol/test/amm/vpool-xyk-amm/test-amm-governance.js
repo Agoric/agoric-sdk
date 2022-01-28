@@ -16,10 +16,10 @@ import {
 import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
 import { startEconomicCommittee } from '../../../src/econ-behaviors.js';
 
-import { setupAmmServices, setupBootstrap } from './setup.js';
+import { setupAmmServices, setupAMMBootstrap } from './setup.js';
 
 test('start Economic Committee', async t => {
-  const { produce, consume } = await setupBootstrap();
+  const { produce, consume } = await setupAMMBootstrap();
   startEconomicCommittee({ produce, consume });
   const agoricNames = await consume.agoricNames;
   const instance = await E(agoricNames).lookup('instance', 'economicCommittee');
