@@ -1,9 +1,12 @@
+// @ts-check
+
 import { assert, details as X } from '@agoric/assert';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistMessage } from '../message.js';
 import { insistCapData } from '../capdata.js';
 import { insistDeviceID, insistVatID } from './id.js';
 
+/** @type { KernelSyscallResult } */
 const OKNULL = harden(['ok', null]);
 
 export function doSend(kernelKeeper, target, msg) {
@@ -67,6 +70,12 @@ export function makeKernelSyscallHandler(tools) {
     workingKeyIterator = undefined;
   }
 
+  /**
+   *
+   * @param { string } vatID
+   * @param { string } key
+   * @returns { KernelSyscallResult }
+   */
   function vatstoreGet(vatID, key) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
@@ -75,6 +84,13 @@ export function makeKernelSyscallHandler(tools) {
     return harden(['ok', value || null]);
   }
 
+  /**
+   *
+   * @param { string } vatID
+   * @param { string } key
+   * @param { string } value
+   * @returns { KernelSyscallResult }
+   */
   function vatstoreSet(vatID, key, value) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
@@ -97,7 +113,7 @@ export function makeKernelSyscallHandler(tools) {
    *   For example, if `lowerBound` is 'hello', then `upperBound` would default
    *   to 'hellp')
    *
-   * @returns {[string, string]|undefined}  A pair of the key and value of the
+   * @returns { KernelSyscallResult } An 'ok' result can provide a pair of the key and value of the
    *   first vatstore entry whose key is lexically greater than both `priorKey`
    *   and `lowerBound`.  If there are no such entries or if the first such
    *   entry has a key that is lexically greater than or equal to `upperBound`,
@@ -195,7 +211,7 @@ export function makeKernelSyscallHandler(tools) {
     }
     if (nextIter.done) {
       clearVatStoreIteration();
-      return harden(['ok', undefined]);
+      return harden(['ok', null]);
     } else {
       const nextKey = nextIter.value;
       const resultValue = kvStore.get(nextKey);
@@ -204,6 +220,13 @@ export function makeKernelSyscallHandler(tools) {
       return harden(['ok', [resultKey, resultValue]]);
     }
   }
+
+  /**
+   *
+   * @param { string } vatID
+   * @param { string } key
+   * @returns { KernelSyscallResult }
+   */
 
   function vatstoreDelete(vatID, key) {
     const actualKey = vatstoreKeyKey(vatID, key);
@@ -214,6 +237,13 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
+  /**
+   *
+   * @param { string } deviceSlot
+   * @param { string } method
+   * @param { SwingSetCapData } args
+   * @returns { KernelSyscallResult }
+   */
   function invoke(deviceSlot, method, args) {
     insistKernelType('device', deviceSlot);
     insistCapData(args);
@@ -225,11 +255,17 @@ export function makeKernelSyscallHandler(tools) {
     assert(dev, X`unknown deviceRef ${deviceSlot}`);
     const ki = harden([deviceSlot, method, args]);
     const di = dev.translators.kernelInvocationToDeviceInvocation(ki);
+    /** @type { DeviceInvocationResult } */
     const dr = dev.manager.invoke(di);
+    /** @type { KernelSyscallResult } */
     const kr = dev.translators.deviceResultToKernelResult(dr);
-    assert(kr.length === 2);
-    assert(kr[0] === 'ok');
-    insistCapData(kr[1]);
+    assert.equal(kr.length, 2);
+    if (kr[0] === 'ok') {
+      insistCapData(kr[1]);
+    } else {
+      assert.equal(kr[0], 'error');
+      assert.typeof(kr[1], 'string');
+    }
     return kr;
   }
 
@@ -282,35 +318,63 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
+  /**
+   * @param { KernelSyscallObject } ksc
+   * @returns {  KernelSyscallResult }
+   */
   function doKernelSyscall(ksc) {
-    const [type, ...args] = ksc;
-    switch (type) {
-      case 'send':
+    // this repeated pattern is necessary to get the typechecker to refine 'ksc' and 'args' properly
+    switch (ksc[0]) {
+      case 'send': {
+        const [_, ...args] = ksc;
         return send(...args);
-      case 'invoke':
+      }
+      case 'invoke': {
+        const [_, ...args] = ksc;
         return invoke(...args);
-      case 'subscribe':
+      }
+      case 'subscribe': {
+        const [_, ...args] = ksc;
         return subscribe(...args);
-      case 'resolve':
+      }
+      case 'resolve': {
+        const [_, ...args] = ksc;
         return resolve(...args);
-      case 'exit':
+      }
+      case 'exit': {
+        const [_, ...args] = ksc;
         return exit(...args);
-      case 'vatstoreGet':
+      }
+      case 'vatstoreGet': {
+        const [_, ...args] = ksc;
         return vatstoreGet(...args);
-      case 'vatstoreSet':
+      }
+      case 'vatstoreSet': {
+        const [_, ...args] = ksc;
         return vatstoreSet(...args);
-      case 'vatstoreGetAfter':
+      }
+      case 'vatstoreGetAfter': {
+        const [_, ...args] = ksc;
         return vatstoreGetAfter(...args);
-      case 'vatstoreDelete':
+      }
+      case 'vatstoreDelete': {
+        const [_, ...args] = ksc;
         return vatstoreDelete(...args);
-      case 'dropImports':
+      }
+      case 'dropImports': {
+        const [_, ...args] = ksc;
         return dropImports(...args);
-      case 'retireImports':
+      }
+      case 'retireImports': {
+        const [_, ...args] = ksc;
         return retireImports(...args);
-      case 'retireExports':
+      }
+      case 'retireExports': {
+        const [_, ...args] = ksc;
         return retireExports(...args);
+      }
       default:
-        assert.fail(X`unknown vatSyscall type ${type}`);
+        assert.fail(X`unknown vatSyscall type ${ksc[0]}`);
     }
   }
 

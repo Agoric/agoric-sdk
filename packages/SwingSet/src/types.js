@@ -130,26 +130,36 @@
  *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports
  *          } KernelDeliveryObject
  * @typedef { [tag: 'send', target: string, msg: Message] } KernelSyscallSend
- * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} KernelSyscallCallNow
+ * @typedef { [tag: 'invoke', target: string, method: string, args: SwingSetCapData]} KernelSyscallInvoke
  * @typedef { [tag: 'subscribe', kpid: string ]} KernelSyscallSubscribe
  * @typedef { [ kpid: string, rejected: boolean, data: SwingSetCapData ]} KernelResolutions
  * @typedef { [tag: 'resolve', resolutions: KernelResolutions ]} KernelSyscallResolve
- * @typedef { [tag: 'vatstoreGet', key: string ]} KernelSyscallVatstoreGet
- * @typedef { [tag: 'vatstoreGetAfter', priorKey: string, lowerBound: string, upperBound: string | undefined ]} KernelSyscallVatstoreGetAfter
- * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} KernelSyscallVatstoreSet
- * @typedef { [tag: 'vatstoreDelete', key: string ]} KernelSyscallVatstoreDelete
+ * @typedef { [tag: 'exit', vatID: string, isFailure: boolean, info: SwingSetCapData ]} KernelSyscallExit
+ * @typedef { [tag: 'vatstoreGet', vatID: string, key: string ]} KernelSyscallVatstoreGet
+ * @typedef { [tag: 'vatstoreGetAfter', vatID: string, priorKey: string, lowerBound: string, upperBound: string | undefined ]} KernelSyscallVatstoreGetAfter
+ * @typedef { [tag: 'vatstoreSet', vatID: string, key: string, data: string ]} KernelSyscallVatstoreSet
+ * @typedef { [tag: 'vatstoreDelete', vatID: string, key: string ]} KernelSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', krefs: string[] ]} KernelSyscallDropImports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelSyscallRetireImports
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelSyscallRetireExports
  *
- * @typedef { KernelSyscallSend | KernelSyscallCallNow | KernelSyscallSubscribe
- *    | KernelSyscallResolve | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetAfter
+ * @typedef { KernelSyscallSend | KernelSyscallInvoke | KernelSyscallSubscribe
+ *    | KernelSyscallResolve | KernelSyscallExit | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetAfter
  *    | KernelSyscallVatstoreSet | KernelSyscallVatstoreDelete | KernelSyscallDropImports
  *    | KernelSyscallRetireImports | KernelSyscallRetireExports
  * } KernelSyscallObject
- * @typedef { [tag: 'ok', data: SwingSetCapData | string | null ]} KernelSyscallResultOk
+ * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | null ]} KernelSyscallResultOk
  * @typedef { [tag: 'error', err: string ] } KernelSyscallResultError
  * @typedef { KernelSyscallResultOk | KernelSyscallResultError } KernelSyscallResult
+ *
+ * @typedef {[string, string, SwingSetCapData]} DeviceInvocation
+ * @property {string} 0 Kernel slot designating the device node that is the target of
+ * the invocation
+ * @property {string} 1 A string naming the method to be invoked
+ * @property {CapData} 2 A capdata object containing the arguments to the invocation
+ * @typedef {[tag: 'ok', data: SwingSetCapData]} DeviceInvocationResultOk
+ * @typedef {[tag: 'error', problem: string]} DeviceInvocationResultError
+ * @typedef { DeviceInvocationResultOk | DeviceInvocationResultError } DeviceInvocationResult
  *
  * @typedef { { d: VatDeliveryObject, syscalls: VatSyscallObject[] } } TranscriptEntry
  * @typedef { { transcriptCount: number } } VatStats

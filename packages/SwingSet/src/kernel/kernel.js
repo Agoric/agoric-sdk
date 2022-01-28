@@ -873,6 +873,11 @@ export default function buildKernel(
     // * error: you are dead ['error, description]
     // the VatManager+VatWorker will see the error case, but liveslots will
     // not
+    /**
+     *
+     * @param { VatSyscallObject } vatSyscallObject
+     * @returns { VatSyscallResult }
+     */
     function vatSyscallHandler(vatSyscallObject) {
       // eslint-disable-next-line no-use-before-define
       if (!vatWarehouse.lookup(vatID)) {
@@ -883,13 +888,16 @@ export default function buildKernel(
         setTerminationTrigger(vatID, true, true, makeError(problem));
         return harden(['error', problem]);
       }
+      /** @type { KernelSyscallObject | undefined } */
       let ksc;
-      let kres;
-      let vres;
+      /** @type { KernelSyscallResult } */
+      let kres = harden(['error', 'incomplete']);
+      /** @type { VatSyscallResult } */
+      let vres = harden(['error', 'incomplete']);
 
       try {
-        // This can fail if the vat asks for something not on their clist, or
-        // their syscall doesn't make sense in some other way, or due to a
+        // This can throw if the vat asks for something not on their clist,
+        // or their syscall doesn't make sense in some other way, or due to a
         // kernel bug, all of which are fatal to the vat.
         ksc = translators.vatSyscallToKernelSyscall(vatSyscallObject);
       } catch (vaterr) {
@@ -898,6 +906,7 @@ export default function buildKernel(
         console.log(`error during syscall translation:`, vaterr);
         const problem = 'syscall translation error: prepare to die';
         setTerminationTrigger(vatID, true, true, makeError(problem));
+        kres = harden(['error', problem]);
         vres = harden(['error', problem]);
         // we leave this catch() with ksc=undefined, so no doKernelSyscall()
       }
@@ -907,21 +916,26 @@ export default function buildKernel(
 
       if (ksc) {
         try {
-          // this can fail if kernel or device code is buggy
+          // this can throw if kernel is buggy
           kres = kernelSyscallHandler.doKernelSyscall(ksc);
-          // kres is a KernelResult ([successFlag, value]), but since errors
-          // here are signalled with exceptions, kres is ['ok', value]. Vats
-          // (liveslots) record the response in the transcript (which is why we
-          // use 'null' instead of 'undefined', TODO clean this up), but otherwise
-          // most syscalls ignore it. The one syscall that pays attention is
-          // callNow(), which assumes it's capdata.
+
+          // kres is a KernelResult: ['ok', value] or ['error', problem],
+          // where 'error' means we want the calling vat's syscall() to
+          // throw. Vats (liveslots) record the response in the transcript
+          // (which is why we use 'null' instead of 'undefined', TODO clean
+          // this up #4390), but otherwise most syscalls ignore it. The one
+          // syscall that pays attention is callNow(), which assumes it's
+          // capdata.
+
+          // this can throw if the translator is buggy
           vres = translators.kernelSyscallResultToVatSyscallResult(
             ksc[0],
             kres,
           );
-          // here, vres is either ['ok', null] or ['ok', capdata]
+
+          // here, vres is ['ok', null] or ['ok', capdata] or ['error', problem]
         } catch (err) {
-          // kernel/device errors cause a kernel panic
+          // kernel/translator errors cause a kernel panic
           panic(`error during syscall/device.invoke: ${err}`, err);
           // the kernel is now in a shutdown state, but it may take a while to
           // grind to a halt

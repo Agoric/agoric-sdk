@@ -4,6 +4,7 @@ import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { kdebug } from './kdebug.js';
+import { insistValidVatstoreKey } from './vatTranslator.js';
 
 /*
  * Return a function that converts KernelInvocation objects into
@@ -37,23 +38,38 @@ function makeDRTranslator(deviceID, kernelKeeper) {
   const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
   const { mapDeviceSlotToKernelSlot } = deviceKeeper;
 
+  /**
+   *
+   * @param { DeviceInvocationResult } deviceInvocationResult
+   * @returns { KernelSyscallResult }
+   */
   function deviceResultToKernelResult(deviceInvocationResult) {
     // deviceInvocationResult is ['ok', capdata]
     const [successFlag, devData] = deviceInvocationResult;
-    assert(successFlag === 'ok');
-    insistCapData(devData);
-    const kData = {
-      ...devData,
-      slots: devData.slots.map(slot => mapDeviceSlotToKernelSlot(slot)),
-    };
-    return harden(['ok', kData]);
+    if (successFlag === 'ok') {
+      insistCapData(devData);
+      const kData = {
+        ...devData,
+        slots: devData.slots.map(slot => mapDeviceSlotToKernelSlot(slot)),
+      };
+      return harden(['ok', kData]);
+    } else {
+      assert.equal(successFlag, 'error');
+      assert.typeof(devData, 'string');
+      return harden([successFlag, devData]);
+    }
   }
   return deviceResultToKernelResult;
 }
 
-/*
+/**
  * return a function that converts DeviceSyscall objects into KernelSyscall
  * objects
+ *
+ * @param { string } deviceID
+ * @param { string } deviceName
+ * @param { * } kernelKeeper
+ * @returns { (dsc: DeviceSyscallObject) => KernelSyscallObject }
  */
 export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
   const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
@@ -81,20 +97,97 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
     return ks;
   }
 
+  function translateVatstoreGet(key) {
+    insistValidVatstoreKey(key);
+    kdebug(`syscall[${deviceID}].vatstoreGet(${key})`);
+    return harden(['vatstoreGet', deviceID, key]);
+  }
+
+  function translateVatstoreSet(key, value) {
+    insistValidVatstoreKey(key);
+    assert.typeof(value, 'string');
+    kdebug(`syscall[${deviceID}].vatstoreSet(${key},${value})`);
+    return harden(['vatstoreSet', deviceID, key, value]);
+  }
+
+  function translateVatstoreGetAfter(priorKey, lowerBound, upperBound) {
+    if (priorKey !== '') {
+      insistValidVatstoreKey(priorKey);
+    }
+    insistValidVatstoreKey(lowerBound);
+    if (upperBound) {
+      insistValidVatstoreKey(upperBound);
+    }
+    kdebug(
+      `syscall[${deviceID}].vatstoreGetAfter(${priorKey}, ${lowerBound}, ${upperBound})`,
+    );
+    return harden([
+      'vatstoreGetAfter',
+      deviceID,
+      priorKey,
+      lowerBound,
+      upperBound,
+    ]);
+  }
+
+  function translateVatstoreDelete(key) {
+    insistValidVatstoreKey(key);
+    kdebug(`syscall[${deviceID}].vatstoreDelete(${key})`);
+    return harden(['vatstoreDelete', deviceID, key]);
+  }
+
   // vsc is [type, ...args]
   // ksc is:
   //  ['send', ktarget, kmsg]
+  /**
+   * Convert syscalls from device space to kernel space
+   *
+   * @param { DeviceSyscallObject } vsc
+   * @returns { KernelSyscallObject }
+   */
   function deviceSyscallToKernelSyscall(vsc) {
     const [type, ...args] = vsc;
     switch (type) {
       case 'sendOnly':
         return translateSendOnly(...args); // becomes ['send' .. result=null]
+      case 'vatstoreGet':
+        return translateVatstoreGet(...args);
+      case 'vatstoreSet':
+        return translateVatstoreSet(...args);
+      case 'vatstoreGetAfter':
+        return translateVatstoreGetAfter(...args);
+      case 'vatstoreDelete':
+        return translateVatstoreDelete(...args);
       default:
         assert.fail(X`unknown deviceSyscall type ${type}`);
     }
   }
 
   return deviceSyscallToKernelSyscall;
+}
+
+function kernelResultToDeviceResult(type, kres) {
+  const [successFlag, resultData] = kres;
+  assert(successFlag === 'ok', 'unexpected KSR error');
+  switch (type) {
+    case 'vatstoreGet':
+      if (resultData) {
+        assert.typeof(resultData, 'string');
+        return harden(['ok', resultData]);
+      } else {
+        return harden(['ok', undefined]);
+      }
+    case 'vatstoreGetAfter':
+      if (resultData) {
+        assert(Array.isArray(resultData));
+        return harden(['ok', resultData]);
+      } else {
+        return harden(['ok', undefined]);
+      }
+    default:
+      assert(resultData === null);
+      return harden(['ok', null]);
+  }
 }
 
 export function makeDeviceTranslators(deviceID, deviceName, kernelKeeper) {
@@ -109,6 +202,6 @@ export function makeDeviceTranslators(deviceID, deviceName, kernelKeeper) {
       deviceName,
       kernelKeeper,
     ),
-    // no syscall results translator: devices cannot do syscall.callNow()
+    kernelResultToDeviceResult,
   });
 }
