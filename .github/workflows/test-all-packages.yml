@@ -50,15 +50,11 @@ jobs:
   lint:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 16
 
       - name: lint check
         run: yarn lint-check
@@ -96,16 +92,12 @@ jobs:
   benchmark:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
     if: ${{github.event_name == 'push'}}
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 16
 
       - name: benchmark changes
         env:
@@ -119,16 +111,12 @@ jobs:
   coverage:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
     if: ${{github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 16
 
       - name: generate coverage for all tests
         run: 'yarn test:c8-all || :'
