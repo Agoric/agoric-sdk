@@ -10,7 +10,7 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:eslint",
     "lint:types": "tsc -p jsconfig.json",

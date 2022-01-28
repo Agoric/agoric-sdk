@@ -12,7 +12,7 @@
     "test": "exit 0",
     "test:nyc": "exit 0",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:eslint",
     "lint:eslint": "eslint '**/*.js'",

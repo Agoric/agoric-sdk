@@ -17,7 +17,7 @@
     "test:xs-unit": "ava-xs --verbose",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
     "build-zcfBundle": "node scripts/build-zcfBundle.js",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:eslint",
     "lint:eslint": "eslint '**/*.js'",

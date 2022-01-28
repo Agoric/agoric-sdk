@@ -9,7 +9,7 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "yarn lint:eslint",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint-check": "yarn lint",
     "lint:types": "tsc -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
