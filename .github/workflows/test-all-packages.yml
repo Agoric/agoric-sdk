@@ -61,18 +61,6 @@ jobs:
       - name: format check
         run: yarn format-check
 
-  types:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: 16
-
-      - name: types check
-        run: yarn types-check
-
   dev-canary:
     if: ${{github.event_name == 'push'}}
     needs: build

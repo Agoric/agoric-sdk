@@ -15,7 +15,7 @@
     "lint-check": "yarn lint",
     "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc -p jsconfig.json",
-    "lint": "yarn lint:eslint"
+    "lint": "yarn lint:types && yarn lint:eslint"
   },
   "repository": {
     "type": "git",
