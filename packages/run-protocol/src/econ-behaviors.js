@@ -34,15 +34,20 @@ const BASIS_POINTS = 10_000n;
 const DEFAULT_POOL_FEE = 24n;
 const DEFAULT_PROTOCOL_FEE = 6n;
 
-/** @param {EconomyBootstrapPowers} powers */
-export const startEconomicCommittee = async ({
-  consume: { agoricNames, nameAdmins, zoe, governanceBundles },
-  produce: { economicCommitteeCreatorFacet },
-}) => {
-  const electorateTerms = {
+/**
+ * @param {EconomyBootstrapPowers} powers
+ * @param {{ committeeName: string, committeeSize: number }} electorateTerms
+ */
+export const startEconomicCommittee = async (
+  {
+    consume: { agoricNames, nameAdmins, zoe, governanceBundles },
+    produce: { economicCommitteeCreatorFacet },
+  },
+  electorateTerms = {
     committeeName: 'Initial Economic Committee',
     committeeSize: 1,
-  };
+  },
+) => {
   const bundles = await governanceBundles;
   keys(bundles).forEach(key => assert(shared.contract[key]));
 
@@ -74,26 +79,27 @@ export const startEconomicCommittee = async ({
 };
 harden(startEconomicCommittee);
 
-// TODO: push most of this back to run-protocol package and unit test it.
-/** @param { BootstrapPowers } powers */
-export async function setupAmm({
+/** @param { EconomyBootstrapPowers } powers */
+export const setupAmm = async ({
   consume: {
-    chainTimerService: timer,
+    chainTimerService,
     agoricNames,
     nameAdmins,
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
+    economyBundles,
   },
   produce: { ammCreatorFacet, ammGovernorCreatorFacet },
-}) {
+}) => {
   const electorateInstance = E(agoricNames).lookup(
     'instance',
     'economicCommittee',
   );
-  const ammInstallation = E(zoe).install(ammBundle);
+  const bundles = await economyBundles;
+  const ammInstallation = E(zoe).install(bundles.amm);
   const governorInstallation = E(agoricNames).lookup(
     'installation',
-    'governor',
+    'contractGovernor',
   );
   const poolFee = DEFAULT_POOL_FEE;
   const protocolFee = DEFAULT_PROTOCOL_FEE;
@@ -103,6 +109,8 @@ export async function setupAmm({
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
+
+  const timer = await chainTimerService; // ISSUE: why on earth doesn't an ERef serve???
 
   const ammTerms = {
     timer,
@@ -115,13 +123,14 @@ export async function setupAmm({
     },
   };
 
+  const centralIssuer = E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME);
   const ammGovernorTerms = {
     timer,
     electorateInstance,
     governedContractInstallation: ammInstallation,
     governed: {
       terms: ammTerms,
-      issuerKeywordRecord: { Central: E(zoe).getFeeIssuer() },
+      issuerKeywordRecord: { Central: centralIssuer },
       privateArgs: { initialPoserInvitation: poserInvitation },
     },
   };
@@ -156,8 +165,9 @@ export async function setupAmm({
   return Promise.all([
     E(installAdmin).update('amm', ammInstallation),
     E(instanceAdmin).update('amm', instance),
+    E(instanceAdmin).update('ammGovernor', g.instance),
   ]);
-}
+};
 
 /**
  * @param {BootstrapPowers & {
