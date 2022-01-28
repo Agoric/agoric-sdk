@@ -3,7 +3,6 @@
 import { E, Far } from '@endo/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 import {
   bootstrapRunLoC,
   Collect,
@@ -383,50 +382,6 @@ export async function startVaultFactory({
   return E(instanceAdmin).update('vaultFactory', vaultFactoryInstance);
 }
 
-/**
- * @param {BootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<PriceAuthorityVat>>},
- * }} powers
- */
-export const startVaultFactoryX = async ({
-  consume: {
-    agoricNames,
-    nameAdmins: nameAdminsP,
-    board,
-    chainTimerService,
-    loadVat,
-    zoe,
-    feeMintAccess: feeMintAccessP,
-  },
-  produce: { priceAuthorityAdmin },
-}) => {
-  // TODO: Zoe should accept a promise, since the value is in that vat.
-  const [feeMintAccess, nameAdmins] = await Promise.all([
-    feeMintAccessP,
-    nameAdminsP,
-  ]);
-
-  const { priceAuthority, adminFacet } = await E(
-    E(loadVat)('priceAuthority'),
-  ).makePriceAuthority();
-
-  priceAuthorityAdmin.resolve(adminFacet);
-
-  // TODO: refactor w.r.t. installEconomicGovernance below
-  return installVaultFactoryOnChain({
-    agoricNames,
-    board,
-    centralName: CENTRAL_ISSUER_NAME,
-    chainTimerService,
-    nameAdmins,
-    priceAuthority,
-    zoe,
-    bootstrapPaymentValue: 0n, // TODO: this is obsolete, right?
-    feeMintAccess,
-  });
-};
-harden(startVaultFactory);
-
 /** @param {BootstrapPowers} powers */
 export const startGetRun = async ({
   consume: {
@@ -454,7 +409,7 @@ export const startGetRun = async ({
     feeMintAccessP,
     E(agoricNames).lookup('issuer', stakeName),
     E(agoricNames).lookup('brand', stakeName),
-    E(agoricNames).lookup('brand', 'RUN'),
+    E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
     // TODO: manage string constants that need to match
     E(agoricNames).lookup('installation', 'contractGovernor'),
     E(agoricNames).lookup('installation', 'committee'),
