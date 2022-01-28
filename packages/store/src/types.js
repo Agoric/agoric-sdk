@@ -242,8 +242,8 @@
 /**
  * @typedef {-1 | 0 | 1} RankComparison
  * The result of a `RankCompare` function that defines a rank-order, i.e.,
- * a total order in which different elements can be tied for the same
- * rank. See `RankCompare`.
+ * a total preorder in which different elements are always comparable but
+ * can be tied for the same rank. See `RankCompare`.
  */
 
 /**
@@ -252,13 +252,13 @@
  * is before, tied-with, or after the rank of `right`.
  *
  * This comparison function is valid as argument to
- * `Array.prototype.sort`. This is often described as a "total order"
- * but, depending on your definitions, this is technically incorrect
- * because it may return `0` to indicate that two distinguishable elements,
- * like `-0` and `0`, are tied, i.e., are in the same equivalence class
- * as far as this ordering is concerned. If each such equivalence class is
+ * `Array.prototype.sort`. This is sometimes described as a "total order"
+ * but, depending on your definitions, this is technically incorrect because
+ * it may return `0` to indicate that two distinguishable elements such as
+ * `-0` and `0` are tied (i.e., are in the same equivalence class
+ * for the purposes of this ordering). If each such equivalence class is
  * a *rank* and ranks are disjoint, then this "rank order" is a
- * total order among these ranks. In mathematics this goes by several
+ * true total order over these ranks. In mathematics this goes by several
  * other names such as "total preorder".
  *
  * This function establishes a total rank order over all passables.
@@ -267,12 +267,12 @@
  * used directly as a comparison with useful semantics. However, it must be
  * closely enough related to such comparisons to aid in implementing
  * lookups based on those comparisons. For example, in order to get a total
- * order among ranks, we put `NaN` after all other JavaScript "number" values.
- * But otherwise, we order JavaScript numbers by magnitude,
- * with `-0` tied with `0`. A semantically useful ordering of JavaScript number
- * values, i.e., IEEE floating point values, would compare magnitudes, and
- * so agree with the rank ordering everywhere except `NaN`. An array sorted by
- * rank would enable range queries by magnitude.
+ * order among ranks, we put `NaN` after all other JavaScript "number" values
+ * (i.e., IEEE 754 floating-point values). But otherwise, we rank JavaScript
+ * numbers by signed magnitude, with `0` and `-0` tied. A semantically useful
+ * ordering would also compare magnitudes, and so agree with the rank ordering
+ * of all values other than `NaN`. An array sorted by rank would enable range
+ * queries by magnitude.
  * @param {Passable} left
  * @param {Passable} right
  * @returns {RankComparison}
@@ -326,7 +326,7 @@
  * `compareKeys(left, right) >= 0` iff `left` is greater than or
  * equivalent to `right` in the partial ordering.
  *
- * Key order (a partial order) and rank order (a full order) are
+ * Key order (a partial order) and rank order (a total preorder) are
  * co-designed so that we store passables in rank order and index into them
  * with keys for key-based queries. To keep these distinct, when speaking
  * informally about rank, we talk about "earlier" and "later". When speaking
@@ -338,14 +338,16 @@
  * key order equivalence class is always at least as precise as the
  * rank order equivalence class. IOW, if `compareKeys(X,Y) === 0` then
  * `compareRank(X,Y) === 0`. But not vice versa. For example, two different
- * remotables are the same rank but incommensurate as keys.
+ * remotables are the same rank but incomparable as keys.
  *
  * A further invariant is if `compareKeys(X,Y) < 0` then
- * `compareRank(X,Y) <= 0`, i.e., if X is smaller than Y in key order, then X
- * must be at least as early as Y in rank order. But not vice versa.
- * X can be earlier than Y in rank order and still be incommensurate with Y in
- * key order. For example, the record `{b: 3, a: 5}` is earlier than but
- * incommensurate with the record `{b: 5, a: 3}`.
+ * `compareRank(X,Y) < 0`, i.e., if X is smaller than Y in key order, then X
+ * must be earlier than Y in rank order. But not vice versa.
+ * X can be equivalent to or earlier than Y in rank order and still be
+ * incomparable with Y in key order. For example, the record `{b: 3, a: 5}` is
+ * earlier than the record `{b: 5, a: 3}` in rank order but they are
+ * incomparable as keys. And two distinct remotables such as `Far('X', {})` and
+ * `Far('Y', {})` are equivalent in rank order but incomparable as keys.
  *
  * This lets us translate a range search over the
  * partial key order into a range search over rank order followed by filtering

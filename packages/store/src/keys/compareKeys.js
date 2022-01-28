@@ -80,7 +80,9 @@ export const compareKeys = (left, right) => {
         // to avoid more irrelevant ones.
         return NaN;
       }
-      let result = 0; // start with hypothesis they are keyEQ
+      // Presume that both copyRecords have the same key order
+      // until encountering a property disproving that hypothesis.
+      let result = 0;
       for (const name of leftNames) {
         const comp = compareKeys(left[name], right[name]);
         if (Number.isNaN(comp)) {
@@ -98,11 +100,12 @@ export const compareKeys = (left, right) => {
         }
       }
       // If copyRecord X is smaller than copyRecord Y, then they must have the
-      // same property names, and every value is X must be smaller or equal to
-      // every corresponding value in Y. The rank order of X and Y is based
-      // on lexicographic rank order of their values, as organized by the
-      // reverse order of their property names. Thus
-      // if compareKeys(X,Y) < 0 then compareRank(X,Y) <= 0.
+      // same property names and every value in X must be smaller or equal to
+      // the corresponding value in Y (with at least one value smaller).
+      // The rank order of X and Y is based on lexicographic rank order of
+      // their values, as organized by reverse lexicographic order of their
+      // property names.
+      // Thus if compareKeys(X,Y) < 0 then compareRank(X,Y) < 0.
       return result;
     }
     case 'tagged': {
@@ -115,7 +118,8 @@ export const compareKeys = (left, right) => {
       switch (leftTag) {
         case 'copySet': {
           // copySet X is smaller than copySet Y when every element of X
-          // is keyEQ to some element of Y.
+          // is keyEQ to some element of Y and Y has at least one element
+          // that no element of X is keyEQ to.
           // The following algorithm is good when there are few elements tied
           // for the same rank. But it is O(N*M) in the size of these ties.
           // Sets of remotables are a particularly bad case. For these, some
