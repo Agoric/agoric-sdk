@@ -2,6 +2,8 @@
 import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@agoric/promise-kit';
+import { makeStore } from '@agoric/store';
+import { makeNameHubKit } from '../nameHub.js';
 
 const { entries, fromEntries, keys } = Object;
 const { details: X, quote: q } = assert;
@@ -22,7 +24,14 @@ export const shared = harden({
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
     noActionElectorate: 'no action electorate',
-    binaryCounter: 'binary vote counter',
+    binaryVoteCounter: 'binary vote counter',
+    amm: 'Automated Market Maker',
+    vaultFactory: 'vault factory',
+    liquidate: 'liquidate',
+    getRUN: 'getRUN',
+  },
+  instance: {
+    economicCommittee: 'Economic Committee',
     amm: 'Automated Market Maker',
     vaultFactory: 'vault factory',
     liquidate: 'liquidate',
@@ -51,6 +60,35 @@ harden(addRemote);
 
 export const callProperties = (obj, ...args) =>
   fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
+
+export const makeNameAdmins = () => {
+  const {
+    nameHub: agoricNames,
+    nameAdmin: agoricNamesAdmin,
+  } = makeNameHubKit();
+
+  /** @type {Store<NameHub, NameAdmin>} */
+  const nameAdmins = makeStore('nameHub');
+  ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].forEach(
+    async nm => {
+      const { nameHub, nameAdmin } = makeNameHubKit();
+      agoricNamesAdmin.update(nm, nameHub);
+      nameAdmins.init(nameHub, nameAdmin);
+      if (nm === 'uiConfig') {
+        // Reserve the Vault Factory's config until we've populated it.
+        nameAdmin.reserve('vaultFactory');
+      } else if (['issuer', 'brand'].includes(nm)) {
+        keys(shared.assets).forEach(k => nameAdmin.reserve(k));
+      } else if (nm === 'installation') {
+        keys(shared.contract).forEach(k => nameAdmin.reserve(k));
+      } else if (nm === 'instance') {
+        keys(shared.instance).forEach(k => nameAdmin.reserve(k));
+      }
+    },
+  );
+  return { agoricNames, agoricNamesAdmin, nameAdmins };
+};
+harden(makeNameAdmins);
 
 /**
  * @param {string[]} edges
