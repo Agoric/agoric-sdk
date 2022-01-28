@@ -51,6 +51,7 @@
     "ses": "^0.15.4"
   },
   "files": [
+    "README.md",
     "src/",
     "exported.js",
     "NEWS.md"
