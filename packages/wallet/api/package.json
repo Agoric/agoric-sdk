@@ -11,7 +11,7 @@
     "lint": "yarn lint:types && yarn lint:eslint",
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {

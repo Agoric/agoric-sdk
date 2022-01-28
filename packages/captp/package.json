@@ -33,7 +33,7 @@
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint": "yarn lint:eslint && yarn lint:types",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.29",
