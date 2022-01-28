@@ -80,13 +80,14 @@
  * @typedef {{
  * method: string,
  * args: SwingSetCapData,
- * result?: string,
+ * result: string | undefined | null,
  * }} Message
  *
  * @typedef { 'sendOnly' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} VatDeliveryMessage
- * @typedef { [tag: 'notify', resolutions: string[] ]} VatDeliveryNotify
+ * @typedef { [vpid: string, isReject: boolean, data: SwingSetCapData ] } VatOneResolution
+ * @typedef { [tag: 'notify', resolutions: VatOneResolution[] ]} VatDeliveryNotify
  * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
  * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
@@ -100,10 +101,10 @@
  * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
  * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow
  * @typedef { [tag: 'subscribe', vpid: string ]} VatSyscallSubscribe
- * @typedef { [ vpid: string, rejected: boolean, data: SwingSetCapData ]} VatResolutions
- * @typedef { [tag: 'resolve', resolutions: VatResolutions ]} VatSyscallResolve
+ * @typedef { [tag: 'resolve', resolutions: VatOneResolution[] ]} VatSyscallResolve
+ * @typedef { [tag: 'exit', isFailure: boolean, info: SwingSetCapData ]} VatSyscallExit
  * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
- * @typedef { [tag: 'vatstoreGetAfter', priorKey: string, lowerBound: string, upperBound: string | undefined | null ]} VatSyscallVatstoreGetAfter
+ * @typedef { [tag: 'vatstoreGetAfter', priorKey: string, lowerBound: string, upperBound: string | undefined ]} VatSyscallVatstoreGetAfter
  * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
@@ -111,29 +112,31 @@
  * @typedef { [tag: 'retireExports', slots: string[] ]} VatSyscallRetireExports
  *
  * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
- *    | VatSyscallResolve | VatSyscallVatstoreGet | VatSyscallVatstoreGetAfter
+ *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetAfter
  *    | VatSyscallVatstoreSet | VatSyscallVatstoreDelete | VatSyscallDropImports
  *    | VatSyscallRetireImports | VatSyscallRetireExports
  * } VatSyscallObject
  *
- * @typedef { [tag: 'ok', data: SwingSetCapData | string | null ]} VatSyscallResultOk
+ * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | undefined[] | null ]} VatSyscallResultOk
  * @typedef { [tag: 'error', err: string ] } VatSyscallResultError
  * @typedef { VatSyscallResultOk | VatSyscallResultError } VatSyscallResult
  * @typedef { (vso: VatSyscallObject) => VatSyscallResult } VatSyscaller
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
- * @typedef { [tag: 'notify', resolutions: string[] ]} KernelDeliveryNotify
+ * @typedef { [kpid: string, kp: { state: string, data: SwingSetCapData }] } KernelDeliveryOneNotify
+ * @typedef { [tag: 'notify', resolutions: KernelDeliveryOneNotify[] ]} KernelDeliveryNotify
  * @typedef { [tag: 'dropExports', krefs: string[] ]} KernelDeliveryDropExports
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelDeliveryRetireExports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
+ * @typedef { [tag: 'bringOutYourDead']} KernelDeliveryBringOutYourDead
  * @typedef { KernelDeliveryMessage | KernelDeliveryNotify | KernelDeliveryDropExports
- *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports
+ *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports | KernelDeliveryBringOutYourDead
  *          } KernelDeliveryObject
  * @typedef { [tag: 'send', target: string, msg: Message] } KernelSyscallSend
  * @typedef { [tag: 'invoke', target: string, method: string, args: SwingSetCapData]} KernelSyscallInvoke
- * @typedef { [tag: 'subscribe', kpid: string ]} KernelSyscallSubscribe
- * @typedef { [ kpid: string, rejected: boolean, data: SwingSetCapData ]} KernelResolutions
- * @typedef { [tag: 'resolve', resolutions: KernelResolutions ]} KernelSyscallResolve
+ * @typedef { [tag: 'subscribe', vatID: string, kpid: string ]} KernelSyscallSubscribe
+ * @typedef { [kpid: string, rejected: boolean, data: SwingSetCapData]} KernelOneResolution
+ * @typedef { [tag: 'resolve', vatID: string, resolutions: KernelOneResolution[] ]} KernelSyscallResolve
  * @typedef { [tag: 'exit', vatID: string, isFailure: boolean, info: SwingSetCapData ]} KernelSyscallExit
  * @typedef { [tag: 'vatstoreGet', vatID: string, key: string ]} KernelSyscallVatstoreGet
  * @typedef { [tag: 'vatstoreGetAfter', vatID: string, priorKey: string, lowerBound: string, upperBound: string | undefined ]} KernelSyscallVatstoreGetAfter
