@@ -32,6 +32,7 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
+import { NonNullish } from '@agoric/assert';
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
@@ -142,7 +143,7 @@ export const start = async (zcf, privateArgs) => {
       runMint,
       collateralBrand,
       priceAuthority,
-      vaultParamManager.getParams,
+      NonNullish(vaultParamManager.getParams),
       reallocateReward,
       timerService,
       liquidationStrategy,

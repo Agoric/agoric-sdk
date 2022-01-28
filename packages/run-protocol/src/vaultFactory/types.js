@@ -171,29 +171,6 @@
  */
 
 /**
- * @callback MakeVaultManager
- * @param {ContractFacet} zcf
- * @param {ZCFMint} runMint
- * @param {Brand} collateralBrand
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {GetParams} getLoanParams
- * @param {ReallocateReward} reallocateReward
- * @param {ERef<TimerService>} timerService
- * @param {LiquidationStrategy} liquidationStrategy
- * @returns {VaultManager}
- */
-
-/**
- * @callback MakeVaultKit
- * @param {ContractFacet} zcf
- * @param {InnerVaultManager} manager
- * @param {ZCFMint} runMint
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {Timestamp} startTimeStamp
- * @returns {VaultKit}
- */
-
-/**
  * @typedef {Object} DebtStatus
  * @property {Timestamp} latestInterestUpdate
  * @property {Amount} interest
@@ -237,28 +214,6 @@
  * @property {(margin: Ratio) => void} updateLiquidationMargin
  * @property {(ratio: Ratio) => void} updateInterestRate
  * @property {(ratio: Ratio) => void} updateLoanFee
- */
-
-/**
- * @typedef {Object} ElectorateParamManager
- * @property {GetParams} getParams
- * @property {(name: string) => Amount} getInvitationAmount
- * @property {(name: string) => Invitation} getInternalParamValue
- * @property {(invitation: Invitation) => void} updateElectorate
- */
-
-/**
- * @callback MakeVaultParamManager
- * @param {LoanParams} loanParams
- * @param {Rates} rates
- * @returns {VaultParamManager}
- */
-
-/**
- * @callback MakeElectorateParamManager
- * @param {ERef<ZoeService>} zoe
- * @param {Invitation} electorateInvitation
- * @returns {ElectorateParamManager}
  */
 
 /**

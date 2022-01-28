@@ -36,7 +36,14 @@ export const VaultState = {
   CLOSED: 'closed',
 };
 
-/** @type {MakeVaultKit} */
+/**
+ * @param {ContractFacet} zcf
+ * @param {InnerVaultManager} manager
+ * @param {ZCFMint} runMint
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {Timestamp} startTimeStamp
+ * @returns {VaultKit}
+ */
 export const makeVaultKit = (
   zcf,
   manager,

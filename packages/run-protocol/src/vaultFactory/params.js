@@ -50,9 +50,13 @@ const makeLoanParams = (loanParams, rates) => {
   });
 };
 
-/** @type {MakeVaultParamManager} */
+/**
+ * @param {LoanParams} loanParams
+ * @param {Rates} rates
+ * @returns {VaultParamManager}
+ */
 const makeVaultParamManager = (loanParams, rates) => {
-  // @ts-ignore It's a VaultParamManager
+  // @ts-expect-error casting to VaultParamManager
   return makeParamManagerBuilder()
     .addNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod)
     .addNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod)
@@ -63,9 +67,18 @@ const makeVaultParamManager = (loanParams, rates) => {
     .build();
 };
 
-/** @type {MakeElectorateParamManager} */
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {Invitation} electorateInvitation
+ * @returns {Promise<{
+ *   getParams: GetParams,
+ *   getInvitationAmount: (name: string) => Amount,
+ *   getInternalParamValue: (name: string) => Invitation,
+ *   updateElectorate: (invitation: Invitation) => void,
+ * }>}
+ */
 const makeElectorateParamManager = async (zoe, electorateInvitation) => {
-  // @ts-ignore It's an ElectorateParamManager
+  // @ts-expect-error casting to ElectorateParamManager
   return makeParamManagerBuilder(zoe)
     .addInvitation(CONTRACT_ELECTORATE, electorateInvitation)
     .then(builder => builder.build());
