@@ -87,7 +87,7 @@ export const setupAmm = async ({
     nameAdmins,
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
-    economyBundles,
+    ammBundle,
   },
   produce: { ammCreatorFacet, ammGovernorCreatorFacet },
 }) => {
@@ -95,8 +95,8 @@ export const setupAmm = async ({
     'instance',
     'economicCommittee',
   );
-  const bundles = await economyBundles;
-  const ammInstallation = E(zoe).install(bundles.amm);
+  const bundle = await ammBundle;
+  const ammInstallation = E(zoe).install(bundle);
   const governorInstallation = E(agoricNames).lookup(
     'installation',
     'contractGovernor',
@@ -190,47 +190,44 @@ export const startPriceAuthority = async ({
 harden(startPriceAuthority);
 
 // TODO: push most of this back to run-protocol package and unit test it.
-/** @param { BootstrapPowers } powers */
-export async function startVaultFactory({
-  consume: {
-    agoricNames,
-    board,
-    chainTimerService,
-    nameAdmins,
-    priceAuthority,
-    zoe,
-    feeMintAccess,
-    economicCommitteeCreatorFacet: electorateCreatorFacet,
+/**
+ * @param { EconomyBootstrapPowers } powers
+ * @param { Object } config
+ * @param { LoanParams } config.loanParams
+ */
+export const startVaultFactory = async (
+  {
+    consume: {
+      agoricNames,
+      vaultBundles,
+      chainTimerService,
+      nameAdmins,
+      priceAuthority,
+      zoe,
+      feeMintAccess: feeMintAccessP, // ISSUE: why doeszn't Zoe await this?
+      economicCommitteeCreatorFacet: electorateCreatorFacet,
+    },
+    produce, // {  vaultFactoryCreator }
   },
-  produce, // {  vaultFactoryCreator }
-}) {
+  { loanParams } = {
+    loanParams: {
+      chargingPeriod: SECONDS_PER_HOUR,
+      recordingPeriod: SECONDS_PER_DAY,
+    },
+  },
+) => {
   // Fetch the nameAdmins we need.
-  const [installAdmin, instanceAdmin, uiConfigAdmin] = await collectNameAdmins(
-    ['installation', 'instance', 'uiConfig'],
+  const [installAdmin, instanceAdmin] = await collectNameAdmins(
+    ['installation', 'instance'],
     agoricNames,
     nameAdmins,
   );
 
-  /** @type {Record<string, SourceBundle>} */
-  const bundles = {
-    liquidate: liquidateBundle,
-    vaultFactory: vaultFactoryBundle,
-  };
-  const installations = await Collect.allValues(
-    Collect.mapValues(bundles, bundle => E(zoe).install(bundle)),
-  );
-
-  // Advertise the installation in agoricNames.
-  await Promise.all(
-    entries(installations).map(([name, install]) =>
-      E(installAdmin).update(name, install),
-    ),
-  );
-
-  const loanParams = {
-    chargingPeriod: SECONDS_PER_HOUR,
-    recordingPeriod: SECONDS_PER_DAY,
-  };
+  const bundles = await vaultBundles;
+  const installations = await Collect.allValues({
+    VaultFactory: E(zoe).install(bundles.VaultFactory),
+    liquidate: E(zoe).install(bundles.liquidate),
+  });
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
   const [initialPoserInvitation, invitationAmount] = await Promise.all([
@@ -238,11 +235,10 @@ export async function startVaultFactory({
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
-  const centralIssuerP = E(zoe).getFeeIssuer();
-  const [centralIssuer, centralBrand] = await Promise.all([
-    centralIssuerP,
-    E(centralIssuerP).getBrand(),
-  ]);
+  const centralBrand = await E(agoricNames).lookup(
+    'brand',
+    CENTRAL_ISSUER_NAME,
+  );
 
   // declare governed params for the vaultFactory; addVaultType() sets actual rates
   const rates = {
@@ -256,24 +252,19 @@ export async function startVaultFactory({
     ammInstance,
     electorateInstance,
     contractGovernorInstall,
-    ammInstall,
-    binaryCounterInstall,
-    noActionElectorateInstall,
   ] = await Promise.all([
     // TODO: manifest constants for these strings
     E(agoricNames).lookup('instance', 'amm'),
     E(agoricNames).lookup('instance', 'economicCommittee'),
-    E(agoricNames).lookup('installation', 'congractGovernor'),
-    E(agoricNames).lookup('installation', 'amm'),
-    E(agoricNames).lookup('installation', 'binaryVoteCounter'),
-    E(agoricNames).lookup('installation', 'noActionElectorate'),
+    E(agoricNames).lookup('installation', 'contractGovernor'),
   ]);
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
+  const feeMintAccess = await feeMintAccessP;
 
   const vaultFactoryTerms = makeGovernedTerms(
     priceAuthority,
     loanParams,
-    installations.liquidation,
+    installations.liquidate,
     chainTimerService,
     invitationAmount,
     rates,
@@ -282,7 +273,7 @@ export async function startVaultFactory({
   const governorTerms = harden({
     timer: chainTimerService,
     electorateInstance,
-    governedContractInstallation: installations.vaultFactory,
+    governedContractInstallation: installations.VaultFactory,
     governed: {
       terms: vaultFactoryTerms,
       issuerKeywordRecord: {},
@@ -290,7 +281,10 @@ export async function startVaultFactory({
     },
   });
 
-  const { creatorFacet: governorCreatorFacet } = await E(zoe).startInstance(
+  const {
+    creatorFacet: governorCreatorFacet,
+    instance: governorInstance,
+  } = await E(zoe).startInstance(
     contractGovernorInstall,
     undefined,
     governorTerms,
@@ -299,7 +293,6 @@ export async function startVaultFactory({
 
   const vaultFactoryInstance = await E(governorCreatorFacet).getInstance();
   const [
-    invitationIssuer,
     {
       // ISSUE: what are govIssuer and govBrand for???
       issuers: { Governance: govIssuer },
@@ -307,10 +300,55 @@ export async function startVaultFactory({
     },
     vaultFactoryCreator,
   ] = await Promise.all([
-    E(zoe).getInvitationIssuer(),
     E(zoe).getTerms(vaultFactoryInstance),
     E(governorCreatorFacet).getCreatorFacet(),
   ]);
+
+  const voteCreator = Far('vaultFactory vote creator', {
+    voteOnParamChange: E(governorCreatorFacet).voteOnParamChange,
+  });
+
+  produce.vaultFactoryCreator.resolve(vaultFactoryCreator);
+  produce.vaultFactoryGovernorCreator.resolve(governorCreatorFacet);
+  produce.vaultFactoryVoteCreator.resolve(voteCreator);
+
+  // Advertise the installation in agoricNames.
+  await Promise.all([
+    E(instanceAdmin).update('VaultFactory', vaultFactoryInstance),
+    E(instanceAdmin).update('VaultFactoryGovernor', governorInstance),
+    ...entries(installations).map(([name, install]) =>
+      E(installAdmin).update(name, install),
+    ),
+  ]);
+};
+
+/** @param { BootstrapPowers } powers */
+export const configureVaultFactoryUI = async ({
+  consume: { agoricNames, nameAdmins, board, zoe },
+}) => {
+  const installs = await Collect.allValues({
+    amm: E(agoricNames).lookup('installation', 'amm'),
+    vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
+    contractGovernor: E(agoricNames).lookup('installation', 'contractGovernor'),
+    noActionElectorate: E(agoricNames).lookup(
+      'installation',
+      'noActionElectorate',
+    ),
+    binaryVoteCounter: E(agoricNames).lookup(
+      'installation',
+      'binaryVoteCounter',
+    ),
+  });
+  const instances = await Collect.allValues({
+    amm: E(agoricNames).lookup('instance', 'amm'),
+    vaultFactory: E(agoricNames).lookup('instance', 'VaultFactory'),
+  });
+  const central = await Collect.allValues({
+    brand: E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
+    issuer: E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME),
+  });
+
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   const vaultFactoryUiDefaults = {
     CONTRACT_NAME: 'VaultFactory',
@@ -323,16 +361,16 @@ export async function startVaultFactory({
 
   // Look up all the board IDs.
   const boardIdValue = [
-    ['INSTANCE_BOARD_ID', vaultFactoryInstance],
-    ['INSTALLATION_BOARD_ID', installations.vaultFactory],
-    ['RUN_ISSUER_BOARD_ID', centralIssuer],
-    ['RUN_BRAND_BOARD_ID', centralBrand],
-    ['AMM_INSTALLATION_BOARD_ID', ammInstall],
-    ['LIQ_INSTALLATION_BOARD_ID', installations.liquidation],
-    ['BINARY_COUNTER_INSTALLATION_BOARD_ID', binaryCounterInstall],
-    ['NO_ACTION_INSTALLATION_BOARD_ID', noActionElectorateInstall],
-    ['CONTRACT_GOVERNOR_INSTALLATION_BOARD_ID', contractGovernorInstall],
-    ['AMM_INSTANCE_BOARD_ID', ammInstance],
+    ['INSTANCE_BOARD_ID', instances.vaultFactory],
+    ['INSTALLATION_BOARD_ID', installs.vaultFactory],
+    ['RUN_ISSUER_BOARD_ID', central.issuer],
+    ['RUN_BRAND_BOARD_ID', central.brand],
+    ['AMM_INSTALLATION_BOARD_ID', installs.amm],
+    ['LIQ_INSTALLATION_BOARD_ID', installs.liquidation],
+    ['BINARY_COUNTER_INSTALLATION_BOARD_ID', installs.binaryVoteCounter],
+    ['NO_ACTION_INSTALLATION_BOARD_ID', installs.noActionElectorate],
+    ['CONTRACT_GOVERNOR_INSTALLATION_BOARD_ID', installs.contractGovernor],
+    ['AMM_INSTANCE_BOARD_ID', instances.amm],
     ['INVITE_BRAND_BOARD_ID', E(invitationIssuer).getBrand()],
   ];
   await Promise.all(
@@ -346,6 +384,12 @@ export async function startVaultFactory({
   // Stash the defaults where the UI can find them.
   harden(vaultFactoryUiDefaults);
 
+  const [instanceAdmin, uiConfigAdmin] = await collectNameAdmins(
+    ['instance', 'uiConfig'],
+    agoricNames,
+    nameAdmins,
+  );
+
   // Install the names in agoricNames.
   const nameAdminUpdates = [
     [
@@ -353,26 +397,20 @@ export async function startVaultFactory({
       vaultFactoryUiDefaults.CONTRACT_NAME,
       vaultFactoryUiDefaults,
     ],
-    [instanceAdmin, vaultFactoryUiDefaults.CONTRACT_NAME, vaultFactoryInstance],
-    [instanceAdmin, vaultFactoryUiDefaults.AMM_NAME, ammInstance],
+    [
+      instanceAdmin,
+      vaultFactoryUiDefaults.CONTRACT_NAME,
+      instances.vaultFactory,
+    ],
+    [instanceAdmin, vaultFactoryUiDefaults.AMM_NAME, instances.amm],
   ];
   await Promise.all(
     nameAdminUpdates.map(([nameAdmin, name, value]) =>
       E(nameAdmin).update(name, value),
     ),
   );
-
-  const voteCreator = Far('vaultFactory vote creator', {
-    voteOnParamChange: E(governorCreatorFacet).voteOnParamChange,
-  });
-
-  produce.vaultFactoryCreator.resolve(vaultFactoryCreator);
-  produce.vaultFactoryGovernorCreator.resolve(governorCreatorFacet);
-  produce.vaultFactoryVoteCreator.resolve(voteCreator);
-
-  // return { vaultFactoryCreator, voteCreator, ammFacets: amm };
-  return E(instanceAdmin).update('vaultFactory', vaultFactoryInstance);
-}
+};
+harden(configureVaultFactoryUI);
 
 /** @param {BootstrapPowers} powers */
 export const startGetRun = async ({
@@ -380,6 +418,7 @@ export const startGetRun = async ({
     zoe,
     // ISSUE: is there some reason Zoe shouldn't await this???
     feeMintAccess: feeMintAccessP,
+    governanceBundles,
     agoricNames,
     bridgeManager,
     client,
@@ -389,6 +428,7 @@ export const startGetRun = async ({
 }) => {
   const [stakeName] = BLD_ISSUER_ENTRY;
 
+  const bundles = await governanceBundles;
   const [
     feeMintAccess,
     bldIssuer,
@@ -405,7 +445,7 @@ export const startGetRun = async ({
     // TODO: manage string constants that need to match
     E(agoricNames).lookup('installation', 'contractGovernor'),
     E(agoricNames).lookup('installation', 'committee'),
-    E(zoe).install(getRUNBundle),
+    E(zoe).install(bundles.getRUN),
   ]);
   const collateralPrice = makeRatio(65n, runBrand, 100n, bldBrand); // arbitrary price
   const collateralizationRatio = makeRatio(5n, runBrand, 1n); // arbitrary raio

@@ -21,7 +21,7 @@ harden(governanceBundles);
 export const economyBundles = {
   liquidate: liquidateBundle,
   amm: ammBundle,
-  vaultFactory: vaultFactoryBundle,
+  VaultFactory: vaultFactoryBundle,
   getRUN: getRUNBundle,
 };
 harden(economyBundles);

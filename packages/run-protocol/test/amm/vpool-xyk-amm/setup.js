@@ -40,7 +40,7 @@ const contractGovernorBundleP = makeBundle(contractGovernorRoot);
 const committeeBundleP = makeBundle(committeeRoot);
 const voteCounterBundleP = makeBundle(voteCounterRoot);
 
-const setUpZoeForTest = async () => {
+export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
 
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
@@ -54,6 +54,7 @@ const setUpZoeForTest = async () => {
     feeMintAccess,
   };
 };
+harden(setUpZoeForTest);
 
 export const setupAMMBootstrap = async (
   timer = buildManualTimer(console.log),
@@ -86,8 +87,15 @@ export const setupAMMBootstrap = async (
   return { produce, consume };
 };
 
-// called separately by each test so AMM/zoe/priceAuthority don't interfere
-const setupAmmServices = async (
+/**
+ * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
+ *
+ * @param {{ committeeName: string, committeeSize: number}} electorateTerms
+ * @param {{ brand: Brand, issuer: Issuer }} centralR
+ * @param {ManualTimer | undefined} timer
+ * @param {ERef<ZoeService> | undefined} zoe
+ */
+export const setupAmmServices = async (
   electorateTerms,
   centralR,
   timer = buildManualTimer(console.log),
@@ -100,7 +108,7 @@ const setupAmmServices = async (
   const ammBundle = await ammBundleP;
   const { consume, produce } = await setupAMMBootstrap(timer, zoe);
 
-  produce.economyBundles.resolve({ amm: ammBundle });
+  produce.ammBundle.resolve(ammBundle);
   const [brandAdmin, issuerAdmin] = await collectNameAdmins(
     ['brand', 'issuer'],
     consume.agoricNames,
@@ -136,7 +144,7 @@ const setupAmmServices = async (
 
   const amm = {
     ammCreatorFacet: await consume.ammCreatorFacet,
-    ammPublicFacet: E(governorCreatorFacet).getPublicFacet(),
+    ammPublicFacet: await E(governorCreatorFacet).getPublicFacet(),
     instance: governedInstance,
   };
 
@@ -159,9 +167,7 @@ const setupAmmServices = async (
     governor: g,
     amm,
     invitationAmount: poserInvitationAmount,
+    space: { consume, produce },
   };
 };
-
 harden(setupAmmServices);
-harden(setUpZoeForTest);
-export { setupAmmServices, setUpZoeForTest };
