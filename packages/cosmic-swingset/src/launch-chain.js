@@ -13,6 +13,10 @@ import {
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
+
+import otel from '@opentelemetry/api';
+
+import { makeSlogSenderKit } from './kernel-trace.js';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -35,7 +39,7 @@ async function buildSwingset(
   hostStorage,
   vatconfig,
   argv,
-  { consensusMode, debugName = undefined, slogCallbacks, slogFile },
+  { consensusMode, debugName = undefined, slogCallbacks, slogFile, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = await loadSwingsetConfigFile(vatconfig);
@@ -78,7 +82,12 @@ async function buildSwingset(
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { overrideVatManagerOptions: { consensusMode }, slogCallbacks, slogFile },
+    {
+      overrideVatManagerOptions: { consensusMode },
+      slogCallbacks,
+      slogFile,
+      slogSender,
+    },
   );
 
   // We DON'T want to run the kernel yet, only when the application decides
@@ -139,6 +148,7 @@ export async function launch(
   argv,
   debugName = undefined,
   meterProvider = DEFAULT_METER_PROVIDER,
+  tracingProvider = undefined,
   slogFile = undefined,
   consensusMode = false,
 ) {
@@ -162,6 +172,14 @@ export async function launch(
     labels: METRIC_LABELS,
   });
 
+  let slogSender;
+  if (tracingProvider) {
+    tracingProvider.register();
+    const tracer = otel.trace.getTracer('ag-chain-cosmos');
+    // FIXME: Dispatch the object that is sent.
+    slogSender = makeSlogSenderKit(tracer).slogSender;
+  }
+
   console.debug(`buildSwingset`);
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
@@ -173,6 +191,7 @@ export async function launch(
       debugName,
       slogCallbacks,
       slogFile,
+      slogSender,
       consensusMode,
     },
   );

@@ -1,5 +1,5 @@
 // @ts-check
-import { MeterProvider } from '@opentelemetry/metrics';
+import { MeterProvider } from '@opentelemetry/sdk-metrics-base';
 
 import { makeLegacyMap } from '@agoric/store';
 
@@ -54,30 +54,27 @@ const recordToKey = record =>
     Object.entries(record).sort(([ka], [kb]) => (ka < kb ? -1 : 1)),
   );
 
+/**
+ * @param {{
+ *   metricMeter: import('@opentelemetry/sdk-metrics-base').Meter,
+ *   labels: Record<string, string>
+ * }} param0
+ */
 export function makeSlogCallbacks({ metricMeter, labels }) {
-  // Legacy because ValueRecorder thing Does not seem to be a passable
-  const nameToBaseMetric = makeLegacyMap('baseMetricName');
-  nameToBaseMetric.init(
-    'swingset_vat_startup',
-    metricMeter.createValueRecorder('swingset_vat_startup', {
-      description: 'Vat startup time (ms)',
-      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-    }),
-  );
-  nameToBaseMetric.init(
-    'swingset_vat_delivery',
-    metricMeter.createValueRecorder('swingset_vat_delivery', {
-      description: 'Vat delivery time (ms)',
-      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-    }),
-  );
-  nameToBaseMetric.init(
-    'swingset_meter_usage',
-    metricMeter.createValueRecorder('swingset_meter_usage', {
-      description: 'Vat meter usage',
-      boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
-    }),
-  );
+  // Legacy because Histogram thing Does not seem to be a passable
+  const nameToMetricOpts = makeLegacyMap('baseMetricName');
+  nameToMetricOpts.init('swingset_vat_startup', {
+    description: 'Vat startup time (ms)',
+    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
+  });
+  nameToMetricOpts.init('swingset_vat_delivery', {
+    description: 'Vat delivery time (ms)',
+    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
+  });
+  nameToMetricOpts.init('swingset_meter_usage', {
+    description: 'Vat meter usage',
+    boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
+  });
   // Legacy because legacyMaps are not passable
   const groupToMetrics = makeLegacyMap('metricGroup');
 
@@ -120,9 +117,12 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
       metric = nameToMetric.get(name);
     } else {
       // Bind the base metric to the group and instance labels.
-      metric = nameToBaseMetric
-        .get(name)
-        .bind({ ...labels, ...group, ...instance });
+      metric = metricMeter.createHistogram(name, {
+        ...nameToMetricOpts.get(name),
+        constantAttributes: new Map(
+          Object.entries({ ...labels, ...group, ...instance }),
+        ),
+      });
       nameToMetric.init(name, metric);
     }
     return metric;
@@ -186,7 +186,7 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
 /**
  * @param {Object} param0
  * @param {any} param0.controller
- * @param {import('@opentelemetry/metrics').Meter} param0.metricMeter
+ * @param {import('@opentelemetry/sdk-metrics-base').Meter} param0.metricMeter
  * @param {Console} param0.log
  * @param {Record<string, any>} param0.labels
  */
@@ -199,9 +199,36 @@ export function exportKernelStats({
   const kernelStatsMetrics = new Map();
   const expectedKernelStats = new Set();
 
+  function warnUnexpectedKernelStat(key) {
+    if (!expectedKernelStats.has(key)) {
+      log.warn(`Unexpected SwingSet kernel statistic`, key);
+      expectedKernelStats.add(key);
+    }
+  }
+
+  let kernelStatsLast = 0;
+  let kernelStatsCache = {};
+  const getKernelStats = () => {
+    const now = Date.now();
+    if (now - kernelStatsLast < 800) {
+      return kernelStatsCache;
+    }
+    kernelStatsLast = now;
+    kernelStatsCache = controller.getStats();
+    Object.keys(kernelStatsCache).forEach(key => {
+      warnUnexpectedKernelStat(key);
+    });
+    return kernelStatsCache;
+  };
+
   KERNEL_STATS_SUM_METRICS.forEach(({ key, name, ...options }) => {
     expectedKernelStats.add(key);
-    kernelStatsMetrics.set(key, metricMeter.createSumObserver(name, options));
+    kernelStatsMetrics.set(
+      key,
+      metricMeter.createObservableCounter(name, options, observableResult => {
+        observableResult.observe(getKernelStats()[key], {});
+      }),
+    );
   });
 
   KERNEL_STATS_UPDOWN_METRICS.forEach(({ key, name, ...options }) => {
@@ -211,16 +238,15 @@ export function exportKernelStats({
     expectedKernelStats.add(`${key}Max`);
     kernelStatsMetrics.set(
       key,
-      metricMeter.createUpDownSumObserver(name, options),
+      metricMeter.createObservableUpDownCounter(
+        name,
+        options,
+        observableResult => {
+          observableResult.observe(getKernelStats()[key], {});
+        },
+      ),
     );
   });
-
-  function warnUnexpectedKernelStat(key) {
-    if (!expectedKernelStats.has(key)) {
-      log.warn(`Unexpected SwingSet kernel statistic`, key);
-      expectedKernelStats.add(key);
-    }
-  }
 
   function checkKernelStats(stats) {
     const notYetFoundKernelStats = new Set(kernelStatsMetrics.keys());
@@ -235,31 +261,24 @@ export function exportKernelStats({
 
   // We check everything on initialization.  Other checks happen when scraping.
   checkKernelStats(controller.getStats());
-  metricMeter.createBatchObserver(batchObserverResult => {
-    const observations = [];
-    Object.entries(controller.getStats()).forEach(([key, value]) => {
-      warnUnexpectedKernelStat(key);
-      if (kernelStatsMetrics.has(key)) {
-        const metric = kernelStatsMetrics.get(key);
-        observations.push(metric.observation(value));
-      }
-    });
-    batchObserverResult.observe(labels, observations);
-  });
 
-  const schedulerCrankTimeHistogram = metricMeter
-    .createValueRecorder('swingset_crank_processing_time', {
+  const schedulerCrankTimeHistogram = metricMeter.createHistogram(
+    'swingset_crank_processing_time',
+    {
       description: 'Processing time per crank (ms)',
       boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
-    })
-    .bind(labels);
+      constantAttributes: new Map(Object.entries(labels)),
+    },
+  );
 
-  const schedulerBlockTimeHistogram = metricMeter
-    .createValueRecorder('swingset_block_processing_seconds', {
+  const schedulerBlockTimeHistogram = metricMeter.createHistogram(
+    'swingset_block_processing_seconds',
+    {
       description: 'Processing time per block',
       boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
-    })
-    .bind(labels);
+      constantAttributes: new Map(Object.entries(labels)),
+    },
+  );
 
   return { schedulerCrankTimeHistogram, schedulerBlockTimeHistogram };
 }

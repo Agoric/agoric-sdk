@@ -79,7 +79,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     assert(!replay, X`Replay not implemented`);
   }
 
-  const { metricsProvider } = getTelemetryProviders({
+  const { metricsProvider, tracingProvider } = getTelemetryProviders({
     console,
     env: process.env,
   });
@@ -92,6 +92,8 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     argv,
     GCI, // debugName
     metricsProvider,
+    tracingProvider,
+    process.env.SLOGFILE,
   );
 
   const { savedHeight, savedActions, savedChainSends } = s;

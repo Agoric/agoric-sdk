@@ -1,5 +1,51 @@
 # Cosmic SwingSet Telemetry
 
+## OpenTelemetry
+
+You can use the [OpenTelemetry
+Collector](https://opentelemetry.io/docs/collector/) collector to export Traces,
+Metrics, and eventually Logs to a network-based analysis service, whether
+self-hosted or a third-party service.  Please look into the documentation for
+how the Collector can forward to different services.
+
+Configure the collector to receive OTLP over GRPC, as described in
+https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/otlpreceiver/README.md:
+
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc: # Can process HTTP as well.
+        endpoint: 0.0.0.0:4317
+```
+
+Then, the chain will export to the collector if the
+`OTEL_EXPORTER_OTLP_HTTP_ENDPOINT` environment variable points to your
+collector's configured GRPC port:
+
+```sh
+OTEL_EXPORTER_OTLP_HTTP_ENDPOINT=http://127.0.0.1:4317 ag-chain-cosmos start ...
+```
+
+# Tracing
+
+By far the most in-depth telemetry the chain can offer is in terms of tracing.
+We have a custom format, called Slog, which exposes a SwingSet-level event
+trace.  You can consume Slog traces in the following ways:
+
+## $SLOGFILE
+
+If you set the `SLOGFILE` environment variable to an absolute filename, then
+SwingSet will open and append JSON-lines-formatted entries to that filename.
+
+There are some custom tools for reading and processing Slogfiles created in this
+format in the
+[`agoric-sdk/packages/SwingSet/misc-tools`](https://github.com/Agoric/agoric-sdk/packages/SwingSet/misc-tools/)
+directory within the Agoric SDK.
+
+# Metrics
+
 The Cosmic SwingSet chain node (`ag-chain-cosmos`) is instrumented to export
 useful metrics via [Prometheus](https://prometheus.io/) endpoints on different
 inbound TCP ports.

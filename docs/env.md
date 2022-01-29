@@ -109,6 +109,22 @@ Description: When nonempty, create pretend prepopulated tokens like "moola" and
 
 Lifetime: until chain is mature enough not to need any pretend tokens
 
+## OTEL_EXPORTER_DEBUG
+
+Affects: cosmic-swingset
+
+Purpose: write telemetry to console
+
+Lifetime: indefinite
+
+## OTEL_EXPORTER_OTLP_GRPC_ENDPOINT
+
+Affects: cosmic-swingset
+
+Purpose: forward traces, metrics, and logs to an OTLP collector
+
+Lifetime: indefinite
+
 ## OTEL_EXPORTER_PROMETHEUS_HOST
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
