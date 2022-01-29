@@ -11,13 +11,10 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
 import path from 'path';
-
-import liquidateBundle from '../../../../bundles/bundle-liquidateMinimum.js';
-import ammBundle from '../../../../bundles/bundle-amm.js';
-import vaultFactoryBundle from '../../../../bundles/bundle-vaultFactory.js';
-import contractGovernorBundle from '../../../../bundles/bundle-contractGovernor.js';
-import committeeBundle from '../../../../bundles/bundle-committee.js';
-import binaryVoteCounterBundle from '../../../../bundles/bundle-binaryVoteCounter.js';
+import {
+  governanceBundles,
+  economyBundles,
+} from '../../../../src/importedBundles.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -28,18 +25,14 @@ const test = rawTest;
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
 
-  const nameToBundle = [
-    ['liquidateMinimum', liquidateBundle],
-    ['amm', ammBundle],
-    ['vaultFactory', vaultFactoryBundle],
-    ['committee', committeeBundle],
-    ['contractGovernor', contractGovernorBundle],
-    ['binaryVoteCounter', binaryVoteCounterBundle],
-  ];
-  const contractBundles = {};
-  nameToBundle.forEach(([name, bundle]) => {
-    contractBundles[name] = bundle;
-  });
+  const contractBundles = {
+    liquidateMinimum: economyBundles.liquidate,
+    amm: economyBundles.amm,
+    vaultFactory: economyBundles.vaultFactory,
+    committee: governanceBundles.committee,
+    contractGovernor: governanceBundles.contractGovernor,
+    binaryVoteCounter: governanceBundles.binaryVoteCounter,
+  };
 
   const vatNames = ['alice', 'owner', 'priceAuthority', 'voter', 'zoe'];
   const vatNameToSource = vatNames.map(name => {
