@@ -147,6 +147,12 @@
  */
 
 /**
+ * @typedef {Object} LoanTiming
+ * @property {RelativeTime} chargingPeriod
+ * @property {RelativeTime} recordingPeriod
+ */
+
+/**
  * @typedef {Object} AMMFees
  * @property {bigint} poolFee
  * @property {bigint} protocolFee

@@ -47,7 +47,6 @@ const { details: X } = assert;
 
 /** @type {ContractStartFn} */
 export const start = async (zcf, privateArgs) => {
-  // loanParams has time limits for charging interest
   const {
     ammPublicFacet,
     priceAuthority,
@@ -56,7 +55,7 @@ export const start = async (zcf, privateArgs) => {
     bootstrapPaymentValue = 0n,
     electionManager,
     main: { [CONTRACT_ELECTORATE]: electorateParam },
-    loanParams,
+    loanTiming,
   } = zcf.getTerms();
 
   /** @type {Promise<GovernorPublic>} */
@@ -124,8 +123,8 @@ export const start = async (zcf, privateArgs) => {
     );
 
     const loanPeriods = {
-      chargingPeriod: loanParams[CHARGING_PERIOD_KEY].value,
-      recordingPeriod: loanParams[RECORDING_PERIOD_KEY].value,
+      chargingPeriod: loanTiming[CHARGING_PERIOD_KEY].value,
+      recordingPeriod: loanTiming[RECORDING_PERIOD_KEY].value,
     };
     /** a powerful object; can modify parameters */
     const vaultParamManager = makeVaultParamManager(loanPeriods, rates);

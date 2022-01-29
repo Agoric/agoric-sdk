@@ -165,7 +165,7 @@ const buildOwner = async (
 
   const rates = makeRates(runBrand);
 
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -180,7 +180,7 @@ const buildOwner = async (
 
   const terms = makeGovernedTerms(
     priceAuthorityKit.priceAuthority,
-    loanParams,
+    loanTiming,
     installations.liquidateMinimum,
     timer,
     poserInvitationAmount,
