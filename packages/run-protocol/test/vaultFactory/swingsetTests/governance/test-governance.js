@@ -28,7 +28,7 @@ test.before(async t => {
   const contractBundles = {
     liquidateMinimum: economyBundles.liquidate,
     amm: economyBundles.amm,
-    vaultFactory: economyBundles.vaultFactory,
+    vaultFactory: economyBundles.VaultFactory,
     committee: governanceBundles.committee,
     contractGovernor: governanceBundles.contractGovernor,
     binaryVoteCounter: governanceBundles.binaryVoteCounter,

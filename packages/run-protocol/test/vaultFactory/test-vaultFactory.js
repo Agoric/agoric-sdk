@@ -3,7 +3,6 @@
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
-import '../../src/vaultFactory/types.js';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
@@ -28,20 +27,18 @@ import { makeTracer } from '../../src/makeTracer.js';
 import { SECONDS_PER_YEAR } from '../../src/vaultFactory/interest.js';
 import { VaultState } from '../../src/vaultFactory/vault.js';
 import {
-  makeGovernedTerms,
   CHARGING_PERIOD_KEY,
   RECORDING_PERIOD_KEY,
 } from '../../src/vaultFactory/params.js';
+import { startVaultFactory } from '../../src/econ-behaviors.js';
+import '../../src/vaultFactory/types.js';
+import { Collect } from '../../src/bootstrapRunLoC.js';
 
-const ammRoot = '../../src/vpool-xyk-amm/multipoolMarketMaker.js';
-const vaultFactoryRoot = '../../src/vaultFactory/vaultFactory.js';
-const liquidationRoot = '../../src/vaultFactory/liquidateMinimum.js';
-
-const faucetRoot = './faucet.js';
-
-const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
-const committeeRoot = '@agoric/governance/src/committee.js';
-const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
+const contractRoots = {
+  faucet: './faucet.js',
+  liquidate: '../../src/vaultFactory/liquidateMinimum.js',
+  VaultFactory: '../../src/vaultFactory/vaultFactory.js',
+};
 
 const trace = makeTracer('TestST');
 
@@ -56,17 +53,11 @@ async function makeBundle(sourceRoot) {
 }
 
 // makeBundle is a slow step, so we do it once for all the tests.
-const vaultFactoryBundleP = makeBundle(vaultFactoryRoot);
-const liquidationBundleP = makeBundle(liquidationRoot);
-const contractGovernorBundleP = makeBundle(contractGovernorRoot);
-const committeeBundleP = makeBundle(committeeRoot);
-const voteCounterBundleP = makeBundle(voteCounterRoot);
-const ammBundleP = makeBundle(ammRoot);
-const faucetBundleP = makeBundle(faucetRoot);
-
-function installBundle(zoe, contractBundle) {
-  return E(zoe).install(contractBundle);
-}
+const bundlePs = {
+  faucet: makeBundle(contractRoots.faucet),
+  liquidate: makeBundle(contractRoots.liquidate),
+  VaultFactory: makeBundle(contractRoots.VaultFactory),
+};
 
 function setupAssets() {
   // setup collateral assets
@@ -86,27 +77,6 @@ async function waitForPromisesToSettle() {
   return pk.promise;
 }
 
-const makePriceAuthority = (
-  brandIn,
-  brandOut,
-  priceList,
-  timer,
-  quoteMint,
-  unitAmountIn,
-  quoteInterval,
-) => {
-  const options = {
-    actualBrandIn: brandIn,
-    actualBrandOut: brandOut,
-    priceList,
-    timer,
-    quoteMint,
-    unitAmountIn,
-    quoteInterval,
-  };
-  return makeScriptedPriceAuthority(options);
-};
-
 function makeRates(runBrand) {
   return harden({
     // margin required to open a loan
@@ -122,7 +92,6 @@ function makeRates(runBrand) {
 
 async function setupAmmAndElectorate(
   timer,
-  installs,
   zoe,
   aethLiquidity,
   runLiquidity,
@@ -130,7 +99,8 @@ async function setupAmmAndElectorate(
   aethIssuer,
   electorateTerms,
 ) {
-  const centralR = { issuer: runIssuer };
+  const runBrand = await E(runIssuer).getBrand();
+  const centralR = { issuer: runIssuer, brand: runBrand };
 
   const {
     amm,
@@ -138,6 +108,7 @@ async function setupAmmAndElectorate(
     governor,
     invitationAmount,
     electorateInstance,
+    space,
   } = await setupAmmServices(electorateTerms, centralR, timer, zoe);
 
   const liquidityIssuer = E(amm.ammPublicFacet).addPool(aethIssuer, 'Aeth');
@@ -176,93 +147,26 @@ async function setupAmmAndElectorate(
     committeeCreator,
     electorateInstance,
     invitationAmount,
+    space,
   };
 }
 
-async function setupVaultFactory(
-  governorTerms,
-  installs,
-  zoe,
-  committeeCreator,
-) {
-  const {
-    instance: governorInstance,
-    publicFacet: governorPublicFacet,
-    creatorFacet: governorCreatorFacet,
-  } = await E(zoe).startInstance(installs.governor, {}, governorTerms, {
-    electorateCreatorFacet: committeeCreator,
-  });
-
-  const vaultFactoryP = E(governorCreatorFacet).getCreatorFacet();
-  const lenderP = E(governorCreatorFacet).getPublicFacet();
-
-  const [vaultFactory, lender] = await Promise.all([vaultFactoryP, lenderP]);
-
-  const g = { governorInstance, governorPublicFacet, governorCreatorFacet };
-
-  const v = { vaultFactory, lender };
-  return { g, v };
-}
-
-async function bundleInstalls(zoe) {
-  const [
-    vaultFactoryBundle,
-    liquidationBundle,
-    contractGovernorBundle,
-    committeeBundle,
-    voteCounterBundle,
-    ammBundle,
-    faucetBundle,
-  ] = await Promise.all([
-    vaultFactoryBundleP,
-    liquidationBundleP,
-    contractGovernorBundleP,
-    committeeBundleP,
-    voteCounterBundleP,
-    ammBundleP,
-    faucetBundleP,
-  ]);
-
-  const [
-    vaultFactory,
-    liquidation,
-    governor,
-    electorate,
-    counter,
-    amm,
-    faucet,
-  ] = await Promise.all([
-    installBundle(zoe, vaultFactoryBundle),
-    installBundle(zoe, liquidationBundle),
-    installBundle(zoe, contractGovernorBundle),
-    installBundle(zoe, committeeBundle),
-    installBundle(zoe, voteCounterBundle),
-    installBundle(zoe, ammBundle),
-    installBundle(zoe, faucetBundle),
-  ]);
-
-  const installs = {
-    vaultFactory,
-    liquidation,
-    governor,
-    electorate,
-    counter,
-    amm,
-    faucet,
-  };
-  return installs;
-}
-
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<FeeMintAccess>} feeMintAccess
+ * @param {Brand} runBrand
+ * @param {bigint} runInitialLiquidity
+ */
 async function getRunFromFaucet(
   zoe,
-  installs,
   feeMintAccess,
   runBrand,
   runInitialLiquidity,
 ) {
+  const bundle = await bundlePs.faucet;
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
-    installs.faucet,
+    E(zoe).install(bundle),
     {},
     {},
     harden({ feeMintAccess }),
@@ -281,7 +185,20 @@ async function getRunFromFaucet(
   return runPayment;
 }
 
-// called separately by each test so AMM/zoe/priceAuthority don't interfere
+/**
+ * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
+ *
+ * @param {LoanParams} loanParams
+ * @param {unknown} priceList
+ * @param {Amount} unitAmountIn
+ * @param {Brand} aethBrand
+ * @param {unknown} electorateTerms
+ * @param {TimerService} timer
+ * @param {unknown} quoteInterval
+ * @param {unknown} aethLiquidity
+ * @param {bigint} runInitialLiquidity
+ * @param {Issuer} aethIssuer
+ */
 async function setupServices(
   loanParams,
   priceList,
@@ -295,12 +212,10 @@ async function setupServices(
   aethIssuer,
 ) {
   const { zoe, feeMintAccess } = await setUpZoeForTest();
-  const installs = await bundleInstalls(zoe);
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   const runPayment = await getRunFromFaucet(
     zoe,
-    installs,
     feeMintAccess,
     runBrand,
     runInitialLiquidity,
@@ -313,11 +228,9 @@ async function setupServices(
 
   const {
     amm: ammFacets,
-    committeeCreator,
-    electorateInstance,
+    space: { produce, consume },
   } = await setupAmmAndElectorate(
     timer,
-    installs,
     zoe,
     aethLiquidity,
     runLiquidity,
@@ -326,59 +239,49 @@ async function setupServices(
     electorateTerms,
   );
 
-  const priceAuthorityPromiseKit = makePromiseKit();
-  const priceAuthorityPromise = priceAuthorityPromiseKit.promise;
-
-  const rates = makeRates(runBrand);
-
-  const poserInvitationP = E(committeeCreator).getPoserInvitation();
-  const [initialPoserInvitation, invitationAmount] = await Promise.all([
-    poserInvitationP,
-    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-  ]);
-
-  const vaultFactoryTerms = makeGovernedTerms(
-    priceAuthorityPromise,
-    loanParams,
-    installs.liquidation,
-    timer,
-    invitationAmount,
-    rates,
-    ammFacets.ammPublicFacet,
-  );
-
-  const governorTerms = harden({
-    timer,
-    electorateInstance,
-    governedContractInstallation: installs.vaultFactory,
-    governed: {
-      terms: vaultFactoryTerms,
-      issuerKeywordRecord: {},
-      privateArgs: { feeMintAccess, initialPoserInvitation },
-    },
-  });
-
-  const { g, v } = await setupVaultFactory(
-    governorTerms,
-    installs,
-    zoe,
-    committeeCreator,
-  );
-
   const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-
-  // priceAuthority needs the RUN brand, which isn't available until the
-  // vaultFactory has been built, so resolve priceAuthorityPromiseKit here
-  const priceAuthority = makePriceAuthority(
-    aethBrand,
-    runBrand,
+  const priceAuthority = makeScriptedPriceAuthority({
+    actualBrandIn: aethBrand,
+    actualBrandOut: runBrand,
     priceList,
     timer,
     quoteMint,
     unitAmountIn,
     quoteInterval,
-  );
-  priceAuthorityPromiseKit.resolve(priceAuthority);
+  });
+  produce.priceAuthority.resolve(priceAuthority);
+
+  produce.feeMintAccess.resolve(feeMintAccess);
+  const vaultBundles = await Collect.allValues({
+    VaultFactory: bundlePs.VaultFactory,
+    liquidate: bundlePs.liquidate,
+  });
+  produce.vaultBundles.resolve(vaultBundles);
+  await startVaultFactory({ consume, produce }, { loanParams });
+  const agoricNames = consume.agoricNames;
+  const installs = await Collect.allValues({
+    vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
+    liquidate: E(agoricNames).lookup('installation', 'liquidate'),
+  });
+
+  const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
+  const [governorInstance, vaultFactory, lender] = await Promise.all([
+    E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
+    E(governorCreatorFacet).getCreatorFacet(),
+    E(governorCreatorFacet).getPublicFacet(),
+  ]);
+
+  const { g, v } = {
+    g: {
+      governorInstance,
+      governorPublicFacet: E(zoe).getPublicFacet(governorInstance),
+      governorCreatorFacet,
+    },
+    v: {
+      vaultFactory,
+      lender,
+    },
+  };
 
   return {
     zoe,
