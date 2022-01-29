@@ -42,6 +42,10 @@ const trace = makeTracer(' VM ');
  * @param {ZCFMint} runMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {{
+ *  'ChargingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
+ *  'RecordingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
+ * }} timingParams
  * @param {GetParams} getLoanParams
  * @param {ReallocateReward} reallocateReward
  * @param {ERef<TimerService>} timerService
@@ -53,6 +57,7 @@ export const makeVaultManager = (
   runMint,
   collateralBrand,
   priceAuthority,
+  timingParams,
   getLoanParams,
   reallocateReward,
   timerService,
@@ -68,8 +73,8 @@ export const makeVaultManager = (
     getInitialMargin: () => (getLoanParams()[INITIAL_MARGIN_KEY].value),
     getLoanFee: () => (getLoanParams()[LOAN_FEE_KEY].value),
     getInterestRate: () => (getLoanParams()[INTEREST_RATE_KEY].value),
-    getChargingPeriod: () => (getLoanParams()[CHARGING_PERIOD_KEY].value),
-    getRecordingPeriod: () => (getLoanParams()[RECORDING_PERIOD_KEY].value),
+    getChargingPeriod: () => (timingParams[CHARGING_PERIOD_KEY].value),
+    getRecordingPeriod: () => (timingParams[RECORDING_PERIOD_KEY].value),
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
       const displayInfo = await E(collateralBrand).getDisplayInfo();
@@ -192,7 +197,7 @@ export const makeVaultManager = (
 
   const periodNotifier = E(timerService).makeNotifier(
     0n,
-    getLoanParams()[RECORDING_PERIOD_KEY].value,
+    timingParams[RECORDING_PERIOD_KEY].value,
   );
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 

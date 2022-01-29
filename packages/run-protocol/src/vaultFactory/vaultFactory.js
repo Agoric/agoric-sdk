@@ -32,16 +32,10 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
-import { NonNullish } from '@agoric/assert';
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
-import {
-  makeVaultParamManager,
-  makeElectorateParamManager,
-  CHARGING_PERIOD_KEY,
-  RECORDING_PERIOD_KEY,
-} from './params.js';
+import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 
 const { details: X } = assert;
 
@@ -55,7 +49,7 @@ export const start = async (zcf, privateArgs) => {
     bootstrapPaymentValue = 0n,
     electionManager,
     main: { [CONTRACT_ELECTORATE]: electorateParam },
-    loanTiming,
+    loanTimingParams,
   } = zcf.getTerms();
 
   /** @type {Promise<GovernorPublic>} */
@@ -113,6 +107,7 @@ export const start = async (zcf, privateArgs) => {
   /** @type { Store<Brand, VaultParamManager> } */
   const vaultParamManagers = makeScalarMap('brand');
 
+  /** @type {AddVaultType} */
   const addVaultType = async (collateralIssuer, collateralKeyword, rates) => {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
@@ -122,12 +117,8 @@ export const start = async (zcf, privateArgs) => {
       `Collateral brand ${collateralBrand} has already been added`,
     );
 
-    const loanPeriods = {
-      chargingPeriod: loanTiming[CHARGING_PERIOD_KEY].value,
-      recordingPeriod: loanTiming[RECORDING_PERIOD_KEY].value,
-    };
     /** a powerful object; can modify parameters */
-    const vaultParamManager = makeVaultParamManager(loanPeriods, rates);
+    const vaultParamManager = makeVaultParamManager(rates);
     vaultParamManagers.init(collateralBrand, vaultParamManager);
 
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
@@ -142,7 +133,8 @@ export const start = async (zcf, privateArgs) => {
       runMint,
       collateralBrand,
       priceAuthority,
-      NonNullish(vaultParamManager.getParams),
+      loanTimingParams,
+      vaultParamManager.getParams,
       reallocateReward,
       timerService,
       liquidationStrategy,

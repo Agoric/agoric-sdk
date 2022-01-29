@@ -408,12 +408,10 @@
  * @callback GetParams - getParams() retrieves a Record containing
  *   keyword pairs with descriptions of parameters under governance.
  * @returns {Record<Keyword,ParamShortDescription> & {
- *  'ChargingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
  *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },
  *  'InterestRate': ParamRecord<'ratio'> & { value: Ratio },
  *  'LiquidationMargin': ParamRecord<'ratio'> & { value: Ratio },
  *  'LoanFee': ParamRecord<'ratio'> & { value: Ratio },
- *  'RecordingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
  * }}
  */
 

@@ -20,7 +20,6 @@ export const LOAN_FEE_KEY = 'LoanFee';
 
 /**
  * @param {Amount} electorateInvitationAmount
- * @returns {Record<string,ParamShortDescription>}
  */
 const makeElectorateParams = electorateInvitationAmount => {
   return harden({
@@ -31,7 +30,6 @@ const makeElectorateParams = electorateInvitationAmount => {
 /**
  * @param {LoanTiming} loanTiming
  * @param {Rates} rates
- * @returns {Record<string,ParamShortDescription>}
  */
 const makeLoanParams = (loanTiming, rates) => {
   return harden({
@@ -45,15 +43,29 @@ const makeLoanParams = (loanTiming, rates) => {
 };
 
 /**
- * @param {LoanTiming} loanTiming
+ * @param {LoanTiming} initialValues
+ * @returns {ParamManagerFull & {
+ *   updateChargingPeriod: (period: bigint) => void,
+ *   updateRecordingPeriod: (period: bigint) => void,
+ * }}
+ */
+const makeLoanTimingManager = initialValues => {
+  // @ts-expect-error until makeParamManagerBuilder can be generic */
+  return makeParamManagerBuilder()
+    .addNat(CHARGING_PERIOD_KEY, initialValues.chargingPeriod)
+    .addNat(RECORDING_PERIOD_KEY, initialValues.recordingPeriod)
+    .build();
+};
+
+/**
+ * XXX maybe call this "loan terms"?
+ *
  * @param {Rates} rates
  * @returns {VaultParamManager}
  */
-const makeVaultParamManager = (loanTiming, rates) => {
-  // @ts-expect-error casting to VaultParamManager
+const makeVaultParamManager = rates => {
+  // @ts-expect-error until makeParamManagerBuilder can be generic */
   return makeParamManagerBuilder()
-    .addNat(CHARGING_PERIOD_KEY, loanTiming.chargingPeriod)
-    .addNat(RECORDING_PERIOD_KEY, loanTiming.recordingPeriod)
     .addBrandedRatio(INITIAL_MARGIN_KEY, rates.initialMargin)
     .addBrandedRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
     .addBrandedRatio(INTEREST_RATE_KEY, rates.interestRate)
@@ -87,15 +99,6 @@ const makeElectorateParamManager = async (zoe, electorateInvitation) => {
  * @param {Rates} rates
  * @param {XYKAMMPublicFacet} ammPublicFacet
  * @param {bigint=} bootstrapPaymentValue
- * @returns {{
- *   ammPublicFacet: XYKAMMPublicFacet,
- *   priceAuthority: ERef<PriceAuthority>,
- *   loanTiming: Record<Keyword,ParamShortDescription>,
- *   timerService: ERef<TimerService>,
- *   liquidationInstall: Installation,
- *   main: Record<Keyword,ParamShortDescription>,
- *   bootstrapPaymentValue: bigint,
- * }}
  */
 const makeGovernedTerms = (
   priceAuthority,
@@ -107,12 +110,15 @@ const makeGovernedTerms = (
   ammPublicFacet,
   bootstrapPaymentValue = 0n,
 ) => {
-  const vaultParamMgr = makeVaultParamManager(loanTiming, rates);
+  const timingParamMgr = makeLoanTimingManager(loanTiming);
+
+  const rateParamMgr = makeVaultParamManager(rates);
 
   return harden({
     ammPublicFacet,
     priceAuthority,
-    loanTiming: vaultParamMgr.getParams(),
+    loanParams: rateParamMgr.getParams(),
+    loanTimingParams: timingParamMgr.getParams(),
     timerService,
     liquidationInstall,
     main: makeElectorateParams(invitationAmount),

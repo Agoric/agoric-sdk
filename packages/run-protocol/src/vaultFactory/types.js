@@ -16,7 +16,7 @@
  */
 
 /**
- * @typedef {Object} Rates
+ * @typedef {Object} Rates - XXX loan terms?
  * @property {Ratio} initialMargin - minimum over-collateralization
  * required to open a loan
  * @property {Ratio} liquidationMargin - margin below which collateral will be
@@ -211,11 +211,14 @@
 
 /**
  * @typedef {Object} VaultParamManager
- * @property {GetParams} getParams
+ * @property {() => Record<Keyword,ParamShortDescription> & {
+ *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },
+ *  'InterestRate': ParamRecord<'ratio'> & { value: Ratio },
+ *  'LiquidationMargin': ParamRecord<'ratio'> & { value: Ratio },
+ *  'LoanFee': ParamRecord<'ratio'> & { value: Ratio },
+ * }} getParams
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
- * @property {(period: bigint) => void} updateChargingPeriod
- * @property {(period: bigint) => void} updateRecordingPeriod
  * @property {(margin: Ratio) => void} updateInitialMargin
  * @property {(margin: Ratio) => void} updateLiquidationMargin
  * @property {(ratio: Ratio) => void} updateInterestRate
