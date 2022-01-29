@@ -6,6 +6,11 @@ import {
   makeSubscriptionKit,
   observeIteration,
 } from '@agoric/notifier';
+import {
+  governanceBundles,
+  economyBundles,
+  ammBundle,
+} from '@agoric/run-protocol/src/importedBundles.js';
 
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 
@@ -167,3 +172,22 @@ export const connectChainFaucet = async ({ consume: { client } }) => {
   return E(client).assignBundle({ faucet: makeFaucet });
 };
 harden(connectChainFaucet);
+
+/** @param {BootstrapPowers} powers */
+export const shareEconomyBundles = async ({
+  produce: {
+    ammBundle: ammP,
+    getRUNBundle,
+    vaultBundles,
+    governanceBundles: govP,
+  },
+}) => {
+  govP.resolve(governanceBundles);
+  ammP.resolve(ammBundle);
+  vaultBundles.resolve({
+    VaultFactory: economyBundles.VaultFactory,
+    liquidate: economyBundles.liquidate,
+  });
+  getRUNBundle.resolve(economyBundles.getRUN);
+};
+harden(shareEconomyBundles);
