@@ -64,7 +64,7 @@ test('amm change param via Governance', async t => {
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
   const { details } = await E(governorCreatorFacet).voteOnParamChange(
-    { parameterName: PROTOCOL_FEE_KEY },
+    { key: 'main', parameterName: PROTOCOL_FEE_KEY },
     20n,
     installs.counter,
     2n,
@@ -169,7 +169,7 @@ test('price check after Governance param change', async t => {
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
   const { details } = await E(governorCreatorFacet).voteOnParamChange(
-    { parameterName: PROTOCOL_FEE_KEY },
+    { key: 'main', parameterName: PROTOCOL_FEE_KEY },
     20n,
     installs.counter,
     2n,
