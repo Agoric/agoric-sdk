@@ -16,7 +16,7 @@ import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 
 import { makeGovernedTerms } from './vaultFactory/params.js';
-import { bootstrapRunLoC, Collect } from './bootstrapRunLoC.js';
+import { bootstrapRunLoC } from './bootstrapRunLoC.js';
 
 import '../exported.js';
 
@@ -24,6 +24,7 @@ import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
 
 import { makeStakeReporter } from '../../vats/src/my-lien.js';
 import { BLD_ISSUER_ENTRY } from '../../vats/src/issuers.js';
+import { Collect } from './collect.js';
 
 const { entries, keys } = Object;
 

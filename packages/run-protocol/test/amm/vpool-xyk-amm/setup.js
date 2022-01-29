@@ -14,7 +14,7 @@ import {
   makeNameAdmins,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
-import { Collect } from '../../../src/bootstrapRunLoC.js';
+import { Collect } from '../../../src/collect.js';
 import {
   setupAmm,
   startEconomicCommittee,
