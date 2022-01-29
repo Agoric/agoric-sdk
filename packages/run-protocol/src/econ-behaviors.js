@@ -115,7 +115,7 @@ export const setupAmm = async ({
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
-  const timer = await chainTimerService; // ISSUE: why on earth doesn't an ERef serve???
+  const timer = await chainTimerService; // avoid promise for legibility
 
   const ammTerms = {
     timer,
@@ -194,7 +194,6 @@ export const startPriceAuthority = async ({
 };
 harden(startPriceAuthority);
 
-// TODO: push most of this back to run-protocol package and unit test it.
 /**
  * @param { EconomyBootstrapPowers } powers
  * @param { Object } config
@@ -297,14 +296,7 @@ export const startVaultFactory = async (
   );
 
   const vaultFactoryInstance = await E(governorCreatorFacet).getInstance();
-  const [
-    {
-      // ISSUE: what are govIssuer and govBrand for???
-      issuers: { Governance: govIssuer },
-      brands: { Governance: govBrand },
-    },
-    vaultFactoryCreator,
-  ] = await Promise.all([
+  const [vaultFactoryCreator] = await Promise.all([
     E(zoe).getTerms(vaultFactoryInstance),
     E(governorCreatorFacet).getCreatorFacet(),
   ]);
