@@ -422,6 +422,9 @@ harden(configureVaultFactoryUI);
  * @template T
  */
 /**
+ * TODO: refactor test to use startGetRUN so we can un-export this,
+ *       since it's not a bootstrap behavior.
+ *
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<TimerService>} timer
  * @param { FeeMintAccess } feeMintAccess
@@ -441,6 +444,7 @@ export const bootstrapRunLoC = async (
   { collateralPrice, collateralizationRatio },
   stakeIssuer,
 ) => {
+  // TODO: refactor to use consume.economicCommittee
   const {
     creatorFacet: electorateCreatorFacet,
     instance: electorateInstance,
@@ -455,6 +459,7 @@ export const bootstrapRunLoC = async (
   ]);
 
   // t.log({ electorateCreatorFacet, electorateInstance });
+  // TODO: use config arg
   const main = harden({
     [CreditTerms.CollateralPrice]: makeGovernedRatio(collateralPrice),
     [CreditTerms.CollateralizationRatio]: makeGovernedRatio(
@@ -534,6 +539,7 @@ export const startGetRun = async ({
   };
 
   // TODO: finish renaming bootstrapRunLoC etc.
+  // TODO: produce getRUNGovernorCreatorFacet, getRUNCreatorFacet, ...
   const { instance, publicFacet, creatorFacet } = await bootstrapRunLoC(
     zoe,
     chainTimerService,
