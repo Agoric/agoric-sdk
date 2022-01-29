@@ -3,35 +3,36 @@
 import { E } from '@agoric/eventual-send';
 
 import '../exported.js';
-import { setMathHelpers } from '@agoric/ertp/src/mathHelpers/setMathHelpers.js';
-import { AmountMath, isNatValue, isSetValue } from '@agoric/ertp';
+import { AmountMath, assertValueGetHelpers } from '@agoric/ertp';
 
 import { q } from '@agoric/assert';
 
 export const assertAmountsEqual = (t, amount, expected, label = '') => {
   harden(amount);
   harden(expected);
-  const brandsEqual = amount.brand === expected.brand;
   const l = label ? `${label} ` : '';
-  let valuesEqual;
-  if (isSetValue(expected.value)) {
-    valuesEqual = setMathHelpers.doIsEqual(amount.value, expected.value);
-  } else if (isNatValue(expected.value)) {
-    valuesEqual = amount.value === expected.value;
-  } else {
-    t.fail(`${l} illegal value; neither isNat() or isSet() was true`);
-  }
+  const brandsEqual = amount.brand === expected.brand;
 
-  if (brandsEqual && valuesEqual) {
-    t.truthy(AmountMath.isEqual(amount, expected), l);
-  } else if (brandsEqual && !valuesEqual) {
+  const helper = assertValueGetHelpers(expected.value);
+  if (helper !== assertValueGetHelpers(amount.value)) {
     t.fail(
-      `${l}value (${q(amount.value)}) expected to equal ${q(expected.value)}`,
+      `${l}Must be the same asset kind: ${amount.value} vs ${expected.value}`,
     );
-  } else if (!brandsEqual && valuesEqual) {
-    t.fail(`${l}brand (${amount.brand}) expected to equal ${expected.brand}`);
   } else {
-    t.fail(`${l}Neither brand nor value matched: ${q(amount)}, ${q(expected)}`);
+    const valuesEqual = helper.doIsEqual(amount.value, expected.value);
+    if (brandsEqual && valuesEqual) {
+      t.truthy(AmountMath.isEqual(amount, expected), l);
+    } else if (brandsEqual && !valuesEqual) {
+      t.fail(
+        `${l}value (${q(amount.value)}) expected to equal ${q(expected.value)}`,
+      );
+    } else if (!brandsEqual && valuesEqual) {
+      t.fail(`${l}brand (${amount.brand}) expected to equal ${expected.brand}`);
+    } else {
+      t.fail(
+        `${l}Neither brand nor value matched: ${q(amount)}, ${q(expected)}`,
+      );
+    }
   }
 };
 
