@@ -104,11 +104,12 @@ const makePurseController = (
 export function buildRootObject(_vatPowers) {
   return Far('bankMaker', {
     /**
-     * @param {import('./bridge').BridgeManager} [bankBridgeManager] a bridge
+     * @param {ERef<import('./bridge').BridgeManager | undefined>} [bankBridgeManagerP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
      */
-    async makeBankManager(bankBridgeManager = undefined) {
+    async makeBankManager(bankBridgeManagerP = undefined) {
+      const bankBridgeManager = await bankBridgeManagerP;
       /** @type {WeakStore<Brand, AssetRecord>} */
       const brandToAssetRecord = makeWeakStore('brand');
 
@@ -138,9 +139,15 @@ export function buildRootObject(_vatPowers) {
       };
 
       /**
-       * @param {import('./bridge').BridgeManager} bankBridgeMgr
+       * @param {ERef<import('./bridge').BridgeManager>} [bankBridgeMgr]
        */
       async function makeBankCaller(bankBridgeMgr) {
+        // We do the logic here if the bridge manager is available.  Otherwise,
+        // the bank is not "remote" (such as on sim-chain), so we just use
+        // immediate purses instead of virtual ones.
+        if (!bankBridgeMgr) {
+          return undefined;
+        }
         // We need to synchronise with the remote bank.
         const handler = Far('bankHandler', {
           async fromBridge(_srcID, obj) {
@@ -156,12 +163,7 @@ export function buildRootObject(_vatPowers) {
         return obj => E(bankBridgeMgr).toBridge('bank', obj);
       }
 
-      // We do the logic here if the bridge manager is available.  Otherwise,
-      // the bank is not "remote" (such as on sim-chain), so we just use
-      // immediate purses instead of virtual ones.
-      const bankCall = await (bankBridgeManager
-        ? makeBankCaller(bankBridgeManager)
-        : undefined);
+      const bankCall = await makeBankCaller(bankBridgeManager);
 
       /** @type {SubscriptionRecord<AssetDescriptor>} */
       const {

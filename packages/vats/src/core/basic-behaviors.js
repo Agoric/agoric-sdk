@@ -134,8 +134,7 @@ export const makeClientBanks = async ({
   consume: { loadVat, client, bridgeManager },
   produce: { bankManager },
 }) => {
-  const settledBridge = await bridgeManager; // ISSUE: why await? it's remote, no?
-  const mgr = E(E(loadVat)('bank')).makeBankManager(settledBridge);
+  const mgr = E(E(loadVat)('bank')).makeBankManager(bridgeManager);
   bankManager.resolve(mgr);
   return E(client).assignBundle({
     bank: address => E(mgr).getBankForAddress(address),
