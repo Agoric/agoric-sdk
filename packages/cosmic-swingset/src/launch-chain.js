@@ -16,6 +16,7 @@ import { openSwingStore } from '@agoric/swing-store';
 
 import otel from '@opentelemetry/api';
 
+import { makeShutdown } from './shutdown.js';
 import { makeSlogSenderKit } from './kernel-trace.js';
 import {
   DEFAULT_METER_PROVIDER,
@@ -154,6 +155,8 @@ export async function launch(
 ) {
   console.info('Launching SwingSet kernel');
 
+  const { registerShutdown } = makeShutdown();
+
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
   );
@@ -176,8 +179,14 @@ export async function launch(
   if (tracingProvider) {
     tracingProvider.register();
     const tracer = otel.trace.getTracer('ag-chain-cosmos');
-    // FIXME: Dispatch the object that is sent.
-    slogSender = makeSlogSenderKit(tracer).slogSender;
+    const { slogSender: ss, finish } = makeSlogSenderKit(tracer);
+    registerShutdown(() => {
+      // Finish all the traces first.
+      finish();
+      // Now stop the tracing provider.
+      return tracingProvider.shutdown();
+    });
+    slogSender = ss;
   }
 
   console.debug(`buildSwingset`);

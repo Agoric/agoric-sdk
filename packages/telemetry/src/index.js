@@ -8,6 +8,9 @@ import {
 } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { Resource } from '@opentelemetry/resources';
+
 import {
   MeterProvider,
   ConsoleMetricExporter,
@@ -25,19 +28,23 @@ export const SPAN_EXPORT_DELAY_MS = 1_000;
  * @typedef {Object} Powers
  * @property {{ warn: Console['warn'] }} console
  * @property {NodeJS.ProcessEnv} env
+ * @property {import('@opentelemetry/resources').Resource} resource
  */
 
 /**
  * @param {Partial<Powers>} param0
  */
-export const getDebuggingTracingProvider = ({ env = process.env } = {}) => {
+export const getDebuggingTracingProvider = ({
+  resource,
+  env = process.env,
+} = {}) => {
   const { OTEL_EXPORTER_DEBUG } = env;
   if (!OTEL_EXPORTER_DEBUG) {
     return undefined;
   }
 
   const exporter = new ConsoleSpanExporter();
-  const provider = new BasicTracerProvider();
+  const provider = new BasicTracerProvider({ resource });
   provider.addSpanProcessor(new SimpleSpanProcessor(exporter));
   return provider;
 };
@@ -45,7 +52,10 @@ export const getDebuggingTracingProvider = ({ env = process.env } = {}) => {
 /**
  * @param {Partial<Powers>} param0
  */
-export const getOTLPHTTPTracingProvider = ({ env = process.env } = {}) => {
+export const getOTLPHTTPTracingProvider = ({
+  resource,
+  env = process.env,
+} = {}) => {
   const {
     OTEL_EXPORTER_OTLP_ENDPOINT,
     OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
@@ -57,19 +67,24 @@ export const getOTLPHTTPTracingProvider = ({ env = process.env } = {}) => {
   const exporter = new OTLPTraceExporter();
   console.info('Enabling OTLP Traces Exporter to', exporter.getDefaultUrl({}));
 
-  const provider = new BasicTracerProvider();
-  provider.addSpanProcessor(new BatchSpanProcessor(exporter, {
-    maxQueueSize: SPAN_MAX_QUEUE_SIZE,
-    maxExportBatchSize: SPAN_MAX_QUEUE_SIZE,
-    scheduledDelayMillis: SPAN_EXPORT_DELAY_MS,
-  }));
+  const provider = new BasicTracerProvider({ resource });
+  provider.addSpanProcessor(
+    new BatchSpanProcessor(exporter, {
+      maxQueueSize: SPAN_MAX_QUEUE_SIZE,
+      maxExportBatchSize: SPAN_MAX_QUEUE_SIZE,
+      scheduledDelayMillis: SPAN_EXPORT_DELAY_MS,
+    }),
+  );
   return provider;
 };
 
 /**
  * @param {Partial<Powers>} param0
  */
-export const getDebuggingMeterProvider = ({ env = process.env } = {}) => {
+export const getDebuggingMeterProvider = ({
+  resource,
+  env = process.env,
+} = {}) => {
   const { OTEL_EXPORTER_DEBUG } = env;
   if (!OTEL_EXPORTER_DEBUG) {
     return undefined;
@@ -77,6 +92,7 @@ export const getDebuggingMeterProvider = ({ env = process.env } = {}) => {
 
   const exporter = new ConsoleMetricExporter();
   const provider = new MeterProvider({
+    resource,
     exporter,
     interval: 1000,
   });
@@ -89,6 +105,7 @@ export const getDebuggingMeterProvider = ({ env = process.env } = {}) => {
 const getPrometheusMeterProvider = ({
   console = globalThis.console,
   env = process.env,
+  resource,
 } = {}) => {
   const { OTEL_EXPORTER_PROMETHEUS_PORT } = env;
   if (!OTEL_EXPORTER_PROMETHEUS_PORT) {
@@ -113,6 +130,7 @@ const getPrometheusMeterProvider = ({
 
   return new MeterProvider({
     exporter,
+    resource,
     interval: DEFAULT_METER_PROVIDER_INTERVAL,
   });
 };
@@ -120,7 +138,10 @@ const getPrometheusMeterProvider = ({
 /**
  * @param {Partial<Powers>} param0
  */
-export const getOTLPHTTPMeterProvider = ({ env = process.env } = {}) => {
+export const getOTLPHTTPMeterProvider = ({
+  resource,
+  env = process.env,
+} = {}) => {
   const {
     OTEL_EXPORTER_OTLP_ENDPOINT,
     OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,
@@ -134,6 +155,7 @@ export const getOTLPHTTPMeterProvider = ({ env = process.env } = {}) => {
 
   return new MeterProvider({
     exporter,
+    resource,
     interval: 1000,
   });
 };
@@ -148,16 +170,25 @@ export const getOTLPHTTPMeterProvider = ({ env = process.env } = {}) => {
  * }}
  */
 export const getTelemetryProviders = powers => {
+  const {
+    resource = new Resource({
+      [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'Agoric',
+      [SemanticResourceAttributes.SERVICE_NAME]: 'ag-chain-cosmos',
+      [SemanticResourceAttributes.SERVICE_INSTANCE_ID]: Math.random(),
+    }),
+  } = powers || {};
+
+  const allPowers = { resource, ...powers };
   const ret = {};
   const metricsProvider =
-    getDebuggingMeterProvider(powers) ||
-    getOTLPHTTPMeterProvider(powers) ||
-    getPrometheusMeterProvider(powers);
+    getDebuggingMeterProvider(allPowers) ||
+    getOTLPHTTPMeterProvider(allPowers) ||
+    getPrometheusMeterProvider(allPowers);
   if (!metricsProvider) {
     ret.metricsProvider = metricsProvider;
   }
   const tracingProvider =
-    getDebuggingTracingProvider(powers) || getOTLPHTTPTracingProvider(powers);
+    getDebuggingTracingProvider(allPowers) || getOTLPHTTPTracingProvider(allPowers);
   if (tracingProvider) {
     ret.tracingProvider = tracingProvider;
   }

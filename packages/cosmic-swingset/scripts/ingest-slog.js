@@ -11,15 +11,19 @@ import {
   makeSlogSenderKit,
 } from '../src/kernel-trace.js';
 
+import { makeShutdown } from '../src/shutdown.js';
+
 const LINE_COUNT_TO_FLUSH = 10000;
 
 async function run() {
   const args = process.argv.slice(2);
-  if (args.length < 2) {
+  if (args.length < 1) {
     console.log(
       `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 ingest-slog.js SLOGFILE[.gz]`,
     );
     console.log(` - sends slogfile via OpenTelemetry`);
+    process.exitCode = 1;
+    return;
   }
 
   process.env.OTEL_EXPORTER_SYNC = 'true';
@@ -30,26 +34,15 @@ async function run() {
     return;
   }
 
+  const { registerShutdown } = makeShutdown();
+
   tracingProvider.register();
   const tracer = tracingProvider.getTracer('ingest-slog');
   const { slogSender, finish } = makeSlogSenderKit(tracer);
-
-  const shutdown = () => {
-    console.log('shutting down tracing provider');
+  registerShutdown(() => {
     finish();
-    const providers = [];
-    if (tracingProvider) {
-      providers.push(tracingProvider.shutdown());
-    }
-    Promise.all(providers)
-      .then(() => console.log('Tracing terminated'))
-      .catch(error => console.log('Error terminating tracing', error))
-      .finally(() => process.exit());
-  };
-  // gracefully shut down the providers on process exit
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT', shutdown);
-  process.on('beforeExit', shutdown);
+    return tracingProvider.shutdown();
+  });
 
   const [slogFile] = args;
   let slogF = fs.createReadStream(slogFile);
@@ -81,13 +74,6 @@ async function run() {
     slogFile,
     `(${lineCount} lines, ${byteCount} bytes)`,
   );
-
-  // Flush the provider so we don't miss things.
-  // FIXME: This is an internal API.  May not be compatible with other
-  // OpenTelemetry implementations.
-  console.log(`flushing...`);
-  await tracingProvider.forceFlush();
-  console.log('done flushing');
 }
 
 run().catch(err => console.log('err', err));
