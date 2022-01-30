@@ -161,22 +161,42 @@ export const getOTLPHTTPMeterProvider = ({
 };
 
 /**
+ * @typedef {Object} Options
+ * @property {string} serviceName
+ * @property {string} serviceNamespace
+ * @property {string | number} serviceInstanceId
+ */
+
+/**
  * Obtain the telemetry providers used by the `@opentelemetry` packages.
  *
- * @param {Partial<Powers>=} powers
+ * @param {Partial<Options>} [options]
+ * @param {Partial<Powers>} [powers]
  * @returns {{
  *  metricsProvider?: MeterProvider,
  *  tracingProvider?: import('@opentelemetry/api').TracerProvider
  * }}
  */
-export const getTelemetryProviders = powers => {
-  const {
-    resource = new Resource({
-      [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'Agoric',
-      [SemanticResourceAttributes.SERVICE_NAME]: 'ag-chain-cosmos',
-      [SemanticResourceAttributes.SERVICE_INSTANCE_ID]: Math.random(),
-    }),
-  } = powers || {};
+export const getTelemetryProviders = (options, powers) => {
+  const { serviceName, serviceNamespace, serviceInstanceId = Math.random() } =
+    options || {};
+  /** @type {import('@opentelemetry/resources').ResourceAttributes} */
+  const resourceAttributes = {};
+  if (serviceNamespace) {
+    resourceAttributes[
+      SemanticResourceAttributes.SERVICE_NAMESPACE
+    ] = serviceNamespace;
+  }
+  if (serviceName) {
+    resourceAttributes[SemanticResourceAttributes.SERVICE_NAME] = serviceName;
+  }
+  if (serviceInstanceId) {
+    resourceAttributes[
+      SemanticResourceAttributes.SERVICE_INSTANCE_ID
+    ] = serviceInstanceId;
+  }
+
+  const { resource = new Resource(resourceAttributes) } = powers || {};
 
   const allPowers = { resource, ...powers };
   const ret = {};
@@ -188,7 +208,8 @@ export const getTelemetryProviders = powers => {
     ret.metricsProvider = metricsProvider;
   }
   const tracingProvider =
-    getDebuggingTracingProvider(allPowers) || getOTLPHTTPTracingProvider(allPowers);
+    getDebuggingTracingProvider(allPowers) ||
+    getOTLPHTTPTracingProvider(allPowers);
   if (tracingProvider) {
     ret.tracingProvider = tracingProvider;
   }

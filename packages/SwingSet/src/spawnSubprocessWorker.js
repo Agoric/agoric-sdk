@@ -1,5 +1,5 @@
 // this file is loaded by the controller, in the start compartment
-import { spawn } from 'child_process';
+import { spawn as ambientSpawn } from 'child_process';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 import { netstringEncoderStream, netstringDecoderStream } from './netstring.js';
@@ -20,7 +20,11 @@ function parentLog(first, ...args) {
 // always be Node.
 const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 
-export function startSubprocessWorker(execPath, procArgs = []) {
+export function startSubprocessWorker(
+  execPath,
+  procArgs = [],
+  spawn = ambientSpawn,
+) {
   const proc = spawn(execPath, procArgs, { stdio });
 
   const toChild = arrayEncoderStream();

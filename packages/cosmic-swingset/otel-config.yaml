@@ -1,0 +1,56 @@
+receivers:
+  # Data sources: metrics
+  hostmetrics:
+    scrapers:
+      cpu:
+      disk:
+      filesystem:
+      load:
+      memory:
+      network:
+      process:
+      processes:
+      # swap:
+
+  # Data sources: traces, metrics, logs
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+  # prometheus:
+  #   config:
+  #     scrape_configs:
+  #       - job_name: 'cosmic-swingset'
+  #         scrape_interval: 5s
+  #         static_configs:
+  #           - targets: ['localhost:9461']
+
+processors:
+  batch:
+
+exporters:
+  # file:
+  #   path: /data/otel-export.json
+
+  prometheus:
+    endpoint: "0.0.0.0:9090"
+    namespace: "default"
+
+  otlp:
+    endpoint: "api.honeycomb.io:443"
+    headers:
+      "x-honeycomb-team": "fffac20082b16f50ebb871b16cae06ce"
+      "x-honeycomb-dataset": "ingestion-test-7"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics, otlp]
+      #receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]

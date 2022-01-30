@@ -43,6 +43,33 @@ function unhandledRejectionHandler(e) {
 }
 
 /**
+ * Make a spawn that propagates signals to the child process.
+ *
+ * @param {typeof ambientSpawn} spawn 
+ */
+export const makeTerminatingSpawn = spawn => {
+  /** @type {Set<ReturnType<typeof ambientSpawn>>} */
+  const childProcesses = new Set();
+  const terminate = () => {
+    childProcesses.forEach(cp => cp.kill());
+  };
+  process.on('SIGINT', terminate);
+  process.on('SIGTERM', terminate);
+  process.on('SIGQUIT', terminate);
+
+  /** @type {any} */
+  const terminatingSpawn = (command, args = undefined, opts = undefined) => {
+    const cp = spawn(command, args, opts);
+    childProcesses.add(cp);
+    cp.on('exit', () => {
+      childProcesses.delete(cp);
+    });
+    return cp;
+  };
+  return terminatingSpawn;
+};
+
+/**
  * @param {{ moduleFormat: string, source: string }[]} bundles
  * @param {{
  *   snapStore?: SnapStore,
@@ -235,6 +262,8 @@ export async function makeSwingsetController(
     return new Worker(supercode);
   }
 
+  const terminatingSpawn = makeTerminatingSpawn(spawn);
+
   // launch a worker in a subprocess (which runs Node.js)
   function startSubprocessWorkerNode() {
     const supercode = new URL(
@@ -242,7 +271,7 @@ export async function makeSwingsetController(
       import.meta.url,
     ).pathname;
     const args = [supercode];
-    return startSubprocessWorker(process.execPath, args);
+    return startSubprocessWorker(process.execPath, args, terminatingSpawn);
   }
 
   const bundles = [
@@ -254,7 +283,7 @@ export async function makeSwingsetController(
   const startXSnap = makeStartXSnap(bundles, {
     snapStore: hostStorage.snapStore,
     env,
-    spawn,
+    spawn: terminatingSpawn,
   });
 
   const kernelEndowments = {

@@ -771,7 +771,8 @@ export default function buildKernel(
       console.error(`We're currently already running at`, processQueueRunning);
       assert.fail(X`Kernel reentrancy is forbidden`);
     }
-    kernelSlog.write({ type: 'crank-start', message });
+    const crankNum = kernelKeeper.getCrankNumber();
+    kernelSlog.write({ type: 'crank-start', message /* , crankNum */ });
     /** @type { PolicyInput } */
     let policyInput = ['none'];
     try {
@@ -831,7 +832,6 @@ export default function buildKernel(
       }
       kernelKeeper.processRefcounts();
       kernelKeeper.saveStats();
-      const crankNum = kernelKeeper.getCrankNumber();
       kernelKeeper.incrementCrankNumber();
       const { crankhash, activityhash } = kernelKeeper.commitCrank();
       kernelSlog.write({

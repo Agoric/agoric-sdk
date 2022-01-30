@@ -13,17 +13,23 @@ test('get telemetry providers', async t => {
       logged.push(args);
     },
   };
-  const providers = getTelemetryProviders({ console: mockConsole, env: {} });
+  const providers = getTelemetryProviders(
+    { serviceName: 'foo' },
+    { console: mockConsole, env: {} },
+  );
   t.is(providers.metricsProvider, undefined);
 
   t.deepEqual(logged, []);
   await sleep(250);
   t.deepEqual(logged, []);
 
-  const providers2 = getTelemetryProviders({
-    console: mockConsole,
-    env: { OTEL_EXPORTER_PROMETHEUS_PORT: '9393' },
-  });
+  const providers2 = getTelemetryProviders(
+    { serviceName: 'foo' },
+    {
+      console: mockConsole,
+      env: { OTEL_EXPORTER_PROMETHEUS_PORT: '9393' },
+    },
+  );
 
   t.is(Object(providers2.metricsProvider), providers2.metricsProvider);
   t.is(typeof providers2.metricsProvider, 'object');

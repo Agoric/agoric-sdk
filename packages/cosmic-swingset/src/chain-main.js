@@ -249,10 +249,13 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         import.meta.url,
       ),
     ).pathname;
-    const { metricsProvider, tracingProvider } = getTelemetryProviders({
-      console,
-      env,
-    });
+    const { metricsProvider, tracingProvider } = getTelemetryProviders(
+      { serviceNamespace: 'Agoric', serviceName: 'ag-chain-cosmos' },
+      {
+        console,
+        env,
+      },
+    );
     const slogFile = env.SLOGFILE;
     const consensusMode = env.DEBUG === undefined;
     const s = await launch(

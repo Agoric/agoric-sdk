@@ -27,7 +27,10 @@ async function run() {
   }
 
   process.env.OTEL_EXPORTER_SYNC = 'true';
-  const { tracingProvider } = getTelemetryProviders();
+  const { tracingProvider } = getTelemetryProviders({
+    serviceNamespace: 'Agoric',
+    serviceName: 'ingest-slog',
+  });
   if (!tracingProvider) {
     console.log(`no tracing provider; you need to set OTEL_EXPORTER_*`);
     process.exitCode = 1;

@@ -167,7 +167,7 @@ export async function launch(
   };
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
-  const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
+  const metricMeter = meterProvider.getMeter('kernel-stats');
   const METRIC_LABELS = { app: 'ag-chain-cosmos' };
 
   const slogCallbacks = makeSlogCallbacks({
@@ -178,7 +178,7 @@ export async function launch(
   let slogSender;
   if (tracingProvider) {
     tracingProvider.register();
-    const tracer = otel.trace.getTracer('ag-chain-cosmos');
+    const tracer = otel.trace.getTracer('slog-trace');
     const { slogSender: ss, finish } = makeSlogSenderKit(tracer);
     registerShutdown(() => {
       // Finish all the traces first.
@@ -274,16 +274,28 @@ export async function launch(
   }
 
   async function saveChainState() {
+    controller.writeSlogObject({
+      type: `cosmic-swingset-save-chain-start`,
+    });
     // Save the mailbox state.
     await mailboxStorage.commit();
+    controller.writeSlogObject({
+      type: `cosmic-swingset-save-chain-finish`,
+    });
   }
 
   async function saveOutsideState(savedHeight, savedActions, savedChainSends) {
+    controller.writeSlogObject({
+      type: `cosmic-swingset-save-external-start`,
+    });
     kvStore.set(
       SWING_STORE_META_KEY,
       JSON.stringify([savedHeight, savedActions, savedChainSends]),
     );
     await commit();
+    controller.writeSlogObject({
+      type: `cosmic-swingset-save-external-finish`,
+    });
   }
 
   async function deliverInbound(sender, messages, ack) {

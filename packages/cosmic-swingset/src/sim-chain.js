@@ -79,10 +79,16 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     assert(!replay, X`Replay not implemented`);
   }
 
-  const { metricsProvider, tracingProvider } = getTelemetryProviders({
-    console,
-    env: process.env,
-  });
+  const { metricsProvider, tracingProvider } = getTelemetryProviders(
+    {
+      serviceNamespace: 'Agoric',
+      serviceName: 'sim-chain',
+    },
+    {
+      console,
+      env: process.env,
+    },
+  );
   const s = await launch(
     stateDBdir,
     mailboxStorage,

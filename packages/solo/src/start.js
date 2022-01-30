@@ -5,6 +5,8 @@ import temp from 'temp';
 import { fork } from 'child_process';
 import { promisify } from 'util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+
+import otel from '@opentelemetry/api';
 // import { createHash } from 'crypto';
 
 import createRequire from 'esm';
@@ -15,6 +17,9 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, details as X } from '@agoric/assert';
+import { getTelemetryProviders } from '@agoric/telemetry';
+import { makeShutdown } from '@agoric/cosmic-swingset/src/shutdown.js';
+
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -28,6 +33,7 @@ import {
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
+import { makeSlogSenderKit } from '@agoric/cosmic-swingset/src/kernel-trace.js';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
 
 import { deliver, addDeliveryTarget } from './outbound.js';
@@ -86,7 +92,17 @@ const buildSwingset = async (
   broadcast,
   defaultManagerType,
 ) => {
+  const { registerShutdown } = makeShutdown();
+
   const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
+
+  const { tracingProvider } = getTelemetryProviders(
+    { serviceNamespace: 'Agoric', serviceName: 'ag-solo' },
+    {
+      console,
+      env: process.env,
+    },
+  );
 
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(initialMailboxState);
@@ -151,17 +167,33 @@ const buildSwingset = async (
     snapStore,
   };
 
+  let slogSender;
+  if (tracingProvider) {
+    tracingProvider.register();
+    const tracer = otel.trace.getTracer('slog-trace');
+    const { slogSender: ss, finish } = makeSlogSenderKit(tracer);
+    registerShutdown(() => {
+      // Finish all the traces first.
+      finish();
+      // Now stop the tracing provider.
+      return tracingProvider.shutdown();
+    });
+    slogSender = ss;
+  }
+
   if (!swingsetIsInitialized(hostStorage)) {
     if (defaultManagerType && !config.defaultManagerType) {
       config.defaultManagerType = defaultManagerType;
     }
     await initializeSwingset(config, argv, hostStorage);
   }
+
   const slogFile = process.env.SOLO_SLOGFILE;
+
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogFile },
+    { slogFile, slogSender },
   );
 
   async function saveState() {
