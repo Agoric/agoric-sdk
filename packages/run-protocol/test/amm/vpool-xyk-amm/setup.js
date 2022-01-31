@@ -92,8 +92,8 @@ export const setupAMMBootstrap = async (
  *
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {{ brand: Brand, issuer: Issuer }} centralR
- * @param {ManualTimer | undefined} timer
- * @param {ERef<ZoeService> | undefined} zoe
+ * @param {ManualTimer | undefined=} timer
+ * @param {ERef<ZoeService> | undefined=} zoe
  */
 export const setupAmmServices = async (
   electorateTerms,
