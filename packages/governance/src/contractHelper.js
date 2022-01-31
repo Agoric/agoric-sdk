@@ -17,7 +17,9 @@ const { details: X, quote: q } = assert;
  *   parameter values, and the governance guarantees only hold if they're not
  *   used directly by the governed contract.
  *
- *  @type {HandleParamGovernance}
+ * @param {ContractFacet} zcf
+ * @param {ParamManagerFull} paramManager
+ * @returns {ParamGovernorBundle}
  */
 const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
@@ -49,6 +51,8 @@ const handleParamGovernance = (zcf, paramManager) => {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
       getContractGovernor: () => electionManager,
+      /** @type {GetGovernedVaultParams} */
+      // @ts-expect-error we know this ParamManagerFull is really a GetGovernedVaultParams
       getGovernedParams: () => paramManager.getParams(),
       ...typedAccessors,
     });

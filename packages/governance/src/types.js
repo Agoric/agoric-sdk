@@ -416,7 +416,7 @@
 
 /**
  * @typedef {Object} ParamManagerBase
- * @property {GetGovernedVaultParams} getParams
+ * @property {() => Record<Keyword,ParamShortDescription>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -593,13 +593,6 @@
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
  * @property {(name: string) => any} getUnknown
- */
-
-/**
- * @callback HandleParamGovernance
- * @param {ContractFacet} zcf
- * @param {ParamManagerFull} paramManager
- * @returns {ParamGovernorBundle}
  */
 
 /**
