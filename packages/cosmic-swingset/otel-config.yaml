@@ -29,6 +29,11 @@ receivers:
 processors:
   batch:
 
+extensions:
+  zpages:
+    endpoint: :55679
+  health_check:
+
 exporters:
   # file:
   #   path: /data/otel-export.json
@@ -43,7 +48,14 @@ exporters:
       "x-honeycomb-team": "fffac20082b16f50ebb871b16cae06ce"
       "x-honeycomb-dataset": "ingestion-test-7"
 
+  logging:
+    loglevel: debug
+
 service:
+  # telemetry:
+  #   logs:
+  #     level: "debug"
+  extensions: [zpages, health_check]
   pipelines:
     metrics:
       receivers: [hostmetrics, otlp]

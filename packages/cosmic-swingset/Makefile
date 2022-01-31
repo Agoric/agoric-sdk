@@ -82,8 +82,7 @@ scenario2-setup-nobuild:
 	$(MAKE) set-local-gci-ingress
 
 scenario2-run-chain:
-	OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
-		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
+	$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 
 # Run a chain with an explicit halt.
 scenario2-run-chain-to-halt:
@@ -200,7 +199,6 @@ scenario3-run:
 	cd t3 && \
 		NODE_OPTIONS= $(AG_SOLO) set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI
 	cd t3 && \
-		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AG_SOLO) start
 
 docker-pull:

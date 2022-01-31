@@ -207,11 +207,13 @@ const buildSwingset = async (
   }
 
   async function processKernel() {
+    controller.writeSlogObject({ type: 'solo-process-kernel-start' });
     await controller.run();
     if (swingSetRunning) {
       await saveState();
       deliverOutbound();
     }
+    controller.writeSlogObject({ type: 'solo-process-kernel-finish' });
   }
 
   // Use the input queue to make sure it doesn't overlap with

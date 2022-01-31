@@ -7,6 +7,7 @@ import {
   SimpleSpanProcessor,
 } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+// import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { Resource } from '@opentelemetry/resources';
@@ -16,6 +17,7 @@ import {
   ConsoleMetricExporter,
 } from '@opentelemetry/sdk-metrics-base';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+// import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
 export const DEFAULT_METER_PROVIDER_INTERVAL = 1_000;
@@ -69,6 +71,7 @@ export const getOTLPHTTPTracingProvider = ({
 
   const provider = new BasicTracerProvider({ resource });
   provider.addSpanProcessor(
+    // new SimpleSpanProcessor(exporter),
     new BatchSpanProcessor(exporter, {
       maxQueueSize: SPAN_MAX_QUEUE_SIZE,
       maxExportBatchSize: SPAN_MAX_QUEUE_SIZE,

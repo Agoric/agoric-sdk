@@ -42,8 +42,9 @@ async function run() {
   tracingProvider.register();
   const tracer = tracingProvider.getTracer('ingest-slog');
   const { slogSender, finish } = makeSlogSenderKit(tracer);
-  registerShutdown(() => {
+  registerShutdown(async () => {
     finish();
+    await tracingProvider.forceFlush();
     return tracingProvider.shutdown();
   });
 

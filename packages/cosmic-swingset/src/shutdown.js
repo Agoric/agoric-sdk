@@ -15,13 +15,13 @@ export const makeFreshShutdown = () => {
       process.exitCode = 99;
     }
     if (shuttingDown) {
-      return;
+      process.exit();
     }
     shuttingDown = true;
     console.error('Shutting down cleanly...');
-    Promise.allSettled(
-      [...shutdownThunks.keys()].map(t => Promise.resolve().then(t)),
-    )
+    const shutdowners = [...shutdownThunks.keys()];
+    shutdownThunks.clear();
+    Promise.allSettled([...shutdowners].map(t => Promise.resolve().then(t)))
       .then(statuses => {
         for (const status of statuses) {
           if (status.status === 'rejected') {

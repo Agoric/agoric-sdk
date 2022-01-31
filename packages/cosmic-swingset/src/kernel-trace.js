@@ -3,13 +3,14 @@ import otel, { SpanStatusCode } from '@opentelemetry/api';
 
 import { makeLegacyMap } from '@agoric/store';
 
-import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
 export { getTelemetryProviders } from '@agoric/telemetry';
 
 /** @typedef {import('@opentelemetry/api').Span} Span */
+/** @typedef {import('@opentelemetry/api').SpanContext} SpanContext */
 /** @typedef {import('@opentelemetry/api').SpanOptions} SpanOptions */
 
 const cleanValue = (value, _key) => {
@@ -62,44 +63,63 @@ export const floatSecondsToHiRes = sFloat => {
   return [sInt, ns];
 };
 
-const shortenMessageAttrs = ({ type: messageType, ...message }) => {
-  /** @type {Record<string, any>} */
-  const attrs = { 'message.type': messageType, ...message };
-  switch (messageType) {
-    case 'create-vat': {
-      if (attrs.source.bundle) {
-        attrs.source = { ...attrs.source, bundle: '*elided*' };
-      }
-      break;
-    }
-    case 'send': {
-      // TODO: The arguments to a method call can be pretty big.
-      delete attrs.msg;
-      attrs['message.msg.method'] = message.msg.method;
-      attrs['message.msg.args.slots'] = message.msg.args.slots;
-      attrs['message.msg.result'] = message.msg.result;
-      break;
-    }
-    case 'dropExports':
-    case 'retireExports':
-    case 'retireImports':
-    case 'notify':
-    case 'bringOutYourDead': {
-      // Use all the attrs.
-      break;
-    }
-    default: {
-      console.error(`Unknown crank-start message.type`, messageType);
-    }
-  }
-  return attrs;
-};
-
 /** @param {import('@opentelemetry/api').Tracer} tracer */
 export const makeSlogSenderKit = tracer => {
   let now;
   /** @type {Record<string, any>} */
   let currentAttrs = {};
+
+  /** @type {LegacyMap<string, Span>} */
+  const vatIdToSpan = makeLegacyMap('vatId');
+
+  /** @type {LegacyMap<string, { context: SpanContext, name: string }>} */
+  const kernelPromiseToSpanContext = makeLegacyMap('kernelPromise');
+
+  const extractMessageAttrs = ({ type: messageType, ...message }) => {
+    /** @type {Record<string, any>} */
+    const attrs = { 'message.type': messageType, ...message };
+    const links = [];
+    let name = messageType;
+    switch (messageType) {
+      case 'create-vat': {
+        if (attrs.source.bundle) {
+          attrs.source = { ...attrs.source, bundle: '*elided*' };
+        }
+        break;
+      }
+      case 'send': {
+        // TODO: The arguments to a method call can be pretty big.
+        delete attrs.msg;
+        name = `E(${message.target}).${message.msg.method}`;
+        attrs['message.msg.method'] = name;
+        attrs['message.msg.args.slots'] = message.msg.args.slots;
+        attrs['message.msg.result'] = message.msg.result;
+        break;
+      }
+      case 'notify': {
+        const { kpid } = attrs;
+        if (kernelPromiseToSpanContext.has(kpid)) {
+          const { context, name: kpName } = kernelPromiseToSpanContext.get(
+            kpid,
+          );
+          links.push({ context });
+          name = `notify ${kpName}`;
+        }
+        break;
+      }
+      case 'dropExports':
+      case 'retireExports':
+      case 'retireImports':
+      case 'bringOutYourDead': {
+        // Use all the attrs.
+        break;
+      }
+      default: {
+        console.error(`Unknown crank-start message.type`, messageType);
+      }
+    }
+    return [name, attrs, links];
+  };
 
   const makeSpans = () => {
     /** @type {LegacyMap<string, Span>} */
@@ -109,7 +129,7 @@ export const makeSlogSenderKit = tracer => {
     /** @type {{ span: Span, name: string }[]} */
     const spanStack = [];
 
-    const makeSpanKey = keyArray => JSON.stringify(cleanAttrs(keyArray));
+    const makeSpanKey = keyArray => JSON.stringify(keyArray.map(cleanValue));
 
     const sp = harden({
       endAll: endTime => {
@@ -134,11 +154,20 @@ export const makeSlogSenderKit = tracer => {
         options = {},
       ) => {
         const ctx = parent && otel.trace.setSpan(otel.context.active(), parent);
-        const span = tracer.startSpan(
-          name,
-          { startTime: now, attributes: cleanAttrs(attrs), ...options },
-          ctx,
-        );
+        const allOpts = { ...options };
+        if (vatIdToSpan.has(attrs.vatID)) {
+          allOpts.links = [
+            ...(allOpts.links || []),
+            {
+              context: vatIdToSpan.get(attrs.vatID).spanContext(),
+            },
+          ];
+        }
+        allOpts.attributes = cleanAttrs({ ...allOpts.attributes, ...attrs });
+        if (!allOpts.startTime) {
+          allOpts.startTime = now;
+        }
+        const span = tracer.startSpan(name, allOpts, ctx);
         if (keyArray.length) {
           const spanKey = makeSpanKey(keyArray);
           keyToSpan.init(spanKey, span);
@@ -167,7 +196,7 @@ export const makeSlogSenderKit = tracer => {
         const keyArray = Array.isArray(key) ? key : [key];
         const spanKey = makeSpanKey(keyArray);
         const span = keyToSpan.get(spanKey);
-        if (errorMessage !== undefined) {
+        if (errorMessage) {
           span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
         }
         span.setAttributes(cleanAttrs(attrs));
@@ -206,8 +235,6 @@ export const makeSlogSenderKit = tracer => {
   };
 
   const spans = makeSpans();
-  /** @type {LegacyMap<string, Span>} */
-  const kernelPromiseToSpan = makeLegacyMap('kernelPromise');
 
   let finished = false;
   const finish = () => {
@@ -221,10 +248,11 @@ export const makeSlogSenderKit = tracer => {
   };
 
   let initing = true;
+  let replayKey;
 
-  const getCrankKey = () => {
-    let key = ['crank', currentAttrs.crankNum];
-    if (!spans.has(key)) {
+  const getCrankKey = create => {
+    let key = ['crank', currentAttrs.vatID];
+    if (!create && !spans.has(key)) {
       const genericKey = ['crank', undefined];
       if (spans.has(genericKey)) {
         key = genericKey;
@@ -263,11 +291,17 @@ export const makeSlogSenderKit = tracer => {
       }
       case 'create-vat': {
         const { vatSourceBundle: _2, name, ...attrs } = slogAttrs;
-        spans.start(['create-vat', slogAttrs.vatID], spans.top(), {
-          'vat.name': name,
-          ...attrs,
-        });
+        const vatSpan = spans.startNamed(
+          `vat ${slogAttrs.vatID}`,
+          ['create-vat', slogAttrs.vatID],
+          spans.top(),
+          {
+            'vat.name': name,
+            ...attrs,
+          },
+        );
         spans.end(['create-vat', slogAttrs.vatID]);
+        vatIdToSpan.init(slogAttrs.vatID, vatSpan);
         break;
       }
       case 'vat-startup-start': {
@@ -279,11 +313,20 @@ export const makeSlogSenderKit = tracer => {
         break;
       }
       case 'start-replay': {
-        spans.start(['vat-replay', slogAttrs.vatID], spans.top());
+        const ckey = getCrankKey(true);
+        // Replay may not happen in the context of a crank.
+        replayKey = spans.has(ckey) && ['start-replay', slogAttrs.vatID];
+        spans.startNamed(
+          `replay ${slogAttrs.vatID}`,
+          replayKey || ckey,
+          spans.top(),
+          slogAttrs,
+        );
         break;
       }
       case 'finish-replay': {
-        spans.end(['vat-replay', slogAttrs.vatID]);
+        spans.end(replayKey || getCrankKey());
+        replayKey = undefined;
         break;
       }
       case 'deliver': {
@@ -295,12 +338,6 @@ export const makeSlogSenderKit = tracer => {
         spans
           .get(getCrankKey())
           .setAttributes(cleanAttrs({ delivery, ...attrs }));
-        /*
-        spans.startNamed(delivery, ['deliver', slogAttrs.vatID], spans.top(), {
-          delivery,
-          ...attrs,
-        });
-        */
         break;
       }
       case 'deliver-result': {
@@ -314,13 +351,6 @@ export const makeSlogSenderKit = tracer => {
             ...meterResult,
           }),
         );
-        /*
-        spans.end(['deliver', slogAttrs.vatID], {
-          status,
-          ...meterResult,
-          ...attrs,
-        });
-        */
         break;
       }
       case 'syscall': {
@@ -335,22 +365,34 @@ export const makeSlogSenderKit = tracer => {
             name,
             [`syscall`, slogAttrs.crankNum],
             crankSpan,
-            { syscall: ksc[0], ...attrs, ...att },
+            {
+              syscall: ksc[0],
+              ...attrs,
+              ...att,
+            },
             options,
           );
         // TODO: get type from packages/SwingSet/src/kernel/kernelSyscall.js
         switch (ksc[0]) {
           case 'send': {
             const [_tag, target, { method, result }] = ksc;
-            const syscall = makeSyscallSpan(method, { target, method, result });
+            const name = `E(${target}).${method}`;
+            const syscall = makeSyscallSpan(name, {
+              target,
+              method,
+              result,
+            });
             if (result) {
-              kernelPromiseToSpan.init(result, syscall);
+              kernelPromiseToSpanContext.init(result, {
+                context: syscall.spanContext(),
+                name,
+              });
             }
             break;
           }
           case 'invoke': {
             const [_, target, method] = ksc;
-            makeSyscallSpan(method, { target, method });
+            makeSyscallSpan(`D(${target}).${method}`, { target, method });
             break;
           }
           case 'resolve': {
@@ -358,18 +400,19 @@ export const makeSlogSenderKit = tracer => {
             const links = [];
             for (const [kp, _rejected, _args] of parts) {
               // We don't (yet) track every promise, so make this conditional.
-              if (kernelPromiseToSpan.has(kp)) {
-                const linkedSpan = kernelPromiseToSpan.get(kp);
-                links.push({ context: linkedSpan.spanContext() });
+              if (kernelPromiseToSpanContext.has(kp)) {
+                const { context } = kernelPromiseToSpanContext.get(kp);
+                links.push({ context });
               }
             }
             const syscall = makeSyscallSpan('resolve', {}, { links });
 
             for (const [kp, rejected, _args] of parts) {
               // Add events for each promise that was resolved.
-              if (kernelPromiseToSpan.has(kp)) {
+              if (kernelPromiseToSpanContext.has(kp)) {
                 syscall.addEvent(kp, cleanAttrs({ rejected }), now);
-                kernelPromiseToSpan.delete(kp);
+                // Save the info for notify messages instead of deleting here.
+                // kernelPromiseToSpan.delete(kp);
               }
             }
 
@@ -382,7 +425,8 @@ export const makeSlogSenderKit = tracer => {
           case 'dropImports':
           case 'retireImports':
           case 'retireExports': {
-            makeSyscallSpan(ksc[0]);
+            // Too noisy and mostly irrelevant.
+            // makeSyscallSpan(ksc[0]);
             break;
           }
           default: {
@@ -397,19 +441,18 @@ export const makeSlogSenderKit = tracer => {
           vsr: [status],
           ...attrs
         } = slogAttrs;
-        spans.end(
-          ['syscall', slogAttrs.crankNum],
-          { status, ...attrs },
-          status !== 'ok' && status,
-        );
+        const key = ['syscall', slogAttrs.crankNum];
+        if (spans.has(key)) {
+          spans.end(key, { status, ...attrs }, status !== 'ok' && status);
+        }
         break;
       }
       case 'cosmic-swingset-bootstrap-block-start': {
-        spans.start(`bootstrap-block`, spans.top());
+        spans.push(`bootstrap-block`);
         break;
       }
       case 'cosmic-swingset-bootstrap-block-finish': {
-        spans.end(`bootstrap-block`);
+        spans.pop(`bootstrap-block`);
         while (spans.top()) {
           // Pop off all our context.
           spans.pop();
@@ -421,7 +464,7 @@ export const makeSlogSenderKit = tracer => {
           // Reset the stack, if we didn't get all the events.
           spans.pop();
         }
-        spans.push(`block`);
+        spans.push(`block ${slogAttrs.blockHeight}`);
         spans.start(`begin-block`, spans.top());
         spans.end(`begin-block`);
         break;
@@ -458,17 +501,24 @@ export const makeSlogSenderKit = tracer => {
       }
       case 'cosmic-swingset-save-external-finish': {
         spans.pop('save-external');
-        spans.pop('block');
+        spans.pop(); // 'block ...'
+        break;
+      }
+      case 'solo-process-kernel-start': {
+        spans.push(`solo-process-kernel`);
+        break;
+      }
+      case 'solo-process-kernel-finish': {
+        spans.pop(`solo-process-kernel`);
         break;
       }
       case 'crank-start': {
-        const crankAttrs = shortenMessageAttrs(slogAttrs.message);
-        spans.startNamed(
-          crankAttrs['message.msg.method'] || crankAttrs['message.type'],
-          getCrankKey(),
-          spans.top(),
-          crankAttrs,
+        const [name, crankAttrs, links] = extractMessageAttrs(
+          slogAttrs.message,
         );
+        spans.startNamed(name, getCrankKey(true), spans.top(), crankAttrs, {
+          links,
+        });
         break;
       }
       case 'clist': {
