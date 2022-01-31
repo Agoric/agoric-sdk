@@ -33,7 +33,7 @@
     "@agoric/captp": "^1.10.8",
     "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
-    "@endo/marshal": "^0.5.0",
+    "@endo/marshal": "^0.5.4",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
@@ -48,7 +48,7 @@
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1",
-    "ses": "^0.15.4"
+    "ses": "^0.15.7"
   },
   "files": [
     "src/",
