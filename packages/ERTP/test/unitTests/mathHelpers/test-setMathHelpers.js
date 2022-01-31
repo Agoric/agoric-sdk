@@ -11,7 +11,7 @@ import { mockBrand } from './mockBrand.js';
 // AmountMath so that we can test that any duplication is handled
 // correctly.
 
-const runSetMathHelpersTests = (t, [a, b, c], a2 = undefined) => {
+const runSetMathHelpersTests = (t, [a, b, c], a2) => {
   // a2 is a copy of a which should have the same values but not same
   // identity. This doesn't make sense to use for handle tests, but
   // makes sense for anything where the identity is based on data.

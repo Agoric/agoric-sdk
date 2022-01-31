@@ -8,6 +8,10 @@ import { assert, details as X } from '@agoric/assert';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
 
+/**
+ * @param {Function} [testContextSetter]
+ * @param {(val: any) => any} [makeRemote]
+ */
 function makeFakeVatAdmin(testContextSetter, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is
   // provided to allow unit testing of contracts that call zcf.shutdown()

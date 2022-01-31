@@ -170,7 +170,9 @@ function makeManagerKit(
     transcriptManager.startReplayDelivery(expectedSyscalls);
 
     // we slog the replay just like the original, but some fields are missing
+    /** @type {any} */
     const newCrankNum = undefined; // TODO think of a way to correlate this
+    /** @type {any} */
     const kd = undefined;
     const vd = delivery;
     const replay = true;
