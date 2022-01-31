@@ -201,15 +201,6 @@
  */
 
 /**
- * @callback MakeInterestCalculator
- * @param {Brand} brand
- * @param {Ratio} rate
- * @param {RelativeTime} chargingPeriod
- * @param {RelativeTime} recordingPeriod
- * @returns {CalculatorKit}
- */
-
-/**
  * @typedef {Object} VaultParamManager
  * @property {() => Record<Keyword, ParamShortDescription> & {
  *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },

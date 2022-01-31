@@ -72,15 +72,9 @@ async function main(t, argv) {
   return E(controller).dump();
 }
 
-const expectedVaultFactoryLog = [
-  '=> alice and the vaultFactory are set up',
-  '=> alice.oneLoanWithInterest called',
-  'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510000n]"} after borrowing',
-  'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510035n]"} after interest',
-];
-
+// NB: yarn build if changing any of the contract bundles under test
 test.serial('vaultFactory', async t => {
-  const startingValues = [[100], [1000]];
+  const startingValues = [[100], [1000]]; // [aliceValues, ownerValues]
   const dump = await main(t, ['oneLoanWithInterest', startingValues]);
-  t.deepEqual(dump.log, expectedVaultFactoryLog);
+  t.snapshot(dump.log);
 });
