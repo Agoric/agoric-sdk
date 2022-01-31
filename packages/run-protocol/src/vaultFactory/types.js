@@ -16,7 +16,7 @@
  */
 
 /**
- * @typedef {Object} Rates - XXX loan terms?
+ * @typedef {Object} Rates
  * @property {Ratio} initialMargin - minimum over-collateralization
  * required to open a loan
  * @property {Ratio} liquidationMargin - margin below which collateral will be
@@ -41,7 +41,7 @@
  * @property {() => Issuer} getRunIssuer
  * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
  * @property {(paramDescription: ParamDescription) => Ratio} getRatioParamState
- * @property {() => Record<Keyword,ParamShortDescription>} getGovernedParams
+ * @property {() => Record<Keyword, ParamShortDescription>} getGovernedParams
  * @property {() => Promise<GovernorPublic>} getContractGovernor
  * @property {(name: string) => Amount} getInvitationAmount
  */
@@ -211,7 +211,7 @@
 
 /**
  * @typedef {Object} VaultParamManager
- * @property {() => Record<Keyword,ParamShortDescription> & {
+ * @property {() => Record<Keyword, ParamShortDescription> & {
  *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },
  *  'InterestRate': ParamRecord<'ratio'> & { value: Ratio },
  *  'LiquidationMargin': ParamRecord<'ratio'> & { value: Ratio },

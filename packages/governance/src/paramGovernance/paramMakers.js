@@ -2,30 +2,22 @@
 
 import { ParamType } from './paramManager.js';
 
-/**
- * @param {bigint} value
- */
+/** @param {bigint} value */
 const makeGovernedNat = value => {
   return harden({ type: ParamType.NAT, value });
 };
 
-/**
- * @param {Amount} value
- */
+/** @param {Amount} value */
 const makeGovernedAmount = value => {
   return harden({ type: ParamType.AMOUNT, value });
 };
 
-/**
- * @param {Ratio} value
- */
+/** @param {Ratio} value */
 const makeGovernedRatio = value => {
   return harden({ type: ParamType.RATIO, value });
 };
 
-/**
- * @param {Brand} value
- */
+/** @param {Brand} value */
 const makeGovernedBrand = value => {
   return harden({ type: ParamType.BRAND, value });
 };
@@ -38,16 +30,12 @@ const makeGovernedInstallation = value => {
   return harden({ type: ParamType.INSTALLATION, value });
 };
 
-/**
- * @param {Amount} value
- */
+/** @param {Amount} value */
 const makeGovernedInvitation = value => {
   return harden({ type: ParamType.INVITATION, value });
 };
 
-/**
- * @param {string} value
- */
+/** @param {string} value */
 const makeGovernedString = value => {
   return harden({ type: ParamType.STRING, value });
 };

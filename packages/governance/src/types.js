@@ -407,16 +407,16 @@
 /**
  * @callback GetGovernedVaultParams
  * @returns {{
- *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },
- *  'InterestRate': ParamRecord<'ratio'> & { value: Ratio },
- *  'LiquidationMargin': ParamRecord<'ratio'> & { value: Ratio },
- *  'LoanFee': ParamRecord<'ratio'> & { value: Ratio },
+ *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
+ *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
  * }}
  */
 
 /**
  * @typedef {Object} ParamManagerBase
- * @property {() => Record<Keyword,ParamShortDescription>} getParams
+ * @property {() => Record<Keyword, ParamShortDescription>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance

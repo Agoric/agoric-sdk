@@ -58,8 +58,6 @@ const makeLoanTimingManager = initialValues => {
 };
 
 /**
- * XXX maybe call this "loan terms"?
- *
  * @param {Rates} rates
  * @returns {VaultParamManager}
  */
