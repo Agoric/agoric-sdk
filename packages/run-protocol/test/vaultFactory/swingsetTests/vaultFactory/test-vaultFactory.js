@@ -12,7 +12,7 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import liquidateBundle from '../../../../bundles/bundle-liquidateMinimum.js';
+import liquidateMinimumBundle from '../../../../bundles/bundle-liquidateMinimum.js';
 import ammBundle from '../../../../bundles/bundle-amm.js';
 import vaultFactoryBundle from '../../../../bundles/bundle-vaultFactory.js';
 import committeeBundle from '../../../../bundles/bundle-committee.js';
@@ -25,23 +25,13 @@ const dirname = path.dirname(filename);
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
 const test = rawTest;
 
-test.before(async t => {
-  const kernelBundles = await buildKernelBundles();
-
-  const nameToBundle = [
-    ['liquidateMinimum', liquidateBundle],
-    ['amm', ammBundle],
-    ['vaultFactory', vaultFactoryBundle],
-    ['committee', committeeBundle],
-    ['contractGovernor', contractGovernorBundle],
-    ['binaryVoteCounter', binaryVoteCounterBundle],
-  ];
-  const contractBundles = {};
-  nameToBundle.forEach(([name, bundle]) => {
-    contractBundles[name] = bundle;
-  });
-
-  const vatNames = ['alice', 'zoe', 'priceAuthority', 'owner'];
+/**
+ *
+ * @param {Record<string, unknown>} contractBundles
+ * @param {string[]} vatNames
+ * @returns {Promise<SwingSetConfig>}
+ */
+const buildSwingSetConfig = async (contractBundles, vatNames) => {
   const vatNameToSource = vatNames.map(name => {
     const source = `${dirname}/vat-${name}.js`;
     return [name, source];
@@ -52,15 +42,34 @@ test.before(async t => {
   const bundles = await Promise.all(
     vatNameToSource.map(([_, source]) => bundleSource(source)),
   );
+
+  /** @type {SwingSetConfigDescriptor} */
   const vats = {};
   [...vatNames, 'bootstrap'].forEach(
     (name, index) => (vats[name] = { bundle: bundles[index] }),
   );
-
   vats.bootstrap.parameters = { contractBundles };
 
   const config = { bootstrap: 'bootstrap', vats };
   config.defaultManagerType = 'xs-worker';
+  return config;
+};
+
+test.before(async t => {
+  const kernelBundles = await buildKernelBundles();
+
+  const contractBundles = {
+    liquidateMinimum: liquidateMinimumBundle,
+    amm: ammBundle,
+    vaultFactory: vaultFactoryBundle,
+    committee: committeeBundle,
+    contractGovernor: contractGovernorBundle,
+    binaryVoteCounter: binaryVoteCounterBundle,
+  };
+
+  const vatNames = ['alice', 'zoe', 'priceAuthority', 'owner'];
+
+  const config = await buildSwingSetConfig(contractBundles, vatNames);
 
   t.context.data = { kernelBundles, config };
 });
