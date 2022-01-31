@@ -42,7 +42,6 @@ async function main() {
       `${srcDir}/vpool-xyk-amm/multipoolMarketMaker.js`,
       `${dirname}/../bundles/bundle-amm.js`,
     ],
-    [`${srcDir}/getRUN.js`, `${dirname}/../bundles/bundle-getRUN.js`],
     [
       '@agoric/governance/src/contractGovernor.js',
       `${dirname}/../bundles/bundle-contractGovernor.js`,
