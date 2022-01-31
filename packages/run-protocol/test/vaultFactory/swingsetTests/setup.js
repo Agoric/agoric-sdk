@@ -146,6 +146,19 @@ const makeVats = async (
   };
 };
 
+/**
+ * @param {(msg: any)=> void} log
+ * @param {ZoeService} zoe
+ * @param {unknown[]} issuers
+ * @param {Brand[]} brands
+ * @param {Payment[]} payments
+ * @param {*} installations
+ * @param {ManualTimer} timer
+ * @param {*} priceAuthorityVat
+ * @param {*} feeMintAccess
+ * @param {*} electorateInstance
+ * @param {*} electorateCreatorFacet
+ */
 const buildOwner = async (
   log,
   zoe,

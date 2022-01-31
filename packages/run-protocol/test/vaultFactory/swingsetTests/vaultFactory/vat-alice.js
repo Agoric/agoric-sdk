@@ -5,6 +5,15 @@ import { Far } from '@endo/marshal';
 import { assert, details as X, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
+/**
+ *
+ * @param {(msg: any)=> void} log
+ * @param {ZoeService} zoe
+ * @param {Brand[]} brands
+ * @param {Payment[]} payments
+ * @param {ManualTimer} timer configured to tick one day (@see setup.js)
+ * @returns {Promise<{startTest: Function}>}
+ */
 const build = async (log, zoe, brands, payments, timer) => {
   const [moolaBrand] = brands;
   const [moolaPayment] = payments;
@@ -46,8 +55,12 @@ const build = async (log, zoe, brands, payments, timer) => {
   });
 };
 
+/**
+ * @param {VatPowers & {testLog: *}} vatPowers
+ */
 export function buildRootObject(vatPowers) {
   return Far('root', {
-    build: (...args) => build(vatPowers.testLog, ...args),
+    build: (zoe, brands, payments, timer) =>
+      build(vatPowers.testLog, zoe, brands, payments, timer),
   });
 }
