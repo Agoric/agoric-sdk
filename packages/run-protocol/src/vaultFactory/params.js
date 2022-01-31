@@ -77,7 +77,7 @@ const makeVaultParamManager = rates => {
  * @param {ERef<ZoeService>} zoe
  * @param {Invitation} electorateInvitation
  * @returns {Promise<{
- *   getParams: GetParams,
+ *   getParams: GetGovernedVaultParams,
  *   getInvitationAmount: (name: string) => Amount,
  *   getInternalParamValue: (name: string) => Invitation,
  *   updateElectorate: (invitation: Invitation) => void,

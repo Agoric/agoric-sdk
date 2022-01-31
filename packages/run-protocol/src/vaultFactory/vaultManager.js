@@ -46,7 +46,7 @@ const trace = makeTracer(' VM ');
  *  'ChargingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
  *  'RecordingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
  * }} timingParams
- * @param {GetParams} getLoanParams
+ * @param {GetGovernedVaultParams} getLoanParams
  * @param {ReallocateReward} reallocateReward
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
