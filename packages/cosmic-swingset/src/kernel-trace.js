@@ -72,8 +72,8 @@ export const makeSlogSenderKit = tracer => {
   /** @type {LegacyMap<string, Span>} */
   const vatIdToSpan = makeLegacyMap('vatId');
 
-  /** @type {LegacyMap<string, { context: SpanContext, name: string }>} */
-  const kernelPromiseToSpanContext = makeLegacyMap('kernelPromise');
+  /** @type {LegacyMap<string, { context: SpanContext, name: string, sender: Span }>} */
+  const kernelPromiseToSender = makeLegacyMap('kernelPromise');
 
   const extractMessageAttrs = ({ type: messageType, ...message }) => {
     /** @type {Record<string, any>} */
@@ -98,12 +98,16 @@ export const makeSlogSenderKit = tracer => {
       }
       case 'notify': {
         const { kpid } = attrs;
-        if (kernelPromiseToSpanContext.has(kpid)) {
-          const { context, name: kpName } = kernelPromiseToSpanContext.get(
+        if (kernelPromiseToSender.has(kpid)) {
+          const { context, sender, name: kpName } = kernelPromiseToSender.get(
             kpid,
           );
           links.push({ context });
           name = `notify ${kpName}`;
+
+          // Mark the notification as the trigger of the span.
+          // eslint-disable-next-line no-use-before-define
+          spans.startNamed(name, ['crank-trigger'], sender, attrs);
         }
         break;
       }
@@ -332,12 +336,25 @@ export const makeSlogSenderKit = tracer => {
       case 'deliver': {
         const {
           vd: [delivery],
-          kd: _2,
+          kd,
           ...attrs
         } = slogAttrs;
         spans
           .get(getCrankKey())
           .setAttributes(cleanAttrs({ delivery, ...attrs }));
+        if (kd[0] === 'message') {
+          // This is where the message is delivered.
+          const [_type, target, { method, result }] = kd;
+          if (kernelPromiseToSender.has(result)) {
+            const { name, sender } = kernelPromiseToSender.get(result);
+            spans.startNamed(`deliver ${name}`, ['crank-trigger'], sender, {
+              target,
+              method,
+              result,
+              ...attrs,
+            });
+          }
+        }
         break;
       }
       case 'deliver-result': {
@@ -383,8 +400,19 @@ export const makeSlogSenderKit = tracer => {
               result,
             });
             if (result) {
-              kernelPromiseToSpanContext.init(result, {
+              // Tracing the sender.
+              const sender = spans.startNamed(
+                name,
+                ['sent'],
+                spans.has('crank-trigger')
+                  ? spans.get('crank-trigger')
+                  : undefined,
+                { target, method, result, ...attrs },
+              );
+              spans.end('sent');
+              kernelPromiseToSender.init(result, {
                 context: syscall.spanContext(),
+                sender,
                 name,
               });
             }
@@ -398,18 +426,25 @@ export const makeSlogSenderKit = tracer => {
           case 'resolve': {
             const [_, _thatVat, parts] = ksc;
             const links = [];
-            for (const [kp, _rejected, _args] of parts) {
+            for (const [kp, rejected, _args] of parts) {
               // We don't (yet) track every promise, so make this conditional.
-              if (kernelPromiseToSpanContext.has(kp)) {
-                const { context } = kernelPromiseToSpanContext.get(kp);
+              if (kernelPromiseToSender.has(kp)) {
+                const { context, sender } = kernelPromiseToSender.get(kp);
                 links.push({ context });
+                spans.startNamed(
+                  `${rejected ? 'reject' : 'fulfill'} ${kp}`,
+                  ['resolve'],
+                  sender,
+                  attrs,
+                );
+                spans.end('resolve');
               }
             }
             const syscall = makeSyscallSpan('resolve', {}, { links });
 
             for (const [kp, rejected, _args] of parts) {
               // Add events for each promise that was resolved.
-              if (kernelPromiseToSpanContext.has(kp)) {
+              if (kernelPromiseToSender.has(kp)) {
                 syscall.addEvent(kp, cleanAttrs({ rejected }), now);
                 // Save the info for notify messages instead of deleting here.
                 // kernelPromiseToSpan.delete(kp);
@@ -526,6 +561,9 @@ export const makeSlogSenderKit = tracer => {
         break;
       }
       case 'crank-finish': {
+        if (spans.has('crank-trigger')) {
+          spans.end('crank-trigger');
+        }
         spans.end(getCrankKey());
         break;
       }
