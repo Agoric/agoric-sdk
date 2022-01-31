@@ -22,7 +22,7 @@ jest.mock('@agoric/ui-components', () => ({
     `${value} ${displayInfo?.assetKind} ${displayInfo?.decimalPlaces}`,
 }));
 
-jest.mock('../../util/Date', () => ({ formatDateNow: stamp => stamp }));
+jest.mock('../../util/Date', () => ({ formatDateNow: stamp => String(stamp) }));
 
 const pendingOffers = new Set();
 const setPendingOffers = jest.fn();

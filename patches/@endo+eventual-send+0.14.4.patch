@@ -1,0 +1,13 @@
+diff --git a/node_modules/@endo/eventual-send/src/handled-promise.js b/node_modules/@endo/eventual-send/src/handled-promise.js
+index d7f18d0..3772e5d 100644
+--- a/node_modules/@endo/eventual-send/src/handled-promise.js
++++ b/node_modules/@endo/eventual-send/src/handled-promise.js
+@@ -427,7 +427,7 @@ export const makeHandledPromise = () => {
+     },
+     resolve(value) {
+       // Resolving a Presence returns the pre-registered handled promise.
+-      let resolvedPromise = presenceToPromise.get(value);
++      let resolvedPromise = presenceToPromise.get(/** @type {any} */ (value));
+       if (!resolvedPromise) {
+         resolvedPromise = Promise.resolve(value);
+       }

@@ -143,7 +143,7 @@ export function makeVatKeeper(
   }
 
   function nextDeliveryNum() {
-    const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
+    const num = Nat(BigInt(getRequired(`${vatID}.nextDeliveryNum`)));
     kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
     return num;
   }
@@ -312,13 +312,13 @@ export function makeVatKeeper(
 
       let id;
       if (type === 'object') {
-        id = Nat(BigInt(kvStore.get(`${vatID}.o.nextID`)));
+        id = Nat(BigInt(getRequired(`${vatID}.o.nextID`)));
         kvStore.set(`${vatID}.o.nextID`, `${id + 1n}`);
       } else if (type === 'device') {
-        id = Nat(BigInt(kvStore.get(`${vatID}.d.nextID`)));
+        id = Nat(BigInt(getRequired(`${vatID}.d.nextID`)));
         kvStore.set(`${vatID}.d.nextID`, `${id + 1n}`);
       } else if (type === 'promise') {
-        id = Nat(BigInt(kvStore.get(`${vatID}.p.nextID`)));
+        id = Nat(BigInt(getRequired(`${vatID}.p.nextID`)));
         kvStore.set(`${vatID}.p.nextID`, `${id + 1n}`);
       } else {
         assert.fail(X`unknown type ${type}`);
@@ -559,7 +559,7 @@ export function makeVatKeeper(
 
   function vatStats() {
     function getCount(key, first) {
-      const id = Nat(BigInt(kvStore.get(key)));
+      const id = Nat(BigInt(getRequired(key)));
       return id - Nat(first);
     }
 

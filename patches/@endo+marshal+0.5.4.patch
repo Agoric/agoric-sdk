@@ -1,0 +1,105 @@
+diff --git a/node_modules/@endo/marshal/src/dot-membrane.js b/node_modules/@endo/marshal/src/dot-membrane.js
+index 6d23b7c..7f1f2fa 100644
+--- a/node_modules/@endo/marshal/src/dot-membrane.js
++++ b/node_modules/@endo/marshal/src/dot-membrane.js
+@@ -14,6 +14,8 @@ const { fromEntries } = Object;
+ const { ownKeys } = Reflect;
+ const { details: X } = assert;
+ 
++// TODO(erights): Add Converter type
++/** @param {any} [mirrorConverter] */
+ const makeConverter = (mirrorConverter = undefined) => {
+   /** @type {WeakMap<any,any>=} */
+   let mineToYours = new WeakMap();
+@@ -61,6 +63,7 @@ const makeConverter = (mirrorConverter = undefined) => {
+         break;
+       }
+       case 'remotable': {
++        /** @param {PropertyKey} [optVerb] */
+         const myMethodToYours = (optVerb = undefined) => (...yourArgs) => {
+           // We use mineIf rather than mine so that mine is not accessible
+           // after revocation. This gives the correct error behavior,
+diff --git a/node_modules/@endo/marshal/src/marshal-justin.js b/node_modules/@endo/marshal/src/marshal-justin.js
+index d32c27f..c9f47c0 100644
+--- a/node_modules/@endo/marshal/src/marshal-justin.js
++++ b/node_modules/@endo/marshal/src/marshal-justin.js
+@@ -396,7 +396,9 @@ const decodeToJustin = (encoding, shouldIndent = false) => {
+         return out.close(']');
+       }
+     } else {
+-      const names = ownKeys(rawTree);
++      // rawTree is an `EncodingRecord` which only has string keys,
++      // but since ownKeys is not generic, it can't propagate that
++      const names = /** @type {string[]} */ (ownKeys(rawTree));
+       if (names.length === 0) {
+         return out.next('{}');
+       } else {
+diff --git a/node_modules/@endo/marshal/src/marshal.js b/node_modules/@endo/marshal/src/marshal.js
+index fb24743..b7e4dc7 100644
+--- a/node_modules/@endo/marshal/src/marshal.js
++++ b/node_modules/@endo/marshal/src/marshal.js
+@@ -451,6 +451,7 @@ export function makeMarshal(
+ 
+           default: {
+             assert(
++              // @ts-ignore exhaustive check should make condition true
+               qclass !== 'ibid',
+               X`The protocol no longer supports ibid encoding: ${rawTree}.`,
+             );
+diff --git a/node_modules/@endo/marshal/src/passStyleOf.js b/node_modules/@endo/marshal/src/passStyleOf.js
+index 47e4d2a..6d9d791 100644
+--- a/node_modules/@endo/marshal/src/passStyleOf.js
++++ b/node_modules/@endo/marshal/src/passStyleOf.js
+@@ -15,21 +15,19 @@ import './types.js';
+ import './helpers/internal-types.js';
+ import { assertPassableSymbol } from './helpers/symbol.js';
+ 
++/** @typedef {Exclude<PassStyle, PrimitiveStyle | "promise">} HelperPassStyle */
++
+ const { details: X, quote: q } = assert;
+ const { ownKeys } = Reflect;
+ const { isFrozen } = Object;
+ 
+ /**
+- * @param {PassStyleHelper[]} passStyleHelpers The passStyleHelpers to register,
+- * in priority order.
+- * NOTE These must all be "trusted",
+- * complete, and non-colliding. `makePassStyleOf` may *assume* that each helper
+- * does what it is supposed to do. `makePassStyleOf` is not trying to defend
+- * itself against malicious helpers, though it does defend against some
+- * accidents.
+- * @returns {PassStyleOf}
++ * @param {PassStyleHelper[]} passStyleHelpers
++ * @returns {Record<HelperPassStyle, PassStyleHelper> }
+  */
+-const makePassStyleOf = passStyleHelpers => {
++
++const makeHelperTable = passStyleHelpers => {
++  /** @type {Record<HelperPassStyle, any> & {__proto__: null}} */
+   const HelperTable = {
+     __proto__: null,
+     copyArray: undefined,
+@@ -54,7 +52,22 @@ const makePassStyleOf = passStyleHelpers => {
+       X`missing helper for ${q(styleName)}`,
+     );
+   }
+-  harden(HelperTable);
++
++  return harden(HelperTable);
++};
++
++/**
++ * @param {PassStyleHelper[]} passStyleHelpers The passStyleHelpers to register,
++ * in priority order.
++ * NOTE These must all be "trusted",
++ * complete, and non-colliding. `makePassStyleOf` may *assume* that each helper
++ * does what it is supposed to do. `makePassStyleOf` is not trying to defend
++ * itself against malicious helpers, though it does defend against some
++ * accidents.
++ * @returns {PassStyleOf}
++ */
++const makePassStyleOf = passStyleHelpers => {
++  const HelperTable = makeHelperTable(passStyleHelpers);
+   const remotableHelper = HelperTable.remotable;
+ 
+   /**

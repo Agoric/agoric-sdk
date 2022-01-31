@@ -42,7 +42,7 @@ const makeNatPurseSelector = ({
   makeStyles,
 }) => ({
   label = 'Purse',
-  purseSelected = null,
+  purseSelected = /** @type {any} */ (null),
   onChange = _p => {},
   disabled = false,
   error = false,
