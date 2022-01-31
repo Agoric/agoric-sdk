@@ -1,5 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
-import { extractMessage } from '../util.js';
+import { extractMessage } from '../vat-util.js';
 
 export default function setup(syscall, state, _helpers, vatPowers) {
   const { testLog } = vatPowers;

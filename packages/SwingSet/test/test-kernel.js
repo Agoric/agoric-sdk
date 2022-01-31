@@ -1,17 +1,12 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import anylogger from 'anylogger';
+// eslint-disable-next-line import/order
 import { assert, details as X } from '@agoric/assert';
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
-import { createSHA256 } from '../src/hasher.js';
-
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/kernel/initializeKernel.js';
 import { makeVatSlot } from '../src/parseVatSlots.js';
-import { provideHostStorage } from '../src/hostStorage.js';
-import { checkKT, extractMessage } from './util.js';
+import { checkKT, extractMessage, makeKernelEndowments } from './util.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -46,29 +41,8 @@ function emptySetup(_syscall) {
   return dispatch;
 }
 
-function makeConsole(tag) {
-  const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
-
-function makeEndowments() {
-  return {
-    waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
-    runEndOfCrank: () => {},
-    makeConsole,
-    WeakRef,
-    FinalizationRegistry,
-    createSHA256,
-  };
-}
-
 function makeKernel() {
-  const endowments = makeEndowments();
+  const endowments = makeKernelEndowments();
   initializeKernel({}, endowments.hostStorage);
   return buildKernel(endowments, {}, {});
 }
@@ -1255,7 +1229,7 @@ test('pipelined promise queueing', async t => {
 });
 
 test('xs-worker default manager type', async t => {
-  const endowments = makeEndowments();
+  const endowments = makeKernelEndowments();
   initializeKernel({ defaultManagerType: 'xs-worker' }, endowments.hostStorage);
   buildKernel(endowments, {}, {});
   t.deepEqual(
