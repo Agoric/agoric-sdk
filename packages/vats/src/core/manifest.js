@@ -181,16 +181,4 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
   configureVaultFactoryUI: {
     consume: { agoricNames: true, nameAdmins: true, board: true, zoe: true },
   },
-  startGetRun: {
-    consume: {
-      zoe: true,
-      feeMintAccess: true,
-      agoricNames: true,
-      getRUNBundle: true,
-      chainTimerService: true,
-      nameAdmins: true,
-      bridgeManager: true,
-      client: true,
-    },
-  },
 });
