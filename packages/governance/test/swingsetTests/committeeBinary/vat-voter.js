@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { observeIteration } from '@agoric/notifier';
 import { keyEQ } from '@agoric/store';
 

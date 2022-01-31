@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { pureCopy, assertRecord } from '@agoric/marshal';
+import { pureCopy, assertRecord } from '@endo/marshal';
 
 // TODO: assertSubset is copied from Zoe. Move this code to a location
 // where it can be used by ERTP and Zoe easily. Perhaps another

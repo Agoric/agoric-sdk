@@ -5,7 +5,7 @@
 
 // This logic was mostly lifted from @agoric/swingset-vat liveSlots.js
 // Defects in it are mfig's fault.
-import { Remotable, Far, makeMarshal, QCLASS } from '@agoric/marshal';
+import { Remotable, Far, makeMarshal, QCLASS } from '@endo/marshal';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { isPromise, makePromiseKit } from '@agoric/promise-kit';
 

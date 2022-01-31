@@ -7,7 +7,7 @@ import '@agoric/zoe/exported.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';

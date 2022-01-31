@@ -1,5 +1,5 @@
 // @ts-check
-import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
+import { Remotable, passStyleOf, makeMarshal } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';

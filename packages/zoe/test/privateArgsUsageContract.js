@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 /** @type {ContractStartFn} */
 const start = (_zcf, privateArgs) => {

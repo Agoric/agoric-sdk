@@ -1,5 +1,5 @@
 import { E, makeCapTP } from '@agoric/captp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export const getCapTPHandler = (
   send,

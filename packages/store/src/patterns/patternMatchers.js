@@ -7,7 +7,7 @@ import {
   makeTagged,
   passStyleOf,
   hasOwnPropertyOf,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 import {
   compareAntiRank,
   compareRank,

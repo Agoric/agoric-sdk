@@ -5,7 +5,7 @@ import {
   passStyleOf,
   getInterfaceOf,
   makeMarshal,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';

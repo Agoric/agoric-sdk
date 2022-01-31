@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { E } from '@agoric/eventual-send';
 
 /**

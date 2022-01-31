@@ -2,7 +2,7 @@
 
 import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { Far, Remotable } from '@agoric/marshal';
+import { Far, Remotable } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';

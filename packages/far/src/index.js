@@ -1,5 +1,5 @@
 export { E } from '@agoric/eventual-send';
-export { Far, getInterfaceOf, passStyleOf } from '@agoric/marshal';
+export { Far, getInterfaceOf, passStyleOf } from '@endo/marshal';
 
 /**
  * @template T

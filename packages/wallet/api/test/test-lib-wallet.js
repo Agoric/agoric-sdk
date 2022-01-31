@@ -14,7 +14,7 @@ import { assert } from '@agoric/assert';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeWallet } from '../src/lib-wallet.js';
 

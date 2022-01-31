@@ -1,6 +1,6 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makePrintLog } from './printLog.js';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */

@@ -3,7 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@agoric/bundle-source';
 import { getAllState } from '@agoric/swing-store';
-import { parse } from '@agoric/marshal';
+import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/hostStorage.js';
 
 import {

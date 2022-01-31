@@ -1,7 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
 import { makePrintLog } from './printLog.js';

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeTagged } from '@agoric/marshal';
+import { makeTagged } from '@endo/marshal';
 import { makeCopySet } from '../src/keys/checkKey.js';
 import {
   setIsSuperset,

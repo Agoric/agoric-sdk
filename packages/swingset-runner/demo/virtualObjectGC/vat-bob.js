@@ -1,6 +1,6 @@
 /* global makeKind */
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export function buildRootObject(_vatPowers) {
   function makeThingInstance(state) {

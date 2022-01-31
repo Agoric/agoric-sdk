@@ -8,7 +8,7 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeWallet } from '../src/lib-wallet.js';
 
 import '../src/types.js';

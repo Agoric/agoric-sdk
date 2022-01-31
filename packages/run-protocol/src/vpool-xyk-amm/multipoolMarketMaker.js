@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeWeakStore, keyEQ } from '@agoric/store';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';

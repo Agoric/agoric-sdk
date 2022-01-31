@@ -1,7 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Far, Remotable } from '@agoric/marshal';
+import { Far, Remotable } from '@endo/marshal';
 
 import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';

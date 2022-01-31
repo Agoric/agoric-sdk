@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { QCLASS } from '@agoric/marshal';
+import { QCLASS } from '@endo/marshal';
 
 function compareArraysOfStrings(a, b) {
   a = a.join(' ');

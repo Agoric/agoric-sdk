@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, assertPassable, passStyleOf } from '@agoric/marshal';
+import { Far, assertPassable, passStyleOf } from '@endo/marshal';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
 const { details: X, quote: q } = assert;

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { passStyleOf, assertRemotable, assertRecord } from '@agoric/marshal';
+import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
 import './types.js';
 import { M, matches } from '@agoric/store';

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeMarshal, mapIterable } from '@agoric/marshal';
+import { makeMarshal, mapIterable } from '@endo/marshal';
 import { makeLegacyMap, makeScalarMap } from '@agoric/store';
 import { assert, details as X, q } from '@agoric/assert';
 

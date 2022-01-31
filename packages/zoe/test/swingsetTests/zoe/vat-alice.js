@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
@@ -401,7 +401,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const { mintAndSellNFT } = installations;
     const { creatorFacet } = await E(zoe).startInstance(mintAndSellNFT);
 
-    // completeObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
+    // completeObj exists because of a current limitation in @endo/marshal : https://github.com/Agoric/agoric-sdk/issues/818
     const {
       sellItemsInstance: ticketSalesInstance,
       sellItemsCreatorSeat,

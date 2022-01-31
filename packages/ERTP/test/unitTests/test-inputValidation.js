@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
 
 test('makeIssuerKit bad allegedName', async t => {

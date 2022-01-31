@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { WeakRef, FinalizationRegistry } from '../src/weakref.js';

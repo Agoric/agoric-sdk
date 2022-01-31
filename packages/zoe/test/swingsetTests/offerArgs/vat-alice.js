@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 const build = async (log, zoe, installations) => {
   return Far('build', {

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export const ammMock = Far('mock AMM', {
   getInputPrice(amountIn, amountOut) {

@@ -23,7 +23,7 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/captp": "^1.10.8",
-    "@agoric/marshal": "^0.5.0",
+    "@endo/marshal": "^0.5.0",
     "@agoric/promise-kit": "^0.2.29",
     "robot3": "^0.2.19"
   },

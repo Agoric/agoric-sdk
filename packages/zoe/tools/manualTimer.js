@@ -4,7 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { makeLegacyMap } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import './types.js';
 import './internal-types.js';

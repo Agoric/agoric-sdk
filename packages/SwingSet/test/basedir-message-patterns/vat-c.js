@@ -1,4 +1,4 @@
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { buildPatterns } from '../message-patterns.js';
 
 export function buildRootObject(vatPowers) {

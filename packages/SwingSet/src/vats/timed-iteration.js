@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 // TODO There's nothing SwingSet specific in this file. It should probably
 // live in @agoric/notifier. But we'd also need to move the

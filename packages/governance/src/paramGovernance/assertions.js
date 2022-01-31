@@ -1,6 +1,6 @@
 // @ts-check
 
-import { isRemotable } from '@agoric/marshal';
+import { isRemotable } from '@endo/marshal';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 const { details: X } = assert;

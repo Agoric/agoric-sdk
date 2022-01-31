@@ -167,7 +167,7 @@ The standard device source file should export a function named
 
 ```js
 // exampledevice-src.js
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export function buildRootDeviceNode(tools) {
   // tools contains: SO, getDeviceState, setDeviceState, endowments,
@@ -225,7 +225,7 @@ using `E(presence).methodname(args)`, device code must use `SO` (for
 
 ```js
 // hello-device-src.js
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 export function buildRootDeviceNode(tools) {
   return Far('root',
     callMe(callbackObj) { SO(callbackObj).hello('there'); },
