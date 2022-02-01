@@ -17,7 +17,6 @@
     "packages/tame-metering",
     "packages/transform-metering",
     "packages/same-structure",
-    "packages/captp",
     "packages/stat-logger",
     "packages/swing-store",
     "packages/SwingSet",
