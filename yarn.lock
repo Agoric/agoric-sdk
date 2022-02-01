@@ -2275,6 +2275,16 @@
   resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.17.tgz#0e2c960a9622d2fe2b616be7a8a7c8032c3737c7"
   integrity sha512-L7Pug/WdmsX6FERJ/harLywE+HPmjcE79xaHEmKToF3r0gXi+6yefk5rdAedX3q6lvBAsvuCb/07In4TU1oBrw==
 
+"@endo/captp@^1.10.12":
+  version "1.10.12"
+  resolved "https://registry.yarnpkg.com/@endo/captp/-/captp-1.10.12.tgz#69ce23a49ecfdf0bad84f931a55df797d2cfd0ed"
+  integrity sha512-tdughHAu1V8+NyXikrEXJfyyq/+CIcsAx9dQ3ZWf34c7gYJPSQtaDFCheDmNwDoVBn1SMGg+8cVjSmbJe8pWtw==
+  dependencies:
+    "@endo/eventual-send" "^0.14.4"
+    "@endo/marshal" "^0.5.4"
+    "@endo/nat" "^4.1.4"
+    "@endo/promise-kit" "^0.2.33"
+
 "@endo/cjs-module-analyzer@^0.2.17":
   version "0.2.17"
   resolved "https://registry.yarnpkg.com/@endo/cjs-module-analyzer/-/cjs-module-analyzer-0.2.17.tgz#002742b7a1c44eab92aaf91ed00665666c20b7f0"
