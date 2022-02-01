@@ -5,7 +5,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
+import '@endo/init';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';

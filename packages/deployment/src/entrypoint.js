@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 /* global setInterval */
 
-import '@agoric/install-ses';
+import '@endo/init';
 
 import fs from 'fs';
 import path from 'path';

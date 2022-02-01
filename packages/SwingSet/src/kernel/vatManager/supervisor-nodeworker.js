@@ -1,7 +1,7 @@
 // @ts-check
 // this file is loaded at the start of a new Worker, which makes it a new JS
 // environment (with it's own Realm), so we must install-ses too.
-import '@agoric/install-ses';
+import '@endo/init';
 import { parentPort } from 'worker_threads';
 import anylogger from 'anylogger';
 

@@ -12,7 +12,7 @@ Usage:
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
 /* eslint-disable no-await-in-loop */
-import '@agoric/install-ses';
+import '@endo/init';
 import { assert, details as X, q } from '@agoric/assert';
 import { xsnap } from './xsnap.js';
 
@@ -39,7 +39,7 @@ const externals = [
   // https://github.com/endojs/endo/issues/768
   '@agoric/babel-standalone',
   '@agoric/bundle-source',
-  '@agoric/install-ses',
+  '@endo/init',
   '@agoric/install-metering-and-ses',
 ];
 

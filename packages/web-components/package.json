@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/install-ses": "^0.5.29",
+    "@endo/init": "^0.5.29",
     "@custom-elements-manifest/analyzer": "^0.4.17",
     "@lit-labs/react": "^1.0.1",
     "@open-wc/eslint-config": "^4.3.0",

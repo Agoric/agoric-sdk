@@ -17,7 +17,7 @@ export default [
   "@agoric/governance",
   "@agoric/import-bundle",
   "@agoric/import-manager",
-  "@agoric/install-ses",
+  "@endo/init",
   "@agoric/notifier",
   "@agoric/pegasus",
   "@agoric/promise-kit",

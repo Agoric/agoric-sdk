@@ -4,7 +4,7 @@
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
+import '@endo/init';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import rawTest from 'ava';
 import path from 'path';

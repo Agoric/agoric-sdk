@@ -1,7 +1,7 @@
 // @ts-check
 
 // this file is loaded at the start of a new subprocess
-import '@agoric/install-ses';
+import '@endo/init';
 
 import anylogger from 'anylogger';
 import fs from 'fs';

@@ -46,7 +46,7 @@ const testRequire = function require(specifier) {
       return undefined;
     case '@endo/ses-ava':
       return { wrapTest: test => test };
-    case '@agoric/install-ses':
+    case '@endo/init':
       return undefined;
     case '@agoric/install-metering-and-ses':
       console.log('TODO: @agoric/install-metering-and-ses');

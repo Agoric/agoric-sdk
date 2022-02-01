@@ -2,7 +2,7 @@
 // @ts-check
 /* eslint no-await-in-loop: ["off"] */
 
-import '@agoric/install-ses';
+import '@endo/init';
 
 /**
  * @template T

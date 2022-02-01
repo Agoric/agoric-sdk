@@ -1,4 +1,4 @@
 import './console-shim.js';
-import '@agoric/install-ses';
+import '@endo/init';
 
 harden(console);

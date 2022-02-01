@@ -30,7 +30,7 @@
     "@endo/marshal": "^0.5.4"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.29",
+    "@endo/init": "^0.5.29",
     "@endo/ses-ava": "^0.2.17",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
