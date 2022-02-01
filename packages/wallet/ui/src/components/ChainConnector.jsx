@@ -9,6 +9,9 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
+
 import { NETWORK_CONFIGS, suggestChain } from '../util/SuggestChain';
 
 const useStyles = makeStyles(_ => ({
@@ -29,11 +32,28 @@ const useStyles = makeStyles(_ => ({
   },
 }));
 
+const Alert = React.forwardRef(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
+
 const ChainConnector = () => {
   const classes = useStyles();
   const [dialogOpened, setDialogOpened] = useState(false);
   const [networkConfig, setNetworkConfig] = useState(null);
   const [connectionInProgress, setConnectionInProgress] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState(null);
+
+  const handleSnackbarClose = (_, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setSnackbarMessage(null);
+  };
+
+  const openSnackbar = message => {
+    setSnackbarMessage(message);
+  };
 
   const handleClose = () => {
     setDialogOpened(false);
@@ -55,7 +75,7 @@ const ChainConnector = () => {
     const connect = async () => {
       if (!window.getOfflineSigner || !window.keplr) {
         setNetworkConfig(null);
-        alert('Please install the Keplr extension');
+        openSnackbar('Please install the Keplr extension');
       } else if (window.keplr.experimentalSuggestChain) {
         try {
           const cosmJS = await suggestChain(networkConfig[0]);
@@ -71,7 +91,9 @@ const ChainConnector = () => {
         }
       } else {
         setNetworkConfig(null);
-        alert('Please use the most recent version of the Keplr extension');
+        openSnackbar(
+          'Please use the most recent version of the Keplr extension',
+        );
       }
     };
     connect();
@@ -115,6 +137,19 @@ const ChainConnector = () => {
           </List>
         </div>
       </Dialog>
+      <Snackbar
+        open={snackbarMessage}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity="error"
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
