@@ -2,7 +2,7 @@
 
 /* global makeKind makeVirtualScalarWeakMap */
 
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { assert } from '@agoric/assert';
 import { handlePWarning } from '../handleWarning.js';
 

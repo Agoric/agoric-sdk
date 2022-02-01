@@ -7,7 +7,7 @@ import anylogger from 'anylogger';
 
 import '../../types.js';
 import { assert, details as X } from '@agoric/assert';
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import engineGC from '../../engine-gc.js';
 import { WeakRef, FinalizationRegistry } from '../../weakref.js';

@@ -10,7 +10,7 @@ import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
 import { createSHA256 } from './hasher.js';
