@@ -41,7 +41,7 @@
  * @property {() => Issuer} getRunIssuer
  * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
  * @property {(paramDescription: ParamDescription) => Ratio} getRatioParamState
- * @property {() => Record<Keyword,ParamShortDescription>} getGovernedParams
+ * @property {() => Record<Keyword, ParamShortDescription>} getGovernedParams
  * @property {() => Promise<GovernorPublic>} getContractGovernor
  * @property {(name: string) => Amount} getInvitationAmount
  */
@@ -147,7 +147,7 @@
  */
 
 /**
- * @typedef {Object} LoanParams
+ * @typedef {Object} LoanTiming
  * @property {RelativeTime} chargingPeriod
  * @property {RelativeTime} recordingPeriod
  */
@@ -177,29 +177,6 @@
  */
 
 /**
- * @callback MakeVaultManager
- * @param {ContractFacet} zcf
- * @param {ZCFMint} runMint
- * @param {Brand} collateralBrand
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {GetParams} getLoanParams
- * @param {ReallocateReward} reallocateReward
- * @param {ERef<TimerService>} timerService
- * @param {LiquidationStrategy} liquidationStrategy
- * @returns {VaultManager}
- */
-
-/**
- * @callback MakeVaultKit
- * @param {ContractFacet} zcf
- * @param {InnerVaultManager} manager
- * @param {ZCFMint} runMint
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {Timestamp} startTimeStamp
- * @returns {VaultKit}
- */
-
-/**
  * @typedef {Object} DebtStatus
  * @property {Timestamp} latestInterestUpdate
  * @property {Amount} interest
@@ -224,47 +201,19 @@
  */
 
 /**
- * @callback MakeInterestCalculator
- * @param {Brand} brand
- * @param {Ratio} rate
- * @param {RelativeTime} chargingPeriod
- * @param {RelativeTime} recordingPeriod
- * @returns {CalculatorKit}
- */
-
-/**
  * @typedef {Object} VaultParamManager
- * @property {GetParams} getParams
+ * @property {() => Record<Keyword, ParamShortDescription> & {
+ *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },
+ *  'InterestRate': ParamRecord<'ratio'> & { value: Ratio },
+ *  'LiquidationMargin': ParamRecord<'ratio'> & { value: Ratio },
+ *  'LoanFee': ParamRecord<'ratio'> & { value: Ratio },
+ * }} getParams
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
- * @property {(period: bigint) => void} updateChargingPeriod
- * @property {(period: bigint) => void} updateRecordingPeriod
  * @property {(margin: Ratio) => void} updateInitialMargin
  * @property {(margin: Ratio) => void} updateLiquidationMargin
  * @property {(ratio: Ratio) => void} updateInterestRate
  * @property {(ratio: Ratio) => void} updateLoanFee
- */
-
-/**
- * @typedef {Object} ElectorateParamManager
- * @property {GetParams} getParams
- * @property {(name: string) => Amount} getInvitationAmount
- * @property {(name: string) => Invitation} getInternalParamValue
- * @property {(invitation: Invitation) => void} updateElectorate
- */
-
-/**
- * @callback MakeVaultParamManager
- * @param {LoanParams} loanParams
- * @param {Rates} rates
- * @returns {VaultParamManager}
- */
-
-/**
- * @callback MakeElectorateParamManager
- * @param {ERef<ZoeService>} zoe
- * @param {Invitation} electorateInvitation
- * @returns {ElectorateParamManager}
  */
 
 /**
@@ -276,41 +225,4 @@
  *            ) => void} burnLosses
  * @param {LiquidationStrategy} strategy
  * @param {Brand} collateralBrand
- */
-
-/**
- * @callback MakeElectorateParams
- * @param {Amount} electorateInvitationAmount
- * @returns {Record<string,ParamShortDescription>}
- */
-
-/**
- * @callback MakeLoanParams
- * @param {LoanParams} loanParams
- * @param {Rates} rates
- * @returns {Record<string,ParamShortDescription>}
- */
-
-/**
- * @typedef {Object} GovernedVaultFactoryTerms
- * @property {XYKAMMPublicFacet} ammPublicFacet
- * @property {ERef<PriceAuthority>} priceAuthority
- * @property {Record<Keyword,ParamShortDescription>} loanParams
- * @property {ERef<TimerService>} timerService
- * @property {Installation} liquidationInstall
- * @property {Record<Keyword,ParamShortDescription>} main
- * @property {bigint} bootstrapPaymentValue
- */
-
-/**
- * @callback MakeGovernedTerms
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {LoanParams} loanParams
- * @param {Installation} liquidationInstall
- * @param {ERef<TimerService>} timerService
- * @param {Amount} invitationAmount
- * @param {Rates} rates
- * @param {XYKAMMPublicFacet} ammPublicFacet
- * @param {bigint=} bootstrapPaymentValue
- * @returns {GovernedVaultFactoryTerms}
  */

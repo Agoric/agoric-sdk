@@ -2,18 +2,22 @@
 
 import { ParamType } from './paramManager.js';
 
+/** @param {bigint} value */
 const makeGovernedNat = value => {
   return harden({ type: ParamType.NAT, value });
 };
 
+/** @param {Amount} value */
 const makeGovernedAmount = value => {
   return harden({ type: ParamType.AMOUNT, value });
 };
 
+/** @param {Ratio} value */
 const makeGovernedRatio = value => {
   return harden({ type: ParamType.RATIO, value });
 };
 
+/** @param {Brand} value */
 const makeGovernedBrand = value => {
   return harden({ type: ParamType.BRAND, value });
 };
@@ -26,11 +30,12 @@ const makeGovernedInstallation = value => {
   return harden({ type: ParamType.INSTALLATION, value });
 };
 
-// value is an invitation amount, not an invitation
+/** @param {Amount} value */
 const makeGovernedInvitation = value => {
   return harden({ type: ParamType.INVITATION, value });
 };
 
+/** @param {string} value */
 const makeGovernedString = value => {
   return harden({ type: ParamType.STRING, value });
 };

@@ -77,6 +77,12 @@ const startElectorate = async (zoe, installations) => {
   return { electorateCreatorFacet, electorateInstance };
 };
 
+/**
+ *
+ * @param {CommitteeElectorateCreatorFacet} electorateCreatorFacet
+ * @param {*} voterCreator
+ * @returns {Promise<unknown[]>}
+ */
 const createCommittee = async (electorateCreatorFacet, voterCreator) => {
   const invitations = await E(electorateCreatorFacet).getVoterInvitations();
 
@@ -146,6 +152,19 @@ const makeVats = async (
   };
 };
 
+/**
+ * @param {(msg: any)=> void} log
+ * @param {ZoeService} zoe
+ * @param {unknown[]} issuers
+ * @param {Brand[]} brands
+ * @param {Payment[]} payments
+ * @param {*} installations
+ * @param {ManualTimer} timer
+ * @param {*} priceAuthorityVat
+ * @param {*} feeMintAccess
+ * @param {*} electorateInstance
+ * @param {*} electorateCreatorFacet
+ */
 const buildOwner = async (
   log,
   zoe,
@@ -165,7 +184,7 @@ const buildOwner = async (
 
   const rates = makeRates(runBrand);
 
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -180,7 +199,7 @@ const buildOwner = async (
 
   const terms = makeGovernedTerms(
     priceAuthorityKit.priceAuthority,
-    loanParams,
+    loanTiming,
     installations.liquidateMinimum,
     timer,
     poserInvitationAmount,

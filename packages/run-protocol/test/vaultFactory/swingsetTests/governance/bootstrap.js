@@ -157,6 +157,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   await E(aliceP).startTest(testName, vaultFactory.publicFacet);
 };
 
+/** @type {BuildRootObjectForTestVat} */
 export function buildRootObject(vatPowers, vatParameters) {
   const { argv, contractBundles: cb } = vatParameters;
   return Far('root', { bootstrap: makeBootstrap(argv, cb, vatPowers) });

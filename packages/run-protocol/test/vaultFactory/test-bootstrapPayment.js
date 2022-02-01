@@ -108,13 +108,14 @@ const startTreasury = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
-  const loanParams = {
+  /** @type {LoanTiming} */
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
 
   const rates = makeRates(runBrand);
-  const loanParamTerms = makeLoanParams(loanParams, rates);
+  const loanParamTerms = makeLoanParams(loanTiming, rates);
 
   const treasuryTerms = {
     autoswapInstall,
