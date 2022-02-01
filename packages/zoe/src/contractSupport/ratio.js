@@ -59,7 +59,13 @@ export const assertIsRatio = ratio => {
   );
 };
 
-/** @type {MakeRatio} */
+/**
+ * @param {bigint} numerator
+ * @param {Brand} numeratorBrand
+ * @param {bigint=} denominator The default denominator is 100
+ * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
+ * @returns {Ratio}
+ */
 export const makeRatio = (
   numerator,
   numeratorBrand,
@@ -77,7 +83,11 @@ export const makeRatio = (
   });
 };
 
-/** @type {MakeRatioFromAmounts} */
+/**
+ * @param {Amount} numeratorAmount
+ * @param {Amount} denominatorAmount
+ * @returns {Ratio}
+ */
 export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   AmountMath.coerce(numeratorAmount.brand, numeratorAmount);
   AmountMath.coerce(denominatorAmount.brand, denominatorAmount);
@@ -159,7 +169,11 @@ export const invertRatio = ratio => {
   );
 };
 
-/** @type {AddRatios} */
+/**
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {Ratio}
+ */
 export const addRatios = (left, right) => {
   assertIsRatio(right);
   assertIsRatio(left);
@@ -180,7 +194,11 @@ export const addRatios = (left, right) => {
   );
 };
 
-/** @type {MultiplyRatios} */
+/**
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {Ratio}
+ */
 export const multiplyRatios = (left, right) => {
   assertIsRatio(right);
   assertIsRatio(left);
@@ -198,8 +216,12 @@ export const multiplyRatios = (left, right) => {
   );
 };
 
-// If ratio is between 0 and 1, subtract from 1.
-/** @type {OneMinus} */
+/**
+ * If ratio is between 0 and 1, subtract from 1.
+ *
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
 export const oneMinus = ratio => {
   assertIsRatio(ratio);
   assert(
@@ -213,7 +235,6 @@ export const oneMinus = ratio => {
   return makeRatio(
     subtract(ratio.denominator.value, ratio.numerator.value),
     ratio.numerator.brand,
-    // @ts-ignore asserts ensure values are Nats
     ratio.denominator.value,
     ratio.numerator.brand,
   );

@@ -255,5 +255,3 @@
  * @param {LiquidationStrategy} strategy
  * @param {Brand} collateralBrand
  */
-
-/** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultPair */

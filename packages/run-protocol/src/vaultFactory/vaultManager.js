@@ -95,6 +95,7 @@ export const makeVaultManager = (
   // XXX mutability and flow control
   /** @type {ReturnType<typeof makePrioritizedVaults>=} */
   let sortedVaultKits;
+  /** @type {MutableQuote=} */
   let outstandingQuote;
 
   // When any Vault's debt ratio is higher than the current high-water level,

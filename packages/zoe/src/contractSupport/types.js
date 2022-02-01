@@ -128,22 +128,6 @@
  */
 
 /**
- * @callback MakeRatio
- * @param {bigint} numerator
- * @param {Brand} numeratorBrand
- * @param {bigint=} denominator The default denominator is 100
- * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
- * @returns {Ratio}
- */
-
-/**
- * @callback MakeRatioFromAmounts
- * @param {Amount} numerator
- * @param {Amount} denominator
- * @returns {Ratio}
- */
-
-/**
  * @callback MultiplyBy
  * @param {Amount} amount
  * @param {Ratio} ratio
@@ -162,30 +146,4 @@
  * @typedef {MultiplyBy} FloorMultiplyBy
  * @typedef {DivideBy} FloorDivideBy
  * @typedef {DivideBy} CeilDivideBy
- */
-
-/**
- * @callback InvertRatio
- * @param {Ratio} ratio
- * @returns {Ratio}
- */
-
-/**
- * @callback OneMinus
- * @param {Ratio} ratio
- * @returns {Ratio}
- */
-
-/**
- * @callback AddRatios
- * @param {Ratio} left
- * @param {Ratio} right
- * @returns {Ratio}
- */
-
-/**
- * @callback MultiplyRatios
- * @param {Ratio} left
- * @param {Ratio} right
- * @returns {Ratio}
  */
