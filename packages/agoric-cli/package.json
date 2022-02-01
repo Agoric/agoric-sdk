@@ -32,7 +32,7 @@
     "@agoric/assert": "^0.3.15",
     "@agoric/bundle-source": "^2.0.1",
     "@agoric/captp": "^1.10.8",
-    "@endo/init": "^0.5.29",
+    "@endo/init": "^0.5.33",
     "@agoric/nat": "^4.1.0",
     "@agoric/promise-kit": "^0.2.29",
     "@endo/compartment-mapper": "^0.6.5",
