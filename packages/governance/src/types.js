@@ -51,6 +51,7 @@
  *   ParamRecord<'invitation'> & { value: Amount } |
  *   ParamRecord<'nat'> & { value: bigint } |
  *   ParamRecord<'ratio'> & { value: Ratio } |
+ *   ParamRecord<'relativeTime'> & { value: RelativeTime } |
  *   ParamRecord<'string'> & { value: string } |
  *   ParamRecord<'unknown'> & { value: unknown }
  * } ParamDescription
@@ -404,14 +405,18 @@
  */
 
 /**
- * @callback GetParams - getParams() retrieves a Record containing
- *   keyword pairs with descriptions of parameters under governance.
- * @returns {Record<Keyword,ParamShortDescription>}
+ * @callback GetGovernedVaultParams
+ * @returns {{
+ *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
+ *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
+ * }}
  */
 
 /**
  * @typedef {Object} ParamManagerBase
- * @property {GetParams} getParams
+ * @property {() => Record<Keyword, ParamShortDescription>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -539,7 +544,7 @@
  * @typedef {Object} GovernedPublicFacet
  * @property {() => Subscription<ParamDescription>} getSubscription
  * @property {VoteOnParamChange} getContractGovernor
- * @property {GetParams} getGovernedParams - get descriptions of
+ * @property {GetGovernedVaultParams} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
@@ -588,13 +593,6 @@
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
  * @property {(name: string) => any} getUnknown
- */
-
-/**
- * @callback HandleParamGovernance
- * @param {ContractFacet} zcf
- * @param {ParamManagerFull} paramManager
- * @returns {ParamGovernorBundle}
  */
 
 /**

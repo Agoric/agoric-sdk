@@ -29,7 +29,6 @@ const DEFAULT_POOL_FEE = 24n;
 const DEFAULT_PROTOCOL_FEE = 6n;
 
 /**
- *
  * @param {ERef<TimerService>} timer
  * @param {Instance} electorateInstance
  * @param {ERef<ZoeService>} zoe
@@ -209,7 +208,7 @@ export async function installOnChain({
     protocolFee,
   );
 
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: SECONDS_PER_HOUR,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -236,7 +235,7 @@ export async function installOnChain({
 
   const vaultFactoryTerms = makeGovernedTerms(
     priceAuthority,
-    loanParams,
+    loanTiming,
     liquidationInstall,
     chainTimerService,
     invitationAmount,

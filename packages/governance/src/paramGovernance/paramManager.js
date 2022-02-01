@@ -271,6 +271,8 @@ const makeParamManagerBuilder = zoe => {
     return harden(descriptions);
   };
 
+  // XXX some type safety but you don't know what keys are valid
+  // TODO replace with explicit keys that map to value types
   const makeParamManager = updateFunctions => {
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by

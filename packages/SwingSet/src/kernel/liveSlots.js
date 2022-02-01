@@ -1029,6 +1029,7 @@ function build(
     syscall.exit(false, args);
   }
 
+  /** @type {ExitVatWithFailure} */
   function exitVatWithFailure(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(reason));

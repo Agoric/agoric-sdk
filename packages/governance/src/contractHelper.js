@@ -8,16 +8,18 @@ const { details: X, quote: q } = assert;
 /**
  * Helper for the 90% of contracts that will have only a single set of
  * parameters. In order to support managed parameters, a contract only has to
- *   * define the parameter template, which includes name, type and value
- *   * call handleParamGovernance() to get wrapPublicFacet and wrapCreatorFacet
- *   * add any methods needed in the public and creator facets.
+ *   - define the parameter template, which includes name, type and value
+ *   - call handleParamGovernance() to get wrapPublicFacet and wrapCreatorFacet
+ *   - add any methods needed in the public and creator facets.
  *
- *   It's also crucial that the governed contract not interact with the product
- *   of wrapCreatorFacet(). The wrapped creatorFacet has the power to change
- *   parameter values, and the governance guarantees only hold if they're not
- *   used directly by the governed contract.
+ *  It's also crucial that the governed contract not interact with the product
+ *  of wrapCreatorFacet(). The wrapped creatorFacet has the power to change
+ *  parameter values, and the governance guarantees only hold if they're not
+ *  used directly by the governed contract.
  *
- *  @type {HandleParamGovernance}
+ * @param {ContractFacet} zcf
+ * @param {ParamManagerFull} paramManager
+ * @returns {ParamGovernorBundle}
  */
 const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
@@ -49,6 +51,8 @@ const handleParamGovernance = (zcf, paramManager) => {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
       getContractGovernor: () => electionManager,
+      /** @type {GetGovernedVaultParams} */
+      // @ts-expect-error we know this ParamManagerFull is really a GetGovernedVaultParams
       getGovernedParams: () => paramManager.getParams(),
       ...typedAccessors,
     });
