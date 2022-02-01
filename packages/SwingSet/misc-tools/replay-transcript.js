@@ -1,6 +1,6 @@
 /* global WeakRef FinalizationRegistry */
 import fs from 'fs';
-// import '@agoric/install-ses';
+// import '@endo/init';
 import '../tools/install-ses-debug.js';
 import zlib from 'zlib';
 import readline from 'readline';

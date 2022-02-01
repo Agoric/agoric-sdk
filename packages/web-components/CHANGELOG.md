@@ -22,7 +22,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* have main entry points use `@agoric/install-ses`, not `ses` ([dce92ac](https://github.com/Agoric/agoric-sdk/commit/dce92acfac4dd0a5de048f7d7865e0e3cdc14396))
+* have main entry points use `@endo/init`, not `ses` ([dce92ac](https://github.com/Agoric/agoric-sdk/commit/dce92acfac4dd0a5de048f7d7865e0e3cdc14396))
 * **wallet-connection:** actually find the wallet admin object ([e5a3e83](https://github.com/Agoric/agoric-sdk/commit/e5a3e83633ee6237eca61f1e63a12ef41f46005e))
 
 

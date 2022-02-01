@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import '@agoric/install-ses/pre-bundle-source.js';
-import '@agoric/install-ses';
+import '@endo/init/pre-bundle-source.js';
+import '@endo/init';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';

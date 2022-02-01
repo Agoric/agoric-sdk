@@ -1,6 +1,6 @@
 // XS resource exhaustion tests
 
-import '@agoric/install-ses';
+import '@endo/init';
 
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies

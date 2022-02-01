@@ -1,5 +1,5 @@
 // @ts-check
-import '@agoric/install-ses';
+import '@endo/init';
 
 import { wrapTest } from '@endo/ses-ava';
 import rawTest from 'ava';

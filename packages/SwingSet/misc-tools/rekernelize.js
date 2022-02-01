@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 import 'node-lmdb';
-import '@agoric/install-ses';
+import '@endo/init';
 
 import fs from 'fs';
 import path from 'path';

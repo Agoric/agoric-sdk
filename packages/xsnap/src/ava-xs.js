@@ -4,7 +4,7 @@
 // TODO Remove babel-standalone preinitialization
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
-import '@agoric/install-ses';
+import '@endo/init';
 import process from 'process';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';

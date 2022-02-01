@@ -6,7 +6,7 @@
  * for virtual objects: makeKind, makeVirtualScalarWeakMap
  */
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 
 import './install-ses-debug.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
