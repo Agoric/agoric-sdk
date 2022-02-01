@@ -1,14 +1,12 @@
 ---
-
-- hosts: "{{ user }}"
+- hosts: '{{ user }}'
   user: root
   #any_errors_fatal: true
   gather_facts: no
   strategy: free
   vars:
     - service: ag-chain-cosmos
-    - user: "{{ service }}"
+    - user: '{{ service }}'
   roles:
     - stop
     - start
-

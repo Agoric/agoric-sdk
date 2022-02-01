@@ -1,13 +1,12 @@
 ---
-
 - name: "Install {{ data | default(service + '/data') }}/genesis.json"
   become_user: root
   become: true
   copy:
     src: "{{ data | default(service + '/data') }}/genesis.json"
-    dest: "/home/{{ service }}/.{{ service }}/config/genesis.json"
-    owner: "{{ service }}"
-    group: "{{ service }}"
+    dest: '/home/{{ service }}/.{{ service }}/config/genesis.json'
+    owner: '{{ service }}'
+    group: '{{ service }}'
     mode: 0644
 
 - name: "Install {{ data | default(service + '/data') }}/*.dst/config/app.toml"
@@ -15,9 +14,9 @@
   become: true
   copy:
     src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst/app.toml"
-    dest: "/home/{{ service }}/.{{ service }}/config/app.toml"
-    owner: "{{ service }}"
-    group: "{{ service }}"
+    dest: '/home/{{ service }}/.{{ service }}/config/app.toml'
+    owner: '{{ service }}'
+    group: '{{ service }}'
     mode: 0644
 
 - name: "Install {{ data | default(service + '/data') }}/*.dst/config/config.toml"
@@ -25,38 +24,38 @@
   become: true
   copy:
     src: "{{ data | default(service + '/data') }}/{{ inventory_hostname }}.dst/config.toml"
-    dest: "/home/{{ service }}/.{{ service }}/config/config.toml"
-    owner: "{{ service }}"
-    group: "{{ service }}"
+    dest: '/home/{{ service }}/.{{ service }}/config/config.toml'
+    owner: '{{ service }}'
+    group: '{{ service }}'
     mode: 0644
 
 - name: Set p2p.addr_book_strict=false
   ini_file:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    path: '/home/{{ service }}/.{{ service }}/config/config.toml'
     section: p2p
     option: addr_book_strict
-    value: "false"
+    value: 'false'
 
 # This limit is 40 by default, but that turns out to be too small
 # for a trivial testnet (no sentry nodes) with > 40 validators.
 - name: Set p2p.max_num_inbound_peers=200
   ini_file:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    path: '/home/{{ service }}/.{{ service }}/config/config.toml'
     section: p2p
     option: max_num_inbound_peers
     value: 200
 
 - name: Set tx_index.index_all_keys=true
   ini_file:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    path: '/home/{{ service }}/.{{ service }}/config/config.toml'
     section: tx_index
     option: index_all_keys
-    value: "true"
+    value: 'true'
 
-- name: "check if prometheus-tendermint.txt exists"
+- name: 'check if prometheus-tendermint.txt exists'
   delegate_to: localhost
   stat:
-    path: "{{ SETUP_HOME }}/prometheus-tendermint.txt"
+    path: '{{ SETUP_HOME }}/prometheus-tendermint.txt'
   register: prommint
 
 # NOTE: This is protected by the server firewall
@@ -67,30 +66,30 @@
 #    option: prometheus_listen_addr
 #    value: '"127.0.0.1:26660"'
 
-- name: "Set instrumentation.prometheus={{ prommint.stat.exists }}"
+- name: 'Set instrumentation.prometheus={{ prommint.stat.exists }}'
   ini_file:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    path: '/home/{{ service }}/.{{ service }}/config/config.toml'
     section: instrumentation
     option: prometheus
     value: '{{ "true" if prommint.stat.exists else "false" }}'
 
 - name: Listen for public RPC
   ini_file:
-    path: "/home/{{ service }}/.{{ service }}/config/config.toml"
+    path: '/home/{{ service }}/.{{ service }}/config/config.toml'
     section: rpc
     option: laddr
     value: '"tcp://0.0.0.0:26657"'
 
 - name: Turn on API server
   ini_file:
-    path: "/home/{{ service }}/.{{ service }}/config/app.toml"
+    path: '/home/{{ service }}/.{{ service }}/config/app.toml'
     section: api
     option: enable
-    value: "true"
+    value: 'true'
 
 - name: Enable Swagger
   ini_file:
-    path: "/home/{{ service }}/.{{ service }}/config/app.toml"
+    path: '/home/{{ service }}/.{{ service }}/config/app.toml'
     section: api
     option: swagger
-    value: "true"
+    value: 'true'

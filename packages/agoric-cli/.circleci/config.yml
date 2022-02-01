@@ -1,7 +1,6 @@
 version: 2.0
 
 references:
-
   node11: &node11image
     docker:
       - image: circleci/node:11
@@ -43,35 +42,34 @@ references:
       - image: circleci/node:7-browsers
 
   install_npm_default: &install_npm
-    run: 
+    run:
       name: Update npm
       command: 'sudo npm install -g npm@latest'
-  restore_cache_default: &restore_cache # special step to restore the dependency cache
+  restore_cache_default:
+    &restore_cache # special step to restore the dependency cache
     restore_cache:
-        # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
-        key: dependency-cache-{{ checksum "package.json" }}
+      # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+      key: dependency-cache-{{ checksum "package.json" }}
   install_npm_packages_default: &install_npm_packages
     run:
-        name: Install npm packages
-        command: npm install
+      name: Install npm packages
+      command: npm install
   save_cache_default: &save_cache # special step to save the dependency cache
-    save_cache: 
-        key: dependency-cache-{{ checksum "package.json" }}
-        paths:
-          - ./node_modules
+    save_cache:
+      key: dependency-cache-{{ checksum "package.json" }}
+      paths:
+        - ./node_modules
   update_realm_submodule_default: &update_realm_submodule
-    run: 
-        name: Git Submodule Update
-        command: git submodule update --init --recursive
+    run:
+      name: Git Submodule Update
+      command: git submodule update --init --recursive
 
-    
 jobs:
-
   # Lint and Test
 
   lint_and_test_node_11: &lint_and_test
     <<: *node11image
-    steps: 
+    steps:
       - checkout
       - *update_realm_submodule
       - *install_npm
@@ -88,7 +86,7 @@ jobs:
   lint_and_test_node_10:
     <<: *lint_and_test
     <<: *node10image
-      
+
   lint_and_test_node_9:
     <<: *lint_and_test
     <<: *node9image
@@ -105,7 +103,7 @@ jobs:
 
   pre_release_test_integration_node_11: &pre_release_test_integration
     <<: *node11browsersimage
-    steps: 
+    steps:
       - checkout
       - *update_realm_submodule
       - *install_npm
@@ -124,15 +122,15 @@ jobs:
   pre_release_test_integration_node_10:
     <<: *pre_release_test_integration
     <<: *node10browsersimage
-  
+
   pre_release_test_integration_node_9:
     <<: *pre_release_test_integration
     <<: *node9browsersimage
-  
+
   pre_release_test_integration_node_8:
     <<: *pre_release_test_integration
     <<: *node8browsersimage
-  
+
   pre_release_test_integration_node_7:
     <<: *pre_release_test_integration
     <<: *node7browsersimage
@@ -141,7 +139,7 @@ jobs:
 
   post_release_test_integration_node_11: &post_release_test_integration
     <<: *node11browsersimage
-    steps: 
+    steps:
       - checkout
       - *update_realm_submodule
       - *install_npm
@@ -171,27 +169,26 @@ jobs:
 
   post_release_test_integration_node_7:
     <<: *post_release_test_integration
-    <<: *node7browsersimage 
+    <<: *node7browsersimage
 
   npm_audit_node_11: &npm_audit
     docker:
       - image: circleci/golang:1.12.0-node
-    steps: 
+    steps:
       - checkout
-      - run: 
+      - run:
           name: Update npm
           command: 'sudo npm install -g npm@latest'
       - run:
           name: install hub
           command: |
-              set -xe
-              go get -u -d github.com/github/hub
-              cd /go/src/github.com/github/hub
-              go install github.com/github/hub
+            set -xe
+            go get -u -d github.com/github/hub
+            cd /go/src/github.com/github/hub
+            go install github.com/github/hub
       - run:
           name: Submit PR if npm audit fix makes changes
           command: ./scripts/npm-audit-fix.sh
-
 
 workflows:
   version: 2
@@ -202,14 +199,14 @@ workflows:
       - pre_release_test_integration_node_11
       - pre_release_test_integration_node_10
   nightly:
-     triggers:
-       - schedule:
-           cron: "0 0 * * *"
-           filters:
-             branches:
-               only:
-                 - master
-     jobs:
-        - npm_audit_node_11
-        - post_release_test_integration_node_11
-        - post_release_test_integration_node_10
+    triggers:
+      - schedule:
+          cron: '0 0 * * *'
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - npm_audit_node_11
+      - post_release_test_integration_node_11
+      - post_release_test_integration_node_10

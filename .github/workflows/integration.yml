@@ -2,7 +2,7 @@ name: Integration tests
 
 on:
   push:
-    branches: [ master ] # $default-branch
+    branches: [master] # $default-branch
   pull_request:
 
 jobs:
@@ -12,88 +12,88 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cli: [ link-cli, local-npm ]
+        cli: [link-cli, local-npm]
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-# Prerequisites
+      # Prerequisites
 
-    - uses: actions/setup-node@v1
-      with:
-        node-version: '14.x'
-    - name: cache node modules
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/yarn
-        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+      - name: cache node modules
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
-    # Select a branch on dapp to test against by adding text to the body of the
-    # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
-    # The default is 'main'
-    - name: Get the appropriate dapp branch
-      id: get-branch
-      uses: actions/github-script@0.9.0
-      with:
-        result-encoding: string
-        script: |
-          let branch = 'main';
-          if (context.payload.pull_request) {
-            const { body } = context.payload.pull_request;
-            const regex = /.*\#getting-started-branch:\s+(\S+)/;
-            const result = regex.exec(body);
-            if (result) {
-              branch = result[1];
+      # Select a branch on dapp to test against by adding text to the body of the
+      # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
+      # The default is 'main'
+      - name: Get the appropriate dapp branch
+        id: get-branch
+        uses: actions/github-script@0.9.0
+        with:
+          result-encoding: string
+          script: |
+            let branch = 'main';
+            if (context.payload.pull_request) {
+              const { body } = context.payload.pull_request;
+              const regex = /.*\#getting-started-branch:\s+(\S+)/;
+              const result = regex.exec(body);
+              if (result) {
+                branch = result[1];
+              }
             }
-          }
-          console.log(branch);
-          return branch;
+            console.log(branch);
+            return branch;
 
-    # 'yarn install' must be done at the top level, to build all the
-    # cross-package symlinks
-    - run: yarn install --frozen-lockfile
-    - run: yarn build
+      # 'yarn install' must be done at the top level, to build all the
+      # cross-package symlinks
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
 
-    - name: Link Agoric CLI from SDK
-      if: ${{ matrix.cli == 'link-cli' }}
-      run: |
-        yarn link-cli "$HOME/bin/agoric"
-        echo "AGORIC_CMD=[\"$HOME/bin/agoric\"]" >> $GITHUB_ENV
+      - name: Link Agoric CLI from SDK
+        if: ${{ matrix.cli == 'link-cli' }}
+        run: |
+          yarn link-cli "$HOME/bin/agoric"
+          echo "AGORIC_CMD=[\"$HOME/bin/agoric\"]" >> $GITHUB_ENV
 
-    - name: Start local NPM registry
-      if: ${{ matrix.cli == 'local-npm' }}
-      run: |
-        tmp_registry_log=`mktemp`
-        nohup npx verdaccio@^5.4.0 &>$tmp_registry_log &
-        # Wait for `verdaccio` to boot
-        grep -q 'http address' <(tail -f $tmp_registry_log)
+      - name: Start local NPM registry
+        if: ${{ matrix.cli == 'local-npm' }}
+        run: |
+          tmp_registry_log=`mktemp`
+          nohup npx verdaccio@^5.4.0 &>$tmp_registry_log &
+          # Wait for `verdaccio` to boot
+          grep -q 'http address' <(tail -f $tmp_registry_log)
 
-        # Set registry to local registry
-        npm set registry http://localhost:4873
-        yarn config set registry http://localhost:4873
+          # Set registry to local registry
+          npm set registry http://localhost:4873
+          yarn config set registry http://localhost:4873
 
-        # Login so we can publish packages
-        npx npm-cli-login@^1.0.0 -u user -p password -e user@example.com \
-          -r http://localhost:4873 --quotes
+          # Login so we can publish packages
+          npx npm-cli-login@^1.0.0 -u user -p password -e user@example.com \
+            -r http://localhost:4873 --quotes
 
-        npm whoami
+          npm whoami
 
-        yarn lerna publish --conventional-prerelease --canary --exact \
-          --dist-tag=blah --preid=dev-$(git rev-parse --short=7 HEAD) \
-          --no-push --no-verify-access --yes
+          yarn lerna publish --conventional-prerelease --canary --exact \
+            --dist-tag=blah --preid=dev-$(git rev-parse --short=7 HEAD) \
+            --no-push --no-verify-access --yes
 
-        yarn global add agoric@blah </dev/null
+          yarn global add agoric@blah </dev/null
 
-        # Use the locally-installed dist-tag.
-        echo 'AGORIC_INSTALL_OPTIONS=["blah"]' >> $GITHUB_ENV
-        echo 'AGORIC_START_OPTIONS=["--rebuild"]' >> $GITHUB_ENV
-        echo 'AGORIC_CMD=["agoric"]' >> $GITHUB_ENV
+          # Use the locally-installed dist-tag.
+          echo 'AGORIC_INSTALL_OPTIONS=["blah"]' >> $GITHUB_ENV
+          echo 'AGORIC_START_OPTIONS=["--rebuild"]' >> $GITHUB_ENV
+          echo 'AGORIC_CMD=["agoric"]' >> $GITHUB_ENV
 
-    - name: run agoric-cli integration-test
-      working-directory: ./packages/agoric-cli
-      run: yarn integration-test
-      env:
-        AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
-        # Try to avoid hitting a pessimal Actions output rate-limitation.
-        SOLO_MAX_DEBUG_LENGTH: '1024'
+      - name: run agoric-cli integration-test
+        working-directory: ./packages/agoric-cli
+        run: yarn integration-test
+        env:
+          AGORIC_INIT_OPTIONS: '["--dapp-branch=${{steps.get-branch.outputs.result}}"]'
+          # Try to avoid hitting a pessimal Actions output rate-limitation.
+          SOLO_MAX_DEBUG_LENGTH: '1024'

@@ -1,29 +1,28 @@
 ---
-
 - name: Synchronize helper
   synchronize:
-    src: "{{HELPER_BINARY}}"
+    src: '{{HELPER_BINARY}}'
     dest: /usr/local/bin/
     mode: push
   when: HELPER_BINARY is defined
 
 - name: Synchronize Agoric SDK
   synchronize:
-    src: "{{ AGORIC_SDK }}/"
-    dest: "/usr/src/agoric-sdk/"
+    src: '{{ AGORIC_SDK }}/'
+    dest: '/usr/src/agoric-sdk/'
     dirs: yes
     delete: yes
     checksum: yes
     mode: push
 
-- name: "Symlink ag-chain-cosmos"
+- name: 'Symlink ag-chain-cosmos'
   file:
-    src: "/usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos"
-    dest: "/usr/local/bin/ag-chain-cosmos"
+    src: '/usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos'
+    dest: '/usr/local/bin/ag-chain-cosmos'
     state: link
 
-- name: "Symlink ag-solo"
+- name: 'Symlink ag-solo'
   file:
-    src: "/usr/src/agoric-sdk/packages/solo/bin/ag-solo"
-    dest: "/usr/local/bin/ag-solo"
+    src: '/usr/src/agoric-sdk/packages/solo/bin/ag-solo'
+    dest: '/usr/local/bin/ag-solo'
     state: link

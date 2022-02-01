@@ -1,15 +1,14 @@
 ---
-
 #Note: You need to add LOGZIO_TOKEN variable with your API key.
 # Like this: ansible-playbook -e LOGZIO_TOKEN=ABCXYZ123456 -e JOURNALBEAT_BINARY=/usr/local/bin/journalbeat
 
-- hosts: "{{ service }}"
+- hosts: '{{ service }}'
   user: root
   #any_errors_fatal: true
   gather_facts: no
   strategy: free
   vars:
-    - service: "ag-chain-cosmos"
+    - service: 'ag-chain-cosmos'
     - units: "{{ hostvars[inventory_hostname]['units'] | default([service + '.service']) }}"
   roles:
     - fluentd
