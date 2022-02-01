@@ -22,7 +22,7 @@
     "@endo/compartment-mapper": "^0.6.5"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^2.0.1",
+    "@endo/bundle-source": "^2.0.5",
     "@endo/init": "^0.5.33",
     "@endo/ses-ava": "^0.2.17",
     "ava": "^3.12.1",

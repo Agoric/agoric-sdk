@@ -37,7 +37,7 @@
     "@endo/marshal": "^0.5.4"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^2.0.1",
+    "@endo/bundle-source": "^2.0.5",
     "@endo/init": "^0.5.33",
     "@agoric/swingset-vat": "^0.24.1",
     "ava": "^3.12.1",
