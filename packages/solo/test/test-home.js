@@ -10,7 +10,7 @@ import '@agoric/swingset-vat/tools/prepare-test-env.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';

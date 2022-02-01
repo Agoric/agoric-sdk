@@ -38,7 +38,7 @@ const externals = [
   // TODO Remove babel-standalone preinitialization
   // https://github.com/endojs/endo/issues/768
   '@agoric/babel-standalone',
-  '@agoric/bundle-source',
+  '@endo/bundle-source',
   '@endo/init',
   '@agoric/install-metering-and-ses',
 ];
@@ -311,7 +311,7 @@ async function avaConfig(args, options, { glob, readFile }) {
 /**
  * @param {string[]} args - CLI args (excluding node interpreter, script name)
  * @param {{
- *   bundleSource: typeof import('@agoric/bundle-source').default,
+ *   bundleSource: typeof import('@endo/bundle-source').default,
  *   spawn: typeof import('child_process')['spawn'],
  *   osType: typeof import('os')['type'],
  *   readFile: typeof import('fs')['promises']['readFile'],

@@ -8,7 +8,7 @@ import test from 'ava';
 import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 // offerArgsUsageContract is just used as a generic contract for the
 // purpose of registering a feeBrand before any zcfMint for the

@@ -3,7 +3,7 @@
 
 import { E, makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
 import path from 'path';
 import inquirer from 'inquirer';

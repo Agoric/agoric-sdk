@@ -9,7 +9,7 @@ import '@endo/init';
 import rawTest from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 import liquidateBundle from '../../../../bundles/bundle-liquidateMinimum.js';

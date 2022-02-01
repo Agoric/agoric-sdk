@@ -11,7 +11,7 @@ import test from 'ava';
 import path from 'path';
 
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 const CONTRACT_FILES = [
   'committee',

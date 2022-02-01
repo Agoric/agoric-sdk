@@ -15,7 +15,7 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.1",
+    "@endo/bundle-source": "^2.0.1",
     "@endo/init": "^0.5.33",
     "@agoric/vats": "^0.5.1",
     "ava": "^3.12.1"

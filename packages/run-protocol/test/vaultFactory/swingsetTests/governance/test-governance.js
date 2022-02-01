@@ -8,7 +8,7 @@ import '@endo/init';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import rawTest from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 import path from 'path';
 
