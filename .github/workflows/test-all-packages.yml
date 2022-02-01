@@ -56,10 +56,8 @@ jobs:
         with:
           node-version: 16
 
-      - name: lint check
-        run: yarn lint-check
-      - name: format check
-        run: yarn format-check
+      - name: yarn lint
+        run: yarn lint
 
   dev-canary:
     if: ${{github.event_name == 'push'}}
