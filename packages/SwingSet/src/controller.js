@@ -365,9 +365,11 @@ export async function makeSwingsetController(
 }
 
 /**
- * This is a helper for making Swingset controllers that automatically
- * initializing the SwingSet if it isn't already. It will not work for use cases
- * that need to configure devices.
+ * NB: To be used only in tests. An app with this may not survive a reboot.
+ *
+ * This helper makes Swingset controllers and automatically initializes the
+ * SwingSet if it isn't already. It will not work for use cases that need to
+ * configure devices.
  *
  * The official API does these as two separate steps because the two sometimes
  * need to happen at different times.  In particular, sometimes you need the
@@ -377,18 +379,11 @@ export async function makeSwingsetController(
  *
  * @param {SwingSetConfig} config
  * @param {string[]} argv
- * @param {{
- *   hostStorage?: HostStore,
- *   env?: Record<string, string>,
- *   verbose?: boolean,
- *   kernelBundles?: Record<string, string>,
- *   debugPrefix?: string,
- *   slogCallbacks?: unknown,
- *   testTrackDecref?: unknown,
- *   warehousePolicy?: { maxVatsOnline?: number },
- *   overrideVatManagerOptions?: { consensusMode?: boolean },
- *   slogFile?: string,
- * }} runtimeOptions
+ * @param {{ hostStorage?: HostStore, env?: Record<string, string>, verbose?:
+ *   boolean, kernelBundles?: Record<string, string>, debugPrefix?: string,
+ *   slogCallbacks?: unknown, testTrackDecref?: unknown, warehousePolicy?: {
+ *   maxVatsOnline?: number }, overrideVatManagerOptions?: { consensusMode?:
+ *   boolean }, slogFile?: string, }} runtimeOptions
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
