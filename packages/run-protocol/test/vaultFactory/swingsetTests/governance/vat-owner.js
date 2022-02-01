@@ -8,6 +8,7 @@ import { buildOwner } from '../setup.js';
 /** @type {BuildRootObjectForTestVat} */
 export function buildRootObject(vatPowers) {
   return Far('root', {
+    // @ts-expect-error spread not typed
     build: (...args) => buildOwner(vatPowers.testLog, ...args),
   });
 }
