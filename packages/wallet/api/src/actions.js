@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { E } from '@agoric/eventual-send';
 
 export const makePaymentActions = ({

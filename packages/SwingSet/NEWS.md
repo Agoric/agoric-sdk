@@ -208,7 +208,7 @@ evaluateExpr('a+1') === 5; // true
 ## Release 0.0.12 (07-Jun-2019)
 
 * move ERTP libraries and examples to `@agoric/ertp` (#73)
-* move marshalling code into `@agoric/marshal`
+* move marshalling code into `@endo/marshal`
 
 
 ## Release 0.0.11 (02-Jun-2019)

@@ -124,19 +124,23 @@ test('ratio - multiplyBy non Amount', t => {
   });
   // @ts-ignore Incorrect values for testing
   t.throws(() => floorMultiplyBy(badAmount, makeRatio(25n, brand)), {
-    message: 'value 3.5 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   // @ts-ignore Incorrect values for testing
   t.throws(() => ceilMultiplyBy(badAmount, makeRatio(25n, brand)), {
-    message: 'value 3.5 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   // @ts-ignore Incorrect values for testing
   t.throws(() => floorDivideBy(badAmount, makeRatio(25n, brand)), {
-    message: 'value 3.5 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   // @ts-ignore Incorrect values for testing
   t.throws(() => ceilDivideBy(badAmount, makeRatio(25n, brand)), {
-    message: 'value 3.5 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
 });
 
@@ -149,10 +153,12 @@ test('ratio - multiplyBy non Amount deprecated', t => {
     brand,
   });
   t.throws(() => multiplyBy(badAmount, makeRatio(25n, brand)), {
-    message: 'value 3.5 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   t.throws(() => divideBy(badAmount, makeRatio(25n, brand)), {
-    message: 'value 3.5 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
 });
 
@@ -338,7 +344,8 @@ test('ratio - Nats', t => {
 
   // @ts-ignore invalid arguments for testing
   t.throws(() => makeRatio(10.1, brand), {
-    message: 'value 10.1 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value 10.1 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
 });
 
@@ -401,11 +408,13 @@ test('ratio bad inputs', t => {
   const moe = value => AmountMath.make(brand, value);
   // @ts-ignore invalid arguments for testing
   t.throws(() => makeRatio(-3, brand), {
-    message: 'value -3 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value -3 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   // @ts-ignore invalid arguments for testing
   t.throws(() => makeRatio(3n, brand, 100.5), {
-    message: 'value 100.5 must be a bigint, copySet, or an array, not "number"',
+    message:
+      'value 100.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   // @ts-ignore invalid arguments for testing
   t.throws(() => makeRatioFromAmounts(3n, moe(30n)), {

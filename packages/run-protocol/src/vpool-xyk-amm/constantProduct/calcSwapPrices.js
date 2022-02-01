@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { swap } from './swap.js';
 import { assertKInvariantSellingX } from './invariants.js';

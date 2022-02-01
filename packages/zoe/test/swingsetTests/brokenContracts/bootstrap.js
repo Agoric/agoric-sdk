@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 /* eslint-disable import/extensions, import/no-unresolved */
 import crashingAutoRefund from './bundle-crashingAutoRefund';

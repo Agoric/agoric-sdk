@@ -26,7 +26,7 @@
     "eslint-config.json"
   ],
   "devDependencies": {
-    "@endo/eslint-config": "^0.3.20",
+    "@endo/eslint-config": "^0.4.2",
     "@jessie.js/eslint-plugin": "^0.1.3",
     "@typescript-eslint/parser": "^4.18.0",
     "eslint": "^7.23.0",

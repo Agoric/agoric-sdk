@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
 
 test('makeIssuerKit bad allegedName', async t => {
@@ -14,7 +14,7 @@ test('makeIssuerKit bad allegedName', async t => {
 test('makeIssuerKit bad assetKind', async t => {
   // @ts-ignore Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
-    message: /The assetKind "somethingWrong" must be one of \["copySet","nat","set"\]/,
+    message: /The assetKind "somethingWrong" must be one of \["copyBag","copySet","nat","set"\]/,
   });
 });
 

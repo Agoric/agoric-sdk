@@ -5,7 +5,7 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { ParamType, makeParamManagerBuilder } from '../../src/index.js';

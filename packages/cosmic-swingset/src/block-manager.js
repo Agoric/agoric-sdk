@@ -3,7 +3,7 @@
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
-import { isObject } from '@agoric/marshal';
+import { isObject } from '@endo/marshal';
 
 import * as ActionType from './action-types.js';
 import { parseParams } from './params.js';

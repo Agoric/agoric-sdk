@@ -1,9 +1,8 @@
 // @ts-check
 
-import { Far, filterIterable } from '@agoric/marshal';
+import { Far, filterIterable } from '@endo/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
-import { assertScalarKey } from '../keys/checkKey.js';
-import { makeCopySet } from '../keys/copySet.js';
+import { assertScalarKey, makeCopySet } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';

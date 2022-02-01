@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
-import { Far, assertCopyArray } from '@agoric/marshal';
+import { Far, assertCopyArray } from '@endo/marshal';
 import { makeWeakStore, fit } from '@agoric/store';
 
 import { AmountMath } from './amountMath.js';

@@ -1,7 +1,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 test('harden from SES is in the vat environment', t => {
   harden();

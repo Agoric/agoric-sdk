@@ -1,6 +1,6 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { getReplHandler } from '@agoric/vats/src/repl.js';
 import { getCapTPHandler } from './captp.js';

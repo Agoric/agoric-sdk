@@ -12,7 +12,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
   "repository": {
@@ -27,11 +27,11 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/marshal": "^0.5.0"
+    "@endo/marshal": "^0.5.4"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.29",
-    "@endo/ses-ava": "^0.2.14",
+    "@endo/ses-ava": "^0.2.17",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

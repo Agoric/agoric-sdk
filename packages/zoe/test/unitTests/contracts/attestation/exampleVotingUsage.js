@@ -1,5 +1,5 @@
 // @ts-check
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeStore } from '@agoric/store';
 

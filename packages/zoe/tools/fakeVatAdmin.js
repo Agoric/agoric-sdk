@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';

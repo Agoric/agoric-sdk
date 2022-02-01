@@ -24,7 +24,7 @@
 
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 // Since we use harden when saving the state, we need to copy the arrays so they
 // will continue to be mutable. each record inside handlers is immutable, so we

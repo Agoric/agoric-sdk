@@ -6,7 +6,7 @@ import path from 'path';
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';

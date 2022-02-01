@@ -1,7 +1,7 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeStore } from '@agoric/store';
 import { setup } from '../setupBasicMints.js';

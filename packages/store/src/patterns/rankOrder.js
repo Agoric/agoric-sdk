@@ -6,7 +6,7 @@ import {
   nameForPassableSymbol,
   passStyleOf,
   sameValueZero,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 
 const { fromEntries, entries, setPrototypeOf } = Object;
 

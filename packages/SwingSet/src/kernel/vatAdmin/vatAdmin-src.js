@@ -17,7 +17,7 @@
  * @param {*} param0.serialize
  */
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 
 export function buildRootDeviceNode({ endowments, serialize }) {

@@ -12,7 +12,7 @@ import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
 
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);

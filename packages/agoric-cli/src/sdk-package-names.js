@@ -18,7 +18,6 @@ export default [
   "@agoric/import-bundle",
   "@agoric/import-manager",
   "@agoric/install-ses",
-  "@agoric/marshal",
   "@agoric/notifier",
   "@agoric/pegasus",
   "@agoric/promise-kit",

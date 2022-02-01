@@ -1,3 +1,4 @@
+// @ts-check
 import { assert } from '@agoric/assert';
 import { makeDeviceSlots } from './deviceSlots.js';
 import { insistCapData } from '../capdata.js';
@@ -56,32 +57,29 @@ export default function makeDeviceManager(
   );
 
   /**
-   * @typedef {['ok', CapData]} VatInvocationResults
-   */
-
-  /**
-   * @typedef {[string, string, CapData]} DeviceInvocation
-   * @property {string} 0 Kernel slot designating the device node that is the target of
-   * the invocation
-   * @property {string} 1 A string naming the method to be invoked
-   * @property {CapData} 2 A capdata object containing the arguments to the invocation
-   */
-
-  /**
    * Invoke a method on a device node.
    *
-   * @param {DeviceInvocation} deviceInvocation
-   * @returns {VatInvocationResults} a VatInvocationResults object: ['ok', capdata]
-   * @throws {Error} an exeption if the invocation failed. This exception is fatal to
-   * the kernel.
+   * @param { DeviceInvocation } deviceInvocation
+   * @returns { DeviceInvocationResult }
    */
   function invoke(deviceInvocation) {
     const [target, method, args] = deviceInvocation;
-    const deviceResults = dispatch.invoke(target, method, args);
-    assert(deviceResults.length === 2);
-    assert(deviceResults[0] === 'ok');
-    insistCapData(deviceResults[1]);
-    return deviceResults;
+    try {
+      /** @type { DeviceInvocationResult } */
+      const deviceResults = dispatch.invoke(target, method, args);
+      // common error: raw devices returning capdata instead of ['ok', capdata]
+      assert.equal(deviceResults.length, 2, deviceResults);
+      if (deviceResults[0] === 'ok') {
+        insistCapData(deviceResults[1]);
+      } else {
+        assert.equal(deviceResults[0], 'error');
+        assert.typeof(deviceResults[1], 'string');
+      }
+      return deviceResults;
+    } catch (e) {
+      console.log(`dm.invoke failed, informing calling vat`, e);
+      return harden(['error', 'device.invoke failed, see logs for details']);
+    }
   }
 
   const manager = {

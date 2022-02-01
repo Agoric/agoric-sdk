@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { INTEREST_RATE_KEY } from '../../../../src/vaultFactory/params';

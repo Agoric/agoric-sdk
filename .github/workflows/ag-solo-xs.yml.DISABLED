@@ -72,12 +72,3 @@ jobs:
         node -r esm $TAPE/bin/tape-xs-build.js $PWD test/test*.js
         noflake mcconfig -m -p x-cli-lin test-xs-manifest.json
         $MODDABLE/build/bin/lin/release/eventual-send
-    - name: test marshal on xs
-      run: |
-        export MODDABLE=$HOME/moddable
-        export PATH=$MODDABLE/build/bin/lin/release:$PATH
-        export TAPE=$HOME/tape-xs
-        cd packages/marshal
-        node -r esm $TAPE/bin/tape-xs-build.js $PWD test/test*.js
-        noflake mcconfig -m -p x-cli-lin test-xs-manifest.json
-        $MODDABLE/build/bin/lin/release/marshal

@@ -192,8 +192,6 @@ jobs:
         run: cd packages/import-manager && yarn test
       - name: yarn test (install-ses)
         run: cd packages/install-ses && yarn test
-      - name: yarn test (marshal)
-        run: cd packages/marshal && yarn test
       - name: yarn test (notifier)
         run: cd packages/notifier && yarn test
       - name: yarn test (promise-kit)

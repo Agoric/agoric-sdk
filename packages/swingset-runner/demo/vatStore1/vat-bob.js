@@ -1,5 +1,5 @@
 /* global makeKind */
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 const p = console.log;
 

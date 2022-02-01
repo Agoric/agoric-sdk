@@ -1,5 +1,5 @@
 // @ts-check
-import { passStyleOf } from '@agoric/marshal';
+import { passStyleOf } from '@endo/marshal';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';

@@ -1,4 +1,4 @@
-import { Far, getInterfaceOf } from '@agoric/marshal';
+import { Far, getInterfaceOf } from '@endo/marshal';
 
 export function buildRootObject(_vatPowers) {
   let counter = 0;

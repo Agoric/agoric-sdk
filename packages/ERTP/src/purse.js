@@ -1,5 +1,5 @@
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AmountMath } from './amountMath.js';
 
 export const makePurse = (allegedName, assetKind, brand, purseMethods) => {

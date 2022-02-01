@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { keyEQ, makeStore } from '@agoric/store';
 

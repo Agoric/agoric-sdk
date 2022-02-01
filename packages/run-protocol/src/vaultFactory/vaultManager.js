@@ -13,7 +13,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeVaultKit } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';

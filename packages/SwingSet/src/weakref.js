@@ -1,6 +1,6 @@
 /* global globalThis */
 import { assert, details as X } from '@agoric/assert';
-import { isObject } from '@agoric/marshal';
+import { isObject } from '@endo/marshal';
 
 const { defineProperties } = Object;
 

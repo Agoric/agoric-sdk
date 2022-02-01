@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 
