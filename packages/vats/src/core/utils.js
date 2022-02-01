@@ -1,5 +1,5 @@
 // @ts-check
-import { E } from '@agoric/far';
+import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
 
 const { entries, fromEntries } = Object;

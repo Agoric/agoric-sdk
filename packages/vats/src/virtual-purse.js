@@ -1,5 +1,5 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { isPromise } from '@agoric/promise-kit';
 
@@ -8,7 +8,7 @@ import '@agoric/notifier/exported.js';
 
 /**
  * @template T
- * @typedef {import('@agoric/far').EOnly<T>} EOnly
+ * @typedef {import('@endo/far').EOnly<T>} EOnly
  */
 
 /**

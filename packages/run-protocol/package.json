@@ -36,7 +36,7 @@
     "@agoric/deploy-script-support": "^0.6.1",
     "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/far": "^0.1.1",
+    "@endo/far": "^0.1.1",
     "@agoric/governance": "^0.4.1",
     "@endo/marshal": "^0.5.4",
     "@agoric/nat": "^4.1.0",

@@ -1,5 +1,5 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import {
   makeNotifierKit,
