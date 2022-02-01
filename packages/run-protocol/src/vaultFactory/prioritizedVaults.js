@@ -61,7 +61,6 @@ const currentDebtToCollateral = vaultKit =>
     vaultKit.vault.getCollateralAmount(),
   );
 
-/** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultPair */
 /**
  * @param {VaultPair} leftVaultPair
  * @param {VaultPair} rightVaultPair
