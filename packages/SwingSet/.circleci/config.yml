@@ -40,7 +40,7 @@ jobs:
           command: npm test
       - run: &lint
           name: Lint
-          command: npm run lint-check
+          command: npm run lint
 
 
   # Automated Npm Audit Fix PR

@@ -61,9 +61,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: lint check
-      run: yarn lint-check
-    - name: format check
-      run: yarn format-check
+      run: yarn lint
 
   dev-canary:
     if: ${{github.event_name == 'push'}}

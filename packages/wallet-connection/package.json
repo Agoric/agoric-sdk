@@ -12,7 +12,6 @@
     "test:c8": "exit 0",
     "test:xs": "exit 0",
     "lint-fix": "exit 0",
-    "lint-check": "exit 0",
     "lint": "exit 0",
     "lint:types": "exit 0",
     "lint:eslint": "exit 0"

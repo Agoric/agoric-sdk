@@ -15,8 +15,7 @@
     "test": "ava",
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava",
     "test:xs-worker": "ava test/workers/test-worker.js -m 'xs vat manager'",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn lint:types&&yarn lint:eslint",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"

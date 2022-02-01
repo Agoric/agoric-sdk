@@ -11,9 +11,8 @@
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc -p jsconfig.json"
   },
