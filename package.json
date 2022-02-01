@@ -6,7 +6,6 @@
   "workspaces": [
     "golang/cosmos",
     "packages/assert",
-    "packages/install-ses",
     "packages/import-manager",
     "packages/sparse-ints",
     "packages/store",
