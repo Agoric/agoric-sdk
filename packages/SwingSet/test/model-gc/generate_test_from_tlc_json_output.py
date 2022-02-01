@@ -283,6 +283,7 @@ def convert_trace_states_to_test_driver(states):
 
     return ret
 
+
 def get_json_traces_from_json_lists_of_states():
     """
     tla2json will produce a list of states when it is given
@@ -337,10 +338,10 @@ if __name__ == "__main__":
         if 0 < cnt(s["script"]["actions"]) and cnt(s["script"]["actions"]) < 5
     ]
 
-    # Shuffle ensures tests are mixed despite lazy sort 
+    # Shuffle ensures tests are mixed despite lazy sort
     random.shuffle(scripts)
     scripts.sort(key=lambda s: cnt(s["script"]["actions"]))
     print(len(scripts))
     scripts = scripts[:50000]
-    with open("debug_set.json", "w") as f:
+    with open("traces.json", "w") as f:
         f.write(json.dumps(scripts))

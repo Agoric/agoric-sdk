@@ -12,10 +12,6 @@ yarn test --verbose --timeout=120m test/model-gc/test-model.js
 
 const pathPrefix = "/Users/danwt/Documents/work/agoric-sdk-fork/packages/SwingSet/test/model-gc/"
 
-function dumpLog(log) {
-  fs.writeFileSync(pathPrefix + 'kernel_log_dump.json', JSON.stringify(log), 'utf8');
-}
-
 test('check userspace', async t => {
 
   // The number of traces to check against a single kernel lifetime
@@ -58,13 +54,9 @@ test('check userspace', async t => {
     try {
       await c.run(); // start kernel, send bootstrap message, wait until halt
     } catch (err) {
-      const log = c.dump().log
-      dumpLog(log)
       t.fail()
     }
     const log = c.dump().log
-    dumpLog(log)
-
 
     function correctNumberTerminations(arr) {
       const TERMINATION_STR = "[vat_bootstrap script complete]"
