@@ -86,7 +86,6 @@
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
     "format": "yarn prettier --write 'packages/**/*.{js,jsx,ts,tsx}' 'golang/**/*.{js,jsx,ts,tsx}'",
     "lint-fix": "yarn workspaces run lint-fix",
-    "lint-check": "yarn workspaces run lint-check",
     "lint": "run-s --continue-on-error lint:*",
     "lint:format": "yarn prettier --check 'packages/**/*.{js,jsx,ts,tsx}' 'golang/**/*.{js,jsx,ts,tsx}'",
     "lint:packages": "yarn workspaces run lint",

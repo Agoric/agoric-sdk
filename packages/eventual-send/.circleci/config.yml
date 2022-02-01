@@ -31,7 +31,7 @@ jobs:
           <<: *save_cache
       - run:
           name: Lint
-          command: npm run lint-check
+          command: npm run lint
       - run:
           name: Test
           command: npm test

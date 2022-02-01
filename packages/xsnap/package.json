@@ -22,7 +22,6 @@
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' api.js",
     "lint:types": "tsc -p jsconfig.json",
     "lint-fix": "eslint --fix 'src/**/*.js' 'lib/**/*.js' api.js",
-    "lint-check": "yarn lint",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0"

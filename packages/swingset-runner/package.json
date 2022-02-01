@@ -14,7 +14,6 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "yarn lint",
     "lint": "eslint '**/*.js'",
     "ci:autobench": "./autobench.js"
   },
