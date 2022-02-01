@@ -2,7 +2,7 @@
 
 import bundleSource from '@agoric/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { makeLoopback } from '@agoric/captp';
+import { makeLoopback } from '@endo/captp';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';

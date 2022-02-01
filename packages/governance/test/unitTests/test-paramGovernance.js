@@ -8,7 +8,7 @@ import bundleSource from '@agoric/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@agoric/eventual-send';
-import { makeLoopback } from '@agoric/captp';
+import { makeLoopback } from '@endo/captp';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';

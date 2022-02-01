@@ -25,7 +25,7 @@
   "dependencies": {
     "@agoric/access-token": "^0.4.16",
     "@agoric/assert": "^0.3.15",
-    "@agoric/captp": "^1.10.8",
+    "@endo/captp": "^1.10.8",
     "@agoric/cosmic-swingset": "^0.34.4",
     "@agoric/eventual-send": "^0.14.0",
     "@agoric/import-bundle": "^0.2.33",

@@ -71,7 +71,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* **deploy:** use `@agoric/captp` epochs to mitigate crosstalk ([f2b5ba4](https://github.com/Agoric/agoric-sdk/commit/f2b5ba4bc29ca48e00f32982c713de3ec972e879))
+* **deploy:** use `@endo/captp` epochs to mitigate crosstalk ([f2b5ba4](https://github.com/Agoric/agoric-sdk/commit/f2b5ba4bc29ca48e00f32982c713de3ec972e879))
 * **solo:** make solo-to-chain more robust ([b266666](https://github.com/Agoric/agoric-sdk/commit/b2666665b1881d5f98fa853ba05627d945783c7c))
 * **solo:** only subscribe to one copy of mailbox events ([9d58314](https://github.com/Agoric/agoric-sdk/commit/9d583148727ed90e9ac555fef75fef40ad90a0cf))
 * **solo:** preserve ports in the `rpcAddr`; `--node` needs them ([7d83576](https://github.com/Agoric/agoric-sdk/commit/7d83576ca3aa4fd81077284bb544a56dcdd75f8c))
