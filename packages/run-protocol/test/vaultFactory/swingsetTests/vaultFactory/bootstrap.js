@@ -27,6 +27,7 @@ function makeBootstrap(argv, cb, vatPowers) {
   };
 }
 
+/** @type {BuildRootObjectForTestVat} */
 export function buildRootObject(vatPowers, vatParameters) {
   const { argv, contractBundles: cb } = vatParameters;
   return Far('root', { bootstrap: makeBootstrap(argv, cb, vatPowers) });

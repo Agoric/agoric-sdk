@@ -64,8 +64,8 @@
  * }} MeteringVatPowers
  *
  * @typedef {{
- *   exitVat: unknown,
- *   exitVatWithFailure: unknown,
+ *   exitVat: (unknown) => void,
+ *   exitVatWithFailure: (reason: Error) => void,
  * }} TerminationVatPowers
  */
 
