@@ -12,6 +12,9 @@ jest.mock('../views/Dashboard', () => () => 'Dashboard');
 jest.mock('../views/Dapps', () => () => 'Dapps');
 jest.mock('../views/Contacts', () => () => 'Contacts');
 jest.mock('../views/Issuers', () => () => 'Issuers');
+jest.mock('@cosmjs/launchpad', () => () => {
+  jest.mock();
+});
 
 const connectionState = 'connecting';
 const withApplicationContext = (Component, _) => ({ ...props }) => {
