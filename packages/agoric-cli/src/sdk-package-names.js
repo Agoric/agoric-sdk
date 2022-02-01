@@ -12,7 +12,6 @@ export default [
   "@agoric/eslint-config",
   "@agoric/eventual-send",
   "@agoric/governance",
-  "@endo/import-bundle",
   "@agoric/import-manager",
   "@agoric/notifier",
   "@agoric/pegasus",
