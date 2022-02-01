@@ -55,7 +55,7 @@ const testRequire = function require(specifier) {
     // https://github.com/endojs/endo/issues/768
     case '@agoric/babel-standalone':
       return undefined;
-    case '@agoric/bundle-source':
+    case '@endo/bundle-source':
       return bundleSource;
     default:
       throw Error(specifier);

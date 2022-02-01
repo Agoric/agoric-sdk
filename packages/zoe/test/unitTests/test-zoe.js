@@ -10,7 +10,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { passStyleOf, Far } from '@endo/marshal';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { setupZCFTest } from './zcf/setupZcfTest.js';
 import { setup } from './setupBasicMints.js';

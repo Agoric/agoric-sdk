@@ -8,7 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { openSwingStore } from '@agoric/swing-store';
 
 function fail(message) {

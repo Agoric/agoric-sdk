@@ -7,7 +7,7 @@ import {
   makeLoopbackProtocolHandler,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
 

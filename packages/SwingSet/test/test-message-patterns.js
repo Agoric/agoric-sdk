@@ -11,7 +11,7 @@ import '../tools/prepare-test-env.js';
 import test from 'ava';
 
 import path from 'path';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { provideHostStorage } from '../src/hostStorage.js';
 import {
   initializeSwingset,

@@ -9,7 +9,7 @@ import '@endo/init';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import path from 'path';
 
 const CONTRACT_FILES = ['committee', 'binaryVoteCounter'];

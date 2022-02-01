@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/bundle-source": "^2.0.1",
+    "@endo/bundle-source": "^2.0.1",
     "@endo/init": "^0.5.33",
     "@agoric/swingset-vat": "^0.24.1",
     "ava": "^3.12.1",

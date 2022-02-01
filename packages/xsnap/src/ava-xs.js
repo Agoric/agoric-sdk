@@ -11,7 +11,7 @@ import { type as osType } from 'os';
 import { promises as fsp } from 'fs';
 import path from 'path';
 import glob from 'glob';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { main, makeBundleResolve } from './avaXS.js';
 

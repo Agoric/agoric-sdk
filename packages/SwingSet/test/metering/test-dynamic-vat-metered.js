@@ -3,7 +3,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/hostStorage.js';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
