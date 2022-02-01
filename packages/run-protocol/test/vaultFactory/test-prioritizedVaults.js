@@ -50,6 +50,12 @@ function makeRescheduler() {
   };
 }
 
+/**
+ *
+ * @param {Amount} initDebt
+ * @param {Amount} initCollateral
+ * @returns {VaultKit & {vault: {setDebt: (Amount) => void}}}
+ */
 function makeFakeVaultKit(
   initDebt,
   initCollateral = AmountMath.make(initDebt.brand, 100n),
@@ -62,6 +68,7 @@ function makeFakeVaultKit(
     setDebt: newDebt => (debt = newDebt),
     setCollateral: newCollateral => (collateral = newCollateral),
   });
+  // @ts-expect-error pretend this is compatible with VaultKit
   return harden({
     vault,
     liquidate: () => {},

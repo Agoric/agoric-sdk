@@ -16,6 +16,12 @@ const { multiply, isGTE } = natSafeMath;
 // debtToCollateral (which is not the collateralizationRatio) is updated using
 // an observer on the UIState.
 
+/**
+ *
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {boolean}
+ */
 const ratioGTE = (left, right) => {
   assert(
     left.numerator.brand === right.numerator.brand &&
@@ -28,6 +34,12 @@ const ratioGTE = (left, right) => {
   );
 };
 
+/**
+ *
+ * @param {Amount} debtAmount
+ * @param {Amount} collateralAmount
+ * @returns {Ratio}
+ */
 const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
   if (AmountMath.isEmpty(collateralAmount)) {
     return makeRatioFromAmounts(
@@ -38,12 +50,23 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
   return makeRatioFromAmounts(debtAmount, collateralAmount);
 };
 
+/**
+ *
+ * @param {VaultKit} vaultKit
+ * @returns {Ratio}
+ */
 const currentDebtToCollateral = vaultKit =>
   calculateDebtToCollateral(
     vaultKit.vault.getDebtAmount(),
     vaultKit.vault.getCollateralAmount(),
   );
 
+/** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultPair */
+/**
+ * @param {VaultPair} leftVaultPair
+ * @param {VaultPair} rightVaultPair
+ * @returns {-1 | 0 | 1}
+ */
 const compareVaultKits = (leftVaultPair, rightVaultPair) => {
   const leftVaultRatio = leftVaultPair.debtToCollateral;
   const rightVaultRatio = rightVaultPair.debtToCollateral;
@@ -59,14 +82,17 @@ const compareVaultKits = (leftVaultPair, rightVaultPair) => {
   throw Error("The vault's collateral ratios are not comparable");
 };
 
-// makePrioritizedVaults() takes a function parameter, which will be called when
-// there is a new least-collateralized vault.
-
+/**
+ *
+ * @param {() => void} reschedulePriceCheck called when there is a new
+ * least-collateralized vault
+ */
 export const makePrioritizedVaults = reschedulePriceCheck => {
-  // Each entry is [Vault, debtToCollateralRatio]. The array must be resorted on
+  // The array must be resorted on
   // every insert, and whenever any vault's ratio changes. We can remove an
   // arbitrary number of vaults from the front of the list without resorting. We
   // delete single entries using filter(), which leaves the array sorted.
+  /** @type {VaultPair[]} */
   let vaultsWithDebtRatio = [];
 
   // To deal with fluctuating prices and varying collateralization, we schedule a
@@ -75,6 +101,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // current high-water mark fires, we reschedule at the new highest ratio
   // (which should be lower, as we will have liquidated any that were at least
   // as high.)
+  /** @type {Ratio=} */
   let highestDebtToCollateral;
 
   // Check if this ratio of debt to collateral would be the highest known. If
@@ -95,6 +122,10 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     return mostIndebted ? mostIndebted.debtToCollateral : undefined;
   };
 
+  /**
+   *
+   * @param {VaultKit} vaultKit
+   */
   const removeVault = vaultKit => {
     vaultsWithDebtRatio = vaultsWithDebtRatio.filter(
       v => v.vaultKit !== vaultKit,
@@ -103,6 +134,11 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     highestDebtToCollateral = highestRatio();
   };
 
+  /**
+   *
+   * @param {VaultKit} vaultKit
+   * @param {Ratio} debtRatio
+   */
   const updateDebtRatio = (vaultKit, debtRatio) => {
     vaultsWithDebtRatio.forEach((vaultPair, index) => {
       if (vaultPair.vaultKit === vaultKit) {
@@ -120,6 +156,10 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     highestDebtToCollateral = highestRatio();
   };
 
+  /**
+   *
+   * @param {VaultKit} vaultKit
+   */
   const makeObserver = vaultKit => ({
     updateState: state => {
       if (AmountMath.isEmpty(state.locked)) {
@@ -138,6 +178,11 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     },
   });
 
+  /**
+   *
+   * @param {VaultKit} vaultKit
+   * @param {ERef<Notifier<any>>} notifier
+   */
   const addVaultKit = (vaultKit, notifier) => {
     const debtToCollateral = currentDebtToCollateral(vaultKit);
     vaultsWithDebtRatio.push({ vaultKit, debtToCollateral });
@@ -146,7 +191,12 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     rescheduleIfHighest(debtToCollateral);
   };
 
-  // Invoke a function for vaults with debt to collateral at or above the ratio
+  /**
+   * Invoke a function for vaults with debt to collateral at or above the ratio
+   *
+   * @param {Ratio} ratio
+   * @param {(VaultPair) => void} func
+   */
   const forEachRatioGTE = (ratio, func) => {
     // vaults are sorted with highest ratios first
     let index;
@@ -172,8 +222,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
 
   const map = func => vaultsWithDebtRatio.map(func);
 
-  const reduce = (func, init = undefined) =>
-    vaultsWithDebtRatio.reduce(func, init);
+  const reduce = (func, init) => vaultsWithDebtRatio.reduce(func, init);
 
   return harden({
     addVaultKit,
