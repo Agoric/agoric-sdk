@@ -5,6 +5,8 @@ import Tooltip from '@mui/material/Tooltip';
 
 import WalletConnection from './WalletConnection';
 import NavDrawer from './NavDrawer';
+import ChainConnector from './ChainConnector';
+import { withApplicationContext } from '../contexts/Application';
 
 const logoUrl =
   'https://agoric.com/wp-content/themes/agoric_2021_theme/assets/img/logo.svg';
@@ -44,7 +46,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const AppBar = () => {
+const AppBar = ({ useChainBackend }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
 
@@ -63,6 +65,13 @@ const AppBar = () => {
       </div>
       <div className={classes.appBarSection}>
         <div className={classes.connector}>
+          {useChainBackend ? (
+            <ChainConnector></ChainConnector>
+          ) : (
+            <WalletConnection></WalletConnection>
+          )}
+        </div>
+        <div className={classes.connector}>
           <Tooltip title="Help">
             <IconButton
               color="primary"
@@ -74,12 +83,11 @@ const AppBar = () => {
             </IconButton>
           </Tooltip>
         </div>
-        <div className={classes.connector}>
-          <WalletConnection></WalletConnection>
-        </div>
       </div>
     </header>
   );
 };
 
-export default AppBar;
+export default withApplicationContext(AppBar, context => ({
+  useChainBackend: context.useChainBackend,
+}));
