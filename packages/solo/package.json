@@ -55,7 +55,7 @@
     "ws": "^7.2.0"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^2.0.1",
+    "@endo/bundle-source": "^2.0.5",
     "@agoric/ertp": "^0.13.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
