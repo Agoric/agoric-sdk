@@ -1,7 +1,7 @@
 /* global globalThis WeakRef FinalizationRegistry */
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import '../../types.js';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority

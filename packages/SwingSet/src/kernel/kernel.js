@@ -1,6 +1,6 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { stringify } from '@endo/marshal';
 import { assertKnownOptions } from '../assertOptions.js';
 import { foreverPolicy } from '../runPolicies.js';

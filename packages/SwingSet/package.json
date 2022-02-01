@@ -32,7 +32,7 @@
     "@endo/bundle-source": "^2.0.5",
     "@endo/captp": "^1.10.12",
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/import-bundle": "^0.2.33",
+    "@endo/import-bundle": "^0.2.33",
     "@endo/init": "^0.5.33",
     "@endo/marshal": "^0.5.4",
     "@agoric/nat": "^4.1.0",
