@@ -61,9 +61,11 @@ const currentDebtToCollateral = vaultKit =>
     vaultKit.vault.getCollateralAmount(),
   );
 
+/** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultKitRecord */
+
 /**
- * @param {VaultPair} leftVaultPair
- * @param {VaultPair} rightVaultPair
+ * @param {VaultKitRecord} leftVaultPair
+ * @param {VaultKitRecord} rightVaultPair
  * @returns {-1 | 0 | 1}
  */
 const compareVaultKits = (leftVaultPair, rightVaultPair) => {
@@ -91,7 +93,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // every insert, and whenever any vault's ratio changes. We can remove an
   // arbitrary number of vaults from the front of the list without resorting. We
   // delete single entries using filter(), which leaves the array sorted.
-  /** @type {VaultPair[]} */
+  /** @type {VaultKitRecord[]} */
   let vaultsWithDebtRatio = [];
 
   // To deal with fluctuating prices and varying collateralization, we schedule a
@@ -106,6 +108,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // Check if this ratio of debt to collateral would be the highest known. If
   // so, reset our highest and invoke the callback. This can be called on new
   // vaults and when we get a state update for a vault changing balances.
+  /** @param {Ratio} collateralToDebt */
   const rescheduleIfHighest = collateralToDebt => {
     if (
       !highestDebtToCollateral ||
@@ -194,7 +197,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * Invoke a function for vaults with debt to collateral at or above the ratio
    *
    * @param {Ratio} ratio
-   * @param {(VaultPair) => void} func
+   * @param {(record: VaultKitRecord) => void} func
    */
   const forEachRatioGTE = (ratio, func) => {
     // vaults are sorted with highest ratios first
