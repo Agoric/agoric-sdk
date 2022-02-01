@@ -1,5 +1,5 @@
 // @ts-check
-import '@agoric/install-ses';
+import '@endo/init';
 import * as manifests from '../src/core/manifest.js';
 
 const { entries } = Object;

@@ -1,7 +1,7 @@
 // import LMDB before SES lockdown, as workaround for
 // https://github.com/Agoric/SES-shim/issues/308
 import 'node-lmdb';
-import '@agoric/install-ses';
+import '@endo/init';
 
 import fs from 'fs';
 

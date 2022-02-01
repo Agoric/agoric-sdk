@@ -22,14 +22,14 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.3.15",
-    "@agoric/captp": "^1.10.8",
+    "@endo/captp": "^1.10.12",
     "@endo/marshal": "^0.5.4",
     "@agoric/promise-kit": "^0.2.29",
     "robot3": "^0.2.19"
   },
   "devDependencies": {
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/install-ses": "^0.5.29",
+    "@endo/init": "^0.5.33",
     "@custom-elements-manifest/analyzer": "^0.4.17",
     "@lit-labs/react": "^1.0.1",
     "@open-wc/eslint-config": "^4.3.0",

@@ -9,7 +9,7 @@
 import 'node-lmdb';
 
 // Now do lockdown.
-import '@agoric/install-ses';
+import '@endo/init';
 import { main } from './kerneldump.js';
 
 main();

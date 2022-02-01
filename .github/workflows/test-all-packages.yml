@@ -184,8 +184,6 @@ jobs:
       run: cd packages/assert && yarn test
     - name: yarn test (bundle-source)
       run: cd packages/bundle-source && yarn test
-    - name: yarn test (captp)
-      run: cd packages/captp && yarn test
     - name: yarn test (wallet/api)
       run: cd packages/wallet/api && yarn test
     - name: yarn test (deployment)
@@ -194,16 +192,12 @@ jobs:
       run: cd packages/ERTP && yarn test
     - name: yarn test (eventual-send)
       run: cd packages/eventual-send && yarn test
-    - name: yarn test (far)
-      run: cd packages/far && yarn test
     - name: yarn test (governance)
       run: cd packages/governance && yarn test
     - name: yarn test (import-bundle)
       run: cd packages/import-bundle && yarn test
     - name: yarn test (import-manager)
       run: cd packages/import-manager && yarn test
-    - name: yarn test (install-ses)
-      run: cd packages/install-ses && yarn test
     - name: yarn test (notifier)
       run: cd packages/notifier && yarn test
     - name: yarn test (promise-kit)

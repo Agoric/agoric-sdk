@@ -4,7 +4,7 @@
  * `test` function.
  */
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 
 import './prepare-test-env.js';
 

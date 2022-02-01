@@ -6,7 +6,6 @@
   "workspaces": [
     "golang/cosmos",
     "packages/assert",
-    "packages/install-ses",
     "packages/import-manager",
     "packages/sparse-ints",
     "packages/store",
@@ -17,9 +16,7 @@
     "packages/promise-kit",
     "packages/tame-metering",
     "packages/transform-metering",
-    "packages/far",
     "packages/same-structure",
-    "packages/captp",
     "packages/stat-logger",
     "packages/swing-store",
     "packages/SwingSet",

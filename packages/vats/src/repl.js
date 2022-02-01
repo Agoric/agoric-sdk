@@ -1,6 +1,6 @@
 import { isPromise } from '@agoric/promise-kit';
-import { Far } from '@agoric/far';
-import * as farExports from '@agoric/far';
+import { Far } from '@endo/far';
+import * as farExports from '@endo/far';
 
 import { Nat } from '@agoric/nat';
 

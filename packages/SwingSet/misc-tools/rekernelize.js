@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 import 'node-lmdb';
-import '@agoric/install-ses';
+import '@endo/init';
 
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { openSwingStore } from '@agoric/swing-store';
 
 function fail(message) {

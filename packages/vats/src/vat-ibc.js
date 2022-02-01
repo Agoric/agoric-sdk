@@ -1,4 +1,4 @@
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeIBCProtocolHandler } from './ibc.js';
 
 export function buildRootObject(_vatPowers) {

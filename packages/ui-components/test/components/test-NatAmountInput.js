@@ -1,6 +1,6 @@
 // @ts-check
 
-import '@agoric/install-ses';
+import '@endo/init';
 import React from 'react';
 import { TextField } from '@material-ui/core';
 

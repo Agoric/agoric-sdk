@@ -1,6 +1,6 @@
 // @ts-check
 
-import '@agoric/install-ses';
+import '@endo/init';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';

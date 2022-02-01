@@ -1,7 +1,7 @@
 {
   "name": "@agoric/import-bundle",
   "version": "0.2.33",
-  "description": "load modules created by @agoric/bundle-source",
+  "description": "load modules created by @endo/bundle-source",
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",
@@ -22,8 +22,8 @@
     "@endo/compartment-mapper": "^0.6.5"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.1",
-    "@agoric/install-ses": "^0.5.29",
+    "@endo/bundle-source": "^2.0.5",
+    "@endo/init": "^0.5.33",
     "@endo/ses-ava": "^0.2.17",
     "ava": "^3.12.1",
     "c8": "^7.7.2"

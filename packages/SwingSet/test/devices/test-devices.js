@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { getAllState } from '@agoric/swing-store';
 import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/hostStorage.js';

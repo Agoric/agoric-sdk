@@ -3,7 +3,7 @@
 import { makeStore } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/far';
+import { Far } from '@endo/far';
 
 /**
  * @template T
@@ -29,7 +29,7 @@ import { Far } from '@agoric/far';
 /**
  * Create a handler that demuxes/muxes the bridge device by its first argument.
  *
- * @param {typeof import('@agoric/far').E} E The eventual sender
+ * @param {typeof import('@endo/far').E} E The eventual sender
  * @param {<T>(target: Device<T>) => T} D The device sender
  * @param {Device<BridgeDevice>} bridgeDevice The bridge to manage
  * @returns {BridgeManager} admin facet for this handler

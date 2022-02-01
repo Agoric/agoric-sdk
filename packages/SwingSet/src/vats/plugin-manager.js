@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeStore } from '@agoric/store';
-import { makeCapTP } from '@agoric/captp';
+import { makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { E, HandledPromise } from '@agoric/eventual-send';
 import { Remotable, Far } from '@endo/marshal';

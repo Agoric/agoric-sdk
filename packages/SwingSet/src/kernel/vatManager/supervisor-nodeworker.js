@@ -1,13 +1,13 @@
 // @ts-check
 // this file is loaded at the start of a new Worker, which makes it a new JS
 // environment (with it's own Realm), so we must install-ses too.
-import '@agoric/install-ses';
+import '@endo/init';
 import { parentPort } from 'worker_threads';
 import anylogger from 'anylogger';
 
 import '../../types.js';
 import { assert, details as X } from '@agoric/assert';
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import engineGC from '../../engine-gc.js';
 import { WeakRef, FinalizationRegistry } from '../../weakref.js';

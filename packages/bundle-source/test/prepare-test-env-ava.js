@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 import '@endo/lockdown/commit-debug.js';
 
 import { wrapTest } from '@endo/ses-ava';

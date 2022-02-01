@@ -4,14 +4,14 @@
 // TODO Remove babel-standalone preinitialization
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
-import '@agoric/install-ses';
+import '@endo/init';
 import process from 'process';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import { promises as fsp } from 'fs';
 import path from 'path';
 import glob from 'glob';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { main, makeBundleResolve } from './avaXS.js';
 

@@ -1,9 +1,9 @@
-import '@agoric/install-ses/pre-bundle-source.js';
-import '@agoric/install-ses';
+import '@endo/init/pre-bundle-source.js';
+import '@endo/init';
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);

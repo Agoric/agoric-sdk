@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import '@agoric/install-ses/pre-remoting.js';
+import '@endo/init/pre-remoting.js';
 
 lockdown({
   __allowUnsafeMonkeyPatching__: 'unsafe',

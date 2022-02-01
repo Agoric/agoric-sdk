@@ -1,6 +1,6 @@
 /* global globalThis */
 
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { Far } from '@endo/marshal';
 
 const endowments = {

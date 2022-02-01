@@ -46,7 +46,7 @@
     "@agoric/store": "^0.6.8"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.1",
+    "@endo/bundle-source": "^2.0.5",
     "@agoric/swingset-vat": "^0.24.1",
     "ava": "^3.12.1",
     "fast-check": "^2.21.0"

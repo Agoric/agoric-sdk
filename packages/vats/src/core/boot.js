@@ -1,5 +1,5 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@agoric/promise-kit';
 import {
   CHAIN_BOOTSTRAP_MANIFEST,
