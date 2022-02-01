@@ -365,11 +365,15 @@ export async function makeSwingsetController(
 }
 
 /**
- * TODO: This is a shim provided strictly for backwards compatibility and should
- * be removed once API changes are propagated everywhere.  Note that this shim
- * will not work for use cases that need to configure devices.  It could be made
- * to, but I've already changed all the places that do that to use the new API
- * and I don't want to encourage people to use the old API. *
+ * This is a helper for making Swingset controllers that automatically
+ * initializing the SwingSet if it isn't already. It will not work for use cases
+ * that need to configure devices.
+ *
+ * The official API does these as two separate steps because the two sometimes
+ * need to happen at different times.  In particular, sometimes you need the
+ * host to be able to control whether or not to initialize independent of the
+ * SwingSet's history.  Also sometimes you want different runtime options for
+ * the two stages; this can happen, for example, in some debugging cases.
  *
  * @param {SwingSetConfig} config
  * @param {string[]} argv
