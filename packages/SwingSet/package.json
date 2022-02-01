@@ -30,7 +30,7 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/bundle-source": "^2.0.1",
-    "@endo/captp": "^1.10.8",
+    "@endo/captp": "^1.10.12",
     "@agoric/eventual-send": "^0.14.0",
     "@agoric/import-bundle": "^0.2.33",
     "@endo/init": "^0.5.33",

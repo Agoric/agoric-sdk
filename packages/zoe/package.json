@@ -57,7 +57,7 @@
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
-    "@endo/captp": "^1.10.8",
+    "@endo/captp": "^1.10.12",
     "@endo/init": "^0.5.33",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
