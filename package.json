@@ -9,7 +9,6 @@
     "packages/import-manager",
     "packages/sparse-ints",
     "packages/store",
-    "packages/bundle-source",
     "packages/import-bundle",
     "packages/eventual-send",
     "packages/governance",
