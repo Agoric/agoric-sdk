@@ -2,7 +2,7 @@
 
 /**
  * @template T
- * @typedef {import('@agoric/far').EOnly<T>} EOnly
+ * @typedef {import('@endo/far').EOnly<T>} EOnly
  */
 
 /**

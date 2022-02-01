@@ -1,7 +1,7 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
@@ -268,7 +268,7 @@ export function buildRootObject(_vatPowers) {
         /**
          * @param {string} denom
          * @param {AssetIssuerKit} feeKit
-         * @returns {import('@agoric/far').EOnly<DepositFacet>}
+         * @returns {import('@endo/far').EOnly<DepositFacet>}
          */
         getFeeCollectorDepositFacet(denom, feeKit) {
           if (!bankCall) {

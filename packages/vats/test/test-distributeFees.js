@@ -8,7 +8,7 @@ import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { E } from '@agoric/far';
+import { E } from '@endo/far';
 import { buildDistributor } from '../src/distributeFees.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.

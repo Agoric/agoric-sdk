@@ -1,7 +1,7 @@
 // @ts-check
 
 import '../../../exported.js';
-import { Far } from '@agoric/far';
+import { Far } from '@endo/far';
 
 /**
  * Tests ZCF

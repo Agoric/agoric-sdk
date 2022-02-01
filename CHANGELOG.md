@@ -47,13 +47,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### ⚠ BREAKING CHANGES
 
-* **repl:** add `@agoric/far` exports to REPL, remove `ui-agent`
+* **repl:** add `@endo/far` exports to REPL, remove `ui-agent`
 
 ### Features
 
 * **far:** export `ERef<T>` ([180149e](https://github.com/Agoric/agoric-sdk/commit/180149ea1406e0c548fa4e2aeddabe5f16f6089b))
-* **far:** new package `@agoric/far` ([8be558c](https://github.com/Agoric/agoric-sdk/commit/8be558c5dc9a4acef43d0f28d5e207cbbd11a019))
-* **repl:** add `@agoric/far` exports to REPL, remove `ui-agent` ([3f41296](https://github.com/Agoric/agoric-sdk/commit/3f41296865dadbf7d7fe50291b86d972bc3caabd))
+* **far:** new package `@endo/far` ([8be558c](https://github.com/Agoric/agoric-sdk/commit/8be558c5dc9a4acef43d0f28d5e207cbbd11a019))
+* **repl:** add `@endo/far` exports to REPL, remove `ui-agent` ([3f41296](https://github.com/Agoric/agoric-sdk/commit/3f41296865dadbf7d7fe50291b86d972bc3caabd))
 * tweak fictional BLD price to suggest early phase ([472912e](https://github.com/Agoric/agoric-sdk/commit/472912e507a4d83b41734b9110e3127b1bd40755))
 
 

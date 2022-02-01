@@ -1,4 +1,4 @@
-import { Far } from '@agoric/far';
+import { Far } from '@endo/far';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { makeStore } from '@agoric/store';
