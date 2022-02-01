@@ -2275,6 +2275,23 @@
   resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-0.2.17.tgz#0e2c960a9622d2fe2b616be7a8a7c8032c3737c7"
   integrity sha512-L7Pug/WdmsX6FERJ/harLywE+HPmjcE79xaHEmKToF3r0gXi+6yefk5rdAedX3q6lvBAsvuCb/07In4TU1oBrw==
 
+"@endo/bundle-source@^2.0.5":
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/@endo/bundle-source/-/bundle-source-2.0.5.tgz#5dc43ab079145328efe82b43bbb25086ba8181a2"
+  integrity sha512-4Kc7BwoGREI4W/+y+1bvHU4tv6h8SHgfsd7UzQIOooBY1O6MlJq5BlZWUvsBXjA3LmhD8xqJq/NkN2jwwxh5vw==
+  dependencies:
+    "@babel/generator" "^7.14.2"
+    "@babel/parser" "^7.14.2"
+    "@babel/traverse" "^7.14.2"
+    "@endo/base64" "^0.2.17"
+    "@endo/compartment-mapper" "^0.6.5"
+    "@rollup/plugin-commonjs" "^19.0.0"
+    "@rollup/plugin-node-resolve" "^13.0.0"
+    acorn "^8.2.4"
+    c8 "^7.7.3"
+    rollup "^2.47.0"
+    source-map "^0.7.3"
+
 "@endo/captp@^1.10.12":
   version "1.10.12"
   resolved "https://registry.yarnpkg.com/@endo/captp/-/captp-1.10.12.tgz#69ce23a49ecfdf0bad84f931a55df797d2cfd0ed"
@@ -6752,6 +6769,24 @@ c8@^7.7.2:
     rimraf "^3.0.0"
     test-exclude "^6.0.0"
     v8-to-istanbul "^7.1.0"
+    yargs "^16.2.0"
+    yargs-parser "^20.2.7"
+
+c8@^7.7.3:
+  version "7.11.0"
+  resolved "https://registry.yarnpkg.com/c8/-/c8-7.11.0.tgz#b3ab4e9e03295a102c47ce11d4ef6d735d9a9ac9"
+  integrity sha512-XqPyj1uvlHMr+Y1IeRndC2X5P7iJzJlEJwBpCdBbq2JocXOgJfr+JVfJkyNMGROke5LfKrhSFXGFXnwnRJAUJw==
+  dependencies:
+    "@bcoe/v8-coverage" "^0.2.3"
+    "@istanbuljs/schema" "^0.1.2"
+    find-up "^5.0.0"
+    foreground-child "^2.0.0"
+    istanbul-lib-coverage "^3.0.1"
+    istanbul-lib-report "^3.0.0"
+    istanbul-reports "^3.0.2"
+    rimraf "^3.0.0"
+    test-exclude "^6.0.0"
+    v8-to-istanbul "^8.0.0"
     yargs "^16.2.0"
     yargs-parser "^20.2.7"
 
@@ -12324,7 +12359,7 @@ istanbul-lib-coverage@^3.0.0:
   resolved "https://registry.yarnpkg.com/istanbul-lib-coverage/-/istanbul-lib-coverage-3.0.0.tgz#f5944a37c70b550b02a78a5c3b2055b280cec8ec"
   integrity sha512-UiUIqxMgRDET6eR+o5HbfRYP1l0hqkWOs7vNxC/mggutCMUIhWMm8gAHb8tHlyfD3/l6rlgNA5cKdDzEAf6hEg==
 
-istanbul-lib-coverage@^3.2.0:
+istanbul-lib-coverage@^3.0.1, istanbul-lib-coverage@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/istanbul-lib-coverage/-/istanbul-lib-coverage-3.2.0.tgz#189e7909d0a39fa5a3dfad5b03f71947770191d3"
   integrity sha512-eOeJ5BHCmHYvQK7xt9GkdHuzuCGS1Y6g9Gvnx3Ym33fz/HpLRYxiS0wHNr+m/MBC8B647Xt608vCDEvhl9c6Mw==
