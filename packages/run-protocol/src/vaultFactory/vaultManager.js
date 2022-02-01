@@ -92,6 +92,8 @@ export const makeVaultManager = (
   //
   // sortedVaultKits should only be set once, but can't be set until after the
   // definition of reschedulePriceCheck, which refers to sortedVaultKits
+  // XXX mutability and flow control
+  /** @type {ReturnType<typeof makePrioritizedVaults>=} */
   let sortedVaultKits;
   let outstandingQuote;
 
@@ -104,6 +106,7 @@ export const makeVaultManager = (
   // when a priceQuote is received, we'll only reschedule if the high-water
   // level when the request was made matches the current high-water level.
   const reschedulePriceCheck = async () => {
+    assert(sortedVaultKits);
     const highestDebtRatio = sortedVaultKits.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -168,6 +171,7 @@ export const makeVaultManager = (
   sortedVaultKits = makePrioritizedVaults(reschedulePriceCheck);
 
   const liquidateAll = () => {
+    assert(sortedVaultKits);
     const promises = sortedVaultKits.map(({ vaultKit }) =>
       liquidate(
         zcf,
@@ -181,6 +185,7 @@ export const makeVaultManager = (
   };
 
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
+    assert(sortedVaultKits);
     const poolIncrement = sortedVaultKits.reduce(
       (total, vaultPair) =>
         AmountMath.add(
@@ -243,6 +248,7 @@ export const makeVaultManager = (
 
     const { vault, openLoan } = vaultKit;
     const { notifier } = await openLoan(seat);
+    assert(sortedVaultKits);
     sortedVaultKits.addVaultKit(vaultKit, notifier);
 
     seat.exit();
