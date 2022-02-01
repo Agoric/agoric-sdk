@@ -23,7 +23,7 @@
     "@agoric/bundle-source": "^2.0.1",
     "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
-    "@endo/init": "^0.5.29",
+    "@endo/init": "^0.5.33",
     "@endo/marshal": "^0.5.4",
     "@agoric/nat": "^4.1.0",
     "@agoric/store": "^0.6.8",

@@ -29,7 +29,7 @@
     "@agoric/cosmic-swingset": "^0.34.4",
     "@agoric/eventual-send": "^0.14.0",
     "@agoric/import-bundle": "^0.2.33",
-    "@endo/init": "^0.5.29",
+    "@endo/init": "^0.5.33",
     "@endo/marshal": "^0.5.4",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
