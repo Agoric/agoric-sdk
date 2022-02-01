@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, mapIterable } from '@agoric/marshal';
+import { Far, mapIterable } from '@endo/marshal';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';

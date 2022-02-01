@@ -33,17 +33,17 @@
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint": "yarn lint:eslint && yarn lint:types",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json"
   },
   "devDependencies": {
     "@agoric/install-ses": "^0.5.29",
-    "@endo/ses-ava": "^0.2.14",
+    "@endo/ses-ava": "^0.2.17",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },
   "dependencies": {
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/marshal": "^0.5.0",
+    "@endo/marshal": "^0.5.4",
     "@agoric/nat": "^4.1.0",
     "@agoric/promise-kit": "^0.2.29"
   },

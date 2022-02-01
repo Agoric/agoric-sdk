@@ -1,4 +1,4 @@
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AssetKind } from '../../../src/index.js';
 
 /** @type {Brand} */

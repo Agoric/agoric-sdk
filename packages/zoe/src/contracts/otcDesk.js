@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import {
   offerTo,
   saveAllIssuers,

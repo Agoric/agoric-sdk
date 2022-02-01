@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeDefaultLiquidationStrategy } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';

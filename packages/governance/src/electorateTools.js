@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { deeplyFulfilled, Far } from '@agoric/marshal';
+import { deeplyFulfilled, Far } from '@endo/marshal';
 
 /**
  * Start up a new Counter for a question

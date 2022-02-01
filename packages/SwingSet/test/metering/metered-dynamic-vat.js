@@ -1,5 +1,5 @@
 import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { meterMe } from './metered-code.js';
 
 export function buildRootObject(_dynamicVatPowers) {

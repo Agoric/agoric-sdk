@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { makeGovernedTerms } from '../../../src/vaultFactory/params';

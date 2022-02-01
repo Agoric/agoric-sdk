@@ -16,7 +16,7 @@ import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
-import { makeMarshal, passStyleOf, Far, mapIterable } from '@agoric/marshal';
+import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import {
   makeNotifierKit,

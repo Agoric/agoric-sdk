@@ -1,6 +1,6 @@
 // @ts-check
 
-// import '@agoric/marshal/src/types.js';
+// import '@endo/marshal/src/types.js';
 
 /**
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat

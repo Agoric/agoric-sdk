@@ -18,7 +18,7 @@
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
@@ -35,7 +35,7 @@
     "@agoric/install-ses": "^0.5.29",
     "@agoric/nat": "^4.1.0",
     "@agoric/promise-kit": "^0.2.29",
-    "@endo/compartment-mapper": "^0.6.2",
+    "@endo/compartment-mapper": "^0.6.5",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
     "chalk": "^2.4.2",

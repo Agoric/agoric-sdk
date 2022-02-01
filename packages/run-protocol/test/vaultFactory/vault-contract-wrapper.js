@@ -8,7 +8,7 @@ import { assert } from '@agoric/assert';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeVaultKit } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';

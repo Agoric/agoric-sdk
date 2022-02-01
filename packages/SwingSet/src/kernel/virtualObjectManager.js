@@ -3,7 +3,7 @@
 
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { getInterfaceOf } from '@agoric/marshal';
+import { getInterfaceOf } from '@endo/marshal';
 import { parseVatSlot } from '../parseVatSlots.js';
 // import { kdebug } from './kdebug.js';
 

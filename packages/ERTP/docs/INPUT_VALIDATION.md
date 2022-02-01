@@ -2,7 +2,7 @@
 
 ## Requirements
 
-We want ERTP to be robust against malicious code in the same vat, so the ERTP must be robust without the kind of checks that we get for free in intervat communication going through `@agoric/marshal` and `@agoric/swingset-vat`. In other words, the only tools at our disposal are being in a Hardened JS environment, and helpers that we import and call directly, such as `passStyleOf` from `@agoric/marshal`. 
+We want ERTP to be robust against malicious code in the same vat, so the ERTP must be robust without the kind of checks that we get for free in intervat communication going through `@endo/marshal` and `@agoric/swingset-vat`. In other words, the only tools at our disposal are being in a Hardened JS environment, and helpers that we import and call directly, such as `passStyleOf` from `@endo/marshal`. 
 
 ## Malicious Behavior
 

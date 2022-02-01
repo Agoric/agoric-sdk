@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 /**
  * Create an opaque handle object.

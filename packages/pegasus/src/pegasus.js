@@ -7,7 +7,7 @@ import { E } from '@agoric/eventual-send';
 import { Nat } from '@agoric/nat';
 import { parse as parseMultiaddr } from '@agoric/swingset-vat/src/vats/network/multiaddr.js';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import '@agoric/notifier/exported.js';
 import '@agoric/vats/exported.js';

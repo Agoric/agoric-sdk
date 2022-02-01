@@ -1,6 +1,6 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 /**
  * Start an instance of an Oracle that follows a script. The Oracle has access

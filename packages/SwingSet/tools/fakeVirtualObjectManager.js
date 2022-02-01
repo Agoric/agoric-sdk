@@ -1,5 +1,5 @@
 /* global WeakRef */
-import { makeMarshal } from '@agoric/marshal';
+import { makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 

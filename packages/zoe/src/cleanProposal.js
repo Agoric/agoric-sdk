@@ -2,7 +2,7 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
-import { assertRecord } from '@agoric/marshal';
+import { assertRecord } from '@endo/marshal';
 import { assertKey, assertPattern, fit, isKey } from '@agoric/store';
 import { ProposalShape } from './typeGuards.js';
 import { arrayToObj } from './objArrayConversion.js';

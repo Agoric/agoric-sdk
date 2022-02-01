@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
 
 const { details: X, quote: q } = assert;

@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { QCLASS } from '@agoric/marshal';
+import { QCLASS } from '@endo/marshal';
 import { insistVatType } from '../../src/parseVatSlots.js';
 import { extractMessage } from '../util.js';
 

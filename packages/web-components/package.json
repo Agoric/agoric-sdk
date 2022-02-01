@@ -15,7 +15,7 @@
     "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
     "lint-check": "yarn lint",
     "lint": "yarn lint:types && yarn lint:eslint",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
     "lint:eslint": "eslint --ext .js,.html . --ignore-path .gitignore",
     "analyze": "cem analyze --litelement",
     "start": "web-dev-server --port 8100"
@@ -23,7 +23,7 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/captp": "^1.10.8",
-    "@agoric/marshal": "^0.5.0",
+    "@endo/marshal": "^0.5.4",
     "@agoric/promise-kit": "^0.2.29",
     "robot3": "^0.2.19"
   },

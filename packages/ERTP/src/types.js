@@ -1,8 +1,8 @@
 /// <reference types="ses"/>
 
 /**
- * @typedef {import('@agoric/marshal').InterfaceSpec} InterfaceSpec
- * @typedef {import('@agoric/marshal').GetInterfaceOf} GetInterfaceOf
+ * @typedef {import('@endo/marshal').InterfaceSpec} InterfaceSpec
+ * @typedef {import('@endo/marshal').GetInterfaceOf} GetInterfaceOf
  */
 
 /**

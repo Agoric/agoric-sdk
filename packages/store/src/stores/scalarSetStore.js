@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, filterIterable } from '@agoric/marshal';
+import { Far, filterIterable } from '@endo/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertScalarKey, makeCopySet } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';

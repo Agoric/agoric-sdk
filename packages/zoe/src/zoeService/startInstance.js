@@ -3,7 +3,7 @@
 import { assert, details as X, quote as q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { Far, passStyleOf } from '@agoric/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { makeWeakStore } from '@agoric/store';
 
 import { makeZoeSeatAdminKit } from './zoeSeat.js';

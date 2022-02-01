@@ -1,7 +1,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeTimerMap, curryPollFn } from '../src/devices/timer-src.js';
 
 test('multiMap multi store', t => {

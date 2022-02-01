@@ -1,7 +1,7 @@
 /* global globalThis */
 
 import { importBundle } from '@agoric/import-bundle';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 const endowments = {
   console,

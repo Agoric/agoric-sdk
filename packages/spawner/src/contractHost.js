@@ -2,7 +2,7 @@
 
 import { E } from '@agoric/eventual-send';
 import { assert } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 // spawnBundle is built with 'yarn build'
 import spawnBundle from '../bundles/bundle-spawn.js';

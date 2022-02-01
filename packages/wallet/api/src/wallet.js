@@ -10,7 +10,7 @@
  */
 import { E } from '@agoric/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeWallet } from './lib-wallet.js';
 import pubsub from './pubsub.js';

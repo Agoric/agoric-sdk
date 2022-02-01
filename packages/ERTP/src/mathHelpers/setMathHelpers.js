@@ -1,6 +1,6 @@
 // @ts-check
 
-import { passStyleOf } from '@agoric/marshal';
+import { passStyleOf } from '@endo/marshal';
 import {
   assertKey,
   elementsIsSuperset,

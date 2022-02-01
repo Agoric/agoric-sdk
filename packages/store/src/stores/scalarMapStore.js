@@ -5,7 +5,7 @@ import {
   assertPassable,
   filterIterable,
   mapIterable,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertScalarKey, makeCopyMap } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';

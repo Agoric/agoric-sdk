@@ -10,7 +10,7 @@ import {
   isObject,
   makeTagged,
   passStyleOf,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 import { checkElements, makeSetOfElements } from './copySet.js';
 import { checkBagEntries, makeBagOfEntries } from './copyBag.js';
 import {

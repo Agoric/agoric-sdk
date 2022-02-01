@@ -1,5 +1,5 @@
 // @ts-check
-import { deeplyFulfilled } from '@agoric/marshal';
+import { deeplyFulfilled } from '@endo/marshal';
 import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,

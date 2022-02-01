@@ -17,7 +17,6 @@
     "packages/promise-kit",
     "packages/tame-metering",
     "packages/transform-metering",
-    "packages/marshal",
     "packages/far",
     "packages/same-structure",
     "packages/captp",

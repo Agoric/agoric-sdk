@@ -80,7 +80,7 @@
 */
 
 function sanitize(data) {
-  // TODO: use @agoric/marshal:pureCopy when it exists.
+  // TODO: use @endo/marshal:pureCopy when it exists.
   // Note: It exists.
   if (data === undefined) {
     return undefined;

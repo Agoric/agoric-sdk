@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { AmountMath, isNatValue } from '@agoric/ertp';
 

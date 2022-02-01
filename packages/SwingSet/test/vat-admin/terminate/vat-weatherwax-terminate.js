@@ -1,5 +1,5 @@
 import { makePromiseKit } from '@agoric/promise-kit';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers) {
   // we use testLog to attempt to deliver messages even after we're supposed

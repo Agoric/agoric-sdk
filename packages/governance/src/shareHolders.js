@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { assertCopyArray, Far } from '@agoric/marshal';
+import { assertCopyArray, Far } from '@endo/marshal';
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';

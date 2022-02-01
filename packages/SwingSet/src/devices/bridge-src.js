@@ -1,8 +1,8 @@
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 function sanitize(data) {
-  // TODO: Use @agoric/marshal:pureCopy when it exists.
+  // TODO: Use @endo/marshal:pureCopy when it exists.
   // Note: It exists.
   if (data === undefined) {
     return undefined;

@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { getInterfaceOf } from '@agoric/marshal';
+import { getInterfaceOf } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '../../src/index.js';
 
 test('interfaces - particular implementation', t => {

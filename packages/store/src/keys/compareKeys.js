@@ -2,7 +2,7 @@
 
 /// <reference types="ses"/>
 
-import { passStyleOf, getTag } from '@agoric/marshal';
+import { passStyleOf, getTag } from '@endo/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertKey } from './checkKey.js';
 import { bagCompare } from './merge-bag-operators.js';

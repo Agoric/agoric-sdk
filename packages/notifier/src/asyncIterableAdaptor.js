@@ -2,7 +2,7 @@
 /// <reference types="ses"/>
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import './types.js';
 
