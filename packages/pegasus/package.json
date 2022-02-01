@@ -32,7 +32,7 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/bundle-source": "^2.0.1",
-    "@endo/captp": "^1.10.8",
+    "@endo/captp": "^1.10.12",
     "@agoric/deploy-script-support": "^0.6.1",
     "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
