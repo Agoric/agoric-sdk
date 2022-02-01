@@ -16,7 +16,6 @@
     "packages/promise-kit",
     "packages/tame-metering",
     "packages/transform-metering",
-    "packages/far",
     "packages/same-structure",
     "packages/captp",
     "packages/stat-logger",
