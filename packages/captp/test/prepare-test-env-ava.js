@@ -1,9 +1,0 @@
-// @ts-check
-import '@endo/init/pre-remoting.js';
-import '@endo/init/debug.js';
-
-import { wrapTest } from '@endo/ses-ava';
-import rawTest from 'ava';
-
-/** @type {typeof rawTest} */
-export const test = wrapTest(rawTest);
