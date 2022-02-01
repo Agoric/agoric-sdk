@@ -19,9 +19,6 @@ import committeeBundle from '../../../../bundles/bundle-committee.js';
 import contractGovernorBundle from '../../../../bundles/bundle-contractGovernor.js';
 import binaryVoteCounterBundle from '../../../../bundles/bundle-binaryVoteCounter.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
-
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
 const test = rawTest;
 
@@ -31,7 +28,10 @@ const test = rawTest;
  * @param {string[]} vatNames
  * @returns {Promise<SwingSetConfig>}
  */
-const buildSwingSetConfig = async (contractBundles, vatNames) => {
+export const buildSwingSetConfig = async (contractBundles, vatNames) => {
+  const filename = new URL(import.meta.url).pathname;
+  const dirname = path.dirname(filename);
+
   const vatNameToSource = vatNames.map(name => {
     const source = `${dirname}/vat-${name}.js`;
     return [name, source];
