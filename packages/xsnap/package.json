@@ -18,7 +18,7 @@
     "build:from-env": "{ cat dist/build-env; echo node src/build.js; } | xargs env",
     "build": "yarn build:bin && yarn build:bundle && yarn build:env",
     "clean": "rm -rf xsnap-native/xsnap/build",
-    "lint": "yarn lint:js && yarn lint:types",
+    "lint": "run-s --continue-on-error lint:",
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' api.js",
     "lint:types": "tsc -p jsconfig.json",
     "lint-fix": "eslint --fix 'src/**/*.js' 'lib/**/*.js' api.js",

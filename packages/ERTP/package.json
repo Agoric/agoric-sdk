@@ -14,7 +14,7 @@
     "test:xs-unit": "ava-xs",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json"
   },

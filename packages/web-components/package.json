@@ -13,7 +13,7 @@
     "test:xs": "exit 0",
     "test:watch": "web-test-runner --watch",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
     "lint:eslint": "eslint --ext .js,.html . --ignore-path .gitignore",
     "analyze": "cem analyze --litelement",

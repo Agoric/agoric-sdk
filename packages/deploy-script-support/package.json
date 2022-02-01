@@ -14,7 +14,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc --maxNodeModuleJsDepth 5 -p jsconfig.json",
-    "lint": "yarn lint:types && yarn lint:eslint"
+    "lint": "run-s --continue-on-error lint:*"
   },
   "repository": {
     "type": "git",

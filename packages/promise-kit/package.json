@@ -12,7 +12,7 @@
     "test": "exit 0",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc -p jsconfig.json"
   },

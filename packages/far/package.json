@@ -10,7 +10,7 @@
     "test:xs": "exit 0",
     "build": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
