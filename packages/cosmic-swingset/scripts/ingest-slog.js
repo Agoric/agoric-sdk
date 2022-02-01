@@ -26,10 +26,11 @@ async function run() {
     return;
   }
 
-  process.env.OTEL_EXPORTER_SYNC = 'true';
+  const [slogFile, serviceName = 'ag-chain-cosmos'] = args;
+
   const { tracingProvider } = getTelemetryProviders({
     serviceNamespace: 'Agoric',
-    serviceName: 'ingest-slog',
+    serviceName,
   });
   if (!tracingProvider) {
     console.log(`no tracing provider; you need to set OTEL_EXPORTER_*`);
@@ -37,18 +38,22 @@ async function run() {
     return;
   }
 
+  let swingsetNamespace = 'AgoricSwingSet';
+  if (serviceName === 'ag-solo') {
+    swingsetNamespace = 'SoloSwingSet';
+  }
+
   const { registerShutdown } = makeShutdown();
 
   tracingProvider.register();
   const tracer = tracingProvider.getTracer('ingest-slog');
-  const { slogSender, finish } = makeSlogSenderKit(tracer);
+  const { slogSender, finish } = makeSlogSenderKit(tracer, swingsetNamespace);
   registerShutdown(async () => {
     finish();
     await tracingProvider.forceFlush();
     return tracingProvider.shutdown();
   });
 
-  const [slogFile] = args;
   let slogF = fs.createReadStream(slogFile);
   if (slogFile.endsWith('.gz')) {
     slogF = slogF.pipe(zlib.createGunzip());

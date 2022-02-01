@@ -250,7 +250,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       ),
     ).pathname;
     const { metricsProvider, tracingProvider } = getTelemetryProviders(
-      { serviceNamespace: 'Agoric', serviceName: 'ag-chain-cosmos' },
+      {},
       {
         console,
         env,
@@ -266,8 +266,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       vatconfig,
       argv,
       undefined,
-      metricsProvider,
-      tracingProvider,
+      {
+        metricsProvider,
+        tracingProvider,
+        attributes: {
+          'service.namespace': 'Agoric',
+          'service.name': 'ag-chain-cosmos',
+        },
+      },
       slogFile,
       consensusMode,
     );

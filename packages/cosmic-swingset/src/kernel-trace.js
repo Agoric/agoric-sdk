@@ -1,8 +1,9 @@
 // @ts-check
 import otel, { SpanStatusCode } from '@opentelemetry/api';
+import sqlite3ambient from 'better-sqlite3';
+import tmpambient from 'tmp';
 
 import { makeLegacyMap } from '@agoric/store';
-import { makePromiseKit } from '@agoric/promise-kit';
 
 // import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 
@@ -48,13 +49,6 @@ const cleanValue = (value, _key) => {
   return subst;
 };
 
-export const cleanAttrs = attrs =>
-  Object.fromEntries(
-    Object.entries(attrs)
-      .map(([key, value]) => [key, cleanValue(value, key)])
-      .filter(([_key, value]) => value !== undefined && value !== null),
-  );
-
 /**
  * @param {number} sFloat
  * @returns {[number, number]}
@@ -65,21 +59,87 @@ export const floatSecondsToHiRes = sFloat => {
   return [sInt, ns];
 };
 
-/** @param {import('@opentelemetry/api').Tracer} tracer */
-export const makeSlogSenderKit = tracer => {
+/**
+ * @param {import('@opentelemetry/api').Tracer} tracer
+ * @param {Record<string, any>} [overrideAttrs]
+ * @param {{ sqlite3?: typeof sqlite3ambient, tmp?: typeof tmpambient }} [io]
+ */
+export const makeSlogSenderKit = (tracer, overrideAttrs = {}, io) => {
+  const { sqlite3 = sqlite3ambient, tmp = tmpambient } = io || {};
+
   let now;
   let nowFloat;
   /** @type {Record<string, any>} */
   let currentAttrs = {};
 
+  const cleanAttrs = attrs => ({
+    ...Object.fromEntries(
+      Object.entries(attrs)
+        .map(([key, value]) => [`agoric.${key}`, cleanValue(value, key)])
+        .filter(([_key, value]) => value !== undefined && value !== null),
+    ),
+    ...overrideAttrs,
+  });
+
   /** @type {LegacyMap<string, Record<string, any>>} */
   const vatIdToAttrs = makeLegacyMap('vatId');
 
-  /** @typedef {{ context: SpanContext, name: string, span: Span }} Cause */
-  /** @type {LegacyMap<string, Cause>} */
-  const kernelPromiseToSendingCause = makeLegacyMap('kernelPromise');
+  /** @typedef {{ context: SpanContext, name: string, attrs?: Record<string, any>, error?: string }} Cause */
   /** @type {LegacyMap<any, Cause>} */
   const crankNumToCause = makeLegacyMap('crankNum');
+
+  const makeSerialisingStore = kind => {
+    const tmpfile = tmp.fileSync({
+      prefix: 'kernel-trace-',
+      postfix: '.sqlite3',
+    });
+    const db = sqlite3(tmpfile.name);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS kind_kv (
+        kind TEXT,
+        key TEXT,
+        value TEXT,
+        PRIMARY KEY (kind, key)
+      )`);
+
+    /** @type {Pick<LegacyMap<string, Cause>, 'get'|'has'|'init'>} */
+    const serialisingStore = harden({
+      get: key => {
+        const it = db
+          .prepare(`SELECT value FROM kind_kv WHERE kind = ? AND key = ?`)
+          .iterate(kind, key);
+        const { done, value } = it.next();
+        if (!done) {
+          it.return && it.return();
+        }
+        // console.log({ serialised: value });
+        return JSON.parse(value.value);
+      },
+      has: key => {
+        const it = db
+          .prepare(
+            `SELECT COUNT(value) AS cnt FROM kind_kv WHERE kind = ? AND key = ?`,
+          )
+          .iterate(kind, key);
+        const { value } = it.next();
+        it.return && it.return();
+        // console.log({ count: value });
+        return value && value.cnt > 0;
+      },
+      init: (key, value) => {
+        const serialised = JSON.stringify(value);
+        const changes = db
+          .prepare(`INSERT INTO kind_kv (kind, key, value) VALUES (?, ?, ?)`)
+          .run(kind, key, serialised).changes;
+        if (changes < 1) {
+          throw Error(`no changes after one insert of ${kind} ${key}`);
+        }
+      },
+    });
+    return serialisingStore;
+  };
+
+  const kernelPromiseToSendingCause = makeSerialisingStore('kernelPromise');
 
   const extractMessageAttrs = ({ type: messageType, ...message }) => {
     /** @type {Record<string, any>} */
@@ -171,7 +231,10 @@ export const makeSlogSenderKit = tracer => {
           ...link,
           attributes: link.attributes && cleanAttrs(link.attributes),
         }));
-        allOpts.attributes = cleanAttrs({ ...allOpts.attributes, ...attrs });
+        allOpts.attributes = {
+          ...overrideAttrs,
+          ...cleanAttrs({ ...allOpts.attributes, ...attrs }),
+        };
         if (!allOpts.startTime) {
           allOpts.startTime = now;
         }
@@ -294,13 +357,27 @@ export const makeSlogSenderKit = tracer => {
    * @param {SpanOptions} options
    * @returns {Cause}
    */
-  const makeCause = (name, graph, parent, attrs = {}, options = {}) => {
+  const makeVatCause = (name, graph, parent, attrs = {}, options = {}) => {
     const span = spans.create(name, parent, { ...attrs, graph }, options);
+    span.setAttributes({
+      'service.namespace': 'SwingSetVat',
+      'service.name': attrs.vatID,
+      'service.version': 'unknown',
+    });
+    if (vatIdToAttrs.has(attrs.vatID)) {
+      // Add the vatName.
+      const { name: vatName } = vatIdToAttrs.get(attrs.vatID);
+      if (vatName) {
+        span.setAttributes({
+          'service.name': `${vatName} (${attrs.vatID})`,
+          'service.version': vatName,
+        });
+      }
+    }
     span.end(now);
 
     return {
       context: span.spanContext(),
-      span,
       name,
     };
   };
@@ -383,12 +460,14 @@ export const makeSlogSenderKit = tracer => {
           const [_type, [notification]] = kd;
           // TODO: We only track the first notified kernel promise. Perhaps we should do more?
           const [kpId, { state }] = notification;
+          const error = state === 'rejected' ? 'rejected' : undefined;
           if (kernelPromiseToSendingCause.has(kpId)) {
             // Track this notification as the cause for the current crank.
             const cause = kernelPromiseToSendingCause.get(kpId);
             crankNumToCause.init(slogAttrs.crankNum, {
               ...cause,
-              name: `${state} ${cause.name}`,
+              attrs: { ...cause.attrs, state },
+              error,
             });
           }
         } else if (kd[0] === 'message') {
@@ -401,7 +480,7 @@ export const makeSlogSenderKit = tracer => {
           } else {
             // Create a new root span.
             const name = `E(${target}).${method}`;
-            cause = makeCause(name, 'send', undefined, {
+            cause = makeVatCause(name, 'send', undefined, {
               target,
               method,
               result,
@@ -465,12 +544,15 @@ export const makeSlogSenderKit = tracer => {
             });
             if (result) {
               // Track call graph.
-              const cause = makeCause(
+              let parentSpan;
+              if (crankNumToCause.has(attrs.crankNum)) {
+                const parentCause = crankNumToCause.get(attrs.crankNum);
+                parentSpan = otel.trace.wrapSpanContext(parentCause.context);
+              }
+              const cause = makeVatCause(
                 name,
                 'send',
-                crankNumToCause.has(attrs.crankNum)
-                  ? crankNumToCause.get(attrs.crankNum).span
-                  : undefined,
+                parentSpan,
                 { target, method, result, ...attrs },
                 {
                   links: [
@@ -599,10 +681,14 @@ export const makeSlogSenderKit = tracer => {
         break;
       }
       case 'crank-finish': {
+        let attrs;
+        let error;
         if (crankNumToCause.has(slogAttrs.crankNum)) {
+          const cause = crankNumToCause.get(slogAttrs.crankNum);
+          ({ attrs, error } = cause);
           crankNumToCause.delete(slogAttrs.crankNum);
         }
-        spans.end(getCrankKey());
+        spans.end(getCrankKey(), attrs, error);
         break;
       }
       case 'console': {

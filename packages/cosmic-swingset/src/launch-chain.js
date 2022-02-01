@@ -148,8 +148,14 @@ export async function launch(
   vatconfig,
   argv,
   debugName = undefined,
-  meterProvider = DEFAULT_METER_PROVIDER,
-  tracingProvider = undefined,
+  {
+    meterProvider = DEFAULT_METER_PROVIDER,
+    tracingProvider = undefined,
+    attributes = {
+      'service.namespace': 'Agoric',
+      'service.name': 'cosmic-swingset',
+    },
+  },
   slogFile = undefined,
   consensusMode = false,
 ) {
@@ -179,7 +185,7 @@ export async function launch(
   if (tracingProvider) {
     tracingProvider.register();
     const tracer = otel.trace.getTracer('slog-trace');
-    const { slogSender: ss, finish } = makeSlogSenderKit(tracer);
+    const { slogSender: ss, finish } = makeSlogSenderKit(tracer, attributes);
     registerShutdown(() => {
       // Finish all the traces first.
       finish();

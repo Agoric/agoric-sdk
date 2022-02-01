@@ -97,7 +97,7 @@ const buildSwingset = async (
   const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
 
   const { tracingProvider } = getTelemetryProviders(
-    { serviceNamespace: 'Agoric', serviceName: 'ag-solo' },
+    {},
     {
       console,
       env: process.env,
@@ -171,7 +171,10 @@ const buildSwingset = async (
   if (tracingProvider) {
     tracingProvider.register();
     const tracer = otel.trace.getTracer('slog-trace');
-    const { slogSender: ss, finish } = makeSlogSenderKit(tracer);
+    const { slogSender: ss, finish } = makeSlogSenderKit(tracer, {
+      'service.namespace': 'SoloSwingSet',
+      'service.name': 'ag-solo',
+    });
     registerShutdown(() => {
       // Finish all the traces first.
       finish();

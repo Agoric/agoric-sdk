@@ -80,10 +80,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   }
 
   const { metricsProvider, tracingProvider } = getTelemetryProviders(
-    {
-      serviceNamespace: 'Agoric',
-      serviceName: 'sim-chain',
-    },
+    {},
     {
       console,
       env: process.env,
@@ -97,8 +94,14 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     vatconfig,
     argv,
     GCI, // debugName
-    metricsProvider,
-    tracingProvider,
+    {
+      attributes: {
+        'service.namespace': 'Agoric',
+        'service.name': 'sim-chain',
+      },
+      metricsProvider,
+      tracingProvider,
+    },
     process.env.SLOGFILE,
   );
 
