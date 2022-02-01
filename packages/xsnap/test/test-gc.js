@@ -1,7 +1,7 @@
 /* global FinalizationRegistry WeakRef */
 // @ts-check
 
-import '@agoric/install-ses';
+import '@endo/init';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';

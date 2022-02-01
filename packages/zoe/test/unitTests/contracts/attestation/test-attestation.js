@@ -8,7 +8,7 @@ import path from 'path';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';

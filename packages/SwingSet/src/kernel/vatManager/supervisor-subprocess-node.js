@@ -1,13 +1,13 @@
 // @ts-check
 
 // this file is loaded at the start of a new subprocess
-import '@agoric/install-ses';
+import '@endo/init';
 
 import anylogger from 'anylogger';
 import fs from 'fs';
 
 import { assert, details as X } from '@agoric/assert';
-import { importBundle } from '@agoric/import-bundle';
+import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import engineGC from '../../engine-gc.js';
 import { WeakRef, FinalizationRegistry } from '../../weakref.js';

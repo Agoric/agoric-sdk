@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { buildRootObject } from '../src/vat-bank.js';
 

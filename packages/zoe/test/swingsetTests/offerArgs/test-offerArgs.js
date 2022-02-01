@@ -2,13 +2,13 @@
 // https://github.com/endojs/endo/issues/768
 import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
+import '@endo/init';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 const CONTRACT_FILES = ['offerArgsUsageContract'];
 

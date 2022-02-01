@@ -1,6 +1,6 @@
 // @ts-check
 
-import { E } from '@agoric/far';
+import { E } from '@endo/far';
 
 import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 import { CENTRAL_ISSUER_NAME } from './utils.js';

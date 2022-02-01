@@ -5,7 +5,7 @@ import path from 'path';
 
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import './types.js';
 import { insistStorageAPI } from './storageAPI.js';

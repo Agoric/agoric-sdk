@@ -24,8 +24,8 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/cosmos": "^0.27.2",
-    "@agoric/import-bundle": "^0.2.33",
-    "@agoric/install-ses": "^0.5.29",
+    "@endo/import-bundle": "^0.2.37",
+    "@endo/init": "^0.5.33",
     "@endo/marshal": "^0.5.4",
     "@agoric/nat": "^4.1.0",
     "@agoric/store": "^0.6.8",

@@ -1,5 +1,5 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { GOVERNANCE_ACTIONS_MANIFEST } from './manifest.js';
 import { addRemote } from './utils.js';
 

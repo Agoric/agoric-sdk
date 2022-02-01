@@ -1,5 +1,5 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
 
 import { makeStore } from '@agoric/store';

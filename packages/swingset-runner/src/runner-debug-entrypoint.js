@@ -7,14 +7,14 @@
 
 // TODO Remove babel-standalone preinitialization
 // https://github.com/endojs/endo/issues/768
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 
 // Initialize trasitive dependencies that run afoul of the property override
 // after SES lockdown hazard.
 import 'node-lmdb';
 
 // Now do lockdown.
-import '@agoric/install-ses';
+import '@endo/init';
 import { main } from './main.js';
 
 main();

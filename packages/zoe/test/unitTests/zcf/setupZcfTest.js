@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
 
 import path from 'path';

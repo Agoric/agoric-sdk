@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { buildVatController } from '../../src/index.js';
 
 function capdata(body, slots = []) {

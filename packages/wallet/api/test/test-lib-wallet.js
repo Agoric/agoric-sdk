@@ -2,7 +2,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoeKit } from '@agoric/zoe';
