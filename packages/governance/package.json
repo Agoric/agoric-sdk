@@ -30,7 +30,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.15",
-    "@agoric/captp": "^1.10.8",
+    "@endo/captp": "^1.10.8",
     "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
     "@endo/marshal": "^0.5.4",

@@ -13,7 +13,7 @@ import { makeZoeKit } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { AmountMath } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeLoopback } from '@agoric/captp';
+import { makeLoopback } from '@endo/captp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import {
