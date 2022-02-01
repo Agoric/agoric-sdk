@@ -11,11 +11,10 @@
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc --maxNodeModuleJsDepth 5 -p jsconfig.json",
-    "lint": "yarn lint:types && yarn lint:eslint"
+    "lint": "run-s --continue-on-error lint:*"
   },
   "repository": {
     "type": "git",

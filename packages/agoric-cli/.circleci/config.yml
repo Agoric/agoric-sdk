@@ -80,7 +80,7 @@ jobs:
       - *save_cache
       - run: &lint
           name: Lint
-          command: npm run lint-check
+          command: npm run lint
       - run: &test
           name: Test
           command: npm test
