@@ -2324,6 +2324,14 @@
   resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-0.14.4.tgz#40f2c7fd64d66e1ed5eaf15a90d6d689af13eb36"
   integrity sha512-1MSnq7bcCustCIKB7TJ1cfCg7A0W/LmX9bxhIV1syG7TO3mgV1DX7YceU0Ek+JDlqR3x9cM12WeaXfM+1ggfKg==
 
+"@endo/far@^0.1.5":
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/@endo/far/-/far-0.1.5.tgz#af2640dffba5cbb326af8ccf9c42831fa9a175f8"
+  integrity sha512-93GuAO10cN8kREc2DIGUseRnoLQkNyGR7meEyZPQFtxcN+GkPxeacK9V2Jvb5BoFRYKyHxQbsYn8LNchHFqwoQ==
+  dependencies:
+    "@endo/eventual-send" "^0.14.4"
+    "@endo/marshal" "^0.5.4"
+
 "@endo/init@^0.5.33":
   version "0.5.33"
   resolved "https://registry.yarnpkg.com/@endo/init/-/init-0.5.33.tgz#9ced756f99965db5d76769e23d1309e5fcf29f74"
