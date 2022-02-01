@@ -2359,6 +2359,14 @@
     "@endo/eventual-send" "^0.14.4"
     "@endo/marshal" "^0.5.4"
 
+"@endo/import-bundle@^0.2.37":
+  version "0.2.37"
+  resolved "https://registry.yarnpkg.com/@endo/import-bundle/-/import-bundle-0.2.37.tgz#6d09d75a8ffeee6645968905b5858a32ca7606f1"
+  integrity sha512-m7tCYfSuzzv/HVlgL95m+3SSOYBxbsTljRj1HQJTtNwHBNkWrPDnHOCjtqORQETOZ2Dlq/zSlifwNFWvsd+Mgg==
+  dependencies:
+    "@endo/base64" "^0.2.17"
+    "@endo/compartment-mapper" "^0.6.5"
+
 "@endo/init@^0.5.33":
   version "0.5.33"
   resolved "https://registry.yarnpkg.com/@endo/init/-/init-0.5.33.tgz#9ced756f99965db5d76769e23d1309e5fcf29f74"
