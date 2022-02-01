@@ -184,8 +184,6 @@ jobs:
       run: cd packages/assert && yarn test
     - name: yarn test (bundle-source)
       run: cd packages/bundle-source && yarn test
-    - name: yarn test (captp)
-      run: cd packages/captp && yarn test
     - name: yarn test (wallet/api)
       run: cd packages/wallet/api && yarn test
     - name: yarn test (deployment)
