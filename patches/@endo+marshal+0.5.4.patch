@@ -1,3 +1,194 @@
+diff --git a/node_modules/@endo/marshal/NEWS.md b/node_modules/@endo/marshal/NEWS.md
+new file mode 100644
+index 0000000..a8c8972
+--- /dev/null
++++ b/node_modules/@endo/marshal/NEWS.md
+@@ -0,0 +1,56 @@
++User-visible changes in `@endo/marshal`:
++
++# Next release
++
++Switch from ambient to exported types.
++Include type declarations (`.d.ts`) generated from JSDoc to avoid requiring
++dependents to parse `.js` files in their `node_modules`.
++
++In order to use the types from `@endo/marshal` you now need to import them
++explicitly. For example, to make them available in scope, use the following:
++- JSDoc: `/** @typedef {import('@endo/marshal').PassStyle} PassStyle */`
++- TypeScript: `import type { PassStyle } from '@endo/marshal'`
++
++
++# v0.5.3 (2021-01-27)
++
++Includes TypeScript definitions in published artifact.
++
++
++# v0.5.1 (2021-01-22)
++
++Moved from https://github.com/Agoric/agoric-sdk to
++https://github.com/endojs/endo, still in a `packages/marshal` directory.
++
++
++---
++
++# v0.1.2 (2019-12-17)
++
++- depend on @agoric/eventual-send (#6)
++
++Moved from https://github.com/Agoric/marshal into the `packages/marshal/`
++directory in the monorepo at https://github.com/Agoric/agoric-sdk .
++
++
++# v0.1.1 (2019-10-02)
++
++Remove unneeded SES dependency.
++
++
++# v0.1.0 (2019-19-11)
++
++Breaking API change: applications must change how they use m.serialize()
++and m.serialize().
++
++- change API to use 'CapData' format: `{body, slots}`
++  - `m.serialize()` now returns `{body, slots}` instead of `{argsString, slots}`
++  - `m.unserialize()` now takes `(capdata, cyclePolicy)` instead of
++    `(body, slots, cyclePolicy)`. The `cyclePolicy` argument remains optional.
++- the return value of `m.serialize()` is now hardened
++- improve error messages
++
++
++# v0.0.1 (2019-06-06)
++
++First release.
+diff --git a/node_modules/@endo/marshal/changelogs/README-changelogs.md b/node_modules/@endo/marshal/changelogs/README-changelogs.md
+new file mode 100644
+index 0000000..ff29e4f
+--- /dev/null
++++ b/node_modules/@endo/marshal/changelogs/README-changelogs.md
+@@ -0,0 +1,13 @@
++For each PR, add a file to this directory named $ISSUENUMBER.txt , and
++describe any downstream-visible changes in it (one per line). For libraries,
++this should include anything a developer using this library needs to know
++when they upgrade to the new version (API changes, new features, significant
++bugs fixed). If the PR only makes internal changes (refactorings,
++documentation updates), you should still add a file, but leave it empty.
++
++These files will be concatenated together and added to the NEWS.md file
++during the release process. Their filenames will be used to indicate which
++issues were closed in the release.
++
++See the top-level developer docs for more details.
++
+diff --git a/node_modules/@endo/marshal/exported.js b/node_modules/@endo/marshal/exported.js
+deleted file mode 100644
+index f4cba01..0000000
+--- a/node_modules/@endo/marshal/exported.js
++++ /dev/null
+@@ -1 +0,0 @@
+-import './src/types.js';
+diff --git a/node_modules/@endo/marshal/index.d.ts b/node_modules/@endo/marshal/index.d.ts
+new file mode 100644
+index 0000000..21b55e5
+--- /dev/null
++++ b/node_modules/@endo/marshal/index.d.ts
+@@ -0,0 +1,15 @@
++export { deeplyFulfilled } from "./src/deeplyFulfilled.js";
++export { makeTagged } from "./src/makeTagged.js";
++export * from "./src/types.js";
++export { mapIterable, filterIterable } from "./src/helpers/iter-helpers.js";
++export { PASS_STYLE, isObject, assertChecker, getTag, hasOwnPropertyOf } from "./src/helpers/passStyle-helpers.js";
++export { getErrorConstructor, toPassableError } from "./src/helpers/error.js";
++export { getInterfaceOf, ALLOW_IMPLICIT_REMOTABLES } from "./src/helpers/remotable.js";
++export { nameForPassableSymbol, passableSymbolForName } from "./src/helpers/symbol.js";
++export { passStyleOf, assertPassable } from "./src/passStyleOf.js";
++export { pureCopy, sameValueZero } from "./src/pureCopy.js";
++export { Remotable, Far, ToFarFunction } from "./src/make-far.js";
++export { QCLASS, makeMarshal } from "./src/marshal.js";
++export { stringify, parse } from "./src/marshal-stringify.js";
++export { assertRecord, assertCopyArray, assertRemotable, isRemotable, isRecord, isCopyArray } from "./src/typeGuards.js";
++//# sourceMappingURL=index.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/index.d.ts.map b/node_modules/@endo/marshal/index.d.ts.map
+new file mode 100644
+index 0000000..ca7a93a
+--- /dev/null
++++ b/node_modules/@endo/marshal/index.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["index.js"],"names":[],"mappings":""}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/index.js b/node_modules/@endo/marshal/index.js
+index fcb8247..8144bda 100644
+--- a/node_modules/@endo/marshal/index.js
++++ b/node_modules/@endo/marshal/index.js
+@@ -39,3 +39,6 @@ export {
+   isRecord,
+   isCopyArray,
+ } from './src/typeGuards.js';
++
++// eslint-disable-next-line import/export
++export * from './src/types.js';
+diff --git a/node_modules/@endo/marshal/src/deeplyFulfilled.d.ts b/node_modules/@endo/marshal/src/deeplyFulfilled.d.ts
+new file mode 100644
+index 0000000..e1b7007
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/deeplyFulfilled.d.ts
+@@ -0,0 +1,4 @@
++export function deeplyFulfilled(val: Passable): ERef<Passable>;
++export type Passable = import('./types.js').Passable;
++export type ERef<T> = import('@endo/eventual-send').ERef<T>;
++//# sourceMappingURL=deeplyFulfilled.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/deeplyFulfilled.d.ts.map b/node_modules/@endo/marshal/src/deeplyFulfilled.d.ts.map
+new file mode 100644
+index 0000000..8cde73c
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/deeplyFulfilled.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"deeplyFulfilled.d.ts","sourceRoot":"","sources":["deeplyFulfilled.js"],"names":[],"mappings":"AAsCO,qCAHI,QAAQ,GACN,KAAK,QAAQ,CAAC,CAyC1B;uBAnEa,OAAO,YAAY,EAAE,QAAQ;sBACjB,OAAO,qBAAqB,EAAE,IAAI,CAAC,CAAC,CAAC"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/deeplyFulfilled.js b/node_modules/@endo/marshal/src/deeplyFulfilled.js
+index 3084cf3..dc2104e 100644
+--- a/node_modules/@endo/marshal/src/deeplyFulfilled.js
++++ b/node_modules/@endo/marshal/src/deeplyFulfilled.js
+@@ -3,15 +3,14 @@
+ /// <reference types="ses"/>
+ 
+ import { E } from '@endo/eventual-send';
+-/**
+- * @template T
+- * @typedef {import('@endo/eventual-send').ERef<T>} ERef
+- */
+ import { isPromise } from '@endo/promise-kit';
+ import { getTag, isObject } from './helpers/passStyle-helpers.js';
+ import { makeTagged } from './makeTagged.js';
+ import { passStyleOf } from './passStyleOf.js';
+ 
++/** @typedef {import('./types.js').Passable} Passable */
++/** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef */
++
+ const { details: X, quote: q } = assert;
+ const { ownKeys } = Reflect;
+ const { fromEntries } = Object;
+diff --git a/node_modules/@endo/marshal/src/dot-membrane.d.ts b/node_modules/@endo/marshal/src/dot-membrane.d.ts
+new file mode 100644
+index 0000000..e7c2079
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/dot-membrane.d.ts
+@@ -0,0 +1,5 @@
++export function makeDotMembraneKit(target: any): {
++    proxy: any;
++    revoke: (reasonString: any) => void;
++};
++//# sourceMappingURL=dot-membrane.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/dot-membrane.d.ts.map b/node_modules/@endo/marshal/src/dot-membrane.d.ts.map
+new file mode 100644
+index 0000000..2170b87
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/dot-membrane.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"dot-membrane.d.ts","sourceRoot":"","sources":["dot-membrane.js"],"names":[],"mappings":"AAoJO;;;EAMN"}
+\ No newline at end of file
 diff --git a/node_modules/@endo/marshal/src/dot-membrane.js b/node_modules/@endo/marshal/src/dot-membrane.js
 index 6d23b7c..7f1f2fa 100644
 --- a/node_modules/@endo/marshal/src/dot-membrane.js
@@ -19,11 +210,522 @@ index 6d23b7c..7f1f2fa 100644
          const myMethodToYours = (optVerb = undefined) => (...yourArgs) => {
            // We use mineIf rather than mine so that mine is not accessible
            // after revocation. This gives the correct error behavior,
+diff --git a/node_modules/@endo/marshal/src/helpers/copyArray.d.ts b/node_modules/@endo/marshal/src/helpers/copyArray.d.ts
+new file mode 100644
+index 0000000..c739632
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/copyArray.d.ts
+@@ -0,0 +1,6 @@
++/**
++ *
++ * @type {import('./internal-types.js').PassStyleHelper}
++ */
++export const CopyArrayHelper: import('./internal-types.js').PassStyleHelper;
++//# sourceMappingURL=copyArray.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/copyArray.d.ts.map b/node_modules/@endo/marshal/src/helpers/copyArray.d.ts.map
+new file mode 100644
+index 0000000..cee8fcc
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/copyArray.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"copyArray.d.ts","sourceRoot":"","sources":["copyArray.js"],"names":[],"mappings":"AAWA;;;GAGG;AACH,8BAFU,OAAO,qBAAqB,EAAE,eAAe,CA+BpD"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/copyArray.js b/node_modules/@endo/marshal/src/helpers/copyArray.js
+index f6ec450..c492c29 100644
+--- a/node_modules/@endo/marshal/src/helpers/copyArray.js
++++ b/node_modules/@endo/marshal/src/helpers/copyArray.js
+@@ -2,8 +2,6 @@
+ 
+ /// <reference types="ses"/>
+ 
+-import '../types.js';
+-import './internal-types.js';
+ import { assertChecker, checkNormalProperty } from './passStyle-helpers.js';
+ 
+ const { details: X } = assert;
+@@ -13,7 +11,7 @@ const { isArray, prototype: arrayPrototype } = Array;
+ 
+ /**
+  *
+- * @type {PassStyleHelper}
++ * @type {import('./internal-types.js').PassStyleHelper}
+  */
+ export const CopyArrayHelper = harden({
+   styleName: 'copyArray',
+diff --git a/node_modules/@endo/marshal/src/helpers/copyRecord.d.ts b/node_modules/@endo/marshal/src/helpers/copyRecord.d.ts
+new file mode 100644
+index 0000000..bf026b4
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/copyRecord.d.ts
+@@ -0,0 +1,6 @@
++/**
++ *
++ * @type {import('./internal-types.js').PassStyleHelper}
++ */
++export const CopyRecordHelper: import('./internal-types.js').PassStyleHelper;
++//# sourceMappingURL=copyRecord.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/copyRecord.d.ts.map b/node_modules/@endo/marshal/src/helpers/copyRecord.d.ts.map
+new file mode 100644
+index 0000000..25500ee
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/copyRecord.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"copyRecord.d.ts","sourceRoot":"","sources":["copyRecord.js"],"names":[],"mappings":"AAkBA;;;GAGG;AACH,+BAFU,OAAO,qBAAqB,EAAE,eAAe,CAwCpD"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/copyRecord.js b/node_modules/@endo/marshal/src/helpers/copyRecord.js
+index 92dcf4b..05c16e2 100644
+--- a/node_modules/@endo/marshal/src/helpers/copyRecord.js
++++ b/node_modules/@endo/marshal/src/helpers/copyRecord.js
+@@ -8,9 +8,6 @@ import {
+   checkNormalProperty,
+ } from './passStyle-helpers.js';
+ 
+-import '../types.js';
+-import './internal-types.js';
+-
+ const { details: X } = assert;
+ const { ownKeys } = Reflect;
+ const {
+@@ -21,7 +18,7 @@ const {
+ 
+ /**
+  *
+- * @type {PassStyleHelper}
++ * @type {import('./internal-types.js').PassStyleHelper}
+  */
+ export const CopyRecordHelper = harden({
+   styleName: 'copyRecord',
+diff --git a/node_modules/@endo/marshal/src/helpers/environment-options.d.ts b/node_modules/@endo/marshal/src/helpers/environment-options.d.ts
+new file mode 100644
+index 0000000..1edb004
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/environment-options.d.ts
+@@ -0,0 +1,3 @@
++export function getEnvironmentOption(optionName: string, defaultSetting?: string | undefined): string | undefined;
++export function setEnvironmentOption(optionName: string, setting?: string | undefined): void;
++//# sourceMappingURL=environment-options.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/environment-options.d.ts.map b/node_modules/@endo/marshal/src/helpers/environment-options.d.ts.map
+new file mode 100644
+index 0000000..6819a00
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/environment-options.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"environment-options.d.ts","sourceRoot":"","sources":["environment-options.js"],"names":[],"mappings":"AA+DO,iDAHI,MAAM,mBACN,MAAM,kCAsChB;AAcM,iDAHI,MAAM,YACN,MAAM,oBAqBhB"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/error.d.ts b/node_modules/@endo/marshal/src/helpers/error.d.ts
+new file mode 100644
+index 0000000..8984261
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/error.d.ts
+@@ -0,0 +1,22 @@
++export function getErrorConstructor(name: any): ErrorConstructor | undefined;
++/**
++ * Validating error objects are passable raises a tension between security
++ * vs preserving diagnostic information. For errors, we need to remember
++ * the error itself exists to help us diagnose a bug that's likely more
++ * pressing than a validity bug in the error itself. Thus, whenever it is safe
++ * to do so, we prefer to let the error test succeed and to couch these
++ * complaints as notes on the error.
++ *
++ * To resolve this, such a malformed error object will still pass
++ * `canBeValid(err)` with no check, so marshal can use this for top
++ * level error to report from, even if it would not actually validate.
++ * Instead, the diagnostics that `assertError` would have reported are
++ * attached as notes to the malformed error. Thus, a malformed
++ * error is passable by itself, but not as part of a passable structure.
++ *
++ * @type {PassStyleHelper}
++ */
++export const ErrorHelper: PassStyleHelper;
++export function toPassableError(err: Error): Error;
++export type PassStyleHelper = import('./internal-types.js').PassStyleHelper;
++//# sourceMappingURL=error.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/error.d.ts.map b/node_modules/@endo/marshal/src/helpers/error.d.ts.map
+new file mode 100644
+index 0000000..5f5d5f0
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/error.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"error.d.ts","sourceRoot":"","sources":["error.js"],"names":[],"mappings":"AAyBO,6EAA+D;AAGtE;;;;;;;;;;;;;;;;GAgBG;AACH,0BAFU,eAAe,CAqDtB;AASI,qCAHI,KAAK,GACH,KAAK,CAYjB;8BA7Ga,OAAO,qBAAqB,EAAE,eAAe"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/error.js b/node_modules/@endo/marshal/src/helpers/error.js
+index b6fa373..2f2d745 100644
+--- a/node_modules/@endo/marshal/src/helpers/error.js
++++ b/node_modules/@endo/marshal/src/helpers/error.js
+@@ -2,10 +2,10 @@
+ 
+ /// <reference types="ses"/>
+ 
+-import '../types.js';
+-import './internal-types.js';
+ import { assertChecker } from './passStyle-helpers.js';
+ 
++/** @typedef {import('./internal-types.js').PassStyleHelper} PassStyleHelper */
++
+ const { details: X } = assert;
+ const { getPrototypeOf, getOwnPropertyDescriptors } = Object;
+ const { ownKeys } = Reflect;
+diff --git a/node_modules/@endo/marshal/src/helpers/internal-types.d.ts b/node_modules/@endo/marshal/src/helpers/internal-types.d.ts
+new file mode 100644
+index 0000000..f5cf8be
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/internal-types.d.ts
+@@ -0,0 +1,26 @@
++export type Checker = import('../types.js').Checker;
++export type PassStyle = import('../types.js').PassStyle;
++export type PassStyleOf = import('../types.js').PassStyleOf;
++/**
++ * The PassStyleHelper are only used to make a `passStyleOf` function.
++ * Thus, it should not depend on an ambient one. Rather, each helper should be
++ * pure, and get its `passStyleOf` or similar function from its caller.
++ *
++ * For those methods that have a last `passStyleOf` or `passStyleOfRecur`,
++ * they must defend against the other arguments being malicious, but may
++ * *assume* that `passStyleOfRecur` does what it is supposed to do.
++ * Each such method is not trying to defend itself against a malicious
++ * `passStyleOfRecur`, though it may defend against some accidents.
++ */
++export type PassStyleHelper = {
++    styleName: PassStyle;
++    /**
++     * If `canBeValid` returns true, then the candidate would
++     * definitely not be valid for any of the other helpers.
++     * `assertValid` still needs to be called to determine if it
++     * actually is valid.
++     */
++    canBeValid: (candidate: any, check?: import("../types.js").Checker | undefined) => boolean;
++    assertValid: (candidate: any, passStyleOfRecur: PassStyleOf) => void;
++};
++//# sourceMappingURL=internal-types.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/internal-types.d.ts.map b/node_modules/@endo/marshal/src/helpers/internal-types.d.ts.map
+new file mode 100644
+index 0000000..c9d2b7e
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/internal-types.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"internal-types.d.ts","sourceRoot":"","sources":["internal-types.js"],"names":[],"mappings":"sBAMc,OAAO,aAAa,EAAE,OAAO;wBAC7B,OAAO,aAAa,EAAE,SAAS;0BAC/B,OAAO,aAAa,EAAE,WAAW;;;;;;;;;;;;;eAejC,SAAS;;;;;;;4BAEG,GAAG,wDAAsB,OAAO;6BAMhC,GAAG,oBACI,WAAW,KACzB,IAAI"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/internal-types.js b/node_modules/@endo/marshal/src/helpers/internal-types.js
+index c813fe8..5338fa0 100644
+--- a/node_modules/@endo/marshal/src/helpers/internal-types.js
++++ b/node_modules/@endo/marshal/src/helpers/internal-types.js
+@@ -2,6 +2,12 @@
+ 
+ /// <reference path="../extra-types.d.ts" />
+ 
++export {};
++
++/** @typedef {import('../types.js').Checker} Checker */
++/** @typedef {import('../types.js').PassStyle} PassStyle */
++/** @typedef {import('../types.js').PassStyleOf} PassStyleOf */
++
+ /**
+  * The PassStyleHelper are only used to make a `passStyleOf` function.
+  * Thus, it should not depend on an ambient one. Rather, each helper should be
+diff --git a/node_modules/@endo/marshal/src/helpers/iter-helpers.d.ts b/node_modules/@endo/marshal/src/helpers/iter-helpers.d.ts
+new file mode 100644
+index 0000000..b82d00f
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/iter-helpers.d.ts
+@@ -0,0 +1,3 @@
++export function mapIterable<T, U>(baseIterable: Iterable<T>, func: (value: T) => U): Iterable<U>;
++export function filterIterable<T>(baseIterable: Iterable<T>, pred: (value: T) => boolean): Iterable<T>;
++//# sourceMappingURL=iter-helpers.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/iter-helpers.d.ts.map b/node_modules/@endo/marshal/src/helpers/iter-helpers.d.ts.map
+new file mode 100644
+index 0000000..dea3d7c
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/iter-helpers.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"iter-helpers.d.ts","sourceRoot":"","sources":["iter-helpers.js"],"names":[],"mappings":"AAeO,iGAaH;AAcG,iFAHkB,OAAO,eAoB5B"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/passStyle-helpers.d.ts b/node_modules/@endo/marshal/src/helpers/passStyle-helpers.d.ts
+new file mode 100644
+index 0000000..9442a29
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/passStyle-helpers.d.ts
+@@ -0,0 +1,21 @@
++export function hasOwnPropertyOf(obj: any, prop: any): any;
++export function isObject(val: any): boolean;
++export const PASS_STYLE: unique symbol;
++export function canBeMethod(func: any): boolean;
++/**
++ * Below we have a series of predicate functions and their (curried) assertion
++ * functions. The semantics of the assertion function is just to assert that
++ * the corresponding predicate function would have returned true. But it
++ * reproduces the internal tests so failures can give a better error message.
++ *
++ * @type {Checker}
++ */
++export const assertChecker: Checker;
++export function checkNormalProperty(candidate: any, propertyName: string | number | symbol, nameType?: string | undefined, shouldBeEnumerable?: boolean | undefined, check?: Checker | undefined): boolean;
++export function getTag(tagRecord: any): any;
++export function checkTagRecord(tagRecord: {
++    [PASS_STYLE]: string;
++}, passStyle: PassStyle, check?: import("../types.js").Checker | undefined): boolean;
++export type Checker = import('../types.js').Checker;
++export type PassStyle = import('../types.js').PassStyle;
++//# sourceMappingURL=passStyle-helpers.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/passStyle-helpers.d.ts.map b/node_modules/@endo/marshal/src/helpers/passStyle-helpers.d.ts.map
+new file mode 100644
+index 0000000..436c7d9
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/passStyle-helpers.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"passStyle-helpers.d.ts","sourceRoot":"","sources":["passStyle-helpers.js"],"names":[],"mappings":"AAeO,2DACmC;AAGnC,4CAA2C;AAGlD,uCAAkD;AAe3C,kCAHI,GAAG,GACD,OAAO,CAGiC;AAGrD;;;;;;;GAOG;AACH,4BAFU,OAAO,CAKf;AAWK,kEANI,MAAM,GAAC,MAAM,GAAC,MAAM,aACpB,MAAM,mCACN,OAAO,sBACP,OAAO,eACL,OAAO,CAqCnB;AAGM,4CAAyD;AASzD,0CALI;IAAE,YAAY,EAAE,MAAM,CAAA;CAAE,aACxB,SAAS,sDAEP,OAAO,CAgCnB;sBAxIa,OAAO,aAAa,EAAE,OAAO;wBAC7B,OAAO,aAAa,EAAE,SAAS"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/passStyle-helpers.js b/node_modules/@endo/marshal/src/helpers/passStyle-helpers.js
+index 5eaab77..37b3dbf 100644
+--- a/node_modules/@endo/marshal/src/helpers/passStyle-helpers.js
++++ b/node_modules/@endo/marshal/src/helpers/passStyle-helpers.js
+@@ -2,8 +2,8 @@
+ 
+ /// <reference types="ses"/>
+ 
+-import '../types.js';
+-import './internal-types.js';
++/** @typedef {import('../types.js').Checker} Checker */
++/** @typedef {import('../types.js').PassStyle} PassStyle */
+ 
+ const { details: X, quote: q } = assert;
+ const {
+diff --git a/node_modules/@endo/marshal/src/helpers/remotable.d.ts b/node_modules/@endo/marshal/src/helpers/remotable.d.ts
+new file mode 100644
+index 0000000..ec4099e
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/remotable.d.ts
+@@ -0,0 +1,15 @@
++export const ALLOW_IMPLICIT_REMOTABLES: boolean;
++export function assertIface(iface: InterfaceSpec): boolean;
++/** @type {MarshalGetInterfaceOf} */
++export const getInterfaceOf: MarshalGetInterfaceOf;
++/**
++ *
++ * @type {PassStyleHelper}
++ */
++export const RemotableHelper: PassStyleHelper;
++export type Checker = import('../types.js').Checker;
++export type InterfaceSpec = import('../types.js').InterfaceSpec;
++export type MarshalGetInterfaceOf = import('../types.js').MarshalGetInterfaceOf;
++export type PassStyleHelper = import('./internal-types.js').PassStyleHelper;
++export type Remotable = import('../types.js').Remotable;
++//# sourceMappingURL=remotable.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/remotable.d.ts.map b/node_modules/@endo/marshal/src/helpers/remotable.d.ts.map
+new file mode 100644
+index 0000000..e1dd296
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/remotable.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"remotable.d.ts","sourceRoot":"","sources":["remotable.js"],"names":[],"mappings":"AAuCA,gDACwE;AAyBjE,mCAFI,aAAa,WAE4C;AAuGpE,oCAAoC;AACpC,6BADW,qBAAqB,CAY9B;AAGF;;;GAGG;AACH,8BAFU,eAAe,CAsEtB;sBAhPW,OAAO,aAAa,EAAE,OAAO;4BAC7B,OAAO,aAAa,EAAE,aAAa;oCACnC,OAAO,aAAa,EAAE,qBAAqB;8BAC3C,OAAO,qBAAqB,EAAE,eAAe;wBAC7C,OAAO,aAAa,EAAE,SAAS"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/remotable.js b/node_modules/@endo/marshal/src/helpers/remotable.js
+index e563566..a87a473 100644
+--- a/node_modules/@endo/marshal/src/helpers/remotable.js
++++ b/node_modules/@endo/marshal/src/helpers/remotable.js
+@@ -2,8 +2,6 @@
+ 
+ /// <reference types="ses"/>
+ 
+-import '../types.js';
+-import './internal-types.js';
+ import {
+   assertChecker,
+   canBeMethod,
+@@ -15,6 +13,12 @@ import {
+ } from './passStyle-helpers.js';
+ import { getEnvironmentOption } from './environment-options.js';
+ 
++/** @typedef {import('../types.js').Checker} Checker */
++/** @typedef {import('../types.js').InterfaceSpec} InterfaceSpec */
++/** @typedef {import('../types.js').MarshalGetInterfaceOf} MarshalGetInterfaceOf */
++/** @typedef {import('./internal-types.js').PassStyleHelper} PassStyleHelper */
++/** @typedef {import('../types.js').Remotable} Remotable */
++
+ const { details: X, quote: q } = assert;
+ const { ownKeys } = Reflect;
+ const { prototype: functionPrototype } = Function;
+diff --git a/node_modules/@endo/marshal/src/helpers/symbol.d.ts b/node_modules/@endo/marshal/src/helpers/symbol.d.ts
+new file mode 100644
+index 0000000..a165f89
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/symbol.d.ts
+@@ -0,0 +1,6 @@
++export function isPassableSymbol(sym: any): boolean;
++export function assertPassableSymbol(sym: any): void;
++export function nameForPassableSymbol(sym: symbol): string | undefined;
++export const AtAtPrefixPattern: RegExp;
++export function passableSymbolForName(name: string): symbol | undefined;
++//# sourceMappingURL=symbol.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/symbol.d.ts.map b/node_modules/@endo/marshal/src/helpers/symbol.d.ts.map
+new file mode 100644
+index 0000000..98de96c
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/symbol.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"symbol.d.ts","sourceRoot":"","sources":["symbol.js"],"names":[],"mappings":"AAmCO,sCAHI,GAAG,GACD,OAAO,CAIuD;AAGpE,qDAIJ;AAwBI,2CAHI,MAAM,GACJ,MAAM,aAWlB;AAGD,uCAA4C;AAsBrC,4CAHI,MAAM,GACJ,MAAM,aAoBlB"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/tagged.d.ts b/node_modules/@endo/marshal/src/helpers/tagged.d.ts
+new file mode 100644
+index 0000000..fe554c0
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/tagged.d.ts
+@@ -0,0 +1,6 @@
++/**
++ *
++ * @type {import('./internal-types.js').PassStyleHelper}
++ */
++export const TaggedHelper: import('./internal-types.js').PassStyleHelper;
++//# sourceMappingURL=tagged.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/tagged.d.ts.map b/node_modules/@endo/marshal/src/helpers/tagged.d.ts.map
+new file mode 100644
+index 0000000..10c8e80
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/helpers/tagged.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"tagged.d.ts","sourceRoot":"","sources":["tagged.js"],"names":[],"mappings":"AAeA;;;GAGG;AACH,2BAFU,OAAO,qBAAqB,EAAE,eAAe,CAiCpD"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/helpers/tagged.js b/node_modules/@endo/marshal/src/helpers/tagged.js
+index 6bfdf56..500db88 100644
+--- a/node_modules/@endo/marshal/src/helpers/tagged.js
++++ b/node_modules/@endo/marshal/src/helpers/tagged.js
+@@ -9,16 +9,13 @@ import {
+   checkNormalProperty,
+ } from './passStyle-helpers.js';
+ 
+-import '../types.js';
+-import './internal-types.js';
+-
+ const { details: X } = assert;
+ const { ownKeys } = Reflect;
+ const { getPrototypeOf, prototype: objectPrototype } = Object;
+ 
+ /**
+  *
+- * @type {PassStyleHelper}
++ * @type {import('./internal-types.js').PassStyleHelper}
+  */
+ export const TaggedHelper = harden({
+   styleName: 'tagged',
+diff --git a/node_modules/@endo/marshal/src/make-far.d.ts b/node_modules/@endo/marshal/src/make-far.d.ts
+new file mode 100644
+index 0000000..04c44d4
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/make-far.d.ts
+@@ -0,0 +1,5 @@
++export function Remotable(iface?: string | undefined, props?: undefined, remotable?: any): any;
++export function Far<T>(farName: string, remotable?: T | undefined): T;
++export function ToFarFunction(farName: string, func: (...args: any[]) => any): (...args: any[]) => any;
++export type InterfaceSpec = import('./types.js').InterfaceSpec;
++//# sourceMappingURL=make-far.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/make-far.d.ts.map b/node_modules/@endo/marshal/src/make-far.d.ts.map
+new file mode 100644
+index 0000000..2f910b3
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/make-far.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"make-far.d.ts","sourceRoot":"","sources":["make-far.js"],"names":[],"mappings":"AAwFO,8DALI,SAAS,cAET,GAAG,GACD,GAAG,CA+Cf;AAYM,gCALI,MAAM,gCAQhB;AAeM,uCAJI,MAAM,kBAEI,GAAG,EAAE,KAAK,GAAG,aAAb,GAAG,EAAE,KAAK,GAAG,CAOjC;4BA5Ja,OAAO,YAAY,EAAE,aAAa"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/make-far.js b/node_modules/@endo/marshal/src/make-far.js
+index ab431a0..697ac76 100644
+--- a/node_modules/@endo/marshal/src/make-far.js
++++ b/node_modules/@endo/marshal/src/make-far.js
+@@ -10,6 +10,8 @@ import {
+ } from './helpers/remotable.js';
+ import { pureCopy } from './pureCopy.js';
+ 
++/** @typedef {import('./types.js').InterfaceSpec} InterfaceSpec */
++
+ const { quote: q, details: X } = assert;
+ 
+ const { prototype: functionPrototype } = Function;
+@@ -81,8 +83,8 @@ const assertCanBeRemotable = candidate =>
+  * Carol's `iface` as misrepresented by VatA.
+  * @param {undefined} [props=undefined] Currently may only be undefined.
+  * That plan is that own-properties are copied to the remotable
+- * @param {object} [remotable={}] The object used as the remotable
+- * @returns {object} remotable, modified for debuggability
++ * @param {any} [remotable={}] The object used as the remotable
++ * @returns {any} remotable, modified for debuggability
+  */
+ export const Remotable = (
+   iface = 'Remotable',
+diff --git a/node_modules/@endo/marshal/src/makeTagged.d.ts b/node_modules/@endo/marshal/src/makeTagged.d.ts
+new file mode 100644
+index 0000000..d34ae7c
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/makeTagged.d.ts
+@@ -0,0 +1,2 @@
++export function makeTagged(tag: any, payload: any): any;
++//# sourceMappingURL=makeTagged.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/makeTagged.d.ts.map b/node_modules/@endo/marshal/src/makeTagged.d.ts.map
+new file mode 100644
+index 0000000..b1b0c3d
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/makeTagged.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"makeTagged.d.ts","sourceRoot":"","sources":["makeTagged.js"],"names":[],"mappings":"AAUO,wDAcN"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/marshal-justin.d.ts b/node_modules/@endo/marshal/src/marshal-justin.d.ts
+new file mode 100644
+index 0000000..d8788d6
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/marshal-justin.d.ts
+@@ -0,0 +1,15 @@
++export type Encoding = import('./types.js').Encoding;
++export type Indenter = {
++    open: (openBracket: string) => number;
++    line: () => number;
++    next: (token: string) => number;
++    close: (closeBracket: string) => number;
++    done: () => string;
++};
++/**
++ * @param {Encoding} encoding
++ * @param {boolean=} shouldIndent
++ * @returns {string}
++ */
++export function decodeToJustin(encoding: Encoding, shouldIndent?: boolean | undefined): string;
++//# sourceMappingURL=marshal-justin.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/marshal-justin.d.ts.map b/node_modules/@endo/marshal/src/marshal-justin.d.ts.map
+new file mode 100644
+index 0000000..23e9642
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/marshal-justin.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"marshal-justin.d.ts","sourceRoot":"","sources":["marshal-justin.js"],"names":[],"mappings":"uBAWc,OAAO,YAAY,EAAE,QAAQ;;wBASf,MAAM,KAAK,MAAM;UAC/B,MAAM,MAAM;kBACJ,MAAM,KAAK,MAAM;0BACV,MAAM,KAAK,MAAM;UAChC,MAAM,MAAM;;AA4F1B;;;;GAIG;AACH,yCAJW,QAAQ,iBACR,OAAO,eACL,MAAM,CAySlB"}
+\ No newline at end of file
 diff --git a/node_modules/@endo/marshal/src/marshal-justin.js b/node_modules/@endo/marshal/src/marshal-justin.js
-index d32c27f..c9f47c0 100644
+index d32c27f..f000651 100644
 --- a/node_modules/@endo/marshal/src/marshal-justin.js
 +++ b/node_modules/@endo/marshal/src/marshal-justin.js
-@@ -396,7 +396,9 @@ const decodeToJustin = (encoding, shouldIndent = false) => {
+@@ -5,11 +5,12 @@
+ import { Nat } from '@endo/nat';
+ import { QCLASS } from './marshal.js';
+ 
+-import './types.js';
+ import { getErrorConstructor } from './helpers/error.js';
+ import { isObject } from './helpers/passStyle-helpers.js';
+ import { AtAtPrefixPattern, passableSymbolForName } from './helpers/symbol.js';
+ 
++/** @typedef {import('./types.js').Encoding} Encoding */
++
+ const { ownKeys } = Reflect;
+ const { isArray } = Array;
+ const { stringify: quote } = JSON;
+@@ -396,7 +397,9 @@ const decodeToJustin = (encoding, shouldIndent = false) => {
          return out.close(']');
        }
      } else {
@@ -34,11 +736,156 @@ index d32c27f..c9f47c0 100644
        if (names.length === 0) {
          return out.next('{}');
        } else {
+diff --git a/node_modules/@endo/marshal/src/marshal-stringify.d.ts b/node_modules/@endo/marshal/src/marshal-stringify.d.ts
+new file mode 100644
+index 0000000..93c3bc4
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/marshal-stringify.d.ts
+@@ -0,0 +1,12 @@
++export type OnlyData = import('./types.js').OnlyData;
++/**
++ * @param {OnlyData} val
++ * @returns {string}
++ */
++export function stringify(val: OnlyData): string;
++/**
++ * @param {string} str
++ * @returns {OnlyData}
++ */
++export function parse(str: string): OnlyData;
++//# sourceMappingURL=marshal-stringify.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/marshal-stringify.d.ts.map b/node_modules/@endo/marshal/src/marshal-stringify.d.ts.map
+new file mode 100644
+index 0000000..b190b12
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/marshal-stringify.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"marshal-stringify.d.ts","sourceRoot":"","sources":["marshal-stringify.js"],"names":[],"mappings":"uBAKc,OAAO,YAAY,EAAE,QAAQ;AA6B3C;;;GAGG;AACH,+BAHW,QAAQ,GACN,MAAM,CAEyB;AAG5C;;;GAGG;AACH,2BAHW,MAAM,GACJ,QAAQ,CAQlB"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/marshal-stringify.js b/node_modules/@endo/marshal/src/marshal-stringify.js
+index d54c655..d657c14 100644
+--- a/node_modules/@endo/marshal/src/marshal-stringify.js
++++ b/node_modules/@endo/marshal/src/marshal-stringify.js
+@@ -3,15 +3,15 @@
+ 
+ import { makeMarshal } from './marshal.js';
+ 
+-import './types.js';
++/** @typedef {import('./types.js').OnlyData} OnlyData */
+ 
+ const { details: X } = assert;
+ 
+-/** @type {ConvertValToSlot<any>} */
++/** @type {import('./types.js').ConvertValToSlot<any>} */
+ const doNotConvertValToSlot = val =>
+   assert.fail(X`Marshal's stringify rejects presences and promises ${val}`);
+ 
+-/** @type {ConvertSlotToVal<any>} */
++/** @type {import('./types.js').ConvertSlotToVal<any>} */
+ const doNotConvertSlotToVal = (slot, _iface) =>
+   assert.fail(X`Marshal's parse must not encode any slots ${slot}`);
+ 
+diff --git a/node_modules/@endo/marshal/src/marshal.d.ts b/node_modules/@endo/marshal/src/marshal.d.ts
+new file mode 100644
+index 0000000..028e723
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/marshal.d.ts
+@@ -0,0 +1,18 @@
++export function makeMarshal<Slot>(convertValToSlot?: ConvertValToSlot<Slot> | undefined, convertSlotToVal?: ConvertSlotToVal<Slot> | undefined, { errorTagging, marshalName, errorIdNum, marshalSaveError, }?: import("./types.js").MakeMarshalOptions | undefined): {
++    serialize: Serialize<Slot>;
++    unserialize: Unserialize<Slot>;
++};
++export type MakeMarshalOptions = import('./types.js').MakeMarshalOptions;
++export type ConvertSlotToVal<Slot> = import('./types.js').ConvertSlotToVal<Slot>;
++export type ConvertValToSlot<Slot> = import('./types.js').ConvertValToSlot<Slot>;
++export type Serialize<Slot> = import('./types.js').Serialize<Slot>;
++export type Unserialize<Slot> = import('./types.js').Unserialize<Slot>;
++export type Passable = import('./types.js').Passable;
++export type InterfaceSpec = import('./types.js').InterfaceSpec;
++export type Encoding = import('./types.js').Encoding;
++/**
++ * Special property name that indicates an encoding that needs special
++ * decoding.
++ */
++export const QCLASS: "@qclass";
++//# sourceMappingURL=marshal.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/marshal.d.ts.map b/node_modules/@endo/marshal/src/marshal.d.ts.map
+new file mode 100644
+index 0000000..649c69d
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/marshal.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"marshal.d.ts","sourceRoot":"","sources":["marshal.js"],"names":[],"mappings":"AAuDO;;;EAgdN;iCAtfa,OAAO,YAAY,EAAE,kBAAkB;qCACxB,OAAO,YAAY,EAAE,gBAAgB,CAAC,IAAI,CAAC;qCAC3C,OAAO,YAAY,EAAE,gBAAgB,CAAC,IAAI,CAAC;8BAC3C,OAAO,YAAY,EAAE,SAAS,CAAC,IAAI,CAAC;gCACpC,OAAO,YAAY,EAAE,WAAW,CAAC,IAAI,CAAC;uBACrD,OAAO,YAAY,EAAE,QAAQ;4BAC7B,OAAO,YAAY,EAAE,aAAa;uBAClC,OAAO,YAAY,EAAE,QAAQ;AAa3C;;;GAGG;AACH,+BAAyB"}
+\ No newline at end of file
 diff --git a/node_modules/@endo/marshal/src/marshal.js b/node_modules/@endo/marshal/src/marshal.js
-index fb24743..de832b8 100644
+index fb24743..53d8001 100644
 --- a/node_modules/@endo/marshal/src/marshal.js
 +++ b/node_modules/@endo/marshal/src/marshal.js
-@@ -451,6 +451,7 @@ export function makeMarshal(
+@@ -5,7 +5,6 @@
+ import { Nat } from '@endo/nat';
+ import { assertPassable, passStyleOf } from './passStyleOf.js';
+ 
+-import './types.js';
+ import { getInterfaceOf } from './helpers/remotable.js';
+ import { ErrorHelper, getErrorConstructor } from './helpers/error.js';
+ import { makeTagged } from './makeTagged.js';
+@@ -16,6 +15,15 @@ import {
+   passableSymbolForName,
+ } from './helpers/symbol.js';
+ 
++/** @typedef {import('./types.js').MakeMarshalOptions} MakeMarshalOptions */
++/** @template Slot @typedef {import('./types.js').ConvertSlotToVal<Slot>} ConvertSlotToVal */
++/** @template Slot @typedef {import('./types.js').ConvertValToSlot<Slot>} ConvertValToSlot */
++/** @template Slot @typedef {import('./types.js').Serialize<Slot>} Serialize */
++/** @template Slot @typedef {import('./types.js').Unserialize<Slot>} Unserialize */
++/** @typedef {import('./types.js').Passable} Passable */
++/** @typedef {import('./types.js').InterfaceSpec} InterfaceSpec */
++/** @typedef {import('./types.js').Encoding} Encoding */
++
+ const { ownKeys } = Reflect;
+ const { isArray } = Array;
+ const {
+@@ -34,14 +42,18 @@ const { details: X, quote: q } = assert;
+ const QCLASS = '@qclass';
+ export { QCLASS };
+ 
++/** @type {ConvertValToSlot<any>} */
+ const defaultValToSlotFn = x => x;
++/** @type {ConvertSlotToVal<any>} */
+ const defaultSlotToValFn = (x, _) => x;
+ 
+ /**
+  * @template Slot
+- * @type {MakeMarshal<Slot>}
++ * @param {ConvertValToSlot<Slot>} [convertValToSlot]
++ * @param {ConvertSlotToVal<Slot>} [convertSlotToVal]
++ * @param {MakeMarshalOptions} [options]
+  */
+-export function makeMarshal(
++export const makeMarshal = (
+   convertValToSlot = defaultValToSlotFn,
+   convertSlotToVal = defaultSlotToValFn,
+   {
+@@ -55,7 +67,7 @@ export function makeMarshal(
+     marshalSaveError = err =>
+       console.log('Temporary logging of sent error', err),
+   } = {},
+-) {
++) => {
+   assert.typeof(marshalName, 'string');
+   assert(
+     errorTagging === 'on' || errorTagging === 'off',
+@@ -67,7 +79,6 @@ export function makeMarshal(
+   };
+ 
+   /**
+-   * @template Slot
+    * @type {Serialize<Slot>}
+    */
+   const serialize = root => {
+@@ -451,6 +462,7 @@ export function makeMarshal(
  
            default: {
              assert(
@@ -46,14 +893,62 @@ index fb24743..de832b8 100644
                qclass !== 'ibid',
                X`The protocol no longer supports ibid encoding: ${rawTree}.`,
              );
+@@ -481,7 +493,6 @@ export function makeMarshal(
+   };
+ 
+   /**
+-   * @template Slot
+    * @type {Unserialize<Slot>}
+    */
+   const unserialize = data => {
+@@ -506,4 +517,4 @@ export function makeMarshal(
+     serialize,
+     unserialize,
+   });
+-}
++};
+diff --git a/node_modules/@endo/marshal/src/passStyleOf.d.ts b/node_modules/@endo/marshal/src/passStyleOf.d.ts
+new file mode 100644
+index 0000000..79718b4
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/passStyleOf.d.ts
+@@ -0,0 +1,9 @@
++export const passStyleOf: import("./types.js").PassStyleOf;
++export function assertPassable(val: any): void;
++export type PassStyleHelper = import('./helpers/internal-types.js').PassStyleHelper;
++export type Passable = import('./types.js').Passable;
++export type PassStyle = import('./types.js').PassStyle;
++export type PassStyleOf = import('./types.js').PassStyleOf;
++export type PrimitiveStyle = import('./types.js').PrimitiveStyle;
++export type HelperPassStyle = Exclude<PassStyle, PrimitiveStyle | "promise">;
++//# sourceMappingURL=passStyleOf.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/passStyleOf.d.ts.map b/node_modules/@endo/marshal/src/passStyleOf.d.ts.map
+new file mode 100644
+index 0000000..eff9cc6
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/passStyleOf.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"passStyleOf.d.ts","sourceRoot":"","sources":["passStyleOf.js"],"names":[],"mappings":"AAwMA,2DAMG;AAEI,+CAEN;8BAnMa,OAAO,6BAA6B,EAAE,eAAe;uBACrD,OAAO,YAAY,EAAE,QAAQ;wBAC7B,OAAO,YAAY,EAAE,SAAS;0BAC9B,OAAO,YAAY,EAAE,WAAW;6BAChC,OAAO,YAAY,EAAE,cAAc;8BAEnC,QAAQ,SAAS,EAAE,cAAc,GAAG,SAAS,CAAC"}
+\ No newline at end of file
 diff --git a/node_modules/@endo/marshal/src/passStyleOf.js b/node_modules/@endo/marshal/src/passStyleOf.js
-index 47e4d2a..6d9d791 100644
+index 47e4d2a..ec5cbea 100644
 --- a/node_modules/@endo/marshal/src/passStyleOf.js
 +++ b/node_modules/@endo/marshal/src/passStyleOf.js
-@@ -15,21 +15,19 @@ import './types.js';
- import './helpers/internal-types.js';
+@@ -11,25 +11,27 @@ import { TaggedHelper } from './helpers/tagged.js';
+ import { RemotableHelper } from './helpers/remotable.js';
+ import { ErrorHelper } from './helpers/error.js';
+ 
+-import './types.js';
+-import './helpers/internal-types.js';
  import { assertPassableSymbol } from './helpers/symbol.js';
  
++/** @typedef {import('./helpers/internal-types.js').PassStyleHelper} PassStyleHelper */
++/** @typedef {import('./types.js').Passable} Passable */
++/** @typedef {import('./types.js').PassStyle} PassStyle */
++/** @typedef {import('./types.js').PassStyleOf} PassStyleOf */
++/** @typedef {import('./types.js').PrimitiveStyle} PrimitiveStyle */
++
 +/** @typedef {Exclude<PassStyle, PrimitiveStyle | "promise">} HelperPassStyle */
 +
  const { details: X, quote: q } = assert;
@@ -79,7 +974,7 @@ index 47e4d2a..6d9d791 100644
    const HelperTable = {
      __proto__: null,
      copyArray: undefined,
-@@ -54,7 +52,22 @@ const makePassStyleOf = passStyleHelpers => {
+@@ -54,7 +56,22 @@ const makePassStyleOf = passStyleHelpers => {
        X`missing helper for ${q(styleName)}`,
      );
    }
@@ -103,3 +998,352 @@ index 47e4d2a..6d9d791 100644
    const remotableHelper = HelperTable.remotable;
  
    /**
+diff --git a/node_modules/@endo/marshal/src/pureCopy.d.ts b/node_modules/@endo/marshal/src/pureCopy.d.ts
+new file mode 100644
+index 0000000..13aea9b
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/pureCopy.d.ts
+@@ -0,0 +1,5 @@
++export function sameValueZero(x: any, y: any): boolean;
++export function pureCopy<T extends unknown>(val: T): T;
++export type OnlyData = import('./types.js').OnlyData;
++export type CopyTagged = import('./types.js').CopyTagged;
++//# sourceMappingURL=pureCopy.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/pureCopy.d.ts.map b/node_modules/@endo/marshal/src/pureCopy.d.ts.map
+new file mode 100644
+index 0000000..ba24220
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/pureCopy.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"pureCopy.d.ts","sourceRoot":"","sources":["pureCopy.js"],"names":[],"mappings":"AAyBO,iCAJI,GAAG,KACH,GAAG,GACD,OAAO,CAEsC;AAYnD,uDAiDN;uBAhFa,OAAO,YAAY,EAAE,QAAQ;yBAC7B,OAAO,YAAY,EAAE,UAAU"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/pureCopy.js b/node_modules/@endo/marshal/src/pureCopy.js
+index 323d786..0579ef6 100644
+--- a/node_modules/@endo/marshal/src/pureCopy.js
++++ b/node_modules/@endo/marshal/src/pureCopy.js
+@@ -4,6 +4,9 @@ import { getTag } from './helpers/passStyle-helpers.js';
+ import { makeTagged } from './makeTagged.js';
+ import { passStyleOf } from './passStyleOf.js';
+ 
++/** @typedef {import('./types.js').OnlyData} OnlyData */
++/** @typedef {import('./types.js').CopyTagged} CopyTagged */
++
+ const { is } = Object;
+ const { details: X, quote: q } = assert;
+ 
+diff --git a/node_modules/@endo/marshal/src/typeGuards.d.ts b/node_modules/@endo/marshal/src/typeGuards.d.ts
+new file mode 100644
+index 0000000..68bceb9
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/typeGuards.d.ts
+@@ -0,0 +1,55 @@
++export type Passable = import('./types.js').Passable;
++export type CopyArray<T> = import('./types.js').CopyArray<T>;
++export type CopyRecord<T> = import('./types.js').CopyRecord<T>;
++export type Remotable = import('./types.js').Remotable;
++export type AssertArray = (array: Passable, optNameOfArray?: string | undefined) => asserts array is CopyArray<any>;
++export type AssertRecord = (record: Passable, optNameOfRecord?: string | undefined) => asserts record is CopyRecord<any>;
++export type AssertRemotable = (remotable: Passable, optNameOfRemotable?: string | undefined) => asserts remotable is any;
++/**
++ * @callback AssertRecord
++ * @param {Passable} record
++ * @param {string=} optNameOfRecord
++ * @returns {asserts record is CopyRecord<any>}
++ */
++/** @type {AssertRecord} */
++export const assertRecord: AssertRecord;
++/**
++ * @callback AssertArray
++ * @param {Passable} array
++ * @param {string=} optNameOfArray
++ * @returns {asserts array is CopyArray<any>}
++ */
++/** @type {AssertArray} */
++export const assertCopyArray: AssertArray;
++/**
++ * @callback AssertRemotable
++ * @param {Passable} remotable
++ * @param {string=} optNameOfRemotable
++ * @returns {asserts remotable is Remotable}
++ */
++/** @type {AssertRemotable} */
++export const assertRemotable: AssertRemotable;
++/**
++ * Check whether the argument is a remotable.
++ *
++ * @param {Passable} remotable
++ * @returns {remotable is Remotable}
++ */
++export function isRemotable(remotable: Passable): remotable is any;
++/**
++ * Check whether the argument is a pass-by-copy record, AKA a
++ * "copyRecord" in @endo/marshal terms
++ *
++ * @param {Passable} record
++ * @returns {record is CopyRecord<any>}
++ */
++export function isRecord(record: Passable): record is CopyRecord<any>;
++/**
++ * Check whether the argument is a pass-by-copy array, AKA a "copyArray"
++ * in @endo/marshal terms
++ *
++ * @param {Passable} array
++ * @returns {array is CopyArray<any>}
++ */
++export function isCopyArray(array: Passable): array is CopyArray<any>;
++//# sourceMappingURL=typeGuards.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/typeGuards.d.ts.map b/node_modules/@endo/marshal/src/typeGuards.d.ts.map
+new file mode 100644
+index 0000000..d67343e
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/typeGuards.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"typeGuards.d.ts","sourceRoot":"","sources":["typeGuards.js"],"names":[],"mappings":"uBAIc,OAAO,YAAY,EAAE,QAAQ;2BACjB,OAAO,YAAY,EAAE,SAAS,CAAC,CAAC,CAAC;4BACjC,OAAO,YAAY,EAAE,UAAU,CAAC,CAAC,CAAC;wBAC9C,OAAO,YAAY,EAAE,SAAS;kCAmCjC,QAAQ,mBACR,MAAM;oCAkBN,QAAQ,oBACR,MAAM;0CAkBN,QAAQ,uBACR,MAAM;AAtBjB;;;;;GAKG;AAEH,2BAA2B;AAC3B,2BADW,YAAY,CASrB;AAnCF;;;;;GAKG;AAEH,0BAA0B;AAC1B,8BADW,WAAW,CASpB;AAsBF;;;;;GAKG;AAEH,8BAA8B;AAC9B,8BADW,eAAe,CAYxB;AAlEF;;;;;GAKG;AACH,uCAHW,QAAQ,oBAGoD;AAhBvE;;;;;;GAMG;AACH,iCAHW,QAAQ,6BAG4C;AAjB/D;;;;;;GAMG;AACH,mCAHW,QAAQ,2BAG4C"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/typeGuards.js b/node_modules/@endo/marshal/src/typeGuards.js
+index c789689..a41b079 100644
+--- a/node_modules/@endo/marshal/src/typeGuards.js
++++ b/node_modules/@endo/marshal/src/typeGuards.js
+@@ -2,6 +2,11 @@
+ 
+ import { passStyleOf } from './passStyleOf.js';
+ 
++/** @typedef {import('./types.js').Passable} Passable */
++/** @template T @typedef {import('./types.js').CopyArray<T>} CopyArray */
++/** @template T @typedef {import('./types.js').CopyRecord<T>} CopyRecord */
++/** @typedef {import('./types.js').Remotable} Remotable */
++
+ const { details: X, quote: q } = assert;
+ 
+ /**
+diff --git a/node_modules/@endo/marshal/src/types.d.ts b/node_modules/@endo/marshal/src/types.d.ts
+new file mode 100644
+index 0000000..6833263
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/types.d.ts
+@@ -0,0 +1,167 @@
++export type PrimitiveStyle = "undefined" | "null" | "boolean" | "number" | "bigint" | "string" | "symbol";
++export type PassStyle = PrimitiveStyle | "copyRecord" | "copyArray" | "tagged" | "remotable" | "error" | "promise";
++/**
++ * A Passable value that may be marshalled. It is classified as one of
++ * PassStyle. A Passable must be hardened.
++ *
++ * A Passable has a pass-by-copy superstructure. This includes
++ *    * the atomic pass-by-copy primitives ("undefined" | "null" |
++ *      "boolean" | "number" | "bigint" | "string" | "symbol"),
++ *    * the pass-by-copy containers
++ *      ("copyRecord" | "copyArray" | "tagged") that
++ *      contain other Passables,
++ *    * and the special cases ("error" | "promise").
++ *
++ * A Passable's pass-by-copy superstructure ends in
++ * PassableCap leafs ("remotable" | "promise"). Since a
++ * Passable is hardened, its structure and classification is stable --- its
++ * structure and classification cannot change even if some of the objects are
++ * proxies.
++ */
++export type Passable = any;
++export type PassStyleOf = (passable: Passable) => PassStyle;
++/**
++ * A Passable is OnlyData when its pass-by-copy superstructure has no
++ * remotables, i.e., when all the leaves of the data structure tree are
++ * primitive data types or empty composites.
++ */
++export type OnlyData = Passable;
++/**
++ * An OnlyData value is PureData when it contains no hidden mutable state,
++ * e.g., when none of its pass-by-copy composite data objects are proxies. This
++ * cannot be determined by inspection. It can only be achieved by trusted
++ * construction. A PureData value cannot be used as a communications channel,
++ * and can therefore be safely shared with subgraphs that should not be able
++ * to communicate with each other.
++ */
++export type PureData = OnlyData;
++/**
++ * Might be an object explicitly declared to be `Remotable` using the
++ * `Far` or `Remotable` functions, or a remote presence of a Remotable.
++ */
++export type Remotable = Passable;
++/**
++ * The leaves of a Passable's pass-by-copy superstructure.
++ */
++export type PassableCap = Promise<any> | Remotable;
++export type CopyArray<T> = T[];
++export type CopyRecord<T> = Record<string, T>;
++/**
++ * The tag is the value of the `[String.toStringTag]` property.
++ */
++export type CopyTagged = {
++    [PASS_STYLE]: 'tagged';
++    [Symbol.toStringTag]: string;
++    payload: Passable;
++};
++export type ConvertValToSlot<Slot> = (val: PassableCap) => Slot;
++export type ConvertSlotToVal<Slot> = (slot: Slot, iface?: InterfaceSpec | undefined) => PassableCap;
++export type EncodingClass<T> = {
++    '@qclass': T;
++};
++export type EncodingUnion = EncodingClass<'NaN'> | EncodingClass<'undefined'> | EncodingClass<'Infinity'> | EncodingClass<'-Infinity'> | (EncodingClass<'bigint'> & {
++    digits: string;
++}) | EncodingClass<'@@asyncIterator'> | (EncodingClass<'symbol'> & {
++    name: string;
++}) | (EncodingClass<'error'> & {
++    name: string;
++    message: string;
++    errorId?: string;
++}) | (EncodingClass<'slot'> & {
++    index: number;
++    iface?: InterfaceSpec;
++}) | (EncodingClass<'hilbert'> & {
++    original: Encoding;
++    rest?: Encoding;
++}) | (EncodingClass<'tagged'> & {
++    tag: string;
++    payload: Encoding;
++});
++/**
++ * We exclude '@qclass' as a property in encoding records.
++ */
++export type EncodingRecord = {
++    [index: string]: Encoding;
++    '@qclass'?: undefined;
++};
++export type EncodingElement = EncodingUnion | null | string | boolean | number | EncodingRecord;
++/**
++ * The JSON structure that the data portion of a Passable serializes to.
++ *
++ * The QCLASS 'hilbert' is a reference to the Hilbert Hotel
++ * of https://www.ias.edu/ideas/2016/pires-hilbert-hotel
++ * If QCLASS appears as a property name in the data, we encode it instead
++ * as a QCLASS record of type 'hilbert'. To do so, we must move the other
++ * parts of the record into fields of the hilbert record.
++ */
++export type Encoding = EncodingElement | NestedArray<EncodingElement>;
++export type CapData<Slot> = {
++    /**
++     * A JSON.stringify of an Encoding
++     */
++    body: string;
++    slots: Slot[];
++};
++export type Serialize<Slot> = (val: Passable) => CapData<Slot>;
++export type Unserialize<Slot> = (data: CapData<Slot>) => Passable;
++export type Marshal<Slot> = {
++    serialize: Serialize<Slot>;
++    unserialize: Unserialize<Slot>;
++};
++export type MakeMarshalOptions = {
++    /**
++     * controls whether serialized errors
++     * also carry tagging information, made from `marshalName` and numbers
++     * generated (currently by counting) starting at `errorIdNum`. The
++     * `errorTagging` option defaults to `'on'`. Serialized
++     * errors are also logged to `marshalSaveError` only if tagging is `'on'`.
++     */
++    errorTagging?: ('on' | 'off') | undefined;
++    /**
++     * Used to identify sent errors.
++     */
++    marshalName?: string | undefined;
++    /**
++     * Ascending numbers staring from here
++     * identify the sending of errors relative to this marshal instance.
++     */
++    errorIdNum?: number | undefined;
++    /**
++     * If `errorTagging` is
++     * `'on'`, then errors serialized by this marshal instance are also
++     * logged by calling `marshalSaveError` *after* `assert.note` associated
++     * that error with its errorId. Thus, if `marshalSaveError` in turn logs
++     * to the normal console, which is the default, then the console will
++     * show that note showing the associated errorId.
++     */
++    marshalSaveError?: ((err: Error) => void) | undefined;
++};
++/**
++ * This is an interface specification.
++ * For now, it is just a string, but will eventually be any OnlyData. Either
++ * way, it must remain pure, so that it can be safely shared by subgraphs that
++ * are not supposed to be able to communicate.
++ */
++export type InterfaceSpec = string;
++/**
++ * Simple semantics, just tell what interface (or undefined) a remotable has.
++ */
++export type MarshalGetInterfaceOf = (maybeRemotable: any) => InterfaceSpec | undefined;
++/**
++ * Internal to a useful pattern for writing checking logic
++ * (a "checkFoo" function) that can be used to implement a predicate
++ * (an "isFoo" function) or a validator (an "assertFoo" function).
++ *
++ *  * A predicate ideally only returns `true` or `false` and rarely throws.
++ *  * A validator throws an informative diagnostic when the predicate
++ *    would have returned `false`, and simply returns `undefined` normally
++ *    when the predicate would have returned `true`.
++ *  * The internal checking function that they share is parameterized by a
++ *    `Checker` that determines how to proceed with a failure condition.
++ *    Predicates pass in an identity function as checker. Validators
++ *    pass in `assertChecker` which is a trivial wrapper around `assert`.
++ *
++ * See the various uses for good examples.
++ */
++export type Checker = (cond: boolean, details?: Details | undefined) => boolean;
++//# sourceMappingURL=types.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/types.d.ts.map b/node_modules/@endo/marshal/src/types.d.ts.map
+new file mode 100644
+index 0000000..a700fdd
+--- /dev/null
++++ b/node_modules/@endo/marshal/src/types.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"types.d.ts","sourceRoot":"","sources":["types.js"],"names":[],"mappings":"6BAQc,WAAW,GAAG,MAAM,GACjC,SAAa,GAAG,QAAQ,GAAG,QAAQ,GAAG,QAAQ,GAAG,QAAQ;wBAK5C,cAAc,GAC3B,YAAgB,GAAG,WAAW,GAAG,QAAQ,GACzC,WAAe,GACf,OAAW,GAAG,SAAS;;;;;;;;;;;;;;;;;;;;qCA8Bb,QAAQ,KACN,SAAS;;;;;;uBAuBT,QAAQ;;;;;;;;;uBAQR,QAAQ;;;;;wBAWR,QAAQ;;;;0BAMR,eAAU,SAAS;2BAMnB,CAAC,EAAE;4BAKH,OAAO,MAAM,EAAE,CAAC,CAAC;;;;yBAIjB;IACZ,CAAK,UAAU,CAAC,EAAE,QAAQ,CAAC;IAC3B,CAAK,OAAO,WAAW,CAAC,EAAE,MAAM,CAAC;IACjC,OAAW,EAAE,QAAQ,CAAA;CAClB;2CAUO,WAAW,KACT,IAAI;4CAMN,IAAI,UACJ,aAAa,iBACX,WAAW;+BAKX;IAAE,SAAS,EAAE,CAAC,CAAA;CAAE;4BAIhB,cAAc,KAAK,CAAC,GAChC,cAA0B,WAAW,CAAC,GACtC,cAA0B,UAAU,CAAC,GACrC,cAA0B,WAAW,CAAC,IACtC,cAA0B,QAAQ,CAAC,GAAG;IAAE,MAAM,EAAE,MAAM,CAAA;CAAE,IACxD,cAA0B,iBAAiB,CAAC,IAC5C,cAA0B,QAAQ,CAAC,GAAG;IAAE,MAAM,MAAM,CAAA;CAAE,KACtD,cAA0B,OAAO,CAAC,GAAG;IAAE,MAAM,MAAM,CAAC;IACpD,OAA8C,EAAE,MAAM,CAAC;IACvD,OAA8C,CAAC,EAAE,MAAM,CAAA;CAC1C,KACb,cAA0B,MAAM,CAAC,GAAG;IAAE,KAAK,EAAE,MAAM,CAAC;IAAC,KAAK,CAAC,EAAE,aAAa,CAAA;CAAE,KAC5E,cAA0B,SAAS,CAAC,GAAG;IAAE,QAAQ,EAAE,QAAQ,CAAC;IAC5D,IAA6C,CAAC,EAAE,QAAQ,CAAA;CAC3C,KACb,cAA0B,QAAQ,CAAC,GAAG;IAAE,GAAG,EAAE,MAAM,CAAC;IACpD,OAA+C,EAAE,QAAQ,CAAA;CAC5C,CAAA;;;;;;gBAGa,SAAS;;8BAGvB,aAAa,GAAG,IAAI,GAAG,MAAM,GACzC,OAAmB,GAAG,MAAM,GAAG,cAAc;;;;;;;;;;uBAKjC,eAAe,GAAG,YAAY,eAAe,CAAC;;;;;UAa7C,MAAM;WACN,IAAI,EAAE;;oCAMT,QAAQ,KACN,QAAQ,IAAI,CAAC;uCAMf,QAAQ,IAAI,CAAC,KACX,QAAQ;;eAMP,UAAU,IAAI,CAAC;iBACf,YAAY,IAAI,CAAC;;;;;;;;;;oBAKjB,IAAI,GAAC,KAAK;;;;kBAKV,MAAM;;;;;iBACN,MAAM;;;;;;;;;8BAEA,KAAK,KAAK,IAAI;;;;;;;;4BAWrB,MAAM;;;;6DAWN,aAAa,GAAC,SAAS;;;;;;;;;;;;;;;;;6BAoBzB,OAAO,oCAEL,OAAO"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/marshal/src/types.js b/node_modules/@endo/marshal/src/types.js
+index 084887d..b777892 100644
+--- a/node_modules/@endo/marshal/src/types.js
++++ b/node_modules/@endo/marshal/src/types.js
+@@ -3,6 +3,8 @@
+ 
+ /// <reference path="extra-types.d.ts" />
+ 
++export {};
++
+ /**
+  * @typedef { "undefined" | "null" |
+  *   "boolean" | "number" | "bigint" | "string" | "symbol"
+@@ -180,7 +182,7 @@
+ 
+ /**
+  * @template Slot
+- * @typedef CapData
++ * @typedef {Object} CapData
+  * @property {string} body A JSON.stringify of an Encoding
+  * @property {Slot[]} slots
+  */
+@@ -201,22 +203,13 @@
+ 
+ /**
+  * @template Slot
+- * @typedef Marshal
++ * @typedef {Object} Marshal
+  * @property {Serialize<Slot>} serialize
+  * @property {Unserialize<Slot>} unserialize
+  */
+ 
+ /**
+- * @template Slot
+- * @callback MakeMarshal
+- * @param {ConvertValToSlot<Slot>=} convertValToSlot
+- * @param {ConvertSlotToVal<Slot>=} convertSlotToVal
+- * @param {MakeMarshalOptions=} options
+- * @returns {Marshal<Slot>}
+- */
+-
+-/**
+- * @typedef MakeMarshalOptions
++ * @typedef {Object} MakeMarshalOptions
+  * @property {'on'|'off'=} errorTagging controls whether serialized errors
+  * also carry tagging information, made from `marshalName` and numbers
+  * generated (currently by counting) starting at `errorIdNum`. The

@@ -1,0 +1,27 @@
+diff --git a/node_modules/@endo/captp/src/captp.js b/node_modules/@endo/captp/src/captp.js
+index 81be418..419f7a5 100644
+--- a/node_modules/@endo/captp/src/captp.js
++++ b/node_modules/@endo/captp/src/captp.js
+@@ -1,6 +1,9 @@
+ // @ts-check
+ /// <reference types="ses"/>
+ 
++/** @template Slot @typedef {import('@endo/marshal').ConvertValToSlot<Slot>} ConvertValToSlot */
++/** @template Slot @typedef {import('@endo/marshal').ConvertSlotToVal<Slot>} ConvertSlotToVal */
++
+ // Your app may need to `import '@endo/eventual-send/shim.js'` to get HandledPromise
+ 
+ // This logic was mostly lifted from @agoric/swingset-vat liveSlots.js
+diff --git a/node_modules/@endo/captp/src/types.js b/node_modules/@endo/captp/src/types.js
+index e07cbe6..65ee214 100644
+--- a/node_modules/@endo/captp/src/types.js
++++ b/node_modules/@endo/captp/src/types.js
+@@ -17,7 +17,7 @@
+  */
+ 
+ /**
+- * @typedef {[boolean, CapData<CapTPSlot>]} TrapCompletion The head of the pair
++ * @typedef {[boolean, import('@endo/marshal').CapData<CapTPSlot>]} TrapCompletion The head of the pair
+  * is the `isRejected` value indicating whether the sync call was an exception,
+  * and tail of the pair is the serialized fulfillment value or rejection reason.
+  * (The fulfillment value is a non-thenable.  The rejection reason is normally
