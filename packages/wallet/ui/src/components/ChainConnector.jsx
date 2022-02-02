@@ -51,7 +51,7 @@ const ChainConnector = () => {
     setSnackbarMessage(null);
   };
 
-  const openSnackbar = message => {
+  const showError = message => {
     setSnackbarMessage(message);
   };
 
@@ -75,7 +75,7 @@ const ChainConnector = () => {
     const connect = async () => {
       if (!window.getOfflineSigner || !window.keplr) {
         setNetworkConfig(null);
-        openSnackbar('Please install the Keplr extension');
+        showError('Please install the Keplr extension');
       } else if (window.keplr.experimentalSuggestChain) {
         try {
           const cosmJS = await suggestChain(networkConfig[0]);
@@ -83,17 +83,17 @@ const ChainConnector = () => {
             setConnectionInProgress(false);
             window.cosmJS = cosmJS;
           }
-        } catch {
+        } catch (e) {
           if (!networkChanged) {
+            showError('Failed to connect to Keplr');
+            console.error(e);
             setConnectionInProgress(false);
             setNetworkConfig(null);
           }
         }
       } else {
         setNetworkConfig(null);
-        openSnackbar(
-          'Please use the most recent version of the Keplr extension',
-        );
+        showError('Please use the most recent version of the Keplr extension');
       }
     };
     connect();
