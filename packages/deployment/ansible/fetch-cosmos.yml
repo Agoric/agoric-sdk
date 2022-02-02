@@ -1,12 +1,11 @@
 ---
-
-- hosts: "{{ service }}"
+- hosts: '{{ service }}'
   user: root
   #any_errors_fatal: true
   gather_facts: yes
   strategy: free
   vars:
     - service: ag-chain-cosmos
-    - data: "{{ SETUP_HOME }}/{{ service }}/data"
+    - data: '{{ SETUP_HOME }}/{{ service }}/data'
   roles:
     - fetch-cosmos

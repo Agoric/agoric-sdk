@@ -1,9 +1,10 @@
-reused_setup: 
+reused_setup:
   - checkout # special step to check out source code to working directory
   - run: &install_npm
       name: Update npm
       command: 'sudo npm install -g npm@latest'
-  - restore_cache: &restore_cache # special step to restore the dependency cache
+  - restore_cache: &restore_cache
+      # special step to restore the dependency cache
       # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
       key: dependency-cache-{{ checksum "package.json" }}
   - run: &install_npm_packages
@@ -80,24 +81,22 @@ jobs:
   npm_audit_node_11: &npm_audit
     docker:
       - image: circleci/golang:1.12.0-node
-    steps: 
+    steps:
       - checkout
-      - run: 
+      - run:
           name: Update npm
           command: 'sudo npm install -g npm@latest'
       - run:
           name: install hub
           command: |
-              set -xe
-              go get -u -d github.com/github/hub
-              cd /go/src/github.com/github/hub
-              go install github.com/github/hub
+            set -xe
+            go get -u -d github.com/github/hub
+            cd /go/src/github.com/github/hub
+            go install github.com/github/hub
       - run:
           name: Submit PR if npm audit fix makes changes
           command: ./scripts/npm-audit-fix.sh
 
-
-            
 workflows:
   version: 2
   test_all:
@@ -105,13 +104,13 @@ workflows:
       - lint_and_test
       - test_integration
   nightly:
-     triggers:
-       - schedule:
-           cron: "0 0 * * *"
-           filters:
-             branches:
-               only:
-                 - master
-     jobs:
-       - post_release_test_integration
-       - npm_audit_node_11
+    triggers:
+      - schedule:
+          cron: '0 0 * * *'
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - post_release_test_integration
+      - npm_audit_node_11

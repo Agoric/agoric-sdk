@@ -1,24 +1,24 @@
 - name: Download fluentd (TreasureData) script
   get_url:
-    url: "https://toolbelt.treasuredata.com/sh/install-debian-stretch-td-agent3.sh"
-    dest: "/root/install-td-agent3.sh"
-    mode: "0755"
+    url: 'https://toolbelt.treasuredata.com/sh/install-debian-stretch-td-agent3.sh'
+    dest: '/root/install-td-agent3.sh'
+    mode: '0755'
 
 - name: Install fluentd prerequisites
   apt:
-    name: "{{ packages }}"
+    name: '{{ packages }}'
     update_cache: yes
     state: present
   vars:
     packages:
-    - build-essential
-    - curl
+      - build-essential
+      - curl
 
 - name: Install fluentd script
-  shell: "/root/install-td-agent3.sh"
+  shell: '/root/install-td-agent3.sh'
 
 - name: Install fluent-plugin-systemd
-  shell: "td-agent-gem install fluent-plugin-systemd -v 1.0.1"
+  shell: 'td-agent-gem install fluent-plugin-systemd -v 1.0.1'
 
 - name: Add td-agent to systemd-journal group
   user:
@@ -33,7 +33,7 @@
   notify: restart fluentd
 
 - name: Install fluent-plugin-grafana-loki
-  shell: "td-agent-gem install fluent-plugin-grafana-loki"
+  shell: 'td-agent-gem install fluent-plugin-grafana-loki'
   when: LOKI_URL is defined
 
 - name: Copy Loki store
@@ -44,7 +44,7 @@
   when: LOKI_URL is defined
 
 - name: Install fluent-plugin-honeycomb
-  shell: "td-agent-gem install fluent-plugin-honeycomb"
+  shell: 'td-agent-gem install fluent-plugin-honeycomb'
   when: HONEYCOMB_API_KEY is defined and HONEYCOMB_DATASET is defined
 
 - name: Copy honeycomb store
@@ -55,7 +55,7 @@
   when: HONEYCOMB_API_KEY is defined and HONEYCOMB_DATASET is defined
 
 - name: Install fluent-plugin-logzio
-  shell: "td-agent-gem install fluent-plugin-logzio"
+  shell: 'td-agent-gem install fluent-plugin-logzio'
   when: LOGZIO_TOKEN is defined
 
 - name: Copy logzio store
@@ -66,14 +66,14 @@
   when: LOGZIO_TOKEN is defined
 
 - name: Install fluent-plugin-gcs
-  shell: "td-agent-gem install fluent-plugin-gcs -v 0.4.0"
+  shell: 'td-agent-gem install fluent-plugin-gcs -v 0.4.0'
   when: GCLOUD_PROJECT is defined and GCS_BUCKET_NAME is defined
 
 - name: Copy gcs keyfile
   become: yes
   become_user: td-agent
   copy:
-    src: "{{ GCLOUD_KEYFILE }}"
+    src: '{{ GCLOUD_KEYFILE }}'
     dest: /var/log/td-agent/gcs-keyfile.json
     mode: 0600
   when: GCLOUD_KEYFILE is defined
@@ -87,21 +87,21 @@
 
 - name: Install dstat
   apt:
-    name: "{{ packages }}"
+    name: '{{ packages }}'
     update_cache: no
     state: present
   vars:
     packages:
-    - dstat
+      - dstat
 
 - name: Install fluent-plugin-dstat
   shell:
-    cmd: "td-agent-gem install fluent-plugin-dstat"
+    cmd: 'td-agent-gem install fluent-plugin-dstat'
 
 - name: Install fluent-plugin-diskusage
   shell:
     cmd: "td-agent-gem install fluent-plugin-diskusage && sed -i -e '1i\\\nrequire \"fluent/input\"' {{ diskusage_rb }}"
-    creates: "{{ diskusage_rb }}"
+    creates: '{{ diskusage_rb }}'
   vars:
     diskusage_rb: /opt/td-agent/embedded/lib/ruby/gems/2.4.0/gems/fluent-plugin-diskusage-0.0.2/lib/fluent/plugin/in_diskusage.rb
 

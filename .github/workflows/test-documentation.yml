@@ -5,7 +5,7 @@ name: Test Documentation
 
 on:
   push:
-    branches: [ master ] # $default-branch
+    branches: [master] # $default-branch
   pull_request:
 
 jobs:
@@ -16,68 +16,67 @@ jobs:
         node-version: ['14.x']
 
     steps:
+      - name: Checkout agoric-sdk
+        uses: actions/checkout@v2
 
-    - name: Checkout agoric-sdk
-      uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: cache node modules
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: cache node modules
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/yarn
-        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-
-
-    # Select a branch on dapp to test against by adding text to the body of the
-    # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
-    # The default is 'main'
-    - name: Get the appropriate dapp branch
-      id: get-branch
-      uses: actions/github-script@0.9.0
-      with:
-        result-encoding: string
-        script: |
-          let branch = 'main';
-          if (context.payload.pull_request) {
-            const { body } = context.payload.pull_request;
-            const regex = /.*\#documentation-branch:\s+(\S+)/;
-            const result = regex.exec(body);
-            if (result) {
-              branch = result[1];
+      # Select a branch on dapp to test against by adding text to the body of the
+      # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
+      # The default is 'main'
+      - name: Get the appropriate dapp branch
+        id: get-branch
+        uses: actions/github-script@0.9.0
+        with:
+          result-encoding: string
+          script: |
+            let branch = 'main';
+            if (context.payload.pull_request) {
+              const { body } = context.payload.pull_request;
+              const regex = /.*\#documentation-branch:\s+(\S+)/;
+              const result = regex.exec(body);
+              if (result) {
+                branch = result[1];
+              }
             }
-          }
-          console.log(branch);
-          return branch;
+            console.log(branch);
+            return branch;
 
-    - name: yarn install --frozen-lockfile
-      run: yarn install --frozen-lockfile
-    # 'yarn build' loops over all workspaces
-    - name: yarn build
-      run: yarn build
-    - name: yarn link-cli
-      run: |
-        yarn link-cli ~/bin/agoric
-        echo "/home/runner/bin" >> $GITHUB_PATH
+      - name: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile
+      # 'yarn build' loops over all workspaces
+      - name: yarn build
+        run: yarn build
+      - name: yarn link-cli
+        run: |
+          yarn link-cli ~/bin/agoric
+          echo "/home/runner/bin" >> $GITHUB_PATH
 
-    - name: Check out dapp
-      uses: actions/checkout@v2
-      with:
-        repository: Agoric/documentation
-        path: dapp
-        ref: ${{steps.get-branch.outputs.result}}
+      - name: Check out dapp
+        uses: actions/checkout@v2
+        with:
+          repository: Agoric/documentation
+          path: dapp
+          ref: ${{steps.get-branch.outputs.result}}
 
-    - name: Agoric install in dapp
-      run: agoric install
-      working-directory: ./dapp
+      - name: Agoric install in dapp
+        run: agoric install
+        working-directory: ./dapp
 
-    - name: yarn build in dapp
-      run: yarn build
-      working-directory: ./dapp
-    
-    - name: yarn test in dapp
-      run: yarn test
-      working-directory: ./dapp
+      - name: yarn build in dapp
+        run: yarn build
+        working-directory: ./dapp
+
+      - name: yarn test in dapp
+        run: yarn test
+        working-directory: ./dapp
