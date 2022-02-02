@@ -12,7 +12,7 @@ jest.mock('../views/Dashboard', () => () => 'Dashboard');
 jest.mock('../views/Dapps', () => () => 'Dapps');
 jest.mock('../views/Contacts', () => () => 'Contacts');
 jest.mock('../views/Issuers', () => () => 'Issuers');
-jest.mock('@cosmjs/launchpad', () => () => {
+jest.mock('@cosmjs/stargate', () => () => {
   jest.mock();
 });
 

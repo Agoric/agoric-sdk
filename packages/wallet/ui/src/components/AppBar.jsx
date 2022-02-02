@@ -46,7 +46,8 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const AppBar = ({ useChainBackend }) => {
+// Exported for testing only.
+export const AppBarWithoutContext = ({ useChainBackend }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
 
@@ -88,6 +89,6 @@ const AppBar = ({ useChainBackend }) => {
   );
 };
 
-export default withApplicationContext(AppBar, context => ({
+export default withApplicationContext(AppBarWithoutContext, context => ({
   useChainBackend: context.useChainBackend,
 }));
