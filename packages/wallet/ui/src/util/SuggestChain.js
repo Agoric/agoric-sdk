@@ -1,4 +1,4 @@
-import { SigningCosmosClient } from '@cosmjs/launchpad';
+import { SigningStargateClient } from '@cosmjs/stargate';
 
 export const AGORIC_COIN_TYPE = 564;
 export const COSMOS_COIN_TYPE = 118;
@@ -67,12 +67,34 @@ export async function suggestChain(networkConfig, caption = undefined) {
   await window.keplr.enable(chainId);
 
   const offlineSigner = window.getOfflineSigner(chainId);
-  const accounts = await offlineSigner.getAccounts();
-  const cosmJS = new SigningCosmosClient(
-    'https://node-cosmoshub-3.keplr.app/rest', // TODO: Provide correct rest API
-    accounts[0].address,
+  const cosmJS = await SigningStargateClient.connectWithSigner(
+    rpc,
     offlineSigner,
   );
+
+  /*
+  // Example transaction 
+  const amount = {
+    denom: 'ubld',
+    amount: '1234567',
+  };
+  const accounts = await offlineSigner.getAccounts();
+  await cosmJS.sendTokens(
+    accounts[0].address,
+    'agoric123456',
+    [amount],
+    {
+      amount: [
+        {
+          amount: '500000',
+          denom: 'urun',
+        },
+      ],
+      gas: '890000',
+    },
+    'enjoy!',
+  );
+ */
 
   return cosmJS;
 }
