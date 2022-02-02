@@ -75,6 +75,7 @@ const ChainConnector = () => {
     const connect = async () => {
       if (!window.getOfflineSigner || !window.keplr) {
         setNetworkConfig(null);
+        setConnectionInProgress(false);
         showError('Please install the Keplr extension');
       } else if (window.keplr.experimentalSuggestChain) {
         try {
@@ -138,7 +139,7 @@ const ChainConnector = () => {
         </div>
       </Dialog>
       <Snackbar
-        open={snackbarMessage}
+        open={snackbarMessage !== null}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
       >
