@@ -25,7 +25,7 @@
  *
  * @typedef {StandardTerms & Record<string, any>} Terms
  *
- * @typedef {object} InstanceRecord
+ * @typedef {Object} InstanceRecord
  * @property {Installation} installation
  * @property {Instance} instance
  * @property {Terms} terms - contract parameters
