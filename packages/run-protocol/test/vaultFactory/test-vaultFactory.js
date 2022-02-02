@@ -188,7 +188,8 @@ async function getRunFromFaucet(
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
- * @param {LoanParams} loanParams
+ * @param {LoanTiming} loanTiming
+ * @param loanTiming
  * @param {unknown} priceList
  * @param {Amount} unitAmountIn
  * @param {Brand} aethBrand
@@ -257,7 +258,7 @@ async function setupServices(
     liquidate: bundlePs.liquidate,
   });
   produce.vaultBundles.resolve(vaultBundles);
-  await startVaultFactory({ consume, produce }, { loanParams });
+  await startVaultFactory({ consume, produce }, { loanParams: loanTiming });
   const agoricNames = consume.agoricNames;
   const installs = await Collect.allValues({
     vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
