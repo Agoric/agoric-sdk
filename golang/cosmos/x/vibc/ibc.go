@@ -22,14 +22,14 @@ type portHandler struct {
 }
 
 type portMessage struct { // comes from swingset's IBC handler
-	Type            string              `json:"type"` // IBC_METHOD
-	Method          string              `json:"method"`
-	Packet          channeltypes.Packet `json:"packet"`
-	RelativeTimeout uint64              `json:"relativeTimeout"`
-	Order           string              `json:"order"`
-	Hops            []string            `json:"hops"`
-	Version         string              `json:"version"`
-	Ack             []byte              `json:"ack"`
+	Type              string              `json:"type"` // IBC_METHOD
+	Method            string              `json:"method"`
+	Packet            channeltypes.Packet `json:"packet"`
+	RelativeTimeoutNs uint64              `json:"relativeTimeoutNs,string"`
+	Order             string              `json:"order"`
+	Hops              []string            `json:"hops"`
+	Version           string              `json:"version"`
+	Ack               []byte              `json:"ack"`
 }
 
 func stringToOrder(order string) channeltypes.Order {
@@ -54,12 +54,6 @@ func orderToString(order channeltypes.Order) string {
 	}
 }
 
-// DefaultRouter is a temporary hack until cosmos-sdk implements its features FIXME.
-type DefaultRouter struct {
-	*porttypes.Router
-	defaultRoute porttypes.IBCModule
-}
-
 func NewPortHandler(ibcModule porttypes.IBCModule, keeper Keeper) portHandler {
 	return portHandler{
 		ibcModule: ibcModule,
@@ -78,7 +72,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	}
 
 	if msg.Type != "IBC_METHOD" {
-		return "", fmt.Errorf(`Channel handler only accepts messages of "type": "IBC_METHOD"`)
+		return "", fmt.Errorf(`channel handler only accepts messages of "type": "IBC_METHOD"`)
 	}
 
 	switch msg.Method {
@@ -92,11 +86,17 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 			return "", fmt.Errorf("unknown sequence number")
 		}
 
+		timeoutTimestamp := msg.Packet.TimeoutTimestamp
+		if msg.Packet.TimeoutHeight.IsZero() && msg.Packet.TimeoutTimestamp == 0 {
+			// Use the relative timeout if no absolute timeout is specifiied.
+			timeoutTimestamp = uint64(ctx.Context.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
+		}
+
 		packet := channeltypes.NewPacket(
 			msg.Packet.Data, seq,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
 			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-			msg.Packet.TimeoutHeight, msg.Packet.TimeoutTimestamp,
+			msg.Packet.TimeoutHeight, timeoutTimestamp,
 		)
 		err = keeper.SendPacket(ctx.Context, packet)
 		if err == nil {

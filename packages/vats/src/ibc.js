@@ -18,6 +18,9 @@ import { makeWithQueue } from './queue.js';
 // empty acknowledgements as distinct from unacknowledged packets.
 const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 
+// Default timeout after 10 minutes.
+const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
+
 /**
  * @typedef {import('./bridge').BridgeHandler} BridgeHandler
  */
@@ -105,11 +108,17 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    *
    * @param {IBCPacket} packet
    * @param {LegacyMap<number, PromiseRecord<Bytes>>} seqToAck
+   * @param {bigint} [relativeTimeoutNs]
    */
-  async function ibcSendPacket(packet, seqToAck) {
+  async function ibcSendPacket(
+    packet,
+    seqToAck,
+    relativeTimeoutNs = DEFAULT_PACKET_TIMEOUT_NS,
+  ) {
     // Make a kernel call to do the send.
     const fullPacket = await callIBCDevice('sendPacket', {
       packet,
+      relativeTimeoutNs,
     });
 
     // Extract the actual sequence number from the return.
@@ -149,9 +158,16 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
      * @param {Connection} _conn
      * @param {Bytes} packetBytes
      * @param {ConnectionHandler} _handler
+     * @param {Object} root0
+     * @param {bigint} [root0.relativeTimeoutNs]
      * @returns {Promise<Bytes>} Acknowledgement data
      */
-    let onReceive = async (_conn, packetBytes, _handler) => {
+    let onReceive = async (
+      _conn,
+      packetBytes,
+      _handler,
+      { relativeTimeoutNs } = {},
+    ) => {
       // console.error(`Remote IBC Handler ${portID} ${channelID}`);
       const packet = {
         source_port: portID,
@@ -160,7 +176,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
         destination_channel: rChannelID,
         data: dataToBase64(packetBytes),
       };
-      return ibcSendPacket(packet, seqToAck);
+      return ibcSendPacket(packet, seqToAck, relativeTimeoutNs);
     };
 
     if (order === 'ORDERED') {
@@ -552,11 +568,11 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
         }
 
         case 'sendPacket': {
-          const { packet } = obj;
+          const { packet, relativeTimeoutNs } = obj;
           const { source_port: portID, source_channel: channelID } = packet;
           const channelKey = `${channelID}:${portID}`;
           const seqToAck = channelKeyToSeqAck.get(channelKey);
-          ibcSendPacket(packet, seqToAck).then(
+          ibcSendPacket(packet, seqToAck, relativeTimeoutNs).then(
             ack => console.info('Manual packet', packet, 'acked:', ack),
             e => console.warn('Manual packet', packet, 'failed:', e),
           );

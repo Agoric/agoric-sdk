@@ -40,7 +40,7 @@
 
 /**
  * @typedef {Object} Connection
- * @property {(packetBytes: Data) => Promise<Bytes>} send Send a packet on the connection
+ * @property {(packetBytes: Data, opts?: Record<string, any>) => Promise<Bytes>} send Send a packet on the connection
  * @property {() => Promise<void>} close Close both ends of the connection
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this connection
  * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
@@ -49,7 +49,7 @@
 /**
  * @typedef {Object} ConnectionHandler A handler for a given Connection
  * @property {(connection: Connection, localAddr: Endpoint, remoteAddr: Endpoint, c: ConnectionHandler) => void} [onOpen] The connection has been opened
- * @property {(connection: Connection, packetBytes: Bytes, c: ConnectionHandler) => Promise<Data>} [onReceive] The connection received a packet
+ * @property {(connection: Connection, packetBytes: Bytes, c: ConnectionHandler, opts?: Record<string, any>) => Promise<Data>} [onReceive] The connection received a packet
  * @property {(connection: Connection, reason?: CloseReason, c?: ConnectionHandler) => Promise<void>} [onClose] The connection has been closed
  *
  * @typedef {any?} CloseReason The reason a connection was closed

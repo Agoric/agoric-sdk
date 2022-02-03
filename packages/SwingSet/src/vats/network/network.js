@@ -72,7 +72,7 @@ export const makeConnection = (
         .onClose(connection, undefined, handler)
         .catch(rethrowUnlessMissing);
     },
-    async send(data) {
+    async send(data, opts) {
       // console.log('send', data, local === srcHandler);
       if (closed) {
         throw closed;
@@ -81,7 +81,7 @@ export const makeConnection = (
       const ackDeferred = makePromiseKit();
       pendingAcks.add(ackDeferred);
       E(handler)
-        .onReceive(connection, bytes, handler)
+        .onReceive(connection, bytes, handler, opts)
         .catch(err => {
           rethrowUnlessMissing(err);
           return '';

@@ -126,6 +126,7 @@ test('network - ibc', async t => {
           source_channel: 'channel-1',
           source_port: 'port-1',
         },
+        relativeTimeoutNs: 600_000_000_000n, // 10 minutes in nanoseconds.
       },
     ]);
 
