@@ -1,4 +1,4 @@
-import { extractMessage } from '../util.js';
+import { extractMessage } from '../vat-util.js';
 
 export default function setup(syscall, state, _helpers, vatPowers) {
   function dispatch(vatDeliverObject) {

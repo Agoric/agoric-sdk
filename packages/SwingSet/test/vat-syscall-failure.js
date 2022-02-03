@@ -1,4 +1,4 @@
-import { extractMessage } from './util.js';
+import { extractMessage } from './vat-util.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
