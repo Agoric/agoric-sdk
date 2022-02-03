@@ -739,6 +739,7 @@ test('GC syscall.dropImports', async t => {
   t.deepEqual(l2, {
     type: 'vatstoreGet',
     key: 'vom.rc.o-1',
+    result: undefined,
   });
 
   // since nothing else is holding onto it, the vat should emit a dropImports

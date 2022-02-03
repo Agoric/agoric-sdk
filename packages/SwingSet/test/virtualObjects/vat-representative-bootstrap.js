@@ -1,11 +1,11 @@
-/* global makeKind makeVirtualScalarWeakMap */
 import { Far } from '@endo/marshal';
+import { makeKind, makeScalarBigWeakMapStore } from '../../src/storeModule.js';
 
-const stuff = makeVirtualScalarWeakMap();
+let stuff;
 
 let initialSelf;
 
-function makeThingInstance(state) {
+function makeThingInnards(state) {
   function init(name) {
     state.name = name;
     // eslint-disable-next-line no-use-before-define
@@ -25,18 +25,18 @@ function makeThingInstance(state) {
   return { init, self };
 }
 
-const thingMaker = makeKind(makeThingInstance);
+const makeThing = makeKind(makeThingInnards);
 
-function makeZotInstance(state) {
+function makeZotInnards(state) {
   function init(name, forceOverflow) {
     state.name = name;
     // enough instances to push me out of the cache
     for (let i = 0; i < 5; i += 1) {
-      stuff.init(thingMaker(`${name}-subthing${i}`, 29));
+      stuff.init(makeThing(`${name}-subthing${i}`, 29));
     }
     if (forceOverflow) {
       // eslint-disable-next-line no-use-before-define
-      zotMaker('recur', true);
+      makeZot('recur', true);
     }
   }
   const self = Far('zot', {
@@ -50,7 +50,7 @@ function makeZotInstance(state) {
   return { init, self };
 }
 
-const zotMaker = makeKind(makeZotInstance);
+const makeZot = makeKind(makeZotInnards);
 
 export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
@@ -58,10 +58,11 @@ export function buildRootObject(vatPowers) {
 
   return Far('root', {
     bootstrap() {
+      stuff = makeScalarBigWeakMapStore();
       return 'bootstrap done';
     },
     makeThing(name, hold) {
-      const thing = thingMaker(name);
+      const thing = makeThing(name);
       if (hold) {
         heldThing = thing;
       }
@@ -97,7 +98,7 @@ export function buildRootObject(vatPowers) {
     testA(name, mode) {
       // mode 1: make thing, return thing
       // mode 2: make thing, return initial self
-      const thing = thingMaker(name);
+      const thing = makeThing(name);
       switch (mode) {
         case 1:
           return thing;
@@ -112,7 +113,7 @@ export function buildRootObject(vatPowers) {
       // mode 4: make thing, rename initial self, return thing
       // mode 5: make thing, rename thing, return initial self
       // mode 6: make thing, rename initial self, return initial self
-      const thing = thingMaker(name);
+      const thing = makeThing(name);
       testLog(`test${mode} thing.name before rename "${thing.getName()}"`);
       // prettier-ignore
       testLog(`test${mode} initialSelf.name before rename "${initialSelf.getName()}"`);
@@ -147,7 +148,7 @@ export function buildRootObject(vatPowers) {
       // mode 8: make thing, use initial self as key in weakstore, lookup value keyed to thing in weakstore
       // mode 9: make thing, use thing as key in weakstore, lookup value keyed to initial self in weakstore
       // mode 10: make thing, use initial self as key in weakstore, lookup value keyed to initial self in weakstore
-      const thing = thingMaker(name);
+      const thing = makeThing(name);
       switch (mode) {
         case 7:
         case 9:
@@ -179,8 +180,8 @@ export function buildRootObject(vatPowers) {
     testD(name, mode) {
       // mode 11: make thing, store thing as value in weakstore, lookup value and return name of value
       // mode 12: make thing, store initial self as value in weakstore, lookup value and return name of value
-      const thing = thingMaker(name);
-      const keyish = harden({ x: mode });
+      const thing = makeThing(name);
+      const keyish = `key for mode ${mode}`;
       switch (mode) {
         case 11:
           stuff.init(keyish, thing);
@@ -205,7 +206,7 @@ export function buildRootObject(vatPowers) {
       // mode 19: make thing, store thing as value in weakstore, rename initial self, lookup and return name of value
       // mode 20: make thing, store initial self as value in weakstore, rename initial self, lookup and return name of value
 
-      const thing = thingMaker(name);
+      const thing = makeThing(name);
       switch (mode) {
         case 13:
         case 14:
@@ -218,7 +219,7 @@ export function buildRootObject(vatPowers) {
         default:
           break;
       }
-      const keyish = harden({ x: mode });
+      const keyish = `key for mode ${mode}`;
       switch (mode) {
         case 13:
         case 15:
@@ -253,7 +254,7 @@ export function buildRootObject(vatPowers) {
     },
     testCacheOverflow(name, forceOverflow) {
       try {
-        return zotMaker(name, forceOverflow);
+        return makeZot(name, forceOverflow);
       } catch (e) {
         testLog(`testCacheOverflow catches ${e}`);
         return 'overflow';

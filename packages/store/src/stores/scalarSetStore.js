@@ -83,16 +83,16 @@ export const makeSetStoreMethods = (
  *
  * @template K
  * @param {string} [keyName='key'] - the column name for the key
- * @param {Partial<StoreOptions>=} options
+ * @param {StoreOptions=} options
  * @returns {SetStore<K>}
  */
 export const makeScalarSetStore = (
   keyName = 'key',
-  { keyPattern = undefined } = {},
+  { keySchema = undefined } = {},
 ) => {
   const jsset = new Set();
-  if (keyPattern !== undefined) {
-    assertPattern(keyPattern);
+  if (keySchema !== undefined) {
+    assertPattern(keySchema);
   }
 
   const assertKeyOkToAdd = key => {
@@ -101,8 +101,8 @@ export const makeScalarSetStore = (
     harden(key);
 
     assertScalarKey(key);
-    if (keyPattern !== undefined) {
-      fit(key, keyPattern);
+    if (keySchema !== undefined) {
+      fit(key, keySchema);
     }
   };
 

@@ -1,11 +1,11 @@
-/* global makeKind */
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeKind } from '@agoric/swingset-vat/src/storeModule.js';
 
 const things = [];
 
 export function buildRootObject(_vatPowers) {
-  function makeThingInstance(state) {
+  function makeThingInnards(state) {
     return {
       init(label) {
         state.label = label;
@@ -18,13 +18,13 @@ export function buildRootObject(_vatPowers) {
     };
   }
 
-  const thingMaker = makeKind(makeThingInstance);
+  const makeThing = makeKind(makeThingInnards);
   let nextThingNumber = 0;
 
   return Far('root', {
     prepare() {
       for (let i = 1; i <= 9; i += 1) {
-        things.push(thingMaker(`thing #${i}`));
+        things.push(makeThing(`thing #${i}`));
       }
     },
     getThing(forWhom) {

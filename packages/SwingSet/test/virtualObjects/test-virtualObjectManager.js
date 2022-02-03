@@ -2,13 +2,16 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { Far } from '@endo/marshal';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
+import {
+  makeFakeVirtualObjectManager,
+  makeFakeVirtualStuff,
+} from '../../tools/fakeVirtualSupport.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
 }
 
-function makeThingInstance(state) {
+function makeThingInnards(state) {
   return {
     init(label = 'thing', counter = 0) {
       state.counter = counter;
@@ -50,7 +53,7 @@ function minThing(label) {
   return thingVal(0, label, 0);
 }
 
-function makeRefInstance(state) {
+function makeRefInnards(state) {
   return {
     init(value) {
       state.value = value;
@@ -63,7 +66,7 @@ function makeRefInstance(state) {
   };
 }
 
-function makeZotInstance(state) {
+function makeZotInnards(state) {
   return {
     init(arbitrary = 47, name = 'Bob', tag = 'say what?') {
       state.arbitrary = arbitrary;
@@ -103,39 +106,39 @@ test('virtual object operations', t => {
   const log = [];
   const { makeKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
-  const thingMaker = makeKind(makeThingInstance);
-  const zotMaker = makeKind(makeZotInstance);
+  const makeThing = makeKind(makeThingInnards);
+  const makeZot = makeKind(makeZotInnards);
 
   // phase 0: start
   t.deepEqual(dumpStore(), []);
 
   // phase 1: object creations
-  const thing1 = thingMaker('thing-1'); // [t1-0]
+  const thing1 = makeThing('thing-1'); // [t1-0]
   // t1-0: 'thing-1' 0 0
-  const thing2 = thingMaker('thing-2', 100); // [t2-0 t1-0]
+  const thing2 = makeThing('thing-2', 100); // [t2-0 t1-0]
   // t2-0: 'thing-2' 100 0
-  const thing3 = thingMaker('thing-3', 200); // [t3-0 t2-0 t1-0]
+  const thing3 = makeThing('thing-3', 200); // [t3-0 t2-0 t1-0]
   // t3-0: 'thing-3' 200 0
-  const thing4 = thingMaker('thing-4', 300); // [t4-0 t3-0 t2-0 t1-0]
+  const thing4 = makeThing('thing-4', 300); // [t4-0 t3-0 t2-0 t1-0]
   // t4-0: 'thing-4' 300 0
   t.deepEqual(log, []);
 
-  const zot1 = zotMaker(23, 'Alice', 'is this on?'); // [z1-0 t4-0 t3-0 t2-0] evict t1-0
+  const zot1 = makeZot(23, 'Alice', 'is this on?'); // [z1-0 t4-0 t3-0 t2-0] evict t1-0
   // z1-0: 23 'Alice' 'is this on?' 0
   t.is(log.shift(), `set vom.o+1/1 ${thingVal(0, 'thing-1', 0)}`); // evict t1-0
   t.deepEqual(log, []);
 
-  const zot2 = zotMaker(29, 'Bob', 'what are you saying?'); // [z2-0 z1-0 t4-0 t3-0] evict t2-0
+  const zot2 = makeZot(29, 'Bob', 'what are you saying?'); // [z2-0 z1-0 t4-0 t3-0] evict t2-0
   // z2-0: 29 'Bob' 'what are you saying?' 0
   t.is(log.shift(), `set vom.o+1/2 ${thingVal(100, 'thing-2', 0)}`); // evict t2-0
   t.deepEqual(log, []);
 
-  const zot3 = zotMaker(47, 'Carol', 'as if...'); // [z3-0 z2-0 z1-0 t4-0] evict t3-0
+  const zot3 = makeZot(47, 'Carol', 'as if...'); // [z3-0 z2-0 z1-0 t4-0] evict t3-0
   // z3-0: 47 'Carol' 'as if...' 0
   t.is(log.shift(), `set vom.o+1/3 ${thingVal(200, 'thing-3', 0)}`); // evict t3-0
   t.deepEqual(log, []);
 
-  const zot4 = zotMaker(66, 'Dave', 'you and what army?'); // [z4-0 z3-0 z2-0 z1-0] evict t4-0
+  const zot4 = makeZot(66, 'Dave', 'you and what army?'); // [z4-0 z3-0 z2-0 z1-0] evict t4-0
   // z4-0: 66 'Dave' 'you and what army?' 0
   t.is(log.shift(), `set vom.o+1/4 ${thingVal(300, 'thing-4', 0)}`); // evict t4-0
   t.deepEqual(log, []);
@@ -316,22 +319,19 @@ test('virtual object operations', t => {
 
 test('virtual object gc', t => {
   const log = [];
-  const {
-    makeKind,
-    dumpStore,
-    setExportStatus,
-    deleteEntry,
-    possibleVirtualObjectDeath,
-  } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
+  const { vom, vrm, fakeStuff } = makeFakeVirtualStuff({ cacheSize: 3, log });
+  const { makeKind } = vom;
+  const { setExportStatus, possibleVirtualObjectDeath } = vrm;
+  const { deleteEntry, dumpStore } = fakeStuff;
 
-  const thingMaker = makeKind(makeThingInstance);
-  const refMaker = makeKind(makeRefInstance);
+  const makeThing = makeKind(makeThingInnards);
+  const makeRef = makeKind(makeRefInnards);
 
   // make a bunch of things which we'll use
   // all virtual objects are born locally ref'd
   const things = [];
   for (let i = 1; i <= 9; i += 1) {
-    things.push(thingMaker(`thing #${i}`));
+    things.push(makeThing(`thing #${i}`));
   }
   t.is(log.shift(), `set vom.o+1/1 ${minThing('thing #1')}`);
   t.is(log.shift(), `set vom.o+1/2 ${minThing('thing #2')}`);
@@ -441,7 +441,7 @@ test('virtual object gc', t => {
   // case 4: ref virtually, export, drop local ref, drop export
   // ref virtually
   // eslint-disable-next-line no-unused-vars
-  const ref1 = refMaker(things[3]);
+  const ref1 = makeRef(things[3]);
   t.is(log.shift(), `set vom.o+1/6 ${minThing('thing #6')}`);
   t.is(log.shift(), `get vom.rc.o+1/4 => undefined`);
   t.is(log.shift(), `set vom.rc.o+1/4 1`);
@@ -474,7 +474,7 @@ test('virtual object gc', t => {
   t.deepEqual(log, []);
   // ref virtually
   // eslint-disable-next-line no-unused-vars
-  const ref2 = refMaker(things[4]);
+  const ref2 = makeRef(things[4]);
   t.is(log.shift(), `set vom.o+1/7 ${minThing('thing #7')}`);
   t.is(log.shift(), `get vom.rc.o+1/5 => undefined`);
   t.is(log.shift(), `set vom.rc.o+1/5 1`);
@@ -503,7 +503,7 @@ test('virtual object gc', t => {
   // case 6: ref virtually, drop local ref
   // ref virtually
   // eslint-disable-next-line no-unused-vars
-  const ref3 = refMaker(things[5]);
+  const ref3 = makeRef(things[5]);
   t.is(log.shift(), `set vom.o+1/8 ${minThing('thing #8')}`);
   t.is(log.shift(), `get vom.rc.o+1/6 => undefined`);
   t.is(log.shift(), `set vom.rc.o+1/6 1`);
@@ -539,7 +539,7 @@ test('virtual object gc', t => {
   ]);
 });
 
-function makeDefectivelyNonFarThingInstance(state) {
+function makeDefectivelyNonFarThingInnards(state) {
   return {
     init(label = 'thing') {
       state.label = label;
@@ -553,30 +553,30 @@ function makeDefectivelyNonFarThingInstance(state) {
 test('demand farhood', t => {
   const { makeKind } = makeFakeVirtualObjectManager({ cacheSize: 3 });
 
-  const thingMaker = makeKind(makeDefectivelyNonFarThingInstance);
-  t.throws(() => thingMaker('thing'), { message: 'self must be declared Far' });
+  const makeThing = makeKind(makeDefectivelyNonFarThingInnards);
+  t.throws(() => makeThing('thing'), { message: 'self must be declared Far' });
 });
 
 test('weak store operations', t => {
-  const { makeVirtualScalarWeakMap, makeKind } = makeFakeVirtualObjectManager({
-    cacheSize: 3,
-  });
+  const { vom, cm } = makeFakeVirtualStuff({ cacheSize: 3 });
+  const { makeKind } = vom;
+  const { makeScalarBigWeakMapStore } = cm;
 
-  const thingMaker = makeKind(makeThingInstance);
-  const zotMaker = makeKind(makeZotInstance);
+  const makeThing = makeKind(makeThingInnards);
+  const makeZot = makeKind(makeZotInnards);
 
-  const thing1 = thingMaker('t1');
-  const thing2 = thingMaker('t2');
+  const thing1 = makeThing('t1');
+  const thing2 = makeThing('t2');
 
-  const zot1 = zotMaker(1, 'z1');
-  const zot2 = zotMaker(2, 'z2');
-  const zot3 = zotMaker(3, 'z3');
-  const zot4 = zotMaker(4, 'z4');
+  const zot1 = makeZot(1, 'z1');
+  const zot2 = makeZot(2, 'z2');
+  const zot3 = makeZot(3, 'z3');
+  const zot4 = makeZot(4, 'z4');
 
-  const ws1 = makeVirtualScalarWeakMap();
-  const ws2 = makeVirtualScalarWeakMap();
-  const nv1 = {};
-  const nv2 = { a: 47 };
+  const ws1 = makeScalarBigWeakMapStore();
+  const ws2 = makeScalarBigWeakMapStore();
+  const nv1 = 'a';
+  const nv2 = 'b';
   ws1.init(zot1, 'zot #1');
   ws2.init(zot2, 'zot #2');
   ws1.init(zot3, 'zot #3');
@@ -610,16 +610,16 @@ test('virtualized weak collection operations', t => {
     makeKind,
   } = makeFakeVirtualObjectManager({ cacheSize: 3 });
 
-  const thingMaker = makeKind(makeThingInstance);
-  const zotMaker = makeKind(makeZotInstance);
+  const makeThing = makeKind(makeThingInnards);
+  const makeZot = makeKind(makeZotInnards);
 
-  const thing1 = thingMaker('t1');
-  const thing2 = thingMaker('t2');
+  const thing1 = makeThing('t1');
+  const thing2 = makeThing('t2');
 
-  const zot1 = zotMaker(1, 'z1');
-  const zot2 = zotMaker(2, 'z2');
-  const zot3 = zotMaker(3, 'z3');
-  const zot4 = zotMaker(4, 'z4');
+  const zot1 = makeZot(1, 'z1');
+  const zot2 = makeZot(2, 'z2');
+  const zot3 = makeZot(3, 'z3');
+  const zot4 = makeZot(4, 'z4');
 
   const wm1 = new VirtualObjectAwareWeakMap();
   const wm2 = new VirtualObjectAwareWeakMap();

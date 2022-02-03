@@ -48,8 +48,10 @@ export {
 
 export {
   M,
+  getRankCover,
   isPattern,
   assertPattern,
+  assertKeyPattern,
   matches,
   fit,
 } from './patterns/patternMatchers.js';

@@ -1,6 +1,6 @@
 // @ts-check
 
-/* global makeKind makeVirtualScalarWeakMap */
+/* global VatData */
 
 import { importBundle } from '@endo/import-bundle';
 import { assert } from '@agoric/assert';
@@ -16,8 +16,7 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
   const defaultEndowments = {
     console: louderConsole,
     assert,
-    makeKind,
-    makeVirtualScalarWeakMap,
+    VatData,
   };
 
   const fullEndowments = Object.create(null, {

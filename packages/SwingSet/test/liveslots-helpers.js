@@ -9,6 +9,25 @@ import { makeLiveSlots } from '../src/kernel/liveSlots.js';
 export function buildSyscall() {
   const log = [];
   const fakestore = new Map();
+  let sortedKeys;
+  let priorKeyReturned;
+  let priorKeyIndex;
+
+  function ensureSorted() {
+    if (!sortedKeys) {
+      sortedKeys = [];
+      for (const key of fakestore.keys()) {
+        sortedKeys.push(key);
+      }
+      sortedKeys.sort((k1, k2) => k1.localeCompare(k2));
+    }
+  }
+
+  function clearSorted() {
+    sortedKeys = undefined;
+    priorKeyReturned = undefined;
+    priorKeyIndex = -1;
+  }
 
   const syscall = {
     send(targetSlot, method, args, resultSlot) {
@@ -33,16 +52,51 @@ export function buildSyscall() {
       log.push({ type: 'exit', isFailure, info });
     },
     vatstoreGet(key) {
-      log.push({ type: 'vatstoreGet', key });
-      return fakestore.get(key);
+      const result = fakestore.get(key);
+      log.push({ type: 'vatstoreGet', key, result });
+      return result;
     },
     vatstoreSet(key, value) {
       log.push({ type: 'vatstoreSet', key, value });
+      if (!fakestore.has(key)) {
+        clearSorted();
+      }
       fakestore.set(key, value);
     },
     vatstoreDelete(key) {
       log.push({ type: 'vatstoreDelete', key });
+      if (fakestore.has(key)) {
+        clearSorted();
+      }
       fakestore.delete(key);
+    },
+    vatstoreGetAfter(priorKey, start, end) {
+      let actualEnd = end;
+      if (!end) {
+        const lastChar = String.fromCharCode(start.slice(-1).charCodeAt(0) + 1);
+        actualEnd = `${start.slice(0, -1)}${lastChar}`;
+      }
+      ensureSorted();
+      let from = 0;
+      if (priorKeyReturned === priorKey) {
+        from = priorKeyIndex;
+      }
+      let result = [undefined, undefined];
+      for (let i = from; i < sortedKeys.length; i += 1) {
+        const key = sortedKeys[i];
+        if (key >= actualEnd) {
+          priorKeyReturned = undefined;
+          priorKeyIndex = -1;
+          break;
+        } else if (key > priorKey && key >= start) {
+          priorKeyReturned = key;
+          priorKeyIndex = i;
+          result = [key, fakestore.get(key)];
+          break;
+        }
+      }
+      log.push({ type: 'vatstoreGetAfter', priorKey, start, end, result });
+      return result;
     },
   };
 
