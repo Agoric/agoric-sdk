@@ -3,7 +3,13 @@ build
 bundles
 compiled
 dist
+lcov-report
 public
+
+# Opt out of these file types for now
+*.html
+*.json
+*.md
 
 # subrepos
 /packages/xsnap/moddable
