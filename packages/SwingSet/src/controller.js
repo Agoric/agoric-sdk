@@ -121,6 +121,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
  *   slogFile?: string,
+ *   slogSender?: (obj: any) => void,
  *   testTrackDecref?: unknown,
  *   warehousePolicy?: { maxVatsOnline?: number },
  *   overrideVatManagerOptions?: { consensusMode?: boolean },
@@ -145,6 +146,7 @@ export async function makeSwingsetController(
     debugPrefix = '',
     slogCallbacks,
     slogFile,
+    slogSender,
     spawn = ambientSpawn,
     warehousePolicy = {},
     overrideVatManagerOptions = {},
@@ -157,12 +159,23 @@ export async function makeSwingsetController(
     slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
 
   function writeSlogObject(obj) {
-    // TODO sqlite
+    if (!slogSender && !slogF) {
+      // Fast path; nothing to do.
+      return;
+    }
+
+    // Add a timestamp to the slog input object.
+    const timeMS = performance.timeOrigin + performance.now();
+    const time = timeMS / 1000;
+    const timedObj = { time, ...obj };
+
+    if (slogSender) {
+      // Allow the SwingSet host to do anything they want with slog messages.
+      slogSender(timedObj);
+    }
     if (slogF) {
-      const timeMS = performance.timeOrigin + performance.now();
-      const time = timeMS / 1000;
       slogF.write(
-        JSON.stringify({ time, ...obj }, (_, arg) =>
+        JSON.stringify(timedObj, (_, arg) =>
           typeof arg === 'bigint' ? Number(arg) : arg,
         ),
       );
