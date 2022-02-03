@@ -558,10 +558,11 @@
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => LimitedCreatorFacet} getLimitedCreatorFacet - the creator
+ * @property {() => T} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
+ * @template {LimitedCreatorFacet} T
  */
 
 /**
@@ -574,7 +575,7 @@
 /**
  * @callback WrapCreatorFacet
  * @param {T} originalCreatorFacet
- * @returns {T & GovernedCreatorFacet}
+ * @returns {GovernedCreatorFacet<T>}
  * @template T
  */
 

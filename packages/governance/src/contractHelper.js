@@ -51,8 +51,7 @@ const handleParamGovernance = (zcf, paramManager) => {
    * @returns {T & GovernedPublicFacet}
    * @template T
    */
-  // @ts-expect-error bounded polymorphism doesn't fit well in JSDoc
-  const wrapPublicFacet = (originalPublicFacet = {}) => {
+  const wrapPublicFacet = (originalPublicFacet = /** @type {T} */ ({})) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
@@ -76,11 +75,12 @@ const handleParamGovernance = (zcf, paramManager) => {
 
   /**
    * @param {T} originalCreatorFacet
-   * @returns {GovernedCreatorFacet}
+   * @returns { GovernedCreatorFacet<T> }
    * @template T
    */
-  // @ts-expect-error bounded polymorphism doesn't fit well in JSDoc
-  const wrapCreatorFacet = (originalCreatorFacet = Far('creatorFacet', {})) => {
+  const wrapCreatorFacet = (
+    originalCreatorFacet = Far('creatorFacet', /** @type {T} */ ({})),
+  ) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
