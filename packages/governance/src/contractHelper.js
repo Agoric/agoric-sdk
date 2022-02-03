@@ -51,7 +51,7 @@ const handleParamGovernance = (zcf, paramManager) => {
    * @returns {T & GovernedPublicFacet}
    * @template T
    */
-  // @ts-ignore bounded polymorphism doesn't fit well in JSDoc
+  // @ts-expect-error bounded polymorphism doesn't fit well in JSDoc
   const wrapPublicFacet = (originalPublicFacet = {}) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
@@ -81,7 +81,7 @@ const handleParamGovernance = (zcf, paramManager) => {
    * @returns {GovernedCreatorFacet}
    * @template T
    */
-  // @ts-ignore bounded polymorphism doesn't fit well in JSDoc
+  // @ts-expect-error bounded polymorphism doesn't fit well in JSDoc
   const wrapCreatorFacet = (originalCreatorFacet = Far('creatorFacet', {})) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 

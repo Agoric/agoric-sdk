@@ -584,8 +584,8 @@
 
 /**
  * @typedef {Object} ParamGovernorBundle
- * @property {WrapPublicFacet<P>} wrapPublicFacet
- * @property {WrapCreatorFacet<C>} wrapCreatorFacet
+ * @property {WrapPublicFacet<unknown>} wrapPublicFacet
+ * @property {WrapCreatorFacet<unknown>} wrapCreatorFacet
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -595,8 +595,6 @@
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
  * @property {(name: string) => any} getUnknown
- * @template P
- * @template C
  */
 
 /**
