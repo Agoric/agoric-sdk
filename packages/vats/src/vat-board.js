@@ -1,4 +1,4 @@
-import { Far } from '@agoric/far';
+import { Far } from '@endo/far';
 import { makeBoard } from './lib-board.js';
 
 export function buildRootObject(_vatPowers) {

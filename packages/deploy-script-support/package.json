@@ -11,13 +11,10 @@
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
-    "pretty-fix": "prettier --write '**/*.js'",
-    "pretty-check": "prettier --check '**/*.js'",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json",
-    "lint": "yarn lint:types && yarn lint:eslint"
+    "lint:types": "tsc --maxNodeModuleJsDepth 5 -p jsconfig.json",
+    "lint": "run-s --continue-on-error lint:*"
   },
   "repository": {
     "type": "git",
@@ -38,15 +35,14 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.15",
-    "@agoric/bundle-source": "^2.0.1",
+    "@endo/bundle-source": "^2.0.5",
     "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
     "@agoric/import-manager": "^0.2.33",
-    "@agoric/marshal": "^0.5.0",
+    "@endo/marshal": "^0.5.4",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
-    "@agoric/same-structure": "^0.1.29",
     "@agoric/store": "^0.6.8",
     "@agoric/vats": "^0.5.1",
     "@agoric/zoe": "^0.21.1"
@@ -70,10 +66,6 @@
     "extends": [
       "@agoric"
     ]
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   },
   "publishConfig": {
     "access": "public"

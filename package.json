@@ -5,9 +5,7 @@
   "useWorkspaces": true,
   "workspaces": [
     "golang/cosmos",
-    "packages/lockdown",
     "packages/assert",
-    "packages/install-ses",
     "packages/import-manager",
     "packages/sparse-ints",
     "packages/store",
@@ -18,15 +16,12 @@
     "packages/promise-kit",
     "packages/tame-metering",
     "packages/transform-metering",
-    "packages/install-metering-and-ses",
-    "packages/marshal",
-    "packages/far",
     "packages/same-structure",
-    "packages/captp",
     "packages/stat-logger",
     "packages/swing-store",
     "packages/SwingSet",
     "packages/swingset-runner",
+    "packages/telemetry",
     "packages/ERTP",
     "packages/spawner",
     "packages/sharing-service",
@@ -66,7 +61,8 @@
     "eslint-plugin-jsx-a11y": "^6.4.0",
     "eslint-plugin-prettier": "^3.2.0",
     "lerna": "^3.20.2",
-    "prettier": "^1.18.2",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^1.19.1",
     "typescript": "^4.2.3"
   },
   "engines": {
@@ -75,16 +71,21 @@
   "eslintConfig": {
     "root": true
   },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  },
   "scripts": {
     "OFF-clean": "yarn workspaces run clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.js",
-    "prettier": "yarn workspaces run prettier",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
+    "format": "yarn prettier --write '{.github,golang,packages}/**/*.{js,jsx,ts,tsx,yml,yaml}'",
+    "lint:format": "yarn prettier --check '{.github,golang,packages}/**/*.{js,jsx,ts,tsx,yml,yaml}'",
     "lint-fix": "yarn workspaces run lint-fix",
-    "lint-check": "yarn workspaces run lint-check",
-    "lint": "yarn workspaces run lint-check",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:packages": "yarn workspaces run lint",
     "test": "yarn workspaces run test",
     "test:c8-all": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8",
     "test:xs": "yarn workspaces run test:xs",

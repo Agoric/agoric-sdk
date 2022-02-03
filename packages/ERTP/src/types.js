@@ -1,9 +1,8 @@
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 /**
- * @typedef {import('@agoric/marshal').InterfaceSpec} InterfaceSpec
- * @typedef {import('@agoric/marshal').GetInterfaceOf} GetInterfaceOf
+ * @typedef {import('@endo/marshal').InterfaceSpec} InterfaceSpec
+ * @typedef {import('@endo/marshal').GetInterfaceOf} GetInterfaceOf
  */
 
 /**
@@ -18,21 +17,43 @@
  * portion.
  *
  * @property {Brand} brand
- * @property {Value} value
+ * @property {AmountValue} value
  */
 
 /**
- * @typedef {NatValue | SetValue} Value
- * Values describe the value of something that can be owned or shared.
- * Fungible values are normally represented by natural numbers. Other
- * values may be represented as strings naming a particular right, or
- * an arbitrary object that sensibly represents the rights at issue.
+ * @typedef {NatValue | SetValue | CopySetValue | CopyBagValue} AmountValue
+ * An `AmountValue` describes a set or quantity of assets that can be owned or
+ * shared.
  *
- * Value must be Comparable. (Would be nice to type this correctly.)
+ * A fungible `AmountValue` uses a non-negative bigint to represent a quantity
+ * of that many assets.
+ *
+ * A non-fungible `AmountValue` uses an array or CopySet of `Key`s to represent
+ * a set of whatever asset each key represents. A `Key` is a passable value
+ * that can be used as an element in a set (SetStore or CopySet) or as the
+ * key in a map (MapStore or CopyMap).
+ *
+ * `SetValue` is for the deprecated set representation, using an array directly
+ * to represent the array of its elements. `CopySetValue` is the proper
+ * representation using a CopySet.
+ *
+ * A semi-fungible `CopyBagValue` is represented as a
+ * `CopyBag` of `Key` objects. "Bag" is synonymous with MultiSet, where an
+ * element of a bag can be present once or more times, i.e., some positive
+ * bigint number of times, representing that quantity of the asset represented
+ * by that key.
  */
 
 /**
- * @typedef {'nat' | 'set' } AssetKind
+ * @typedef {AmountValue} Value
+ * "Value" is a deprecated alias for "AmountValue". Please use
+ * "AmountValue" instead.
+ */
+
+/**
+ * @typedef {'nat' | 'set' | 'copySet' | 'copyBag' } AssetKind
+ *
+ * See doc-comment for `AmountValue`.
  */
 
 /**
@@ -48,7 +69,7 @@
  *
  * @callback AmountMake
  * @param {Brand} brand
- * @param {Value} allegedValue
+ * @param {AmountValue} allegedValue
  * @returns {Amount}
  *
  * @callback AmountCoerce
@@ -59,7 +80,7 @@
  * @callback AmountGetValue
  * @param {Brand} brand
  * @param {Amount} allegedAmount
- * @returns {Value}
+ * @returns {AmountValue}
  */
 
 /**
@@ -149,7 +170,8 @@
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
  * @property {AssetKind} assetKind - the kind of asset, either
- *   AssetKind.NAT (fungible) or AssetKind.SET (non-fungible)
+ *   AssetKind.NAT (fungible) or
+ *   AssetKind.SET or AssertKind.COPY_SET (non-fungible)
  */
 
 /**
@@ -515,19 +537,31 @@
  */
 
 /**
- * @typedef {Comparable} SetValueElem
- */
-
-/**
- * @typedef {Array<SetValueElem>} SetValue
- */
-
-/**
  * @typedef {MathHelpers<NatValue>} NatMathHelpers
  */
 
 /**
+ * @typedef {Array<Key>} SetValue
+ */
+
+/**
  * @typedef {MathHelpers<SetValue>} SetMathHelpers
+ */
+
+/**
+ * @typedef {CopySet<Key>} CopySetValue
+ */
+
+/**
+ * @typedef {MathHelpers<CopySetValue>} CopySetMathHelpers
+ */
+
+/**
+ * @typedef {CopyBag<Key>} CopyBagValue
+ */
+
+/**
+ * @typedef {MathHelpers<CopyBagValue>} CopyBagMathHelpers
  */
 
 /**

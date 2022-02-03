@@ -1,0 +1,53 @@
+{
+  "bootstrap": "bootstrap",
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "./src/core/boot.js",
+      "parameters": {
+        "governanceActions": true
+      }
+    }
+  },
+  "bundles": {
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "bank": {
+      "sourceSpec": "./src/vat-bank.js"
+    },
+    "board": {
+      "sourceSpec": "./src/vat-board.js"
+    },
+    "distributeFees": {
+      "sourceSpec": "./src/vat-distributeFees.js"
+    },
+    "ibc": {
+      "sourceSpec": "./src/vat-ibc.js"
+    },
+    "mints": {
+      "sourceSpec": "./src/vat-mints.js"
+    },
+    "network": {
+      "sourceSpec": "./src/vat-network.js"
+    },
+    "priceAuthority": {
+      "sourceSpec": "./src/vat-priceAuthority.js"
+    },
+    "provisioning": {
+      "sourceSpec": "./src/vat-provisioning.js"
+    },
+    "sharing": {
+      "sourceSpec": "./src/vat-sharing.js"
+    },
+    "walletManager": {
+      "sourceSpec": "./src/vat-walletManager.js"
+    },
+    "zoe": {
+      "sourceSpec": "./src/vat-zoe.js",
+      "parameters": {
+        "zcfBundleName": "zcf"
+      }
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}

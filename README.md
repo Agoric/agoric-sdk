@@ -65,7 +65,7 @@ constraints). Our goal is to remove all the unique-to-a-subproject deps.
 
 When one subproject depends upon another, `node_modules/` will contain a
 symlink to the subproject (e.g. `ERTP` depends upon `marshal`, so
-`node_modules/@agoric/marshal` is a symlink to `packages/marshal`).
+`node_modules/@endo/marshal` is a symlink to `packages/marshal`).
 
 Run `yarn workspaces info` to get a report on which subprojects (aka
 "workspaces") depend upon which others. The `mismatchedWorkspaceDependencies`

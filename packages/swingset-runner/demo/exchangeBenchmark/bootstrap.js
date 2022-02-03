@@ -1,6 +1,6 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
 import exchangeBundle from './bundle-simpleExchange.js';

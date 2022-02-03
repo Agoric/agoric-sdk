@@ -1,5 +1,5 @@
 // @ts-check
-import { passStyleOf } from '@agoric/marshal';
+import { passStyleOf } from '@endo/marshal';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
@@ -18,7 +18,7 @@ const { details: X, quote: q } = assert;
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @returns {Offer}
  */
-export const makeOffer = (
+export const makeOfferMethod = (
   invitationIssuer,
   getInstanceAdmin,
   depositPayments,

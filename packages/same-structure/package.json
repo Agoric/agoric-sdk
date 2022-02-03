@@ -11,7 +11,6 @@
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
-    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
@@ -31,8 +30,8 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.15",
-    "@agoric/marshal": "^0.5.0",
-    "@agoric/store": "^0.6.7"
+    "@endo/marshal": "^0.5.4",
+    "@agoric/store": "^0.6.8"
   },
   "devDependencies": {
     "ava": "^3.12.1"
@@ -49,10 +48,6 @@
   "eslintIgnore": [
     "bundle-*.js"
   ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "publishConfig": {
     "access": "public"
   },

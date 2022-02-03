@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
@@ -70,7 +70,7 @@ const start = async zcf => {
   /** @type {Set<OracleRecord>} */
   const oracleRecords = new Set();
 
-  /** @type {Store<Instance, Set<OracleRecord>>} */
+  /** @type {LegacyMap<Instance, Set<OracleRecord>>} */
   // Legacy because we're storing a raw JS Set
   const instanceToRecords = makeLegacyMap('oracleInstance');
 

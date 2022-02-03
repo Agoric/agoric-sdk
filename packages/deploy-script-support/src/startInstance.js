@@ -2,7 +2,7 @@
 
 import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { passStyleOf } from '@agoric/marshal';
+import { passStyleOf } from '@endo/marshal';
 
 /** @type {MakeStartInstanceAndSave} */
 export const makeStartInstance = (

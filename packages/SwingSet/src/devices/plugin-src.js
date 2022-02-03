@@ -1,7 +1,7 @@
 // @ts-check
 
-import { makeCapTP } from '@agoric/captp';
-import { Far } from '@agoric/marshal';
+import { makeCapTP } from '@endo/captp';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {

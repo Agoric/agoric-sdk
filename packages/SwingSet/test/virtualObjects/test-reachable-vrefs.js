@@ -1,20 +1,20 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Far, Remotable } from '@agoric/marshal';
+import { Far, Remotable } from '@endo/marshal';
 
 import { makeVatSlot } from '../../src/parseVatSlots.js';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
+import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
-// empty object, used as makeVirtualScalarWeakMap() key
-function makeKeyInstance(_state) {
+// empty object, used as weap map store key
+function makeKeyInnards(_state) {
   return {
     init() {},
     self: Far('key'),
   };
 }
 
-function makeHolderInstance(state) {
+function makeHolderInnards(state) {
   return {
     init(held) {
       state.held = held;
@@ -32,11 +32,12 @@ function makeHolderInstance(state) {
 
 test('VOM tracks reachable vrefs', async t => {
   const vomOptions = { cacheSize: 3 };
-  const vom = makeFakeVirtualObjectManager(vomOptions);
-  const { makeVirtualScalarWeakMap, makeKind } = vom;
-  const weakStore = makeVirtualScalarWeakMap();
-  const keyMaker = makeKind(makeKeyInstance);
-  const holderMaker = makeKind(makeHolderInstance);
+  const { vom, vrm, cm } = makeFakeVirtualStuff(vomOptions);
+  const { makeKind } = vom;
+  const { makeScalarBigWeakMapStore } = cm;
+  const weakStore = makeScalarBigWeakMapStore('test');
+  const makeKey = makeKind(makeKeyInnards);
+  const makeHolder = makeKind(makeHolderInnards);
 
   let count = 1001;
   function makePresence() {
@@ -51,38 +52,29 @@ test('VOM tracks reachable vrefs', async t => {
   }
 
   const [vref1, obj1] = makePresence();
-  const key1 = keyMaker();
-  t.falsy(vom.isPresenceReachable(vref1));
+  const key1 = makeKey();
+  t.falsy(vrm.isPresenceReachable(vref1));
   weakStore.init(key1, obj1);
-  t.truthy(vom.isPresenceReachable(vref1));
+  t.truthy(vrm.isPresenceReachable(vref1));
 
   const [vref2, obj2] = makePresence();
-  const key2 = keyMaker();
+  const key2 = makeKey();
   weakStore.init(key2, 'not yet');
-  t.falsy(vom.isPresenceReachable(vref2));
+  t.falsy(vrm.isPresenceReachable(vref2));
   weakStore.set(key2, obj2);
-  t.truthy(vom.isPresenceReachable(vref2));
-
-  // storing Presences as the value for a non-virtual key just holds on to
-  // the Presence directly, and does not track the vref
-
-  const [vref3, obj3] = makePresence();
-  const key3 = {};
-  weakStore.init(key3, obj3);
-  weakStore.set(key3, obj3);
-  t.falsy(vom.isPresenceReachable(vref3));
+  t.truthy(vrm.isPresenceReachable(vref2));
 
   // now check that Presences are tracked when in the state of a virtual
   // object
-  const [vref4, obj4] = makePresence();
-  t.falsy(vom.isPresenceReachable(vref4));
+  const [vref3, obj3] = makePresence();
+  t.falsy(vrm.isPresenceReachable(vref3));
   // eslint-disable-next-line no-unused-vars
-  const holder4 = holderMaker(obj4);
-  t.truthy(vom.isPresenceReachable(vref4));
+  const holder3 = makeHolder(obj3);
+  t.truthy(vrm.isPresenceReachable(vref3));
 
-  const [vref5, obj5] = makePresence();
-  const holder5 = holderMaker('not yet');
-  t.falsy(vom.isPresenceReachable(vref5));
-  holder5.setHeld(obj5);
-  t.truthy(vom.isPresenceReachable(vref5));
+  const [vref4, obj4] = makePresence();
+  const holder4 = makeHolder('not yet');
+  t.falsy(vrm.isPresenceReachable(vref4));
+  holder4.setHeld(obj4);
+  t.truthy(vrm.isPresenceReachable(vref4));
 });

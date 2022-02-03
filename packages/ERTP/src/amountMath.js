@@ -1,28 +1,34 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
-import { passStyleOf, assertRemotable, assertRecord } from '@agoric/marshal';
+import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
 import './types.js';
+import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
+import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
+import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
+
+const { details: X, quote: q } = assert;
 
 /**
  * Constants for the kinds of assets we support.
  *
- * @type {{ NAT: 'nat', SET: 'set' }}
+ * @type {{ NAT: 'nat', SET: 'set', COPY_SET: 'copySet', COPY_BAG: 'copyBag' }}
  */
-const AssetKind = {
+const AssetKind = harden({
   NAT: 'nat',
   SET: 'set',
-};
-harden(AssetKind);
+  COPY_SET: 'copySet',
+  COPY_BAG: 'copyBag',
+});
+const assetKindNames = harden(Object.values(AssetKind).sort());
 
 /** @type {AssertAssetKind} */
 const assertAssetKind = allegedAK =>
   assert(
-    Object.values(AssetKind).includes(allegedAK),
-    X`The assetKind ${allegedAK} must be either AssetKind.NAT or AssetKind.SET`,
+    assetKindNames.includes(allegedAK),
+    X`The assetKind ${allegedAK} must be one of ${q(assetKindNames)}`,
   );
 harden(assertAssetKind);
 
@@ -65,35 +71,55 @@ harden(assertAssetKind);
  * each other.
  */
 
-/** @type {{ nat: NatMathHelpers, set: SetMathHelpers }} */
+/** @type {{
+ *   nat: NatMathHelpers,
+ *   set: SetMathHelpers,
+ *   copySet: CopySetMathHelpers,
+ *   copyBag: CopyBagMathHelpers
+ * }} */
 const helpers = {
   nat: natMathHelpers,
   set: setMathHelpers,
+  copySet: copySetMathHelpers,
+  copyBag: copyBagMathHelpers,
 };
 
-/** @type {(value: Value) => AssetKind} */
+/** @type {(value: AmountValue) => AssetKind} */
 const assertValueGetAssetKind = value => {
-  const valuePassStyle = passStyleOf(value);
-  if (valuePassStyle === 'copyArray') {
-    return 'set';
-  }
-  if (valuePassStyle === 'bigint') {
+  const passStyle = passStyleOf(value);
+  if (passStyle === 'bigint') {
     return 'nat';
   }
+  if (passStyle === 'copyArray') {
+    return 'set';
+  }
+  if (matches(value, M.set())) {
+    return 'copySet';
+  }
+  if (matches(value, M.bag())) {
+    return 'copyBag';
+  }
   assert.fail(
-    X`value ${value} must be a bigint or an array, not ${valuePassStyle}`,
+    // TODO This isn't quite the right error message, in case valuePassStyle
+    // is 'tagged'. We would need to distinguish what kind of tagged
+    // object it is.
+    // Also, this kind of manual listing is a maintenance hazard we
+    // (TODO) will encounter when we extend the math helpers further.
+    X`value ${value} must be a bigint, copySet, copyBag, or an array, not ${passStyle}`,
   );
 };
 
 /**
  *
- * Asserts that passStyleOf(value) === 'copyArray' or 'bigint' and
- * returns the appropriate helpers.
+ * Asserts that value is a valid AmountMath and returns the appropriate helpers.
  *
- * @param {Value} value
- * @returns {NatMathHelpers | SetMathHelpers}
+ * Made available only for testing, but it is harmless for other uses.
+ *
+ * @param {AmountValue} value
+ * @returns {MathHelpers<*>}
  */
-const assertValueGetHelpers = value => helpers[assertValueGetAssetKind(value)];
+export const assertValueGetHelpers = value =>
+  helpers[assertValueGetAssetKind(value)];
 
 /** @type {(allegedBrand: Brand, brand?: Brand) => void} */
 const optionalBrandCheck = (allegedBrand, brand) => {
@@ -111,7 +137,7 @@ const optionalBrandCheck = (allegedBrand, brand) => {
  * @param {Amount} leftAmount
  * @param {Amount} rightAmount
  * @param {Brand | undefined} brand
- * @returns {NatMathHelpers | SetMathHelpers }
+ * @returns {MathHelpers<*>}
  */
 const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
   assertRecord(leftAmount, 'leftAmount');
@@ -138,10 +164,10 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
 };
 
 /**
- * @param {MathHelpers<Value>} h
+ * @param {MathHelpers<AmountValue>} h
  * @param {Amount} leftAmount
  * @param {Amount} rightAmount
- * @returns {[Value, Value]}
+ * @returns {[AmountValue, AmountValue]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
   return [h.doCoerce(leftAmount.value), h.doCoerce(rightAmount.value)];
@@ -152,7 +178,8 @@ const AmountMath = {
   make: (brand, allegedValue) => {
     assertRemotable(brand, 'brand');
     const h = assertValueGetHelpers(allegedValue);
-    // @ts-ignore Needs better typing to express Value to Helpers relationship
+    // @ts-ignore Needs better typing to express AmountValue to Helpers
+    // relationship
     const value = h.doCoerce(allegedValue);
     return harden({ brand, value });
   },
@@ -186,28 +213,28 @@ const AmountMath = {
     assertRemotable(allegedBrand, 'brand');
     optionalBrandCheck(allegedBrand, brand);
     const h = assertValueGetHelpers(value);
-    // @ts-ignore Needs better typing to express Value to Helpers relationship
+    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsEmpty(h.doCoerce(value));
   },
   isGTE: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore Needs better typing to express Value to Helpers relationship
+    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
   },
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore Needs better typing to express Value to Helpers relationship
+    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsEqual(...coerceLR(h, leftAmount, rightAmount));
   },
   add: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore Needs better typing to express Value to Helpers relationship
+    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     const value = h.doAdd(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
   },
   subtract: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore Needs better typing to express Value to Helpers relationship
+    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     const value = h.doSubtract(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
   },

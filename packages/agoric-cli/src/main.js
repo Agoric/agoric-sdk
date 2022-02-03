@@ -11,7 +11,7 @@ import startMain from './start.js';
 import walletMain from './open.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
-const DEFAULT_DAPP_URL_BASE = 'git://github.com/Agoric/';
+const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
 const DEFAULT_DAPP_BRANCH = undefined;
 
 const STAMP = '_agstate';
@@ -52,11 +52,7 @@ const main = async (progname, rawArgs, powers) => {
   program
     .option('--sdk', 'use the Agoric SDK containing this program')
     .option('--no-sdk', 'do not use the Agoric SDK containing this program')
-    .option(
-      '--docker-tag <tag>',
-      'image tag to use for Docker containers',
-      'latest',
-    )
+    .option('--docker-tag <tag>', 'image tag to use for Docker containers')
     .option(
       '-v, --verbose',
       'verbosity that can be increased',
@@ -164,43 +160,68 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(installMain, ['install', forceSdkVersion], opts);
     });
 
-  program
-    .command('deploy [script...]')
-    .description(
-      'run a deployment script with all your user privileges against the local Agoric VM',
-    )
-    .option(
-      '--allow-unsafe-plugins',
-      `CAREFUL: installed Agoric VM plugins will also have all your user's privileges`,
-      false,
-    )
-    .option(
-      '--hostport <host:port>',
-      'host and port to connect to VM',
-      '127.0.0.1:8000',
-    )
-    .option(
-      '--need <subsystems>',
-      'comma-separated names of subsystems to wait for',
-      'local,agoric,wallet',
-    )
-    .option(
-      '--provide <subsystems>',
-      'comma-separated names of subsystems this script initializes',
-      '',
-    )
-    .action(async (scripts, cmd) => {
-      const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(deployMain, ['deploy', ...scripts], opts);
-    });
+  const addRunOptions = cmd =>
+    cmd
+      .option(
+        '--allow-unsafe-plugins',
+        `CAREFUL: installed Agoric VM plugins will also have all your user's privileges`,
+        false,
+      )
+      .option(
+        '--hostport <host:port>',
+        'host and port to connect to VM',
+        '127.0.0.1:8000',
+      )
+      .option(
+        '--need <subsystems>',
+        'comma-separated names of subsystems to wait for',
+        'local,agoric,wallet',
+      )
+      .option(
+        '--provide <subsystems>',
+        'comma-separated names of subsystems this script initializes',
+        '',
+      );
+
+  addRunOptions(
+    program
+      .command('run <script> [script-args...]')
+      .description(
+        'run a script with all your user privileges against the local Agoric VM',
+      ),
+  ).action(async (script, scriptArgs, cmd) => {
+    const opts = { ...program.opts(), ...cmd.opts(), scriptArgs };
+    return subMain(deployMain, ['run', script], opts);
+  });
+
+  addRunOptions(
+    program
+      .command('deploy [script...]')
+      .description(
+        'run multiple scripts with all your user privileges against the local Agoric VM',
+      ),
+  ).action(async (scripts, cmd) => {
+    const opts = { ...program.opts(), ...cmd.opts() };
+    return subMain(deployMain, ['deploy', ...scripts], opts);
+  });
 
   program
     .command('start [profile] [args...]')
-    .description('run an Agoric VM')
+    .description(
+      `\
+start an Agoric VM
+
+agoric start - runs the default profile (dev)
+agoric start dev -- [initArgs] - simulated chain and solo VM
+agoric start local-chain [portNum] -- [initArgs] - local chain
+agoric start local-solo [portNum] [provisionPowers] - local solo VM
+`,
+    )
     .option('-d, --debug', 'run in JS debugger mode')
     .option('--reset', 'clear all VM state before starting')
     .option('--no-restart', 'do not actually start the VM')
     .option('--pull', 'for Docker-based VM, pull the image before running')
+    .option('--rebuild', 'rebuild VM dependencies before running')
     .option(
       '--delay [seconds]',
       'delay for simulated chain to process messages',

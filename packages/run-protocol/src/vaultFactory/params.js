@@ -18,18 +18,23 @@ export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
 export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
 
-/** @type {MakeElectorateParams} */
+/**
+ * @param {Amount} electorateInvitationAmount
+ */
 const makeElectorateParams = electorateInvitationAmount => {
   return harden({
     [CONTRACT_ELECTORATE]: makeGovernedInvitation(electorateInvitationAmount),
   });
 };
 
-/** @type {MakeLoanParams} */
-const makeLoanParams = (loanParams, rates) => {
+/**
+ * @param {LoanTiming} loanTiming
+ * @param {Rates} rates
+ */
+const makeLoanParams = (loanTiming, rates) => {
   return harden({
-    [CHARGING_PERIOD_KEY]: makeGovernedNat(loanParams.chargingPeriod),
-    [RECORDING_PERIOD_KEY]: makeGovernedNat(loanParams.recordingPeriod),
+    [CHARGING_PERIOD_KEY]: makeGovernedNat(loanTiming.chargingPeriod),
+    [RECORDING_PERIOD_KEY]: makeGovernedNat(loanTiming.recordingPeriod),
     [INITIAL_MARGIN_KEY]: makeGovernedRatio(rates.initialMargin),
     [LIQUIDATION_MARGIN_KEY]: makeGovernedRatio(rates.liquidationMargin),
     [INTEREST_RATE_KEY]: makeGovernedRatio(rates.interestRate),
@@ -37,12 +42,28 @@ const makeLoanParams = (loanParams, rates) => {
   });
 };
 
-/** @type {MakeVaultParamManager} */
-const makeVaultParamManager = (loanParams, rates) => {
-  // @ts-ignore It's a VaultParamManager
+/**
+ * @param {LoanTiming} initialValues
+ * @returns {ParamManagerFull & {
+ *   updateChargingPeriod: (period: bigint) => void,
+ *   updateRecordingPeriod: (period: bigint) => void,
+ * }}
+ */
+const makeLoanTimingManager = initialValues => {
+  // @ts-expect-error until makeParamManagerBuilder can be generic */
   return makeParamManagerBuilder()
-    .addNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod)
-    .addNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod)
+    .addNat(CHARGING_PERIOD_KEY, initialValues.chargingPeriod)
+    .addNat(RECORDING_PERIOD_KEY, initialValues.recordingPeriod)
+    .build();
+};
+
+/**
+ * @param {Rates} rates
+ * @returns {VaultParamManager}
+ */
+const makeVaultParamManager = rates => {
+  // @ts-expect-error until makeParamManagerBuilder can be generic */
+  return makeParamManagerBuilder()
     .addBrandedRatio(INITIAL_MARGIN_KEY, rates.initialMargin)
     .addBrandedRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
     .addBrandedRatio(INTEREST_RATE_KEY, rates.interestRate)
@@ -50,18 +71,36 @@ const makeVaultParamManager = (loanParams, rates) => {
     .build();
 };
 
-/** @type {MakeElectorateParamManager} */
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {Invitation} electorateInvitation
+ * @returns {Promise<{
+ *   getParams: GetGovernedVaultParams,
+ *   getInvitationAmount: (name: string) => Amount,
+ *   getInternalParamValue: (name: string) => Invitation,
+ *   updateElectorate: (invitation: Invitation) => void,
+ * }>}
+ */
 const makeElectorateParamManager = async (zoe, electorateInvitation) => {
-  // @ts-ignore It's an ElectorateParamManager
+  // @ts-expect-error casting to ElectorateParamManager
   return makeParamManagerBuilder(zoe)
     .addInvitation(CONTRACT_ELECTORATE, electorateInvitation)
     .then(builder => builder.build());
 };
 
-/** @type {MakeGovernedTerms} */
+/**
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {LoanTiming} loanTiming
+ * @param {Installation} liquidationInstall
+ * @param {ERef<TimerService>} timerService
+ * @param {Amount} invitationAmount
+ * @param {Rates} rates
+ * @param {XYKAMMPublicFacet} ammPublicFacet
+ * @param {bigint=} bootstrapPaymentValue
+ */
 const makeGovernedTerms = (
   priceAuthority,
-  loanParams,
+  loanTiming,
   liquidationInstall,
   timerService,
   invitationAmount,
@@ -69,12 +108,15 @@ const makeGovernedTerms = (
   ammPublicFacet,
   bootstrapPaymentValue = 0n,
 ) => {
-  const vaultParamMgr = makeVaultParamManager(loanParams, rates);
+  const timingParamMgr = makeLoanTimingManager(loanTiming);
+
+  const rateParamMgr = makeVaultParamManager(rates);
 
   return harden({
     ammPublicFacet,
     priceAuthority,
-    loanParams: vaultParamMgr.getParams(),
+    loanParams: rateParamMgr.getParams(),
+    loanTimingParams: timingParamMgr.getParams(),
     timerService,
     liquidationInstall,
     main: makeElectorateParams(invitationAmount),

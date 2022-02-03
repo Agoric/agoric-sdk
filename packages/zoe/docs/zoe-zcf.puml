@@ -1,0 +1,50 @@
+
+@startuml Zoe communication with ZCF
+
+participant "packages/vats"
+actor Alice
+participant "Zoe Service"
+box new vat per contract instance
+collections ZCF
+database "contract instance"
+end box
+
+"packages/vats" -> "Zoe Service" : makeZoeKit(...)
+"packages/vats" //-- "Zoe Service" : <font color=gray><size:12>feeMintAccess
+Alice -> "Zoe Service" : install(bundle)
+Alice //-- "Zoe Service" : <font color=gray><size:12> installation
+Alice -> "Zoe Service" : startInstance(installation...)
+"Zoe Service" -> "Zoe Service" : makeInstanceAdmin()
+"Zoe Service" -> "Zoe Service" : createZCFVat()
+"Zoe Service" -> ZCF : E(zcfRoot).executeContract()
+ZCF -> ZCF : makeZCFZygote()
+ZCF -> ZCF : evaluateContract(bundle)
+ZCF -> "contract instance" : start(zcf)
+"contract instance" -> ZCF : [optional] makeInvitation(...)
+ZCF -> "Zoe Service" : makeInvitation(...)
+note left
+mint invitation payment
+end note
+"Zoe Service" --\\ ZCF : <font color=gray><size:12> invitation
+ZCF --\\ "contract instance" : <font color=gray><size:12> invitation
+"contract instance" --\\ ZCF : <font color=gray><size:12> {creatorFacet?, creatorInvitation?, publicFacet? }
+ZCF --\\ "Zoe Service" : <font color=gray><size:12> {creatorFacet?\n <font color=gray><size:12>creatorInvitation?\n <font color=gray><size:12>publicFacet?\n <font color=gray><size:12>handleOfferObj}
+Alice //-- "Zoe Service" : <font color=gray><size:12>{creatorFacet,\n <font color=gray><size:12>creatorInvitation\n <font color=gray><size:12>instance\n <font color=gray><size:12>publicFacet\n <font color=gray><size:12>adminFacet}
+
+====
+
+Alice -> "Zoe Service" : offer(invitation...)
+"Zoe Service" -> "Zoe Service" : makeUserSeat
+"Zoe Service" -> Alice : <font color=gray><size:12> userSeat
+"Zoe Service" -> ZCF : E(handleOfferObj).handleOffer()
+note left
+deposit payments
+end note
+ZCF -> ZCF : makeZCFSeat
+ZCF -> "contract instance" : offerHandler(ZCFSeat)
+"contract instance" -> ZCF : <font color=gray><size:12> offerResult
+ZCF --\\ "Zoe Service" : <font color=gray><size:12> { offerResult, exitObj }
+
+"Zoe Service" --\\ "Zoe Service" : <font color=gray><size:12> userSeat promises updated
+
+@enduml

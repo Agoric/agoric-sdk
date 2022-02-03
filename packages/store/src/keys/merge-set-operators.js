@@ -1,51 +1,125 @@
 // @ts-check
 
 import {
+  assertRankSorted,
+  compareAntiRank,
   makeFullOrderComparatorKit,
   sortByRank,
 } from '../patterns/rankOrder.js';
+import { assertNoDuplicates, makeSetOfElements } from './copySet.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 /**
- * Different than any valid value. Therefore, must not escape this module.
+ * Asserts that `elements` is already rank sorted by `rankCompare`, where there
+ * may be contiguous regions of elements tied for the same rank.
+ * Returns an iterable that will enumerate all the elements in order
+ * according to `fullOrder`, which should differ from `rankOrder` only
+ * by being more precise.
  *
- * @typedef {symbol} Pumpkin
+ * This should be equivalent to resorting the entire `elements` array according
+ *  to `fullOrder`. However, it optimizes for the case where these contiguous
+ * runs that need to be resorted are either absent or small.
+ *
+ * @template T
+ * @param {T[]} elements
+ * @param {RankCompare} rankCompare
+ * @param {FullCompare} fullCompare
+ * @returns {Iterable<T>}
  */
-const PUMPKIN = Symbol('pumpkin');
+const windowResort = (elements, rankCompare, fullCompare) => {
+  assertRankSorted(elements, rankCompare);
+  const { length } = elements;
+  let i = 0;
+  let optInnerIterator;
+  return harden({
+    [Symbol.iterator]: () =>
+      harden({
+        next: () => {
+          if (optInnerIterator) {
+            const result = optInnerIterator.next();
+            if (result.done) {
+              optInnerIterator = undefined;
+              // fall through
+            } else {
+              return result;
+            }
+          }
+          if (i < length) {
+            const value = elements[i];
+            let j = i + 1;
+            while (j < length && rankCompare(value, elements[j]) === 0) {
+              j += 1;
+            }
+            if (j === i + 1) {
+              i = j;
+              return harden({ done: false, value });
+            }
+            const similarRun = elements.slice(i, j);
+            i = j;
+            const resorted = sortByRank(similarRun, fullCompare);
+            // Providing the same `fullCompare` should cause a memo hit
+            // within `assertNoDuplicates` enabling it to avoid a
+            // redundant resorting.
+            assertNoDuplicates(resorted, fullCompare);
+            // This is the raw JS array iterator whose `.next()` method
+            // does not harden the IteratorResult, in violation of our
+            // conventions. Fixing this is expensive and I'm confident the
+            // unfrozen value does not escape this file, so I'm leaving this
+            // as is.
+            optInnerIterator = resorted[Symbol.iterator]();
+            return optInnerIterator.next();
+          } else {
+            return harden({ done: true, value: null });
+          }
+        },
+      }),
+  });
+};
 
 /**
+ * Returns an iterable whose iteration results are [key, xCount, yCount] tuples
+ * representing the next key in the local full order, as well as how many
+ * times it ocurred in the x input iterator and the y input interator.
+ *
+ * For sets, these counts are always 0 or 1, but this representation
+ * generalizes nicely for bags.
+ *
  * @template T
- * @typedef {T | Pumpkin} Opt
+ * @param {T[]} xelements
+ * @param {T[]} yelements
+ * @returns {Iterable<[T,bigint,bigint]>}
  */
+const merge = (xelements, yelements) => {
+  // This fullOrder contains history dependent state. It is specific
+  // to this one `merge` call and does not survive it.
+  const fullCompare = makeFullOrderComparatorKit().antiComparator;
 
-/**
- * @template T
- * @param {Iterable<T>} xs
- * @param {Iterable<T>} ys
- * @param {CompareRank} fullCompare
- * @returns {Iterable<[Opt<T>,Opt<T>]>}
- */
-const merge = (xs, ys, fullCompare) => {
+  const xs = windowResort(xelements, compareAntiRank, fullCompare);
+  const ys = windowResort(yelements, compareAntiRank, fullCompare);
   return harden({
     [Symbol.iterator]: () => {
+      // These four `let` variables are buffering one ahead from the underlying
+      // iterators. Each iteration reports one or the other or both, and
+      // then refills the buffers of those it advanced.
+      /** @type {T} */
+      let x;
+      let xDone;
+      /** @type {T} */
+      let y;
+      let yDone;
+
       const xi = xs[Symbol.iterator]();
-      /** @type {Opt<T>} */
-      let x; // PUMPKIN when done
       const nextX = () => {
-        assert(x !== PUMPKIN);
-        const { done, value } = xi.next();
-        x = done ? PUMPKIN : value;
+        assert(!xDone, X`Internal: nextX should not be called once done`);
+        ({ done: xDone, value: x } = xi.next());
       };
       nextX();
 
       const yi = ys[Symbol.iterator]();
-      /** @type {Opt<T>} */
-      let y; // PUMPKIN when done
       const nextY = () => {
-        assert(y !== PUMPKIN);
-        const { done, value } = yi.next();
-        y = done ? PUMPKIN : value;
+        assert(!yDone, X`Internal: nextY should not be called once done`);
+        ({ done: yDone, value: y } = yi.next());
       };
       nextY();
 
@@ -53,30 +127,35 @@ const merge = (xs, ys, fullCompare) => {
         next: () => {
           /** @type {boolean} */
           let done = false;
-          /** @type {[Opt<T>,Opt<T>]} */
-          let value = [x, y];
-          if (x === PUMPKIN && y === PUMPKIN) {
+          /** @type {[T,bigint,bigint]} */
+          let value;
+          if (xDone && yDone) {
             done = true;
-          } else if (x === PUMPKIN) {
+            // @ts-ignore Because the terminating value does not matter
+            value = [null, 0n, 0n];
+          } else if (xDone) {
             // only ys are left
+            value = [y, 0n, 1n];
             nextY();
-          } else if (y === PUMPKIN) {
+          } else if (yDone) {
             // only xs are left
+            value = [x, 1n, 0n];
             nextX();
           } else {
             const comp = fullCompare(x, y);
             if (comp === 0) {
               // x and y are equivalent, so report both
+              value = [x, 1n, 1n];
               nextX();
               nextY();
             } else if (comp < 0) {
               // x is earlier, so report it
-              value = [x, PUMPKIN];
+              value = [x, 1n, 0n];
               nextX();
             } else {
               // y is earlier, so report it
-              assert(comp > 0);
-              value = [PUMPKIN, y];
+              assert(comp > 0, X`Internal: Unexpected comp ${q(comp)}`);
+              value = [y, 0n, 1n];
               nextY();
             }
           }
@@ -88,9 +167,9 @@ const merge = (xs, ys, fullCompare) => {
 };
 harden(merge);
 
-const isSupersetOp = xyi => {
-  for (const [x, _yr] of xyi) {
-    if (x === PUMPKIN) {
+const iterIsSuperset = xyi => {
+  for (const [_m, xc, _yc] of xyi) {
+    if (xc === 0n) {
       // something in y is not in x, so x is not a superset of y
       return false;
     }
@@ -98,9 +177,9 @@ const isSupersetOp = xyi => {
   return true;
 };
 
-const isDisjointOp = xyi => {
-  for (const [x, y] of xyi) {
-    if (x !== PUMPKIN && y !== PUMPKIN) {
+const iterIsDisjoint = xyi => {
+  for (const [_m, xc, yc] of xyi) {
+    if (xc >= 1n && yc >= 1n) {
       // Something in both, so not disjoint
       return false;
     }
@@ -108,95 +187,108 @@ const isDisjointOp = xyi => {
   return true;
 };
 
-const unionOp = xyi => {
-  const result = [];
-  for (const [x, y] of xyi) {
-    if (x !== PUMPKIN) {
-      result.push(x);
-    } else {
-      assert(y !== PUMPKIN);
-      // if x and y were both ready, then they were equivalent and
-      // above clause already took care of it. Only push y
-      // if x was absent.
-      result.push(y);
+const iterCompare = xyi => {
+  let loneY = false;
+  let loneX = false;
+  for (const [_m, xc, yc] of xyi) {
+    if (xc === 0n) {
+      // something in y is not in x, so x is not a superset of y
+      loneY = true;
+    }
+    if (yc === 0n) {
+      // something in x is not in y, so y is not a superset of x
+      loneX = true;
+    }
+    if (loneX && loneY) {
+      return NaN;
     }
   }
-  return result;
-};
-
-const disjointUnionOp = xyi => {
-  const result = [];
-  for (const [x, y] of xyi) {
+  if (loneX) {
+    return 1;
+  } else if (loneY) {
+    return -1;
+  } else {
     assert(
-      x === PUMPKIN || y === PUMPKIN,
-      X`Sets must not have common elements: ${x}`,
+      !loneX && !loneY,
+      X`Internal: Unexpected lone pair ${q([loneX, loneY])}`,
     );
-    if (x !== PUMPKIN) {
-      result.push(x);
+    return 0;
+  }
+};
+
+const iterUnion = xyi => {
+  const result = [];
+  for (const [m, xc, yc] of xyi) {
+    if (xc >= 0n) {
+      result.push(m);
     } else {
-      assert(y !== PUMPKIN);
-      result.push(y);
+      assert(yc >= 0n, X`Internal: Unexpected count ${q(yc)}`);
+      // if x and y were both ready, then they were equivalent and
+      // above clause already took care of it. Otherwise push here.
+      result.push(m);
     }
   }
   return result;
 };
 
-const intersectionOp = xyi => {
+const iterDisjointUnion = xyi => {
   const result = [];
-  for (const [x, y] of xyi) {
-    if (x !== PUMPKIN && y !== PUMPKIN) {
+  for (const [m, xc, yc] of xyi) {
+    assert(xc === 0n || yc === 0n, X`Sets must not have common elements: ${m}`);
+    if (xc >= 1n) {
+      result.push(m);
+    } else {
+      assert(yc >= 1n, X`Internal: Unexpected count ${q(yc)}`);
+      result.push(m);
+    }
+  }
+  return result;
+};
+
+const iterIntersection = xyi => {
+  const result = [];
+  for (const [m, xc, yc] of xyi) {
+    if (xc >= 1n && yc >= 1n) {
       // If they are both present, then they were equivalent
-      result.push(x);
+      result.push(m);
     }
   }
   return result;
 };
 
-const disjointSubtractOp = xyi => {
+const iterDisjointSubtract = xyi => {
   const result = [];
-  for (const [x, y] of xyi) {
-    assert(x !== PUMPKIN, X`right element ${y} was not in left`);
-    if (y === PUMPKIN) {
+  for (const [m, xc, yc] of xyi) {
+    assert(xc >= 1n, X`right element ${m} was not in left`);
+    if (yc === 0n) {
       // the x was not in y
-      result.push(x);
+      result.push(m);
     }
   }
   return result;
 };
 
-/**
- * @template T
- * @typedef {Object} SetOps
- * @property {CompareRank} fullCompare
- * @property {(xlist: T[], ylist: T[]) => boolean} isSuperset
- * @property {(xlist: T[], ylist: T[]) => boolean} isDisjoint
- * @property {(xlist: T[], ylist: T[]) => T[]} union
- * @property {(xlist: T[], ylist: T[]) => T[]} disjointUnion
- * @property {(xlist: T[], ylist: T[]) => T[]} intersection
- * @property {(xlist: T[], ylist: T[]) => T[]} disjointSubtract
- */
+const mergeify = iterOp => (xelements, yelements) =>
+  iterOp(merge(xelements, yelements));
 
-/**
- * @template T
- * @param {boolean=} longLived
- * @returns {SetOps<T>}
- */
-export const makeSetOps = (longLived = false) => {
-  const { antiComparator: fullCompare } = makeFullOrderComparatorKit(longLived);
-  const composeOp = op => (xlist, ylist) => {
-    const xs = sortByRank(xlist, fullCompare);
-    const ys = sortByRank(ylist, fullCompare);
-    const xyi = merge(xs, ys, fullCompare);
-    return op(xyi);
-  };
-  return harden({
-    fullCompare,
-    isSuperset: composeOp(isSupersetOp),
-    isDisjoint: composeOp(isDisjointOp),
-    union: composeOp(unionOp),
-    disjointUnion: composeOp(disjointUnionOp),
-    intersection: composeOp(intersectionOp),
-    disjointSubtract: composeOp(disjointSubtractOp),
-  });
-};
-harden(makeSetOps);
+export const elementsIsSuperset = mergeify(iterIsSuperset);
+export const elementsIsDisjoint = mergeify(iterIsDisjoint);
+export const elementsCompare = mergeify(iterCompare);
+export const elementsUnion = mergeify(iterUnion);
+export const elementsDisjointUnion = mergeify(iterDisjointUnion);
+export const elementsIntersection = mergeify(iterIntersection);
+export const elementsDisjointSubtract = mergeify(iterDisjointSubtract);
+
+const rawSetify = elementsOp => (xset, yset) =>
+  elementsOp(xset.payload, yset.payload);
+
+const setify = elementsOp => (xset, yset) =>
+  makeSetOfElements(elementsOp(xset.payload, yset.payload));
+
+export const setIsSuperset = rawSetify(elementsIsSuperset);
+export const setIsDisjoint = rawSetify(elementsIsDisjoint);
+export const setCompare = rawSetify(elementsCompare);
+export const setUnion = setify(elementsUnion);
+export const setDisjointUnion = setify(elementsDisjointUnion);
+export const setIntersection = setify(elementsIntersection);
+export const setDisjointSubtract = setify(elementsDisjointSubtract);

@@ -7,7 +7,7 @@ import { hasExpired } from './expiringHelpers.js';
  * Look at the amounts liened and their expiration and unlien anything
  * that is expired.
  *
- * @param {Store<Address,Array<ExpiringAttElem>>} store
+ * @param {LegacyMap<Address,Array<ExpiringAttElem>>} store
  * @param {Amount} empty - an empty amount of the externalBrand
  * @param {Address} address
  * @param {Timestamp} currentTime

@@ -6,53 +6,53 @@ on:
   workflow_dispatch:
   # Otherwise, run on default branch.
   push:
-    branches: [ master ] # $default-branch
+    branches: [master] # $default-branch
 
 jobs:
   deployment-test:
     runs-on: ubuntu-18.04 # trusty
     steps:
-    - uses: actions/checkout@v2
-      with:
-        clean: 'false'
-    - uses: ./.github/actions/restore-golang
-      with:
-        go-version: 1.17
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: 14.x
-    - name: Build cosmic-swingset dependencies
-      run: |
-        # Some of our build relies on /usr/src/agoric-sdk
-        set -e
-        sudo mv "$GITHUB_WORKSPACE" /usr/src/agoric-sdk
-        ln -s /usr/src/agoric-sdk "$GITHUB_WORKSPACE"
-        cd /usr/src/agoric-sdk/packages/cosmic-swingset
-        make install
-      working-directory: /
-    - run: sudo ./packages/deployment/scripts/install-deps.sh
-      working-directory: /usr/src/agoric-sdk
-    - run: /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh
-      env:
-        NETWORK_NAME: chaintest
-    - name: capture results
-      if: failure()
-      run: |
-        NOW=$(date -u +%Y%m%dT%H%M%S)
-        echo "NOW=$NOW" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v2
+        with:
+          clean: 'false'
+      - uses: ./.github/actions/restore-golang
+        with:
+          go-version: 1.17
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 14.x
+      - name: Build cosmic-swingset dependencies
+        run: |
+          # Some of our build relies on /usr/src/agoric-sdk
+          set -e
+          sudo mv "$GITHUB_WORKSPACE" /usr/src/agoric-sdk
+          ln -s /usr/src/agoric-sdk "$GITHUB_WORKSPACE"
+          cd /usr/src/agoric-sdk/packages/cosmic-swingset
+          make install
+        working-directory: /
+      - run: sudo ./packages/deployment/scripts/install-deps.sh
+        working-directory: /usr/src/agoric-sdk
+      - run: /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh
+        env:
+          NETWORK_NAME: chaintest
+      - name: capture results
+        if: failure()
+        run: |
+          NOW=$(date -u +%Y%m%dT%H%M%S)
+          echo "NOW=$NOW" >> "$GITHUB_ENV"
 
-        # Stop the chain from running.
-        /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
+          # Stop the chain from running.
+          /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh play stop || true
 
-        # Get the results.
-        /usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh
+          # Get the results.
+          /usr/src/agoric-sdk/packages/deployment/scripts/capture-integration-results.sh
 
-        # Tear down the nodes.
-        echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy
-      env:
-        NETWORK_NAME: chaintest
-    - uses: actions/upload-artifact@v2
-      if: failure()
-      with:
-        name: deployment-test-results-${{ env.NOW }}
-        path: chaintest/results
+          # Tear down the nodes.
+          echo yes | /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh destroy
+        env:
+          NETWORK_NAME: chaintest
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: deployment-test-results-${{ env.NOW }}
+          path: chaintest/results

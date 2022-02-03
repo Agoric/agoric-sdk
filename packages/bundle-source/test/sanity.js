@@ -1,4 +1,4 @@
-import { lockdown } from '@agoric/lockdown';
+import { lockdown } from '@endo/lockdown';
 
 import { decodeBase64 } from '@endo/base64';
 import { parseArchive } from '@endo/compartment-mapper/import-archive.js';
@@ -17,7 +17,7 @@ export function makeSanityTests(stackFiltering) {
   const prefix = stackFiltering === 'concise' ? '' : '/bundled-source/.../';
 
   function stackContains(stack, filePattern) {
-    return stack.indexOf(`(${prefix}${filePattern}`) >= 0;
+    return stack.indexOf(`${prefix}${filePattern}`) >= 0;
   }
 
   test(`endoZipBase64`, async t => {

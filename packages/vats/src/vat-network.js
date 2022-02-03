@@ -1,5 +1,5 @@
 // @ts-check
-import { E } from '@agoric/far';
+import { E } from '@endo/far';
 import { makeRouterProtocol } from '@agoric/swingset-vat/src/vats/network/router.js';
 
 export function buildRootObject(_vatPowers) {

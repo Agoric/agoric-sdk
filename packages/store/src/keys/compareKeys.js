@@ -1,63 +1,17 @@
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
-import { passStyleOf, getTag } from '@agoric/marshal';
+import { passStyleOf, getTag } from '@endo/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertKey } from './checkKey.js';
+import { bagCompare } from './merge-bag-operators.js';
+import { setCompare } from './merge-set-operators.js';
 
 const { details: X, quote: q } = assert;
 const { ownKeys } = Reflect;
 
-/**
- * `compareKeys` implements a partial order over keys. As with the
- * rank ordering produced by `compareRank`, -1, 0, and 1 mean
- * "less than", "equivalent to", and "greater than" respectively.
- * NaN means "incomparable" --- the first key is not less, equivalent,
- * or greater than the second. For example, subsets over sets is
- * a partial order.
- *
- * By using NaN for "incomparable", the normal equivalence for using
- * the return value in a comparison is preserved.
- * `compareKeys(left, right) >= 0` iff `left` is greater than or
- * equivalent to `right` in the partial ordering.
- * `compareKeys` is currently not exported directly, so its
- * bizarre but convenient return type is not exposed.
- *
- * Key order (a partial order) and rank order (a full order) are
- * co-designed so that we store passables in rank order and index into them
- * with keys for key-based queries. To keep these distinct, when speaking
- * informally about rank, we talk about "earlier" and "later". When speaking
- * informally about keys, we talk about "smaller" and "bigger".
- *
- * In both orders, the return-0 case defines
- * an equivalence class, i.e., those that are tied for the same place in the
- * order. The global invariant that we need between the two orders is that the
- * key order equivalence class is always at least as precise as the
- * rank order equivalence class. IOW, if `compareKeys(X,Y) === 0` then
- * `compareRank(X,Y) === 0`. But not vice versa. For example, two different
- * remotables are the same rank but incommensurate as keys.
- *
- * A further invariant is if `compareKeys(X,Y) < 0` then
- * `compareRank(X,Y) <= 0`, i.e., if X is smaller than Y in key order, then X
- * must be at least as early as Y in rank order. But not vice versa.
- * X can be earlier than Y in rank order and still be incommensurate with Y in
- * key order. For example, the records `{b: 3, a: 5}` is earlier than but
- * incommensurate with the record `{b: 5, a: 3}`.
- *
- * This lets us translate a range search over the
- * partial key order into a range search over rank order followed by filtering
- * out those that don't match. To get this effect, we store the elements of
- * a set in an array sorted in reverse rank order, from later to earlier.
- * Combined with our lexicographic comparison of arrays, if set X is a subset
- * of set Y then the array representing set X will be an earlier rank that the
- * array representing set Y.
- *
- * @param {Key} left
- * @param {Key} right
- * @returns {-1 | 0 | 1 | NaN}
- */
+/** @type {KeyCompare} */
 export const compareKeys = (left, right) => {
   assertKey(left);
   assertKey(right);
@@ -128,7 +82,9 @@ export const compareKeys = (left, right) => {
         // to avoid more irrelevant ones.
         return NaN;
       }
-      let result = 0; // start with hypothesis they are keyEQ
+      // Presume that both copyRecords have the same key order
+      // until encountering a property disproving that hypothesis.
+      let result = 0;
       for (const name of leftNames) {
         const comp = compareKeys(left[name], right[name]);
         if (Number.isNaN(comp)) {
@@ -146,11 +102,12 @@ export const compareKeys = (left, right) => {
         }
       }
       // If copyRecord X is smaller than copyRecord Y, then they must have the
-      // same property names, and every value is X must be smaller or equal to
-      // every corresponding value in Y. The rank order of X and Y is based
-      // on lexicographic rank order of their values, as organized by the
-      // reverse order of their property names. Thus
-      // if compareKeys(X,Y) < 0 then compareRank(X,Y) <= 0.
+      // same property names and every value in X must be smaller or equal to
+      // the corresponding value in Y (with at least one value smaller).
+      // The rank order of X and Y is based on lexicographic rank order of
+      // their values, as organized by reverse lexicographic order of their
+      // property names.
+      // Thus if compareKeys(X,Y) < 0 then compareRank(X,Y) < 0.
       return result;
     }
     case 'tagged': {
@@ -163,71 +120,16 @@ export const compareKeys = (left, right) => {
       switch (leftTag) {
         case 'copySet': {
           // copySet X is smaller than copySet Y when every element of X
-          // is keyEQ to some element of Y.
-          // The following algorithm is good when there are few elements tied
-          // for the same rank. But it is O(N*M) in the size of these ties.
-          // Sets of remotables are a particularly bad case. For these, some
-          // kind of hash table (scalar set or map) should be used instead.
-
-          // TODO to get something working, I am currently implementing
-          // only the special case where there are no rank-order ties.
-
-          let result = 0; // start with the hypothesis they are keyEQ.
-          const xs = left.payload;
-          const ys = right.payload;
-          const xlen = xs.length;
-          const ylen = ys.length;
-          let xi = 0;
-          let yi = 0;
-          while (xi < xlen && yi < ylen) {
-            const x = xs[xi];
-            const y = ys[yi];
-            if (xi + 1 < xlen && compareRank(x, xs[xi + 1]) === 0) {
-              assert.fail(X`sets with rank ties not yet implemented: ${left}`);
-            }
-            if (yi + 1 < ylen && compareRank(y, ys[yi + 1]) === 0) {
-              assert.fail(X`sets with rank ties not yet implemented: ${right}`);
-            }
-            const comp = compareKeys(x, y);
-            if (Number.isNaN(comp)) {
-              // If they are incommensurate, then each element is not in the
-              // other set, so the sets are incommensurate.
-              return NaN;
-            } else if (comp === 0) {
-              //
-              xi += 1;
-              yi += 1;
-            } else {
-              if (result !== comp) {
-                if (result === 0) {
-                  result = comp;
-                } else {
-                  assert(
-                    (result === -1 && comp === 1) ||
-                      (result === 1 && comp === -1),
-                  );
-                  return NaN;
-                }
-              }
-              if (comp === 1) {
-                xi += 1;
-              } else {
-                assert(comp === -1);
-                yi += 1;
-              }
-            }
-          }
-          const comp = compareKeys(xlen, ylen);
-          if (comp === 0) {
-            return result;
-          } else if (result === 0 || result === comp) {
-            return comp;
-          } else {
-            assert(
-              (result === -1 && comp === 1) || (result === 1 && comp === -1),
-            );
-            return NaN;
-          }
+          // is keyEQ to some element of Y and some element of Y is
+          // not keyEQ to any element of X.
+          return setCompare(left, right);
+        }
+        case 'copyBag': {
+          // copyBag X is smaller than copyBag Y when every element of X
+          // occurs no more than the keyEQ element of Y, and some element
+          // of Y occurs more than some element of X, where being absent
+          // from X counts as occuring zero times.
+          return bagCompare(left, right);
         }
         case 'copyMap': {
           // Two copyMaps that have different keys (according to keyEQ) are

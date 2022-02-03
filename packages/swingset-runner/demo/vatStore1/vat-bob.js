@@ -1,9 +1,9 @@
-/* global makeKind */
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
+import { makeKind } from '@agoric/swingset-vat/src/storeModule.js';
 
 const p = console.log;
 
-function makeThingInstance(state) {
+function makeThingInnards(state) {
   return {
     init(label = 'thing', counter = 0) {
       p(`@@@ thing.initialize(${label}, ${counter})`);
@@ -37,7 +37,7 @@ function makeThingInstance(state) {
   };
 }
 
-const thingMaker = makeKind(makeThingInstance);
+const makeThing = makeKind(makeThingInnards);
 
 function makeZotInstance(state) {
   return {
@@ -67,7 +67,7 @@ function makeZotInstance(state) {
   };
 }
 
-const zotMaker = makeKind(makeZotInstance);
+const makeZot = makeKind(makeZotInstance);
 
 export function buildRootObject(_vatPowers) {
   let thing1;
@@ -89,15 +89,15 @@ export function buildRootObject(_vatPowers) {
           break;
         case 1:
           p('phase 1: object creations');
-          thing1 = thingMaker('thing-1');
-          thing2 = thingMaker('thing-2', 100);
-          thing3 = thingMaker('thing-3', 200);
-          thing4 = thingMaker('thing-4', 300);
+          thing1 = makeThing('thing-1');
+          thing2 = makeThing('thing-2', 100);
+          thing3 = makeThing('thing-3', 200);
+          thing4 = makeThing('thing-4', 300);
 
-          zot1 = zotMaker(23, 'Alice', 'is this on?');
-          zot2 = zotMaker(29, 'Bob', 'what are you saying?');
-          zot3 = zotMaker(47, 'Carol', 'as if...');
-          zot4 = zotMaker(66, 'Dave', 'you and what army?');
+          zot1 = makeZot(23, 'Alice', 'is this on?');
+          zot2 = makeZot(29, 'Bob', 'what are you saying?');
+          zot3 = makeZot(47, 'Carol', 'as if...');
+          zot4 = makeZot(66, 'Dave', 'you and what army?');
           break;
         case 2:
           p('phase 2: first batch-o-stuff');

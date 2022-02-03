@@ -1,10 +1,15 @@
 // @ts-check
 
 import { observeNotifier } from '@agoric/notifier';
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 
-// wrapper to take the vaultFactory or AMM's creatorFacet, and make a function that
-// will request an invitation and return a promise for a payment.
+/**
+ * wrapper to take the vaultFactory or AMM's creatorFacet, and make a function that
+ * will request an invitation and return a promise for a payment.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {{ makeCollectFeesInvitation: () => Promise<Invitation> }} creatorFacet
+ */
 export function makeFeeCollector(zoe, creatorFacet) {
   /** @type {FeeCollector} */
   return Far('collectFees', {

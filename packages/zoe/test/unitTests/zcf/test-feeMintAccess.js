@@ -8,7 +8,7 @@ import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';

@@ -1,12 +1,14 @@
+// @ts-check
+
 // this file is loaded at the start of a new subprocess
-import '@agoric/install-ses';
+import '@endo/init';
 
 import anylogger from 'anylogger';
 import fs from 'fs';
 
 import { assert, details as X } from '@agoric/assert';
-import { importBundle } from '@agoric/import-bundle';
-import { makeMarshal } from '@agoric/marshal';
+import { importBundle } from '@endo/import-bundle';
+import { makeMarshal } from '@endo/marshal';
 import engineGC from '../../engine-gc.js';
 import { WeakRef, FinalizationRegistry } from '../../weakref.js';
 import { makeGcAndFinalize } from '../../gc-and-finalize.js';
@@ -81,6 +83,7 @@ fromParent.on('data', ([type, ...margs]) => {
       sendUplink(['syscall', vatSyscallObject]);
     }
     // this 'syscall' throws or returns data
+    // @ts-expect-error the syscaller can return void when the second argument is false
     const syscall = makeSupervisorSyscall(syscallToManager, false);
     const vatID = 'demo-vatID';
     const vatPowers = {
@@ -95,6 +98,27 @@ fromParent.on('data', ([type, ...margs]) => {
       gcAndFinalize: makeGcAndFinalize(engineGC),
       meterControl: makeDummyMeterControl(),
     });
+
+    const makeLogMaker = tag => {
+      const logger = anylogger(tag);
+      const makeLog = level => {
+        const log = logger[level];
+        assert.typeof(log, 'function', X`logger[${level}] must be a function`);
+        return (...args) => {
+          // We have to dynamically wrap the consensus mode so that it can change
+          // during the lifetime of the supervisor (which when snapshotting, is
+          // restored to its current heap across restarts, not actually stopping
+          // until the vat is terminated).
+          if (consensusMode) {
+            return;
+          }
+
+          log(...args);
+        };
+      };
+      return makeLog;
+    };
+
     const ls = makeLiveSlots(
       syscall,
       vatID,
@@ -104,17 +128,13 @@ fromParent.on('data', ([type, ...margs]) => {
       enableDisavow,
       enableVatstore,
       gcTools,
+      makeVatConsole(makeLogMaker(`SwingSet:ls:${vatID}`)),
     );
 
     // Enable or disable the console accordingly.
     const endowments = {
       ...ls.vatGlobals,
-      console: makeVatConsole(
-        anylogger(`SwingSet:vat:${vatID}`),
-        (logger, args) => {
-          consensusMode || logger(...args);
-        },
-      ),
+      console: makeVatConsole(makeLogMaker(`SwingSet:vat:${vatID}`)),
       assert,
     };
 
@@ -125,7 +145,7 @@ fromParent.on('data', ([type, ...margs]) => {
         workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
         sendUplink(['gotBundle']);
         ls.setBuildRootObject(vatNS.buildRootObject);
-        dispatch = makeSupervisorDispatch(ls.dispatch, waitUntilQuiescent);
+        dispatch = makeSupervisorDispatch(ls.dispatch);
         workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
         sendUplink(['dispatchReady']);
       },

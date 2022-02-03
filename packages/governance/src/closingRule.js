@@ -5,7 +5,7 @@
 // reached.
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 /** @type {CloseVoting} */
 export const scheduleClose = (closingRule, closeVoting) => {

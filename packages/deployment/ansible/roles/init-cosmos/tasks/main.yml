@@ -1,42 +1,42 @@
-- name: "Check for {{ service }} private key"
+- name: 'Check for {{ service }} private key'
   stat:
-    path: "/home/{{ service }}/.{{ service }}/config/priv_validator_key.json"
+    path: '/home/{{ service }}/.{{ service }}/config/priv_validator_key.json'
   register: valkey
 
-- name: "Reset {{ service }}"
+- name: 'Reset {{ service }}'
   become: yes
-  become_user: "{{ service }}"
-  shell: "{{ service }} unsafe-reset-all"
+  become_user: '{{ service }}'
+  shell: '{{ service }} unsafe-reset-all'
   when:
     - valkey.stat.exists
 
-- name: "Remove gentxs (they are signed incorrectly)"
+- name: 'Remove gentxs (they are signed incorrectly)'
   file:
-    path: "/home/{{ service }}/.{{ service }}/config/gentx"
+    path: '/home/{{ service }}/.{{ service }}/config/gentx'
     state: absent
 
-- name: "Remove genesis.json (needs to be regenerated)"
+- name: 'Remove genesis.json (needs to be regenerated)'
   file:
-    path: "/home/{{ service }}/.{{ service }}/config/genesis.json"
+    path: '/home/{{ service }}/.{{ service }}/config/genesis.json'
     state: absent
 
-- name: "Check that app.toml is up-to-date"
+- name: 'Check that app.toml is up-to-date'
   lineinfile:
-    dest: "/home/{{ service }}/.{{ service }}/config/app.toml"
-    line: "[grpc]"
+    dest: '/home/{{ service }}/.{{ service }}/config/app.toml'
+    line: '[grpc]'
     state: present
     create: yes
   check_mode: yes
   register: app_toml
 
-- name: "Remove outdated app.toml"
+- name: 'Remove outdated app.toml'
   file:
-    path: "/home/{{ service }}/.{{ service }}/config/app.toml"
+    path: '/home/{{ service }}/.{{ service }}/config/app.toml'
     state: absent
   when: app_toml.changed
 
-- name: "Initialize {{ service }}"
+- name: 'Initialize {{ service }}'
   become: yes
-  become_user: "{{ service }}"
+  become_user: '{{ service }}'
   shell: "{{ service }} init {{ moniker | default(inventory_hostname) }} \
     --overwrite --chain-id={{ CHAIN_NAME }}"

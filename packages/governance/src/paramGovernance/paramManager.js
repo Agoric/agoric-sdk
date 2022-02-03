@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far, mapIterable } from '@endo/marshal';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
@@ -254,9 +254,8 @@ const makeParamManagerBuilder = zoe => {
     return param.getVisibleValue(proposed);
   };
 
-  const getParamList = () => {
-    return harden(namesToParams.keys().map(k => getParam(k)));
-  };
+  const getParamList = () =>
+    harden(mapIterable(namesToParams.keys(), k => getParam(k)));
 
   // should be exposed within contracts, and not externally, for invitations
   const getInternalParamValue = name => {
@@ -266,12 +265,14 @@ const makeParamManagerBuilder = zoe => {
   const getParams = () => {
     /** @type {Record<Keyword,ParamDescription>} */
     const descriptions = {};
-    namesToParams.entries().forEach(([name, param]) => {
+    for (const [name, param] of namesToParams.entries()) {
       descriptions[name] = param.makeShortDescription();
-    });
+    }
     return harden(descriptions);
   };
 
+  // XXX some type safety but you don't know what keys are valid
+  // TODO replace with explicit keys that map to value types
   const makeParamManager = updateFunctions => {
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by

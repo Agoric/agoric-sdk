@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E as defaultE } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';

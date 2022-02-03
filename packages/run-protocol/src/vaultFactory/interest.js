@@ -20,7 +20,13 @@ const BASIS_POINTS = 10000;
 // single digit APR is less than a basis point per day.
 const LARGE_DENOMINATOR = BASIS_POINTS * BASIS_POINTS;
 
-/** @type {MakeInterestCalculator} */
+/**
+ * @param {Brand} brand
+ * @param {Ratio} annualRate
+ * @param {RelativeTime} chargingPeriod
+ * @param {RelativeTime} recordingPeriod
+ * @returns {CalculatorKit}
+ */
 export const makeInterestCalculator = (
   brand,
   annualRate,

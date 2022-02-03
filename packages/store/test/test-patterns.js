@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeCopySet } from '../src/keys/copySet.js';
+import { makeCopySet } from '../src/keys/checkKey.js';
 import { fit, matches, M } from '../src/patterns/patternMatchers.js';
 import '../src/types.js';
 
@@ -87,7 +87,7 @@ const matchTests = harden([
       [M.split([3, 4, 5, 6]), /\[3,4\] - Must be equivalent to: \[3,4,5,6\]/],
       [M.split([5]), /\[3\] - Must be equivalent to: \[5\]/],
       [M.split({}), /\[3,4\] - Must have shape of base: "copyRecord"/],
-      [M.split([3], 'x'), /\[4\] - Must be equivalent to: "x"/],
+      [M.split([3], 'x'), /Remainder \[4\] - Must match "x"/],
 
       [M.partial([5]), /\[3\] - Must be equivalent to: \[5\]/],
 
@@ -158,7 +158,7 @@ const matchTests = harden([
       ],
       [
         M.split({ foo: 3 }, { foo: 3, bar: 4 }),
-        /{"bar":4} - Must be equivalent to: {"foo":3,"bar":4}/,
+        /Remainder {"bar":4} - Must match {"foo":3,"bar":4}/,
       ],
       [
         M.partial({ foo: 7, zip: 5 }, { bar: 4 }),

@@ -70,7 +70,7 @@ test('lets you remove a dapp', async () => {
   await act(async () =>
     firstDappSettingsButton
       .props()
-      .onClick({ currentTarget: firstDappPopover }),
+      .onClick({ currentTarget: firstDappPopover.getDOMNode() }),
   );
   component.update();
 

@@ -47,13 +47,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### ⚠ BREAKING CHANGES
 
-* **repl:** add `@agoric/far` exports to REPL, remove `ui-agent`
+* **repl:** add `@endo/far` exports to REPL, remove `ui-agent`
 
 ### Features
 
 * **far:** export `ERef<T>` ([180149e](https://github.com/Agoric/agoric-sdk/commit/180149ea1406e0c548fa4e2aeddabe5f16f6089b))
-* **far:** new package `@agoric/far` ([8be558c](https://github.com/Agoric/agoric-sdk/commit/8be558c5dc9a4acef43d0f28d5e207cbbd11a019))
-* **repl:** add `@agoric/far` exports to REPL, remove `ui-agent` ([3f41296](https://github.com/Agoric/agoric-sdk/commit/3f41296865dadbf7d7fe50291b86d972bc3caabd))
+* **far:** new package `@endo/far` ([8be558c](https://github.com/Agoric/agoric-sdk/commit/8be558c5dc9a4acef43d0f28d5e207cbbd11a019))
+* **repl:** add `@endo/far` exports to REPL, remove `ui-agent` ([3f41296](https://github.com/Agoric/agoric-sdk/commit/3f41296865dadbf7d7fe50291b86d972bc3caabd))
 * tweak fictional BLD price to suggest early phase ([472912e](https://github.com/Agoric/agoric-sdk/commit/472912e507a4d83b41734b9110e3127b1bd40755))
 
 
@@ -192,7 +192,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **chain-config:** increase timeouts to prevent RPC EOF errors ([d731195](https://github.com/Agoric/agoric-sdk/commit/d731195b5768017d9c5d158fd9f13da731af3544))
 * **cosmos:** ensure simulated transactions can't trigger SwingSet ([997329a](https://github.com/Agoric/agoric-sdk/commit/997329a92f5380edab586f4186a2092ce361dcde))
 * **cosmos:** the bootstrap block is not a simulation, either ([f906a54](https://github.com/Agoric/agoric-sdk/commit/f906a54a9a3cdb2342c8b274a7132fb6aa9e9fcc))
-* **deploy:** use `@agoric/captp` epochs to mitigate crosstalk ([f2b5ba4](https://github.com/Agoric/agoric-sdk/commit/f2b5ba4bc29ca48e00f32982c713de3ec972e879))
+* **deploy:** use `@endo/captp` epochs to mitigate crosstalk ([f2b5ba4](https://github.com/Agoric/agoric-sdk/commit/f2b5ba4bc29ca48e00f32982c713de3ec972e879))
 * **deployment:** properly handle the `file:` URL protocol ([e852b2d](https://github.com/Agoric/agoric-sdk/commit/e852b2d906b27e9170c9a44e9e5589803af39207))
 * **solo:** make solo-to-chain more robust ([b266666](https://github.com/Agoric/agoric-sdk/commit/b2666665b1881d5f98fa853ba05627d945783c7c))
 * **solo:** only subscribe to one copy of mailbox events ([9d58314](https://github.com/Agoric/agoric-sdk/commit/9d583148727ed90e9ac555fef75fef40ad90a0cf))

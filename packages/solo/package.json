@@ -13,12 +13,9 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "pretty-fix": "prettier --write '**/*.js'",
-    "pretty-check": "prettier --check '**/*.js'",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
   "keywords": [],
@@ -27,12 +24,12 @@
   "dependencies": {
     "@agoric/access-token": "^0.4.16",
     "@agoric/assert": "^0.3.15",
-    "@agoric/captp": "^1.10.8",
+    "@endo/captp": "^1.10.12",
     "@agoric/cosmic-swingset": "^0.34.4",
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/import-bundle": "^0.2.33",
-    "@agoric/install-ses": "^0.5.29",
-    "@agoric/marshal": "^0.5.0",
+    "@endo/import-bundle": "^0.2.37",
+    "@endo/init": "^0.5.33",
+    "@endo/marshal": "^0.5.4",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
     "@agoric/spawner": "^0.4.33",
@@ -42,6 +39,7 @@
     "@agoric/vats": "^0.5.1",
     "@agoric/wallet": "^0.11.7",
     "@agoric/xsnap": "^0.11.0",
+    "agoric": "^0.13.21",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
@@ -56,7 +54,7 @@
     "ws": "^7.2.0"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.1",
+    "@endo/bundle-source": "^2.0.5",
     "@agoric/ertp": "^0.13.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
@@ -65,10 +63,6 @@
     "extends": [
       "@agoric"
     ]
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   },
   "publishConfig": {
     "access": "public"

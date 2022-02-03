@@ -2,18 +2,33 @@
 /**
  * Prepare Agoric SwingSet vat global environment for testing.
  *
- * installs SES (and does lockdown), plus adds mocks
- * for virtual objects: makeKind, makeVirtualScalarWeakMap
+ * Installs Hardened JS (and does lockdown), plus adds mocks for virtual objects
+ * and stores.
  */
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 
 import './install-ses-debug.js';
-import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
+import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
-const { makeKind, makeVirtualScalarWeakMap } = makeFakeVirtualObjectManager({
-  cacheSize: 3,
+const { vom, cm } = makeFakeVirtualStuff({ cacheSize: 3 });
+
+const { makeKind, makeDurableKind } = vom;
+
+const {
+  makeScalarBigMapStore,
+  makeScalarBigWeakMapStore,
+  makeScalarBigSetStore,
+  makeScalarBigWeakSetStore,
+} = cm;
+
+const VatData = harden({
+  makeKind,
+  makeDurableKind,
+  makeScalarBigMapStore,
+  makeScalarBigWeakMapStore,
+  makeScalarBigSetStore,
+  makeScalarBigWeakSetStore,
 });
 
-globalThis.makeKind = makeKind;
-globalThis.makeVirtualScalarWeakMap = makeVirtualScalarWeakMap;
+globalThis.VatData = VatData;

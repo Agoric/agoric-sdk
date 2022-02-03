@@ -1,11 +1,11 @@
 // @ts-check
-import { allComparable } from '@agoric/same-structure';
+import { deeplyFulfilled } from '@endo/marshal';
 import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeStore } from '@agoric/store';
 import { installOnChain as installVaultFactoryOnChain } from '@agoric/run-protocol/bundles/install-on-chain.js';
 import { installOnChain as installPegasusOnChain } from '@agoric/pegasus/bundles/install-on-chain.js';
@@ -16,7 +16,7 @@ import {
   makeRatio,
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { AmountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeBridgeManager } from './bridge.js';
 import { makeNameHubKit } from './nameHub.js';
@@ -26,6 +26,7 @@ import {
   fromCosmosIssuerEntries,
   BLD_ISSUER_ENTRY,
 } from './issuers';
+import { feeIssuerConfig } from './core/utils.js';
 
 const { multiply, floorDivide } = natSafeMath;
 
@@ -78,11 +79,6 @@ export function buildRootObject(vatPowers, vatParameters) {
 
     const chainTimerServiceP = E(vats.timer).createTimerService(timerDevice);
 
-    const feeIssuerConfig = {
-      name: CENTRAL_ISSUER_NAME,
-      assetKind: AssetKind.NAT,
-      displayInfo: { decimalPlaces: 6, assetKind: AssetKind.NAT },
-    };
     // Create singleton instances.
     const [
       bankManager,
@@ -959,7 +955,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       },
     });
 
-    return allComparable(
+    return deeplyFulfilled(
       harden({
         ...(plugin ? { plugin } : {}),
         scratch,

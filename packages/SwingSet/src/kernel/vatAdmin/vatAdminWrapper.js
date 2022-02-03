@@ -7,7 +7,7 @@
  */
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 
 function producePRR() {

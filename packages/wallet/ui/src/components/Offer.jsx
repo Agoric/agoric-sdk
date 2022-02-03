@@ -20,6 +20,7 @@ const statusText = {
   complete: 'Accepted',
   pending: 'Pending',
   proposed: 'Proposed',
+  cancel: 'Cancelled',
 };
 
 const statusColors = {
@@ -29,6 +30,7 @@ const statusColors = {
   pending: 'warning',
   proposed: 'default',
   complete: 'success',
+  cancel: 'default',
 };
 
 const cmp = (a, b) => {
@@ -53,7 +55,6 @@ const OfferWithoutContext = ({
   declinedOffers,
   setDeclinedOffers,
   setClosedOffers,
-  walletBridge,
 }) => {
   const {
     instancePetname,
@@ -62,7 +63,6 @@ const OfferWithoutContext = ({
     proposalForDisplay: { give = {}, want = {} } = {},
     invitationDetails: { fee, feePursePetname, expiry } = {},
     id,
-    offerId,
   } = offer;
   let status = offer.status || 'proposed';
 
@@ -71,7 +71,7 @@ const OfferWithoutContext = ({
     setPendingOffers({ offerId: id, isPending: true });
   }
 
-  // Eagerly show pending and declined offers states.
+  // Eagerly show pending and declined offers' states.
   if (status === 'proposed' && pendingOffers.has(id)) {
     status = 'pending';
   }
@@ -81,16 +81,16 @@ const OfferWithoutContext = ({
 
   const approve = () => {
     setPendingOffers({ offerId: id, isPending: true });
-    E(walletBridge).acceptOffer(offerId);
+    E(offer.actions).accept();
   };
 
   const decline = () => {
     setDeclinedOffers({ offerId: id, isDeclined: true });
-    E(walletBridge).declineOffer(offerId);
+    E(offer.actions).decline();
   };
 
   const exit = () => {
-    E(walletBridge).cancelOffer(offerId);
+    E(offer.actions).cancel();
   };
 
   const close = () => {
@@ -194,17 +194,16 @@ const OfferWithoutContext = ({
     </div>
   );
 
+  const isOfferCompleted = [
+    'accept',
+    'decline',
+    'complete',
+    'rejected',
+    'cancel',
+  ].includes(status);
+
   return (
-    <Request
-      header="Offer"
-      completed={
-        status === 'accept' ||
-        status === 'decline' ||
-        status === 'complete' ||
-        status === 'rejected'
-      }
-      close={close}
-    >
+    <Request header="Offer" completed={isOfferCompleted} close={close}>
       <Chip
         variant="outlined"
         color={statusColors[status]}
@@ -240,5 +239,4 @@ export default withApplicationContext(OfferWithoutContext, context => ({
   declinedOffers: context.declinedOffers,
   setDeclinedOffers: context.setDeclinedOffers,
   setClosedOffers: context.setClosedOffers,
-  walletBridge: context.walletBridge,
 }));

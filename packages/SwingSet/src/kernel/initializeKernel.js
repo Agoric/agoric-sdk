@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 
-import { makeMarshal, Far } from '@agoric/marshal';
+import { makeMarshal, Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { createSHA256 } from '../hasher.js';
 import { assertKnownOptions } from '../assertOptions.js';

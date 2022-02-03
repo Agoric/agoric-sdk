@@ -1,19 +1,21 @@
 // @ts-check
 
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 /**
  * @typedef {Passable} Key
  * Keys are pass-by-copy structures (CopyArray, CopyRecord,
- * CopySet, CopyMap) that end in either passable primitive data or
+ * CopySet, CopyBag, CopyMap) that end in either passable primitive data or
  * Remotables (Far objects or their remote presences.) Keys are so named
  * because they can be used as keys in MapStores and CopyMaps, as well as
- * the elements of CopySets.
+ * the elements of CopySets and CopyBags.
  *
  * Keys cannot contain promises or errors, as these do not have a useful
  * distributed equality semantics. Keys also cannot contain any CopyTagged
- * except for those recognized as CopySets and CopyMaps.
+ * except for those recognized as CopySets, CopyBags, and CopyMaps.
+ *
+ * Be aware that we may recognize more CopyTaggeds over time, including
+ * CopyTaggeds recognized as keys.
  *
  * Distributed equality is location independent.
  * The same two keys, passed to another location, will be equal there iff
@@ -23,7 +25,7 @@
 /**
  * @typedef {Passable} Pattern
  * Patterns are pass-by-copy structures (CopyArray, CopyRecord,
- * CopySet, CopyMap) that end in either Keys or Matchers. Each pattern
+ * CopySet, CopyBag, CopyMap) that end in either Keys or Matchers. Each pattern
  * acts as a declarative passable predicate over passables, where each passable
  * either passes a given pattern, or does not. Every key is also a pattern.
  * Used as a pattern, a key matches only "itself", i.e., keys that are equal
@@ -33,7 +35,10 @@
  * not have a useful distributed equality or matching semantics. Likewise,
  * no pattern can distinguish among promises, or distinguish among errors.
  * Patterns also cannot contain any CopyTaggeds except for those recognized as
- * CopySets, CopyMaps, or Matchers.
+ * CopySets, CopyBags, CopyMaps, or Matchers.
+ *
+ * Be aware that we may recognize more CopyTaggeds over time, including
+ * CopyTaggeds recognized as patterns.
  *
  * Whether a passable matches a given pattern is location independent.
  * For a passable and a pattern, both passed to another location, the passable
@@ -47,7 +52,7 @@
  * category of Amounts. And "AmountPatternShape" represents the
  * category of patterns over Amounts.
  *
- * * I say "indended" above because Patterns, in order to be declarative
+ * * I say "intended" above because Patterns, in order to be declarative
  * and passable, cannot have the generality of predicates written in a
  * Turing-universal programming language. Rather, to represent the category of
  * things intended to be a Foo, a FooShape should reliably
@@ -63,6 +68,11 @@
 /**
  * @template K
  * @typedef {CopyTagged} CopySet
+ */
+
+/**
+ * @template K
+ * @typedef {CopyTagged} CopyBag
  */
 
 /**
@@ -85,15 +95,25 @@
  * case we internally may use a JavaScript `WeakMap`. Otherwise we internally
  * may use a JavaScript `Map`.
  * Defaults to true, so please mark short lived stores explicitly.
- * @property {Pattern=} schema The store will reject
- * the insertion of any content that does not match the schema pattern.
- * For a SetStore, this is a key pattern.
- * For a MapStore, this is an entry pattern,
- * i.e., a pattern over `[key,value]` pairs.
- * Defaults to `M.any()`.
+ * @property {boolean=} durable  The contents of this store survive termination
+ *   of its containing process, allowing for restart or upgrade but at the cost
+ *   of forbidding storage of references to ephemeral data.  Defaults to false.
+ * @property {Pattern=} keySchema
+ * @property {Pattern=} valueSchema
  */
 
-/** @typedef {"forward" | "reverse"} Direction */
+/**
+ * Most store methods are in one of three categories
+ *   * lookup methods (`has`,`get`)
+ *   * update methods (`add`,`init`,`set`,`delete`,`addAll`)
+ *   * query methods (`snapshot`,`keys`,`values`,`entries`,`getSize`)
+ *   * query-update methods (`clear`)
+ *
+ * WeakStores have the lookup and update methods but not the query
+ * or query-update methods.
+ * Non-weak Stores are like their corresponding WeakStore, but with the
+ * additional query and query-update methods.
+ */
 
 /**
  * @template K
@@ -108,6 +128,7 @@
  * allows primitives and remotables.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
+ * @property {(keys: Iterable<K>) => void} addAll
  */
 
 /**
@@ -123,12 +144,11 @@
  * allows primitives and remotables.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
- * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(keyPattern?: Pattern) => CopySet<K>} snapshot
- * @property {(copySet: CopySet<K>) => void} addAll
- * @property {(keyPattern?: Pattern,
- *             direction?: Direction
- * ) => Iterable<K>} cursor
+ * @property {(keys: Iterable<K>) => void} addAll
+ * @property {(keyPatt?: Pattern) => Iterable<K>} keys
+ * @property {(keyPatt?: Pattern) => CopySet<K>} snapshot
+ * @property {(keyPatt?: Pattern) => number} getSize
+ * @property {(keyPatt?: Pattern) => void} clear
  */
 
 /**
@@ -147,6 +167,7 @@
  * Set the key. Throws if not found.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
+ * @property {(entries: Iterable<[K,V]>) => void} addAll
  */
 
 /**
@@ -165,14 +186,16 @@
  * Set the key. Throws if not found.
  * @property {(key: K) => void} delete
  * Remove the key. Throws if not found.
- * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(valuePattern?: Pattern) => V[]} values
- * @property {(entryPattern?: Pattern) => [K,V][]} entries
- * @property {(entryPattern?: Pattern) => CopyMap<K,V>} snapshot
- * @property {(copyMap: CopyMap<K,V>) => void} addAll
- * @property {(entryPattern?: Pattern,
- *             direction?: Direction
- * ) => Iterable<[K,V]>} cursor
+ * @property {(entries: Iterable<[K,V]>) => void} addAll
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<K>} keys
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<V>} values
+ * @property {(
+ *   keyPatt?: Pattern,
+ *   valuePatt?: Pattern
+ * ) => Iterable<[K,V]>} entries
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => CopyMap<K,V>} snapshot
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => number} getSize
+ * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => void} clear
  */
 
 // ///////////////////////// Deprecated Legacy /////////////////////////////////
@@ -185,24 +208,8 @@
 
 /**
  * @template K,V
- * @typedef {Object} Store
+ * @typedef {MapStore<K,V>} Store
  * Deprecated type name `Store`. Use `MapStore` instead.
- * @property {(key: K) => boolean} has
- * Check if a key exists. The key can be any JavaScript value, though the
- * answer will always be false for keys that cannot be found in this map
- * @property {(key: K) => V} get
- * Return a value for the key. Throws if not found.
- * @property {(key: K, value: V) => void} init
- * Initialize the key only if it doesn't already exist.
- * The key must be one allowed by this store. For example a scalar store only
- * allows primitives and remotables.
- * @property {(key: K, value: V) => void} set
- * Set the key. Throws if not found.
- * @property {(key: K) => void} delete
- * Remove the key. Throws if not found.
- * @property {(keyPattern?: Pattern) => K[]} keys
- * @property {(valuePattern?: Pattern) => V[]} values
- * @property {(entryPattern?: Pattern) => [K,V][]} entries
  */
 
 /**
@@ -224,26 +231,48 @@
 
 /**
  * @template K,V
- * @callback MakeLegacyWeakMap
- * @param {string} [keyName='key'] - the column name for the key
- * @returns {LegacyWeakMap}
+ * @typedef {Object} LegacyMap
+ * LegacyWeakMap is deprecated. Use WeakMapStore instead.
+ * @property {(key: K) => boolean} has
+ * Check if a key exists
+ * @property {(key: K) => V} get
+ * Return a value for the key. Throws if not found.
+ * @property {(key: K, value: V) => void} init
+ * Initialize the key only if it
+ * doesn't already exist
+ * @property {(key: K, value: V) => void} set
+ * Set the key. Throws if not found.
+ * @property {(key: K) => void} delete
+ * Remove the key. Throws if not found.
+ * @property {() => Iterable<K>} keys
+ * @property {() => Iterable<V>} values
+ * @property {() => Iterable<[K,V]>} entries
+ * @property {() => number} getSize
+ * @property {() => void} clear
  */
 
 // /////////////////////////////////////////////////////////////////////////////
 
 /**
- * @callback CompareRank
+ * @typedef {-1 | 0 | 1} RankComparison
+ * The result of a `RankCompare` function that defines a rank-order, i.e.,
+ * a total preorder in which different elements are always comparable but
+ * can be tied for the same rank. See `RankCompare`.
+ */
+
+/**
+ * @callback RankCompare
  * Returns `-1`, `0`, or `1` depending on whether the rank of `left`
  * is before, tied-with, or after the rank of `right`.
  *
  * This comparison function is valid as argument to
- * `Array.prototype.sort`. This is often described as a "total order"
- * but, depending on your definitions, this is technically incorrect
- * because it may return `0` to indicate that two distinguishable elements,
- * like `-0` and `0`, are tied, i.e., are in the same equivalence class
- * as far as this ordering is concerned. If each such equivalence class is
+ * `Array.prototype.sort`. This is sometimes described as a "total order"
+ * but, depending on your definitions, this is technically incorrect because
+ * it may return `0` to indicate that two distinguishable elements such as
+ * `-0` and `0` are tied (i.e., are in the same equivalence class
+ * for the purposes of this ordering). If each such equivalence class is
  * a *rank* and ranks are disjoint, then this "rank order" is a
- * total order among these ranks. In mathematics this goes by several
+ * true total order over these ranks. In mathematics this goes by several
  * other names such as "total preorder".
  *
  * This function establishes a total rank order over all passables.
@@ -252,21 +281,99 @@
  * used directly as a comparison with useful semantics. However, it must be
  * closely enough related to such comparisons to aid in implementing
  * lookups based on those comparisons. For example, in order to get a total
- * order among ranks, we put `NaN` after all other JavaScript "number" values.
- * But otherwise, we order JavaScript numbers by magnitude,
- * with `-0` tied with `0`. A semantically useful ordering of JavaScript number
- * values, i.e., IEEE floating point values, would compare magnitudes, and
- * so agree with the rank ordering everywhere except `NaN`. An array sorted by
- * rank would enable range queries by magnitude.
+ * order among ranks, we put `NaN` after all other JavaScript "number" values
+ * (i.e., IEEE 754 floating-point values). But otherwise, we rank JavaScript
+ * numbers by signed magnitude, with `0` and `-0` tied. A semantically useful
+ * ordering would also compare magnitudes, and so agree with the rank ordering
+ * of all values other than `NaN`. An array sorted by rank would enable range
+ * queries by magnitude.
  * @param {Passable} left
  * @param {Passable} right
- * @returns {-1 | 0 | 1}
+ * @returns {RankComparison}
  */
 
 /**
- * @typedef {Object} ComparatorKit
- * @property {CompareRank} comparator
- * @property {CompareRank} antiComparator
+ * @typedef {RankCompare} FullCompare
+ * A `FullCompare` function satisfies all the invariants stated below for
+ * `RankCompare`'s relation with KeyCompare.
+ * In addition, its equality is as precise as the `KeyCompare`
+ * comparison defined below, in that, for all Keys `x` and `y`,
+ * `FullCompare(x, y) === 0` iff `KeyCompare(x, y) === 0`.
+ *
+ * For non-keys a `FullCompare` should be exactly as imprecise as
+ * `RankCompare`. For example, both will treat all errors as in the same
+ * equivalence class. Both will treat all promises as in the same
+ * equivalence class. Both will order taggeds the same way, which is admittedly
+ * weird, as some taggeds will be considered keys and other taggeds will be
+ * considered non-keys.
+ */
+
+/**
+ * @typedef {Object} RankComparatorKit
+ * @property {RankCompare} comparator
+ * @property {RankCompare} antiComparator
+ */
+
+/**
+ * @typedef {Object} FullComparatorKit
+ * @property {FullCompare} comparator
+ * @property {FullCompare} antiComparator
+ */
+
+/**
+ * @typedef {-1 | 0 | 1 | NaN} KeyComparison
+ * The result of a `KeyCompare` function that defines a meaningful
+ * and meaningfully precise partial order of `Key` values. See `KeyCompare`.
+ */
+
+/**
+ * @callback KeyCompare
+ * `compareKeys` implements a partial order over keys. As with the
+ * rank ordering produced by `compareRank`, -1, 0, and 1 mean
+ * "less than", "equivalent to", and "greater than" respectively.
+ * NaN means "incomparable" --- the first key is not less, equivalent,
+ * or greater than the second. For example, subsets over sets is
+ * a partial order.
+ *
+ * By using NaN for "incomparable", the normal equivalence for using
+ * the return value in a comparison is preserved.
+ * `compareKeys(left, right) >= 0` iff `left` is greater than or
+ * equivalent to `right` in the partial ordering.
+ *
+ * Key order (a partial order) and rank order (a total preorder) are
+ * co-designed so that we store passables in rank order and index into them
+ * with keys for key-based queries. To keep these distinct, when speaking
+ * informally about rank, we talk about "earlier" and "later". When speaking
+ * informally about keys, we talk about "smaller" and "bigger".
+ *
+ * In both orders, the return-0 case defines
+ * an equivalence class, i.e., those that are tied for the same place in the
+ * order. The global invariant that we need between the two orders is that the
+ * key order equivalence class is always at least as precise as the
+ * rank order equivalence class. IOW, if `compareKeys(X,Y) === 0` then
+ * `compareRank(X,Y) === 0`. But not vice versa. For example, two different
+ * remotables are the same rank but incomparable as keys.
+ *
+ * A further invariant is if `compareKeys(X,Y) < 0` then
+ * `compareRank(X,Y) < 0`, i.e., if X is smaller than Y in key order, then X
+ * must be earlier than Y in rank order. But not vice versa.
+ * X can be equivalent to or earlier than Y in rank order and still be
+ * incomparable with Y in key order. For example, the record `{b: 3, a: 5}` is
+ * earlier than the record `{b: 5, a: 3}` in rank order but they are
+ * incomparable as keys. And two distinct remotables such as `Far('X', {})` and
+ * `Far('Y', {})` are equivalent in rank order but incomparable as keys.
+ *
+ * This lets us translate a range search over the
+ * partial key order into a range search over rank order followed by filtering
+ * out those that don't match. To get this effect, we store the elements of
+ * a set in an array sorted in reverse rank order, from later to earlier.
+ * Combined with our lexicographic comparison of arrays, if set X is a subset
+ * of set Y then the array representing set X will be an earlier rank that the
+ * array representing set Y.
+ *
+ * @param {Key} left
+ * @param {Key} right
+ * @returns {KeyComparison}
  */
 
 // ///////////////////// Should be internal only types /////////////////////////
@@ -294,7 +401,7 @@
 /**
  * @callback GetIndexCover
  * @param {Passable[]} sorted
- * @param {CompareRank} compare
+ * @param {RankCompare} compare
  * @param {RankCover} rankCover
  * @returns {IndexCover}
  */
@@ -358,7 +465,7 @@
  * The scalars are the primitive values and Remotables.
  * All scalars are keys.
  * @property {() => Matcher} key
- * Can be in a copySet or the key in a CopyMap.
+ * Can be in a copySet or CopyBag, or the key in a CopyMap.
  * (Will eventually be able to a key is a MapStore.)
  * All keys are patterns that match only themselves.
  * @property {() => Matcher} pattern
@@ -376,6 +483,7 @@
  * @property {() => Matcher} record A CopyRecord
  * @property {() => Matcher} array A CopyArray
  * @property {() => Matcher} set A CopySet
+ * @property {() => Matcher} bag A CopyBag
  * @property {() => Matcher} map A CopyMap
  * @property {() => Matcher} remotable A far object or its remote presence
  * @property {() => Matcher} error
@@ -409,6 +517,7 @@
  * @property {(subPatt?: Pattern) => Matcher} arrayOf
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} recordOf
  * @property {(keyPatt?: Pattern) => Matcher} setOf
+ * @property {(keyPatt?: Pattern) => Matcher} bagOf
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Matcher} mapOf
  * @property {(
  *   base: CopyRecord<*> | CopyArray<*>,
@@ -436,6 +545,7 @@
  * @property {(patt: Passable) => boolean} isPattern
  * @property {(patt: Pattern) => void} assertKeyPattern
  * @property {(patt: Passable) => boolean} isKeyPattern
+ * @property {GetRankCover} getRankCover
  * @property {MatcherNamespace} M
  */
 

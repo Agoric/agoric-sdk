@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@agoric/far';
+import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeVirtualPurse } from '../src/virtual-purse.js';

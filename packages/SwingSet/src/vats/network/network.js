@@ -2,7 +2,7 @@
 
 import { makeScalarMap, makeLegacyMap } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { toBytes } from './bytes.js';
@@ -217,7 +217,7 @@ export function getPrefixes(addr) {
  * @returns {Protocol} the local capability for connecting and listening
  */
 export function makeNetworkProtocol(protocolHandler) {
-  /** @type {Store<Port, Set<Closable>>} */
+  /** @type {LegacyMap<Port, Set<Closable>>} */
   // Legacy because we're storing a JS Set
   const currentConnections = makeLegacyMap('port');
 
@@ -426,10 +426,12 @@ export function makeNetworkProtocol(protocolHandler) {
             consummated = Error(`Already accepted`);
             current.delete(inboundAttempt);
 
-            const lchandler =
-              /** @type {ConnectionHandler} */
-              // eslint-disable-next-line prettier/prettier
-              (await E(listener).onAccept(port, localAddr, remoteAddr, listener));
+            const lchandler = await E(listener).onAccept(
+              port,
+              localAddr,
+              remoteAddr,
+              listener,
+            );
 
             return crossoverConnection(
               lchandler,

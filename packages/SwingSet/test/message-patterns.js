@@ -6,7 +6,7 @@
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { quote as q } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { ignore } from './util.js';
 
 // Exercise a set of increasingly complex object-capability message patterns,
@@ -308,7 +308,6 @@ export function buildPatterns(log) {
       return b.bert;
     };
   }
-  // TODO https://github.com/Agoric/agoric-sdk/issues/1631
   out.a51 = ['a51 done, got [object Alleged: bert], match true true'];
   test('a51');
 

@@ -54,7 +54,7 @@ const issuers = [
 ];
 
 const setPendingPurseCreations = jest.fn();
-const walletBridge = { makeEmptyPurse: jest.fn() };
+const schemaActions = { createPurse: jest.fn() };
 
 const withApplicationContext = (Component, _) => ({ ...props }) => {
   return (
@@ -63,7 +63,7 @@ const withApplicationContext = (Component, _) => ({ ...props }) => {
         issuers={issuers}
         purses={purses}
         setPendingPurseCreations={setPendingPurseCreations}
-        walletBridge={walletBridge}
+        schemaActions={schemaActions}
         {...props}
       />
     </ThemeProvider>
@@ -138,7 +138,7 @@ test('creates the purse', async () => {
   await act(async () => createButton.props.onClick());
   component.update();
 
-  expect(walletBridge.makeEmptyPurse).toHaveBeenCalledWith('Moola', 'Savings');
+  expect(schemaActions.createPurse).toHaveBeenCalledWith(issuers[1], 'Savings');
   expect(setPendingPurseCreations).toHaveBeenCalledWith({
     isPending: true,
     issuerId: 1,
@@ -154,9 +154,7 @@ test('creates the purse', async () => {
 });
 
 test('shows an error when purse creation fails', async () => {
-  walletBridge.makeEmptyPurse.mockRejectedValue(
-    new Error('Cannot create purse'),
-  );
+  schemaActions.createPurse.mockRejectedValue(new Error('Cannot create purse'));
 
   const component = mount(<MakePurse issuerId={1} handleClose={jest.fn()} />);
 

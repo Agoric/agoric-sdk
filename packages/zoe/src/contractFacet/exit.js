@@ -2,7 +2,7 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import {
   isOnDemandExitRule,

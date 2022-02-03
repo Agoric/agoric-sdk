@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { assertCopyArray, Far } from '@endo/marshal';
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
@@ -73,7 +73,7 @@ const start = zcf => {
     // Give the user their attestation payment back
     seat.exit();
 
-    assert.typeof(attestation.value, 'object'); // entailed by isGTE on empty SET
+    assertCopyArray(attestation.value);
     return makeVoterInvitation(attestation.value);
   };
 

@@ -4,14 +4,14 @@ import { E } from '@agoric/eventual-send';
 import '@agoric/governance/exported.js';
 import '../exported.js';
 
-import { Far } from '@agoric/far';
+import { Far } from '@endo/far';
 import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from '../src/vpool-xyk-amm/params.js';
 import {
   makeGovernedInvitation,
   CONTRACT_ELECTORATE,
   makeGovernedNat,
 } from '@agoric/governance';
-import { makeRatio } from '@agoric/zoe/src/contractSupport';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import liquidateBundle from './bundle-liquidateMinimum.js';
 import ammBundle from './bundle-amm.js';
@@ -29,7 +29,6 @@ const DEFAULT_POOL_FEE = 24n;
 const DEFAULT_PROTOCOL_FEE = 6n;
 
 /**
- *
  * @param {ERef<TimerService>} timer
  * @param {Instance} electorateInstance
  * @param {ERef<ZoeService>} zoe
@@ -100,9 +99,7 @@ async function setupAmm(
     ammGovernorCreatorFacet,
   };
 
-  const [ammCreatorFacet,
-    ammPublicFacet,
-    instance] = await Promise.all([
+  const [ammCreatorFacet, ammPublicFacet, instance] = await Promise.all([
     E(ammGovernorCreatorFacet).getCreatorFacet(),
     E(ammGovernorCreatorFacet).getPublicFacet(),
     E(ammGovernorPublicFacet).getGovernedContract(),
@@ -174,7 +171,6 @@ export async function installOnChain({
     ['contractGovernor', contractGovernorBundle],
     ['noActionElectorate', noActionElectorateBundle],
     ['binaryCounter', binaryVoteCounterBundle],
-
   ];
   const [
     liquidationInstall,
@@ -210,9 +206,9 @@ export async function installOnChain({
     contractGovernorInstall,
     poolFee,
     protocolFee,
-  )
+  );
 
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: SECONDS_PER_HOUR,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -235,11 +231,11 @@ export async function installOnChain({
     liquidationMargin: makeRatio(105n, centralBrand),
     interestRate: makeRatio(250n, centralBrand, BASIS_POINTS),
     loanFee: makeRatio(200n, centralBrand, BASIS_POINTS),
-  }
+  };
 
   const vaultFactoryTerms = makeGovernedTerms(
     priceAuthority,
-    loanParams,
+    loanTiming,
     liquidationInstall,
     chainTimerService,
     invitationAmount,
@@ -258,9 +254,7 @@ export async function installOnChain({
     },
   });
 
-  const {
-    creatorFacet: governorCreatorFacet,
-  } = await E(zoe).startInstance(
+  const { creatorFacet: governorCreatorFacet } = await E(zoe).startInstance(
     contractGovernorInstall,
     undefined,
     governorTerms,
@@ -278,7 +272,7 @@ export async function installOnChain({
   ] = await Promise.all([
     E(zoe).getInvitationIssuer(),
     E(zoe).getTerms(vaultFactoryInstance),
-    E(governorCreatorFacet).getCreatorFacet()
+    E(governorCreatorFacet).getCreatorFacet(),
   ]);
 
   const vaultFactoryUiDefaults = {
@@ -317,7 +311,11 @@ export async function installOnChain({
 
   // Install the names in agoricNames.
   const nameAdminUpdates = [
-    [uiConfigAdmin, vaultFactoryUiDefaults.CONTRACT_NAME, vaultFactoryUiDefaults],
+    [
+      uiConfigAdmin,
+      vaultFactoryUiDefaults.CONTRACT_NAME,
+      vaultFactoryUiDefaults,
+    ],
     [instanceAdmin, vaultFactoryUiDefaults.CONTRACT_NAME, vaultFactoryInstance],
     [instanceAdmin, vaultFactoryUiDefaults.AMM_NAME, amm.governedInstance],
     [brandAdmin, centralName, centralBrand],

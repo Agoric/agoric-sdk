@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import {
   insistVatSyscallObject,
   insistVatSyscallResult,
@@ -88,7 +88,7 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
       }
       case 'error': {
         const [err] = rest;
-        throw Error(`syscall.${fields[0]} failed, prepare to die: ${err}`);
+        throw Error(`syscall.${fields[0]} failed: ${err}`);
       }
       default:
         throw Error(`unknown result type ${type}`);
@@ -115,10 +115,20 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
     // vatstoreSet requires a result, and we offer them as a group.
     callNow: (target, method, args) =>
       doSyscall(['callNow', target, method, args]),
-    vatstoreGet: key => doSyscall(['vatstoreGet', key]),
+    vatstoreGet: key => {
+      const result = doSyscall(['vatstoreGet', key]);
+      return result === null ? undefined : result;
+    },
     vatstoreSet: (key, value) => doSyscall(['vatstoreSet', key, value]),
-    vatstoreGetAfter: (priorKey, lowerBound, upperBound) =>
-      doSyscall(['vatstoreGetAfter', priorKey, lowerBound, upperBound]),
+    vatstoreGetAfter: (priorKey, lowerBound, upperBound) => {
+      const result = doSyscall([
+        'vatstoreGetAfter',
+        priorKey,
+        lowerBound,
+        upperBound,
+      ]);
+      return result === null ? [undefined, undefined] : result;
+    },
     vatstoreDelete: key => doSyscall(['vatstoreDelete', key]),
   };
 
@@ -144,36 +154,21 @@ harden(makeSupervisorSyscall);
 export { makeSupervisorSyscall };
 
 /**
- * Create a vat console, or a no-op if consensusMode is true.
+ * Create a vat console from a log stream maker.
  *
  * TODO: consider other methods per SES VirtualConsole.
  * See https://github.com/Agoric/agoric-sdk/issues/2146
  *
- * @param {Record<'debug' | 'log' | 'info' | 'warn' | 'error', (...args: any[]) => void>} logger
- * the backing log method
- * @param {(logger: any, args: any[]) => void} [wrapper]
+ * @param {(level: string) => (...args: any[]) => void} makeLog
  */
-function makeVatConsole(logger, wrapper) {
-  assert.typeof(
-    wrapper,
-    'function',
-    X`Invalid VatConsole wrapper value ${wrapper}`,
-  );
-  const cons = Object.fromEntries(
-    ['debug', 'log', 'info', 'warn', 'error'].map(level => {
-      const backingLog = logger[level];
-
-      return [
-        level,
-        (...args) => {
-          // Wrap the actual backing log message, in case there is logic to impose.
-          wrapper(backingLog, args);
-        },
-      ];
-    }),
-  );
-
-  return harden(cons);
+function makeVatConsole(makeLog) {
+  return harden({
+    debug: makeLog('debug'),
+    log: makeLog('log'),
+    info: makeLog('info'),
+    warn: makeLog('warn'),
+    error: makeLog('error'),
+  });
 }
 
 harden(makeVatConsole);

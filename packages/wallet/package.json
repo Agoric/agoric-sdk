@@ -13,7 +13,6 @@
   },
   "scripts": {
     "lint-fix": "exit 0",
-    "lint-check": "exit 0",
     "lint": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
@@ -32,9 +31,5 @@
     "extends": [
       "@agoric"
     ]
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   }
 }

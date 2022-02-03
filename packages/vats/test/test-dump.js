@@ -1,4 +1,4 @@
-import '@agoric/install-ses';
+import '@endo/init';
 import test from 'ava';
 
 import { dump } from '../src/repl.js';

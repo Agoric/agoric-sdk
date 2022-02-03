@@ -95,6 +95,21 @@ startInstance is complex.  does it successfully
  * update allocations?
  * protect handleOfferObj from zcfZygote through startInstance.  How about the resulting exitObj and offerResult
 
+## The "Fred" Problem
+
+In a commonly discussed scenario, Fred wants to be able to examine an invitation and learn
+enough about the associated contract to be sure that he understands what committed state it
+represents. In that scenario, Fred needs to be able to identify the contract, the seat
+represented by this invitation, and any invariants enforced by the contract.
+
+The particular case expressed in the eponymous scenario is a covered call, and the contract's
+code is responsible for enforcing that Fred's invitation won't be created unless the goods
+offered have been escrowed, and can definitely be obtained by Fred by paying the required
+offer price.
+
+If we can find attacks that make it impossible for contract writers to write clear contracts
+that express necessary state in the invitation, then an important feature of Zoe is broken.
+
 ## getAmountAllocated
 
 Can `getAmountAllocated()` be out of date with Zoe's values?

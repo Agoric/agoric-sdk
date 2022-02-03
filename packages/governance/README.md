@@ -151,8 +151,8 @@ like this:
 
 ``` javascript
 return makeParamManagerBuilder()
-  .addNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod)
-  .addNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod)
+  .addNat(CHARGING_PERIOD_KEY, loanTiming.chargingPeriod)
+  .addNat(RECORDING_PERIOD_KEY, loanTiming.recordingPeriod)
   .addRatio(INITIAL_MARGIN_KEY, rates.initialMargin)
   .addRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
   .addRatio(INTEREST_RATE_KEY, rates.interestRate)

@@ -7,10 +7,10 @@ import path from 'path';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { passStyleOf, Far } from '@agoric/marshal';
+import { passStyleOf, Far } from '@endo/marshal';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { setupZCFTest } from './zcf/setupZcfTest.js';
 import { setup } from './setupBasicMints.js';
@@ -193,6 +193,26 @@ test(`E(zoe).getPublicFacet`, async t => {
   const offersCount = await E(publicFacet).getOffersCount();
   t.is(offersCount, 0n);
   t.is(await E(zoe).getPublicFacet(instance), publicFacet);
+});
+
+test(`E(zoe).getPublicFacet promise for instance`, async t => {
+  const { zoe } = setup();
+  const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
+  const bundle = await bundleSource(contractPath);
+  const installationP = E(zoe).install(bundle);
+  // Note that E.get does not currently pipeline
+  const { publicFacet: publicFacetP, instance: instanceP } = E.get(
+    E(zoe).startInstance(installationP),
+  );
+  const pfp = E(zoe).getPublicFacet(instanceP);
+  const offersCountP = E(publicFacetP).getOffersCount();
+  const [offersCount, publicFacet, pf] = await Promise.all([
+    offersCountP,
+    publicFacetP,
+    pfp,
+  ]);
+  t.is(offersCount, 0n);
+  t.is(pf, publicFacet);
 });
 
 test(`E(zoe).getPublicFacet - no instance`, async t => {

@@ -1,12 +1,12 @@
 /* global WeakRef FinalizationRegistry */
 import fs from 'fs';
-// import '@agoric/install-ses';
+// import '@endo/init';
 import '../tools/install-ses-debug.js';
 import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
 import { spawn } from 'child_process';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { makeStartXSnap } from '../src/controller.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-xsnap.js';

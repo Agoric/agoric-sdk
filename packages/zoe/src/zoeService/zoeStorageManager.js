@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import './types.js';
 import './internal-types.js';

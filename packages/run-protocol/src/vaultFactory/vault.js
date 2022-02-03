@@ -14,7 +14,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeInterestCalculator } from './interest.js';
 
@@ -36,7 +36,14 @@ export const VaultState = {
   CLOSED: 'closed',
 };
 
-/** @type {MakeVaultKit} */
+/**
+ * @param {ContractFacet} zcf
+ * @param {InnerVaultManager} manager
+ * @param {ZCFMint} runMint
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {Timestamp} startTimeStamp
+ * @returns {VaultKit}
+ */
 export const makeVaultKit = (
   zcf,
   manager,
@@ -71,12 +78,6 @@ export const makeVaultKit = (
 
   const { brand: runBrand } = runMint.getIssuerRecord();
   let runDebt = AmountMath.makeEmpty(runBrand);
-  const interestCalculator = makeInterestCalculator(
-    runBrand,
-    manager.getInterestRate(),
-    manager.getChargingPeriod(),
-    manager.getRecordingPeriod(),
-  );
 
   const getCollateralAllocated = seat =>
     seat.getAmountAllocated('Collateral', collateralBrand);
@@ -164,6 +165,9 @@ export const makeVaultKit = (
     }
   };
 
+  /**
+   * @param {Amount} newDebt
+   */
   const liquidated = newDebt => {
     runDebt = newDebt;
     vaultState = VaultState.CLOSED;
@@ -464,8 +468,19 @@ export const makeVaultKit = (
     return { notifier };
   };
 
+  /**
+   * @param {bigint} currentTime
+   * @returns {Amount} rate of interest used for accrual period
+   */
   const accrueInterestAndAddToPool = currentTime => {
-    const interestKit = interestCalculator.calculateReportingPeriod(
+    const interestCalculator = makeInterestCalculator(
+      runBrand,
+      manager.getInterestRate(),
+      manager.getChargingPeriod(),
+      manager.getRecordingPeriod(),
+    );
+
+    const debtStatus = interestCalculator.calculateReportingPeriod(
       {
         latestInterestUpdate,
         newDebt: runDebt,
@@ -474,13 +489,13 @@ export const makeVaultKit = (
       currentTime,
     );
 
-    if (interestKit.latestInterestUpdate === latestInterestUpdate) {
+    if (debtStatus.latestInterestUpdate === latestInterestUpdate) {
       return AmountMath.makeEmpty(runBrand);
     }
 
-    ({ latestInterestUpdate, newDebt: runDebt } = interestKit);
+    ({ latestInterestUpdate, newDebt: runDebt } = debtStatus);
     updateUiState();
-    return interestKit.interest;
+    return debtStatus.interest;
   };
 
   const getDebtAmount = () => runDebt;

@@ -3,7 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
 
 test('makeIssuerKit bad allegedName', async t => {
@@ -14,7 +14,7 @@ test('makeIssuerKit bad allegedName', async t => {
 test('makeIssuerKit bad assetKind', async t => {
   // @ts-ignore Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
-    message: `The assetKind "somethingWrong" must be either AssetKind.NAT or AssetKind.SET`,
+    message: /The assetKind "somethingWrong" must be one of \["copyBag","copySet","nat","set"\]/,
   });
 });
 
@@ -135,10 +135,10 @@ test('issuer.combine bad payments array', async t => {
     length: 2,
     split: () => {},
   };
-  // @ts-ignore Intentional wrong type for testing
+  // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => E(issuer).combine(notAnArray), {
     message:
-      'Cannot pass non-frozen objects like {"length":2,"split":"[Function split]"}. Use harden()',
+      'cannot serialize Remotables with non-methods like "length" in {"length":2,"split":"[Function split]"}',
   });
 
   const notAnArray2 = Far('notAnArray2', {

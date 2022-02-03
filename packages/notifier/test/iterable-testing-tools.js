@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { observeIteration, observeIterator } from '../src/index.js';
 
-import '@agoric/marshal/exported.js';
+import '@endo/marshal/exported.js';
 import '../src/types.js';
 
 /** @typedef {import('ava').Assertions} Assertions */

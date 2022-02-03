@@ -3,7 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import engineGC from '../src/engine-gc.js';
@@ -739,6 +739,7 @@ test('GC syscall.dropImports', async t => {
   t.deepEqual(l2, {
     type: 'vatstoreGet',
     key: 'vom.rc.o-1',
+    result: undefined,
   });
 
   // since nothing else is holding onto it, the vat should emit a dropImports

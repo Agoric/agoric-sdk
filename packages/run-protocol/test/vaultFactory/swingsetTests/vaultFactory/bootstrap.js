@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { installContracts, makeVats } from '../setup';
 
 function makeBootstrap(argv, cb, vatPowers) {
@@ -27,6 +27,7 @@ function makeBootstrap(argv, cb, vatPowers) {
   };
 }
 
+/** @type {BuildRootObjectForTestVat} */
 export function buildRootObject(vatPowers, vatParameters) {
   const { argv, contractBundles: cb } = vatParameters;
   return Far('root', { bootstrap: makeBootstrap(argv, cb, vatPowers) });

@@ -34,6 +34,16 @@ declarations.
 Lifetime: until all sources (including dapps) conform to using `Far`
 declarations for all remote objects
 
+## CHAIN_BOOTSTRAP_VAT_CONFIG
+
+Affects: `ag-chain-cosmos`, `ag-solo`
+
+Purpose: to set the specifier for the chain/sim-chain's `vatconfig.json`
+
+Description: defaults to `@agoric/vats/decentral-config.json`
+
+Lifetime: until we don't want to allow user control of the chain's vat config
+
 ## CXXFLAGS
 
 Affects: yarn, agoric install

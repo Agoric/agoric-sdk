@@ -10,22 +10,19 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint-check": "yarn lint",
-    "lint-fix-jessie": "eslint -c '.eslintrc-jessie.js' --fix '**/*.js'",
-    "lint-check-jessie": "eslint -c '.eslintrc-jessie.js' '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/lockdown": "^0.1.1",
-    "@endo/ses-ava": "^0.2.8",
+    "@endo/lockdown": "^0.1.5",
+    "@endo/ses-ava": "^0.2.17",
     "ava": "^3.12.1"
   },
   "dependencies": {
     "@babel/generator": "^7.14.2",
     "@babel/parser": "^7.14.2",
     "@babel/traverse": "^7.14.2",
-    "@endo/base64": "^0.2.8",
-    "@endo/compartment-mapper": "^0.5.3",
+    "@endo/base64": "^0.2.17",
+    "@endo/compartment-mapper": "^0.6.5",
     "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
     "acorn": "^8.2.4",
@@ -60,9 +57,5 @@
     "extends": [
       "@agoric"
     ]
-  },
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
   }
 }

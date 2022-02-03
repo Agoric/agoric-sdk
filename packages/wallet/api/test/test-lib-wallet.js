@@ -2,7 +2,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoeKit } from '@agoric/zoe';
@@ -14,7 +14,7 @@ import { assert } from '@agoric/assert';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeWallet } from '../src/lib-wallet.js';
 
@@ -1457,15 +1457,15 @@ test('stamps from dateNow', async t => {
   t.deepEqual(paymentMeta, [
     {
       creationStamp: date0,
-      updatedStamp: date1,
-      id: 7,
-      status: undefined,
-    },
-    {
-      creationStamp: date0,
       updatedStamp: date0,
       id: 6,
       status: 'deposited',
+    },
+    {
+      creationStamp: date0,
+      updatedStamp: date1,
+      id: 7,
+      status: undefined,
     },
     {
       creationStamp: date1,

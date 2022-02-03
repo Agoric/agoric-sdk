@@ -1,4 +1,3 @@
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses"/>
 
 /**
@@ -67,7 +66,7 @@
 
 /**
  * @callback GetPublicFacet
- * @param {Instance} instance
+ * @param {ERef<Instance>} instanceP
  * @returns {Promise<Object>}
  */
 
@@ -178,6 +177,7 @@
 /**
  * @typedef {Object} UserSeat
  * @property {() => Promise<Allocation>} getCurrentAllocation
+ * TODO remove getCurrentAllocation query
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout

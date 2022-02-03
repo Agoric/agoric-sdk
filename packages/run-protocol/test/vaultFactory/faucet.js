@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 // A Faucet providing RUN so we can provide initial liquidity to the AMM so the

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { E } from '@agoric/eventual-send';
 
 /**
@@ -12,8 +12,11 @@ export const makeInstallationStorage = () => {
   const installations = new WeakSet();
 
   /**
-   * Create an installation by permanently storing the bundle. It will be
-   * evaluated each time it is used to make a new instance of a contract.
+   * Create an installation by permanently storing the bundle. The code is
+   * currently evaluated each time it is used to make a new instance of a
+   * contract. When SwingSet supports zygotes, the code will be evaluated once
+   * when creating a zcfZygote, then the start() function will be called each
+   * time an instance is started.
    */
   /** @type {Install} */
   const install = async bundle => {

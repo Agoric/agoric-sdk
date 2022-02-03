@@ -5,14 +5,15 @@ import {
   passStyleOf,
   getInterfaceOf,
   makeMarshal,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { isPromise } from '@agoric/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage } from '../message.js';
+import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
-import { insistValidVatstoreKey } from './vatTranslator.js';
+import { makeCollectionManager } from './collectionManager.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -84,7 +85,7 @@ function build(
    * and use a FinalizationRegistry to learn when the vat has dropped it, so
    * we can notify the kernel. We retain strong references to unresolved
    * Promises. When an import is added, the finalizer is added to
-   * `droppedRegistry`.
+   * `droppedImportRegistry`.
    *
    * slotToVal is a Map whose keys are slots (strings) and the values are
    * WeakRefs. If the entry is present but wr.deref()===undefined (the
@@ -118,7 +119,7 @@ function build(
     if (type === 'object' && allocatedByVat) {
       if (virtual) {
         // eslint-disable-next-line no-use-before-define
-        vom.setExportStatus(vref, 'reachable');
+        vrm.setExportStatus(vref, 'reachable');
       } else {
         // eslint-disable-next-line no-use-before-define
         const remotable = requiredValForSlot(vref);
@@ -196,7 +197,7 @@ function build(
       slotToVal.delete(vref);
     }
   }
-  const droppedRegistry = new FinalizationRegistry(finalizeDroppedImport);
+  const droppedImportRegistry = new FinalizationRegistry(finalizeDroppedImport);
 
   async function scanForDeadObjects() {
     // `possiblyDeadSet` accumulates vrefs which have lost a supporting
@@ -234,7 +235,7 @@ function build(
           // Don't retire things that haven't yet made the transition to dead,
           // i.e., always drop before retiring
           // eslint-disable-next-line no-use-before-define
-          if (!vom.isVrefRecognizable(vref)) {
+          if (!vrm.isVrefRecognizable(vref)) {
             importsToRetire.push(vref);
           }
         }
@@ -249,7 +250,7 @@ function build(
         if (virtual) {
           // Representative: send nothing, but perform refcount checking
           // eslint-disable-next-line no-use-before-define
-          const [gcAgain, doRetire] = vom.possibleVirtualObjectDeath(vref);
+          const [gcAgain, doRetire] = vrm.possibleVirtualObjectDeath(vref);
           if (doRetire) {
             exportsToRetire.push(vref);
           }
@@ -263,10 +264,10 @@ function build(
         } else {
           // Presence: send dropImport unless reachable by VOM
           // eslint-disable-next-line no-lonely-if, no-use-before-define
-          if (!vom.isPresenceReachable(vref)) {
+          if (!vrm.isPresenceReachable(vref)) {
             importsToDrop.push(vref);
             // eslint-disable-next-line no-use-before-define
-            if (!vom.isVrefRecognizable(vref)) {
+            if (!vrm.isVrefRecognizable(vref)) {
               importsToRetire.push(vref);
             }
           }
@@ -486,6 +487,8 @@ function build(
       console.info('Logging sent error stack', err),
   });
   const unmeteredUnserialize = meterControl.unmetered(m.unserialize);
+  // eslint-disable-next-line no-use-before-define
+  const unmeteredConvertSlotToVal = meterControl.unmetered(convertSlotToVal);
 
   function getSlotForVal(val) {
     return valToSlot.get(val);
@@ -512,19 +515,38 @@ function build(
     possiblyRetiredSet.add(vref);
   }
 
-  const vom = makeVirtualObjectManager(
+  const vrm = makeVirtualReferenceManager(
     syscall,
-    allocateExportID,
     getSlotForVal,
     requiredValForSlot,
+    FinalizationRegistry,
+    addToPossiblyDeadSet,
+    addToPossiblyRetiredSet,
+  );
+
+  const vom = makeVirtualObjectManager(
+    syscall,
+    vrm,
+    allocateExportID,
+    getSlotForVal,
     // eslint-disable-next-line no-use-before-define
     registerValue,
     m.serialize,
     unmeteredUnserialize,
     cacheSize,
-    FinalizationRegistry,
-    addToPossiblyDeadSet,
-    addToPossiblyRetiredSet,
+  );
+
+  const collectionManager = makeCollectionManager(
+    syscall,
+    vrm,
+    allocateExportID,
+    // eslint-disable-next-line no-use-before-define
+    convertValToSlot,
+    unmeteredConvertSlotToVal,
+    // eslint-disable-next-line no-use-before-define
+    registerValue,
+    m.serialize,
+    unmeteredUnserialize,
   );
 
   function convertValToSlot(val) {
@@ -563,7 +585,7 @@ function build(
         // doesn't matter anyway because deadSet.add only happens when
         // finializers run, and we wrote xsnap.c to ensure they only run
         // deterministically (during gcAndFinalize)
-        droppedRegistry.register(val, slot, val);
+        droppedImportRegistry.register(val, slot, val);
       }
     }
     return valToSlot.get(val);
@@ -585,7 +607,7 @@ function build(
     valToSlot.set(val, slot);
     // we don't dropImports on promises, to avoid interaction with retire
     if (type === 'object') {
-      droppedRegistry.register(val, slot, val);
+      droppedImportRegistry.register(val, slot, val);
     }
   }
 
@@ -610,13 +632,13 @@ function build(
         // detect reanimation by playing games inside their instanceKitMaker to
         // try to observe when new representatives are created (e.g., by
         // counting calls or squirreling things away in hidden WeakMaps).
-        vom.makeVirtualObjectRepresentative(slot, true); // N.b.: throwing away the result
+        vrm.reanimate(slot, true); // N.b.: throwing away the result
       }
       return val;
     }
     if (virtual) {
       assert.equal(type, 'object');
-      val = vom.makeVirtualObjectRepresentative(slot, false);
+      val = vrm.reanimate(slot, false);
     } else {
       assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
       if (type === 'object') {
@@ -752,7 +774,7 @@ function build(
     valToSlot.set(returnedP, resultVPID);
     slotToVal.set(resultVPID, new WeakRef(returnedP));
     pendingPromises.add(returnedP);
-    // we do not use droppedRegistry for promises, even result promises
+    // we do not use droppedImportRegistry for promises, even result promises
 
     return p;
   }
@@ -962,7 +984,7 @@ function build(
       }
       const { virtual } = parseVatSlot(vref);
       if (virtual) {
-        vom.setExportStatus(vref, 'recognizable');
+        vrm.setExportStatus(vref, 'recognizable');
       }
     }
   }
@@ -974,7 +996,7 @@ function build(
     assert.equal(type, 'object');
     // console.log(`-- liveslots acting on retireExports ${vref}`);
     if (virtual) {
-      vom.setExportStatus(vref, 'none');
+      vrm.setExportStatus(vref, 'none');
     } else {
       // Remotable
       // console.log(`-- liveslots acting on retireExports ${vref}`);
@@ -1000,7 +1022,7 @@ function build(
             return;
           }
           valToSlot.delete(val);
-          droppedRegistry.unregister(val);
+          droppedImportRegistry.unregister(val);
         }
         kernelRecognizableRemotables.delete(vref);
         slotToVal.delete(vref);
@@ -1017,7 +1039,7 @@ function build(
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
-    vrefs.forEach(vom.ceaseRecognition);
+    vrefs.forEach(vrm.ceaseRecognition);
   }
 
   // TODO: when we add notifyForward, guard against cycles
@@ -1029,6 +1051,7 @@ function build(
     syscall.exit(false, args);
   }
 
+  /** @type {ExitVatWithFailure} */
   function exitVatWithFailure(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(reason));
@@ -1054,8 +1077,14 @@ function build(
   }
 
   const vatGlobals = harden({
-    makeVirtualScalarWeakMap: vom.makeVirtualScalarWeakMap,
-    makeKind: vom.makeKind,
+    VatData: {
+      makeKind: vom.makeKind,
+      makeDurableKind: vom.makeDurableKind,
+      makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,
+      makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
+      makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
+      makeScalarBigWeakSetStore: collectionManager.makeScalarBigWeakSetStore,
+    },
   });
 
   const inescapableGlobalProperties = harden({
@@ -1063,7 +1092,16 @@ function build(
     WeakSet: vom.VirtualObjectAwareWeakSet,
   });
 
-  const testHooks = harden({ ...vom.testHooks });
+  const testHooks = harden({
+    ...vom.testHooks,
+    ...vrm.testHooks,
+    ...collectionManager.testHooks,
+  });
+
+  function assertValidUserVatstoreKey(key) {
+    assert.typeof(key, 'string');
+    assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
+  }
 
   function setBuildRootObject(buildRootObject) {
     assert(!didRoot);
@@ -1088,44 +1126,43 @@ function build(
     if (enableVatstore) {
       vpow.vatstore = harden({
         get: key => {
-          insistValidVatstoreKey(key);
+          assertValidUserVatstoreKey(key);
           return syscall.vatstoreGet(`vvs.${key}`);
         },
         set: (key, value) => {
-          insistValidVatstoreKey(key);
+          assertValidUserVatstoreKey(key);
           assert.typeof(value, 'string');
           syscall.vatstoreSet(`vvs.${key}`, value);
         },
         getAfter: (priorKey, lowerBound, upperBound) => {
           let scopedPriorKey = '';
           if (priorKey !== '') {
-            insistValidVatstoreKey(priorKey);
+            assertValidUserVatstoreKey(priorKey);
             assert(priorKey >= lowerBound, 'priorKey must be >= lowerBound');
             scopedPriorKey = `vvs.${priorKey}`;
           }
-          insistValidVatstoreKey(lowerBound);
+          assertValidUserVatstoreKey(lowerBound);
           const scopedLowerBound = `vvs.${lowerBound}`;
           let scopedUpperBound;
           if (upperBound) {
-            insistValidVatstoreKey(upperBound);
+            assertValidUserVatstoreKey(upperBound);
             assert(upperBound > lowerBound, 'upperBound must be > lowerBound');
             scopedUpperBound = `vvs.${upperBound}`;
           }
-          const fetched = syscall.vatstoreGetAfter(
+          const [key, value] = syscall.vatstoreGetAfter(
             scopedPriorKey,
             scopedLowerBound,
             scopedUpperBound,
           );
-          if (fetched) {
-            const [key, value] = fetched;
+          if (key) {
             assert(key.startsWith('vvs.'));
             return [key.slice(4), value];
           } else {
-            return undefined;
+            return [undefined, undefined];
           }
         },
         delete: key => {
-          insistValidVatstoreKey(key);
+          assertValidUserVatstoreKey(key);
           syscall.vatstoreDelete(`vvs.${key}`);
         },
       });
@@ -1147,7 +1184,7 @@ function build(
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, new WeakRef(rootObject));
     retainExportedVref(rootSlot);
-    // we do not use droppedRegistry for exports
+    // we do not use droppedImportRegistry for exports
   }
 
   /**
@@ -1193,6 +1230,7 @@ function build(
   const unmeteredDispatch = meterControl.unmetered(dispatchToUserspace);
 
   async function bringOutYourDead() {
+    vom.flushCache();
     await gcTools.gcAndFinalize();
     const doMore = await scanForDeadObjects();
     if (doMore) {
@@ -1202,12 +1240,39 @@ function build(
   }
 
   /**
-   * This low-level liveslots code is responsible for deciding when userspace
-   * is done with a crank. Userspace code can use Promises, so it can add as
-   * much as it wants to the ready promise queue. But since userspace never
-   * gets direct access to the timer or IO queues (i.e. setImmediate,
-   * setInterval, setTimeout), then once the promise queue is empty, the vat
-   * has lost "agency" (the ability to initiate further execution).
+   * This 'dispatch' function is the entry point for the vat as a whole: the
+   * vat-worker supervisor gives us VatDeliveryObjects (like
+   * dispatch.deliver) to execute. Here in liveslots, we invoke user-provided
+   * code during this time, which might cause us to make some syscalls. This
+   * userspace code might use Promises to add more turns to the ready promise
+   * queue, but we never give it direct access to the timer or IO queues
+   * (setImmediate, setInterval, setTimeout), so once the promise queue is
+   * empty, the vat userspace loses "agency" (the ability to initiate further
+   * execution), and waitUntilQuiescent fires. At that point we return
+   * control to the supervisor by resolving our return promise.
+   *
+   * Liveslots specifically guards against userspace reacquiring agency after
+   * our return promise is fired: vats are idle between cranks. Metering of
+   * the worker guards against userspace performing a synchronous infinite
+   * loop (`for (;;) {}`, the dreaded cthulu operator) or an async one
+   * (`function again() { return Promise.resolve().then(again); }`), by
+   * killing the vat after too much work. Userspace errors during delivery
+   * are expressed by calling syscall.resolve to reject the
+   * dispatch.deliver(result=) promise ID, which is unrelated to the Promise
+   * that `dispatch` returns.
+   *
+   * Liveslots does the authority to stall a crank indefinitely, by virtue of
+   * having access to `waitUntilQuiescent` and `FinalizationRegistry` (to
+   * retain agency), and the ability to disable metering (to disable worker
+   * termination), but only a buggy liveslots would do this. The kernel is
+   * vulnerable to a buggy liveslots never finishing a crank.
+   *
+   * This `dispatch` function always returns a Promise. It resolves (with
+   * nothing) when the crank completes successfully. If it rejects, that
+   * indicates the delivery has failed, and the worker should send an
+   * ["error", ..] `VatDeliveryResult` back to the kernel (which may elect to
+   * terminate the vat). Userspace should not be able to cause the delivery
+   * to fail: only a bug in liveslots should trigger a failure.
    *
    * @param { VatDeliveryObject } delivery
    * @returns { Promise<void> }
@@ -1221,15 +1286,13 @@ function build(
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for
       // any promise it returns to fire.
-      Promise.resolve(delivery)
-        .then(unmeteredDispatch)
-        .catch(err =>
-          console.log(`liveslots error ${err} during delivery ${delivery}`),
-        );
+      const p = Promise.resolve(delivery).then(unmeteredDispatch);
 
-      // Instead, we wait for userspace to become idle by draining the promise
-      // queue.
-      return gcTools.waitUntilQuiescent();
+      // Instead, we wait for userspace to become idle by draining the
+      // promise queue. We return 'p' so that any bugs in liveslots that
+      // cause an error during unmeteredDispatch will be reported to the
+      // supervisor (but only after userspace is idle).
+      return gcTools.waitUntilQuiescent().then(() => p);
     }
   }
   harden(dispatch);
@@ -1258,7 +1321,7 @@ function build(
  * @param {boolean} enableDisavow
  * @param {boolean} enableVatstore
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
- * @param {Console} [liveSlotsConsole]
+ * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
  *
  * setBuildRootObject should be called, once, with a function that will

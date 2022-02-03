@@ -14,7 +14,7 @@ The ability to create new vats is not ambient: it requires access to the Vat Adm
 
 ### Making the Source Bundle
 
-The first step is to create a source bundle. To do this, you'll want to point the `bundleSource` function (from the `@agoric/bundle-source` package) at a local source file. This file should export a function named `buildRootObject` (it can export other things too, perhaps for unit tests, but only `buildRootObject` will be used by the dynamic vat loader). Suppose your vat code is stored in `vat-counter.js`:
+The first step is to create a source bundle. To do this, you'll want to point the `bundleSource` function (from the `@endo/bundle-source` package) at a local source file. This file should export a function named `buildRootObject` (it can export other things too, perhaps for unit tests, but only `buildRootObject` will be used by the dynamic vat loader). Suppose your vat code is stored in `vat-counter.js`:
 
 ```js
 export function buildRootObject() {
@@ -34,7 +34,7 @@ export function buildRootObject() {
 Then turn this into a bundle:
 
 ```js
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 async function run() {
   const bundle = await bundleSource('.../vat-counter.js');
   // 'bundle' can be JSON serialized

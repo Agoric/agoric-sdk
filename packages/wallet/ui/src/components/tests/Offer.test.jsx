@@ -29,11 +29,6 @@ const setPendingOffers = jest.fn();
 const declinedOffers = new Set();
 const setDeclinedOffers = jest.fn();
 const setClosedOffers = jest.fn();
-const walletBridge = {
-  acceptOffer: jest.fn(),
-  declineOffer: jest.fn(),
-  cancelOffer: jest.fn(),
-};
 
 const withApplicationContext = (Component, _) => ({ ...props }) => {
   return (
@@ -43,7 +38,6 @@ const withApplicationContext = (Component, _) => ({ ...props }) => {
       declinedOffers={declinedOffers}
       setDeclinedOffers={setDeclinedOffers}
       setClosedOffers={setClosedOffers}
-      walletBridge={walletBridge}
       {...props}
     />
   );
@@ -59,6 +53,11 @@ const offer = {
   offerId: 'https://tokenpalace.app#555',
   instancePetname: ['TokenPalace', 'Installation'],
   instanceHandleBoardId: '123',
+  actions: {
+    accept: jest.fn(),
+    cancel: jest.fn(),
+    decline: jest.fn(),
+  },
   requestContext: {
     date: 1636614038901,
     dappOrigin: 'https://tokenpalace.app',
@@ -291,6 +290,11 @@ test('renders the request as completed when appropriate', () => {
   rejectedOffer.status = 'rejected';
   component = mount(<Offer offer={rejectedOffer} />);
   expect(component.find(Request).props().completed).toEqual(true);
+
+  const cancelledOffer = { ...offer };
+  cancelledOffer.status = 'cancel';
+  component = mount(<Offer offer={cancelledOffer} />);
+  expect(component.find(Request).props().completed).toEqual(true);
 });
 
 test('closes the offer', () => {
@@ -332,7 +336,7 @@ test('accepts the offer', () => {
     offerId: offer.id,
     isPending: true,
   });
-  expect(walletBridge.acceptOffer).toHaveBeenCalledWith(offer.offerId);
+  expect(offer.actions.accept).toHaveBeenCalledWith();
 });
 
 test('declines the offer', () => {
@@ -350,7 +354,7 @@ test('declines the offer', () => {
     offerId: offer.id,
     isDeclined: true,
   });
-  expect(walletBridge.declineOffer).toHaveBeenCalledWith(offer.offerId);
+  expect(offer.actions.decline).toHaveBeenCalledWith();
 });
 
 test('cancels the offer', () => {
@@ -366,7 +370,7 @@ test('cancels the offer', () => {
       .onClick(),
   );
 
-  expect(walletBridge.cancelOffer).toHaveBeenCalledWith(offer.offerId);
+  expect(offer.actions.cancel).toHaveBeenCalledWith();
 });
 
 test('renders the dapp origin', () => {

@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore, makeStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
@@ -174,17 +174,6 @@ export const createSeatManager = (
         X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
       );
     });
-
-    const zcfSeatsReallocatedOver = new Set(seats);
-
-    // Ensure that all stagings are present in this reallocate call.
-    const allStagedSeatsUsed = zcfSeatToStagedAllocations
-      .keys()
-      .every(stagedSeat => zcfSeatsReallocatedOver.has(stagedSeat));
-    assert(
-      allStagedSeatsUsed,
-      X`At least one seat has a staged allocation but was not included in the call to reallocate`,
-    );
 
     // Keep track of seats used so far in this call, to prevent aliasing.
     const zcfSeatsSoFar = new Set();

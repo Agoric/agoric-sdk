@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
 import { mockBrand } from './mockBrand.js';
 
@@ -14,20 +14,25 @@ test('natMathHelpers make', t => {
   t.deepEqual(m.make(mockBrand, 4n), { brand: mockBrand, value: 4n });
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => m.make(mockBrand, 4), {
-    message: 'value 4 must be a bigint or an array, not "number"',
+    message:
+      'value 4 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.make(mockBrand, 'abc'),
     {
-      message: 'value "abc" must be a bigint or an array, not "string"',
+      message:
+        'value "abc" must be a bigint, copySet, copyBag, or an array, not "string"',
     },
     `'abc' is not a nat`,
   );
   t.throws(
     // @ts-ignore deliberate invalid arguments for testing
     () => m.make(mockBrand, -1),
-    { message: 'value -1 must be a bigint or an array, not "number"' },
+    {
+      message:
+        'value -1 must be a bigint, copySet, copyBag, or an array, not "number"',
+    },
     `- 1 is not a valid Nat`,
   );
 });
@@ -95,7 +100,8 @@ test('natMathHelpers getValue', t => {
   t.is(m.getValue(mockBrand, m.make(mockBrand, 4n)), 4n);
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => m.getValue(mockBrand, m.make(mockBrand, 4)), {
-    message: 'value 4 must be a bigint or an array, not "number"',
+    message:
+      'value 4 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
 });
 
@@ -150,7 +156,8 @@ test('natMathHelpers isEmpty', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.isEmpty(harden({ brand: mockBrand, value: 'abc' })),
     {
-      message: 'value "abc" must be a bigint or an array, not "string"',
+      message:
+        'value "abc" must be a bigint, copySet, copyBag, or an array, not "string"',
     },
     `isEmpty('abc') throws because it cannot be coerced`,
   );

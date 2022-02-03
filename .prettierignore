@@ -1,0 +1,16 @@
+# artifacts
+build
+bundles
+compiled
+dist
+public
+
+# subrepos
+/packages/xsnap/moddable
+/packages/xsnap/xsnap-native
+
+# copied from upstream
+/packages/xsnap/lib/object-inspect.js
+
+# XXX unsupported syntax; will be addressed in https://github.com/Agoric/agoric-sdk/issues/4329
+/packages/captp/src/ts-types.d.ts

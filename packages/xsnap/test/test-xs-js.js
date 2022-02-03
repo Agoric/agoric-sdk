@@ -1,5 +1,7 @@
 // JavaScript correctness tests
 
+import '@endo/init';
+
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
@@ -100,7 +102,9 @@ test('Base64.decode', async t => {
     };
   `);
   const expectedOutputString = 'Hello, World! 😃🌍  ';
-  const expectedOutputUint8Array = new TextEncoder().encode(expectedOutputString);
+  const expectedOutputUint8Array = new TextEncoder().encode(
+    expectedOutputString,
+  );
   const inputString = encodeBase64(expectedOutputUint8Array);
   await vat.issueStringCommand(inputString);
   t.deepEqual(opts.messages, [expectedOutputString]);

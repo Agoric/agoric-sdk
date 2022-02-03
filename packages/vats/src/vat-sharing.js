@@ -1,4 +1,4 @@
-import { Far } from '@agoric/far';
+import { Far } from '@endo/far';
 import { makeSharingService } from '@agoric/sharing-service';
 
 // This vat contains the sharing service for the demo.

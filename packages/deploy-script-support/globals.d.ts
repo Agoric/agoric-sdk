@@ -1,2 +1,10 @@
-declare var makeKind: function;
-declare var makeVirtualScalarWeakMap: function;
+interface VatData {
+  makeKind: function;
+  makeDurableKind: function;
+  makeScalarBigMapStore: function;
+  makeScalarBigWeakMapStore: function;
+  makeScalarBigSetStore: function;
+  makeScalarBigWeakSetStore: function;
+}
+
+declare let VatData: VatData;

@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { details as X } from '@agoric/assert';
@@ -392,8 +392,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message:
-      'The assetKind "whatever" must be either AssetKind.NAT or AssetKind.SET',
+    message: /The assetKind "whatever" must be one of \["copyBag","copySet","nat","set"\]/,
   });
 });
 
@@ -430,7 +429,7 @@ test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
     message:
-      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -456,7 +455,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
     message:
-      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -466,7 +465,7 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
     message:
-      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -477,7 +476,7 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
     message:
-      '"amountKeywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
+      '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
   });
 });
 
@@ -724,7 +723,7 @@ test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
  * @param {Keyword} zcfMintKeyword
  * @param {ZCFSeat} zcfSeat
  * @param {Keyword} gainsKeyword
- * @param {Value} gainsValue
+ * @param {AmountValue} gainsValue
  * @returns {Promise<IssuerRecord>}
  */
 const allocateEasy = async (

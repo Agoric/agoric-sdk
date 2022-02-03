@@ -1,6 +1,6 @@
 /* global process */
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 
 // `test.after.always` does not yet seem compatible with ses-ava
 // See https://github.com/endojs/endo/issues/647
@@ -10,9 +10,9 @@ import '@agoric/swingset-vat/tools/prepare-test-env.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers.js';
 

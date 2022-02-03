@@ -1,4 +1,4 @@
 export default {
-  files: [ "integration-tests/test-workflow.js" ],
-  timeout: "10m",
-}
+  files: ['integration-tests/test-workflow.js'],
+  timeout: '10m',
+};

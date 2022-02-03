@@ -1,4 +1,5 @@
 /* eslint-disable react/display-name */
+import { observeIterator } from '@agoric/notifier';
 import React, {
   useEffect,
   createContext,
@@ -123,13 +124,25 @@ const closedOffersReducer = (closedOffers, { offerId, isClosed }) => {
 
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
-  const [walletBridge, setWalletBridge] = useState(null);
   const [inbox, setInbox] = useReducer(inboxReducer, null);
   const [purses, setPurses] = useReducer(pursesReducer, null);
   const [dapps, setDapps] = useReducer(dappsReducer, null);
   const [contacts, setContacts] = useReducer(contactsReducer, null);
   const [payments, setPayments] = useReducer(paymentsReducer, null);
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
+  const [services, setServices] = useState(null);
+  const [schemaActions, setSchemaActions] = useState(null);
+
+  const setBackend = backend => {
+    setSchemaActions(backend.actions);
+    observeIterator(backend.services, { updateState: setServices });
+    observeIterator(backend.offers, { updateState: setInbox });
+    observeIterator(backend.purses, { updateState: setPurses });
+    observeIterator(backend.dapps, { updateState: setDapps });
+    observeIterator(backend.contacts, { updateState: setContacts });
+    observeIterator(backend.payments, { updateState: setPayments });
+    observeIterator(backend.issuers, { updateState: setIssuers });
+  };
 
   const [pendingPurseCreations, setPendingPurseCreations] = useReducer(
     pendingPurseCreationsReducer,
@@ -162,6 +175,10 @@ const Provider = ({ children }) => {
   const state = {
     connectionState,
     setConnectionState,
+    schemaActions,
+    setBackend,
+    services,
+    setServices,
     inbox,
     setInbox,
     purses,
@@ -176,8 +193,6 @@ const Provider = ({ children }) => {
     setIssuers,
     pendingPurseCreations,
     setPendingPurseCreations,
-    walletBridge,
-    setWalletBridge,
     pendingTransfers,
     setPendingTransfers,
     pendingOffers,
@@ -189,6 +204,7 @@ const Provider = ({ children }) => {
   };
 
   useDebugLogging(state, [
+    schemaActions,
     inbox,
     purses,
     dapps,
@@ -196,7 +212,7 @@ const Provider = ({ children }) => {
     payments,
     issuers,
     pendingPurseCreations,
-    walletBridge,
+    services,
     pendingTransfers,
     pendingOffers,
     declinedOffers,

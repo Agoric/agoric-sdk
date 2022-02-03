@@ -23,12 +23,15 @@ type Keeper struct {
 	cdc        codec.Codec
 	paramSpace paramtypes.Subspace
 
-	accountKeeper types.AccountKeeper
-	bankKeeper    bankkeeper.Keeper
+	accountKeeper    types.AccountKeeper
+	bankKeeper       bankkeeper.Keeper
+	feeCollectorName string
 
 	// CallToController dispatches a message to the controlling process
 	CallToController func(ctx sdk.Context, str string) (string, error)
 }
+
+var _ types.SwingSetKeeper = &Keeper{}
 
 // A prefix of bytes, since KVStores can't handle empty slices as keys.
 var keyPrefix = []byte{':'}
@@ -49,6 +52,7 @@ func stringToKey(keyStr string) []byte {
 func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
+	feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
@@ -63,6 +67,7 @@ func NewKeeper(
 		paramSpace:       paramSpace,
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
+		feeCollectorName: feeCollectorName,
 		CallToController: callToController,
 	}
 }
@@ -76,6 +81,77 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramSpace.SetParamSet(ctx, &params)
 }
 
+// GetBeansPerUnit returns a map taken from the current SwingSet parameters from
+// a unit (key) string to an unsigned integer amount of beans.
+func (k Keeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdk.Uint {
+	params := k.GetParams(ctx)
+	beansPerUnit := make(map[string]sdk.Uint, len(params.BeansPerUnit))
+	for _, bpu := range params.BeansPerUnit {
+		beansPerUnit[bpu.Key] = bpu.Beans
+	}
+	return beansPerUnit
+}
+
+func getBeansOwingPathForAddress(addr sdk.AccAddress) string {
+	return "beansOwing." + addr.String()
+}
+
+// GetBeansOwing returns the number of beans that the given address owes to
+// the FeeAccount but has not yet paid.
+func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
+	path := getBeansOwingPathForAddress(addr)
+	value := k.GetStorage(ctx, path)
+	if value == "" {
+		return sdk.ZeroUint()
+	}
+	return sdk.NewUintFromString(value)
+}
+
+// SetBeansOwing sets the number of beans that the given address owes to the
+// feeCollector but has not yet paid.
+func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) {
+	path := getBeansOwingPathForAddress(addr)
+	k.SetStorage(ctx, path, beans.String())
+}
+
+// ChargeBeans charges the given address the given number of beans.  It divides
+// the beans into the number to debit immediately vs. the number to store in the
+// beansOwing.
+func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) error {
+	beansPerUnit := k.GetBeansPerUnit(ctx)
+
+	wasOwing := k.GetBeansOwing(ctx, addr)
+	nowOwing := wasOwing.Add(beans)
+
+	// Actually debit immediately in integer multiples of the minimum debit, since
+	// nowOwing must be less than the minimum debit.
+	beansPerMinFeeDebit := beansPerUnit[types.BeansPerMinFeeDebit]
+	remainderOwing := nowOwing.Mod(beansPerMinFeeDebit)
+	beansToDebit := nowOwing.Sub(remainderOwing)
+
+	// Convert the debit to coins.
+	beansPerFeeUnitDec := sdk.NewDecFromBigInt(beansPerUnit[types.BeansPerFeeUnit].BigInt())
+	beansToDebitDec := sdk.NewDecFromBigInt(beansToDebit.BigInt())
+	feeUnitPrice := k.GetParams(ctx).FeeUnitPrice
+	feeDecCoins := sdk.NewDecCoinsFromCoins(feeUnitPrice...).MulDec(beansToDebitDec).QuoDec(beansPerFeeUnitDec)
+
+	// Charge the account immediately if they owe more than BeansPerMinFeeDebit.
+	// NOTE: We assume that BeansPerMinFeeDebit is a multiple of BeansPerFeeUnit.
+	feeCoins, _ := feeDecCoins.TruncateDecimal()
+	if !feeCoins.IsZero() {
+		err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, k.feeCollectorName, feeCoins)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Record the new owing value, whether we have debited immediately or not
+	// (i.e. there is more owing than before, but not enough to debit).
+	k.SetBeansOwing(ctx, addr, remainderOwing)
+	return nil
+}
+
+// GetBalance returns the amount of denom coins in the addr's account balance.
 func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	return k.bankKeeper.GetBalance(ctx, addr, denom)
 }

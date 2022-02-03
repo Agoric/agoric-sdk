@@ -19,7 +19,7 @@ import { assert, details as X, q } from '@agoric/assert';
  * // Legacy because...
  * ```
  * comment explaining the problem inhibiting conversion to the new
- * system. Some of these problems as if this writing:
+ * system. Some of these problems as of this writing:
  *    * A promiseKit used as a value, even though a promiseKit is not
  *      a passable. Solutions are to make it a passable, or to convert
  *      the container back to a conventional JavaScript Map.
@@ -29,7 +29,9 @@ import { assert, details as X, q } from '@agoric/assert';
  *      likely work fine.
  *
  * @deprecated switch to ScalarMap if possible, Map otherwise
+ * @template K,V
  * @param {string} [keyName='key'] - the column name for the key
+ * @returns {LegacyMap<K,V>}
  */
 export const makeLegacyMap = (keyName = 'key') => {
   const m = new Map();
@@ -37,7 +39,7 @@ export const makeLegacyMap = (keyName = 'key') => {
     assert(!m.has(key), X`${q(keyName)} already registered: ${key}`);
   const assertKeyExists = key =>
     assert(m.has(key), X`${q(keyName)} not found: ${key}`);
-  const legacyMap = harden({
+  return harden({
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,
       // though the answer will always be false for keys that cannot be found
@@ -60,10 +62,11 @@ export const makeLegacyMap = (keyName = 'key') => {
       assertKeyExists(key);
       m.delete(key);
     },
-    keys: () => [...m.keys()],
-    values: () => [...m.values()],
-    entries: () => [...m.entries()],
+    keys: () => m.keys(),
+    values: () => m.values(),
+    entries: () => m.entries(),
+    getSize: () => m.size,
+    clear: () => m.clear(),
   });
-  return legacyMap;
 };
 harden(makeLegacyMap);

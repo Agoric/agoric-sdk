@@ -8,7 +8,7 @@ import {
 import { makeStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/far';
+import { Far } from '@endo/far';
 
 import '@agoric/store/exported.js';
 import '@agoric/swingset-vat/src/vats/network/types.js';
@@ -44,7 +44,7 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
  * Create a handler for the IBC protocol, both from the network
  * and from the bridge.
  *
- * @param {typeof import('@agoric/far').E} E
+ * @param {typeof import('@endo/far').E} E
  * @param {(method: string, params: any) => Promise<any>} rawCallIBCDevice
  * @returns {ProtocolHandler & BridgeHandler} Protocol/Bridge handler
  */
@@ -233,7 +233,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   const portToCircuits = makeStore('Port');
 
   /**
-   * @type {Store<Port, Set<PromiseRecord<ConnectionHandler>>>}
+   * @type {LegacyMap<Port, Set<PromiseRecord<ConnectionHandler>>>}
    */
   // Legacy because it holds a raw JavaScript Set
   const portToPendingConns = makeLegacyMap('Port');

@@ -1,13 +1,13 @@
 #! /usr/bin/env node
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 
 // import node-lmdb early to work around SES incompatibility
 import 'node-lmdb';
 
 import agcc from '@agoric/cosmos';
 
-import '@agoric/install-ses';
+import '@endo/init';
 
 import os from 'os';
 import path from 'path';

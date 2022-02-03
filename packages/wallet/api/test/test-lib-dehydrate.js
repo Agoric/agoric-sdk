@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeDehydrator } from '../src/lib-dehydrate.js';
 

@@ -1,4 +1,4 @@
-/* global globalThis makeKind makeVirtualScalarWeakMap */
+/* global globalThis VatData */
 /* set up globalThis.handleCommand for running test scripts
 
 See avaXS.js for the way this is run inside an xsnap process.
@@ -10,9 +10,7 @@ HandledPromise is defined by eventual send shim.
 */
 /* global __dirname, __filename, HandledPromise, issueCommand, test */
 // @ts-check
-// eslint-disable-next-line spaced-comment
 /// <reference types="ses" />
-// eslint-disable-next-line spaced-comment
 /// <reference types="@agoric/eventual-send" />
 
 const encoder = new TextEncoder();
@@ -48,7 +46,7 @@ const testRequire = function require(specifier) {
       return undefined;
     case '@endo/ses-ava':
       return { wrapTest: test => test };
-    case '@agoric/install-ses':
+    case '@endo/init':
       return undefined;
     case '@agoric/install-metering-and-ses':
       console.log('TODO: @agoric/install-metering-and-ses');
@@ -57,7 +55,7 @@ const testRequire = function require(specifier) {
     // https://github.com/endojs/endo/issues/768
     case '@agoric/babel-standalone':
       return undefined;
-    case '@agoric/bundle-source':
+    case '@endo/bundle-source':
       return bundleSource;
     default:
       throw Error(specifier);
@@ -77,12 +75,7 @@ function handler(rawMessage) {
       const virtualObjectGlobals =
         // @ts-ignore
         // eslint-disable-next-line no-undef
-        typeof makeKind !== 'undefined'
-          ? {
-              makeKind,
-              makeVirtualScalarWeakMap,
-            }
-          : {};
+        typeof VatData !== 'undefined' ? { VatData } : {};
       // @ts-ignore How do I get ses types in scope?!?!?!
       const c = new Compartment({
         require: testRequire,

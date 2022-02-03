@@ -1,14 +1,14 @@
 /* global globalThis, print */
 
-// We use setQuote() below to break the cycle
-// where SES requires console and console is
-// implemented using assert.quote from SES.
-let quote = _v => '[?]';
+import inspect from './object-inspect.js';
 
 const printAll = (...args) => {
   // Though xsnap doesn't have a whole console, it does have print().
+  //
+  // We use inspect to render non-string arguments to strings.
+  //
   // eslint-disable-next-line no-restricted-globals
-  print(...args.map(v => (typeof v === 'string' ? v : quote(v))));
+  print(...args.map(v => (typeof v === 'string' ? v : inspect(v))));
 };
 
 const noop = _ => {};
@@ -49,15 +49,5 @@ const console = {
   profileEnd: noop,
   timeStamp: noop,
 };
-
-let quoteSet = false;
-
-export function setQuote(f) {
-  if (quoteSet) {
-    throw TypeError('quote already set');
-  }
-  quote = f;
-  quoteSet = true;
-}
 
 globalThis.console = console;

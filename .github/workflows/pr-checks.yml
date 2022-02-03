@@ -11,10 +11,10 @@ jobs:
   conventional-commits:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        # as of v0.16.0 commitsar still requires full git objects, so fetch-depth=0
-        # https://github.com/aevea/commitsar/blob/master/www/docs/usage/github.md#actionscheckoutv2
-        fetch-depth: 0
-    - name: check Conventional Commits
-      uses: docker://outillage/commitsar
+      - uses: actions/checkout@v2
+        with:
+          # as of v0.16.0 commitsar still requires full git objects, so fetch-depth=0
+          # https://github.com/aevea/commitsar/blob/master/www/docs/usage/github.md#actionscheckoutv2
+          fetch-depth: 0
+      - name: check Conventional Commits
+        uses: docker://outillage/commitsar

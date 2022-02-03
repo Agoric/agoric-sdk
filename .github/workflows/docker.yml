@@ -2,72 +2,72 @@ name: Build release Docker Images
 
 on:
   push:
-    branches: [ master ] # $default-branch
+    branches: [master] # $default-branch
     tags:
-      - "@agoric/sdk@*"
+      - '@agoric/sdk@*'
 
 jobs:
   docker-deployment:
     runs-on: ubuntu-latest
     outputs:
-      tags: "${{ steps.docker-tags.outputs.tags }},${{ steps.deployment.outputs.snapshot-tag }}"
-      snapshot-tag: "${{ steps.deployment.outputs.snapshot-tag }}"
+      tags: '${{ steps.docker-tags.outputs.tags }},${{ steps.deployment.outputs.snapshot-tag }}'
+      snapshot-tag: '${{ steps.deployment.outputs.snapshot-tag }}'
     steps:
-    - uses: actions/checkout@v2
-    - name: Compute docker-tags
-      id: docker-tags
-      run: |
-        SDK_TAG=$(echo "${{ github.ref_name }}" | sed -ne 's!^@agoric/sdk@!!p')
-        case $SDK_TAG in
-          "")
-            # Just a dev release.
-            DOCKER_TAGS=dev
-            ;;
-          *)
-            # A tagged SDK release.
-            DOCKER_TAGS="latest,$SDK_TAG"
-            ;;
-        esac
-        echo "::set-output name=tags::$DOCKER_TAGS"
-    - name: Build setup image
-      uses: elgohr/Publish-Docker-Github-Action@3.04
-      id: deployment
-      with:
-        name: agoric/deployment
-        dockerfile: packages/deployment/Dockerfile.deployment
-        context: packages/deployment/docker
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        snapshot: true
-        tags: "${{ steps.docker-tags.outputs.tags }}"
+      - uses: actions/checkout@v2
+      - name: Compute docker-tags
+        id: docker-tags
+        run: |
+          SDK_TAG=$(echo "${{ github.ref_name }}" | sed -ne 's!^@agoric/sdk@!!p')
+          case $SDK_TAG in
+            "")
+              # Just a dev release.
+              DOCKER_TAGS=dev
+              ;;
+            *)
+              # A tagged SDK release.
+              DOCKER_TAGS="latest,$SDK_TAG"
+              ;;
+          esac
+          echo "::set-output name=tags::$DOCKER_TAGS"
+      - name: Build setup image
+        uses: elgohr/Publish-Docker-Github-Action@3.04
+        id: deployment
+        with:
+          name: agoric/deployment
+          dockerfile: packages/deployment/Dockerfile.deployment
+          context: packages/deployment/docker
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          snapshot: true
+          tags: '${{ steps.docker-tags.outputs.tags }}'
 
   docker-sdk:
     runs-on: ubuntu-latest
     needs: docker-deployment
     outputs:
-      tags: "${{ needs.docker-deployment.outputs.tags }}"
-      snapshot-tag: "${{ needs.docker-deployment.outputs.snapshot-tag }}"
+      tags: '${{ needs.docker-deployment.outputs.tags }}'
+      snapshot-tag: '${{ needs.docker-deployment.outputs.snapshot-tag }}'
     steps:
-    - uses: actions/checkout@v2
-    - name: Save GIT_REVISION
-      run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
-    - name: Save GIT_COMMIT
-      run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-    - name: Save commit hash, url of submodules to environment
-      run: |
-        node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
-    - name: Build SDK image
-      id: build-sdk
-      uses: elgohr/Publish-Docker-Github-Action@3.04
-      with:
-        name: agoric/agoric-sdk
-        dockerfile: packages/deployment/Dockerfile.sdk
-        # When changing/adding entries here, make sure to search the whole
-        # project for `@@AGORIC_DOCKER_SUBMODULES@@`
-        buildargs: GIT_COMMIT,MODDABLE_COMMIT_HASH,MODDABLE_URL,XSNAP_NATIVE_COMMIT_HASH,XSNAP_NATIVE_URL,GIT_REVISION
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        tags: "${{ needs.docker-deployment.outputs.tags }}"
+      - uses: actions/checkout@v2
+      - name: Save GIT_REVISION
+        run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
+      - name: Save GIT_COMMIT
+        run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Save commit hash, url of submodules to environment
+        run: |
+          node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
+      - name: Build SDK image
+        id: build-sdk
+        uses: elgohr/Publish-Docker-Github-Action@3.04
+        with:
+          name: agoric/agoric-sdk
+          dockerfile: packages/deployment/Dockerfile.sdk
+          # When changing/adding entries here, make sure to search the whole
+          # project for `@@AGORIC_DOCKER_SUBMODULES@@`
+          buildargs: GIT_COMMIT,MODDABLE_COMMIT_HASH,MODDABLE_URL,XSNAP_NATIVE_COMMIT_HASH,XSNAP_NATIVE_URL,GIT_REVISION
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: '${{ needs.docker-deployment.outputs.tags }}'
 
   # This is currently needed for the relayer integration test framework.
   # It just runs agoric/agoric-sdk with a "single-node" argument.
@@ -76,46 +76,46 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ needs.docker-sdk.outputs.tags }} != dev
     steps:
-    - uses: actions/checkout@v2
-    - name: Save SDK_TAG
-      run: echo "SDK_TAG=${{ needs.docker-sdk.outputs.snapshot-tag }}" >> $GITHUB_ENV
-    - name: Build ibc-alpha image
-      uses: elgohr/Publish-Docker-Github-Action@3.04
-      with:
-        name: agoric/agoric-sdk
-        dockerfile: packages/deployment/Dockerfile.ibc-alpha
-        context: packages/deployment/docker
-        buildargs: SDK_TAG
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        tags: ibc-alpha
+      - uses: actions/checkout@v2
+      - name: Save SDK_TAG
+        run: echo "SDK_TAG=${{ needs.docker-sdk.outputs.snapshot-tag }}" >> $GITHUB_ENV
+      - name: Build ibc-alpha image
+        uses: elgohr/Publish-Docker-Github-Action@3.04
+        with:
+          name: agoric/agoric-sdk
+          dockerfile: packages/deployment/Dockerfile.ibc-alpha
+          context: packages/deployment/docker
+          buildargs: SDK_TAG
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: ibc-alpha
 
   docker-solo:
     needs: docker-sdk
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build ag-solo image
-      uses: elgohr/Publish-Docker-Github-Action@3.04
-      with:
-        name: agoric/cosmic-swingset-solo
-        dockerfile: packages/solo/Dockerfile
-        context: packages/solo
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        tags: ${{ needs.docker-sdk.outputs.tags }}
+      - uses: actions/checkout@v2
+      - name: Build ag-solo image
+        uses: elgohr/Publish-Docker-Github-Action@3.04
+        with:
+          name: agoric/cosmic-swingset-solo
+          dockerfile: packages/solo/Dockerfile
+          context: packages/solo
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: ${{ needs.docker-sdk.outputs.tags }}
 
   docker-setup:
     needs: docker-sdk
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build setup image
-      uses: elgohr/Publish-Docker-Github-Action@3.04
-      with:
-        name: agoric/cosmic-swingset-setup
-        dockerfile: packages/deployment/Dockerfile
-        context: packages/deployment
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        tags:  ${{ needs.docker-sdk.outputs.tags }}
+      - uses: actions/checkout@v2
+      - name: Build setup image
+        uses: elgohr/Publish-Docker-Github-Action@3.04
+        with:
+          name: agoric/cosmic-swingset-setup
+          dockerfile: packages/deployment/Dockerfile
+          context: packages/deployment
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: ${{ needs.docker-sdk.outputs.tags }}

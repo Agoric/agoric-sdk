@@ -13,7 +13,6 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
@@ -33,18 +32,19 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/eventual-send": "^0.14.0",
-    "@agoric/import-bundle": "^0.2.33",
-    "@agoric/marshal": "^0.5.0"
+    "@endo/import-bundle": "^0.2.37",
+    "@endo/marshal": "^0.5.4"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.1",
-    "@agoric/install-ses": "^0.5.29",
+    "@endo/bundle-source": "^2.0.5",
+    "@endo/init": "^0.5.33",
     "@agoric/swingset-vat": "^0.24.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },
   "files": [
     "src/",
+    "bundles/",
     "NEWS.md"
   ],
   "eslintConfig": {
@@ -55,10 +55,6 @@
   "eslintIgnore": [
     "bundle-*.js"
   ],
-  "prettier": {
-    "trailingComma": "all",
-    "singleQuote": true
-  },
   "publishConfig": {
     "access": "public"
   },

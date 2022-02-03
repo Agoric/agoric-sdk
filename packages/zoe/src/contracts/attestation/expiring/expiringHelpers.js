@@ -6,7 +6,7 @@
  * expiration date has passed is only checked when `getLienAmount`
  * is called)
  *
- * @param {Store<Address,Array<ExpiringAttElem>>} store
+ * @param {LegacyMap<Address,Array<ExpiringAttElem>>} store
  * @param {ExpiringAttElem} attestationElem
  */
 const addToLiened = (store, attestationElem) => {

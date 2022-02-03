@@ -1,6 +1,4 @@
-import { setQuote } from './console-shim.js';
-import '@agoric/install-ses/debug.js';
-
-setQuote(assert.quote);
+import './console-shim.js';
+import '@endo/init/debug.js';
 
 harden(console);

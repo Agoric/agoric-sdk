@@ -1,8 +1,8 @@
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
-import { sameStructure } from '@agoric/same-structure';
+import { keyEQ } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
 import { makePrintLog } from './printLog.js';
@@ -31,14 +31,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         X`wrong installation`,
       );
       assert(
-        sameStructure(
+        keyEQ(
           harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
           issuerKeywordRecord,
         ),
         X`issuerKeywordRecord were not as expected`,
       );
-      assert(sameStructure(invitationValue[0].minimumBid, simoleans(3)));
-      assert(sameStructure(invitationValue[0].auctionedAssets, moola(1)));
+      assert(keyEQ(invitationValue[0].minimumBid, simoleans(3)));
+      assert(keyEQ(invitationValue[0].auctionedAssets, moola(1)));
 
       const proposal = harden({
         want: { Asset: moola(1) },
@@ -91,7 +91,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       );
       assert(installation === installations.atomicSwap, X`wrong installation`);
       assert(
-        sameStructure(
+        keyEQ(
           harden({ Asset: invitationIssuer, Price: bucksIssuer }),
           issuerKeywordRecord,
         ),
@@ -101,13 +101,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
       assert(
-        sameStructure(invitationValue[0].asset, optionAmounts),
+        keyEQ(invitationValue[0].asset, optionAmounts),
         X`asset is the option`,
       );
-      assert(
-        sameStructure(invitationValue[0].price, bucks(1n)),
-        X`price is 1 buck`,
-      );
+      assert(keyEQ(invitationValue[0].price, bucks(1n)), X`price is 1 buck`);
       const optionValue = optionAmounts.value;
       assert(
         optionValue[0].description === 'exerciseOption',

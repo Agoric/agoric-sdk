@@ -2,6 +2,8 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
+import '@endo/init';
+
 import * as proc from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';
@@ -202,24 +204,24 @@ test('console - objects should include detail', async t => {
         [
           'Error#1:',
           'assertion text',
-          '{"prop1":["elem1a","elem1b"],"prop2":["elem2a","elem2b"]}',
+          `{ prop1: [ 'elem1a', 'elem1b' ], prop2: [ 'elem2a', 'elem2b' ] }`,
         ],
         [
           'primitive:',
-          '"[undefined]"',
+          'undefined',
           'null',
           'true',
           'false',
           '123',
           'abc',
-          '"[123n]"',
-          '"[Symbol(x)]"',
+          '123n',
+          'Symbol(x)',
         ],
         [
           'compound:',
-          '{"prop1":["elem1a","elem1b"],"prop2":["elem2a","elem2b"]}',
-          '"[ArrayBuffer]"',
-          '"[Promise]"',
+          `{ prop1: [ 'elem1a', 'elem1b' ], prop2: [ 'elem2a', 'elem2b' ] }`,
+          `ArrayBuffer [ArrayBuffer] {}`,
+          'Promise [Promise] {}',
           '(Error#2)',
         ],
         ['Error#2:', 'oops!'],

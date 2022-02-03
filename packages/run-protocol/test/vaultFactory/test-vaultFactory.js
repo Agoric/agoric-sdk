@@ -8,7 +8,7 @@ import '../../src/vaultFactory/types.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
@@ -283,7 +283,7 @@ async function getRunFromFaucet(
 
 // called separately by each test so AMM/zoe/priceAuthority don't interfere
 async function setupServices(
-  loanParams,
+  loanTiming,
   priceList,
   unitAmountIn,
   aethBrand,
@@ -339,7 +339,7 @@ async function setupServices(
 
   const vaultFactoryTerms = makeGovernedTerms(
     priceAuthorityPromise,
-    loanParams,
+    loanTiming,
     installs.liquidation,
     timer,
     invitationAmount,
@@ -395,7 +395,7 @@ test('first', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -407,7 +407,7 @@ test('first', async t => {
   };
 
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [500n, 15n],
     AmountMath.make(aethBrand, 900n),
     aethBrand,
@@ -543,7 +543,7 @@ test('price drop', async t => {
   // When the price falls to 636, the loan will get liquidated. 636 for 900
   // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -554,7 +554,7 @@ test('price drop', async t => {
   };
 
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [1000n, 677n, 636n],
     AmountMath.make(aethBrand, 900n),
     aethBrand,
@@ -659,7 +659,7 @@ test('price falls precipitously', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -679,7 +679,7 @@ test('price falls precipitously', async t => {
     payment: aethMint.mintPayment(aethInitialLiquidity),
   };
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [2200n, 19180n, 1650n, 150n],
     AmountMath.make(aethBrand, 900n),
     aethBrand,
@@ -775,7 +775,7 @@ test('price falls precipitously', async t => {
 });
 
 test('vaultFactory display collateral', async t => {
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
   };
@@ -789,7 +789,7 @@ test('vaultFactory display collateral', async t => {
   };
 
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [500n, 1500n],
     AmountMath.make(aethBrand, 90n),
     aethBrand,
@@ -833,7 +833,7 @@ test('interest on multiple vaults', async t => {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
   const secondsPerDay = SECONDS_PER_YEAR / 365n;
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: secondsPerDay * 7n,
     recordingPeriod: secondsPerDay * 7n,
   };
@@ -847,7 +847,7 @@ test('interest on multiple vaults', async t => {
   };
 
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [500n, 1500n],
     AmountMath.make(aethBrand, 90n),
     aethBrand,
@@ -999,7 +999,7 @@ test('interest on multiple vaults', async t => {
 });
 
 test('adjust balances', async t => {
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
   };
@@ -1014,7 +1014,7 @@ test('adjust balances', async t => {
   };
 
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [15n],
     AmountMath.make(aethBrand, 1n),
     aethBrand,
@@ -1267,7 +1267,7 @@ test('adjust balances', async t => {
 // Alice will over repay her borrowed RUN. In order to make that possible,
 // Bob will also take out a loan and will give her the proceeds.
 test('overdeposit', async t => {
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
   };
@@ -1282,7 +1282,7 @@ test('overdeposit', async t => {
   };
 
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [15n],
     AmountMath.make(aethBrand, 1n),
     aethBrand,
@@ -1435,14 +1435,14 @@ test('mutable liquidity triggers and interest', async t => {
   };
 
   const secondsPerDay = SECONDS_PER_YEAR / 365n;
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: secondsPerDay * 7n,
     recordingPeriod: secondsPerDay * 7n,
   };
   // charge interest on every tick
   const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay * 7n);
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [10n, 7n],
     AmountMath.make(aethBrand, 1n),
     aethBrand,
@@ -1625,7 +1625,7 @@ test('mutable liquidity triggers and interest', async t => {
 });
 
 test('bad chargingPeriod', async t => {
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2,
     recordingPeriod: 10n,
   };
@@ -1634,15 +1634,15 @@ test('bad chargingPeriod', async t => {
     () =>
       makeParamManagerBuilder()
         // @ts-ignore It's not a bigint.
-        .addNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod)
-        .addNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod)
+        .addNat(CHARGING_PERIOD_KEY, loanTiming.chargingPeriod)
+        .addNat(RECORDING_PERIOD_KEY, loanTiming.recordingPeriod)
         .build(),
     { message: '2 must be a bigint' },
   );
 });
 
 test('collect fees from loan and AMM', async t => {
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -1661,7 +1661,7 @@ test('collect fees from loan and AMM', async t => {
   };
 
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     priceList,
     unitAmountIn,
     aethBrand,
@@ -1752,12 +1752,12 @@ test('close loan', async t => {
     proposal: aethInitialLiquidity,
     payment: aethMint.mintPayment(aethInitialLiquidity),
   };
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
   };
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [15n],
     AmountMath.make(aethBrand, 1n),
     aethBrand,
@@ -1893,12 +1893,12 @@ test('excessive loan', async t => {
     proposal: aethInitialLiquidity,
     payment: aethMint.mintPayment(aethInitialLiquidity),
   };
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
   };
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [15n],
     AmountMath.make(aethBrand, 1n),
     aethBrand,
@@ -1957,14 +1957,14 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   };
 
   const secondsPerDay = SECONDS_PER_YEAR / 365n;
-  const loanParams = {
+  const loanTiming = {
     chargingPeriod: secondsPerDay * 7n,
     recordingPeriod: secondsPerDay * 7n,
   };
   // charge interest on every tick
   const manualTimer = buildManualTimer(console.log, 0n, secondsPerDay * 7n);
   const services = await setupServices(
-    loanParams,
+    loanTiming,
     [10n, 7n],
     AmountMath.make(aethBrand, 1n),
     aethBrand,

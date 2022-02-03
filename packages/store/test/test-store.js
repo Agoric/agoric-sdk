@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { ALLOW_IMPLICIT_REMOTABLES, Far, passStyleOf } from '@agoric/marshal';
+import { ALLOW_IMPLICIT_REMOTABLES, Far, passStyleOf } from '@endo/marshal';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';
 import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
@@ -128,4 +128,17 @@ test('passability of stores', t => {
     t.throws(() => passStyleOf(makeLegacyMap('foo')), { message: /x/ });
     t.throws(() => passStyleOf(makeLegacyWeakMap('foo')), { message: /x/ });
   }
+});
+
+test('passability of store iters', t => {
+  // See test 'copyMap - iters are passable'
+  const m = makeScalarMapStore('bar');
+  m.init('x', 8);
+  m.init('y', 7);
+  const keys = m.keys();
+  t.is(passStyleOf(keys), 'remotable');
+  const iter = keys[Symbol.iterator]();
+  t.is(passStyleOf(iter), 'remotable');
+  const iterResult = iter.next();
+  t.is(passStyleOf(iterResult), 'copyRecord');
 });

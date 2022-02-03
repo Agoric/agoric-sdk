@@ -1,11 +1,10 @@
-import '@agoric/install-ses';
+import '@endo/init';
 
 import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import tmp from 'tmp';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { xsnap } from '@agoric/xsnap';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
@@ -17,8 +16,8 @@ const ld = (() => {
   /** @param { string } ref */
   // WARNING: ambient
   const resolve = async ref => {
-    const url = await importMetaResolve(ref, import.meta.url);
-    return new URL(url).pathname;
+    const parsed = await importMetaResolve(ref, import.meta.url);
+    return new URL(parsed).pathname;
   };
   const readFile = fs.promises.readFile;
   return freeze({
@@ -150,12 +149,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   t.teardown(() => vat.close());
 
   const h1 = await store.save(vat.snapshot);
-
-  t.is(
-    h1,
-    '55d61ad40214961f16eabf0a224215e53feda6c0191482f657226b4e221d82c3',
-    'initial snapshot',
-  );
+  t.snapshot(h1, 'initial snapshot');
 
   const bootScript = await ld.asset(
     '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
@@ -163,19 +157,21 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   await vat.evaluate(bootScript);
 
   const h2 = await store.save(vat.snapshot);
-  t.is(
-    h2,
-    '5ee30291cad7830309bcd3fda0d252e8dfb3a7a6a503c846cbf90461873082e9',
-    'after SES boot - sensitive to SES-shim, XS, and supervisor',
-  );
+  t.snapshot(h2, 'after SES boot - sensitive to SES-shim, XS, and supervisor');
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
   const h3 = await store.save(vat.snapshot);
-  t.is(
+  t.snapshot(
     h3,
-    '400dbfad83f15e2555280d83e3c0f753740a5c9d182449432ed7f3a7b0ebd7b0',
     'after use of harden() - sensitive to SES-shim, XS, and supervisor',
   );
+
+  t.log(`\
+This test fails under maintenance of xsnap dependencies.
+If these changes are expected, run:
+  yarn test --update-snapshots test/test-xsnap-store.js
+Then commit the changes in .../snapshots/ path.
+`);
 });
 
 async function makeTestSnapshot(t) {

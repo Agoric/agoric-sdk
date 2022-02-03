@@ -1,8 +1,7 @@
 // @ts-check
 
-import { makeWeakStore } from '@agoric/store';
-import { Far } from '@agoric/marshal';
-import { sameStructure } from '@agoric/same-structure';
+import { makeWeakStore, keyEQ } from '@agoric/store';
+import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
@@ -133,7 +132,7 @@ const start = async (zcf, privateArgs) => {
 
   const electorateInvAmt = getInvitationAmount(CONTRACT_ELECTORATE);
   assert(
-    sameStructure(electorateInvAmt, electorateParam.value),
+    keyEQ(electorateInvAmt, electorateParam.value),
     X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
   );
 

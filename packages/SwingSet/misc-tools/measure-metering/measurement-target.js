@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies,no-unused-vars,no-empty-function */
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 export function buildRootObject(vatPowers) {

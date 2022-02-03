@@ -1,9 +1,9 @@
 /* global globalThis */
 // TODO Remove esm preinitialization
 // https://github.com/endojs/endo/issues/768
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 import 'esm';
-import '@agoric/install-ses';
+import '@endo/init';
 import test from 'ava';
 import fs from 'fs';
 import anylogger from 'anylogger';
