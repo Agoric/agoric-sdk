@@ -50,7 +50,15 @@ function makeSyscallStore(syscall) {
 }
 
 function commaSplit(s) {
-  if (s === undefined || s === '') {
+  // 's' might be 'undefined' (because the DB key that feeds it was not
+  // present, and undefined is the obvious return value from a
+  // .get(missingKey), or null (because the DB lookup actually happened on
+  // the other side of a JSON-encoded vat-worker-to-kernel-process pipe and
+  // the JSON decoder produces null instead of undefined), or '' (because the
+  // key is present but was populated with slots.join(',') and slots was
+  // empty, so join() produces an empty string). In all three cases, and
+  // empty list is the correct return value.
+  if (!s) {
     return [];
   }
   return s.split(',');
