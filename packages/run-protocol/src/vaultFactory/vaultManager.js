@@ -10,6 +10,7 @@ import {
   getAmountIn,
   ceilMultiplyBy,
   ceilDivideBy,
+  makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
@@ -78,7 +79,7 @@ export const makeVaultManager = (
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
       const displayInfo = await E(collateralBrand).getDisplayInfo();
-      const decimalPlaces = (displayInfo && displayInfo.decimalPlaces) || 0n;
+      const decimalPlaces = displayInfo?.decimalPlaces || 0n;
       return E(priceAuthority).quoteGiven(
         AmountMath.make(collateralBrand, 10n ** Nat(decimalPlaces)),
         runBrand,
@@ -120,7 +121,7 @@ export const makeVaultManager = (
     // with the highest debt to collateral ratio will no longer be valued at the
     // liquidationMargin above its debt.
     const triggerPoint = ceilMultiplyBy(
-      highestDebtRatio.numerator,
+      highestDebtRatio.numerator, // debt
       liquidationMargin,
     );
 
@@ -130,14 +131,14 @@ export const makeVaultManager = (
     // liquidate anything that's above the price level.
     if (outstandingQuote) {
       E(outstandingQuote).updateLevel(
-        highestDebtRatio.denominator,
+        highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
       return;
     }
 
     outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
-      highestDebtRatio.denominator,
+      highestDebtRatio.denominator, // collateral
       triggerPoint,
     );
 
@@ -185,6 +186,7 @@ export const makeVaultManager = (
     return Promise.all(promises);
   };
 
+  // FIXME don't mutate vaults to charge them
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
     assert(sortedVaultKits);
     const poolIncrement = sortedVaultKits.reduce(
@@ -197,7 +199,9 @@ export const makeVaultManager = (
     );
     sortedVaultKits.updateAllDebts();
     reschedulePriceCheck();
+    // @ts-expect-error bad typedef for reduce
     runMint.mintGains(harden({ RUN: poolIncrement }), poolIncrementSeat);
+    // @ts-expect-error bad typedef for reduce
     reallocateReward(poolIncrement, poolIncrementSeat);
   };
 
@@ -209,7 +213,7 @@ export const makeVaultManager = (
 
   const timeObserver = {
     updateState: updateTime =>
-      chargeAllVaults(updateTime, poolIncrementSeat).catch(_ => {}),
+      chargeAllVaults(updateTime, poolIncrementSeat).catch(console.error),
     fail: reason => {
       zcf.shutdownWithFailure(
         assert.error(X`Unable to continue without a timer: ${reason}`),
@@ -229,6 +233,7 @@ export const makeVaultManager = (
     ...shared,
     reallocateReward,
     getCollateralBrand: () => collateralBrand,
+    getCompoundedInterest: () => makeRatio(1n, runBrand), // FIXME
   });
 
   /** @param {ZCFSeat} seat */

@@ -69,6 +69,7 @@ export async function start(zcf, privateArgs) {
       return SECONDS_PER_HOUR * 24n * 7n;
     },
     reallocateReward,
+    getCompoundedInterest: () => makeRatio(1n, runBrand),
   });
 
   const timer = buildManualTimer(console.log, 0n, SECONDS_PER_HOUR * 24n);

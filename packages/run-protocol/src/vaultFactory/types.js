@@ -102,6 +102,7 @@
  * @typedef {Object} InnerVaultManagerBase
  * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
+ * @property {() => Ratio} getCompoundedInterest
  */
 
 /**
