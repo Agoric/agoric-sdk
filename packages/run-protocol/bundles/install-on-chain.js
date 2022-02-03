@@ -121,6 +121,8 @@ async function setupAmm(
 }
 
 /**
+ * @deprecated in favor of core bootstrap
+ *
  * @param {Object} param0
  * @param {ERef<NameHub>} param0.agoricNames
  * @param {ERef<Board>} param0.board

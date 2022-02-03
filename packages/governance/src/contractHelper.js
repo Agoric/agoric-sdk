@@ -46,18 +46,26 @@ const handleParamGovernance = (zcf, paramManager) => {
     getUnknown: paramManager.getUnknown,
   };
 
-  const wrapPublicFacet = (originalPublicFacet = {}) => {
+  /**
+   * @param {T} originalPublicFacet
+   * @returns {T & GovernedPublicFacet}
+   * @template T
+   */
+  const wrapPublicFacet = (originalPublicFacet = /** @type {T} */ ({})) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
       getContractGovernor: () => electionManager,
-      /** @type {GetGovernedVaultParams} */
-      // @ts-expect-error we know this ParamManagerFull is really a GetGovernedVaultParams
       getGovernedParams: () => paramManager.getParams(),
       ...typedAccessors,
     });
   };
 
+  /**
+   * @param {T} originalCreatorFacet
+   * @returns {T & LimitedCreatorFacet}
+   * @template T
+   */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
     return Far('governedContract creator facet', {
       ...originalCreatorFacet,
@@ -65,7 +73,14 @@ const handleParamGovernance = (zcf, paramManager) => {
     });
   };
 
-  const wrapCreatorFacet = (originalCreatorFacet = Far('creatorFacet', {})) => {
+  /**
+   * @param {T} originalCreatorFacet
+   * @returns { GovernedCreatorFacet<T> }
+   * @template T
+   */
+  const wrapCreatorFacet = (
+    originalCreatorFacet = Far('creatorFacet', /** @type {T} */ ({})),
+  ) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet

@@ -405,13 +405,9 @@
  */
 
 /**
- * @callback GetGovernedVaultParams
- * @returns {{
- *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
- *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
- *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
- *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
- * }}
+ * @callback GetParams - getParams() retrieves a Record containing
+ *   keyword pairs with descriptions of parameters under governance.
+ * @returns {Record<Keyword,ParamShortDescription>}
  */
 
 /**
@@ -544,7 +540,7 @@
  * @typedef {Object} GovernedPublicFacet
  * @property {() => Subscription<ParamDescription>} getSubscription
  * @property {VoteOnParamChange} getContractGovernor
- * @property {GetGovernedVaultParams} getGovernedParams - get descriptions of
+ * @property {GetParams} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
@@ -562,28 +558,31 @@
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => LimitedCreatorFacet} getLimitedCreatorFacet - the creator
+ * @property {() => T} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
+ * @template {LimitedCreatorFacet} T
  */
 
 /**
  * @callback WrapPublicFacet
- * @param {any} originalPublicFacet
- * @returns {GovernedPublicFacet}
+ * @param {T} originalPublicFacet
+ * @returns {T & GovernedPublicFacet}
+ * @template T
  */
 
 /**
  * @callback WrapCreatorFacet
- * @param {any} originalCreatorFacet
- * @returns {GovernedCreatorFacet}
+ * @param {T} originalCreatorFacet
+ * @returns {GovernedCreatorFacet<T>}
+ * @template T
  */
 
 /**
  * @typedef {Object} ParamGovernorBundle
- * @property {WrapPublicFacet} wrapPublicFacet
- * @property {WrapCreatorFacet} wrapCreatorFacet
+ * @property {WrapPublicFacet<unknown>} wrapPublicFacet
+ * @property {WrapCreatorFacet<unknown>} wrapCreatorFacet
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance

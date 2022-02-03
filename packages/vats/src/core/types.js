@@ -90,6 +90,47 @@
 
 /**
  * @typedef {{
+ *   consume: {
+ *     agoricNames: Promise<NameHub>,
+ *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
+ *     ammGovernorCreatorFacet: ERef<GovernedContractFacetAccess>,
+ *     chainTimerService: ERef<TimerService>,
+ *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
+ *     ammBundle: ERef<{ moduleFormat: string }>,
+ *     getRUNBundle: ERef<{ moduleFormat: string }>,
+ *     vaultBundles: ERef<Record<string, { moduleFormat: string }>>,
+ *     feeMintAccess: ERef<FeeMintAccess>,
+ *     governanceBundles: ERef<Record<string, { moduleFormat: string }>>,
+ *     nameAdmins: Promise<Store<NameHub, NameAdmin>>,
+ *     priceAuthority: ERef<PriceAuthority>,
+ *     priceAuthorityAdmin: ERef<PriceAuthorityRegistryAdmin>,
+ *     vaultFactoryCreator: ERef<unknown>,
+ *     vaultFactoryGovernorCreator: ERef<GovernedContractFacetAccess>,
+ *     zoe: ERef<ZoeService>,
+ *   },
+ *   produce: {
+ *     agoricNames: Producer<NameHub>,
+ *     agoricNamesAdmin: Producer<NameAdmin>,
+ *     ammCreatorFacet: Producer<unknown>,
+ *     ammGovernorCreatorFacet: Producer<unknown>,
+ *     chainTimerService: Producer<ERef<TimerService>>,
+ *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
+ *     ammBundle: Producer<{ moduleFormat: string }>,
+ *     getRUNBundle: Producer<{ moduleFormat: string }>,
+ *     vaultBundles: Producer<Record<string, { moduleFormat: string }>>,
+ *     governanceBundles: Producer<Record<string, { moduleFormat: string }>>,
+ *     feeMintAccess: Producer<FeeMintAccess>,
+ *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
+ *     priceAuthority: Producer<PriceAuthority>,
+ *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>,
+ *     vaultFactoryCreator: Producer<unknown>,
+ *     vaultFactoryGovernorCreator: Producer<unknown>,
+ *     vaultFactoryVoteCreator: Producer<unknown>,
+ *     zoe: Producer<ERef<ZoeService>>,
+ *   },
+ * }} EconomyBootstrapPowers
+ *
+ * @typedef {{
  *   devices: {
  *      timer: unknown,
  *      bridge: Device<import('../bridge.js').BridgeDevice>,
@@ -103,36 +144,24 @@
  *   },
  *   vatPowers: { D: DProxy },
  *   runBehaviors: (manifest: unknown) => Promise<unknown>,
- *   consume: {
- *     agoricNames: Promise<NameHub>,
+ *   consume: EconomyBootstrapPowers['consume'] & {
  *     bankManager: Promise<BankManager>,
- *     bridgeManager: ERef<OptionalBridgeManager>,
  *     board: ERef<Board>,
- *     chainTimerService: ERef<TimerService>,
+ *     bridgeManager: ERef<OptionalBridgeManager>,
  *     client: ERef<ClientManager>,
  *     clientCreator: ERef<ClientCreator>,
- *     feeMintAccess: ERef<FeeMintAccess>,
- *     nameAdmins: Promise<Store<NameHub, NameAdmin>>,
  *     provisioning: ProvisioningVat,
  *     vatAdminSvc: ERef<VatAdminSvc>,
- *     zoe: ERef<ZoeService>,
  *   },
- *   produce: {
- *     agoricNames: Producer<NameHub>,
- *     agoricNamesAdmin: Producer<NameAdmin>,
+ *   produce: EconomyBootstrapPowers['produce'] & {
  *     bankManager: Producer<unknown>,
- *     bridgeManager: Producer<OptionalBridgeManager>,
  *     board: Producer<ERef<Board>>,
- *     chainTimerService: Producer<ERef<TimerService>>,
+ *     bridgeManager: Producer<OptionalBridgeManager>,
  *     client: Producer<ClientManager>,
  *     clientCreator: Producer<ClientCreator>,
- *     feeMintAccess: Producer<FeeMintAccess>,
  *     loadVat: Producer<VatLoader<unknown>>,
- *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
- *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>,
  *     provisioning: Producer<unknown>,
  *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
- *     zoe: Producer<ZoeService>,
  *   },
  * }} BootstrapPowers
  * @typedef {*} BankManager // TODO

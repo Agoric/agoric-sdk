@@ -129,36 +129,56 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
 });
 
 export const GOVERNANCE_ACTIONS_MANIFEST = harden({
+  shareEconomyBundles: {
+    produce: {
+      ammBundle: true,
+      getRUNBundle: true,
+      vaultBundles: true,
+      governanceBundles: true,
+    },
+  },
+  startEconomicCommittee: {
+    consume: {
+      agoricNames: true,
+      nameAdmins: true,
+      zoe: true,
+      governanceBundles: true,
+    },
+    produce: { economicCommitteeCreatorFacet: true },
+  },
+  setupAmm: {
+    consume: {
+      chainTimerService: true,
+      agoricNames: true,
+      nameAdmins: true,
+      zoe: true,
+      economicCommitteeCreatorFacet: true,
+      ammBundle: true,
+    },
+    produce: { ammCreatorFacet: true, ammGovernorCreatorFacet: true },
+  },
+  startPriceAuthority: {
+    consume: { loadVat: true },
+    produce: { priceAuthority: true, priceAuthorityAdmin: true },
+  },
   startVaultFactory: {
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
-      board: true,
-      chainTimerService: true,
-      loadVat: true,
-      zoe: true,
       feeMintAccess: true,
+      agoricNames: true,
+      vaultBundles: true,
+      nameAdmins: true,
+      chainTimerService: true,
+      zoe: true,
+      priceAuthority: true,
+      economicCommitteeCreatorFacet: true,
     },
     produce: {
-      priceAuthorityAdmin: true,
+      vaultFactoryCreator: true,
+      vaultFactoryGovernorCreator: true,
+      vaultFactoryVoteCreator: true,
     },
   },
-  installEconomicGovernance: {
-    consume: {
-      zoe: true,
-      agoricNames: true,
-      nameAdmins: true,
-    },
-  },
-  startGetRun: {
-    consume: {
-      zoe: true,
-      feeMintAccess: true,
-      agoricNames: true,
-      chainTimerService: true,
-      nameAdmins: true,
-      bridgeManager: true,
-      client: true,
-    },
+  configureVaultFactoryUI: {
+    consume: { agoricNames: true, nameAdmins: true, board: true, zoe: true },
   },
 });

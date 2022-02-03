@@ -2,14 +2,10 @@
 import { E, Far } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
 
-import { makeStore } from '@agoric/store';
-
 import { makeNameHubKit } from '../nameHub.js';
 import { BLD_ISSUER_ENTRY } from '../issuers.js';
 
-import { feeIssuerConfig, collectNameAdmins, shared } from './utils.js';
-
-const { keys } = Object;
+import { feeIssuerConfig, collectNameAdmins, makeNameAdmins } from './utils.js';
 
 /**
  * TODO: review behaviors carefully for powers that go out of scope,
@@ -93,34 +89,12 @@ harden(makeBoard);
 /** @param {BootstrapPowers} powers */
 export const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
   const {
-    nameHub: agoricNames,
-    nameAdmin: agoricNamesAdmin,
-  } = makeNameHubKit();
-
-  const {
     nameHub: namesByAddress,
     nameAdmin: namesByAddressAdmin,
   } = makeNameHubKit();
 
-  /** @type {Store<NameHub, NameAdmin>} */
-  const nameAdmins = makeStore('nameHub');
-  await Promise.all(
-    ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].map(
-      async nm => {
-        const { nameHub, nameAdmin } = makeNameHubKit();
-        await E(agoricNamesAdmin).update(nm, nameHub);
-        nameAdmins.init(nameHub, nameAdmin);
-        if (nm === 'uiConfig') {
-          // Reserve the Vault Factory's config until we've populated it.
-          nameAdmin.reserve('vaultFactory');
-        } else if (['issuer', 'brand'].includes(nm)) {
-          keys(shared.assets).forEach(k => nameAdmin.reserve(k));
-        } else if (['installation', 'instance'].includes(nm)) {
-          keys(shared.contract).forEach(k => nameAdmin.reserve(k));
-        }
-      },
-    ),
-  );
+  const { agoricNames, agoricNamesAdmin, nameAdmins } = makeNameAdmins();
+
   produce.nameAdmins.resolve(nameAdmins);
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
@@ -160,8 +134,7 @@ export const makeClientBanks = async ({
   consume: { loadVat, client, bridgeManager },
   produce: { bankManager },
 }) => {
-  const settledBridge = await bridgeManager; // ISSUE: why await? it's remote, no?
-  const mgr = E(E(loadVat)('bank')).makeBankManager(settledBridge);
+  const mgr = E(E(loadVat)('bank')).makeBankManager(bridgeManager);
   bankManager.resolve(mgr);
   return E(client).assignBundle({
     bank: address => E(mgr).getBankForAddress(address),

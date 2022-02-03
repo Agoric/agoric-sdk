@@ -31,6 +31,10 @@
  */
 
 /**
+ * @typedef {Object} XYKAMMCreatorFacet
+ * @property {() => ERef<Invitation>} makeCollectFeesInvitation
+ */
+/**
  * @typedef {Object} XYKAMMPublicFacet
  * @property {(issuer: Issuer, keyword: Keyword) => Promise<Issuer>} addPool
  * add a new liquidity pool
@@ -49,10 +53,10 @@
  * @property {(brand: Brand) => Issuer} getLiquidityIssuer
  * @property {(brand: Brand) => bigint} getLiquiditySupply get the current value of
  * liquidity in the pool for brand held by investors.
- * @property {(amountIn: Amount, brandOut: Brand) => VPoolPriceQuote} getInputPrice
+ * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getInputPrice
  * calculate the amount of brandOut that will be returned if the amountIn is
  * offered using makeSwapInInvitation at the current price.
- * @property {(amountOut: Amount, brandIn: Brand) => VPoolPriceQuote} getOutputPrice
+ * @property {(amountOut: Amount, amountIn: Amount) => VPoolPriceQuote} getOutputPrice
  * calculate the amount of brandIn that is required in order to get amountOut
  * using makeSwapOutInvitation at the current price
  * @property {(brand: Brand) => Record<string, Amount>} getPoolAllocation get an

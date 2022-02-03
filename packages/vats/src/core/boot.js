@@ -1,6 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { extract, makePromiseSpace } from './utils.js';
 import {
   CHAIN_BOOTSTRAP_MANIFEST,
   SIM_CHAIN_BOOTSTRAP_MANIFEST,
@@ -10,7 +10,7 @@ import {
 import * as behaviors from './behaviors.js';
 import * as simBehaviors from './sim-behaviors.js';
 
-const { entries, fromEntries, keys } = Object;
+const { entries } = Object;
 const { details: X, quote: q } = assert;
 
 // Choose a manifest based on runtime configured argv.ROLE.
@@ -21,101 +21,6 @@ const roleToManifest = harden({
 const roleToBehaviors = harden({
   'sim-chain': { ...behaviors, ...simBehaviors },
 });
-
-/**
- * Make { produce, consume } where for each name, `consume[name]` is a promise
- * and `produce[name].resolve` resolves it.
- *
- * @returns {PromiseSpace}
- */
-const makePromiseSpace = () => {
-  /** @type {Map<string, PromiseRecord<unknown>>} */
-  const state = new Map();
-  const remaining = new Set();
-
-  const findOrCreateKit = name => {
-    let kit = state.get(name);
-    if (!kit) {
-      console.info(`${name}: new Promise`);
-      kit = makePromiseKit();
-      state.set(name, kit);
-      remaining.add(name);
-    }
-    return kit;
-  };
-
-  const consume = new Proxy(
-    {},
-    {
-      get: (_target, name) => {
-        assert.typeof(name, 'string');
-        const kit = findOrCreateKit(name);
-        return kit.promise;
-      },
-    },
-  );
-
-  const produce = new Proxy(
-    {},
-    {
-      get: (_target, name) => {
-        assert.typeof(name, 'string');
-        const { resolve, promise } = findOrCreateKit(name);
-        // promise.then(
-        // () => console.info(name, ': resolve'),
-        // e => console.info(name, ': reject', e),
-        // );
-        promise.finally(() => {
-          remaining.delete(name);
-          console.info(
-            name,
-            'settled; remaining:',
-            [...remaining.keys()].sort(),
-          );
-        });
-        // Note: repeated resolves() are noops.
-        return harden({ resolve });
-      },
-    },
-  );
-
-  return harden({ produce, consume });
-};
-
-/**
- * @param {unknown} template
- * @param {unknown} specimen
- */
-const extract = (template, specimen) => {
-  if (template === true) {
-    return specimen;
-  } else if (typeof template === 'object' && template !== null) {
-    if (typeof specimen !== 'object' || specimen === null) {
-      assert.fail(X`object template requires object specimen, not ${specimen}`);
-    }
-    const target = harden(
-      fromEntries(
-        entries(template).map(([propName, subTemplate]) => [
-          propName,
-          extract(subTemplate, specimen[propName]),
-        ]),
-      ),
-    );
-    return new Proxy(target, {
-      get: (t, propName) => {
-        if (typeof propName !== 'symbol') {
-          assert(
-            propName in t,
-            X`${propName} not permitted, only ${keys(template)}`,
-          );
-        }
-        return t[propName];
-      },
-    });
-  } else {
-    assert.fail(X`unexpected template: ${q(template)}`);
-  }
-};
 
 /**
  * Build root object of the bootstrap vat.
@@ -171,8 +76,9 @@ const buildRootObject = (vatPowers, vatParameters) => {
           entries(manifest).map(([name, permit]) =>
             Promise.resolve().then(() => {
               const endowments = extract(permit, powers);
+              const config = vatParameters[name];
               console.info(`bootstrap: ${name}(${q(permit)})`);
-              return bootBehaviors[name](endowments);
+              return bootBehaviors[name](endowments, config);
             }),
           ),
         );
@@ -186,5 +92,5 @@ const buildRootObject = (vatPowers, vatParameters) => {
   });
 };
 
-harden({ buildRootObject, extract });
-export { buildRootObject, extract };
+harden({ buildRootObject });
+export { buildRootObject };
