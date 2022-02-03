@@ -6,7 +6,6 @@ import binaryVoteCounterBundle from '../bundles/bundle-binaryVoteCounter.js';
 import liquidateBundle from '../bundles/bundle-liquidateMinimum.js';
 import ammBundle from '../bundles/bundle-amm.js';
 import vaultFactoryBundle from '../bundles/bundle-vaultFactory.js';
-import getRUNBundle from '../bundles/bundle-getRUN.js';
 
 /** @type { Record<string, { moduleFormat: string }>} */
 export const governanceBundles = {
@@ -22,7 +21,6 @@ export const economyBundles = {
   liquidate: liquidateBundle,
   amm: ammBundle,
   VaultFactory: vaultFactoryBundle,
-  getRUN: getRUNBundle,
 };
 harden(economyBundles);
 
