@@ -132,6 +132,13 @@ const Provider = ({ children }) => {
   const [issuers, setIssuers] = useReducer(issuersReducer, null);
   const [services, setServices] = useState(null);
   const [schemaActions, setSchemaActions] = useState(null);
+  const [useChainBackend, setUseChainBackend] = useState(false);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const onChain = urlParams.get('onchain') === 'true';
+    setUseChainBackend(onChain);
+  }, []);
 
   const setBackend = backend => {
     setSchemaActions(backend.actions);
@@ -201,6 +208,7 @@ const Provider = ({ children }) => {
     setDeclinedOffers,
     closedOffers,
     setClosedOffers,
+    useChainBackend,
   };
 
   useDebugLogging(state, [
