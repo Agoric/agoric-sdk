@@ -57,8 +57,6 @@ const handleParamGovernance = (zcf, paramManager) => {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
       getContractGovernor: () => electionManager,
-      /** @type {GetGovernedVaultParams} */
-      // @ts-expect-error we know this ParamManagerFull is really a GetGovernedVaultParams
       getGovernedParams: () => paramManager.getParams(),
       ...typedAccessors,
     });

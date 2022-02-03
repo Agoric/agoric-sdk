@@ -405,13 +405,9 @@
  */
 
 /**
- * @callback GetGovernedVaultParams
- * @returns {{
- *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
- *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
- *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
- *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
- * }}
+ * @callback GetParams - getParams() retrieves a Record containing
+ *   keyword pairs with descriptions of parameters under governance.
+ * @returns {Record<Keyword,ParamShortDescription>}
  */
 
 /**
@@ -544,7 +540,7 @@
  * @typedef {Object} GovernedPublicFacet
  * @property {() => Subscription<ParamDescription>} getSubscription
  * @property {VoteOnParamChange} getContractGovernor
- * @property {GetGovernedVaultParams} getGovernedParams - get descriptions of
+ * @property {GetParams} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand

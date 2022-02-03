@@ -12,6 +12,7 @@
  * @property {Ratio} liquidationMargin
  * @property {Ratio} stabilityFee
  * @property {Ratio} marketPrice
+ * @property {Ratio} interestRate
  * @property {Brand} brand
  */
 
@@ -132,7 +133,7 @@
  * @typedef {Object} VaultMixin
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
  * @property {() => Promise<Invitation>} makeCloseInvitation
- * @property {() => Promise<UserSeat>} getLiquidationSeat
+ * @property {() => ERef<UserSeat>} getLiquidationSeat
  * @property {() => Promise<string>} getLiquidationPromise
  */
 
@@ -232,6 +233,16 @@
  * @property {(margin: Ratio) => void} updateLiquidationMargin
  * @property {(ratio: Ratio) => void} updateInterestRate
  * @property {(ratio: Ratio) => void} updateLoanFee
+ */
+
+/**
+ * @callback GetGovernedVaultParams
+ * @returns {{
+ *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
+ *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
+ * }}
  */
 
 /**

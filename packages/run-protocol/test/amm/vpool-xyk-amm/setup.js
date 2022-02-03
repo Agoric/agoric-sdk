@@ -142,7 +142,7 @@ export const setupAmmServices = async (
   };
   const governedInstance = E(governorPublicFacet).getGovernedContract();
 
-  /** @type { XYKAMMPublicFacet } */
+  /** @type { XYKAMMPublicFacet & GovernedPublicFacet } */
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
   const amm = {
     ammCreatorFacet: await consume.ammCreatorFacet,
