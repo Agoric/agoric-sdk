@@ -262,13 +262,8 @@ export function makeVirtualReferenceManager(
         } else {
           // exported non-virtual object: Remotable
           const remotable = requiredValForSlot(vref);
-          if (remotableRefCounts.has(remotable)) {
-            /** @type {number} */
-            const oldRefCount = (remotableRefCounts.get(remotable));
-            remotableRefCounts.set(remotable, oldRefCount + 1);
-          } else {
-            remotableRefCounts.set(remotable, 1);
-          }
+          const oldRefCount = remotableRefCounts.get(remotable) || 0;
+          remotableRefCounts.set(remotable, oldRefCount + 1);
         }
       } else {
         // We refcount imports, to preserve their vrefs against
@@ -288,8 +283,7 @@ export function makeVirtualReferenceManager(
         } else {
           // exported non-virtual object: Remotable
           const remotable = requiredValForSlot(vref);
-          /** @type {number} */
-          const oldRefCount = (remotableRefCounts.get(remotable));
+          const oldRefCount = remotableRefCounts.get(remotable) || 0;
           assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
           if (oldRefCount === 1) {
             remotableRefCounts.delete(remotable);

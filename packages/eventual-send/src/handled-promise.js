@@ -426,7 +426,7 @@ export const makeHandledPromise = () => {
     },
     resolve(value) {
       // Resolving a Presence returns the pre-registered handled promise.
-      let resolvedPromise = presenceToPromise.get(value);
+      let resolvedPromise = presenceToPromise.get(/** @type {any} */ (value));
       if (!resolvedPromise) {
         resolvedPromise = Promise.resolve(value);
       }

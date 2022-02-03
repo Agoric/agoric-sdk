@@ -85,6 +85,15 @@ const makePurseController = (
  */
 
 /**
+ * @typedef {Object} AssetDescriptor
+ * @property {Brand} brand
+ * @property {Issuer} issuer
+ * @property {string} issuerName
+ * @property {string} denom
+ * @property {string} proposedName
+ */
+
+/**
  * @typedef {Object} Bank
  * @property {() => Subscription<AssetDescriptor>} getAssetSubscription Returns
  * assets as they are added to the bank
@@ -154,14 +163,6 @@ export function buildRootObject(_vatPowers) {
         ? makeBankCaller(bankBridgeManager)
         : undefined);
 
-      /**
-       * @typedef {Object} AssetDescriptor
-       * @property {Brand} brand
-       * @property {Issuer} issuer
-       * @property {string} issuerName
-       * @property {string} denom
-       * @property {string} proposedName
-       */
       /** @type {SubscriptionRecord<AssetDescriptor>} */
       const {
         subscription: assetSubscription,
