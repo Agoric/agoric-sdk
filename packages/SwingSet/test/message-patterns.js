@@ -7,7 +7,7 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { quote as q } from '@agoric/assert';
 import { Far } from '@endo/marshal';
-import { ignore } from './util.js';
+import { ignore } from './vat-util.js';
 
 // Exercise a set of increasingly complex object-capability message patterns,
 // for testing.

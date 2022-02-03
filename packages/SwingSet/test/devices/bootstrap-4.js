@@ -1,7 +1,7 @@
 import { assert } from '@agoric/assert';
 import { QCLASS } from '@endo/marshal';
 import { insistVatType } from '../../src/parseVatSlots.js';
-import { extractMessage } from '../util.js';
+import { extractMessage } from '../vat-util.js';
 
 // to exercise the error we get when syscall.callNow() is given a promise
 // identifier, we must bypass liveslots, which would otherwise protect us
