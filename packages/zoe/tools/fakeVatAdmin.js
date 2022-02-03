@@ -9,10 +9,10 @@ import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
 
 /**
- * @param {Function} [testContextSetter]
- * @param {(val: any) => any} [makeRemote]
+ * @param { (...args) => unknown } [testContextSetter]
+ * @param { (x: unknown) => unknown } [makeRemote]
  */
-function makeFakeVatAdmin(testContextSetter, makeRemote = x => x) {
+function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is
   // provided to allow unit testing of contracts that call zcf.shutdown()
   let exitMessage;

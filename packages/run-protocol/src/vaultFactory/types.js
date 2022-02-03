@@ -51,9 +51,9 @@
  * @property {AddVaultType} addVaultType
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation,
- * @property {() => ERef<Payment>} getBootstrapPayment
+ * @property {() => Promise<Payment>} getBootstrapPayment
  * @property {() => Instance} getContractGovernor
- * @property {() => ERef<Invitation>} makeCollectFeesInvitation
+ * @property {() => Promise<Invitation>} makeCollectFeesInvitation
  */
 
 /**
@@ -132,7 +132,7 @@
  * @typedef {Object} VaultMixin
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
  * @property {() => Promise<Invitation>} makeCloseInvitation
- * @property {() => ERef<UserSeat>} getLiquidationSeat
+ * @property {() => Promise<UserSeat>} getLiquidationSeat
  * @property {() => Promise<string>} getLiquidationPromise
  */
 

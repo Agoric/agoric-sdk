@@ -15,19 +15,20 @@ async function writeSourceBundle(contractFilename, outputPath) {
   });
 }
 
-async function main() {
-  for await (const { src, bundle } of [
-    { src: 'contractFacet/vatRoot.js', bundle: 'bundle-contractFacet.js' },
-    {
-      src: 'contracts/attestation/attestation.js',
-      bundle: 'bundle-attestation.js',
-    },
-  ]) {
-    const contractFilename = `${dirname}/../src/${src}`;
-    const outputPath = `${dirname}/../bundles/${bundle}`;
-    await writeSourceBundle(contractFilename, outputPath);
-  }
-}
+const main = () =>
+  Promise.all(
+    [
+      { src: 'contractFacet/vatRoot.js', bundle: 'bundle-contractFacet.js' },
+      {
+        src: 'contracts/attestation/attestation.js',
+        bundle: 'bundle-attestation.js',
+      },
+    ].map(({ src, bundle }) => {
+      const contractFilename = `${dirname}/../src/${src}`;
+      const outputPath = `${dirname}/../bundles/${bundle}`;
+      return writeSourceBundle(contractFilename, outputPath);
+    }),
+  );
 
 main().then(
   _ => process.exit(0),
