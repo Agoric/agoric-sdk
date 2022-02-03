@@ -1,5 +1,7 @@
 // @ts-check
 
+import '@endo/marshal/exported.js';
+
 /// <reference types="ses"/>
 
 import {
