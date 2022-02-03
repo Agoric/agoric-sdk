@@ -31,6 +31,10 @@
  */
 
 /**
+ * @typedef {Object} XYKAMMCreatorFacet
+ * @property {() => ERef<Invitation>} makeCollectFeesInvitation
+ */
+/**
  * @typedef {Object} XYKAMMPublicFacet
  * @property {(issuer: Issuer, keyword: Keyword) => Promise<Issuer>} addPool
  * add a new liquidity pool

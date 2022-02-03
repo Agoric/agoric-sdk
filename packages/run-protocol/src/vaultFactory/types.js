@@ -53,7 +53,7 @@
  * @property {() => Allocation} getRewardAllocation,
  * @property {() => ERef<Payment>} getBootstrapPayment
  * @property {() => Instance} getContractGovernor
- * @property {() => Invitation} makeCollectFeesInvitation
+ * @property {() => ERef<Invitation>} makeCollectFeesInvitation
  */
 
 /**

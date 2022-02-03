@@ -14,6 +14,7 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
+import '@agoric/vats/src/core/types.js';
 
 import { makeGovernedTerms } from './vaultFactory/params.js';
 

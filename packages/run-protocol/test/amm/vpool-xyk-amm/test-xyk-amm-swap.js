@@ -173,6 +173,7 @@ test('amm with valid offers', async t => {
   const bobSwapInvitation1 = await E(amm.ammPublicFacet).makeSwapInInvitation();
 
   const { value } = await E(invitationIssuer).getAmountOf(bobSwapInvitation1);
+  assert(Array.isArray(value)); // non-fungible
   const [bobInvitationValue] = value;
   const bobPublicFacet = await E(zoe).getPublicFacet(
     bobInvitationValue.instance,
@@ -629,6 +630,7 @@ test('amm with some invalid offers', async t => {
   const bobSwapInvitation1 = await E(amm.ammPublicFacet).makeSwapInInvitation();
 
   const { value } = await E(invitationIssuer).getAmountOf(bobSwapInvitation1);
+  assert(Array.isArray(value)); // non-fungible
   const [bobInvitationValue] = value;
   const bobPublicFacet = E(zoe).getPublicFacet(bobInvitationValue.instance);
 

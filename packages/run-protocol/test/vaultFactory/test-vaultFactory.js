@@ -189,7 +189,6 @@ async function getRunFromFaucet(
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
  * @param {LoanTiming} loanTiming
- * @param loanTiming
  * @param {unknown} priceList
  * @param {Amount} unitAmountIn
  * @param {Brand} aethBrand
@@ -266,9 +265,13 @@ async function setupServices(
   });
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
+  /** @type {Promise<VaultFactory & LimitedCreatorFacet>} */
+  const vaultFactoryCreatorFacet = /** @type { any } */ (E(
+    governorCreatorFacet,
+  ).getCreatorFacet());
   const [governorInstance, vaultFactory, lender] = await Promise.all([
     E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
-    E(governorCreatorFacet).getCreatorFacet(),
+    vaultFactoryCreatorFacet,
     E(governorCreatorFacet).getPublicFacet(),
   ]);
 
