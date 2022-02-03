@@ -92,7 +92,7 @@
  * @typedef {{
  *   consume: {
  *     agoricNames: Promise<NameHub>,
- *     ammCreatorFacet: ERef<unknown>,
+ *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
  *     ammGovernorCreatorFacet: ERef<GovernedContractFacetAccess>,
  *     chainTimerService: ERef<TimerService>,
  *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
