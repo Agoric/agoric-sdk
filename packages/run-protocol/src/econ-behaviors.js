@@ -6,7 +6,6 @@ import {
   makeGovernedInvitation,
   CONTRACT_ELECTORATE,
   makeGovernedNat,
-  makeGovernedRatio,
 } from '@agoric/governance';
 import {
   CENTRAL_ISSUER_NAME,
@@ -16,12 +15,7 @@ import {
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 
-import { BLD_ISSUER_ENTRY } from '@agoric/vats/src/issuers.js';
-import { makeStakeReporter } from '@agoric/vats/src/my-lien.js';
-import {
-  makeElectorateParams,
-  makeGovernedTerms,
-} from './vaultFactory/params.js';
+import { makeGovernedTerms } from './vaultFactory/params.js';
 
 import '../exported.js';
 
@@ -196,7 +190,7 @@ harden(startPriceAuthority);
 /**
  * @param { EconomyBootstrapPowers } powers
  * @param { Object } config
- * @param { LoanParams } config.loanParams
+ * @param { LoanTiming } config.loanParams
  */
 export const startVaultFactory = async (
   {
