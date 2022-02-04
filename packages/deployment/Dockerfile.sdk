@@ -13,7 +13,7 @@ RUN make GIT_COMMIT="$GIT_COMMIT" MOD_READONLY= compile-go
 
 ###############################
 # The js build container
-FROM node:14.15-buster AS build-js
+FROM node:14-buster AS build-js
 
 # When changing/adding entries here, make sure to search the whole project for
 # `@@AGORIC_DOCKER_SUBMODULES@@`
@@ -51,7 +51,7 @@ RUN rm -rf packages/xsnap/moddable
 
 ###############################
 # The install container.
-FROM node:14.15-buster AS install
+FROM node:14-buster AS install
 
 # Install some conveniences.
 RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less && apt-get clean -y
