@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { ALLOW_IMPLICIT_REMOTABLES, Far, passStyleOf } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';
 import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
@@ -121,13 +121,8 @@ test('reject promise keys', t => {
 test('passability of stores', t => {
   t.is(passStyleOf(makeScalarMapStore('foo')), 'remotable');
   t.is(passStyleOf(makeScalarWeakMapStore('foo')), 'remotable');
-  if (ALLOW_IMPLICIT_REMOTABLES) {
-    t.is(passStyleOf(makeLegacyMap('foo')), 'remotable');
-    t.is(passStyleOf(makeLegacyWeakMap('foo')), 'remotable');
-  } else {
-    t.throws(() => passStyleOf(makeLegacyMap('foo')), { message: /x/ });
-    t.throws(() => passStyleOf(makeLegacyWeakMap('foo')), { message: /x/ });
-  }
+  t.throws(() => passStyleOf(makeLegacyMap('foo')), { message: /x/ });
+  t.throws(() => passStyleOf(makeLegacyWeakMap('foo')), { message: /x/ });
 });
 
 test('passability of store iters', t => {
