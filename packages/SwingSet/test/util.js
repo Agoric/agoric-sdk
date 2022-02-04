@@ -34,9 +34,9 @@ export function checkKT(t, kernel, expected) {
 }
 
 export function dumpKT(kernel) {
-  const got = Array.from(
-    kernel.dump().kernelTable,
-  ).map(([kid, vatdev, vid]) => [vatdev, vid, kid]);
+  const got = Array.from(kernel.dump().kernelTable).map(
+    ([kid, vatdev, vid]) => [vatdev, vid, kid],
+  );
   got.sort(compareArraysOfStrings);
   for (const [vatdev, vid, kid] of got) {
     console.log(`${vatdev}:${vid} <-> ${kid}`);

@@ -62,7 +62,7 @@
     "eslint-plugin-prettier": "^3.2.0",
     "lerna": "^3.20.2",
     "npm-run-all": "^4.1.5",
-    "prettier": "^1.19.1",
+    "prettier": "^2.5.1",
     "typescript": "~4.5.5"
   },
   "engines": {
@@ -72,6 +72,7 @@
     "root": true
   },
   "prettier": {
+    "arrowParens": "avoid",
     "trailingComma": "all",
     "singleQuote": true
   },
@@ -81,8 +82,8 @@
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
-    "format": "yarn prettier --write '{.github,golang,packages}/**/*.{js,jsx,ts,tsx,yml,yaml}'",
-    "lint:format": "yarn prettier --check '{.github,golang,packages}/**/*.{js,jsx,ts,tsx,yml,yaml}'",
+    "format": "yarn prettier --write .github golang packages",
+    "lint:format": "yarn prettier --check .github golang packages",
     "lint-fix": "yarn workspaces run lint-fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:packages": "yarn workspaces run lint",

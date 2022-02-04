@@ -64,10 +64,8 @@ function makeVirtualPurse(vpc, kit) {
   }
 
   /** @type {NotifierRecord<Amount>} */
-  const {
-    notifier: balanceNotifier,
-    updater: balanceUpdater,
-  } = makeNotifierKit();
+  const { notifier: balanceNotifier, updater: balanceUpdater } =
+    makeNotifierKit();
 
   /** @type {ERef<Amount>} */
   let lastBalance = E.get(balanceNotifier.getUpdateSince()).value;

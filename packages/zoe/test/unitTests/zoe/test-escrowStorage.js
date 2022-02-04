@@ -12,12 +12,8 @@ import {
 } from '../../zoeTestHelpers.js';
 
 test('makeEscrowStorage', async t => {
-  const {
-    createPurse,
-    makeLocalPurse,
-    withdrawPayments,
-    depositPayments,
-  } = makeEscrowStorage();
+  const { createPurse, makeLocalPurse, withdrawPayments, depositPayments } =
+    makeEscrowStorage();
 
   const currencyKit = makeIssuerKit(
     'currency',

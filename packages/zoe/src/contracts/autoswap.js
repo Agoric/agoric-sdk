@@ -61,10 +61,8 @@ const start = async zcf => {
   const liquidityMint = await zcf.makeZCFMint('Liquidity');
   // AWAIT  ////////////////////
 
-  const {
-    issuer: liquidityIssuer,
-    brand: liquidityBrand,
-  } = liquidityMint.getIssuerRecord();
+  const { issuer: liquidityIssuer, brand: liquidityBrand } =
+    liquidityMint.getIssuerRecord();
   let liqTokenSupply = 0n;
 
   // In order to get all the brands, we must call zcf.getTerms() after

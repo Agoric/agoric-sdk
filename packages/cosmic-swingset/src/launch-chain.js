@@ -144,9 +144,8 @@ export async function launch(
 ) {
   console.info('Launching SwingSet kernel');
 
-  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
-    kernelStateDBDir,
-  );
+  const { kvStore, streamStore, snapStore, commit } =
+    openSwingStore(kernelStateDBDir);
   const hostStorage = {
     kvStore,
     streamStore,
@@ -177,15 +176,13 @@ export async function launch(
     },
   );
 
-  const {
-    schedulerCrankTimeHistogram,
-    schedulerBlockTimeHistogram,
-  } = exportKernelStats({
-    controller,
-    metricMeter,
-    log: console,
-    labels: METRIC_LABELS,
-  });
+  const { schedulerCrankTimeHistogram, schedulerBlockTimeHistogram } =
+    exportKernelStats({
+      controller,
+      metricMeter,
+      log: console,
+      labels: METRIC_LABELS,
+    });
 
   async function crankScheduler(policy, clock = () => Date.now()) {
     let now = clock();

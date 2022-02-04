@@ -152,11 +152,7 @@ const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
             // If it makes a significant difference, use the faster one.
             .reverse(),
         );
-        const rightNames = harden(
-          ownKeys(right)
-            .sort()
-            .reverse(),
-        );
+        const rightNames = harden(ownKeys(right).sort().reverse());
         const result = comparator(leftNames, rightNames);
         if (result !== 0) {
           return result;
@@ -393,10 +389,8 @@ export const intersectRankCovers = (compare, covers) => {
   return covers.reduce(intersectRankCoverPair, ['', '{']);
 };
 
-export const {
-  comparator: compareRank,
-  antiComparator: compareAntiRank,
-} = makeComparatorKit();
+export const { comparator: compareRank, antiComparator: compareAntiRank } =
+  makeComparatorKit();
 
 /**
  * Create a comparator kit in which remotables are fully ordered

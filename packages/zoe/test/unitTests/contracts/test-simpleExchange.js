@@ -63,9 +63,9 @@ test('simpleExchange with valid offers', async t => {
       t.is(beforeAliceCount, 3);
     });
 
-  const {
-    value: initialOrders,
-  } = await publicFacet.getNotifier().getUpdateSince();
+  const { value: initialOrders } = await publicFacet
+    .getNotifier()
+    .getUpdateSince();
   t.deepEqual(
     initialOrders,
     { buys: [], sells: [] },
@@ -160,15 +160,11 @@ test('simpleExchange with valid offers', async t => {
   assertOfferResult(t, bobSeat, 'Order Added');
   assertOfferResult(t, aliceSeat, 'Order Added');
 
-  const {
-    Asset: bobMoolaPayout,
-    Price: bobSimoleanPayout,
-  } = await bobSeat.getPayouts();
+  const { Asset: bobMoolaPayout, Price: bobSimoleanPayout } =
+    await bobSeat.getPayouts();
 
-  const {
-    Asset: aliceMoolaPayout,
-    Price: aliceSimoleanPayout,
-  } = await aliceSeat.getPayouts();
+  const { Asset: aliceMoolaPayout, Price: aliceSimoleanPayout } =
+    await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
   t.truthy(
@@ -391,15 +387,11 @@ test('simpleExchange with non-fungible assets', async t => {
   assertOfferResult(t, bobSeat, 'Order Added');
   assertOfferResult(t, aliceSeat, 'Order Added');
 
-  const {
-    Asset: bobRpgPayout,
-    Price: bobCcPayout,
-  } = await bobSeat.getPayouts();
+  const { Asset: bobRpgPayout, Price: bobCcPayout } =
+    await bobSeat.getPayouts();
 
-  const {
-    Asset: aliceRpgPayout,
-    Price: aliceCcPayout,
-  } = await aliceSeat.getPayouts();
+  const { Asset: aliceRpgPayout, Price: aliceCcPayout } =
+    await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
   t.truthy(

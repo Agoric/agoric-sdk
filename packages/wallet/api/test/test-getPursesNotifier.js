@@ -50,12 +50,8 @@ const setup = async () => {
 };
 
 test('getPursesNotifier', async t => {
-  const {
-    wallet,
-    moolaKit,
-    MOOLA_ISSUER_PETNAME,
-    MOOLA_PURSE_PETNAME,
-  } = await setup();
+  const { wallet, moolaKit, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME } =
+    await setup();
   const pursesNotifier = wallet.getPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
   t.is(update.updateCount, 6);
@@ -71,8 +67,7 @@ test('getPursesNotifier', async t => {
     value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
-    body:
-      '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
+    body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
     slots: [
       {
         kind: 'brand',
@@ -90,12 +85,8 @@ test('getPursesNotifier', async t => {
 });
 
 test('getAttenuatedPursesNotifier', async t => {
-  const {
-    wallet,
-    MOOLA_ISSUER_PETNAME,
-    MOOLA_PURSE_PETNAME,
-    moolaKit,
-  } = await setup();
+  const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME, moolaKit } =
+    await setup();
   const pursesNotifier = wallet.getAttenuatedPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
   t.is(update.updateCount, 6);
@@ -111,8 +102,7 @@ test('getAttenuatedPursesNotifier', async t => {
     value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
-    body:
-      '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
+    body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
     slots: [
       {
         kind: 'brand',

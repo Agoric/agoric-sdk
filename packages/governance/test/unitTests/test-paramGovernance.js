@@ -83,10 +83,8 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
   ]);
   const installs = { governor, electorate, counter, governed };
 
-  const {
-    creatorFacet: committeeCreator,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(electorate, harden({}), electorateTerms);
+  const { creatorFacet: committeeCreator, instance: electorateInstance } =
+    await E(zoe).startInstance(electorate, harden({}), electorateTerms);
 
   // TODO (cth)   three awaits?
 
@@ -124,15 +122,12 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
 test('governParam no votes', async t => {
   const { zoe } = await setUpZoeForTest(() => {});
   const timer = buildManualTimer(console.log);
-  const {
-    governorFacets,
-    installs,
-    invitationAmount,
-  } = await setUpGovernedContract(
-    zoe,
-    { committeeName: 'Demos', committeeSize: 1 },
-    timer,
-  );
+  const { governorFacets, installs, invitationAmount } =
+    await setUpGovernedContract(
+      zoe,
+      { committeeName: 'Demos', committeeSize: 1 },
+      timer,
+    );
 
   const paramSpec = { key: 'contractParams', parameterName: MALLEABLE_NUMBER };
 

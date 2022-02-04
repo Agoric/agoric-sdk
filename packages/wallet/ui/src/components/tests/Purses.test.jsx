@@ -55,11 +55,17 @@ const purses = [
 
 const pendingTransfers = new Set([0]);
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <Component purses={purses} pendingTransfers={pendingTransfers} {...props} />
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <Component
+        purses={purses}
+        pendingTransfers={pendingTransfers}
+        {...props}
+      />
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };

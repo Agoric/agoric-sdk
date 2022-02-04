@@ -4,9 +4,11 @@ import AppBar, { AppBarWithoutContext } from '../AppBar';
 import ChainConnector from '../ChainConnector';
 import WalletConnection from '../WalletConnection';
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return <Component useChainBackend={false} {...props} />;
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return <Component useChainBackend={false} {...props} />;
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };

@@ -13,9 +13,7 @@ describe('AgoricPetimage', () => {
 
   it('passes the a11y audit', async () => {
     const el = await fixture(
-      html`
-        <agoric-petimage uid="AG.1"></agoric-petimage>
-      `,
+      html` <agoric-petimage uid="AG.1"></agoric-petimage> `,
     );
 
     await expect(el).shadowDom.to.be.accessible();
@@ -24,9 +22,7 @@ describe('AgoricPetimage', () => {
   it('calls Powerbox.expandPetdata on update', async () => {
     const expandPetdataStub = stub(Powerbox, 'expandPetdata');
     const el = await fixture(
-      html`
-        <agoric-petimage uid="AG.1"></agoric-petimage>
-      `,
+      html` <agoric-petimage uid="AG.1"></agoric-petimage> `,
     );
     expect(expandPetdataStub).to.have.callCount(1);
 
@@ -37,9 +33,7 @@ describe('AgoricPetimage', () => {
 
   it('renders a div with the correct data', async () => {
     const el = await fixture(
-      html`
-        <agoric-petimage uid="AG.1"></agoric-petimage>
-      `,
+      html` <agoric-petimage uid="AG.1"></agoric-petimage> `,
     );
 
     const inner = el.shadowRoot.querySelector('div');

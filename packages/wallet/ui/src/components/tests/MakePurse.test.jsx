@@ -56,19 +56,21 @@ const issuers = [
 const setPendingPurseCreations = jest.fn();
 const schemaActions = { createPurse: jest.fn() };
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <ThemeProvider theme={appTheme}>
-      <Component
-        issuers={issuers}
-        purses={purses}
-        setPendingPurseCreations={setPendingPurseCreations}
-        schemaActions={schemaActions}
-        {...props}
-      />
-    </ThemeProvider>
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <ThemeProvider theme={appTheme}>
+        <Component
+          issuers={issuers}
+          purses={purses}
+          setPendingPurseCreations={setPendingPurseCreations}
+          schemaActions={schemaActions}
+          {...props}
+        />
+      </ThemeProvider>
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };

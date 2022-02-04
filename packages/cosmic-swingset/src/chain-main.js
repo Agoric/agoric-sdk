@@ -288,10 +288,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
 
     if (!blockManager) {
-      const {
-        savedChainSends: scs,
-        ...fns
-      } = await launchAndInitializeSwingSet(action);
+      const { savedChainSends: scs, ...fns } =
+        await launchAndInitializeSwingSet(action);
       savedChainSends = scs;
       blockManager = makeBlockManager({
         ...fns,

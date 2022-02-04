@@ -123,12 +123,8 @@ const start = async (zcf, privateArgs) => {
     protocolFeeParam.value,
     initialPoserInvitation,
   );
-  const {
-    wrapPublicFacet,
-    wrapCreatorFacet,
-    getNat,
-    getInvitationAmount,
-  } = handleParamGovernance(zcf, paramManager);
+  const { wrapPublicFacet, wrapCreatorFacet, getNat, getInvitationAmount } =
+    handleParamGovernance(zcf, paramManager);
 
   const electorateInvAmt = getInvitationAmount(CONTRACT_ELECTORATE);
   assert(
@@ -166,9 +162,7 @@ const start = async (zcf, privateArgs) => {
     protocolSeat,
   );
   const getPoolAllocation = brand => {
-    return getPool(brand)
-      .getPoolSeat()
-      .getCurrentAllocation();
+    return getPool(brand).getPoolSeat().getCurrentAllocation();
   };
 
   const getPriceAuthorities = brand => {
@@ -209,10 +203,8 @@ const start = async (zcf, privateArgs) => {
     return pool.getOutputPrice(amountIn, amountOut);
   };
 
-  const {
-    makeSwapInInvitation,
-    makeSwapOutInvitation,
-  } = makeMakeSwapInvitation(zcf, provideVPool);
+  const { makeSwapInInvitation, makeSwapOutInvitation } =
+    makeMakeSwapInvitation(zcf, provideVPool);
   const makeAddLiquidityInvitation = makeMakeAddLiquidityInvitation(
     zcf,
     getPool,

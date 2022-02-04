@@ -144,7 +144,7 @@ const setupGovernance = async (
       .then(outcome => {
         if (keyEQ(positive, outcome)) {
           E(paramMgr)
-            [`update${(paramSpec.parameterName)}`](proposedValue)
+            [`update${paramSpec.parameterName}`](proposedValue)
             .then(newValue => outcomeOfUpdateP.resolve(newValue))
             .catch(e => {
               outcomeOfUpdateP.reject(e);

@@ -46,10 +46,8 @@ export const makeAddPool = (
   const makePool = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     let liqTokenSupply = 0n;
 
-    const {
-      brand: liquidityBrand,
-      issuer: liquidityIssuer,
-    } = liquidityZcfMint.getIssuerRecord();
+    const { brand: liquidityBrand, issuer: liquidityIssuer } =
+      liquidityZcfMint.getIssuerRecord();
     const { notifier, updater } = makeNotifierKit();
 
     const updateState = pool =>

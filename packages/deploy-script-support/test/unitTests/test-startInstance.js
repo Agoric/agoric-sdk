@@ -69,12 +69,8 @@ test('startInstance', async t => {
     },
   };
 
-  const {
-    creatorFacet,
-    publicFacet,
-    instance,
-    creatorInvitationDetails,
-  } = await startInstance(startInstanceConfig);
+  const { creatorFacet, publicFacet, instance, creatorInvitationDetails } =
+    await startInstance(startInstanceConfig);
 
   t.is(addedPetname, 'automaticRefund');
   t.truthy(creatorFacet);

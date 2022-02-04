@@ -236,8 +236,8 @@ test('Invitation', async t => {
 
   t.is(paramManager.getBrand('Currency'), drachmaBrand);
   t.is(paramManager.getAmount('Amt'), drachmaAmount);
-  const invitationActualAmount = paramManager.getInvitationAmount('Invite')
-    .value;
+  const invitationActualAmount =
+    paramManager.getInvitationAmount('Invite').value;
   t.is(invitationActualAmount, invitationAmount.value);
   // @ts-ignore invitationActualAmount's type is unknown
   t.is(invitationActualAmount[0].description, 'simple');

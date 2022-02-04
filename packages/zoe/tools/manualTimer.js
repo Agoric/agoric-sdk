@@ -139,7 +139,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
     makeNotifier(delay, interval) {
       assert.typeof(delay, 'bigint');
       assert(
-        (delay % timeStep) === 0n,
+        delay % timeStep === 0n,
         `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
       );
       assert.typeof(interval, 'bigint');
@@ -162,7 +162,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
     delay(delay) {
       assert.typeof(delay, 'bigint');
       assert(
-        (delay % timeStep) === 0n,
+        delay % timeStep === 0n,
         `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
       );
       const promiseKit = makePromiseKit();

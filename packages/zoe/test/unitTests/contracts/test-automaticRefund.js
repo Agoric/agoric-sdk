@@ -248,20 +248,14 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
     ContributionA: moolaR.issuer,
     ContributionB: simoleanR.issuer,
   });
-  const {
-    creatorInvitation: aliceInvitation1,
-    publicFacet: publicFacet1,
-  } = await E(zoe).startInstance(installation, issuerKeywordRecord);
+  const { creatorInvitation: aliceInvitation1, publicFacet: publicFacet1 } =
+    await E(zoe).startInstance(installation, issuerKeywordRecord);
 
-  const {
-    creatorInvitation: aliceInvitation2,
-    publicFacet: publicFacet2,
-  } = await E(zoe).startInstance(installation, issuerKeywordRecord);
+  const { creatorInvitation: aliceInvitation2, publicFacet: publicFacet2 } =
+    await E(zoe).startInstance(installation, issuerKeywordRecord);
 
-  const {
-    creatorInvitation: aliceInvitation3,
-    publicFacet: publicFacet3,
-  } = await E(zoe).startInstance(installation, issuerKeywordRecord);
+  const { creatorInvitation: aliceInvitation3, publicFacet: publicFacet3 } =
+    await E(zoe).startInstance(installation, issuerKeywordRecord);
 
   const aliceProposal = harden({
     give: { ContributionA: moola(10n) },

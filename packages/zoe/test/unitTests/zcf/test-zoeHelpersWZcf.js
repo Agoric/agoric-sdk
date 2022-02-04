@@ -236,13 +236,8 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
 });
 
 test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
-  const {
-    moolaIssuer,
-    moola,
-    simoleanIssuer,
-    simoleanMint,
-    simoleans,
-  } = setup();
+  const { moolaIssuer, moola, simoleanIssuer, simoleanMint, simoleans } =
+    setup();
   const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
   const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
 
@@ -307,7 +302,8 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
   t.throws(
     () => fit(proposal, M.split({ want: { C: M.any() } })),
     {
-      message: /Must have same property names as record pattern: {"C":"\[match:any\]"}/,
+      message:
+        /Must have same property names as record pattern: {"C":"\[match:any\]"}/,
     },
     'empty keywordRecord does not match',
   );
@@ -316,27 +312,24 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
   t.throws(
     () => fit(proposal, M.split({ give: { c: M.any() } })),
     {
-      message: /Must have same property names as record pattern: {"c":"\[match:any\]"}/,
+      message:
+        /Must have same property names as record pattern: {"c":"\[match:any\]"}/,
     },
     'wrong key in keywordRecord does not match',
   );
   t.throws(
     () => fit(proposal, M.split({ exit: { onDemaind: M.any() } })),
     {
-      message: /Must have same property names as record pattern: {"exit":{"onDemaind":"\[match:any\]"}}/,
+      message:
+        /Must have same property names as record pattern: {"exit":{"onDemaind":"\[match:any\]"}}/,
     },
     'missing exit rule',
   );
 });
 
 test(`zoeHelper with zcf - assertProposalShape`, async t => {
-  const {
-    moolaIssuer,
-    moola,
-    simoleanIssuer,
-    simoleanMint,
-    simoleans,
-  } = setup();
+  const { moolaIssuer, moola, simoleanIssuer, simoleanMint, simoleans } =
+    setup();
   const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
   const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
 
@@ -616,13 +609,8 @@ test(`zcf/zoeHelper - fit proposal pattern w/bad Expected`, async t => {
 });
 
 test(`zcf/zoeHelper - assertProposalShape w/bad Expected`, async t => {
-  const {
-    moolaIssuer,
-    moola,
-    simoleanIssuer,
-    simoleanMint,
-    simoleans,
-  } = setup();
+  const { moolaIssuer, moola, simoleanIssuer, simoleanMint, simoleans } =
+    setup();
   const issuerKeywordRecord = { A: moolaIssuer, B: simoleanIssuer };
   const { zoe, zcf } = await setupZCFTest(issuerKeywordRecord);
 

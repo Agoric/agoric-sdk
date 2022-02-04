@@ -70,10 +70,8 @@ const setupBorrow = async (
 
   // In the config that the borrow code sees, the periodNotifier has
   // been adapted to a periodAsyncIterable
-  const {
-    updater: periodUpdater,
-    notifier: periodNotifier,
-  } = makeNotifierKit();
+  const { updater: periodUpdater, notifier: periodNotifier } =
+    makeNotifierKit();
 
   const interestRate = makeRatio(5n, loanKit.brand, BASIS_POINTS);
 
@@ -131,13 +129,8 @@ const setupBorrowFacet = async (
 };
 
 test('borrow assert customProps', async t => {
-  const {
-    borrowInvitation,
-    zoe,
-    installation,
-    instance,
-    maxLoan,
-  } = await setupBorrow();
+  const { borrowInvitation, zoe, installation, instance, maxLoan } =
+    await setupBorrow();
 
   await checkDetails(t, zoe, borrowInvitation, {
     description: 'borrow',
@@ -190,13 +183,8 @@ test('borrow getRecentCollateralAmount', async t => {
 });
 
 test('borrow getLiquidationPromise', async t => {
-  const {
-    borrowFacet,
-    collateralKit,
-    loanKit,
-    priceAuthority,
-    timer,
-  } = await setupBorrowFacet(100n);
+  const { borrowFacet, collateralKit, loanKit, priceAuthority, timer } =
+    await setupBorrowFacet(100n);
   const liquidationPromise = E(borrowFacet).getLiquidationPromise();
 
   const collateralGiven = AmountMath.make(collateralKit.brand, 100n);
@@ -312,13 +300,8 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
 });
 
 test('getDebtNotifier with interest', async t => {
-  const {
-    borrowFacet,
-    maxLoan,
-    periodUpdater,
-    zoe,
-    loanKit,
-  } = await setupBorrowFacet(100000n, 40000n);
+  const { borrowFacet, maxLoan, periodUpdater, zoe, loanKit } =
+    await setupBorrowFacet(100000n, 40000n);
   periodUpdater.updateState(0n);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -367,7 +350,8 @@ test('getDebtNotifier with interest', async t => {
   const seat = await E(zoe).offer(closeLoanInvitation, proposal, payments);
 
   await t.throwsAsync(() => seat.getOfferResult(), {
-    message: /Not enough Loan assets have been repaid. {2}.* is required, but only .* was repaid./,
+    message:
+      /Not enough Loan assets have been repaid. {2}.* is required, but only .* was repaid./,
   });
 });
 
@@ -384,12 +368,8 @@ test('borrow collateral just too low', async t => {
 });
 
 test('aperiodic interest', async t => {
-  const {
-    borrowFacet,
-    maxLoan,
-    periodUpdater,
-    loanKit,
-  } = await setupBorrowFacet(100000n, 40000n);
+  const { borrowFacet, maxLoan, periodUpdater, loanKit } =
+    await setupBorrowFacet(100000n, 40000n);
   periodUpdater.updateState(0);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
@@ -488,12 +468,8 @@ test('interest starting from non-zero time', async t => {
 // multiples of 4 instead. The starting time is 1. We should charge interest
 // after 9, 13, 17, 21, 29
 test('short periods', async t => {
-  const {
-    borrowFacet,
-    maxLoan,
-    periodUpdater,
-    loanKit,
-  } = await setupBorrowFacet(100000n, 40000n);
+  const { borrowFacet, maxLoan, periodUpdater, loanKit } =
+    await setupBorrowFacet(100000n, 40000n);
   periodUpdater.updateState(0);
 
   const debtNotifier = await E(borrowFacet).getDebtNotifier();

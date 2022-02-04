@@ -69,10 +69,8 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       workerP.then(worker => worker.postMessage(msg));
     }
 
-    const {
-      promise: dispatchReadyP,
-      resolve: dispatchIsReady,
-    } = makePromiseKit();
+    const { promise: dispatchReadyP, resolve: dispatchIsReady } =
+      makePromiseKit();
     let waiting;
 
     function handleUpstream([type, ...args]) {

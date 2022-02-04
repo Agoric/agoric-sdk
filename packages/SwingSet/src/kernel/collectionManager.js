@@ -646,15 +646,8 @@ export function makeCollectionManager(
     if (hasWeakKeys) {
       collection = weakMethods;
     } else {
-      const {
-        keys,
-        values,
-        entries,
-        sizeInternal,
-        getSize,
-        snapshot,
-        clear,
-      } = raw;
+      const { keys, values, entries, sizeInternal, getSize, snapshot, clear } =
+        raw;
       collection = {
         ...weakMethods,
         keys,

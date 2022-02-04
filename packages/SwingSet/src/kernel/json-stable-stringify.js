@@ -13,10 +13,10 @@ const isArray =
 
 const objectKeys =
   Object.keys ||
-  function(obj) {
+  function (obj) {
     const has =
       Object.prototype.hasOwnProperty ||
-      function() {
+      function () {
         return true;
       };
     const keys = [];
@@ -36,9 +36,9 @@ export default function stableStringify(obj, opts) {
 
   const cmp =
     opts.cmp &&
-    (function(f) {
-      return function(node) {
-        return function(a, b) {
+    (function (f) {
+      return function (node) {
+        return function (a, b) {
           const aobj = { key: a, value: node[a] };
           const bobj = { key: b, value: node[b] };
           return f(aobj, bobj);

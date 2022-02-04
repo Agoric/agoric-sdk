@@ -2,13 +2,8 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 export function buildRootDeviceNode(tools) {
-  const {
-    SO,
-    endowments,
-    deviceParameters,
-    getDeviceState,
-    setDeviceState,
-  } = tools;
+  const { SO, endowments, deviceParameters, getDeviceState, setDeviceState } =
+    tools;
   const { registerPassOneMessage, deliverMode } = endowments;
 
   function makeSender(sender) {

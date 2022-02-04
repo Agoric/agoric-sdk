@@ -23,7 +23,11 @@ export const getCapTPHandler = (
       const sendObj = o => {
         send(o, [channelHandle]);
       };
-      const { dispatch, abort, getBootstrap: getRemoteBootstrap } = makeCapTP(
+      const {
+        dispatch,
+        abort,
+        getBootstrap: getRemoteBootstrap,
+      } = makeCapTP(
         origin,
         sendObj,
         async o => getLocalBootstrap(getRemoteBootstrap(), meta, o),

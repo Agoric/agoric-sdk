@@ -12,10 +12,8 @@ const setup = (t, escrowValue = 0n) => {
   const { brand } = kit;
 
   /** @type {NotifierRecord<Amount>} */
-  const {
-    notifier: balanceNotifier,
-    updater: balanceUpdater,
-  } = makeNotifierKit();
+  const { notifier: balanceNotifier, updater: balanceUpdater } =
+    makeNotifierKit();
 
   /** @type {string} */
   let expectedType = 'none';
@@ -241,24 +239,22 @@ test('vpurse.deposit', async t => {
     nextUpdate = E(notifier).getUpdateSince(updateCount);
   };
 
-  const checkDeposit = (
-    expectedOldBalance,
-    expectedNewBalance,
-  ) => async depositResult => {
-    const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
-    t.assert(
-      AmountMath.isEqual(depositResult, delta),
-      `the balance changes by the deposited amount: ${delta.value}`,
-    );
-    await checkNotifier();
-    t.assert(
-      AmountMath.isEqual(
-        await E(vpurse).getCurrentAmount(),
-        expectedNewBalance,
-      ),
-      `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
-    );
-  };
+  const checkDeposit =
+    (expectedOldBalance, expectedNewBalance) => async depositResult => {
+      const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
+      t.assert(
+        AmountMath.isEqual(depositResult, delta),
+        `the balance changes by the deposited amount: ${delta.value}`,
+      );
+      await checkNotifier();
+      t.assert(
+        AmountMath.isEqual(
+          await E(vpurse).getCurrentAmount(),
+          expectedNewBalance,
+        ),
+        `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
+      );
+    };
 
   balanceUpdater.updateState(AmountMath.makeEmpty(brand));
   await checkNotifier();

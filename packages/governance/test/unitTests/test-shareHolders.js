@@ -171,11 +171,8 @@ test('shareHolders attestation to vote', async t => {
   const attest1 = AmountMath.make(brand, attest('a', 37n, 5n));
   const voteSeat = voterFacet(mint, publicFacet, attest1);
 
-  const {
-    deposePositions,
-    deposeCounter,
-    questionHandle,
-  } = await addDeposeQuestion(timer, creatorFacet);
+  const { deposePositions, deposeCounter, questionHandle } =
+    await addDeposeQuestion(timer, creatorFacet);
 
   await E(voteSeat).castBallotFor(questionHandle, [deposePositions[1]]);
 
@@ -364,11 +361,8 @@ test('shareHolders bundle/split attestations', async t => {
   const attestUpdate = AmountMath.make(brand, harden([claim7Later, claim14]));
   const voteFacetUpdate = await voterFacet(mint, publicFacet, attestUpdate);
 
-  const {
-    deposePositions,
-    deposeCounter,
-    questionHandle,
-  } = await addDeposeQuestion(timer, creatorFacet);
+  const { deposePositions, deposeCounter, questionHandle } =
+    await addDeposeQuestion(timer, creatorFacet);
 
   const deposeBallot0 = [deposePositions[0]];
   const deposeBallot1 = [deposePositions[1]];

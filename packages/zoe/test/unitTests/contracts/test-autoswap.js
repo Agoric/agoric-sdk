@@ -131,10 +131,8 @@ test('autoSwap API interactions, no jig', async t => {
   // Bob swaps
   assertOfferResult(t, bobSeat, 'Swap successfully completed.');
 
-  const {
-    In: bobMoolaPayout1,
-    Out: bobSimoleanPayout1,
-  } = await bobSeat.getPayouts();
+  const { In: bobMoolaPayout1, Out: bobSimoleanPayout1 } =
+    await bobSeat.getPayouts();
 
   await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout1, moola(0n));
   await assertPayoutAmount(
@@ -178,10 +176,8 @@ test('autoSwap API interactions, no jig', async t => {
 
   assertOfferResult(t, bobSeat, 'Swap successfully completed.');
 
-  const {
-    Out: bobMoolaPayout2,
-    In: bobSimoleanPayout2,
-  } = await bobSecondSeat.getPayouts();
+  const { Out: bobMoolaPayout2, In: bobSimoleanPayout2 } =
+    await bobSecondSeat.getPayouts();
   await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout2, moola(5n));
   await assertPayoutAmount(
     t,
@@ -457,14 +453,8 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
 });
 
 test('autoSwap - trade attempt before init, no jig', async t => {
-  const {
-    moolaIssuer,
-    simoleanIssuer,
-    moolaMint,
-    moola,
-    simoleans,
-    zoe,
-  } = setup();
+  const { moolaIssuer, simoleanIssuer, moolaMint, moola, simoleans, zoe } =
+    setup();
   const installation = await installationPFromSource(zoe, autoswap);
 
   const issuerKeywordRecord = harden({

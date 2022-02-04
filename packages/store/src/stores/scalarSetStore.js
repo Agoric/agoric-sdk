@@ -23,17 +23,14 @@ export const makeSetStoreMethods = (
   assertKeyOkToDelete = undefined,
   keyName = 'key',
 ) => {
-  const {
-    assertUpdateOnAdd,
-    assertUpdateOnDelete,
-    iterableKeys,
-  } = makeCurrentKeysKit(
-    () => jsset.keys(),
-    compareRank,
-    assertKeyOkToAdd,
-    assertKeyOkToDelete,
-    keyName,
-  );
+  const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
+    makeCurrentKeysKit(
+      () => jsset.keys(),
+      compareRank,
+      assertKeyOkToAdd,
+      assertKeyOkToDelete,
+      keyName,
+    );
 
   /**
    * @param {Pattern=} keyPatt

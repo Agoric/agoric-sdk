@@ -68,9 +68,8 @@ export const start = async (zcf, privateArgs) => {
     initialPoserInvitation,
   );
 
-  const electorateInvAmt = electorateParamManager.getInvitationAmount(
-    CONTRACT_ELECTORATE,
-  );
+  const electorateInvAmt =
+    electorateParamManager.getInvitationAmount(CONTRACT_ELECTORATE);
   assert(
     keyEQ(electorateInvAmt, electorateParam.value),
     X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
@@ -195,10 +194,8 @@ export const start = async (zcf, privateArgs) => {
 
   // TODO(#4021) remove this method
   const mintBootstrapPayment = () => {
-    const {
-      zcfSeat: bootstrapZCFSeat,
-      userSeat: bootstrapUserSeat,
-    } = zcf.makeEmptySeatKit();
+    const { zcfSeat: bootstrapZCFSeat, userSeat: bootstrapUserSeat } =
+      zcf.makeEmptySeatKit();
     const bootstrapAmount = AmountMath.make(runBrand, bootstrapPaymentValue);
     runMint.mintGains(
       harden({

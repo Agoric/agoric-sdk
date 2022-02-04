@@ -5,11 +5,8 @@ import { assert, details as X } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
-  const {
-    registerInboundCallback,
-    deliverResponse,
-    sendBroadcast,
-  } = endowments;
+  const { registerInboundCallback, deliverResponse, sendBroadcast } =
+    endowments;
   let { inboundHandler } = getDeviceState() || {};
 
   registerInboundCallback((count, bodyString) => {

@@ -30,17 +30,14 @@ export const makeMapStoreMethods = (
   assertKeyOkToDelete = undefined,
   keyName = 'key',
 ) => {
-  const {
-    assertUpdateOnAdd,
-    assertUpdateOnDelete,
-    iterableKeys,
-  } = makeCurrentKeysKit(
-    () => jsmap.keys(),
-    compareRank,
-    assertKVOkToAdd,
-    assertKeyOkToDelete,
-    keyName,
-  );
+  const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
+    makeCurrentKeysKit(
+      () => jsmap.keys(),
+      compareRank,
+      assertKVOkToAdd,
+      assertKeyOkToDelete,
+      keyName,
+    );
 
   /**
    * @param {Pattern=} keyPatt

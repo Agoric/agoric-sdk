@@ -57,12 +57,8 @@ const setUpVote = async (
   paramDesc,
   contracts,
 ) => {
-  const {
-    vaultFactory,
-    installations,
-    electorateInstance,
-    governor,
-  } = contracts;
+  const { vaultFactory, installations, electorateInstance, governor } =
+    contracts;
 
   const { details: feeDetails } = await E(
     vaultFactory.voteCreator,

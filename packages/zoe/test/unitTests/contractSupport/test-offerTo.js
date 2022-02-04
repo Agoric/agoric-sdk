@@ -64,14 +64,8 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
 };
 
 test(`offerTo - basic usage`, async t => {
-  const {
-    moola,
-    moolaIssuer,
-    moolaMint,
-    bucksMint,
-    bucks,
-    bucksIssuer,
-  } = setup();
+  const { moola, moolaIssuer, moolaMint, bucksMint, bucks, bucksIssuer } =
+    setup();
   const { zoe, instanceToZCF, instanceA, instanceB } = await setupContract(
     moolaIssuer,
     bucksIssuer,

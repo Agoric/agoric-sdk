@@ -7,15 +7,13 @@ export const DEFAULT_TIMER_DEVICE_SCALE = 1;
 
 // Make a function that returns the latest polled time.
 // This only provides as high resolution as the timer device.
-export const makeTimerDeviceDateNow = (
-  D,
-  timerDevice,
-  timerDeviceScale = DEFAULT_TIMER_DEVICE_SCALE,
-) => () => {
-  const stamp = D(timerDevice).getLastPolled();
-  const lastPolledStamp = parseInt(`${stamp}`, 10) * timerDeviceScale;
-  return lastPolledStamp;
-};
+export const makeTimerDeviceDateNow =
+  (D, timerDevice, timerDeviceScale = DEFAULT_TIMER_DEVICE_SCALE) =>
+  () => {
+    const stamp = D(timerDevice).getLastPolled();
+    const lastPolledStamp = parseInt(`${stamp}`, 10) * timerDeviceScale;
+    return lastPolledStamp;
+  };
 
 // Make a function that returns the latest polled time.  This only provides as
 // high resolution as the timer service poll interval.

@@ -31,10 +31,10 @@ export const ContactsWithoutContext = ({
     setIsSnackbarOpen(true);
   };
 
-  const [
-    importingContacts,
-    dispatchImportingContacts,
-  ] = useReducer(importingContactsReducer, { count: 0 });
+  const [importingContacts, dispatchImportingContacts] = useReducer(
+    importingContactsReducer,
+    { count: 0 },
+  );
   const incrementImportingContacts = () =>
     dispatchImportingContacts({ difference: 1 });
   const decrementImportingContacts = () =>

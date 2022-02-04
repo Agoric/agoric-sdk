@@ -65,10 +65,8 @@ export const callProperties = (obj, ...args) =>
   fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
 
 export const makeNameAdmins = () => {
-  const {
-    nameHub: agoricNames,
-    nameAdmin: agoricNamesAdmin,
-  } = makeNameHubKit();
+  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
+    makeNameHubKit();
 
   /** @type {Store<NameHub, NameAdmin>} */
   const nameAdmins = makeStore('nameHub');

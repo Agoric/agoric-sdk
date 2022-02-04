@@ -23,15 +23,8 @@ const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;
 
 test('zoe - coveredCall', async t => {
   t.plan(13);
-  const {
-    moolaKit,
-    simoleanKit,
-    bucksKit,
-    moola,
-    simoleans,
-    bucks,
-    zoe,
-  } = setup();
+  const { moolaKit, simoleanKit, bucksKit, moola, simoleans, bucks, zoe } =
+    setup();
 
   const makeAlice = async (timer, moolaPayment) => {
     const moolaPurse = await E(moolaKit.issuer).makeEmptyPurse();

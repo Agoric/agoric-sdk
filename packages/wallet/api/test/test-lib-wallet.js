@@ -76,15 +76,14 @@ async function setupTest() {
     Central: moolaBundle.issuer,
     Secondary: simoleanBundle.issuer,
   });
-  const {
-    publicFacet: autoswapPublicFacet,
-    instance: autoswapInstanceHandle,
-  } = await E(zoe).startInstance(
-    autoswapInstallationHandle,
-    autoswapIssuerKeywordRecord,
-  );
+  const { publicFacet: autoswapPublicFacet, instance: autoswapInstanceHandle } =
+    await E(zoe).startInstance(
+      autoswapInstallationHandle,
+      autoswapIssuerKeywordRecord,
+    );
 
-  const addLiquidityInvite = await autoswapPublicFacet.makeAddLiquidityInvitation();
+  const addLiquidityInvite =
+    await autoswapPublicFacet.makeAddLiquidityInvitation();
 
   const { admin: wallet, initialized } = makeWallet({
     zoe,
@@ -216,8 +215,7 @@ test('lib-wallet issuer and purse methods', async t => {
         pursePetname: 'Default Zoe invite purse',
         value: [],
         currentAmountSlots: {
-          body:
-            '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[]}',
+          body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[]}',
           slots: [{ kind: 'brand', petname: 'zoe invite' }],
         },
         currentAmount: {
@@ -239,8 +237,7 @@ test('lib-wallet issuer and purse methods', async t => {
         pursePetname: 'fun money',
         value: 100,
         currentAmountSlots: {
-          body:
-            '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
+          body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
           slots: [{ kind: 'brand', petname: 'moola' }],
         },
         currentAmount: {
@@ -364,8 +361,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         },
       ],
       currentAmountSlots: {
-        body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
+        body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
@@ -450,8 +446,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         },
       ],
       currentAmountSlots: {
-        body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
+        body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
@@ -585,8 +580,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         },
       ],
       currentAmountSlots: {
-        body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
+        body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[{"description":"getRefund","handle":{"@qclass":"slot","iface":"Alleged: InvitationHandle","index":1},"installation":{"@qclass":"slot","iface":"Alleged: Installation","index":2},"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":3}}]}',
         slots: [
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
@@ -783,8 +777,7 @@ test('lib-wallet offer methods', async t => {
       pursePetname: 'Default Zoe invite purse',
       value: [],
       currentAmountSlots: {
-        body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[]}',
+        body: '{"brand":{"@qclass":"slot","iface":"Alleged: Zoe Invitation brand","index":0},"value":[]}',
         slots: [{ kind: 'brand', petname: 'zoe invite' }],
       },
       currentAmount: {
@@ -807,8 +800,7 @@ test('lib-wallet offer methods', async t => {
       depositBoardId: '604346717',
       value: 100,
       currentAmountSlots: {
-        body:
-          '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
+        body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
         slots: [{ kind: 'brand', petname: 'moola' }],
       },
       meta: {

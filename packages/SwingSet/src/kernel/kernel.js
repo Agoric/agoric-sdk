@@ -1066,9 +1066,8 @@ export default function buildKernel(
       if (deviceEndowments[name] || unendowed) {
         const translators = makeDeviceTranslators(deviceID, name, kernelKeeper);
         function deviceSyscallHandler(deviceSyscallObject) {
-          const ksc = translators.deviceSyscallToKernelSyscall(
-            deviceSyscallObject,
-          );
+          const ksc =
+            translators.deviceSyscallToKernelSyscall(deviceSyscallObject);
           const kres = kernelSyscallHandler.doKernelSyscall(ksc);
           const dres = translators.kernelResultToDeviceResult(ksc[0], kres);
           assert.equal(dres[0], 'ok');

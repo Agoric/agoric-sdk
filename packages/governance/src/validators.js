@@ -22,10 +22,8 @@ const assertContractGovernance = async (
   const realGovernedP = E(allegedGovernorPF).getGovernedContract();
   const allegedGovernedTermsP = E(zoe).getTerms(allegedGoverned);
 
-  const [
-    { electionManager: realGovernorInstance },
-    realGovernedInstance,
-  ] = await Promise.all([allegedGovernedTermsP, realGovernedP]);
+  const [{ electionManager: realGovernorInstance }, realGovernedInstance] =
+    await Promise.all([allegedGovernedTermsP, realGovernedP]);
 
   assert(
     allegedGovernor === realGovernorInstance,

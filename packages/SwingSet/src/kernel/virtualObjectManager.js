@@ -510,8 +510,11 @@ export function makeVirtualObjectManager(
     function reanimate(vobjID, proForma) {
       // kdebug(`vo reanimate ${vobjID}`);
       const innerSelf = cache.lookup(vobjID, false);
-      const representative = makeRepresentative(innerSelf, false, proForma)
-        .self;
+      const representative = makeRepresentative(
+        innerSelf,
+        false,
+        proForma,
+      ).self;
       if (proForma) {
         return null;
       } else {

@@ -54,19 +54,21 @@ const schemaActions = {
   createIssuer: jest.fn(),
 };
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <ThemeProvider theme={appTheme}>
-      <Component
-        pendingPurseCreations={pendingPurseCreations}
-        issuers={issuers}
-        schemaActions={schemaActions}
-        services={services}
-        {...props}
-      />
-    </ThemeProvider>
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <ThemeProvider theme={appTheme}>
+        <Component
+          pendingPurseCreations={pendingPurseCreations}
+          issuers={issuers}
+          schemaActions={schemaActions}
+          services={services}
+          {...props}
+        />
+      </ThemeProvider>
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };

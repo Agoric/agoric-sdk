@@ -129,10 +129,11 @@ test('crankBuffer can abortCrank', t => {
   const store = initSwingStore(null);
   const getState = () => getAllState(store).kvStuff;
 
-  const { crankBuffer: s, commitCrank, abortCrank } = buildCrankBuffer(
-    store.kvStore,
-    createSHA256,
-  );
+  const {
+    crankBuffer: s,
+    commitCrank,
+    abortCrank,
+  } = buildCrankBuffer(store.kvStore, createSHA256);
 
   s.set('foo', 'f');
   t.truthy(s.has('foo'));

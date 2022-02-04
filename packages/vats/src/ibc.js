@@ -530,9 +530,8 @@ EOF
           const onConnectP = channelKeyToOnConnectP.get(channelKey);
           channelKeyToOnConnectP.delete(channelKey);
 
-          const { order, connectionHops: rHops } = channelKeyToInfo.get(
-            channelKey,
-          );
+          const { order, connectionHops: rHops } =
+            channelKeyToInfo.get(channelKey);
           channelKeyToInfo.delete(channelKey);
 
           // Finish the outbound connection.

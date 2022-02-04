@@ -33,9 +33,8 @@ export const HISTOGRAM_MS_LATENCY_BOUNDARIES = [
   10000,
   Infinity,
 ];
-export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES = HISTOGRAM_MS_LATENCY_BOUNDARIES.map(
-  ms => ms / 1000,
-);
+export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES =
+  HISTOGRAM_MS_LATENCY_BOUNDARIES.map(ms => ms / 1000);
 
 const wrapDeltaMS = (finisher, useDeltaMS) => {
   const startMS = Date.now();

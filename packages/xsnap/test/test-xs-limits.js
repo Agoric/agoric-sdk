@@ -87,8 +87,9 @@ test('property name space exhaustion: orderly fail-stop', async t => {
       [2, 10, null],
       [2, 50000, 'buffer overflow'],
     ])) {
-      test(`parser buffer size ${parserBufferSize ||
-        'default'}k; rep ${qty}; debug ${debug}`, async t => {
+      test(`parser buffer size ${
+        parserBufferSize || 'default'
+      }k; rep ${qty}; debug ${debug}`, async t => {
         const opts = { ...options(io), meteringLimit: 1e8, debug };
         const vat = xsnap({ ...opts, parserBufferSize });
         t.teardown(() => vat.terminate());

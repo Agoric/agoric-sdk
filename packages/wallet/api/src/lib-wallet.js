@@ -217,10 +217,8 @@ export function makeWallet({
   });
 
   /** @type {NotifierRecord<OfferState[]>} */
-  const {
-    notifier: offersNotifier,
-    updater: offersUpdater,
-  } = makeNotifierKit();
+  const { notifier: offersNotifier, updater: offersUpdater } =
+    makeNotifierKit();
 
   const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => {
     /** @type {NotifierRecord<PursesFullState[]>} */
@@ -315,7 +313,7 @@ export function makeWallet({
       ...(depositBoardId && { depositBoardId }),
       brandPetname,
       pursePetname,
-      displayInfo: (issuerRecord && issuerRecord.displayInfo),
+      displayInfo: issuerRecord && issuerRecord.displayInfo,
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
@@ -480,12 +478,10 @@ export function makeWallet({
     inboxStateChangeHandler(getInboxState());
   }
 
-  const {
-    updater: issuersUpdater,
-    notifier: issuersNotifier,
-  } = /** @type {NotifierRecord<Array<[Petname, BrandRecord]>>} */ (makeNotifierKit(
-    [],
-  ));
+  const { updater: issuersUpdater, notifier: issuersNotifier } =
+    /** @type {NotifierRecord<Array<[Petname, BrandRecord]>>} */ (
+      makeNotifierKit([])
+    );
 
   function updateAllIssuersState() {
     issuersUpdater.updateState(
@@ -688,12 +684,10 @@ export function makeWallet({
     return issuerBoardId;
   };
 
-  const {
-    updater: contactsUpdater,
-    notifier: contactsNotifier,
-  } = /** @type {NotifierRecord<Array<[Petname, Contact]>>} */ (makeNotifierKit(
-    [],
-  ));
+  const { updater: contactsUpdater, notifier: contactsNotifier } =
+    /** @type {NotifierRecord<Array<[Petname, Contact]>>} */ (
+      makeNotifierKit([])
+    );
 
   /**
    * @param {Petname} petname
@@ -783,10 +777,9 @@ export function makeWallet({
     // Just notice the balance updates for the purse.
     observeNotifier(E(purse).getCurrentAmountNotifier(), {
       updateState(_balance) {
-        updatePursesState(
-          purseMapping.valToPetname.get(purse),
-          purse,
-        ).catch(e => console.error('cannot updateState', e));
+        updatePursesState(purseMapping.valToPetname.get(purse), purse).catch(
+          e => console.error('cannot updateState', e),
+        );
       },
       fail(reason) {
         console.error(`failed updateState observer`, reason);
@@ -913,10 +906,8 @@ export function makeWallet({
 
   /** @type {Store<string, DappRecord>} */
   const dappOrigins = makeScalarMap('dappOrigin');
-  const {
-    notifier: dappsNotifier,
-    updater: dappsUpdater,
-  } = /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
+  const { notifier: dappsNotifier, updater: dappsUpdater } =
+    /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
 
   const updateDapp = dappRecord => {
     harden(addMeta(dappRecord));
@@ -1192,10 +1183,8 @@ export function makeWallet({
 
   /** @type {Store<number, PaymentRecord>} */
   const idToPaymentRecord = makeScalarMap('paymentId');
-  const {
-    updater: paymentsUpdater,
-    notifier: paymentsNotifier,
-  } = /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
+  const { updater: paymentsUpdater, notifier: paymentsNotifier } =
+    /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
   /**
    * @param {PaymentRecord} param0
    */

@@ -617,12 +617,8 @@ test.serial('store lifecycle 1', async t => {
 // test 2: lerv -> Lerv -> LerV -> lerV -> LerV -> LERV -> lERV -> LERV ->
 //   lERV -> LERV -> lERV -> leRV -> LeRV -> leRV -> LeRV -> LerV
 test.serial('store lifecycle 2', async t => {
-  const {
-    v,
-    dispatchMessage,
-    dispatchDropExports,
-    dispatchRetireExports,
-  } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
+    setupLifecycleTest(t);
 
   // lerv -> Lerv  Create store
   let rp = await dispatchMessage('makeAndHold');
@@ -688,12 +684,8 @@ test.serial('store lifecycle 2', async t => {
 
 // test 3: lerv -> Lerv -> LerV -> LERV -> LeRV -> leRV -> lerV -> lerv
 test.serial('store lifecycle 3', async t => {
-  const {
-    v,
-    dispatchMessage,
-    dispatchDropExports,
-    dispatchRetireExports,
-  } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
+    setupLifecycleTest(t);
 
   // lerv -> Lerv  Create store
   let rp = await dispatchMessage('makeAndHold');
@@ -749,12 +741,8 @@ test.serial('store lifecycle 4', async t => {
 
 // test 5: lerv -> Lerv -> LERv -> LeRv -> Lerv -> lerv
 test.serial('store lifecycle 5', async t => {
-  const {
-    v,
-    dispatchMessage,
-    dispatchDropExports,
-    dispatchRetireExports,
-  } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
+    setupLifecycleTest(t);
 
   // lerv -> Lerv  Create store
   let rp = await dispatchMessage('makeAndHold');
@@ -1210,12 +1198,8 @@ test.serial('verify store weak key GC', async t => {
 });
 
 test.serial('verify presence weak key GC', async t => {
-  const {
-    v,
-    dispatchMessage,
-    dispatchRetireImports,
-    testHooks,
-  } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchRetireImports, testHooks } =
+    setupLifecycleTest(t);
 
   // Import a presence to use as a key and hold onto it weakly
   let rp = await dispatchMessage('importAndHoldAndKey', thingArg('o-5'));
