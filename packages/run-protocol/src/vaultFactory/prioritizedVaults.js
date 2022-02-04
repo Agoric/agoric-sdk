@@ -1,6 +1,5 @@
 // @ts-check
 
-import { observeNotifier } from '@agoric/notifier';
 import {
   natSafeMath,
   makeRatioFromAmounts,
@@ -9,6 +8,8 @@ import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 const { multiply, isGTE } = natSafeMath;
+
+/** @typedef {import('./vault').VaultKit} VaultKit */
 
 // Stores a collection of Vaults, pretending to be indexed by ratio of
 // debt to collateral. Once performance is an issue, this should use Virtual
@@ -96,6 +97,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   /** @type {VaultKitRecord[]} */
   let vaultsWithDebtRatio = [];
 
+  // XXX why keep this state in PrioritizedVaults? Better in vaultManager?
+
   // To deal with fluctuating prices and varying collateralization, we schedule a
   // new request to the priceAuthority when some vault's debtToCollateral ratio
   // surpasses the current high-water mark. When the request that is at the
@@ -126,70 +129,71 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
 
   /**
    *
-   * @param {VaultKit} vaultKit
+   * @param {VaultId} vaultId
+   * @returns {VaultKit}
    */
-  const removeVault = vaultKit => {
-    vaultsWithDebtRatio = vaultsWithDebtRatio.filter(
-      v => v.vaultKit !== vaultKit,
-    );
+  const removeVault = vaultId => {
+    console.log('removing', { vaultId });
+    // FIXME actually remove
+    // vaultsWithDebtRatio = vaultsWithDebtRatio.filter(
+    //   v => v.vaultKit !== vaultKit,
+    // );
+    return vaultsWithDebtRatio[0].vaultKit;
+
     // don't call reschedulePriceCheck, but do reset the highest.
-    highestDebtToCollateral = highestRatio();
+    // highestDebtToCollateral = highestRatio();
   };
 
-  /**
-   *
-   * @param {VaultKit} vaultKit
-   * @param {Ratio} debtRatio
-   */
-  const updateDebtRatio = (vaultKit, debtRatio) => {
-    vaultsWithDebtRatio.forEach((vaultPair, index) => {
-      if (vaultPair.vaultKit === vaultKit) {
-        vaultsWithDebtRatio[index].debtToCollateral = debtRatio;
-      }
-    });
-  };
-
+  // TODO handle what this was doing
   // called after charging interest, which changes debts without affecting sort
-  const updateAllDebts = () => {
-    vaultsWithDebtRatio.forEach((vaultPair, index) => {
-      const debtToCollateral = currentDebtToCollateral(vaultPair.vaultKit);
-      vaultsWithDebtRatio[index].debtToCollateral = debtToCollateral;
-    });
-    highestDebtToCollateral = highestRatio();
-  };
+  // const updateAllDebts = () => {
+  //   // DEAD
+  //   // vaultsWithDebtRatio.forEach((vaultPair, index) => {
+  //   //   const debtToCollateral = currentDebtToCollateral(vaultPair.vaultKit);
+  //   //   vaultsWithDebtRatio[index].debtToCollateral = debtToCollateral;
+  //   // });
+
+  //   // FIXME still need to track a "highest one" for the oracle
+  //   // this basically "what's our outstanding ask of the oracle"
+  //   // and we re-ask only if have something new to ask.
+  //   // E.g. ask anew or update the ask with a new value.
+  //   highestDebtToCollateral = highestRatio();
+  // };
+
+  // /**
+  //  *
+  //  * @param {VaultKit} vaultKit
+  //  */
+  // const makeObserver = (vaultKit) => ({
+  //   updateState: (state) => {
+  //     if (AmountMath.isEmpty(state.locked)) {
+  //       return;
+  //     }
+  //     const debtToCollateral = currentDebtToCollateral(vaultKit);
+  //     updateDebtRatio(vaultKit, debtToCollateral);
+  //     vaultsWithDebtRatio.sort(compareVaultKits);
+  //     rescheduleIfHighest(debtToCollateral);
+  //   },
+  //   finish: (_) => {
+  //     removeVault(vaultKit);
+  //   },
+  //   fail: (_) => {
+  //     removeVault(vaultKit);
+  //   },
+  // });
 
   /**
    *
+   * @param {VaultId} vaultId
    * @param {VaultKit} vaultKit
    */
-  const makeObserver = vaultKit => ({
-    updateState: state => {
-      if (AmountMath.isEmpty(state.locked)) {
-        return;
-      }
-      const debtToCollateral = currentDebtToCollateral(vaultKit);
-      updateDebtRatio(vaultKit, debtToCollateral);
-      vaultsWithDebtRatio.sort(compareVaultKits);
-      rescheduleIfHighest(debtToCollateral);
-    },
-    finish: _ => {
-      removeVault(vaultKit);
-    },
-    fail: _ => {
-      removeVault(vaultKit);
-    },
-  });
+  const addVaultKit = (vaultId, vaultKit) => {
+    // FIXME use the ordered store
 
-  /**
-   *
-   * @param {VaultKit} vaultKit
-   * @param {ERef<Notifier<any>>} notifier
-   */
-  const addVaultKit = (vaultKit, notifier) => {
     const debtToCollateral = currentDebtToCollateral(vaultKit);
     vaultsWithDebtRatio.push({ vaultKit, debtToCollateral });
     vaultsWithDebtRatio.sort(compareVaultKits);
-    observeNotifier(notifier, makeObserver(vaultKit));
+    // observeNotifier(notifier, makeObserver(vaultKit));
     rescheduleIfHighest(debtToCollateral);
   };
 
@@ -222,17 +226,26 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     highestDebtToCollateral = highestRatio();
   };
 
+  /**
+   *
+   * @param {VaultId} vaultId
+   */
+  const refreshVaultPriority = vaultId => {
+    const vault = removeVault(vaultId);
+    addVaultKit(vaultId, vault);
+  };
+
   const map = func => vaultsWithDebtRatio.map(func);
 
   const reduce = (func, init) => vaultsWithDebtRatio.reduce(func, init);
 
   return harden({
     addVaultKit,
+    refreshVaultPriority,
     removeVault,
     map,
     reduce,
     forEachRatioGTE,
     highestRatio: () => highestDebtToCollateral,
-    updateAllDebts,
   });
 };

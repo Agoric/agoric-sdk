@@ -12,29 +12,48 @@ import { numberToDBEntryKey } from './storeUtils.js';
  * Used by prioritizedVaults to
  */
 
-/**
- * Sorts by ratio in descending debt. Ordered of vault id is undefined.
- *
- * @param {Ratio} ratio
- * @param {string} vaultId
- * @returns {string}
- */
-const vaultKey = (ratio, vaultId) => {
-  // TODO make sure infinity sorts correctly
-  const float = ratio.denominator / ratio.numerator;
-  const numberPart = numberToDBEntryKey(float);
-  return `${numberPart}:${vaultId}`;
-};
+/** @typedef {import('./vault').VaultKit} VaultKit */
 
-// TODO type these generics
-const store = VatData.makeScalarBigMapStore();
+export const makeOrderedVaultStore = () => {
+  /**
+   * Sorts by ratio in descending debt. Ordering of vault id is undefined.
+   *
+   * @param {Ratio} ratio
+   * @param {VaultId} vaultId
+   * @returns {string}
+   */
+  const vaultKey = (ratio, vaultId) => {
+    // TODO make sure infinity sorts correctly
+    const float = ratio.denominator / ratio.numerator;
+    const numberPart = numberToDBEntryKey(float);
+    return `${numberPart}:${vaultId}`;
+  };
 
-/**
- *
- * @param {Vault} vault
- */
-const addVault = vault => {
-  // vault.get
-  // const key = vaultKey(vault.)
-  // store.init
+  // TODO type these generics
+  const store = VatData.makeScalarBigMapStore();
+
+  /**
+   *
+   * @param {VaultKit} vk
+   */
+  const addVaultKit = vk => {
+    const id = vk.getIdInManager();
+    // FIXME needs to be the normalized value
+    const key = vaultKey(vk.vault.getDebtAmount());
+    store.init(key, vk);
+  };
+
+  /**
+   *
+   * @param {VaultId} vkId
+   */
+  const removeVaultKit = vkId => {
+    store.delete(vkId);
+  };
+
+  return harden({
+    addVaultKit,
+    removeVaultKit,
+    getSize: store.getSize,
+  });
 };
