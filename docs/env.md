@@ -22,18 +22,6 @@ Lifetime:
 
 -->
 
-## ALLOW_IMPLICIT_REMOTABLES
-
-Affects: marshal
-
-Purpose: to control whether the marshal system demands `Far`
-
-Description: set to `true` if you need to debug problems with missing `Far`
-declarations.
-
-Lifetime: until all sources (including dapps) conform to using `Far`
-declarations for all remote objects
-
 ## CHAIN_BOOTSTRAP_VAT_CONFIG
 
 Affects: `ag-chain-cosmos`, `ag-solo`

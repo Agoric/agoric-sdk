@@ -1,16 +1,26 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import {
-  getTag,
-  nameForPassableSymbol,
-  passStyleOf,
-  sameValueZero,
-} from '@endo/marshal';
+import { getTag, nameForPassableSymbol, passStyleOf } from '@endo/marshal';
 
-const { fromEntries, entries, setPrototypeOf } = Object;
+const { fromEntries, entries, setPrototypeOf, is } = Object;
 
 const { ownKeys } = Reflect;
+
+/**
+ * This is the equality comparison used by JavaScript's Map and Set
+ * abstractions, where NaN is the same as NaN and -0 is the same as
+ * 0. Marshal serializes -0 as zero, so the semantics of our distributed
+ * object system does not distinguish 0 from -0.
+ *
+ * `sameValueZero` is the EcmaScript spec name for this equality comparison,
+ * but TODO we need a better name for the API.
+ *
+ * @param {any} x
+ * @param {any} y
+ * @returns {boolean}
+ */
+const sameValueZero = (x, y) => x === y || is(x, y);
 
 /**
  * @type {[PassStyle, RankCover][]}
