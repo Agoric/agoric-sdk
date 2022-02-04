@@ -130,11 +130,12 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   /**
    *
    * @param {VaultId} vaultId
+   * @param {Vault} vault
    * @returns {VaultKit}
    */
-  const removeVault = vaultId => {
-    console.log('removing', { vaultId });
-    // FIXME actually remove
+  const removeVault = (vaultId, vault) => {
+    console.log('removing', { vaultId, vault });
+    // FIXME actually remove using the OrderedVaultStore
     // vaultsWithDebtRatio = vaultsWithDebtRatio.filter(
     //   v => v.vaultKit !== vaultKit,
     // );
@@ -229,10 +230,11 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   /**
    *
    * @param {VaultId} vaultId
+   * @param {Vault} vault
    */
-  const refreshVaultPriority = vaultId => {
-    const vault = removeVault(vaultId);
-    addVaultKit(vaultId, vault);
+  const refreshVaultPriority = (vaultId, vault) => {
+    const vaultKit = removeVault(vaultId, vault);
+    addVaultKit(vaultId, vaultKit);
   };
 
   const map = func => vaultsWithDebtRatio.map(func);
