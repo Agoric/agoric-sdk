@@ -19,42 +19,64 @@ import '../types.js';
  * Produce an object that will serve as the kernel's handle onto a device.
  *
  * @param {string} deviceName  The device's name, for human readable diagnostics
- * @param {*} buildRootDeviceNode
+ * @param {*} deviceNamespace The module namespace object exported by the device bundle
  * @param {*} state  A get/set object for the device's persistent state
  * @param {Record<string, any>} endowments  The device's configured endowments
  * @param {*} testLog
  * @param {*} deviceParameters  Parameters from the device's config entry
+ * @param {*} deviceSyscallHandler
  */
 export default function makeDeviceManager(
   deviceName,
-  buildRootDeviceNode,
+  deviceNamespace,
   state,
   endowments,
   testLog,
   deviceParameters,
+  deviceSyscallHandler,
 ) {
-  let deviceSyscallHandler;
-  function setDeviceSyscallHandler(handler) {
-    deviceSyscallHandler = handler;
-  }
-
   const syscall = harden({
     sendOnly: (target, method, args) => {
       const dso = harden(['sendOnly', target, method, args]);
       deviceSyscallHandler(dso);
     },
+    vatstoreGet: key => {
+      const dso = harden(['vatstoreGet', key]);
+      return deviceSyscallHandler(dso);
+    },
+    vatstoreSet: (key, value) => {
+      const dso = harden(['vatstoreSet', key, value]);
+      deviceSyscallHandler(dso);
+    },
+    vatstoreDelete: key => {
+      const dso = harden(['vatstoreDelete', key]);
+      deviceSyscallHandler(dso);
+    },
   });
 
-  // Setting up the device runtime gives us back the device's dispatch object
-  const dispatch = makeDeviceSlots(
-    syscall,
-    state,
-    buildRootDeviceNode,
-    deviceName,
-    endowments,
-    testLog,
-    deviceParameters,
-  );
+  let dispatch;
+  if (typeof deviceNamespace.buildDevice === 'function') {
+    // raw device
+    const tools = { syscall };
+    // maybe add state utilities
+    dispatch = deviceNamespace.buildDevice(tools, endowments);
+  } else {
+    assert(
+      typeof deviceNamespace.buildRootDeviceNode === 'function',
+      `device ${deviceName} lacks buildRootDeviceNode`,
+    );
+
+    // Setting up the device runtime gives us back the device's dispatch object
+    dispatch = makeDeviceSlots(
+      syscall,
+      state,
+      deviceNamespace.buildRootDeviceNode,
+      deviceName,
+      endowments,
+      testLog,
+      deviceParameters,
+    );
+  }
 
   /**
    * Invoke a method on a device node.
@@ -84,7 +106,6 @@ export default function makeDeviceManager(
 
   const manager = {
     invoke,
-    setDeviceSyscallHandler,
   };
   return manager;
 }

@@ -1019,52 +1019,6 @@ export default function buildKernel(
     return vatID;
   }
 
-  function buildDeviceManager(
-    deviceID,
-    name,
-    buildRootDeviceNode,
-    endowments,
-    deviceParameters,
-  ) {
-    const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
-    // Wrapper for state, to give to the device to access its state.
-    // Devices are allowed to get their state at startup, and set it anytime.
-    // They do not use orthogonal persistence or transcripts.
-    const state = harden({
-      get() {
-        return deviceKeeper.getDeviceState();
-      },
-      set(value) {
-        deviceKeeper.setDeviceState(value);
-      },
-    });
-    const manager = makeDeviceManager(
-      name,
-      buildRootDeviceNode,
-      state,
-      endowments,
-      testLog,
-      deviceParameters,
-    );
-    return manager;
-  }
-
-  // plug a new DeviceManager into the kernel
-  function addDeviceManager(deviceID, name, manager) {
-    const translators = makeDeviceTranslators(deviceID, name, kernelKeeper);
-    function deviceSyscallHandler(deviceSyscallObject) {
-      const ksc = translators.deviceSyscallToKernelSyscall(deviceSyscallObject);
-      // devices can only do syscall.sendOnly, which has no results
-      kernelSyscallHandler.doKernelSyscall(ksc);
-    }
-    manager.setDeviceSyscallHandler(deviceSyscallHandler);
-
-    ephemeral.devices.set(deviceID, {
-      translators,
-      manager,
-    });
-  }
-
   async function start() {
     if (started) {
       throw Error('kernel.start already called');
@@ -1102,24 +1056,47 @@ export default function buildKernel(
       assertKnownOptions(options, ['deviceParameters', 'unendowed']);
       const { deviceParameters = {}, unendowed } = options;
       const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
+
       // eslint-disable-next-line no-await-in-loop
       const NS = await importBundle(source.bundle, {
         filePrefix: `dev-${name}/...`,
         endowments: harden({ ...vatEndowments, console: devConsole, assert }),
       });
-      assert(
-        typeof NS.buildRootDeviceNode === 'function',
-        `device ${name} lacks buildRootDeviceNode`,
-      );
+
       if (deviceEndowments[name] || unendowed) {
-        const manager = buildDeviceManager(
-          deviceID,
+        const translators = makeDeviceTranslators(deviceID, name, kernelKeeper);
+        function deviceSyscallHandler(deviceSyscallObject) {
+          const ksc = translators.deviceSyscallToKernelSyscall(
+            deviceSyscallObject,
+          );
+          const kres = kernelSyscallHandler.doKernelSyscall(ksc);
+          const dres = translators.kernelResultToDeviceResult(ksc[0], kres);
+          assert.equal(dres[0], 'ok');
+          return dres[1];
+        }
+
+        // Wrapper for state, to give to the device to access its state.
+        // Devices are allowed to get their state at startup, and set it anytime.
+        // They do not use orthogonal persistence or transcripts.
+        const state = harden({
+          get() {
+            return deviceKeeper.getDeviceState();
+          },
+          set(value) {
+            deviceKeeper.setDeviceState(value);
+          },
+        });
+
+        const manager = makeDeviceManager(
           name,
-          NS.buildRootDeviceNode,
+          NS,
+          state,
           deviceEndowments[name],
+          testLog,
           deviceParameters,
+          deviceSyscallHandler,
         );
-        addDeviceManager(deviceID, name, manager);
+        ephemeral.devices.set(deviceID, { translators, manager });
       } else {
         console.log(
           `WARNING: skipping device ${deviceID} (${name}) because it has no endowments`,
