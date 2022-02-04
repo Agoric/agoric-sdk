@@ -8,11 +8,6 @@ export const STAKING_MAX_VALIDATORS = 150;
 // Required for IBC connections not to time out.
 export const STAKING_MIN_HISTORICAL_ENTRIES = 10000;
 
-// We reserve the default `transfer` IBC port for Pegasus (JS-level ERTP
-// assets).  The `cosmos-transfer` IBC port is used for ibc-go (Cosmos-level
-// prefixed string token denominations).
-export const COSMOS_TRANSFER_PORT_ID = 'cosmos-transfer';
-
 export const DENOM_METADATA = [
   {
     name: 'Agoric Staking Token',
@@ -191,8 +186,6 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
     existingHistoricalEntries,
     STAKING_MIN_HISTORICAL_ENTRIES,
   );
-
-  genesis.app_state.transfer.port_id = COSMOS_TRANSFER_PORT_ID;
 
   // We scale this parameter according to our own block cadence, so
   // that we tolerate the same downtime as the old genesis.
