@@ -133,6 +133,72 @@ function dbEntryKeyToBigint(k) {
   }
 }
 
+/**
+ * Exported for unit testing
+ *
+ * @param {(remotable: Object) => string} encodeRemotable
+ * @returns {(key: Key) => string}
+ */
+function makeEncodeKey(encodeRemotable) {
+  const encodeKey = key => {
+    const passStyle = passStyleOf(key);
+    switch (passStyle) {
+      case 'null':
+        return 'v';
+      case 'undefined':
+        return 'z';
+      case 'number':
+        return numberToDBEntryKey(key);
+      case 'string':
+        return `s${key}`;
+      case 'boolean':
+        return `b${key}`;
+      case 'bigint':
+        return bigintToDBEntryKey(key);
+      case 'remotable': {
+        const result = encodeRemotable(key);
+        assert(
+          result.startsWith('r'),
+          X`internal: Remotable encoding must start with "r": ${result}`,
+        );
+        return result;
+      }
+      case 'symbol':
+        return `y${nameForPassableSymbol(key)}`;
+      default:
+        assert.fail(X`a ${q(passStyle)} cannot be used as a collection key`);
+    }
+  };
+  return harden(encodeKey);
+}
+
+function makeDecodeKey(decodeRemotable) {
+  const decodeKey = encodedKey => {
+    switch (encodedKey[0]) {
+      case 'v':
+        return null;
+      case 'z':
+        return undefined;
+      case 'f':
+        return dbEntryKeyToNumber(encodedKey);
+      case 's':
+        return encodedKey.substring(1);
+      case 'b':
+        return encodedKey.substring(1) !== 'false';
+      case 'n':
+      case 'p':
+        return dbEntryKeyToBigint(encodedKey);
+      case 'r':
+        return decodeRemotable(encodedKey);
+      case 'y':
+        return passableSymbolForName(encodedKey.substring(1));
+      default:
+        assert.fail(X`invalid database key: ${encodedKey}`);
+    }
+  };
+  return harden(decodeKey);
+}
+
 function pattEq(p1, p2) {
   return compareRank(p1, p2) === 0;
 }
@@ -259,34 +325,20 @@ export function makeCollectionManager(
       return `${dbKeyPrefix}${dbEntryKey}`;
     }
 
-    function encodeKey(key) {
-      const passStyle = passStyleOf(key);
-      switch (passStyle) {
-        case 'null':
-          return 'v';
-        case 'undefined':
-          return 'z';
-        case 'number':
-          return numberToDBEntryKey(key);
-        case 'string':
-          return `s${key}`;
-        case 'boolean':
-          return `b${key}`;
-        case 'bigint':
-          return bigintToDBEntryKey(key);
-        case 'remotable': {
-          // eslint-disable-next-line no-use-before-define
-          const ordinal = getOrdinal(key);
-          assert(ordinal !== undefined, X`no ordinal for ${key}`);
-          const ordinalTag = zeroPad(ordinal, BIGINT_TAG_LEN);
-          return `r${ordinalTag}:${convertValToSlot(key)}`;
-        }
-        case 'symbol':
-          return `y${nameForPassableSymbol(key)}`;
-        default:
-          assert.fail(X`a ${q(passStyle)} cannot be used as a collection key`);
-      }
-    }
+    const encodeRemotable = remotable => {
+      // eslint-disable-next-line no-use-before-define
+      const ordinal = getOrdinal(remotable);
+      assert(ordinal !== undefined, X`no ordinal for ${remotable}`);
+      const ordinalTag = zeroPad(ordinal, BIGINT_TAG_LEN);
+      return `r${ordinalTag}:${convertValToSlot(remotable)}`;
+    };
+
+    const encodeKey = makeEncodeKey(encodeRemotable);
+
+    const decodeRemotable = encodedKey =>
+      convertSlotToVal(encodedKey.substring(BIGINT_TAG_LEN + 2));
+
+    const decodeKey = makeDecodeKey(decodeRemotable);
 
     function generateOrdinal(remotable) {
       const nextOrdinal = Number.parseInt(
@@ -314,27 +366,7 @@ export function makeCollectionManager(
 
     function dbKeyToKey(dbKey) {
       const dbEntryKey = dbKey.substring(dbKeyPrefix.length);
-      switch (dbEntryKey[0]) {
-        case 'v':
-          return null;
-        case 'z':
-          return undefined;
-        case 'f':
-          return dbEntryKeyToNumber(dbEntryKey);
-        case 's':
-          return dbEntryKey.substring(1);
-        case 'b':
-          return dbEntryKey.substring(1) !== 'false';
-        case 'n':
-        case 'p':
-          return dbEntryKeyToBigint(dbEntryKey);
-        case 'r':
-          return convertSlotToVal(dbEntryKey.substring(BIGINT_TAG_LEN + 2));
-        case 'y':
-          return passableSymbolForName(dbEntryKey.substring(1));
-        default:
-          assert.fail(X`invalid database key: ${dbEntryKey}`);
-      }
+      return decodeKey(dbEntryKey);
     }
 
     function has(key) {
