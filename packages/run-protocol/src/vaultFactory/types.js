@@ -101,18 +101,6 @@
 /**
  * @typedef {string} VaultId
  */
-/**
- * @typedef {Object} InnerVaultManagerBase
- * @property {(VaultId, Amount) => void} applyDebtDelta
- * @property {() => Brand} getCollateralBrand
- * @property {ReallocateReward} reallocateReward
- * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
- * @property {(Amount) => void} tallyInterestAccrual
- */
-
-/**
- * @typedef {InnerVaultManagerBase & GetVaultParams} InnerVaultManager
- */
 
 /**
  * @typedef {Object} VaultManagerBase
@@ -238,6 +226,8 @@
  *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
  * }}
  */
+
+/** @typedef {import('./vault').VaultKit} VaultKit */
 
 /**
  * @callback VaultFactoryLiquidate

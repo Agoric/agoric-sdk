@@ -34,21 +34,25 @@ export const makeOrderedVaultStore = () => {
 
   /**
    *
-   * @param {VaultKit} vk
+   * @param {string} vaultId
+   * @param {VaultKit} vaultKit
    */
-  const addVaultKit = vk => {
-    const id = vk.getIdInManager();
-    // FIXME needs to be the normalized value
-    const key = vaultKey(vk.vault.getDebtAmount());
-    store.init(key, vk);
+  const addVaultKit = (vaultId, vaultKit) => {
+    const key = vaultKey(vaultKit.vault.getDebtAmount(), vaultId);
+    store.init(key, vaultKit);
   };
 
   /**
    *
-   * @param {VaultId} vkId
+   * @param {VaultId} vaultId
+   * @param {Vault} vault
    */
-  const removeVaultKit = vkId => {
-    store.delete(vkId);
+  const removeVaultKit = (vaultId, vault) => {
+    const key = vaultKey(vault.getDebtAmount(), vaultId);
+    const vaultKit = store.get(key);
+    assert(vaultKit);
+    store.delete(key);
+    return vaultKit;
   };
 
   return harden({

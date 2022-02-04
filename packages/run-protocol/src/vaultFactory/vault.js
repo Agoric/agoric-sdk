@@ -40,8 +40,16 @@ export const VaultState = {
 };
 
 /**
+ * @typedef {Object} InnerVaultManagerBase
+ * @property {(VaultId, Vault, Amount) => void} applyDebtDelta
+ * @property {() => Brand} getCollateralBrand
+ * @property {ReallocateReward} reallocateReward
+ * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
+ */
+
+/**
  * @param {ContractFacet} zcf
- * @param {InnerVaultManager} manager
+ * @param {InnerVaultManagerBase & GetVaultParams} manager
  * @param {VaultId} idInManager
  * @param {ZCFMint} runMint
  * @param {ERef<PriceAuthority>} priceAuthority
@@ -86,8 +94,6 @@ export const makeVaultKit = (
    */
   let interestSnapshot;
 
-  const getIdInManager = () => idInManager;
-
   /**
    * @param {Amount} newDebt - principal and all accrued interest
    * @returns {Amount}
@@ -113,7 +119,8 @@ export const makeVaultKit = (
   const updateDebtSnapshotAndNotify = newDebt => {
     const delta = updateDebtSnapshot(newDebt);
     // update parent state
-    manager.applyDebtDelta(idInManager, delta);
+    // eslint-disable-next-line no-use-before-define
+    manager.applyDebtDelta(idInManager, vault, delta);
   };
 
   /**
@@ -557,15 +564,18 @@ export const makeVaultKit = (
     getLiquidationPromise: () => liquidationPromiseKit.promise,
   });
 
-  return harden({
-    vault,
-    getIdInManager,
+  const adminFacet = Far('vaultAdmin', {
     openLoan,
     vaultSeat,
     liquidating,
     liquidated,
     liquidationPromiseKit,
     liquidationZcfSeat,
+  });
+
+  return harden({
+    vault,
+    adminFacet,
   });
 };
 

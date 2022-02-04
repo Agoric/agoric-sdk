@@ -254,9 +254,10 @@ export const makeVaultManager = (
 
   /**
    * @param {VaultId} vaultId
+   * @param {Vault} vault
    * @param {Amount} delta
    */
-  const applyDebtDelta = (vaultId, delta) => {
+  const applyDebtDelta = (vaultId, vault, delta) => {
     totalDebt = AmountMath.add(totalDebt, delta);
     assert(prioritizedVaults);
     prioritizedVaults.refreshVaultPriority(vaultId);
@@ -285,9 +286,8 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
-  // TODO type this here not externally
-  /** @type {InnerVaultManager} */
-  const innerFacet = harden({
+  /** @type {Parameters<typeof makeVaultKit>[1]} */
+  const managerFacade = harden({
     ...shared,
     applyDebtDelta,
     reallocateReward,
@@ -302,13 +302,21 @@ export const makeVaultManager = (
       want: { RUN: null },
     });
 
-    const vaultKit = makeVaultKit(zcf, innerFacet, runMint, priceAuthority);
+    const vaultId = 'FIXME';
+
+    const vaultKit = makeVaultKit(
+      zcf,
+      managerFacade,
+      vaultId,
+      runMint,
+      priceAuthority,
+    );
 
     const { vault, openLoan } = vaultKit;
     // FIXME do without notifier callback
     const { notifier } = await openLoan(seat);
     assert(prioritizedVaults);
-    prioritizedVaults.addVaultKit(vaultKit);
+    prioritizedVaults.addVaultKit(vaultId, vaultKit);
 
     seat.exit();
 
