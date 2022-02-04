@@ -99,10 +99,15 @@
  */
 
 /**
+ * @typedef {string} VaultId
+ */
+/**
  * @typedef {Object} InnerVaultManagerBase
+ * @property {(VaultId, Amount) => void} applyDebtDelta
  * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
- * @property {() => Ratio} getCompoundedInterest
+ * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
+ * @property {(Amount) => void} tallyInterestAccrual
  */
 
 /**
@@ -152,18 +157,6 @@
  * @typedef {Object} LoanKit
  * @property {Vault} vault
  * @property {Notifier<UIState>} uiNotifier
- */
-
-/**
- * @typedef {Object} VaultKit
- * @property {Vault} vault
- * @property {(seat: ZCFSeat) => Promise<OpenLoanKit>} openLoan
- * @property {(timestamp: Timestamp) => Amount} accrueInterestAndAddToPool
- * @property {ZCFSeat} vaultSeat
- * @property {PromiseRecord<string>} liquidationPromiseKit
- * @property {ZCFSeat} liquidationZcfSeat
- * @property {() => void} liquidating
- * @property {(newDebt: Amount) => void} liquidated
  */
 
 /**

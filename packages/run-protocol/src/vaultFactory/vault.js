@@ -20,7 +20,6 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
-import { makeInterestCalculator } from './interest.js';
 
 const { details: X, quote: q } = assert;
 
@@ -43,17 +42,16 @@ export const VaultState = {
 /**
  * @param {ContractFacet} zcf
  * @param {InnerVaultManager} manager
+ * @param {VaultId} idInManager
  * @param {ZCFMint} runMint
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {Timestamp} startTimeStamp
- * @returns {VaultKit}
  */
 export const makeVaultKit = (
   zcf,
   manager,
+  idInManager, // will go in state
   runMint,
   priceAuthority,
-  startTimeStamp,
 ) => {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
@@ -68,8 +66,6 @@ export const makeVaultKit = (
   };
 
   const collateralBrand = manager.getCollateralBrand();
-  // timestamp of most recent update to interest
-  let latestInterestUpdate = startTimeStamp;
 
   // vaultSeat will hold the collateral until the loan is retired. The
   // payout from it will be handed to the user: if the vault dies early
@@ -90,13 +86,34 @@ export const makeVaultKit = (
    */
   let interestSnapshot;
 
+  const getIdInManager = () => idInManager;
+
   /**
-   *
-   * @param {Amount} newDebt
+   * @param {Amount} newDebt - principal and all accrued interest
+   * @returns {Amount}
    */
   const updateDebtSnapshot = newDebt => {
+    // Since newDebt includes accrued interest we need to use getDebtAmount()
+    // to get a baseline that also includes accrued interest.
+    // eslint-disable-next-line no-use-before-define
+    const delta = AmountMath.subtract(newDebt, getDebtAmount());
+
+    // update local state
     runDebtSnapshot = newDebt;
     interestSnapshot = manager.getCompoundedInterest();
+
+    return delta;
+  };
+
+  /**
+   * XXX maybe fold this into the calling context (vaultManager)
+   *
+   * @param {Amount} newDebt - principal and all accrued interest
+   */
+  const updateDebtSnapshotAndNotify = newDebt => {
+    const delta = updateDebtSnapshot(newDebt);
+    // update parent state
+    manager.applyDebtDelta(idInManager, delta);
   };
 
   /**
@@ -201,6 +218,8 @@ export const makeVaultKit = (
   };
 
   /**
+   * Call must check for and remember shortfall
+   *
    * @param {Amount} newDebt
    */
   const liquidated = newDebt => {
@@ -404,7 +423,11 @@ export const makeVaultKit = (
     return { newDebt, toMint, fee };
   };
 
-  /** @param {ZCFSeat} clientSeat */
+  /**
+   * Adjust principal and collateral (atomically for offer safety)
+   *
+   * @param {ZCFSeat} clientSeat
+   */
   const adjustBalancesHook = async clientSeat => {
     assertVaultIsOpen();
     const proposal = clientSeat.getProposal();
@@ -465,7 +488,8 @@ export const makeVaultKit = (
     transferRun(clientSeat);
     manager.reallocateReward(fee, vaultSeat, clientSeat);
 
-    updateDebtSnapshot(newDebt);
+    // parent needs to know about the change in debt
+    updateDebtSnapshotAndNotify(newDebt);
 
     runMint.burnLosses(harden({ RUN: runAfter.vault }), vaultSeat);
 
@@ -521,40 +545,6 @@ export const makeVaultKit = (
     return { notifier };
   };
 
-  /**
-   * FIXME we no longer calculate interest the same way
-   *
-   * @param {bigint} currentTime
-   * @returns {Amount} rate of interest used for accrual period
-   */
-  const accrueInterestAndAddToPool = currentTime => {
-    const interestCalculator = makeInterestCalculator(
-      runBrand,
-      manager.getInterestRate(),
-      manager.getChargingPeriod(),
-      manager.getRecordingPeriod(),
-    );
-
-    const debtStatus = interestCalculator.calculateReportingPeriod(
-      {
-        latestInterestUpdate,
-        newDebt: getDebtAmount(),
-        interest: AmountMath.makeEmpty(runBrand),
-      },
-      currentTime,
-    );
-
-    updateDebtSnapshot(debtStatus.newDebt);
-
-    if (debtStatus.latestInterestUpdate === latestInterestUpdate) {
-      return AmountMath.makeEmpty(runBrand);
-    }
-
-    ({ latestInterestUpdate } = debtStatus);
-    updateUiState();
-    return debtStatus.interest;
-  };
-
   /** @type {Vault} */
   const vault = Far('vault', {
     makeAdjustBalancesInvitation,
@@ -569,8 +559,8 @@ export const makeVaultKit = (
 
   return harden({
     vault,
+    getIdInManager,
     openLoan,
-    accrueInterestAndAddToPool,
     vaultSeat,
     liquidating,
     liquidated,
@@ -578,3 +568,7 @@ export const makeVaultKit = (
     liquidationZcfSeat,
   });
 };
+
+/**
+ * @typedef {ReturnType<typeof makeVaultKit>} VaultKit
+ */

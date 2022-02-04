@@ -7,11 +7,13 @@ import '@agoric/zoe/exported.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { makePrioritizedVaults } from '../../src/vaultFactory/prioritizedVaults.js';
+import { makeFakeVaultKit } from '../supports.js';
+
+/** @typedef {import('../../src/vaultFactory/vault.js').VaultKit} VaultKit */
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
@@ -50,37 +52,12 @@ function makeRescheduler() {
   };
 }
 
-/**
- *
- * @param {Amount} initDebt
- * @param {Amount} initCollateral
- * @returns {VaultKit & {vault: {setDebt: (Amount) => void}}}
- */
-function makeFakeVaultKit(
-  initDebt,
-  initCollateral = AmountMath.make(initDebt.brand, 100n),
-) {
-  let debt = initDebt;
-  let collateral = initCollateral;
-  const vault = Far('Vault', {
-    getCollateralAmount: () => collateral,
-    getDebtAmount: () => debt,
-    setDebt: newDebt => (debt = newDebt),
-    setCollateral: newCollateral => (collateral = newCollateral),
-  });
-  // @ts-expect-error pretend this is compatible with VaultKit
-  return harden({
-    vault,
-    liquidate: () => {},
-  });
-}
-
 test('add to vault', async t => {
   const { brand } = makeIssuerKit('ducats');
 
   const rescheduler = makeRescheduler();
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
-  const fakeVaultKit = makeFakeVaultKit(AmountMath.make(brand, 130n));
+  const fakeVaultKit = makeFakeVaultKit('foo2', AmountMath.make(brand, 130n));
   const { notifier } = makeNotifierKit();
   vaults.addVaultKit(fakeVaultKit, notifier);
   const collector = makeCollector();
@@ -292,18 +269,18 @@ test('removal by notification', async t => {
   const reschedulePriceCheck = makeRescheduler();
   const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
 
-  const fakeVault1 = makeFakeVaultKit(AmountMath.make(brand, 150n));
+  const fakeVault1 = makeFakeVaultKit('v1', AmountMath.make(brand, 150n));
   const { updater: updater1, notifier: notifier1 } = makeNotifierKit();
   vaults.addVaultKit(fakeVault1, notifier1);
   const cr1 = makeRatio(150n, brand);
   t.deepEqual(vaults.highestRatio(), cr1);
 
-  const fakeVault2 = makeFakeVaultKit(AmountMath.make(brand, 130n));
+  const fakeVault2 = makeFakeVaultKit('v2', AmountMath.make(brand, 130n));
   const { notifier: notifier2 } = makeNotifierKit();
   vaults.addVaultKit(fakeVault2, notifier2);
   t.deepEqual(vaults.highestRatio(), cr1, 'should be new highest');
 
-  const fakeVault3 = makeFakeVaultKit(AmountMath.make(brand, 140n));
+  const fakeVault3 = makeFakeVaultKit('v3', AmountMath.make(brand, 140n));
   const { notifier: notifier3 } = makeNotifierKit();
   vaults.addVaultKit(fakeVault3, notifier3);
   const cr3 = makeRatio(140n, brand);
