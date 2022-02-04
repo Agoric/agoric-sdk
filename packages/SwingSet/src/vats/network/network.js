@@ -478,13 +478,15 @@ export function makeNetworkProtocol(protocolHandler) {
         localAddress = localAddr,
       } =
         /** @type {Partial<AttemptDescription>} */
-        (await E(protocolHandler).onConnect(
-          port,
-          initialLocalAddr,
-          remoteAddr,
-          lchandler,
-          protocolHandler,
-        ));
+        (
+          await E(protocolHandler).onConnect(
+            port,
+            initialLocalAddr,
+            remoteAddr,
+            lchandler,
+            protocolHandler,
+          )
+        );
 
       if (!rchandler) {
         throw lastFailure;
