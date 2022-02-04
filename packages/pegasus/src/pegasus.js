@@ -38,18 +38,19 @@ const makePegasus = (zcf, board, namesByAddress) => {
    * @property {LegacyMap<Denom, PromiseRecord<Courier>>} remoteDenomToCourierPK
    * @property {IterationObserver<Denom>} remoteDenomPublication
    * @property {Subscription<Denom>} remoteDenomSubscription
-   * @property {number} lastDenomNonce
+   * @property {bigint} lastDenomNonce Distinguish Pegasus-created denom names
+   * that are sent and received from a remote connection
    * @property {(reason: CloseReason) => void} abort
    */
 
-  let lastLocalIssuerNonce = 0;
+  let lastLocalIssuerNonce = 0n;
   /**
    * Create a new issuer keyword (based on Local + nonce)
    *
    * @returns {string}
    */
   const createLocalIssuerKeyword = () => {
-    lastLocalIssuerNonce += 1;
+    lastLocalIssuerNonce += 1n;
     return `Local${lastLocalIssuerNonce}`;
   };
 
@@ -172,11 +173,10 @@ const makePegasus = (zcf, board, namesByAddress) => {
       async pegLocal(allegedName, localIssuer) {
         checkAbort();
 
-        // We need the last nonce for our denom name.
-        localDenomState.lastDenomNonce += 1;
+        localDenomState.lastDenomNonce += 1n;
         const remoteDenom = `pegasus${localDenomState.lastDenomNonce}`;
 
-        // Create a seat in which to keep our denomination.
+        // Create a seat in which to keep our escrowed ERTP assets of this denomination.
         const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
 
         // Ensure the issuer can be used in Zoe offers.
@@ -298,7 +298,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
             localAddr,
             remoteAddr,
             remoteDenomToCourierPK,
-            lastDenomNonce: 0,
+            lastDenomNonce: 0n,
             remoteDenomPublication,
             remoteDenomSubscription,
             abort: reason => {
@@ -336,10 +336,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
             const { remoteDenom } = parts;
             assert.typeof(remoteDenom, 'string');
 
-            const {
-              remoteDenomToCourierPK,
-              remoteDenomPublication,
-            } = connectionToLocalDenomState.get(c);
+            const { remoteDenomToCourierPK, remoteDenomPublication } =
+              connectionToLocalDenomState.get(c);
 
             if (!remoteDenomToCourierPK.has(remoteDenom)) {
               // This is the first time we've heard of this denomination.
