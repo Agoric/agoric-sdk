@@ -457,16 +457,17 @@ export default function buildKernel(
           assert.typeof(consumed, 'number');
           used = BigInt(consumed);
           policyInput = ['crank', { computrons: used }];
-        }
-        if (useMeter && metering !== null && meterID) {
-          // If we have a Meter, and the manager reported a non-null value, use it.
-          assert(used !== undefined);
-          const underflow = deductMeter(meterID, used, true);
-          if (underflow) {
-            console.log(`meter ${meterID} underflow, terminating vat ${vatID}`);
-            const err = makeError('meter underflow, vat terminated');
-            setTerminationTrigger(vatID, true, true, err);
-            return harden(['crank-failed', {}]);
+          if (useMeter && meterID) {
+            // If we have a Meter and we want to use it, do so.
+            const underflow = deductMeter(meterID, used, true);
+            if (underflow) {
+              console.log(
+                `meter ${meterID} underflow, terminating vat ${vatID}`,
+              );
+              const err = makeError('meter underflow, vat terminated');
+              setTerminationTrigger(vatID, true, true, err);
+              return harden(['crank-failed', {}]);
+            }
           }
         }
       }

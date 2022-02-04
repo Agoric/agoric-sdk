@@ -3,8 +3,12 @@ In agoric-sdk, start the chain:
 ```
 yarn build
 cd packages/cosmic-swingset
-make scenario2-setup-nobuild scenario2-run-chain
-# In another terminal:
+make scenario2-setup-nobuild
+# Look for the bootstrap key mnemonic in the command output marked with **Important**
+make scenario2-run-chain
+# In another terminal, restore that mnemonic (using the below Hermes config):
+hermes keys restore agoric -p "m/44'/564'/0'/0/0" -m 'under cake there slam...'
+# Run the client
 make scenario2-run-client
 ```
 
@@ -23,13 +27,13 @@ host = '127.0.0.1'
 port = 3001
 
 [[chains]]                                                               
-id = 'agoricstage-15'
-rpc_addr = 'http://143.198.36.204:26657'
-grpc_addr = 'http://143.198.36.204:9090'
-websocket_addr = 'ws://143.198.36.204:26657/websocket'
+id = 'agoric'
+rpc_addr = 'http://127.0.0.1:26657'
+grpc_addr = 'http://127.0.0.1:9090'
+websocket_addr = 'ws://127.0.0.1:26657/websocket'
 rpc_timeout = '10s'
 account_prefix = 'agoric'
-key_name = 'stagekey'
+key_name = 'localkey'
 store_prefix = 'ibc'
 max_gas = 3000000
 gas_price = { price = 0.001, denom = 'urun' }
@@ -134,27 +138,27 @@ When Golang relayer says "no packets to relay", or when Hermes started, go to Ag
 command[0]
 E(home.pegasusConnections).entries()
 history[0]
-[["/ibc-port/transfer/unordered/ics20-1/ibc-channel/channel-0",[Alleged: Connection]{}]]
+[["/ibc-port/transfer/unordered/ics20-1/ibc-channel/channel-0",{"actions":[Object Alleged: pegasusConnectionActions]{},"localAddr":"/ibc-port/transfer/unordered/ics20-1/ibc-channel/channel-0","remoteAddr":"/ibc-hop/connection-0/ibc-port/transfer/unordered/ics20-1/ibc-channel/channel-270","remoteDenomSubscription":[Object Alleged: Subscription]{}}]]
 command[1]
-E(home.agoricNames).lookup('instance', 'Pegasus')
+E(history[0][0][1].actions).pegRemote('Muon', 'umuon', 'nat', { decimalPlaces: 6 })
 history[1]
-[Alleged: InstanceHandle]{}
+[Object Alleged: Muon peg]{}
 command[2]
-E(home.zoe).getPublicFacet(history[1])
+E(home.agoricNames).lookup('instance', 'Pegasus')
 history[2]
-[Alleged: presence o-61]{}
+[Object Alleged: InstanceHandle]{}
 command[3]
-E(history[2]).pegRemote('Muon', history[0][0][1], 'umuon', 'nat', { decimalPlaces: 6 })
+E(home.zoe).getPublicFacet(history[2])
 history[3]
-[Alleged: presence o-158]{}
+[Object Alleged: pegasus]{}
 command[4]
-E(history[3]).getLocalBrand()
+E(history[1]).getLocalBrand()
 history[4]
-[Alleged: Local1 Brand ...]
+[Object Alleged: Local1 brand]{}
 command[5]
-E(history[2]).getLocalIssuer(history[4])
+E(history[3]).getLocalIssuer(history[4])
 history[5]
-[issuer]
+[Object Alleged: Local1 issuer]{}
 command[6]
 E(home.board).getId(history[5])
 ```
