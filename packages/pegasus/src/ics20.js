@@ -4,12 +4,30 @@ import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
 /**
- * @typedef {Object} ICS20TransferPacket
+ * @typedef {Object} ICS20TransferPacket Packet shape defined at:
+ * https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
  * @property {string} amount The extent of the amount
  * @property {Denom} denom The denomination of the amount
  * @property {string} [sender] The sender address
  * @property {DepositAddress} receiver The receiver deposit address
  */
+
+/**
+ * @param {string} s
+ */
+const safeJSONParseObject = s => {
+  /** @type {unknown} */
+  let obj;
+  try {
+    obj = JSON.parse(s);
+  } catch (e) {
+    assert.note(e, X`${s} is not valid JSON`);
+    throw e;
+  }
+  assert.typeof(obj, 'object', X`${s} is not a JSON object`);
+  assert(obj !== null, X`${s} is null`);
+  return obj;
+};
 
 /**
  * Convert an inbound packet to a local amount.
@@ -18,8 +36,7 @@ import { assert, details as X } from '@agoric/assert';
  * @returns {Promise<PacketParts>}
  */
 export const parseICS20TransferPacket = async packet => {
-  /** @type {ICS20TransferPacket} */
-  const ics20Packet = JSON.parse(packet);
+  const ics20Packet = safeJSONParseObject(packet);
   const { amount, denom, receiver } = ics20Packet;
 
   assert.typeof(denom, 'string', X`Denom ${denom} must be a string`);
@@ -40,7 +57,8 @@ export const parseICS20TransferPacket = async packet => {
 };
 
 /**
- * Convert the amount to a packet to send.
+ * Convert the amount to a packet to send.  PacketParts.value is limited to
+ * fungible (bigint) amounts.
  *
  * @param {PacketParts} param0
  * @returns {Promise<Bytes>}
@@ -50,9 +68,8 @@ export const makeICS20TransferPacket = async ({
   remoteDenom,
   depositAddress,
 }) => {
-  // We're using Nat as a dynamic check in a way that tsc doesn't grok.
-  // Should Nat's parameter type be `unknown`?
-  // @ts-ignore
+  // We're using Nat as a dynamic check for overflow.
+  // @ts-ignore - this causes errors on some versions of TS, but not others.
   const stringValue = String(Nat(value));
 
   // Generate the ics20-1 packet.
@@ -73,12 +90,13 @@ export const makeICS20TransferPacket = async ({
  * @returns {Promise<void>}
  */
 export const assertICS20TransferPacketAck = async ack => {
-  const { success, error } = JSON.parse(ack);
+  const { success, error } = safeJSONParseObject(ack);
   assert(success, X`ICS20 transfer error ${error}`);
 };
 
 /**
- * Create results of the transfer.
+ * Create results of the transfer.  Acknowledgement shape defined at:
+ * https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
  *
  * @param {boolean} success
  * @param {any} error
