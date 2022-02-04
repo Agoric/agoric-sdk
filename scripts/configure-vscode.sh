@@ -18,7 +18,8 @@ mkdir -p .vscode ||
 cat >.vscode/settings.json.new <<\EOF ||
 {
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "typescript.preferences.importModuleSpecifierEnding": "js"
 }
 EOF
 	die "Could not write settings.json"
