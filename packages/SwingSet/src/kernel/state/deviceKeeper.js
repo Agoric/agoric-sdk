@@ -46,18 +46,20 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
   insistDeviceID(deviceID);
   const { addKernelDeviceNode, incrementRefCount } = tools;
 
-  function setSourceAndOptions(source, options) {
-    assert.typeof(source, 'object');
-    assert(source && source.bundleID);
+  const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
+
+  function setSourceAndOptions(bundleID, options) {
+    assert.typeof(bundleID, 'string');
+    assert(bundleIDRE.test(bundleID), `${bundleID} is not a bundleID`);
     assert.typeof(options, 'object');
-    kvStore.set(`${deviceID}.source`, JSON.stringify(source));
+    kvStore.set(`${deviceID}.bundleID`, bundleID);
     kvStore.set(`${deviceID}.options`, JSON.stringify(options));
   }
 
   function getSourceAndOptions() {
-    const source = JSON.parse(kvStore.get(`${deviceID}.source`));
+    const bundleID = kvStore.get(`${deviceID}.bundleID`);
     const options = JSON.parse(kvStore.get(`${deviceID}.options`));
-    return harden({ source, options });
+    return harden({ bundleID, options });
   }
 
   /**

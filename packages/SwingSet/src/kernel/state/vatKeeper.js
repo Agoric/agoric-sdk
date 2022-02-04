@@ -91,27 +91,31 @@ export function makeVatKeeper(
     return value;
   }
 
+  const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
+
   /**
-   * @param {SourceOfBundle} source
+   * @param {BundleID} bundleID
    * @param {ManagerOptions} options
    */
-  function setSourceAndOptions(source, options) {
+  function setSourceAndOptions(bundleID, options) {
     // take care with API change
     assert(options.managerType, X`vat options missing managerType`);
-    assert(source);
-    assert(
-      'bundle' in source || 'bundleName' in source || 'bundleID' in source,
-    );
+    assert.typeof(bundleID, 'string');
+    assert(bundleIDRE.test(bundleID), `${bundleID} is not a bundleID`);
     assert.typeof(options, 'object');
-    kvStore.set(`${vatID}.source`, JSON.stringify(source));
+    kvStore.set(`${vatID}.bundleID`, bundleID);
     kvStore.set(`${vatID}.options`, JSON.stringify(options));
   }
 
+  /**
+   *
+   * @returns { { bundleID: BundleID, options: ManagerOptions }}
+   */
   function getSourceAndOptions() {
-    const source = JSON.parse(getRequired(`${vatID}.source`));
+    const bundleID = getRequired(`${vatID}.bundleID`);
     /** @type { ManagerOptions } */
     const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
-    return harden({ source, options });
+    return harden({ bundleID, options });
   }
 
   function getOptions() {

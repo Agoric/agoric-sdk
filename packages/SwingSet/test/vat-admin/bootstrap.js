@@ -12,12 +12,6 @@ export function buildRootObject(vatPowers) {
       bundleDevice = devices.bundle;
     },
 
-    async byBundle(bundle) {
-      const { root } = await E(admin).createVat(bundle);
-      const n = await E(root).getANumber();
-      return n;
-    },
-
     async byName(bundleName) {
       const { root } = await E(admin).createVatByName(bundleName);
       const n = await E(root).getANumber();

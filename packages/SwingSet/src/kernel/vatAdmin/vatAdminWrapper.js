@@ -97,27 +97,18 @@ export function buildRootObject(vatPowers) {
       createUnlimitedMeter() {
         return makeUnlimitedMeter(vatAdminNode);
       },
-      createVat(bundleOrBundlecap, options = {}) {
+      createVat(bundlecap, options = {}) {
         const co = convertOptions(options);
-        let vatID;
-        if (passStyleOf(bundleOrBundlecap) === 'remotable') {
-          const bundlecap = bundleOrBundlecap;
-          let bundleID;
-          try {
-            bundleID = D(bundlecap).getBundleID();
-          } catch (e) {
-            // 'bundlecap' probably wasn't a bundlecap
-            throw Error('Vat Creation Error: createVat() requires a bundlecap');
-          }
-          assert.typeof(bundleID, 'string');
-          vatID = D(vatAdminNode).createByBundleID(bundleID, co);
-        } else {
-          // eventually this option will go away: userspace will be obligated
-          // to use an ID, not a full bundle
-          const bundle = bundleOrBundlecap;
-          assert(bundle.moduleFormat, 'does not look like a bundle');
-          vatID = D(vatAdminNode).createByBundle(bundle, co);
+        assert.equal(passStyleOf(bundlecap), 'remotable');
+        let bundleID;
+        try {
+          bundleID = D(bundlecap).getBundleID();
+        } catch (e) {
+          // 'bundlecap' probably wasn't a bundlecap
+          throw Error('Vat Creation Error: createVat() requires a bundlecap');
         }
+        assert.typeof(bundleID, 'string');
+        const vatID = D(vatAdminNode).createByBundleID(bundleID, co);
         return finishVatCreation(vatAdminNode, vatID);
       },
       createVatByName(bundleName, options = {}) {

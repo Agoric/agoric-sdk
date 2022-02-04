@@ -691,7 +691,7 @@ export default function buildKernel(
    */
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
-    const { vatID, source, dynamicOptions } = message;
+    const { vatID, bundleID, dynamicOptions } = message;
     kernelKeeper.addDynamicVatID(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const options = { ...dynamicOptions };
@@ -701,7 +701,7 @@ export default function buildKernel(
     if (!dynamicOptions.reapInterval) {
       options.reapInterval = kernelKeeper.getDefaultReapInterval();
     }
-    vatKeeper.setSourceAndOptions(source, options);
+    vatKeeper.setSourceAndOptions(bundleID, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
     function makeSuccessResponse() {
@@ -1031,20 +1031,10 @@ export default function buildKernel(
 
     // the admin device is endowed directly by the kernel
     deviceEndowments.vatAdmin = {
-      pushCreateVatBundleEvent(bundle, dynamicOptions) {
-        const source = { bundle };
-        const vatID = kernelKeeper.allocateUnusedVatID();
-        const event = { type: 'create-vat', vatID, source, dynamicOptions };
-        kernelKeeper.addToRunQueue(harden(event));
-        // the device gets the new vatID immediately, and will be notified
-        // later when it is created and a root object is available
-        return vatID;
-      },
       pushCreateVatIDEvent(bundleID, dynamicOptions) {
         assert(kernelKeeper.hasBundle(bundleID), bundleID);
-        const source = { bundleID };
         const vatID = kernelKeeper.allocateUnusedVatID();
-        const event = { type: 'create-vat', vatID, source, dynamicOptions };
+        const event = { type: 'create-vat', vatID, bundleID, dynamicOptions };
         kernelKeeper.addToRunQueue(harden(event));
         // the device gets the new vatID immediately, and will be notified
         // later when it is created and a root object is available
@@ -1075,13 +1065,13 @@ export default function buildKernel(
     for (const [name, deviceID] of kernelKeeper.getDevices()) {
       logStartup(`starting device ${name} as ${deviceID}`);
       const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
-      const { source, options } = deviceKeeper.getSourceAndOptions();
-      assert(source.bundleID);
+      const { bundleID, options } = deviceKeeper.getSourceAndOptions();
+      assert(bundleID);
       assertKnownOptions(options, ['deviceParameters', 'unendowed']);
       const { deviceParameters = {}, unendowed } = options;
       const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
 
-      const bundle = kernelKeeper.getBundle(source.bundleID);
+      const bundle = kernelKeeper.getBundle(bundleID);
       assert(bundle);
       // eslint-disable-next-line no-await-in-loop
       const NS = await importBundle(bundle, {

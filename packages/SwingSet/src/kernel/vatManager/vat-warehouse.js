@@ -109,7 +109,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
     assert(kernelKeeper.vatIsAlive(vatID), X`${q(vatID)}: not alive`);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const { source, options } = vatKeeper.getSourceAndOptions();
+    const { bundleID, options } = vatKeeper.getSourceAndOptions();
 
     const translators = provideTranslators(vatID);
 
@@ -125,7 +125,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
         return vatLoader.createVatDynamically;
       }
     };
-    const manager = await chooseLoader()(vatID, source, translators, options);
+    const manager = await chooseLoader()(vatID, bundleID, translators, options);
 
     // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;

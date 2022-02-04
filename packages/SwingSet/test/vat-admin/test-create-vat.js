@@ -41,19 +41,8 @@ async function doTestSetup(t) {
   const id44 = await c.validateAndInstallBundle(bundles.vat44Bundle);
   c.pinVatRoot('bootstrap');
   await c.run();
-  return { c, id44, vat13Bundle: bundles.vat13Bundle };
+  return { c, id44 };
 }
-
-test('createVatByBundle', async t => {
-  const { c, vat13Bundle } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot(
-    'bootstrap',
-    'byBundle',
-    capargs([vat13Bundle]),
-  );
-  await c.run();
-  t.deepEqual(JSON.parse(c.kpResolution(kpid).body), 13);
-});
 
 test('createVatByName', async t => {
   const { c } = await doTestSetup(t);

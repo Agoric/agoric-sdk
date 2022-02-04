@@ -23,7 +23,6 @@ import { assert } from '@agoric/assert';
 
 export function buildRootDeviceNode({ endowments, serialize }) {
   const {
-    pushCreateVatBundleEvent,
     pushCreateVatIDEvent,
     getBundleIDByName,
     terminate: kernelTerminateVatFn,
@@ -54,10 +53,6 @@ export function buildRootDeviceNode({ endowments, serialize }) {
     // Called by the wrapper vat to create a new vat. Gets a new ID from the
     // kernel's vat creator fn. Remember that the root object will arrive
     // separately. Clean up the outgoing and incoming arguments.
-    createByBundle(bundle, options = {}) {
-      const vatID = pushCreateVatBundleEvent(bundle, options);
-      return vatID;
-    },
     createByBundleID(bundleID, options = {}) {
       assert.typeof(bundleID, 'string');
       const vatID = pushCreateVatIDEvent(bundleID, options);

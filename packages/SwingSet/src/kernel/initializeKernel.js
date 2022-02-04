@@ -82,7 +82,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-      vatKeeper.setSourceAndOptions({ bundleID }, creationOptions);
+      vatKeeper.setSourceAndOptions(bundleID, creationOptions);
       vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
@@ -114,7 +114,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
       logStartup(`assigned DeviceID ${deviceID} for genesis device ${name}`);
       const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
-      deviceKeeper.setSourceAndOptions({ bundleID }, creationOptions);
+      deviceKeeper.setSourceAndOptions(bundleID, creationOptions);
       if (name === 'vatAdmin') {
         haveAdminDevice = true;
       }

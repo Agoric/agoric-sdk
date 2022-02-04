@@ -627,13 +627,10 @@ test('vatKeeper.getOptions', async t => {
   const vk = k.provideVatKeeper(v1);
   const bundleID =
     'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-  vk.setSourceAndOptions(
-    { bundleID },
-    {
-      managerType: 'local',
-      name: 'fred',
-    },
-  );
+  vk.setSourceAndOptions(bundleID, {
+    managerType: 'local',
+    name: 'fred',
+  });
   const { name } = vk.getOptions();
   t.is(name, 'fred');
 });

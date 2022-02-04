@@ -264,7 +264,7 @@
  */
 
 /**
- * @typedef {{ bundleName: string} | { bundle: Bundle } | { bundleID: BundleID } } SourceOfBundle
+ * @typedef {{ bundleID: BundleID } } SourceOfBundle
  */
 /**
  * @typedef { import('@agoric/swing-store').KVStore } KVStore

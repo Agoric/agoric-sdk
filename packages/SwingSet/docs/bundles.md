@@ -78,7 +78,7 @@ The "bundle device" (aka `devices.bundle`) has a root device node with an API to
 
 Bundlecaps are new device nodes created by the bundle device. Internally, this device remembers the mapping from bundleID to the device node ID (`dref`), and vice versa, in a pair of vatstore state entries. This mapping is not held in RAM: the state entries are looked up on each call to `getBundleID`/etc. The device can also access the kernelKeeper APIs to convert bundleIDs into full bundles, if requested.
 
-The vatAdmin vat's `createVat` method accepts bundlecaps (or full bundles, for now). The vatAdmin device (which is wrapped tightly by vatAdminVat and not exposed to anyone else) accepts bundleIDs. VatAdminDevice translates bundlecaps into bundleIDs before talking to the device.
+The vatAdmin vat's `createVat` method accepts bundlecaps. The vatAdmin device (which is wrapped tightly by vatAdminVat and not exposed to anyone else) accepts bundleIDs. VatAdminDevice translates bundlecaps into bundleIDs before talking to the device.
 
 `controller.validateAndInstallBundle(bundle, optionalAllegedBundleID)` performs validity checks, installs the bundle, and returns the computed bundleID. It uses `kernel.installBundle(bundleID, bundle)` internally, which uses uses `kernelKeeper` to store the bundle, and does not perform validation.
 

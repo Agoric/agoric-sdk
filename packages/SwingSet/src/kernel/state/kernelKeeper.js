@@ -53,7 +53,7 @@ const enableKernelGC = true;
 // kernel.defaultManagerType = managerType
 // kernel.defaultReapInterval = $NN
 
-// v$NN.source = JSON({ bundle }) or JSON({ bundleName })
+// v$NN.bundleID = bundleID
 // v$NN.options = JSON
 // v$NN.o.nextID = $NN
 // v$NN.p.nextID = $NN
@@ -82,7 +82,7 @@ const enableKernelGC = true;
 // d$NN.c.$kernelSlot = $deviceSlot = o-$NN/d+$NN/d-$NN
 // d$NN.c.$deviceSlot = $kernelSlot = ko$NN/kd$NN
 // d$NN.deviceState = JSON
-// d$NN.source = JSON({ bundle }) or JSON({ bundleName })
+// d$NN.bundleID = bundleID
 // d$NN.options = JSON
 
 // crankNumber = $NN
