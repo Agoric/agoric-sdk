@@ -86,7 +86,12 @@ function sanitize(data) {
   if (data instanceof Error) {
     data = data.stack;
   }
-  return JSON.parse(JSON.stringify(data));
+  // Golang likes to have its bigints as strings.
+  return JSON.parse(
+    JSON.stringify(data, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value,
+    ),
+  );
 }
 
 export function buildBridge(outboundCallback) {

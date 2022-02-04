@@ -1,7 +1,6 @@
 // @ts-check
 
 import {
-  rethrowUnlessMissing,
   dataToBase64,
   base64ToBytes,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
@@ -15,11 +14,12 @@ import '@agoric/swingset-vat/src/vats/network/types.js';
 
 import { makeWithQueue } from './queue.js';
 
-const DEFAULT_PACKET_TIMEOUT = 1000;
-
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.
 const DEFAULT_ACKNOWLEDGEMENT = '\x00';
+
+// Default timeout after 10 minutes.
+const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
 
 /**
  * @typedef {import('./bridge').BridgeHandler} BridgeHandler
@@ -74,14 +74,18 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    * @property {Counterparty} counterparty
    * @property {string} version
    *
-   * @typedef {PromiseRecord<[Endpoint, ConnectionHandler]>} OnConnectP
-   * @typedef {ConnectingInfo & { onConnectP: OnConnectP }} Outbound
+   * @typedef {PromiseRecord<AttemptDescription>} OnConnectP
+   * @typedef {Omit<ConnectingInfo, 'counterparty' | 'channelID'> & {
+   *   localAddr: Endpoint, onConnectP: OnConnectP
+   *   counterparty: { port_id: string },
+   * }} Outbound
    */
 
   /**
-   * @type {Store<string, Array<Outbound>>}
+   * @type {LegacyMap<string, Array<Outbound>>}
    */
-  const srcPortToOutbounds = makeStore('SRC-PORT');
+  // Legacy because it holds a mutable Javascript Array
+  const srcPortToOutbounds = makeLegacyMap('SRC-PORT');
 
   /**
    * @type {Store<string, ConnectingInfo>}
@@ -89,31 +93,32 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   const channelKeyToInfo = makeStore('CHANNEL:PORT');
 
   /**
-   * @type {Store<string, OnConnectP>}
-   */
-  const channelKeyToOnConnectP = makeStore('CHANNEL:PORT');
-
-  /**
    * @type {Store<string, Promise<InboundAttempt>>}
    */
   const channelKeyToAttemptP = makeStore('CHANNEL:PORT');
 
   /**
-   * @type {Store<string, Store<number, PromiseRecord<Bytes>>>}
+   * @type {LegacyMap<string, LegacyMap<number, PromiseRecord<Bytes>>>}
    */
-  const channelKeyToSeqAck = makeStore('CHANNEL:PORT');
+  // Legacy because it holds a LegacyMap
+  const channelKeyToSeqAck = makeLegacyMap('CHANNEL:PORT');
 
   /**
    * Send a packet out via the IBC device.
    *
    * @param {IBCPacket} packet
-   * @param {Store<number, PromiseRecord<Bytes>>} seqToAck
+   * @param {LegacyMap<number, PromiseRecord<Bytes>>} seqToAck
+   * @param {bigint} [relativeTimeoutNs]
    */
-  async function ibcSendPacket(packet, seqToAck) {
+  async function ibcSendPacket(
+    packet,
+    seqToAck,
+    relativeTimeoutNs = DEFAULT_PACKET_TIMEOUT_NS,
+  ) {
     // Make a kernel call to do the send.
     const fullPacket = await callIBCDevice('sendPacket', {
       packet,
-      relativeTimeout: DEFAULT_PACKET_TIMEOUT,
+      relativeTimeoutNs,
     });
 
     // Extract the actual sequence number from the return.
@@ -145,16 +150,24 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     order,
   ) {
     const channelKey = `${channelID}:${portID}`;
-    const seqToAck = makeStore('SEQUENCE');
+    // Legacy because it holds a PromiseRecord
+    const seqToAck = makeLegacyMap('SEQUENCE');
     channelKeyToSeqAck.init(channelKey, seqToAck);
 
     /**
      * @param {Connection} _conn
      * @param {Bytes} packetBytes
      * @param {ConnectionHandler} _handler
+     * @param {Object} root0
+     * @param {bigint} [root0.relativeTimeoutNs]
      * @returns {Promise<Bytes>} Acknowledgement data
      */
-    let onReceive = async (_conn, packetBytes, _handler) => {
+    let onReceive = async (
+      _conn,
+      packetBytes,
+      _handler,
+      { relativeTimeoutNs } = {},
+    ) => {
       // console.error(`Remote IBC Handler ${portID} ${channelID}`);
       const packet = {
         source_port: portID,
@@ -163,7 +176,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
         destination_channel: rChannelID,
         data: dataToBase64(packetBytes),
       };
-      return ibcSendPacket(packet, seqToAck);
+      return ibcSendPacket(packet, seqToAck, relativeTimeoutNs);
     };
 
     if (order === 'ORDERED') {
@@ -190,7 +203,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
           source_port: portID,
           source_channel: channelID,
         };
-        await callIBCDevice('channelCloseInit', { packet });
+        await callIBCDevice('startChannelCloseInit', { packet });
         const rejectReason = Error('Connection closed');
         for (const ackDeferred of seqToAck.values()) {
           ackDeferred.reject(rejectReason);
@@ -228,26 +241,22 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    */
 
   /**
-   * @type {Store<Port, OutboundCircuitRecord[]>}
-   */
-  const portToCircuits = makeStore('Port');
-
-  /**
    * @type {LegacyMap<Port, Set<PromiseRecord<ConnectionHandler>>>}
    */
   // Legacy because it holds a raw JavaScript Set
   const portToPendingConns = makeLegacyMap('Port');
 
-  /** @type {Store<Endpoint, Endpoint>} */
-  const remoteAddrToLocalSuffix = makeStore('endpoint');
-
   /**
    * @type {ProtocolHandler}
    */
-  const protocol = Far('ProtocolHandler', {
+  const protocol = Far('IBCProtocolHandler', {
     async onCreate(impl, _protocolHandler) {
       console.debug('IBC onCreate');
       protocolImpl = impl;
+    },
+    async onInstantiate() {
+      // The IBC channel is not known until after handshake.
+      return '';
     },
     async generatePortID(_localAddr, _protocolHandler) {
       lastPortID += 1;
@@ -255,19 +264,13 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     },
     async onBind(port, localAddr, _protocolHandler) {
       const portID = localAddrToPortID(localAddr);
-      portToCircuits.init(port, []);
       portToPendingConns.init(port, new Set());
       const packet = {
         source_port: portID,
       };
       return callIBCDevice('bindPort', { packet });
     },
-    async onInstantiate(_port, _localAddr, remoteAddr, _protocolHandler) {
-      // we can take advantage of the fact that remoteAddrs are unique (they
-      // have their own channelID).
-      return remoteAddrToLocalSuffix.get(remoteAddr);
-    },
-    async onConnect(port, localAddr, remoteAddr, chandler, _protocolHandler) {
+    async onConnect(port, localAddr, remoteAddr, _chandler, _protocolHandler) {
       console.debug('IBC onConnect', localAddr, remoteAddr);
       const portID = localAddrToPortID(localAddr);
       const pendingConns = portToPendingConns.get(port);
@@ -302,9 +305,10 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
       const onConnectP = makePromiseKit();
 
       pendingConns.add(onConnectP);
+      /** @type {Outbound[]} */
       let outbounds;
       if (srcPortToOutbounds.has(portID)) {
-        outbounds = srcPortToOutbounds.get(portID);
+        outbounds = [...srcPortToOutbounds.get(portID)];
       } else {
         outbounds = [];
         srcPortToOutbounds.init(portID, outbounds);
@@ -316,9 +320,10 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
         order,
         version,
         onConnectP,
+        localAddr,
       });
 
-      // Get any passive relayers to flow.
+      // Initialise the channel, which automatic relayers should pick up.
       const packet = {
         source_port: portID,
         destination_port: rPortID,
@@ -331,38 +336,6 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
         version,
       });
 
-      if (!chandler) {
-        // Nothing to explain to the user, so return now.
-        return onConnectP.promise;
-      }
-
-      // We explain to the user how to configure a naive relayer.
-      const q = JSON.stringify;
-      E(
-        /** @type {ConnectionHandler&{infoMessage?: (...args: any[]) => void}} */
-        (chandler),
-      )
-        .infoMessage(
-          `\
-# Set up the relayer for this path:
-ag-nchainz start-relayer <<'EOF'
-{
-  "src": {
-    "connection-id": ${q(hops[0])},
-    "port-id": ${q(portID)},
-    "order": ${q(order)},
-    "version": ${q(version)}
-  },
-  "dst": {
-    "port-id": ${q(rPortID)},
-    "order": ${q(order)}
-  }
-}
-EOF
-# then your connection will try to proceed.
-`,
-        )
-        .catch(rethrowUnlessMissing);
       return onConnectP.promise;
     },
     async onListen(_port, localAddr, _listenHandler) {
@@ -375,7 +348,6 @@ EOF
       console.debug('IBC onRevoke', localAddr);
       const pendingConns = portToPendingConns.get(port);
       portToPendingConns.delete(port);
-      portToCircuits.delete(port);
       const revoked = Error(`Port ${localAddr} revoked`);
       for (const onConnectP of pendingConns.values()) {
         onConnectP.reject(revoked);
@@ -388,50 +360,6 @@ EOF
     async fromBridge(srcID, obj) {
       console.info('IBC fromBridge', srcID, obj);
       switch (obj.event) {
-        case 'channelOpenInit': {
-          // This event is sent by a naive relayer that wants to initiate
-          // a connection.  It is only honoured if we already have autonomously
-          // attempted a connection.
-          const {
-            portID,
-            counterparty: { port_id: rPortID },
-            connectionHops: rHops,
-          } = obj;
-
-          const outbounds = srcPortToOutbounds.has(portID)
-            ? srcPortToOutbounds.get(portID)
-            : [];
-          const oidx = outbounds.findIndex(
-            ({ counterparty: { port_id: iPortID }, connectionHops: iHops }) => {
-              if (iPortID !== rPortID) {
-                return false;
-              }
-              for (let i = 0; i < rHops.length; i += 1) {
-                if (iHops[i] !== rHops[i]) {
-                  return false;
-                }
-              }
-              return true;
-            },
-          );
-
-          assert(oidx >= 0, X`${portID}: did not expect channelOpenInit`);
-
-          // Continue the handshake by extracting the outbound information.
-          const { onConnectP, ...chanInfo } = outbounds[oidx];
-          outbounds.splice(oidx, 1);
-          if (outbounds.length === 0) {
-            srcPortToOutbounds.delete(portID);
-          }
-
-          // We have more specific information for the outbound connection.
-          const channelKey = `${obj.channelID}:${portID}`;
-          channelKeyToInfo.init(channelKey, { ...chanInfo, ...obj });
-          channelKeyToOnConnectP.init(channelKey, onConnectP);
-          break;
-        }
-
-        case 'attemptChannelOpenTry':
         case 'channelOpenTry': {
           // They're (more or less politely) asking if we are listening, so make an attempt.
           const {
@@ -444,33 +372,22 @@ EOF
             counterpartyVersion: rVersion,
           } = obj;
 
-          const channelKey = `${channelID}:${portID}`;
-          if (channelKeyToAttemptP.has(channelKey)) {
-            // We have a pending attempt, so continue the handshake.
-            break;
-          }
-
-          const versionSuffix = version ? `/${version}` : '';
-          const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}${versionSuffix}`;
+          const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
           const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
           const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}/ibc-channel/${rChannelID}`;
 
           // See if we allow an inbound attempt for this address pair (without
           // rejecting).
-          remoteAddrToLocalSuffix.init(remoteAddr, `ibc-channel/${channelID}`);
           const attemptP = E(protocolImpl).inbound(localAddr, remoteAddr);
 
           // Tell what version string we negotiated.
-          const attemptedLocal = await E(attemptP)
-            .getLocalAddress()
-            .finally(() => {
-              // No matter what, delete the temporary mapping.
-              remoteAddrToLocalSuffix.delete(remoteAddr);
-            });
+          const attemptedLocal = await E(attemptP).getLocalAddress();
           const match = attemptedLocal.match(
             // Match:  ... /ORDER/VERSION ...
             new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
           );
+
+          const channelKey = `${channelID}:${portID}`;
           if (!match) {
             throw Error(
               `${channelKey}: cannot determine version from attempted local address ${attemptedLocal}`,
@@ -482,23 +399,7 @@ EOF
           channelKeyToInfo.init(channelKey, obj);
 
           try {
-            if (obj.type === 'attemptChannelOpenTry') {
-              // We can try to open with the version we wanted.
-              const packet = {
-                source_channel: channelID,
-                source_port: portID,
-                destination_channel: rChannelID,
-                destination_port: rPortID,
-              };
-
-              await callIBCDevice('continueChannelOpenTry', {
-                packet,
-                order,
-                hops,
-                version: negotiatedVersion,
-                counterpartyVersion: rVersion,
-              });
-            } else if (negotiatedVersion !== version) {
+            if (negotiatedVersion !== version) {
               // Too late; the relayer gave us a version we didn't like.
               throw Error(
                 `${channelKey}: negotiated version was ${negotiatedVersion}; rejecting ${version}`,
@@ -521,30 +422,51 @@ EOF
             channelID,
             counterparty: { port_id: rPortID, channel_id: rChannelID },
             counterpartyVersion: rVersion,
+            connectionHops: rHops,
           } = obj;
-          const channelKey = `${channelID}:${portID}`;
-          assert(
-            channelKeyToOnConnectP.has(channelKey),
-            X`${channelKey}: did not expect channelOpenAck`,
+          const outbounds = srcPortToOutbounds.has(portID)
+            ? srcPortToOutbounds.get(portID)
+            : [];
+          const oidx = outbounds.findIndex(
+            ({ counterparty: { port_id: iPortID }, connectionHops: iHops }) => {
+              if (iPortID !== rPortID) {
+                return false;
+              }
+              if (iHops.length !== rHops.length) {
+                return false;
+              }
+              for (let i = 0; i < iHops.length; i += 1) {
+                if (iHops[i] !== rHops[i]) {
+                  return false;
+                }
+              }
+              return true;
+            },
           );
-          const onConnectP = channelKeyToOnConnectP.get(channelKey);
-          channelKeyToOnConnectP.delete(channelKey);
 
-          const { order, connectionHops: rHops } =
-            channelKeyToInfo.get(channelKey);
-          channelKeyToInfo.delete(channelKey);
+          assert(oidx >= 0, X`${portID}: did not expect channelOpenAck`);
+          const { onConnectP, localAddr, ...chanInfo } = outbounds[oidx];
+          outbounds.splice(oidx, 1);
+          if (outbounds.length === 0) {
+            srcPortToOutbounds.delete(portID);
+          }
 
           // Finish the outbound connection.
           const ibcHops = rHops.map(hop => `/ibc-hop/${hop}`).join('/');
-          const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}`;
+          const remoteAddress = `${ibcHops}/ibc-port/${rPortID}/${chanInfo.order.toLowerCase()}/${rVersion}/ibc-channel/${rChannelID}`;
+          const localAddress = `${localAddr}/ibc-channel/${channelID}`;
           const rchandler = makeIBCConnectionHandler(
             channelID,
             portID,
             rChannelID,
             rPortID,
-            order,
+            chanInfo.order,
           );
-          onConnectP.resolve([remoteAddr, rchandler]);
+          onConnectP.resolve({
+            localAddress,
+            remoteAddress,
+            handler: rchandler,
+          });
           break;
         }
 
@@ -573,7 +495,11 @@ EOF
             rPortID,
             order,
           );
-          E(attemptP).accept(rchandler);
+          const localAddr = await E(attemptP).getLocalAddress();
+          E(attemptP).accept({
+            localAddress: `${localAddr}/ibc-channel/${channelID}`,
+            handler: rchandler,
+          });
           break;
         }
 
@@ -642,11 +568,11 @@ EOF
         }
 
         case 'sendPacket': {
-          const { packet } = obj;
+          const { packet, relativeTimeoutNs } = obj;
           const { source_port: portID, source_channel: channelID } = packet;
           const channelKey = `${channelID}:${portID}`;
           const seqToAck = channelKeyToSeqAck.get(channelKey);
-          ibcSendPacket(packet, seqToAck).then(
+          ibcSendPacket(packet, seqToAck, relativeTimeoutNs).then(
             ack => console.info('Manual packet', packet, 'acked:', ack),
             e => console.warn('Manual packet', packet, 'failed:', e),
           );
