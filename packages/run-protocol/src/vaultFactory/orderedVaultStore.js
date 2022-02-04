@@ -46,6 +46,7 @@ export const makeOrderedVaultStore = () => {
    *
    * @param {VaultId} vaultId
    * @param {Vault} vault
+   * @returns {VaultKit}
    */
   const removeVaultKit = (vaultId, vault) => {
     const key = vaultKey(vault.getDebtAmount(), vaultId);
@@ -59,5 +60,6 @@ export const makeOrderedVaultStore = () => {
     addVaultKit,
     removeVaultKit,
     getSize: store.getSize,
+    values: store.values,
   });
 };

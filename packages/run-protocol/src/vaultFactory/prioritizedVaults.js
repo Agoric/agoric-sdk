@@ -6,6 +6,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import { makeOrderedVaultStore } from './orderedVaultStore';
 
 const { multiply, isGTE } = natSafeMath;
 
@@ -53,14 +54,11 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
 
 /**
  *
- * @param {VaultKit} vaultKit
+ * @param {Vault} vault
  * @returns {Ratio}
  */
-const currentDebtToCollateral = vaultKit =>
-  calculateDebtToCollateral(
-    vaultKit.vault.getDebtAmount(),
-    vaultKit.vault.getCollateralAmount(),
-  );
+const currentDebtToCollateral = vault =>
+  calculateDebtToCollateral(vault.getDebtAmount(), vault.getCollateralAmount());
 
 /** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultKitRecord */
 
@@ -94,8 +92,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // every insert, and whenever any vault's ratio changes. We can remove an
   // arbitrary number of vaults from the front of the list without resorting. We
   // delete single entries using filter(), which leaves the array sorted.
-  /** @type {VaultKitRecord[]} */
-  let vaultsWithDebtRatio = [];
+  const orderedVaultKits = makeOrderedVaultStore();
 
   // XXX why keep this state in PrioritizedVaults? Better in vaultManager?
 
@@ -134,12 +131,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * @returns {VaultKit}
    */
   const removeVault = (vaultId, vault) => {
-    console.log('removing', { vaultId, vault });
-    // FIXME actually remove using the OrderedVaultStore
-    // vaultsWithDebtRatio = vaultsWithDebtRatio.filter(
-    //   v => v.vaultKit !== vaultKit,
-    // );
-    return vaultsWithDebtRatio[0].vaultKit;
+    return orderedVaultKits.removeVaultKit(vaultId, vault);
 
     // don't call reschedulePriceCheck, but do reset the highest.
     // highestDebtToCollateral = highestRatio();
@@ -189,42 +181,51 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * @param {VaultKit} vaultKit
    */
   const addVaultKit = (vaultId, vaultKit) => {
-    // FIXME use the ordered store
+    orderedVaultKits.addVaultKit(vaultId, vaultKit);
 
-    const debtToCollateral = currentDebtToCollateral(vaultKit);
-    vaultsWithDebtRatio.push({ vaultKit, debtToCollateral });
-    vaultsWithDebtRatio.sort(compareVaultKits);
+    // REVISIT
+    const debtToCollateral = currentDebtToCollateral(vaultKit.vault);
     // observeNotifier(notifier, makeObserver(vaultKit));
     rescheduleIfHighest(debtToCollateral);
   };
 
+  // REVISIT what happens to the store’s iteration order if it’s mutated while iterating?
+  // When shoudl we delete them from the collection (since they've been liquidated)
   /**
    * Invoke a function for vaults with debt to collateral at or above the ratio
    *
    * @param {Ratio} ratio
-   * @param {(record: VaultKitRecord) => void} func
+   * @param {(VaultKit) => void} cb
    */
-  const forEachRatioGTE = (ratio, func) => {
-    // vaults are sorted with highest ratios first
-    let index;
-    for (index = 0; index < vaultsWithDebtRatio.length; index += 1) {
-      const vaultPair = vaultsWithDebtRatio[index];
-      if (ratioGTE(vaultPair.debtToCollateral, ratio)) {
-        func(vaultPair);
+  const forEachRatioGTE = (ratio, cb) => {
+    for (const v of orderedVaultKits.values()) {
+      /** @type {VaultKit} */
+      const vk = v;
+      // TODO simplify currentDebtToCollateral to just take vault
+      const debtToCollateral = currentDebtToCollateral(vk.vault);
+
+      if (ratioGTE(debtToCollateral, ratio)) {
+        cb(vk);
       } else {
         // stop once we are below the target ratio
         break;
       }
     }
 
-    if (index > 0) {
-      vaultsWithDebtRatio = vaultsWithDebtRatio.slice(index);
-      const highest = highestRatio();
-      if (highest) {
-        reschedulePriceCheck();
+    // vaults are sorted with highest ratios first
+    let index;
+    for (index = 0; index < vaultsWithDebtRatio.length; index += 1) {
+      const vaultPair = vaultsWithDebtRatio[index];
+
+      if (index > 0) {
+        vaultsWithDebtRatio = vaultsWithDebtRatio.slice(index);
+        const highest = highestRatio();
+        if (highest) {
+          reschedulePriceCheck();
+        }
       }
+      highestDebtToCollateral = highestRatio();
     }
-    highestDebtToCollateral = highestRatio();
   };
 
   /**

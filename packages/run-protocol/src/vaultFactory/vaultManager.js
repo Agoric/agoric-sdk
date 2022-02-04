@@ -171,7 +171,7 @@ export const makeVaultManager = (
     // TODO maybe extract this into a method
     // TODO try pattern matching to achieve GTE
     // FIXME pass in a key instead of the actual vaultKit
-    prioritizedVaults.forEachRatioGTE(quoteRatioPlusMargin, ({ vaultKit }) => {
+    prioritizedVaults.forEachRatioGTE(quoteRatioPlusMargin, vaultKit => {
       trace('liquidating', vaultKit.vaultSeat.getProposal());
 
       liquidate(
@@ -260,7 +260,7 @@ export const makeVaultManager = (
   const applyDebtDelta = (vaultId, vault, delta) => {
     totalDebt = AmountMath.add(totalDebt, delta);
     assert(prioritizedVaults);
-    prioritizedVaults.refreshVaultPriority(vaultId);
+    prioritizedVaults.refreshVaultPriority(vaultId, vault);
   };
 
   const periodNotifier = E(timerService).makeNotifier(
