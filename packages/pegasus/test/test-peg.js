@@ -42,10 +42,8 @@ async function testRemotePeg(t) {
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
    */
-  const {
-    promise: localDepositFacet,
-    resolve: resolveLocalDepositFacet,
-  } = makePromiseKit();
+  const { promise: localDepositFacet, resolve: resolveLocalDepositFacet } =
+    makePromiseKit();
   const fakeBoard = Far('fakeBoard', {
     getValue(id) {
       if (id === '0x1234') {

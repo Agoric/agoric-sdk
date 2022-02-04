@@ -9,7 +9,7 @@
 
 /**
  * @typedef {Object} PacketParts
- * @property {Value} value
+ * @property {AmountValue} value
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
  */
