@@ -7,8 +7,9 @@
  */
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
+import { assert } from '@agoric/assert';
 
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();
@@ -96,15 +97,40 @@ export function buildRootObject(vatPowers) {
       createUnlimitedMeter() {
         return makeUnlimitedMeter(vatAdminNode);
       },
-      createVat(code, options = {}) {
-        const vatID = D(vatAdminNode).create(code, convertOptions(options));
+      createVat(bundleOrBundlecap, options = {}) {
+        const co = convertOptions(options);
+        let vatID;
+        if (passStyleOf(bundleOrBundlecap) === 'remotable') {
+          const bundlecap = bundleOrBundlecap;
+          let bundleID;
+          try {
+            bundleID = D(bundlecap).getBundleID();
+          } catch (e) {
+            // 'bundlecap' probably wasn't a bundlecap
+            throw Error('Vat Creation Error: createVat() requires a bundlecap');
+          }
+          assert.typeof(bundleID, 'string');
+          vatID = D(vatAdminNode).createByBundleID(bundleID, co);
+        } else {
+          // eventually this option will go away: userspace will be obligated
+          // to use an ID, not a full bundle
+          const bundle = bundleOrBundlecap;
+          assert(bundle.moduleFormat, 'does not look like a bundle');
+          vatID = D(vatAdminNode).createByBundle(bundle, co);
+        }
         return finishVatCreation(vatAdminNode, vatID);
       },
       createVatByName(bundleName, options = {}) {
-        const vatID = D(vatAdminNode).createByName(
-          bundleName,
-          convertOptions(options),
-        );
+        // eventually this option will go away: userspace will be obligated
+        // to use D(devices.bundle).getNamedBundleId(name), probably during
+        // bootstrap (so devices.bundle can be closely held), to fetch the
+        // named bundlecaps early, and then distribute specific bundlecaps to
+        // any vat which wants to make a vat from them (e.g. zoe with ZCF).
+        // That requires chain-side changes that I want to coordinate
+        // separately, so I'll leave this in place until later.
+        assert.typeof(bundleName, 'string');
+        const co = convertOptions(options);
+        const vatID = D(vatAdminNode).createByName(bundleName, co);
         return finishVatCreation(vatAdminNode, vatID);
       },
     });

@@ -179,6 +179,7 @@ test.serial('bootstrap export', async t => {
   c.pinVatRoot('bootstrap');
   const vatAdminVatID = c.vatNameToID('vatAdmin');
   const vatAdminDevID = c.deviceNameToID('vatAdmin');
+  const bundleDevID = c.deviceNameToID('bundle');
   const commsVatID = c.vatNameToID('comms');
   const vatTPVatID = c.vatNameToID('vattp');
   const timerVatID = c.vatNameToID('timer');
@@ -201,8 +202,10 @@ test.serial('bootstrap export', async t => {
   const right0 = 'ko24';
   const timer0 = 'ko25';
   const vattp0 = 'ko26';
-  const adminDev = 'kd30';
+  const bundleDev = 'kd30';
+  const adminDev = 'kd31';
   const kt = [
+    [bundleDev, bundleDevID, 'd+0'],
     [adminDev, vatAdminDevID, 'd+0'],
     [boot0, bootstrapVatID, 'o+0'],
     [left0, leftVatID, 'o+0'],
@@ -220,7 +223,7 @@ test.serial('bootstrap export', async t => {
         result: 'kp40',
         method: 'bootstrap',
         args: {
-          body: '[{"bootstrap":{"@qclass":"slot","iface":"Alleged: vref","index":0},"comms":{"@qclass":"slot","iface":"Alleged: vref","index":1},"left":{"@qclass":"slot","iface":"Alleged: vref","index":2},"right":{"@qclass":"slot","iface":"Alleged: vref","index":3},"timer":{"@qclass":"slot","iface":"Alleged: vref","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: vref","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: vref","index":6}},{"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":7}}]',
+          body: '[{"bootstrap":{"@qclass":"slot","iface":"Alleged: vref","index":0},"comms":{"@qclass":"slot","iface":"Alleged: vref","index":1},"left":{"@qclass":"slot","iface":"Alleged: vref","index":2},"right":{"@qclass":"slot","iface":"Alleged: vref","index":3},"timer":{"@qclass":"slot","iface":"Alleged: vref","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: vref","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: vref","index":6}},{"bundle":{"@qclass":"slot","iface":"Alleged: device","index":7},"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":8}}]',
           slots: [
             boot0,
             comms0,
@@ -229,6 +232,7 @@ test.serial('bootstrap export', async t => {
             timer0,
             vatAdminSvc,
             vattp0,
+            bundleDev,
             adminDev,
           ],
         },
@@ -266,7 +270,8 @@ test.serial('bootstrap export', async t => {
   kt.push([vatAdminSvc, bootstrapVatID, 'o-54']);
   kt.push([vattp0, bootstrapVatID, 'o-55']);
   kt.push([fooP, bootstrapVatID, 'p+5']);
-  kt.push([adminDev, bootstrapVatID, 'd-70']);
+  kt.push([bundleDev, bootstrapVatID, 'd-70']);
+  kt.push([adminDev, bootstrapVatID, 'd-71']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
   t.deepEqual(c.dump().runQueue, [

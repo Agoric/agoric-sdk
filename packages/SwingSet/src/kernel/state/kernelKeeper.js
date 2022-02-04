@@ -47,7 +47,8 @@ const enableKernelGC = true;
 // meter.nextID = $NN // used to make m$NN
 
 // kernelBundle = JSON(bundle)
-// bundle.$NAME = JSON(bundle)
+// namedBundleID.$NAME = bundleID
+// bundle.$BUNDLEID = JSON(bundle)
 //
 // kernel.defaultManagerType = managerType
 // kernel.defaultReapInterval = $NN
@@ -304,12 +305,75 @@ export default function makeKernelKeeper(
     return getRequired('kernel.defaultReapInterval');
   }
 
-  function addBundle(name, bundle) {
-    kvStore.set(`bundle.${name}`, JSON.stringify(bundle));
+  const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
+
+  /**
+   * @param { string } name
+   * @param { BundleID } bundleID
+   * @returns { void }
+   */
+  function addNamedBundleID(name, bundleID) {
+    assert.typeof(bundleID, 'string');
+    assert(bundleIDRE.test(bundleID), `${bundleID} is not a bundleID`);
+    kvStore.set(`namedBundleID.${name}`, bundleID);
   }
 
-  function getBundle(name) {
-    return harden(JSON.parse(getRequired(`bundle.${name}`)));
+  /**
+   * @param { string } name
+   * @returns { BundleID }
+   */
+  function getNamedBundleID(name) {
+    return harden(getRequired(`namedBundleID.${name}`));
+  }
+
+  /**
+   * @param { BundleID } bundleID
+   * @returns { string }
+   */
+  function bundleIDToKey(bundleID) {
+    // bundleID is b1-HASH
+    assert.typeof(bundleID, 'string');
+    assert(bundleIDRE.test(bundleID), `${bundleID} is not a bundleID`);
+    return `bundle.${bundleID}`;
+  }
+
+  /**
+   * Store a bundle (by ID) in the kernel DB.
+   *
+   * @param { BundleID } bundleID The claimed bundleID: the caller
+   *        (controller.js) must validate it first, we assume it is correct.
+   * @param { EndoZipBase64Bundle } bundle The code bundle, whose format must
+   *        be 'endoZipBase64'.
+   */
+  function addBundle(bundleID, bundle) {
+    const key = bundleIDToKey(bundleID);
+    assert(!kvStore.has(key), 'bundleID already installed');
+    // we repack the object to ensure the DB only holds the known fields
+    const { moduleFormat, endoZipBase64 } = bundle;
+    assert.equal(moduleFormat, 'endoZipBase64');
+    assert.typeof(endoZipBase64, 'string');
+    const value = JSON.stringify({ moduleFormat, endoZipBase64 });
+    kvStore.set(key, value);
+  }
+
+  /**
+   * @param { BundleID } bundleID
+   * @returns { boolean }
+   */
+  function hasBundle(bundleID) {
+    return kvStore.has(bundleIDToKey(bundleID));
+  }
+
+  /**
+   * @param { BundleID } bundleID
+   * @returns { EndoZipBase64Bundle | undefined }
+   */
+  function getBundle(bundleID) {
+    const value = kvStore.get(bundleIDToKey(bundleID));
+    if (value) {
+      return JSON.parse(value);
+    }
+    return undefined;
   }
 
   function getGCActions() {
@@ -1336,7 +1400,12 @@ export default function makeKernelKeeper(
     createStartingKernelState,
     getDefaultManagerType,
     getDefaultReapInterval,
+
+    addNamedBundleID,
+    getNamedBundleID,
+
     addBundle,
+    hasBundle,
     getBundle,
 
     getCrankNumber,
