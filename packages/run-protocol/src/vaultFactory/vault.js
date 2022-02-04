@@ -564,7 +564,7 @@ export const makeVaultKit = (
     getLiquidationPromise: () => liquidationPromiseKit.promise,
   });
 
-  const adminFacet = Far('vaultAdmin', {
+  const admin = Far('vaultAdmin', {
     openLoan,
     vaultSeat,
     liquidating,
@@ -575,7 +575,7 @@ export const makeVaultKit = (
 
   return harden({
     vault,
-    adminFacet,
+    admin,
   });
 };
 

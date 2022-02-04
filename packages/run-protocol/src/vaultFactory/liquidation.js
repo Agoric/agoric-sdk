@@ -15,7 +15,14 @@ const trace = makeTracer('LIQ');
  * Once collateral has been sold using the contract, we burn the amount
  * necessary to cover the debt and return the remainder.
  *
- * @type {VaultFactoryLiquidate}
+ * @param {ContractFacet} zcf
+ * @param {VaultKit} vaultKit
+ * @param {(losses: AmountKeywordRecord,
+ *             zcfSeat: ZCFSeat
+ *            ) => void} burnLosses
+ * @param {LiquidationStrategy} strategy
+ * @param {Brand} collateralBrand
+ * @returns {[VaultId, Vault]}
  */
 const liquidate = async (
   zcf,
@@ -24,10 +31,12 @@ const liquidate = async (
   strategy,
   collateralBrand,
 ) => {
-  vaultKit.liquidating();
+  // ??? should we bail if it's already liquidating?
+  // if so should that be done here or throw here and managed at the caller
+  vaultKit.admin.liquidating();
   const runDebt = vaultKit.vault.getDebtAmount();
   const { brand: runBrand } = runDebt;
-  const { vaultSeat, liquidationZcfSeat: liquidationSeat } = vaultKit;
+  const { vaultSeat, liquidationZcfSeat: liquidationSeat } = vaultKit.admin;
 
   const collateralToSell = vaultSeat.getAmountAllocated(
     'Collateral',
@@ -57,12 +66,15 @@ const liquidate = async (
   const isUnderwater = !AmountMath.isGTE(runProceedsAmount, runDebt);
   const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
   burnLosses(harden({ RUN: runToBurn }), liquidationSeat);
-  vaultKit.liquidated(AmountMath.subtract(runDebt, runToBurn));
+  // FIXME removal was triggered by this through observation of state change
+  vaultKit.admin.liquidated(AmountMath.subtract(runDebt, runToBurn));
 
   // any remaining RUN plus anything else leftover from the sale are refunded
   vaultSeat.exit();
   liquidationSeat.exit();
-  vaultKit.liquidationPromiseKit.resolve('Liquidated');
+  vaultKit.admin.liquidationPromiseKit.resolve('Liquidated');
+
+  return ['FIXME', vaultKit.vault];
 };
 
 /**

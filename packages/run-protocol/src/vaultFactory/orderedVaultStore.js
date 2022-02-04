@@ -40,14 +40,17 @@ export const makeOrderedVaultStore = () => {
   const addVaultKit = (vaultId, vaultKit) => {
     const key = vaultKey(vaultKit.vault.getDebtAmount(), vaultId);
     store.init(key, vaultKit);
+    store.getSize;
   };
 
   /**
    *
    * @param {VaultId} vaultId
    * @param {Vault} vault
+   * @returns {VaultKit}
    */
   const removeVaultKit = (vaultId, vault) => {
+    // FIXME needs to be the normalized debt amount
     const key = vaultKey(vault.getDebtAmount(), vaultId);
     const vaultKit = store.get(key);
     assert(vaultKit);
@@ -58,6 +61,8 @@ export const makeOrderedVaultStore = () => {
   return harden({
     addVaultKit,
     removeVaultKit,
+    entries: store.entries,
     getSize: store.getSize,
+    values: store.values,
   });
 };
