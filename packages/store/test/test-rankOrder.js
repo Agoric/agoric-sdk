@@ -25,7 +25,7 @@ const carol = Far('carol', {});
 /**
  * An unordered copyArray of some passables
  */
-const sample = harden([
+export const sample = harden([
   makeTagged('copySet', [
     ['b', 3],
     ['a', 4],

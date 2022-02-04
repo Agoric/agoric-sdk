@@ -74,7 +74,7 @@ const comparatorMirrorImages = new WeakMap();
  * for the same rank.
  * @returns {RankComparatorKit}
  */
-const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
+export const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
   /** @type {RankCompare} */
   const comparator = (left, right) => {
     if (sameValueZero(left, right)) {
