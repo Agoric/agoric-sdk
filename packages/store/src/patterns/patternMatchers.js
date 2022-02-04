@@ -522,10 +522,10 @@ const makePatternKit = () => {
     checkIsMatcherPayload: (allegedPatts, check = x => x) => {
       const checkIt = patt => checkPattern(patt, check);
       return (
-        (check(
+        check(
           passStyleOf(allegedPatts) === 'copyArray',
           X`Needs array of sub-patterns: ${allegedPatts}`,
-        ) && allegedPatts.every(checkIt))
+        ) && allegedPatts.every(checkIt)
       );
     },
 
@@ -891,12 +891,12 @@ const makePatternKit = () => {
       harden(specB);
       harden(specR);
       return (
-        (checkMatches(specB, base, check) &&
+        checkMatches(specB, base, check) &&
         (rest === undefined ||
           check(
             matches(specR, rest),
             X`Remainder ${specR} - Must match ${rest}`,
-          )))
+          ))
       );
     },
 
@@ -970,12 +970,12 @@ const makePatternKit = () => {
       harden(specR);
       harden(newBase);
       return (
-        (checkMatches(specB, newBase, check) &&
+        checkMatches(specB, newBase, check) &&
         (rest === undefined ||
           check(
             matches(specR, rest),
             X`Remainder ${specR} - Must match ${rest}`,
-          )))
+          ))
       );
     },
 

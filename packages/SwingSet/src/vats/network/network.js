@@ -151,9 +151,11 @@ export function crossoverConnection(
         }
         const ack =
           /** @type {Bytes} */
-          (await E(handlers[r])
-            .onReceive(conns[r], toBytes(packetBytes), handlers[r])
-            .catch(rethrowUnlessMissing));
+          (
+            await E(handlers[r])
+              .onReceive(conns[r], toBytes(packetBytes), handlers[r])
+              .catch(rethrowUnlessMissing)
+          );
         return toBytes(ack);
       },
       async close() {
@@ -287,9 +289,7 @@ export function makeNetworkProtocol(protocolHandler) {
             return;
           }
           listening.set(localAddr, [port, listenHandler]);
-          E(lhandler)
-            .onRemove(lport, lhandler)
-            .catch(rethrowUnlessMissing);
+          E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
         } else {
           listening.init(localAddr, [port, listenHandler]);
         }
@@ -469,13 +469,15 @@ export function makeNetworkProtocol(protocolHandler) {
 
       const [connectedAddress, rchandler] =
         /** @type {[Endpoint, ConnectionHandler]} */
-        (await E(protocolHandler).onConnect(
-          port,
-          la,
-          remoteAddr,
-          lchandler,
-          protocolHandler,
-        ));
+        (
+          await E(protocolHandler).onConnect(
+            port,
+            la,
+            remoteAddr,
+            lchandler,
+            protocolHandler,
+          )
+        );
 
       if (!rchandler) {
         throw lastFailure;

@@ -44,7 +44,8 @@ test('bad display info', t => {
   const displayInfo = harden({ somethingUnexpected: 3 });
   // @ts-ignore deliberate invalid arguments for testing
   t.throws(() => makeIssuerKit('fungible', AssetKind.NAT, displayInfo), {
-    message: /key "somethingUnexpected" was not one of the expected keys \["decimalPlaces","assetKind"\]/,
+    message:
+      /key "somethingUnexpected" was not one of the expected keys \["decimalPlaces","assetKind"\]/,
   });
 });
 
@@ -163,21 +164,19 @@ test('purse.deposit', async t => {
     nextUpdate = notifier.getUpdateSince(updateCount);
   };
 
-  const checkDeposit = (
-    expectedOldBalance,
-    expectedNewBalance,
-  ) => async depositResult => {
-    const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
-    t.assert(
-      AmountMath.isEqual(depositResult, delta),
-      `the balance changes by the deposited amount: ${delta.value}`,
-    );
-    t.assert(
-      AmountMath.isEqual(purse.getCurrentAmount(), expectedNewBalance),
-      `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
-    );
-    await checkNotifier();
-  };
+  const checkDeposit =
+    (expectedOldBalance, expectedNewBalance) => async depositResult => {
+      const delta = AmountMath.subtract(expectedNewBalance, expectedOldBalance);
+      t.assert(
+        AmountMath.isEqual(depositResult, delta),
+        `the balance changes by the deposited amount: ${delta.value}`,
+      );
+      t.assert(
+        AmountMath.isEqual(purse.getCurrentAmount(), expectedNewBalance),
+        `the new purse balance ${depositResult.value} is the expected amount: ${expectedNewBalance.value}`,
+      );
+      await checkNotifier();
+    };
 
   await checkNotifier();
   await E(purse)
@@ -333,7 +332,8 @@ test('issuer.split bad amount', async t => {
   await t.throwsAsync(
     _ => E(issuer).split(payment, AmountMath.make(otherBrand, 10n)),
     {
-      message: /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
+      message:
+        /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
     },
     'throws for bad amount',
   );
@@ -396,9 +396,7 @@ test('issuer.combine good payments', async t => {
       ),
     );
   };
-  await E(issuer)
-    .combine(payments)
-    .then(checkCombinedPayment);
+  await E(issuer).combine(payments).then(checkCombinedPayment);
 });
 
 test('issuer.combine array of promises', async t => {
@@ -418,16 +416,13 @@ test('issuer.combine array of promises', async t => {
     });
   };
 
-  await E(issuer)
-    .combine(paymentsP)
-    .then(checkCombinedResult);
+  await E(issuer).combine(paymentsP).then(checkCombinedResult);
 });
 
 test('issuer.combine bad payments', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
-  const { mint: otherMint, brand: otherBrand } = makeIssuerKit(
-    'other fungible',
-  );
+  const { mint: otherMint, brand: otherBrand } =
+    makeIssuerKit('other fungible');
   const payments = [];
   for (let i = 0; i < 100; i += 1) {
     payments.push(mint.mintPayment(AmountMath.make(brand, 1n)));

@@ -40,18 +40,20 @@ const appTheme = createTheme({
   },
 });
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <ThemeProvider theme={appTheme}>
-      <Component
-        contacts={contacts}
-        services={services}
-        schemaActions={schemaActions}
-        {...props}
-      />
-    </ThemeProvider>
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <ThemeProvider theme={appTheme}>
+        <Component
+          contacts={contacts}
+          services={services}
+          schemaActions={schemaActions}
+          {...props}
+        />
+      </ThemeProvider>
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };

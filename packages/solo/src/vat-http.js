@@ -12,10 +12,8 @@ export function buildRootObject(vatPowers) {
   const channelIdToHandle = new Map();
   const channelHandleToId = new WeakMap();
   let LOADING = harden(['agoric', 'wallet', 'local']);
-  const {
-    notifier: loadingNotifier,
-    updater: loadingUpdater,
-  } = makeNotifierKit(LOADING);
+  const { notifier: loadingNotifier, updater: loadingUpdater } =
+    makeNotifierKit(LOADING);
 
   const replObjects = {
     home: { LOADING },

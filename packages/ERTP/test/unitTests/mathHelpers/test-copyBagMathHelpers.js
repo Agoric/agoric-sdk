@@ -66,10 +66,12 @@ test('copyBag with strings getValue', t => {
   );
   t.deepEqual(
     getCopyBagEntries(
-      /** @type {CopyBag<Key>} */ (m.getValue(
-        mockBrand,
-        harden({ brand: mockBrand, value: makeBag(['1']) }),
-      )),
+      /** @type {CopyBag<Key>} */ (
+        m.getValue(
+          mockBrand,
+          harden({ brand: mockBrand, value: makeBag(['1']) }),
+        )
+      ),
     ),
     [['1', 1n]],
   );

@@ -28,19 +28,14 @@ const setupBasicMints = () => {
 };
 
 const installContracts = async (zoe, cb) => {
-  const [
-    liquidateMinimum,
-    vaultFactory,
-    electorate,
-    counter,
-    governor,
-  ] = await Promise.all([
-    E(zoe).install(cb.liquidateMinimum),
-    E(zoe).install(cb.vaultFactory),
-    E(zoe).install(cb.committee),
-    E(zoe).install(cb.binaryVoteCounter),
-    E(zoe).install(cb.contractGovernor),
-  ]);
+  const [liquidateMinimum, vaultFactory, electorate, counter, governor] =
+    await Promise.all([
+      E(zoe).install(cb.liquidateMinimum),
+      E(zoe).install(cb.vaultFactory),
+      E(zoe).install(cb.committee),
+      E(zoe).install(cb.binaryVoteCounter),
+      E(zoe).install(cb.contractGovernor),
+    ]);
 
   const installations = {
     liquidateMinimum,
@@ -66,14 +61,12 @@ const startElectorate = async (zoe, installations) => {
     committeeName: 'TwentyCommittee',
     committeeSize: 5,
   });
-  const {
-    creatorFacet: electorateCreatorFacet,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(
-    installations.electorate,
-    harden({}),
-    electorateTerms,
-  );
+  const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
+    await E(zoe).startInstance(
+      installations.electorate,
+      harden({}),
+      electorateTerms,
+    );
   return { electorateCreatorFacet, electorateInstance };
 };
 
@@ -124,9 +117,11 @@ const makeVats = async (
   );
 
   // Setup Owner
-  const { governor, governed: vaultFactory, runBrand } = await E(
-    vats.owner,
-  ).build(
+  const {
+    governor,
+    governed: vaultFactory,
+    runBrand,
+  } = await E(vats.owner).build(
     zoe,
     issuers,
     brands,

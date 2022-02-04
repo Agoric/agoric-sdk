@@ -6,10 +6,8 @@ export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
   let currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
   /** @type {NotifierRecord<Amount>} */
-  const {
-    notifier: balanceNotifier,
-    updater: balanceUpdater,
-  } = makeNotifierKit(currentBalance);
+  const { notifier: balanceNotifier, updater: balanceUpdater } =
+    makeNotifierKit(currentBalance);
 
   const updatePurseBalance = newPurseBalance => {
     currentBalance = newPurseBalance;

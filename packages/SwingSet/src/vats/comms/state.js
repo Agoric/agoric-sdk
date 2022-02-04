@@ -383,10 +383,9 @@ export function makeState(syscall, identifierBase = 0) {
           if (!reachable) {
             // the object is unreachable
 
-            // eslint-disable-next-line no-use-before-define
-            const { owner, isReachable, isRecognizable } = getOwnerAndStatus(
-              lref,
-            );
+            const { owner, isReachable, isRecognizable } =
+              // eslint-disable-next-line no-use-before-define
+              getOwnerAndStatus(lref);
             if (isReachable) {
               // but the exporter doesn't realize it yet, so schedule a
               // dropExport to them, which will clear the isReachable flag at

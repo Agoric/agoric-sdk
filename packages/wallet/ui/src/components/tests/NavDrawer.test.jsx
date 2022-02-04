@@ -22,12 +22,7 @@ test('shows the drawer when the button is clicked', () => {
   });
 
   const component = mount(<NavDrawer />);
-  act(() =>
-    component
-      .find(IconButton)
-      .props()
-      .onClick(),
-  );
+  act(() => component.find(IconButton).props().onClick());
   component.update();
 
   expect(component.find(Drawer).props().open).toEqual(true);

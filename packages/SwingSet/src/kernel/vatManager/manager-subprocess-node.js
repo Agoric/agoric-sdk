@@ -52,10 +52,8 @@ export function makeNodeSubprocessFactory(tools) {
     // worker and eventually get back an "ok" or an error. When we do
     // that, doSyscall won't even see replayed syscalls from the worker.
 
-    const {
-      promise: dispatchReadyP,
-      resolve: dispatchIsReady,
-    } = makePromiseKit();
+    const { promise: dispatchReadyP, resolve: dispatchIsReady } =
+      makePromiseKit();
     let waiting;
 
     /**

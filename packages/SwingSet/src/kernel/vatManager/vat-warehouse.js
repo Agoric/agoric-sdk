@@ -300,10 +300,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
     const vatKeeper = kernelKeeper.provideVatKeeper(lastVatID);
     let reason;
-    const {
-      totalEntries,
-      snapshottedEntries,
-    } = vatKeeper.transcriptSnapshotStats();
+    const { totalEntries, snapshottedEntries } =
+      vatKeeper.transcriptSnapshotStats();
     if (snapshotInitial === totalEntries) {
       reason = { snapshotInitial };
     } else if (totalEntries - snapshottedEntries >= snapshotInterval) {

@@ -22,9 +22,9 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
   log(`Verify: q: ${q(iss)}, max: ${maxChoices}, committee: ${c}`);
   const electorateInstance = await E(electoratePublicFacet).getInstance();
   log(
-    `Verify instances: electorate: ${electorateInstance ===
-      instances.electorateInstance}, counter: ${details.counterInstance ===
-      instances.counterInstance}`,
+    `Verify instances: electorate: ${
+      electorateInstance === instances.electorateInstance
+    }, counter: ${details.counterInstance === instances.counterInstance}`,
   );
 };
 

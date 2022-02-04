@@ -164,11 +164,11 @@ export default function makeKernelKeeper(
     return true;
   }
 
-  const { abortCrank, commitCrank, enhancedCrankBuffer: kvStore } = wrapStorage(
-    rawKVStore,
-    createSHA256,
-    isConsensusKey,
-  );
+  const {
+    abortCrank,
+    commitCrank,
+    enhancedCrankBuffer: kvStore,
+  } = wrapStorage(rawKVStore, createSHA256, isConsensusKey);
   insistEnhancedStorageAPI(kvStore);
   const { streamStore, snapStore } = hostStorage;
 
@@ -770,9 +770,7 @@ export default function makeKernelKeeper(
     const p = getKernelPromise(kernelSlot);
     const s = new Set(p.subscribers);
     s.add(vatID);
-    const v = Array.from(s)
-      .sort()
-      .join(',');
+    const v = Array.from(s).sort().join(',');
     kvStore.set(`${kernelSlot}.subscribers`, v);
   }
 

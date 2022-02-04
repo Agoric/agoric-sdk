@@ -112,11 +112,8 @@ test(`storeIssuerKeywordRecord, twice`, async t => {
 });
 
 test(`storeIssuerRecord`, async t => {
-  const {
-    storeIssuerRecord,
-    getAssetKindByBrand,
-    instantiate,
-  } = makeIssuerStorage();
+  const { storeIssuerRecord, getAssetKindByBrand, instantiate } =
+    makeIssuerStorage();
   instantiate();
   const { currencyKit } = setupIssuersForTest();
 
@@ -137,11 +134,8 @@ test(`storeIssuerRecord`, async t => {
 });
 
 test(`storeIssuerRecord twice`, async t => {
-  const {
-    storeIssuerRecord,
-    getAssetKindByBrand,
-    instantiate,
-  } = makeIssuerStorage();
+  const { storeIssuerRecord, getAssetKindByBrand, instantiate } =
+    makeIssuerStorage();
   instantiate();
   const { currencyKit } = setupIssuersForTest();
 
@@ -213,10 +207,8 @@ test('use issuerRecords', async t => {
   t.deepEqual(issuerRecords, [currencyIssuerRecord]);
 
   // SecondIssuerStorage
-  const {
-    getIssuerRecords: getIssuerRecords2,
-    instantiate: instantiate2,
-  } = makeIssuerStorage();
+  const { getIssuerRecords: getIssuerRecords2, instantiate: instantiate2 } =
+    makeIssuerStorage();
   instantiate2(issuerRecords);
 
   const exportedIssuerStorage2 = getIssuerRecords2([currencyKit.issuer]);

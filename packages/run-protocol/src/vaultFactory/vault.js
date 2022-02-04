@@ -52,10 +52,8 @@ export const makeVaultKit = (
   startTimeStamp,
 ) => {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
-  const {
-    zcfSeat: liquidationZcfSeat,
-    userSeat: liquidationSeat,
-  } = zcf.makeEmptySeatKit(undefined);
+  const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
+    zcf.makeEmptySeatKit(undefined);
   const liquidationPromiseKit = makePromiseKit();
 
   /** @type {VAULT_STATE} */

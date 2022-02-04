@@ -882,120 +882,37 @@ test('complex set queries', t => {
   });
   primes.forEach(v => primeStore.add(v));
 
-  t.deepEqual(Array.from(primeStore.values()), [
-    2,
-    3,
-    5,
-    7,
-    11,
-    13,
-    17,
-    19,
-    23,
-    29,
-    31,
-    37,
-    41,
-    43,
-    47,
-    53,
-    59,
-    61,
-    67,
-    71,
-    73,
-    79,
-    83,
-    89,
-    97,
-  ]);
-  t.deepEqual(Array.from(primeStore.values(M.gt(53))), [
-    59,
-    61,
-    67,
-    71,
-    73,
-    79,
-    83,
-    89,
-    97,
-  ]);
-  t.deepEqual(Array.from(primeStore.values(M.gte(53))), [
-    53,
-    59,
-    61,
-    67,
-    71,
-    73,
-    79,
-    83,
-    89,
-    97,
-  ]);
-  t.deepEqual(Array.from(primeStore.values(M.lt(53))), [
-    2,
-    3,
-    5,
-    7,
-    11,
-    13,
-    17,
-    19,
-    23,
-    29,
-    31,
-    37,
-    41,
-    43,
-    47,
-  ]);
-  t.deepEqual(Array.from(primeStore.values(M.lte(53))), [
-    2,
-    3,
-    5,
-    7,
-    11,
-    13,
-    17,
-    19,
-    23,
-    29,
-    31,
-    37,
-    41,
-    43,
-    47,
-    53,
-  ]);
-  t.deepEqual(Array.from(primeStore.values(M.and(M.gt(25), M.lt(75)))), [
-    29,
-    31,
-    37,
-    41,
-    43,
-    47,
-    53,
-    59,
-    61,
-    67,
-    71,
-    73,
-  ]);
-  t.deepEqual(Array.from(primeStore.values(M.or(M.lt(25), M.gt(75)))), [
-    2,
-    3,
-    5,
-    7,
-    11,
-    13,
-    17,
-    19,
-    23,
-    79,
-    83,
-    89,
-    97,
-  ]);
+  t.deepEqual(
+    Array.from(primeStore.values()),
+    [
+      2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
+      71, 73, 79, 83, 89, 97,
+    ],
+  );
+  t.deepEqual(
+    Array.from(primeStore.values(M.gt(53))),
+    [59, 61, 67, 71, 73, 79, 83, 89, 97],
+  );
+  t.deepEqual(
+    Array.from(primeStore.values(M.gte(53))),
+    [53, 59, 61, 67, 71, 73, 79, 83, 89, 97],
+  );
+  t.deepEqual(
+    Array.from(primeStore.values(M.lt(53))),
+    [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47],
+  );
+  t.deepEqual(
+    Array.from(primeStore.values(M.lte(53))),
+    [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53],
+  );
+  t.deepEqual(
+    Array.from(primeStore.values(M.and(M.gt(25), M.lt(75)))),
+    [29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73],
+  );
+  t.deepEqual(
+    Array.from(primeStore.values(M.or(M.lt(25), M.gt(75)))),
+    [2, 3, 5, 7, 11, 13, 17, 19, 23, 79, 83, 89, 97],
+  );
   t.deepEqual(
     Array.from(
       primeStore.values(

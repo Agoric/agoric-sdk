@@ -68,13 +68,13 @@ export const makeVaultManager = (
   /** @type {GetVaultParams} */
   const shared = {
     // loans below this margin may be liquidated
-    getLiquidationMargin: () => (getLoanParams()[LIQUIDATION_MARGIN_KEY].value),
+    getLiquidationMargin: () => getLoanParams()[LIQUIDATION_MARGIN_KEY].value,
     // loans must initially have at least 1.2x collateralization
-    getInitialMargin: () => (getLoanParams()[INITIAL_MARGIN_KEY].value),
-    getLoanFee: () => (getLoanParams()[LOAN_FEE_KEY].value),
-    getInterestRate: () => (getLoanParams()[INTEREST_RATE_KEY].value),
-    getChargingPeriod: () => (timingParams[CHARGING_PERIOD_KEY].value),
-    getRecordingPeriod: () => (timingParams[RECORDING_PERIOD_KEY].value),
+    getInitialMargin: () => getLoanParams()[INITIAL_MARGIN_KEY].value,
+    getLoanFee: () => getLoanParams()[LOAN_FEE_KEY].value,
+    getInterestRate: () => getLoanParams()[INTEREST_RATE_KEY].value,
+    getChargingPeriod: () => timingParams[CHARGING_PERIOD_KEY].value,
+    getRecordingPeriod: () => timingParams[RECORDING_PERIOD_KEY].value,
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
       const displayInfo = await E(collateralBrand).getDisplayInfo();

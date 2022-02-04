@@ -66,13 +66,7 @@ function makeCallbackRegistry(callbacks) {
       if (!cbNames.length) {
         return;
       }
-      console.warn(
-        errorUnusedMsg,
-        cbNames
-          .map(quote)
-          .sort()
-          .join(', '),
-      );
+      console.warn(errorUnusedMsg, cbNames.map(quote).sort().join(', '));
     },
   });
 }
@@ -84,9 +78,8 @@ function makeCallbackRegistry(callbacks) {
  * @returns { KernelSlog }
  */
 export function makeDummySlogger(slogCallbacks, makeConsole) {
-  const { registerCallback: reg, doneRegistering } = makeCallbackRegistry(
-    slogCallbacks,
-  );
+  const { registerCallback: reg, doneRegistering } =
+    makeCallbackRegistry(slogCallbacks);
   const dummySlogger = harden({
     provideVatSlogger: reg('provideVatSlogger', () =>
       harden({
@@ -249,9 +242,8 @@ export function makeSlogger(slogCallbacks, writeObj) {
   //   write({ type: 'annotate-vat', vatID, data });
   // }
 
-  const { registerCallback: reg, doneRegistering } = makeCallbackRegistry(
-    slogCallbacks,
-  );
+  const { registerCallback: reg, doneRegistering } =
+    makeCallbackRegistry(slogCallbacks);
   const slogger = harden({
     provideVatSlogger: reg('provideVatSlogger', provideVatSlogger),
     vatConsole: reg('vatConsole', (vatID, ...args) =>

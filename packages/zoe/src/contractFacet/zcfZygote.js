@@ -53,16 +53,12 @@ export const makeZCFZygote = (
     powers.exitVatWithFailure(reason);
   };
 
-  const {
-    makeZCFSeat,
-    reallocate,
-    reallocateForZCFMint,
-    dropAllReferences,
-  } = createSeatManager(
-    zoeInstanceAdmin,
-    getAssetKindByBrand,
-    shutdownWithFailure,
-  );
+  const { makeZCFSeat, reallocate, reallocateForZCFMint, dropAllReferences } =
+    createSeatManager(
+      zoeInstanceAdmin,
+      getAssetKindByBrand,
+      shutdownWithFailure,
+    );
 
   const { storeOfferHandler, takeOfferHandler } = makeOfferHandlerStorage();
 

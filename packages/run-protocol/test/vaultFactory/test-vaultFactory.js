@@ -266,9 +266,9 @@ async function setupServices(
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet>} */
-  const vaultFactoryCreatorFacet = /** @type { any } */ (E(
-    governorCreatorFacet,
-  ).getCreatorFacet());
+  const vaultFactoryCreatorFacet = /** @type { any } */ (
+    E(governorCreatorFacet).getCreatorFacet()
+  );
   const [governorInstance, vaultFactory, lender] = await Promise.all([
     E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
     vaultFactoryCreatorFacet,

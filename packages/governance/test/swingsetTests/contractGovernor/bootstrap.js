@@ -46,17 +46,13 @@ const voteToChangeParameter = async (
 };
 
 const installContracts = async (zoe, cb) => {
-  const [
-    committee,
-    binaryVoteCounter,
-    contractGovernor,
-    governedContract,
-  ] = await Promise.all([
-    E(zoe).install(cb.committee),
-    E(zoe).install(cb.binaryVoteCounter),
-    E(zoe).install(cb.contractGovernor),
-    E(zoe).install(cb.governedContract),
-  ]);
+  const [committee, binaryVoteCounter, contractGovernor, governedContract] =
+    await Promise.all([
+      E(zoe).install(cb.committee),
+      E(zoe).install(cb.binaryVoteCounter),
+      E(zoe).install(cb.contractGovernor),
+      E(zoe).install(cb.governedContract),
+    ]);
   const installations = {
     committee,
     binaryVoteCounter,
@@ -67,10 +63,8 @@ const installContracts = async (zoe, cb) => {
 };
 
 const startElectorate = async (zoe, installations, electorateTerms) => {
-  const {
-    creatorFacet: electorateCreatorFacet,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(installations.committee, {}, electorateTerms);
+  const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
+    await E(zoe).startInstance(installations.committee, {}, electorateTerms);
   return { electorateCreatorFacet, electorateInstance };
 };
 
@@ -105,17 +99,13 @@ const oneVoterValidate = async (
   installations,
   timer,
 ) => {
-  const [
-    voters,
-    details,
-    governedInstance,
-    governorInstance,
-  ] = await Promise.all([
-    votersP,
-    detailsP,
-    governedInstanceP,
-    governorInstanceP,
-  ]);
+  const [voters, details, governedInstance, governorInstance] =
+    await Promise.all([
+      votersP,
+      detailsP,
+      governedInstanceP,
+      governorInstanceP,
+    ]);
   const { counterInstance } = details;
 
   E(voters[0]).validate(
@@ -244,10 +234,8 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   switch (testName) {
     case 'contractGovernorStart': {
       const votersP = createVoters(firstElectorateCreatorFacet, voterCreator);
-      const {
-        details: detailsP,
-        outcomeOfUpdate: outcome1,
-      } = await voteToChangeParameter(zoe, log, installations, governor, 3n);
+      const { details: detailsP, outcomeOfUpdate: outcome1 } =
+        await voteToChangeParameter(zoe, log, installations, governor, 3n);
       await votersVote(detailsP, votersP, [0, 1, 1, 0, 0]);
 
       await oneVoterValidate(
@@ -286,16 +274,14 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       ).getPoserInvitation();
       const [newPoserInvitation] = await Promise.all([newPoserInvitationP]);
 
-      const {
-        details: details1,
-        outcomeOfUpdate: electorateOutcome,
-      } = await setupElectorateChange(
-        zoe,
-        log,
-        governor,
-        installations,
-        newPoserInvitation,
-      );
+      const { details: details1, outcomeOfUpdate: electorateOutcome } =
+        await setupElectorateChange(
+          zoe,
+          log,
+          governor,
+          installations,
+          newPoserInvitation,
+        );
 
       await votersVote(details1, voters1, [1, 0, 0, 0, 1]);
       await E(timer).tick();
@@ -312,10 +298,8 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         E(zoe).getPublicFacet(governorInstance),
       );
 
-      const {
-        details: details2,
-        outcomeOfUpdate: outcome2,
-      } = await voteToChangeParameter(zoe, log, installations, governor, 4n);
+      const { details: details2, outcomeOfUpdate: outcome2 } =
+        await voteToChangeParameter(zoe, log, installations, governor, 4n);
       await votersVote(details2, voters2, [0, 0, 1, 0, 1]);
       await E(timer).tick();
       await E(timer).tick();

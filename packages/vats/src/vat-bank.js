@@ -166,10 +166,8 @@ export function buildRootObject(_vatPowers) {
       const bankCall = await makeBankCaller(bankBridgeManager);
 
       /** @type {SubscriptionRecord<AssetDescriptor>} */
-      const {
-        subscription: assetSubscription,
-        publication: assetPublication,
-      } = makeSubscriptionKit();
+      const { subscription: assetSubscription, publication: assetPublication } =
+        makeSubscriptionKit();
 
       /** @type {Store<string, Bank>} */
       const addressToBank = makeStore('address');

@@ -106,10 +106,8 @@ test('fundedCallSpread below Strike1', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: bobLongOption,
-    ShortOption: carolShortOption,
-  } = await aliceSeat.getPayouts();
+  const { LongOption: bobLongOption, ShortOption: carolShortOption } =
+    await aliceSeat.getPayouts();
 
   const bobOptionSeat = await E(zoe).offer(bobLongOption);
   const bobPayout = bobOptionSeat.getPayout('Collateral');
@@ -202,10 +200,8 @@ test('fundedCallSpread above Strike2', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: bobLongOption,
-    ShortOption: carolShortOption,
-  } = await aliceSeat.getPayouts();
+  const { LongOption: bobLongOption, ShortOption: carolShortOption } =
+    await aliceSeat.getPayouts();
 
   const bobOptionSeat = await E(zoe).offer(bobLongOption);
   const bobPayout = bobOptionSeat.getPayout('Collateral');
@@ -297,10 +293,8 @@ test('fundedCallSpread, mid-strike', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: bobLongOption,
-    ShortOption: carolShortOption,
-  } = await aliceSeat.getPayouts();
+  const { LongOption: bobLongOption, ShortOption: carolShortOption } =
+    await aliceSeat.getPayouts();
 
   const bobOptionSeat = await E(zoe).offer(bobLongOption);
   const bobPayout = bobOptionSeat.getPayout('Collateral');
@@ -394,10 +388,8 @@ test('fundedCallSpread, late exercise', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: bobLongOption,
-    ShortOption: carolShortOption,
-  } = await aliceSeat.getPayouts();
+  const { LongOption: bobLongOption, ShortOption: carolShortOption } =
+    await aliceSeat.getPayouts();
 
   const bobOptionSeat = await E(zoe).offer(bobLongOption);
   const bobPayout = bobOptionSeat.getPayout('Collateral');
@@ -491,10 +483,8 @@ test('fundedCallSpread, sell options', async t => {
     aliceProposal,
     alicePayments,
   );
-  const {
-    LongOption: longOption,
-    ShortOption: shortOption,
-  } = await aliceSeat.getPayouts();
+  const { LongOption: longOption, ShortOption: shortOption } =
+    await aliceSeat.getPayouts();
 
   const exchangeInstallation = await installationPFromSource(
     zoe,

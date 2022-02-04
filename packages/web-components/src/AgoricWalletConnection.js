@@ -222,9 +222,8 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         case 'bridged':
         case 'connecting': {
           if (!this._connector) {
-            this._connector = this.service.context.connectionParams.makeConnector(
-              this,
-            );
+            this._connector =
+              this.service.context.connectionParams.makeConnector(this);
             this._connector.hostConnected();
           }
           backend = this._connector.render();

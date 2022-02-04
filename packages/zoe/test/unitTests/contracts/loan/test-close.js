@@ -38,10 +38,8 @@ test('makeCloseLoanInvitation repay all', async t => {
   );
 
   // Set up the lender seat
-  const {
-    zcfSeat: lenderSeat,
-    userSeat: lenderUserSeatP,
-  } = zcf.makeEmptySeatKit();
+  const { zcfSeat: lenderSeat, userSeat: lenderUserSeatP } =
+    zcf.makeEmptySeatKit();
 
   const borrowedAmount = AmountMath.make(loanKit.brand, 20n);
   const interest = AmountMath.make(loanKit.brand, 3n);

@@ -25,13 +25,11 @@ test('throw in offerHandler', async t => {
 
   const { creatorFacet } = await E(zoe).startInstance(installation);
 
-  const throwInOfferHandlerInvitation = E(
-    creatorFacet,
-  ).makeThrowInOfferHandlerInvitation();
+  const throwInOfferHandlerInvitation =
+    E(creatorFacet).makeThrowInOfferHandlerInvitation();
 
-  const throwInDepositToSeatInvitation = E(
-    creatorFacet,
-  ).makeThrowInDepositToSeatInvitation();
+  const throwInDepositToSeatInvitation =
+    E(creatorFacet).makeThrowInDepositToSeatInvitation();
 
   const throwsInOfferHandlerSeat = E(zoe).offer(throwInOfferHandlerInvitation);
 

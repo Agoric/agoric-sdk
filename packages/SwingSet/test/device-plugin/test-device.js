@@ -90,13 +90,8 @@ test.serial('plugin first time', async t => {
 });
 
 test.serial('plugin after restart', async t => {
-  const {
-    bridge,
-    cycle,
-    dump,
-    plugin,
-    queueThunkForKernel,
-  } = await setupVatController(t);
+  const { bridge, cycle, dump, plugin, queueThunkForKernel } =
+    await setupVatController(t);
 
   plugin.reset();
   queueThunkForKernel(() => bridge.deliverInbound('pingpong'));

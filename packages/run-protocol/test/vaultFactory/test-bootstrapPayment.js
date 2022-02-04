@@ -93,14 +93,8 @@ const startTreasury = async (
   const electorateInstall = await installBundle(zoe, electorateBundle);
   const governanceInstall = await installBundle(zoe, governanceBundle);
 
-  const {
-    instance: electorateInstance,
-    creatorFacet: electorateCreatorFacet,
-  } = await E(zoe).startInstance(
-    electorateInstall,
-    harden({}),
-    electorateTerms,
-  );
+  const { instance: electorateInstance, creatorFacet: electorateCreatorFacet } =
+    await E(zoe).startInstance(electorateInstall, harden({}), electorateTerms);
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
@@ -150,11 +144,7 @@ const startTreasury = async (
 
 test('bootstrap payment', async t => {
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
-  const {
-    runIssuer,
-    creatorFacet,
-    runBrand,
-  } = await startTreasury(
+  const { runIssuer, creatorFacet, runBrand } = await startTreasury(
     buildManualTimer(console.log),
     bootstrapPaymentValue,
     { committeeName: 'bandOfAngels', committeeSize: 5 },
@@ -179,11 +169,7 @@ test('bootstrap payment - only minted once', async t => {
   // be minted
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
 
-  const {
-    runIssuer,
-    creatorFacet,
-    runBrand,
-  } = await startTreasury(
+  const { runIssuer, creatorFacet, runBrand } = await startTreasury(
     buildManualTimer(console.log),
     bootstrapPaymentValue,
     { committeeName: 'bandOfAngels', committeeSize: 5 },

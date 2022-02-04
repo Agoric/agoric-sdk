@@ -142,9 +142,8 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
-  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
-    kernelStateDBDir,
-  );
+  const { kvStore, streamStore, snapStore, commit } =
+    openSwingStore(kernelStateDBDir);
   const hostStorage = {
     kvStore,
     streamStore,
@@ -390,9 +389,8 @@ const start = async (basedir, argv) => {
   const pjs = new URL(
     await importMetaResolve(`${wallet}/package.json`, import.meta.url),
   ).pathname;
-  const {
-    'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {},
-  } = JSON.parse(fs.readFileSync(pjs, 'utf-8'));
+  const { 'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {} } =
+    JSON.parse(fs.readFileSync(pjs, 'utf-8'));
 
   const agWallet = path.dirname(pjs);
   const agWalletHtml = path.resolve(agWallet, htmlBasedir);

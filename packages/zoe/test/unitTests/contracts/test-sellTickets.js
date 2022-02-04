@@ -380,9 +380,8 @@ test(`mint and sell opera tickets`, async t => {
       want: { Items: ticket2Amount },
     });
 
-    const jokerInsufficientPaymentForTicket = jokerPurse.withdraw(
-      insufficientAmount,
-    );
+    const jokerInsufficientPaymentForTicket =
+      jokerPurse.withdraw(insufficientAmount);
 
     const seat = await E(zoe).offer(
       invitation,
@@ -577,9 +576,8 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   const birdBrand = await E(birdIssuerP).getBrand();
   const birdSalesPublicFacet = E(zoe).getPublicFacet(sellItemsInstance);
   const birdsForSale = await E(birdSalesPublicFacet).getAvailableItems();
-  const birdsForSaleNotifier = E(
-    birdSalesPublicFacet,
-  ).getAvailableItemsNotifier();
+  const birdsForSaleNotifier =
+    E(birdSalesPublicFacet).getAvailableItemsNotifier();
 
   const birdsForSalePresolved = await E(birdsForSaleNotifier).getUpdateSince();
   t.is(birdsForSale, birdsForSalePresolved.value);

@@ -30,12 +30,7 @@ const selectNetworkAtIndex = (component, index) => {
   const dialog = component.find(Dialog);
   const options = dialog.find(ListItem);
 
-  act(() =>
-    options
-      .at(index)
-      .props()
-      .onClick(),
-  );
+  act(() => options.at(index).props().onClick());
   component.update();
 };
 

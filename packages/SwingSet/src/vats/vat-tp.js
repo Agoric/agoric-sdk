@@ -76,10 +76,8 @@ export function buildRootObject(vatPowers) {
         return exportedObjects.get(address);
       },
     });
-    const {
-      promise: theirLocatorUnum,
-      resolve: gotTheirLocatorUnum,
-    } = makePromiseKit();
+    const { promise: theirLocatorUnum, resolve: gotTheirLocatorUnum } =
+      makePromiseKit();
     const name = makeConnectionName();
     let openCalled = false;
     assert(!connectionNames.has(name), X`already have host for ${name}`);

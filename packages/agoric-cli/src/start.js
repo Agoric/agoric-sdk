@@ -383,9 +383,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     // Calculate the GCI for the updated genesis.json.
     const hashFile = `${genesisFile}.sha256`;
-    const gci = createHash('sha256')
-      .update(newGenesisJson)
-      .digest('hex');
+    const gci = createHash('sha256').update(newGenesisJson).digest('hex');
 
     // Save all the files to disk.
     await Promise.all([

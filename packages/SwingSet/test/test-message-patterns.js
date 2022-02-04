@@ -128,9 +128,8 @@ for (const name of Array.from(bp.patterns.keys()).sort()) {
 
 export async function runVatsInComms(t, name) {
   const { commsConfig, kernelBundles } = t.context.data;
-  const { passOneMessage, loopboxSrcPath, loopboxEndowments } = buildLoopbox(
-    'queued',
-  );
+  const { passOneMessage, loopboxSrcPath, loopboxEndowments } =
+    buildLoopbox('queued');
   const devices = {
     loopbox: {
       sourceSpec: loopboxSrcPath,

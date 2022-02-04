@@ -92,9 +92,9 @@ export function finishCosmosApp({
   }
 
   // Offset the GRPC listener from our rpc port.
-  app.grpc.address = `0.0.0.0:${rpcPort +
-    DEFAULT_GRPC_PORT -
-    DEFAULT_RPC_PORT}`;
+  app.grpc.address = `0.0.0.0:${
+    rpcPort + DEFAULT_GRPC_PORT - DEFAULT_RPC_PORT
+  }`;
 
   // Lengthen the pruning span.
   app.pruning = 'custom';
@@ -185,9 +185,8 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
   genesis.app_state.staking.params.max_validators = STAKING_MAX_VALIDATORS;
-  const {
-    historical_entries: existingHistoricalEntries = 0,
-  } = genesis.app_state.staking.params;
+  const { historical_entries: existingHistoricalEntries = 0 } =
+    genesis.app_state.staking.params;
   genesis.app_state.staking.params.historical_entries = Math.max(
     existingHistoricalEntries,
     STAKING_MIN_HISTORICAL_ENTRIES,

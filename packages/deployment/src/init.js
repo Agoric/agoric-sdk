@@ -47,64 +47,66 @@ const tfStringify = obj => {
   return ret;
 };
 
-const genericAskApiKey = ({ env, inquirer }) => async (provider, myDetails) => {
-  const questions = [
-    {
-      name: 'API_KEYS',
-      type: 'input',
-      message: `API Key for ${provider.name}?`,
-      default: myDetails.API_KEYS || env.DO_API_TOKEN,
-      filter: key => key.trim(),
-    },
-  ];
-  const ret = await inquirer.prompt(questions);
-  if (!ret.API_KEYS) {
-    return { CANCEL: true };
-  }
-  return ret;
-};
+const genericAskApiKey =
+  ({ env, inquirer }) =>
+  async (provider, myDetails) => {
+    const questions = [
+      {
+        name: 'API_KEYS',
+        type: 'input',
+        message: `API Key for ${provider.name}?`,
+        default: myDetails.API_KEYS || env.DO_API_TOKEN,
+        filter: key => key.trim(),
+      },
+    ];
+    const ret = await inquirer.prompt(questions);
+    if (!ret.API_KEYS) {
+      return { CANCEL: true };
+    }
+    return ret;
+  };
 
-const genericAskDatacenter = ({ inquirer }) => async (
-  provider,
-  PLACEMENT,
-  dcs,
-  placement,
-) => {
-  const questions = [];
-  const count = nodeCount(calculateTotal(placement), true);
-  const DONE = { name: `Done with ${PLACEMENT} placement${count}`, value: '' };
-  if (dcs) {
-    questions.push({
-      name: 'DATACENTER',
-      type: 'list',
-      message: `Which ${PLACEMENT} datacenter${count}?`,
-      choices: [DONE, ...dcs],
-    });
-  } else {
-    questions.push({
-      name: 'DATACENTER',
-      type: 'input',
-      message: `Which ${PLACEMENT} datacenter${count}?`,
-      filter: dc => dc.trim(),
-    });
-  }
+const genericAskDatacenter =
+  ({ inquirer }) =>
+  async (provider, PLACEMENT, dcs, placement) => {
+    const questions = [];
+    const count = nodeCount(calculateTotal(placement), true);
+    const DONE = {
+      name: `Done with ${PLACEMENT} placement${count}`,
+      value: '',
+    };
+    if (dcs) {
+      questions.push({
+        name: 'DATACENTER',
+        type: 'list',
+        message: `Which ${PLACEMENT} datacenter${count}?`,
+        choices: [DONE, ...dcs],
+      });
+    } else {
+      questions.push({
+        name: 'DATACENTER',
+        type: 'input',
+        message: `Which ${PLACEMENT} datacenter${count}?`,
+        filter: dc => dc.trim(),
+      });
+    }
 
-  const { DATACENTER } = await inquirer.prompt(questions);
-  if (!DATACENTER) {
-    return { MORE: false };
-  }
+    const { DATACENTER } = await inquirer.prompt(questions);
+    if (!DATACENTER) {
+      return { MORE: false };
+    }
 
-  const { NUM_NODES } = await inquirer.prompt([
-    {
-      name: 'NUM_NODES',
-      type: 'number',
-      message: `Number of nodes for ${PLACEMENT} ${DATACENTER} (0 or more)?`,
-      default: placement[DATACENTER] || 0,
-      validate: num => Math.floor(num) === num && num >= 0,
-    },
-  ]);
-  return { DATACENTER, NUM_NODES, MORE: true };
-};
+    const { NUM_NODES } = await inquirer.prompt([
+      {
+        name: 'NUM_NODES',
+        type: 'number',
+        message: `Number of nodes for ${PLACEMENT} ${DATACENTER} (0 or more)?`,
+        default: placement[DATACENTER] || 0,
+        validate: num => Math.floor(num) === num && num >= 0,
+      },
+    ]);
+    return { DATACENTER, NUM_NODES, MORE: true };
+  };
 
 const DOCKER_DATACENTER = 'default';
 
@@ -209,58 +211,220 @@ module "${PLACEMENT}" {
   },
 });
 
-const askPlacement = ({ inquirer }) => async (PLACEMENTS, ROLES) => {
-  let total = 0;
-  PLACEMENTS.forEach(
-    ([_PLACEMENT, placement]) => (total += calculateTotal(placement)),
-  );
-  const count = nodeCount(total, true);
-  const DONE = { name: `Done with allocation${count}`, value: '' };
-  const NEW = { name: `Initialize new placement`, value: 'NEW' };
+const askPlacement =
+  ({ inquirer }) =>
+  async (PLACEMENTS, ROLES) => {
+    let total = 0;
+    PLACEMENTS.forEach(
+      ([_PLACEMENT, placement]) => (total += calculateTotal(placement)),
+    );
+    const count = nodeCount(total, true);
+    const DONE = { name: `Done with allocation${count}`, value: '' };
+    const NEW = { name: `Initialize new placement`, value: 'NEW' };
 
-  const questions = [
-    {
-      name: 'PLACEMENT',
-      type: 'list',
-      message: `Where would you like to allocate nodes${count}?`,
-      choices: [
-        DONE,
-        NEW,
-        ...PLACEMENTS.map(([place, placement]) => ({
-          name: `${ROLES[place]} - ${place}${nodeCount(
-            calculateTotal(placement),
-          )}`,
-          value: place,
-        })),
-      ],
-    },
-  ];
+    const questions = [
+      {
+        name: 'PLACEMENT',
+        type: 'list',
+        message: `Where would you like to allocate nodes${count}?`,
+        choices: [
+          DONE,
+          NEW,
+          ...PLACEMENTS.map(([place, placement]) => ({
+            name: `${ROLES[place]} - ${place}${nodeCount(
+              calculateTotal(placement),
+            )}`,
+            value: place,
+          })),
+        ],
+      },
+    ];
 
-  const first = await inquirer.prompt(questions);
+    const first = await inquirer.prompt(questions);
 
-  const roleQuestions = [
-    {
-      name: 'ROLE',
-      type: 'list',
-      message: `Role for the ${first.PLACEMENT} placement?`,
-      choices: AVAILABLE_ROLES,
-    },
-  ];
-  const second = first.PLACEMENT ? await inquirer.prompt(roleQuestions) : {};
+    const roleQuestions = [
+      {
+        name: 'ROLE',
+        type: 'list',
+        message: `Role for the ${first.PLACEMENT} placement?`,
+        choices: AVAILABLE_ROLES,
+      },
+    ];
+    const second = first.PLACEMENT ? await inquirer.prompt(roleQuestions) : {};
 
-  return { ...first, ...second };
-};
+    return { ...first, ...second };
+  };
 
-const askProvider = ({ inquirer }) => PROVIDERS => {
-  const DONE = { name: `Return to allocation menu`, value: '' };
-  const questions = [
-    {
-      name: 'PROVIDER',
-      type: 'list',
-      message: `For what provider would you like to create a new placement?`,
-      choices: [
-        DONE,
-        ...Object.values(PROVIDERS).sort((nva, nvb) => {
+const askProvider =
+  ({ inquirer }) =>
+  PROVIDERS => {
+    const DONE = { name: `Return to allocation menu`, value: '' };
+    const questions = [
+      {
+        name: 'PROVIDER',
+        type: 'list',
+        message: `For what provider would you like to create a new placement?`,
+        choices: [
+          DONE,
+          ...Object.values(PROVIDERS).sort((nva, nvb) => {
+            if (nva.name < nvb.name) {
+              return -1;
+            }
+            if (nva.name === nvb.name) {
+              return 0;
+            }
+            return 1;
+          }),
+        ],
+      },
+    ];
+    return inquirer.prompt(questions);
+  };
+
+const doInit =
+  ({ env, rd, wr, running, setup, inquirer, fetch, parseArgs }) =>
+  async (progname, args) => {
+    const { needDoRun, needBacktick, cwd, chdir } = running;
+    const PROVIDERS = makeProviders({
+      env,
+      inquirer,
+      wr,
+      setup,
+      fetch,
+      needBacktick,
+    });
+
+    const { _: parsedArgs, noninteractive } = parseArgs(args.slice(1), {
+      boolean: ['noninteractive'],
+    });
+    let [dir, overrideNetworkName] = parsedArgs;
+
+    if (!dir) {
+      dir = setup.SETUP_HOME;
+    }
+    assert(dir, X`Need: [dir] [[network name]]`);
+    await wr.mkdir(dir, { recursive: true });
+    await chdir(dir);
+
+    const networkTxt = `network.txt`;
+    if (await rd.exists(networkTxt)) {
+      overrideNetworkName = (await rd.readFile(networkTxt, 'utf-8')).trimEnd();
+    }
+
+    if (!overrideNetworkName) {
+      overrideNetworkName = env.NETWORK_NAME;
+    }
+    if (!overrideNetworkName) {
+      overrideNetworkName = rd.basename(dir);
+    }
+
+    // Gather saved information.
+    const deploymentJson = `deployment.json`;
+    const config = (await rd.exists(deploymentJson))
+      ? JSON.parse(await rd.readFile(deploymentJson, 'utf-8'))
+      : {};
+
+    const defaultConfigs = {
+      PLACEMENTS: [],
+      PLACEMENT_PROVIDER: {},
+      SSH_PRIVATE_KEY_FILE: `id_${SSH_TYPE}`,
+      DETAILS: {},
+      OFFSETS: {},
+      ROLES: {},
+      DATACENTERS: {},
+      PROVIDER_NEXT_INDEX: {},
+    };
+    Object.entries(defaultConfigs).forEach(([key, dflt]) => {
+      if (!(key in config)) {
+        config[key] = dflt;
+      }
+    });
+    config.NETWORK_NAME = overrideNetworkName;
+
+    while (!noninteractive) {
+      // eslint-disable-next-line no-await-in-loop
+      const { ROLE, ...rest } = await askPlacement({ inquirer })(
+        config.PLACEMENTS,
+        config.ROLES,
+      );
+      let { PLACEMENT } = rest;
+      if (!PLACEMENT) {
+        break;
+      }
+      let provider;
+      let myDetails = {};
+      if (PLACEMENT !== 'NEW') {
+        config.ROLES[PLACEMENT] = ROLE;
+        const PROVIDER = config.PLACEMENT_PROVIDER[PLACEMENT];
+        provider = PROVIDERS[PROVIDER];
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        const { PROVIDER } = await askProvider({ inquirer })(PROVIDERS);
+        if (!PROVIDER) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        provider = PROVIDERS[PROVIDER];
+
+        const setPlacement = () => {
+          if (config.PLACEMENT_PROVIDER[PLACEMENT]) {
+            // Already present.
+            return;
+          }
+
+          const idx = config.PROVIDER_NEXT_INDEX;
+          if (!idx[PROVIDER]) {
+            idx[PROVIDER] = 0;
+          }
+          idx[PROVIDER] += 1;
+          PLACEMENT = `${PROVIDER}${idx[PROVIDER]}`;
+          config.ROLES[PLACEMENT] = ROLE;
+          config.PLACEMENT_PROVIDER[PLACEMENT] = PROVIDER;
+        };
+
+        if (provider.askDetails) {
+          // eslint-disable-next-line no-await-in-loop
+          const { CANCEL, ...PLACEMENT_DETAILS } = await provider.askDetails(
+            provider,
+            myDetails,
+          );
+          if (CANCEL) {
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+          // Out with the old, in with the new.
+          setPlacement();
+          for (const vname of Object.keys(myDetails)) {
+            delete config.DETAILS[vname][PLACEMENT];
+          }
+          myDetails = PLACEMENT_DETAILS;
+          for (const vname of Object.keys(myDetails)) {
+            if (!config.DETAILS[vname]) {
+              config.DETAILS[vname] = {};
+            }
+            config.DETAILS[vname][PLACEMENT] = PLACEMENT_DETAILS[vname];
+          }
+        } else {
+          setPlacement();
+        }
+      }
+
+      const dcs =
+        provider.datacenters &&
+        // eslint-disable-next-line no-await-in-loop
+        (await provider.datacenters(provider, PLACEMENT, myDetails));
+      config.ROLES;
+      const [_p, placement] = config.PLACEMENTS.find(
+        ([p]) => p === PLACEMENT,
+      ) || [PLACEMENT, {}];
+      if (dcs) {
+        // Add our choices to the list.
+        const already = { ...placement };
+        dcs.forEach(nv => delete already[nv.value]);
+        Object.entries(already).forEach(([dc]) => {
+          dcs.push({ name: dc, value: dc });
+        });
+        dcs.sort((nva, nvb) => {
           if (nva.name < nvb.name) {
             return -1;
           }
@@ -268,249 +432,84 @@ const askProvider = ({ inquirer }) => PROVIDERS => {
             return 0;
           }
           return 1;
-        }),
-      ],
-    },
-  ];
-  return inquirer.prompt(questions);
-};
+        });
+      }
 
-const doInit = ({
-  env,
-  rd,
-  wr,
-  running,
-  setup,
-  inquirer,
-  fetch,
-  parseArgs,
-}) => async (progname, args) => {
-  const { needDoRun, needBacktick, cwd, chdir } = running;
-  const PROVIDERS = makeProviders({
-    env,
-    inquirer,
-    wr,
-    setup,
-    fetch,
-    needBacktick,
-  });
-
-  const { _: parsedArgs, noninteractive } = parseArgs(args.slice(1), {
-    boolean: ['noninteractive'],
-  });
-  let [dir, overrideNetworkName] = parsedArgs;
-
-  if (!dir) {
-    dir = setup.SETUP_HOME;
-  }
-  assert(dir, X`Need: [dir] [[network name]]`);
-  await wr.mkdir(dir, { recursive: true });
-  await chdir(dir);
-
-  const networkTxt = `network.txt`;
-  if (await rd.exists(networkTxt)) {
-    overrideNetworkName = (await rd.readFile(networkTxt, 'utf-8')).trimEnd();
-  }
-
-  if (!overrideNetworkName) {
-    overrideNetworkName = env.NETWORK_NAME;
-  }
-  if (!overrideNetworkName) {
-    overrideNetworkName = rd.basename(dir);
-  }
-
-  // Gather saved information.
-  const deploymentJson = `deployment.json`;
-  const config = (await rd.exists(deploymentJson))
-    ? JSON.parse(await rd.readFile(deploymentJson, 'utf-8'))
-    : {};
-
-  const defaultConfigs = {
-    PLACEMENTS: [],
-    PLACEMENT_PROVIDER: {},
-    SSH_PRIVATE_KEY_FILE: `id_${SSH_TYPE}`,
-    DETAILS: {},
-    OFFSETS: {},
-    ROLES: {},
-    DATACENTERS: {},
-    PROVIDER_NEXT_INDEX: {},
-  };
-  Object.entries(defaultConfigs).forEach(([key, dflt]) => {
-    if (!(key in config)) {
-      config[key] = dflt;
+      // Allocate the datacenters.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const dcsWithNodeCount =
+          dcs &&
+          dcs.map(nv => {
+            const ret = { ...nv };
+            const num = placement[nv.value] || 0;
+            if (num === 1) {
+              ret.name += ` (${num} node)`;
+            } else if (num) {
+              ret.name += ` (${num} nodes)`;
+            }
+            return ret;
+          });
+        // eslint-disable-next-line no-await-in-loop
+        const { DATACENTER, NUM_NODES, MORE } = await provider.askDatacenter(
+          provider,
+          PLACEMENT,
+          dcsWithNodeCount,
+          placement,
+        );
+        if (NUM_NODES) {
+          placement[DATACENTER] = NUM_NODES;
+        } else {
+          delete placement[DATACENTER];
+        }
+        if (!MORE) {
+          break;
+        }
+      }
+      if (!config.PLACEMENTS.find(([place]) => place === PLACEMENT)) {
+        config.PLACEMENTS.push([PLACEMENT, placement]);
+      }
     }
-  });
-  config.NETWORK_NAME = overrideNetworkName;
 
-  while (!noninteractive) {
-    // eslint-disable-next-line no-await-in-loop
-    const { ROLE, ...rest } = await askPlacement({ inquirer })(
-      config.PLACEMENTS,
-      config.ROLES,
-    );
-    let { PLACEMENT } = rest;
-    if (!PLACEMENT) {
-      break;
-    }
-    let provider;
-    let myDetails = {};
-    if (PLACEMENT !== 'NEW') {
-      config.ROLES[PLACEMENT] = ROLE;
-      const PROVIDER = config.PLACEMENT_PROVIDER[PLACEMENT];
-      provider = PROVIDERS[PROVIDER];
-    } else {
-      // eslint-disable-next-line no-await-in-loop
-      const { PROVIDER } = await askProvider({ inquirer })(PROVIDERS);
-      if (!PROVIDER) {
+    // Collate the placement information.
+    const ROLE_INSTANCE = {};
+    Object.values(config.ROLES).forEach(role => {
+      ROLE_INSTANCE[role] = 0;
+    });
+    for (const [PLACEMENT, placement] of config.PLACEMENTS) {
+      let instance = ROLE_INSTANCE[config.ROLES[PLACEMENT]];
+      const offset = instance;
+      config.DATACENTERS[PLACEMENT] = [];
+      for (const dc of Object.keys(placement).sort()) {
+        const nodes = [];
+        for (let i = 0; i < placement[dc]; i += 1) {
+          instance += 1;
+          nodes.push(dc);
+        }
+        if (nodes.length !== 0) {
+          config.DATACENTERS[PLACEMENT].push(...nodes);
+        }
+      }
+
+      if (instance === offset) {
+        // No nodes added.
         // eslint-disable-next-line no-continue
         continue;
       }
-      provider = PROVIDERS[PROVIDER];
 
-      const setPlacement = () => {
-        if (config.PLACEMENT_PROVIDER[PLACEMENT]) {
-          // Already present.
-          return;
-        }
-
-        const idx = config.PROVIDER_NEXT_INDEX;
-        if (!idx[PROVIDER]) {
-          idx[PROVIDER] = 0;
-        }
-        idx[PROVIDER] += 1;
-        PLACEMENT = `${PROVIDER}${idx[PROVIDER]}`;
-        config.ROLES[PLACEMENT] = ROLE;
-        config.PLACEMENT_PROVIDER[PLACEMENT] = PROVIDER;
-      };
-
-      if (provider.askDetails) {
-        // eslint-disable-next-line no-await-in-loop
-        const { CANCEL, ...PLACEMENT_DETAILS } = await provider.askDetails(
-          provider,
-          myDetails,
-        );
-        if (CANCEL) {
-          // eslint-disable-next-line no-continue
-          continue;
-        }
-        // Out with the old, in with the new.
-        setPlacement();
-        for (const vname of Object.keys(myDetails)) {
-          delete config.DETAILS[vname][PLACEMENT];
-        }
-        myDetails = PLACEMENT_DETAILS;
-        for (const vname of Object.keys(myDetails)) {
-          if (!config.DETAILS[vname]) {
-            config.DETAILS[vname] = {};
-          }
-          config.DETAILS[vname][PLACEMENT] = PLACEMENT_DETAILS[vname];
-        }
-      } else {
-        setPlacement();
-      }
+      // Commit the final details.
+      ROLE_INSTANCE[config.ROLES[PLACEMENT]] = instance;
+      config.OFFSETS[PLACEMENT] = offset;
     }
 
-    const dcs =
-      provider.datacenters &&
-      // eslint-disable-next-line no-await-in-loop
-      (await provider.datacenters(provider, PLACEMENT, myDetails));
-    config.ROLES;
-    const [_p, placement] = config.PLACEMENTS.find(
-      ([p]) => p === PLACEMENT,
-    ) || [PLACEMENT, {}];
-    if (dcs) {
-      // Add our choices to the list.
-      const already = { ...placement };
-      dcs.forEach(nv => delete already[nv.value]);
-      Object.entries(already).forEach(([dc]) => {
-        dcs.push({ name: dc, value: dc });
-      });
-      dcs.sort((nva, nvb) => {
-        if (nva.name < nvb.name) {
-          return -1;
-        }
-        if (nva.name === nvb.name) {
-          return 0;
-        }
-        return 1;
-      });
-    }
+    assert(
+      Object.values(ROLE_INSTANCE).some(i => i > 0),
+      X`Aborting due to no nodes configured!`,
+    );
 
-    // Allocate the datacenters.
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const dcsWithNodeCount =
-        dcs &&
-        dcs.map(nv => {
-          const ret = { ...nv };
-          const num = placement[nv.value] || 0;
-          if (num === 1) {
-            ret.name += ` (${num} node)`;
-          } else if (num) {
-            ret.name += ` (${num} nodes)`;
-          }
-          return ret;
-        });
-      // eslint-disable-next-line no-await-in-loop
-      const { DATACENTER, NUM_NODES, MORE } = await provider.askDatacenter(
-        provider,
-        PLACEMENT,
-        dcsWithNodeCount,
-        placement,
-      );
-      if (NUM_NODES) {
-        placement[DATACENTER] = NUM_NODES;
-      } else {
-        delete placement[DATACENTER];
-      }
-      if (!MORE) {
-        break;
-      }
-    }
-    if (!config.PLACEMENTS.find(([place]) => place === PLACEMENT)) {
-      config.PLACEMENTS.push([PLACEMENT, placement]);
-    }
-  }
-
-  // Collate the placement information.
-  const ROLE_INSTANCE = {};
-  Object.values(config.ROLES).forEach(role => {
-    ROLE_INSTANCE[role] = 0;
-  });
-  for (const [PLACEMENT, placement] of config.PLACEMENTS) {
-    let instance = ROLE_INSTANCE[config.ROLES[PLACEMENT]];
-    const offset = instance;
-    config.DATACENTERS[PLACEMENT] = [];
-    for (const dc of Object.keys(placement).sort()) {
-      const nodes = [];
-      for (let i = 0; i < placement[dc]; i += 1) {
-        instance += 1;
-        nodes.push(dc);
-      }
-      if (nodes.length !== 0) {
-        config.DATACENTERS[PLACEMENT].push(...nodes);
-      }
-    }
-
-    if (instance === offset) {
-      // No nodes added.
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-
-    // Commit the final details.
-    ROLE_INSTANCE[config.ROLES[PLACEMENT]] = instance;
-    config.OFFSETS[PLACEMENT] = offset;
-  }
-
-  assert(
-    Object.values(ROLE_INSTANCE).some(i => i > 0),
-    X`Aborting due to no nodes configured!`,
-  );
-
-  await wr.createFile(
-    `vars.tf`,
-    `\
+    await wr.createFile(
+      `vars.tf`,
+      `\
 # Terraform configuration generated by "${progname} init"
 
 variable "NETWORK_NAME" {
@@ -544,30 +543,38 @@ variable ${JSON.stringify(vname)} {
   )
   .join('\n')}
 `,
-  );
+    );
 
-  // Go and create the specific files.
-  const clusterPrefix = 'ag-';
-  for (const PLACEMENT of Object.keys(config.PLACEMENT_PROVIDER).sort()) {
-    const PROVIDER = config.PLACEMENT_PROVIDER[PLACEMENT];
-    const provider = PROVIDERS[PROVIDER];
+    // Go and create the specific files.
+    const clusterPrefix = 'ag-';
+    for (const PLACEMENT of Object.keys(config.PLACEMENT_PROVIDER).sort()) {
+      const PROVIDER = config.PLACEMENT_PROVIDER[PLACEMENT];
+      const provider = PROVIDERS[PROVIDER];
 
-    // Create a placement-specific key file.
-    const keyFile = `${PLACEMENT}-${config.SSH_PRIVATE_KEY_FILE}`;
-    // eslint-disable-next-line no-await-in-loop
-    if (!(await rd.exists(keyFile))) {
-      // Set empty password.
+      // Create a placement-specific key file.
+      const keyFile = `${PLACEMENT}-${config.SSH_PRIVATE_KEY_FILE}`;
       // eslint-disable-next-line no-await-in-loop
-      await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', keyFile]);
+      if (!(await rd.exists(keyFile))) {
+        // Set empty password.
+        // eslint-disable-next-line no-await-in-loop
+        await needDoRun([
+          'ssh-keygen',
+          '-N',
+          '',
+          '-t',
+          SSH_TYPE,
+          '-f',
+          keyFile,
+        ]);
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      await provider.createPlacementFiles(provider, PLACEMENT, clusterPrefix);
     }
 
-    // eslint-disable-next-line no-await-in-loop
-    await provider.createPlacementFiles(provider, PLACEMENT, clusterPrefix);
-  }
-
-  await wr.createFile(
-    `outputs.tf`,
-    `\
+    await wr.createFile(
+      `outputs.tf`,
+      `\
 output "public_ips" {
   value = {
 ${Object.keys(config.DATACENTERS)
@@ -585,17 +592,17 @@ output "offsets" {
   value = "\${var.OFFSETS}"
 }
 `,
-  );
+    );
 
-  const keyFile = config.SSH_PRIVATE_KEY_FILE;
-  if (!(await rd.exists(keyFile))) {
-    // Set empty password.
-    await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', keyFile]);
-  }
+    const keyFile = config.SSH_PRIVATE_KEY_FILE;
+    if (!(await rd.exists(keyFile))) {
+      // Set empty password.
+      await needDoRun(['ssh-keygen', '-N', '', '-t', SSH_TYPE, '-f', keyFile]);
+    }
 
-  await wr.createFile(
-    PLAYBOOK_WRAPPER,
-    `\
+    await wr.createFile(
+      PLAYBOOK_WRAPPER,
+      `\
 #! /bin/sh
 exec ansible-playbook -f10 \\
   -eSETUP_HOME=${shellEscape(cwd())} \\
@@ -603,12 +610,12 @@ exec ansible-playbook -f10 \\
   -eNETWORK_NAME=\`cat ${shellEscape(rd.resolve('network.txt'))}\` \\
   \${1+"$@"}
 `,
-  );
-  await wr.chmod(PLAYBOOK_WRAPPER, '0755');
+    );
+    await wr.chmod(PLAYBOOK_WRAPPER, '0755');
 
-  await wr.createFile(
-    `ansible.cfg`,
-    `\
+    await wr.createFile(
+      `ansible.cfg`,
+      `\
 [defaults]
 inventory = ./provision/hosts
 deprecation_warnings = False
@@ -617,11 +624,11 @@ deprecation_warnings = False
 ssh_args = -oForwardAgent=yes -oUserKnownHostsFile=provision/ssh_known_hosts -oControlMaster=auto -oControlPersist=30m
 pipelining = True
 `,
-  );
+    );
 
-  // Persist data for later.
-  await wr.createFile(deploymentJson, JSON.stringify(config, undefined, 2));
-  await wr.createFile(networkTxt, config.NETWORK_NAME);
-};
+    // Persist data for later.
+    await wr.createFile(deploymentJson, JSON.stringify(config, undefined, 2));
+    await wr.createFile(networkTxt, config.NETWORK_NAME);
+  };
 
 export { doInit };

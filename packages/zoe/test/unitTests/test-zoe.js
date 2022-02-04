@@ -98,10 +98,8 @@ test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
 
 test(`E(zoe).startInstance promise for installation`, async t => {
   const { zoe, installation } = await setupZCFTest();
-  const {
-    promise: installationP,
-    resolve: installationPResolve,
-  } = makePromiseKit();
+  const { promise: installationP, resolve: installationPResolve } =
+    makePromiseKit();
 
   const resultP = E(zoe).startInstance(installationP);
   installationPResolve(installation);

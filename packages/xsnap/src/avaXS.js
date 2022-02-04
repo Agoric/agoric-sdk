@@ -325,14 +325,8 @@ export async function main(
   args,
   { bundleSource, spawn, osType, readFile, resolve, dirname, basename, glob },
 ) {
-  const {
-    files,
-    require,
-    exclude,
-    debug,
-    verbose,
-    titleMatch,
-  } = await avaConfig(args, {}, { readFile, glob });
+  const { files, require, exclude, debug, verbose, titleMatch } =
+    await avaConfig(args, {}, { readFile, glob });
 
   /** @param {Record<string, unknown>} opts */
   const spawnXSnap = opts =>

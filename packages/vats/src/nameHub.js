@@ -36,10 +36,11 @@ export const makeNameHubKit = () => {
       return [
         ...mapIterable(
           keyToRecord.entries(),
-          ([key, record]) => /** @type {[string, ERef<unknown>]} */ ([
-            key,
-            record.promise || record.value,
-          ]),
+          ([key, record]) =>
+            /** @type {[string, ERef<unknown>]} */ ([
+              key,
+              record.promise || record.value,
+            ]),
         ),
       ];
     },

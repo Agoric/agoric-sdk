@@ -71,9 +71,8 @@ export function buildRootObject(vatPowers) {
   };
 
   const { publish: pursesPublish, subscribe: pursesSubscribe } = pubsub(E);
-  const { updater: inboxUpdater, notifier: offerNotifier } = makeNotifierKit(
-    inboxState,
-  );
+  const { updater: inboxUpdater, notifier: offerNotifier } =
+    makeNotifierKit(inboxState);
   const { publish: inboxPublish, subscribe: inboxSubscribe } = pubsub(E);
 
   const notifiers = harden({

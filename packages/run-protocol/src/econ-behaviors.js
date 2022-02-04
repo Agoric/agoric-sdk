@@ -246,16 +246,13 @@ export const startVaultFactory = async (
     loanFee: makeRatio(200n, centralBrand, BASIS_POINTS),
   };
 
-  const [
-    ammInstance,
-    electorateInstance,
-    contractGovernorInstall,
-  ] = await Promise.all([
-    // TODO: manifest constants for these strings
-    E(agoricNames).lookup('instance', 'amm'),
-    E(agoricNames).lookup('instance', 'economicCommittee'),
-    E(agoricNames).lookup('installation', 'contractGovernor'),
-  ]);
+  const [ammInstance, electorateInstance, contractGovernorInstall] =
+    await Promise.all([
+      // TODO: manifest constants for these strings
+      E(agoricNames).lookup('instance', 'amm'),
+      E(agoricNames).lookup('instance', 'economicCommittee'),
+      E(agoricNames).lookup('installation', 'contractGovernor'),
+    ]);
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
   const feeMintAccess = await feeMintAccessP;
 
@@ -279,15 +276,13 @@ export const startVaultFactory = async (
     },
   });
 
-  const {
-    creatorFacet: governorCreatorFacet,
-    instance: governorInstance,
-  } = await E(zoe).startInstance(
-    contractGovernorInstall,
-    undefined,
-    governorTerms,
-    harden({ electorateCreatorFacet }),
-  );
+  const { creatorFacet: governorCreatorFacet, instance: governorInstance } =
+    await E(zoe).startInstance(
+      contractGovernorInstall,
+      undefined,
+      governorTerms,
+      harden({ electorateCreatorFacet }),
+    );
 
   const vaultFactoryInstance = await E(governorCreatorFacet).getInstance();
   const [vaultFactoryCreator] = await Promise.all([

@@ -19,9 +19,11 @@ const dapps = [
   },
 ];
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return <Component dapps={dapps} {...props} />;
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return <Component dapps={dapps} {...props} />;
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };

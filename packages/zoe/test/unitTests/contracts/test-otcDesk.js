@@ -41,14 +41,8 @@ const makeAlice = async (
   coveredCallInstallation,
 ) => {
   let creatorFacet;
-  const {
-    moolaIssuer,
-    simoleanIssuer,
-    bucksIssuer,
-    moola,
-    simoleans,
-    bucks,
-  } = issuers;
+  const { moolaIssuer, simoleanIssuer, bucksIssuer, moola, simoleans, bucks } =
+    issuers;
   const { moolaPayment, simoleanPayment, bucksPayment } = origPayments;
 
   const simoleanPurse = await E(simoleanIssuer).makeEmptyPurse();
@@ -114,14 +108,8 @@ const makeBob = (
   origPayments,
   coveredCallInstallation,
 ) => {
-  const {
-    moolaIssuer,
-    simoleanIssuer,
-    bucksIssuer,
-    moola,
-    simoleans,
-    bucks,
-  } = issuers;
+  const { moolaIssuer, simoleanIssuer, bucksIssuer, moola, simoleans, bucks } =
+    issuers;
   const { moolaPayment, simoleanPayment, bucksPayment } = origPayments;
   const moolaPurse = moolaIssuer.makeEmptyPurse();
   const simoleanPurse = simoleanIssuer.makeEmptyPurse();

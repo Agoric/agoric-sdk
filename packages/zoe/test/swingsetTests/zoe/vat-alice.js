@@ -366,9 +366,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
       liquidity(10n),
     );
-    const removeLiquidityInvitation = E(
-      publicFacet,
-    ).makeRemoveLiquidityInvitation();
+    const removeLiquidityInvitation =
+      E(publicFacet).makeRemoveLiquidityInvitation();
 
     const removeLiquiditySeatP = await E(zoe).offer(
       removeLiquidityInvitation,

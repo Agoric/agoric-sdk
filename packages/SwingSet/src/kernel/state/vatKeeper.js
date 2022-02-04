@@ -566,8 +566,9 @@ export function makeVatKeeper(
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
     const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
-    const transcriptCount = JSON.parse(getRequired(`${vatID}.t.endPosition`))
-      .itemCount;
+    const transcriptCount = JSON.parse(
+      getRequired(`${vatID}.t.endPosition`),
+    ).itemCount;
 
     // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts
     return harden({

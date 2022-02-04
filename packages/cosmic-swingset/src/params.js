@@ -16,10 +16,8 @@ export const stringToNat = s => {
 
 // Map the SwingSet parameters to a deterministic data structure.
 export const parseParams = params => {
-  const {
-    beans_per_unit: rawBeansPerUnit,
-    fee_unit_price: rawFeeUnitPrice,
-  } = params;
+  const { beans_per_unit: rawBeansPerUnit, fee_unit_price: rawFeeUnitPrice } =
+    params;
   assert(
     Array.isArray(rawBeansPerUnit),
     X`beansPerUnit must be an array, not ${rawBeansPerUnit}`,

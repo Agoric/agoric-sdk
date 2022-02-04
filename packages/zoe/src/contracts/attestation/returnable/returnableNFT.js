@@ -25,10 +25,8 @@ const { details: X } = assert;
 const setupAttestation = async (attestationTokenName, empty, zcf) => {
   assert(AmountMath.isEmpty(empty), X`empty ${empty} was not empty`);
   const zcfMint = await zcf.makeZCFMint(attestationTokenName, AssetKind.SET);
-  const {
-    brand: attestationBrand,
-    issuer: attestationIssuer,
-  } = zcfMint.getIssuerRecord();
+  const { brand: attestationBrand, issuer: attestationIssuer } =
+    zcfMint.getIssuerRecord();
 
   const { brand: externalBrand } = empty;
 
@@ -69,8 +67,9 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     zcfMint.burnLosses(harden({ Attestation: attestationAmount }), seat);
     seat.exit();
 
-    const attestationValue =
-      /** @type {Array<ReturnableAttElem>} */ (attestationAmount.value);
+    const attestationValue = /** @type {Array<ReturnableAttElem>} */ (
+      attestationAmount.value
+    );
 
     attestationValue.forEach(({ address, amountLiened: amountReturned }) => {
       assert(

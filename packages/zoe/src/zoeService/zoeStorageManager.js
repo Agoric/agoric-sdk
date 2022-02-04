@@ -61,9 +61,8 @@ export const makeZoeStorageManager = (
   // In order to participate in a contract, users must have
   // invitations, which are ERTP payments made by Zoe. This code
   // contains the mint capability for invitations.
-  const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
-    shutdownZoeVat,
-  );
+  const { setupMakeInvitation, invitationIssuer } =
+    createInvitationKit(shutdownZoeVat);
 
   // Every new instance of a contract creates a corresponding
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for

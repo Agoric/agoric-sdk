@@ -11,11 +11,9 @@ type ERef<T> = PromiseLike<T> | T;
 export type EOnly<T> = T extends (...args: infer P) => infer R
   ? (...args: P) => ERef<R> | EOnly<R>
   : T extends Record<string | number | symbol, Function>
-  ? ERef<
-      {
-        [K in keyof T]: EOnly<T[K]>;
-      }
-    >
+  ? ERef<{
+      [K in keyof T]: EOnly<T[K]>;
+    }>
   : ERef<T>;
 
 type Unpromise<T> = T extends ERef<infer U> ? U : T;

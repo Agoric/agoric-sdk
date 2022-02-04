@@ -321,9 +321,7 @@ export const offerTo = async (
     depositedPromiseKit.resolve(mappedAmounts);
   };
 
-  E(userSeatPromise)
-    .getPayouts()
-    .then(doDeposit);
+  E(userSeatPromise).getPayouts().then(doDeposit);
 
   return harden({ userSeatPromise, deposited: depositedPromiseKit.promise });
 };

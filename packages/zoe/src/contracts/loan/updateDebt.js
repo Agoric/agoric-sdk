@@ -39,10 +39,8 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   // the last period-end for which interest has been added
   let lastCalculationTimestamp = basetime;
 
-  const {
-    updater: debtNotifierUpdater,
-    notifier: debtNotifier,
-  } = makeNotifierKit();
+  const { updater: debtNotifierUpdater, notifier: debtNotifier } =
+    makeNotifierKit();
 
   const getDebt = () => debt;
 

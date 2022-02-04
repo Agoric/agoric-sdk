@@ -198,10 +198,10 @@ const makeParamManagerBuilder = zoe => {
     await setInvitation(invitation);
 
     const makeDescription = () => {
-      return ({ name, type: ParamType.INVITATION, value: currentAmount });
+      return { name, type: ParamType.INVITATION, value: currentAmount };
     };
     const makeShortDescription = () => {
-      return ({ type: ParamType.INVITATION, value: currentAmount });
+      return { type: ParamType.INVITATION, value: currentAmount };
     };
 
     const getVisibleValue = async allegedInvitation =>

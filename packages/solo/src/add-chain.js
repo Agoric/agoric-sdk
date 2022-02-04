@@ -56,10 +56,7 @@ async function addChain(basedir, chainConfig, force = false) {
       );
     }
     const s = djson.stringify(resp.result);
-    const gci = crypto
-      .createHash('sha256')
-      .update(s)
-      .digest('hex');
+    const gci = crypto.createHash('sha256').update(s).digest('hex');
 
     netconf.gci = gci;
   }

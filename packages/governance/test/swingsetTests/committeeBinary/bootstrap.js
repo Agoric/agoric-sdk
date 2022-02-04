@@ -55,10 +55,8 @@ const committeeBinaryStart = async (
   installations,
 ) => {
   const electorateTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
-  const {
-    creatorFacet: electorateFacet,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(installations.committee, {}, electorateTerms);
+  const { creatorFacet: electorateFacet, instance: electorateInstance } =
+    await E(zoe).startInstance(installations.committee, {}, electorateTerms);
 
   const choose = { text: 'Choose' };
   const electionType = ElectionType.SURVEY;
@@ -117,10 +115,8 @@ const committeeBinaryTwoQuestions = async (
   log('starting TWO questions test');
 
   const electorateTerms = { committeeName: 'TheCommittee', committeeSize: 5 };
-  const {
-    creatorFacet: electorateFacet,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(installations.committee, {}, electorateTerms);
+  const { creatorFacet: electorateFacet, instance: electorateInstance } =
+    await E(zoe).startInstance(installations.committee, {}, electorateTerms);
 
   const invitations = await E(electorateFacet).getVoterInvitations();
   const details2 = await E(zoe).getInvitationDetails(invitations[2]);

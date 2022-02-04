@@ -106,11 +106,8 @@ const makeZoeKit = (
 
   // Make the methods that allow users to easily and credibly get
   // information about their invitations.
-  const {
-    getInstance,
-    getInstallation,
-    getInvitationDetails,
-  } = makeInvitationQueryFns(invitationIssuer);
+  const { getInstance, getInstallation, getInvitationDetails } =
+    makeInvitationQueryFns(invitationIssuer);
 
   const getConfiguration = () => {
     return harden({

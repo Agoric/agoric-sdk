@@ -30,18 +30,20 @@ const declinedOffers = new Set();
 const setDeclinedOffers = jest.fn();
 const setClosedOffers = jest.fn();
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <Component
-      pendingOffers={pendingOffers}
-      setPendingOffers={setPendingOffers}
-      declinedOffers={declinedOffers}
-      setDeclinedOffers={setDeclinedOffers}
-      setClosedOffers={setClosedOffers}
-      {...props}
-    />
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <Component
+        pendingOffers={pendingOffers}
+        setPendingOffers={setPendingOffers}
+        declinedOffers={declinedOffers}
+        setDeclinedOffers={setDeclinedOffers}
+        setClosedOffers={setClosedOffers}
+        {...props}
+      />
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };
@@ -165,18 +167,8 @@ test('renders the controls', () => {
 
   const controls = component.find('.Controls');
 
-  expect(
-    controls
-      .find(Chip)
-      .at(0)
-      .text(),
-  ).toContain('Approve');
-  expect(
-    controls
-      .find(Chip)
-      .at(1)
-      .text(),
-  ).toContain('Decline');
+  expect(controls.find(Chip).at(0).text()).toContain('Approve');
+  expect(controls.find(Chip).at(1).text()).toContain('Decline');
 });
 
 test('renders the exit button while pending', () => {
@@ -185,18 +177,8 @@ test('renders the exit button while pending', () => {
 
   const component = mount(<Offer offer={pendingOffer} />);
 
-  expect(
-    component
-      .find(Chip)
-      .at(0)
-      .text(),
-  ).toContain('Pending');
-  expect(
-    component
-      .find('.Controls')
-      .find(Chip)
-      .text(),
-  ).toContain('Exit');
+  expect(component.find(Chip).at(0).text()).toContain('Pending');
+  expect(component.find('.Controls').find(Chip).text()).toContain('Exit');
 });
 
 test('renders the pending state eagerly', () => {
@@ -204,18 +186,8 @@ test('renders the pending state eagerly', () => {
     <Offer offer={offer} pendingOffers={new Set([offer.id])} />,
   );
 
-  expect(
-    component
-      .find(Chip)
-      .at(0)
-      .text(),
-  ).toContain('Pending');
-  expect(
-    component
-      .find('.Controls')
-      .find(Chip)
-      .text(),
-  ).toContain('Exit');
+  expect(component.find(Chip).at(0).text()).toContain('Pending');
+  expect(component.find('.Controls').find(Chip).text()).toContain('Exit');
 });
 
 test('renders the declined state eagerly', () => {
@@ -223,12 +195,7 @@ test('renders the declined state eagerly', () => {
     <Offer offer={offer} declinedOffers={new Set([offer.id])} />,
   );
 
-  expect(
-    component
-      .find(Chip)
-      .at(0)
-      .text(),
-  ).toContain('Declined');
+  expect(component.find(Chip).at(0).text()).toContain('Declined');
   expect(component.find('.Controls').find(Chip)).toHaveLength(0);
 });
 
@@ -238,12 +205,7 @@ test('renders the accepted state', () => {
 
   const component = mount(<Offer offer={acceptedOffer} />);
 
-  expect(
-    component
-      .find(Chip)
-      .at(0)
-      .text(),
-  ).toContain('Accepted');
+  expect(component.find(Chip).at(0).text()).toContain('Accepted');
   expect(component.find('.Controls').find(Chip)).toHaveLength(0);
 });
 
@@ -253,12 +215,7 @@ test('renders the declined state', () => {
 
   const component = mount(<Offer offer={declinedOffer} />);
 
-  expect(
-    component
-      .find(Chip)
-      .at(0)
-      .text(),
-  ).toContain('Declined');
+  expect(component.find(Chip).at(0).text()).toContain('Declined');
   expect(component.find('.Controls').find(Chip)).toHaveLength(0);
 });
 
@@ -300,12 +257,7 @@ test('renders the request as completed when appropriate', () => {
 test('closes the offer', () => {
   const component = mount(<Offer offer={offer} />);
 
-  act(() =>
-    component
-      .find(Request)
-      .props()
-      .close(),
-  );
+  act(() => component.find(Request).props().close());
 
   expect(setClosedOffers).toHaveBeenCalledWith({
     offerId: offer.id,
@@ -324,13 +276,7 @@ test('closes the offer', () => {
 test('accepts the offer', () => {
   const component = mount(<Offer offer={offer} />);
 
-  act(() =>
-    component
-      .find(Chip)
-      .at(1)
-      .props()
-      .onClick(),
-  );
+  act(() => component.find(Chip).at(1).props().onClick());
 
   expect(setPendingOffers).toHaveBeenCalledWith({
     offerId: offer.id,
@@ -342,13 +288,7 @@ test('accepts the offer', () => {
 test('declines the offer', () => {
   const component = mount(<Offer offer={offer} />);
 
-  act(() =>
-    component
-      .find(Chip)
-      .at(2)
-      .props()
-      .onClick(),
-  );
+  act(() => component.find(Chip).at(2).props().onClick());
 
   expect(setDeclinedOffers).toHaveBeenCalledWith({
     offerId: offer.id,
@@ -362,13 +302,7 @@ test('cancels the offer', () => {
   pendingOffer.status = 'pending';
   const component = mount(<Offer offer={pendingOffer} />);
 
-  act(() =>
-    component
-      .find(Chip)
-      .at(1)
-      .props()
-      .onClick(),
-  );
+  act(() => component.find(Chip).at(1).props().onClick());
 
   expect(offer.actions.cancel).toHaveBeenCalledWith();
 });

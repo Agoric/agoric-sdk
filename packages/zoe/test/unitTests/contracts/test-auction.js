@@ -526,15 +526,8 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
 // Three bidders with (fungible) moola bid for a CryptoCat
 test('zoe - secondPriceAuction non-fungible asset', async t => {
   t.plan(30);
-  const {
-    ccIssuer,
-    moolaIssuer,
-    ccMint,
-    moolaMint,
-    cryptoCats,
-    moola,
-    zoe,
-  } = setupMixed();
+  const { ccIssuer, moolaIssuer, ccMint, moolaMint, cryptoCats, moola, zoe } =
+    setupMixed();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Setup Alice

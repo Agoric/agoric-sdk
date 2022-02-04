@@ -382,10 +382,8 @@ export async function connectToChain(
           // console.info(`got ${storagePath} query`, obj);
           if (obj.result && obj.result.response && obj.result.response.value) {
             // Decode the layers up to the actual storage value.
-            const {
-              value: b64JsonStorage,
-              height: heightString,
-            } = obj.result.response;
+            const { value: b64JsonStorage, height: heightString } =
+              obj.result.response;
             const jsonStorage = Buffer.from(b64JsonStorage, 'base64').toString(
               'utf8',
             );

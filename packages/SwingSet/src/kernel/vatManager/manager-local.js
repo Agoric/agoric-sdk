@@ -12,13 +12,8 @@ import {
 } from './supervisor-helper.js';
 
 export function makeLocalVatManagerFactory(tools) {
-  const {
-    allVatPowers,
-    kernelKeeper,
-    vatEndowments,
-    gcTools,
-    kernelSlog,
-  } = tools;
+  const { allVatPowers, kernelKeeper, vatEndowments, gcTools, kernelSlog } =
+    tools;
 
   const baseVP = {
     makeMarshal: allVatPowers.makeMarshal,
