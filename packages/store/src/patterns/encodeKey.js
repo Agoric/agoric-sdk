@@ -7,6 +7,8 @@ import {
   passableSymbolForName,
 } from '@endo/marshal';
 
+const { is } = Object;
+
 export const zeroPad = (n, size) => {
   const nStr = `${n}`;
   assert(nStr.length <= size);
@@ -38,7 +40,17 @@ const asBits = new BigUint64Array(asNumber.buffer);
 // encoding whose lexicographic sort order is the same as the numeric sort order
 // of the corresponding numbers.
 
+// TODO Choose the same canonical NaN encoding that cosmWasm and ewasm chose.
+const CanonicalNaN = 'ffff8000000000000';
+
+// Normalize -0 to 0
+
 const numberToDBEntryKey = n => {
+  if (is(n, -0)) {
+    n = 0;
+  } else if (is(n, NaN)) {
+    return CanonicalNaN;
+  }
   asNumber[0] = n;
   let bits = asBits[0];
   if (n < 0) {
@@ -62,7 +74,11 @@ const dbEntryKeyToNumber = k => {
     bits ^= 0x8000000000000000n;
   }
   asBits[0] = bits;
-  return asNumber[0];
+  const result = asNumber[0];
+  if (is(result, -0)) {
+    return 0;
+  }
+  return result;
 };
 
 // BigInts are encoded as keys as follows:
@@ -157,7 +173,9 @@ export const makeEncodeKey = encodeRemotable => {
       case 'symbol':
         return `y${nameForPassableSymbol(key)}`;
       default:
-        assert.fail(X`a ${q(passStyle)} cannot be used as a collection key`);
+        assert.fail(
+          X`a ${q(passStyle)} cannot yet be used as a collection key`,
+        );
     }
   };
   return harden(encodeKey);

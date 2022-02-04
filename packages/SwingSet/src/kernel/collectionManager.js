@@ -126,7 +126,7 @@ export function makeCollectionManager(
   }
 
   function summonCollectionInternal(
-    initial,
+    _initial,
     label,
     collectionID,
     kindName,

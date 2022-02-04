@@ -1,13 +1,13 @@
 // @ts-check
+/* global BigUint64Array */
+/* eslint-disable no-bitwise */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { isKey, isScalarKey } from '../src/keys/checkKey.js';
 import { compareKeys, keyEQ } from '../src/keys/compareKeys.js';
 import { makeEncodeKey, makeDecodeKey } from '../src/patterns/encodeKey.js';
 import { compareRank, makeComparatorKit } from '../src/patterns/rankOrder.js';
-import { sample as originalSample } from './test-rankOrder.js';
-
-const sample = originalSample.filter(val => !Object.is(val, -0));
+import { sample } from './test-rankOrder.js';
 
 const { details: X } = assert;
 
@@ -40,12 +40,27 @@ const decodeKey = makeDecodeKey(decodeRemotable);
 
 const { comparator: compareFull } = makeComparatorKit(compareRemotables);
 
+const asNumber = new Float64Array(1);
+const asBits = new BigUint64Array(asNumber.buffer);
+const getNaN = (hexEncoding = '0008000000000000') => {
+  let bits = BigInt(`0x${hexEncoding}`);
+  bits |= 0x7ff0000000000000n;
+  if (!(bits & 0x0001111111111111n)) {
+    bits |= 0x0008000000000000n;
+  }
+  asBits[0] = bits;
+  return asNumber[0];
+};
+
+const NegativeNaN = getNaN('ffffffffffffffff');
+
 const goldenPairs = harden([
   [37n, 'p0000000002:37'],
   [-1n, 'n9999999999:9'],
   [1, 'fbff0000000000000'],
   [-1, 'f400fffffffffffff'],
   [NaN, 'ffff8000000000000'],
+  [NegativeNaN, 'ffff8000000000000'],
   [0, 'f8000000000000000'],
   [Infinity, 'ffff0000000000000'],
   [-Infinity, 'f000fffffffffffff'],
@@ -57,6 +72,7 @@ test('golden round trips', t => {
     t.is(decodeKey(e), k, 'does the key round trip through the encoding');
   }
   // Not round trips
+  t.is(encodeKey(-0), 'f8000000000000000');
   t.is(decodeKey('f0000000000000000'), NaN);
 });
 
