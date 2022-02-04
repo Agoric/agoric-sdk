@@ -31,9 +31,7 @@ const { multiply, floorDivide, ceilDivide, add, subtract } = natSafeMath;
 // division of the underlying bigints, and bigint division requires that the
 // rounding mode (round up or round down) be specified. It would be a mistake to
 // hide this distinction from the caller, so we make it very visible by using
-// floorMultiplyBy, ceilMultiplyBy, floorDivideBy, and ceilDivideBy. The
-// operations without floor/ceil are still present (though deprecated), and
-// won't be kept around for long.
+// floorMultiplyBy, ceilMultiplyBy, floorDivideBy, and ceilDivideBy.
 
 const PERCENT = 100n;
 
@@ -120,14 +118,6 @@ export const ceilMultiplyBy = (amount, ratio) => {
   return multiplyHelper(amount, ratio, ceilDivide);
 };
 
-/**
- * @deprecated use floorMultiplyBy() or ceilMultiplyBy()
- * @type {MultiplyBy}
- */
-export const multiplyBy = (amount, ratio) => {
-  return floorMultiplyBy(amount, ratio);
-};
-
 const divideHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);
@@ -155,14 +145,6 @@ export const floorDivideBy = (amount, ratio) => {
 /** @type {CeilDivideBy} */
 export const ceilDivideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, ceilDivide);
-};
-
-/**
- * @deprecated use floorDivideBy() or ceilDivideBy()
- * @type {DivideBy}
- */
-export const divideBy = (amount, ratio) => {
-  return floorDivideBy(amount, ratio);
 };
 
 /** @type {InvertRatio} */
