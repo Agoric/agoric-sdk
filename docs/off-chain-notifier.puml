@@ -1,0 +1,51 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+header Agoric Systems Operating Company.
+footer Page %page% of %lastpage%
+title TBD
+
+autonumber
+actor "wallet owner" as owner #lime
+entity "wallet UI" as UI #yellow
+entity "Keplr/MetaMask" as keplr
+entity "RPC node" as rpc
+entity "chain" as chain
+entity "on-chain user wallet" as wallet
+
+owner -> keplr: generate agoric account
+keplr -> keplr: account is agoric1...
+owner -> UI: "create Agoric wallet [backend]"
+
+group user-initiated transaction
+UI -> keplr: sign MsgCreateWallet tx
+keplr -> owner: approve tx?
+owner -> keplr: tx approved!
+keplr -> rpc: MsgCreateWallet tx\n(from agoric1...)
+rpc -> chain: tx
+chain -> chain: block including tx
+chain -> wallet: instantiate
+chain -> rpc: new block
+rpc -> keplr: new block event
+keplr -> UI: tx successful
+end
+
+group wallet-initiated notification
+wallet -> chain: send root notifier
+chain -> chain: block including root notifier
+chain -> rpc: new block
+rpc -> UI: notifier
+end
+UI -> owner: display initial state
+
+rando -> rpc: MsgSend (10 RUN to agoric1...)
+rpc -> chain: MsgSend
+' chain -> chain: block including donation
+chain -> wallet: balance update
+' chain -> rpc: new block
+wallet -> chain: send balance notification
+chain -> chain: block including\ndonation + notification
+chain -> rpc: new block
+rpc -> UI: balance notification
+UI -> owner: balance is now 10 RUN
+
+@enduml
