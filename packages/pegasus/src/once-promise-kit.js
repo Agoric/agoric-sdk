@@ -18,11 +18,13 @@ export const makeOncePromiseKit = reinitDetails => {
    * @param {(...args: A) => R} fn
    * @returns {(...args: A) => R}
    */
-  const onceOnly = fn => (...args) => {
-    assert(!resolved, reinitDetails);
-    resolved = true;
-    return fn(...args);
-  };
+  const onceOnly =
+    fn =>
+    (...args) => {
+      assert(!resolved, reinitDetails);
+      resolved = true;
+      return fn(...args);
+    };
 
   /** @type {PromiseRecord<any>} */
   const oncePK = harden({
