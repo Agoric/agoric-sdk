@@ -1,7 +1,12 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { getTag, nameForPassableSymbol, passStyleOf } from '@endo/marshal';
+import {
+  assertRecord,
+  getTag,
+  nameForPassableSymbol,
+  passStyleOf,
+} from '@endo/marshal';
 
 const { fromEntries, entries, setPrototypeOf, is } = Object;
 
@@ -65,6 +70,18 @@ const memoOfSorted = new WeakMap();
  * @type {WeakMap<RankCompare,RankCompare>}
  */
 const comparatorMirrorImages = new WeakMap();
+
+export const recordParts = record => {
+  assertRecord(record);
+  // TODO Measure which is faster: a reverse sort by sorting and
+  // reversing, or by sorting with an inverse comparison function.
+  // If it makes a significant difference, use the faster one.
+  const names = ownKeys(record).sort().reverse();
+  // @ts-expect-error It thinks name might be a symbol, which it doesn't like.
+  const vals = names.map(name => record[name]);
+  return harden([names, vals]);
+};
+harden(recordParts);
 
 /**
  * @param {RankCompare=} compareRemotables
@@ -144,21 +161,13 @@ export const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
         // of these names, which we then compare lexicographically. This ensures
         // that if the names of record X are a subset of the names of record Y,
         // then record X will have an earlier rank and sort to the left of Y.
-        const leftNames = harden(
-          ownKeys(left)
-            .sort()
-            // TODO Measure which is faster: a reverse sort by sorting and
-            // reversing, or by sorting with an inverse comparison function.
-            // If it makes a significant difference, use the faster one.
-            .reverse(),
-        );
-        const rightNames = harden(ownKeys(right).sort().reverse());
+        const [leftNames, leftValues] = recordParts(left);
+        const [rightNames, rightValues] = recordParts(right);
+
         const result = comparator(leftNames, rightNames);
         if (result !== 0) {
           return result;
         }
-        const leftValues = harden(leftNames.map(name => left[name]));
-        const rightValues = harden(rightNames.map(name => right[name]));
         return comparator(leftValues, rightValues);
       }
       case 'copyArray': {

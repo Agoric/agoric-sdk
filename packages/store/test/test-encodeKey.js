@@ -3,7 +3,7 @@
 /* eslint-disable no-bitwise */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { isKey, isScalarKey } from '../src/keys/checkKey.js';
+import { isKey } from '../src/keys/checkKey.js';
 import { compareKeys, keyEQ } from '../src/keys/compareKeys.js';
 import { makeEncodeKey, makeDecodeKey } from '../src/patterns/encodeKey.js';
 import { compareRank, makeComparatorKit } from '../src/patterns/rankOrder.js';
@@ -97,18 +97,14 @@ const orderInvariants = (t, x, y) => {
       t.is(keyComp, fullComp);
       t.is(keyComp, rankComp);
     }
-    if (isScalarKey(x) && isScalarKey(y)) {
-      // TODO We're working towards making all keys encodable, but
-      // currently only scalars are.
-      const ex = encodeKey(x);
-      const ey = encodeKey(y);
-      const encComp = compareRank(ex, ey);
-      t.is(encComp, fullComp);
-      const dx = decodeKey(ex);
-      const dy = decodeKey(ey);
-      t.assert(keyEQ(x, dx));
-      t.assert(keyEQ(y, dy));
-    }
+    const ex = encodeKey(x);
+    const ey = encodeKey(y);
+    const encComp = compareRank(ex, ey);
+    const dx = decodeKey(ex);
+    const dy = decodeKey(ey);
+    t.assert(keyEQ(x, dx));
+    t.assert(keyEQ(y, dy));
+    t.is(encComp, fullComp);
   }
 };
 

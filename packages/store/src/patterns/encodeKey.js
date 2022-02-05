@@ -5,9 +5,13 @@ import {
   passStyleOf,
   nameForPassableSymbol,
   passableSymbolForName,
+  assertRecord,
+  getTag,
+  makeTagged,
 } from '@endo/marshal';
+import { recordParts } from './rankOrder.js';
 
-const { is } = Object;
+const { is, fromEntries } = Object;
 
 export const zeroPad = (n, size) => {
   const nStr = `${n}`;
@@ -140,6 +144,94 @@ const dbEntryKeyToBigint = k => {
   }
 };
 
+// `'\u0000'` is the terminator after elements.
+// `'\u0001'` is the backslash-like escape character, for
+// escaping both of these characters.
+
+const encodeArray = (array, encodeKey) => {
+  const chars = ['['];
+  for (const element of array) {
+    const enc = encodeKey(element);
+    for (const c of enc) {
+      if (c === '\u0000' || c === '\u0001') {
+        chars.push('\u0001');
+      }
+      chars.push(c);
+    }
+    chars.push('\u0000');
+  }
+  return chars.join('');
+};
+
+const decodeArray = (encodedKey, decodeKey) => {
+  assert(encodedKey.startsWith('['), X`Encoded array expected: ${encodedKey}`);
+  const elements = [];
+  const elemChars = [];
+  for (let i = 1; i < encodedKey.length; i += 1) {
+    const c = encodedKey[i];
+    if (c === '\u0000') {
+      const encodedElement = elemChars.join('');
+      elemChars.length = 0;
+      const element = decodeKey(encodedElement);
+      elements.push(element);
+    } else if (c === '\u0001') {
+      i += 1;
+      assert(
+        i < encodedKey.length,
+        X`unexpected end of encoding ${encodedKey}`,
+      );
+      const c2 = encodedKey[i];
+      assert(
+        c2 === '\u0000' || c2 === '\u0001',
+        X`Unexpected character after u0001 escape: ${c2}`,
+      );
+      elemChars.push(c2);
+    } else {
+      elemChars.push(c);
+    }
+  }
+  assert(elemChars.length === 0, X`encoding terminated early: ${encodedKey}`);
+  return harden(elements);
+};
+
+const encodeRecord = (record, encodeKey) => {
+  const [names, values] = recordParts(record);
+  return `(${encodeArray(harden([names, values]), encodeKey)}`;
+};
+
+const decodeRecord = (encodedKey, decodeKey) => {
+  assert(encodedKey.startsWith('('));
+  const keysvals = decodeArray(encodedKey.substring(1), decodeKey);
+  assert(keysvals.length === 2, X`expected keys,values pair: ${encodedKey}`);
+  const [keys, vals] = keysvals;
+  assert(
+    passStyleOf(keys) === 'copyArray' &&
+      passStyleOf(vals) === 'copyArray' &&
+      keys.length === vals.length &&
+      keys.every(key => typeof key === 'string'),
+    X`not a valid record encoding: ${encodedKey}`,
+  );
+  const entries = keys.map((key, i) => [key, vals[i]]);
+  const record = harden(fromEntries(entries));
+  assertRecord(record, 'decoded record');
+  return record;
+};
+
+const encodeTagged = (tagged, encodeKey) =>
+  `:${encodeArray(harden([getTag(tagged), tagged.payload]), encodeKey)}`;
+
+const decodeTagged = (encodedKey, decodeKey) => {
+  assert(encodedKey.startsWith(':'));
+  const tagpayload = decodeArray(encodedKey.substring(1), decodeKey);
+  assert(tagpayload.length === 2, X`expected tag,payload pair: ${encodedKey}`);
+  const [tag, payload] = tagpayload;
+  assert(
+    passStyleOf(tag) === 'string',
+    X`not a valid tagged encoding: ${encodedKey}`,
+  );
+  return makeTagged(tag, payload);
+};
+
 /**
  * Exported for unit testing
  *
@@ -150,18 +242,24 @@ export const makeEncodeKey = encodeRemotable => {
   const encodeKey = key => {
     const passStyle = passStyleOf(key);
     switch (passStyle) {
-      case 'null':
+      case 'null': {
         return 'v';
-      case 'undefined':
+      }
+      case 'undefined': {
         return 'z';
-      case 'number':
+      }
+      case 'number': {
         return numberToDBEntryKey(key);
-      case 'string':
+      }
+      case 'string': {
         return `s${key}`;
-      case 'boolean':
+      }
+      case 'boolean': {
         return `b${key}`;
-      case 'bigint':
+      }
+      case 'bigint': {
         return bigintToDBEntryKey(key);
+      }
       case 'remotable': {
         const result = encodeRemotable(key);
         assert(
@@ -170,12 +268,21 @@ export const makeEncodeKey = encodeRemotable => {
         );
         return result;
       }
-      case 'symbol':
+      case 'symbol': {
         return `y${nameForPassableSymbol(key)}`;
-      default:
-        assert.fail(
-          X`a ${q(passStyle)} cannot yet be used as a collection key`,
-        );
+      }
+      case 'copyArray': {
+        return encodeArray(key, encodeKey);
+      }
+      case 'copyRecord': {
+        return encodeRecord(key, encodeKey);
+      }
+      case 'tagged': {
+        return encodeTagged(key, encodeKey);
+      }
+      default: {
+        assert.fail(X`a ${q(passStyle)} cannot be used as a collection key`);
+      }
     }
   };
   return harden(encodeKey);
@@ -185,25 +292,43 @@ harden(makeEncodeKey);
 export const makeDecodeKey = decodeRemotable => {
   const decodeKey = encodedKey => {
     switch (encodedKey[0]) {
-      case 'v':
+      case 'v': {
         return null;
-      case 'z':
+      }
+      case 'z': {
         return undefined;
-      case 'f':
+      }
+      case 'f': {
         return dbEntryKeyToNumber(encodedKey);
-      case 's':
+      }
+      case 's': {
         return encodedKey.substring(1);
-      case 'b':
+      }
+      case 'b': {
         return encodedKey.substring(1) !== 'false';
+      }
       case 'n':
-      case 'p':
+      case 'p': {
         return dbEntryKeyToBigint(encodedKey);
-      case 'r':
+      }
+      case 'r': {
         return decodeRemotable(encodedKey);
-      case 'y':
+      }
+      case 'y': {
         return passableSymbolForName(encodedKey.substring(1));
-      default:
+      }
+      case '[': {
+        return decodeArray(encodedKey, decodeKey);
+      }
+      case '(': {
+        return decodeRecord(encodedKey, decodeKey);
+      }
+      case ':': {
+        return decodeTagged(encodedKey, decodeKey);
+      }
+      default: {
         assert.fail(X`invalid database key: ${encodedKey}`);
+      }
     }
   };
   return harden(decodeKey);
