@@ -39,33 +39,40 @@ export const makeMemoryMappedCircularBuffer = ({
     circularBufferFile || `${stateDir}/${DEFAULT_CIRCULAR_BUFFER_FILE}`;
   // console.log({ circularBufferFile, bufferFile });
 
-  // If the file doesn't exist, or is not large enough, create it.
-  let stbuf;
-  try {
-    stbuf = fs.statSync(bufferFile);
-  } catch (e) {
-    if (e.code !== 'ENOENT') {
-      throw e;
+  let arenaSize;
+  if (circularBufferSize) {
+    // If the file doesn't exist, or is not large enough, create it.
+    let stbuf;
+    try {
+      stbuf = fs.statSync(bufferFile);
+    } catch (e) {
+      if (e.code !== 'ENOENT') {
+        throw e;
+      }
     }
-  }
-  const arenaSize = BigInt(
-    circularBufferSize - HEADER_LENGTH * BigUint64Array.BYTES_PER_ELEMENT,
-  );
-  if (!stbuf || stbuf.size < BigUint64Array.BYTES_PER_ELEMENT * 3) {
-    // Write the header.
-    const header = new Array(HEADER_LENGTH).fill(0n);
-    header[I_MAGIC] = SLOG_MAGIC;
-    header[I_ARENA_SIZE] = arenaSize;
-    fs.mkdirSync(path.dirname(bufferFile), { recursive: true });
-    fs.writeFileSync(bufferFile, BigUint64Array.from(header));
-  }
-  if (!stbuf || stbuf.size < circularBufferSize) {
-    fs.truncateSync(bufferFile, circularBufferSize);
+    arenaSize = BigInt(
+      circularBufferSize - HEADER_LENGTH * BigUint64Array.BYTES_PER_ELEMENT,
+    );
+    if (!stbuf || stbuf.size < BigUint64Array.BYTES_PER_ELEMENT * 3) {
+      // Write the header.
+      const header = new Array(HEADER_LENGTH).fill(0n);
+      header[I_MAGIC] = SLOG_MAGIC;
+      header[I_ARENA_SIZE] = arenaSize;
+      fs.mkdirSync(path.dirname(bufferFile), { recursive: true });
+      fs.writeFileSync(bufferFile, BigUint64Array.from(header));
+    }
+    if (!stbuf || stbuf.size < circularBufferSize) {
+      fs.truncateSync(bufferFile, circularBufferSize);
+    }
   }
 
   /** @type {Uint8Array} */
   const fileBuf = BufferFromFile(bufferFile).Uint8Array();
   const header = new BigUint64Array(fileBuf.buffer, 0, HEADER_LENGTH);
+
+  if (!arenaSize) {
+    arenaSize = header[I_ARENA_SIZE];
+  }
 
   assert.equal(
     SLOG_MAGIC,
@@ -86,6 +93,7 @@ export const makeMemoryMappedCircularBuffer = ({
   /**
    * @param {Uint8Array} data
    * @param {number} [offset]
+   * @returns {IteratorResult<Uint8Array, void>}
    */
   const readCircBuf = (data, offset = 0) => {
     assert(
@@ -97,12 +105,21 @@ export const makeMemoryMappedCircularBuffer = ({
     let firstReadLength = data.byteLength;
     const circStart = Number(header[I_CIRC_START]);
     const readStart = (circStart + offset) % Number(arenaSize);
-    if (readStart > header[I_CIRC_END]) {
+    if (header[I_CIRC_START] > header[I_CIRC_END]) {
       // The data is wrapped around the end of the arena, like BBB---AAA
       firstReadLength = Math.min(
         firstReadLength,
         Number(arenaSize) - readStart,
       );
+      if (readStart >= header[I_CIRC_END] && readStart < header[I_CIRC_START]) {
+        return { done: true, value: undefined };
+      }
+    } else if (
+      readStart < header[I_CIRC_START] ||
+      readStart >= header[I_CIRC_END]
+    ) {
+      // The data is contiguous, like ---AAABBB---
+      return { done: true, value: undefined };
     }
     data.set(arena.subarray(readStart, readStart + firstReadLength));
     if (firstReadLength < data.byteLength) {
@@ -111,7 +128,7 @@ export const makeMemoryMappedCircularBuffer = ({
         firstReadLength,
       );
     }
-    return data;
+    return { done: false, value: data };
   };
 
   /** @param {Uint8Array} data */
@@ -144,11 +161,14 @@ export const makeMemoryMappedCircularBuffer = ({
       capacity = header[I_CIRC_START] - header[I_CIRC_END];
     }
 
+    // Advance the start pointer until we have space to write the record.
     let overlap = BigInt(record.byteLength) - capacity;
     while (overlap > 0n) {
-      // Advance the start pointer.
       const startRecordLength = new BigUint64Array(1);
-      readCircBuf(new Uint8Array(startRecordLength.buffer));
+      const { done } = readCircBuf(new Uint8Array(startRecordLength.buffer));
+      if (done) {
+        break;
+      }
 
       const totalRecordLength =
         BigInt(startRecordLength.byteLength) + // size of the length field
@@ -186,7 +206,9 @@ export const makeMemoryMappedCircularBuffer = ({
       }
       if (key === 'endoZipBase64') {
         // Abridge the source bundle, since it's pretty huge.
-        return `[${value.length} characters...]`;
+        return `${value.slice(0, 10)}[...${
+          value.length
+        } characters...]${value.slice(-10)}`;
       }
       return value;
     });
