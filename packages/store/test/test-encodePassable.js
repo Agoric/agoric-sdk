@@ -5,7 +5,10 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import fc from 'fast-check';
 import { isKey } from '../src/keys/checkKey.js';
 import { compareKeys, keyEQ } from '../src/keys/compareKeys.js';
-import { makeEncodeKey, makeDecodeKey } from '../src/patterns/encodeKey.js';
+import {
+  makeEncodePassable,
+  makeDecodePassable,
+} from '../src/patterns/encodePassable.js';
 import { compareRank, makeComparatorKit } from '../src/patterns/rankOrder.js';
 import { assertionPassed } from './test-store.js';
 import { sample } from './test-rankOrder.js';
@@ -35,9 +38,9 @@ const decodeRemotable = e => {
 const compareRemotables = (x, y) =>
   compareRank(encodeRemotable(x), encodeRemotable(y));
 
-const encodeKey = makeEncodeKey(encodeRemotable);
+const encodePassable = makeEncodePassable({ encodeRemotable });
 
-const decodeKey = makeDecodeKey(decodeRemotable);
+const decodePassable = makeDecodePassable({ decodeRemotable });
 
 const { comparator: compareFull } = makeComparatorKit(compareRemotables);
 
@@ -55,6 +58,7 @@ const getNaN = (hexEncoding = '0008000000000000') => {
 
 const NegativeNaN = getNaN('ffffffffffffffff');
 
+/** @type {[Key, string][]} */
 const goldenPairs = harden([
   [1, 'fbff0000000000000'],
   [-1, 'f400fffffffffffff'],
@@ -77,12 +81,12 @@ const goldenPairs = harden([
 
 test('golden round trips', t => {
   for (const [k, e] of goldenPairs) {
-    t.is(encodeKey(k), e, 'does k encode as expected');
-    t.is(decodeKey(e), k, 'does the key round trip through the encoding');
+    t.is(encodePassable(k), e, 'does k encode as expected');
+    t.is(decodePassable(e), k, 'does the key round trip through the encoding');
   }
   // Not round trips
-  t.is(encodeKey(-0), 'f8000000000000000');
-  t.is(decodeKey('f0000000000000000'), NaN);
+  t.is(encodePassable(-0), 'f8000000000000000');
+  t.is(decodePassable('f0000000000000000'), NaN);
 });
 
 const orderInvariants = (t, x, y) => {
@@ -106,11 +110,11 @@ const orderInvariants = (t, x, y) => {
       t.is(keyComp, fullComp);
       t.is(keyComp, rankComp);
     }
-    const ex = encodeKey(x);
-    const ey = encodeKey(y);
+    const ex = encodePassable(x);
+    const ey = encodePassable(y);
     const encComp = compareRank(ex, ey);
-    const dx = decodeKey(ex);
-    const dy = decodeKey(ey);
+    const dx = decodePassable(ex);
+    const dy = decodePassable(ey);
     t.assert(keyEQ(x, dx));
     t.assert(keyEQ(y, dy));
     t.is(encComp, fullComp);
@@ -128,7 +132,7 @@ test('order invariants', t => {
 test('BigInt values round-trip', async t => {
   await fc.assert(
     fc.property(fc.bigInt(), n => {
-      const rt = decodeKey(encodeKey(n));
+      const rt = decodePassable(encodePassable(n));
       return assertionPassed(t.is(rt, n), () => rt === n);
     }),
   );
@@ -137,8 +141,8 @@ test('BigInt values round-trip', async t => {
 test('BigInt encoding comparison corresponds with numeric comparison', async t => {
   await fc.assert(
     fc.property(fc.bigInt(), fc.bigInt(), (a, b) => {
-      const ea = encodeKey(a);
-      const eb = encodeKey(b);
+      const ea = encodePassable(a);
+      const eb = encodePassable(b);
       return (
         assertionPassed(t.is(a < b, ea < eb), () => a < b === ea < eb) &&
         assertionPassed(t.is(a > b, ea > eb), () => a > b === ea > eb)

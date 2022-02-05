@@ -6,15 +6,15 @@
 
 // XXX importing these that are declared to be used only for testing
 // until @agoric/store supports composite keys
-import { makeDecodeKey, makeEncodeKey } from '@agoric/store';
+import { makeDecodePassable, makeEncodePassable } from '@agoric/store';
 
 /** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
 
 /**
  * @param {number} n
  */
-const numberToDBEntryKey = makeEncodeKey(/** @type {any} */ (null));
-const dbEntryKeyToNumber = makeDecodeKey(/** @type {any} */ (null));
+const numberToDBEntryKey = makeEncodePassable();
+const dbEntryKeyToNumber = makeDecodePassable();
 
 /**
  * Overcollateralized are greater than one.

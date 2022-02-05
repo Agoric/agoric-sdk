@@ -8,8 +8,8 @@ import {
   compareRank,
   M,
   zeroPad,
-  makeEncodeKey,
-  makeDecodeKey,
+  makeEncodePassable,
+  makeDecodePassable,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
@@ -152,12 +152,12 @@ export function makeCollectionManager(
       return `r${ordinalTag}:${convertValToSlot(remotable)}`;
     };
 
-    const encodeKey = makeEncodeKey(encodeRemotable);
+    const encodePassable = makeEncodePassable({ encodeRemotable });
 
     const decodeRemotable = encodedKey =>
       convertSlotToVal(encodedKey.substring(BIGINT_TAG_LEN + 2));
 
-    const decodeKey = makeDecodeKey(decodeRemotable);
+    const decodePassable = makeDecodePassable({ decodeRemotable });
 
     function generateOrdinal(remotable) {
       const nextOrdinal = Number.parseInt(
@@ -180,12 +180,12 @@ export function makeCollectionManager(
     }
 
     function keyToDBKey(key) {
-      return prefix(encodeKey(key));
+      return prefix(encodePassable(key));
     }
 
     function dbKeyToKey(dbKey) {
       const dbEntryKey = dbKey.substring(dbKeyPrefix.length);
-      return decodeKey(dbEntryKey);
+      return decodePassable(dbEntryKey);
     }
 
     function has(key) {
@@ -330,7 +330,7 @@ export function makeCollectionManager(
       assert(needKeys || needValues);
       assertKeyPattern(keyPatt);
       assertPattern(valuePatt);
-      const [coverStart, coverEnd] = getRankCover(keyPatt, encodeKey);
+      const [coverStart, coverEnd] = getRankCover(keyPatt, encodePassable);
       let priorDBKey = '';
       const start = prefix(coverStart);
       const end = prefix(coverEnd);

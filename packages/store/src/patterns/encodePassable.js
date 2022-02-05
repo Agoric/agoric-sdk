@@ -176,10 +176,10 @@ const decodeBigInt = encodedKey => {
 // `'\u0001'` is the backslash-like escape character, for
 // escaping both of these characters.
 
-const encodeArray = (array, encodeKey) => {
+const encodeArray = (array, encodePassable) => {
   const chars = ['['];
   for (const element of array) {
-    const enc = encodeKey(element);
+    const enc = encodePassable(element);
     for (const c of enc) {
       if (c === '\u0000' || c === '\u0001') {
         chars.push('\u0001');
@@ -191,7 +191,7 @@ const encodeArray = (array, encodeKey) => {
   return chars.join('');
 };
 
-const decodeArray = (encodedKey, decodeKey) => {
+const decodeArray = (encodedKey, decodePassable) => {
   assert(encodedKey.startsWith('['), X`Encoded array expected: ${encodedKey}`);
   const elements = [];
   const elemChars = [];
@@ -200,7 +200,7 @@ const decodeArray = (encodedKey, decodeKey) => {
     if (c === '\u0000') {
       const encodedElement = elemChars.join('');
       elemChars.length = 0;
-      const element = decodeKey(encodedElement);
+      const element = decodePassable(encodedElement);
       elements.push(element);
     } else if (c === '\u0001') {
       i += 1;
@@ -222,14 +222,14 @@ const decodeArray = (encodedKey, decodeKey) => {
   return harden(elements);
 };
 
-const encodeRecord = (record, encodeKey) => {
+const encodeRecord = (record, encodePassable) => {
   const [names, values] = recordParts(record);
-  return `(${encodeArray(harden([names, values]), encodeKey)}`;
+  return `(${encodeArray(harden([names, values]), encodePassable)}`;
 };
 
-const decodeRecord = (encodedKey, decodeKey) => {
+const decodeRecord = (encodedKey, decodePassable) => {
   assert(encodedKey.startsWith('('));
-  const keysvals = decodeArray(encodedKey.substring(1), decodeKey);
+  const keysvals = decodeArray(encodedKey.substring(1), decodePassable);
   assert(keysvals.length === 2, X`expected keys,values pair: ${encodedKey}`);
   const [keys, vals] = keysvals;
   assert(
@@ -245,12 +245,12 @@ const decodeRecord = (encodedKey, decodeKey) => {
   return record;
 };
 
-const encodeTagged = (tagged, encodeKey) =>
-  `:${encodeArray(harden([getTag(tagged), tagged.payload]), encodeKey)}`;
+const encodeTagged = (tagged, encodePassable) =>
+  `:${encodeArray(harden([getTag(tagged), tagged.payload]), encodePassable)}`;
 
-const decodeTagged = (encodedKey, decodeKey) => {
+const decodeTagged = (encodedKey, decodePassable) => {
   assert(encodedKey.startsWith(':'));
-  const tagpayload = decodeArray(encodedKey.substring(1), decodeKey);
+  const tagpayload = decodeArray(encodedKey.substring(1), decodePassable);
   assert(tagpayload.length === 2, X`expected tag,payload pair: ${encodedKey}`);
   const [tag, payload] = tagpayload;
   assert(
@@ -261,13 +261,26 @@ const decodeTagged = (encodedKey, decodeKey) => {
 };
 
 /**
- * Exported for unit testing
- *
- * @param {(remotable: Object) => string} encodeRemotable
+ * @typedef {Object} EncodeOptionsRecord
+ * @property {(remotable: Object) => string} encodeRemotable
+ * @property {(promise: Object) => string} encodePromise
+ * @property {(error: Object) => string} encodeError
+ */
+
+/**
+ * @typedef {Partial<EncodeOptionsRecord>} EncodeOptions
+ */
+
+/**
+ * @param {EncodeOptions=} encodeOptions
  * @returns {(key: Key) => string}
  */
-export const makeEncodeKey = encodeRemotable => {
-  const encodeKey = key => {
+export const makeEncodePassable = ({
+  encodeRemotable = rem => assert.fail(X`remotable unexpected: ${rem}`),
+  encodePromise = prom => assert.fail(X`promise unexpected: ${prom}`),
+  encodeError = err => assert.fail(X`error unexpected: ${err}`),
+} = {}) => {
+  const encodePassable = key => {
     const passStyle = passStyleOf(key);
     switch (passStyle) {
       case 'null': {
@@ -296,29 +309,64 @@ export const makeEncodeKey = encodeRemotable => {
         );
         return result;
       }
+      case 'error': {
+        const result = encodeError(key);
+        assert(
+          result.startsWith('!'),
+          X`internal: Error encoding must start with "!": ${result}`,
+        );
+        return result;
+      }
+      case 'promise': {
+        const result = encodePromise(key);
+        assert(
+          result.startsWith('?'),
+          X`internal: Promise encoding must start with "p": ${result}`,
+        );
+        return result;
+      }
       case 'symbol': {
         return `y${nameForPassableSymbol(key)}`;
       }
       case 'copyArray': {
-        return encodeArray(key, encodeKey);
+        return encodeArray(key, encodePassable);
       }
       case 'copyRecord': {
-        return encodeRecord(key, encodeKey);
+        return encodeRecord(key, encodePassable);
       }
       case 'tagged': {
-        return encodeTagged(key, encodeKey);
+        return encodeTagged(key, encodePassable);
       }
       default: {
         assert.fail(X`a ${q(passStyle)} cannot be used as a collection key`);
       }
     }
   };
-  return harden(encodeKey);
+  return harden(encodePassable);
 };
-harden(makeEncodeKey);
+harden(makeEncodePassable);
 
-export const makeDecodeKey = decodeRemotable => {
-  const decodeKey = encodedKey => {
+/**
+ * @typedef {Object} DecodeOptionsRecord
+ * @property {(encodedRemotable: string) => Object} decodeRemotable
+ * @property {(encodedPromise: string) => Promise} decodePromise
+ * @property {(encodedError: string) => Error} decodeError
+ */
+
+/**
+ * @typedef {Partial<DecodeOptionsRecord>} DecodeOptions
+ */
+
+/**
+ * @param {DecodeOptions=} decodeOptions
+ * @returns {(encodedKey: string) => Key}
+ */
+export const makeDecodePassable = ({
+  decodeRemotable = rem => assert.fail(X`remotable unexpected: ${rem}`),
+  decodePromise = prom => assert.fail(X`promise unexpected: ${prom}`),
+  decodeError = err => assert.fail(X`error unexpected: ${err}`),
+} = {}) => {
+  const decodePassable = encodedKey => {
     switch (encodedKey[0]) {
       case 'v': {
         return null;
@@ -342,23 +390,29 @@ export const makeDecodeKey = decodeRemotable => {
       case 'r': {
         return decodeRemotable(encodedKey);
       }
+      case '?': {
+        return decodePromise(encodedKey);
+      }
+      case '!': {
+        return decodeError(encodedKey);
+      }
       case 'y': {
         return passableSymbolForName(encodedKey.substring(1));
       }
       case '[': {
-        return decodeArray(encodedKey, decodeKey);
+        return decodeArray(encodedKey, decodePassable);
       }
       case '(': {
-        return decodeRecord(encodedKey, decodeKey);
+        return decodeRecord(encodedKey, decodePassable);
       }
       case ':': {
-        return decodeTagged(encodedKey, decodeKey);
+        return decodeTagged(encodedKey, decodePassable);
       }
       default: {
         assert.fail(X`invalid database key: ${encodedKey}`);
       }
     }
   };
-  return harden(decodeKey);
+  return harden(decodePassable);
 };
-harden(makeDecodeKey);
+harden(makeDecodePassable);
