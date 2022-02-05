@@ -3,7 +3,7 @@
   "version": "0.4.16",
   "description": "Persistent credentials for Agoric users, backed by a simple JSON file",
   "type": "module",
-  "main": "src/access-token.js",
+  "main": "dist/access-token.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
