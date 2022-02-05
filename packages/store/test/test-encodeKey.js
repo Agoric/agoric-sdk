@@ -47,6 +47,8 @@ const goldenPairs = harden([
   [-1, 'f400fffffffffffff'],
   [NaN, 'ffff8000000000000'],
   [0, 'f8000000000000000'],
+  [Infinity, 'ffff0000000000000'],
+  [-Infinity, 'f000fffffffffffff'],
 ]);
 
 test('golden round trips', t => {
