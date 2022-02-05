@@ -15,6 +15,7 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, details as X } from '@agoric/assert';
+import { makeSlogSenderFromModule } from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -156,11 +157,14 @@ const buildSwingset = async (
     }
     await initializeSwingset(config, argv, hostStorage);
   }
-  const slogFile = process.env.SOLO_SLOGFILE;
+  const { SOLO_SLOGFILE: slogFile, SOLO_SLOGSENDER } = process.env;
+  const slogSender = await makeSlogSenderFromModule(SOLO_SLOGSENDER, {
+    stateDir: kernelStateDBDir,
+  });
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogFile },
+    { slogFile, slogSender },
   );
 
   async function saveState() {

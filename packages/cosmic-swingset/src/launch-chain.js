@@ -35,7 +35,7 @@ async function buildSwingset(
   hostStorage,
   vatconfig,
   argv,
-  { consensusMode, debugName = undefined, slogCallbacks, slogFile },
+  { consensusMode, debugName = undefined, slogCallbacks, slogFile, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = await loadSwingsetConfigFile(vatconfig);
@@ -78,7 +78,12 @@ async function buildSwingset(
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { overrideVatManagerOptions: { consensusMode }, slogCallbacks, slogFile },
+    {
+      overrideVatManagerOptions: { consensusMode },
+      slogCallbacks,
+      slogFile,
+      slogSender,
+    },
   );
 
   // We DON'T want to run the kernel yet, only when the application decides
@@ -140,6 +145,7 @@ export async function launch(
   debugName = undefined,
   meterProvider = DEFAULT_METER_PROVIDER,
   slogFile = undefined,
+  slogSender,
   consensusMode = false,
 ) {
   console.info('Launching SwingSet kernel');
@@ -172,6 +178,7 @@ export async function launch(
       debugName,
       slogCallbacks,
       slogFile,
+      slogSender,
       consensusMode,
     },
   );
