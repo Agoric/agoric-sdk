@@ -42,8 +42,6 @@ export {
 export {
   makeRatio,
   makeRatioFromAmounts,
-  multiplyBy,
-  divideBy,
   floorMultiplyBy,
   floorDivideBy,
   ceilMultiplyBy,

@@ -8,8 +8,6 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import {
   makeRatio,
   makeRatioFromAmounts,
-  multiplyBy,
-  divideBy,
   floorMultiplyBy,
   floorDivideBy,
   ceilMultiplyBy,
@@ -89,32 +87,6 @@ test('ratio - basic (ceil)', t => {
   amountsEqual(t, ceilMultiplyBy(moe(0n), halfPrecise), moe(0n), brand);
 });
 
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio - basic deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-
-  const halfDefault = makeRatio(50n, brand);
-  const halfPrecise = makeRatio(5000n, brand, 10000n);
-
-  amountsEqual(t, multiplyBy(moe(1333n), halfDefault), moe(666n), brand);
-  amountsEqual(
-    t,
-    multiplyBy(moe(13333333n), halfDefault),
-    moe(6666666n),
-    brand,
-  );
-  amountsEqual(t, multiplyBy(moe(1333n), halfPrecise), moe(666n), brand);
-  amountsEqual(
-    t,
-    multiplyBy(moe(13333333n), halfPrecise),
-    moe(6666666n),
-    brand,
-  );
-  amountsEqual(t, multiplyBy(moe(0n), halfPrecise), moe(0n), brand);
-});
-
 test('ratio - multiplyBy non Amount', t => {
   const { brand } = makeIssuerKit('moe');
 
@@ -144,24 +116,6 @@ test('ratio - multiplyBy non Amount', t => {
   });
 });
 
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio - multiplyBy non Amount deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-
-  const badAmount = harden({
-    value: 3.5,
-    brand,
-  });
-  t.throws(() => multiplyBy(badAmount, makeRatio(25n, brand)), {
-    message:
-      'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
-  });
-  t.throws(() => divideBy(badAmount, makeRatio(25n, brand)), {
-    message:
-      'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
-  });
-});
-
 test('ratio - onethird', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
@@ -171,17 +125,6 @@ test('ratio - onethird', t => {
 
   amountsEqual(t, floorMultiplyBy(moe(100000n), oneThird), moe(33333n), brand);
   amountsEqual(t, ceilMultiplyBy(moe(100000n), oneThird), moe(33334n), brand);
-});
-
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio - onethird deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-
-  const oneThird = makeRatioFromAmounts(moe(1n), moe(3n));
-
-  amountsEqual(t, multiplyBy(moe(100000n), oneThird), moe(33333n), brand);
 });
 
 test('ratio - different brands', t => {
@@ -203,69 +146,6 @@ test('ratio - different brands', t => {
     brand,
   );
   amountsEqual(t, ceilMultiplyBy(ast(10000n), convertToMoe), moe(3334n), brand);
-});
-
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio - different brands deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-  const { brand: astBrand } = makeIssuerKit('ast');
-  /** @param {bigint} value */
-  const ast = value => AmountMath.make(astBrand, value);
-
-  const convertToMoe = makeRatioFromAmounts(
-    moe(1n),
-    AmountMath.make(astBrand, 3n),
-  );
-  amountsEqual(t, multiplyBy(ast(10000n), convertToMoe), moe(3333n), brand);
-});
-
-test('ratio - brand mismatch', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-  const { brand: astBrand } = makeIssuerKit('ast');
-  /** @param {bigint} value */
-  const ast = value => AmountMath.make(astBrand, value);
-
-  const convertToMoe = makeRatioFromAmounts(
-    moe(1n),
-    AmountMath.make(astBrand, 3n),
-  );
-  t.throws(() => floorDivideBy(ast(10000n), convertToMoe), {
-    message: /amount's brand .* must match ratio's numerator .*/,
-  });
-  t.throws(() => floorMultiplyBy(moe(10000n), convertToMoe), {
-    message: /amount's brand .* must match ratio's denominator .*/,
-  });
-  t.throws(() => ceilDivideBy(ast(10000n), convertToMoe), {
-    message: /amount's brand .* must match ratio's numerator .*/,
-  });
-  t.throws(() => ceilMultiplyBy(moe(10000n), convertToMoe), {
-    message: /amount's brand .* must match ratio's denominator .*/,
-  });
-});
-
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio - brand mismatch deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-  const { brand: astBrand } = makeIssuerKit('ast');
-  /** @param {bigint} value */
-  const ast = value => AmountMath.make(astBrand, value);
-
-  const convertToMoe = makeRatioFromAmounts(
-    moe(1n),
-    AmountMath.make(astBrand, 3n),
-  );
-  t.throws(() => divideBy(ast(10000n), convertToMoe), {
-    message: /amount's brand .* must match ratio's numerator .*/,
-  });
-  t.throws(() => multiplyBy(moe(10000n), convertToMoe), {
-    message: /amount's brand .* must match ratio's denominator .*/,
-  });
 });
 
 test('ratio - brand mismatch & details', t => {
@@ -294,27 +174,6 @@ test('ratio - brand mismatch & details', t => {
   });
 });
 
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio - brand mismatch & details deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-  const { brand: astBrand } = makeIssuerKit('ast');
-  /** @param {bigint} value */
-  const ast = value => AmountMath.make(astBrand, value);
-
-  const convertToMoe = makeRatioFromAmounts(
-    moe(1n),
-    AmountMath.make(astBrand, 3n),
-  );
-  t.throws(() => divideBy(ast(10000n), convertToMoe), {
-    message: `amount's brand "[Alleged: ast brand]" must match ratio's numerator "[Alleged: moe brand]"`,
-  });
-  t.throws(() => multiplyBy(moe(10000n), convertToMoe), {
-    message: `amount's brand "[Alleged: moe brand]" must match ratio's denominator "[Alleged: ast brand]"`,
-  });
-});
-
 test('ratio - larger than 100%', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
@@ -325,18 +184,6 @@ test('ratio - larger than 100%', t => {
   // 5/3 * 7777
   amountsEqual(t, floorMultiplyBy(moe(7777n), fiveThirds), moe(12961n), brand);
   amountsEqual(t, ceilMultiplyBy(moe(7777n), fiveThirds), moe(12962n), brand);
-});
-
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio - larger than 100% deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-
-  const fiveThirds = makeRatioFromAmounts(moe(5n), moe(3n));
-
-  // 5/3 * 7777
-  amountsEqual(t, multiplyBy(moe(7777n), fiveThirds), moe(12961n), brand);
 });
 
 test('ratio - Nats', t => {
@@ -363,18 +210,6 @@ test('ratio division', t => {
   amountsEqual(t, ceilDivideBy(moe(0n), twoFifths), moe(0n), brand);
 });
 
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio division deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-
-  const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
-  amountsEqual(t, divideBy(moe(100n), twoFifths), moe(250n), brand);
-  amountsEqual(t, multiplyBy(moe(100n), twoFifths), moe(40n), brand);
-  amountsEqual(t, divideBy(moe(0n), twoFifths), moe(0n), brand);
-});
-
 test('ratio inverse', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
@@ -387,19 +222,6 @@ test('ratio inverse', t => {
   amountsEqual(t, ceilDivideBy(moe(100n), fiveHalves), moe(40n), brand);
   amountsEqual(t, floorMultiplyBy(moe(100n), fiveHalves), moe(250n), brand);
   amountsEqual(t, ceilMultiplyBy(moe(100n), fiveHalves), moe(250n), brand);
-});
-
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio inverse deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-
-  const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
-  const fiveHalves = invertRatio(twoFifths);
-
-  amountsEqual(t, divideBy(moe(100n), fiveHalves), moe(40n), brand);
-  amountsEqual(t, multiplyBy(moe(100n), fiveHalves), moe(250n), brand);
 });
 
 test('ratio bad inputs', t => {
@@ -444,21 +266,6 @@ test('ratio bad inputs', t => {
   });
   t.throws(() => makeRatioFromAmounts(moe(37n), moe(0n)), {
     message: /No infinite ratios! Denominator was 0/,
-  });
-});
-
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio bad inputs deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
-  // @ts-ignore invalid arguments for testing
-  t.throws(() => multiplyBy(37, makeRatioFromAmounts(moe(3n), moe(5n))), {
-    message: '"brand" "[undefined]" must be a remotable, not "undefined"',
-  });
-  // @ts-ignore invalid arguments for testing
-  t.throws(() => divideBy(makeRatioFromAmounts(moe(3n), moe(5n)), 37), {
-    message: '"brand" "[undefined]" must be a remotable, not "undefined"',
   });
 });
 
@@ -526,17 +333,4 @@ test('ratio - complement', t => {
   t.throws(() => oneMinus(makeRatioFromAmounts(moe(30n), moe(20n))), {
     message: /Parameter must be less than or equal to 1: .*/,
   });
-});
-
-// TODO: (3676) drop when the deprecated multiplyBy is removed
-test('ratio - complement deprecated', t => {
-  const { brand } = makeIssuerKit('moe');
-  const moe = value => AmountMath.make(brand, value);
-
-  const oneThird = makeRatioFromAmounts(moe(1n), moe(3n));
-  const twoThirds = oneMinus(oneThird);
-
-  t.deepEqual(twoThirds, makeRatio(2n, brand, 3n));
-  amountsEqual(t, multiplyBy(moe(100000n), oneThird), moe(33333n), brand);
-  amountsEqual(t, multiplyBy(moe(100000n), twoThirds), moe(66666n), brand);
 });
