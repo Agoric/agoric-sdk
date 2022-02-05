@@ -17,7 +17,7 @@ import { observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeVaultKit } from './vault.js';
+import { makeVaultKit, VaultState } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -168,25 +168,43 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
+    /** @type {Promise<any>[]} */
+    const toLiquidate = [];
+
     // TODO maybe extract this into a method
     // TODO try pattern matching to achieve GTE
     // FIXME pass in a key instead of the actual vaultKit
-    prioritizedVaults.forEachRatioGTE(quoteRatioPlusMargin, vaultKit => {
-      trace('liquidating', vaultKit.vaultSeat.getProposal());
+    prioritizedVaults.forEachRatioGTE(
+      quoteRatioPlusMargin,
+      ([vaultId, vaultKit]) => {
+        trace('liquidating', vaultKit.vaultSeat.getProposal());
 
-      liquidate(
-        zcf,
-        vaultKit,
-        runMint.burnLosses,
-        liquidationStrategy,
-        collateralBrand,
-      );
-    });
+        // XXX firing off promise unhandled, nothing tracking if this errors
+        toLiquidate.push([
+          vaultId,
+          liquidate(
+            zcf,
+            vaultKit,
+            runMint.burnLosses,
+            liquidationStrategy,
+            collateralBrand,
+          ),
+        ]);
+      },
+    );
     outstandingQuote = undefined;
+    /** @type {Array<[VaultId, VaultKit]>} */
+    const liquidationResults = await Promise.all(toLiquidate);
+    for (const [vaultId, vaultKit] of liquidationResults) {
+      prioritizedVaults.removeVault(vaultId, vaultKit.vault);
+    }
+
+    // TODO wait until we've removed them all
     reschedulePriceCheck();
   };
   prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
 
+  // ??? what's the use case for liquidating all vaults?
   const liquidateAll = () => {
     assert(prioritizedVaults);
     const promises = prioritizedVaults.map(({ vaultKit }) =>

@@ -15,7 +15,14 @@ const trace = makeTracer('LIQ');
  * Once collateral has been sold using the contract, we burn the amount
  * necessary to cover the debt and return the remainder.
  *
- * @type {VaultFactoryLiquidate}
+ * @param {ContractFacet} zcf
+ * @param {VaultKit} vaultKit
+ * @param {(losses: AmountKeywordRecord,
+ *             zcfSeat: ZCFSeat
+ *            ) => void} burnLosses
+ * @param {LiquidationStrategy} strategy
+ * @param {Brand} collateralBrand
+ * @returns {[VaultId, Vault]}
  */
 const liquidate = async (
   zcf,
@@ -66,6 +73,8 @@ const liquidate = async (
   vaultSeat.exit();
   liquidationSeat.exit();
   vaultKit.admin.liquidationPromiseKit.resolve('Liquidated');
+
+  return ['FIXME', vaultKit.vault];
 };
 
 /**

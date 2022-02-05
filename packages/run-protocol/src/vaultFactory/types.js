@@ -228,14 +228,3 @@
  */
 
 /** @typedef {import('./vault').VaultKit} VaultKit */
-
-/**
- * @callback VaultFactoryLiquidate
- * @param {ContractFacet} zcf
- * @param {VaultKit} vaultKit
- * @param {(losses: AmountKeywordRecord,
- *             zcfSeat: ZCFSeat
- *            ) => void} burnLosses
- * @param {LiquidationStrategy} strategy
- * @param {Brand} collateralBrand
- */
