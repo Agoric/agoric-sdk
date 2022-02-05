@@ -9,7 +9,7 @@ import { openJSONStore } from './json-store.js';
 export function generateAccessToken({
   stringBase = 'base64url' as BufferEncoding,
   byteLength = 48,
-} = {}) {
+} = {}): Promise<string> {
   return new Promise((resolve, reject) =>
     crypto.randomBytes(byteLength, (err, buffer) => {
       if (err) {
@@ -26,7 +26,10 @@ export function generateAccessToken({
   );
 }
 
-export async function getAccessToken(port) {
+// TS: without this annotation someone could easily pass a 'number' for port and get nothing back
+export async function getAccessToken(
+  port: string,
+): Promise<string | undefined> {
   if (typeof port === 'string') {
     const match = port.match(/^(.*:)?(\d+)$/);
     if (match) {

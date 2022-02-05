@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as process from 'process';
 import * as Readlines from 'n-readlines';
+import { assert } from 'console';
 
 // TODO: Update this when we make a breaking change.
 // const DATA_FILE = 'data.jsonlines';
@@ -10,11 +11,7 @@ import * as Readlines from 'n-readlines';
 // changed when you're just trying to use the wallet from the browser.
 const DATA_FILE = 'swingset-kernel-state.jsonlines';
 
-/**
- * @typedef {ReturnType<typeof makeStorageInMemory>['storage']} JSONStore
- */
-
-function safeUnlink(filePath) {
+function safeUnlink(filePath: string) {
   try {
     fs.unlinkSync(filePath);
   } catch (e) {
@@ -148,6 +145,8 @@ function makeStorageInMemory() {
   return { storage, state };
 }
 
+type JSONStore = ReturnType<typeof makeStorageInMemory>['storage'];
+
 /**
  * Do the work of `initJSONStore` and `openJSONStore`.
  *
@@ -164,7 +163,7 @@ function makeStorageInMemory() {
 function makeJSONStore(dirPath, forceReset = false) {
   const { storage, state } = makeStorageInMemory();
 
-  let storeFile;
+  let storeFile: string | undefined;
   if (dirPath) {
     fs.mkdirSync(dirPath, { recursive: true });
     storeFile = path.resolve(dirPath, DATA_FILE);
@@ -207,7 +206,7 @@ function makeJSONStore(dirPath, forceReset = false) {
         fs.writeSync(fd, '\n');
       }
       fs.closeSync(fd);
-      fs.renameSync(tempFile, storeFile);
+      fs.renameSync(tempFile, storeFile!);
     }
   }
 
@@ -227,7 +226,7 @@ function makeJSONStore(dirPath, forceReset = false) {
  * serialized to a text file.  If there is an existing store at the given
  * `dirPath`, it will be reinitialized to an empty state.
  *
- * @param {string=} dirPath  Path to a directory in which database files may be kept.
+ * @param {string} [dirPath]  Path to a directory in which database files may be kept.
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   JSON store instance.  If this is nullish, the JSON store created will
@@ -240,7 +239,7 @@ function makeJSONStore(dirPath, forceReset = false) {
  *            // changes
  * }
  */
-export function initJSONStore(dirPath) {
+export function initJSONStore(dirPath?: string) {
   if (dirPath !== null && dirPath !== undefined && `${dirPath}` !== dirPath) {
     throw new Error('dirPath must be a string or nullish');
   }
@@ -264,7 +263,7 @@ export function initJSONStore(dirPath) {
  *            // changes
  * }
  */
-export function openJSONStore(dirPath) {
+export function openJSONStore(dirPath: string) {
   if (`${dirPath}` !== dirPath) {
     throw new Error('dirPath must be a string');
   }
@@ -284,7 +283,7 @@ export function openJSONStore(dirPath) {
  * @returns {Record<string, string>} an array representing all the current state in `storage`, one
  *    element of the form [key, value] per key/value pair.
  */
-export function getAllState(storage) {
+export function getAllState(storage: JSONStore) {
   /** @type { Record<string, string> } */
   const stuff = {};
   for (const key of Array.from(storage.getKeys('', ''))) {
@@ -304,7 +303,10 @@ export function getAllState(storage) {
  * @param {JSONStore} storage  The storage whose state is to be set.
  * @param {Array<[string, string]>} stuff  An array of key/value pairs, each element of the form [key, value]
  */
-export function setAllState(storage, stuff) {
+export function setAllState(
+  storage: JSONStore,
+  stuff: Array<[string, string]>,
+) {
   for (const k of Object.getOwnPropertyNames(stuff)) {
     storage.set(k, stuff[k]);
   }
@@ -321,7 +323,7 @@ export function setAllState(storage, stuff) {
  *   or openJSONStore, returns true. Else returns false.
  *
  */
-export function isJSONStore(dirPath) {
+export function isJSONStore(dirPath: string) {
   if (`${dirPath}` !== dirPath) {
     throw new Error('dirPath must be a string');
   }
