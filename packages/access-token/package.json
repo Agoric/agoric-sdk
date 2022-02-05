@@ -37,7 +37,9 @@
       "@agoric"
     ],
     "rules": {
-      "no-undef": "off"
+      "no-undef": "off",
+      "jsdoc/require-param-type": "off",
+      "jsdoc/require-returns-type": "off"
     }
   }
 }
