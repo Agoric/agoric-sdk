@@ -1,13 +1,13 @@
-import fs from 'fs';
-import crypto from 'crypto';
-import os from 'os';
-import path from 'path';
+import * as fs from 'fs';
+import * as crypto from 'crypto';
+import * as os from 'os';
+import * as path from 'path';
 
 import { openJSONStore } from './json-store.js';
 
 // Adapted from https://stackoverflow.com/a/43866992/14073862
 export function generateAccessToken({
-  stringBase = 'base64url',
+  stringBase = 'base64url' as BufferEncoding,
   byteLength = 48,
 } = {}) {
   return new Promise((resolve, reject) =>

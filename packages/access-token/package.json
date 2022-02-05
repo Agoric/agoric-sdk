@@ -35,6 +35,9 @@
   "eslintConfig": {
     "extends": [
       "@agoric"
-    ]
+    ],
+    "rules": {
+      "no-undef": "off"
+    }
   }
 }

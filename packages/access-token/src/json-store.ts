@@ -1,8 +1,7 @@
-// @ts-check
-import fs from 'fs';
-import path from 'path';
-import process from 'process';
-import Readlines from 'n-readlines';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as process from 'process';
+import * as Readlines from 'n-readlines';
 
 // TODO: Update this when we make a breaking change.
 // const DATA_FILE = 'data.jsonlines';
