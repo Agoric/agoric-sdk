@@ -3,13 +3,12 @@
 /// <reference types="ses"/>
 
 import { passStyleOf, getTag } from '@endo/marshal';
-import { compareRank } from '../patterns/rankOrder.js';
+import { compareRank, recordParts } from '../patterns/rankOrder.js';
 import { assertKey } from './checkKey.js';
 import { bagCompare } from './merge-bag-operators.js';
 import { setCompare } from './merge-set-operators.js';
 
 const { details: X, quote: q } = assert;
-const { ownKeys } = Reflect;
 
 /** @type {KeyCompare} */
 export const compareKeys = (left, right) => {
@@ -71,8 +70,9 @@ export const compareKeys = (left, right) => {
     }
     case 'copyRecord': {
       // Pareto partial order comparison.
-      const leftNames = harden(ownKeys(left).sort());
-      const rightNames = harden(ownKeys(right).sort());
+      const [leftNames, leftValues] = recordParts(left);
+      const [rightNames, rightValues] = recordParts(right);
+
       // eslint-disable-next-line no-use-before-define
       if (!keyEQ(leftNames, rightNames)) {
         // If they do not have exactly the same properties,
@@ -85,8 +85,8 @@ export const compareKeys = (left, right) => {
       // Presume that both copyRecords have the same key order
       // until encountering a property disproving that hypothesis.
       let result = 0;
-      for (const name of leftNames) {
-        const comp = compareKeys(left[name], right[name]);
+      for (let i = 0; i < leftValues.length; i += 1) {
+        const comp = compareKeys(leftValues[i], rightValues[i]);
         if (Number.isNaN(comp)) {
           return NaN;
         }

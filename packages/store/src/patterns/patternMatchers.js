@@ -9,10 +9,10 @@ import {
   hasOwnPropertyOf,
 } from '@endo/marshal';
 import {
-  compareAntiRank,
   compareRank,
   getPassStyleCover,
   intersectRankCovers,
+  recordParts,
   unionRankCovers,
 } from './rankOrder.js';
 import { keyEQ, keyGT, keyGTE, keyLT, keyLTE } from '../keys/compareKeys.js';
@@ -30,8 +30,6 @@ import {
 
 /// <reference types="ses"/>
 
-// const { entries, fromEntries } = Object; // XXX TEMP
-const { ownKeys } = Reflect;
 const { quote: q, details: X } = assert;
 
 /** @type WeakSet<Pattern> */
@@ -293,16 +291,14 @@ const makePatternKit = () => {
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
           );
         }
-        const specNames = harden(ownKeys(specimen).sort(compareAntiRank));
-        const pattNames = harden(ownKeys(patt).sort(compareAntiRank));
+        const [specNames, specValues] = recordParts(specimen);
+        const [pattNames, pattValues] = recordParts(patt);
         if (!keyEQ(specNames, pattNames)) {
           return check(
             false,
             X`Record ${specimen} - Must have same property names as record pattern: ${patt}`,
           );
         }
-        const specValues = harden(specNames.map(name => specimen[name]));
-        const pattValues = harden(pattNames.map(name => patt[name]));
         return checkMatches(specValues, pattValues, check);
       }
       case 'tagged': {

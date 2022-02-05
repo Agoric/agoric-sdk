@@ -120,23 +120,6 @@ const sortedSample = harden([
   // Lexicographic arrays. Shorter beats longer.
   // Lexicographic records by reverse sorted property name, then by values
   // in that order.
-
-  // XXX The arrays in the sample data sort as follows, but this is not the sort
-  // order that appeared in the original version of this test as it existed
-  // prior to merging with Mark's (@erights) earlier POC implementation of
-  // stores.  A key difference between that version and this one is the switch
-  // from using values themselves as covers directly to using the key-string
-  // encoding of those values.  However, that formulation currently only works
-  // for scalar keys and the code that deals with non-scalars was not touched by
-  // these changes, so the rank sort order of non-scalar values ought not to be
-  // different -- but it is.  In f2f discussion we concluded that it's possible
-  // other work he did in the meantime caused this change and the divergence in
-  // behavior simply went undetected because this test had been disabled at time
-  // on account of it not yet having been updated for the new rank order
-  // encoding (which it now has been).  This comment is here as a flag and
-  // reminder for Mark, so that when he gets to it he can investigage how
-  // non-scalars are now being rank sorted and possibly debug or possibly
-  // pronounce the current order correct.
   [],
   [5],
   [5, { bar: 5 }],
