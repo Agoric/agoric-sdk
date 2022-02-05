@@ -128,18 +128,31 @@ const bigintToDBEntryKey = n => {
     return `n${lenTag}:${zeroPad(numstr, raw.length)}`;
   } else {
     const numstr = n.toString();
-    return `p${zeroPad(numstr.length, BIGINT_TAG_LEN)}:${numstr}`;
+    const lenstr = numstr.length.toString();
+    const lenlenstr = lenstr.length.toString();
+    assert(
+      lenlenstr.length === 1,
+      X`internal: expected single digit: ${lenlenstr}`,
+    );
+    return `p${lenlenstr}:${lenstr}:${numstr}`;
   }
 };
 
 const dbEntryKeyToBigint = k => {
-  const numstr = k.substring(BIGINT_TAG_LEN + 2);
-  const n = BigInt(numstr);
-  if (k[0] === 'n') {
+  if (k.startsWith('n')) {
+    const numstr = k.substring(BIGINT_TAG_LEN + 2);
+    const n = BigInt(numstr);
     const modulus = 10n ** BigInt(numstr.length);
     return -(modulus - n);
   } else {
-    return n;
+    assert(k.startsWith('p'));
+    const lenlen = Number(BigInt(k[1]));
+    assert(k[2] === ':');
+    assert(k[3 + lenlen] === ':');
+    const len = Number(BigInt(k.substring(3, 3 + lenlen)));
+    const numstr = k.substring(4 + lenlen);
+    assert(numstr.length === len);
+    return BigInt(numstr);
   }
 };
 
