@@ -25,7 +25,7 @@ const carol = Far('carol', {});
 /**
  * An unordered copyArray of some passables
  */
-const sample = harden([
+export const sample = harden([
   makeTagged('copySet', [
     ['b', 3],
     ['a', 4],
@@ -47,6 +47,7 @@ const sample = harden([
   NaN,
   true,
   undefined,
+  -Infinity,
   [5],
   alice,
   [],
@@ -73,6 +74,7 @@ const sample = harden([
     ['a', 4],
     ['b', 3],
   ]),
+  Infinity,
   Symbol.isConcatSpreadable,
   [5, { foo: 4, bar: undefined }],
   Promise.resolve('fulfillment'),
@@ -150,10 +152,12 @@ const sortedSample = harden([
   true,
 
   // -0 is equivalent enough to 0. NaN after all numbers.
+  -Infinity,
   -3,
   -0,
   0,
   2,
+  Infinity,
   NaN,
 
   3n,

@@ -1,4 +1,3 @@
-/* global BigUint64Array */
 // @ts-check
 import { assert, details as X, q } from '@agoric/assert';
 import {
@@ -8,130 +7,13 @@ import {
   matches,
   compareRank,
   M,
+  BIGINT_TAG_LEN,
+  zeroPad,
+  makeEncodeKey,
+  makeDecodeKey,
 } from '@agoric/store';
-import {
-  Far,
-  passStyleOf,
-  nameForPassableSymbol,
-  passableSymbolForName,
-} from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../parseVatSlots.js';
-
-function zeroPad(n, size) {
-  const nStr = `${n}`;
-  assert(nStr.length <= size);
-  const str = `00000000000000000000${nStr}`;
-  const result = str.substring(str.length - size);
-  assert(result.length === size);
-  return result;
-}
-
-// This is the JavaScript analog to a C union: a way to map between a float as a
-// number and the bits that represent the float as a buffer full of bytes.  Note
-// that the mutation of static state here makes this invalid Jessie code, but
-// doing it this way saves the nugatory and gratuitous allocations that would
-// happen every time you do a conversion -- and in practical terms it's safe
-// because we put the value in one side and then immediately take it out the
-// other; there is no actual state retained in the classic sense and thus no
-// re-entrancy issue.
-const asNumber = new Float64Array(1);
-const asBits = new BigUint64Array(asNumber.buffer);
-
-// JavaScript numbers are encode as keys by outputting the base-16
-// representation of the binary value of the underlying IEEE floating point
-// representation.  For negative values, all bits of this representation are
-// complemented prior to the base-16 conversion, while for positive values, the
-// sign bit is complemented.  This ensures both that negative values sort before
-// positive values and that negative values sort according to their negative
-// magnitude rather than their positive magnitude.  This results in an ASCII
-// encoding whose lexicographic sort order is the same as the numeric sort order
-// of the corresponding numbers.
-
-function numberToDBEntryKey(n) {
-  asNumber[0] = n;
-  let bits = asBits[0];
-  if (n < 0) {
-    // XXX Why is the no-bitwise lint rule even a thing??
-    // eslint-disable-next-line no-bitwise
-    bits ^= 0xffffffffffffffffn;
-  } else {
-    // eslint-disable-next-line no-bitwise
-    bits ^= 0x8000000000000000n;
-  }
-  return `f${zeroPad(bits.toString(16), 16)}`;
-}
-
-function dbEntryKeyToNumber(k) {
-  let bits = BigInt(`0x${k.substring(1)}`);
-  if (k[1] < '8') {
-    // eslint-disable-next-line no-bitwise
-    bits ^= 0xffffffffffffffffn;
-  } else {
-    // eslint-disable-next-line no-bitwise
-    bits ^= 0x8000000000000000n;
-  }
-  asBits[0] = bits;
-  return asNumber[0];
-}
-
-// BigInts are encoded as keys as follows:
-//   `${prefix}${length}:${encodedNumber}`
-// Where:
-//
-//   ${prefix} is either 'n' or 'p' according to whether the BigInt is negative
-//      or positive ('n' is less than 'p', so negative BigInts will sort below
-//      positive ones)
-//
-//   ${encodedNumber} is the value of the BigInt itself, encoded as a decimal
-//      number.  Positive BigInts use their normal decimal representation (i.e.,
-//      what is returned when you call `toString()` on a BigInt).  Negative
-//      BigInts are encoded as the unpadded 10s complement of their value; in
-//      this encoding, all negative values that have same number of digits will
-//      sort lexically in the inverse order of their numeric value (which is to
-//      say, most negative to least negative).
-//
-//   ${length} is the decimal representation of the width (i.e., the count of
-//      digits) of the BigInt.  This length value is then zero padded to a fixed
-//      number (currently 10) of digits.  Note that the fixed width length field
-//      means that we cannot encode BigInts whose values have more than 10**10
-//      digits, but we are willing to live with this limitation since we could
-//      never store such large numbers anyway.  The length field is used in lieu
-//      of zero padding the BigInts themselves for sorting, which would be
-//      impractical for the same reason that storing large values directly would
-//      be.  The length is zero padded so that numbers are sorted within groups
-//      according to their decimal orders of magnitude in size and then these
-//      groups are sorted smallest to largest.
-//
-// This encoding allows all BigInts to be represented as ASCII strings that sort
-// lexicographically in the same order as the values of the BigInts themselves
-// would sort numerically.
-
-const BIGINT_TAG_LEN = 10;
-const BIGINT_LEN_MODULUS = 10 ** BIGINT_TAG_LEN;
-
-function bigintToDBEntryKey(n) {
-  if (n < 0n) {
-    const raw = (-n).toString();
-    const modulus = 10n ** BigInt(raw.length);
-    const numstr = (modulus + n).toString(); // + because n is negative
-    const lenTag = zeroPad(BIGINT_LEN_MODULUS - raw.length, BIGINT_TAG_LEN);
-    return `n${lenTag}:${zeroPad(numstr, raw.length)}`;
-  } else {
-    const numstr = n.toString();
-    return `p${zeroPad(numstr.length, BIGINT_TAG_LEN)}:${numstr}`;
-  }
-}
-
-function dbEntryKeyToBigint(k) {
-  const numstr = k.substring(BIGINT_TAG_LEN + 2);
-  const n = BigInt(numstr);
-  if (k[0] === 'n') {
-    const modulus = 10n ** BigInt(numstr.length);
-    return -(modulus - n);
-  } else {
-    return n;
-  }
-}
 
 function pattEq(p1, p2) {
   return compareRank(p1, p2) === 0;
@@ -244,7 +126,7 @@ export function makeCollectionManager(
   }
 
   function summonCollectionInternal(
-    initial,
+    _initial,
     label,
     collectionID,
     kindName,
@@ -259,34 +141,20 @@ export function makeCollectionManager(
       return `${dbKeyPrefix}${dbEntryKey}`;
     }
 
-    function encodeKey(key) {
-      const passStyle = passStyleOf(key);
-      switch (passStyle) {
-        case 'null':
-          return 'v';
-        case 'undefined':
-          return 'z';
-        case 'number':
-          return numberToDBEntryKey(key);
-        case 'string':
-          return `s${key}`;
-        case 'boolean':
-          return `b${key}`;
-        case 'bigint':
-          return bigintToDBEntryKey(key);
-        case 'remotable': {
-          // eslint-disable-next-line no-use-before-define
-          const ordinal = getOrdinal(key);
-          assert(ordinal !== undefined, X`no ordinal for ${key}`);
-          const ordinalTag = zeroPad(ordinal, BIGINT_TAG_LEN);
-          return `r${ordinalTag}:${convertValToSlot(key)}`;
-        }
-        case 'symbol':
-          return `y${nameForPassableSymbol(key)}`;
-        default:
-          assert.fail(X`a ${q(passStyle)} cannot be used as a collection key`);
-      }
-    }
+    const encodeRemotable = remotable => {
+      // eslint-disable-next-line no-use-before-define
+      const ordinal = getOrdinal(remotable);
+      assert(ordinal !== undefined, X`no ordinal for ${remotable}`);
+      const ordinalTag = zeroPad(ordinal, BIGINT_TAG_LEN);
+      return `r${ordinalTag}:${convertValToSlot(remotable)}`;
+    };
+
+    const encodeKey = makeEncodeKey(encodeRemotable);
+
+    const decodeRemotable = encodedKey =>
+      convertSlotToVal(encodedKey.substring(BIGINT_TAG_LEN + 2));
+
+    const decodeKey = makeDecodeKey(decodeRemotable);
 
     function generateOrdinal(remotable) {
       const nextOrdinal = Number.parseInt(
@@ -314,27 +182,7 @@ export function makeCollectionManager(
 
     function dbKeyToKey(dbKey) {
       const dbEntryKey = dbKey.substring(dbKeyPrefix.length);
-      switch (dbEntryKey[0]) {
-        case 'v':
-          return null;
-        case 'z':
-          return undefined;
-        case 'f':
-          return dbEntryKeyToNumber(dbEntryKey);
-        case 's':
-          return dbEntryKey.substring(1);
-        case 'b':
-          return dbEntryKey.substring(1) !== 'false';
-        case 'n':
-        case 'p':
-          return dbEntryKeyToBigint(dbEntryKey);
-        case 'r':
-          return convertSlotToVal(dbEntryKey.substring(BIGINT_TAG_LEN + 2));
-        case 'y':
-          return passableSymbolForName(dbEntryKey.substring(1));
-        default:
-          assert.fail(X`invalid database key: ${dbEntryKey}`);
-      }
+      return decodeKey(dbEntryKey);
     }
 
     function has(key) {
