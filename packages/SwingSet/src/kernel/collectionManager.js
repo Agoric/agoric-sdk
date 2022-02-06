@@ -7,7 +7,6 @@ import {
   matches,
   compareRank,
   M,
-  BIGINT_TAG_LEN,
   zeroPad,
   makeEncodeKey,
   makeDecodeKey,
@@ -124,6 +123,10 @@ export function makeCollectionManager(
     }
     return storeKindInfo[kindName].kindID;
   }
+
+  // Not that it's only used for this purpose, what should it be called?
+  // Should we be using the new bigint encoding scheme instead, anyway?
+  const BIGINT_TAG_LEN = 10;
 
   function summonCollectionInternal(
     _initial,

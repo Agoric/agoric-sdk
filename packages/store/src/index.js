@@ -56,12 +56,7 @@ export {
   fit,
 } from './patterns/patternMatchers.js';
 export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
-export {
-  makeDecodeKey,
-  makeEncodeKey,
-  zeroPad,
-  BIGINT_TAG_LEN,
-} from './patterns/encodeKey.js';
+export { makeDecodeKey, makeEncodeKey, zeroPad } from './patterns/encodeKey.js';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';

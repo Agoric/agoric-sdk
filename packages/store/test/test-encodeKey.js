@@ -54,9 +54,9 @@ const getNaN = (hexEncoding = '0008000000000000') => {
 const NegativeNaN = getNaN('ffffffffffffffff');
 
 const goldenPairs = harden([
-  [37n, 'p0:2:37'],
-  [934857932847598725662n, 'p1:21:934857932847598725662'],
-  [-1n, 'n9999999999:9'],
+  [37n, 'p137'],
+  [934857932847598725662n, 'p911934857932847598725662'],
+  [-1n, 'n98'],
   [1, 'fbff0000000000000'],
   [-1, 'f400fffffffffffff'],
   [NaN, 'ffff8000000000000'],
@@ -115,3 +115,5 @@ test('order invariants', t => {
     }
   }
 });
+
+// TODO Add tests from https://jsfiddle.net/o6vw2nfd/

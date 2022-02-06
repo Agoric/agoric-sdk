@@ -84,103 +84,110 @@ const dbEntryKeyToNumber = k => {
   return result;
 };
 
-// Positive BigInts are encoded as keys as follows:
-//   `p${lenlenm1}:${length}:${encodedNumber}`
-// Where:
-//
-//   Where the 'p' indicates "positive". Below we explain the current encoding
-//      of negative bigints, which begin with 'n'. 'n' is less than 'p',
-//      so negative BigInts will sort below positive ones.
-//
-//   ${encodedNumber} is the value of the BigInt itself, encoded as a decimal
-//      number.  Positive BigInts use their normal decimal representation (i.e.,
-//      what is returned when you call `toString()` on a BigInt).
-//
-//   ${length} is the decimal representation of the width (i.e., the count of
-//      digits) of the BigInt.
-//
-//   ${lenlenm1} is the length of the length minus 1, which must
-//      only be a single digit. (We subtract 1 because the length of the
-//      length will never be zero.)
-//      This limits us to bigints smaller that 10 ** 10 ** 11, which is
-//      beyond what we expect any engine to support anyway. (At some point,
-//      we may well impose an implemention limit much smaller than this.)
-//
-// Negative BigInts are currently encoded as keys as follows:
-//   `n${length}:${encodedNumber}`
-// Where:
-//
-//   Where the 'n' indicates "negative". See above for the encoding of
-//      positive bigints, which begin with a 'p'.
-//
-//   ${encodedNumber} is the value of the BigInt itself, encoded as a decimal
-//      number. Negative
-//      BigInts are encoded as the unpadded 10s complement of their value; in
-//      this encoding, all negative values that have same number of digits will
-//      sort lexically in the inverse order of their numeric value (which is to
-//      say, most negative to least negative).
-//
-//   ${length} is the decimal representation of the width (i.e., the count of
-//      digits) of the BigInt.  This length value is then zero padded to a fixed
-//      number (currently 10) of digits.  Note that the fixed width length field
-//      means that we cannot encode BigInts whose values have more than 10**10
-//      digits, but we are willing to live with this limitation since we could
-//      never store such large numbers anyway.  The length field is used in lieu
-//      of zero padding the BigInts themselves for sorting, which would be
-//      impractical for the same reason that storing large values directly would
-//      be.  The length is zero padded so that numbers are sorted within groups
-//      according to their decimal orders of magnitude in size and then these
-//      groups are sorted smallest to largest.
-//
-// This encoding allows all BigInts to be represented as ASCII strings that sort
-// lexicographically in the same order as the values of the BigInts themselves
-// would sort numerically.
-//
-// The positive encoding also has the virtue that small bigints have small
-// encodings.
-// We do not yet have a similarly economical sort-preserving encodng of negavive
-// bigints.
-// (See also https://en.wikipedia.org/wiki/Elias_delta_coding which seems to
-// be related.)
-
-export const BIGINT_TAG_LEN = 10;
-const BIGINT_LEN_MODULUS = 10 ** BIGINT_TAG_LEN;
-
+/**
+ * See https://github.com/Agoric/agoric-sdk/pull/4469#issuecomment-1030770373
+ * TODO Move that text into an .md file
+ *
+ * @param {bigint} n
+ * @returns {string}
+ */
 const bigintToDBEntryKey = n => {
+  const nn = n < 0n ? -n : n;
+  const nDigits = nn.toString().length;
+  const lDigits = nDigits.toString().length;
   if (n < 0n) {
-    const raw = (-n).toString();
-    const modulus = 10n ** BigInt(raw.length);
-    const numstr = (modulus + n).toString(); // + because n is negative
-    const lenTag = zeroPad(BIGINT_LEN_MODULUS - raw.length, BIGINT_TAG_LEN);
-    return `n${lenTag}:${zeroPad(numstr, raw.length)}`;
+    return `n${
+      // A zero for each digit beyond the first
+      // in the decimal *count* of decimal digits.
+      '0'.repeat(lDigits - 1)
+    }${
+      // The count of digits, offset to be a
+      // number of lDigits digits
+      // that never starts with zero.
+      // * lDigits=1: nDigits 1-9 => 9-1
+      // * lDigits=2: nDigits 10-99 => 99-10
+      // * lDigits=3: nDigits 100-999 => 999-100
+      // * lDigits=4: nDigits 1000-9999 => 9999-1000
+      // * ...
+      10 ** lDigits + 10 ** (lDigits - 1) - 1 - nDigits
+    }${
+      // The digits in a complementary representation
+      // for reverse sorting.
+      (10n ** BigInt(nDigits) - 1n + n).toString().padStart(nDigits, '0')
+      /* or e.g. 10n**nDigits + 10n**(nDigits-1n) - 1n + n */
+    }`;
+  } else if (n === 0n) {
+    return `o`;
   } else {
-    const numstr = n.toString();
-    const lenstr = numstr.length.toString();
-    const lenlenm1str = (lenstr.length - 1).toString();
-    assert(
-      lenlenm1str.length === 1,
-      X`internal: expected single digit: ${lenlenm1str}`,
-    );
-    return `p${lenlenm1str}:${lenstr}:${numstr}`;
+    return `p${
+      // A nine for each digit beyond the first
+      // in the decimal *count* of decimal digits.
+      '9'.repeat(lDigits - 1)
+    }${
+      // The count of digits,
+      // offset to never start with a nine
+      // and padded to lDigits digits.
+      // * lDigits=1: nDigits 1-9 => 0-8
+      // * lDigits=2: nDigits 10-99 => 00-89
+      // * lDigits=3: nDigits 100-999 => 000-899
+      // * lDigits=4: nDigits 1000-9999 => 0000-8999
+      // * ...
+      (nDigits - 10 ** (lDigits - 1)).toString().padStart(lDigits, '0')
+    }${
+      // The digits.
+      n
+    }`;
   }
 };
 
+// TODO Replace with the NonNullish that is coming. What PR?
+const NonNullish = x => {
+  assert(x !== null && x !== undefined, X`Must not be nullish: ${x}`);
+  return x;
+};
+
+/**
+ * See https://github.com/Agoric/agoric-sdk/pull/4469#issuecomment-1030770373
+ * TODO Move that text into an .md file
+ *
+ * @param {string} k
+ * @returns {bigint}
+ */
 const dbEntryKeyToBigint = k => {
-  if (k.startsWith('n')) {
-    const numstr = k.substring(BIGINT_TAG_LEN + 2);
-    const n = BigInt(numstr);
-    const modulus = 10n ** BigInt(numstr.length);
-    return -(modulus - n);
-  } else {
-    assert(k.startsWith('p'));
-    const lenlenm1 = Number(BigInt(k[1]));
-    assert(k[2] === ':');
-    const sepIndex = 4 + lenlenm1;
-    assert(k[sepIndex] === ':');
-    const len = Number(BigInt(k.substring(3, sepIndex)));
-    const numstr = k.substring(sepIndex + 1);
-    assert(numstr.length === len);
-    return BigInt(numstr);
+  const ch = k[0];
+  let rem = k.slice(1);
+  switch (ch) {
+    case 'o': {
+      if (rem.length > 0) throw new Error(`"o" must stand alone: ${k}`);
+      return 0n;
+    }
+    case 'n': {
+      const lDigits = NonNullish(rem.match(/^0*/))[0].length + 1;
+      rem = rem.slice(lDigits - 1);
+      if (rem.length < lDigits) throw new Error(`incomplete digit count: ${k}`);
+      const snDigits = rem.slice(0, lDigits);
+      rem = rem.slice(lDigits);
+      if (!/^[0-9]*$/.test(snDigits)) throw new Error(`invalid nDigits: ${k}`);
+      const cnDigits = parseInt(snDigits, 10);
+      const nDigits = 10 ** lDigits + 10 ** (lDigits - 1) - 1 - cnDigits;
+      if (rem.length !== nDigits) throw new Error(`digit count mismatch: ${k}`);
+      const cn = BigInt(rem);
+      const n = cn - 10n ** BigInt(nDigits) + 1n;
+      return n;
+    }
+    case 'p': {
+      const lDigits = NonNullish(rem.match(/^9*/))[0].length + 1;
+      rem = rem.slice(lDigits - 1);
+      if (rem.length < lDigits) throw new Error(`incomplete digit count: ${k}`);
+      const snDigits = rem.slice(0, lDigits);
+      rem = rem.slice(lDigits);
+      if (!/^[0-9]*$/.test(snDigits)) throw new Error(`invalid nDigits: ${k}`);
+      const nDigits = parseInt(snDigits, 10) + 10 ** (lDigits - 1);
+      if (rem.length !== nDigits) throw new Error(`digit count mismatch: ${k}`);
+      return BigInt(rem);
+    }
+    default:
+      throw new Error(`invalid first character: ${k}`);
   }
 };
 
