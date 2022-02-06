@@ -84,17 +84,35 @@ const dbEntryKeyToNumber = k => {
   return result;
 };
 
-// BigInts are encoded as keys as follows:
-//   `${prefix}${length}:${encodedNumber}`
+// Positive BigInts are encoded as keys as follows:
+//   `p${lenlen}:${length}:${encodedNumber}`
 // Where:
 //
-//   ${prefix} is either 'n' or 'p' according to whether the BigInt is negative
-//      or positive ('n' is less than 'p', so negative BigInts will sort below
-//      positive ones)
+//   Where the 'p' indicates "positive". Below we explain the current encoding
+//      of negative bigints, which begin with 'n'. 'n' is less than 'p',
+//      so negative BigInts will sort below positive ones.
 //
 //   ${encodedNumber} is the value of the BigInt itself, encoded as a decimal
 //      number.  Positive BigInts use their normal decimal representation (i.e.,
-//      what is returned when you call `toString()` on a BigInt).  Negative
+//      what is returned when you call `toString()` on a BigInt).
+//
+//   ${length} is the decimal representation of the width (i.e., the count of
+//      digits) of the BigInt.
+//
+//   ${lenlen} is the length of the length, which may only be a single digit.
+//      This limits is to bigints smaller that 10 ** 10 ** 10, which is
+//      beyond what we expect any engine to support anyway. (At some point,
+//      we may well impose an implemention limit much smaller than this.)
+//
+// Negative BigInts are currently encoded as keys as follows:
+//   `n${length}:${encodedNumber}`
+// Where:
+//
+//   Where the 'n' indicates "negative". See above for the encoding of
+//      positive bigints, which begin with a 'p'.
+//
+//   ${encodedNumber} is the value of the BigInt itself, encoded as a decimal
+//      number. Negative
 //      BigInts are encoded as the unpadded 10s complement of their value; in
 //      this encoding, all negative values that have same number of digits will
 //      sort lexically in the inverse order of their numeric value (which is to
@@ -115,6 +133,13 @@ const dbEntryKeyToNumber = k => {
 // This encoding allows all BigInts to be represented as ASCII strings that sort
 // lexicographically in the same order as the values of the BigInts themselves
 // would sort numerically.
+//
+// The positive encoding also has the virtue that small bigints have small
+// encodings.
+// We do not yet have a similarly economical sort-preserving encodng of negavive
+// bigints.
+// (See also https://en.wikipedia.org/wiki/Elias_delta_coding which seems to
+// be related.)
 
 export const BIGINT_TAG_LEN = 10;
 const BIGINT_LEN_MODULUS = 10 ** BIGINT_TAG_LEN;
