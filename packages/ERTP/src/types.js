@@ -155,6 +155,20 @@
  * (subtraction results in a negative), throw  an error. Because the
  * left amount must include the right amount, this is NOT equivalent
  * to set subtraction.
+ *
+ * @property {(
+ *   leftAmount: Amount,
+ *   rightAmount: Amount,
+ *   brand?: Brand
+ * ) => Amount} min
+ * Returns the Amount that has the least value/count between leftAmount and rightAmount
+ *
+ * @property {(
+ *   leftAmount: Amount,
+ *   rightAmount: Amount,
+ *   brand?: Brand
+ * ) => Amount} max
+ * Returns the Amount that has the most value/count between leftAmount and rightAmount
  */
 
 /**

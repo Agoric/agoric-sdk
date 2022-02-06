@@ -238,6 +238,18 @@ const AmountMath = {
     const value = h.doSubtract(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
   },
+  min: (leftAmount, rightAmount, brand = undefined) => {
+    const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
+    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
+    const value = h.doMin(...coerceLR(h, leftAmount, rightAmount));
+    return harden({ brand: leftAmount.brand, value });
+  },
+  max: (leftAmount, rightAmount, brand = undefined) => {
+    const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
+    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
+    const value = h.doMax(...coerceLR(h, leftAmount, rightAmount));
+    return harden({ brand: leftAmount.brand, value });
+  },
 };
 harden(AmountMath);
 

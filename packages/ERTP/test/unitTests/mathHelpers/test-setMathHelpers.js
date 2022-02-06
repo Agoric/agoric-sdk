@@ -217,6 +217,29 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
     );
   }
 
+  // min max
+  t.assert(
+    m.isEqual(
+      m.max(
+        harden({ brand: mockBrand, value: [a, b, c] }),
+        harden({ brand: mockBrand, value: [a, b] }),
+      ),
+      harden({ brand: mockBrand, value: [a, b, c] }),
+    ),
+    `max superset`,
+  );
+
+  t.assert(
+    m.isEqual(
+      m.min(
+        harden({ brand: mockBrand, value: [a, b, c] }),
+        harden({ brand: mockBrand, value: [a, b] }),
+      ),
+      harden({ brand: mockBrand, value: [a, b] }),
+    ),
+    `min superset`,
+  );
+
   // isEqual
   t.throws(
     () =>

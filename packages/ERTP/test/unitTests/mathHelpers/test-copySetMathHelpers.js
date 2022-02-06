@@ -161,6 +161,29 @@ test('copySet with strings isGTE', t => {
   );
 });
 
+test('copySet with strings minmax', t => {
+  t.assert(
+    m.isEqual(
+      m.max(
+        harden({ brand: mockBrand, value: makeCopySet(['a']) }),
+        harden({ brand: mockBrand, value: makeCopySet(['a', 'b']) }),
+      ),
+      harden({ brand: mockBrand, value: makeCopySet(['a', 'b']) }),
+    ),
+    `max superset`,
+  );
+  t.assert(
+    m.isEqual(
+      m.min(
+        harden({ brand: mockBrand, value: makeCopySet(['a']) }),
+        harden({ brand: mockBrand, value: makeCopySet(['a', 'b']) }),
+      ),
+      harden({ brand: mockBrand, value: makeCopySet(['a']) }),
+    ),
+    `min superset`,
+  );
+});
+
 test('copySet with strings isEqual', t => {
   t.throws(
     () =>

@@ -29,4 +29,6 @@ export const copySetMathHelpers = harden({
   doIsEqual: keyEQ,
   doAdd: setDisjointUnion,
   doSubtract: setDisjointSubtract,
+  doMax: (setX, setY) => (setIsSuperset(setX, setY) ? setX : setY),
+  doMin: (setX, setY) => (setIsSuperset(setX, setY) ? setY : setX),
 });

@@ -214,6 +214,30 @@ test('set with strings add', t => {
   );
 });
 
+test('set with strings minmax', t => {
+  t.assert(
+    m.isEqual(
+      m.max(
+        harden({ brand: mockBrand, value: ['a', 'b', 'c'] }),
+        harden({ brand: mockBrand, value: ['a'] }),
+      ),
+      harden({ brand: mockBrand, value: ['a', 'b', 'c'] }),
+    ),
+    `set with 'a', 'b', 'c' should be max`,
+  );
+
+  t.assert(
+    m.isEqual(
+      m.min(
+        harden({ brand: mockBrand, value: ['a', 'b', 'c'] }),
+        harden({ brand: mockBrand, value: ['a'] }),
+      ),
+      harden({ brand: mockBrand, value: ['a'] }),
+    ),
+    `set with 'a' should be min`,
+  );
+});
+
 test('set with strings subtract', t => {
   t.throws(
     () =>

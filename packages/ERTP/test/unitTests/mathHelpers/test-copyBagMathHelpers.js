@@ -170,6 +170,29 @@ test('copyBag with strings add', t => {
   );
 });
 
+test('copyBag with strings min/max', t => {
+  t.true(
+    m.isEqual(
+      m.max(
+        harden({ brand: mockBrand, value: makeBag(['a', 'b']) }),
+        harden({ brand: mockBrand, value: makeBag(['b']) }),
+      ),
+      harden({ brand: mockBrand, value: makeBag(['a', 'b']) }),
+    ),
+    'max',
+  );
+  t.true(
+    m.isEqual(
+      m.min(
+        harden({ brand: mockBrand, value: makeBag(['a', 'b']) }),
+        harden({ brand: mockBrand, value: makeBag(['b']) }),
+      ),
+      harden({ brand: mockBrand, value: makeBag(['b']) }),
+    ),
+    'min',
+  );
+});
+
 test('copyBag with strings subtract', t => {
   t.throws(
     () =>

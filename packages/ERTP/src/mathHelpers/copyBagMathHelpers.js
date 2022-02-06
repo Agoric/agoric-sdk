@@ -29,4 +29,6 @@ export const copyBagMathHelpers = harden({
   doIsEqual: keyEQ,
   doAdd: bagUnion,
   doSubtract: bagDisjointSubtract,
+  doMax: (bagX, bagY) => (bagIsSuperbag(bagX, bagY) ? bagX : bagY),
+  doMin: (bagX, bagY) => (bagIsSuperbag(bagX, bagY) ? bagY : bagX),
 });
