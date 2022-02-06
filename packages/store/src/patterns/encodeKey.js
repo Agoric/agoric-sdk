@@ -102,7 +102,7 @@ const dbEntryKeyToNumber = k => {
 //   ${lenlenm1} is the length of the length minus 1, which must
 //      only be a single digit. (We subtract 1 because the length of the
 //      length will never be zero.)
-//      This limits us to bigints smaller that 10 ** 10 ** 10, which is
+//      This limits us to bigints smaller that 10 ** 10 ** 11, which is
 //      beyond what we expect any engine to support anyway. (At some point,
 //      we may well impose an implemention limit much smaller than this.)
 //
