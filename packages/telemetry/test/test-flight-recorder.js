@@ -24,18 +24,26 @@ test('flight-recorder sanity', t => {
   const buf0Str = new TextDecoder().decode(buf0);
   t.is(buf0Str, `\n{"type":"start"}`);
 
-  for (let i = 0; i < 500; i += 1) {
+  const last = 500;
+  for (let i = 0; i < last; i += 1) {
     slogSender({ type: 'iteration', iteration: i });
   }
 
+  let offset = 0;
   const len1 = new BigUint64Array(1);
-  const { done: done1 } = readCircBuf(new Uint8Array(len1.buffer));
-  t.false(done1, 'readCircBuf should not be done');
-  const buf1 = new Uint8Array(Number(len1[0]));
-  const { done: done1b } = readCircBuf(buf1, len1.byteLength);
-  t.false(done1b, 'readCircBuf should not be done');
-  const buf1Str = new TextDecoder().decode(buf1);
-  t.is(buf1Str, `\n{"type":"iteration","iteration":490}`);
+  for (let i = 490; i < last; i += 1) {
+    const { done: done1 } = readCircBuf(new Uint8Array(len1.buffer), offset);
+    offset += len1.byteLength;
+    t.false(done1, `readCircBuf ${i} should not be done`);
+    const buf1 = new Uint8Array(Number(len1[0]));
+    const { done: done1b } = readCircBuf(buf1, offset);
+    offset += buf1.byteLength;
+    t.false(done1b, `readCircBuf ${i} should not be done`);
+    const buf1Str = new TextDecoder().decode(buf1);
+    t.is(buf1Str, `\n{"type":"iteration","iteration":${i}}`);
+  }
 
+  const { done: done2 } = readCircBuf(new Uint8Array(len1.buffer), offset);
+  t.assert(done2, `readCircBuf ${last} should be done`);
   removeCallback();
 });
