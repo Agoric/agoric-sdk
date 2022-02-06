@@ -85,7 +85,7 @@ const dbEntryKeyToNumber = k => {
 };
 
 // Positive BigInts are encoded as keys as follows:
-//   `p${lenlen}:${length}:${encodedNumber}`
+//   `p${lenlenm1}:${length}:${encodedNumber}`
 // Where:
 //
 //   Where the 'p' indicates "positive". Below we explain the current encoding
@@ -99,8 +99,10 @@ const dbEntryKeyToNumber = k => {
 //   ${length} is the decimal representation of the width (i.e., the count of
 //      digits) of the BigInt.
 //
-//   ${lenlen} is the length of the length, which may only be a single digit.
-//      This limits is to bigints smaller that 10 ** 10 ** 10, which is
+//   ${lenlenm1} is the length of the length minus 1, which must
+//      only be a single digit. (We subtract 1 because the length of the
+//      length will never be zero.)
+//      This limits us to bigints smaller that 10 ** 10 ** 10, which is
 //      beyond what we expect any engine to support anyway. (At some point,
 //      we may well impose an implemention limit much smaller than this.)
 //
@@ -154,12 +156,12 @@ const bigintToDBEntryKey = n => {
   } else {
     const numstr = n.toString();
     const lenstr = numstr.length.toString();
-    const lenlenstr = lenstr.length.toString();
+    const lenlenm1str = (lenstr.length - 1).toString();
     assert(
-      lenlenstr.length === 1,
-      X`internal: expected single digit: ${lenlenstr}`,
+      lenlenm1str.length === 1,
+      X`internal: expected single digit: ${lenlenm1str}`,
     );
-    return `p${lenlenstr}:${lenstr}:${numstr}`;
+    return `p${lenlenm1str}:${lenstr}:${numstr}`;
   }
 };
 
@@ -171,11 +173,12 @@ const dbEntryKeyToBigint = k => {
     return -(modulus - n);
   } else {
     assert(k.startsWith('p'));
-    const lenlen = Number(BigInt(k[1]));
+    const lenlenm1 = Number(BigInt(k[1]));
     assert(k[2] === ':');
-    assert(k[3 + lenlen] === ':');
-    const len = Number(BigInt(k.substring(3, 3 + lenlen)));
-    const numstr = k.substring(4 + lenlen);
+    const sepIndex = 4 + lenlenm1;
+    assert(k[sepIndex] === ':');
+    const len = Number(BigInt(k.substring(3, sepIndex)));
+    const numstr = k.substring(sepIndex + 1);
     assert(numstr.length === len);
     return BigInt(numstr);
   }

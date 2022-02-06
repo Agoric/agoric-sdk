@@ -54,8 +54,8 @@ const getNaN = (hexEncoding = '0008000000000000') => {
 const NegativeNaN = getNaN('ffffffffffffffff');
 
 const goldenPairs = harden([
-  [37n, 'p1:2:37'],
-  [934857932847598725662n, 'p2:21:934857932847598725662'],
+  [37n, 'p0:2:37'],
+  [934857932847598725662n, 'p1:21:934857932847598725662'],
   [-1n, 'n9999999999:9'],
   [1, 'fbff0000000000000'],
   [-1, 'f400fffffffffffff'],
