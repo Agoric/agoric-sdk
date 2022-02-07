@@ -15,10 +15,3 @@ public
 *.json
 *.md
 
-# subrepos
-/packages/xsnap/moddable
-/packages/xsnap/xsnap-native
-
-# copied from upstream
-/packages/xsnap/lib/object-inspect.js
-
