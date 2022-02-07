@@ -130,6 +130,7 @@ export const makeVaultKit = (
    */
   const getDebtAmount = () => {
     assert(interestSnapshot);
+    // divide compounded interest by the the snapshot
     const interestSinceSnapshot = multiplyRatios(
       manager.getCompoundedInterest(),
       invertRatio(interestSnapshot),
