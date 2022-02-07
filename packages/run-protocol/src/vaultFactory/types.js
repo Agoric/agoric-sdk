@@ -204,10 +204,10 @@
 /**
  * @typedef {Object} VaultParamManager
  * @property {() => Record<Keyword, ParamShortDescription> & {
- *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },
- *  'InterestRate': ParamRecord<'ratio'> & { value: Ratio },
- *  'LiquidationMargin': ParamRecord<'ratio'> & { value: Ratio },
- *  'LoanFee': ParamRecord<'ratio'> & { value: Ratio },
+ *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
+ *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
  * }} getParams
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio

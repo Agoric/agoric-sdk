@@ -46,8 +46,8 @@ const trace = makeTracer(' VM ');
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {{
- *  'ChargingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
- *  'RecordingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
+ *  ChargingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
+ *  RecordingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
  * }} timingParams
  * @param {GetGovernedVaultParams} getLoanParams
  * @param {ReallocateReward} reallocateReward
