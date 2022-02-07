@@ -23,7 +23,7 @@ import { assert } from '@agoric/assert';
 
 export function buildRootDeviceNode({ endowments, serialize }) {
   const {
-    pushCreateVatIDEvent,
+    pushCreateVatEvent,
     getBundleIDByName,
     terminate: kernelTerminateVatFn,
     meterCreate,
@@ -55,7 +55,7 @@ export function buildRootDeviceNode({ endowments, serialize }) {
     // separately. Clean up the outgoing and incoming arguments.
     createByBundleID(bundleID, options = {}) {
       assert.typeof(bundleID, 'string');
-      const vatID = pushCreateVatIDEvent(bundleID, options);
+      const vatID = pushCreateVatEvent(bundleID, options);
       return vatID;
     },
     createByName(bundleName, options = {}) {
@@ -66,7 +66,7 @@ export function buildRootDeviceNode({ endowments, serialize }) {
       } catch (e) {
         throw Error(`unregistered bundle name '${bundleName}'`);
       }
-      const vatID = pushCreateVatIDEvent(bundleID, options);
+      const vatID = pushCreateVatEvent(bundleID, options);
       return vatID;
     },
     terminateWithFailure(vatID, reason) {

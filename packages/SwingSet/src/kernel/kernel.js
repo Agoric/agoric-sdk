@@ -1031,7 +1031,7 @@ export default function buildKernel(
 
     // the admin device is endowed directly by the kernel
     deviceEndowments.vatAdmin = {
-      pushCreateVatIDEvent(bundleID, dynamicOptions) {
+      pushCreateVatEvent(bundleID, dynamicOptions) {
         assert(kernelKeeper.hasBundle(bundleID), bundleID);
         const vatID = kernelKeeper.allocateUnusedVatID();
         const event = { type: 'create-vat', vatID, bundleID, dynamicOptions };
