@@ -20,7 +20,7 @@
  * @typedef { ERef<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/vats/vat-timerWrapper.js').buildRootObject>> } TimerVat
  *
- * See deliverToController in packages/SwingSet/src/vats/comms/controller.js
+ * See deliverToController in packages/swingset-vat/src/vats/comms/controller.js
  * @typedef {ERef<{
  *   addRemote: (name: string, tx: unknown, rx: unknown) => void,
  *   addEgress: (addr: string, ix: number, provider: unknown) => void,

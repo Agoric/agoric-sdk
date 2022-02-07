@@ -1,6 +1,6 @@
 /* global setImmediate */
 
-// This is a copy of a utility from packages/SwingSet/src/gc.js, which
+// This is a copy of a utility from packages/swingset-vat/src/gc.js, which
 // swingset uses to force GC in the middle of a crank. We copy it into xsnap
 // to make sure xsnap's gc() and finalizer scheduling will provide what
 // swingset needs.

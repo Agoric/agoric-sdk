@@ -320,7 +320,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn test 'test/**/test-[A-Da-d]*.js'
+        run: cd packages/swingset-vat && yarn test 'test/**/test-[A-Da-d]*.js'
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -336,12 +336,12 @@ jobs:
           node-version: ${{ matrix.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn test 'test/**/test-[E-Ie-i]*.js'
+        run: cd packages/swingset-vat && yarn test 'test/**/test-[E-Ie-i]*.js'
       - name: yarn test (xsnap)
         run: cd packages/xsnap && yarn test
       # explicitly test the XS worker, for visibility
       - name: yarn test (SwingSet XS Worker)
-        run: cd packages/SwingSet && yarn test:xs-worker
+        run: cd packages/swingset-vat && yarn test:xs-worker
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
@@ -357,7 +357,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn test 'test/**/test-[J-Rj-r]*.js'
+        run: cd packages/swingset-vat && yarn test 'test/**/test-[J-Rj-r]*.js'
 
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
@@ -374,7 +374,7 @@ jobs:
       # END-TEST-BOILERPLATE
 
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn test 'test/**/test-[S-Zs-z0-9]*.js'
+        run: cd packages/swingset-vat && yarn test 'test/**/test-[S-Zs-z0-9]*.js'
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
