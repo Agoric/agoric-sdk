@@ -5,14 +5,13 @@ import { test } from './prepare-test-env-ava.js';
 
 import { makeMemoryMappedCircularBuffer } from '../src/flight-recorder.js';
 
-test('flight-recorder sanity', t => {
+test('flight-recorder sanity', async t => {
   const { name: tmpFile, removeCallback } = tmp.fileSync();
-  const { writeJSON: slogSender, readCircBuf } = makeMemoryMappedCircularBuffer(
-    {
+  const { writeJSON: slogSender, readCircBuf } =
+    await makeMemoryMappedCircularBuffer({
       circularBufferSize: 512,
       circularBufferFile: tmpFile,
-    },
-  );
+    });
   slogSender({ type: 'start' });
 
   const len0 = new BigUint64Array(1);

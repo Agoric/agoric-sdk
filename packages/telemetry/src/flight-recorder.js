@@ -15,7 +15,7 @@
 // no coherency problem, and the speed is unaffected by disk write speeds.
 
 import BufferFromFile from 'bufferfromfile';
-import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import path from 'path';
 
 const { details: X } = assert;
@@ -30,7 +30,53 @@ const I_CIRC_START = 2;
 const I_CIRC_END = 3;
 const HEADER_LENGTH = 4;
 
-export const makeMemoryMappedCircularBuffer = ({
+const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
+  if (!circularBufferSize) {
+    return undefined;
+  }
+  // If the file doesn't exist, or is not large enough, create it.
+  const stbuf = await fsPromises.stat(bufferFile).catch(e => {
+    if (e.code === 'ENOENT') {
+      return undefined;
+    }
+    throw e;
+  });
+  const arenaSize = BigInt(
+    circularBufferSize - HEADER_LENGTH * BigUint64Array.BYTES_PER_ELEMENT,
+  );
+
+  const writeHeader = async () => {
+    if (
+      stbuf &&
+      stbuf.size >= HEADER_LENGTH * BigUint64Array.BYTES_PER_ELEMENT
+    ) {
+      // Header already exists.
+      return;
+    }
+
+    // Write the header.
+    const header = new Array(HEADER_LENGTH).fill(0n);
+    header[I_MAGIC] = SLOG_MAGIC;
+    header[I_ARENA_SIZE] = arenaSize;
+    await fsPromises.mkdir(path.dirname(bufferFile), { recursive: true });
+    await fsPromises.writeFile(bufferFile, BigUint64Array.from(header));
+  };
+  await writeHeader();
+
+  const growFile = async () => {
+    if (stbuf && stbuf.size >= circularBufferSize) {
+      // File is big enough.
+      return;
+    }
+    // Increase the file size.;
+    await fsPromises.truncate(bufferFile, circularBufferSize);
+  };
+  await growFile();
+
+  return arenaSize;
+};
+
+export const makeMemoryMappedCircularBuffer = async ({
   circularBufferSize = DEFAULT_CIRCULAR_BUFFER_SIZE,
   stateDir = '/tmp',
   circularBufferFile,
@@ -39,40 +85,17 @@ export const makeMemoryMappedCircularBuffer = ({
     circularBufferFile || `${stateDir}/${DEFAULT_CIRCULAR_BUFFER_FILE}`;
   // console.log({ circularBufferFile, bufferFile });
 
-  let arenaSize;
-  if (circularBufferSize) {
-    // If the file doesn't exist, or is not large enough, create it.
-    let stbuf;
-    try {
-      stbuf = fs.statSync(bufferFile);
-    } catch (e) {
-      if (e.code !== 'ENOENT') {
-        throw e;
-      }
-    }
-    arenaSize = BigInt(
-      circularBufferSize - HEADER_LENGTH * BigUint64Array.BYTES_PER_ELEMENT,
-    );
-    if (!stbuf || stbuf.size < BigUint64Array.BYTES_PER_ELEMENT * 3) {
-      // Write the header.
-      const header = new Array(HEADER_LENGTH).fill(0n);
-      header[I_MAGIC] = SLOG_MAGIC;
-      header[I_ARENA_SIZE] = arenaSize;
-      fs.mkdirSync(path.dirname(bufferFile), { recursive: true });
-      fs.writeFileSync(bufferFile, BigUint64Array.from(header));
-    }
-    if (!stbuf || stbuf.size < circularBufferSize) {
-      fs.truncateSync(bufferFile, circularBufferSize);
-    }
-  }
+  const newArenaSize = await initializeCircularBuffer(
+    bufferFile,
+    circularBufferSize,
+  );
 
   /** @type {Uint8Array} */
   const fileBuf = BufferFromFile(bufferFile).Uint8Array();
   const header = new BigUint64Array(fileBuf.buffer, 0, HEADER_LENGTH);
 
-  if (!arenaSize) {
-    arenaSize = header[I_ARENA_SIZE];
-  }
+  // Detect the arena size from the header, if not initialized.
+  const arenaSize = newArenaSize || header[I_ARENA_SIZE];
 
   assert.equal(
     SLOG_MAGIC,
@@ -199,21 +222,15 @@ export const makeMemoryMappedCircularBuffer = ({
       (header[I_CIRC_END] + BigInt(record.byteLength)) % header[I_ARENA_SIZE];
   };
 
-  const writeJSON = obj => {
-    const text = JSON.stringify(obj, (key, value) => {
-      if (typeof value === 'bigint') {
-        return Number(value);
-      }
-      if (key === 'endoZipBase64') {
-        // Abridge the source bundle, since it's pretty huge.
-        return `${value.slice(0, 10)}[...${
-          value.length
-        } characters...]${value.slice(-10)}`;
-      }
-      return value;
-    });
+  const writeJSON = (obj, jsonObj) => {
+    if (jsonObj === undefined) {
+      // We need to create a JSON object, since we weren't given one.
+      jsonObj = JSON.stringify(obj, (_, arg) =>
+        typeof arg === 'bigint' ? Number(arg) : arg,
+      );
+    }
     // Prepend a newline so that the file can be more easily manipulated.
-    const data = new TextEncoder().encode(`\n${text}`);
+    const data = new TextEncoder().encode(`\n${jsonObj}`);
     // console.log('have obj', obj);
     writeCircBuf(data);
   };
@@ -221,7 +238,7 @@ export const makeMemoryMappedCircularBuffer = ({
   return { readCircBuf, writeCircBuf, writeJSON };
 };
 
-export const makeSlogSender = opts => {
-  const { writeJSON } = makeMemoryMappedCircularBuffer(opts);
+export const makeSlogSender = async opts => {
+  const { writeJSON } = await makeMemoryMappedCircularBuffer(opts);
   return writeJSON;
 };
