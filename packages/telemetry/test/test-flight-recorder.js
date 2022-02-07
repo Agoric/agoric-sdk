@@ -51,5 +51,5 @@ test('flight-recorder sanity', async t => {
   const { done: done2 } = readCircBuf(len1, offset);
   t.assert(done2, `readCircBuf ${last} should be done`);
   console.log({ tmpFile });
-  // removeCallback();
+  removeCallback();
 });
