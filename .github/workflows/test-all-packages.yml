@@ -187,7 +187,7 @@ jobs:
       - name: yarn test (deployment)
         run: cd packages/deployment && yarn test
       - name: yarn test (ERTP)
-        run: cd packages/ERTP && yarn test
+        run: cd packages/ertp && yarn test
       - name: yarn test (eventual-send)
         run: cd packages/eventual-send && yarn test
       - name: yarn test (governance)

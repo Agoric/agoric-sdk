@@ -17,14 +17,14 @@ You'll need Node.js version 11 or higher.
 * `yarn install`
 * `yarn build` (This *must* be done at the top level to build all of
   the packages)
-* `cd packages/ERTP`
+* `cd packages/ertp`
 * `yarn test`
 
 ## Pull Requests
 
 Before submitting a pull request, please:
 
-* run `yarn test` within `packages/ERTP` and make sure all the unit
+* run `yarn test` within `packages/ertp` and make sure all the unit
   tests pass (running `yarn test` at the top level will test all the
   monorepo packages, which can be a good integration test.)
 * run `yarn run lint-fix` to reformat the code according to our
@@ -32,7 +32,7 @@ Before submitting a pull request, please:
   correct
 * make sure your PR includes a new file in the `changelogs` directory named $ISSUENUMBER.txt , and
   describe any downstream-visible changes in it (one per line). See
-  [README-changelogs.md](/packages/ERTP/changelogs/README-changelogs.md) for more information.
+  [README-changelogs.md](/packages/ertp/changelogs/README-changelogs.md) for more information.
 
 ## Making a Release
 

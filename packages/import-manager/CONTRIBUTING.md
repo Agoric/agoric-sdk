@@ -51,4 +51,4 @@ Before submitting a pull request, please:
 Then, once the release has been made, the packages dependent on import-manager
 should be updated in a PR reviewed by the owners of the packages.
 Those packages are:
-* packages/ERTP
+* packages/ertp

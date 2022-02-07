@@ -17,9 +17,9 @@ The malicious behavior we would like to prevent is:
 ## Entry points in ERTP
 
 There are three entry points in ERTP:
-1. packages/ERTP/src/amountMath.js
-2. packages/ERTP/src/issuerKit.js
-3. packages/ERTP/src/typeGuards.js
+1. packages/ertp/src/amountMath.js
+2. packages/ertp/src/issuerKit.js
+3. packages/ertp/src/typeGuards.js
 
 This document will only analyze `AmountMath.coerce`, but the
 methodology for validating inputs remains the same for the ERTP functions.
