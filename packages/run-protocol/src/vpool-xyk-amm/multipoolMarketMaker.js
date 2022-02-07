@@ -7,6 +7,7 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@agoric/eventual-send';
 import { makeAddPool } from './pool.js';
 import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
@@ -115,6 +116,13 @@ const start = async (zcf, privateArgs) => {
   } = /** @type { Terms & AMMTerms } */ (zcf.getTerms());
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
+
+  const centralDisplayInfo = await E(centralBrand).getDisplayInfo();
+  assert(
+    centralDisplayInfo.assetKind === AssetKind.NAT,
+    X`Central must be of kind AssetKind.NAT`,
+  );
+
   const { initialPoserInvitation } = privateArgs;
 
   const paramManager = await makeParamManager(
