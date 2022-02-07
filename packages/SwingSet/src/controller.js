@@ -121,7 +121,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
  *   slogFile?: string,
- *   slogSender?: (obj: any) => void,
+ *   slogSender?: (obj: any, jsonObj: string) => void,
  *   testTrackDecref?: unknown,
  *   warehousePolicy?: { maxVatsOnline?: number },
  *   overrideVatManagerOptions?: { consensusMode?: boolean },
@@ -164,21 +164,25 @@ export async function makeSwingsetController(
       return;
     }
 
-    // Add a timestamp to the slog input object.
+    // Create an object with the property order that loadgen expects.
+    const timedObj = { time: undefined, type: undefined, ...obj };
+
+    // Update the timedObj timestamp.
     const timeMS = performance.timeOrigin + performance.now();
-    const time = timeMS / 1000;
-    const timedObj = { time, ...obj };
+    timedObj.time = timeMS / 1000;
+
+    // Serialise just once.
+    const jsonObj = JSON.stringify(timedObj, (_, arg) =>
+      typeof arg === 'bigint' ? Number(arg) : arg,
+    );
 
     if (slogSender) {
       // Allow the SwingSet host to do anything they want with slog messages.
-      slogSender(timedObj);
+      slogSender(timedObj, jsonObj);
     }
     if (slogF) {
-      slogF.write(
-        JSON.stringify(timedObj, (_, arg) =>
-          typeof arg === 'bigint' ? Number(arg) : arg,
-        ),
-      );
+      // Record the pristine JSON object.
+      slogF.write(jsonObj);
       slogF.write('\n');
     }
   }
