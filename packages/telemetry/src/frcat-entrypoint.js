@@ -13,20 +13,21 @@ const main = async () => {
   }
 
   for await (const file of files) {
-    const { readCircBuf } = makeMemoryMappedCircularBuffer({
+    const { readCircBuf } = await makeMemoryMappedCircularBuffer({
       circularBufferFile: file,
       circularBufferSize: null,
     });
 
     let offset = 0;
     for (;;) {
-      const lenBuf = new BigUint64Array(1);
-      const { done } = readCircBuf(new Uint8Array(lenBuf.buffer), offset);
+      const lenBuf = new Uint8Array(BigUint64Array.BYTES_PER_ELEMENT);
+      const { done } = readCircBuf(lenBuf, offset);
       if (done) {
         break;
       }
       offset += 8;
-      const len = Number(lenBuf[0]);
+      const dv = new DataView(lenBuf.buffer);
+      const len = Number(dv.getBigUint64(0));
 
       const { done: done2, value: buf } = readCircBuf(
         new Uint8Array(len),
