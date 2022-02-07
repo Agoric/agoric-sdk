@@ -1,11 +1,11 @@
-# TODO REWRITE
+# TODO (update to include new stores and durable objects stuff)
 
 # Vat Secondary Storage
 
 The kernel currently provides two secondary storage mechanisms for the use of (application) code running in a vat:
 
 - Virtual objects
-- Persistent weak stores
+- Persistent stores
 
 Each of these is accessed via a global made available to vat code.
 
@@ -115,21 +115,3 @@ Additional important details:
 ```
 
 - As illustrated above, the `self` object must be made `Far`, since it will be subject to serialization.
-
-## Persistent Weak Stores
-
-The vat secondary storage system also includes a `makeWeakStore` function, which is identical in API to the `makeWeakStore` function provided by the `@agoric/store` package.  I.e., you call:
-
-  `const ws = makeWeakStore();`
-
-to obtain a new weak store instance, which you can then access using the `has`, `init`, `set`, `get`, and `delete` methods just as you would if you had imported `makeWeakStore` from `@agoric/store`.
-
-However, the vat secondary storage system's `makeWeakStore` augments the one provided by the `@agoric/store` package in two important ways:
-
-- Weak store operations may use virtual objects as keys, and if you do this the corresponding underlying virtual object instance identities will be used for indexing rather than the current in-memory object identities of the objects.
-
-- The values set for weak store entries will be saved persistently to secondary storage.  This means that such weak stores can grow to be very large without impacting the vat's memory footprint.
-
-Since weak store values are saved persistently, they must be serializable and will be hardened as soon as they are set.
-
-An important caveat is that the latter entries are currently not actually weak, in the sense that if a virtual object becomes unreferenced, any corresponding weak store entries will not go away.  This is not semantically visible to vat code, but does impact the disk storage footprint of the vat.  Since the in-memory representations of virtual objects may come and go depending on the working state of the vat, there is no graceful way to garbage collect the underlying objects or corresponding weak store entries; a future system which can do robust distributed garbage collection should eventually rectify this, but for now you should not rely on any such garbage collection happening.
