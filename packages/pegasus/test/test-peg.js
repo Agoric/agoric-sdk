@@ -104,6 +104,7 @@ async function testRemotePeg(t) {
                 amount: '100000000000000000001',
                 denom: 'uatom',
                 receiver: 'markaccount',
+                sender: 'pegasus',
               },
               'expected transfer packet',
             );
