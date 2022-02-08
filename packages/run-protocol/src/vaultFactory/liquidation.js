@@ -22,7 +22,7 @@ const trace = makeTracer('LIQ');
  *            ) => void} burnLosses
  * @param {LiquidationStrategy} strategy
  * @param {Brand} collateralBrand
- * @returns {[VaultId, Vault]}
+ * @returns {Promise<[VaultId, Vault]>}
  */
 const liquidate = async (
   zcf,

@@ -14,21 +14,30 @@ import { numberToDBEntryKey } from './storeUtils.js';
 
 /** @typedef {import('./vault').VaultKit} VaultKit */
 
-export const makeOrderedVaultStore = () => {
-  /**
-   * Sorts by ratio in descending debt. Ordering of vault id is undefined.
-   *
-   * @param {Ratio} ratio
-   * @param {VaultId} vaultId
-   * @returns {string}
-   */
-  const vaultKey = (ratio, vaultId) => {
-    // TODO make sure infinity sorts correctly
-    const float = ratio.denominator / ratio.numerator;
-    const numberPart = numberToDBEntryKey(float);
-    return `${numberPart}:${vaultId}`;
-  };
+/**
+ * Sorts by ratio in descending debt. Ordering of vault id is undefined.
+ *
+ * @param {Ratio} ratio normalized debt ratio
+ * @param {VaultId} vaultId
+ * @returns {string}
+ */
+export const toVaultKey = (ratio, vaultId) => {
+  // TODO make sure infinity sorts correctly
+  const float = ratio.denominator / ratio.numerator;
+  const numberPart = numberToDBEntryKey(float);
+  return `${numberPart}:${vaultId}`;
+};
 
+/**
+ * @param {string} key
+ * @returns {[Ratio, VaultId]} normalized debt ratio, vault id
+ */
+export const fromVaultKey = key => {
+  const [numberPart, vaultIdPart] = key.split(':');
+  return [Number(numberPart), String(vaultIdPart)];
+};
+
+export const makeOrderedVaultStore = () => {
   // TODO type these generics
   const store = VatData.makeScalarBigMapStore();
 
@@ -38,7 +47,7 @@ export const makeOrderedVaultStore = () => {
    * @param {VaultKit} vaultKit
    */
   const addVaultKit = (vaultId, vaultKit) => {
-    const key = vaultKey(vaultKit.vault.getDebtAmount(), vaultId);
+    const key = toVaultKey(vaultKit.vault.getDebtAmount(), vaultId);
     store.init(key, vaultKit);
     store.getSize;
   };
@@ -50,8 +59,7 @@ export const makeOrderedVaultStore = () => {
    * @returns {VaultKit}
    */
   const removeVaultKit = (vaultId, vault) => {
-    // FIXME needs to be the normalized debt amount
-    const key = vaultKey(vault.getDebtAmount(), vaultId);
+    const key = toVaultKey(vault.getNormalizedDebt(), vaultId);
     const vaultKit = store.get(key);
     assert(vaultKit);
     store.delete(key);

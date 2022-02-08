@@ -124,10 +124,18 @@ export const makeVaultKit = (
   };
 
   /**
-   * The current debt, including accrued interest
+   * The actual current debt, including accrued interest.
    *
+   * This looks like a simple getter but it does a lot of the heavy lifting for
+   * interest accrual. Rather than updating all records when interest accrues,
+   * the vault manager updates just its rolling compounded interest. Here we
+   * calculate what the current debt is given what's recorded in this vault and
+   * what interest has compounded since this vault record was written.
+   *
+   * @see getNormalizedDebt
    * @returns {Amount}
    */
+  // TODO rename to getActualDebtAmount throughout codebase
   const getDebtAmount = () => {
     assert(interestSnapshot);
     // divide compounded interest by the the snapshot
@@ -137,6 +145,19 @@ export const makeVaultKit = (
     );
 
     return floorMultiplyBy(runDebtSnapshot, interestSinceSnapshot);
+  };
+
+  /**
+   * The normalization puts all debts on a common time-independent scale since
+   * the launch of this vault manager. This allows the manager to order vaults
+   * by their debt-to-collateral ratios without having to mutate the debts as
+   * the interest accrues.
+   *
+   * @see getActualDebAmount
+   * @returns {Amount} as if the vault was open at the launch of this manager, before any interest accrued
+   */
+  const getNormalizedDebt = () => {
+    return floorMultiplyBy(runDebtSnapshot, invertRatio(interestSnapshot));
   };
 
   const getCollateralAllocated = seat =>
@@ -561,6 +582,7 @@ export const makeVaultKit = (
     // for status/debugging
     getCollateralAmount,
     getDebtAmount,
+    getNormalizedDebt,
     getLiquidationSeat: () => liquidationSeat,
     getLiquidationPromise: () => liquidationPromiseKit.promise,
   });
