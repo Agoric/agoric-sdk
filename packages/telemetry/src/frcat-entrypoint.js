@@ -1,6 +1,7 @@
 #! /usr/bin/env node
 /* global process, BigUint64Array */
 // frcat - print out the contents of a flight recorder
+// NOTE: this only works on inactive recorder files where the writer has terminated
 
 import '@endo/init';
 
@@ -14,7 +15,7 @@ const main = async () => {
 
   for await (const file of files) {
     const { readCircBuf } = await makeMemoryMappedCircularBuffer({
-      circularBufferFile: file,
+      circularBufferFilename: file,
       circularBufferSize: null,
     });
 
@@ -25,7 +26,7 @@ const main = async () => {
       if (done) {
         break;
       }
-      offset += 8;
+      offset += lenBuf.byteLength;
       const dv = new DataView(lenBuf.buffer);
       const len = Number(dv.getBigUint64(0));
 

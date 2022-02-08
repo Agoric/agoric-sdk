@@ -10,7 +10,7 @@ test('flight-recorder sanity', async t => {
   const { writeJSON: slogSender, readCircBuf } =
     await makeMemoryMappedCircularBuffer({
       circularBufferSize: 512,
-      circularBufferFile: tmpFile,
+      circularBufferFilename: tmpFile,
     });
   slogSender({ type: 'start' });
 
@@ -50,6 +50,6 @@ test('flight-recorder sanity', async t => {
 
   const { done: done2 } = readCircBuf(len1, offset);
   t.assert(done2, `readCircBuf ${last} should be done`);
-  console.log({ tmpFile });
+  // console.log({ tmpFile });
   removeCallback();
 });

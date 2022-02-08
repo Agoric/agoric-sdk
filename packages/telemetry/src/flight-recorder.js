@@ -20,8 +20,8 @@ import path from 'path';
 
 const { details: X } = assert;
 
-export const DEFAULT_CIRCULAR_BUFFER_SIZE = 100 * 1024 * 1024;
-export const DEFAULT_CIRCULAR_BUFFER_FILE = 'flight-recorder.bin';
+export const DEFAULT_CBUF_SIZE = 100 * 1024 * 1024;
+export const DEFAULT_CBUF_FILE = 'flight-recorder.bin';
 export const SLOG_MAGIC = 0x41472d534c4f4721n; // 'AG-SLOG!'
 
 const I_MAGIC = 0 * BigUint64Array.BYTES_PER_ELEMENT;
@@ -29,6 +29,8 @@ const I_ARENA_SIZE = 1 * BigUint64Array.BYTES_PER_ELEMENT;
 const I_CIRC_START = 2 * BigUint64Array.BYTES_PER_ELEMENT;
 const I_CIRC_END = 3 * BigUint64Array.BYTES_PER_ELEMENT;
 const I_ARENA_START = 4 * BigUint64Array.BYTES_PER_ELEMENT;
+
+const RECORD_HEADER_SIZE = BigUint64Array.BYTES_PER_ELEMENT;
 
 const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   if (!circularBufferSize) {
@@ -43,54 +45,50 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   });
   const arenaSize = BigInt(circularBufferSize - I_ARENA_START);
 
-  const writeHeader = async () => {
-    if (stbuf && stbuf.size >= I_ARENA_START) {
-      // Header already exists.
-      return;
-    }
+  if (stbuf && stbuf.size >= I_ARENA_START) {
+    // Header already exists.
+    return arenaSize;
+  }
 
-    // Write the header.
-    const headerBuf = new Uint8Array(I_ARENA_START);
-    const header = new DataView(headerBuf.buffer);
-    header.setBigUint64(I_MAGIC, SLOG_MAGIC);
-    header.setBigUint64(I_ARENA_SIZE, arenaSize);
-    header.setBigUint64(I_CIRC_START, 0n);
-    header.setBigUint64(I_CIRC_END, 0n);
+  // Write the header.
+  const headerBuf = new Uint8Array(I_ARENA_START);
+  const header = new DataView(headerBuf.buffer);
+  header.setBigUint64(I_MAGIC, SLOG_MAGIC);
+  header.setBigUint64(I_ARENA_SIZE, arenaSize);
+  header.setBigUint64(I_CIRC_START, 0n);
+  header.setBigUint64(I_CIRC_END, 0n);
 
-    await fsPromises.mkdir(path.dirname(bufferFile), { recursive: true });
-    await fsPromises.writeFile(bufferFile, headerBuf);
-  };
-  await writeHeader();
+  await fsPromises.mkdir(path.dirname(bufferFile), { recursive: true });
+  await fsPromises.writeFile(bufferFile, headerBuf);
 
-  const growFile = async () => {
-    if (stbuf && stbuf.size >= circularBufferSize) {
-      // File is big enough.
-      return;
-    }
-    // Increase the file size.;
-    await fsPromises.truncate(bufferFile, circularBufferSize);
-  };
-  await growFile();
+  if (stbuf && stbuf.size >= circularBufferSize) {
+    // File is big enough.
+    return arenaSize;
+  }
 
+  // Increase the file size.
+  await fsPromises.truncate(bufferFile, circularBufferSize);
   return arenaSize;
 };
 
 export const makeMemoryMappedCircularBuffer = async ({
-  circularBufferSize = DEFAULT_CIRCULAR_BUFFER_SIZE,
+  circularBufferSize = DEFAULT_CBUF_SIZE,
   stateDir = '/tmp',
-  circularBufferFile,
+  circularBufferFilename,
 }) => {
-  const bufferFile =
-    circularBufferFile || `${stateDir}/${DEFAULT_CIRCULAR_BUFFER_FILE}`;
-  // console.log({ circularBufferFile, bufferFile });
+  const filename = circularBufferFilename || `${stateDir}/${DEFAULT_CBUF_FILE}`;
+  // console.log({ circularBufferFilename, filename });
 
   const newArenaSize = await initializeCircularBuffer(
-    bufferFile,
+    filename,
     circularBufferSize,
   );
 
-  /** @type {Uint8Array} */
-  const fileBuf = BufferFromFile(bufferFile).Uint8Array();
+  /**
+   * @type {Uint8Array}
+   * BufferFromFile mmap()s the file into the process address space.
+   */
+  const fileBuf = BufferFromFile(filename).Uint8Array();
   const header = new DataView(fileBuf.buffer, 0, I_ARENA_START);
 
   // Detect the arena size from the header, if not initialized.
@@ -101,12 +99,12 @@ export const makeMemoryMappedCircularBuffer = async ({
   assert.equal(
     SLOG_MAGIC,
     hdrMagic,
-    X`${bufferFile} is not a slog buffer; wanted magic ${SLOG_MAGIC}, got ${hdrMagic}`,
+    X`${filename} is not a slog buffer; wanted magic ${SLOG_MAGIC}, got ${hdrMagic}`,
   );
   assert.equal(
     arenaSize,
     hdrArenaSize,
-    X`${bufferFile} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`,
+    X`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`,
   );
   const arena = new Uint8Array(
     fileBuf.buffer,
@@ -115,18 +113,18 @@ export const makeMemoryMappedCircularBuffer = async ({
   );
 
   /**
-   * @param {Uint8Array} data
-   * @param {number} [offset]
+   * @param {Uint8Array} outbuf
+   * @param {number} [offset] offset relative to the current trailing edge (circStart) of the data
    * @returns {IteratorResult<Uint8Array, void>}
    */
-  const readCircBuf = (data, offset = 0) => {
+  const readCircBuf = (outbuf, offset = 0) => {
     assert(
-      offset + data.byteLength <= arenaSize,
+      offset + outbuf.byteLength <= arenaSize,
       X`Reading past end of circular buffer`,
     );
 
     // Read the data to the end of the arena.
-    let firstReadLength = data.byteLength;
+    let firstReadLength = outbuf.byteLength;
     const circStart = header.getBigUint64(I_CIRC_START);
     const circEnd = header.getBigUint64(I_CIRC_END);
     const readStart = (Number(circStart) + offset) % Number(arenaSize);
@@ -143,31 +141,34 @@ export const makeMemoryMappedCircularBuffer = async ({
       // The data is contiguous, like ---AAABBB---
       return { done: true, value: undefined };
     }
-    data.set(arena.subarray(readStart, readStart + firstReadLength));
-    if (firstReadLength < data.byteLength) {
-      data.set(
-        arena.subarray(0, data.byteLength - firstReadLength),
+    outbuf.set(arena.subarray(readStart, readStart + firstReadLength));
+    if (firstReadLength < outbuf.byteLength) {
+      outbuf.set(
+        arena.subarray(0, outbuf.byteLength - firstReadLength),
         firstReadLength,
       );
     }
-    return { done: false, value: data };
+    return { done: false, value: outbuf };
   };
 
   /** @param {Uint8Array} data */
   const writeCircBuf = data => {
-    if (BigUint64Array.BYTES_PER_ELEMENT + data.byteLength > arena.byteLength) {
+    if (RECORD_HEADER_SIZE + data.byteLength > arena.byteLength) {
       // The data is too big to fit in the arena, so skip it.
       const tooBigRecord = JSON.stringify({
         type: 'slog-record-too-big',
-        size: data.byteLength,
+        snippet: new TextDecoder().decode(data.subarray(0, 20)),
       });
       data = new TextEncoder().encode(tooBigRecord);
     }
 
-    const record = new Uint8Array(
-      BigUint64Array.BYTES_PER_ELEMENT + data.byteLength,
-    );
-    record.set(data, BigUint64Array.BYTES_PER_ELEMENT);
+    if (RECORD_HEADER_SIZE + data.byteLength > arena.byteLength) {
+      // Silently drop, it just doesn't fit.
+      return;
+    }
+
+    const record = new Uint8Array(RECORD_HEADER_SIZE + data.byteLength);
+    record.set(data, RECORD_HEADER_SIZE);
 
     const lengthPrefix = new DataView(record.buffer);
     lengthPrefix.setBigUint64(0, BigInt(data.byteLength));
@@ -188,9 +189,7 @@ export const makeMemoryMappedCircularBuffer = async ({
     // Advance the start pointer until we have space to write the record.
     let overlap = BigInt(record.byteLength) - capacity;
     while (overlap > 0n) {
-      const startRecordLength = new Uint8Array(
-        BigUint64Array.BYTES_PER_ELEMENT,
-      );
+      const startRecordLength = new Uint8Array(RECORD_HEADER_SIZE);
       const { done } = readCircBuf(startRecordLength);
       if (done) {
         break;
