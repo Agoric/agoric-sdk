@@ -1,45 +1,18 @@
-// FIXME remove before review
-// @ts-nocheck
-// @jessie-nocheck
-/* eslint-disable no-unused-vars */
-
-import { numberToDBEntryKey } from './storeUtils.js';
-
-// XXX declaration shouldn't be necessary. Add exception to eslint or make a real import.
-/* global VatData */
+// XXX avoid deep imports https://github.com/Agoric/agoric-sdk/issues/4255#issuecomment-1032117527
+import { makeScalarBigMapStore } from '@agoric/swingset-vat/src/storeModule.js';
+import { fromVaultKey, toVaultKey } from './storeUtils.js';
 
 /**
- * Used by prioritizedVaults to
+ * Used by prioritizedVaults to wrap the Collections API for this use case.
  */
 
 /** @typedef {import('./vault').VaultKit} VaultKit */
 
-/**
- * Sorts by ratio in descending debt. Ordering of vault id is undefined.
- *
- * @param {Ratio} ratio normalized debt ratio
- * @param {VaultId} vaultId
- * @returns {string}
- */
-export const toVaultKey = (ratio, vaultId) => {
-  // TODO make sure infinity sorts correctly
-  const float = ratio.denominator / ratio.numerator;
-  const numberPart = numberToDBEntryKey(float);
-  return `${numberPart}:${vaultId}`;
-};
-
-/**
- * @param {string} key
- * @returns {[Ratio, VaultId]} normalized debt ratio, vault id
- */
-export const fromVaultKey = key => {
-  const [numberPart, vaultIdPart] = key.split(':');
-  return [Number(numberPart), String(vaultIdPart)];
-};
+/** @typedef {[normalizedDebtRatio: number, vaultId: VaultId]} CompositeKey */
 
 export const makeOrderedVaultStore = () => {
-  // TODO type these generics
-  const store = VatData.makeScalarBigMapStore();
+  /** @type {MapStore<string, VaultKit} */
+  const store = makeScalarBigMapStore();
 
   /**
    *
@@ -66,10 +39,26 @@ export const makeOrderedVaultStore = () => {
     return vaultKit;
   };
 
+  /**
+   * Have to define both tags until https://github.com/Microsoft/TypeScript/issues/23857
+   *
+   * @yields {[[string, string], VaultKit]>}
+   * @returns {IterableIterator<[CompositeKey, VaultKit]>}
+   */
+  // XXX need to make generator with const arrow definitions?
+  function* entriesWithCompositeKeys() {
+    for (const [k, v] of store.entries()) {
+      const compositeKey = fromVaultKey(k);
+      /** @type {VaultKit} */
+      const vaultKit = v;
+      yield [compositeKey, vaultKit];
+    }
+  }
+
   return harden({
     addVaultKit,
     removeVaultKit,
-    entries: store.entries,
+    entriesWithCompositeKeys,
     getSize: store.getSize,
     values: store.values,
   });

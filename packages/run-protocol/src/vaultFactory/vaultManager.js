@@ -17,7 +17,7 @@ import { observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeVaultKit, VaultState } from './vault.js';
+import { makeVaultKit } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -114,6 +114,7 @@ export const makeVaultManager = (
    *
    * @type {'READY' | 'CULLING' | 'LIQUIDATING'}
    */
+  // eslint-disable-next-line no-unused-vars
   const currentState = 'READY';
 
   // A Map from vaultKits to their most recent ratio of debt to
@@ -193,7 +194,7 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
-    /** @type {Promise<any>[]} */
+    /** @type {Array<Promise<readonly [vaultId: string, vault: Vault]>>} */
     const toLiquidate = [];
 
     // TODO maybe extract this into a method
@@ -201,27 +202,29 @@ export const makeVaultManager = (
     // FIXME pass in a key instead of the actual vaultKit
     prioritizedVaults.forEachRatioGTE(
       quoteRatioPlusMargin,
-      ([vaultId, vaultKit]) => {
-        trace('liquidating', vaultKit.vaultSeat.getProposal());
+      (vaultId, vaultKit) => {
+        trace('liquidating', vaultKit.admin.vaultSeat.getProposal());
 
-        // XXX firing off promise unhandled, nothing tracking if this errors
-        toLiquidate.push([
-          vaultId,
-          liquidate(
-            zcf,
-            vaultKit,
-            runMint.burnLosses,
-            liquidationStrategy,
-            collateralBrand,
-          ),
-        ]);
+        const liquidateP = liquidate(
+          zcf,
+          vaultKit,
+          runMint.burnLosses,
+          liquidationStrategy,
+          collateralBrand,
+        ).then(
+          () =>
+            // style: JSdoc const only works inline
+            /** @type {const} */ ([vaultId, vaultKit.vault]),
+        );
+        toLiquidate.push(liquidateP);
       },
     );
+
     outstandingQuote = undefined;
-    /** @type {Array<[VaultId, VaultKit]>} */
+    /** @type {Array<readonly [VaultId, Vault]>} */
     const liquidationResults = await Promise.all(toLiquidate);
-    for (const [vaultId, vaultKit] of liquidationResults) {
-      prioritizedVaults.removeVault(vaultId, vaultKit.vault);
+    for (const [vaultId, vault] of liquidationResults) {
+      prioritizedVaults.removeVault(vaultId, vault);
     }
 
     // TODO wait until we've removed them all
@@ -232,7 +235,7 @@ export const makeVaultManager = (
   // In extreme situations system health may require liquidating all vaults.
   const liquidateAll = () => {
     assert(prioritizedVaults);
-    const promises = prioritizedVaults.map(({ vaultKit }) =>
+    return prioritizedVaults.forAll(({ vaultKit }) =>
       liquidate(
         zcf,
         vaultKit,
@@ -241,7 +244,6 @@ export const makeVaultManager = (
         collateralBrand,
       ),
     );
-    return Promise.all(promises);
   };
 
   // FIXME don't mutate vaults to charge them
@@ -249,7 +251,6 @@ export const makeVaultManager = (
    *
    * @param {bigint} updateTime
    * @param {ZCFSeat} poolIncrementSeat
-   * @returns void
    */
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
     const interestCalculator = makeInterestCalculator(
@@ -355,7 +356,10 @@ export const makeVaultManager = (
       priceAuthority,
     );
 
-    const { vault, openLoan } = vaultKit;
+    const {
+      vault,
+      admin: { openLoan },
+    } = vaultKit;
     // FIXME do without notifier callback
     const { notifier } = await openLoan(seat);
     assert(prioritizedVaults);

@@ -22,7 +22,7 @@ const trace = makeTracer('LIQ');
  *            ) => void} burnLosses
  * @param {LiquidationStrategy} strategy
  * @param {Brand} collateralBrand
- * @returns {Promise<[VaultId, Vault]>}
+ * @returns {Promise<Vault>}
  */
 const liquidate = async (
   zcf,
@@ -74,7 +74,7 @@ const liquidate = async (
   liquidationSeat.exit();
   vaultKit.admin.liquidationPromiseKit.resolve('Liquidated');
 
-  return ['FIXME', vaultKit.vault];
+  return vaultKit.vault;
 };
 
 /**

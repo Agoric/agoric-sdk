@@ -49,6 +49,9 @@ const CanonicalNaN = 'ffff8000000000000';
 
 // Normalize -0 to 0
 
+/**
+ * @param {number} n
+ */
 const numberToDBEntryKey = n => {
   if (is(n, -0)) {
     n = 0;
@@ -68,6 +71,9 @@ const numberToDBEntryKey = n => {
   return `f${zeroPad(bits.toString(16), 16)}`;
 };
 
+/**
+ * @param {string} k
+ */
 const dbEntryKeyToNumber = k => {
   let bits = BigInt(`0x${k.substring(1)}`);
   if (k[1] < '8') {

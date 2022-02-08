@@ -157,7 +157,11 @@ export const ceilDivideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, ceilDivide);
 };
 
-/** @type {InvertRatio} */
+/**
+ *
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
 export const invertRatio = ratio => {
   assertIsRatio(ratio);
 
