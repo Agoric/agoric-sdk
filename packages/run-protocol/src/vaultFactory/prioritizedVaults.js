@@ -6,7 +6,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { makeOrderedVaultStore } from './orderedVaultStore';
+import { fromVaultKey, makeOrderedVaultStore } from './orderedVaultStore';
 
 const { multiply, isGTE } = natSafeMath;
 
@@ -63,26 +63,6 @@ const currentDebtToCollateral = vault =>
 /** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultKitRecord */
 
 /**
- * @param {VaultKitRecord} leftVaultPair
- * @param {VaultKitRecord} rightVaultPair
- * @returns {-1 | 0 | 1}
- */
-const compareVaultKits = (leftVaultPair, rightVaultPair) => {
-  const leftVaultRatio = leftVaultPair.debtToCollateral;
-  const rightVaultRatio = rightVaultPair.debtToCollateral;
-  const leftGTERight = ratioGTE(leftVaultRatio, rightVaultRatio);
-  const rightGTEleft = ratioGTE(rightVaultRatio, leftVaultRatio);
-  if (leftGTERight && rightGTEleft) {
-    return 0;
-  } else if (leftGTERight) {
-    return -1;
-  } else if (rightGTEleft) {
-    return 1;
-  }
-  throw Error("The vault's collateral ratios are not comparable");
-};
-
-/**
  *
  * @param {() => void} reschedulePriceCheck called when there is a new
  * least-collateralized vault
@@ -117,8 +97,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     }
   };
 
-  const highestRatio = () => {
-    const mostIndebted = vaults.first;
+  const firstDebtRatio = () => {
+    const [mostIndebted] = vaults.values();
     return mostIndebted ? mostIndebted.debtToCollateral : undefined;
   };
 
@@ -136,7 +116,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       ratioGTE(debtToCollateral, highestDebtToCollateral)
     ) {
       // don't call reschedulePriceCheck, but do reset the highest.
-      highestDebtToCollateral = highestRatio();
+      highestDebtToCollateral = firstDebtRatio();
     }
     return vaults.removeVaultKit(vaultId, vault);
   };
@@ -194,12 +174,13 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   const forEachRatioGTE = (ratio, cb) => {
     // ??? should this use a Pattern to limit the iteration?
     for (const [k, v] of vaults.entries()) {
+      const [_, vaultId] = fromVaultKey(k);
       /** @type {VaultKit} */
       const vk = v;
       const debtToCollateral = currentDebtToCollateral(vk.vault);
 
       if (ratioGTE(debtToCollateral, ratio)) {
-        cb(vk);
+        cb(vk, vaultId);
       } else {
         // stop once we are below the target ratio
         break;

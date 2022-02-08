@@ -35,12 +35,13 @@ const { details: X } = assert;
 
 const trace = makeTracer(' VM ');
 
-// Each VaultManager manages a single collateralType. It owns an autoswap
-// instance which trades this collateralType against RUN. It also manages
-// some number of outstanding loans, each called a Vault, for which the
-// collateral is provided in exchange for borrowed RUN.
-
 /**
+ * Each VaultManager manages a single collateralType.
+ *
+ * It owns an autoswap instance which trades this collateralType against RUN. It
+ * also manages some number of outstanding loans, each called a Vault, for which
+ * the collateral is provided in exchange for borrowed RUN.
+ *
  * @param {ContractFacet} zcf
  * @param {ZCFMint} runMint
  * @param {Brand} collateralBrand
@@ -90,6 +91,30 @@ export const makeVaultManager = (
       );
     },
   };
+
+  /**
+   * Each vaultManager can be in these liquidation process states:
+   *
+   * READY
+   * - Ready to liquidate
+   * - waiting on price info
+   * - If chargeInterest triggers, we have to reschedulePriceCheck
+   * CULLING
+   * - Price info arrived
+   * - Picking out set to liquidate
+   * - reschedulePriceCheck ?
+   * - highestDebtToCollateral is just a cache for perf of the head of the priority queue
+   * - If chargeInterest triggers, it’s postponed until READY
+   * LIQUIDATING
+   * - Liquidate each of the selected
+   * - ¿ Skip ones that no longer need to be?
+   * - ¿ Remove empty vaults?
+   * - If chargeInterest triggers, it’s postponed until READY
+   * - Go back to READY
+   *
+   * @type {'READY' | 'CULLING' | 'LIQUIDATING'}
+   */
+  const currentState = 'READY';
 
   // A Map from vaultKits to their most recent ratio of debt to
   // collateralization. (This representation won't be optimized; when we need
@@ -204,7 +229,7 @@ export const makeVaultManager = (
   };
   prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
 
-  // ??? what's the use case for liquidating all vaults?
+  // In extreme situations system health may require liquidating all vaults.
   const liquidateAll = () => {
     assert(prioritizedVaults);
     const promises = prioritizedVaults.map(({ vaultKit }) =>
