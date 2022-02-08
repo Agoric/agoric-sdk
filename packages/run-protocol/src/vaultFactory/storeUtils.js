@@ -63,6 +63,18 @@ const dbEntryKeyToNumber = k => {
   return result;
 };
 
+// XXX there's got to be a helper somewhere for Ratio to float?
+/**
+ *
+ * @param {Ratio} ratio
+ * @returns {number}
+ */
+const ratioToNumber = ratio => {
+  return ratio.numerator.value
+    ? Number(ratio.denominator.value / ratio.numerator.value)
+    : Number.POSITIVE_INFINITY;
+};
+
 /**
  * Sorts by ratio in descending debt. Ordering of vault id is undefined.
  * All debts greater than colleteral are tied for first.
@@ -74,12 +86,8 @@ const dbEntryKeyToNumber = k => {
 const toVaultKey = (ratio, vaultId) => {
   assert(ratio);
   assert(vaultId);
-  // XXX there's got to be a helper for Ratio to float
-  const float = ratio.numerator.value
-    ? Number(ratio.denominator.value / ratio.numerator.value)
-    : Number.POSITIVE_INFINITY;
   // until DB supports composite keys, copy its method for turning numbers to DB entry keys
-  const numberPart = numberToDBEntryKey(float);
+  const numberPart = numberToDBEntryKey(ratioToNumber(ratio));
   return `${numberPart}:${vaultId}`;
 };
 

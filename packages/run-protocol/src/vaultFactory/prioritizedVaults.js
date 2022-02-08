@@ -74,7 +74,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // (which should be lower, as we will have liquidated any that were at least
   // as high.)
   /** @type {Ratio=} */
-  // cache of the head of the priority queue (actualized)
+  // cache of the head of the priority queue (normalized or actualized?)
   let highestDebtToCollateral;
 
   // Check if this ratio of debt to collateral would be the highest known. If
@@ -92,15 +92,19 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     }
   };
 
+  /**
+   *
+   * @returns {Ratio=} actual debt over collateral
+   */
   const firstDebtRatio = () => {
     if (vaults.getSize() === 0) {
       return undefined;
     }
 
-    // TODO get from keys() instead of entries()
-    const [[compositeKey]] = vaults.entriesWithCompositeKeys();
-    const [normalizedDebtRatio] = compositeKey;
-    return normalizedDebtRatio;
+    const [[_, vaultKit]] = vaults.entriesWithId();
+    const { vault } = vaultKit;
+    const actualDebtAmount = vault.getDebtAmount();
+    return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
   };
 
   /**
@@ -141,7 +145,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * @returns {void}
    */
   const forAll = cb => {
-    for (const [[_, vaultId], vk] of vaults.entriesWithCompositeKeys()) {
+    for (const [vaultId, vk] of vaults.entriesWithId()) {
       cb(vaultId, vk);
     }
   };
@@ -161,7 +165,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    */
   const forEachRatioGTE = (ratio, cb) => {
     // TODO use a Pattern to limit the query
-    for (const [[_, vaultId], vk] of vaults.entriesWithCompositeKeys()) {
+    for (const [vaultId, vk] of vaults.entriesWithId()) {
       const debtToCollateral = currentDebtToCollateral(vk.vault);
 
       if (ratioGTE(debtToCollateral, ratio)) {
