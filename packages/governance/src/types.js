@@ -306,10 +306,6 @@
  */
 
 /**
- * @typedef { ElectorateCreatorFacet & {addQuestion: AddQuestion} } ShareholdersCreatorFacet
- */
-
-/**
  * @typedef {Object} GetVoterInvitations
  * @property {() => Invitation[]} getVoterInvitations
  */
