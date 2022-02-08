@@ -6,18 +6,13 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { fromVaultKey, makeOrderedVaultStore } from './orderedVaultStore';
+import { makeOrderedVaultStore } from './orderedVaultStore';
 
 const { multiply, isGTE } = natSafeMath;
 
 /** @typedef {import('./vault').VaultKit} VaultKit */
 
-// Stores a collection of Vaults, pretending to be indexed by ratio of
-// debt to collateral. Once performance is an issue, this should use Virtual
-// Objects. For now, it uses a Map (Vault->debtToCollateral).
-// debtToCollateral (which is not the collateralizationRatio) is updated using
-// an observer on the UIState.
-
+// TODO put this with other ratio math
 /**
  *
  * @param {Ratio} left
@@ -79,7 +74,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // (which should be lower, as we will have liquidated any that were at least
   // as high.)
   /** @type {Ratio=} */
-  // cache of the head of the priority queue
+  // cache of the head of the priority queue (actualized)
   let highestDebtToCollateral;
 
   // Check if this ratio of debt to collateral would be the highest known. If
@@ -98,8 +93,14 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   };
 
   const firstDebtRatio = () => {
-    const [mostIndebted] = vaults.values();
-    return mostIndebted ? mostIndebted.debtToCollateral : undefined;
+    if (vaults.getSize() === 0) {
+      return undefined;
+    }
+
+    // TODO get from keys() instead of entries()
+    const [[compositeKey]] = vaults.entriesWithCompositeKeys();
+    const [normalizedDebtRatio] = compositeKey;
+    return normalizedDebtRatio;
   };
 
   /**
@@ -121,29 +122,6 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     return vaults.removeVaultKit(vaultId, vault);
   };
 
-  // FIXME need to still do this work
-  // /**
-  //  *
-  //  * @param {VaultKit} vaultKit
-  //  */
-  // const makeObserver = (vaultKit) => ({
-  //   updateState: (state) => {
-  //     if (AmountMath.isEmpty(state.locked)) {
-  //       return;
-  //     }
-  //     const debtToCollateral = currentDebtToCollateral(vaultKit);
-  //     updateDebtRatio(vaultKit, debtToCollateral);
-  //     vaultsWithDebtRatio.sort(compareVaultKits);
-  //     rescheduleIfHighest(debtToCollateral);
-  //   },
-  //   finish: (_) => {
-  //     removeVault(vaultKit);
-  //   },
-  //   fail: (_) => {
-  //     removeVault(vaultKit);
-  //   },
-  // });
-
   /**
    *
    * @param {VaultId} vaultId
@@ -152,10 +130,20 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   const addVaultKit = (vaultId, vaultKit) => {
     vaults.addVaultKit(vaultId, vaultKit);
 
-    // REVISIT
     const debtToCollateral = currentDebtToCollateral(vaultKit.vault);
-    // observeNotifier(notifier, makeObserver(vaultKit));
     rescheduleIfHighest(debtToCollateral);
+  };
+
+  /**
+   * Akin to forEachRatioGTE but iterate over all vaults.
+   *
+   * @param {(VaultId, VaultKit) => void} cb
+   * @returns {void}
+   */
+  const forAll = cb => {
+    for (const [[_, vaultId], vk] of vaults.entriesWithCompositeKeys()) {
+      cb(vaultId, vk);
+    }
   };
 
   /**
@@ -169,18 +157,15 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * dump rate to manage economices.
    *
    * @param {Ratio} ratio
-   * @param {(VaultId, VaultKit) => void} cb
+   * @param {(vid: VaultId, vk: VaultKit) => void} cb
    */
   const forEachRatioGTE = (ratio, cb) => {
-    // ??? should this use a Pattern to limit the iteration?
-    for (const [k, v] of vaults.entries()) {
-      const [_, vaultId] = fromVaultKey(k);
-      /** @type {VaultKit} */
-      const vk = v;
+    // TODO use a Pattern to limit the query
+    for (const [[_, vaultId], vk] of vaults.entriesWithCompositeKeys()) {
       const debtToCollateral = currentDebtToCollateral(vk.vault);
 
       if (ratioGTE(debtToCollateral, ratio)) {
-        cb(vk, vaultId);
+        cb(vaultId, vk);
       } else {
         // stop once we are below the target ratio
         break;
@@ -202,13 +187,11 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     addVaultKit(vaultId, vaultKit);
   };
 
-  const map = func => vaultsWithDebtRatio.map(func);
-
   return harden({
     addVaultKit,
     refreshVaultPriority,
     removeVault,
-    map,
+    forAll,
     forEachRatioGTE,
     highestRatio: () => highestDebtToCollateral,
   });

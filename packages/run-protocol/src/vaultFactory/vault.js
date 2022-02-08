@@ -157,6 +157,7 @@ export const makeVaultKit = (
    * @returns {Amount} as if the vault was open at the launch of this manager, before any interest accrued
    */
   const getNormalizedDebt = () => {
+    assert(interestSnapshot);
     return floorMultiplyBy(runDebtSnapshot, invertRatio(interestSnapshot));
   };
 
