@@ -10,6 +10,8 @@ import {
 
 import anylogger from 'anylogger';
 
+import { makeSlogSenderFromModule } from '@agoric/telemetry';
+
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
@@ -83,6 +85,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     console,
     env: process.env,
   });
+
+  const { SLOGFILE, SLOGSENDER } = process.env;
+  const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+    stateDir: stateDBdir,
+  });
+
   const s = await launch(
     stateDBdir,
     mailboxStorage,
@@ -92,6 +100,8 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     argv,
     GCI, // debugName
     metricsProvider,
+    SLOGFILE,
+    slogSender,
   );
 
   const { savedHeight, savedActions, savedChainSends } = s;

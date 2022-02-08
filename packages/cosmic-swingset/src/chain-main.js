@@ -7,6 +7,7 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox.js';
 
 import { assert, details as X } from '@agoric/assert';
+import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
@@ -249,7 +250,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       ),
     ).pathname;
     const { metricsProvider } = getTelemetryProviders({ console, env });
-    const slogFile = env.SLOGFILE;
+
+    const { SLOGFILE, SLOGSENDER } = env;
+    const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+      stateDir: stateDBDir,
+    });
+
     const consensusMode = env.DEBUG === undefined;
     const s = await launch(
       stateDBDir,
@@ -260,7 +266,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       argv,
       undefined,
       metricsProvider,
-      slogFile,
+      SLOGFILE,
+      slogSender,
       consensusMode,
     );
     return s;

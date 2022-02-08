@@ -15,18 +15,24 @@
     "lint:types": "tsc -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
+  "bin": {
+    "frcat": "./src/frcat-entrypoint.js"
+  },
   "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@endo/init": "^0.5.33",
     "@opentelemetry/exporter-prometheus": "^0.16.0",
-    "@opentelemetry/metrics": "^0.16.0"
+    "@opentelemetry/metrics": "^0.16.0",
+    "bufferfromfile": "agoric-labs/BufferFromFile#Agoric-built"
   },
   "devDependencies": {
     "@endo/lockdown": "^0.1.5",
     "@endo/ses-ava": "^0.2.17",
     "ava": "^3.12.1",
-    "c8": "^7.7.2"
+    "c8": "^7.7.2",
+    "tmp": "^0.2.1"
   },
   "eslintConfig": {
     "extends": [

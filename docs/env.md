@@ -115,6 +115,12 @@ Same as SLOGFILE, but for solo instead of chain.
 
 Lifetime: ?
 
+## SOLO_SLOGSENDER
+
+Same as SLOGSENDER, but for solo instead of chain.
+
+Lifetime: ?
+
 ## SOLO_MAX_DEBUG_LENGTH
 
 Affects: solo
@@ -136,6 +142,21 @@ Description: when nonempty, use the value as an absolute path to which SwingSet
 debug logs should be written.
 
 Lifetime: ?
+
+## SLOGSENDER
+
+Affects: cosmic-swingset
+
+Purpose: intercept the SwingSet LOG file in realtime
+
+Description: when nonempty, use the value as a module specifier.  The module
+will be loaded by `@agoric/telemetry/src/make-slog-sender.js`, via
+`import(moduleSpec)`, and then the exported `makeSlogSender` function creates a
+`slogSender`.  Then, every time a SLOG object is written by SwingSet,
+`slogSender(slogObject)` will be called.
+
+The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
+mmap'ed circular buffer.
 
 ## SWINGSET_WORKER_TYPE
 

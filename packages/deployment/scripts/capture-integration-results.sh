@@ -14,5 +14,6 @@ for node in validator{0,1}; do
   home=/home/ag-chain-cosmos/.ag-chain-cosmos
   "$thisdir/setup.sh" ssh "$node" cat "$home/config/genesis.json" > "$RESULTSDIR/$node-genesis.json" || true
   "$thisdir/setup.sh" ssh "$node" cat "$home/data/chain.slog" > "$RESULTSDIR/$node.slog" || true
+  "$thisdir/setup.sh" ssh "$node" cat "$home/data/ag-cosmos-chain-state/flight-recorder.bin" > "$RESULTSDIR/$node-flight-recorder.bin" || true
   "$thisdir/setup.sh" ssh "$node" cat "$home/data/kvstore.trace" > "$RESULTSDIR/$node-kvstore.trace" || true
 done
