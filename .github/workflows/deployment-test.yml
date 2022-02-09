@@ -1,7 +1,7 @@
 name: Chain deployment test
 
 on:
-  # Use the following to explicitly start thit workflow.
+  # Use the following to explicitly start this workflow.
   # packages/deployment/scripts/start-deployment-test.sh <BRANCH-OR-TAG>
   workflow_dispatch:
   # Otherwise, run on default branch.
@@ -21,12 +21,48 @@ jobs:
       - uses: ./.github/actions/restore-node
         with:
           node-version: 14.x
+
+      # Select a branch on loadgen to test against by adding text to the body of the
+      # pull request. For example: #loadgen-branch: user-123-update-foo
+      # The default is 'main'
+      - name: Get the appropriate loadgen branch
+        id: get-loadgen-branch
+        uses: actions/github-script@0.9.0
+        with:
+          result-encoding: string
+          script: |
+            let branch = 'main';
+            if (context.payload.pull_request) {
+              const { body } = context.payload.pull_request;
+              const regex = /.*\#loadgen-branch:\s+(\S+)/;
+              const result = regex.exec(body);
+              if (result) {
+                branch = result[1];
+              }
+            }
+            console.log(branch);
+            return branch;
+
+      - name: Check out loadgen
+        uses: actions/checkout@v2
+        with:
+          repository: Agoric/testnet-load-generator
+          path: testnet-load-generator
+          ref: ${{steps.get-loadgen-branch.outputs.result}}
+
+      - name: Move repos under /usr/src where scripts expect them
+        run: |
+          set -e
+          sudo mv "$GITHUB_WORKSPACE/testnet-load-generator" /usr/src/testnet-load-generator
+          sudo mv "$GITHUB_WORKSPACE" /usr/src/agoric-sdk
+          ln -s /usr/src/agoric-sdk/packages/deployment/bin/ag-setup-cosmos /usr/local/bin/ag-setup-cosmos
+          ln -s /usr/src/agoric-sdk "$GITHUB_WORKSPACE"
+        working-directory: /
+
       - name: Build cosmic-swingset dependencies
         run: |
           # Some of our build relies on /usr/src/agoric-sdk
           set -e
-          sudo mv "$GITHUB_WORKSPACE" /usr/src/agoric-sdk
-          ln -s /usr/src/agoric-sdk "$GITHUB_WORKSPACE"
           cd /usr/src/agoric-sdk/packages/cosmic-swingset
           make install
         working-directory: /
