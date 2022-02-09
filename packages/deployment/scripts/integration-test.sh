@@ -42,6 +42,8 @@ then
     loadgen $(cat _agstate/agoric-servers/testnet-8000/ag-cosmos-helper-address)
   SDK_BUILD=0 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
     --no-stage.save-storage --stages=3 --stage.duration=4 \
+    --stage.loadgen.vault.interval=12 --stage.loadgen.vault.limit=2 \
+    --stage.loadgen.amm.interval=12 --stage.loadgen.amm.wait=6 --stage.loadgen.amm.limit=2 \
     --profile=testnet "--testnet-origin=file://$RESULTSDIR" \
     --no-reset
 fi
