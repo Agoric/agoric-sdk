@@ -146,7 +146,7 @@ export async function launch(
   meterProvider = DEFAULT_METER_PROVIDER,
   slogFile = undefined,
   slogSender,
-  consensusMode = false,
+  consensusMode = true,
 ) {
   console.info('Launching SwingSet kernel');
 

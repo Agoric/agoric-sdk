@@ -256,7 +256,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       stateDir: stateDBDir,
     });
 
-    const consensusMode = env.DEBUG === undefined;
+    // We want to make it hard for a validator to accidentally disable
+    // consensusMode.
+    const consensusMode = true;
     const s = await launch(
       stateDBDir,
       mailboxStorage,
