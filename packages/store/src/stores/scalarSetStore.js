@@ -26,6 +26,7 @@ export const makeSetStoreMethods = (
   const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
     makeCurrentKeysKit(
       () => jsset.keys(),
+      k => jsset.has(k),
       compareRank,
       assertKeyOkToAdd,
       assertKeyOkToDelete,
@@ -50,6 +51,8 @@ export const makeSetStoreMethods = (
     ),
 
     keys,
+
+    values: keys,
 
     snapshot: (keyPatt = undefined) => makeCopySet(keys(keyPatt)),
 

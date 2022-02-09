@@ -15,6 +15,7 @@ const { details: X, quote: q } = assert;
 /**
  * @template K,V
  * @param {() => Iterable<K>} getRawKeys
+ * @param {(k: K) => boolean} checkHas
  * @param {RankCompare} compare
  * @param {(k: K, v?: V) => void} assertOkToAdd
  * @param {((k: K) => void)=} assertOkToDelete
@@ -23,6 +24,7 @@ const { details: X, quote: q } = assert;
  */
 export const makeCurrentKeysKit = (
   getRawKeys,
+  checkHas,
   compare,
   assertOkToAdd,
   assertOkToDelete = undefined,
@@ -37,17 +39,7 @@ export const makeCurrentKeysKit = (
     sortedKeysMemo = undefined;
   };
 
-  const assertUpdateOnDelete =
-    assertOkToDelete === undefined
-      ? _k => {
-          updateCount += 1;
-          sortedKeysMemo = undefined;
-        }
-      : k => {
-          assertOkToDelete(k);
-          updateCount += 1;
-          sortedKeysMemo = undefined;
-        };
+  const assertUpdateOnDelete = k => assertOkToDelete && assertOkToDelete(k);
 
   const getSortedKeys = () => {
     if (sortedKeysMemo === undefined) {
@@ -71,12 +63,16 @@ export const makeCurrentKeysKit = (
           );
           // If they're equal, then the sortedKeyMemo is the same one
           // we started with.
-          if (i < len) {
-            const result = harden({ done: false, value: sortedKeysMemo[i] });
-            i += 1;
-            return result;
-          } else {
-            return harden({ done: true, value: undefined });
+          for (;;) {
+            if (i < len) {
+              const value = sortedKeysMemo[i];
+              i += 1;
+              if (checkHas(value)) {
+                return harden({ done: false, value });
+              }
+            } else {
+              return harden({ done: true, value: undefined });
+            }
           }
         },
       });
