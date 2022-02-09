@@ -2,7 +2,11 @@
 // XXX avoid deep imports https://github.com/Agoric/agoric-sdk/issues/4255#issuecomment-1032117527
 import { makeScalarBigMapStore } from '@agoric/swingset-vat/src/storeModule.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
-import { fromVaultKey, toVaultKey } from './storeUtils.js';
+import {
+  fromVaultKey,
+  toUncollateralizedKey,
+  toVaultKey,
+} from './storeUtils.js';
 
 /**
  * Used by prioritizedVaults to wrap the Collections API for this use case.
@@ -30,11 +34,13 @@ export const makeOrderedVaultStore = () => {
    */
   const addVaultKit = (vaultId, vaultKit) => {
     const { vault } = vaultKit;
-    const debtRatio = makeRatioFromAmounts(
-      vault.getDebtAmount(),
-      vault.getCollateralAmount(),
-    );
-    const key = toVaultKey(debtRatio, vaultId);
+    const debt = vault.getDebtAmount();
+    const collateral = vault.getCollateralAmount();
+    console.log('addVaultKit', { debt, collateral });
+    const key =
+      collateral.value === 0n
+        ? toUncollateralizedKey(vaultId)
+        : toVaultKey(makeRatioFromAmounts(debt, collateral), vaultId);
     store.init(key, vaultKit);
     store.getSize;
   };
@@ -53,10 +59,23 @@ export const makeOrderedVaultStore = () => {
 
     // XXX TESTME does this really work?
     const key = toVaultKey(debtRatio, vaultId);
-    const vaultKit = store.get(key);
-    assert(vaultKit);
-    store.delete(key);
-    return vaultKit;
+    try {
+      const vaultKit = store.get(key);
+      assert(vaultKit);
+      store.delete(key);
+      return vaultKit;
+    } catch (e) {
+      const keys = Array.from(store.keys());
+      console.error(
+        'removeVaultKit failed to remove',
+        key,
+        'parts:',
+        fromVaultKey(key),
+      );
+      console.error('  key literals:', keys);
+      console.error('  key parts:', keys.map(fromVaultKey));
+      throw e;
+    }
   };
 
   /**

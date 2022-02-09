@@ -80,7 +80,7 @@ const ratioToNumber = ratio => {
 
 /**
  * Sorts by ratio in descending debt. Ordering of vault id is undefined.
- * All debts greater than colleteral are tied for first.
+ * All debts greater than collateral are tied for first.
  *
  * @param {Ratio} ratio normalized debt ratio (debt over collateral)
  * @param {VaultId} vaultId
@@ -91,6 +91,20 @@ const toVaultKey = (ratio, vaultId) => {
   assert(vaultId);
   // until DB supports composite keys, copy its method for turning numbers to DB entry keys
   const numberPart = numberToDBEntryKey(ratioToNumber(ratio));
+  return `${numberPart}:${vaultId}`;
+};
+
+/**
+ * Vaults may be in the store with zero collateral before loans are opened upon them. (??? good/bad idea?)
+ * They're always the highest priority.
+ *
+ * @param {VaultId} vaultId
+ * @returns {string} lexically sortable string in which highest debt-to-collateral is earliest
+ */
+const toUncollateralizedKey = vaultId => {
+  assert(vaultId);
+  // until DB supports composite keys, copy its method for turning numbers to DB entry keys
+  const numberPart = numberToDBEntryKey(0);
   return `${numberPart}:${vaultId}`;
 };
 
@@ -106,6 +120,13 @@ const fromVaultKey = key => {
 harden(dbEntryKeyToNumber);
 harden(fromVaultKey);
 harden(numberToDBEntryKey);
+harden(toUncollateralizedKey);
 harden(toVaultKey);
 
-export { dbEntryKeyToNumber, fromVaultKey, numberToDBEntryKey, toVaultKey };
+export {
+  dbEntryKeyToNumber,
+  fromVaultKey,
+  numberToDBEntryKey,
+  toUncollateralizedKey,
+  toVaultKey,
+};

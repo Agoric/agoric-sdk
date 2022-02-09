@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-check
 
 import '@agoric/zoe/src/types.js';
 
@@ -30,6 +30,8 @@ export async function start(zcf, privateArgs) {
 
   const { zcfSeat: vaultFactorySeat } = zcf.makeEmptySeatKit();
 
+  let vaultCounter = 0;
+
   function reallocateReward(amount, fromSeat, otherSeat) {
     vaultFactorySeat.incrementBy(
       fromSeat.decrementBy(
@@ -45,7 +47,7 @@ export async function start(zcf, privateArgs) {
     }
   }
 
-  /** @type {InnerVaultManager} */
+  /** @type {Parameters<typeof makeVaultKit>[1]} */
   const managerMock = Far('vault manager mock', {
     getLiquidationMargin() {
       return makeRatio(105n, runBrand);
@@ -69,6 +71,10 @@ export async function start(zcf, privateArgs) {
       return SECONDS_PER_HOUR * 24n * 7n;
     },
     reallocateReward,
+    applyDebtDelta() {},
+    getCollateralQuote() {
+      return Promise.resolve({ quoteAmount: null, quotePayment: null });
+    },
     getCompoundedInterest: () => makeRatio(1n, runBrand),
   });
 
@@ -83,12 +89,16 @@ export async function start(zcf, privateArgs) {
   };
   const priceAuthority = makeFakePriceAuthority(options);
 
-  const { vault, openLoan, accrueInterestAndAddToPool } = await makeVaultKit(
+  const {
+    vault,
+    actions: { openLoan },
+  } = await makeVaultKit(
     zcf,
     managerMock,
+    // eslint-disable-next-line no-plusplus
+    String(vaultCounter++),
     runMint,
     priceAuthority,
-    timer.getCurrentTimestamp(),
   );
 
   zcf.setTestJig(() => ({ collateralKit, runMint, vault, timer }));
@@ -104,7 +114,6 @@ export async function start(zcf, privateArgs) {
         add() {
           return vault.makeAdjustBalancesInvitation();
         },
-        accrueInterestAndAddToPool,
       }),
       notifier,
     };

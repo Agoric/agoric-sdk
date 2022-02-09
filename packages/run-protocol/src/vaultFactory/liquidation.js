@@ -72,7 +72,6 @@ const liquidate = async (
   // any remaining RUN plus anything else leftover from the sale are refunded
   vaultSeat.exit();
   liquidationSeat.exit();
-  vaultKit.liquidationPromiseKit.resolve('Liquidated');
 
   return vaultKit.vault;
 };

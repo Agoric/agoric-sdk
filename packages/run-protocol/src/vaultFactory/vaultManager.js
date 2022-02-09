@@ -33,7 +33,7 @@ import { makeInterestCalculator } from './interest.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer(' VM ');
+const trace = makeTracer('VM');
 
 /**
  * Each VaultManager manages a single collateralType.
@@ -291,19 +291,71 @@ export const makeVaultManager = (
 
     // notifiy UIs
     // updateUiState();
+    trace('chargeAllVaults complete', {
+      compoundedInterest,
+      interestAccrued,
+      totalDebt,
+    });
 
     reschedulePriceCheck();
   };
 
   /**
+   * @param {Amount} oldDebt - principal and all accrued interest
+   * @param {Amount} newDebt - principal and all accrued interest
+   * @returns {bigint} in brand of the manager's debt
+   */
+  const debtDelta = (oldDebt, newDebt) => {
+    // Since newDebt includes accrued interest we need to use getDebtAmount()
+    // to get a baseline that also includes accrued interest.
+    // eslint-disable-next-line no-use-before-define
+    const priorDebtValue = oldDebt.value;
+    // We can't used AmountMath because the delta can be negative.
+    assert.typeof(
+      priorDebtValue,
+      'bigint',
+      'vault debt supports only bigint amounts',
+    );
+    return newDebt.value - priorDebtValue;
+  };
+
+  /**
    * @param {VaultId} vaultId
    * @param {Vault} vault
-   * @param {Amount} delta
+   * @param {Amount} oldDebtOnVault
+   * @param {Amount} newDebtOnVault
    */
-  const applyDebtDelta = (vaultId, vault, delta) => {
-    totalDebt = AmountMath.add(totalDebt, delta);
+  const applyDebtDelta = (vaultId, vault, oldDebtOnVault, newDebtOnVault) => {
+    const delta = debtDelta(oldDebtOnVault, newDebtOnVault);
+    trace(
+      `updating total debt of ${totalDebt.value} ${totalDebt.brand} by ${delta}`,
+    );
+    if (delta === 0n) {
+      // nothing to do
+      return;
+    }
+
+    if (delta > 0n) {
+      // add the amount
+      totalDebt = AmountMath.add(
+        totalDebt,
+        AmountMath.make(totalDebt.brand, delta),
+      );
+    } else {
+      // negate the amount so that it's a natural number, then subtract
+      const absDelta = -delta;
+      assert(
+        !(absDelta > totalDebt.value),
+        'Negative delta greater than total debt',
+      );
+      totalDebt = AmountMath.subtract(
+        totalDebt,
+        AmountMath.make(totalDebt.brand, absDelta),
+      );
+    }
     assert(prioritizedVaults);
     prioritizedVaults.refreshVaultPriority(vaultId, vault);
+    trace('applyDebtDelta complete', { totalDebt });
   };
 
   const periodNotifier = E(timerService).makeNotifier(
@@ -359,10 +411,11 @@ export const makeVaultManager = (
       vault,
       actions: { openLoan },
     } = vaultKit;
-    // FIXME do without notifier callback
-    const { notifier } = await openLoan(seat);
     assert(prioritizedVaults);
     prioritizedVaults.addVaultKit(vaultId, vaultKit);
+
+    // ??? do we still need the notifier?
+    const { notifier } = await openLoan(seat);
 
     seat.exit();
 

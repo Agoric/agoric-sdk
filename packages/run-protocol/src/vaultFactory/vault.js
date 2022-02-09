@@ -19,9 +19,11 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makeTracer } from '../makeTracer.js';
 
 const { details: X, quote: q } = assert;
+
+const trace = makeTracer('Vault');
 
 // a Vault is an individual loan, using some collateralType as the
 // collateral, and lending RUN to the borrower
@@ -41,7 +43,7 @@ export const VaultState = {
 
 /**
  * @typedef {Object} InnerVaultManagerBase
- * @property {(VaultId, Vault, Amount) => void} applyDebtDelta
+ * @property {(vaultId: VaultId, vault: Vault, oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
  * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
  * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
@@ -64,7 +66,6 @@ export const makeVaultKit = (
   const { updater: uiUpdater, notifier } = makeNotifierKit();
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
     zcf.makeEmptySeatKit(undefined);
-  const liquidationPromiseKit = makePromiseKit();
 
   /** @type {VAULT_STATE} */
   let vaultState = VaultState.ACTIVE;
@@ -96,31 +97,29 @@ export const makeVaultKit = (
 
   /**
    * @param {Amount} newDebt - principal and all accrued interest
-   * @returns {Amount}
    */
   const updateDebtSnapshot = newDebt => {
-    // Since newDebt includes accrued interest we need to use getDebtAmount()
-    // to get a baseline that also includes accrued interest.
-    // eslint-disable-next-line no-use-before-define
-    const delta = AmountMath.subtract(newDebt, getDebtAmount());
-
     // update local state
     runDebtSnapshot = newDebt;
     interestSnapshot = manager.getCompoundedInterest();
 
-    return delta;
+    trace(`${idInManager} updateDebtSnapshot`, newDebt.value, {
+      interestSnapshot,
+      runDebtSnapshot,
+    });
   };
 
   /**
-   * XXX maybe fold this into the calling context (vaultManager)
-   *
    * @param {Amount} newDebt - principal and all accrued interest
    */
   const updateDebtSnapshotAndNotify = newDebt => {
-    const delta = updateDebtSnapshot(newDebt);
+    // eslint-disable-next-line no-use-before-define
+    const oldDebt = getDebtAmount();
+    trace(idInManager, 'updateDebtSnapshotAndNotify', { oldDebt, newDebt });
+    updateDebtSnapshot(newDebt);
     // update parent state
     // eslint-disable-next-line no-use-before-define
-    manager.applyDebtDelta(idInManager, vault, delta);
+    manager.applyDebtDelta(idInManager, vault, oldDebt, newDebt);
   };
 
   /**
@@ -137,11 +136,6 @@ export const makeVaultKit = (
    */
   // TODO rename to getActualDebtAmount throughout codebase
   const getDebtAmount = () => {
-    console.log(
-      'DEBUG getDebtAmount',
-      { interestSnapshot },
-      manager.getCompoundedInterest(),
-    );
     // divide compounded interest by the the snapshot
     const interestSinceSnapshot = multiplyRatios(
       manager.getCompoundedInterest(),
@@ -189,11 +183,14 @@ export const makeVaultKit = (
     );
   };
 
-  const assertSufficientCollateral = async (collateralAmount, wantedRun) => {
+  const assertSufficientCollateral = async (
+    collateralAmount,
+    proposedRunDebt,
+  ) => {
     const maxRun = await maxDebtFor(collateralAmount);
     assert(
-      AmountMath.isGTE(maxRun, wantedRun, runBrand),
-      X`Requested ${q(wantedRun)} exceeds max ${q(maxRun)}`,
+      AmountMath.isGTE(maxRun, proposedRunDebt, runBrand),
+      X`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)}`,
     );
   };
 
@@ -257,6 +254,7 @@ export const makeVaultKit = (
    * @param {Amount} newDebt
    */
   const liquidated = newDebt => {
+    trace(idInManager, 'liquidated', newDebt);
     updateDebtSnapshot(newDebt);
 
     vaultState = VaultState.CLOSED;
@@ -264,6 +262,7 @@ export const makeVaultKit = (
   };
 
   const liquidating = () => {
+    trace(idInManager, 'liquidating');
     vaultState = VaultState.LIQUIDATING;
     updateUiState();
   };
@@ -312,7 +311,6 @@ export const makeVaultKit = (
     assertVaultHoldsNoRun();
     vaultSeat.exit();
     liquidationZcfSeat.exit();
-    liquidationPromiseKit.resolve('Closed');
 
     return 'your loan is closed, thank you for your business';
   };
@@ -463,6 +461,7 @@ export const makeVaultKit = (
    * @param {ZCFSeat} clientSeat
    */
   const adjustBalancesHook = async clientSeat => {
+    trace('adjustBalancesHook start');
     assertVaultIsOpen();
     const proposal = clientSeat.getProposal();
 
@@ -490,6 +489,14 @@ export const makeVaultKit = (
     // to the debt limit based on the new values.
     const vaultCollateral =
       collateralAfter.vault || AmountMath.makeEmpty(collateralBrand);
+
+    trace('adjustBalancesHook', {
+      targetCollateralAmount,
+      vaultCollateral,
+      fee,
+      toMint,
+      newDebt,
+    });
 
     // If the collateral decreased, we pro-rate maxDebt
     if (AmountMath.isGTE(targetCollateralAmount, vaultCollateral)) {
@@ -561,18 +568,20 @@ export const makeVaultKit = (
         Error('loan requested is too small; cannot accrue interest'),
       );
     }
+    trace(idInManager, 'openLoan', { wantedRun, fee });
 
-    updateDebtSnapshot(AmountMath.add(wantedRun, fee));
+    const runDebt = AmountMath.add(wantedRun, fee);
+    await assertSufficientCollateral(collateralAmount, runDebt);
 
-    await assertSufficientCollateral(collateralAmount, getDebtAmount());
-
-    runMint.mintGains(harden({ RUN: getDebtAmount() }), vaultSeat);
+    runMint.mintGains(harden({ RUN: runDebt }), vaultSeat);
 
     seat.incrementBy(vaultSeat.decrementBy(harden({ RUN: wantedRun })));
     vaultSeat.incrementBy(
       seat.decrementBy(harden({ Collateral: collateralAmount })),
     );
     manager.reallocateReward(fee, vaultSeat, seat);
+
+    updateDebtSnapshotAndNotify(runDebt);
 
     updateUiState();
 
@@ -589,7 +598,6 @@ export const makeVaultKit = (
     getDebtAmount,
     getNormalizedDebt,
     getLiquidationSeat: () => liquidationSeat,
-    getLiquidationPromise: () => liquidationPromiseKit.promise,
   });
 
   const actions = Far('vaultAdmin', {
@@ -601,7 +609,6 @@ export const makeVaultKit = (
   return harden({
     vault,
     actions,
-    liquidationPromiseKit,
     liquidationZcfSeat,
     vaultSeat,
   });

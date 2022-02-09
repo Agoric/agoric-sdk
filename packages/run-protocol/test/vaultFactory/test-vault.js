@@ -13,6 +13,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
+import { makeFakeLiveSlotsStuff } from '@agoric/swingset-vat/tools/fakeVirtualSupport.js';
 import { makeTracer } from '../../src/makeTracer.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
@@ -218,4 +219,13 @@ test('bad collateral', async t => {
   //       rej => console.log('reg', rej));
   // t.rejects(p, / /, 'addCollateral requires the right kind', {});
   // t.throws(async () => { await p; }, /was not a live payment/);
+});
+
+test('serializable with collectionManager', async t => {
+  // Necessary to initialize the testjig
+  await helperContract;
+
+  const { vault } = testJig;
+  const stuff = makeFakeLiveSlotsStuff();
+  t.notThrows(() => stuff.marshal.serialize(vault));
 });
