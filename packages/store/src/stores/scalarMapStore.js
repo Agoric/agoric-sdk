@@ -33,6 +33,7 @@ export const makeMapStoreMethods = (
   const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
     makeCurrentKeysKit(
       () => jsmap.keys(),
+      k => jsmap.has(k),
       compareRank,
       assertKVOkToAdd,
       assertKeyOkToDelete,
