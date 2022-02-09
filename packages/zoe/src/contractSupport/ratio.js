@@ -92,6 +92,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   AmountMath.coerce(numeratorAmount.brand, numeratorAmount);
   AmountMath.coerce(denominatorAmount.brand, denominatorAmount);
   return makeRatio(
+    // @ts-ignore value can be any AmountValue but makeRatio() supports only bigint
     numeratorAmount.value,
     numeratorAmount.brand,
     denominatorAmount.value,
@@ -239,6 +240,7 @@ export const oneMinus = ratio => {
   return makeRatio(
     subtract(ratio.denominator.value, ratio.numerator.value),
     ratio.numerator.brand,
+    // @ts-ignore value can be any AmountValue but makeRatio() supports only bigint
     ratio.denominator.value,
     ratio.numerator.brand,
   );

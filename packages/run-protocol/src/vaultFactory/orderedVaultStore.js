@@ -1,5 +1,7 @@
+// @ts-check
 // XXX avoid deep imports https://github.com/Agoric/agoric-sdk/issues/4255#issuecomment-1032117527
 import { makeScalarBigMapStore } from '@agoric/swingset-vat/src/storeModule.js';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { fromVaultKey, toVaultKey } from './storeUtils.js';
 
 /**
@@ -17,8 +19,9 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
 /** @typedef {[normalizedDebtRatio: number, vaultId: VaultId]} CompositeKey */
 
 export const makeOrderedVaultStore = () => {
-  /** @type {MapStore<string, VaultKit} */
-  const store = makeScalarBigMapStore();
+  // TODO make it work durably
+  /** @type {MapStore<string, VaultKit>} */
+  const store = makeScalarBigMapStore('orderedVaultStore', { durable: false });
 
   /**
    *
@@ -26,7 +29,12 @@ export const makeOrderedVaultStore = () => {
    * @param {VaultKit} vaultKit
    */
   const addVaultKit = (vaultId, vaultKit) => {
-    const key = toVaultKey(vaultKit.vault.getDebtAmount(), vaultId);
+    const { vault } = vaultKit;
+    const debtRatio = makeRatioFromAmounts(
+      vault.getDebtAmount(),
+      vault.getCollateralAmount(),
+    );
+    const key = toVaultKey(debtRatio, vaultId);
     store.init(key, vaultKit);
     store.getSize;
   };
@@ -38,7 +46,13 @@ export const makeOrderedVaultStore = () => {
    * @returns {VaultKit}
    */
   const removeVaultKit = (vaultId, vault) => {
-    const key = toVaultKey(vault.getNormalizedDebt(), vaultId);
+    const debtRatio = makeRatioFromAmounts(
+      vault.getNormalizedDebt(),
+      vault.getCollateralAmount(),
+    );
+
+    // XXX TESTME does this really work?
+    const key = toVaultKey(debtRatio, vaultId);
     const vaultKit = store.get(key);
     assert(vaultKit);
     store.delete(key);

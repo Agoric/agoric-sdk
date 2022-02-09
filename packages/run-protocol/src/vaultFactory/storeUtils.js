@@ -8,6 +8,8 @@
 // XXX declaration shouldn't be necessary. Add exception to eslint or make a real import.
 /* global BigUint64Array */
 
+import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
+
 const asNumber = new Float64Array(1);
 const asBits = new BigUint64Array(asNumber.buffer);
 
@@ -70,6 +72,7 @@ const dbEntryKeyToNumber = k => {
  * @returns {number}
  */
 const ratioToNumber = ratio => {
+  assertIsRatio(ratio);
   return ratio.numerator.value
     ? Number(ratio.denominator.value / ratio.numerator.value)
     : Number.POSITIVE_INFINITY;

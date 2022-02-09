@@ -33,10 +33,10 @@ const liquidate = async (
 ) => {
   // ??? should we bail if it's already liquidating?
   // if so should that be done here or throw here and managed at the caller
-  vaultKit.admin.liquidating();
+  vaultKit.actions.liquidating();
   const runDebt = vaultKit.vault.getDebtAmount();
   const { brand: runBrand } = runDebt;
-  const { vaultSeat, liquidationZcfSeat: liquidationSeat } = vaultKit.admin;
+  const { vaultSeat, liquidationZcfSeat: liquidationSeat } = vaultKit;
 
   const collateralToSell = vaultSeat.getAmountAllocated(
     'Collateral',
@@ -67,12 +67,12 @@ const liquidate = async (
   const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
   burnLosses(harden({ RUN: runToBurn }), liquidationSeat);
   // FIXME removal was triggered by this through observation of state change
-  vaultKit.admin.liquidated(AmountMath.subtract(runDebt, runToBurn));
+  vaultKit.actions.liquidated(AmountMath.subtract(runDebt, runToBurn));
 
   // any remaining RUN plus anything else leftover from the sale are refunded
   vaultSeat.exit();
   liquidationSeat.exit();
-  vaultKit.admin.liquidationPromiseKit.resolve('Liquidated');
+  vaultKit.liquidationPromiseKit.resolve('Liquidated');
 
   return vaultKit.vault;
 };

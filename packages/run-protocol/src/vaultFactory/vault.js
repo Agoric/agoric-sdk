@@ -90,9 +90,9 @@ export const makeVaultKit = (
   /**
    * compounded interest at the time the debt was snapshotted
    *
-   * @type {Ratio=}
+   * @type {Ratio}
    */
-  let interestSnapshot;
+  let interestSnapshot = manager.getCompoundedInterest();
 
   /**
    * @param {Amount} newDebt - principal and all accrued interest
@@ -137,7 +137,11 @@ export const makeVaultKit = (
    */
   // TODO rename to getActualDebtAmount throughout codebase
   const getDebtAmount = () => {
-    assert(interestSnapshot);
+    console.log(
+      'DEBUG getDebtAmount',
+      { interestSnapshot },
+      manager.getCompoundedInterest(),
+    );
     // divide compounded interest by the the snapshot
     const interestSinceSnapshot = multiplyRatios(
       manager.getCompoundedInterest(),
@@ -588,18 +592,18 @@ export const makeVaultKit = (
     getLiquidationPromise: () => liquidationPromiseKit.promise,
   });
 
-  const admin = Far('vaultAdmin', {
+  const actions = Far('vaultAdmin', {
     openLoan,
-    vaultSeat,
     liquidating,
     liquidated,
-    liquidationPromiseKit,
-    liquidationZcfSeat,
   });
 
   return harden({
     vault,
-    admin,
+    actions,
+    liquidationPromiseKit,
+    liquidationZcfSeat,
+    vaultSeat,
   });
 };
 
