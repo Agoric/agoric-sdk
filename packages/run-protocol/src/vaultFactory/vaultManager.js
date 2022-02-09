@@ -301,11 +301,32 @@ export const makeVaultManager = (
   };
 
   /**
+   * @param {Amount} oldDebt - principal and all accrued interest
+   * @param {Amount} newDebt - principal and all accrued interest
+   * @returns {bigint} in brand of the manager's debt
+   */
+  const debtDelta = (oldDebt, newDebt) => {
+    // Since newDebt includes accrued interest we need to use getDebtAmount()
+    // to get a baseline that also includes accrued interest.
+    // eslint-disable-next-line no-use-before-define
+    const priorDebtValue = oldDebt.value;
+    // We can't used AmountMath because the delta can be negative.
+    assert.typeof(
+      priorDebtValue,
+      'bigint',
+      'vault debt supports only bigint amounts',
+    );
+    return newDebt.value - priorDebtValue;
+  };
+
+  /**
    * @param {VaultId} vaultId
    * @param {Vault} vault
-   * @param {bigint} delta
+   * @param {Amount} oldDebtOnVault
+   * @param {Amount} newDebtOnVault
    */
-  const applyDebtDelta = (vaultId, vault, delta) => {
+  const applyDebtDelta = (vaultId, vault, oldDebtOnVault, newDebtOnVault) => {
+    const delta = debtDelta(oldDebtOnVault, newDebtOnVault);
     trace(
       `updating total debt of ${totalDebt.value} ${totalDebt.brand} by ${delta}`,
     );
@@ -390,10 +411,11 @@ export const makeVaultManager = (
       vault,
       actions: { openLoan },
     } = vaultKit;
-    // FIXME do without notifier callback
-    const { notifier } = await openLoan(seat);
     assert(prioritizedVaults);
     prioritizedVaults.addVaultKit(vaultId, vaultKit);
+
+    // ??? do we still need the notifier?
+    const { notifier } = await openLoan(seat);
 
     seat.exit();
 

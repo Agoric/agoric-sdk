@@ -43,7 +43,7 @@ export const VaultState = {
 
 /**
  * @typedef {Object} InnerVaultManagerBase
- * @property {(VaultId, Vault, bigint) => void} applyDebtDelta
+ * @property {(vaultId: VaultId, vault: Vault, oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
  * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
  * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
@@ -97,43 +97,29 @@ export const makeVaultKit = (
 
   /**
    * @param {Amount} newDebt - principal and all accrued interest
-   * @returns {bigint} in brand of the manager's debt
    */
   const updateDebtSnapshot = newDebt => {
-    // Since newDebt includes accrued interest we need to use getDebtAmount()
-    // to get a baseline that also includes accrued interest.
-    // eslint-disable-next-line no-use-before-define
-    const priorDebtValue = getDebtAmount().value;
-    // We can't used AmountMath because the delta can be negative.
-    assert.typeof(
-      priorDebtValue,
-      'bigint',
-      'vault debt supports only bigint amounts',
-    );
-    const delta = newDebt.value - priorDebtValue;
-
     // update local state
     runDebtSnapshot = newDebt;
     interestSnapshot = manager.getCompoundedInterest();
 
     trace(`${idInManager} updateDebtSnapshot`, newDebt.value, {
-      delta,
       interestSnapshot,
       runDebtSnapshot,
     });
-
-    return delta;
   };
 
   /**
    * @param {Amount} newDebt - principal and all accrued interest
    */
   const updateDebtSnapshotAndNotify = newDebt => {
-    trace(idInManager, 'updateDebtSnapshotAndNotify', newDebt);
-    const delta = updateDebtSnapshot(newDebt);
+    // eslint-disable-next-line no-use-before-define
+    const oldDebt = getDebtAmount();
+    trace(idInManager, 'updateDebtSnapshotAndNotify', { oldDebt, newDebt });
+    updateDebtSnapshot(newDebt);
     // update parent state
     // eslint-disable-next-line no-use-before-define
-    manager.applyDebtDelta(idInManager, vault, delta);
+    manager.applyDebtDelta(idInManager, vault, oldDebt, newDebt);
   };
 
   /**
