@@ -41,7 +41,7 @@ export const VaultState = {
 
 /**
  * @typedef {Object} InnerVaultManagerBase
- * @property {(VaultId, Vault, Amount) => void} applyDebtDelta
+ * @property {(VaultId, Vault, bigint) => void} applyDebtDelta
  * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
  * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
@@ -96,13 +96,20 @@ export const makeVaultKit = (
 
   /**
    * @param {Amount} newDebt - principal and all accrued interest
-   * @returns {Amount}
+   * @returns {bigint} in brand of the manager's debt
    */
   const updateDebtSnapshot = newDebt => {
     // Since newDebt includes accrued interest we need to use getDebtAmount()
     // to get a baseline that also includes accrued interest.
     // eslint-disable-next-line no-use-before-define
-    const delta = AmountMath.subtract(newDebt, getDebtAmount());
+    const priorDebtValue = getDebtAmount().value;
+    // We can't used AmountMath because the delta can be negative.
+    assert.typeof(
+      priorDebtValue,
+      'bigint',
+      'vault debt supports only bigint amounts',
+    );
+    const delta = newDebt.value - priorDebtValue;
 
     // update local state
     runDebtSnapshot = newDebt;
@@ -137,11 +144,6 @@ export const makeVaultKit = (
    */
   // TODO rename to getActualDebtAmount throughout codebase
   const getDebtAmount = () => {
-    console.log(
-      'DEBUG getDebtAmount',
-      { interestSnapshot },
-      manager.getCompoundedInterest(),
-    );
     // divide compounded interest by the the snapshot
     const interestSinceSnapshot = multiplyRatios(
       manager.getCompoundedInterest(),
