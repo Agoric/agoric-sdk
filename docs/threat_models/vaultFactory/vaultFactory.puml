@@ -41,8 +41,6 @@ node "Vat" {
         circle getDebtAmount
         circle getLiquidationSeat
         getLiquidationSeat -u-> LiquidationSeat
-        circle getLiquidationPromise
-        getLiquidationPromise -u-> LiquidationPromise
     }
 }
 Borrower -> makeLoanInvitation: open vault and transfer collateral

@@ -33,7 +33,7 @@ import { makeInterestCalculator } from './interest.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer(' VM ');
+const trace = makeTracer('VM');
 
 /**
  * Each VaultManager manages a single collateralType.
@@ -291,6 +291,11 @@ export const makeVaultManager = (
 
     // notifiy UIs
     // updateUiState();
+    trace('chargeAllVaults complete', {
+      compoundedInterest,
+      interestAccrued,
+      totalDebt,
+    });
 
     reschedulePriceCheck();
   };
@@ -298,12 +303,38 @@ export const makeVaultManager = (
   /**
    * @param {VaultId} vaultId
    * @param {Vault} vault
-   * @param {Amount} delta
+   * @param {bigint} delta
    */
   const applyDebtDelta = (vaultId, vault, delta) => {
-    totalDebt = AmountMath.add(totalDebt, delta);
+    trace(
+      `updating total debt of ${totalDebt.value} ${totalDebt.brand} by ${delta}`,
+    );
+    if (delta === 0n) {
+      // nothing to do
+      return;
+    }
+
+    if (delta > 0n) {
+      // add the amount
+      totalDebt = AmountMath.add(
+        totalDebt,
+        AmountMath.make(totalDebt.brand, delta),
+      );
+    } else {
+      // negate the amount so that it's a natural number, then subtract
+      const absDelta = -delta;
+      assert(
+        !(absDelta > totalDebt.value),
+        'Negative delta greater than total debt',
+      );
+      totalDebt = AmountMath.subtract(
+        totalDebt,
+        AmountMath.make(totalDebt.brand, absDelta),
+      );
+    }
     assert(prioritizedVaults);
     prioritizedVaults.refreshVaultPriority(vaultId, vault);
+    trace('applyDebtDelta complete', { totalDebt });
   };
 
   const periodNotifier = E(timerService).makeNotifier(
