@@ -92,6 +92,8 @@ export const makeVaultManager = (
     },
   };
 
+  let vaultCounter = 0;
+
   /**
    * Each vaultManager can be in these liquidation process states:
    *
@@ -131,7 +133,7 @@ export const makeVaultManager = (
   /** @type {Amount} */
   let totalDebt = AmountMath.makeEmpty(runBrand);
   /** @type {Ratio}} */
-  let compoundedInterest = makeRatio(0n, runBrand);
+  let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
   // timestamp of most recent update to interest
   /** @type {bigint} */
@@ -168,6 +170,7 @@ export const makeVaultManager = (
     // then make a new request to the priceAuthority, and when it resolves,
     // liquidate anything that's above the price level.
     if (outstandingQuote) {
+      // Safe to call extraneously (lightweight and idempotent)
       E(outstandingQuote).updateLevel(
         highestDebtRatio.denominator, // collateral
         triggerPoint,
@@ -194,40 +197,36 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
-    /** @type {Array<Promise<readonly [vaultId: string, vault: Vault]>>} */
+    /** @type {Array<Promise<void>>} */
     const toLiquidate = [];
 
     // TODO maybe extract this into a method
     // TODO try pattern matching to achieve GTE
-    // FIXME pass in a key instead of the actual vaultKit
     prioritizedVaults.forEachRatioGTE(
       quoteRatioPlusMargin,
       (vaultId, vaultKit) => {
-        trace('liquidating', vaultKit.admin.vaultSeat.getProposal());
+        trace('liquidating', vaultKit.vaultSeat.getProposal());
 
+        // Start liquidation (vaultState: LIQUIDATING)
         const liquidateP = liquidate(
           zcf,
           vaultKit,
           runMint.burnLosses,
           liquidationStrategy,
           collateralBrand,
-        ).then(
-          () =>
-            // style: JSdoc const only works inline
-            /** @type {const} */ ([vaultId, vaultKit.vault]),
-        );
+        ).then(() => {
+          assert(prioritizedVaults);
+          // TODO handle errors but notify
+          prioritizedVaults.removeVault(vaultId, vaultKit.vault);
+        });
         toLiquidate.push(liquidateP);
       },
     );
 
     outstandingQuote = undefined;
-    /** @type {Array<readonly [VaultId, Vault]>} */
-    const liquidationResults = await Promise.all(toLiquidate);
-    for (const [vaultId, vault] of liquidationResults) {
-      prioritizedVaults.removeVault(vaultId, vault);
-    }
+    // Ensure all vaults complete
+    await Promise.all(toLiquidate);
 
-    // TODO wait until we've removed them all
     reschedulePriceCheck();
   };
   prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
@@ -346,7 +345,8 @@ export const makeVaultManager = (
       want: { RUN: null },
     });
 
-    const vaultId = 'FIXME';
+    // eslint-disable-next-line no-plusplus
+    const vaultId = String(vaultCounter++);
 
     const vaultKit = makeVaultKit(
       zcf,
@@ -355,10 +355,9 @@ export const makeVaultManager = (
       runMint,
       priceAuthority,
     );
-
     const {
       vault,
-      admin: { openLoan },
+      actions: { openLoan },
     } = vaultKit;
     // FIXME do without notifier callback
     const { notifier } = await openLoan(seat);

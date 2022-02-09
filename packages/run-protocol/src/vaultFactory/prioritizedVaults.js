@@ -6,7 +6,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { makeOrderedVaultStore } from './orderedVaultStore';
+import { makeOrderedVaultStore } from './orderedVaultStore.js';
 
 const { multiply, isGTE } = natSafeMath;
 
@@ -52,7 +52,7 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
  * @param {Vault} vault
  * @returns {Ratio}
  */
-const currentDebtToCollateral = vault =>
+export const currentDebtToCollateral = vault =>
   calculateDebtToCollateral(vault.getDebtAmount(), vault.getCollateralAmount());
 
 /** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultKitRecord */
@@ -73,21 +73,22 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // current high-water mark fires, we reschedule at the new highest ratio
   // (which should be lower, as we will have liquidated any that were at least
   // as high.)
+  // Without this we'd be calling reschedulePriceCheck() unnecessarily
   /** @type {Ratio=} */
-  // cache of the head of the priority queue (normalized or actualized?)
-  let highestDebtToCollateral;
+  let oracleQueryThreshold;
 
   // Check if this ratio of debt to collateral would be the highest known. If
   // so, reset our highest and invoke the callback. This can be called on new
   // vaults and when we get a state update for a vault changing balances.
   /** @param {Ratio} collateralToDebt */
+
   // Caches and reschedules
   const rescheduleIfHighest = collateralToDebt => {
     if (
-      !highestDebtToCollateral ||
-      !ratioGTE(highestDebtToCollateral, collateralToDebt)
+      !oracleQueryThreshold ||
+      !ratioGTE(oracleQueryThreshold, collateralToDebt)
     ) {
-      highestDebtToCollateral = collateralToDebt;
+      oracleQueryThreshold = collateralToDebt;
       reschedulePriceCheck();
     }
   };
@@ -116,12 +117,12 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   const removeVault = (vaultId, vault) => {
     const debtToCollateral = currentDebtToCollateral(vault);
     if (
-      !highestDebtToCollateral ||
+      !oracleQueryThreshold ||
       // TODO check for equality is sufficient and faster
-      ratioGTE(debtToCollateral, highestDebtToCollateral)
+      ratioGTE(debtToCollateral, oracleQueryThreshold)
     ) {
       // don't call reschedulePriceCheck, but do reset the highest.
-      highestDebtToCollateral = firstDebtRatio();
+      oracleQueryThreshold = firstDebtRatio();
     }
     return vaults.removeVaultKit(vaultId, vault);
   };
@@ -151,14 +152,10 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   };
 
   /**
-   * Invoke a function for vaults with debt to collateral at or above the ratio
+   * Invoke a function for vaults with debt to collateral at or above the ratio.
    *
-   * The iterator breaks on any change to the store. We could puts items to
-   * liquidate into a separate store, but for now we'll rely on accumlating the
-   * keys in memory and removing them all at once.
-   *
-   * Something to consider for the separate store idea is we can throttle the
-   * dump rate to manage economices.
+   * Callbacks are called in order of priority. Vaults that are under water
+   * (more debt than collateral) are all tied for first.
    *
    * @param {Ratio} ratio
    * @param {(vid: VaultId, vk: VaultKit) => void} cb
@@ -175,10 +172,6 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
         break;
       }
     }
-
-    // TODO accumulate keys in memory and remove them all at once
-
-    // REVISIT the logic in maser for forEachRatioGTE that optimized when to update highest ratio and reschedule
   };
 
   /**
@@ -197,6 +190,6 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     removeVault,
     forAll,
     forEachRatioGTE,
-    highestRatio: () => highestDebtToCollateral,
+    highestRatio: () => oracleQueryThreshold,
   });
 };

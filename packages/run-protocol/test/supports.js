@@ -17,17 +17,18 @@ export function makeFakeVaultKit(
   let collateral = initCollateral;
   const vault = Far('Vault', {
     getCollateralAmount: () => collateral,
+    getNormalizedDebt: () => debt,
     getDebtAmount: () => debt,
     setDebt: newDebt => (debt = newDebt),
     setCollateral: newCollateral => (collateral = newCollateral),
   });
-  const adminFacet = Far('vaultAdmin', {
+  const admin = Far('vaultAdmin', {
     getIdInManager: () => vaultId,
     liquidate: () => {},
   });
   // @ts-expect-error pretend this is compatible with VaultKit
   return harden({
     vault,
-    adminFacet,
+    admin,
   });
 }
