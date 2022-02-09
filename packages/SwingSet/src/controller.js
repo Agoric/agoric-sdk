@@ -13,6 +13,7 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
+import { computeBundleID } from './validate-archive.js';
 import { createSHA256 } from './hasher.js';
 import engineGC from './engine-gc.js';
 import { WeakRef, FinalizationRegistry } from './weakref.js';
@@ -295,6 +296,30 @@ export async function makeSwingsetController(
    */
   const defensiveCopy = x => JSON.parse(JSON.stringify(x));
 
+  /**
+   * Validate and install a code bundle.
+   *
+   * @param { EndoZipBase64Bundle } bundle
+   * @param { BundleID? } allegedBundleID
+   * @returns { Promise<BundleID> }
+   */
+  async function validateAndInstallBundle(bundle, allegedBundleID) {
+    // TODO: validation: unpack, parse sources, check hashes
+
+    // this only computes the hash of the compartment map, it does not check
+    // that the rest of the bundle matches
+    const bundleID = await computeBundleID(bundle);
+    if (allegedBundleID) {
+      assert.equal(
+        allegedBundleID,
+        bundleID,
+        `alleged bundleID ${allegedBundleID} does not match actual ${bundleID}`,
+      );
+    }
+    kernel.installBundle(bundleID, bundle);
+    return bundleID;
+  }
+
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
@@ -311,6 +336,8 @@ export async function makeSwingsetController(
     verboseDebugMode(flag) {
       kernel.kdebugEnable(flag);
     },
+
+    validateAndInstallBundle,
 
     async run(policy) {
       return kernel.run(policy);

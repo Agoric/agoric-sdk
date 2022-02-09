@@ -4,6 +4,7 @@
 
 /**
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
+ * @typedef { string } BundleID
  */
 
 /**
@@ -11,7 +12,10 @@
  */
 
 /**
- * @typedef {{ moduleFormat: unknown }} Bundle
+ * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string } } EndoZipBase64Bundle
+ * @typedef { { moduleFormat: 'getExport', source: string, sourceMap: string? } } GetExportBundle
+ * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap: string? } } NestedEvaluateBundle
+ * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  *
  * @typedef {{
  *   bundle: Bundle,
@@ -241,12 +245,26 @@
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
  * format.
  * @property {*} [devices]
- *
- * Swingsets defined by scanning a directory in this manner define no devices.
  */
 
 /**
- * @typedef {{ bundleName: string} | { bundle: Bundle }} SourceOfBundle
+ * @typedef {Object} SwingSetKernelConfig the config object passed to initializeKernel
+ * @property {string} [bootstrap]
+ * @property {boolean} [includeDevDependencies] indicates that
+ * `devDependencies` of the surrounding `package.json` should be accessible to
+ * bundles.
+ * @property { ManagerType } [defaultManagerType]
+ * @property {SwingSetConfigDescriptor} [vats]
+ * @property {SwingSetConfigDescriptor} [bundles]
+ * @property {Record<string, BundleID>} namedBundleIDs
+ * @property {Record<BundleID, Bundle>} idToBundle
+ * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
+ * format.
+ * @property {*} [devices]
+ */
+
+/**
+ * @typedef {{ bundleName: string} | { bundle: Bundle } | { bundleID: BundleID } } SourceOfBundle
  */
 /**
  * @typedef { import('@agoric/swing-store').KVStore } KVStore

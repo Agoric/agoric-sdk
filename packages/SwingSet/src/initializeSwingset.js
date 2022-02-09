@@ -11,6 +11,7 @@ import './types.js';
 import { insistStorageAPI } from './storageAPI.js';
 import { initializeKernel } from './kernel/initializeKernel.js';
 import { kdebugEnable } from './kernel/kdebug.js';
+import { computeBundleID } from './validate-archive.js';
 
 /**
  * @param {X[]} xs
@@ -52,6 +53,7 @@ export async function buildKernelBundles(options = {}) {
     kernel: src('./kernel/kernel.js'),
     adminDevice: src('./kernel/vatAdmin/vatAdmin-src'),
     adminVat: src('./kernel/vatAdmin/vatAdminWrapper'),
+    bundleDevice: src('./devices/bundle'),
     comms: src('./vats/comms'),
     vattp: src('./vats/vat-tp'),
     timer: src('./vats/vat-timerWrapper'),
@@ -318,12 +320,15 @@ export async function initializeSwingset(
     }
   }
 
-  // the vatAdminDevice is given endowments by the kernel itself
+  // vatAdmin and bundle devices are given endowments by the kernel itself
   config.vats.vatAdmin = {
     bundle: kernelBundles.adminVat,
   };
   config.devices.vatAdmin = {
     bundle: kernelBundles.adminDevice,
+  };
+  config.devices.bundle = {
+    bundle: kernelBundles.bundleDevice,
   };
 
   // comms vat is added automatically, but TODO: bootstraps must still
@@ -355,81 +360,112 @@ export async function initializeSwingset(
     bundle: kernelBundles.timer,
   };
 
-  function validateBundleDescriptor(desc, groupName, descName) {
-    if (desc.bundleHash) {
-      throw Error(
-        `config ${groupName}.${descName}: "bundleHash" is not yet supported for specifying bundles`,
-      );
+  // The host application gives us
+  // config.[vats|devices].NAME.[bundle|bundleSpec|sourceSpec|bundleName] .
+  // The 'bundleName' option points into
+  // config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec] , which can
+  // also include arbitrary named bundles that will be made available to
+  // D(devices.bundle).getNamedBundleCap(bundleName) ,and temporarily as
+  // E(vatAdminService).createVatByName(bundleName)
+
+  // The 'kconfig' we pass through to initializeKernel has
+  // kconfig.[vats|devices].NAME.bundleID and
+  // kconfig.namedBundleIDs.BUNDLENAME=bundleID , which both point into
+  // kconfig.idToBundle.BUNDLEID=bundle
+
+  async function getBundle(desc, mode, nameToBundle) {
+    if (mode === 'bundle') {
+      return desc.bundle;
+    } else if (mode === 'bundleSpec') {
+      return JSON.parse(fs.readFileSync(desc.bundleSpec).toString());
+    } else if (mode === 'sourceSpec') {
+      return bundleSource(desc.sourceSpec, {
+        dev: config.includeDevDependencies,
+        format: config.bundleFormat,
+      });
+    } else if (mode === 'bundleName') {
+      assert(nameToBundle, `cannot use .bundleName in config.bundles`);
+      const bundle = nameToBundle[desc.bundleName];
+      assert(bundle, `unknown bundleName ${desc.bundleName}`);
+      return bundle;
     }
-    let count = 0;
-    if (desc.bundleName) {
-      if (groupName === 'bundles') {
-        throw Error(
-          `config bundles.${descName}: "bundleName" is only available in vat or device descriptors`,
-        );
-        // @ts-ignore
-      } else if (!config.bundles[desc.bundleName]) {
-        throw Error(
-          `config ${groupName}.${descName}: bundle ${desc.bundleName} is undefined`,
-        );
-      }
-      count += 1;
-    }
-    if (desc.sourceSpec) {
-      count += 1;
-    }
-    if (desc.bundleSpec) {
-      count += 1;
-    }
-    if (desc.bundle) {
-      count += 1;
-    }
-    if (count > 1) {
-      throw Error(
-        `config ${groupName}.${descName}: "bundleName", "bundle", "bundleSpec", and "sourceSpec" are mutually exclusive`,
-      );
-    } else if (count === 0) {
-      throw Error(
-        `config ${groupName}.${descName}: you must specify one of: "bundleName", "bundle", "bundleSpec", or "sourceSpec"`,
-      );
-    }
+    throw Error(`unknown mode ${mode}`);
   }
 
-  async function bundleBundles(group, groupName) {
-    if (group) {
-      const names = [];
-      const presumptiveBundles = [];
-      for (const name of Object.keys(group)) {
-        const desc = group[name];
-        validateBundleDescriptor(desc, groupName, name);
-        if (desc.sourceSpec) {
-          names.push(name);
-          presumptiveBundles.push(
-            bundleSource(desc.sourceSpec, {
-              dev: config.includeDevDependencies,
-              format: config.bundleFormat,
-            }),
-          );
-        } else if (desc.bundleSpec) {
-          names.push(name);
-          presumptiveBundles.push(fs.readFileSync(desc.bundleSpec));
-        } else if (!desc.bundle && !desc.bundleName) {
-          assert.fail(`this can't happen`);
-        }
-      }
-      const actualBundles = await Promise.all(presumptiveBundles);
-      for (let i = 0; i < names.length; i += 1) {
-        group[names[i]].bundle = actualBundles[i];
-      }
+  // fires with BundleWithID: { ...bundle, id }
+  async function addBundleID(bundle) {
+    if (bundle.id) {
+      // during config, we believe bundle.id, but not at runtime!
+      return bundle;
     }
+    return computeBundleID(bundle).then(id => ({ ...bundle, id }));
   }
 
-  await bundleBundles(config.bundles, 'bundles');
-  await bundleBundles(config.vats, 'vats');
-  await bundleBundles(config.devices, 'devices');
+  // fires with BundleWithID: { ...bundle, id }
+  async function processDesc(desc, nameToBundle) {
+    const allModes = ['bundle', 'bundleSpec', 'sourceSpec', 'bundleName'];
+    const modes = allModes.filter(mode => mode in desc);
+    assert(
+      modes.length === 1,
+      `need =1 of bundle/bundleSpec/sourceSpec/bundleName, got ${modes}`,
+    );
+    const mode = modes[0];
+    return getBundle(desc, mode, nameToBundle)
+      .then(addBundleID)
+      .then(bundleWithID => {
+        // replace original .sourceSpec/etc with a uniform .bundleID
+        delete desc[mode];
+        desc.bundleID = bundleWithID.id;
+        return bundleWithID;
+      });
+  }
+
+  async function processGroup(groupName, nameToBundle) {
+    const group = config[groupName] || {};
+    const names = Array.from(Object.keys(group));
+    const processP = names.map(name =>
+      processDesc(group[name], nameToBundle).catch(err => {
+        throw Error(`config.${groupName}.${name}: ${err.message}`);
+      }),
+    );
+    const bundlesWithID = await Promise.all(processP);
+    const newNameToBundle = {};
+    const idToBundle = {};
+    for (let i = 0; i < names.length; i += 1) {
+      const name = names[i];
+      const bundle = bundlesWithID[i];
+      const id = bundle.id;
+      newNameToBundle[name] = bundle;
+      idToBundle[id] = bundle;
+    }
+    return [newNameToBundle, idToBundle];
+  }
+
+  // for each config.bundles.NAME, do whatever bundling/reading is necessary
+  // to get a bundle and bundleID, and return both the name->bundleID record
+  // (to populate config.namedBundles) and the bundleID->bundle record (to
+  // install the actual bundles)
+
+  const [nameToBundle, idToNamedBundle] = await processGroup('bundles');
+  const [_1, idToVatBundle] = await processGroup('vats', nameToBundle);
+  const [_2, idToDeviceBundle] = await processGroup('devices', nameToBundle);
+  /** @type { SwingSetKernelConfig } */
+  const kconfig = {
+    ...config,
+    namedBundleIDs: {},
+    idToBundle: {
+      ...idToNamedBundle,
+      ...idToVatBundle,
+      ...idToDeviceBundle,
+    },
+  };
+  for (const name of Object.keys(nameToBundle)) {
+    kconfig.namedBundleIDs[name] = nameToBundle[name].id;
+  }
+  delete kconfig.bundles;
 
   if (verbose) {
     kdebugEnable(true);
   }
-  return initializeKernel(config, hostStorage);
+  return initializeKernel(kconfig, hostStorage);
 }

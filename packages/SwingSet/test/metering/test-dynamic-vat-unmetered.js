@@ -2,7 +2,6 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import bundleSource from '@endo/bundle-source';
 import { buildVatController } from '../../src/index.js';
 
 function capdata(body, slots = []) {
@@ -24,6 +23,11 @@ test('unmetered dynamic vat', async t => {
         sourceSpec: new URL('vat-load-dynamic.js', import.meta.url).pathname,
       },
     },
+    bundles: {
+      dynamic: {
+        sourceSpec: new URL('metered-dynamic-vat.js', import.meta.url).pathname,
+      },
+    },
   };
   const c = await buildVatController(config, []);
   c.pinVatRoot('bootstrap');
@@ -31,17 +35,11 @@ test('unmetered dynamic vat', async t => {
   // let the vatAdminService get wired up before we create any new vats
   await c.run();
 
-  // we'll give this bundle to the loader vat, which will use it to create a
-  // new (unmetered) dynamic vat
-  const dynamicVatBundle = await bundleSource(
-    new URL('metered-dynamic-vat.js', import.meta.url).pathname,
-  );
-
   // 'createVat' will import the bundle
   const kp1 = c.queueToVatRoot(
     'bootstrap',
     'createVat',
-    capargs([dynamicVatBundle]),
+    capargs(['dynamic']),
     'panic',
   );
   await c.run();

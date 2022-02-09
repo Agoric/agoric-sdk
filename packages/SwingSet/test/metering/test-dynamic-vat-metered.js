@@ -105,7 +105,7 @@ async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
 
   // 'createVat' will import the bundle
   const cvargs = capargs(
-    [dynamicVatBundle, { managerType: 'xs-worker', meter: marg }],
+    ['dynamic', { managerType: 'xs-worker', meter: marg }],
     [meterKref],
   );
   const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs);
@@ -148,6 +148,11 @@ async function overflowCrank(t, explosion) {
         bundle: bootstrapBundle,
       },
     },
+    bundles: {
+      dynamic: {
+        bundle: dynamicVatBundle,
+      },
+    },
   };
   const hostStorage = provideHostStorage();
   const kvStore = hostStorage.kvStore;
@@ -169,7 +174,7 @@ async function overflowCrank(t, explosion) {
 
   // 'createVat' will import the bundle
   const cvopts = { managerType, meter: marg };
-  const cvargs = capargs([dynamicVatBundle, cvopts], [meterKref]);
+  const cvargs = capargs(['dynamic', cvopts], [meterKref]);
   const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs);
   await c.run();
   const res2 = c.kpResolution(kp2);
@@ -246,6 +251,11 @@ test('meter decrements', async t => {
     vats: {
       bootstrap: {
         bundle: bootstrapBundle,
+      },
+    },
+    bundles: {
+      dynamic: {
+        bundle: dynamicVatBundle,
       },
     },
   };
@@ -341,6 +351,11 @@ test('unlimited meter', async t => {
         bundle: bootstrapBundle,
       },
     },
+    bundles: {
+      dynamic: {
+        bundle: dynamicVatBundle,
+      },
+    },
   };
   const hostStorage = provideHostStorage();
   const c = await buildVatController(config, [], {
@@ -361,7 +376,7 @@ test('unlimited meter', async t => {
 
   // 'createVat' will import the bundle
   const cvargs = capargs(
-    [dynamicVatBundle, { managerType, meter: marg }],
+    ['dynamic', { managerType, meter: marg }],
     [meterKref],
   );
   const kp2 = c.queueToVatRoot('bootstrap', 'createVat', cvargs);

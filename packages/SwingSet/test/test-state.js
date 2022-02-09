@@ -625,8 +625,10 @@ test('vatKeeper.getOptions', async t => {
 
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
   const vk = k.provideVatKeeper(v1);
+  const bundleID =
+    'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
   vk.setSourceAndOptions(
-    { bundleName: 'vattp' },
+    { bundleID },
     {
       managerType: 'local',
       name: 'fred',

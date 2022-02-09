@@ -28,10 +28,17 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     config.defaultReapInterval || 1,
   );
 
-  if (config.bundles) {
-    for (const name of Object.keys(config.bundles)) {
-      kernelKeeper.addBundle(name, config.bundles[name].bundle);
+  for (const id of Object.keys(config.idToBundle || {})) {
+    const bundle = config.idToBundle[id];
+    assert.equal(bundle.moduleFormat, 'endoZipBase64');
+    if (!kernelKeeper.hasBundle(id)) {
+      kernelKeeper.addBundle(id, bundle);
     }
+  }
+
+  for (const name of Object.keys(config.namedBundleIDs || {})) {
+    const id = config.namedBundleIDs[name];
+    kernelKeeper.addNamedBundleID(name, id);
   }
 
   let gotVatAdminRootKref;
@@ -40,22 +47,13 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   if (config.vats) {
     for (const name of Object.keys(config.vats)) {
       const {
-        bundle,
-        bundleName,
+        bundleID,
         parameters: vatParameters = {},
         creationOptions = {},
       } = config.vats[name];
-      logStartup(`adding vat '${name}' from bundle ${bundleName}`);
+      logStartup(`adding vat '${name}' from bundle ${bundleID}`);
 
-      if (bundle) {
-        assert.typeof(
-          bundle,
-          'object',
-          X`bundle is not an object, rather ${bundle}`,
-        );
-      } else {
-        assert(bundleName, X`no bundle specified for vat ${name}`);
-      }
+      assert(bundleID, X`no bundleID specified for vat ${name}`);
 
       // todo: consider having vats indicate 'enablePipelining' by exporting a
       // boolean, rather than options= . We'd have to retrieve the flag from
@@ -84,7 +82,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-      vatKeeper.setSourceAndOptions({ bundle, bundleName }, creationOptions);
+      vatKeeper.setSourceAndOptions({ bundleID }, creationOptions);
       vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
@@ -104,25 +102,19 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   if (config.devices) {
     for (const name of Object.keys(config.devices)) {
       const {
-        bundleName = name,
+        bundleID,
         parameters: deviceParameters = {},
         creationOptions = {},
       } = config.devices[name];
-      logStartup(`adding device '${name}' from bundle ${bundleName}`);
+      logStartup(`adding device '${name}' from bundle ${bundleID}`);
 
-      const bundle =
-        config.devices[name].bundle || config.bundles[bundleName].bundle;
-      assert.typeof(
-        bundle,
-        'object',
-        X`bundle is not an object, rather ${bundle}`,
-      );
+      assert(bundleID, X`no bundleID for device ${name}`);
       creationOptions.deviceParameters = deviceParameters;
 
       const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
       logStartup(`assigned DeviceID ${deviceID} for genesis device ${name}`);
       const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
-      deviceKeeper.setSourceAndOptions({ bundle }, creationOptions);
+      deviceKeeper.setSourceAndOptions({ bundleID }, creationOptions);
       if (name === 'vatAdmin') {
         haveAdminDevice = true;
       }
