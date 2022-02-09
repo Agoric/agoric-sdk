@@ -10,6 +10,7 @@ import test from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
+import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -49,6 +50,7 @@ test.before(async t => {
       contractBundles[bundleName] = bundle;
     }),
   );
+  const bundles = { zcf: { bundle: zcfBundle } };
   const step3 = Date.now();
 
   const vats = {};
@@ -64,7 +66,7 @@ test.before(async t => {
     bundle: await bundleSource(bootstrapSource),
     parameters: { contractBundles }, // argv will be added to this
   };
-  const config = { bootstrap: 'bootstrap', vats };
+  const config = { bootstrap: 'bootstrap', vats, bundles };
   config.defaultManagerType = 'xs-worker';
 
   const step4 = Date.now();

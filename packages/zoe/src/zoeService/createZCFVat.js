@@ -1,7 +1,5 @@
 import { E } from '@agoric/eventual-send';
 
-import zcfContractBundle from '../../bundles/bundle-contractFacet.js';
-
 /**
  * Attenuate the power of vatAdminSvc by restricting it such that only
  * ZCF Vats can be created.
@@ -10,13 +8,11 @@ import zcfContractBundle from '../../bundles/bundle-contractFacet.js';
  * @param {string=} zcfBundleName
  * @returns {CreateZCFVat}
  */
-export const setupCreateZCFVat = (vatAdminSvc, zcfBundleName = undefined) => {
+export const setupCreateZCFVat = (vatAdminSvc, zcfBundleName = 'zcf') => {
   /** @type {CreateZCFVat} */
   const createZCFVat = async () => {
-    const rootAndAdminNodeP =
-      typeof zcfBundleName === 'string'
-        ? E(vatAdminSvc).createVatByName(zcfBundleName)
-        : E(vatAdminSvc).createVat(zcfContractBundle);
+    assert.typeof(zcfBundleName, 'string');
+    const rootAndAdminNodeP = E(vatAdminSvc).createVatByName(zcfBundleName);
     const rootAndAdminNode = await rootAndAdminNodeP;
     return rootAndAdminNode;
   };

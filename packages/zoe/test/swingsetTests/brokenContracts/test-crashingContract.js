@@ -11,8 +11,8 @@ import path from 'path';
 
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
-
 import fs from 'fs';
+import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -32,6 +32,7 @@ const generateBundlesP = Promise.all(
 async function main(argv) {
   const config = await loadBasedir(dirname);
   config.defaultManagerType = 'xs-worker';
+  config.bundles = { zcf: { bundle: zcfBundle } };
   await generateBundlesP;
   const controller = await buildVatController(config, argv);
   await controller.run();
