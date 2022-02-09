@@ -91,6 +91,8 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     stateDir: stateDBdir,
   });
 
+  // We don't want to force a sim chain to use consensus mode.
+  const consensusMode = false;
   const s = await launch(
     stateDBdir,
     mailboxStorage,
@@ -102,6 +104,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     metricsProvider,
     SLOGFILE,
     slogSender,
+    consensusMode,
   );
 
   const { savedHeight, savedActions, savedChainSends } = s;
