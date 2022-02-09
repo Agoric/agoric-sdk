@@ -4,9 +4,10 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
+import zcfContractBundle from '../bundles/bundle-contractFacet.js';
 
 /**
  * @param { (...args) => unknown } [testContextSetter]
@@ -54,8 +55,9 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
         }),
       });
     },
-    createVatByName: _name => {
-      assert.fail(X`createVatByName not supported in fake mode`);
+    createVatByName: name => {
+      assert.equal(name, 'zcf', `only name='zcf' accepted, not ${name}`);
+      return admin.createVat(zcfContractBundle);
     },
   });
   const vatAdminState = {
