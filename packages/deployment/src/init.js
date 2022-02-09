@@ -117,9 +117,20 @@ const makeProviders = ({ env, inquirer, wr, setup, fetch, needBacktick }) => ({
     askDetails: async (_provider, _myDetails) => {
       let vspec = '';
 
-      const dockerInfo = await needBacktick(`docker info`);
-      const cgroupMatch = dockerInfo.match(/^\s*Cgroup\sVersion:\s*(\d+)/im);
-      if (!cgroupMatch || Number(cgroupMatch[1]) < 2) {
+      let cgroupVersion = 0;
+      try {
+        const dockerInfo = JSON.parse(
+          await needBacktick(
+            `curl -s --unix-socket /var/run/docker.sock http://localhost/v1.41/info`,
+          ),
+        );
+        cgroupVersion = parseInt(dockerInfo.CgroupVersion, 10);
+      } catch (e) {
+        // Ignore
+      }
+
+      // Tolerate NaN returned by any parseInt errors.
+      if (!(cgroupVersion >= 2)) {
         // Older cgroup version, we need to mount `/sys/fs/cgroup` explicitly
         // for our Agoric deployment Docker containers' systemd.
         vspec += ',/sys/fs/cgroup:/sys/fs/cgroup';
