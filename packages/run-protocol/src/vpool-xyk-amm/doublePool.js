@@ -27,7 +27,7 @@ const publicPrices = prices => {
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
- * @returns {VPool}
+ * @returns {VPoolWrapper<VPoolInternalFacet>}
  */
 export const makeDoublePool = (
   zcf,
@@ -63,7 +63,7 @@ export const makeDoublePool = (
     inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
     inPoolSeat.decrementBy(harden({ Central: prices.inPoolDecrement }));
     outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
-    outPoolSeat.decrementBy(harden({ Secondary: prices.outpoolDecrement }));
+    outPoolSeat.decrementBy(harden({ Secondary: prices.outPoolDecrement }));
 
     zcf.reallocate(outPoolSeat, inPoolSeat, feeSeat, seat);
     seat.exit();
@@ -115,7 +115,7 @@ export const makeDoublePool = (
       inPoolIncrement: finalInPoolPrices.xIncrement,
       inPoolDecrement: finalInPoolPrices.yDecrement,
       outPoolIncrement: outPoolPrices.xIncrement,
-      outpoolDecrement: outPoolPrices.yDecrement,
+      outPoolDecrement: outPoolPrices.yDecrement,
       protocolFee: AmountMath.add(
         finalInPoolPrices.protocolFee,
         outPoolPrices.protocolFee,
@@ -176,7 +176,7 @@ export const makeDoublePool = (
       inPoolIncrement: inpoolPrices.xIncrement,
       inPoolDecrement: inpoolPrices.yDecrement,
       outPoolIncrement: finalOutpoolPrices.xIncrement,
-      outpoolDecrement: finalOutpoolPrices.yDecrement,
+      outPoolDecrement: finalOutpoolPrices.yDecrement,
       protocolFee: AmountMath.add(
         finalOutpoolPrices.protocolFee,
         inpoolPrices.protocolFee,
@@ -192,10 +192,17 @@ export const makeDoublePool = (
     return allocateGainsAndLosses(seat, prices);
   };
 
-  return Far('double pool', {
+  const externalFacet = Far('double pool', {
     getInputPrice,
     getOutputPrice,
     swapIn,
     swapOut,
   });
+
+  const internalFacet = Far('single pool', {
+    getPriceForInput,
+    getPriceForOutput,
+  });
+
+  return { externalFacet, internalFacet };
 };
