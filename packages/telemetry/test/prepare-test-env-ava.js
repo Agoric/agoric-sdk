@@ -1,6 +1,5 @@
-/* eslint-disable import/no-extraneous-dependencies */
-import '@endo/init/pre-bundle-source.js';
-import '@endo/lockdown/commit-debug.js';
+// @ts-check
+import '@endo/init';
 
 import { wrapTest } from '@endo/ses-ava';
 import rawTest from 'ava';

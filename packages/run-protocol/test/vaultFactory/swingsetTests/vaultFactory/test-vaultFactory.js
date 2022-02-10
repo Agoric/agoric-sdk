@@ -11,6 +11,7 @@ import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
+import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 
 import liquidateMinimumBundle from '../../../../bundles/bundle-liquidateMinimum.js';
 import ammBundle from '../../../../bundles/bundle-amm.js';
@@ -51,6 +52,7 @@ export const buildSwingSetConfig = async (contractBundles, vatNames) => {
   vats.bootstrap.parameters = { contractBundles };
 
   const config = { bootstrap: 'bootstrap', vats };
+  config.bundles = { zcf: { bundle: zcfBundle } };
   config.defaultManagerType = 'xs-worker';
   return config;
 };

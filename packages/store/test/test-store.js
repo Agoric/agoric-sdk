@@ -7,6 +7,7 @@ import { Far, passStyleOf } from '@endo/marshal';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';
 import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
+import { makeScalarSetStore } from '../src/stores/scalarSetStore.js';
 import { makeScalarWeakMapStore } from '../src/stores/scalarWeakMapStore.js';
 
 import '../src/types.js';
@@ -136,4 +137,76 @@ test('passability of store iters', t => {
   t.is(passStyleOf(iter), 'remotable');
   const iterResult = iter.next();
   t.is(passStyleOf(iterResult), 'copyRecord');
+});
+
+test('iteration fails with concurrent addition', t => {
+  const m = makeScalarMapStore('mapFail');
+  const s = makeScalarSetStore('setFail');
+  for (let i = 0; i < 6; i += 1) {
+    m.init(i, `foo`);
+    s.add(i);
+  }
+
+  let pos = 0;
+  t.throws(
+    () => {
+      // eslint-disable-next-line no-unused-vars
+      for (const k of m.keys()) {
+        pos += 1;
+        if (pos === 2) {
+          m.init(47, 'nonsense');
+        }
+      }
+    },
+    {
+      message: `Store "mapFail" cursor stale`,
+    },
+  );
+
+  pos = 0;
+  t.throws(
+    () => {
+      // eslint-disable-next-line no-unused-vars
+      for (const k of s.keys()) {
+        pos += 1;
+        if (pos === 2) {
+          s.add(47);
+        }
+      }
+    },
+    {
+      message: `Store "setFail" cursor stale`,
+    },
+  );
+});
+
+test('iteration succeeds with concurrent deletion', t => {
+  const m = makeScalarMapStore('mapOK');
+  const s = makeScalarSetStore('setOK');
+  for (let i = 0; i < 6; i += 1) {
+    m.init(i, `foo`);
+    s.add(i);
+  }
+
+  let pos = 0;
+  const seenKeys = [];
+  for (const k of m.keys()) {
+    seenKeys.push(k);
+    pos += 1;
+    if (pos === 2) {
+      m.delete(4);
+    }
+  }
+  t.deepEqual(seenKeys, [0, 1, 2, 3, 5]);
+
+  pos = 0;
+  const seenValues = [];
+  for (const v of s.values()) {
+    seenValues.push(v);
+    pos += 1;
+    if (pos === 2) {
+      s.delete(4);
+    }
+  }
+  t.deepEqual(seenValues, [0, 1, 2, 3, 5]);
 });

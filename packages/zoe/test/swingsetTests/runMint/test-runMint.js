@@ -9,6 +9,7 @@ import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
+import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 // offerArgsUsageContract is just used as a generic contract for the
 // purpose of registering a feeBrand before any zcfMint for the
@@ -54,6 +55,7 @@ test.before(async t => {
     parameters: { contractBundles }, // argv will be added to this
   };
   const config = { bootstrap: 'bootstrap', vats };
+  config.bundles = { zcf: { bundle: zcfBundle } };
   config.defaultManagerType = 'xs-worker';
 
   const step4 = Date.now();

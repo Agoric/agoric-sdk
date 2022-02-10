@@ -11,6 +11,7 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 import path from 'path';
+import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 import {
   governanceBundles,
   economyBundles,
@@ -53,6 +54,7 @@ test.before(async t => {
   vats.bootstrap.parameters = { contractBundles };
 
   const config = { bootstrap: 'bootstrap', vats };
+  config.bundles = { zcf: { bundle: zcfBundle } };
   config.defaultManagerType = 'xs-worker';
 
   t.context.data = { kernelBundles, config };

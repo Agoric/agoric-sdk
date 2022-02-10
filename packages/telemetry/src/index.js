@@ -3,6 +3,8 @@
 import { MeterProvider } from '@opentelemetry/metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
+export * from './make-slog-sender.js';
+
 /**
  * @typedef {Object} Powers
  * @property {{ warn: Console['warn'] }} console

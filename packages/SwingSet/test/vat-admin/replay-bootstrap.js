@@ -2,25 +2,21 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export function buildRootObject(vatPowers) {
+  const { D } = vatPowers;
   const { promise: vatAdminSvc, resolve: gotVatAdminSvc } = makePromiseKit();
   let root;
+  let devices;
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    async bootstrap(vats, devs) {
+      devices = devs;
       gotVatAdminSvc(E(vats.vatAdmin).createVatAdminService(devices.vatAdmin));
     },
 
-    async createBundle() {
-      const { dynamicBundle } = vatParameters;
-      const vc = await E(vatAdminSvc).createVat(dynamicBundle);
-      root = vc.root;
-      const count = await E(root).first();
-      return count === 1 ? 'created' : `wrong counter ${count}`;
-    },
-
-    async createNamed() {
-      const vc = await E(vatAdminSvc).createVatByName('dynamic');
+    async createVat() {
+      const bcap = D(devices.bundle).getNamedBundleCap('dynamic');
+      const vc = await E(vatAdminSvc).createVat(bcap);
       root = vc.root;
       const count = await E(root).first();
       return count === 1 ? 'created' : `wrong counter ${count}`;

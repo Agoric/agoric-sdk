@@ -48,7 +48,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
 
   function setSourceAndOptions(source, options) {
     assert.typeof(source, 'object');
-    assert(source.bundle || source.bundleName);
+    assert(source && source.bundleID);
     assert.typeof(options, 'object');
     kvStore.set(`${deviceID}.source`, JSON.stringify(source));
     kvStore.set(`${deviceID}.options`, JSON.stringify(options));
