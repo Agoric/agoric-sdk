@@ -69,10 +69,10 @@ const dbEntryKeyToNumber = k => {
  * @param {Ratio} ratio
  * @returns {number}
  */
-const ratioToNumber = ratio => {
+const ratioToInverseProportion = ratio => {
   assertIsRatio(ratio);
   return ratio.numerator.value
-    ? Number(ratio.denominator.value / ratio.numerator.value)
+    ? Number(ratio.denominator.value) / Number(ratio.numerator.value)
     : Number.POSITIVE_INFINITY;
 };
 
@@ -88,7 +88,7 @@ const toVaultKey = (ratio, vaultId) => {
   assert(ratio);
   assert(vaultId);
   // until DB supports composite keys, copy its method for turning numbers to DB entry keys
-  const numberPart = numberToDBEntryKey(ratioToNumber(ratio));
+  const numberPart = numberToDBEntryKey(ratioToInverseProportion(ratio));
   return `${numberPart}:${vaultId}`;
 };
 
