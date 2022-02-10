@@ -47,18 +47,10 @@ export const makeOrderedVaultStore = () => {
 
   /**
    *
-   * @param {VaultId} vaultId
-   * @param {Vault} vault
+   * @param {string} key
    * @returns {VaultKit}
    */
-  const removeVaultKit = (vaultId, vault) => {
-    const debtRatio = makeRatioFromAmounts(
-      vault.getNormalizedDebt(),
-      vault.getCollateralAmount(),
-    );
-
-    // XXX TESTME does this really work?
-    const key = toVaultKey(debtRatio, vaultId);
+  const removeByKey = key => {
     try {
       const vaultKit = store.get(key);
       assert(vaultKit);
@@ -79,30 +71,26 @@ export const makeOrderedVaultStore = () => {
   };
 
   /**
-   * Exposes vaultId contained in the key but not the ordering factor.
-   * That ordering factor is the inverse quotient of the debt ratio (collateral÷debt)
-   * but nothing outside this module should rely on that to be true.
    *
-   * Redundant tags until https://github.com/Microsoft/TypeScript/issues/23857
-   *
-   * @yields {[[string, string], VaultKit]>}
-   * @returns {IterableIterator<[VaultId, VaultKit]>}
+   * @param {VaultId} vaultId
+   * @param {Vault} vault
+   * @returns {VaultKit}
    */
-  // XXX need to make generator with const arrow definitions?
-  // XXX can/should we avoid exposing the inverse debt quotient?
-  function* entriesWithId() {
-    for (const [k, v] of store.entries()) {
-      const [_, vaultId] = fromVaultKey(k);
-      /** @type {VaultKit} */
-      const vaultKit = v;
-      yield [vaultId, vaultKit];
-    }
-  }
+  const removeVaultKit = (vaultId, vault) => {
+    const debtRatio = makeRatioFromAmounts(
+      vault.getNormalizedDebt(),
+      vault.getCollateralAmount(),
+    );
+
+    // XXX TESTME does this really work?
+    const key = toVaultKey(debtRatio, vaultId);
+    return removeByKey(key);
+  };
 
   return harden({
     addVaultKit,
     removeVaultKit,
-    entriesWithId,
+    entries: store.entries,
     getSize: store.getSize,
     values: store.values,
   });

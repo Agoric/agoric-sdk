@@ -43,7 +43,7 @@ export const VaultState = {
 
 /**
  * @typedef {Object} InnerVaultManagerBase
- * @property {(vaultId: VaultId, vault: Vault, oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
+ * @property {(oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
  * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
  * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
@@ -119,7 +119,7 @@ export const makeVaultKit = (
     updateDebtSnapshot(newDebt);
     // update parent state
     // eslint-disable-next-line no-use-before-define
-    manager.applyDebtDelta(idInManager, vault, oldDebt, newDebt);
+    manager.applyDebtDelta(oldDebt, newDebt);
   };
 
   /**

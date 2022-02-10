@@ -202,26 +202,23 @@ export const makeVaultManager = (
 
     // TODO maybe extract this into a method
     // TODO try pattern matching to achieve GTE
-    prioritizedVaults.forEachRatioGTE(
-      quoteRatioPlusMargin,
-      (vaultId, vaultKit) => {
-        trace('liquidating', vaultKit.vaultSeat.getProposal());
+    prioritizedVaults.forEachRatioGTE(quoteRatioPlusMargin, (key, vaultKit) => {
+      trace('liquidating', vaultKit.vaultSeat.getProposal());
 
-        // Start liquidation (vaultState: LIQUIDATING)
-        const liquidateP = liquidate(
-          zcf,
-          vaultKit,
-          runMint.burnLosses,
-          liquidationStrategy,
-          collateralBrand,
-        ).then(() => {
-          assert(prioritizedVaults);
-          // TODO handle errors but notify
-          prioritizedVaults.removeVault(vaultId, vaultKit.vault);
-        });
-        toLiquidate.push(liquidateP);
-      },
-    );
+      // Start liquidation (vaultState: LIQUIDATING)
+      const liquidateP = liquidate(
+        zcf,
+        vaultKit,
+        runMint.burnLosses,
+        liquidationStrategy,
+        collateralBrand,
+      ).then(() => {
+        assert(prioritizedVaults);
+        // TODO handle errors but notify
+        prioritizedVaults.removeVault(key);
+      });
+      toLiquidate.push(liquidateP);
+    });
 
     outstandingQuote = undefined;
     // Ensure all vaults complete
@@ -234,7 +231,9 @@ export const makeVaultManager = (
   // In extreme situations system health may require liquidating all vaults.
   const liquidateAll = () => {
     assert(prioritizedVaults);
-    return prioritizedVaults.forAll(({ vaultKit }) =>
+    return prioritizedVaults.forAll((key, vaultKit) =>
+      // FIXME remove one completion
+      // Maybe make this a single function for use in forEachRatioGTE too
       liquidate(
         zcf,
         vaultKit,
@@ -306,6 +305,7 @@ export const makeVaultManager = (
    * @returns {bigint} in brand of the manager's debt
    */
   const debtDelta = (oldDebt, newDebt) => {
+    trace('debtDelta', { oldDebt, newDebt });
     // Since newDebt includes accrued interest we need to use getDebtAmount()
     // to get a baseline that also includes accrued interest.
     // eslint-disable-next-line no-use-before-define
@@ -320,12 +320,10 @@ export const makeVaultManager = (
   };
 
   /**
-   * @param {VaultId} vaultId
-   * @param {Vault} vault
    * @param {Amount} oldDebtOnVault
    * @param {Amount} newDebtOnVault
    */
-  const applyDebtDelta = (vaultId, vault, oldDebtOnVault, newDebtOnVault) => {
+  const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
     const delta = debtDelta(oldDebtOnVault, newDebtOnVault);
     trace(
       `updating total debt of ${totalDebt.value} ${totalDebt.brand} by ${delta}`,
@@ -353,9 +351,19 @@ export const makeVaultManager = (
         AmountMath.make(totalDebt.brand, absDelta),
       );
     }
+    trace('applyDebtDelta complete', { totalDebt });
+  };
+
+  /**
+   * FIXME finisht this
+   *
+   * @param {VaultId} vaultId
+   * @param {Vault} vault
+   */
+  const updateVaultPriority = (vaultId, vault) => {
     assert(prioritizedVaults);
     prioritizedVaults.refreshVaultPriority(vaultId, vault);
-    trace('applyDebtDelta complete', { totalDebt });
+    trace('updateVaultPriority complete', { totalDebt });
   };
 
   const periodNotifier = E(timerService).makeNotifier(
@@ -388,6 +396,7 @@ export const makeVaultManager = (
     reallocateReward,
     getCollateralBrand: () => collateralBrand,
     getCompoundedInterest: () => compoundedInterest,
+    updateVaultPriority,
   });
 
   /** @param {ZCFSeat} seat */
