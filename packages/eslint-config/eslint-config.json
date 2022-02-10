@@ -24,6 +24,7 @@
         ]
       }
     ],
+    "no-bitwise": "off", // type checker will catch these errors
     "prettier/prettier": "warn" // @jessie.js/recommended errors. This repo checks format separately but keeps warn to maintain that "eslint --fix" prettifies
   },
   "settings": {

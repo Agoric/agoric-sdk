@@ -54,7 +54,6 @@ const verifyToken = (actual, expected) => {
   // The bitwise operations here and fixed loop length are necessary to
   // guarantee constant time.
   for (let i = 0; i < expectedLength; i += 1) {
-    // eslint-disable-next-line no-bitwise
     failed |= stringToCompare.charCodeAt(i) ^ expected.charCodeAt(i);
   }
 

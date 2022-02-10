@@ -58,11 +58,8 @@ const numberToDBEntryKey = n => {
   asNumber[0] = n;
   let bits = asBits[0];
   if (n < 0) {
-    // XXX Why is the no-bitwise lint rule even a thing??
-    // eslint-disable-next-line no-bitwise
     bits ^= 0xffffffffffffffffn;
   } else {
-    // eslint-disable-next-line no-bitwise
     bits ^= 0x8000000000000000n;
   }
   return `f${zeroPad(bits.toString(16), 16)}`;
@@ -71,10 +68,8 @@ const numberToDBEntryKey = n => {
 const dbEntryKeyToNumber = k => {
   let bits = BigInt(`0x${k.substring(1)}`);
   if (k[1] < '8') {
-    // eslint-disable-next-line no-bitwise
     bits ^= 0xffffffffffffffffn;
   } else {
-    // eslint-disable-next-line no-bitwise
     bits ^= 0x8000000000000000n;
   }
   asBits[0] = bits;

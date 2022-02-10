@@ -1,6 +1,5 @@
 // @ts-check
 /* global BigUint64Array */
-/* eslint-disable no-bitwise */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { isKey } from '../src/keys/checkKey.js';

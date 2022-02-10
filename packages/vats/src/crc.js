@@ -7,7 +7,6 @@
  * down to a version that assumes TypedArrays are universal.
  */
 // @ts-check
-/* eslint-disable no-bitwise */
 
 /**
  * @typedef {string | number | Uint8Array | ArrayBuffer} Data
