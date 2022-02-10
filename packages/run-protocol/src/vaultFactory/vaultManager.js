@@ -147,6 +147,32 @@ export const makeVaultManager = (
   /** @type {bigint} */
   let latestInterestUpdate = startTimeStamp;
 
+  /**
+   *
+   * @param {string} key
+   * @param {VaultKit} vaultKit
+   */
+  const liquidateAndRemove = async (key, vaultKit) => {
+    assert(prioritizedVaults);
+    trace('liquidating', vaultKit.vaultSeat.getProposal());
+
+    try {
+      // Start liquidation (vaultState: LIQUIDATING)
+      await liquidate(
+        zcf,
+        vaultKit,
+        runMint.burnLosses,
+        liquidationStrategy,
+        collateralBrand,
+      );
+
+      await prioritizedVaults.removeVault(key);
+    } catch (e) {
+      // XXX should notify interested parties
+      console.error('liquidateAndRemove failed with', e);
+    }
+  };
+
   // When any Vault's debt ratio is higher than the current high-water level,
   // call reschedulePriceCheck() to request a fresh notification from the
   // priceAuthority. There will be extra outstanding requests since we can't
@@ -208,24 +234,10 @@ export const makeVaultManager = (
     /** @type {Array<Promise<void>>} */
     const toLiquidate = [];
 
-    // TODO maybe extract this into a method
     // TODO try pattern matching to achieve GTE
+    // TODO replace forEachRatioGTE with a generator pattern like liquidateAll below
     prioritizedVaults.forEachRatioGTE(quoteRatioPlusMargin, (key, vaultKit) => {
-      trace('liquidating', vaultKit.vaultSeat.getProposal());
-
-      // Start liquidation (vaultState: LIQUIDATING)
-      const liquidateP = liquidate(
-        zcf,
-        vaultKit,
-        runMint.burnLosses,
-        liquidationStrategy,
-        collateralBrand,
-      ).then(() => {
-        assert(prioritizedVaults);
-        // TODO handle errors but notify
-        prioritizedVaults.removeVault(key);
-      });
-      toLiquidate.push(liquidateP);
+      toLiquidate.push(liquidateAndRemove(key, vaultKit));
     });
 
     outstandingQuote = undefined;
@@ -236,20 +248,12 @@ export const makeVaultManager = (
   };
   prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
 
-  // In extreme situations system health may require liquidating all vaults.
-  const liquidateAll = () => {
+  // In extreme situations, system health may require liquidating all vaults.
+  const liquidateAll = async () => {
     assert(prioritizedVaults);
-    return prioritizedVaults.forAll((key, vaultKit) =>
-      // FIXME remove one completion
-      // Maybe make this a single function for use in forEachRatioGTE too
-      liquidate(
-        zcf,
-        vaultKit,
-        runMint.burnLosses,
-        liquidationStrategy,
-        collateralBrand,
-      ),
-    );
+    for await (const [key, vaultKit] of prioritizedVaults.entries()) {
+      await liquidateAndRemove(key, vaultKit);
+    }
   };
 
   /**

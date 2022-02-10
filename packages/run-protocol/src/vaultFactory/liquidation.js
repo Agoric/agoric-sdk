@@ -66,7 +66,6 @@ const liquidate = async (
   const isUnderwater = !AmountMath.isGTE(runProceedsAmount, runDebt);
   const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
   burnLosses(harden({ RUN: runToBurn }), liquidationSeat);
-  // FIXME removal was triggered by this through observation of state change
   vaultKit.actions.liquidated(AmountMath.subtract(runDebt, runToBurn));
 
   // any remaining RUN plus anything else leftover from the sale are refunded
