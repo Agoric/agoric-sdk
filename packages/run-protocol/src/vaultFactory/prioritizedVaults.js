@@ -58,6 +58,7 @@ export const currentDebtToCollateral = vault =>
 /** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultKitRecord */
 
 /**
+ * Really a prioritization of vault *kits*.
  *
  * @param {() => void} reschedulePriceCheck called when there is a new
  * least-collateralized vault
@@ -102,20 +103,19 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       return undefined;
     }
 
-    const [[_, vaultKit]] = vaults.entriesWithId();
+    const [[_, vaultKit]] = vaults.entries();
     const { vault } = vaultKit;
     const actualDebtAmount = vault.getDebtAmount();
     return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
   };
 
   /**
-   *
-   * @param {VaultId} vaultId
-   * @param {Vault} vault
+   * @param {string} key
    * @returns {VaultKit}
    */
-  const removeVault = (vaultId, vault) => {
-    const debtToCollateral = currentDebtToCollateral(vault);
+  const removeVault = key => {
+    const vk = vaults.removeByKey(key);
+    const debtToCollateral = currentDebtToCollateral(vk.vault);
     if (
       !oracleQueryThreshold ||
       // TODO check for equality is sufficient and faster
@@ -124,7 +124,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       // don't call reschedulePriceCheck, but do reset the highest.
       oracleQueryThreshold = firstDebtRatio();
     }
-    return vaults.removeVaultKit(vaultId, vault);
+    return vk;
   };
 
   /**
@@ -142,12 +142,12 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   /**
    * Akin to forEachRatioGTE but iterate over all vaults.
    *
-   * @param {(VaultId, VaultKit) => void} cb
+   * @param {(key: string, vk: VaultKit) => void} cb
    * @returns {void}
    */
   const forAll = cb => {
-    for (const [vaultId, vk] of vaults.entriesWithId()) {
-      cb(vaultId, vk);
+    for (const [key, vk] of vaults.entries()) {
+      cb(key, vk);
     }
   };
 
@@ -158,15 +158,15 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * (more debt than collateral) are all tied for first.
    *
    * @param {Ratio} ratio
-   * @param {(vid: VaultId, vk: VaultKit) => void} cb
+   * @param {(key: string, vk: VaultKit) => void} cb
    */
   const forEachRatioGTE = (ratio, cb) => {
     // TODO use a Pattern to limit the query
-    for (const [vaultId, vk] of vaults.entriesWithId()) {
+    for (const [key, vk] of vaults.entries()) {
       const debtToCollateral = currentDebtToCollateral(vk.vault);
 
       if (ratioGTE(debtToCollateral, ratio)) {
-        cb(vaultId, vk);
+        cb(key, vk);
       } else {
         // stop once we are below the target ratio
         break;
