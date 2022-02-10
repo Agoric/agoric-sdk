@@ -13,16 +13,21 @@ const dirname = path.dirname(filename);
 export const connectToPipe = async ({ method, args, deliverInboundToMbx }) => {
   // console.log('connectToPipe', method, args);
 
+  const { registerShutdown } = makeShutdown();
   const cp = fork(path.join(dirname, 'pipe-entrypoint.js'), [method, ...args], {
     stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
   });
+  registerShutdown(() => {
+    // console.log('connectToPipe', 'shutdown');
+    cp.kill('SIGTERM');
+  });
   // console.log('connectToPipe', 'done fork');
 
-  let baton = makePromiseKit();
+  let mutex = makePromiseKit();
   cp.on('message', msg => {
     // console.log('connectToPipe', 'received', msg);
     if (msg === 'go') {
-      baton.resolve(undefined);
+      mutex.resolve(undefined);
       return;
     }
     // console.log('pipe.js', msg);
@@ -30,17 +35,12 @@ export const connectToPipe = async ({ method, args, deliverInboundToMbx }) => {
     deliverInboundToMbx(...as).then(() => cp.send('go'));
   });
 
-  const { registerShutdown } = makeShutdown();
-  registerShutdown(() => {
-    // console.log('connectToPipe', 'shutdown');
-    cp.kill('SIGINT');
-  });
+  await mutex.promise;
 
-  await baton.promise;
   return async (...as) => {
     // console.log('sending from pipe.js', as);
-    baton = makePromiseKit();
+    mutex = makePromiseKit();
     cp.send(stringify(harden(as)));
-    return baton.promise;
+    return mutex.promise;
   };
 };
