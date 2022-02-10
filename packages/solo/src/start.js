@@ -308,7 +308,7 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
 
   // We turn off NODE_OPTIONS in case the user is debugging.
   const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
-  let unregister;
+  let unregisterShutdown = () => {};
   const cp = fork(
     agoricCli,
     [
@@ -323,11 +323,11 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
       if (err) {
         console.error(err);
       }
-      unregister();
+      unregisterShutdown();
     },
   );
   const { registerShutdown } = makeShutdown();
-  unregister = registerShutdown(() => cp.kill('SIGINT'));
+  unregisterShutdown = registerShutdown(() => cp.kill('SIGTERM'));
 };
 
 const start = async (basedir, argv) => {
