@@ -298,6 +298,7 @@ async function setupServices(
   };
 }
 
+// FIXME
 test.skip('first', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
@@ -441,6 +442,7 @@ test.skip('first', async t => {
   });
 });
 
+// FIXME
 test.skip('price drop', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
@@ -562,6 +564,7 @@ test.skip('price drop', async t => {
   t.deepEqual(liquidations.RUN, AmountMath.makeEmpty(runBrand));
 });
 
+// FIXME
 test.skip('price falls precipitously', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
@@ -681,7 +684,7 @@ test.skip('price falls precipitously', async t => {
   t.deepEqual(liquidations.RUN, AmountMath.makeEmpty(runBrand));
 });
 
-test.skip('vaultFactory display collateral', async t => {
+test('vaultFactory display collateral', async t => {
   const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
@@ -735,6 +738,7 @@ test.skip('vaultFactory display collateral', async t => {
 });
 
 // charging period is 1 week. Clock ticks by days
+// FIXME
 test.skip('interest on multiple vaults', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
@@ -905,7 +909,7 @@ test.skip('interest on multiple vaults', async t => {
   );
 });
 
-test.skip('adjust balances', async t => {
+test('adjust balances', async t => {
   const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 6n,
@@ -1331,6 +1335,7 @@ test('overdeposit', async t => {
 // Both loans will initially be over collateralized 100%. Alice will withdraw
 // enough of the overage that she'll get caught when prices drop. Bob will be
 // charged interest (twice), which will trigger liquidation.
+// FIXME
 test.skip('mutable liquidity triggers and interest', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
@@ -1531,7 +1536,7 @@ test.skip('mutable liquidity triggers and interest', async t => {
   t.truthy(bobUpdate.value.liquidated);
 });
 
-test.skip('bad chargingPeriod', async t => {
+test('bad chargingPeriod', async t => {
   const loanTiming = {
     chargingPeriod: 2,
     recordingPeriod: 10n,
@@ -1548,7 +1553,7 @@ test.skip('bad chargingPeriod', async t => {
   );
 });
 
-test.skip('collect fees from loan and AMM', async t => {
+test('collect fees from loan and AMM', async t => {
   const loanTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
@@ -1650,7 +1655,7 @@ test.skip('collect fees from loan and AMM', async t => {
   t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.RUN));
 });
 
-test.skip('close loan', async t => {
+test('close loan', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
@@ -1791,7 +1796,7 @@ test.skip('close loan', async t => {
   );
 });
 
-test.skip('excessive loan', async t => {
+test('excessive loan', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
@@ -1853,6 +1858,7 @@ test.skip('excessive loan', async t => {
 // prices drop. Bob will be charged interest (twice), which will trigger
 // liquidation. Alice's withdrawal is precisely gauged so the difference between
 // a floorDivideBy and a ceilingDivideBy will leave her unliquidated.
+// FIXME
 test.skip('mutable liquidity triggers and interest sensitivity', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },

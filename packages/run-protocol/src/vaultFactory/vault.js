@@ -10,7 +10,7 @@ import {
   floorMultiplyBy,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 
 import {
   invertRatio,
@@ -52,6 +52,7 @@ export const VaultState = {
 /**
  * @param {ContractFacet} zcf
  * @param {InnerVaultManagerBase & GetVaultParams} manager
+ * @param {Notifier<unknown>} managerNotifier
  * @param {VaultId} idInManager
  * @param {ZCFMint} runMint
  * @param {ERef<PriceAuthority>} priceAuthority
@@ -59,6 +60,7 @@ export const VaultState = {
 export const makeVaultKit = (
   zcf,
   manager,
+  managerNotifier,
   idInManager, // will go in state
   runMint,
   priceAuthority,
@@ -224,16 +226,20 @@ export const makeVaultKit = (
     // await quoteGiven() here
     // [https://github.com/Agoric/dapp-token-economy/issues/123]
     const collateralizationRatio = await getCollateralizationRatio();
-    /** @type {UIState} */
+    /** @type {VaultUIState} */
     const uiState = harden({
       interestRate: manager.getInterestRate(),
       liquidationRatio: manager.getLiquidationMargin(),
+      runDebtSnapshot,
+      interestSnapshot,
       locked: getCollateralAmount(),
       debt: getDebtAmount(),
       collateralizationRatio,
       liquidated: vaultState === VaultState.CLOSED,
       vaultState,
     });
+
+    trace('updateUiState', uiState);
 
     switch (vaultState) {
       case VaultState.ACTIVE:
@@ -247,6 +253,8 @@ export const makeVaultKit = (
         throw Error(`unreachable vaultState: ${vaultState}`);
     }
   };
+  // Propagate notifications from the manager to observers of this vault
+  observeNotifier(managerNotifier, { updateState: updateUiState });
 
   /**
    * Call must check for and remember shortfall
@@ -304,9 +312,8 @@ export const makeVaultKit = (
     seat.exit();
     burnSeat.exit();
     vaultState = VaultState.CLOSED;
-    updateUiState();
-
     updateDebtSnapshot(AmountMath.makeEmpty(runBrand));
+    updateUiState();
 
     assertVaultHoldsNoRun();
     vaultSeat.exit();
