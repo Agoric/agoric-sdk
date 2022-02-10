@@ -1049,3 +1049,182 @@ test('zoe allow empty reallocations', async t => {
     AmountMath.makeEmpty(centralR.brand),
   );
 });
+
+const makeAddLiquidity = (
+  t,
+  zoe,
+  amm,
+  moolaR,
+  centralR,
+  moolaLiquidityIssuer,
+) => {
+  return async (moola, central) => {
+    const centralTokens = value => AmountMath.make(centralR.brand, value);
+    const makeMoola = value => AmountMath.make(moolaR.brand, value);
+    const moolaLiquidityBrand = await E(moolaLiquidityIssuer).getBrand();
+    const moolaLiquidity = value => AmountMath.make(moolaLiquidityBrand, value);
+
+    const addLiquidityInvitation = E(
+      amm.ammPublicFacet,
+    ).makeAddLiquidityAtRateInvitation();
+
+    const aliceMoolaPayment1 = moolaR.mint.mintPayment(makeMoola(moola));
+    const aliceCentralPayment1 = centralR.mint.mintPayment(
+      centralTokens(central),
+    );
+
+    const aliceProposal = harden({
+      want: { Liquidity: moolaLiquidity(1000n) },
+      give: { Secondary: makeMoola(moola), Central: centralTokens(central) },
+    });
+    const alicePayments = {
+      Secondary: aliceMoolaPayment1,
+      Central: aliceCentralPayment1,
+    };
+
+    const addLiquiditySeat = await E(zoe).offer(
+      addLiquidityInvitation,
+      aliceProposal,
+      alicePayments,
+    );
+
+    t.is(
+      await E(addLiquiditySeat).getOfferResult(),
+      'Added liquidity.',
+      `Alice added moola and central liquidity`,
+    );
+
+    return E(addLiquiditySeat).getPayouts();
+  };
+};
+
+const makeAssertPayouts = (
+  t,
+  moolaLiquidityIssuer,
+  liquidityBrand,
+  centralR,
+  moolaR,
+) => {
+  return async (
+    lPayment,
+    lExpected,
+    cPayment,
+    cExpected,
+    sPayment,
+    sExpected,
+  ) => {
+    const lAmount = AmountMath.make(liquidityBrand, lExpected);
+    await assertPayoutAmount(
+      t,
+      moolaLiquidityIssuer,
+      lPayment,
+      lAmount,
+      'Liquidity payout',
+    );
+    const cAmount = AmountMath.make(centralR.brand, cExpected);
+    await assertPayoutAmount(
+      t,
+      centralR.issuer,
+      cPayment,
+      cAmount,
+      'central payout',
+    );
+    const sAmount = AmountMath.make(moolaR.brand, sExpected);
+    await assertPayoutAmount(
+      t,
+      moolaR.issuer,
+      sPayment,
+      sAmount,
+      'moola Payout',
+    );
+  };
+};
+
+test('amm adding liquidity', async t => {
+  // Set up central token
+  const centralR = makeIssuerKit('central');
+  const moolaR = makeIssuerKit('moola');
+  const moola = value => AmountMath.make(moolaR.brand, value);
+
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  // This timer is only used to build quotes. Let's make it non-zero
+  const timer = buildManualTimer(console.log, 30n);
+
+  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
+    moolaR.issuer,
+    'Moola',
+  );
+  const liquidityBrand = await E(moolaLiquidityIssuer).getBrand();
+
+  const allocation = (c, l, s) => ({
+    Central: AmountMath.make(centralR.brand, c),
+    Liquidity: AmountMath.make(liquidityBrand, l),
+    Secondary: moola(s),
+  });
+  const addLiquidity = makeAddLiquidity(
+    t,
+    zoe,
+    amm,
+    moolaR,
+    centralR,
+    moolaLiquidityIssuer,
+  );
+  const assertPayouts = makeAssertPayouts(
+    t,
+    moolaLiquidityIssuer,
+    liquidityBrand,
+    centralR,
+    moolaR,
+  );
+
+  t.deepEqual(
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    {},
+    `The poolAllocation object values for moola should be empty`,
+  );
+
+  // add initial liquidity at 10000:50000
+  const {
+    Central: c1,
+    Liquidity: l1,
+    Secondary: s1,
+  } = await addLiquidity(10000n, 50000n);
+  // We get liquidity back. All the central and secondary is accepted
+  await assertPayouts(l1, 50000n, c1, 0n, s1, 0n);
+  t.deepEqual(
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    allocation(50000n, 0n, 10000n),
+    `poolAllocation after initialization`,
+  );
+
+  // Add liquidity. Offer 20_000:70_000.
+  const {
+    Central: c2,
+    Liquidity: l2,
+    Secondary: s2,
+  } = await addLiquidity(20_000n, 70_000n);
+  // After the trade, this will increase the pool by about 150%
+  await assertPayouts(l2, 84115n, c2, 0n, s2, 11n);
+  // The pool should now have 50K + 70K and 10K + 20K
+  t.deepEqual(
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    allocation(119_996n, 0n, 29_989n),
+    `poolAllocation after initialization`,
+  );
+
+  // Add liquidity. Offer 12_000:100_000.
+  const {
+    Central: c3,
+    Liquidity: l3,
+    Secondary: s3,
+  } = await addLiquidity(12_000n, 100_000n);
+
+  await assertPayouts(l3, 80_680n, c3, 0n, s3, 16n);
+  // The pool should now have just under 50K + 70K + 60K and 10K + 14K + 12K
+  t.deepEqual(
+    await E(amm.ammPublicFacet).getPoolAllocation(moolaR.brand),
+    allocation(219985n, 0n, 41973n),
+    `poolAllocation after initialization`,
+  );
+});

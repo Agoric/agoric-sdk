@@ -6,7 +6,7 @@ import '@agoric/zoe/exported.js';
 
 /**
  * @param {ContractFacet} zcf
- * @param {(brandIn: Brand, brandOut: Brand) => VPool} provideVPool
+ * @param {(brandIn: Brand, brandOut: Brand) => VPoolWrapper<unknown>} provideVPool
  */
 export const makeMakeSwapInvitation = (zcf, provideVPool) => {
   // trade with a stated amountIn.
@@ -19,7 +19,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    const pool = provideVPool(amountIn.brand, amountOut.brand);
+    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
     return pool.swapIn(seat, amountIn, amountOut);
   };
 
@@ -34,7 +34,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    const pool = provideVPool(amountIn.brand, amountOut.brand);
+    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
     return pool.swapOut(seat, amountIn, amountOut);
   };
 

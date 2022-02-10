@@ -15,6 +15,61 @@
  */
 
 /**
+ * @typedef {Object} DoublePoolSwapResult
+ * @property {Amount} swapperGives
+ * @property {Amount} swapperGets
+ * @property {Amount} inPoolIncrement
+ * @property {Amount} inPoolDecrement
+ * @property {Amount} outPoolIncrement
+ * @property {Amount} outPoolDecrement
+ * @property {Amount} protocolFee
+ */
+
+/**
+ * @callback GetDoublePoolSwapQuote
+ * @param {Amount} amountIn
+ * @param {Amount} amountOut
+ * @returns {DoublePoolSwapResult}
+ */
+
+/**
+ * @callback GetSinglePoolSwapQuote
+ * @param {Amount} amountIn
+ * @param {Amount} amountOut
+ * @returns {SwapResult}
+ */
+
+/**
+ * @typedef {Object} VPoolInternalFacet - virtual pool for price quotes and trading
+ * @property {GetDoublePoolSwapQuote} getPriceForInput
+ * @property {GetDoublePoolSwapQuote} getPriceForOutput
+ */
+
+/**
+ * @callback AddLiquidityActual
+ * @param {XYKPool} pool
+ * @param {ZCFSeat} zcfSeat
+ * @param {Amount} secondaryAmount
+ * @param {Amount} poolCentralAmount
+ * @param {ZCFSeat} feeSeat
+ * @returns {string}
+ */
+
+/**
+ * @typedef {Object} SinglePoolInternalFacet
+ * @property {GetSinglePoolSwapQuote} getPriceForInput
+ * @property {GetSinglePoolSwapQuote} getPriceForOutput
+ * @property {AddLiquidityActual} addLiquidityActual
+ */
+
+/**
+ * @template T
+ * @typedef {Object} VPoolWrapper - wrapper holding external and internal facets
+ * @property {VPool} externalFacet
+ * @property {T} internalFacet
+ */
+
+/**
  * @typedef {Object} XYKPool
  * @property {() => bigint} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
@@ -27,7 +82,7 @@
  * @property {() => void} updateState
  * @property {() => PriceAuthority} getToCentralPriceAuthority
  * @property {() => PriceAuthority} getFromCentralPriceAuthority
- * @property {() => VPool} getVPool
+ * @property {() => VPoolWrapper<unknown>} getVPool
  */
 
 /**
