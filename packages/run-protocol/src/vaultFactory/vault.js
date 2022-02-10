@@ -68,7 +68,6 @@ export const makeVaultKit = (
   runMint,
   priceAuthority,
 ) => {
-  console.log('DEBUG makeVaultKit', { manager });
   const { updater: uiUpdater, notifier } = makeNotifierKit();
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
     zcf.makeEmptySeatKit(undefined);

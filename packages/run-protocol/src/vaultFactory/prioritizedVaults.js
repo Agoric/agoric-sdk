@@ -67,8 +67,6 @@ export const currentDebtToCollateral = vault =>
 export const makePrioritizedVaults = reschedulePriceCheck => {
   const vaults = makeOrderedVaultStore();
 
-  // XXX why keep this state in PrioritizedVaults? Better in vaultManager?
-
   // To deal with fluctuating prices and varying collateralization, we schedule a
   // new request to the priceAuthority when some vault's debtToCollateral ratio
   // surpasses the current high-water mark. When the request that is at the
@@ -107,12 +105,6 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     const [[_, vaultKit]] = vaults.entries();
     const { vault } = vaultKit;
     const actualDebtAmount = vault.getDebtAmount();
-    console.log(
-      'DEBUG firstDebtRatio',
-      { actualDebtAmount },
-      'in',
-      Array.from(vaults.entries()),
-    );
     return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
   };
 

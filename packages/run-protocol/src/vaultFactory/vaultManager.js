@@ -102,31 +102,6 @@ export const makeVaultManager = (
 
   let vaultCounter = 0;
 
-  /**
-   * Each vaultManager can be in these liquidation process states:
-   *
-   * READY
-   * - Ready to liquidate
-   * - waiting on price info
-   * - If chargeInterest triggers, we have to reschedulePriceCheck
-   * CULLING
-   * - Price info arrived
-   * - Picking out set to liquidate
-   * - reschedulePriceCheck ?
-   * - highestDebtToCollateral is just a cache for perf of the head of the priority queue
-   * - If chargeInterest triggers, it’s postponed until READY
-   * LIQUIDATING
-   * - Liquidate each of the selected
-   * - ¿ Skip ones that no longer need to be?
-   * - ¿ Remove empty vaults?
-   * - If chargeInterest triggers, it’s postponed until READY
-   * - Go back to READY
-   *
-   * @type {'READY' | 'CULLING' | 'LIQUIDATING'}
-   */
-  // eslint-disable-next-line no-unused-vars
-  const currentState = 'READY';
-
   // A Map from vaultKits to their most recent ratio of debt to
   // collateralization. (This representation won't be optimized; when we need
   // better performance, use virtual objects.)
@@ -318,18 +293,23 @@ export const makeVaultManager = (
    * @returns {bigint} in brand of the manager's debt
    */
   const debtDelta = (oldDebt, newDebt) => {
-    trace('debtDelta', { oldDebt, newDebt });
     // Since newDebt includes accrued interest we need to use getDebtAmount()
     // to get a baseline that also includes accrued interest.
     // eslint-disable-next-line no-use-before-define
     const priorDebtValue = oldDebt.value;
+    const newDebtValue = newDebt.value;
     // We can't used AmountMath because the delta can be negative.
     assert.typeof(
       priorDebtValue,
       'bigint',
       'vault debt supports only bigint amounts',
     );
-    return newDebt.value - priorDebtValue;
+    assert.typeof(
+      newDebtValue,
+      'bigint',
+      'vault debt supports only bigint amounts',
+    );
+    return newDebtValue - priorDebtValue;
   };
 
   /**

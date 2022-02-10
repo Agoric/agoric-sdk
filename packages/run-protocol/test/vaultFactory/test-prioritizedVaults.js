@@ -299,28 +299,3 @@ test.skip('removal by notification', async t => {
     'should be only one',
   );
 });
-
-/*
-test.skip('refresh', t => {
-  for (const [vaultId, runCount, collateralCount] of fixture) {
-    const mockVaultKit = harden({
-      vault: mockVault(runCount, collateralCount),
-    });
-    // @ts-expect-error mock
-    vaults.addVaultKit(vaultId, mockVaultKit);
-  }
-  const vaultIds = Array.from(vaults.entriesWithId()).map(
-    ([vaultId, _kit]) => vaultId,
-  );
-  t.deepEqual(
-    vaultIds,
-    fixture.map(([vid]) => vid),
-  );
-  const [id, runCount, collateralCount] = fixture[4];
-  vaults.refreshVaultPriority(
-    AmountMath.make(runBand, BigInt(runCount)),
-    AmountMath.make(collateralCount, BigInt(collateralBrand)),
-    id,
-  );
-});
-*/

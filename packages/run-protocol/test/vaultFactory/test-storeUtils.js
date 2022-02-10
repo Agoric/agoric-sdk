@@ -7,8 +7,7 @@ import * as StoreUtils from '../../src/vaultFactory/storeUtils.js';
 
 // XXX shouldn't we have a shared test utils for this kind of thing?
 export const mockBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
-  isMyIssuer: async allegedIssuer => false,
+  isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
   getDisplayInfo: () => ({
     assetKind: AssetKind.NAT,
