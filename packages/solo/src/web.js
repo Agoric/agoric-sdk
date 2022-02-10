@@ -295,7 +295,6 @@ export async function makeHTTPListener(
         obj = JSON.parse(message);
         const res = await inboundCommand(obj, meta, id);
 
-        // eslint-disable-next-line no-use-before-define
         sendJSON({ ...res, meta });
       } catch (error) {
         inboundCommand(
