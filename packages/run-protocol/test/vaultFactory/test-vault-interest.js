@@ -89,7 +89,7 @@ async function launch(zoeP, sourceRoot) {
 
 const helperContract = launch(zoe, vaultRoot);
 
-// FIXME test failing waiting for updates
+// FIXME test fails waiting for updates
 test.skip('interest', async t => {
   const { creatorSeat } = await helperContract;
 

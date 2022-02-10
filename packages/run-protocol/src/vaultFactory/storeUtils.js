@@ -7,6 +7,8 @@
 // XXX declaration shouldn't be necessary. Add exception to eslint or make a real import.
 /* global BigUint64Array */
 
+/** @typedef {[normalizedDebtRatio: number, vaultId: VaultId]} CompositeKey */
+
 const asNumber = new Float64Array(1);
 const asBits = new BigUint64Array(asNumber.buffer);
 

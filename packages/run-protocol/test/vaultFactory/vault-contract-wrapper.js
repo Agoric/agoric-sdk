@@ -2,7 +2,7 @@
 
 import '@agoric/zoe/src/types.js';
 
-import { makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -74,7 +74,10 @@ export async function start(zcf, privateArgs) {
     reallocateReward,
     applyDebtDelta() {},
     getCollateralQuote() {
-      return Promise.resolve({ quoteAmount: null, quotePayment: null });
+      return Promise.resolve({
+        quoteAmount: AmountMath.make(runBrand, 0n),
+        quotePayment: null,
+      });
     },
     getCompoundedInterest: () => makeRatio(1n, runBrand),
     updateVaultPriority: () => {

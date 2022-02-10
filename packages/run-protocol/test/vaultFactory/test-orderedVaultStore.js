@@ -5,11 +5,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeOrderedVaultStore } from '../../src/vaultFactory/orderedVaultStore.js';
+import { fromVaultKey } from '../../src/vaultFactory/storeUtils.js';
 
 // XXX shouldn't we have a shared test utils for this kind of thing?
 const runBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
-  isMyIssuer: async allegedIssuer => false,
+  isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mockRUN',
   getDisplayInfo: () => ({
     assetKind: AssetKind.NAT,
@@ -17,8 +17,7 @@ const runBrand = Far('brand', {
 });
 
 const collateralBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
-  isMyIssuer: async allegedIssuer => false,
+  isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mockCollateral',
   getDisplayInfo: () => ({
     assetKind: AssetKind.NAT,
@@ -67,8 +66,8 @@ test.skip('ordering', t => {
     // @ts-expect-error mock
     vaults.addVaultKit(vaultId, mockVaultKit);
   }
-  const contents = Array.from(vaults.entriesWithId());
-  const vaultIds = contents.map(([vaultId, _kit]) => vaultId);
+  const contents = Array.from(vaults.entries());
+  const vaultIds = contents.map(([k, _v]) => fromVaultKey(k)[1]);
   // keys were ordered matching the fixture's ordering of vaultId
   t.deepEqual(vaultIds, vaultIds.sort());
 });
