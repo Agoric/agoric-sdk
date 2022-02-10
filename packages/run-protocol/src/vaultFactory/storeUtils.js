@@ -1,5 +1,4 @@
-// FIXME remove before review
-// @ts-nocheck
+// @ts-check
 /**
  * Module to improvise composite keys for orderedVaultStore until Collections API supports them.
  *
@@ -15,12 +14,11 @@ const asBits = new BigUint64Array(asNumber.buffer);
 
 /**
  *
- * @param {number} n
+ * @param {string} nStr
  * @param {number} size
  * @returns {string}
  */
-const zeroPad = (n, size) => {
-  const nStr = `${n}`;
+const zeroPad = (nStr, size) => {
   assert(nStr.length <= size);
   const str = `00000000000000000000${nStr}`;
   const result = str.substring(str.length - size);
@@ -110,7 +108,7 @@ const toUncollateralizedKey = vaultId => {
 
 /**
  * @param {string} key
- * @returns {CompositeKey} normalized debt ratio as number, vault id
+ * @returns {[normalizedDebtRatio: number, vaultId: VaultId]}
  */
 const fromVaultKey = key => {
   const [numberPart, vaultIdPart] = key.split(':');

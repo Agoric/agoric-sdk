@@ -140,18 +140,6 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   };
 
   /**
-   * Akin to forEachRatioGTE but iterate over all vaults.
-   *
-   * @param {(key: string, vk: VaultKit) => void} cb
-   * @returns {void}
-   */
-  const forAll = cb => {
-    for (const [key, vk] of vaults.entries()) {
-      cb(key, vk);
-    }
-  };
-
-  /**
    * Invoke a function for vaults with debt to collateral at or above the ratio.
    *
    * Callbacks are called in order of priority. Vaults that are under water
@@ -160,6 +148,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * @param {Ratio} ratio
    * @param {(key: string, vk: VaultKit) => void} cb
    */
+  // TODO switch to generator
   const forEachRatioGTE = (ratio, cb) => {
     // TODO use a Pattern to limit the query
     for (const [key, vk] of vaults.entries()) {
@@ -175,11 +164,11 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   };
 
   /**
-   *
    * @param {VaultId} vaultId
    * @param {Vault} vault
    */
   const refreshVaultPriority = (vaultId, vault) => {
+    // @ts-ignore FIXME removeVault() takes a key
     const vaultKit = removeVault(vaultId, vault);
     addVaultKit(vaultId, vaultKit);
   };
@@ -188,7 +177,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     addVaultKit,
     refreshVaultPriority,
     removeVault,
-    forAll,
+    entries: vaults.entries,
     forEachRatioGTE,
     highestRatio: () => oracleQueryThreshold,
   });
