@@ -1,4 +1,6 @@
 // @ts-check
+// XXX we do this a lot, okay to drop it to warning in eslint config?
+/* eslint-disable no-use-before-define */
 import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
@@ -47,6 +49,7 @@ export const VaultState = {
  * @property {() => Brand} getCollateralBrand
  * @property {ReallocateReward} reallocateReward
  * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
+ * @property {(oldDebt: Amount, oldCollateral: Amount, vaultId: VaultId) => void} updateVaultPriority
  */
 
 /**
@@ -114,14 +117,14 @@ export const makeVaultKit = (
   /**
    * @param {Amount} newDebt - principal and all accrued interest
    */
-  const updateDebtSnapshotAndNotify = newDebt => {
-    // eslint-disable-next-line no-use-before-define
+  const updateDebtPrincipal = newDebt => {
     const oldDebt = getDebtAmount();
-    trace(idInManager, 'updateDebtSnapshotAndNotify', { oldDebt, newDebt });
+    trace(idInManager, 'updateDebtPrincipal', { oldDebt, newDebt });
     updateDebtSnapshot(newDebt);
-    // update parent state
-    // eslint-disable-next-line no-use-before-define
+    // update vault manager which tracks total debt
     manager.applyDebtDelta(oldDebt, newDebt);
+    // update position of this vault in liquidation priority queue
+    manager.updateVaultPriority(oldDebt, getCollateralAmount(), idInManager);
   };
 
   /**
@@ -253,6 +256,7 @@ export const makeVaultKit = (
         throw Error(`unreachable vaultState: ${vaultState}`);
     }
   };
+  // ??? better to provide this notifier downstream to partition broadcasts?
   // Propagate notifications from the manager to observers of this vault
   observeNotifier(managerNotifier, { updateState: updateUiState });
 
@@ -537,7 +541,7 @@ export const makeVaultKit = (
     manager.reallocateReward(fee, vaultSeat, clientSeat);
 
     // parent needs to know about the change in debt
-    updateDebtSnapshotAndNotify(newDebt);
+    updateDebtPrincipal(newDebt);
 
     runMint.burnLosses(harden({ RUN: runAfter.vault }), vaultSeat);
 
@@ -588,7 +592,7 @@ export const makeVaultKit = (
     );
     manager.reallocateReward(fee, vaultSeat, seat);
 
-    updateDebtSnapshotAndNotify(runDebt);
+    updateDebtPrincipal(runDebt);
 
     updateUiState();
 

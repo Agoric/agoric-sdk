@@ -36,13 +36,16 @@ export const makeOrderedVaultStore = () => {
     const { vault } = vaultKit;
     const debt = vault.getDebtAmount();
     const collateral = vault.getCollateralAmount();
-    console.log('addVaultKit', { debt, collateral });
     const key =
       collateral.value === 0n
         ? toUncollateralizedKey(vaultId)
         : toVaultKey(makeRatioFromAmounts(debt, collateral), vaultId);
+    console.log('addVaultKit', {
+      debt: debt.value,
+      collateral: collateral.value,
+      key,
+    });
     store.init(key, vaultKit);
-    store.getSize;
   };
 
   /**
@@ -59,7 +62,7 @@ export const makeOrderedVaultStore = () => {
     } catch (e) {
       const keys = Array.from(store.keys());
       console.error(
-        'removeVaultKit failed to remove',
+        'removeByKey failed to remove',
         key,
         'parts:',
         fromVaultKey(key),
@@ -91,27 +94,9 @@ export const makeOrderedVaultStore = () => {
     }
   }
 
-  /**
-   *
-   * @param {VaultId} vaultId
-   * @param {Vault} vault
-   * @returns {VaultKit}
-   */
-  const removeVaultKit = (vaultId, vault) => {
-    const debtRatio = makeRatioFromAmounts(
-      vault.getNormalizedDebt(),
-      vault.getCollateralAmount(),
-    );
-
-    // XXX TESTME does this really work?
-    const key = toVaultKey(debtRatio, vaultId);
-    return removeByKey(key);
-  };
-
   return harden({
     addVaultKit,
     removeByKey,
-    removeVaultKit,
     entries: store.entries,
     entriesWithId,
     getSize: store.getSize,

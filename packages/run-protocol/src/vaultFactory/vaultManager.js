@@ -368,14 +368,13 @@ export const makeVaultManager = (
   };
 
   /**
-   * FIXME finisht this
-   *
+   * @param {Amount} oldDebt
+   * @param {Amount} oldCollateral
    * @param {VaultId} vaultId
-   * @param {Vault} vault
    */
-  const updateVaultPriority = (vaultId, vault) => {
+  const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {
     assert(prioritizedVaults);
-    prioritizedVaults.refreshVaultPriority(vaultId, vault);
+    prioritizedVaults.refreshVaultPriority(oldDebt, oldCollateral, vaultId);
     trace('updateVaultPriority complete', { totalDebt });
   };
 

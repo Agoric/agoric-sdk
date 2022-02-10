@@ -4,7 +4,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
-import { details as X } from '@agoric/assert';
 import * as StoreUtils from '../../src/vaultFactory/storeUtils.js';
 
 // XXX shouldn't we have a shared test utils for this kind of thing?
@@ -43,8 +42,29 @@ for (const [before, after] of [
 for (const [numerator, denominator, vaultId, expectedKey, numberOut] of [
   [0, 100, 'vault-A', 'ffff0000000000000:vault-A', Infinity],
   [1, 100, 'vault-B', 'fc059000000000000:vault-B', 100.0],
-  // TODO do we want prioritize greater debt before other debts that need to be liquidated?
-  [1000, 100, 'vault-C', 'f8000000000000000:vault-C', 0], // debts greater than collateral are tied for first
+  [1000, 100, 'vault-C', 'fbfb999999999999a:vault-C', 0.1],
+  [1000, 101, 'vault-D', 'fbfb9db22d0e56042:vault-D', 0.101],
+  [
+    100,
+    Number.MAX_SAFE_INTEGER,
+    'vault-MAX-COLLATERAL',
+    'fc2d47ae147ae147a:vault-MAX-COLLATERAL',
+    90071992547409.9,
+  ],
+  [
+    Number.MAX_SAFE_INTEGER,
+    100,
+    'vault-MAX-DEBT',
+    'fbd09000000000001:vault-MAX-DEBT',
+    1.1102230246251567e-14,
+  ],
+  [
+    Number.MAX_SAFE_INTEGER,
+    Number.MAX_SAFE_INTEGER,
+    'vault-MAX-EVEN',
+    'fbff0000000000000:vault-MAX-EVEN',
+    1,
+  ],
 ]) {
   test(`vault keys: (${numerator}/${denominator}, ${vaultId}) => ${expectedKey} ==> ${numberOut}, ${vaultId}`, t => {
     const ratio = makeRatioFromAmounts(

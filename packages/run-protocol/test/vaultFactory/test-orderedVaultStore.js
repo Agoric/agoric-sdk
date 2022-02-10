@@ -35,8 +35,6 @@ const mockVault = (runCount, collateralCount) => {
   });
 };
 
-const vaults = makeOrderedVaultStore();
-
 /**
  * @type {Array<[string, bigint, bigint]>}
  */
@@ -47,13 +45,17 @@ const fixture = [
   ['vault-C1', 100n, 1000n],
   ['vault-C2', 200n, 2000n],
   ['vault-C3', 300n, 3000n],
-  ['vault-D', 1n, 100n],
-  ['vault-E', 1n, 1000n],
-  ['vault-F', BigInt(Number.MAX_VALUE), BigInt(Number.MAX_VALUE)],
+  ['vault-D', 30n, 100n],
+  ['vault-E', 40n, 100n],
+  ['vault-F', 50n, 100n],
+  ['vault-M', 1n, 1000n],
+  ['vault-Y', BigInt(Number.MAX_VALUE), BigInt(Number.MAX_VALUE)],
   ['vault-Z-withoutdebt', 0n, 100n],
 ];
 
-test('ordering', t => {
+test.skip('ordering', t => {
+  const vaults = makeOrderedVaultStore();
+
   // TODO keep a seed so we can debug when it does fail
   // randomize because the add order should not matter
   // Maybe use https://dubzzz.github.io/fast-check.github.com/
@@ -69,4 +71,21 @@ test('ordering', t => {
   const vaultIds = contents.map(([vaultId, _kit]) => vaultId);
   // keys were ordered matching the fixture's ordering of vaultId
   t.deepEqual(vaultIds, vaultIds.sort());
+});
+
+test('uniqueness', t => {
+  const vaults = makeOrderedVaultStore();
+
+  for (const [vaultId, runCount, collateralCount] of fixture) {
+    const mockVaultKit = harden({
+      vault: mockVault(runCount, collateralCount),
+    });
+    // @ts-expect-error mock
+    vaults.addVaultKit(vaultId, mockVaultKit);
+  }
+  const numberParts = Array.from(vaults.entries()).map(
+    ([k, _v]) => k.split(':')[0],
+  );
+  const uniqueNumberParts = Array.from(new Set(numberParts));
+  t.is(uniqueNumberParts.length, 9); // of 11, three have the same ratio
 });

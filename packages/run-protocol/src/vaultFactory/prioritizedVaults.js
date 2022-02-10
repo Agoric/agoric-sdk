@@ -7,6 +7,7 @@ import {
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
+import { toVaultKey } from './storeUtils.js';
 
 const { multiply, isGTE } = natSafeMath;
 
@@ -106,6 +107,12 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     const [[_, vaultKit]] = vaults.entries();
     const { vault } = vaultKit;
     const actualDebtAmount = vault.getDebtAmount();
+    console.log(
+      'DEBUG firstDebtRatio',
+      { actualDebtAmount },
+      'in',
+      Array.from(vaults.entries()),
+    );
     return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
   };
 
@@ -125,6 +132,18 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       oracleQueryThreshold = firstDebtRatio();
     }
     return vk;
+  };
+
+  /**
+   *
+   * @param {Amount} oldDebt
+   * @param {Amount} oldCollateral
+   * @param {string} vaultId
+   */
+  const removeVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
+    const ratio = makeRatioFromAmounts(oldDebt, oldCollateral);
+    const key = toVaultKey(ratio, vaultId);
+    return removeVault(key);
   };
 
   /**
@@ -154,6 +173,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     for (const [key, vk] of vaults.entries()) {
       const debtToCollateral = currentDebtToCollateral(vk.vault);
 
+      console.log('forEachRatioGTE', { ratio, debtToCollateral });
+
       if (ratioGTE(debtToCollateral, ratio)) {
         cb(key, vk);
       } else {
@@ -164,21 +185,22 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   };
 
   /**
-   * @param {VaultId} vaultId
-   * @param {Vault} vault
+   * @param {Amount} oldDebt
+   * @param {Amount} oldCollateral
+   * @param {string} vaultId
    */
-  const refreshVaultPriority = (vaultId, vault) => {
-    // @ts-ignore FIXME removeVault() takes a key
-    const vaultKit = removeVault(vaultId, vault);
+  const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {
+    const vaultKit = removeVaultByAttributes(oldDebt, oldCollateral, vaultId);
     addVaultKit(vaultId, vaultKit);
   };
 
   return harden({
     addVaultKit,
-    refreshVaultPriority,
-    removeVault,
     entries: vaults.entries,
     forEachRatioGTE,
     highestRatio: () => oracleQueryThreshold,
+    refreshVaultPriority,
+    removeVault,
+    removeVaultByAttributes,
   });
 };
