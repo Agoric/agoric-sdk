@@ -11,7 +11,7 @@ import { AmountMath } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin, zcfBundlecap } from '../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -19,7 +19,10 @@ const dirname = path.dirname(filename);
 const contractRoot = `${dirname}/registerFeeMintContract.js`;
 
 test(`feeMintAccess`, async t => {
-  const { zoeService: zoe, feeMintAccess } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe, feeMintAccess } = makeZoeKit(
+    fakeVatAdmin,
+    zcfBundlecap,
+  );
   const bundle = await bundleSource(contractRoot);
   const installation = await E(zoe).install(bundle);
   const { creatorFacet } = await E(zoe).startInstance(

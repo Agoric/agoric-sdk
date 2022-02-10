@@ -6,9 +6,13 @@ import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
 export function buildRootObject(vatPowers) {
   return Far('root', {
-    buildZoe: vatAdminSvc => {
+    buildZoe: (vatAdminSvc, zcfBundlecap) => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      const { zoeService: zoe } = makeZoeKit(vatAdminSvc, shutdownZoeVat);
+      const { zoeService: zoe } = makeZoeKit(
+        vatAdminSvc,
+        zcfBundlecap,
+        shutdownZoeVat,
+      );
       return zoe;
     },
   });

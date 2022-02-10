@@ -10,7 +10,7 @@ import { E } from '@agoric/eventual-send';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin, zcfBundlecap } from '../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -21,7 +21,7 @@ test('zoe - brokenAutomaticRefund', async t => {
   t.plan(1);
   // Setup zoe and mints
   const { moolaR } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin, zcfBundlecap);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   const installation = await E(zoe).install(bundle);

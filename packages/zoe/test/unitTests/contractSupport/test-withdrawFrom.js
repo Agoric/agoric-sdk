@@ -9,7 +9,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { setup } from '../setupBasicMints.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin, zcfBundlecap } from '../../../tools/fakeVatAdmin.js';
 import {
   depositToSeat,
   withdrawFromSeat,
@@ -27,7 +27,10 @@ async function setupContract(moolaIssuer, bucksIssuer) {
   const setJig = jig => {
     testJig = jig;
   };
-  const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
+  const { zoeService: zoe } = makeZoeKit(
+    makeFakeVatAdmin(setJig).admin,
+    zcfBundlecap,
+  );
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

@@ -11,7 +11,7 @@ import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin, zcfBundlecap } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
 import '../../../exported.js';
@@ -37,7 +37,10 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin().admin);
+    const { zoeService: zoe } = makeZoeKit(
+      makeFakeVatAdmin().admin,
+      zcfBundlecap,
+    );
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);

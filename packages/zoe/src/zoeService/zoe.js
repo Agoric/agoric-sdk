@@ -31,11 +31,11 @@ import { createFeeMint } from './feeMint.js';
  *
  * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
  * to create a new vat.
+ * @param {BundleCap} zcfBundlecap - handle to the ZCF source bundle
  * @param {ShutdownWithFailure} shutdownZoeVat - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {string} [zcfBundleName] - The name of the contract facet bundle.
  * @returns {{
  *   zoeService: ZoeService,
  *   feeMintAccess: FeeMintAccess,
@@ -43,13 +43,13 @@ import { createFeeMint } from './feeMint.js';
  */
 const makeZoeKit = (
   vatAdminSvc,
+  zcfBundlecap,
   shutdownZoeVat = () => {},
   feeIssuerConfig = {
     name: 'RUN',
     assetKind: AssetKind.NAT,
     displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
   },
-  zcfBundleName = undefined,
 ) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
   // defined. See below where the promise is resolved.
@@ -64,7 +64,7 @@ const makeZoeKit = (
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
-  const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfBundleName);
+  const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfBundlecap);
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.

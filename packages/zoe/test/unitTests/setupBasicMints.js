@@ -3,7 +3,7 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeStore } from '@agoric/store';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin, zcfBundlecap } from '../../tools/fakeVatAdmin.js';
 
 const setup = () => {
   const moolaBundle = makeIssuerKit('moola');
@@ -21,7 +21,7 @@ const setup = () => {
     brands.init(k, allBundles[k].brand);
   }
 
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin, zcfBundlecap);
 
   /** @type {(brand: Brand) => (value: AmountValue) => Amount} */
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);

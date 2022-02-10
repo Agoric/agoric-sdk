@@ -9,7 +9,7 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin, zcfBundlecap } from '../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -19,7 +19,7 @@ const contractRoot = `${dirname}/useObjExample.js`;
 test('zoe - useObj', async t => {
   t.plan(3);
   const { moolaIssuer, moolaMint, moola } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin, zcfBundlecap);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);

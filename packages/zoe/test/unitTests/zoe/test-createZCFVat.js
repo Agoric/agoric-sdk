@@ -11,22 +11,16 @@ test('setupCreateZCFVat', async t => {
   // This is difficult to unit test, since the real functionality
   // creates a new vat
 
+  const zcfBundlecap = Far('zcfBundlecap', {});
   const fakeVatAdminSvc = Far('fakeVatAdminSvc', {
-    createVatByName: _name => {
-      return harden({ adminNode: undefined, root: undefined });
-    },
-    createVat: _bundle => {
+    createVat: bundlecap => {
+      assert.equal(bundlecap, zcfBundlecap);
       return harden({ adminNode: undefined, root: undefined });
     },
   });
 
   // @ts-ignore fakeVatAdminSvc is mocked
-  t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, undefined)(), {
-    adminNode: undefined,
-    root: undefined,
-  });
-  // @ts-ignore fakeVatAdminSvc is mocked
-  t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, 'myVat')(), {
+  t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, zcfBundlecap)(), {
     adminNode: undefined,
     root: undefined,
   });

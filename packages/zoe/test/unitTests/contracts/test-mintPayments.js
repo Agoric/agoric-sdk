@@ -7,7 +7,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin, zcfBundlecap } from '../../../tools/fakeVatAdmin.js';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
@@ -18,7 +18,7 @@ const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 
 test('zoe - mint payments', async t => {
   t.plan(2);
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin, zcfBundlecap);
 
   const makeAlice = () => {
     return {
@@ -86,7 +86,7 @@ test('zoe - mint payments', async t => {
 
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin, zcfBundlecap);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');
 

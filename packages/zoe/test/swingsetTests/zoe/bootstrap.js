@@ -81,13 +81,15 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 };
 
 export function buildRootObject(vatPowers, vatParameters) {
+  const { D } = vatPowers;
   const { argv, contractBundles: cb } = vatParameters;
   return Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
-      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
+      const zcfBundlecap = D(devices.bundle).getNamedBundleCap('zcf');
+      const zoe = await E(vats.zoe).buildZoe(vatAdminSvc, zcfBundlecap);
       const installations = {
         automaticRefund: await E(zoe).install(cb.automaticRefund),
         coveredCall: await E(zoe).install(cb.coveredCall),

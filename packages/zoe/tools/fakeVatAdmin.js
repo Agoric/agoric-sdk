@@ -9,6 +9,9 @@ import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
 import zcfContractBundle from '../bundles/bundle-contractFacet.js';
 
+// this simulates a bundlecap, which is normally a swingset "device node"
+export const zcfBundlecap = Far('zcfBundlecap', {});
+
 /**
  * @param { (...args) => unknown } [testContextSetter]
  * @param { (x: unknown) => unknown } [makeRemote]
@@ -36,7 +39,9 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // test-only state can be provided from contracts
   // to their tests.
   const admin = Far('vatAdmin', {
-    createVat: bundle => {
+    createVat: bundlecap => {
+      assert.equal(bundlecap, zcfBundlecap, 'fakeVatAdmin only creates ZCF');
+      const bundle = zcfContractBundle;
       return harden({
         root: makeRemote(
           E(evalContractBundle(bundle)).buildRootObject(
@@ -55,10 +60,6 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
         }),
       });
     },
-    createVatByName: name => {
-      assert.equal(name, 'zcf', `only name='zcf' accepted, not ${name}`);
-      return admin.createVat(zcfContractBundle);
-    },
   });
   const vatAdminState = {
     getExitMessage: () => exitMessage,
@@ -71,4 +72,4 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
 const fakeVatAdmin = makeFakeVatAdmin().admin;
 
 export default fakeVatAdmin;
-export { makeFakeVatAdmin };
+export { makeFakeVatAdmin, fakeVatAdmin };
