@@ -13,7 +13,7 @@ import {
   makeRatio,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { observeNotifier } from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
@@ -70,6 +70,14 @@ export const makeVaultManager = (
   startTimeStamp,
 ) => {
   const { brand: runBrand } = runMint.getIssuerRecord();
+
+  const { updater, notifier } = makeNotifierKit(
+    harden({
+      compoundedInterest: makeRatio(1n, runBrand, 1n, runBrand),
+      latestInterestUpdate: 0n,
+      totalDebt: AmountMath.makeEmpty(runBrand),
+    }),
+  );
 
   /** @type {GetVaultParams} */
   const shared = {
@@ -244,13 +252,13 @@ export const makeVaultManager = (
     );
   };
 
-  // FIXME don't mutate vaults to charge them
   /**
    *
    * @param {bigint} updateTime
    * @param {ZCFSeat} poolIncrementSeat
    */
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
+    trace('chargeAllVault', { updateTime });
     const interestCalculator = makeInterestCalculator(
       runBrand,
       shared.getInterestRate(),
@@ -288,13 +296,14 @@ export const makeVaultManager = (
     // update running tally of total debt against this collateral
     ({ latestInterestUpdate } = debtStatus);
 
-    // notifiy UIs
-    // updateUiState();
-    trace('chargeAllVaults complete', {
+    const payload = harden({
       compoundedInterest,
-      interestAccrued,
+      latestInterestUpdate,
       totalDebt,
     });
+    updater.updateState(payload);
+
+    trace('chargeAllVaults complete', payload);
 
     reschedulePriceCheck();
   };
@@ -412,6 +421,7 @@ export const makeVaultManager = (
     const vaultKit = makeVaultKit(
       zcf,
       managerFacade,
+      notifier,
       vaultId,
       runMint,
       priceAuthority,
@@ -423,13 +433,12 @@ export const makeVaultManager = (
     assert(prioritizedVaults);
     prioritizedVaults.addVaultKit(vaultId, vaultKit);
 
-    // ??? do we still need the notifier?
-    const { notifier } = await openLoan(seat);
+    const vaultResult = await openLoan(seat);
 
     seat.exit();
 
     return harden({
-      uiNotifier: notifier,
+      uiNotifier: vaultResult.notifier,
       invitationMakers: Far('invitation makers', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
         CloseVault: vault.makeCloseInvitation,

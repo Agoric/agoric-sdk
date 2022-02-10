@@ -71,6 +71,27 @@ export const makeOrderedVaultStore = () => {
   };
 
   /**
+   * XXX part of refactoring, used only for tests at this point.
+   *
+   * Exposes vaultId contained in the key but not the ordering factor.
+   * That ordering factor is the inverse quotient of the debt ratio (collateral÷debt)
+   * but nothing outside this module should rely on that to be true.
+   *
+   * Redundant tags until https://github.com/Microsoft/TypeScript/issues/23857
+   *
+   * @yields {[[string, string], VaultKit]>}
+   * @returns {IterableIterator<[VaultId, VaultKit]>}
+   */
+  function* entriesWithId() {
+    for (const [k, v] of store.entries()) {
+      const [_, vaultId] = fromVaultKey(k);
+      /** @type {VaultKit} */
+      const vaultKit = v;
+      yield [vaultId, vaultKit];
+    }
+  }
+
+  /**
    *
    * @param {VaultId} vaultId
    * @param {Vault} vault
@@ -89,8 +110,10 @@ export const makeOrderedVaultStore = () => {
 
   return harden({
     addVaultKit,
+    removeByKey,
     removeVaultKit,
     entries: store.entries,
+    entriesWithId,
     getSize: store.getSize,
     values: store.values,
   });

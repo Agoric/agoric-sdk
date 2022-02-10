@@ -10,6 +10,7 @@ import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js'
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 
+import { makeNotifierKit } from '@agoric/notifier';
 import { makeVaultKit } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
@@ -89,12 +90,15 @@ export async function start(zcf, privateArgs) {
   };
   const priceAuthority = makeFakePriceAuthority(options);
 
+  const { notifier: managerNotifier } = makeNotifierKit();
+
   const {
     vault,
     actions: { openLoan },
   } = await makeVaultKit(
     zcf,
     managerMock,
+    managerNotifier,
     // eslint-disable-next-line no-plusplus
     String(vaultCounter++),
     runMint,

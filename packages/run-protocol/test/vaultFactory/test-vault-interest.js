@@ -95,7 +95,7 @@ test('interest', async t => {
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
   // RUN (charging 3 RUN fee), which uses an automatic market maker that
   // presents a fixed price of 4 RUN per Collateral.
-  const { notifier, actions } = await E(creatorSeat).getOfferResult();
+  const { notifier } = await E(creatorSeat).getOfferResult();
   const {
     runMint,
     collateralKit: { brand: collateralBrand },
@@ -121,21 +121,21 @@ test('interest', async t => {
   );
 
   timer.tick();
-  const noInterest = actions.accrueInterestAndAddToPool(1n);
-  t.truthy(AmountMath.isEqual(noInterest, AmountMath.makeEmpty(runBrand)));
+  // const noInterest = actions.accrueInterestAndAddToPool(1n);
+  // t.truthy(AmountMath.isEqual(noInterest, AmountMath.makeEmpty(runBrand)));
 
   // { chargingPeriod: 3, recordingPeriod: 9 }  charge 2% 3 times
   for (let i = 0; i < 12; i += 1) {
     timer.tick();
   }
 
-  const nextInterest = actions.accrueInterestAndAddToPool(
-    timer.getCurrentTimestamp(),
-  );
-  t.truthy(
-    AmountMath.isEqual(nextInterest, AmountMath.make(runBrand, 70n)),
-    `interest should be 70, was ${nextInterest.value}`,
-  );
+  // const nextInterest = actions.accrueInterestAndAddToPool(
+  //   timer.getCurrentTimestamp(),
+  // );
+  // t.truthy(
+  //   AmountMath.isEqual(nextInterest, AmountMath.make(runBrand, 70n)),
+  //   `interest should be 70, was ${nextInterest.value}`,
+  // );
   const { value: v2, updateCount: c2 } = await E(notifier).getUpdateSince(c1);
   t.deepEqual(v2.debt, AmountMath.make(runBrand, 73500n + 70n));
   t.deepEqual(v2.interestRate, makeRatio(5n, runBrand, 100n));

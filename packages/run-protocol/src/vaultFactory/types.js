@@ -65,7 +65,7 @@
  */
 
 /**
- * @typedef {BaseUIState & LiquidationUIMixin} UIState
+ * @typedef {BaseUIState & LiquidationUIMixin} VaultUIState
  * @typedef {Object} LiquidationUIMixin
  * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
@@ -114,7 +114,7 @@
 
 /**
  * @typedef {Object} OpenLoanKit
- * @property {Notifier<UIState>} notifier
+ * @property {Notifier<VaultUIState>} notifier
  * @property {Promise<PaymentPKeywordRecord>} collateralPayoutP
  */
 
@@ -144,7 +144,7 @@
 /**
  * @typedef {Object} LoanKit
  * @property {Vault} vault
- * @property {Notifier<UIState>} uiNotifier
+ * @property {Notifier<VaultUIState>} uiNotifier
  */
 
 /**
