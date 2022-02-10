@@ -141,8 +141,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * @param {string} vaultId
    */
   const removeVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
-    const ratio = makeRatioFromAmounts(oldDebt, oldCollateral);
-    const key = toVaultKey(ratio, vaultId);
+    const key = toVaultKey(oldDebt, oldCollateral, vaultId);
     return removeVault(key);
   };
 

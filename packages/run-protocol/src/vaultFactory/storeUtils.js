@@ -7,8 +7,6 @@
 // XXX declaration shouldn't be necessary. Add exception to eslint or make a real import.
 /* global BigUint64Array */
 
-import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
-
 const asNumber = new Float64Array(1);
 const asBits = new BigUint64Array(asNumber.buffer);
 
@@ -63,46 +61,38 @@ const dbEntryKeyToNumber = k => {
   return result;
 };
 
-// XXX there's got to be a helper somewhere for Ratio to float?
 /**
+ * Overcollateralized are greater than one.
+ * The more undercollaterized the smaller in [0-1].
  *
- * @param {Ratio} ratio
+ * @param {Amount} normalizedDebt normalized (not actual) total debt
+ * @param {Amount} collateral
  * @returns {number}
  */
-const ratioToInverseProportion = ratio => {
-  assertIsRatio(ratio);
-  return ratio.numerator.value
-    ? Number(ratio.denominator.value) / Number(ratio.numerator.value)
-    : Number.POSITIVE_INFINITY;
+const inverseDebtQuotient = (normalizedDebt, collateral) => {
+  const a = Number(collateral.value);
+  const b = normalizedDebt.value
+    ? Number(normalizedDebt.value)
+    : Number.EPSILON;
+  return a / b;
 };
 
 /**
  * Sorts by ratio in descending debt. Ordering of vault id is undefined.
- * All debts greater than collateral are tied for first.
  *
- * @param {Ratio} ratio normalized debt ratio (debt over collateral)
+ * @param {Amount} normalizedDebt normalized (not actual) total debt
+ * @param {Amount} collateral
  * @param {VaultId} vaultId
  * @returns {string} lexically sortable string in which highest debt-to-collateral is earliest
  */
-const toVaultKey = (ratio, vaultId) => {
-  assert(ratio);
+const toVaultKey = (normalizedDebt, collateral, vaultId) => {
+  assert(normalizedDebt);
+  assert(collateral);
   assert(vaultId);
   // until DB supports composite keys, copy its method for turning numbers to DB entry keys
-  const numberPart = numberToDBEntryKey(ratioToInverseProportion(ratio));
-  return `${numberPart}:${vaultId}`;
-};
-
-/**
- * Vaults may be in the store with zero collateral before loans are opened upon them. (??? good/bad idea?)
- * They're always the highest priority.
- *
- * @param {VaultId} vaultId
- * @returns {string} lexically sortable string in which highest debt-to-collateral is earliest
- */
-const toUncollateralizedKey = vaultId => {
-  assert(vaultId);
-  // until DB supports composite keys, copy its method for turning numbers to DB entry keys
-  const numberPart = numberToDBEntryKey(0);
+  const numberPart = numberToDBEntryKey(
+    inverseDebtQuotient(normalizedDebt, collateral),
+  );
   return `${numberPart}:${vaultId}`;
 };
 
@@ -118,13 +108,6 @@ const fromVaultKey = key => {
 harden(dbEntryKeyToNumber);
 harden(fromVaultKey);
 harden(numberToDBEntryKey);
-harden(toUncollateralizedKey);
 harden(toVaultKey);
 
-export {
-  dbEntryKeyToNumber,
-  fromVaultKey,
-  numberToDBEntryKey,
-  toUncollateralizedKey,
-  toVaultKey,
-};
+export { dbEntryKeyToNumber, fromVaultKey, numberToDBEntryKey, toVaultKey };

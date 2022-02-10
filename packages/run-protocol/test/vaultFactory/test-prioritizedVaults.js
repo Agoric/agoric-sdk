@@ -181,7 +181,7 @@ test('removals', async t => {
   // remove fake 3
   rescheduler.resetCalled();
   vaults.removeVaultByAttributes(
-    AmountMath.make(brand, 150n),
+    AmountMath.make(brand, 140n),
     AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
     'id-fakeVault3',
   );

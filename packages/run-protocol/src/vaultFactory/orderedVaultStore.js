@@ -1,12 +1,7 @@
 // @ts-check
 // XXX avoid deep imports https://github.com/Agoric/agoric-sdk/issues/4255#issuecomment-1032117527
 import { makeScalarBigMapStore } from '@agoric/swingset-vat/src/storeModule.js';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
-import {
-  fromVaultKey,
-  toUncollateralizedKey,
-  toVaultKey,
-} from './storeUtils.js';
+import { fromVaultKey, toVaultKey } from './storeUtils.js';
 
 /**
  * Used by prioritizedVaults to wrap the Collections API for this use case.
@@ -36,10 +31,7 @@ export const makeOrderedVaultStore = () => {
     const { vault } = vaultKit;
     const debt = vault.getDebtAmount();
     const collateral = vault.getCollateralAmount();
-    const key =
-      collateral.value === 0n
-        ? toUncollateralizedKey(vaultId)
-        : toVaultKey(makeRatioFromAmounts(debt, collateral), vaultId);
+    const key = toVaultKey(debt, collateral, vaultId);
     console.log('addVaultKit', {
       debt: debt.value,
       collateral: collateral.value,
