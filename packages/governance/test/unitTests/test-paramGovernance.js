@@ -6,7 +6,10 @@ import '@agoric/zoe/exported.js';
 import { makeZoeKit } from '@agoric/zoe';
 import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import {
+  makeFakeVatAdmin,
+  zcfBundlecap,
+} from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@agoric/eventual-send';
 import { makeLoopback } from '@endo/captp';
 
@@ -50,6 +53,7 @@ const setUpZoeForTest = async setJig => {
 
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
     makeFakeVatAdmin(setJig, o => makeFar(o)).admin,
+    zcfBundlecap,
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);

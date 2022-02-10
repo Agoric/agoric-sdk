@@ -188,8 +188,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
     devices.vatAdmin,
   );
+  const zcfBundlecap = vatPowers.D(devices.bundle).getNamedBundleCap('zcf');
   /** @type { ERef<ZoeService> } */
-  const zoe = E(vats.zoe).buildZoe(vatAdminSvc);
+  const zoe = E(vats.zoe).buildZoe(vatAdminSvc, zcfBundlecap);
   const installations = await installContracts(zoe, cb);
   const timer = buildManualTimer(log);
   const voterCreator = E(vats.voter).build(zoe);

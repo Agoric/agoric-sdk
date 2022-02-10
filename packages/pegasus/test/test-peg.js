@@ -11,7 +11,7 @@ import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
 
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { fakeVatAdmin, zcfBundlecap } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { Far } from '@endo/marshal';
 import { makeSubscription } from '@agoric/notifier';
 
@@ -62,7 +62,7 @@ async function testRemotePeg(t) {
     },
   });
 
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin, zcfBundlecap);
 
   // Pack the contract.
   const contractBundle = await bundleSource(contractPath);

@@ -9,7 +9,8 @@ function makeBootstrap(argv, cb, vatPowers) {
     const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
       devices.vatAdmin,
     );
-    const { zoe, feeMintAccess } = await E(vats.zoe).buildZoe(vatAdminSvc);
+    const zcfBundlecap = vatPowers.D(devices.bundle).getNamedBundleCap('zcf');
+    const { zoe, feeMintAccess } = await E(vats.zoe).buildZoe(vatAdminSvc, zcfBundlecap);
 
     const installations = await installContracts(zoe, cb);
 

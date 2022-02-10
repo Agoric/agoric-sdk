@@ -7,7 +7,7 @@ import '@agoric/zoe/exported.js';
 import path from 'path';
 import { E } from '@agoric/eventual-send';
 import { makeZoeKit } from '@agoric/zoe';
-import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { fakeVatAdmin, zcfBundlecap } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
@@ -25,7 +25,7 @@ const electorateRoot = `${dirname}/../../src/committee.js`;
 const counterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
 
 const setupContract = async () => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin, zcfBundlecap);
 
   // pack the contract
   const [electorateBundle, counterBundle] = await Promise.all([

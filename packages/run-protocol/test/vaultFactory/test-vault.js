@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin, zcfBundlecap } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@endo/captp';
 import { makeZoeKit } from '@agoric/zoe';
 import bundleSource from '@endo/bundle-source';
@@ -38,7 +38,7 @@ const setJig = jig => {
 const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
 
 const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-  makeFakeVatAdmin(setJig, makeRemote).admin,
+  makeFakeVatAdmin(setJig, makeRemote).admin, zcfBundlecap
 );
 /** @type {ERef<ZoeService>} */
 const zoe = makeFar(zoeService);

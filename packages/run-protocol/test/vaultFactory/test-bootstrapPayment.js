@@ -8,7 +8,7 @@ import '../../src/vaultFactory/types.js';
 import path from 'path';
 import { E } from '@agoric/eventual-send';
 import bundleSource from '@endo/bundle-source';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin, zcfBundlecap } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { AmountMath } from '@agoric/ertp';
@@ -59,7 +59,7 @@ const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
 const setUpZoeForTest = async setJig => {
   const { makeFar } = makeLoopback('zoeTest');
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(setJig).admin,
+    makeFakeVatAdmin(setJig).admin, zcfBundlecap
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
