@@ -2,7 +2,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 import * as StoreUtils from '../../src/vaultFactory/storeUtils.js';
 
@@ -39,8 +38,8 @@ for (const [before, after] of [
   });
 }
 
-for (const [numerator, denominator, vaultId, expectedKey, numberOut] of [
-  [0, 100, 'vault-A', 'ffff0000000000000:vault-A', Infinity],
+for (const [debt, collat, vaultId, expectedKey, numberOut] of [
+  [0, 100, 'vault-A', 'fc399000000000000:vault-A', 450359962737049600], // Infinity collateralized but we treat 0 as epsilon for safer serialization
   [1, 100, 'vault-B', 'fc059000000000000:vault-B', 100.0],
   [1000, 100, 'vault-C', 'fbfb999999999999a:vault-C', 0.1],
   [1000, 101, 'vault-D', 'fbfb9db22d0e56042:vault-D', 0.101],
@@ -65,13 +64,14 @@ for (const [numerator, denominator, vaultId, expectedKey, numberOut] of [
     'fbff0000000000000:vault-MAX-EVEN',
     1,
   ],
+  [1, 0, 'vault-NOCOLLATERAL', 'f8000000000000000:vault-NOCOLLATERAL', 0],
 ]) {
-  test(`vault keys: (${numerator}/${denominator}, ${vaultId}) => ${expectedKey} ==> ${numberOut}, ${vaultId}`, t => {
-    const ratio = makeRatioFromAmounts(
-      AmountMath.make(mockBrand, BigInt(numerator)),
-      AmountMath.make(mockBrand, BigInt(denominator)),
+  test(`vault keys: (${debt}/${collat}, ${vaultId}) => ${expectedKey} ==> ${numberOut}, ${vaultId}`, t => {
+    const key = StoreUtils.toVaultKey(
+      AmountMath.make(mockBrand, BigInt(debt)),
+      AmountMath.make(mockBrand, BigInt(collat)),
+      vaultId,
     );
-    const key = StoreUtils.toVaultKey(ratio, vaultId);
     t.is(key, expectedKey);
     t.deepEqual(StoreUtils.fromVaultKey(key), [numberOut, vaultId]);
   });

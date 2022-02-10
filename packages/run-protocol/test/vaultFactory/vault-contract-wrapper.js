@@ -77,6 +77,9 @@ export async function start(zcf, privateArgs) {
       return Promise.resolve({ quoteAmount: null, quotePayment: null });
     },
     getCompoundedInterest: () => makeRatio(1n, runBrand),
+    updateVaultPriority: () => {
+      // noop
+    },
   });
 
   const timer = buildManualTimer(console.log, 0n, SECONDS_PER_HOUR * 24n);

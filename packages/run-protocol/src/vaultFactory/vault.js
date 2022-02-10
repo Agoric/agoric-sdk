@@ -68,6 +68,7 @@ export const makeVaultKit = (
   runMint,
   priceAuthority,
 ) => {
+  console.log('DEBUG makeVaultKit', { manager });
   const { updater: uiUpdater, notifier } = makeNotifierKit();
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
     zcf.makeEmptySeatKit(undefined);
@@ -115,16 +116,28 @@ export const makeVaultKit = (
   };
 
   /**
-   * @param {Amount} newDebt - principal and all accrued interest
+   * @param {Amount} oldDebt - prior principal and all accrued interest
+   * @param {Amount} oldCollateral - actual collateral
+   * @param {Amount} newDebt - actual principal and all accrued interest
+   * @param {Amount} newCollateral - actual collateral
    */
-  const updateDebtPrincipal = newDebt => {
-    const oldDebt = getDebtAmount();
-    trace(idInManager, 'updateDebtPrincipal', { oldDebt, newDebt });
+  const refreshLoanTracking = (
+    oldDebt,
+    oldCollateral,
+    newDebt,
+    newCollateral,
+  ) => {
+    trace(idInManager, 'refreshLoanTracking', {
+      oldDebt,
+      oldCollateral,
+      newDebt,
+      newCollateral,
+    });
     updateDebtSnapshot(newDebt);
     // update vault manager which tracks total debt
     manager.applyDebtDelta(oldDebt, newDebt);
     // update position of this vault in liquidation priority queue
-    manager.updateVaultPriority(oldDebt, getCollateralAmount(), idInManager);
+    manager.updateVaultPriority(oldDebt, oldCollateral, idInManager);
   };
 
   /**
@@ -475,6 +488,8 @@ export const makeVaultKit = (
     trace('adjustBalancesHook start');
     assertVaultIsOpen();
     const proposal = clientSeat.getProposal();
+    const oldDebt = getDebtAmount();
+    const oldCollateral = getCollateralAmount();
 
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
@@ -540,8 +555,10 @@ export const makeVaultKit = (
     transferRun(clientSeat);
     manager.reallocateReward(fee, vaultSeat, clientSeat);
 
+    trace('adjustBalancesHook', { oldCollateral, newDebt });
+
     // parent needs to know about the change in debt
-    updateDebtPrincipal(newDebt);
+    refreshLoanTracking(oldDebt, oldCollateral, newDebt, getCollateralAmount());
 
     runMint.burnLosses(harden({ RUN: runAfter.vault }), vaultSeat);
 
@@ -564,6 +581,10 @@ export const makeVaultKit = (
       AmountMath.isEmpty(runDebtSnapshot),
       X`vault must be empty initially`,
     );
+    const oldDebt = getDebtAmount();
+    const oldCollateral = getCollateralAmount();
+    trace('openLoan start: collateral', { oldDebt, oldCollateral });
+
     // get the payout to provide access to the collateral if the
     // contract abandons
     const {
@@ -579,7 +600,7 @@ export const makeVaultKit = (
         Error('loan requested is too small; cannot accrue interest'),
       );
     }
-    trace(idInManager, 'openLoan', { wantedRun, fee });
+    trace(idInManager, 'openLoan', { wantedRun, fee }, getCollateralAmount());
 
     const runDebt = AmountMath.add(wantedRun, fee);
     await assertSufficientCollateral(collateralAmount, runDebt);
@@ -592,7 +613,11 @@ export const makeVaultKit = (
     );
     manager.reallocateReward(fee, vaultSeat, seat);
 
-    updateDebtPrincipal(runDebt);
+    trace(
+      'openLoan about to refreshLoanTracking: collateral',
+      getCollateralAmount(),
+    );
+    refreshLoanTracking(oldDebt, oldCollateral, runDebt, collateralAmount);
 
     updateUiState();
 
