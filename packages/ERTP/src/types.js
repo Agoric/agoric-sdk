@@ -161,14 +161,14 @@
  *   rightAmount: Amount,
  *   brand?: Brand
  * ) => Amount} min
- * Returns the Amount that has the least value/count between leftAmount and rightAmount
+ * Returns the min based on isGTE(leftAmount, rightAmount)
  *
  * @property {(
  *   leftAmount: Amount,
  *   rightAmount: Amount,
  *   brand?: Brand
  * ) => Amount} max
- * Returns the Amount that has the most value/count between leftAmount and rightAmount
+ * Returns the max based on isGTE(leftAmount, rightAmount)
  */
 
 /**
