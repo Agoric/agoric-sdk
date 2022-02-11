@@ -10,8 +10,11 @@ const { add, multiply } = natSafeMath;
 const { brand: brandX } = makeIssuerKit('X');
 const { brand: brandY } = makeIssuerKit('Y');
 
-const arbX = fc.bigUint().map(value => m.make(brandX, value));
-const arbY = fc.bigUint().map(value => m.make(brandY, value));
+const oneB = 1_000_000_000n;
+// const dec18 = 1_000_000_000_000_000_000n; // 18 decimals as used in ETH
+
+const arbX = fc.bigUint({ max: oneB }).map(value => m.make(brandX, value));
+const arbY = fc.bigUint({ max: oneB }).map(value => m.make(brandY, value));
 
 test('balancesToReachRatio calculations are to spec', t => {
   const sameRatio = ([x1, y1], [x2, y2], label) =>
