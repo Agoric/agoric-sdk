@@ -459,7 +459,8 @@ test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
+    message:
+      'rights were not conserved for brand "[Alleged: moola brand]" "[15n]" != "[20n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   await assertPayoutAmount(
@@ -515,7 +516,8 @@ test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
+    message:
+      'rights were not conserved for brand "[Alleged: moola brand]" "[40n]" != "[20n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   await assertPayoutAmount(
@@ -571,7 +573,8 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   );
 
   t.throws(() => swapExact(zcf, zcfSeatA, zcfSeatB), {
-    message: 'rights were not conserved for brand "[Alleged: moola brand]"',
+    message:
+      'rights were not conserved for brand "[Alleged: moola brand]" "[40n]" != "[0n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
   await assertPayoutAmount(
