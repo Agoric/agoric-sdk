@@ -26,6 +26,7 @@
     ],
     "no-bitwise": "off", // type checker will catch these errors
     "no-plusplus": "off", // we have consistent whitespace
+    "no-underscore-dangle": "off", // we use them
     "no-use-before-define": "warn", // readability consideration, needn't fail CI
     "prettier/prettier": "warn" // @jessie.js/recommended errors. This repo checks format separately but keeps warn to maintain that "eslint --fix" prettifies
   },

@@ -1,4 +1,3 @@
-/* eslint-disable no-underscore-dangle */
 // @ts-check
 /// <reference types="ses"/>
 
