@@ -268,8 +268,7 @@
 
 /**
  * @typedef {Object} VatAdminSvc
- * @property {(bundle: SourceBundle) => RootAndAdminNode} createVat
- * @property {(BundleName: string) => RootAndAdminNode} createVatByName
+ * @property {(bundlecap: bundlecap) => RootAndAdminNode} createVat
  */
 
 /**
