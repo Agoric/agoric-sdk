@@ -1,4 +1,4 @@
-/* global setTimeout */
+/* global setTimeout, window */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from './prepare-test-env-ava.js';
 
@@ -9,7 +9,6 @@ const { details: X } = assert;
 
 if (typeof window !== 'undefined') {
   // Let the browser detect when the tests are done.
-  /* eslint-disable-next-line no-undef */
   window.testDonePromise = new Promise(resolve => {
     test.onFinish(() => {
       // Allow the summary to be printed.

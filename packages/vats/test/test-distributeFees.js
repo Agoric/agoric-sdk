@@ -1,5 +1,5 @@
 // @ts-check
-
+/* global setImmediate */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
@@ -16,7 +16,6 @@ import { buildDistributor } from '../src/distributeFees.js';
 // have all their callbacks run
 async function waitForPromisesToSettle() {
   const pk = makePromiseKit();
-  // eslint-disable-next-line no-undef
   setImmediate(pk.resolve);
   return pk.promise;
 }

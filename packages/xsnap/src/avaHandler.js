@@ -73,8 +73,6 @@ function handler(rawMessage) {
     case 'loadScript': {
       const { source } = msg;
       const virtualObjectGlobals =
-        // @ts-ignore
-        // eslint-disable-next-line no-undef
         typeof VatData !== 'undefined' ? { VatData } : {};
       // @ts-ignore How do I get ses types in scope?!?!?!
       const c = new Compartment({

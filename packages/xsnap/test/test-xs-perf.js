@@ -1,4 +1,4 @@
-/* global performance */
+/* global performance, issueCommand */
 // @ts-check
 
 import '@endo/init';
@@ -185,7 +185,6 @@ test('metering switch - start compartment only', async t => {
 function dataStructurePerformance(logn) {
   const n = 1 << logn;
   // @ts-ignore
-  // eslint-disable-next-line no-undef
   const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
   const t0 = performance.now();
   for (let i = 0; i < 256; i += 1) {

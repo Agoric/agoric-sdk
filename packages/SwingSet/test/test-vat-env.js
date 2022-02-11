@@ -23,7 +23,6 @@ function makeThingInnards(_state) {
 }
 
 test('kind makers are in the test environment', t => {
-  // eslint-disable-next-line no-undef
   const makeVThing = VatData.makeKind(makeThingInnards);
   const vthing = makeVThing('vthing');
   t.is(vthing.ping(), 4);
@@ -35,7 +34,6 @@ test('kind makers are in the test environment', t => {
 
 test('store makers are in the test environment', t => {
   // TODO: configure eslint to know that VatData is a global
-  // eslint-disable-next-line no-undef
   const o = harden({ size: 10, color: 'blue' });
 
   const m = VatData.makeScalarBigMapStore();
