@@ -118,8 +118,7 @@ const start = async (zcf, privateArgs) => {
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
   const centralDisplayInfo = await E(centralBrand).getDisplayInfo();
-  assert(
-    centralDisplayInfo.assetKind === AssetKind.NAT,
+  assert.equal(centralDisplayInfo.assetKind, AssetKind.NAT,
     X`Central must be of kind AssetKind.NAT`,
   );
 
