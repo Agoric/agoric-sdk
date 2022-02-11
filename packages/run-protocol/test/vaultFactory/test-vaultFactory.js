@@ -298,7 +298,6 @@ async function setupServices(
   };
 }
 
-// FIXME
 test('first', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
@@ -430,7 +429,6 @@ test('first', async t => {
     'vault is cleared',
   );
 
-  // t.is(await E(vault).getLiquidationPromise(), 'Liquidated');
   const liquidations = await E(
     E(vault).getLiquidationSeat(),
   ).getCurrentAllocation();
@@ -442,8 +440,7 @@ test('first', async t => {
   });
 });
 
-// FIXME don't know yet whether failure is bug, legitimate change in new design, or merely brittle test
-test.skip('price drop', async t => {
+test('price drop', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
@@ -508,10 +505,12 @@ test.skip('price drop', async t => {
     'borrower RUN amount does not match',
   );
 
-  const notification1 = await E(uiNotifier).getUpdateSince();
-  t.falsy(notification1.value.liquidated);
+  /** @type {UpdateRecord<VaultUIState>} */
+  let notification = await E(uiNotifier).getUpdateSince();
+
+  t.falsy(notification.value.liquidated);
   t.deepEqual(
-    await notification1.value.collateralizationRatio,
+    await notification.value.collateralizationRatio,
     makeRatio(444n, runBrand, 284n),
   );
   const { RUN: lentAmount } = await E(loanSeat).getCurrentAllocation();
@@ -523,25 +522,18 @@ test.skip('price drop', async t => {
   );
 
   await manualTimer.tick();
-  const notification2 = await E(uiNotifier).getUpdateSince();
-  t.is(notification2.updateCount, 2);
-  t.falsy(notification2.value.liquidated);
+  notification = await E(uiNotifier).getUpdateSince();
+  t.falsy(notification.value.liquidated);
 
   await manualTimer.tick();
-  const notification3 = await E(uiNotifier).getUpdateSince();
-  t.is(notification3.updateCount, 2);
-  t.falsy(notification3.value.liquidated);
+  notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
+  t.falsy(notification.value.liquidated);
+  t.is(notification.value.vaultState, VaultState.LIQUIDATING);
 
   await manualTimer.tick();
-  const notification4 = await E(uiNotifier).getUpdateSince(2);
-  t.falsy(notification4.value.liquidated);
-  t.is(notification4.value.vaultState, VaultState.LIQUIDATING);
-
-  await manualTimer.tick();
-  const notification5 = await E(uiNotifier).getUpdateSince(3);
-
-  t.falsy(notification5.updateCount);
-  t.truthy(notification5.value.liquidated);
+  notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
+  t.falsy(notification.updateCount);
+  t.truthy(notification.value.liquidated);
 
   const debtAmountAfter = await E(vault).getDebtAmount();
   const finalNotification = await E(uiNotifier).getUpdateSince();
@@ -556,7 +548,6 @@ test.skip('price drop', async t => {
     RUN: AmountMath.make(runBrand, 14n),
   });
 
-  // t.is(await E(vault).getLiquidationPromise(), 'Liquidated');
   const liquidations = await E(
     E(vault).getLiquidationSeat(),
   ).getCurrentAllocation();
@@ -564,8 +555,7 @@ test.skip('price drop', async t => {
   t.deepEqual(liquidations.RUN, AmountMath.makeEmpty(runBrand));
 });
 
-// FIXME don't know yet whether failure is bug, legitimate change in new design, or merely brittle test
-test.skip('price falls precipitously', async t => {
+test('price falls precipitously', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
@@ -624,6 +614,7 @@ test.skip('price falls precipitously', async t => {
     }),
   );
 
+  /** @type {{vault: Vault}} */
   const { vault } = await E(loanSeat).getOfferResult();
   const debtAmount = await E(vault).getDebtAmount();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 370n), rates.loanFee);
@@ -658,20 +649,32 @@ test.skip('price falls precipitously', async t => {
     }),
   );
 
-  await manualTimer.tick();
-  t.falsy(AmountMath.isEmpty(await E(vault).getDebtAmount()));
-  await manualTimer.tick();
-  t.falsy(AmountMath.isEmpty(await E(vault).getDebtAmount()));
-  await manualTimer.tick();
-  t.falsy(AmountMath.isEmpty(await E(vault).getDebtAmount()));
-  await manualTimer.tick();
+  async function assertDebtIs(value) {
+    const debt = await E(vault).getDebtAmount();
+    t.is(
+      debt.value,
+      BigInt(value),
+      `Expected debt ${debt.value} to be ${value}`,
+    );
+  }
 
-  // t.is(await E(vault).getLiquidationPromise(), 'Liquidated');
+  await manualTimer.tick();
+  await assertDebtIs(debtAmount.value);
 
+  await manualTimer.tick();
+  await assertDebtIs(debtAmount.value);
+
+  await manualTimer.tick();
+  await assertDebtIs(debtAmount.value);
+
+  await manualTimer.tick();
+  await waitForPromisesToSettle();
   // An emergency liquidation got less than full value
   const newDebtAmount = await E(vault).getDebtAmount();
-
-  t.truthy(AmountMath.isGTE(AmountMath.make(runBrand, 70n), newDebtAmount));
+  t.truthy(
+    AmountMath.isGTE(AmountMath.make(runBrand, 70n), newDebtAmount),
+    `Expected ${newDebtAmount.value} to be less than 70`,
+  );
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 19n),
@@ -738,7 +741,6 @@ test('vaultFactory display collateral', async t => {
 });
 
 // charging period is 1 week. Clock ticks by days
-// FIXME don't know yet whether failure is bug, legitimate change in new design, or merely brittle test
 test('interest on multiple vaults', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
@@ -1336,7 +1338,6 @@ test('overdeposit', async t => {
 // Both loans will initially be over collateralized 100%. Alice will withdraw
 // enough of the overage that she'll get caught when prices drop. Bob will be
 // charged interest (twice), which will trigger liquidation.
-// FIXME legit bug (Cannot finish after termination.)
 test('mutable liquidity triggers and interest', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
@@ -1790,7 +1791,6 @@ test('close loan', async t => {
     AmountMath.makeEmpty(aethBrand),
   );
 
-  // t.is(await E(aliceVault).getLiquidationPromise(), 'Closed');
   t.deepEqual(
     await E(E(aliceVault).getLiquidationSeat()).getCurrentAllocation(),
     {},
@@ -1859,7 +1859,6 @@ test('excessive loan', async t => {
 // prices drop. Bob will be charged interest (twice), which will trigger
 // liquidation. Alice's withdrawal is precisely gauged so the difference between
 // a floorDivideBy and a ceilingDivideBy will leave her unliquidated.
-// FIXME legit bug (Cannot finish after termination.)
 test('mutable liquidity triggers and interest sensitivity', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },

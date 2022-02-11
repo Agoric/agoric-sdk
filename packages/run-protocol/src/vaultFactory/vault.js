@@ -270,7 +270,16 @@ export const makeVaultKit = (
   };
   // ??? better to provide this notifier downstream to partition broadcasts?
   // Propagate notifications from the manager to observers of this vault
-  observeNotifier(managerNotifier, { updateState: updateUiState });
+  observeNotifier(managerNotifier, {
+    updateState: () => {
+      // XXX managerNotifier updates can keep coming after close (uiUpdater.finish() called)
+      // Is there a way to stop observing?
+      // If not, what alternatives to changing the client to separate the observers?
+      if (vaultState !== VaultState.CLOSED) {
+        updateUiState();
+      }
+    },
+  });
 
   /**
    * Call must check for and remember shortfall
