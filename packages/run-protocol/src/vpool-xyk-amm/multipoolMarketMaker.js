@@ -119,7 +119,7 @@ const start = async (zcf, privateArgs) => {
 
   const centralDisplayInfo = await E(centralBrand).getDisplayInfo();
   assert.equal(centralDisplayInfo.assetKind, AssetKind.NAT,
-    X`Central must be of kind AssetKind.NAT`,
+    X`Central must be of kind ${q(AssetKind.NAT)}, not ${q(centralDisplayInfo.assetKind)}`,
   );
 
   const { initialPoserInvitation } = privateArgs;
