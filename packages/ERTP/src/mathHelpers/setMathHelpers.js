@@ -36,6 +36,4 @@ export const setMathHelpers = harden({
   doIsEqual: (x, y) => elementsCompare(x, y) === 0,
   doAdd: elementsDisjointUnion,
   doSubtract: elementsDisjointSubtract,
-  doMax: (x, y) => (elementsIsSuperset(x, y) ? x : y),
-  doMin: (x, y) => (elementsIsSuperset(x, y) ? y : x),
 });

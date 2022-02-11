@@ -33,6 +33,4 @@ export const natMathHelpers = harden({
   // BigInts don't observably overflow
   doAdd: (left, right) => left + right,
   doSubtract: (left, right) => Nat(left - right),
-  doMax: (left, right) => (left >= right ? left : right),
-  doMin: (left, right) => (left >= right ? right : left),
 });
