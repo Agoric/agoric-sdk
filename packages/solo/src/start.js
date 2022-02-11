@@ -144,8 +144,17 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
-  const { kvStore, streamStore, snapStore, commit } =
-    openSwingStore(kernelStateDBDir);
+  const {
+    SOLO_SLOGFILE: slogFile,
+    SOLO_SLOGSENDER,
+    SOLO_LMDB_MAP_SIZE,
+  } = process.env;
+  const mapSize =
+    (SOLO_LMDB_MAP_SIZE && parseInt(SOLO_LMDB_MAP_SIZE, 10)) || undefined;
+  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
+    kernelStateDBDir,
+    { mapSize },
+  );
   const hostStorage = {
     kvStore,
     streamStore,
@@ -158,7 +167,6 @@ const buildSwingset = async (
     }
     await initializeSwingset(config, argv, hostStorage);
   }
-  const { SOLO_SLOGFILE: slogFile, SOLO_SLOGSENDER } = process.env;
   const slogSender = await makeSlogSenderFromModule(SOLO_SLOGSENDER, {
     stateDir: kernelStateDBDir,
   });

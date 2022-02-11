@@ -251,27 +251,29 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     ).pathname;
     const { metricsProvider } = getTelemetryProviders({ console, env });
 
-    const { SLOGFILE, SLOGSENDER } = env;
+    const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE } = env;
     const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
       stateDir: stateDBDir,
     });
 
+    const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
+
     // We want to make it hard for a validator to accidentally disable
     // consensusMode.
     const consensusMode = true;
-    const s = await launch(
-      stateDBDir,
+    const s = await launch({
+      kernelStateDBDir: stateDBDir,
       mailboxStorage,
       setActivityhash,
-      doOutboundBridge,
+      bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
-      undefined,
       metricsProvider,
-      SLOGFILE,
+      slogFile: SLOGFILE,
       slogSender,
       consensusMode,
-    );
+      mapSize,
+    });
     return s;
   }
 

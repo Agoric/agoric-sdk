@@ -12,7 +12,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
-import { openSwingStore } from '@agoric/swing-store';
+import { openSwingStore, DEFAULT_LMDB_MAP_SIZE } from '@agoric/swing-store';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -135,7 +135,7 @@ function neverStop() {
   });
 }
 
-export async function launch(
+export async function launch({
   kernelStateDBDir,
   mailboxStorage,
   setActivityhash,
@@ -143,15 +143,18 @@ export async function launch(
   vatconfig,
   argv,
   debugName = undefined,
-  meterProvider = DEFAULT_METER_PROVIDER,
+  metricsProvider = DEFAULT_METER_PROVIDER,
   slogFile = undefined,
   slogSender,
   consensusMode = true,
-) {
+  mapSize = DEFAULT_LMDB_MAP_SIZE,
+}) {
   console.info('Launching SwingSet kernel');
 
-  const { kvStore, streamStore, snapStore, commit } =
-    openSwingStore(kernelStateDBDir);
+  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
+    kernelStateDBDir,
+    { mapSize },
+  );
   const hostStorage = {
     kvStore,
     streamStore,
@@ -159,7 +162,7 @@ export async function launch(
   };
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
-  const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
+  const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
   const METRIC_LABELS = { app: 'ag-chain-cosmos' };
 
   const slogCallbacks = makeSlogCallbacks({
