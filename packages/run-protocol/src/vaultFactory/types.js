@@ -70,6 +70,7 @@
  * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
  * @property {boolean} liquidated boolean showing whether liquidation occurred
+ * @property {'active' | 'liquidating' | 'closed'} vaultState
  */
 
 /**
