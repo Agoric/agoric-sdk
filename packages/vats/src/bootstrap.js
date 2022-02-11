@@ -66,6 +66,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     vats,
     bridgeManager,
     timerDevice,
+    bundleDevice,
     vatAdminSvc,
     noFakeCurrencies,
   ) {
@@ -79,6 +80,9 @@ export function buildRootObject(vatPowers, vatParameters) {
     const dibcBridgeManager = bridgeManager;
 
     const chainTimerServiceP = E(vats.timer).createTimerService(timerDevice);
+
+    // vatParameters.zcfBundleName,
+    const zcfBundlecap = D(bundleDevice).getNamedBundleCap('zcf');
 
     // Create singleton instances.
     const [
@@ -96,7 +100,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       chainTimerServiceP,
       /** @type {Promise<{ zoeService: ZoeService, feeMintAccess:
        * FeeMintAccess }>} */ (
-        E(vats.zoe).buildZoe(vatAdminSvc, feeIssuerConfig)
+        E(vats.zoe).buildZoe(vatAdminSvc, zcfBundlecap, feeIssuerConfig)
       ),
       E(vats.priceAuthority).makePriceAuthority(),
       E(vats.walletManager).buildWalletManager(vatAdminSvc),
@@ -986,6 +990,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             vats,
             bridgeManager,
             devices.timer,
+            devices.bundle,
             vatAdminSvc,
             noFakeCurrencies,
           );
@@ -1045,6 +1050,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             vats,
             bridgeManager,
             devices.timer,
+            devices.bundle,
             vatAdminSvc,
             noFakeCurrencies,
           );
