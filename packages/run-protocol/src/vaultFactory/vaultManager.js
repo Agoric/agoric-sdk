@@ -124,10 +124,9 @@ export const makeVaultManager = (
 
   /**
    *
-   * @param {string} key
-   * @param {VaultKit} vaultKit
+   * @param {[key: string, vaultKit: VaultKit]} record
    */
-  const liquidateAndRemove = async (key, vaultKit) => {
+  const liquidateAndRemove = async ([key, vaultKit]) => {
     assert(prioritizedVaults);
     trace('liquidating', vaultKit.vaultSeat.getProposal());
 
@@ -207,13 +206,9 @@ export const makeVaultManager = (
     );
 
     /** @type {Array<Promise<void>>} */
-    const toLiquidate = [];
-
-    // TODO try pattern matching to achieve GTE
-    // TODO replace forEachRatioGTE with a generator pattern like liquidateAll below
-    prioritizedVaults.forEachRatioGTE(quoteRatioPlusMargin, (key, vaultKit) => {
-      toLiquidate.push(liquidateAndRemove(key, vaultKit));
-    });
+    const toLiquidate = Array.from(
+      prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin),
+    ).map(liquidateAndRemove);
 
     outstandingQuote = undefined;
     // Ensure all vaults complete
@@ -226,9 +221,10 @@ export const makeVaultManager = (
   // In extreme situations, system health may require liquidating all vaults.
   const liquidateAll = async () => {
     assert(prioritizedVaults);
-    for await (const [key, vaultKit] of prioritizedVaults.entries()) {
-      await liquidateAndRemove(key, vaultKit);
-    }
+    const toLiquidate = Array.from(prioritizedVaults.entries()).map(
+      liquidateAndRemove,
+    );
+    await Promise.all(toLiquidate);
   };
 
   /**

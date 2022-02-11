@@ -104,6 +104,11 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
 
     const [[_, vaultKit]] = vaults.entries();
     const { vault } = vaultKit;
+    const collateralAmount = vault.getCollateralAmount();
+    if (AmountMath.isEmpty(collateralAmount)) {
+      // Would be an infinite ratio
+      return undefined;
+    }
     const actualDebtAmount = vault.getDebtAmount();
     return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
   };
@@ -152,28 +157,27 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   /**
    * Invoke a function for vaults with debt to collateral at or above the ratio.
    *
-   * Callbacks are called in order of priority. Vaults that are under water
-   * (more debt than collateral) are all tied for first.
+   * Results are returned in order of priority, with highest debt to collateral first.
+   *
+   * Redundant tags until https://github.com/Microsoft/TypeScript/issues/23857
    *
    * @param {Ratio} ratio
-   * @param {(key: string, vk: VaultKit) => void} cb
+   * @yields {[string, VaultKit]>}
+   * @returns {IterableIterator<[string, VaultKit]>}
    */
-  // TODO switch to generator
-  const forEachRatioGTE = (ratio, cb) => {
+  // eslint-disable-next-line func-names
+  function* entriesPrioritizedGTE(ratio) {
     // TODO use a Pattern to limit the query
     for (const [key, vk] of vaults.entries()) {
       const debtToCollateral = currentDebtToCollateral(vk.vault);
-
-      console.log('forEachRatioGTE', { ratio, debtToCollateral });
-
       if (ratioGTE(debtToCollateral, ratio)) {
-        cb(key, vk);
+        yield [key, vk];
       } else {
         // stop once we are below the target ratio
         break;
       }
     }
-  };
+  }
 
   /**
    * @param {Amount} oldDebt
@@ -188,7 +192,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   return harden({
     addVaultKit,
     entries: vaults.entries,
-    forEachRatioGTE,
+    entriesPrioritizedGTE,
     highestRatio: () => oracleQueryThreshold,
     refreshVaultPriority,
     removeVault,
