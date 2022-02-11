@@ -5,6 +5,7 @@
 /**
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
  * @typedef { string } BundleID
+ * @typedef { {} } BundleCap
  */
 
 /**
