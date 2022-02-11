@@ -35,9 +35,16 @@ const mockVault = (runCount, collateralCount) => {
 };
 
 /**
+ * Records to be inserted in this order. Jumbled to verify insertion order invariance.
+ *
  * @type {Array<[string, bigint, bigint]>}
  */
 const fixture = [
+  ['vault-E', 40n, 100n],
+  ['vault-F', 50n, 100n],
+  ['vault-M', 1n, 1000n],
+  ['vault-Y', BigInt(Number.MAX_VALUE), BigInt(Number.MAX_VALUE)],
+  ['vault-Z-withoutdebt', 0n, 100n],
   ['vault-A-underwater', 1000n, 100n],
   ['vault-B', 101n, 1000n],
   // because the C vaults all have same ratio, order among them is not defined
@@ -45,21 +52,15 @@ const fixture = [
   ['vault-C2', 200n, 2000n],
   ['vault-C3', 300n, 3000n],
   ['vault-D', 30n, 100n],
-  ['vault-E', 40n, 100n],
-  ['vault-F', 50n, 100n],
-  ['vault-M', 1n, 1000n],
-  ['vault-Y', BigInt(Number.MAX_VALUE), BigInt(Number.MAX_VALUE)],
-  ['vault-Z-withoutdebt', 0n, 100n],
 ];
 
-test.skip('ordering', t => {
+test('ordering', t => {
   const vaults = makeOrderedVaultStore();
 
   // TODO keep a seed so we can debug when it does fail
   // randomize because the add order should not matter
   // Maybe use https://dubzzz.github.io/fast-check.github.com/
-  const params = fixture.sort(Math.random);
-  for (const [vaultId, runCount, collateralCount] of params) {
+  for (const [vaultId, runCount, collateralCount] of fixture) {
     const mockVaultKit = harden({
       vault: mockVault(runCount, collateralCount),
     });
