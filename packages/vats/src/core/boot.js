@@ -7,6 +7,7 @@ import {
   CHAIN_BOOTSTRAP_MANIFEST,
   SIM_CHAIN_BOOTSTRAP_MANIFEST,
   GOVERNANCE_ACTIONS_MANIFEST,
+  DEMO_ECONOMY,
 } from './manifest.js';
 
 import * as behaviors from './behaviors.js';

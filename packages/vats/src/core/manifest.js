@@ -207,11 +207,22 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
     consume: { clientCreator: true },
   },
   connectFaucet: {
-    consume: { zoe: true, client: true },
+    consume: {
+      bankManager: true,
+      bldIssuerKit: true,
+      centralSupplyBundle: true,
+      client: true,
+      feeMintAccess: true,
+      loadVat: true,
+      zoe: true,
+    },
+    produce: { mints: true },
+    home: { produce: { faucet: true } },
   },
   grantRunBehaviors: {
     runBehaviors: true,
     consume: { client: true },
+    home: { produce: { runBehaviors: true, governanceActions: true } },
   },
 });
 
@@ -296,5 +307,22 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
   },
   configureVaultFactoryUI: {
     consume: { agoricNames: true, nameAdmins: true, board: true, zoe: true },
+  },
+
+export const DEMO_ECONOMY = harden({
+  fundAMM: {
+    consume: {
+      agoricNames: true,
+      centralSupplyBundle: true,
+      chainTimerService: 'timer',
+      bldIssuerKit: true,
+      feeMintAccess: true,
+      loadVat: true,
+      mints: 'mints',
+      priceAuthorityVat: 'priceAuthority',
+      priceAuthorityAdmin: 'priceAuthority',
+      vaultFactoryCreator: 'vaultFactory',
+      zoe: true,
+    },
   },
 });
