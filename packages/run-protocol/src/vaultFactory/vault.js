@@ -88,28 +88,24 @@ export const makeVaultKit = (
 
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  // ??? is there a good way to encapsulate these snapshot values so they can only be touched together?
-  // perhaps a hardened DebtSnapshot {debt: Amount, interest: Ratio}
-  let runDebtSnapshot = AmountMath.makeEmpty(runBrand);
   /**
-   * compounded interest at the time the debt was snapshotted
+   * Snapshot of the debt and cmpouneded interest when the principal was last changed
    *
-   * @type {Ratio}
+   * @type {{run: Amount, interest: Ratio}}
    */
-  let interestSnapshot = manager.getCompoundedInterest();
+  let debtSnapshot = {
+    run: AmountMath.makeEmpty(runBrand),
+    interest: manager.getCompoundedInterest(),
+  };
 
   /**
    * @param {Amount} newDebt - principal and all accrued interest
    */
   const updateDebtSnapshot = newDebt => {
     // update local state
-    runDebtSnapshot = newDebt;
-    interestSnapshot = manager.getCompoundedInterest();
+    debtSnapshot = { run: newDebt, interest: manager.getCompoundedInterest() };
 
-    trace(`${idInManager} updateDebtSnapshot`, newDebt.value, {
-      interestSnapshot,
-      runDebtSnapshot,
-    });
+    trace(`${idInManager} updateDebtSnapshot`, newDebt.value, debtSnapshot);
   };
 
   /**
@@ -154,10 +150,10 @@ export const makeVaultKit = (
     // divide compounded interest by the the snapshot
     const interestSinceSnapshot = multiplyRatios(
       manager.getCompoundedInterest(),
-      invertRatio(interestSnapshot),
+      invertRatio(debtSnapshot.interest),
     );
 
-    return floorMultiplyBy(runDebtSnapshot, interestSinceSnapshot);
+    return floorMultiplyBy(debtSnapshot.run, interestSinceSnapshot);
   };
 
   /**
@@ -170,8 +166,11 @@ export const makeVaultKit = (
    * @returns {Amount} as if the vault was open at the launch of this manager, before any interest accrued
    */
   const getNormalizedDebt = () => {
-    assert(interestSnapshot);
-    return floorMultiplyBy(runDebtSnapshot, invertRatio(interestSnapshot));
+    assert(debtSnapshot);
+    return floorMultiplyBy(
+      debtSnapshot.run,
+      invertRatio(debtSnapshot.interest),
+    );
   };
 
   const getCollateralAllocated = seat =>
@@ -225,11 +224,11 @@ export const makeVaultKit = (
     );
 
     // TODO: allow Ratios to represent X/0.
-    if (AmountMath.isEmpty(runDebtSnapshot)) {
+    if (AmountMath.isEmpty(debtSnapshot.run)) {
       return makeRatio(collateralAmount.value, runBrand, 1n);
     }
     const collateralValueInRun = getAmountOut(quoteAmount);
-    return makeRatioFromAmounts(collateralValueInRun, runDebtSnapshot);
+    return makeRatioFromAmounts(collateralValueInRun, debtSnapshot.run);
   };
 
   // call this whenever anything changes!
@@ -244,8 +243,7 @@ export const makeVaultKit = (
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
       interestRate: manager.getInterestRate(),
       liquidationRatio: manager.getLiquidationMargin(),
-      runDebtSnapshot,
-      interestSnapshot,
+      debtSnapshot,
       locked: getCollateralAmount(),
       debt: getDebtAmount(),
       collateralizationRatio,
@@ -583,7 +581,7 @@ export const makeVaultKit = (
   /** @type {OfferHandler} */
   const openLoan = async seat => {
     assert(
-      AmountMath.isEmpty(runDebtSnapshot),
+      AmountMath.isEmpty(debtSnapshot.run),
       X`vault must be empty initially`,
     );
     const oldDebt = getDebtAmount();
