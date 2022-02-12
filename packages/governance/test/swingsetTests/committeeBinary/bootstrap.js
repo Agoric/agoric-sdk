@@ -211,6 +211,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const log = vatPowers.testLog;
   const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
     devices.vatAdmin,
+    devices.bundle,
   );
   /** @type { ERef<ZoeService> } */
   const zoe = E(vats.zoe).buildZoe(vatAdminSvc);

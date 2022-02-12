@@ -22,11 +22,13 @@ test('setupCreateZCFVat', async t => {
 
   // @ts-ignore fakeVatAdminSvc is mocked
   t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, undefined)(), {
+    // @ts-ignore fakeVatAdminSvc is mocked
     adminNode: undefined,
     root: undefined,
   });
   // @ts-ignore fakeVatAdminSvc is mocked
   t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, 'myVat')(), {
+    // @ts-ignore fakeVatAdminSvc is mocked
     adminNode: undefined,
     root: undefined,
   });

@@ -18,7 +18,10 @@ export const makeVatsFromBundles = ({
   devices,
   produce: { vatAdminSvc, loadVat },
 }) => {
-  const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+  const svc = E(vats.vatAdmin).createVatAdminService(
+    devices.vatAdmin,
+    devices.bundle,
+  );
   vatAdminSvc.resolve(svc);
   // TODO: getVat? do we need to memoize this by name?
   // TODO: rename loadVat to createVatByName?

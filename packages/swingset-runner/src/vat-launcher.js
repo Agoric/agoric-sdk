@@ -26,7 +26,10 @@ export function buildRootObject(_vatPowers, vatParameters) {
 
   return Far('root', {
     async bootstrap(vats, devices) {
-      const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      const vatMaker = E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+        devices.bundle,
+      );
       const vatRoots = {};
       for (const vatName of Object.keys(vatParameters.config.vats)) {
         const vatDesc = vatParameters.config.vats[vatName];

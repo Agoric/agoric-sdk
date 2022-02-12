@@ -135,6 +135,7 @@
  *      timer: unknown,
  *      bridge: Device<import('../bridge.js').BridgeDevice>,
  *      vatAdmin: unknown,
+ *      bundle: unknown,
  *   },
  *   vats: {
  *     comms: CommsVatRoot,

@@ -65,6 +65,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
+        devices.bundle,
       );
       const spawner = await E(vats.spawner).buildSpawner(vatAdminSvc);
       const [mode, trivialBundle] = vatParameters.argv;

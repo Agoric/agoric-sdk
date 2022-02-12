@@ -8,6 +8,7 @@ function makeBootstrap(argv, cb, vatPowers) {
   return async (vats, devices) => {
     const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
       devices.vatAdmin,
+      devices.bundle,
     );
     const { zoe, feeMintAccess } = await E(vats.zoe).buildZoe(vatAdminSvc);
 

@@ -970,6 +970,7 @@ export function buildRootObject(vatPowers, vatParameters) {
 
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
+        devices.bundle,
       );
 
       console.debug(`${ROLE} bootstrap starting`);

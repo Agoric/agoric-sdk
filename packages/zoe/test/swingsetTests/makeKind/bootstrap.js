@@ -7,6 +7,7 @@ export function buildRootObject(vatPowers, vatParameters) {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
+        devices.bundle,
       );
       const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
       const installations = {

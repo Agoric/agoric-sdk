@@ -80,6 +80,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const log = vatPowers.testLog;
   const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
     devices.vatAdmin,
+    devices.bundle,
   );
   const { zoe, feeMintAccess } = await E(vats.zoe).buildZoe(vatAdminSvc);
 
