@@ -1,6 +1,4 @@
 // @ts-check
-// XXX we do this a lot, okay to drop it to warning in eslint config?
-/* eslint-disable no-use-before-define */
 import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
@@ -243,6 +241,7 @@ export const makeVaultKit = (
     const collateralizationRatio = await getCollateralizationRatio();
     /** @type {VaultUIState} */
     const uiState = harden({
+      // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
       interestRate: manager.getInterestRate(),
       liquidationRatio: manager.getLiquidationMargin(),
       runDebtSnapshot,
@@ -250,6 +249,7 @@ export const makeVaultKit = (
       locked: getCollateralAmount(),
       debt: getDebtAmount(),
       collateralizationRatio,
+      // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
       liquidated: vaultState === VaultState.CLOSED,
       vaultState,
     });
@@ -268,13 +268,10 @@ export const makeVaultKit = (
         throw Error(`unreachable vaultState: ${vaultState}`);
     }
   };
-  // ??? better to provide this notifier downstream to partition broadcasts?
-  // Propagate notifications from the manager to observers of this vault
+  // XXX Echo notifications from the manager though all vaults
+  // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
   observeNotifier(managerNotifier, {
     updateState: () => {
-      // XXX managerNotifier updates can keep coming after close (uiUpdater.finish() called)
-      // Is there a way to stop observing?
-      // If not, what alternatives to changing the client to separate the observers?
       if (vaultState !== VaultState.CLOSED) {
         updateUiState();
       }
