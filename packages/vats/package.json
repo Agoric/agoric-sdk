@@ -3,7 +3,7 @@
   "version": "0.5.1",
   "description": "Agoric's Vat library",
   "type": "module",
-  "main": "./src/bootstrap.js",
+  "main": "./src/core/boot.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
