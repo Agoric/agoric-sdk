@@ -32,7 +32,7 @@ import {
 } from '../../src/vaultFactory/params.js';
 import { startVaultFactory } from '../../src/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
-import { Collect } from '../../src/collect.js';
+import * as Collect from '../../src/collect.js';
 
 const contractRoots = {
   faucet: './faucet.js',

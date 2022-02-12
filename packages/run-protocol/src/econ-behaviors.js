@@ -22,7 +22,7 @@ import '../exported.js';
 
 import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
 
-import { Collect } from './collect.js';
+import * as Collect from './collect.js';
 
 const { entries, keys } = Object;
 
@@ -179,14 +179,16 @@ export const setupAmm = async ({
  */
 export const startPriceAuthority = async ({
   consume: { loadVat },
-  produce: { priceAuthority: priceAuthorityProduce, priceAuthorityAdmin },
+  produce,
 }) => {
+  const vats = { priceAuthority: E(loadVat)('priceAuthority') };
   const { priceAuthority, adminFacet } = await E(
-    E(loadVat)('priceAuthority'),
+    vats.priceAuthority,
   ).makePriceAuthority();
 
-  priceAuthorityProduce.resolve(priceAuthority);
-  priceAuthorityAdmin.resolve(adminFacet);
+  produce.priceAuthorityVat.resolve(vats.priceAuthority);
+  produce.priceAuthority.resolve(priceAuthority);
+  produce.priceAuthorityAdmin.resolve(adminFacet);
 };
 harden(startPriceAuthority);
 
