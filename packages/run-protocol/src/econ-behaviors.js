@@ -33,6 +33,8 @@ const BASIS_POINTS = 10_000n;
 const DEFAULT_POOL_FEE = 24n;
 const DEFAULT_PROTOCOL_FEE = 6n;
 
+const CENTRAL_DENOM_NAME = 'urun';
+
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {{ committeeName: string, committeeSize: number }} electorateTerms
@@ -396,3 +398,62 @@ export const configureVaultFactoryUI = async ({
   );
 };
 harden(configureVaultFactoryUI);
+
+/**
+ * Start the reward distributor.
+ *
+ * @param {BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<DistributeFeesVat>>},
+ * }} powers
+ *
+ * @typedef {ERef<ReturnType<import('../../vats/src/vat-distributeFees.js').buildRootObject>>} DistributeFeesVat
+ */
+export const startRewardDistributor = async ({
+  consume: {
+    agoricNames,
+    chainTimerService,
+    bankManager,
+    loadVat,
+    vaultFactoryCreator,
+    ammCreatorFacet,
+    zoe,
+  },
+}) => {
+  const epochTimerService = await chainTimerService;
+  const distributorParams = {
+    epochInterval: 60n * 60n, // 1 hour
+  };
+  const [centralIssuer, centralBrand] = await Promise.all([
+    E(agoricNames).lookup('issuer', 'RUN'), // TODO: constant for RUN
+    E(agoricNames).lookup('brand', 'RUN'),
+  ]);
+  const feeCollectorDepositFacet = await E(bankManager)
+    .getFeeCollectorDepositFacet(CENTRAL_DENOM_NAME, {
+      issuer: centralIssuer,
+      brand: centralBrand,
+    })
+    .catch(e => {
+      console.log('Cannot create fee collector deposit facet', e);
+      return undefined;
+    });
+
+  if (!feeCollectorDepositFacet) {
+    return;
+  }
+
+  // Only distribute fees if there is a collector.
+  const vat = E(loadVat)('distributeFees');
+  const [vaultAdmin, ammAdmin] = await Promise.all([
+    vaultFactoryCreator,
+    ammCreatorFacet,
+  ]);
+  await E(vat)
+    .buildDistributor(
+      [vaultAdmin, ammAdmin].map(cf => E(vat).makeFeeCollector(zoe, cf)),
+      feeCollectorDepositFacet,
+      epochTimerService,
+      harden(distributorParams),
+    )
+    .catch(e => console.error('Error building fee distributor', e));
+};
+harden(startRewardDistributor);
