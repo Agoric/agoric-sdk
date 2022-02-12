@@ -29,16 +29,19 @@ export const shared = harden({
     VaultFactory: 'vault factory',
     liquidate: 'liquidate',
     getRUN: 'getRUN',
+    pegasus: 'pegasus',
   },
   instance: {
     economicCommittee: 'Economic Committee',
     amm: 'Automated Market Maker',
     ammGovernor: 'AMM Governor',
     VaultFactory: 'vault factory',
+    Treasury: 'Treasury', // for compatibility
     VaultFactoryGovernor: 'vault factory governor',
     liquidate: 'liquidate',
     getRUN: 'getRUN',
     getRUNGovernor: 'getRUN governor',
+    Pegasus: 'remote peg',
   },
 });
 
@@ -61,8 +64,13 @@ export const addRemote = async (addr, { vats: { comms, vattp } }) => {
 };
 harden(addRemote);
 
-export const callProperties = (obj, ...args) =>
-  fromEntries(entries(obj).map(([k, fn]) => [k, fn(...args)]));
+/**
+ * @param {Array<(...args) => Record<string, unknown>>} builders
+ * @param  {...unknown} args
+ * @returns {Record<string, unknown>}
+ */
+export const callProperties = (builders, ...args) =>
+  fromEntries(builders.map(fn => entries(fn(...args))).flat());
 
 export const makeNameAdmins = () => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
@@ -70,23 +78,28 @@ export const makeNameAdmins = () => {
 
   /** @type {Store<NameHub, NameAdmin>} */
   const nameAdmins = makeStore('nameHub');
-  ['brand', 'installation', 'issuer', 'instance', 'uiConfig'].forEach(
-    async nm => {
-      const { nameHub, nameAdmin } = makeNameHubKit();
-      agoricNamesAdmin.update(nm, nameHub);
-      nameAdmins.init(nameHub, nameAdmin);
-      if (nm === 'uiConfig') {
-        // Reserve the Vault Factory's config until we've populated it.
-        nameAdmin.reserve('vaultFactory');
-      } else if (['issuer', 'brand'].includes(nm)) {
-        keys(shared.assets).forEach(k => nameAdmin.reserve(k));
-      } else if (nm === 'installation') {
-        keys(shared.contract).forEach(k => nameAdmin.reserve(k));
-      } else if (nm === 'instance') {
-        keys(shared.instance).forEach(k => nameAdmin.reserve(k));
-      }
-    },
-  );
+  [
+    'brand',
+    'installation',
+    'issuer',
+    'instance',
+    'uiConfig',
+    'pegasus',
+  ].forEach(nm => {
+    const { nameHub, nameAdmin } = makeNameHubKit();
+    agoricNamesAdmin.update(nm, nameHub);
+    nameAdmins.init(nameHub, nameAdmin);
+    if (nm === 'uiConfig') {
+      // Reserve the Vault Factory's config until we've populated it.
+      nameAdmin.reserve('vaultFactory');
+    } else if (['issuer', 'brand'].includes(nm)) {
+      keys(shared.assets).forEach(k => nameAdmin.reserve(k));
+    } else if (nm === 'installation') {
+      keys(shared.contract).forEach(k => nameAdmin.reserve(k));
+    } else if (nm === 'instance') {
+      keys(shared.instance).forEach(k => nameAdmin.reserve(k));
+    }
+  });
   return { agoricNames, agoricNamesAdmin, nameAdmins };
 };
 harden(makeNameAdmins);
@@ -111,9 +124,12 @@ harden(collectNameAdmins);
  * Make { produce, consume } where for each name, `consume[name]` is a promise
  * and `produce[name].resolve` resolves it.
  *
+ * Note: repeated resolves() are noops.
+ *
+ * @param {typeof console.log} [log]
  * @returns {PromiseSpace}
  */
-export const makePromiseSpace = () => {
+export const makePromiseSpace = (log = (..._args) => {}) => {
   /** @type {Map<string, PromiseRecord<unknown>>} */
   const state = new Map();
   const remaining = new Set();
@@ -121,7 +137,7 @@ export const makePromiseSpace = () => {
   const findOrCreateKit = name => {
     let kit = state.get(name);
     if (!kit) {
-      console.info(`${name}: new Promise`);
+      log(`${name}: new Promise`);
       kit = makePromiseKit();
       state.set(name, kit);
       remaining.add(name);
@@ -146,19 +162,10 @@ export const makePromiseSpace = () => {
       get: (_target, name) => {
         assert.typeof(name, 'string');
         const { resolve, promise } = findOrCreateKit(name);
-        // promise.then(
-        // () => console.info(name, ': resolve'),
-        // e => console.info(name, ': reject', e),
-        // );
         promise.finally(() => {
           remaining.delete(name);
-          console.info(
-            name,
-            'settled; remaining:',
-            [...remaining.keys()].sort(),
-          );
+          log(name, 'settled; remaining:', [...remaining.keys()].sort());
         });
-        // Note: repeated resolves() are noops.
         return harden({ resolve });
       },
     },
@@ -169,15 +176,19 @@ export const makePromiseSpace = () => {
 harden(makePromiseSpace);
 
 /**
- * @param {unknown} template
+ * @param {unknown} template true or vat name string or recursive object
  * @param {unknown} specimen
  */
 export const extract = (template, specimen) => {
-  if (template === true) {
+  if (template === true || typeof template === 'string') {
     return specimen;
   } else if (typeof template === 'object' && template !== null) {
     if (typeof specimen !== 'object' || specimen === null) {
-      assert.fail(X`object template requires object specimen, not ${specimen}`);
+      assert.fail(
+        X`object template ${q(template)} requires object specimen, not ${q(
+          specimen,
+        )}`,
+      );
     }
     const target = harden(
       fromEntries(

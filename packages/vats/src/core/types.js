@@ -3,16 +3,29 @@
 /** @typedef { import('@agoric/eventual-send').EProxy } EProxy */
 
 /**
+ * This type conflicts with packages/SwingSet/src/vats/plugin-manager.js
+ *
  * @template T
  * @typedef {'Device' & { __deviceType__: T }} Device
  */
+
 /** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
 
 /**
  * SwingSet types
  *
  * @typedef { Device<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/devices/bridge-src.js').buildRootDeviceNode>> } BridgeDevice
+ * @typedef { Device<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/devices/command-src.js').buildRootDeviceNode>> } CommandDevice
+ * @typedef { Device<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/devices/mailbox-src.js').buildRootDeviceNode>> } MailboxDevice
+ * @typedef { import('@agoric/swingset-vat/src/vats/plugin-manager.js').PluginDevice } PluginDevice
+ * @typedef { Device<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/devices/timer-src.js').buildRootDeviceNode>> } TimerDevice
+ * @typedef { Device<ReturnType<typeof
+ *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdmin-src.js').buildRootDeviceNode>> } VatAdminDevice
+ *
  * @typedef { ERef<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/vats/vat-tp.js').buildRootObject>> } VattpVat
  * @typedef { ERef<ReturnType<typeof
@@ -24,6 +37,7 @@
  * @typedef {ERef<{
  *   addRemote: (name: string, tx: unknown, rx: unknown) => void,
  *   addEgress: (addr: string, ix: number, provider: unknown) => void,
+ *   addIngress: (remoteID: string, remoteRefID: number, label?: string) => Promise<any>,
  * }>} CommsVatRoot
  *
  * @typedef {{
@@ -32,14 +46,28 @@
  *   vatAdmin: VatAdminVat,
  *   vattp: VattpVat,
  * }} SwingsetVats
- * @typedef {{
- *   mailbox: MailboxDevice,
- *   vatAdmin: unknown,
- * }} SwingsetDevices
  */
 
 /**
- * @typedef {ReturnType<typeof import('../bridge.js').makeBridgeManager> | undefined} OptionalBridgeManager
+ * @typedef {{
+ *   vatAdmin: VatAdminDevice,
+ *   mailbox: MailboxDevice,
+ *   command: CommandDevice,
+ *   timer: TimerDevice,
+ *   plugin: PluginDevice,
+ * }} SoloDevices
+ *
+ * @typedef {{
+ *   vatAdmin: VatAdminDevice,
+ *   mailbox: MailboxDevice,
+ *   timer: TimerDevice,
+ *   bridge?: BridgeDevice,
+ * }} ChainDevices
+ */
+
+/**
+ * @typedef {ReturnType<typeof import('../bridge.js').makeBridgeManager>} BridgeManager
+ * @typedef {BridgeManager | undefined} OptionalBridgeManager
  */
 
 /**
@@ -67,7 +95,7 @@
  *   assignBundle: (ps: PropertyMakers) => void
  * }} ClientManager
  *
- * @typedef {Record<string, (addr: string) => void>} PropertyMakers
+ * @typedef {Array<(addr: string) => Record<string, unknown>>} PropertyMakers
  */
 
 /**
@@ -75,13 +103,13 @@
  * @param {string} nickname
  * @param {string} clientAddress
  * @param {string[]} powerFlags
- * @returns {Promise<Record<string, unknown>>}
+ * @returns {Promise<Record<string, Promise<any>>>}
  *
  * @typedef {Object} ClientFacet
- * @property {() => Record<string, unknown>} getChainBundle Required for ag-solo, but deprecated in favour of getConfiguration
+ * @property {() => ERef<Record<string, any>>} getChainBundle Required for ag-solo, but deprecated in favour of getConfiguration
  * @property {() => ConsistentAsyncIterable<Configuration>} getConfiguration
  *
- * @typedef {{ clientAddress: string, clientHome: Record<string, unknown>}} Configuration
+ * @typedef {{ clientAddress: string, clientHome: Record<string, any>}} Configuration
  *
  * @typedef {Object} ClientCreator
  * @property {CreateUserBundle} createUserBundle Required for vat-provisioning, but deprecated in favor of {@link createClient}.
@@ -96,15 +124,18 @@
  *     ammGovernorCreatorFacet: ERef<GovernedContractFacetAccess>,
  *     chainTimerService: ERef<TimerService>,
  *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
- *     ammBundle: ERef<{ moduleFormat: string }>,
- *     getRUNBundle: ERef<{ moduleFormat: string }>,
- *     vaultBundles: ERef<Record<string, { moduleFormat: string }>>,
+ *     ammBundle: ERef<SourceBundle>,
+ *     vaultBundles: ERef<Record<string, SourceBundle>>,
+ *     centralSupplyBundle: ERef<SourceBundle>,
  *     feeMintAccess: ERef<FeeMintAccess>,
- *     governanceBundles: ERef<Record<string, { moduleFormat: string }>>,
+ *     governanceBundles: ERef<Record<string, SourceBundle>>,
+ *     initialSupply: ERef<Payment>,
  *     nameAdmins: Promise<Store<NameHub, NameAdmin>>,
+ *     pegasusBundle: Promise<SourceBundle>,
+ *     priceAuthorityVat: PriceAuthorityVat,
  *     priceAuthority: ERef<PriceAuthority>,
  *     priceAuthorityAdmin: ERef<PriceAuthorityRegistryAdmin>,
- *     vaultFactoryCreator: ERef<unknown>,
+ *     vaultFactoryCreator: ERef<VaultFactory>,
  *     vaultFactoryGovernorCreator: ERef<GovernedContractFacetAccess>,
  *     zoe: ERef<ZoeService>,
  *   },
@@ -115,15 +146,19 @@
  *     ammGovernorCreatorFacet: Producer<unknown>,
  *     chainTimerService: Producer<ERef<TimerService>>,
  *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
- *     ammBundle: Producer<{ moduleFormat: string }>,
  *     getRUNBundle: Producer<{ moduleFormat: string }>,
- *     vaultBundles: Producer<Record<string, { moduleFormat: string }>>,
- *     governanceBundles: Producer<Record<string, { moduleFormat: string }>>,
+ *     ammBundle: Producer<SourceBundle>,
+ *     vaultBundles: Producer<Record<string, SourceBundle>>,
+ *     governanceBundles: Producer<Record<string, SourceBundle>>,
+ *     initialSupply: Producer<Payment>,
+ *     centralSupplyBundle: Producer<SourceBundle>,
  *     feeMintAccess: Producer<FeeMintAccess>,
  *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
+ *     priceAuthorityVat: Producer<PriceAuthorityVat>,
  *     priceAuthority: Producer<PriceAuthority>,
  *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>,
- *     vaultFactoryCreator: Producer<unknown>,
+ *     pegasusBundle: Producer<SourceBundle>,
+ *     vaultFactoryCreator: Producer<{ makeCollectFeesInvitation: () => Promise<Invitation> }>,
  *     vaultFactoryGovernorCreator: Producer<unknown>,
  *     vaultFactoryVoteCreator: Producer<unknown>,
  *     zoe: Producer<ERef<ZoeService>>,
@@ -131,30 +166,38 @@
  * }} EconomyBootstrapPowers
  *
  * @typedef {{
- *   devices: {
- *      timer: unknown,
- *      bridge: Device<import('../bridge.js').BridgeDevice>,
- *      vatAdmin: unknown,
+ *   argv: {
+ *     ROLE: string,
+ *     hardcodedClientAddresses: string[],
+ *     FIXME_GCI: string,
+ *     PROVISIONER_INDEX: number,
  *   },
- *   vats: {
- *     comms: CommsVatRoot,
- *     timer: TimerVat,
- *     vattp: VattpVat,
- *     vatAdmin: VatAdminVat,
- *   },
- *   vatPowers: { D: DProxy },
+ *   bootstrapManifest?: Record<string, Record<string, unknown>>,
+ *   governanceActions?: boolean,
+ * }} BootstrapVatParams
+ * @typedef { BootstrapSpace & {
+ *   devices: SoloDevices | ChainDevices,
+ *   vats: SwingsetVats,
+ *   vatPowers: { [prop: string]: any, D: DProxy },
+ *   vatParameters: BootstrapVatParams,
  *   runBehaviors: (manifest: unknown) => Promise<unknown>,
+ * }} BootstrapPowers
+ * @typedef {{
  *   consume: EconomyBootstrapPowers['consume'] & {
- *     bankManager: Promise<BankManager>,
+ *     bankManager: BankManager,
  *     board: ERef<Board>,
+ *     bldIssuerKit: ERef<IssuerKit>,
  *     bridgeManager: ERef<OptionalBridgeManager>,
  *     client: ERef<ClientManager>,
  *     clientCreator: ERef<ClientCreator>,
  *     provisioning: ProvisioningVat,
  *     vatAdminSvc: ERef<VatAdminSvc>,
+ *     namesByAddress: ERef<NameHub>,
+ *     namesByAddressAdmin: ERef<NameAdmin>,
  *   },
  *   produce: EconomyBootstrapPowers['produce'] & {
- *     bankManager: Producer<unknown>,
+ *     bankManager: Producer<BankManager>,
+ *     bldIssuerKit: Producer<IssuerKit>,
  *     board: Producer<ERef<Board>>,
  *     bridgeManager: Producer<OptionalBridgeManager>,
  *     client: Producer<ClientManager>,
@@ -162,9 +205,31 @@
  *     loadVat: Producer<VatLoader<unknown>>,
  *     provisioning: Producer<unknown>,
  *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
+ *     namesByAddress: Producer<NameHub>,
+ *     namesByAddressAdmin: Producer<NameAdmin>,
  *   },
- * }} BootstrapPowers
- * @typedef {*} BankManager // TODO
+ * }} BootstrapSpace
+ * @typedef {ReturnType<Unpromise<BankVat>['makeBankManager']>} BankManager
+ * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
+ * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
+ * @typedef {ERef<ReturnType<import('../vat-network.js').buildRootObject>>} NetworkVat
+ * @typedef {ERef<ReturnType<import('../vat-ibc.js').buildRootObject>>} IBCVat
  * @typedef { import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin } PriceAuthorityRegistryAdmin
  */
+
+/**
+ * @typedef {{
+ *   spawner: SpawnerVat,
+ *   http: HttpVat,
+ *   network: NetworkVat,
+ *   uploads: UploadsVat,
+ *   bootstrap: unknown
+ * }} SoloVats
+ * @typedef {ERef<ReturnType<import('@agoric/solo/src/vat-spawner.js').buildRootObject>>} SpawnerVat
+ * @typedef {ERef<ReturnType<import('@agoric/solo/src/vat-http.js').buildRootObject>>} HttpVat
+ * @typedef {ERef<ReturnType<import('@agoric/solo/src/vat-uploads.js').buildRootObject>>} UploadsVat
+ */
+
+/** @template T @typedef  {{vatPowers: { D: DProxy }, devices: T}} BootDevices<T>  */
+/** @template T @typedef {import('@agoric/eventual-send').Unpromise<T>} Unpromise<T> */

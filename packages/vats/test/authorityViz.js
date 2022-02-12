@@ -1,3 +1,4 @@
+/* eslint-disable no-continue */
 // @ts-check
 import '@endo/init';
 import * as manifests from '../src/core/manifest.js';
@@ -5,24 +6,48 @@ import * as manifests from '../src/core/manifest.js';
 const { entries } = Object;
 
 const styles = {
-  vatPowers: 'shape=Mcircle',
-  vats: 'shape=trapezium',
-  devices: 'shape=box',
-  space: 'shape=diamond',
+  vatPowers: 'shape=star, style=filled, fillcolor=aqua',
+  vats: 'shape=doubleoctagon, style=filled, fillcolor=tomato',
+  vat: 'shape=doubleoctagon, style=filled, fillcolor=tomato3',
+  devices: 'shape=box, style=filled, fillcolor=gold',
+  space: 'shape=house, style=filled, fillcolor=khaki',
+  issuer: 'shape=trapezium, style=filled, fillcolor=chocolate',
+  brand: 'shape=Mcircle, style=filled, fillcolor=chocolate2',
+  installation: 'shape=cylinder',
+  instance: 'shape=component',
+  home: 'shape=folder',
 };
 
 /**
  * @param { Set<GraphNode> } nodes
  * @param {Map<string, Set<{ id: string, style?: string }>>} neighbors
  * @yields { string }
- * @typedef {{ id: string, label: string, style?: string }} GraphNode
+ * @typedef {{
+ *   id: string,
+ *   cluster?: string,
+ *   label: string,
+ *   style?: string,
+ * }} GraphNode
  */
 function* fmtGraph(nodes, neighbors) {
   const q = txt => JSON.stringify(txt.replace(/\./g, '_'));
   yield 'digraph G {\n';
   yield 'rankdir = LR;\n';
-  for (const { id, label, style } of nodes) {
-    yield `${q(id)} [label=${q(label)}${style ? `, ${style}` : ''}];\n`;
+  const clusters = new Set(
+    [...nodes].map(({ cluster }) => cluster).filter(c => !!c),
+  );
+  for (const subgraph of [...clusters, undefined]) {
+    if (subgraph) {
+      yield `subgraph cluster_${subgraph} {\n`;
+      yield `label = "${subgraph}"`;
+    }
+    for (const { id, cluster, label, style } of nodes) {
+      if (subgraph && cluster !== subgraph) continue;
+      yield `${q(id)} [label=${q(label)}${style ? `, ${style}` : ''}];\n`;
+    }
+    if (subgraph) {
+      yield `}\n`;
+    }
   }
   for (const [src, arcs] of neighbors.entries()) {
     for (const { id, style } of arcs) {
@@ -36,12 +61,20 @@ function* fmtGraph(nodes, neighbors) {
  *
  * @param {Record<string, Permit>} manifest
  * @typedef {{
+ *   vatParameters?: Record<string, unknown>,
  *   vatPowers?: Record<string, boolean>
  *   vats?: Record<string, boolean>
  *   devices?: Record<string, boolean>
- *   produce?: Record<string, boolean>
- *   consume?: Record<string, boolean>
- * }} Permit
+ *   home?: PowerSpace,
+ *   issuer?: PowerSpace,
+ *   brand?: PowerSpace,
+ *   installation?: PowerSpace,
+ *   instance?: PowerSpace,
+ *   runBehaviors: Function,
+ * } & PowerSpace } Permit
+ * @typedef {{produce?: Record<string, Status>, consume?: Record<string, Status>}} PowerSpace
+ * @typedef { boolean | VatName } Status
+ * @typedef { string } VatName
  */
 const manifest2graph = manifest => {
   /** @type { Set<GraphNode> } */
@@ -63,20 +96,41 @@ const manifest2graph = manifest => {
   /**
    * @param {string} src
    * @param {string} ty
-   * @param {Record<string, boolean> | undefined} item
+   * @param {Record<string, Status> | undefined} item
    * @param {boolean=} reverse
    */
   const level1 = (src, ty, item, reverse = false) => {
     if (item) {
       for (const [powerName, status] of entries(item)) {
+        // subsumed by permits for vat:, home:, ...
+        if (
+          [
+            'loadVat',
+            'client',
+            'agoricNames',
+            'nameHubs',
+            'nameAdmins',
+          ].includes(powerName) &&
+          reverse
+        )
+          continue;
         if (status) {
-          // TODO: just powerName for label; use style for ty
+          let cluster = {};
+          if (typeof status !== 'boolean') {
+            cluster = { cluster: status };
+          }
+
           nodes.add({
             id: `${ty}.${powerName}`,
             label: powerName,
             style: styles[ty],
+            ...cluster,
           });
           addEdge(src, `${ty}.${powerName}`, reverse ? 'dir=back' : '');
+          if (ty === 'home') {
+            nodes.add({ id: 'home', label: 'home', cluster: 'provisioning' });
+            addEdge('home', `${ty}.${powerName}`);
+          }
         }
       }
     }
@@ -90,6 +144,23 @@ const manifest2graph = manifest => {
     level1(fnName, 'devices', permit.devices, true);
     level1(fnName, 'space', permit.produce);
     level1(fnName, 'space', permit.consume, true);
+    level1(fnName, 'home', (permit.home || {}).produce);
+    level1(fnName, 'issuer', (permit.issuer || {}).produce);
+    level1(fnName, 'issuer', (permit.issuer || {}).consume, true);
+    level1(fnName, 'brand', (permit.brand || {}).produce);
+    level1(fnName, 'brand', (permit.brand || {}).consume, true);
+    level1(fnName, 'installation', (permit.installation || {}).produce);
+    level1(fnName, 'installation', (permit.installation || {}).consume, true);
+    level1(fnName, 'instance', (permit.instance || {}).produce);
+    level1(fnName, 'instance', (permit.instance || {}).consume, true);
+    if (permit.runBehaviors) {
+      nodes.add({
+        id: `runBehaviors`,
+        label: `runBehaviors`,
+        style: '',
+      });
+      addEdge(fnName, `runBehaviors`);
+    }
   }
   return { nodes, neighbors };
 };
@@ -97,41 +168,28 @@ const manifest2graph = manifest => {
 /**
  * @param { string[] } args
  * @param { Object } io
- * @param { typeof import('fs/promises').readFile } io.readFile
  * @param { typeof import('process').stdout } io.stdout
  */
-const main = async (args, { readFile, stdout }) => {
-  const [fn, ...opts] = args;
-  if (!fn) throw Error('usage: authorityViz config.json');
-  const txt = await readFile(fn, 'utf-8');
-  const config = JSON.parse(txt);
-  const {
-    vats: {
-      bootstrap: {
-        parameters: { bootstrapManifest },
-      },
-    },
-  } = config;
-  const manifest =
-    bootstrapManifest ||
-    (opts.includes('--sim-chain')
-      ? manifests.SIM_CHAIN_BOOTSTRAP_MANIFEST
-      : manifests.CHAIN_BOOTSTRAP_MANIFEST);
+const main = async (args, { stdout }) => {
+  const [...opts] = args;
+  // if (!fn) throw Error('usage: authorityViz [--sim-chain]');
+  let manifest = opts.includes('--sim-chain')
+    ? manifests.SIM_CHAIN_BOOTSTRAP_MANIFEST
+    : manifests.CHAIN_BOOTSTRAP_MANIFEST;
+  if (opts.includes('--gov')) {
+    manifest = { ...manifests.GOVERNANCE_ACTIONS_MANIFEST, ...manifest };
+  }
 
   // console.log(JSON.stringify(bootstrapManifest, null, 2));
-  const g = manifest2graph(manifest);
+  const g = manifest2graph(/** @type {any} */ (manifest));
   for (const chunk of fmtGraph(g.nodes, g.neighbors)) {
     stdout.write(chunk);
   }
 };
 
 (async () => {
-  const [process, fsp] = await Promise.all([
-    import('process'),
-    import('fs/promises'),
-  ]);
+  const [process] = await Promise.all([import('process')]);
   return main(process.argv.slice(2), {
-    readFile: fsp.readFile,
     stdout: process.stdout,
   });
 })().catch(console.error);
