@@ -7,7 +7,7 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@agoric/eventual-send';
+import { E } from '@agoric/far';
 import { makeAddPool } from './pool.js';
 import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
