@@ -287,9 +287,8 @@ export const startVaultFactory = async (
       harden({ electorateCreatorFacet }),
     );
 
-  const vaultFactoryInstance = await E(governorCreatorFacet).getInstance();
-  const [vaultFactoryCreator] = await Promise.all([
-    E(zoe).getTerms(vaultFactoryInstance),
+  const [vaultFactoryInstance, vaultFactoryCreator] = await Promise.all([
+    E(governorCreatorFacet).getInstance(),
     E(governorCreatorFacet).getCreatorFacet(),
   ]);
 
@@ -304,6 +303,7 @@ export const startVaultFactory = async (
   // Advertise the installation in agoricNames.
   await Promise.all([
     E(instanceAdmin).update('VaultFactory', vaultFactoryInstance),
+    E(instanceAdmin).update('Treasury', vaultFactoryInstance), // backward compatibility
     E(instanceAdmin).update('VaultFactoryGovernor', governorInstance),
     ...entries(installations).map(([name, install]) =>
       E(installAdmin).update(name, install),
@@ -386,11 +386,8 @@ export const configureVaultFactoryUI = async ({
       vaultFactoryUiDefaults.CONTRACT_NAME,
       vaultFactoryUiDefaults,
     ],
-    [
-      instanceAdmin,
-      vaultFactoryUiDefaults.CONTRACT_NAME,
-      instances.vaultFactory,
-    ],
+    // compatibility
+    [uiConfigAdmin, 'Treasury', vaultFactoryUiDefaults],
     [instanceAdmin, vaultFactoryUiDefaults.AMM_NAME, instances.amm],
   ];
   await Promise.all(
