@@ -40,7 +40,7 @@ export function buildRootObject(vatPowers) {
     },
 
     async createVat(name, dynamicOptions) {
-      const bundleID = D(bundleDev).getNamedBundleCap(name);
+      const bundleID = D(bundleDev).getNamedBundlecap(name);
       control = await E(service).createVat(bundleID, dynamicOptions);
       const done = E(control.adminNode).done();
       // the caller checks this later, but doesn't wait for it
