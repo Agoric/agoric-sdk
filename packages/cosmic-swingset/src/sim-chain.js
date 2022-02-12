@@ -10,6 +10,8 @@ import {
 
 import anylogger from 'anylogger';
 
+import { makeSlogSenderFromModule } from '@agoric/telemetry';
+
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
@@ -83,16 +85,27 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     console,
     env: process.env,
   });
-  const s = await launch(
-    stateDBdir,
+
+  const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE } = process.env;
+  const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
+  const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+    stateDir: stateDBdir,
+  });
+
+  // We don't want to force a sim chain to use consensus mode.
+  const consensusMode = false;
+  const s = await launch({
+    kernelStateDBDir: stateDBdir,
     mailboxStorage,
-    undefined,
-    undefined,
     vatconfig,
     argv,
-    GCI, // debugName
+    debugName: GCI,
     metricsProvider,
-  );
+    slogFile: SLOGFILE,
+    slogSender,
+    consensusMode,
+    mapSize,
+  });
 
   const { savedHeight, savedActions, savedChainSends } = s;
   const blockManager = makeBlockManager({ ...s, flushChainSends });

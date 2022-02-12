@@ -99,7 +99,9 @@ export function makeVatKeeper(
     // take care with API change
     assert(options.managerType, X`vat options missing managerType`);
     assert(source);
-    assert('bundle' in source || 'bundleName' in source);
+    assert(
+      'bundle' in source || 'bundleName' in source || 'bundleID' in source,
+    );
     assert.typeof(options, 'object');
     kvStore.set(`${vatID}.source`, JSON.stringify(source));
     kvStore.set(`${vatID}.options`, JSON.stringify(options));

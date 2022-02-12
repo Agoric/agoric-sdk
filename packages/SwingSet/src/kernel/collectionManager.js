@@ -314,7 +314,6 @@ export function makeCollectionManager(
     }
 
     function del(key) {
-      currentGenerationNumber += 1;
       deleteInternal(key);
       updateEntryCount(-1);
     }
@@ -339,7 +338,7 @@ export function makeCollectionManager(
         while (priorDBKey !== undefined) {
           assert(
             generationAtStart === currentGenerationNumber,
-            X`keys in store cannot be changed during iteration`,
+            X`keys in store cannot be added to during iteration`,
           );
           const [dbKey, dbValue] = syscall.vatstoreGetAfter(
             priorDBKey,
@@ -393,7 +392,6 @@ export function makeCollectionManager(
       if (!hasWeakKeys && !isDeleting) {
         syscall.vatstoreSet(prefix('|entryCount'), '0');
       }
-      currentGenerationNumber += 1;
       return doMoreGC;
     }
 

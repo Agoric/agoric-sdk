@@ -1031,13 +1031,28 @@ export default function buildKernel(
 
     // the admin device is endowed directly by the kernel
     deviceEndowments.vatAdmin = {
-      pushCreateVatEvent(source, dynamicOptions) {
+      pushCreateVatBundleEvent(bundle, dynamicOptions) {
+        const source = { bundle };
         const vatID = kernelKeeper.allocateUnusedVatID();
         const event = { type: 'create-vat', vatID, source, dynamicOptions };
         kernelKeeper.addToRunQueue(harden(event));
         // the device gets the new vatID immediately, and will be notified
         // later when it is created and a root object is available
         return vatID;
+      },
+      pushCreateVatIDEvent(bundleID, dynamicOptions) {
+        assert(kernelKeeper.hasBundle(bundleID), bundleID);
+        const source = { bundleID };
+        const vatID = kernelKeeper.allocateUnusedVatID();
+        const event = { type: 'create-vat', vatID, source, dynamicOptions };
+        kernelKeeper.addToRunQueue(harden(event));
+        // the device gets the new vatID immediately, and will be notified
+        // later when it is created and a root object is available
+        return vatID;
+      },
+      getBundleIDByName(bundleName) {
+        // this throws if the name is unknown
+        return kernelKeeper.getNamedBundleID(bundleName);
       },
       terminate: (vatID, reason) => terminateVat(vatID, true, reason),
       meterCreate: (remaining, threshold) =>
@@ -1049,17 +1064,27 @@ export default function buildKernel(
       meterGet: meterID => kernelKeeper.getMeter(meterID),
     };
 
+    // same for bundle device
+    deviceEndowments.bundle = {
+      hasBundle: kernelKeeper.hasBundle,
+      getBundle: kernelKeeper.getBundle,
+      getNamedBundleID: kernelKeeper.getNamedBundleID,
+    };
+
     // instantiate all devices
     for (const [name, deviceID] of kernelKeeper.getDevices()) {
       logStartup(`starting device ${name} as ${deviceID}`);
       const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
       const { source, options } = deviceKeeper.getSourceAndOptions();
+      assert(source.bundleID);
       assertKnownOptions(options, ['deviceParameters', 'unendowed']);
       const { deviceParameters = {}, unendowed } = options;
       const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
 
+      const bundle = kernelKeeper.getBundle(source.bundleID);
+      assert(bundle);
       // eslint-disable-next-line no-await-in-loop
-      const NS = await importBundle(source.bundle, {
+      const NS = await importBundle(bundle, {
         filePrefix: `dev-${name}/...`,
         endowments: harden({ ...vatEndowments, console: devConsole, assert }),
       });
@@ -1204,6 +1229,20 @@ export default function buildKernel(
     return vatWarehouse.shutdown();
   }
 
+  /**
+   * Install a pre-validated bundle under the given ID.
+   *
+   * @param { BundleID } bundleID
+   * @param { EndoZipBase64Bundle } bundle
+   */
+  async function installBundle(bundleID, bundle) {
+    // bundleID is b1-HASH
+    if (!kernelKeeper.hasBundle(bundleID)) {
+      kernelKeeper.addBundle(bundleID, bundle);
+      kernelKeeper.commitCrank();
+    }
+  }
+
   function kpRegisterInterest(kpid) {
     kernelKeeper.incrementRefCount(kpid, 'external');
   }
@@ -1240,6 +1279,7 @@ export default function buildKernel(
 
   const kernel = harden({
     // these are meant for the controller
+    installBundle,
     start,
     step,
     run,

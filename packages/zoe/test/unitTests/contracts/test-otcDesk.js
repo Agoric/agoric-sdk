@@ -261,7 +261,7 @@ const makeBob = (
 
       await t.throwsAsync(() => E(seat).getOfferResult(), {
         message:
-          'rights were not conserved for brand "[Alleged: simoleans brand]"',
+          'rights were not conserved for brand "[Alleged: simoleans brand]" "[15n]" != "[16n]"',
       });
 
       await assertPayoutAmount(

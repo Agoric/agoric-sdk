@@ -79,7 +79,7 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
     const { leftSum, rightSum } = getSums(brand);
     assert(
       AmountMath.isEqual(leftSum, rightSum),
-      X`rights were not conserved for brand ${brand}`,
+      X`rights were not conserved for brand ${brand} ${leftSum.value} != ${rightSum.value}`,
     );
   });
 };

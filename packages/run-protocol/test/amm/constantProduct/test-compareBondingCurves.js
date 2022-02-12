@@ -199,9 +199,20 @@ test('getInputPrice zero input', t => {
     outputReserve: 50n,
     inputValue: 0n,
   };
-  const message =
-    'amountGiven or amountWanted must be greater than 0: {"brand":"[Alleged: BLD brand]","value":"[0n]"} {"brand":"[Alleged: RUN brand]","value":"[0n]"}';
-  getInputPriceThrows(t, input, message);
+
+  const expectedOutput = 0n;
+  testInputGetPrice(t, input, expectedOutput);
+});
+
+test('getOutputPrice zero output', t => {
+  const input = {
+    inputReserve: 320n,
+    outputReserve: 50n,
+    outputValue: 0n,
+  };
+
+  const expectedInput = 0n;
+  testGetOutputPrice(t, input, expectedInput);
 });
 
 test('getInputPrice big product', t => {

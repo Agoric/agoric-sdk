@@ -14,6 +14,8 @@ The ability to create new vats is not ambient: it requires access to the Vat Adm
 
 ### Making the Source Bundle
 
+Vats are created from "bundlecaps", which are objects that represent installed source code bundles. See docs/bundles.md for details.
+
 The first step is to create a source bundle. To do this, you'll want to point the `bundleSource` function (from the `@endo/bundle-source` package) at a local source file. This file should export a function named `buildRootObject` (it can export other things too, perhaps for unit tests, but only `buildRootObject` will be used by the dynamic vat loader). Suppose your vat code is stored in `vat-counter.js`:
 
 ```js
@@ -41,29 +43,43 @@ async function run() {
 }
 ```
 
-The next step is to somehow get this bundle into an existing vat. The bundle can be turned into a string with `s = JSON.stringify(bundle)`, and back into an object with `bundle = JSON.parse(s)`. In the Agoric system, the bundling and transfer is managed by the `agoric deploy` command.
+The next step is to somehow get this bundle into the host application, perhaps through a network connection. In the Agoric system, the bundling and transfer is managed by the `agoric deploy` command.
 
-### Options
+Then, your host application can install this bundle into the kernel. Pass the bundle to `controller.validateAndInstallBundle(bundle)`, which will return a `bundleID` string. Then somehow get this bundleID into a vat.
 
-There is currently only one option recognized by `createVat()`:
+Once inside a vat with access to the `bundle` device, you can convert the bundleID string into a "bundlecap" with:
 
-* `metered` (boolean, default `true`). If `true`, the new dynamic vat is subject to metering restrictions, and may be terminated if any single crank uses too much. If `false`, the vat is unmetered, and may cause the overall SwingSet machine to cease making progress (by going into an infinite loop, or consuming too much memory, or too many stack frames).
+```js
+const bundlecap = D(devices.bundle).getBundleCap(bundleID);
+```
 
-Note that any vat which can reach `createVat()` can create a new unmetered vat, even if the caller was metered themselves. So do not share an unattenuated Vat Admin object with an unmetered vat if you wish them to remain confined to metered operation.
+The `vatAdminService` accepts the bundlecap.
+
 
 ### Invoking createVat()
 
 Once the bundle object is present within a vat that has access to the Vat Admin Service, you create the vat with a `createVat` call:
 
 ```js
-const control = await E(vatAdminService).createVat(bundle, options);
+const control = await E(vatAdminService).createVat(bundlecap, options);
 ```
 
-To create an unmetered dynamic vat, set `metered: false`:
+### Options
 
-```js
-const control = await E(vatAdminService).createVat(bundle, { metered: false });
-```
+`createVat()` recognizes the following options:
+
+* `description` (string): used in debug messages to describe the vat
+* `meter` (`Meter` object, default none): a Meter object to impose upon the vat. If provided, the Meter will be deducted for each computron spent executing, and the vat will be terminated if the Meter runs out. See docs/metering.md for details.
+* `managerType` (`'local'` or `'xs-worker'` or `'nodeWorker'` or `'node-subprocess'`): the type of worker that will host the vat. `xs-worker` is the only sensible choice. Defaults to a value set by `config.defaultManagerType`, or `xs-worker` if that is not set
+* `vatParameters` (JSON-serializable object): data passed to `buildRootObject` in the `vatParameters` argument
+* `enableSetup` (boolean, default `false`): only used for specialized vats like comms, bypasses `buildRootObject` and the liveslots layer
+* `enablePipelining` (boolean, default `false`): only used for specialized vats like comms, pipelines all messages into the vat instead of queueing them in the kernel until the target promise resolves
+* `enableVatstore` (boolean, default `true`): enables `vatPowers.vatstore` methods for DB-backed state management
+* `virtualObjectCacheSize` (integer): performance tuning parameter
+* `useTranscript` (boolean, default `true`): only used for specialized vats like comms
+* `reapInterval` (integer): performance tuning parameter
+
+Note that any vat which can reach `createVat()` can create a new unmetered vat, even if the caller was metered themselves. So do not share an unattenuated Vat Admin object with an unmetered vat if you wish them to remain confined to metered operation.
 
 
 ## Root Object and Admin Node
@@ -72,7 +88,7 @@ The result of `createVat` gives you access to two things. One is a *Presence* th
 
 
 ```js
-const { root, adminNode } = await E(vatAdminService).createVat(bundle);
+const { root, adminNode } = await E(vatAdminService).createVat(bundlecap);
 await E(root).increment();
 let count = E(root).read();
 console.log(count); // 1
@@ -101,7 +117,7 @@ const {
 
 ### Waiting for Vat Termination
 
-To find out when the vat is terminated (either explicitly or due to a metering fault), you can wait for the `done()` Promise to fire. It will be resolved normally if the vat was terminated explicitly, and it will be rejected if the vat halted for any other reason.
+To find out when the vat is terminated (either explicitly or due to a metering fault), you can wait for the `done()` Promise to fire. It will be resolved normally if the vat invokes `vatPowers.exitVat(reason)`. It will be rejected if the vat invokes `vatPowers.exitVatWithFailure(reason)`, if the adminNode holder uses `E(adminNode).terminateWithFailure(reason)`, if the vat suffers a metering fault, or if the vat is halted for any other reason (illegal syscall, etc).
 
 ```
 E(adminNode).done()

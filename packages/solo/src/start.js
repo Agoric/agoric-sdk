@@ -15,6 +15,7 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, details as X } from '@agoric/assert';
+import { makeSlogSenderFromModule } from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -27,10 +28,11 @@ import {
   buildTimer,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
-import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
+import { makeShutdown } from '@agoric/cosmic-swingset/src/shutdown.js';
 
 import { deliver, addDeliveryTarget } from './outbound.js';
+import { connectToPipe } from './pipe.js';
 import { makeHTTPListener } from './web.js';
 
 import { connectToChain } from './chain-cosmos-sdk.js';
@@ -142,8 +144,17 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
-  const { kvStore, streamStore, snapStore, commit } =
-    openSwingStore(kernelStateDBDir);
+  const {
+    SOLO_SLOGFILE: slogFile,
+    SOLO_SLOGSENDER,
+    SOLO_LMDB_MAP_SIZE,
+  } = process.env;
+  const mapSize =
+    (SOLO_LMDB_MAP_SIZE && parseInt(SOLO_LMDB_MAP_SIZE, 10)) || undefined;
+  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
+    kernelStateDBDir,
+    { mapSize },
+  );
   const hostStorage = {
     kvStore,
     streamStore,
@@ -156,11 +167,13 @@ const buildSwingset = async (
     }
     await initializeSwingset(config, argv, hostStorage);
   }
-  const slogFile = process.env.SOLO_SLOGFILE;
+  const slogSender = await makeSlogSenderFromModule(SOLO_SLOGSENDER, {
+    stateDir: kernelStateDBDir,
+  });
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogFile },
+    { slogFile, slogSender },
   );
 
   async function saveState() {
@@ -303,6 +316,7 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
 
   // We turn off NODE_OPTIONS in case the user is debugging.
   const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
+  let unregisterShutdown = () => {};
   const cp = fork(
     agoricCli,
     [
@@ -317,12 +331,11 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
       if (err) {
         console.error(err);
       }
-      // eslint-disable-next-line no-use-before-define
-      process.off('exit', killDeployment);
+      unregisterShutdown();
     },
   );
-  const killDeployment = () => cp.kill('SIGINT');
-  process.on('exit', killDeployment);
+  const { registerShutdown } = makeShutdown();
+  unregisterShutdown = registerShutdown(() => cp.kill('SIGTERM'));
 };
 
 const start = async (basedir, argv) => {
@@ -417,12 +430,11 @@ const start = async (basedir, argv) => {
           break;
         case 'fake-chain': {
           log(`adding follower/sender for fake chain ${c.GCI}`);
-          const deliverator = await connectToFakeChain(
-            basedir,
-            c.GCI,
-            c.fakeDelay,
+          const deliverator = await connectToPipe({
+            method: 'connectToFakeChain',
+            args: [basedir, c.GCI, c.fakeDelay],
             deliverInboundToMbx,
-          );
+          });
           addDeliveryTarget(c.GCI, deliverator);
           break;
         }

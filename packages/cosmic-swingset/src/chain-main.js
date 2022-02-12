@@ -7,6 +7,7 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox.js';
 
 import { assert, details as X } from '@agoric/assert';
+import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
@@ -249,20 +250,30 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       ),
     ).pathname;
     const { metricsProvider } = getTelemetryProviders({ console, env });
-    const slogFile = env.SLOGFILE;
-    const consensusMode = env.DEBUG === undefined;
-    const s = await launch(
-      stateDBDir,
+
+    const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE } = env;
+    const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+      stateDir: stateDBDir,
+    });
+
+    const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
+
+    // We want to make it hard for a validator to accidentally disable
+    // consensusMode.
+    const consensusMode = true;
+    const s = await launch({
+      kernelStateDBDir: stateDBDir,
       mailboxStorage,
       setActivityhash,
-      doOutboundBridge,
+      bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
-      undefined,
       metricsProvider,
-      slogFile,
+      slogFile: SLOGFILE,
+      slogSender,
       consensusMode,
-    );
+      mapSize,
+    });
     return s;
   }
 

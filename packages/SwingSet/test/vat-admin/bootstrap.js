@@ -1,59 +1,59 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(vatPowers, vatParameters) {
-  const log = vatPowers.testLog;
+export function buildRootObject(vatPowers) {
+  const { D } = vatPowers;
+  let admin;
+  let bundleDevice;
+
   return Far('root', {
     async bootstrap(vats, devices) {
-      const { argv } = vatParameters;
-      const bundles = argv[1];
-      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-        devices.vatAdmin,
-      );
-      switch (argv[0]) {
-        case 'newVat':
-          {
-            log(`starting newVat test`);
-            const { root } = await E(vatAdminSvc).createVat(
-              bundles.newVatBundle,
-            );
-            const n = await E(root).getANumber();
-            log(n);
-          }
-          break;
-        case 'counters': {
-          log(`starting counter test`);
-          const { root } = await E(vatAdminSvc).createVat(bundles.newVatBundle);
-          const c = E(root).createRcvr(1);
-          log(await E(c).increment(3));
-          log(await E(c).increment(5));
-          log(await E(c).ticker());
-          return;
-        }
-        case 'brokenVat': {
-          log(`starting brokenVat test`);
-          E(vatAdminSvc)
-            .createVat(bundles.brokenVatBundle)
-            .then(
-              result => log(`didn't expect success ${result}`),
-              rejection => log(`yay, rejected: ${rejection}`),
-            );
-          return;
-        }
-        case 'non-bundle': {
-          log(`starting non-bundle test`);
-          E(vatAdminSvc)
-            .createVat(bundles.nonBundle)
-            .then(
-              result => log(`didn't expect success ${result}`),
-              rejection => log(`yay, rejected: ${rejection}`),
-            );
-          return;
-        }
-        default:
-          assert.fail(X`unknown argv mode '${argv[0]}'`);
-      }
+      admin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      bundleDevice = devices.bundle;
+    },
+
+    async byBundle(bundle) {
+      const { root } = await E(admin).createVat(bundle);
+      const n = await E(root).getANumber();
+      return n;
+    },
+
+    async byName(bundleName) {
+      const { root } = await E(admin).createVatByName(bundleName);
+      const n = await E(root).getANumber();
+      return n;
+    },
+
+    async byNamedBundleCap(name) {
+      const bcap = D(bundleDevice).getNamedBundleCap(name);
+      const { root } = await E(admin).createVat(bcap);
+      const n = await E(root).getANumber();
+      return n;
+    },
+
+    async byID(id) {
+      const bcap = D(bundleDevice).getBundleCap(id);
+      const { root } = await E(admin).createVat(bcap);
+      const n = await E(root).getANumber();
+      return n;
+    },
+
+    async counters(bundleName) {
+      const { root } = await E(admin).createVatByName(bundleName);
+      const c = E(root).createRcvr(1);
+      const log = [];
+      log.push(await E(c).increment(3));
+      log.push(await E(c).increment(5));
+      log.push(await E(c).ticker());
+      return log;
+    },
+
+    async brokenVat(bundleName) {
+      return E(admin).createVatByName(bundleName); // should reject
+    },
+
+    async nonBundleCap() {
+      return E(admin).createVat(Far('non-bundlecap', {})); // should reject
     },
   });
 }

@@ -8,9 +8,14 @@ import { assert, details as X } from '@agoric/assert';
  * https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
  * @property {string} amount The extent of the amount
  * @property {Denom} denom The denomination of the amount
- * @property {string} [sender] The sender address
+ * @property {string} sender The sender address
  * @property {DepositAddress} receiver The receiver deposit address
  */
+
+// ibc-go as late as v3 requires the `sender` to be nonempty, but doesn't
+// actually use it on the receiving side.  We don't need it on the sending side,
+// either, so we can just omit it.
+export const DUMMY_SENDER_ADDRESS = 'pegasus';
 
 /**
  * @param {string} s
@@ -78,6 +83,7 @@ export const makeICS20TransferPacket = async ({
     amount: stringValue,
     denom: remoteDenom,
     receiver: depositAddress,
+    sender: DUMMY_SENDER_ADDRESS,
   };
 
   return JSON.stringify(ics20);

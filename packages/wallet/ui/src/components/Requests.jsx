@@ -23,7 +23,7 @@ const RequestsInternal = ({
 
   const isDisabled = dapp => !dapp.enable;
 
-  payments = (payments || [])
+  payments = ((purses && payments) || [])
     .filter(hasNoAutodeposit)
     .map(p => ({ type: 'payment', data: p }));
 

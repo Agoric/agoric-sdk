@@ -384,21 +384,10 @@ test('map fail on concurrent modification', t => {
     for (const k of primeMap.keys()) {
       pos += 1;
       if (pos === 5) {
-        primeMap.delete(43);
-      }
-    }
-  }, m(`keys in store cannot be changed during iteration`));
-
-  pos = 0;
-  t.throws(() => {
-    // eslint-disable-next-line no-unused-vars
-    for (const k of primeMap.keys()) {
-      pos += 1;
-      if (pos === 5) {
         primeMap.init(8, 'nonsense');
       }
     }
-  }, m(`keys in store cannot be changed during iteration`));
+  }, m(`keys in store cannot be added to during iteration`));
 });
 
 test('set fail on concurrent modification', t => {
@@ -413,21 +402,10 @@ test('set fail on concurrent modification', t => {
     for (const k of primeSet.keys()) {
       pos += 1;
       if (pos === 5) {
-        primeSet.delete(43);
-      }
-    }
-  }, m(`keys in store cannot be changed during iteration`));
-
-  pos = 0;
-  t.throws(() => {
-    // eslint-disable-next-line no-unused-vars
-    for (const k of primeSet.keys()) {
-      pos += 1;
-      if (pos === 5) {
         primeSet.add(8);
       }
     }
-  }, m(`keys in store cannot be changed during iteration`));
+  }, m(`keys in store cannot be added to during iteration`));
 });
 
 test('map queries', t => {

@@ -19,10 +19,13 @@
 
 import { Far } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
+import { assert } from '@agoric/assert';
 
 export function buildRootDeviceNode({ endowments, serialize }) {
   const {
-    pushCreateVatEvent,
+    pushCreateVatBundleEvent,
+    pushCreateVatIDEvent,
+    getBundleIDByName,
     terminate: kernelTerminateVatFn,
     meterCreate,
     meterAddRemaining,
@@ -51,12 +54,24 @@ export function buildRootDeviceNode({ endowments, serialize }) {
     // Called by the wrapper vat to create a new vat. Gets a new ID from the
     // kernel's vat creator fn. Remember that the root object will arrive
     // separately. Clean up the outgoing and incoming arguments.
-    create(bundle, options = {}) {
-      const vatID = pushCreateVatEvent({ bundle }, options);
+    createByBundle(bundle, options = {}) {
+      const vatID = pushCreateVatBundleEvent(bundle, options);
+      return vatID;
+    },
+    createByBundleID(bundleID, options = {}) {
+      assert.typeof(bundleID, 'string');
+      const vatID = pushCreateVatIDEvent(bundleID, options);
       return vatID;
     },
     createByName(bundleName, options = {}) {
-      const vatID = pushCreateVatEvent({ bundleName }, options);
+      assert.typeof(bundleName, 'string');
+      let bundleID;
+      try {
+        bundleID = getBundleIDByName(bundleName);
+      } catch (e) {
+        throw Error(`unregistered bundle name '${bundleName}'`);
+      }
+      const vatID = pushCreateVatIDEvent(bundleID, options);
       return vatID;
     },
     terminateWithFailure(vatID, reason) {

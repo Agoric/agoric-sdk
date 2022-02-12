@@ -13,6 +13,7 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
+import { computeBundleID } from './validate-archive.js';
 import { createSHA256 } from './hasher.js';
 import engineGC from './engine-gc.js';
 import { WeakRef, FinalizationRegistry } from './weakref.js';
@@ -121,6 +122,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
  *   slogFile?: string,
+ *   slogSender?: (obj: any, jsonObj: string) => void,
  *   testTrackDecref?: unknown,
  *   warehousePolicy?: { maxVatsOnline?: number },
  *   overrideVatManagerOptions?: { consensusMode?: boolean },
@@ -145,6 +147,7 @@ export async function makeSwingsetController(
     debugPrefix = '',
     slogCallbacks,
     slogFile,
+    slogSender,
     spawn = ambientSpawn,
     warehousePolicy = {},
     overrideVatManagerOptions = {},
@@ -157,15 +160,30 @@ export async function makeSwingsetController(
     slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
 
   function writeSlogObject(obj) {
-    // TODO sqlite
+    if (!slogSender && !slogF) {
+      // Fast path; nothing to do.
+      return;
+    }
+
+    // Create an object with the property order that loadgen expects.
+    const timedObj = { time: undefined, type: undefined, ...obj };
+
+    // Update the timedObj timestamp.
+    const timeMS = performance.timeOrigin + performance.now();
+    timedObj.time = timeMS / 1000;
+
+    // Serialise just once.
+    const jsonObj = JSON.stringify(timedObj, (_, arg) =>
+      typeof arg === 'bigint' ? Number(arg) : arg,
+    );
+
+    if (slogSender) {
+      // Allow the SwingSet host to do anything they want with slog messages.
+      slogSender(timedObj, jsonObj);
+    }
     if (slogF) {
-      const timeMS = performance.timeOrigin + performance.now();
-      const time = timeMS / 1000;
-      slogF.write(
-        JSON.stringify({ time, ...obj }, (_, arg) =>
-          typeof arg === 'bigint' ? Number(arg) : arg,
-        ),
-      );
+      // Record the pristine JSON object.
+      slogF.write(jsonObj);
       slogF.write('\n');
     }
   }
@@ -278,6 +296,30 @@ export async function makeSwingsetController(
    */
   const defensiveCopy = x => JSON.parse(JSON.stringify(x));
 
+  /**
+   * Validate and install a code bundle.
+   *
+   * @param { EndoZipBase64Bundle } bundle
+   * @param { BundleID? } allegedBundleID
+   * @returns { Promise<BundleID> }
+   */
+  async function validateAndInstallBundle(bundle, allegedBundleID) {
+    // TODO: validation: unpack, parse sources, check hashes
+
+    // this only computes the hash of the compartment map, it does not check
+    // that the rest of the bundle matches
+    const bundleID = await computeBundleID(bundle);
+    if (allegedBundleID) {
+      assert.equal(
+        allegedBundleID,
+        bundleID,
+        `alleged bundleID ${allegedBundleID} does not match actual ${bundleID}`,
+      );
+    }
+    kernel.installBundle(bundleID, bundle);
+    return bundleID;
+  }
+
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
@@ -294,6 +336,8 @@ export async function makeSwingsetController(
     verboseDebugMode(flag) {
       kernel.kdebugEnable(flag);
     },
+
+    validateAndInstallBundle,
 
     async run(policy) {
       return kernel.run(policy);
