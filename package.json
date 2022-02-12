@@ -87,7 +87,7 @@
     "lint-fix": "yarn workspaces run lint-fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:packages": "yarn workspaces run lint",
-    "test": "yarn workspaces run test",
+    "test": "ava",
     "test:c8-all": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build",
