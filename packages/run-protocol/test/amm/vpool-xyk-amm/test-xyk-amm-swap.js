@@ -38,7 +38,9 @@ test('amm with non-fungible central token', async t => {
   await t.throwsAsync(
     () => setupAmmServices(electorateTerms, centralR, timer),
     {
-      message: 'Central must be of kind AssetKind.NAT',
+      message: `Central must be of kind ${q(AssetKind.NAT)}, not ${q(
+        AssetKind.SET,
+      )}`,
     },
     'test AssetKind.SET as central brand',
   );

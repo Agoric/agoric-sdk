@@ -7,7 +7,7 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@agoric/far';
+import { E } from '@endo/far';
 import { makeAddPool } from './pool.js';
 import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
@@ -18,8 +18,7 @@ import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
 import { makeParamManager, POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
 
-const { details: X } = assert;
-
+const { quote: q, details: X } = assert;
 /**
  * Multipool AMM is a rewrite of Uniswap that supports multiple liquidity pools,
  * and direct exchanges across pools. Please see the documentation for more:
@@ -117,19 +116,26 @@ const start = async (zcf, privateArgs) => {
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
-  const centralDisplayInfo = await E(centralBrand).getDisplayInfo();
-  assert.equal(centralDisplayInfo.assetKind, AssetKind.NAT,
-    X`Central must be of kind ${q(AssetKind.NAT)}, not ${q(centralDisplayInfo.assetKind)}`,
-  );
-
   const { initialPoserInvitation } = privateArgs;
 
-  const paramManager = await makeParamManager(
-    zcf.getZoeService(),
-    poolFeeParam.value,
-    protocolFeeParam.value,
-    initialPoserInvitation,
+  const [paramManager, centralDisplayInfo] = await Promise.all([
+    makeParamManager(
+      zcf.getZoeService(),
+      poolFeeParam.value,
+      protocolFeeParam.value,
+      initialPoserInvitation,
+    ),
+    E(centralBrand).getDisplayInfo(),
+  ]);
+
+  assert.equal(
+    centralDisplayInfo.assetKind,
+    AssetKind.NAT,
+    X`Central must be of kind ${q(AssetKind.NAT)}, not ${q(
+      centralDisplayInfo.assetKind,
+    )}`,
   );
+
   const { wrapPublicFacet, wrapCreatorFacet, getNat, getInvitationAmount } =
     handleParamGovernance(zcf, paramManager);
 
