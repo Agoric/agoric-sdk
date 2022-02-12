@@ -173,11 +173,15 @@ const manifest2graph = manifest => {
 const main = async (args, { stdout }) => {
   const [...opts] = args;
   // if (!fn) throw Error('usage: authorityViz [--sim-chain]');
-  let manifest = opts.includes('--sim-chain')
+  const [sim, gov] = ['--sim-chain', '--gov'].map(opt => opts.includes(opt));
+  let manifest = sim
     ? manifests.SIM_CHAIN_BOOTSTRAP_MANIFEST
     : manifests.CHAIN_BOOTSTRAP_MANIFEST;
-  if (opts.includes('--gov')) {
-    manifest = { ...manifests.GOVERNANCE_ACTIONS_MANIFEST, ...manifest };
+  if (gov) {
+    const postBoot = sim
+      ? manifests.SIM_CHAIN_POST_BOOT_MANIFEST
+      : manifests.CHAIN_POST_BOOT_MANIFEST;
+    manifest = { ...postBoot, ...manifest };
   }
 
   // console.log(JSON.stringify(bootstrapManifest, null, 2));

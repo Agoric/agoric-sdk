@@ -1,5 +1,5 @@
 // @ts-check
-export const CHAIN_BOOTSTRAP_MANIFEST = harden({
+const SHARED_BOOTSTRAP_MANIFEST = harden({
   makeVatsFromBundles: {
     vats: {
       vatAdmin: 'vatAdmin',
@@ -155,13 +155,16 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       provisioning: true,
     },
   },
-  // TODO: resolve conflict with demo connectFaucet
-  // connectChainFaucet: {
-  //   consume: {
-  //     client: true,
-  //   },
-  //   home: { produce: { faucet: true } },
-  // },
+});
+
+export const CHAIN_BOOTSTRAP_MANIFEST = harden({
+  ...SHARED_BOOTSTRAP_MANIFEST,
+  connectChainFaucet: {
+    consume: {
+      client: true,
+    },
+    home: { produce: { faucet: true } },
+  },
 });
 
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({
@@ -197,7 +200,7 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
 });
 
 export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
-  ...CHAIN_BOOTSTRAP_MANIFEST,
+  ...SHARED_BOOTSTRAP_MANIFEST,
   installSimEgress: {
     vatParameters: { argv: { hardcodedClientAddresses: true } },
     vats: {
@@ -226,7 +229,7 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
 });
 
-export const GOVERNANCE_ACTIONS_MANIFEST = harden({
+const SHARED_POST_BOOT_MANIFEST = harden({
   shareEconomyBundles: {
     produce: {
       ammBundle: true,
@@ -308,8 +311,30 @@ export const GOVERNANCE_ACTIONS_MANIFEST = harden({
   configureVaultFactoryUI: {
     consume: { agoricNames: true, nameAdmins: true, board: true, zoe: true },
   },
+});
 
-export const DEMO_ECONOMY = harden({
+export const CHAIN_POST_BOOT_MANIFEST = harden({
+  ...SHARED_POST_BOOT_MANIFEST,
+  startRewardDistributor: {
+    consume: {
+      agoricNames: true,
+      chainTimerService: true,
+      bankManager: true,
+      loadVat: true,
+      vaultFactoryCreator: true,
+      ammCreatorFacet: true,
+      zoe: true,
+    },
+    produce: {
+      distributor: 'distributeFees',
+    },
+    issuer: { consume: { RUN: 'zoe' } },
+    brand: { consume: { RUN: 'zoe' } },
+  },
+});
+
+export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
+  ...SHARED_POST_BOOT_MANIFEST,
   fundAMM: {
     consume: {
       agoricNames: true,
