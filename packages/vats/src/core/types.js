@@ -165,10 +165,12 @@
  *   },
  * }} EconomyBootstrapPowers
  *
+ * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {
  *     ROLE: string,
  *     hardcodedClientAddresses: string[],
+ *     noFakeCurrencies: boolean,
  *     FIXME_GCI: string,
  *     PROVISIONER_INDEX: number,
  *   },
@@ -190,6 +192,7 @@
  *     bridgeManager: ERef<OptionalBridgeManager>,
  *     client: ERef<ClientManager>,
  *     clientCreator: ERef<ClientCreator>,
+ *     mints: ERef<MintsVat>,
  *     provisioning: ProvisioningVat,
  *     vatAdminSvc: ERef<VatAdminSvc>,
  *     namesByAddress: ERef<NameHub>,
@@ -203,6 +206,7 @@
  *     client: Producer<ClientManager>,
  *     clientCreator: Producer<ClientCreator>,
  *     loadVat: Producer<VatLoader<unknown>>,
+ *     mints: Producer<MintsVat>,
  *     provisioning: Producer<unknown>,
  *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
  *     namesByAddress: Producer<NameHub>,
@@ -212,6 +216,7 @@
  * @typedef {ReturnType<Unpromise<BankVat>['makeBankManager']>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
+ * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>} MintsVat
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
  * @typedef {ERef<ReturnType<import('../vat-network.js').buildRootObject>>} NetworkVat
  * @typedef {ERef<ReturnType<import('../vat-ibc.js').buildRootObject>>} IBCVat
