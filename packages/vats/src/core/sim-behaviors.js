@@ -1,6 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { GOVERNANCE_ACTIONS_MANIFEST } from './manifest.js';
+import { SIM_CHAIN_POST_BOOT_MANIFEST } from './manifest.js';
 import { addRemote } from './utils.js';
 
 export { connectFaucet, fundAMM } from '../demoIssuers.js';
@@ -35,7 +35,7 @@ export const grantRunBehaviors = async ({
 }) => {
   const bundle = {
     behaviors: Far('behaviors', { run: manifest => runBehaviors(manifest) }),
-    governanceActions: GOVERNANCE_ACTIONS_MANIFEST,
+    governanceActions: SIM_CHAIN_POST_BOOT_MANIFEST,
   };
   return E(client).assignBundle([_addr => bundle]);
 };
