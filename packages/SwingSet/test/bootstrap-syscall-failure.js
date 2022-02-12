@@ -16,6 +16,7 @@ export function buildRootObject(vatPowers, vatParameters) {
       if (vatParameters.beDynamic) {
         const vatMaker = E(vats.vatAdmin).createVatAdminService(
           devices.vatAdmin,
+          devices.bundle,
         );
         const vat = await E(vatMaker).createVatByName('badvat', {
           enableSetup: true,

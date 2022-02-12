@@ -10,7 +10,10 @@ export function buildRootObject(vatPowers) {
 
   const self = Far('root', {
     async bootstrap(vats, devices) {
-      const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      const vatMaker = E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+        devices.bundle,
+      );
       mediumRoot = vats.medium;
 
       // create a dynamic vat, then kill it, then try to send it a message

@@ -1050,10 +1050,6 @@ export default function buildKernel(
         // later when it is created and a root object is available
         return vatID;
       },
-      getBundleIDByName(bundleName) {
-        // this throws if the name is unknown
-        return kernelKeeper.getNamedBundleID(bundleName);
-      },
       terminate: (vatID, reason) => terminateVat(vatID, true, reason),
       meterCreate: (remaining, threshold) =>
         kernelKeeper.allocateMeter(remaining, threshold),

@@ -32,7 +32,10 @@ export function buildRootObject(vatPowers) {
       devices = d0;
       // we exercise a little bit of vatAdmin, but this test is mostly about
       // bundles
-      vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      vatAdmin = await E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+        devices.bundle,
+      );
     },
 
     async checkConfiguredVats() {

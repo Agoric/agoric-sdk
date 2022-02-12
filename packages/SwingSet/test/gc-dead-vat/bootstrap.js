@@ -14,7 +14,10 @@ export function buildRootObject() {
   const pk1 = makePromiseKit();
   return Far('root', {
     async bootstrap(vats, devices) {
-      const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      const vatMaker = E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+        devices.bundle,
+      );
       vat = await E(vatMaker).createVatByName('doomed');
       doomedRoot = vat.root;
       await sendExport(doomedRoot);

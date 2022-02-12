@@ -8,7 +8,10 @@ export function buildRootObject(vatPowers) {
 
   return Far('root', {
     async bootstrap(vats, devices) {
-      admin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      admin = await E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+        devices.bundle,
+      );
       bundleDevice = devices.bundle;
     },
 

@@ -7,7 +7,10 @@ export function buildRootObject(vatPowers, vatParameters) {
 
   const self = Far('root', {
     async bootstrap(vats, devices) {
-      const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      const vatMaker = E(vats.vatAdmin).createVatAdminService(
+        devices.vatAdmin,
+        devices.bundle,
+      );
 
       // create a dynamic vat, send it a message and let it respond, to make
       // sure everything is working

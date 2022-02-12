@@ -25,7 +25,6 @@ export function buildRootDeviceNode({ endowments, serialize }) {
   const {
     pushCreateVatBundleEvent,
     pushCreateVatIDEvent,
-    getBundleIDByName,
     terminate: kernelTerminateVatFn,
     meterCreate,
     meterAddRemaining,
@@ -60,17 +59,6 @@ export function buildRootDeviceNode({ endowments, serialize }) {
     },
     createByBundleID(bundleID, options = {}) {
       assert.typeof(bundleID, 'string');
-      const vatID = pushCreateVatIDEvent(bundleID, options);
-      return vatID;
-    },
-    createByName(bundleName, options = {}) {
-      assert.typeof(bundleName, 'string');
-      let bundleID;
-      try {
-        bundleID = getBundleIDByName(bundleName);
-      } catch (e) {
-        throw Error(`unregistered bundle name '${bundleName}'`);
-      }
       const vatID = pushCreateVatIDEvent(bundleID, options);
       return vatID;
     },

@@ -22,6 +22,34 @@ export function buildRootObject(vatPowers) {
   const running = new Map(); // vatID -> { resolve, reject } for doneP
   const meterByID = new Map(); // meterID -> { meter, updater }
   const meterIDByMeter = new WeakMap(); // meter -> meterID
+  let bundledev; // set by createVatAdminService() TODO(4523) initialize()
+  const pendingBundles = new Map(); // bundleID -> Promise<bundlecap>
+
+  function waitForBundlecap(bundleID) {
+    const bundlecap = D(bundledev).getBundlecap(bundleID);
+    if (bundlecap) {
+      return bundlecap;
+    }
+    if (!pendingBundles.has(bundleID)) {
+      pendingBundles.set(bundleID, makePromiseKit());
+    }
+    return pendingBundles.get(bundleID).promise;
+  }
+
+  // this message is queued to us by kernel.installBundle()
+  function bundleInstalled(bundleID) {
+    if (pendingBundles.has(bundleID)) {
+      const bundlecap = D(bundledev).getBundlecap(bundleID);
+      if (!bundlecap) {
+        // if the bundle got uninstalled by the time we got the message, keep
+        // waiting, maybe it will get reinstalled some day
+        console.log(`bundle ${bundleID} missing, hoping for reinstall`);
+        return;
+      }
+      pendingBundles.get(bundleID).resolve(bundlecap);
+      pendingBundles.delete(bundleID);
+    }
+  }
 
   function makeMeter(vatAdminNode, remaining, threshold) {
     Nat(remaining);
@@ -89,8 +117,15 @@ export function buildRootObject(vatPowers) {
     return harden(options);
   }
 
-  function createVatAdminService(vatAdminNode) {
+  function createVatAdminService(vatAdminNode, bundleDeviceNode) {
+    bundledev = bundleDeviceNode;
     return Far('vatAdminService', {
+      getBundlecap(bundleID) {
+        return waitForBundlecap(bundleID);
+      },
+      getNamedBundlecap(name) {
+        return D(bundledev).getNamedBundlecap(name);
+      },
       createMeter(remaining, threshold) {
         return makeMeter(vatAdminNode, remaining, threshold);
       },
@@ -122,15 +157,16 @@ export function buildRootObject(vatPowers) {
       },
       createVatByName(bundleName, options = {}) {
         // eventually this option will go away: userspace will be obligated
-        // to use D(devices.bundle).getNamedBundleId(name), probably during
-        // bootstrap (so devices.bundle can be closely held), to fetch the
-        // named bundlecaps early, and then distribute specific bundlecaps to
-        // any vat which wants to make a vat from them (e.g. zoe with ZCF).
-        // That requires chain-side changes that I want to coordinate
-        // separately, so I'll leave this in place until later.
+        // to use getNamedBundlecap(), probably during bootstrap, to fetch
+        // the named bundlecaps early, and then distribute specific
+        // bundlecaps to any vat which wants to make a vat from them (e.g.
+        // zoe with ZCF). That requires chain-side changes that I want to
+        // coordinate separately, so I'll leave this in place until later.
         assert.typeof(bundleName, 'string');
         const co = convertOptions(options);
-        const vatID = D(vatAdminNode).createByName(bundleName, co);
+        const bundlecap = D(bundledev).getNamedBundlecap(bundleName);
+        const bundleID = D(bundlecap).getBundleID();
+        const vatID = D(vatAdminNode).createByBundleID(bundleID, co);
         return finishVatCreation(vatAdminNode, vatID);
       },
     });
@@ -172,6 +208,7 @@ export function buildRootObject(vatPowers) {
 
   return Far('root', {
     createVatAdminService,
+    bundleInstalled,
     newVatCallback,
     vatTerminated,
     meterCrossedThreshold,

@@ -11,7 +11,12 @@ export function buildRootObject(vatPowers) {
   return Far('root', {
     async bootstrap(vats, devs) {
       devices = devs;
-      gotVatAdminSvc(E(vats.vatAdmin).createVatAdminService(devices.vatAdmin));
+      gotVatAdminSvc(
+        E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
+          devices.bundle,
+        ),
+      );
     },
 
     async createVat() {
