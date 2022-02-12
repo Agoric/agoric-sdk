@@ -10,27 +10,14 @@ import { E } from '@agoric/eventual-send';
 import bundleSource from '@endo/bundle-source';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { AmountMath } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeLoopback } from '@endo/captp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-
-import {
-  makeLoanParams,
-  makeElectorateParams,
-} from '../../src/vaultFactory/params.js';
-
-const BASIS_POINTS = 10_000n;
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
-const vaultFactoryRoot = `${dirname}/../../src/vaultFactory/vaultFactory.js`;
-const liquidationRoot = `${dirname}/../../src/vaultFactory/liquidateMinimum.js`;
-const autoswapRoot = `${dirname}/../../src/vpool-xyk-amm/multipoolMarketMaker.js`;
-const governanceRoot = '@agoric/governance/src/contractGovernor.js';
-const electorateRoot = '@agoric/governance/src/committee.js';
+const centralSupplyRoot = `${dirname}/../../src/centralSupply.js`;
 
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
@@ -40,18 +27,8 @@ const makeBundle = async sourceRoot => {
 };
 
 // makeBundle is slow, so we bundle each contract once and reuse in all tests.
-const [
-  autoswapBundle,
-  vaultFactoryBundle,
-  liquidationBundle,
-  governanceBundle,
-  electorateBundle,
-] = await Promise.all([
-  makeBundle(autoswapRoot),
-  makeBundle(vaultFactoryRoot),
-  makeBundle(liquidationRoot),
-  makeBundle(governanceRoot),
-  makeBundle(electorateRoot),
+const [centralSupplyBundle] = await Promise.all([
+  makeBundle(centralSupplyRoot),
 ]);
 
 const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
@@ -70,72 +47,22 @@ const setUpZoeForTest = async setJig => {
   };
 };
 
-const makeRates = runBrand =>
-  harden({
-    liquidationMargin: makeRatio(105n, runBrand),
-    interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
-    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
-  });
-
-const startTreasury = async (
-  manualTimer,
-  bootstrapPaymentValue,
-  electorateTerms,
-) => {
+const startContract = async bootstrapPaymentValue => {
   const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
 
-  const autoswapInstall = await installBundle(zoe, autoswapBundle);
-  const vaultFactoryInstall = await installBundle(zoe, vaultFactoryBundle);
-  const liquidationInstall = await installBundle(zoe, liquidationBundle);
-  const electorateInstall = await installBundle(zoe, electorateBundle);
-  const governanceInstall = await installBundle(zoe, governanceBundle);
+  const centralSupplyInstall = await installBundle(zoe, centralSupplyBundle);
 
-  const { instance: electorateInstance, creatorFacet: electorateCreatorFacet } =
-    await E(zoe).startInstance(electorateInstall, harden({}), electorateTerms);
-
-  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
-  const [poserInvitation, poserInvitationAmount] = await Promise.all([
-    poserInvitationP,
-    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-  ]);
-
-  /** @type {LoanTiming} */
-  const loanTiming = {
-    chargingPeriod: 2n,
-    recordingPeriod: 10n,
-  };
-
-  const rates = makeRates(runBrand);
-  const loanParamTerms = makeLoanParams(loanTiming, rates);
-
-  const treasuryTerms = {
-    autoswapInstall,
-    liquidationInstall,
-    manualTimer,
+  const terms = {
     bootstrapPaymentValue,
-    main: makeElectorateParams(poserInvitationAmount),
-    loanParams: loanParamTerms,
-  };
-  const governed = {
-    terms: treasuryTerms,
-    issuerKeywordRecord: {},
-    privateArgs: { feeMintAccess, initialPoserInvitation: poserInvitation },
-  };
-
-  const governorTerms = {
-    electorateInstance,
-    timer: manualTimer,
-    governedContractInstallation: vaultFactoryInstall,
-    governed,
   };
 
   const { creatorFacet } = await E(zoe).startInstance(
-    governanceInstall,
+    centralSupplyInstall,
     harden({}),
-    governorTerms,
-    harden({ electorateCreatorFacet }),
+    terms,
+    harden({ feeMintAccess }),
   );
 
   return { runIssuer, creatorFacet, runBrand };
@@ -143,15 +70,11 @@ const startTreasury = async (
 
 test('bootstrap payment', async t => {
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
-  const { runIssuer, creatorFacet, runBrand } = await startTreasury(
-    buildManualTimer(console.log),
+  const { runIssuer, creatorFacet, runBrand } = await startContract(
     bootstrapPaymentValue,
-    { committeeName: 'bandOfAngels', committeeSize: 5 },
   );
 
-  const bootstrapPayment = E(
-    E(creatorFacet).getCreatorFacet(),
-  ).getBootstrapPayment();
+  const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
   const bootstrapAmount = await E(runIssuer).getAmountOf(bootstrapPayment);
 
@@ -168,15 +91,11 @@ test('bootstrap payment - only minted once', async t => {
   // be minted
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
 
-  const { runIssuer, creatorFacet, runBrand } = await startTreasury(
-    buildManualTimer(console.log),
+  const { runIssuer, creatorFacet, runBrand } = await startContract(
     bootstrapPaymentValue,
-    { committeeName: 'bandOfAngels', committeeSize: 5 },
   );
 
-  const bootstrapPayment = E(
-    E(creatorFacet).getCreatorFacet(),
-  ).getBootstrapPayment();
+  const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
   const issuers = { RUN: runIssuer };
 
@@ -192,9 +111,7 @@ test('bootstrap payment - only minted once', async t => {
 
   // Try getting another payment
 
-  const bootstrapPayment2 = E(
-    E(creatorFacet).getCreatorFacet(),
-  ).getBootstrapPayment();
+  const bootstrapPayment2 = E(creatorFacet).getBootstrapPayment();
 
   await t.throwsAsync(() => E(issuers.RUN).claim(bootstrapPayment2), {
     message: /was not a live payment/,
@@ -202,20 +119,11 @@ test('bootstrap payment - only minted once', async t => {
 });
 
 test('bootstrap payment - default value is 0n', async t => {
-  const { runIssuer, creatorFacet, runBrand } = await startTreasury(
-    buildManualTimer(console.log),
-    0n,
-    {
-      committeeName: 'bandOfAngels',
-      committeeSize: 5,
-    },
-  );
+  const { runIssuer, creatorFacet, runBrand } = await startContract(0n);
 
   const issuers = { RUN: runIssuer };
 
-  const bootstrapPayment = E(
-    E(creatorFacet).getCreatorFacet(),
-  ).getBootstrapPayment();
+  const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
   const bootstrapAmount = await E(issuers.RUN).getAmountOf(bootstrapPayment);
 
