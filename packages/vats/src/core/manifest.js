@@ -383,4 +383,21 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
       consume: { amm: 'amm' },
     },
   },
+
+export const DEMO_ECONOMY = harden({
+  fundAMM: {
+    consume: {
+      agoricNames: true,
+      centralSupplyBundle: true,
+      chainTimerService: 'timer',
+      bldIssuerKit: true,
+      feeMintAccess: true,
+      loadVat: true,
+      mints: 'mints',
+      priceAuthorityVat: 'priceAuthority',
+      priceAuthorityAdmin: 'priceAuthority',
+      vaultFactoryCreator: 'vaultFactory',
+      zoe: true,
+    },
+  },
 });
