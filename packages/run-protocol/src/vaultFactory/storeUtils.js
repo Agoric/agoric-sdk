@@ -7,7 +7,7 @@
 // XXX declaration shouldn't be necessary. Add exception to eslint or make a real import.
 /* global BigUint64Array */
 
-/** @typedef {[normalizedDebtRatio: number, vaultId: VaultId]} CompositeKey */
+/** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
 
 const asNumber = new Float64Array(1);
 const asBits = new BigUint64Array(asNumber.buffer);
@@ -71,12 +71,12 @@ const dbEntryKeyToNumber = k => {
  * @param {Amount} collateral
  * @returns {number}
  */
-const inverseDebtQuotient = (normalizedDebt, collateral) => {
-  const a = Number(collateral.value);
-  const b = normalizedDebt.value
+const collateralizationRatio = (normalizedDebt, collateral) => {
+  const c = Number(collateral.value);
+  const d = normalizedDebt.value
     ? Number(normalizedDebt.value)
     : Number.EPSILON;
-  return a / b;
+  return c / d;
 };
 
 /**
@@ -93,14 +93,14 @@ const toVaultKey = (normalizedDebt, collateral, vaultId) => {
   assert(vaultId);
   // until DB supports composite keys, copy its method for turning numbers to DB entry keys
   const numberPart = numberToDBEntryKey(
-    inverseDebtQuotient(normalizedDebt, collateral),
+    collateralizationRatio(normalizedDebt, collateral),
   );
   return `${numberPart}:${vaultId}`;
 };
 
 /**
  * @param {string} key
- * @returns {[normalizedDebtRatio: number, vaultId: VaultId]}
+ * @returns {[normalizedCollateralization: number, vaultId: VaultId]}
  */
 const fromVaultKey = key => {
   const [numberPart, vaultIdPart] = key.split(':');
