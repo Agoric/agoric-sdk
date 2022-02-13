@@ -9,7 +9,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         adminVat,
         shutdownZoeVat,
         feeIssuerConfig,
-        vatParameters.zcfBundleName,
+        { name: vatParameters.zcfBundleName },
       );
       return harden({
         zoeService,
