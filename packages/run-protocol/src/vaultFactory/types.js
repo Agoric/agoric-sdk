@@ -101,7 +101,7 @@
 
 /**
  * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<LoanKit>}  makeLoanKit
+ * @property {(seat: ZCFSeat) => Promise<LoanKit>}  makeVaultKit
  * @property {() => void} liquidateAll
  */
 

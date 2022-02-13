@@ -16,7 +16,7 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeVaultKit } from './vault.js';
+import { makeInnerVaultKit } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -342,7 +342,7 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
-  /** @type {Parameters<typeof makeVaultKit>[1]} */
+  /** @type {Parameters<typeof makeInnerVaultKit>[1]} */
   const managerFacet = harden({
     ...shared,
     applyDebtDelta,
@@ -353,7 +353,7 @@ export const makeVaultManager = (
   });
 
   /** @param {ZCFSeat} seat */
-  const makeLoanKit = async seat => {
+  const makeVaultKit = async seat => {
     assertProposalShape(seat, {
       give: { Collateral: null },
       want: { RUN: null },
@@ -362,7 +362,7 @@ export const makeVaultManager = (
     vaultCounter += 1;
     const vaultId = String(vaultCounter);
 
-    const vaultKit = makeVaultKit(
+    const vaultKit = makeInnerVaultKit(
       zcf,
       managerFacet,
       notifier,
@@ -372,13 +372,15 @@ export const makeVaultManager = (
     );
     const {
       vault,
-      actions: { openLoan },
+      actions: { initVault },
     } = vaultKit;
+
     assert(prioritizedVaults);
     const addedVaultKey = prioritizedVaults.addVaultKit(vaultId, vaultKit);
 
     try {
-      const vaultResult = await openLoan(seat);
+      // Don't record the vault until it gets opened
+      const vaultResult = await initVault(seat);
 
       seat.exit();
 
@@ -401,7 +403,7 @@ export const makeVaultManager = (
   /** @type {VaultManager} */
   return Far('vault manager', {
     ...shared,
-    makeLoanKit,
+    makeVaultKit,
     liquidateAll,
   });
 };

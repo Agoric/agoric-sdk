@@ -6,7 +6,7 @@ import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
 
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vault').InnerVault} VaultKit */
 
 /**
  *

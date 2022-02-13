@@ -14,7 +14,7 @@ import {
 import { Far } from '@endo/marshal';
 
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeVaultKit } from '../../src/vaultFactory/vault.js';
+import { makeInnerVaultKit } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
 const BASIS_POINTS = 10000n;
@@ -55,7 +55,7 @@ export async function start(zcf, privateArgs) {
     }
   }
 
-  /** @type {Parameters<typeof makeVaultKit>[1]} */
+  /** @type {Parameters<typeof makeInnerVaultKit>[1]} */
   const managerMock = Far('vault manager mock', {
     getLiquidationMargin() {
       return makeRatio(105n, runBrand);
@@ -104,8 +104,8 @@ export async function start(zcf, privateArgs) {
 
   const {
     vault,
-    actions: { openLoan },
-  } = await makeVaultKit(
+    actions: { initVault },
+  } = await makeInnerVaultKit(
     zcf,
     managerMock,
     managerNotifier,
@@ -142,7 +142,7 @@ export async function start(zcf, privateArgs) {
   }));
 
   async function makeHook(seat) {
-    const { notifier } = await openLoan(seat);
+    const { notifier } = await initVault(seat);
 
     return {
       vault,
