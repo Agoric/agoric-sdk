@@ -1,6 +1,6 @@
 // @ts-check
 /* globals globalThis, process */
-import { MeterProvider } from '@opentelemetry/metrics';
+import { MeterProvider } from '@opentelemetry/sdk-metrics-base';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
 export * from './make-slog-sender.js';
