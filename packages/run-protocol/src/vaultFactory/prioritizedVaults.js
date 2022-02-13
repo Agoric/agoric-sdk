@@ -11,7 +11,7 @@ import { toVaultKey } from './storeUtils.js';
 
 const { multiply, isGTE } = natSafeMath;
 
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vault').InnerVault} VaultKit */
 
 // TODO put this with other ratio math
 /**

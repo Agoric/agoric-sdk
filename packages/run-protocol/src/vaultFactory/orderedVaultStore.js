@@ -13,7 +13,7 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
  * first.)
  */
 
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vault').InnerVault} VaultKit */
 /** @typedef {import('./storeUtils').CompositeKey} CompositeKey */
 
 export const makeOrderedVaultStore = () => {
