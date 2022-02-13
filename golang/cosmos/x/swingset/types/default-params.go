@@ -54,5 +54,5 @@ var (
 		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
 	}
 
-	DefaultBootstrapVatConfig = "@agoric/vats/decentral-config.json"
+	DefaultBootstrapVatConfig = "@agoric/vats/decentral-core-config.json"
 )
