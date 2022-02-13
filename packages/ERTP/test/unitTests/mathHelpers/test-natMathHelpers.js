@@ -231,41 +231,6 @@ test('natMathHelpers min/max', t => {
     m.make(mockBrand, 9n),
     `max(5,9) == 9`,
   );
-
-  t.deepEqual(
-    m.max(m.make(mockBrand, 0n), m.make(mockBrand, 0n)),
-    m.make(mockBrand, 0n),
-    `max(0,0) == 0`,
-  );
-
-  const zc = m.make(mockBrand, 0n);
-  const cA = m.make(mockBrand, 300n);
-  const cB = m.make(mockBrand, 500n);
-  const cC = m.make(mockBrand, 700n);
-
-  t.deepEqual(m.min(zc, cA), zc, `CoinsMin(ZeroCoins, A) == ZeroCoins`);
-  t.deepEqual(m.max(zc, cA), cA, `CoinsMax(ZeroCoins, A) == A`);
-
-  t.deepEqual(
-    m.max(cA, m.min(cB, cC)),
-    m.min(m.max(cA, cB), m.max(cA, cC)),
-    `CoinsMax(A, CoinsMin(B, C)) == CoinsMin(CoinsMax(A, B), CoinsMax(A, C))`,
-  );
-
-  t.deepEqual(
-    m.min(cA, m.max(cB, cC)),
-    m.max(m.min(cA, cB), m.min(cA, cC)),
-    `CoinsMin(A, CoinsMax(B, C)) == CoinsMax(CoinsMin(A, B), CoinsMin(A, C))`,
-  );
-
-  t.true(m.isGTE(m.add(cA, cB), cA), `A <= A + B`);
-  t.deepEqual(m.subtract(m.add(cA, cB), cA), cB, `(A + B) - A == B`);
-
-  t.deepEqual(
-    m.add(cA, cB),
-    m.add(m.max(cA, cB), m.min(cA, cB)),
-    `A + B == CoinsMax(A, B) + CoinsMin(A, B)`,
-  );
 });
 
 test('natMathHelpers isGTE mixed brands', t => {
