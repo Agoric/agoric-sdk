@@ -96,10 +96,8 @@ const bootstrapZoeAndRun = async () => {
 
   const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
 
-  const {
-    zoeService: nonFarZoeService,
-    feeMintAccess: nonFarFeeMintAccess,
-  } = makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin);
+  const { zoeService: nonFarZoeService, feeMintAccess: nonFarFeeMintAccess } =
+    makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin);
   const feePurse = E(nonFarZoeService).makeFeePurse();
   const { brand: runBrandThere } = await E(feePurse).getCurrentAmount();
   const [runBrand, zoeService, feeMintAccess] = await Promise.all([
