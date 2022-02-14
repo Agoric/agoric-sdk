@@ -7,7 +7,10 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { assert } from '@agoric/assert';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  makeRatio,
+  multiplyRatios,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 
 import { makeNotifierKit } from '@agoric/notifier';
@@ -16,6 +19,7 @@ import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
+const DAY = SECONDS_PER_HOUR * 24n;
 
 /** @type {ContractStartFn} */
 export async function start(zcf, privateArgs) {
@@ -32,6 +36,9 @@ export async function start(zcf, privateArgs) {
   const { zcfSeat: vaultFactorySeat } = zcf.makeEmptySeatKit();
 
   let vaultCounter = 0;
+
+  let currentInterest = makeRatio(5n, runBrand); // 5%
+  let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
   function reallocateReward(amount, fromSeat, otherSeat) {
     vaultFactorySeat.incrementBy(
@@ -60,16 +67,16 @@ export async function start(zcf, privateArgs) {
       return makeRatio(500n, runBrand, BASIS_POINTS);
     },
     getInterestRate() {
-      return makeRatio(5n, runBrand);
+      return currentInterest;
     },
     getCollateralBrand() {
       return collateralBrand;
     },
     getChargingPeriod() {
-      return SECONDS_PER_HOUR * 24n;
+      return DAY;
     },
     getRecordingPeriod() {
-      return SECONDS_PER_HOUR * 24n * 7n;
+      return DAY;
     },
     reallocateReward,
     applyDebtDelta() {},
@@ -79,13 +86,13 @@ export async function start(zcf, privateArgs) {
         quotePayment: null,
       });
     },
-    getCompoundedInterest: () => makeRatio(1n, runBrand),
+    getCompoundedInterest: () => compoundedInterest,
     updateVaultPriority: () => {
       // noop
     },
   });
 
-  const timer = buildManualTimer(console.log, 0n, SECONDS_PER_HOUR * 24n);
+  const timer = buildManualTimer(console.log, 0n, DAY);
   const options = {
     actualBrandIn: collateralBrand,
     actualBrandOut: runBrand,
@@ -111,7 +118,31 @@ export async function start(zcf, privateArgs) {
     priceAuthority,
   );
 
-  zcf.setTestJig(() => ({ collateralKit, runMint, vault, timer }));
+  const advanceRecordingPeriod = () => {
+    timer.tick();
+
+    // skip the debt calculation for this mock manager
+    const currentInterestAsMultiplicand = makeRatio(
+      100n + currentInterest.numerator.value,
+      currentInterest.numerator.brand,
+    );
+    compoundedInterest = multiplyRatios(
+      compoundedInterest,
+      currentInterestAsMultiplicand,
+    );
+  };
+
+  const setInterestRate = percent => {
+    currentInterest = makeRatio(percent, runBrand);
+  };
+
+  zcf.setTestJig(() => ({
+    advanceRecordingPeriod,
+    collateralKit,
+    runMint,
+    setInterestRate,
+    vault,
+  }));
 
   async function makeHook(seat) {
     const { notifier } = await openLoan(seat);

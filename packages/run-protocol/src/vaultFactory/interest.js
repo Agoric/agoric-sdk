@@ -9,12 +9,6 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 
-const makeResult = (latestInterestUpdate, interest, newDebt) => ({
-  latestInterestUpdate,
-  interest,
-  newDebt,
-});
-
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
 // single digit APR is less than a basis point per day.
@@ -47,8 +41,11 @@ export const makeInterestCalculator = (
     BigInt(LARGE_DENOMINATOR),
   );
 
-  // Calculate new debt for charging periods up to the present.
-  /** @type {Calculate} */
+  /**
+   * Calculate new debt for charging periods up to the present.
+   *
+   * @type {Calculate}
+   */
   const calculate = (debtStatus, currentTime) => {
     const { newDebt, latestInterestUpdate } = debtStatus;
     let newRecent = latestInterestUpdate;
@@ -60,14 +57,21 @@ export const makeInterestCalculator = (
       growingInterest = AmountMath.add(growingInterest, newInterest);
       growingDebt = AmountMath.add(growingDebt, newInterest, brand);
     }
-    return makeResult(newRecent, growingInterest, growingDebt);
+    return {
+      latestInterestUpdate: newRecent,
+      interest: growingInterest,
+      newDebt: growingDebt,
+    };
   };
 
-  // Calculate new debt for reporting periods up to the present. If some
-  // charging periods have elapsed that don't constitute whole reporting
-  // periods, the time is not updated past them and interest is not accumulated
-  // for them.
-  /** @type {Calculate} */
+  /**
+   * Calculate new debt for reporting periods up to the present. If some
+   * charging periods have elapsed that don't constitute whole reporting
+   * periods, the time is not updated past them and interest is not accumulated
+   * for them.
+   *
+   * @type {Calculate}
+   */
   const calculateReportingPeriod = (debtStatus, currentTime) => {
     const { latestInterestUpdate } = debtStatus;
     const overshoot = (currentTime - latestInterestUpdate) % recordingPeriod;

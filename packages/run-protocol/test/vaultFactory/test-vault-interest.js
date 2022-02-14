@@ -10,10 +10,9 @@ import { makeZoeKit } from '@agoric/zoe';
 import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
-import { makeFakeLiveSlotsStuff } from '@agoric/swingset-vat/tools/fakeVirtualSupport.js';
 import { makeTracer } from '../../src/makeTracer.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
@@ -85,10 +84,8 @@ async function launch(zoeP, sourceRoot) {
   };
 }
 
-const helperContract = launch(zoe, vaultRoot);
-
-test('first', async t => {
-  const { creatorSeat, creatorFacet } = await helperContract;
+test('charges', async t => {
+  const { creatorSeat, creatorFacet } = await launch(zoe, vaultRoot);
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
   // RUN (charging 3 RUN fee), which uses an automatic market maker that
@@ -97,11 +94,12 @@ test('first', async t => {
   const { runMint, collateralKit, vault } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const { issuer: cIssuer, mint: cMint, brand: cBrand } = collateralKit;
+  const { brand: cBrand } = collateralKit;
 
+  const startingDebt = 74n;
   t.deepEqual(
     vault.getDebtAmount(),
-    AmountMath.make(runBrand, 74n),
+    AmountMath.make(runBrand, startingDebt),
     'borrower owes 74 RUN',
   );
   t.deepEqual(
@@ -109,35 +107,24 @@ test('first', async t => {
     AmountMath.make(cBrand, 50n),
     'vault holds 50 Collateral',
   );
+  t.deepEqual(vault.getNormalizedDebt().value, startingDebt);
 
-  // Add more collateral to an existing loan. We get nothing back but a warm
-  // fuzzy feeling.
-
-  const collateralAmount = AmountMath.make(cBrand, 20n);
-  const invite = await E(creatorFacet).makeAdjustBalancesInvitation();
-  const giveCollateralSeat = await E(zoe).offer(
-    invite,
-    harden({
-      give: { Collateral: collateralAmount },
-      want: {}, // RUN: AmountMath.make(runBrand, 2n) },
-    }),
-    harden({
-      // TODO
-      Collateral: cMint.mintPayment(collateralAmount),
-    }),
-  );
-
-  await E(giveCollateralSeat).getOfferResult();
-  t.deepEqual(
-    vault.getCollateralAmount(),
-    AmountMath.make(cBrand, 70n),
-    'vault holds 70 Collateral',
-  );
-  trace('addCollateral');
+  let interest = 0n;
+  for (const [i, charge] of [3n, 4n, 4n, 4n].entries()) {
+    testJig.advanceRecordingPeriod();
+    interest += charge;
+    t.is(
+      vault.getDebtAmount().value,
+      startingDebt + interest,
+      `interest charge ${i} should have been ${charge}`,
+    );
+    t.is(vault.getNormalizedDebt().value, startingDebt);
+  }
 
   // partially payback
+  const paybackValue = 3n;
   const collateralWanted = AmountMath.make(cBrand, 1n);
-  const paybackAmount = AmountMath.make(runBrand, 3n);
+  const paybackAmount = AmountMath.make(runBrand, paybackValue);
   const payback = await E(creatorFacet).mintRun(paybackAmount);
   const paybackSeat = E(zoe).offer(
     vault.makeAdjustBalancesInvitation(),
@@ -148,83 +135,29 @@ test('first', async t => {
     harden({ RUN: payback }),
   );
   await E(paybackSeat).getOfferResult();
-
-  const returnedCollateral = await E(paybackSeat).getPayout('Collateral');
-  trace('returnedCollateral', returnedCollateral, cIssuer);
-  const returnedAmount = await cIssuer.getAmountOf(returnedCollateral);
   t.deepEqual(
     vault.getDebtAmount(),
-    AmountMath.make(runBrand, 71n),
-    'debt reduced to 71 RUN',
+    AmountMath.make(runBrand, startingDebt + interest - paybackValue),
   );
+  const normalizedPaybackValue = paybackValue + 1n;
   t.deepEqual(
-    vault.getCollateralAmount(),
-    AmountMath.make(cBrand, 69n),
-    'vault holds 69 Collateral',
-  );
-  t.deepEqual(
-    returnedAmount,
-    AmountMath.make(cBrand, 1n),
-    'withdrew 1 collateral',
-  );
-  t.is(returnedAmount.value, 1n, 'withdrew 1 collateral');
-});
-
-test('bad collateral', async t => {
-  const { creatorSeat: offerKit } = await helperContract;
-
-  const { runMint, collateralKit, vault } = testJig;
-
-  // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
-  // RUN (charging 3 RUN fee), which uses an automatic market maker that
-  // presents a fixed price of 4 RUN per Collateral.
-  await E(offerKit).getOfferResult();
-  const { brand: collateralBrand } = collateralKit;
-  const { brand: runBrand } = runMint.getIssuerRecord();
-
-  t.deepEqual(
-    vault.getCollateralAmount(),
-    AmountMath.make(collateralBrand, 50n),
-    'vault should hold 50 Collateral',
-  );
-  t.deepEqual(
-    vault.getDebtAmount(),
-    AmountMath.make(runBrand, 74n),
-    'borrower owes 74 RUN',
+    vault.getNormalizedDebt(),
+    AmountMath.make(runBrand, startingDebt - normalizedPaybackValue),
   );
 
-  const collateralAmount = AmountMath.make(collateralBrand, 2n);
+  testJig.setInterestRate(25n);
 
-  // adding the wrong kind of collateral should be rejected
-  const { mint: wrongMint, brand: wrongBrand } = makeIssuerKit('wrong');
-  const wrongAmount = AmountMath.make(wrongBrand, 2n);
-  const p = E(zoe).offer(
-    vault.makeAdjustBalancesInvitation(),
-    harden({
-      give: { Collateral: collateralAmount },
-      want: {},
-    }),
-    harden({
-      Collateral: wrongMint.mintPayment(wrongAmount),
-    }),
-  );
-  try {
-    await p;
-    t.fail('not rejected when it should have been');
-  } catch (e) {
-    t.truthy(true, 'yay rejection');
+  for (const [i, charge] of [21n, 27n, 33n].entries()) {
+    testJig.advanceRecordingPeriod();
+    interest += charge;
+    t.is(
+      vault.getDebtAmount().value,
+      startingDebt + interest - paybackValue,
+      `interest charge ${i} should have been ${charge}`,
+    );
+    t.is(
+      vault.getNormalizedDebt().value,
+      startingDebt - normalizedPaybackValue,
+    );
   }
-  // p.then(_ => console.log('oops passed'),
-  //       rej => console.log('reg', rej));
-  // t.rejects(p, / /, 'addCollateral requires the right kind', {});
-  // t.throws(async () => { await p; }, /was not a live payment/);
-});
-
-test('serializable with collectionManager', async t => {
-  // Necessary to initialize the testjig
-  await helperContract;
-
-  const { vault } = testJig;
-  const stuff = makeFakeLiveSlotsStuff();
-  t.notThrows(() => stuff.marshal.serialize(vault));
 });

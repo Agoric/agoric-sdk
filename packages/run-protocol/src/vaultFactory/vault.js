@@ -165,6 +165,7 @@ export const makeVaultKit = (
    * @see getActualDebAmount
    * @returns {Amount} as if the vault was open at the launch of this manager, before any interest accrued
    */
+  // Not in use until https://github.com/Agoric/agoric-sdk/issues/4540
   const getNormalizedDebt = () => {
     assert(debtSnapshot);
     return floorMultiplyBy(
