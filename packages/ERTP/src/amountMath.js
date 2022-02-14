@@ -173,8 +173,23 @@ const coerceLR = (h, leftAmount, rightAmount) => {
   return [h.doCoerce(leftAmount.value), h.doCoerce(rightAmount.value)];
 };
 
-/** @type {AmountMath} */
+/**
+ * Logic for manipulating amounts.
+ *
+ * Amounts are the canonical description of tradable goods. They are manipulated
+ * by issuers and mints, and represent the goods and currency carried by purses
+ * and
+ * payments. They can be used to represent things like currency, stock, and the
+ * abstract right to participate in a particular exchange.
+ */
 const AmountMath = {
+  /**
+   * Make an amount from a value by adding the brand.
+   *
+   * @param {Brand} brand
+   * @param {AmountValue} allegedValue
+   * @returns {Amount}
+   */
   make: (brand, allegedValue) => {
     assertRemotable(brand, 'brand');
     const h = assertValueGetHelpers(allegedValue);
@@ -183,6 +198,14 @@ const AmountMath = {
     const value = h.doCoerce(allegedValue);
     return harden({ brand, value });
   },
+  /**
+   * Make sure this amount is valid enough, and return a corresponding
+   * valid amount if so.
+   *
+   * @param {Brand} brand
+   * @param {Amount} allegedAmount
+   * @returns {Amount}
+   */
   coerce: (brand, allegedAmount) => {
     assertRemotable(brand, 'brand');
     assertRecord(allegedAmount, 'amount');
@@ -194,19 +217,48 @@ const AmountMath = {
     // Will throw on inappropriate value
     return AmountMath.make(brand, allegedValue);
   },
+  /**
+   * Extract and return the value.
+   *
+   * @param {Brand} brand
+   * @param {Amount} amount
+   * @returns {AmountValue}
+   */
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
+  /**
+   * Return the amount representing an empty amount. This is the
+   * identity element for MathHelpers.add and MatHelpers.subtract.
+   *
+   * @param {Brand} brand
+   * @param {AssetKind=} assetKind
+   * @returns {Amount}
+   */
   makeEmpty: (brand, assetKind = AssetKind.NAT) => {
     assertRemotable(brand, 'brand');
     assertAssetKind(assetKind);
     const value = helpers[assetKind].doMakeEmpty();
     return harden({ brand, value });
   },
+  /**
+   * Return the amount representing an empty amount, using another
+   * amount as the template for the brand and assetKind.
+   *
+   * @param {Amount} amount
+   * @returns {Amount}
+   */
   makeEmptyFromAmount: amount => {
     assertRecord(amount, 'amount');
     const { brand, value } = amount;
     const assetKind = assertValueGetAssetKind(value);
     return AmountMath.makeEmpty(brand, assetKind);
   },
+  /**
+   * Return true if the Amount is empty. Otherwise false.
+   *
+   * @param {Amount} amount
+   * @param {Brand=} brand
+   * @returns {boolean}
+   */
   isEmpty: (amount, brand = undefined) => {
     assertRecord(amount, 'amount');
     const { brand: allegedBrand, value } = amount;
@@ -216,22 +268,68 @@ const AmountMath = {
     // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsEmpty(h.doCoerce(value));
   },
+  /**
+   * Returns true if the leftAmount is greater than or equal to the
+   * rightAmount. For non-scalars, "greater than or equal to" depends
+   * on the kind of amount, as defined by the MathHelpers. For example,
+   * whether rectangle A is greater than rectangle B depends on whether rectangle
+   * A includes rectangle B as defined by the logic in MathHelpers.
+   *
+   * @param {Amount} leftAmount
+   * @param {Amount} rightAmount
+   * @param {Brand=} brand
+   * @returns {boolean}
+   */
   isGTE: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
   },
+  /**
+   * Returns true if the leftAmount equals the rightAmount. We assume
+   * that if isGTE is true in both directions, isEqual is also true
+   *
+   * @param {Amount} leftAmount
+   * @param {Amount} rightAmount
+   * @param {Brand=} brand
+   * @returns {boolean}
+   */
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsEqual(...coerceLR(h, leftAmount, rightAmount));
   },
+  /**
+   * Returns a new amount that is the union of both leftAmount and rightAmount.
+   *
+   * For fungible amount this means adding the values. For other kinds of
+   * amount, it usually means including all of the elements from both
+   * left and right.
+   *
+   * @param {Amount} leftAmount
+   * @param {Amount} rightAmount
+   * @param {Brand=} brand
+   * @returns {Amount}
+   */
   add: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     const value = h.doAdd(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
   },
+  /**
+   * Returns a new amount that is the leftAmount minus the rightAmount
+   * (i.e. everything in the leftAmount that is not in the
+   * rightAmount). If leftAmount doesn't include rightAmount
+   * (subtraction results in a negative), throw  an error. Because the
+   * left amount must include the right amount, this is NOT equivalent
+   * to set subtraction.
+   *
+   * @param {Amount} leftAmount
+   * @param {Amount} rightAmount
+   * @param {Brand=} brand
+   * @returns {Amount}
+   */
   subtract: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
