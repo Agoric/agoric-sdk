@@ -1,5 +1,5 @@
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 /** @param { ContractFacet } zcf */
 export const start = zcf => {

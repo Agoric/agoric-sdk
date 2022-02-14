@@ -1,14 +1,14 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@agoric/far';
 import {
   CONTRACT_ELECTORATE,
   handleParamGovernance,
   makeParamManagerBuilder,
 } from '@agoric/governance';
-import { Far } from '@agoric/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeAttestationFacets } from '@agoric/zoe/src/contracts/attestation/attestation.js';
+import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
 import {
   assertProposalShape,
   ceilMultiplyBy,
