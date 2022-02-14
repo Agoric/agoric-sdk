@@ -6,7 +6,8 @@
  */
 
 /**
- * @typedef {Object} Amount
+ * @template {AmountValue} [V=AmountValue]
+ * @typedef {object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
  * AmountMath executes the logic of how amounts are changed when digital
@@ -17,7 +18,7 @@
  * portion.
  *
  * @property {Brand} brand
- * @property {AmountValue} value
+ * @property {V} value
  */
 
 /**
