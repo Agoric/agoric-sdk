@@ -10,6 +10,7 @@ import {
 } from '@agoric/governance';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
+import { makeStakeReporter } from '@agoric/vats/src/my-lien.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
@@ -453,7 +454,7 @@ harden(startRewardDistributor);
  * @param {Ratio} terms.collateralizationRatio
  * @param {Issuer} stakeIssuer
  *
- * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartLineOfCredit
+ * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartGetRun
  */
 export const bootstrapRunLoC = async (
   zoe,
@@ -501,7 +502,7 @@ export const bootstrapRunLoC = async (
   );
 
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();
-  /** @type {ERef<StartLineOfCredit['publicFacet']>} */
+  /** @type {ERef<StartGetRun['publicFacet']>} */
   const publicFacet = E(zoe).getPublicFacet(governedInstance);
   const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
 
@@ -517,13 +518,14 @@ export const startGetRun = async ({
     feeMintAccess: feeMintAccessP,
     getRUNBundle,
     agoricNames,
-    bridgeManager,
+    bridgeManager: bridgeP,
     client,
     chainTimerService,
     nameAdmins,
   },
 }) => {
   const stakeName = 'BLD'; // MAGIC STRING TODO TECHDEBT
+  const bridgeManager = await bridgeP;
 
   const bundle = await getRUNBundle;
   const [
@@ -566,7 +568,7 @@ export const startGetRun = async ({
   const attIssuer = E(publicFacet).getIssuer();
   const attBrand = await E(attIssuer).getBrand();
 
-  const reporter = makeStakeReporter(bridgeManager, bldBrand);
+  const reporter = bridgeManager && makeStakeReporter(bridgeManager, bldBrand);
 
   const [brandAdmin, issuerAdmin, installAdmin, instanceAdmin] =
     await collectNameAdmins(
@@ -584,10 +586,10 @@ export const startGetRun = async ({
     E(instanceAdmin).update(key, instance),
     E(brandAdmin).update(attKey, attBrand),
     E(issuerAdmin).update(attKey, attIssuer),
-    // @ts-ignore threading types thru governance is WIP
-    E(creatorFacet).addAuthority(reporter),
+    // @ts-expect-error threading types thru governance is WIP
+    ...(reporter ? [E(creatorFacet).addAuthority(reporter)] : []),
     E(client).assignBundle({
-      // @ts-ignore threading types thru governance is WIP
+      // @ts-expect-error threading types thru governance is WIP
       attMaker: address => E(creatorFacet).getAttMaker(address),
     }),
   ]);
