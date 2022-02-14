@@ -162,7 +162,7 @@ test('RUN mint access', async t => {
  * @param {{ before: bigint, delta: bigint, after: bigint}} detail.liened
  * @param { boolean } [detail.failAttestation]
  * @param { boolean } [detail.failOffer]
- * @param { (faker: StartFaker['publicFacet'], bldBrand: Brand)
+ * @param { (faker: ERef<StartFaker['publicFacet']>, bldBrand: Brand)
  *            => Promise<[Amount, Payment]> } [mockAttestation]
  *
  * @typedef {ReturnType<typeof import('./attestationFaker.js').start>} StartFaker
@@ -268,7 +268,7 @@ const testLoC = (
       const fakerInstallation = E(zoe).install(bundles.faker);
       const [attAmt, attPmt] = await (mockAttestation
         ? mockAttestation(
-            (await E(zoe).startInstance(fakerInstallation)).publicFacet,
+            E.get(E(zoe).startInstance(fakerInstallation)).publicFacet,
             bld.brand,
           )
         : getReturnableAttestation());
