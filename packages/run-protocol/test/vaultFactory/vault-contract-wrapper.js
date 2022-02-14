@@ -14,7 +14,7 @@ import {
 import { Far } from '@endo/marshal';
 
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeInnerVaultKit } from '../../src/vaultFactory/vault.js';
+import { makeInnerVault } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
 const BASIS_POINTS = 10000n;
@@ -55,7 +55,7 @@ export async function start(zcf, privateArgs) {
     }
   }
 
-  /** @type {Parameters<typeof makeInnerVaultKit>[1]} */
+  /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerMock = Far('vault manager mock', {
     getLiquidationMargin() {
       return makeRatio(105n, runBrand);
@@ -102,10 +102,7 @@ export async function start(zcf, privateArgs) {
 
   const { notifier: managerNotifier } = makeNotifierKit();
 
-  const {
-    vault,
-    actions: { initVault },
-  } = await makeInnerVaultKit(
+  const innerVault = await makeInnerVault(
     zcf,
     managerMock,
     managerNotifier,
@@ -138,22 +135,21 @@ export async function start(zcf, privateArgs) {
     collateralKit,
     runMint,
     setInterestRate,
-    vault,
+    vault: innerVault,
   }));
 
   async function makeHook(seat) {
-    const { notifier } = await initVault(seat);
-
+    const vault = await innerVault.initVault(seat);
     return {
-      vault,
+      vault: innerVault,
       runMint,
       collateralKit,
       actions: Far('vault actions', {
         add() {
-          return vault.makeAdjustBalancesInvitation();
+          return innerVault.makeAdjustBalancesInvitation();
         },
       }),
-      notifier,
+      notifier: vault.getNotifier(),
     };
   }
 
@@ -161,7 +157,7 @@ export async function start(zcf, privateArgs) {
 
   const vaultAPI = Far('vaultAPI', {
     makeAdjustBalancesInvitation() {
-      return vault.makeAdjustBalancesInvitation();
+      return innerVault.makeAdjustBalancesInvitation();
     },
     mintRun(amount) {
       return paymentFromZCFMint(zcf, runMint, amount);

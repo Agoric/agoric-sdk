@@ -16,7 +16,7 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeInnerVaultKit } from './vault.js';
+import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -111,7 +111,7 @@ export const makeVaultManager = (
   /** @type {bigint} */
   let latestInterestUpdate = startTimeStamp;
 
-  const { updater, notifier } = makeNotifierKit(
+  const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
     harden({
       compoundedInterest,
       latestInterestUpdate,
@@ -121,17 +121,17 @@ export const makeVaultManager = (
 
   /**
    *
-   * @param {[key: string, vaultKit: VaultKit]} record
+   * @param {[key: string, vaultKit: InnerVault]} record
    */
-  const liquidateAndRemove = async ([key, vaultKit]) => {
+  const liquidateAndRemove = async ([key, vault]) => {
     assert(prioritizedVaults);
-    trace('liquidating', vaultKit.vaultSeat.getProposal());
+    trace('liquidating', vault.getVaultSeat().getProposal());
 
     try {
       // Start liquidation (vaultState: LIQUIDATING)
       await liquidate(
         zcf,
-        vaultKit,
+        vault,
         runMint.burnLosses,
         liquidationStrategy,
         collateralBrand,
@@ -282,7 +282,7 @@ export const makeVaultManager = (
       latestInterestUpdate,
       totalDebt,
     });
-    updater.updateState(payload);
+    assetUpdater.updateState(payload);
 
     trace('chargeAllVaults complete', payload);
 
@@ -342,7 +342,7 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
-  /** @type {Parameters<typeof makeInnerVaultKit>[1]} */
+  /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerFacet = harden({
     ...shared,
     applyDebtDelta,
@@ -362,33 +362,31 @@ export const makeVaultManager = (
     vaultCounter += 1;
     const vaultId = String(vaultCounter);
 
-    const vaultKit = makeInnerVaultKit(
+    const innerVault = makeInnerVault(
       zcf,
       managerFacet,
-      notifier,
+      assetNotifer,
       vaultId,
       runMint,
       priceAuthority,
     );
-    const {
-      vault,
-      actions: { initVault },
-    } = vaultKit;
 
+    // Don't record the vault until it gets opened
+    // TODO
     assert(prioritizedVaults);
-    const addedVaultKey = prioritizedVaults.addVaultKit(vaultId, vaultKit);
+    const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
 
     try {
-      // Don't record the vault until it gets opened
-      const vaultResult = await initVault(seat);
+      const vault = await innerVault.initVault(seat);
 
       seat.exit();
 
       return harden({
-        uiNotifier: vaultResult.notifier,
+        uiNotifier: vault.getNotifier(),
         invitationMakers: Far('invitation makers', {
           AdjustBalances: vault.makeAdjustBalancesInvitation,
           CloseVault: vault.makeCloseInvitation,
+          // TransferVault: vault.makeTransferVaultInvitation,
         }),
         vault,
       });
