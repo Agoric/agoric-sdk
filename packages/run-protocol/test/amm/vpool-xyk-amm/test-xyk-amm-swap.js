@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
 import {
@@ -28,6 +28,23 @@ import { setupAmmServices } from './setup.js';
 
 const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
+
+test('amm with non-fungible central token', async t => {
+  // Set up central token
+  const centralR = makeIssuerKit('central', AssetKind.SET);
+  const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
+  const timer = buildManualTimer(console.log, 30n);
+
+  await t.throwsAsync(
+    () => setupAmmServices(electorateTerms, centralR, timer),
+    {
+      message: `Central must be of kind ${q(AssetKind.NAT)}, not ${q(
+        AssetKind.SET,
+      )}`,
+    },
+    'test AssetKind.SET as central brand',
+  );
+});
 
 test('amm with valid offers', async t => {
   // Set up central token
