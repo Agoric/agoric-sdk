@@ -512,3 +512,88 @@ export const bootstrapRunLoC = async (
   return { instance: governedInstance, publicFacet, creatorFacet };
 };
 harden(bootstrapRunLoC);
+
+/** @param {BootstrapPowers} powers */
+export const startGetRun = async ({
+  consume: {
+    zoe,
+    // ISSUE: is there some reason Zoe shouldn't await this???
+    feeMintAccess: feeMintAccessP,
+    getRUNBundle,
+    agoricNames,
+    bridgeManager,
+    client,
+    chainTimerService,
+    nameAdmins,
+  },
+}) => {
+  const stakeName = 'BLD'; // MAGIC STRING TODO TECHDEBT
+
+  const bundle = await getRUNBundle;
+  const [
+    feeMintAccess,
+    bldIssuer,
+    bldBrand,
+    runBrand,
+    governor,
+    electorate,
+    installation,
+  ] = await Promise.all([
+    feeMintAccessP,
+    E(agoricNames).lookup('issuer', stakeName),
+    E(agoricNames).lookup('brand', stakeName),
+    E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
+    // TODO: manage string constants that need to match
+    E(agoricNames).lookup('installation', 'contractGovernor'),
+    E(agoricNames).lookup('installation', 'committee'),
+    E(zoe).install(bundle),
+  ]);
+  const collateralPrice = makeRatio(65n, runBrand, 100n, bldBrand); // arbitrary price
+  const collateralizationRatio = makeRatio(5n, runBrand, 1n); // arbitrary raio
+
+  const installations = {
+    governor,
+    electorate,
+    getRUN: installation,
+  };
+
+  // TODO: finish renaming bootstrapRunLoC etc.
+  // TODO: produce getRUNGovernorCreatorFacet, getRUNCreatorFacet, ...
+  const { instance, publicFacet, creatorFacet } = await bootstrapRunLoC(
+    zoe,
+    chainTimerService,
+    feeMintAccess,
+    installations,
+    { collateralPrice, collateralizationRatio },
+    bldIssuer,
+  );
+  const attIssuer = E(publicFacet).getIssuer();
+  const attBrand = await E(attIssuer).getBrand();
+
+  const reporter = makeStakeReporter(bridgeManager, bldBrand);
+
+  const [brandAdmin, issuerAdmin, installAdmin, instanceAdmin] =
+    await collectNameAdmins(
+      ['brand', 'issuer', 'installation', 'instance'],
+      agoricNames,
+      nameAdmins,
+    );
+
+  const key = 'getRUN';
+  const attKey = 'Attestation';
+  assert(agoricNamesReserved.installation[key]);
+  assert(agoricNamesReserved.issuer[attKey]);
+  return Promise.all([
+    E(installAdmin).update(key, installation),
+    E(instanceAdmin).update(key, instance),
+    E(brandAdmin).update(attKey, attBrand),
+    E(issuerAdmin).update(attKey, attIssuer),
+    // @ts-ignore threading types thru governance is WIP
+    E(creatorFacet).addAuthority(reporter),
+    E(client).assignBundle({
+      // @ts-ignore threading types thru governance is WIP
+      attMaker: address => E(creatorFacet).getAttMaker(address),
+    }),
+  ]);
+};
+harden(startGetRun);
