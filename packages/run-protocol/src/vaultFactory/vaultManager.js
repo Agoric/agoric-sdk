@@ -17,7 +17,7 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeInnerVaultKit } from './vault.js';
+import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -71,7 +71,7 @@ export const makeVaultManager = (
 ) => {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const { updater, notifier } = makeNotifierKit(
+  const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
     harden({
       compoundedInterest: makeRatio(1n, runBrand, 1n, runBrand),
       latestInterestUpdate: 0n,
@@ -124,17 +124,17 @@ export const makeVaultManager = (
 
   /**
    *
-   * @param {[key: string, vaultKit: VaultKit]} record
+   * @param {[key: string, vaultKit: InnerVault]} record
    */
-  const liquidateAndRemove = async ([key, vaultKit]) => {
+  const liquidateAndRemove = async ([key, vault]) => {
     assert(prioritizedVaults);
-    trace('liquidating', vaultKit.vaultSeat.getProposal());
+    trace('liquidating', vault.getVaultSeat().getProposal());
 
     try {
       // Start liquidation (vaultState: LIQUIDATING)
       await liquidate(
         zcf,
-        vaultKit,
+        vault,
         runMint.burnLosses,
         liquidationStrategy,
         collateralBrand,
@@ -276,7 +276,7 @@ export const makeVaultManager = (
       latestInterestUpdate,
       totalDebt,
     });
-    updater.updateState(payload);
+    assetUpdater.updateState(payload);
 
     trace('chargeAllVaults complete', payload);
 
@@ -291,7 +291,7 @@ export const makeVaultManager = (
   const debtDelta = (oldDebt, newDebt) => {
     // Since newDebt includes accrued interest we need to use getDebtAmount()
     // to get a baseline that also includes accrued interest.
-    // eslint-disable-next-line no-use-before-define
+    // XXXeslint-disable-next-line no-use-before-define
     const priorDebtValue = oldDebt.value;
     const newDebtValue = newDebt.value;
     // We can't used AmountMath because the delta can be negative.
@@ -377,7 +377,7 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
-  /** @type {Parameters<typeof makeInnerVaultKit>[1]} */
+  /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerFacade = harden({
     ...shared,
     applyDebtDelta,
@@ -397,32 +397,30 @@ export const makeVaultManager = (
     // eslint-disable-next-line no-plusplus
     const vaultId = String(vaultCounter++);
 
-    const vaultKit = makeInnerVaultKit(
+    const innerVault = makeInnerVault(
       zcf,
       managerFacade,
-      notifier,
+      assetNotifer,
       vaultId,
       runMint,
       priceAuthority,
     );
-    const {
-      vault,
-      actions: { initVault },
-    } = vaultKit;
 
     // Don't record the vault until it gets opened
-    const vaultResult = await initVault(seat);
-
+    // TODO
     assert(prioritizedVaults);
-    prioritizedVaults.addVaultKit(vaultId, vaultKit);
+    prioritizedVaults.addVault(vaultId, innerVault);
+    
+    const vault = await innerVault.initVault(seat);
 
     seat.exit();
 
     return harden({
-      uiNotifier: vaultResult.notifier,
+      uiNotifier: vault.getNotifier(),
       invitationMakers: Far('invitation makers', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
         CloseVault: vault.makeCloseInvitation,
+        // TransferVault: vault.makeTransferVaultInvitation,
       }),
       vault,
     });

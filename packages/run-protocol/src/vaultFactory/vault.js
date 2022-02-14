@@ -41,6 +41,31 @@ export const VaultState = {
   CLOSED: 'closed',
 };
 
+
+const makeOuterKit = inner => {
+  const { updater: uiUpdater, notifier } = makeNotifierKit();
+
+  const assertActive = v => {
+    inner.assertActiveOuter(v);
+    // console.log('INNER', inner, v);
+    return inner;
+  }
+  /** @type {Vault} */
+  const vault = Far('vault', {
+    getNotifier: () => notifier,
+    makeAdjustBalancesInvitation: () => assertActive(vault).makeAdjustBalancesInvitation(),
+    makeCloseInvitation: () => assertActive(vault).makeCloseInvitation(),
+    makeTransferInvitation: () => assertActive(vault).makeTransferInvitation(),
+
+    // for status/debugging
+    getCollateralAmount: () => assertActive(vault).getCollateralAmount(),
+    getDebtAmount: () => assertActive(vault).getDebtAmount(),
+    getNormalizedDebt: () => assertActive(vault).getNormalizedDebt(),
+    getLiquidationSeat: () => assertActive(vault).getLiquidationSeat(),
+  });
+  return { vault, uiUpdater };
+}
+
 /**
  * @typedef {Object} InnerVaultManagerBase
  * @property {(oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
@@ -58,7 +83,7 @@ export const VaultState = {
  * @param {ZCFMint} runMint
  * @param {ERef<PriceAuthority>} priceAuthority
  */
-export const makeInnerVaultKit = (
+export const makeInnerVault = (
   zcf,
   manager,
   managerNotifier,
@@ -72,7 +97,6 @@ export const makeInnerVaultKit = (
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   // STATE
-  const { updater: uiUpdater, notifier } = makeNotifierKit();
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
     zcf.makeEmptySeatKit(undefined);
 
@@ -85,10 +109,19 @@ export const makeInnerVaultKit = (
 
   /** @type {Vault} */
   let outerVault;
-  const assertActiveInner = outer => {
+  const assertActiveOuter = outer => {
     assert(outerVault === outer, X`Using ${outer} after transfer/close`);
     // assert(vaultState === VaultState.ACTIVE, X`vault must still be active (is ${vaultState})`);
   };
+
+  let uiUpdater;
+  const updateOuter = inner => {
+    // ({ vault: outerVault, uiUpdater }) = makeOuterKit(inner);
+    const { vault, uiUpdater: updater } = makeOuterKit(inner);
+    outerVault = vault;
+    uiUpdater = updater;
+    updateUiState();
+  }
 
   // vaultSeat will hold the collateral until the loan is retired. The
   // payout from it will be handed to the user: if the vault dies early
@@ -240,6 +273,9 @@ export const makeInnerVaultKit = (
 
   // call this whenever anything changes!
   const updateUiState = async () => {
+    if (!uiUpdater) {
+      return;
+    }
     // TODO(123): track down all calls and ensure that they all update a
     // lastKnownCollateralizationRatio (since they all know) so we don't have to
     // await quoteGiven() here
@@ -591,7 +627,7 @@ export const makeInnerVaultKit = (
   };
 
   /** @type {OfferHandler} */
-  const initVault = async seat => {
+  const initVault = async (seat, innerVault) => {
     assert(
       AmountMath.isEmpty(debtSnapshot.run),
       X`vault must be empty initially`,
@@ -634,45 +670,28 @@ export const makeInnerVaultKit = (
     );
     refreshLoanTracking(oldDebt, oldCollateral, runDebt, collateralAmount);
 
-    updateUiState();
-
-    return { notifier };
+    // TODO why isn't this complaining about use-before-define
+    updateOuter(innerVault);
+    return outerVault
   };
 
-  const makeVault = inner => {
-    const assertActive = v => {
-      assertActiveInner(v);
-      return inner;
-    }
-    /** @type {Vault} */
-    const vault = Far('vault', {
-      makeAdjustBalancesInvitation: () => assertActive(vault).makeAdjustBalancesInvitation(),
-      makeCloseInvitation: () => assertActive(vault).makeCloseInvitation(),
-      makeTransferInvitation: () => assertActive(vault).makeTransferInvitation(),
-
-      // for status/debugging
-      getCollateralAmount: () => assertActive(vault).getCollateralAmount(),
-      getDebtAmount: () => assertActive(vault).getDebtAmount(),
-      getNormalizedDebt: () => assertActive(vault).getNormalizedDebt(),
-      getLiquidationSeat: () => assertActive(vault).getLiquidationSeat(),
-    });
-    return vault;
+  const makeTransferInvitationHook = seat => {
+    assertVaultIsOpen();
+    throw 'TODO unimplemented';
   }
 
-  // const makeTransferInvitationHook = seat => {
-  //   return makeVault(seat, vaultSeat, debt, generation+1);
-  // }
-
   const makeTransferInvitation = () => {
-    outerVault = undefined;
-    //return zcf.makeInvitation(makeTransferInvitationHook);
+    updateOuter(innerVault);
+    return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');
   }
 
   const innerVault = Far('innerVault', {
     getInnerLiquidationSeat: () => liquidationZcfSeat,
     getVaultSeat: () => vaultSeat,
+    assertActiveOuter,
 
-    initVault,
+    // 
+    initVault: seat => initVault(seat, innerVault),
     liquidating,
     liquidated,
 
@@ -687,16 +706,9 @@ export const makeInnerVaultKit = (
     getLiquidationSeat: () => liquidationSeat,
   });
 
-  outerVault = makeVault(innerVault);
-
-  return harden({
-    vault: outerVault,
-    actions: innerVault,
-    liquidationZcfSeat,
-    vaultSeat,
-  });
+  return innerVault;
 };
 
 /**
- * @typedef {ReturnType<typeof makeInnerVaultKit>} InnerVault
+ * @typedef {ReturnType<typeof makeInnerVault>} InnerVault
  */

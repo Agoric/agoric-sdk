@@ -61,11 +61,9 @@ test('ordering', t => {
   // randomize because the add order should not matter
   // Maybe use https://dubzzz.github.io/fast-check.github.com/
   for (const [vaultId, runCount, collateralCount] of fixture) {
-    const mockVaultKit = harden({
-      vault: mockVault(runCount, collateralCount),
-    });
+    const vault = mockVault(runCount, collateralCount);
     // @ts-expect-error mock
-    vaults.addVaultKit(vaultId, mockVaultKit);
+    vaults.addVault(vaultId, vault);
   }
   const contents = Array.from(vaults.entries());
   const vaultIds = contents.map(([k, _v]) => fromVaultKey(k)[1]);
@@ -77,11 +75,9 @@ test('uniqueness', t => {
   const vaults = makeOrderedVaultStore();
 
   for (const [vaultId, runCount, collateralCount] of fixture) {
-    const mockVaultKit = harden({
-      vault: mockVault(runCount, collateralCount),
-    });
+    const vault = mockVault(runCount, collateralCount);
     // @ts-expect-error mock
-    vaults.addVaultKit(vaultId, mockVaultKit);
+    vaults.addVault(vaultId, vault);
   }
   const numberParts = Array.from(vaults.entries()).map(
     ([k, _v]) => k.split(':')[0],

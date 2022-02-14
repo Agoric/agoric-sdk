@@ -228,4 +228,4 @@
  * }}
  */
 
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vault').InnerVault} InnerVault */

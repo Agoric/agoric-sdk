@@ -471,6 +471,7 @@ test('price drop', async t => {
     500n,
     aethIssuer,
   );
+  trace('setup');
 
   const {
     zoe,
@@ -495,8 +496,10 @@ test('price drop', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
+  trace('loan made', loanAmount);
 
   const { vault, uiNotifier } = await E(loanSeat).getOfferResult();
+  trace('offer result', vault);
   const debtAmount = await E(vault).getDebtAmount();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 270n), rates.loanFee);
   t.deepEqual(
@@ -507,6 +510,7 @@ test('price drop', async t => {
 
   /** @type {UpdateRecord<VaultUIState>} */
   let notification = await E(uiNotifier).getUpdateSince();
+  trace('got notificaation', notification);
 
   t.falsy(notification.value.liquidated);
   t.deepEqual(
@@ -520,13 +524,13 @@ test('price drop', async t => {
     AmountMath.make(aethBrand, 400n),
     'vault holds 11 Collateral',
   );
-
   await manualTimer.tick();
   notification = await E(uiNotifier).getUpdateSince();
   t.falsy(notification.value.liquidated);
 
   await manualTimer.tick();
   notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
+  trace('price changed to liquidate', notification.value.vaultState);
   t.falsy(notification.value.liquidated);
   t.is(notification.value.vaultState, VaultState.LIQUIDATING);
 
