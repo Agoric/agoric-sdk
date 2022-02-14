@@ -6,19 +6,24 @@ import {
   makeGovernedInvitation,
   CONTRACT_ELECTORATE,
   makeGovernedNat,
+  makeGovernedRatio,
 } from '@agoric/governance';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
-import { makeGovernedTerms } from './vaultFactory/params.js';
+import {
+  makeElectorateParams,
+  makeGovernedTerms,
+} from './vaultFactory/params.js';
 
 import '../exported.js';
 
 import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
 
 import * as Collect from './collect.js';
+import { CreditTerms } from './getRUN.js';
 
 const { entries } = Object;
 
@@ -430,3 +435,76 @@ export const startRewardDistributor = async ({
   );
 };
 harden(startRewardDistributor);
+
+/**
+ * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
+ * @template T
+ */
+/**
+ * TODO: refactor test to use startGetRUN so we can un-export this,
+ *       since it's not a bootstrap behavior.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<TimerService>} timer
+ * @param { FeeMintAccess } feeMintAccess
+ * @param {Record<string, Installation>} installations
+ * @param {Object} terms
+ * @param {Ratio} terms.collateralPrice
+ * @param {Ratio} terms.collateralizationRatio
+ * @param {Issuer} stakeIssuer
+ *
+ * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartLineOfCredit
+ */
+export const bootstrapRunLoC = async (
+  zoe,
+  timer,
+  feeMintAccess,
+  installations,
+  { collateralPrice, collateralizationRatio },
+  stakeIssuer,
+) => {
+  // TODO: refactor to use consume.economicCommittee
+  const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
+    await E(zoe).startInstance(installations.electorate);
+  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
+
+  // t.log({ electorateCreatorFacet, electorateInstance });
+  // TODO: use config arg
+  const main = harden({
+    [CreditTerms.CollateralPrice]: makeGovernedRatio(collateralPrice),
+    [CreditTerms.CollateralizationRatio]: makeGovernedRatio(
+      collateralizationRatio,
+    ),
+    ...makeElectorateParams(electorateInvitationAmount),
+  });
+
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess}} */
+  const governorFacets = await E(zoe).startInstance(
+    installations.governor,
+    {},
+    {
+      timer,
+      electorateInstance,
+      governedContractInstallation: installations.getRUN,
+      governed: harden({
+        terms: { main },
+        issuerKeywordRecord: { Stake: stakeIssuer },
+        privateArgs: { feeMintAccess, initialPoserInvitation },
+      }),
+    },
+    harden({ electorateCreatorFacet }),
+  );
+
+  const governedInstance = await E(governorFacets.creatorFacet).getInstance();
+  /** @type {ERef<StartLineOfCredit['publicFacet']>} */
+  const publicFacet = E(zoe).getPublicFacet(governedInstance);
+  const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
+
+  return { instance: governedInstance, publicFacet, creatorFacet };
+};
+harden(bootstrapRunLoC);
