@@ -17,7 +17,7 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
 /** @typedef {import('./storeUtils').CompositeKey} CompositeKey */
 
 export const makeOrderedVaultStore = () => {
-  // TODO make it work durably
+  // TODO make it work durably https://github.com/Agoric/agoric-sdk/issues/4550
   /** @type {MapStore<string, VaultKit>} */
   const store = makeScalarBigMapStore('orderedVaultStore', { durable: false });
 

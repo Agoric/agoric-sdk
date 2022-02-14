@@ -122,7 +122,6 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     const debtToCollateral = currentDebtToCollateral(vk.vault);
     if (
       !oracleQueryThreshold ||
-      // TODO check for equality is sufficient and faster
       ratioGTE(debtToCollateral, oracleQueryThreshold)
     ) {
       // don't call reschedulePriceCheck, but do reset the highest.
@@ -167,7 +166,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    */
   // eslint-disable-next-line func-names
   function* entriesPrioritizedGTE(ratio) {
-    // TODO use a Pattern to limit the query
+    // TODO use a Pattern to limit the query https://github.com/Agoric/agoric-sdk/issues/4550
     for (const [key, vk] of vaults.entries()) {
       const debtToCollateral = currentDebtToCollateral(vk.vault);
       if (ratioGTE(debtToCollateral, ratio)) {

@@ -57,9 +57,6 @@ const fixture = [
 test('ordering', t => {
   const vaults = makeOrderedVaultStore();
 
-  // TODO keep a seed so we can debug when it does fail
-  // randomize because the add order should not matter
-  // Maybe use https://dubzzz.github.io/fast-check.github.com/
   for (const [vaultId, runCount, collateralCount] of fixture) {
     const mockVaultKit = harden({
       vault: mockVault(runCount, collateralCount),

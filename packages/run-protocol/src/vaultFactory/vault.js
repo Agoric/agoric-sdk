@@ -145,7 +145,7 @@ export const makeVaultKit = (
    * @see getNormalizedDebt
    * @returns {Amount}
    */
-  // TODO rename to getActualDebtAmount throughout codebase
+  // TODO rename to getActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
   const getDebtAmount = () => {
     // divide compounded interest by the the snapshot
     const interestSinceSnapshot = multiplyRatios(

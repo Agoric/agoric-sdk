@@ -2,9 +2,8 @@
 /**
  * Module to improvise composite keys for orderedVaultStore until Collections API supports them.
  *
- * TODO BEFORE MERGE: assess maximum key length limits with Collections API
  */
-// XXX declaration shouldn't be necessary. Add exception to eslint or make a real import.
+// XXX declaration shouldn't be necessary. Fixed by https://github.com/endojs/endo/pull/1071
 /* global BigUint64Array */
 
 /** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
