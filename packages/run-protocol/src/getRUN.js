@@ -49,11 +49,8 @@ export const makeLineOfCreditKit = (
   runMint,
   runBrand,
 ) => {
-  const {
-    runWanted,
-    attestationGiven,
-    amountLiened,
-  } = creditPolicy.checkOpenProposal(startSeat);
+  const { runWanted, attestationGiven, amountLiened } =
+    creditPolicy.checkOpenProposal(startSeat);
   let closed = false;
 
   const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
