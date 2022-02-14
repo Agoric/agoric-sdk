@@ -892,6 +892,11 @@ test('interest on multiple vaults', async t => {
     AmountMath.make(runBrand, 4700n + aliceAddedDebt),
     `should have collected ${aliceAddedDebt}`,
   );
+  // but no change to the snapshot
+  t.deepEqual(aliceUpdate.value.debtSnapshot, {
+    run: AmountMath.make(runBrand, 4935n),
+    interest: makeRatio(100n, runBrand, 100n),
+  });
   t.deepEqual(aliceUpdate.value.interestRate, interestRate);
   t.deepEqual(aliceUpdate.value.liquidationRatio, makeRatio(105n, runBrand));
   const aliceCollateralization = aliceUpdate.value.collateralizationRatio;
@@ -910,6 +915,36 @@ test('interest on multiple vaults', async t => {
     // reward includes 5% fees on two loans plus 1% interest three times on each
     `Should be ${rewardRunCount}, was ${rewardAllocation.RUN.value}`,
   );
+
+  // try opening a vault that can't cover fees
+  const caroleLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: AmountMath.make(aethBrand, 200n) },
+      want: { RUN: AmountMath.make(runBrand, 0n) }, // no debt
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 200n)),
+    }),
+  );
+  await t.throwsAsync(E(caroleLoanSeat).getOfferResult());
+
+  // open a vault with floor debt (1n RUN)
+  const danLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: AmountMath.make(aethBrand, 200n) },
+      want: { RUN: AmountMath.make(runBrand, 1n) }, // smallest debt
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 200n)),
+    }),
+  );
+  /** @type {{vault: Vault}} */
+  const { vault: danVault } = await E(danLoanSeat).getOfferResult();
+  console.log('DEBUG', danVault);
+  t.is((await E(danVault).getDebtAmount()).value, 2n);
+  t.is((await E(danVault).getNormalizedDebt()).value, 1n);
 });
 
 test('adjust balances', async t => {
@@ -991,6 +1026,10 @@ test('adjust balances', async t => {
   const aliceCollateralization1 = aliceUpdate.value.collateralizationRatio;
   t.deepEqual(aliceCollateralization1.numerator.value, 15000n);
   t.deepEqual(aliceCollateralization1.denominator.value, runDebtLevel.value);
+  t.deepEqual(aliceUpdate.value.debtSnapshot, {
+    run: AmountMath.make(runBrand, 5250n),
+    interest: makeRatio(100n, runBrand),
+  });
 
   // increase collateral 1 ///////////////////////////////////// (give both)
 
@@ -1095,6 +1134,10 @@ test('adjust balances', async t => {
     ceilMultiplyBy(collateralLevel, priceConversion),
   );
   t.deepEqual(aliceCollateralization3.denominator, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot, {
+    run: AmountMath.make(runBrand, 5253n),
+    interest: makeRatio(100n, runBrand),
+  });
 
   // reduce collateral  ///////////////////////////////////// (want both)
 

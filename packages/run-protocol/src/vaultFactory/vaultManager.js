@@ -246,7 +246,7 @@ export const makeVaultManager = (
       {
         latestInterestUpdate,
         newDebt: totalDebt,
-        interest: AmountMath.makeEmpty(runBrand), // ??FIXME
+        interest: AmountMath.makeEmpty(runBrand),
       },
       updateTime,
     );
