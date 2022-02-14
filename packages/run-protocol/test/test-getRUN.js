@@ -12,7 +12,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import { bootstrapRunLoC } from '../src/econ-behaviors.js';
-import { Collect } from '../src/collect.js';
+import * as Collect from '../src/collect.js';
 import * as testCases from './runLoC-test-case-sheet.js';
 
 const contractRoots = {
