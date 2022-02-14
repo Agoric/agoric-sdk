@@ -393,7 +393,7 @@
  */
 
 /**
- * @template V
+ * @template {AmountValue} V
  * @typedef {Object} MathHelpers<V>
  * All of the difference in how digital asset amount are manipulated can be
  * reduced to the behavior of the math on values. We extract this

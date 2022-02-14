@@ -84,19 +84,31 @@ const helpers = {
   copyBag: copyBagMathHelpers,
 };
 
-/** @type {(value: AmountValue) => AssetKind} */
+/**
+ * @template {AmountValue} V
+ * @type {(value: V) =>
+ *  V extends NatValue ? 'nat' :
+ *  V extends SetValue ? 'set' :
+ *  V extends CopySetValue ? 'copySet' :
+ *  V extends CopyBagValue ? 'copyBag' :
+ *  never}
+ */
 const assertValueGetAssetKind = value => {
   const passStyle = passStyleOf(value);
   if (passStyle === 'bigint') {
+    // @ts-expect-error cast
     return 'nat';
   }
   if (passStyle === 'copyArray') {
+    // @ts-expect-error cast
     return 'set';
   }
   if (matches(value, M.set())) {
+    // @ts-expect-error cast
     return 'copySet';
   }
   if (matches(value, M.bag())) {
+    // @ts-expect-error cast
     return 'copyBag';
   }
   assert.fail(
@@ -115,10 +127,12 @@ const assertValueGetAssetKind = value => {
  *
  * Made available only for testing, but it is harmless for other uses.
  *
- * @param {AmountValue} value
- * @returns {MathHelpers<*>}
+ * @template {AmountValue} V
+ * @param {V} value
+ * @returns {MathHelpers<V>}
  */
 export const assertValueGetHelpers = value =>
+  // @ts-expect-error cast
   helpers[assertValueGetAssetKind(value)];
 
 /** @type {(allegedBrand: Brand, brand?: Brand) => void} */
@@ -134,8 +148,9 @@ const optionalBrandCheck = (allegedBrand, brand) => {
 };
 
 /**
- * @param {Amount} leftAmount
- * @param {Amount} rightAmount
+ * @template {AmountValue} [V=AmountValue]
+ * @param {Amount<V>} leftAmount
+ * @param {Amount<V>} rightAmount
  * @param {Brand | undefined} brand
  * @returns {MathHelpers<*>}
  */
@@ -164,12 +179,14 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
 };
 
 /**
+ * @template {AmountValue} V
  * @param {MathHelpers<AmountValue>} h
- * @param {Amount} leftAmount
- * @param {Amount} rightAmount
- * @returns {[AmountValue, AmountValue]}
+ * @param {Amount<V>} leftAmount
+ * @param {Amount<V>} rightAmount
+ * @returns {[V, V]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
+  // @ts-ignore cast (ignore b/c erroring in CI but not my IDE)
   return [h.doCoerce(leftAmount.value), h.doCoerce(rightAmount.value)];
 };
 
@@ -186,25 +203,27 @@ const AmountMath = {
   /**
    * Make an amount from a value by adding the brand.
    *
+   * @template {AmountValue} [V=AmountValue]
    * @param {Brand} brand
-   * @param {AmountValue} allegedValue
-   * @returns {Amount}
+   * @param {V extends NatValue ? NatValue : V extends SetValue ? SetValue : V extends CopySetValue ? CopySetValue : V extends CopyBagValue ? CopyBagValue : never} allegedValue
+   * @returns {Amount<V>}
    */
+  // allegedValue has a conditional expression for type widening, to prevent V being bound to a a literal like 1n
   make: (brand, allegedValue) => {
     assertRemotable(brand, 'brand');
     const h = assertValueGetHelpers(allegedValue);
-    // @ts-ignore Needs better typing to express AmountValue to Helpers
-    // relationship
     const value = h.doCoerce(allegedValue);
+    // @ts-ignore cast (ignore b/c erroring in CI but not my IDE)
     return harden({ brand, value });
   },
   /**
    * Make sure this amount is valid enough, and return a corresponding
    * valid amount if so.
    *
+   * @template {AmountValue} [V=AmountValue]
    * @param {Brand} brand
-   * @param {Amount} allegedAmount
-   * @returns {Amount}
+   * @param {Amount<V>} allegedAmount
+   * @returns {Amount<V>}
    */
   coerce: (brand, allegedAmount) => {
     assertRemotable(brand, 'brand');
@@ -215,41 +234,48 @@ const AmountMath = {
       X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
     );
     // Will throw on inappropriate value
+    // @ts-ignore cast (ignore b/c erroring in CI but not my IDE)
     return AmountMath.make(brand, allegedValue);
   },
   /**
    * Extract and return the value.
    *
+   * @template {AmountValue} [V=AmountValue]
    * @param {Brand} brand
-   * @param {Amount} amount
-   * @returns {AmountValue}
+   * @param {Amount<V>} amount
+   * @returns {V}
    */
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   /**
    * Return the amount representing an empty amount. This is the
    * identity element for MathHelpers.add and MatHelpers.subtract.
    *
+   * @template {AssetKind} K
    * @param {Brand} brand
    * @param {AssetKind=} assetKind
-   * @returns {Amount}
+   * @returns {Amount<K extends 'nat' ? NatValue: K extends 'set' ? SetValue: K extends 'copySet' ? CopySetValue: K extends 'copyBag' ? CopyBagValue : never>}
    */
   makeEmpty: (brand, assetKind = AssetKind.NAT) => {
     assertRemotable(brand, 'brand');
     assertAssetKind(assetKind);
     const value = helpers[assetKind].doMakeEmpty();
+    // @ts-ignore cast (ignore b/c erroring in CI but not my IDE)
     return harden({ brand, value });
   },
   /**
    * Return the amount representing an empty amount, using another
    * amount as the template for the brand and assetKind.
    *
-   * @param {Amount} amount
-   * @returns {Amount}
+   * @template {AmountValue} V
+   * @param {Amount<V>} amount
+   * @returns {Amount<V>}
    */
   makeEmptyFromAmount: amount => {
     assertRecord(amount, 'amount');
     const { brand, value } = amount;
+    // @ts-expect-error cast
     const assetKind = assertValueGetAssetKind(value);
+    // @ts-ignore cast (ignore b/c erroring in CI but not my IDE)
     return AmountMath.makeEmpty(brand, assetKind);
   },
   /**
@@ -265,7 +291,6 @@ const AmountMath = {
     assertRemotable(allegedBrand, 'brand');
     optionalBrandCheck(allegedBrand, brand);
     const h = assertValueGetHelpers(value);
-    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsEmpty(h.doCoerce(value));
   },
   /**
@@ -275,28 +300,28 @@ const AmountMath = {
    * whether rectangle A is greater than rectangle B depends on whether rectangle
    * A includes rectangle B as defined by the logic in MathHelpers.
    *
-   * @param {Amount} leftAmount
-   * @param {Amount} rightAmount
+   * @template {AmountValue} [V=AmountValue]
+   * @param {Amount<V>} leftAmount
+   * @param {Amount<V>} rightAmount
    * @param {Brand=} brand
    * @returns {boolean}
    */
   isGTE: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
   },
   /**
    * Returns true if the leftAmount equals the rightAmount. We assume
    * that if isGTE is true in both directions, isEqual is also true
    *
-   * @param {Amount} leftAmount
-   * @param {Amount} rightAmount
+   * @template {AmountValue} [V=AmountValue]
+   * @param {Amount<V>} leftAmount
+   * @param {Amount<V>} rightAmount
    * @param {Brand=} brand
    * @returns {boolean}
    */
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     return h.doIsEqual(...coerceLR(h, leftAmount, rightAmount));
   },
   /**
@@ -306,14 +331,14 @@ const AmountMath = {
    * amount, it usually means including all of the elements from both
    * left and right.
    *
-   * @param {Amount} leftAmount
-   * @param {Amount} rightAmount
+   * @template {AmountValue} [V=AmountValue]
+   * @param {Amount<V>} leftAmount
+   * @param {Amount<V>} rightAmount
    * @param {Brand=} brand
-   * @returns {Amount}
+   * @returns {Amount<V>}
    */
   add: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     const value = h.doAdd(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
   },
@@ -325,23 +350,28 @@ const AmountMath = {
    * left amount must include the right amount, this is NOT equivalent
    * to set subtraction.
    *
-   * @param {Amount} leftAmount
-   * @param {Amount} rightAmount
+   * @template {AmountValue} [V=AmountValue]
+   * @param {Amount<V>} leftAmount
+   * @param {Amount<V>} rightAmount
    * @param {Brand=} brand
-   * @returns {Amount}
+   * @returns {Amount<V>}
    */
   subtract: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    // @ts-ignore Needs better typing to express AmountValue to Helpers relationship
     const value = h.doSubtract(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
   },
 };
 harden(AmountMath);
 
+/**
+ *
+ * @param {Amount} amount
+ */
 const getAssetKind = amount => {
   assertRecord(amount, 'amount');
   const { value } = amount;
+  // @ts-ignore cast (ignore b/c erroring in CI but not my IDE)
   return assertValueGetAssetKind(value);
 };
 harden(getAssetKind);
