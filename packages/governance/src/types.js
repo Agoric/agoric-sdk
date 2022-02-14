@@ -558,27 +558,18 @@
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
- * @template {LimitedCreatorFacet} T
- */
-
-/**
- * @callback WrapPublicFacet
- * @param {T} originalPublicFacet
- * @returns {T & GovernedPublicFacet}
  * @template T
  */
 
 /**
- * @callback WrapCreatorFacet
- * @param {T} originalCreatorFacet
- * @returns {GovernedCreatorFacet<T>}
- * @template T
+ * @typedef {<T>(originalPublicFacet: T) => T & GovernedPublicFacet } WrapPublicFacet
+ * @typedef {<T>(originalCreatorFacet: T) => GovernedCreatorFacet<T> } WrapCreatorFacet
  */
 
 /**
  * @typedef {Object} ParamGovernorBundle
- * @property {WrapPublicFacet<unknown>} wrapPublicFacet
- * @property {WrapCreatorFacet<unknown>} wrapCreatorFacet
+ * @property {WrapPublicFacet} wrapPublicFacet
+ * @property {WrapCreatorFacet} wrapCreatorFacet
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
