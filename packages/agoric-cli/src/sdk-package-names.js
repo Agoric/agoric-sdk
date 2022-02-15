@@ -17,7 +17,6 @@ export default [
   "@agoric/import-manager",
   "@agoric/notifier",
   "@agoric/pegasus",
-  "@endo/promise-kit",
   "@agoric/run-protocol",
   "@agoric/same-structure",
   "@agoric/sharing-service",
