@@ -99,6 +99,8 @@ export const makeVaultKit = (
   };
 
   /**
+   * Called whenever principal changes.
+   *
    * @param {Amount} newDebt - principal and all accrued interest
    */
   const updateDebtSnapshot = newDebt => {
@@ -133,7 +135,7 @@ export const makeVaultKit = (
    * @see getNormalizedDebt
    * @returns {Amount}
    */
-  // TODO rename to getActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
+  // TODO rename to calculateActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
   const getDebtAmount = () => {
     // divide compounded interest by the the snapshot
     const interestSinceSnapshot = multiplyRatios(
@@ -204,6 +206,9 @@ export const makeVaultKit = (
       : getCollateralAllocated(vaultSeat);
   };
 
+  /**
+   * @returns {Promise<Ratio>} Collateral over actual debt
+   */
   const getCollateralizationRatio = async () => {
     const collateralAmount = getCollateralAmount();
 
@@ -217,7 +222,7 @@ export const makeVaultKit = (
       return makeRatio(collateralAmount.value, runBrand, 1n);
     }
     const collateralValueInRun = getAmountOut(quoteAmount);
-    return makeRatioFromAmounts(collateralValueInRun, debtSnapshot.run);
+    return makeRatioFromAmounts(collateralValueInRun, getDebtAmount());
   };
 
   // call this whenever anything changes!

@@ -904,6 +904,11 @@ test('interest on multiple vaults', async t => {
     aliceCollateralization.numerator.value >
       aliceCollateralization.denominator.value,
   );
+  t.is(
+    aliceCollateralization.denominator.value,
+    aliceUpdate.value.debt.value,
+    `Debt in collateralizationRatio should match actual debt`,
+  );
 
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
   const rewardRunCount = aliceAddedDebt + bobAddedDebt + 1n; // +1 due to rounding
