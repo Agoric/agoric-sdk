@@ -89,7 +89,7 @@ export const makeVaultKit = (
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   /**
-   * Snapshot of the debt and cmpouneded interest when the principal was last changed
+   * Snapshot of the debt and compouneded interest when the principal was last changed
    *
    * @type {{run: Amount, interest: Ratio}}
    */

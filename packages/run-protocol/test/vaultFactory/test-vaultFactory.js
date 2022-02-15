@@ -861,6 +861,7 @@ test('interest on multiple vaults', async t => {
   );
 
   // { chargingPeriod: weekly, recordingPeriod: weekly }
+  // Advance 8 days, past one charging and recording period
   for (let i = 0; i < 8; i += 1) {
     manualTimer.tick();
   }
@@ -934,22 +935,40 @@ test('interest on multiple vaults', async t => {
   );
   await t.throwsAsync(E(caroleLoanSeat).getOfferResult());
 
-  // open a vault with floor debt (1n RUN)
+  // Advance another 7 days, past one charging and recording period
+  for (let i = 0; i < 8; i += 1) {
+    manualTimer.tick();
+  }
+  await waitForPromisesToSettle();
+
+  // open a vault when manager's interest already compounded
+  const wantedRun = 1_000n;
   const danLoanSeat = await E(zoe).offer(
     E(lender).makeLoanInvitation(),
     harden({
-      give: { Collateral: AmountMath.make(aethBrand, 200n) },
-      want: { RUN: AmountMath.make(runBrand, 1n) }, // smallest debt
+      give: { Collateral: AmountMath.make(aethBrand, 2_000n) },
+      want: { RUN: AmountMath.make(runBrand, wantedRun) },
     }),
     harden({
-      Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 200n)),
+      Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 2_000n)),
     }),
   );
-  /** @type {{vault: Vault}} */
-  const { vault: danVault } = await E(danLoanSeat).getOfferResult();
-  console.log('DEBUG', danVault);
-  t.is((await E(danVault).getDebtAmount()).value, 2n);
-  t.is((await E(danVault).getNormalizedDebt()).value, 1n);
+  /** @type {{vault: Vault, uiNotifier: Notifier<*>}} */
+  const { vault: danVault, uiNotifier: danNotifier } = await E(
+    danLoanSeat,
+  ).getOfferResult();
+  const danActualDebt = wantedRun + 50n; // includes fees
+  t.is((await E(danVault).getDebtAmount()).value, danActualDebt);
+  const normalizedDebt = (await E(danVault).getNormalizedDebt()).value;
+  t.true(
+    normalizedDebt < danActualDebt,
+    `Normalized debt ${normalizedDebt} must be less than actual ${danActualDebt} (after any time elapsed)`,
+  );
+  t.is((await E(danVault).getNormalizedDebt()).value, 1_047n);
+  const danUpdate = await E(danNotifier).getUpdateSince();
+  // snapshot should equal actual since no additional time has elapsed
+  const { debtSnapshot: danSnap } = danUpdate.value;
+  t.is(danSnap.run.value, danActualDebt);
 });
 
 test('adjust balances', async t => {
