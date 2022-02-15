@@ -13,30 +13,68 @@ const { brand: brandY } = makeIssuerKit('Y');
 const oneB = 1_000_000_000n;
 // const dec18 = 1_000_000_000_000_000_000n; // 18 decimals as used in ETH
 
-const arbX = fc.bigUint({ max: oneB }).map(value => m.make(brandX, value));
-const arbY = fc.bigUint({ max: oneB }).map(value => m.make(brandY, value));
+const arbPoolX = fc
+  .bigUint({ max: oneB })
+  .map(value => m.make(brandX, 100n + value));
+const arbPoolY = fc
+  .bigUint({ min: 100n, max: oneB })
+  .map(value => m.make(brandY, 100n + value));
+const arbGiveX = fc
+  .bigUint({ min: 100n, max: oneB })
+  .map(value => m.make(brandX, value));
+const arbGiveY = fc
+  .bigUint({ min: 100n, max: oneB })
+  .map(value => m.make(brandY, value));
+
+function withinEpsilon(numer, denom, epsilon) {
+  return (
+    Number(denom) * (1 - epsilon) <= numer &&
+    numer <= Number(denom) * (1 + epsilon)
+  );
+}
 
 test('balancesToReachRatio calculations are to spec', t => {
-  const sameRatio = ([x1, y1], [x2, y2], label) =>
-    t.deepEqual(multiply(x1, y2), multiply(x2, y1), label);
-
   fc.assert(
     fc.property(
-      fc.record({ poolX: arbX, poolY: arbY, giveX: arbX, giveY: arbY }),
+      fc.record({
+        poolX: arbPoolX,
+        poolY: arbPoolY,
+        giveX: arbGiveX,
+        giveY: arbGiveY,
+      }),
       ({ poolX, poolY, giveX, giveY }) => {
-        const { newX, newY } = balancesToReachRatio(poolX, poolY, giveX, giveY);
-
-        t.deepEqual(
-          multiply(newX.value, newY.value),
-          multiply(poolX.value, poolY.value),
-          `with giveX=${giveX.value} giveY=${giveY.value}, targetX=${newX.value} and targetY=${newY.value} multiply to the same product as poolX=${poolX.value} * poolY=${poolY.value}.`,
+        const { targetX, targetY } = balancesToReachRatio(
+          poolX,
+          poolY,
+          giveX,
+          giveY,
         );
 
-        sameRatio(
-          [newX.value, newY.value],
-          [add(poolX.value, giveX.value), add(poolY.value, giveY.value)],
-          `targetX ${newX.value} and targetY ${newY.value} are in the ratio as poolX + giveX / poolY + giveY`,
-        );
+        if (targetX.value === 0n && targetY.value === 0n) {
+          t.pass();
+        } else {
+          const targetProduct = Number(multiply(targetX.value, targetY.value));
+          const withinRange = withinEpsilon(
+            targetProduct,
+            Number(multiply(poolX.value, poolY.value)),
+            0.05,
+          );
+          t.truthy(
+            withinRange,
+            `with giveX=${giveX.value} giveY=${giveY.value}, targetX=${targetX.value} and targetY=${targetY.value} should have the same product as poolX=${poolX.value} * poolY=${poolY.value}.`,
+          );
+
+          const ratiosWithinRange = withinEpsilon(
+            targetX.value * add(poolY.value, giveY.value),
+            targetY.value * add(poolX.value, giveX.value),
+            0.05,
+          );
+
+          t.truthy(
+            ratiosWithinRange,
+            `targetX ${targetX.value} and targetY ${targetY.value} should be in the same ratio as poolX + giveX / poolY + giveY`,
+          );
+        }
       },
     ),
   );
