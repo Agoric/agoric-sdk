@@ -124,12 +124,12 @@ const closedOffersReducer = (closedOffers, { offerId, isClosed }) => {
 
 const Provider = ({ children }) => {
   const [connectionState, setConnectionState] = useState('disconnected');
-  const [inbox, setInbox] = useReducer(inboxReducer, null);
-  const [purses, setPurses] = useReducer(pursesReducer, null);
-  const [dapps, setDapps] = useReducer(dappsReducer, null);
-  const [contacts, setContacts] = useReducer(contactsReducer, null);
-  const [payments, setPayments] = useReducer(paymentsReducer, null);
-  const [issuers, setIssuers] = useReducer(issuersReducer, null);
+  const [inbox, setInbox] = useReducer(inboxReducer, []);
+  const [purses, setPurses] = useReducer(pursesReducer, []);
+  const [dapps, setDapps] = useReducer(dappsReducer, []);
+  const [contacts, setContacts] = useReducer(contactsReducer, []);
+  const [payments, setPayments] = useReducer(paymentsReducer, []);
+  const [issuers, setIssuers] = useReducer(issuersReducer, []);
   const [services, setServices] = useState(null);
   const [schemaActions, setSchemaActions] = useState(null);
   const [useChainBackend, setUseChainBackend] = useState(false);
