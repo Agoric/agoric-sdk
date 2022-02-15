@@ -291,7 +291,6 @@ export const makeVaultManager = (
   const debtDelta = (oldDebt, newDebt) => {
     // Since newDebt includes accrued interest we need to use getDebtAmount()
     // to get a baseline that also includes accrued interest.
-    // eslint-disable-next-line no-use-before-define
     const priorDebtValue = oldDebt.value;
     const newDebtValue = newDebt.value;
     // We can't used AmountMath because the delta can be negative.
@@ -410,20 +409,27 @@ export const makeVaultManager = (
       actions: { openLoan },
     } = vaultKit;
     assert(prioritizedVaults);
-    prioritizedVaults.addVaultKit(vaultId, vaultKit);
+    const addedVaultKey = prioritizedVaults.addVaultKit(vaultId, vaultKit);
 
-    const vaultResult = await openLoan(seat);
+    try {
+      const vaultResult = await openLoan(seat);
 
-    seat.exit();
+      seat.exit();
 
-    return harden({
-      uiNotifier: vaultResult.notifier,
-      invitationMakers: Far('invitation makers', {
-        AdjustBalances: vault.makeAdjustBalancesInvitation,
-        CloseVault: vault.makeCloseInvitation,
-      }),
-      vault,
-    });
+      return harden({
+        uiNotifier: vaultResult.notifier,
+        invitationMakers: Far('invitation makers', {
+          AdjustBalances: vault.makeAdjustBalancesInvitation,
+          CloseVault: vault.makeCloseInvitation,
+        }),
+        vault,
+      });
+    } catch (err) {
+      // remove it from prioritizedVaults
+      // XXX openLoan shouldn't assume it's already in the prioritizedVaults
+      prioritizedVaults.removeVault(addedVaultKey);
+      throw err;
+    }
   };
 
   /** @type {VaultManager} */

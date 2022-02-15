@@ -276,6 +276,9 @@ export const makeVaultKit = (
   };
 
   const liquidating = () => {
+    if (vaultState === VaultState.LIQUIDATING) {
+      throw new Error('Vault already liquidating');
+    }
     vaultState = VaultState.LIQUIDATING;
     updateUiState();
   };

@@ -31,8 +31,6 @@ const liquidate = async (
   strategy,
   collateralBrand,
 ) => {
-  // ??? should we bail if it's already liquidating?
-  // if so should that be done here or throw here and managed at the caller
   vaultKit.actions.liquidating();
   const runDebt = vaultKit.vault.getDebtAmount();
   const { brand: runBrand } = runDebt;

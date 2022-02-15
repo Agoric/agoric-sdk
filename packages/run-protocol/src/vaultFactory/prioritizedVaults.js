@@ -147,10 +147,11 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * @param {VaultKit} vaultKit
    */
   const addVaultKit = (vaultId, vaultKit) => {
-    vaults.addVaultKit(vaultId, vaultKit);
+    const key = vaults.addVaultKit(vaultId, vaultKit);
 
     const debtToCollateral = currentDebtToCollateral(vaultKit.vault);
     rescheduleIfHighest(debtToCollateral);
+    return key;
   };
 
   /**

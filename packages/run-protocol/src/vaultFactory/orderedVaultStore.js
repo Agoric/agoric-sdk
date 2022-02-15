@@ -37,6 +37,7 @@ export const makeOrderedVaultStore = () => {
       key,
     });
     store.init(key, vaultKit);
+    return key;
   };
 
   /**
