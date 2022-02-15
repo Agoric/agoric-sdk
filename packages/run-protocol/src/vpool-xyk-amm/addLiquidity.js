@@ -35,6 +35,15 @@ export const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
   return makeAddLiquidityInvitation;
 };
 
+// The desired ratio requires a wider range than K would support.
+const imbalancedRequest = (desiredRatio, startK) => {
+  if (desiredRatio > 1.0) {
+    return desiredRatio > startK;
+  } else {
+    return 1 / desiredRatio > startK;
+  }
+};
+
 /**
  * The pool has poolX and poolY currently. The user wants to add liquidity of
  * giveX and giveY, but the ratios are probably not the same. We want to adjust
@@ -60,19 +69,26 @@ export const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
  * @param {Amount} poolY
  * @param {Amount} giveX
  * @param {Amount} giveY
- * @returns {{newX: Amount, newY: Amount }}
+ * @returns {{targetX: Amount, targetY: Amount }}
  */
 export const balancesToReachRatio = (poolX, poolY, giveX, giveY) => {
   const startK = multiply(poolX.value, poolY.value);
   const endX = add(poolX.value, giveX.value);
   const endY = add(poolY.value, giveY.value);
   const desiredRatio = Number(endX) / Number(endY);
+
+  if (imbalancedRequest(desiredRatio, startK)) {
+    return {
+      targetX: AmountMath.makeEmpty(poolX.brand),
+      targetY: AmountMath.makeEmpty(poolY.brand),
+    };
+  }
   const targetY = Math.sqrt(Number(startK) / desiredRatio);
   const targetX = targetY * desiredRatio;
 
   return {
-    newX: AmountMath.make(poolX.brand, BigInt(Math.trunc(targetX))),
-    newY: AmountMath.make(poolY.brand, BigInt(Math.trunc(targetY))),
+    targetX: AmountMath.make(poolX.brand, BigInt(Math.trunc(targetX))),
+    targetY: AmountMath.make(poolY.brand, BigInt(Math.trunc(targetY))),
   };
 };
 
@@ -109,7 +125,7 @@ export const makeMakeAddLiquidityAtRateInvitation = (
       return pool.addLiquidity(seat);
     }
 
-    const { newX: newCentral, newY: newSecondary } = balancesToReachRatio(
+    const { targetX: newCentral, targetY: newSecondary } = balancesToReachRatio(
       centralPoolAmount,
       secondaryPoolAmount,
       giveAlloc.Central,
@@ -118,13 +134,13 @@ export const makeMakeAddLiquidityAtRateInvitation = (
 
     const vPool = provideVPool(secondaryBrand).internalFacet;
     const poolSeat = pool.getPoolSeat();
-    function transferForTrade(prices, incrementKey, decrementKey) {
+    const transferForTrade = (prices, incrementKey, decrementKey) => {
       seat.decrementBy(harden({ [incrementKey]: prices.swapperGives }));
       seat.incrementBy(harden({ [decrementKey]: prices.swapperGets }));
       feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
       poolSeat.incrementBy(harden({ [incrementKey]: prices.xIncrement }));
       poolSeat.decrementBy(harden({ [decrementKey]: prices.yDecrement }));
-    }
+    };
 
     //   1C  Stage the changes for the trade
     if (AmountMath.isGTE(newCentral, centralPoolAmount)) {

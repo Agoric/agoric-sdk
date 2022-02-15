@@ -13,8 +13,8 @@ test('calcBalances', t => {
   t.deepEqual(
     balancesToReachRatio(run(3000n), bld(4000n), run(400_000n), bld(300_000n)),
     {
-      newX: run(3988n),
-      newY: bld(3008n),
+      targetX: run(3988n),
+      targetY: bld(3008n),
     },
   );
 });
@@ -24,7 +24,20 @@ test('calcBalances', t => {
 test('calcBalances 2', t => {
   const { run, bld } = setupMintKits();
   t.deepEqual(balancesToReachRatio(run(4n), bld(9n), run(1196n), bld(291n)), {
-    newX: run(12n),
-    newY: bld(3n),
+    targetX: run(12n),
+    targetY: bld(3n),
   });
+});
+
+// The pool has x=4, y=9. The user wants to change the ratio to 1.1M:20K. The
+// pool balance doesn't have enough resolution to support that, so it says no.
+test('calcBalances out of balance', t => {
+  const { run, bld } = setupMintKits();
+  t.deepEqual(
+    balancesToReachRatio(run(4n), bld(9n), run(1_196_000n), bld(21_000n)),
+    {
+      targetX: run(0n),
+      targetY: bld(0n),
+    },
+  );
 });
