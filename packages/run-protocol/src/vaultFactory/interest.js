@@ -15,6 +15,12 @@ const makeResult = (latestInterestUpdate, interest, newDebt) => ({
   newDebt,
 });
 
+// What about leap years?
+// https://www.grc.nasa.gov/www/k-12/Numbers/Math/Mathematical_Thinking/calendar_calculations.htm
+// says the average Gregorian year is 365.2425
+// whereas the astronomical figure (tropical year) is 365.2422
+// No mention made of the occasional leap second!
+// Whether we care depends on what we do with it.
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
 // single digit APR is less than a basis point per day.

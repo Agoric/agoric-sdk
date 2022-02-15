@@ -62,18 +62,19 @@ export const assertSubset = (whole, part) => {
  *      value.
  *    * No matter whether the original property was an accessor, writable,
  *      or configurable, all the properties of the returned object will be
- *      writable, configurable, data properties.
+ *      non-writable, non-configurable, own data properties.
  *    * No matter what the original object may have inherited from, and
  *      no matter whether it was a special kind of object such as an array,
  *      the returned object will always be a plain object inheriting directly
  *      from `Object.prototype` and whose state is only these new mapped
  *      own properties.
+ *    * The new object is hardened.
  *    * The caller-provided mapping function can map the entry to a new entry
  *      with a different key, in which case the new object will have those
  *      keys as its property names rather than the original's.
  *
  * Typical usage will be to apply `objectMap` to a pass-by-copy record, i.e.,
- * and object for which `passStyleOf(original) === 'copyRecord'`. For these,
+ * an object for which `passStyleOf(original) === 'copyRecord'`. For these,
  * none of these edge cases arise. If the mapping does not introduce
  * symbol-named properties, then the result, once hardened, will also be a
  * pass-by-copy record.

@@ -1,5 +1,7 @@
 // @ts-check
 
+// Should this be moved to the contractSupport library of helpers?
+
 /**
  * @param {ContractFacet} zcf
  * @param {ZCFSeat} feeSeat

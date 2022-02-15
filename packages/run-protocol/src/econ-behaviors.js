@@ -22,7 +22,7 @@ import '../exported.js';
 
 import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
 
-import { Collect } from './collect.js';
+import { allValues, mapValues } from './collect.js';
 
 const { entries, keys } = Object;
 
@@ -50,8 +50,8 @@ export const startEconomicCommittee = async (
   const bundles = await governanceBundles;
   keys(bundles).forEach(key => assert(shared.contract[key]));
 
-  const installations = await Collect.allValues(
-    Collect.mapValues(bundles, bundle => E(zoe).install(bundle)),
+  const installations = await allValues(
+    mapValues(bundles, bundle => E(zoe).install(bundle)),
   );
 
   const [installAdmin, instanceAdmin] = await collectNameAdmins(
@@ -167,6 +167,7 @@ export const setupAmm = async ({
     E(instanceAdmin).update('ammGovernor', g.instance),
   ]);
 };
+harden(setupAmm);
 
 /**
  * @param {BootstrapPowers & {
@@ -222,7 +223,7 @@ export const startVaultFactory = async (
   );
 
   const bundles = await vaultBundles;
-  const installations = await Collect.allValues({
+  const installations = await allValues({
     VaultFactory: E(zoe).install(bundles.VaultFactory),
     liquidate: E(zoe).install(bundles.liquidate),
   });
@@ -307,12 +308,13 @@ export const startVaultFactory = async (
     ),
   ]);
 };
+harden(startVaultFactory);
 
 /** @param { BootstrapPowers } powers */
 export const configureVaultFactoryUI = async ({
   consume: { agoricNames, nameAdmins, board, zoe },
 }) => {
-  const installs = await Collect.allValues({
+  const installs = await allValues({
     amm: E(agoricNames).lookup('installation', 'amm'),
     vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
     contractGovernor: E(agoricNames).lookup('installation', 'contractGovernor'),
@@ -325,11 +327,11 @@ export const configureVaultFactoryUI = async ({
       'binaryVoteCounter',
     ),
   });
-  const instances = await Collect.allValues({
+  const instances = await allValues({
     amm: E(agoricNames).lookup('instance', 'amm'),
     vaultFactory: E(agoricNames).lookup('instance', 'VaultFactory'),
   });
-  const central = await Collect.allValues({
+  const central = await allValues({
     brand: E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
     issuer: E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME),
   });

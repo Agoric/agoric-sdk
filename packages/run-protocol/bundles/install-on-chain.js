@@ -1,8 +1,16 @@
 // @ts-check
+
+// Even though this is in the bundles/ directory, it is a source file.
+// However, because it is in that directory, it seems exempt from eslint.
+// As a result, it looks like several uncought type errors have crept
+// in over time. All seem to be failures to pick up ambient types.
+
 import { E } from '@agoric/eventual-send';
 
 import '@agoric/governance/exported.js';
 import '../exported.js';
+import '../src/vaultFactory/type-imports.js';
+import '@agoric/vats';
 
 import { Far } from '@endo/far';
 import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from '../src/vpool-xyk-amm/params.js';

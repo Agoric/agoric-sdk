@@ -32,7 +32,7 @@ import {
 } from '../../src/vaultFactory/params.js';
 import { startVaultFactory } from '../../src/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
-import { Collect } from '../../src/collect.js';
+import { allValues } from '../../src/collect.js';
 
 const contractRoots = {
   faucet: './faucet.js',
@@ -252,14 +252,14 @@ async function setupServices(
   produce.priceAuthority.resolve(priceAuthority);
 
   produce.feeMintAccess.resolve(feeMintAccess);
-  const vaultBundles = await Collect.allValues({
+  const vaultBundles = await allValues({
     VaultFactory: bundlePs.VaultFactory,
     liquidate: bundlePs.liquidate,
   });
   produce.vaultBundles.resolve(vaultBundles);
   await startVaultFactory({ consume, produce }, { loanParams: loanTiming });
   const agoricNames = consume.agoricNames;
-  const installs = await Collect.allValues({
+  const installs = await allValues({
     vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
     liquidate: E(agoricNames).lookup('installation', 'liquidate'),
   });

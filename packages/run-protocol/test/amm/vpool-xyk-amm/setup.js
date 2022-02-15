@@ -14,7 +14,7 @@ import {
   makeNameAdmins,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
-import { Collect } from '../../../src/collect.js';
+import { allValues } from '../../../src/collect.js';
 import {
   setupAmm,
   startEconomicCommittee,
@@ -76,12 +76,12 @@ export const setupAMMBootstrap = async (
   produce.nameAdmins.resolve(nameAdmins);
 
   /** @type {Record<string, Promise<{moduleFormat: string}>>} */
-  const governanceBundlePs = {
+  const governanceBundlePs = harden({
     contractGovernor: contractGovernorBundleP,
     committee: committeeBundleP,
     binaryVoteCounter: voteCounterBundleP,
-  };
-  const bundles = await Collect.allValues(governanceBundlePs);
+  });
+  const bundles = await allValues(governanceBundlePs);
   produce.governanceBundles.resolve(bundles);
 
   return { produce, consume };
@@ -122,7 +122,7 @@ export const setupAmmServices = async (
   ]);
 
   const agoricNames = consume.agoricNames;
-  const installs = await Collect.allValues({
+  const installs = await allValues({
     amm: E(agoricNames).lookup('installation', 'amm'),
     governor: E(agoricNames).lookup('installation', 'contractGovernor'),
     electorate: E(agoricNames).lookup('installation', 'committee'),
