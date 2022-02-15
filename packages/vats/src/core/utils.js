@@ -19,7 +19,6 @@ export const shared = harden({
     RUN: 'Agoric RUN currency',
     Attestation: 'Agoric lien attestation',
   },
-  // installation, instance nameAdmins
   contract: {
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
@@ -42,6 +41,10 @@ export const shared = harden({
     getRUN: 'getRUN',
     getRUNGovernor: 'getRUN governor',
     Pegasus: 'remote peg',
+  },
+  uiConfig: {
+    VaultFactory: 'vault factory',
+    Treasury: 'vault factory', // compatibility
   },
 });
 
@@ -76,28 +79,23 @@ export const makeNameAdmins = () => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
 
+  const sections = {
+    brand: 'assets',
+    issuer: 'assets',
+    installation: 'contract',
+    instance: 'instance',
+    uiConfig: 'uiConfig',
+    pegasus: undefined,
+  };
   /** @type {Store<NameHub, NameAdmin>} */
   const nameAdmins = makeStore('nameHub');
-  [
-    'brand',
-    'installation',
-    'issuer',
-    'instance',
-    'uiConfig',
-    'pegasus',
-  ].forEach(nm => {
+  keys(sections).forEach(nm => {
     const { nameHub, nameAdmin } = makeNameHubKit();
     agoricNamesAdmin.update(nm, nameHub);
     nameAdmins.init(nameHub, nameAdmin);
-    if (nm === 'uiConfig') {
-      // Reserve the Vault Factory's config until we've populated it.
-      nameAdmin.reserve('vaultFactory');
-    } else if (['issuer', 'brand'].includes(nm)) {
-      keys(shared.assets).forEach(k => nameAdmin.reserve(k));
-    } else if (nm === 'installation') {
-      keys(shared.contract).forEach(k => nameAdmin.reserve(k));
-    } else if (nm === 'instance') {
-      keys(shared.instance).forEach(k => nameAdmin.reserve(k));
+    const section = sections[nm];
+    if (section) {
+      keys(shared[section]).forEach(k => nameAdmin.reserve(k));
     }
   });
   return { agoricNames, agoricNamesAdmin, nameAdmins };
