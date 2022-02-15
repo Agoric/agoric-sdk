@@ -106,15 +106,10 @@ export const makeClientManager = async (
   /** @type {SubscriptionRecord<PropertyMakers>} */
   const { subscription, publication } = makeSubscriptionKit();
 
-  // Cache the latest full property maker state.
-  /** @type { PropertyMakers } */
-  let cachedPropertyMakers = [];
-
   /** @type {ClientManager} */
   const clientManager = Far('chainClientManager', {
     assignBundle: newPropertyMakers => {
       // Write the property makers to the cache, and update the subscription.
-      cachedPropertyMakers = [...cachedPropertyMakers, ...newPropertyMakers];
       publication.updateState(newPropertyMakers);
     },
   });
@@ -148,7 +143,7 @@ export const makeClientManager = async (
       };
 
       // Publish new configurations.
-      const newConfig = await makeUpdatedConfiguration(cachedPropertyMakers);
+      const newConfig = await makeUpdatedConfiguration([]);
       const { notifier, updater } = makeNotifierKit(newConfig);
 
       /** @type {ClientFacet} */
