@@ -53,6 +53,7 @@ export const makeInterestCalculator = (
     let growingDebt = newDebt;
     while (newRecent + chargingPeriod <= currentTime) {
       newRecent += chargingPeriod;
+      // The `ceil` implies that a vault with any debt will accrue at least one µRUN.
       const newInterest = ceilMultiplyBy(growingDebt, ratePerChargingPeriod);
       growingInterest = AmountMath.add(growingInterest, newInterest);
       growingDebt = AmountMath.add(growingDebt, newInterest, brand);
