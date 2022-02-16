@@ -5,12 +5,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import path from 'path';
-import { E } from '@agoric/eventual-send';
+import { E, Far } from '@endo/far';
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 
+import { makePromiseKit } from '@agoric/promise-kit';
 import {
   ChoiceMethod,
   ElectionType,
@@ -24,7 +26,9 @@ const dirname = path.dirname(filename);
 const electorateRoot = `${dirname}/../../src/committee.js`;
 const counterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
 
-const setupContract = async () => {
+const setupContract = async (
+  terms = { committeeName: 'illuminati', committeeSize: 13 },
+) => {
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // pack the contract
@@ -37,7 +41,6 @@ const setupContract = async () => {
     E(zoe).install(electorateBundle),
     E(zoe).install(counterBundle),
   ]);
-  const terms = { committeeName: 'illuminati', committeeSize: 13 };
   const electorateStartResult = await E(zoe).startInstance(
     electorateInstallation,
     {},
@@ -133,4 +136,55 @@ test('committee-open question:mixed', async t => {
 
   const questions = await publicFacet.getOpenQuestions();
   t.deepEqual(questions.length, 2);
+});
+
+test('committee-distribute invitations', async t => {
+  const DEPOSIT_FACET = 'depositFacet';
+
+  const addresses = ['P43 Wallaby Way', '21 Jump Street'];
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+    makeNameHubKit();
+  await Promise.all(addresses.map(key => E(namesByAddressAdmin).reserve(key)));
+
+  const {
+    electorateStartResult: { creatorFacet },
+  } = await setupContract({
+    committeeName: 'The Storybook Voters',
+    committeeSize: addresses.length,
+    addresses,
+    namesByAddress,
+  });
+
+  const provisionClient = async address => {
+    const { nameHub, nameAdmin } = makeNameHubKit();
+    nameAdmin.reserve(DEPOSIT_FACET);
+    namesByAddressAdmin.update(address, nameHub);
+    return { address, nameHub, nameAdmin };
+  };
+
+  const clientBundles = await Promise.all(addresses.map(provisionClient));
+  const clientsByAddress = Object.fromEntries(
+    clientBundles.map(b => [b.address, b]),
+  );
+
+  const invitations = await E(creatorFacet)
+    .getVoterInvitations()
+    .then(ips => Promise.all(ips));
+
+  t.plan(addresses.length);
+  const deployWalletFor = async address => {
+    const done = makePromiseKit();
+    const contact = Far('contact', {
+      receive: payment => {
+        t.true(invitations.includes(payment), 'received expected invitation');
+        done.resolve(payment);
+      },
+      done: () => done.promise,
+    });
+    const { nameAdmin } = clientsByAddress[address];
+    await E(nameAdmin).update(DEPOSIT_FACET, contact);
+    return contact;
+  };
+  const clients = await Promise.all(addresses.map(deployWalletFor));
+  await Promise.all(clients.map(c => c.done()));
 });
