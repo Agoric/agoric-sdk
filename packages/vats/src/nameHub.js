@@ -9,6 +9,9 @@ import { makeLegacyMap } from '@agoric/store';
 import './types.js';
 
 /**
+ * Make two facets of a node in a name hierarchy: the nameHub
+ * is read access and the nameAdmin is write access.
+ *
  * @returns {NameHubKit}
  */
 export const makeNameHubKit = () => {

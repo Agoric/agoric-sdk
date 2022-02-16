@@ -5,7 +5,7 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeNameHubKit } from '../nameHub.js';
 
-import { feeIssuerConfig, collectNameAdmins, makeNameAdmins } from './utils.js';
+import { feeIssuerConfig } from './utils.js';
 
 // TODO/TECHDEBT: move to run-protocol?
 const Tokens = harden({
@@ -30,7 +30,7 @@ const Tokens = harden({
  * cosmosInitAction with type AG_COSMOS_INIT,
  * with the following shape.
  *
- * The urun supplyCoins value is taken from geneis,
+ * The urun supplyCoins value is taken from genesis,
  * thereby authorizing the minting an initial supply of RUN.
  */
 // eslint-disable-next-line no-unused-vars
@@ -117,16 +117,29 @@ export const makeBoard = async ({
 };
 harden(makeBoard);
 
-/** @param {BootstrapPowers} powers */
-export const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
+/**
+ * Make the agoricNames, namesByAddress name hierarchies.
+ *
+ * agoricNames are well-known items such as the RUN issuer,
+ * available as E(home.agoricNames).lookup('issuer', 'RUN')
+ *
+ * namesByAddress is a NameHub for each provisioned client,
+ * available, for example, as `E(home.namesByAddress).lookup('agoric1...')`.
+ * `depositFacet` as in `E(home.namesByAddress).lookup('agoric1...', 'depositFacet')`
+ * is reserved for use by the Agoric wallet. Each client
+ * is given `home.myAddressNameAdmin`, which they can use to
+ * assign (update / reserve) any other names they choose.
+ *
+ * @param {BootstrapSpace} powers
+ */
+export const makeAddressNameHubs = async ({
+  consume: { agoricNames: agoricNamesP, client },
+  produce,
+}) => {
+  const agoricNames = await agoricNamesP;
+
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
-
-  const { agoricNames, agoricNamesAdmin, nameAdmins } = makeNameAdmins();
-
-  produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
-  produce.nameAdmins.resolve(nameAdmins);
   produce.namesByAddress.resolve(namesByAddress);
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
@@ -192,7 +205,7 @@ export const mintInitialSupply = async ({
     { feeMintAccess },
   );
   const payment = await E(E.get(start).creatorFacet).getBootstrapPayment();
-  // TODO: is it OK for creatorFacet, instance, installation to be dropped?
+  // TODO: shut down the centralSupply contract, now that we have the payment?
   initialSupply.resolve(payment);
 };
 harden(mintInitialSupply);
@@ -205,15 +218,10 @@ harden(mintInitialSupply);
  * }} powers
  */
 export const addBankAssets = async ({
-  consume: {
-    agoricNames,
-    nameAdmins,
-    initialSupply,
-    bridgeManager,
-    loadVat,
-    zoe,
-  },
+  consume: { initialSupply, bridgeManager, loadVat, zoe },
   produce: { bankManager, bldIssuerKit },
+  issuer: { produce: produceIssuer },
+  brand: { produce: produceBrand },
 }) => {
   const runIssuer = await E(zoe).getFeeIssuer();
   const [runBrand, payment] = await Promise.all([
@@ -226,30 +234,24 @@ export const addBankAssets = async ({
     Tokens.BLD.name,
     AssetKind.NAT,
     Tokens.BLD.displayInfo,
-  ); // TODO: should this live in another vat???
+  ); // TODO(#4578): move BLD issuerKit to its own vat
   bldIssuerKit.resolve(bldKit);
 
-  const mgr = E(E(loadVat)('bank')).makeBankManager(bridgeManager);
-  bankManager.resolve(mgr);
+  const bankMgr = E(E(loadVat)('bank')).makeBankManager(bridgeManager);
+  bankManager.resolve(bankMgr);
 
-  const [issuerAdmin, brandAdmin] = await collectNameAdmins(
-    ['issuer', 'brand'],
-    agoricNames,
-    nameAdmins,
-  );
-
+  produceIssuer.BLD.resolve(bldKit.issuer);
+  produceIssuer.RUN.resolve(runKit.issuer);
+  produceBrand.BLD.resolve(bldKit.brand);
+  produceBrand.RUN.resolve(runKit.brand);
   return Promise.all([
-    E(issuerAdmin).update(Tokens.BLD.name, bldKit.issuer),
-    E(brandAdmin).update(Tokens.BLD.name, bldKit.brand),
-    E(issuerAdmin).update(Tokens.RUN.name, runKit.issuer),
-    E(brandAdmin).update(Tokens.RUN.name, runKit.brand),
-    E(mgr).addAsset(
+    E(bankMgr).addAsset(
       Tokens.BLD.denom,
       Tokens.BLD.name,
       Tokens.BLD.proposedName,
       bldKit, // with mint
     ),
-    E(mgr).addAsset(
+    E(bankMgr).addAsset(
       Tokens.RUN.denom,
       Tokens.RUN.name,
       Tokens.RUN.proposedName,

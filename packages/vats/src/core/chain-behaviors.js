@@ -22,7 +22,8 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import * as Collect from '@agoric/run-protocol/src/collect.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 
-import { collectNameAdmins, callProperties } from './utils.js';
+import { callProperties } from './utils.js';
+import { makeNameHubKit } from '../nameHub.js';
 
 export { installOnChain as installPegasusOnChain } from '@agoric/pegasus/src/install-on-chain.js';
 
@@ -174,9 +175,12 @@ harden(makeClientManager);
 export const startTimerService = async ({
   devices: { timer: timerDevice },
   vats: { timer: timerVat },
-  produce: { chainTimerService },
+  consume: { client },
+  produce: { chainTimerService: produceTimer },
 }) => {
-  chainTimerService.resolve(E(timerVat).createTimerService(timerDevice));
+  const chainTimerService = E(timerVat).createTimerService(timerDevice);
+  produceTimer.resolve(chainTimerService);
+  return E(client).assignBundle([_addr => ({ chainTimerService })]);
 };
 harden(startTimerService);
 
@@ -334,14 +338,10 @@ const addPegasusTransferPort = async (
  * @typedef {{ network: NetworkVat, ibc: IBCVat, provisioning: ProvisioningVat}} NetVats
  */
 export const setupNetworkProtocols = async ({
-  consume: {
-    agoricNames,
-    client,
-    nameAdmins,
-    loadVat,
-    bridgeManager,
-    zoe,
-    provisioning,
+  consume: { client, loadVat, bridgeManager, zoe, provisioning },
+  produce: { pegasusConnections, pegasusConnectionsAdmin },
+  instance: {
+    consume: { [PEGASUS_NAME]: pegasusInstance },
   },
 }) => {
   /** @type { NetVats } */
@@ -351,13 +351,13 @@ export const setupNetworkProtocols = async ({
     provisioning,
   };
 
-  const pegasusInstance = E(agoricNames).lookup('instance', PEGASUS_NAME);
-  const [dibcBridgeManager, pegasus, [pegasusConnectionsAdmin]] =
-    await Promise.all([
-      bridgeManager,
-      E(zoe).getPublicFacet(pegasusInstance),
-      collectNameAdmins(['pegasus'], agoricNames, nameAdmins),
-    ]);
+  const { nameHub, nameAdmin } = makeNameHubKit();
+  pegasusConnections.resolve(nameHub);
+  pegasusConnectionsAdmin.resolve(nameAdmin);
+  const [dibcBridgeManager, pegasus] = await Promise.all([
+    bridgeManager,
+    E(zoe).getPublicFacet(pegasusInstance),
+  ]);
 
   const makePorts = async () => {
     // Bind to some fresh ports (unspecified name) on the IBC implementation
@@ -375,7 +375,7 @@ export const setupNetworkProtocols = async ({
   // ibc-port etc.
   await registerNetworkProtocols(vats, dibcBridgeManager);
   return Promise.all([
-    addPegasusTransferPort(vats, pegasus, pegasusConnectionsAdmin),
+    addPegasusTransferPort(vats, pegasus, nameAdmin),
     E(client).assignBundle([_a => ({ ibcport: makePorts() })]),
   ]);
 };

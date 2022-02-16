@@ -107,6 +107,10 @@
  *
  * @typedef {Object} ClientFacet
  * @property {() => ERef<Record<string, any>>} getChainBundle Required for ag-solo, but deprecated in favour of getConfiguration
+ *   NOTE: we use `any` rather than `unknown` because each client that wants to call a method such as
+ *   `E(userBundle.bank).deposit(payment)` has to cast userBundle.bank;
+ *   ideally, the cast is to some useful type. But unknown can't be cast directly to some other type;
+ *   it has to be cast to any first.
  * @property {() => ConsistentAsyncIterable<Configuration>} getConfiguration
  *
  * @typedef {{ clientAddress: string, clientHome: Record<string, any>}} Configuration
@@ -118,6 +122,49 @@
 
 /**
  * @typedef {{
+ *   issuer: |
+ *     'RUN' | 'BLD',
+ *   installation: |
+ *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
+ *     'amm' | 'VaultFactory' | 'liquidate' | 'getRUN' |
+ *     'Pegasus',
+ *   instance: |
+ *     'economicCommittee' |
+ *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' | 'liquidate' |
+ *     'getRUN' | 'getRUNGovernor' |
+ *     'Treasury' |
+ *     'Pegasus',
+ *   uiConfig: |
+ *     'VaultFactory' |
+ *     'Treasury' // compat.
+ * }} WellKnownName
+ *
+ * @typedef {{
+ *   issuer: {
+ *     produce: Record<WellKnownName['issuer'], Producer<Issuer>>,
+ *     consume: Record<WellKnownName['issuer'], Promise<Issuer>>,
+ *   },
+ *   brand: {
+ *     produce: Record<WellKnownName['issuer'], Producer<Brand>>,
+ *     consume: Record<WellKnownName['issuer'], Promise<Brand>>,
+ *   },
+ *   installation:{
+ *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
+ *     consume: Record<WellKnownName['installation'], Promise<Installation>>,
+ *   },
+ *   instance:{
+ *     produce: Record<WellKnownName['instance'], Producer<Instance>>,
+ *     consume: Record<WellKnownName['instance'], Promise<Instance>>,
+ *   },
+ *   uiConfig: {
+ *     produce: Record<WellKnownName['uiConfig'], Producer<Record<string, any>>>,
+ *     consume: Record<WellKnownName['uiConfig'], Promise<Record<string, any>>>,
+ *   },
+ * }} WellKnownSpaces
+ */
+
+/**
+ * @typedef { WellKnownSpaces & {
  *   consume: {
  *     agoricNames: Promise<NameHub>,
  *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
@@ -130,8 +177,9 @@
  *     feeMintAccess: ERef<FeeMintAccess>,
  *     governanceBundles: ERef<Record<string, SourceBundle>>,
  *     initialSupply: ERef<Payment>,
- *     nameAdmins: Promise<Store<NameHub, NameAdmin>>,
  *     pegasusBundle: Promise<SourceBundle>,
+ *     pegasusConnections: Promise<NameHub>,
+ *     pegasusConnectionsAdmin: Promise<NameAdmin>,
  *     priceAuthorityVat: PriceAuthorityVat,
  *     priceAuthority: ERef<PriceAuthority>,
  *     priceAuthorityAdmin: ERef<PriceAuthorityRegistryAdmin>,
@@ -141,7 +189,6 @@
  *   },
  *   produce: {
  *     agoricNames: Producer<NameHub>,
- *     agoricNamesAdmin: Producer<NameAdmin>,
  *     ammCreatorFacet: Producer<unknown>,
  *     ammGovernorCreatorFacet: Producer<unknown>,
  *     chainTimerService: Producer<ERef<TimerService>>,
@@ -153,11 +200,12 @@
  *     initialSupply: Producer<Payment>,
  *     centralSupplyBundle: Producer<SourceBundle>,
  *     feeMintAccess: Producer<FeeMintAccess>,
- *     nameAdmins: Producer<Store<NameHub, NameAdmin>>,
  *     priceAuthorityVat: Producer<PriceAuthorityVat>,
  *     priceAuthority: Producer<PriceAuthority>,
  *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>,
  *     pegasusBundle: Producer<SourceBundle>,
+ *     pegasusConnections: Producer<NameHub>,
+ *     pegasusConnectionsAdmin: Producer<NameAdmin>,
  *     vaultFactoryCreator: Producer<{ makeCollectFeesInvitation: () => Promise<Invitation> }>,
  *     vaultFactoryGovernorCreator: Producer<unknown>,
  *     vaultFactoryVoteCreator: Producer<unknown>,
@@ -184,7 +232,7 @@
  *   vatParameters: BootstrapVatParams,
  *   runBehaviors: (manifest: unknown) => Promise<unknown>,
  * }} BootstrapPowers
- * @typedef {{
+ * @typedef { WellKnownSpaces & {
  *   consume: EconomyBootstrapPowers['consume'] & {
  *     bankManager: BankManager,
  *     board: ERef<Board>,

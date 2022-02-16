@@ -14,7 +14,7 @@ const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
 
 const CENTRAL_ISSUER_NAME = 'RUN';
-const QUOTE_INTERVAL = 5 * 60;
+const QUOTE_INTERVAL = 5n * 60n;
 
 /** @type {Record<string, number>} */
 export const DecimalPlaces = {
@@ -467,7 +467,6 @@ export const poolRates = (issuerName, record, kits, central) => {
  */
 export const fundAMM = async ({
   consume: {
-    agoricNames,
     bldIssuerKit,
     centralSupplyBundle,
     chainTimerService,
@@ -477,6 +476,15 @@ export const fundAMM = async ({
     priceAuthorityAdmin,
     vaultFactoryCreator,
     zoe,
+  },
+  issuer: {
+    consume: { RUN: centralIssuer },
+  },
+  brand: {
+    consume: { RUN: centralBrand },
+  },
+  instance: {
+    consume: { amm: ammInstance },
   },
 }) => {
   const { ammTotal: ammDepositValue, balances } =
@@ -493,8 +501,8 @@ export const fundAMM = async ({
         switch (issuerName) {
           case CENTRAL_ISSUER_NAME: {
             const [issuer, brand] = await Promise.all([
-              E(agoricNames).lookup('issuer', issuerName),
-              E(agoricNames).lookup('brand', issuerName),
+              centralIssuer,
+              centralBrand,
             ]);
             return { mint: undefined, issuer, brand };
           }
@@ -508,8 +516,6 @@ export const fundAMM = async ({
   );
   const central = kits[CENTRAL_ISSUER_NAME];
 
-  /** @type {ERef<Instance>} */
-  const ammInstance = E(agoricNames).lookup('instance', 'amm');
   /** @type {[XYKAMMPublicFacet, TimerService]} */
   const [ammPublicFacet, timer] = await Promise.all([
     E(zoe).getPublicFacet(ammInstance),
@@ -680,9 +686,9 @@ export const fundAMM = async ({
       // Register the price pairs.
       await Promise.all(
         [
-          [fromCentral, central.brand, brand],
-          [toCentral, brand, central.brand],
-        ].map(async ([pa, fromBrand, toBrand]) => {
+          { pa: fromCentral, fromBrand: central.brand, toBrand: brand },
+          { pa: toCentral, fromBrand: brand, toBrand: central.brand },
+        ].map(async ({ pa, fromBrand, toBrand }) => {
           const paPresence = await pa;
           if (!paPresence) {
             return;

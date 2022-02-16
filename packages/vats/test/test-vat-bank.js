@@ -14,7 +14,7 @@ import {
   mintInitialSupply,
   addBankAssets,
 } from '../src/core/basic-behaviors.js';
-import { makeNameAdmins, makePromiseSpace } from '../src/core/utils.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 
 test('communication', async t => {
   t.plan(38);
@@ -202,6 +202,9 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     /** @type { BootstrapPowers & { consume: { loadVat: VatLoader<any> }}} */ (
       space
     );
+  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  produce.agoricNames.resolve(agoricNames);
+
   produce.centralSupplyBundle.resolve(economyBundles.centralSupply);
 
   const { zoeService, feeMintAccess } = makeZoeKit(
@@ -238,6 +241,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     vats: /** @type { any } */ ({}),
     vatPowers: /** @type { any } */ ({}),
     runBehaviors: /** @type { any } */ ({}),
+    ...spaces,
   });
 
   // check results: initialSupply
@@ -251,10 +255,6 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     'initialSupply of 50 RUN',
   );
 
-  const { agoricNames, agoricNamesAdmin, nameAdmins } = makeNameAdmins();
-  produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
-  produce.nameAdmins.resolve(nameAdmins);
   const loadVat = async name => {
     assert.equal(name, 'bank');
     return E(buildRootObject)();
@@ -262,7 +262,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.loadVat.resolve(loadVat);
   produce.bridgeManager.resolve(undefined);
 
-  await addBankAssets({ consume, produce });
+  await addBankAssets({ consume, produce, ...spaces });
 
   // check results: bankManager assets
   const assets = E(consume.bankManager).getAssetSubscription();
