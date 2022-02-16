@@ -11,7 +11,6 @@ import {
   ceilMultiplyBy,
   ceilDivideBy,
   makeRatio,
-  multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
@@ -29,7 +28,10 @@ import {
   INTEREST_RATE_KEY,
   CHARGING_PERIOD_KEY,
 } from './params.js';
-import { makeInterestCalculator } from './interest.js';
+import {
+  calculateCompoundedInterest,
+  makeInterestCalculator,
+} from './interest.js';
 
 const { details: X } = assert;
 
@@ -257,10 +259,10 @@ export const makeVaultManager = (
       return;
     }
 
-    // compoundedInterest *= debtStatus.newDebt / totalDebt;
-    compoundedInterest = multiplyRatios(
+    compoundedInterest = calculateCompoundedInterest(
       compoundedInterest,
-      makeRatio(debtStatus.newDebt, runBrand, totalDebt, runBrand),
+      totalDebt,
+      debtStatus.newDebt,
     );
     totalDebt += interestAccrued;
 

@@ -3,7 +3,10 @@
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/callSpread/types.js';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  makeRatio,
+  multiplyRatios,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import './types.js';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
@@ -81,4 +84,26 @@ export const makeInterestCalculator = (
     calculate,
     calculateReportingPeriod,
   });
+};
+
+/**
+ * compoundedInterest *= (new debt) / (prior total debt)
+ *
+ * @param {Ratio} priorCompoundedInterest
+ * @param {NatValue} priorDebt
+ * @param {NatValue} newDebt
+ */
+export const calculateCompoundedInterest = (
+  priorCompoundedInterest,
+  priorDebt,
+  newDebt,
+) => {
+  const brand = priorCompoundedInterest.numerator.brand;
+  if (priorDebt === 0n) {
+    throw new Error('No interest on zero debt');
+  }
+  return multiplyRatios(
+    priorCompoundedInterest,
+    makeRatio(newDebt, brand, priorDebt, brand),
+  );
 };

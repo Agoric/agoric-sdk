@@ -4,8 +4,9 @@ import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-
+import { Far } from '@endo/marshal';
 import {
+  calculateCompoundedInterest,
   makeInterestCalculator,
   SECONDS_PER_YEAR,
 } from '../../src/vaultFactory/interest.js';
@@ -412,4 +413,37 @@ test('basic charge reasonable numbers monthly', async t => {
       newDebt: 10246705n,
     },
   );
+});
+
+test('calculateCompoundedInterest on zero debt', t => {
+  const brand = Far('brand');
+  t.throws(() =>
+    calculateCompoundedInterest(makeRatio(0n, brand, 1n, brand), 0n, 100n),
+  );
+});
+
+// -illions
+const B = 1_000_000_000n;
+const Q = B * B;
+
+test('calculateCompoundedInterest', t => {
+  const brand = Far('brand');
+  const cases = [
+    [1n, 1n, 1n, 1n, 1n, 1n], // no charge
+    [1n, 1n, 1n, 2n, 2n, 1n], // doubled
+    [11n, 10n, 1n, 2n * Q, 22n * Q, 10n], // >1 previous interest
+    [1n, 1n, 1n, 2n * Q, 2n * Q, 1n], // ludicrous rate greater than Number.MAX_SAFE_INTEGER
+    [2n, 1n, 1n * Q, 2n * Q, 4n * Q, 1n * Q], // 2x on huge debt
+    [4n * Q, 1n * Q, 4n * Q, 8n * Q, 32n * Q * Q, 4n * Q * Q], // 2x again
+  ];
+  for (const [priorNum, priorDen, oldDebt, newDebt, newNum, newDen] of cases) {
+    const oldInterest = makeRatio(priorNum, brand, priorDen, brand);
+    const expectedInterest = makeRatio(newNum, brand, newDen, brand);
+    const compounded = calculateCompoundedInterest(
+      oldInterest,
+      oldDebt,
+      newDebt,
+    );
+    t.deepEqual(compounded, expectedInterest);
+  }
 });
