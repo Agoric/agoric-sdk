@@ -2,20 +2,19 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
-  const { D } = vatPowers;
+export function buildRootObject() {
   const { promise: vatAdminSvc, resolve: gotVatAdminSvc } = makePromiseKit();
   let root;
-  let devices;
+  let vats;
 
   return Far('root', {
-    async bootstrap(vats, devs) {
-      devices = devs;
+    async bootstrap(vats0, devices) {
+      vats = vats0;
       gotVatAdminSvc(E(vats.vatAdmin).createVatAdminService(devices.vatAdmin));
     },
 
     async createVat() {
-      const bcap = D(devices.bundle).getNamedBundlecap('dynamic');
+      const bcap = await E(vatAdminSvc).getNamedBundleCap('dynamic');
       const vc = await E(vatAdminSvc).createVat(bcap);
       root = vc.root;
       const count = await E(root).first();

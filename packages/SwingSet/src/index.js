@@ -12,3 +12,6 @@ export { buildTimer } from './devices/timer.js';
 export { buildBridge } from './devices/bridge.js';
 export { default as buildCommand } from './devices/command.js';
 export { buildPlugin } from './devices/plugin.js';
+
+// eslint-disable-next-line import/export
+export * from './types-exported.js';
