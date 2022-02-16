@@ -38,10 +38,9 @@ const { details: X } = assert;
 const trace = makeTracer('VM');
 
 /**
- * Each VaultManager manages a single collateralType.
+ * Each VaultManager manages a single collateral type.
  *
- * It owns an autoswap instance which trades this collateralType against RUN. It
- * also manages some number of outstanding loans, each called a Vault, for which
+ * It manages some number of outstanding loans, each called a Vault, for which
  * the collateral is provided in exchange for borrowed RUN.
  *
  * @param {ContractFacet} zcf
@@ -76,8 +75,7 @@ export const makeVaultManager = (
   const { updater, notifier } = makeNotifierKit(
     harden({
       compoundedInterest: makeRatio(1n, runBrand, 1n, runBrand),
-      latestInterestUpdate: 0n,
-      // XXX since debt will always be in RUN, no need to wrap in an Amount
+      latestInterestUpdate: 0n, // no previous update
       totalDebt: AmountMath.makeEmpty(runBrand),
     }),
   );
@@ -105,13 +103,11 @@ export const makeVaultManager = (
 
   let vaultCounter = 0;
 
-  // A Map from vaultKits to their most recent ratio of debt to
-  // collateralization. (This representation won't be optimized; when we need
-  // better performance, use virtual objects.)
+  // A store for of vaultKits prioritized by their collaterization ratio.
   //
-  // sortedVaultKits should only be set once, but can't be set until after the
+  // It should be set only once but it's a `let` because it can't be set until after the
   // definition of reschedulePriceCheck, which refers to sortedVaultKits
-  // XXX mutability and flow control
+  // XXX mutability and flow control, could be refactored with a listener
   /** @type {ReturnType<typeof makePrioritizedVaults>=} */
   let prioritizedVaults;
   /** @type {MutableQuote=} */
@@ -366,8 +362,8 @@ export const makeVaultManager = (
       want: { RUN: null },
     });
 
-    // eslint-disable-next-line no-plusplus
-    const vaultId = String(vaultCounter++);
+    vaultCounter += 1;
+    const vaultId = String(vaultCounter);
 
     const vaultKit = makeVaultKit(
       zcf,

@@ -20,8 +20,6 @@ import { makeFakeVaultKit } from '../supports.js';
 // This invocation (thanks to Warner) waits for all promises that can fire to
 // have all their callbacks run
 async function waitForPromisesToSettle() {
-  // ??? can't we do simply:
-  // return new Promise(resolve => setImmediate(resolve));
   const pk = makePromiseKit();
   setImmediate(pk.resolve);
   return pk.promise;

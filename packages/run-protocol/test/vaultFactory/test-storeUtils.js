@@ -1,18 +1,12 @@
+// @ts-check
 // Must be first to set up globals
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import * as StoreUtils from '../../src/vaultFactory/storeUtils.js';
 
-// XXX shouldn't we have a shared test utils for this kind of thing?
-export const mockBrand = Far('brand', {
-  isMyIssuer: async _allegedIssuer => false,
-  getAllegedName: () => 'mock',
-  getDisplayInfo: () => ({
-    assetKind: AssetKind.NAT,
-  }),
-});
+export const mockBrand = Far('brand');
 
 for (const [before, after] of [
   // matches
@@ -28,10 +22,7 @@ for (const [before, after] of [
 ]) {
   test(`cycle number from DB entry key function: ${before} => ${after}`, t => {
     t.is(
-      StoreUtils.dbEntryKeyToNumber(
-        StoreUtils.numberToDBEntryKey(before),
-        after,
-      ),
+      StoreUtils.dbEntryKeyToNumber(StoreUtils.numberToDBEntryKey(before)),
       after,
     );
   });
@@ -69,7 +60,7 @@ for (const [debt, collat, vaultId, expectedKey, numberOut] of [
     const key = StoreUtils.toVaultKey(
       AmountMath.make(mockBrand, BigInt(debt)),
       AmountMath.make(mockBrand, BigInt(collat)),
-      vaultId,
+      String(vaultId),
     );
     t.is(key, expectedKey);
     t.deepEqual(StoreUtils.fromVaultKey(key), [numberOut, vaultId]);

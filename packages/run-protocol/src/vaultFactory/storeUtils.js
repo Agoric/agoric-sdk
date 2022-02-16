@@ -3,7 +3,7 @@
  * Module to improvise composite keys for orderedVaultStore until Collections API supports them.
  *
  */
-// XXX declaration shouldn't be necessary. Fixed by https://github.com/endojs/endo/pull/1071
+// TODO remove after release of https://github.com/endojs/endo/pull/1071
 /* global BigUint64Array */
 
 /** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
@@ -32,7 +32,6 @@ const numberToDBEntryKey = n => {
   asNumber[0] = n;
   let bits = asBits[0];
   if (n < 0) {
-    // XXX Why is the no-bitwise lint rule even a thing??
     // eslint-disable-next-line no-bitwise
     bits ^= 0xffffffffffffffffn;
   } else {

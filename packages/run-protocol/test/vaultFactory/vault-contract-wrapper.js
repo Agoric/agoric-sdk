@@ -123,7 +123,6 @@ export async function start(zcf, privateArgs) {
 
     // skip the debt calculation for this mock manager
     const currentInterestAsMultiplicand = makeRatio(
-      // @ts-ignore XXX can be cleaned up with https://github.com/Agoric/agoric-sdk/pull/4551
       100n + currentInterest.numerator.value,
       currentInterest.numerator.brand,
     );

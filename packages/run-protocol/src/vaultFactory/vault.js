@@ -137,7 +137,7 @@ export const makeVaultKit = (
    */
   // TODO rename to calculateActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
   const getDebtAmount = () => {
-    // divide compounded interest by the the snapshot
+    // divide compounded interest by the snapshot
     const interestSinceSnapshot = multiplyRatios(
       manager.getCompoundedInterest(),
       invertRatio(debtSnapshot.interest),

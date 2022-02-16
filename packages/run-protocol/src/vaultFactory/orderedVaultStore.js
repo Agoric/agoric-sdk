@@ -31,11 +31,6 @@ export const makeOrderedVaultStore = () => {
     const debt = vault.getDebtAmount();
     const collateral = vault.getCollateralAmount();
     const key = toVaultKey(debt, collateral, vaultId);
-    console.log('addVaultKit', {
-      debt: debt.value,
-      collateral: collateral.value,
-      key,
-    });
     store.init(key, vaultKit);
     return key;
   };

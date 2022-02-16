@@ -2,31 +2,16 @@
 // Must be first to set up globals
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeOrderedVaultStore } from '../../src/vaultFactory/orderedVaultStore.js';
 import { fromVaultKey } from '../../src/vaultFactory/storeUtils.js';
 
-// XXX shouldn't we have a shared test utils for this kind of thing?
-const runBrand = Far('brand', {
-  isMyIssuer: async _allegedIssuer => false,
-  getAllegedName: () => 'mockRUN',
-  getDisplayInfo: () => ({
-    assetKind: AssetKind.NAT,
-  }),
-});
-
-const collateralBrand = Far('brand', {
-  isMyIssuer: async _allegedIssuer => false,
-  getAllegedName: () => 'mockCollateral',
-  getDisplayInfo: () => ({
-    assetKind: AssetKind.NAT,
-  }),
-});
+const brand = Far('brand');
 
 const mockVault = (runCount, collateralCount) => {
-  const debtAmount = AmountMath.make(runBrand, runCount);
-  const collateralAmount = AmountMath.make(collateralBrand, collateralCount);
+  const debtAmount = AmountMath.make(brand, runCount);
+  const collateralAmount = AmountMath.make(brand, collateralCount);
 
   return Far('vault', {
     getDebtAmount: () => debtAmount,
@@ -34,6 +19,7 @@ const mockVault = (runCount, collateralCount) => {
   });
 };
 
+const BIGGER_INT = BigInt(Number.MAX_VALUE) + 1n;
 /**
  * Records to be inserted in this order. Jumbled to verify insertion order invariance.
  *
@@ -43,7 +29,7 @@ const fixture = [
   ['vault-E', 40n, 100n],
   ['vault-F', 50n, 100n],
   ['vault-M', 1n, 1000n],
-  ['vault-Y', BigInt(Number.MAX_VALUE), BigInt(Number.MAX_VALUE)],
+  ['vault-Y', BIGGER_INT, BIGGER_INT],
   ['vault-Z-withoutdebt', 0n, 100n],
   ['vault-A-underwater', 1000n, 100n],
   ['vault-B', 101n, 1000n],
