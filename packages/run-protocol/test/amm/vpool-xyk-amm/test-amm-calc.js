@@ -3,7 +3,10 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath as m, makeIssuerKit } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import fc from 'fast-check';
-import { balancesToReachRatio } from '../../../src/vpool-xyk-amm/addLiquidity.js';
+import {
+  imbalancedRequest,
+  balancesToReachRatio,
+} from '../../../src/vpool-xyk-amm/addLiquidity.js';
 
 const { add, multiply } = natSafeMath;
 
@@ -17,21 +20,15 @@ const arbPoolX = fc
   .bigUint({ max: oneB })
   .map(value => m.make(brandX, 100n + value));
 const arbPoolY = fc
-  .bigUint({ min: 100n, max: oneB })
+  .bigUint({ max: oneB })
   .map(value => m.make(brandY, 100n + value));
-const arbGiveX = fc
-  .bigUint({ min: 100n, max: oneB })
-  .map(value => m.make(brandX, value));
-const arbGiveY = fc
-  .bigUint({ min: 100n, max: oneB })
-  .map(value => m.make(brandY, value));
+const arbGiveX = fc.bigUint({ max: oneB }).map(value => m.make(brandX, value));
+const arbGiveY = fc.bigUint({ max: oneB }).map(value => m.make(brandY, value));
 
-function withinEpsilon(numer, denom, epsilon) {
-  return (
-    Number(denom) * (1 - epsilon) <= numer &&
-    numer <= Number(denom) * (1 + epsilon)
-  );
-}
+// left and right are within 5% of each other.
+const withinEpsilon = (left, right) =>
+  multiply(right, 105) >= multiply(left, 100) &&
+  multiply(left, 105) >= multiply(right, 100);
 
 test('balancesToReachRatio calculations are to spec', t => {
   fc.assert(
@@ -43,6 +40,17 @@ test('balancesToReachRatio calculations are to spec', t => {
         giveY: arbGiveY,
       }),
       ({ poolX, poolY, giveX, giveY }) => {
+        if (
+          imbalancedRequest(
+            // use floats so we don't convert all fractions less than 1 to 0.
+            Number(m.add(poolX, giveX).value) /
+              Number(m.add(poolY, giveY).value),
+            multiply(poolX.value, poolY.value),
+          )
+        ) {
+          t.pass();
+          return;
+        }
         const { targetX, targetY } = balancesToReachRatio(
           poolX,
           poolY,
@@ -50,31 +58,25 @@ test('balancesToReachRatio calculations are to spec', t => {
           giveY,
         );
 
-        if (targetX.value === 0n && targetY.value === 0n) {
-          t.pass();
-        } else {
-          const targetProduct = Number(multiply(targetX.value, targetY.value));
-          const withinRange = withinEpsilon(
-            targetProduct,
-            Number(multiply(poolX.value, poolY.value)),
-            0.05,
-          );
-          t.truthy(
-            withinRange,
-            `with giveX=${giveX.value} giveY=${giveY.value}, targetX=${targetX.value} and targetY=${targetY.value} should have the same product as poolX=${poolX.value} * poolY=${poolY.value}.`,
-          );
+        const targetWithinRangeOfK = withinEpsilon(
+          multiply(targetX.value, targetY.value),
+          multiply(poolX.value, poolY.value),
+        );
+        t.truthy(
+          targetWithinRangeOfK,
+          `with giveX=${giveX.value} giveY=${giveY.value}, targetX=${targetX.value} and targetY=${targetY.value} should have the same product as poolX=${poolX.value} * poolY=${poolY.value}.`,
+        );
 
-          const ratiosWithinRange = withinEpsilon(
-            targetX.value * add(poolY.value, giveY.value),
-            targetY.value * add(poolX.value, giveX.value),
-            0.05,
-          );
+        // target X / targetY approximately equals poolXAfter / poolYAfter
+        const ratiosWithinRange = withinEpsilon(
+          targetX.value * add(poolY.value, giveY.value),
+          targetY.value * add(poolX.value, giveX.value),
+        );
 
-          t.truthy(
-            ratiosWithinRange,
-            `targetX ${targetX.value} and targetY ${targetY.value} should be in the same ratio as poolX + giveX / poolY + giveY`,
-          );
-        }
+        t.truthy(
+          ratiosWithinRange,
+          `targetX ${targetX.value} and targetY ${targetY.value} should be in the same ratio as poolX + giveX / poolY + giveY`,
+        );
       },
     ),
   );
