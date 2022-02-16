@@ -184,55 +184,6 @@ test('natMathHelpers isGTE', t => {
   );
 });
 
-test('natMathHelpers min/max', t => {
-  t.throws(
-    () =>
-      m.max(
-        m.make(
-          Far('otherBrand', {
-            getAllegedName: () => 'somename',
-            isMyIssuer: async () => false,
-            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-          }),
-          5n,
-        ),
-        m.make(mockBrand, 3n),
-      ),
-    {
-      message: /Brands in left .* and right .* should match but do not/,
-    },
-  );
-
-  t.throws(
-    () =>
-      m.min(
-        m.make(
-          Far('otherBrand', {
-            getAllegedName: () => 'somename',
-            isMyIssuer: async () => false,
-            getDisplayInfo: () => ({ assetKind: AssetKind.NAT }),
-          }),
-          5n,
-        ),
-        m.make(mockBrand, 3n),
-      ),
-    {
-      message: /Brands in left .* and right .* should match but do not/,
-    },
-  );
-
-  t.deepEqual(
-    m.min(m.make(mockBrand, 5n), m.make(mockBrand, 9n)),
-    m.make(mockBrand, 5n),
-    `min(5,9) == 5`,
-  );
-  t.deepEqual(
-    m.max(m.make(mockBrand, 5n), m.make(mockBrand, 9n)),
-    m.make(mockBrand, 9n),
-    `max(5,9) == 9`,
-  );
-});
-
 test('natMathHelpers isGTE mixed brands', t => {
   t.throws(
     () =>
