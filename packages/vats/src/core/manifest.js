@@ -242,7 +242,12 @@ const SHARED_POST_BOOT_MANIFEST = harden({
     },
   },
   startEconomicCommittee: {
+    vatParameters: {
+      argv: { economicCommitteeAddresses: true },
+    },
     consume: {
+      namesByAddress: true,
+      namesByAddressAdmin: true,
       zoe: true,
       governanceBundles: true,
     },
