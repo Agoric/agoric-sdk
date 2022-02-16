@@ -169,6 +169,38 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     home: { produce: { faucet: true } },
   },
+
+  // @@@@
+  shareEconomyBundles: {
+    produce: {
+      ammBundle: true,
+      vaultBundles: true,
+      governanceBundles: true,
+    },
+  },
+  startEconomicCommittee: {
+    vatParameters: {
+      argv: { economicCommitteeAddresses: true },
+    },
+    consume: {
+      agoricNames: true,
+      nameAdmins: true,
+      namesByAddress: true,
+      namesByAddressAdmin: true,
+      zoe: true,
+      governanceBundles: true,
+    },
+    produce: { economicCommitteeCreatorFacet: 'economicCommittee' },
+    installation: {
+      produce: {
+        contractGovernor: 'zoe',
+        binaryVoteCounter: 'zoe',
+      },
+    },
+    instance: {
+      produce: { economicCommittee: 'zoe' },
+    },
+  },
 });
 
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({
