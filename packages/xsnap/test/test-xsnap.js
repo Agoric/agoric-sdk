@@ -54,7 +54,7 @@ test('evaluate infinite loop', async t => {
   t.deepEqual([], opts.messages);
 });
 
-// TODO: Reenable when this doesn't take 3.6 seconds.
+// TODO: Re-enable when this doesn't take 3.6 seconds.
 test('evaluate promise loop', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
@@ -135,7 +135,7 @@ test('print - start compartment only', async t => {
     const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     print('print:', 123);
     try {
-      (new Compartment()).evalate('print("456")');
+      (new Compartment()).evaluate('print("456")');
     } catch (_err) {
       send('no print in Compartment');
     }
@@ -152,7 +152,7 @@ test('gc - start compartment only', async t => {
     const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     gc();
     try {
-      (new Compartment()).evalate('gc()');
+      (new Compartment()).evaluate('gc()');
     } catch (_err) {
       send('no gc in Compartment');
     }

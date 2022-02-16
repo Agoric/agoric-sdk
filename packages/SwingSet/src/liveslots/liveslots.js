@@ -36,7 +36,7 @@ const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
  * a new root object and its initial associated object graph, if any.
  *
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
- * @param {*} forVatID  Vat ID label, for use in debug diagostics
+ * @param {*} forVatID  Vat ID label, for use in debug diagnostics
  * @param {*} vatPowers
  * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
@@ -184,7 +184,7 @@ function build(
     we can describe what operations could cause a transition, and what our
     observations allow us to deduce about the state:
 
-    * UKNOWN moves to REACHABLE when a crank introduces a new import
+    * UNKNOWN moves to REACHABLE when a crank introduces a new import
     * userspace holds a reference only in REACHABLE
     * REACHABLE moves to UNREACHABLE only during a userspace crank
     * UNREACHABLE moves to COLLECTED when GC runs, which queues the finalizer

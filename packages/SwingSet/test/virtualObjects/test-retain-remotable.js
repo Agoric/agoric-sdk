@@ -98,7 +98,7 @@ test('remotables retained by virtualized data', async t => {
   await gcAndFinalize();
   // Each state property is virtualized upon write (via the generated
   // setters). So again we rely on the VOM to keep the Remotable alive in
-  // case someone retreives it again.
+  // case someone retrieves it again.
   t.truthy(stash3.wr.deref());
   t.truthy(stash3.isHeld(stash3.holder.getHeld()));
 

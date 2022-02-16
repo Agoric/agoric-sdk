@@ -411,7 +411,7 @@ export function main() {
     let method;
     let args;
     let result;
-    // annoying assymetry that's too hard to fix on the originating end
+    // annoying asymmetry that's too hard to fix on the originating end
     if (kernelSpace) {
       method = entry[2].method;
       args = entry[2].args;

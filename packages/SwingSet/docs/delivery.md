@@ -43,7 +43,7 @@ transcript to enable replay-based orthogonal persistence.
 
 To enable transactional commitments, all state changes that might be made by
 syscalls are held in a transaction buffer (the "crank buffer") until the
-delivery is deemed to complete succesfully. The delivery might fail because
+delivery is deemed to complete successfully. The delivery might fail because
 of a fatal error (e.g. addressing a non-existent object or promise, or
 resolving a promise that is supposed to be decided by some other vat), or it
 might be interrupted by an out-of-gas error (in which case it could be
@@ -1433,7 +1433,7 @@ connections it makes to other machines).
 Once the remote machine ID is known, the rest of the message slots (target,
 argument slots, and optional result) are mapped through a C-List that is
 specific to that machine. The mapping rules are similar to the ones used by
-the kernel as it does a `dispatch.deliver()`, but are adjusted to accomodate
+the kernel as it does a `dispatch.deliver()`, but are adjusted to accommodate
 three-party handoff (which is disabled until we finish designing it) and the
 lack of a single central kernel:
 
@@ -1688,7 +1688,7 @@ which messages must be delivered.
 * Dean pointed out an important performance improvement, Promises which are
   resolved/rejected to data (or forwarded?) should be removed from the
   resolving vat's C-List right away. We'd need an extra message in the future
-  if that vat ever sends that promise again, but apparenly the vast majority
+  if that vat ever sends that promise again, but apparently the vast majority
   of the time it never will, so pruning the C-List immediately is a big win.
   This might interfere with having the kernel handle dumped queued messages.
   Why do this for data+forward but not for fulfill?

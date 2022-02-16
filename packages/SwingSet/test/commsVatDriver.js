@@ -13,7 +13,7 @@ import { capargs, makeMessage, makeResolutions } from './util.js';
 // acknowledgements and object/promise reference polarity.  NOTE: It is not
 // expected that tests implemented using this driver will be testing *those*
 // things, at least not directly (of course, those things have to be correct for
-// this to work, so it does test them indirectly); rather, these tests wil be
+// this to work, so it does test them indirectly); rather, these tests will be
 // verifying things like the propagation of promise resolutions, correct
 // handling of promise reference cycles, the correctness of promise reference
 // retirement, and so on.
@@ -541,7 +541,7 @@ export function commsVatDriver(t, verbose = false) {
    * @param {string} name  The name of the remote (typically 'a', 'b', or 'c')
    * @param {string} transmitter  Scriptref of the transmitter object to send to
    *   the other end
-   * @param {string}  receiver Scriptref of the receiver objec that will be sent
+   * @param {string}  receiver Scriptref of the receiver object that will be sent
    *   to by the other end
    */
   function makeNewRemote(name, transmitter, receiver) {
@@ -702,7 +702,7 @@ export function commsVatDriver(t, verbose = false) {
         break;
       }
       case 's': {
-        // The 's' (subscribe) op is only allowed as a kernal observation
+        // The 's' (subscribe) op is only allowed as a kernel observation
         assert(who === 'k' && dir === '<');
         const target = refOf(params[0]);
         observeSubscribe(target);
