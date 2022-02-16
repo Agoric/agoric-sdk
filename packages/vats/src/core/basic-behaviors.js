@@ -134,14 +134,16 @@ export const makeAddressNameHubs = async ({ consume: { client }, produce }) => {
     // Create a name hub for this address.
     const { nameHub: myAddressNameHub, nameAdmin: rawMyAddressNameAdmin } =
       makeNameHubKit();
-    // Register it with the namesByAddress hub.
-    namesByAddressAdmin.update(address, myAddressNameHub);
 
     /** @type {MyAddressNameAdmin} */
     const myAddressNameAdmin = Far('myAddressNameAdmin', {
       ...rawMyAddressNameAdmin,
       getMyAddress: () => address,
     });
+    // reserve space for deposit facet
+    myAddressNameAdmin.reserve('depositFacet');
+    // Register it with the namesByAddress hub.
+    namesByAddressAdmin.update(address, myAddressNameHub);
     return { agoricNames, namesByAddress, myAddressNameAdmin };
   };
 
