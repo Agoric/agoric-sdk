@@ -1599,10 +1599,8 @@ export function makeWallet({
         return addPayment(payment);
       },
     });
-    const [address] = await Promise.all([
-      E(myAddressNameAdmin).getMyAddress(),
-      E(myAddressNameAdmin).update('depositFacet', selfDepositFacet),
-    ]);
+
+    const address = await E(myAddressNameAdmin).getMyAddress();
     // We need to do this before we can enable auto deposit.
     selfContactP = addContact('Self', selfDepositFacet, address);
 
@@ -1620,6 +1618,8 @@ export function makeWallet({
       .then(makeInvitePurse)
       .then(addInviteDepositFacet);
     zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
+
+    await E(myAddressNameAdmin).update('depositFacet', selfDepositFacet);
   };
 
   // Importing assets as virtual purses from the bank is a highly-trusted path.
