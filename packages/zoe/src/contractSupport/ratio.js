@@ -251,6 +251,24 @@ export const oneMinus = ratio => {
 };
 
 /**
+ *
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {boolean}
+ */
+export const ratioGTE = (left, right) => {
+  assert(
+    left.numerator.brand === right.numerator.brand &&
+      left.denominator.brand === right.denominator.brand,
+    `brands must match`,
+  );
+  return natSafeMath.isGTE(
+    multiply(left.numerator.value, right.denominator.value),
+    multiply(right.numerator.value, left.denominator.value),
+  );
+};
+
+/**
  * Make an equivalant ratio with a new denominator
  *
  * @param {Ratio} ratio

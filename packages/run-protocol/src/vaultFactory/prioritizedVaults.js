@@ -1,36 +1,14 @@
 // @ts-check
 
-import {
-  natSafeMath,
-  makeRatioFromAmounts,
-} from '@agoric/zoe/src/contractSupport/index.js';
-import { assert } from '@agoric/assert';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
+import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
-
-const { multiply, isGTE } = natSafeMath;
 
 /** @typedef {import('./vault').VaultKit} VaultKit */
 
 // TODO put this with other ratio math
-/**
- *
- * @param {Ratio} left
- * @param {Ratio} right
- * @returns {boolean}
- */
-const ratioGTE = (left, right) => {
-  assert(
-    left.numerator.brand === right.numerator.brand &&
-      left.denominator.brand === right.denominator.brand,
-    `brands must match`,
-  );
-  return isGTE(
-    multiply(left.numerator.value, right.denominator.value),
-    multiply(right.numerator.value, left.denominator.value),
-  );
-};
 
 /**
  *
