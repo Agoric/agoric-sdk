@@ -316,9 +316,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     }
 
+    const economicCommitteeAddresses = (env.ECON_GOV_ADDRS || '').split(/\s+/);
     const argv = {
       ROLE: 'chain',
       noFakeCurrencies: !env.FAKE_CURRENCIES,
+      economicCommitteeAddresses,
       bootMsg,
     };
     const vatconfig = new URL(
