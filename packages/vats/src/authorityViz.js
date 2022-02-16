@@ -1,7 +1,9 @@
 /* eslint-disable no-continue */
 // @ts-check
 import '@endo/init';
-import * as manifests from '../src/core/manifest.js';
+import process from 'process';
+
+import * as manifests from './core/manifest.js';
 
 const { entries } = Object;
 
@@ -38,8 +40,9 @@ function* fmtGraph(nodes, neighbors) {
   );
   for (const subgraph of [...clusters, undefined]) {
     if (subgraph) {
+      assert.typeof(subgraph, 'string');
       yield `subgraph cluster_${subgraph} {\n`;
-      yield `label = "${subgraph}"`;
+      yield `label = "${subgraph}"\n`;
     }
     for (const { id, cluster, label, style } of nodes) {
       if (subgraph && cluster !== subgraph) continue;
@@ -192,7 +195,6 @@ const main = async (args, { stdout }) => {
 };
 
 (async () => {
-  const [process] = await Promise.all([import('process')]);
   return main(process.argv.slice(2), {
     stdout: process.stdout,
   });

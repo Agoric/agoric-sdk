@@ -2,24 +2,32 @@
 import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeStore } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
 
 const { entries, fromEntries, keys } = Object;
 const { details: X, quote: q } = assert;
 
+/** @type { <K extends string, T, U>(obj: Record<K, T>, f: (k: K, v: T) => [K, U]) => Record<K, U>} */
+const mapEntries = (obj, f) =>
+  // @ts-ignore entries() loses key type
+  fromEntries(entries(obj).map(([p, v]) => f(p, v)));
+
 // TODO: phase out ./issuers.js
 export const CENTRAL_ISSUER_NAME = 'RUN';
 
 // We reserve these keys in name hubs.
-export const shared = harden({
-  // issuer, brand nameAdmins
-  assets: {
+export const agoricNamesReserved = harden({
+  issuer: {
     BLD: 'Agoric staking token',
     RUN: 'Agoric RUN currency',
     Attestation: 'Agoric lien attestation',
   },
-  contract: {
+  brand: {
+    BLD: 'Agoric staking token',
+    RUN: 'Agoric RUN currency',
+    Attestation: 'Agoric lien attestation',
+  },
+  installation: {
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
     noActionElectorate: 'no action electorate',
@@ -74,49 +82,6 @@ harden(addRemote);
  */
 export const callProperties = (builders, ...args) =>
   fromEntries(builders.map(fn => entries(fn(...args))).flat());
-
-export const makeNameAdmins = () => {
-  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
-    makeNameHubKit();
-
-  const sections = {
-    brand: 'assets',
-    issuer: 'assets',
-    installation: 'contract',
-    instance: 'instance',
-    uiConfig: 'uiConfig',
-    pegasus: undefined,
-  };
-  /** @type {Store<NameHub, NameAdmin>} */
-  const nameAdmins = makeStore('nameHub');
-  keys(sections).forEach(nm => {
-    const { nameHub, nameAdmin } = makeNameHubKit();
-    agoricNamesAdmin.update(nm, nameHub);
-    nameAdmins.init(nameHub, nameAdmin);
-    const section = sections[nm];
-    if (section) {
-      keys(shared[section]).forEach(k => nameAdmin.reserve(k));
-    }
-  });
-  return { agoricNames, agoricNamesAdmin, nameAdmins };
-};
-harden(makeNameAdmins);
-
-/**
- * @param {string[]} edges
- * @param {ERef<NameHub>} agoricNames
- * @param {ERef<Store<NameHub, NameAdmin>>} nameAdmins
- * @returns {Promise<NameAdmin[]>}
- */
-export const collectNameAdmins = (edges, agoricNames, nameAdmins) => {
-  return Promise.all(
-    edges.map(async edge => {
-      const hub = /** @type {NameHub} */ (await E(agoricNames).lookup(edge));
-      return E(nameAdmins).get(hub);
-    }),
-  );
-};
-harden(collectNameAdmins);
 
 /**
  * Make { produce, consume } where for each name, `consume[name]` is a promise
@@ -212,3 +177,51 @@ export const extract = (template, specimen) => {
   }
 };
 harden(extract);
+
+/**
+ * Make the well-known agoricNames namespace so that we can
+ * E(home.agoricNames).lookup('issuer', 'RUN') and likewise
+ * for brand, installation, instance, etc.
+ *
+ * @param {typeof console.log} [log]
+ * @param {Record<string, Record<string, unknown>>} reserved a property
+ *   for each of issuer, brand, etc. with a value whose keys are names
+ *   to reserve.
+ *
+ * For static typing and integrating with the bootstrap permit system,
+ * return { produce, consume } spaces rather than NameAdmins.
+ *
+ * @returns {{
+ *   agoricNames: NameHub,
+ *   spaces: WellKnownSpaces,
+ * }}
+ *
+ */
+export const makeAgoricNamesAccess = (
+  log = console.debug,
+  reserved = agoricNamesReserved,
+) => {
+  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
+    makeNameHubKit();
+  const hubs = mapEntries(reserved, (key, _d) => {
+    const { nameHub, nameAdmin } = makeNameHubKit();
+    agoricNamesAdmin.update(key, nameHub);
+    return [key, { nameHub, nameAdmin }];
+  });
+  const spaces = mapEntries(reserved, (key, detail) => {
+    const { nameAdmin } = hubs[key];
+    const { produce, consume } = makePromiseSpace(log);
+    keys(detail).forEach(k => {
+      nameAdmin.reserve(k);
+      consume[k].then(v => nameAdmin.update(k, v));
+    });
+    return [key, { produce, consume }];
+  });
+  const typedSpaces = /** @type { WellKnownSpaces } */ (
+    /** @type {any} */ (spaces)
+  );
+  return {
+    agoricNames,
+    spaces: typedSpaces,
+  };
+};

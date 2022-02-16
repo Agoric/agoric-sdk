@@ -104,7 +104,7 @@ export const startClient = async ({
 }) => {
   let localBundle;
   let chainBundle;
-  const deprecated = {};
+  let deprecated = {};
 
   // Tell the http server about our presences.  This can be called in
   // any order (whether localBundle and/or chainBundle are set or not).
@@ -131,7 +131,7 @@ export const startClient = async ({
     );
 
     // TODO: Remove this alias when we can.
-    deprecated.uploads = localBundle.scratch;
+    deprecated = harden({ ...deprecated, uploads: localBundle.scratch });
     await updatePresences();
   };
 

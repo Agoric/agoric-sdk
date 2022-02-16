@@ -1,7 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 
-import { extract, makePromiseSpace } from './utils.js';
+import { extract, makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import {
   CLIENT_BOOTSTRAP_MANIFEST,
   CHAIN_BOOTSTRAP_MANIFEST,
@@ -25,7 +25,8 @@ const roleToManifest = harden({
 });
 const roleToBehaviors = harden({
   'sim-chain': { ...behaviors, ...simBehaviors },
-  client: clientBehaviors,
+  // copy to avoid trying to harden a module namespace
+  client: { ...clientBehaviors },
 });
 const roleToGovernanceActions = harden({
   chain: CHAIN_POST_BOOT_MANIFEST,
@@ -44,9 +45,12 @@ const roleToGovernanceActions = harden({
  *   bootstrapManifest?: Record<string, Record<string, unknown>>,
  *   governanceActions?: boolean,
  * }} vatParameters
+ * @param {typeof console.log} [log]
  */
-const buildRootObject = (vatPowers, vatParameters) => {
-  const { produce, consume } = makePromiseSpace(console.info);
+const buildRootObject = (vatPowers, vatParameters, log = console.info) => {
+  const { produce, consume } = makePromiseSpace(log);
+  const { agoricNames, spaces } = makeAgoricNamesAccess(log);
+  produce.agoricNames.resolve(agoricNames);
 
   const {
     argv: { ROLE },
@@ -81,6 +85,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
           devices,
           produce,
           consume,
+          ...spaces,
           runBehaviors,
         };
         return Promise.all(
@@ -89,15 +94,15 @@ const buildRootObject = (vatPowers, vatParameters) => {
               const {
                 // TODO: use these for more than just visualization.
                 home: _h,
-                installation: _i1,
-                instance: _i2,
-                issuer: _i3,
-                brand: _b,
                 ...effectivePermit
               } = permit;
               const endowments = extract(effectivePermit, powers);
               const config = vatParameters[name];
-              console.info(`bootstrap: ${name}(${q(permit)})`);
+              log(`bootstrap: ${name}(${q(permit)})`);
+              assert(
+                name in bootBehaviors,
+                `${name} not in ${Object.keys(bootBehaviors).join(',')}`,
+              );
               return bootBehaviors[name](endowments, config);
             }),
           ),

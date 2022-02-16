@@ -14,8 +14,6 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
   },
   buildZoe: {
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
       vatAdminSvc: true,
       loadVat: true,
       client: true,
@@ -41,12 +39,11 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
   },
   makeAddressNameHubs: {
     consume: {
+      agoricNames: true,
       client: true,
     },
     produce: {
       agoricNames: true,
-      agoricNamesAdmin: true,
-      nameAdmins: true,
       namesByAddress: true,
       namesByAddressAdmin: true,
     },
@@ -61,9 +58,11 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
     vats: {
       timer: 'timer',
     },
+    consume: { client: true },
     produce: {
       chainTimerService: 'timer',
     },
+    home: { produce: { chainTimerService: 'timer' } },
   },
   makeClientBanks: {
     consume: {
@@ -89,14 +88,10 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
     },
   },
   addBankAssets: {
-    vatParameters: {
-      argv: { bootMsg: true },
-    },
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
       initialSupply: true,
       bridgeManager: true,
+      // TODO: re-org loadVat to be subject to permits
       loadVat: true,
       zoe: true,
     },
@@ -104,8 +99,6 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       bankManager: 'bank',
       bldIssuerKit: true,
     },
-    // TODO: re-org loadVat, agoricNames to be
-    // subject to permits such as these:
     issuer: { produce: { BLD: true, RUN: 'zoe' } },
     brand: { produce: { BLD: true, RUN: 'zoe' } },
   },
@@ -136,24 +129,35 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
   },
   installPegasusOnChain: {
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
       namesByAddress: true,
       board: 'board',
       pegasusBundle: true,
       zoe: 'zoe',
     },
+    installation: {
+      produce: {
+        Pegasus: 'zoe',
+      },
+    },
+    instance: {
+      produce: {
+        Pegasus: 'Pegasus',
+      },
+    },
   },
   setupNetworkProtocols: {
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
       client: true,
       loadVat: true,
       bridgeManager: true,
       zoe: true,
       provisioning: true,
     },
+    produce: {
+      pegasusConnections: true,
+      pegasusConnectionsAdmin: true,
+    },
+    instance: { consume: { Pegasus: 'Pegasus' } },
   },
 });
 
@@ -239,27 +243,25 @@ const SHARED_POST_BOOT_MANIFEST = harden({
   },
   startEconomicCommittee: {
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
       zoe: true,
       governanceBundles: true,
     },
     produce: { economicCommitteeCreatorFacet: 'economicCommittee' },
     installation: {
       produce: {
+        committee: 'zoe',
+        noActionElectorate: 'zoe',
         contractGovernor: 'zoe',
         binaryVoteCounter: 'zoe',
       },
     },
     instance: {
-      produce: { economicCommittee: 'zoe' },
+      produce: { economicCommittee: 'economicCommittee' },
     },
   },
   setupAmm: {
     consume: {
       chainTimerService: 'timer',
-      agoricNames: true,
-      nameAdmins: true,
       zoe: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
       ammBundle: true,
@@ -271,10 +273,11 @@ const SHARED_POST_BOOT_MANIFEST = harden({
     issuer: { consume: { RUN: 'zoe' } },
     installation: {
       consume: { contractGovernor: 'zoe' },
+      produce: { amm: 'zoe' },
     },
     instance: {
-      consume: { economicCommittee: 'zoe' },
-      produce: { amm: 'zoe' },
+      consume: { economicCommittee: 'economicCommittee' },
+      produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
     },
   },
   startPriceAuthority: {
@@ -288,9 +291,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
   startVaultFactory: {
     consume: {
       feeMintAccess: 'zoe',
-      agoricNames: true,
       vaultBundles: true,
-      nameAdmins: true,
       chainTimerService: 'timer',
       zoe: 'zoe',
       priceAuthority: 'priceAuthority',
@@ -302,14 +303,39 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       vaultFactoryVoteCreator: 'VaultFactory',
     },
     brand: { consume: { RUN: 'zoe' } },
-    installation: { consume: { contractGovernor: 'zoe' } },
+    installation: {
+      consume: { contractGovernor: 'zoe' },
+      produce: { VaultFactory: 'zoe', liquidate: 'zoe' },
+    },
     instance: {
-      consume: { amm: 'zoe', economicCommittee: 'zoe' },
-      produce: { VaultFactory: 'zoe' },
+      consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
+      produce: {
+        VaultFactory: 'VaultFactory',
+        Treasury: 'VaultFactory',
+        VaultFactoryGovernor: 'VaultFactoryGovernor',
+      },
     },
   },
   configureVaultFactoryUI: {
-    consume: { agoricNames: true, nameAdmins: true, board: true, zoe: true },
+    consume: {
+      board: true,
+      zoe: true,
+    },
+    issuer: { consume: { RUN: 'zoe' } },
+    brand: { consume: { RUN: 'zoe' } },
+    installation: {
+      consume: {
+        amm: 'zoe',
+        VaultFactory: 'zoe',
+        contractGovernor: 'zoe',
+        noActionElectorate: 'zoe',
+        binaryVoteCounter: 'zoe',
+      },
+    },
+    instance: {
+      consume: { amm: 'amm', VaultFactory: 'VaultFactory' },
+    },
+    uiConfig: { produce: { Treasury: true, VaultFactory: true } },
   },
 });
 
@@ -317,7 +343,6 @@ export const CHAIN_POST_BOOT_MANIFEST = harden({
   ...SHARED_POST_BOOT_MANIFEST,
   startRewardDistributor: {
     consume: {
-      agoricNames: true,
       chainTimerService: true,
       bankManager: true,
       loadVat: true,
@@ -337,7 +362,6 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
   ...SHARED_POST_BOOT_MANIFEST,
   fundAMM: {
     consume: {
-      agoricNames: true,
       centralSupplyBundle: true,
       chainTimerService: 'timer',
       bldIssuerKit: true,
