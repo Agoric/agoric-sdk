@@ -6,12 +6,12 @@ import { importBundle } from '@endo/import-bundle';
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
   let vats;
-  let devices;
   let vatAdmin;
 
   async function checkImport(getCap) {
-    const bcap = getCap();
-    assert(bcap === getCap()); // should be consistent
+    const bcap = await getCap();
+    const bcap2 = await getCap();
+    assert(bcap === bcap2, 'bundlecaps do not match'); // should be consistent
     const bundle = D(bcap).getBundle();
     assert.typeof(bundle, 'object');
     const endowments = harden({ big: 'big' });
@@ -27,9 +27,8 @@ export function buildRootObject(vatPowers) {
   }
 
   return Far('root', {
-    async bootstrap(v0, d0) {
+    async bootstrap(v0, devices) {
       vats = v0;
-      devices = d0;
       // we exercise a little bit of vatAdmin, but this test is mostly about
       // bundles
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
@@ -41,7 +40,7 @@ export function buildRootObject(vatPowers) {
     },
 
     async vatFromNamedBundlecap(name, method) {
-      const bcap = D(devices.bundle).getNamedBundlecap(name);
+      const bcap = await E(vatAdmin).getNamedBundlecap(name);
       const { root } = await E(vatAdmin).createVat(bcap);
       const hello = await E(root)[method]();
       return [hello];
@@ -55,25 +54,30 @@ export function buildRootObject(vatPowers) {
     },
 
     async vatFromID(id, method) {
-      const bcap = D(devices.bundle).getBundlecap(id);
+      const bcap = await E(vatAdmin).getBundlecap(id);
       const { root } = await E(vatAdmin).createVat(bcap);
       const hello = await E(root)[method]();
       return [hello];
     },
 
-    getBundlecap(id) {
-      // bad bundleIDs should throw
-      return D(devices.bundle).getBundlecap(id);
+    waitForBundlecap(id) {
+      // bad bundleIDs should throw, missing bundleIDs should wait (hang)
+      return E(vatAdmin).waitForBundlecap(id);
     },
 
-    getBundle(id) {
-      const bcap = D(devices.bundle).getBundlecap(id);
+    getBundlecap(id) {
+      // bad bundleIDs should throw, missing bundleIDs should throw
+      return E(vatAdmin).getBundlecap(id);
+    },
+
+    async getBundle(id) {
+      const bcap = await E(vatAdmin).getBundlecap(id);
       return D(bcap).getBundle();
     },
 
     async checkImportByID(id) {
-      function getCap() {
-        const bcap = D(devices.bundle).getBundlecap(id);
+      async function getCap() {
+        const bcap = await E(vatAdmin).getBundlecap(id);
         assert.equal(D(bcap).getBundleID(), id);
         return bcap;
       }
@@ -81,8 +85,9 @@ export function buildRootObject(vatPowers) {
     },
 
     async checkImportByName(name) {
-      function getCap() {
-        return D(devices.bundle).getNamedBundlecap(name);
+      async function getCap() {
+        const bcap = await E(vatAdmin).getNamedBundlecap(name);
+        return bcap;
       }
       return checkImport(getCap);
     },

@@ -2,15 +2,13 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers) {
-  const { D, testLog: log } = vatPowers;
-  let bundleDev;
+  const { testLog: log } = vatPowers;
   let service;
   let control;
 
   return Far('root', {
     async bootstrap(vats, devices) {
       service = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-      bundleDev = devices.bundle;
     },
 
     createMeter(remaining, notifyThreshold) {
@@ -40,8 +38,8 @@ export function buildRootObject(vatPowers) {
     },
 
     async createVat(name, dynamicOptions) {
-      const bundleID = D(bundleDev).getNamedBundlecap(name);
-      control = await E(service).createVat(bundleID, dynamicOptions);
+      const bundlecap = await E(service).getNamedBundlecap(name);
+      control = await E(service).createVat(bundlecap, dynamicOptions);
       const done = E(control.adminNode).done();
       // the caller checks this later, but doesn't wait for it
       return ['created', done];

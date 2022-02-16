@@ -22,8 +22,25 @@ export function buildRootObject(vatPowers) {
   const running = new Map(); // vatID -> { resolve, reject } for doneP
   const meterByID = new Map(); // meterID -> { meter, updater }
   const meterIDByMeter = new WeakMap(); // meter -> meterID
+  let vatAdminNode;
+  const pendingBundles = new Map(); // bundleID -> Promise<bundlecap>
 
-  function makeMeter(vatAdminNode, remaining, threshold) {
+  // this message is queued to us by kernel.installBundle()
+  function bundleInstalled(bundleID) {
+    if (vatAdminNode && pendingBundles.has(bundleID)) {
+      const bundlecap = D(vatAdminNode).getBundlecap(bundleID);
+      if (!bundlecap) {
+        // if the bundle got uninstalled by the time we got the message, keep
+        // waiting, maybe it will get reinstalled some day
+        console.log(`bundle ${bundleID} missing, hoping for reinstall`);
+        return;
+      }
+      pendingBundles.get(bundleID).resolve(bundlecap);
+      pendingBundles.delete(bundleID);
+    }
+  }
+
+  function makeMeter(remaining, threshold) {
     Nat(remaining);
     Nat(threshold);
     const meterID = D(vatAdminNode).createMeter(remaining, threshold);
@@ -43,7 +60,7 @@ export function buildRootObject(vatPowers) {
     return meter;
   }
 
-  function makeUnlimitedMeter(vatAdminNode) {
+  function makeUnlimitedMeter() {
     const meterID = D(vatAdminNode).createUnlimitedMeter();
     const { updater, notifier } = makeNotifierKit();
     const meter = Far('meter', {
@@ -57,7 +74,7 @@ export function buildRootObject(vatPowers) {
     return meter;
   }
 
-  function finishVatCreation(vatAdminNode, vatID) {
+  function finishVatCreation(vatID) {
     const [promise, pendingRR] = producePRR();
     pending.set(vatID, pendingRR);
 
@@ -89,13 +106,34 @@ export function buildRootObject(vatPowers) {
     return harden(options);
   }
 
-  function createVatAdminService(vatAdminNode) {
+  function createVatAdminService(vaDevice) {
+    vatAdminNode = vaDevice;
     return Far('vatAdminService', {
+      waitForBundlecap(bundleID) {
+        const bundlecap = D(vatAdminNode).getBundlecap(bundleID);
+        if (bundlecap) {
+          return bundlecap;
+        }
+        if (!pendingBundles.has(bundleID)) {
+          pendingBundles.set(bundleID, makePromiseKit());
+        }
+        return pendingBundles.get(bundleID).promise;
+      },
+      getBundlecap(bundleID) {
+        const bundlecap = D(vatAdminNode).getBundlecap(bundleID);
+        if (bundlecap) {
+          return bundlecap;
+        }
+        throw Error(`bundleID not yet installed: ${bundleID}`);
+      },
+      getNamedBundlecap(name) {
+        return D(vatAdminNode).getNamedBundlecap(name);
+      },
       createMeter(remaining, threshold) {
-        return makeMeter(vatAdminNode, remaining, threshold);
+        return makeMeter(remaining, threshold);
       },
       createUnlimitedMeter() {
-        return makeUnlimitedMeter(vatAdminNode);
+        return makeUnlimitedMeter();
       },
       createVat(bundleOrBundlecap, options = {}) {
         const co = convertOptions(options);
@@ -118,20 +156,21 @@ export function buildRootObject(vatPowers) {
           assert(bundle.moduleFormat, 'does not look like a bundle');
           vatID = D(vatAdminNode).createByBundle(bundle, co);
         }
-        return finishVatCreation(vatAdminNode, vatID);
+        return finishVatCreation(vatID);
       },
       createVatByName(bundleName, options = {}) {
         // eventually this option will go away: userspace will be obligated
-        // to use D(devices.bundle).getNamedBundleId(name), probably during
-        // bootstrap (so devices.bundle can be closely held), to fetch the
-        // named bundlecaps early, and then distribute specific bundlecaps to
-        // any vat which wants to make a vat from them (e.g. zoe with ZCF).
-        // That requires chain-side changes that I want to coordinate
-        // separately, so I'll leave this in place until later.
+        // to use getNamedBundlecap(), probably during bootstrap, to fetch
+        // the named bundlecaps early, and then distribute specific
+        // bundlecaps to any vat which wants to make a vat from them (e.g.
+        // zoe with ZCF). That requires chain-side changes that I want to
+        // coordinate separately, so I'll leave this in place until later.
         assert.typeof(bundleName, 'string');
         const co = convertOptions(options);
-        const vatID = D(vatAdminNode).createByName(bundleName, co);
-        return finishVatCreation(vatAdminNode, vatID);
+        const bundlecap = D(vatAdminNode).getNamedBundlecap(bundleName);
+        const bundleID = D(bundlecap).getBundleID();
+        const vatID = D(vatAdminNode).createByBundleID(bundleID, co);
+        return finishVatCreation(vatID);
       },
     });
   }
@@ -172,6 +211,7 @@ export function buildRootObject(vatPowers) {
 
   return Far('root', {
     createVatAdminService,
+    bundleInstalled,
     newVatCallback,
     vatTerminated,
     meterCrossedThreshold,

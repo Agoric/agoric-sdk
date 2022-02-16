@@ -53,7 +53,6 @@ export async function buildKernelBundles(options = {}) {
     kernel: src('./kernel/kernel.js'),
     adminDevice: src('./kernel/vatAdmin/vatAdmin-src'),
     adminVat: src('./kernel/vatAdmin/vatAdminWrapper'),
-    bundleDevice: src('./devices/bundle'),
     comms: src('./vats/comms'),
     vattp: src('./vats/vat-tp'),
     timer: src('./vats/vat-timerWrapper'),
@@ -327,9 +326,6 @@ export async function initializeSwingset(
   config.devices.vatAdmin = {
     bundle: kernelBundles.adminDevice,
   };
-  config.devices.bundle = {
-    bundle: kernelBundles.bundleDevice,
-  };
 
   // comms vat is added automatically, but TODO: bootstraps must still
   // connect it to vat-tp. TODO: test-message-patterns builds two comms and
@@ -365,7 +361,7 @@ export async function initializeSwingset(
   // The 'bundleName' option points into
   // config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec] , which can
   // also include arbitrary named bundles that will be made available to
-  // D(devices.bundle).getNamedBundlecap(bundleName) ,and temporarily as
+  // E(vatAdminService).getNamedBundlecap(bundleName) ,and temporarily as
   // E(vatAdminService).createVatByName(bundleName)
 
   // The 'kconfig' we pass through to initializeKernel has
