@@ -248,7 +248,7 @@ export const makeVaultManager = (
       {
         latestInterestUpdate,
         newDebt: totalDebt,
-        interest: 0n,
+        interest: 0n, // XXX this is always zero, doesn't need to be an option
       },
       updateTime,
     );
@@ -259,6 +259,11 @@ export const makeVaultManager = (
       return;
     }
 
+    // NB: This method of inferring the compounded rate from the ratio of debts
+    // acrrued suffers slightly from the integer nature of debts. However in
+    // testing with small numbers there's 5 digits of precision, and with large
+    // numbers the ratios tend towards ample precision. Because this calculation
+    // is over all debts of the vault the numbers will be reliably large.
     compoundedInterest = calculateCompoundedInterest(
       compoundedInterest,
       totalDebt,

@@ -181,8 +181,8 @@
 /**
  * @typedef {Object} DebtStatus
  * @property {Timestamp} latestInterestUpdate
- * @property {NatValue} interest
- * @property {NatValue} newDebt
+ * @property {NatValue} interest interest accrued since latestInterestUpdate
+ * @property {NatValue} newDebt total including principal and interest
  */
 
 /**

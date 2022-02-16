@@ -6,6 +6,7 @@ import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   makeRatio,
   multiplyRatios,
+  quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import './types.js';
 
@@ -13,6 +14,11 @@ export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
 // single digit APR is less than a basis point per day.
 const LARGE_DENOMINATOR = BASIS_POINTS * BASIS_POINTS;
+
+/**
+ * Number chosen from 6 digits for a basis point, doubled for multiplication.
+ */
+const COMPOUNDED_INTEREST_DENOMINATOR = 10n ** 20n;
 
 /**
  * @param {Ratio} annualRate
@@ -99,11 +105,9 @@ export const calculateCompoundedInterest = (
   newDebt,
 ) => {
   const brand = priorCompoundedInterest.numerator.brand;
-  if (priorDebt === 0n) {
-    throw new Error('No interest on zero debt');
-  }
-  return multiplyRatios(
+  const compounded = multiplyRatios(
     priorCompoundedInterest,
     makeRatio(newDebt, brand, priorDebt, brand),
   );
+  return quantize(compounded, COMPOUNDED_INTEREST_DENOMINATOR);
 };

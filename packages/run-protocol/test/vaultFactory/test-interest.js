@@ -2,8 +2,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
-import { makeIssuerKit } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import {
+  ceilMultiplyBy,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 import {
   calculateCompoundedInterest,
@@ -423,27 +426,60 @@ test('calculateCompoundedInterest on zero debt', t => {
 });
 
 // -illions
-const B = 1_000_000_000n;
-const Q = B * B;
+const M = 1_000_000n;
 
 test('calculateCompoundedInterest', t => {
   const brand = Far('brand');
+  /** @type {Array<[bigint, bigint, bigint, number, bigint, number]>} */
   const cases = [
-    [1n, 1n, 1n, 1n, 1n, 1n], // no charge
-    [1n, 1n, 1n, 2n, 2n, 1n], // doubled
-    [11n, 10n, 1n, 2n * Q, 22n * Q, 10n], // >1 previous interest
-    [1n, 1n, 1n, 2n * Q, 2n * Q, 1n], // ludicrous rate greater than Number.MAX_SAFE_INTEGER
-    [2n, 1n, 1n * Q, 2n * Q, 4n * Q, 1n * Q], // 2x on huge debt
-    [4n * Q, 1n * Q, 4n * Q, 8n * Q, 32n * Q * Q, 4n * Q * Q], // 2x again
+    [250n, BASIS_POINTS, M, 1, 1025000n, 10], // 2.5% APR over 1 year yields 2.5%
+    [250n, BASIS_POINTS, M, 10, 1280090n, 5], // 2.5% APR over 10 year yields 28%
+    // XXX resolution was 12 with banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
+    [250n, BASIS_POINTS, M * M, 10, 1280084544199n, 8], // 2.5% APR over 10 year yields 28%
+    [250n, BASIS_POINTS, M, 100, 11813903n, 5], // 2.5% APR over 10 year yields 1181%
   ];
-  for (const [priorNum, priorDen, oldDebt, newDebt, newNum, newDen] of cases) {
-    const oldInterest = makeRatio(priorNum, brand, priorDen, brand);
-    const expectedInterest = makeRatio(newNum, brand, newDen, brand);
-    const compounded = calculateCompoundedInterest(
-      oldInterest,
-      oldDebt,
-      newDebt,
+  for (const [
+    rateNum,
+    rateDen,
+    startingDebt,
+    charges,
+    expected,
+    floatMatch,
+  ] of cases) {
+    const apr = makeRatio(rateNum, brand, rateDen, brand);
+    const aprf = Number(rateNum) / Number(rateDen);
+
+    let compoundedInterest = makeRatio(1n, brand, 1n, brand);
+    let compoundedFloat = 1.0;
+    let totalDebt = startingDebt;
+
+    for (let i = 0; i < charges; i += 1) {
+      compoundedFloat *= 1 + aprf;
+      const delta = ceilMultiplyBy(AmountMath.make(brand, totalDebt), apr);
+      compoundedInterest = calculateCompoundedInterest(
+        compoundedInterest,
+        totalDebt,
+        totalDebt + delta.value,
+      );
+      totalDebt += delta.value;
+    }
+    t.is(
+      compoundedFloat.toPrecision(floatMatch),
+      (
+        Number(compoundedInterest.numerator.value) /
+        Number(compoundedInterest.denominator.value)
+      ).toPrecision(floatMatch),
+      `For ${startingDebt} at (${rateNum}/${rateDen})^${charges}, expected compounded ratio to match ${compoundedFloat}`,
     );
-    t.deepEqual(compounded, expectedInterest);
+    t.is(
+      (compoundedFloat * Number(startingDebt)).toPrecision(floatMatch),
+      Number(totalDebt).toPrecision(floatMatch),
+      `For ${startingDebt} at (${rateNum}/${rateDen})^${charges}, expected compounded float ${compoundedFloat} to match debt`,
+    );
+    t.is(
+      totalDebt,
+      expected,
+      `For ${startingDebt} at (${rateNum}/${rateDen})^${charges}, expected ${expected}`,
+    );
   }
 });

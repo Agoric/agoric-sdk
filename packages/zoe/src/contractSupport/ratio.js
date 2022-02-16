@@ -119,13 +119,13 @@ const multiplyHelper = (amount, ratio, divideOp) => {
   );
 };
 
-/** @type {FloorMultiplyBy} */
+/** @type {ScaleAmount} */
 export const floorMultiplyBy = (amount, ratio) => {
   // @ts-ignore cast
   return multiplyHelper(amount, ratio, floorDivide);
 };
 
-/** @type {CeilMultiplyBy} */
+/** @type {ScaleAmount} */
 export const ceilMultiplyBy = (amount, ratio) => {
   // @ts-ignore cast
   return multiplyHelper(amount, ratio, ceilDivide);
@@ -150,13 +150,13 @@ const divideHelper = (amount, ratio, divideOp) => {
   );
 };
 
-/** @type {FloorDivideBy} */
+/** @type {ScaleAmount} */
 export const floorDivideBy = (amount, ratio) => {
   // @ts-ignore cast
   return divideHelper(amount, ratio, floorDivide);
 };
 
-/** @type {CeilDivideBy} */
+/** @type {ScaleAmount} */
 export const ceilDivideBy = (amount, ratio) => {
   // @ts-ignore cast
   return divideHelper(amount, ratio, ceilDivide);
@@ -247,5 +247,26 @@ export const oneMinus = ratio => {
     // @ts-ignore value can be any AmountValue but makeRatio() supports only bigint
     ratio.denominator.value,
     ratio.numerator.brand,
+  );
+};
+
+/**
+ * Make an equivalant ratio with a new denominator
+ *
+ * @param {Ratio} ratio
+ * @param {bigint} newDen
+ * @returns {Ratio}
+ */
+export const quantize = (ratio, newDen) => {
+  const oldDen = ratio.denominator.value;
+  const oldNum = ratio.numerator.value;
+  const newNum =
+    // TODO adopt banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
+    newDen === oldDen ? oldNum : ceilDivide(oldNum * newDen, oldDen);
+  return makeRatio(
+    newNum,
+    ratio.numerator.brand,
+    newDen,
+    ratio.denominator.brand,
   );
 };

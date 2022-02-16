@@ -128,22 +128,8 @@
  */
 
 /**
- * @callback MultiplyBy
+ * @callback ScaleAmount
  * @param {Amount} amount
  * @param {Ratio} ratio
  * @returns {Amount<NatValue>}
- */
-
-/**
- * @callback DivideBy
- * @param {Amount} amount
- * @param {Ratio} ratio
- * @returns {Amount<NatValue>}
- */
-
-/**
- * @typedef {MultiplyBy} CeilMultiplyBy
- * @typedef {MultiplyBy} FloorMultiplyBy
- * @typedef {DivideBy} FloorDivideBy
- * @typedef {DivideBy} CeilDivideBy
  */
