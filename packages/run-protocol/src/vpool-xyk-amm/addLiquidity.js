@@ -14,7 +14,7 @@ const { add, multiply } = natSafeMath;
  * @param {ContractFacet} zcf
  * @param {(brand: Brand) => XYKPool} getPool
  */
-export const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
+const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
   const addLiquidity = seat => {
     assertProposalShape(seat, {
       give: {
@@ -38,11 +38,14 @@ export const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
 // The desired ratio requires a wider range than K would support.
 const imbalancedRequest = (desiredRatio, startK) => {
   if (desiredRatio > 1.0) {
-    return desiredRatio > startK;
+    return desiredRatio > Number(startK);
   } else {
-    return 1 / desiredRatio > startK;
+    return Number(startK) * desiredRatio < 1n;
   }
 };
+harden(imbalancedRequest);
+// exported for testing only
+export { imbalancedRequest };
 
 /**
  * The pool has poolX and poolY currently. The user wants to add liquidity of
@@ -64,6 +67,13 @@ const imbalancedRequest = (desiredRatio, startK) => {
  *
  * Since startK/endK is less than one, and we have to worry about early loss of
  * precision, we round and convert to bigint as the last step
+ *
+ * If the desired ratio (the ratio of the sums of contributed amounts and pool
+ * balances) is larger than K (which most often happens when the pool balances
+ * are small) we somewhat arbitrarily refuse the transaction.
+ * For instance, if the desired ratio is 1000:1 because one currency uses 12
+ * digits and the other 9, and the pool has single digits of liquidity, then
+ * it would be better to manually adjust rather than using this approach.
  *
  * @param {Amount} poolX
  * @param {Amount} poolY
@@ -92,7 +102,7 @@ export const balancesToReachRatio = (poolX, poolY, giveX, giveY) => {
   };
 };
 
-export const makeMakeAddLiquidityAtRateInvitation = (
+const makeMakeAddLiquidityAtRateInvitation = (
   zcf,
   getPool,
   provideVPool,
@@ -190,3 +200,8 @@ export const makeMakeAddLiquidityAtRateInvitation = (
 
   return makeAddLiquidityInvitation;
 };
+
+harden(makeMakeAddLiquidityInvitation);
+harden(makeMakeAddLiquidityAtRateInvitation);
+
+export { makeMakeAddLiquidityInvitation, makeMakeAddLiquidityAtRateInvitation };
