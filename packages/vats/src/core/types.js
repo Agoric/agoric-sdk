@@ -165,6 +165,9 @@
 
 /**
  * @typedef { WellKnownSpaces & {
+ *   vatParameters: { argv: {
+ *     economicCommitteeAddresses?: string[],
+ *   }},
  *   consume: {
  *     agoricNames: Promise<NameHub>,
  *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
@@ -178,6 +181,8 @@
  *     getRUNBundle: ERef<SourceBundle>,
  *     governanceBundles: ERef<Record<string, SourceBundle>>,
  *     initialSupply: ERef<Payment>,
+ *     namesByAddress: ERef<NameHub>,
+ *     namesByAddressAdmin: ERef<NameAdmin>,
  *     pegasusBundle: Promise<SourceBundle>,
  *     pegasusConnections: Promise<NameHub>,
  *     pegasusConnectionsAdmin: Promise<NameAdmin>,
@@ -244,8 +249,6 @@
  *     mints: ERef<MintsVat>,
  *     provisioning: ProvisioningVat,
  *     vatAdminSvc: ERef<VatAdminSvc>,
- *     namesByAddress: ERef<NameHub>,
- *     namesByAddressAdmin: ERef<NameAdmin>,
  *   },
  *   produce: EconomyBootstrapPowers['produce'] & {
  *     bankManager: Producer<BankManager>,
