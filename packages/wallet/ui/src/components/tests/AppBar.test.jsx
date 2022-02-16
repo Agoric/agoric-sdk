@@ -19,7 +19,7 @@ jest.mock('../ChainConnector', () => () => 'Wallet Connection');
 jest.mock('../WalletConnection', () => () => 'Chain Connector');
 
 const appTheme = createTheme({
-  pallete: {
+  palette: {
     background: {
       default: '#fff',
     },

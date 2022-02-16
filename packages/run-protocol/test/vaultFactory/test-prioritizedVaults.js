@@ -16,7 +16,7 @@ import { makeFakeInnerVault } from '../supports.js';
 
 /** @typedef {import('../../src/vaultFactory/vault.js').InnerVault} InnerVault */
 
-// Some notifier updates aren't propogating sufficiently quickly for the tests.
+// Some notifier updates aren't propagating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
 // have all their callbacks run
 async function waitForPromisesToSettle() {

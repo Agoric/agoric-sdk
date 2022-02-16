@@ -24,7 +24,7 @@ export function makeKernel(state, syscall) {
     assert(kfref, X`${lref} must already be mapped to a kernel-facing ID`);
     const { type, allocatedByVat } = parseVatSlot(kfref);
     if (type === 'object' && !allocatedByVat) {
-      // comms import, kernel export, make sure we can stil reach it
+      // comms import, kernel export, make sure we can still reach it
       assert(isReachable(lref), X`comms sending to unreachable import ${lref}`);
     }
     return kfref;

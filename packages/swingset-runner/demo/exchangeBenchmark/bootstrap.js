@@ -61,7 +61,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
       bob = E(vats.bob).build(zoe, issuers, bobPayments, publicFacet);
 
       // Zoe appears to do some one-time setup the first time it's used, so this
-      // is an optional, sacrifical benchmark round to prime the pump.
+      // is an optional, sacrificial benchmark round to prime the pump.
       if (primeContracts) {
         await E(alice).initiateTrade(bob, quiet);
         await E(bob).initiateTrade(alice, quiet);

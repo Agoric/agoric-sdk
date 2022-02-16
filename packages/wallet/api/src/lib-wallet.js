@@ -604,7 +604,7 @@ export function makeWallet({
       );
 
     // Gather all of our payments, and if there's an error, reclaim the ones
-    // that were successfuly withdrawn.
+    // that were successfully withdrawn.
     const withdrawAllPayments = Promise.all(keywordPaymentPs);
     withdrawAllPayments.catch(tryReclaimingWithdrawnPayments);
 

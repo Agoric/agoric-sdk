@@ -77,7 +77,7 @@ function makeTimerMap(state = undefined) {
   /**
    * @type {Array<Event>} an array containing events that should be triggered
    * after specific times.  Multiple events can be stored with the same time
-   * {time, handlers: [hander, ...]}. The array will be kept sorted in
+   * {time, handlers: [handler, ...]}. The array will be kept sorted in
    * increasing order by timestamp.
    */
   const schedule = state ? copyState(state) : [];

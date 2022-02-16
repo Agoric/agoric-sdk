@@ -128,19 +128,19 @@ export const compareKeys = (left, right) => {
           // copyBag X is smaller than copyBag Y when every element of X
           // occurs no more than the keyEQ element of Y, and some element
           // of Y occurs more than some element of X, where being absent
-          // from X counts as occuring zero times.
+          // from X counts as occurring zero times.
           return bagCompare(left, right);
         }
         case 'copyMap': {
           // Two copyMaps that have different keys (according to keyEQ) are
-          // incomensurate. The representation of copyMaps includes the keys
+          // incommensurate. The representation of copyMaps includes the keys
           // first, in the same reverse rank order used by sets. Thus, all
           // copyMaps with keys of the same rank (which is
           // less precise!) will be grouped together when copyMaps are sorted
           // by rank, minimizing the number of misses when range searching.
           //
           // Among copyMaps with the same keys (according to keyEQ), they
-          // compare by a parento comparison of their values. Thus, as with
+          // compare by a parent comparison of their values. Thus, as with
           // records, for two copyMaps X and Y, if `compareKeys(X,Y) < 0`
           // then, because these values obey the above invariants,
           // none of the values in X have a later rank than the corresponding

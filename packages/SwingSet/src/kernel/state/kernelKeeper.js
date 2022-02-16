@@ -700,7 +700,7 @@ export default function makeKernelKeeper(
       assert(k.startsWith(exportPrefix), k);
       // The void for an object exported by a vat will always be of the form
       // `o+NN`.  The '+' means that the vat exported the object (rather than
-      // importing it) and therefor the object is owned by (i.e., within) the
+      // importing it) and therefore the object is owned by (i.e., within) the
       // vat.  The corresponding void->koid c-list entry will thus always
       // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
       // must also delete the corresponding kernel owner entry for the object,

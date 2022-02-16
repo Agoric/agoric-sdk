@@ -104,7 +104,7 @@ export function buildCrankBuffer(
       // caller from these kinds of risks, as the nature of the risks themselves
       // varies depending on what the caller is trying to do.  This API should
       // not be made available to user (i.e., vat) code.  Rather, it is intended
-      // as a low-level mechanism to use in implementating higher level storage
+      // as a low-level mechanism to use in implementing higher level storage
       // abstractions that are expected to provide their own consistency
       // protections as appropriate to their own circumstances.
 

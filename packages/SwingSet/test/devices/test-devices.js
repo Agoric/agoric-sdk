@@ -391,7 +391,7 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
     await c.step(); // bring out your dead
   }
   await c.step(); // bootstrap, which will fail
-  // if the kernel paniced, that c.step() will reject, and the await will throw
+  // if the kernel panicked, that c.step() will reject, and the await will throw
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
   // now check that the vat was terminated: this should throw an exception
   // because the entire bootstrap vat was deleted

@@ -12,7 +12,7 @@ import { makeIngressEgress } from './clist-xgress.js';
 // 2: local: o+NN/etc
 // 3: kernel: same as local
 
-// At each boundary, we translate all slot identifers (message targets,
+// At each boundary, we translate all slot identifiers (message targets,
 // arguments, result promises, notification targets, resolution data) from
 // one namespace to the other. This boundary is also where we manage
 // promises: we keep track of who is the decider, and we prepare to notify
@@ -38,7 +38,7 @@ import { makeIngressEgress } from './clist-xgress.js';
 // system.
 
 // Either kind of message might be directed at a promise that has been
-// resolved to somthing undeliverable (data or rejection), in which case
+// resolved to something undeliverable (data or rejection), in which case
 // we'll reject any result promise, which will generate some number of
 // notification messages (possibly headed somewhere else entirely).
 

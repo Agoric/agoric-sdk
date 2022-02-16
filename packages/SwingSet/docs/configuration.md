@@ -118,7 +118,7 @@ version of this design may eliminate some of these options.
 omitted) that is passed to the vat or device as one of its creation
 parameters as the second argument to the `buildRootObject` function.
 The `buildVatController` function's second argument is an array of
-strings, nominally representing command line paramaters such as would
+strings, nominally representing command line parameters such as would
 be given when launching a statically defined vat group via a command
 line tool such as `swingset-runner` or `ag-solo`.  If such command
 line parameters are given to `buildVatController`, then are added to

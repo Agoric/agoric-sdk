@@ -295,7 +295,7 @@ is available in `src/deviceTools.js`. This provides a marshalling layer that
 can parse the incoming `argsCapdata` into representations of different sorts
 of objects, and a reverse direction for serializing the returned results.
 Unlike liveslots and deviceslots, this library makes no attempt to present
-the parsed output as invokable objects. When it parses `o-4` into a
+the parsed output as invocable objects. When it parses `o-4` into a
 "Presence", you cannot use `E()` on that presence. However, you can extract
 the `o-4` from it. The library is most useful for building the data structure
 of the return results without manual JSON hacking.

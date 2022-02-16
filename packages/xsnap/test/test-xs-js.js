@@ -184,7 +184,7 @@ test('round-trip byte sequences via JSON including string literals', async t => 
     const octets2 = bstring3.split('').map(c => c.charCodeAt(0));
     send(octets2.length === 256);
 
-    // And to be able to reencode them:
+    // And to be able to re-encode them:
     const bstring4 = String.fromCharCode.apply(null, octets2);
     send(bstring1 === bstring4);
   }

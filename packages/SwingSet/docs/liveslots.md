@@ -63,7 +63,7 @@ For safety, all objects should hardened before they are allowed to escape the sc
 Some useful things cannot be serialized: they will trigger an error.
 
 * Functions: this may be fixed, but for now only entire objects are pass-by-presence, and bare functions cause an error. This includes resolvers for Promises.
-* Mixed objects: objects with both function properties and non-function properties. We aren't really sure how to combine pass-by-presence and pass-by-copy, however look at issue #2069 ("auxilliary data") for some plans.
+* Mixed objects: objects with both function properties and non-function properties. We aren't really sure how to combine pass-by-presence and pass-by-copy, however look at issue #2069 ("auxiliary data") for some plans.
 * Non-frozen objects: since the receiving end would not automatically get updated with changes to a non-frozen object's properties, it seems safer to require that all values be frozen before transmission
 
 Uncertain:

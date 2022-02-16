@@ -80,7 +80,7 @@ const windowResort = (elements, rankCompare, fullCompare) => {
 /**
  * Returns an iterable whose iteration results are [key, xCount, yCount] tuples
  * representing the next key in the local full order, as well as how many
- * times it ocurred in the x input iterator and the y input interator.
+ * times it occurred in the x input iterator and the y input iterator.
  *
  * For sets, these counts are always 0 or 1, but this representation
  * generalizes nicely for bags.

@@ -11,7 +11,7 @@ import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E } from '@endo/far';
 import { buildDistributor } from '../src/distributeFees.js';
 
-// Some notifier updates aren't propogating sufficiently quickly for the tests.
+// Some notifier updates aren't propagating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
 // have all their callbacks run
 async function waitForPromisesToSettle() {
