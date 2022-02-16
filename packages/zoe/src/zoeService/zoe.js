@@ -17,6 +17,7 @@ import '../internal-types.js';
 
 import { AssetKind } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
@@ -61,6 +62,8 @@ const makeZoeKit = (
     shutdownZoeVat,
   );
 
+  const getBundlecapFromID = bundleID => E(vatAdminSvc).getBundlecap(bundleID);
+
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
@@ -83,6 +86,7 @@ const makeZoeKit = (
     invitationIssuer,
   } = makeZoeStorageManager(
     createZCFVat,
+    getBundlecapFromID,
     getFeeIssuerKit,
     shutdownZoeVat,
     feeIssuer,

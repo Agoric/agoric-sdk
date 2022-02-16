@@ -31,7 +31,9 @@ export const makeStartInstance = (
     /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
     const seatHandleToZoeSeatAdmin = makeWeakStore('seatHandle');
 
-    const { installation, bundle } = await unwrapInstallation(installationP);
+    const { installation, bundleOrBundlecap } = await unwrapInstallation(
+      installationP,
+    );
     // AWAIT ///
 
     if (privateArgs !== undefined) {
@@ -204,7 +206,7 @@ export const makeStartInstance = (
       creatorInvitation: creatorInvitationP,
       handleOfferObj,
     } = await E(zcfRoot).executeContract(
-      bundle,
+      bundleOrBundlecap,
       zoeServicePromise,
       zoeInstanceStorageManager.invitationIssuer,
       zoeInstanceAdminForZcf,

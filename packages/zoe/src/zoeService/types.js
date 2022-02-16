@@ -113,12 +113,16 @@
  */
 
 /**
+ * @typedef { SourceBundle | BundleID } BundleOrBundleID
+ */
+
+/**
  * @callback Install
  *
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.
  *
- * @param {SourceBundle} bundle
+ * @param {BundleOrBundleID} bundleOrBundleID
  * @returns {Promise<Installation>}
  */
 
@@ -272,9 +276,9 @@
 
 /**
  * @typedef {Object} VatAdminSvc
- * @property {(BundleID: id) => Bundlecap} getBundlecap
- * @property {(name: string) => Bundlecap} getNamedBundlecap
- * @property {(bundlecap: Bundlecap) => RootAndAdminNode} createVat
+ * @property {(BundleID: id) => Promise<Bundlecap>} getBundlecap
+ * @property {(name: string) => Promise<Bundlecap>} getNamedBundlecap
+ * @property {(bundlecap: Bundlecap) => Promise<RootAndAdminNode>} createVat
  */
 
 /**
@@ -306,6 +310,7 @@
 /**
  * @typedef {Object} Installation
  * @property {() => SourceBundle} getBundle
+ * @property {() => BundleID} getBundleID
  */
 
 /**

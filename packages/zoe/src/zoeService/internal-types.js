@@ -54,14 +54,18 @@
  */
 
 /**
+ * @typedef { SourceBundle | Bundlecap } BundleOrBundlecap
+ */
+
+/**
  * @callback UnwrapInstallation
  *
- * Assert the installation is known, and return the bundle and
+ * Assert the installation is known, and return the bundle/bundlecap and
  * installation
  *
  * @param {ERef<Installation>} installationP
  * @returns {Promise<{
- *   bundle: SourceBundle,
+ *   bundleOrBundlecap: BundleOrBundlecap,
  *   installation:Installation
  * }>}
  */
@@ -103,6 +107,12 @@
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
  * @returns {ZoeInstanceStorageManager}
+ */
+
+/**
+ * @callback GetBundlecapFromID
+ * @param {BundleID} id
+ * @returns {Promise<Bundlecap>}
  */
 
 /**
