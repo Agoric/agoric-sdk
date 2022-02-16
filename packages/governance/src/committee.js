@@ -16,6 +16,10 @@ import {
 } from './electorateTools.js';
 
 const { ceilDivide } = natSafeMath;
+const { details: X, quote: q } = assert;
+
+/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+export const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
  * Each Committee (an Electorate) represents a particular set of voters. The
@@ -26,9 +30,16 @@ const { ceilDivide } = natSafeMath;
  * for elections where the set of voters needs to be known, unless the contract
  * is used in a way that makes the distribution of voter facets visible.
  *
+ * @typedef {{
+ *   committeeName: string,
+ *   committeeSize: number,
+ *   addresses?: string[],
+ *   namesByAddress?: ERef<NameHub>,
+ * }} CommitteeTerms
+ *
  *  @type {ContractStartFn}
  */
-const start = zcf => {
+const start = async zcf => {
   /** @type {Store<Handle<'Question'>, QuestionRecord>} */
   const allQuestions = makeStore('Question');
   const { subscription, publication } = makeSubscriptionKit();
@@ -57,11 +68,42 @@ const start = zcf => {
     return zcf.makeInvitation(offerHandler, `Voter${index}`);
   };
 
-  const { committeeName, committeeSize } = zcf.getTerms();
+  const { committeeName, committeeSize, addresses, namesByAddress } =
+    /** @type { CommitteeTerms & Terms } */ (zcf.getTerms());
 
   const invitations = harden(
     [...Array(committeeSize).keys()].map(makeCommitteeVoterInvitation),
   );
+
+  const distributeInvitations = async (keys, nameHub) => {
+    const DEPOSIT_FACET = 'depositFacet';
+
+    if (!(Array.isArray(keys) && nameHub)) {
+      return;
+    }
+    assert(
+      keys.length === committeeSize,
+      X`committeeSize ${q(committeeSize)} does not match addresses ${q(keys)}`,
+    );
+
+    zip(invitations, keys).forEach(async ([invitationP, addr]) => {
+      const [invitation, depositFacet] = await Promise.all([
+        invitationP,
+        E(nameHub).lookup(addr, DEPOSIT_FACET),
+      ]);
+
+      return E(depositFacet)
+        .receive(invitation)
+        .catch(reason => {
+          // If something went wrong, somebody will have to
+          // use the creator facet to get more invitations.
+          // TODO: perhaps there should be a bootstrap error collector?
+          // TODO: add API to get results of these promises?
+          console.warn(`cannot send:`, { addr, invitation, reason });
+        });
+    });
+  };
+  await distributeInvitations(addresses, namesByAddress);
 
   /** @type {AddQuestion} */
   const addQuestion = async (voteCounter, questionSpec) => {
