@@ -75,6 +75,7 @@ export const makeVaultManager = (
     harden({
       compoundedInterest: makeRatio(1n, runBrand, 1n, runBrand),
       latestInterestUpdate: 0n,
+      // XXX since debt will always be in RUN, no need to wrap in an Amount
       totalDebt: AmountMath.makeEmpty(runBrand),
     }),
   );
@@ -113,8 +114,8 @@ export const makeVaultManager = (
   let prioritizedVaults;
   /** @type {MutableQuote=} */
   let outstandingQuote;
-  /** @type {Amount} */
-  let totalDebt = AmountMath.makeEmpty(runBrand);
+  /** @type {NatValue} */
+  let totalDebt = 0n;
   /** @type {Ratio}} */
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
@@ -235,7 +236,6 @@ export const makeVaultManager = (
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
     trace('chargeAllVault', { updateTime });
     const interestCalculator = makeInterestCalculator(
-      runBrand,
       shared.getInterestRate(),
       shared.getChargingPeriod(),
       shared.getRecordingPeriod(),
@@ -246,27 +246,28 @@ export const makeVaultManager = (
       {
         latestInterestUpdate,
         newDebt: totalDebt,
-        interest: AmountMath.makeEmpty(runBrand),
+        interest: 0n,
       },
       updateTime,
     );
     const interestAccrued = debtStatus.interest;
 
     // done if none
-    if (AmountMath.isEmpty(interestAccrued)) {
+    if (interestAccrued === 0n) {
       return;
     }
 
     // compoundedInterest *= debtStatus.newDebt / totalDebt;
     compoundedInterest = multiplyRatios(
       compoundedInterest,
-      makeRatioFromAmounts(debtStatus.newDebt, totalDebt),
+      makeRatio(debtStatus.newDebt, runBrand, totalDebt, runBrand),
     );
-    totalDebt = AmountMath.add(totalDebt, interestAccrued);
+    totalDebt += interestAccrued;
 
     // mint that much RUN for the reward pool
-    runMint.mintGains(harden({ RUN: interestAccrued }), poolIncrementSeat);
-    reallocateReward(interestAccrued, poolIncrementSeat);
+    const rewarded = AmountMath.make(runBrand, interestAccrued);
+    runMint.mintGains(harden({ RUN: rewarded }), poolIncrementSeat);
+    reallocateReward(rewarded, poolIncrementSeat);
 
     // update running tally of total debt against this collateral
     ({ latestInterestUpdate } = debtStatus);
@@ -274,7 +275,7 @@ export const makeVaultManager = (
     const payload = harden({
       compoundedInterest,
       latestInterestUpdate,
-      totalDebt,
+      totalDebt: AmountMath.make(runBrand, totalDebt),
     });
     updater.updateState(payload);
 
@@ -284,38 +285,12 @@ export const makeVaultManager = (
   };
 
   /**
-   * @param {Amount} oldDebt - principal and all accrued interest
-   * @param {Amount} newDebt - principal and all accrued interest
-   * @returns {bigint} in brand of the manager's debt
-   */
-  const debtDelta = (oldDebt, newDebt) => {
-    // Since newDebt includes accrued interest we need to use getDebtAmount()
-    // to get a baseline that also includes accrued interest.
-    const priorDebtValue = oldDebt.value;
-    const newDebtValue = newDebt.value;
-    // We can't used AmountMath because the delta can be negative.
-    assert.typeof(
-      priorDebtValue,
-      'bigint',
-      'vault debt supports only bigint amounts',
-    );
-    assert.typeof(
-      newDebtValue,
-      'bigint',
-      'vault debt supports only bigint amounts',
-    );
-    return newDebtValue - priorDebtValue;
-  };
-
-  /**
-   * @param {Amount} oldDebtOnVault
-   * @param {Amount} newDebtOnVault
+   * @param {Amount<NatValue>} oldDebtOnVault
+   * @param {Amount<NatValue>} newDebtOnVault
    */
   const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
-    const delta = debtDelta(oldDebtOnVault, newDebtOnVault);
-    trace(
-      `updating total debt of ${totalDebt.value} ${totalDebt.brand} by ${delta}`,
-    );
+    const delta = newDebtOnVault.value - oldDebtOnVault.value;
+    trace(`updating total debt ${totalDebt} by ${delta}`);
     if (delta === 0n) {
       // nothing to do
       return;
@@ -323,28 +298,19 @@ export const makeVaultManager = (
 
     if (delta > 0n) {
       // add the amount
-      totalDebt = AmountMath.add(
-        totalDebt,
-        AmountMath.make(totalDebt.brand, delta),
-      );
+      totalDebt += delta;
     } else {
       // negate the amount so that it's a natural number, then subtract
       const absDelta = -delta;
-      assert(
-        !(absDelta > totalDebt.value),
-        'Negative delta greater than total debt',
-      );
-      totalDebt = AmountMath.subtract(
-        totalDebt,
-        AmountMath.make(totalDebt.brand, absDelta),
-      );
+      assert(!(absDelta > totalDebt), 'Negative delta greater than total debt');
+      totalDebt -= absDelta;
     }
     trace('applyDebtDelta complete', { totalDebt });
   };
 
   /**
-   * @param {Amount} oldDebt
-   * @param {Amount} oldCollateral
+   * @param {Amount<NatValue>} oldDebt
+   * @param {Amount<NatValue>} oldCollateral
    * @param {VaultId} vaultId
    */
   const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {

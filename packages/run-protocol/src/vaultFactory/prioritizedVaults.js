@@ -34,8 +34,8 @@ const ratioGTE = (left, right) => {
 
 /**
  *
- * @param {Amount} debtAmount
- * @param {Amount} collateralAmount
+ * @param {Amount<NatValue>} debtAmount
+ * @param {Amount<NatValue>} collateralAmount
  * @returns {Ratio}
  */
 const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
@@ -132,8 +132,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
 
   /**
    *
-   * @param {Amount} oldDebt
-   * @param {Amount} oldCollateral
+   * @param {Amount<NatValue>} oldDebt
+   * @param {Amount<NatValue>} oldCollateral
    * @param {string} vaultId
    */
   const removeVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
@@ -162,7 +162,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * Redundant tags until https://github.com/Microsoft/TypeScript/issues/23857
    *
    * @param {Ratio} ratio
-   * @yields {[string, VaultKit]>}
+   * @yields {[string, VaultKit]}
    * @returns {IterableIterator<[string, VaultKit]>}
    */
   // eslint-disable-next-line func-names
@@ -180,8 +180,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   }
 
   /**
-   * @param {Amount} oldDebt
-   * @param {Amount} oldCollateral
+   * @param {Amount<NatValue>} oldDebt
+   * @param {Amount<NatValue>} oldCollateral
    * @param {string} vaultId
    */
   const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {

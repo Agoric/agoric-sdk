@@ -59,8 +59,8 @@
 
 /**
  * @typedef {Object} BaseUIState
- * @property {Amount} locked Amount of Collateral locked
- * @property {Amount} debt Amount of Loan (including accrued interest)
+ * @property {Amount<NatValue>} locked Amount of Collateral locked
+ * @property {Amount<NatValue>} debt Amount of Loan (including accrued interest)
  * @property {Ratio} collateralizationRatio
  */
 
@@ -121,9 +121,9 @@
 
 /**
  * @typedef {Object} BaseVault
- * @property {() => Amount} getCollateralAmount
- * @property {() => Amount} getDebtAmount
- * @property {() => Amount} getNormalizedDebt
+ * @property {() => Amount<NatValue>} getCollateralAmount
+ * @property {() => Amount<NatValue>} getDebtAmount
+ * @property {() => Amount<NatValue>} getNormalizedDebt
  *
  * @typedef {BaseVault & VaultMixin} Vault
  * @typedef {Object} VaultMixin
@@ -181,8 +181,8 @@
 /**
  * @typedef {Object} DebtStatus
  * @property {Timestamp} latestInterestUpdate
- * @property {Amount} interest
- * @property {Amount} newDebt
+ * @property {NatValue} interest
+ * @property {NatValue} newDebt
  */
 
 /**

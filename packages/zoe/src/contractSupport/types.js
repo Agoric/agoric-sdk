@@ -123,22 +123,22 @@
 
 /**
  * @typedef {Object} Ratio
- * @property {Amount} numerator
- * @property {Amount} denominator
+ * @property {Amount<NatValue>} numerator
+ * @property {Amount<NatValue>} denominator
  */
 
 /**
  * @callback MultiplyBy
  * @param {Amount} amount
  * @param {Ratio} ratio
- * @returns {Amount}
+ * @returns {Amount<NatValue>}
  */
 
 /**
  * @callback DivideBy
  * @param {Amount} amount
  * @param {Ratio} ratio
- * @returns {Amount}
+ * @returns {Amount<NatValue>}
  */
 
 /**

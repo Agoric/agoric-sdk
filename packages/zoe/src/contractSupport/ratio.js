@@ -121,11 +121,13 @@ const multiplyHelper = (amount, ratio, divideOp) => {
 
 /** @type {FloorMultiplyBy} */
 export const floorMultiplyBy = (amount, ratio) => {
+  // @ts-ignore cast
   return multiplyHelper(amount, ratio, floorDivide);
 };
 
 /** @type {CeilMultiplyBy} */
 export const ceilMultiplyBy = (amount, ratio) => {
+  // @ts-ignore cast
   return multiplyHelper(amount, ratio, ceilDivide);
 };
 
@@ -150,11 +152,13 @@ const divideHelper = (amount, ratio, divideOp) => {
 
 /** @type {FloorDivideBy} */
 export const floorDivideBy = (amount, ratio) => {
+  // @ts-ignore cast
   return divideHelper(amount, ratio, floorDivide);
 };
 
 /** @type {CeilDivideBy} */
 export const ceilDivideBy = (amount, ratio) => {
+  // @ts-ignore cast
   return divideHelper(amount, ratio, ceilDivide);
 };
 

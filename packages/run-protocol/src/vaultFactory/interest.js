@@ -2,12 +2,9 @@
 
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/callSpread/types.js';
+import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import './types.js';
-import {
-  ceilMultiplyBy,
-  makeRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
-import { AmountMath } from '@agoric/ertp';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
@@ -15,14 +12,12 @@ const BASIS_POINTS = 10000;
 const LARGE_DENOMINATOR = BASIS_POINTS * BASIS_POINTS;
 
 /**
- * @param {Brand} brand
  * @param {Ratio} annualRate
  * @param {RelativeTime} chargingPeriod
  * @param {RelativeTime} recordingPeriod
  * @returns {CalculatorKit}
  */
 export const makeInterestCalculator = (
-  brand,
   annualRate,
   chargingPeriod,
   recordingPeriod,
@@ -54,9 +49,12 @@ export const makeInterestCalculator = (
     while (newRecent + chargingPeriod <= currentTime) {
       newRecent += chargingPeriod;
       // The `ceil` implies that a vault with any debt will accrue at least one µRUN.
-      const newInterest = ceilMultiplyBy(growingDebt, ratePerChargingPeriod);
-      growingInterest = AmountMath.add(growingInterest, newInterest);
-      growingDebt = AmountMath.add(growingDebt, newInterest, brand);
+      const newInterest = natSafeMath.ceilDivide(
+        growingDebt * ratePerChargingPeriod.numerator.value,
+        ratePerChargingPeriod.denominator.value,
+      );
+      growingInterest += newInterest;
+      growingDebt += newInterest;
     }
     return {
       latestInterestUpdate: newRecent,

@@ -94,7 +94,7 @@ export const makeVaultKit = (
    * @type {{run: Amount, interest: Ratio}}
    */
   let debtSnapshot = {
-    run: AmountMath.makeEmpty(runBrand),
+    run: AmountMath.makeEmpty(runBrand, 'nat'),
     interest: manager.getCompoundedInterest(),
   };
 
@@ -133,7 +133,7 @@ export const makeVaultKit = (
    * what interest has compounded since this vault record was written.
    *
    * @see getNormalizedDebt
-   * @returns {Amount}
+   * @returns {Amount<NatValue>}
    */
   // TODO rename to calculateActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
   const getDebtAmount = () => {
@@ -153,7 +153,7 @@ export const makeVaultKit = (
    * the interest accrues.
    *
    * @see getActualDebAmount
-   * @returns {Amount} as if the vault was open at the launch of this manager, before any interest accrued
+   * @returns {Amount<NatValue>} as if the vault was open at the launch of this manager, before any interest accrued
    */
   // Not in use until https://github.com/Agoric/agoric-sdk/issues/4540
   const getNormalizedDebt = () => {
@@ -199,6 +199,10 @@ export const makeVaultKit = (
     );
   };
 
+  /**
+   *
+   * @returns {Amount<NatValue>}
+   */
   const getCollateralAmount = () => {
     // getCollateralAllocated would return final allocations
     return vaultSeat.hasExited()
@@ -584,6 +588,7 @@ export const makeVaultKit = (
       want: { RUN: wantedRun },
     } = seat.getProposal();
 
+    if (typeof wantedRun.value !== 'bigint') throw new Error();
     // todo trigger process() check right away, in case the price dropped while we ran
 
     const fee = ceilMultiplyBy(wantedRun, manager.getLoanFee());
