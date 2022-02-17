@@ -543,6 +543,7 @@ export const makeInnerVault = (
   const adjustBalancesHook = async clientSeat => {
     trace('adjustBalancesHook start');
     assertVaultIsOpen();
+    const caller = outerVault;
     const proposal = clientSeat.getProposal();
     const oldDebt = getDebtAmount();
     const oldCollateral = getCollateralAmount();
@@ -552,6 +553,7 @@ export const makeInnerVault = (
     const targetCollateralAmount = targetCollateralLevels(clientSeat).vault;
     // max debt supported by current Collateral as modified by proposal
     const maxDebtForOriginalTarget = await maxDebtFor(targetCollateralAmount);
+    assertActiveOuter(caller);
     assertVaultIsOpen();
 
     const priceOfCollateralInRun = makeRatioFromAmounts(
