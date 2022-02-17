@@ -9,6 +9,7 @@ import installMain from './install.js';
 import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
 import walletMain from './open.js';
+import addMain from './add.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
@@ -41,6 +42,9 @@ const main = async (progname, rawArgs, powers) => {
       // This seems to be the only way to propagate the exit code.
       code => process.exit(code || 0),
     );
+  }
+  function subMainNoExit(fn, args, options) {
+    return fn(progname, args, powers, options);
   }
 
   program.storeOptionsAsProperties(false);
@@ -150,7 +154,20 @@ const main = async (progname, rawArgs, powers) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
-
+  program
+    .command('add [script-args...]')
+    .description('add a new dependency to the directory')
+    .action(async (scriptArgs, cmd) => {
+      await isNotBasedir();
+      const opts = { ...program.opts(), ...cmd.opts() };
+      subMainNoExit(addMain, ['add', scriptArgs], opts);
+      await isNotBasedir();
+      console.log(scriptArgs);
+      if (scriptArgs.length < 2) {
+        return;
+      }
+      return subMain(installMain, ['install', undefined], opts);
+    });
   program
     .command('install [force-sdk-version]')
     .description('install Dapp dependencies')
