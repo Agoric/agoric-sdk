@@ -72,7 +72,6 @@ const setUpZoeForTest = async setJig => {
 
 const makeRates = runBrand =>
   harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),

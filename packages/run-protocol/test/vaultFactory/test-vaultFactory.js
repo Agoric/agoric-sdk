@@ -79,8 +79,6 @@ async function waitForPromisesToSettle() {
 
 function makeRates(runBrand) {
   return harden({
-    // margin required to open a loan
-    initialMargin: makeRatio(120n, runBrand),
     // margin required to maintain a loan
     liquidationMargin: makeRatio(105n, runBrand),
     // periodic interest rate (per charging period)
@@ -714,7 +712,6 @@ test('vaultFactory display collateral', async t => {
   const { vaultFactory } = services.vaultFactory;
 
   const rates = harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
     loanFee: makeRatio(530n, runBrand, BASIS_POINTS),
@@ -727,7 +724,6 @@ test('vaultFactory display collateral', async t => {
   t.deepEqual(collaterals[0], {
     brand: aethBrand,
     liquidationMargin: makeRatio(105n, runBrand),
-    initialMargin: makeRatio(120n, runBrand),
     stabilityFee: makeRatio(530n, runBrand, BASIS_POINTS),
     marketPrice: makeRatio(5n, runBrand, 1n, aethBrand),
     interestRate: makeRatio(100n, runBrand, 10000n, runBrand),
@@ -773,7 +769,6 @@ test('interest on multiple vaults', async t => {
 
   const interestRate = makeRatio(5n, runBrand);
   const rates = harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     interestRate,
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
@@ -1372,7 +1367,6 @@ test('mutable liquidity triggers and interest', async t => {
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     // charge 5% interest
     interestRate: makeRatio(5n, runBrand),
@@ -1894,7 +1888,6 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     // charge 5% interest
     interestRate: makeRatio(5n, runBrand),
