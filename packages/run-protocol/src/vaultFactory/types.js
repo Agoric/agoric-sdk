@@ -127,6 +127,7 @@
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
  * @property {() => Promise<Invitation>} makeCloseInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
+ * @property {() => Notifier<VaultUIState>} getNotifier
  */
 
 /**

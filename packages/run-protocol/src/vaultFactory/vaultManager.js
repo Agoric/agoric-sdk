@@ -377,19 +377,9 @@ export const makeVaultManager = (
     const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
 
     try {
-      const vault = await innerVault.initVault(seat);
-
+      const vaultKit = await innerVault.initVaultKit(seat);
       seat.exit();
-
-      return harden({
-        uiNotifier: vault.getNotifier(),
-        invitationMakers: Far('invitation makers', {
-          AdjustBalances: vault.makeAdjustBalancesInvitation,
-          CloseVault: vault.makeCloseInvitation,
-          // TransferVault: vault.makeTransferVaultInvitation,
-        }),
-        vault,
-      });
+      return vaultKit;
     } catch (err) {
       // remove it from prioritizedVaults
       // XXX openLoan shouldn't assume it's already in the prioritizedVaults

@@ -108,27 +108,7 @@ export const makeInnerVault = (
     assert(vaultState === VaultState.ACTIVE, X`vault must still be active`);
   };
 
-  /** @type {Vault} */
-  let outerVault;
-  const assertActiveOuter = outer => {
-    assert(outerVault === outer, X`Using ${outer} after transfer`);
-    // assert(vaultState === VaultState.ACTIVE, X`vault must still be active (is ${vaultState})`);
-  };
-
-  let uiUpdater;
-<<<<<<< HEAD
-  const updateOuter = inner => {
-    // ({ vault: outerVault, uiUpdater }) = makeOuterKit(inner);
-    if (uiUpdater) {
-      uiUpdater.finish(snapshotState(VaultState.TRANSFER));
-    }
-    const { vault, uiUpdater: updater } = makeOuterKit(inner);
-    outerVault = vault;
-    uiUpdater = updater;
-    updateUiState();
-  };
-=======
->>>>>>> d05c3899d (feat: stronger revocation)
+  let outerUpdater;
 
   // vaultSeat will hold the collateral until the loan is retired. The
   // payout from it will be handed to the user: if the vault dies early
@@ -147,24 +127,6 @@ export const makeInnerVault = (
     interest: manager.getCompoundedInterest(),
   };
 
-<<<<<<< HEAD
-  const snapshotState = (vstate, collateralizationRatio) => {
-    /** @type {VaultUIState} */
-    return harden({
-      // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
-      interestRate: manager.getInterestRate(),
-      liquidationRatio: manager.getLiquidationMargin(),
-      debtSnapshot,
-      locked: getCollateralAmount(),
-      debt: getDebtAmount(),
-      collateralizationRatio,
-      // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
-      liquidated: vaultState === VaultState.CLOSED,
-      vaultState,
-    });
-  };
-=======
->>>>>>> d05c3899d (feat: stronger revocation)
   /**
    * Called whenever the debt is paid or created through a transaction,
    * but not for interest accrual.
@@ -312,7 +274,7 @@ export const makeInnerVault = (
 
   // call this whenever anything changes!
   const updateUiState = async () => {
-    if (!uiUpdater) {
+    if (!outerUpdater) {
       return;
     }
     // TODO(123): track down all calls and ensure that they all update a
@@ -327,10 +289,10 @@ export const makeInnerVault = (
     switch (vaultState) {
       case VaultState.ACTIVE:
       case VaultState.LIQUIDATING:
-        uiUpdater.updateState(uiState);
+        outerUpdater.updateState(uiState);
         break;
       case VaultState.CLOSED:
-        uiUpdater.finish(uiState);
+        outerUpdater.finish(uiState);
         break;
       default:
         throw Error(`unreachable vaultState: ${vaultState}`);
@@ -564,7 +526,8 @@ export const makeInnerVault = (
    */
   const adjustBalancesHook = async clientSeat => {
     assertVaultIsOpen();
-    const caller = outerVault;
+    // the updater will change if we start a transfer
+    const oldUpdater = outerUpdater;
     const proposal = clientSeat.getProposal();
     const oldDebt = getDebtAmount();
     const oldCollateral = getCollateralAmount();
@@ -574,7 +537,7 @@ export const makeInnerVault = (
     const targetCollateralAmount = targetCollateralLevels(clientSeat).vault;
     // max debt supported by current Collateral as modified by proposal
     const maxDebtForOriginalTarget = await maxDebtFor(targetCollateralAmount);
-    assertActiveOuter(caller);
+    assert(oldUpdater === outerUpdater, X`Transfer during vault adjustment`);
     assertVaultIsOpen();
 
     const priceOfCollateralInRun = makeRatioFromAmounts(
@@ -653,27 +616,30 @@ export const makeInnerVault = (
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   };
 
-  const updateOuter = inner => {
-    if (uiUpdater) {
-      uiUpdater.finish(snapshotState(VaultState.TRANSFER));
-    }
-    // This syntax is supposed to work, but is rejected:
-    // ({ vault: outerVault, uiUpdater }) = makeOuterKit(inner);
+  const setupOuter = inner => {
     const { vault, uiUpdater: updater } = makeOuterKit(inner);
-    outerVault = vault;
-    uiUpdater = updater;
+    outerUpdater = updater;
     updateUiState();
+    return harden({
+      uiNotifier: vault.getNotifier(),
+      invitationMakers: Far('invitation makers', {
+        AdjustBalances: vault.makeAdjustBalancesInvitation,
+        CloseVault: vault.makeCloseInvitation,
+        // TransferVault: vault.makeTransferVaultInvitation,
+      }),
+      vault,
+    });
   };
 
   /** @type {OfferHandler} */
-  const initVault = async (seat, innerVault) => {
+  const initVaultKit = async (seat, innerVault) => {
     assert(
       AmountMath.isEmpty(debtSnapshot.run),
       X`vault must be empty initially`,
     );
     const oldDebt = getDebtAmount();
     const oldCollateral = getCollateralAmount();
-    trace('initVault start: collateral', { oldDebt, oldCollateral });
+    trace('initVaultKit start: collateral', { oldDebt, oldCollateral });
 
     // get the payout to provide access to the collateral if the
     // contract abandons
@@ -705,40 +671,31 @@ export const makeInnerVault = (
 
     refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
 
-    // TODO why isn't this complaining about use-before-define
-    updateOuter(innerVault);
-    return outerVault;
+    return setupOuter(innerVault);
   };
 
   const makeTransferInvitationHook = seat => {
     assertVaultIsOpen();
-<<<<<<< HEAD
-    throw 'TODO unimplemented';
-  };
-
-  const makeTransferInvitation = () => {
-    updateOuter(innerVault);
-    return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');
-=======
     seat.exit();
-    return outerVault;
->>>>>>> d05c3899d (feat: stronger revocation)
+    // eslint-disable-next-line no-use-before-define
+    return setupOuter(innerVault);
   };
 
   const innerVault = Far('innerVault', {
     getInnerLiquidationSeat: () => liquidationZcfSeat,
     getVaultSeat: () => vaultSeat,
-    assertActiveOuter,
 
-    //
-    initVault: seat => initVault(seat, innerVault),
+    initVaultKit: seat => initVaultKit(seat, innerVault),
     liquidating,
     liquidated,
 
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
     makeTransferInvitation: () => {
-      updateOuter(innerVault);
+      if (outerUpdater) {
+        outerUpdater.finish(snapshotState(VaultState.TRANSFER));
+        outerUpdater = null;
+      }
       return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');
     },
 
