@@ -154,6 +154,17 @@ export function buildRootObject(vatPowers) {
 
   // the kernel sends this when the vat halts
   function vatTerminated(vatID, shouldReject, info) {
+    if (pending.has(vatID)) {
+      // This happens when a dynamic vat survives `createDynamicVat` but fails
+      // during `startVat`.  In that case, the `newVatCallback` success message
+      // that got sent was unwound by the failed delivery crank abort and will
+      // never be seen.  However, as a consolation prize the crank abort queued
+      // a `vatTerminated` message for the vat.  So if we see a `vatTerminated`
+      // for a vat before seeing a `newVatCallback` for that same vat, it means
+      // the vat setup failed.  In this case we should simulate an errorful
+      // `newVatCallback` so the caller will be notified about their misfortune.
+      newVatCallback(vatID, { error: info });
+    }
     if (!running.has(vatID)) {
       // a static vat terminated, so we have nobody to notify
       console.log(`DANGER: static vat ${vatID} terminated`);

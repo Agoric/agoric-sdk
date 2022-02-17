@@ -39,6 +39,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   const kernelKeeper = {
     provideVatKeeper: () => ({
       getLastSnapshot: () => undefined,
+      addToTranscript: () => undefined,
     }),
   };
 
@@ -56,7 +57,7 @@ test('child termination distinguished from meter exhaustion', async t => {
 
   /** @type { ManagerOptions } */
   // @ts-ignore close enough for this test
-  const managerOptions = {};
+  const managerOptions = { useTranscript: true };
   const schandler = _vso => ['ok', null];
   const m = await xsWorkerFactory.createFromBundle(
     'v1',
@@ -64,6 +65,8 @@ test('child termination distinguished from meter exhaustion', async t => {
     managerOptions,
     schandler,
   );
+
+  await m.deliver(['startVat']);
 
   const msg = { method: 'hang', args: capargs([]) };
   /** @type { VatDeliveryObject } */

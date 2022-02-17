@@ -68,6 +68,9 @@ async function simpleCall(t) {
   // vat1:o+0 will map to ko21
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, [
+    { type: 'startVat', vatID: 'v2' },
+    { type: 'startVat', vatID: 'v4' },
+    { type: 'startVat', vatID: 'v5' },
     {
       msg: {
         method: 'foo',
@@ -113,6 +116,10 @@ test('bootstrap', async t => {
   // basedir-controller-2/bootstrap.js logs "bootstrap called" and queues a call to
   // left[0].bootstrap
   const c = await buildVatController(config);
+  for (let i = 0; i < 5; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat starts
+  }
   t.deepEqual(c.dump().log, ['bootstrap called']);
 });
 
@@ -123,6 +130,10 @@ test('XS bootstrap', async t => {
   config.defaultManagerType = 'xs-worker';
   const hostStorage = provideHostStorage();
   const c = await buildVatController(config, [], { hostStorage });
+  for (let i = 0; i < 5; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat starts
+  }
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.is(
     hostStorage.kvStore.get('kernel.defaultManagerType'),
@@ -156,6 +167,10 @@ test('static vats are unmetered on XS', async t => {
       },
     },
   );
+  for (let i = 0; i < 5; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat starts
+  }
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.deepEqual(limited, [false, false, false, false]);
 });
@@ -218,6 +233,12 @@ test.serial('bootstrap export', async t => {
   checkKT(t, c, kt);
 
   t.deepEqual(c.dump().runQueue, [
+    { type: 'startVat', vatID: 'v1' },
+    { type: 'startVat', vatID: 'v2' },
+    { type: 'startVat', vatID: 'v3' },
+    { type: 'startVat', vatID: 'v4' },
+    { type: 'startVat', vatID: 'v6' },
+    { type: 'startVat', vatID: 'v7' },
     {
       msg: {
         result: 'kp40',
@@ -258,6 +279,10 @@ test.serial('bootstrap export', async t => {
   }
 
   t.deepEqual(c.dump().log, []);
+  for (let i = 0; i < 7; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await stepGC(); // vat starts
+  }
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');
   await stepGC(); // message bootstrap
   // kernel promise for result of the foo() that bootstrap sends to vat-left
@@ -289,7 +314,6 @@ test.serial('bootstrap export', async t => {
     },
   ]);
 
-  await stepGC(); // dropExports
   await stepGC(); // message foo
   const barP = 'kp42';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()', 'left.foo 1']);

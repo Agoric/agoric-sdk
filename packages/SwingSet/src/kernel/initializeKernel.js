@@ -73,6 +73,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       creationOptions.vatParameters = vatParameters;
       creationOptions.description = `static name=${name}`;
       creationOptions.name = name;
+      if (creationOptions.useTranscript === undefined) {
+        creationOptions.useTranscript = true;
+      }
       if (!creationOptions.managerType) {
         creationOptions.managerType = kernelKeeper.getDefaultManagerType();
       }
@@ -85,6 +88,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundleID }, creationOptions);
       vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
+      if (!creationOptions.enableSetup) {
+        kernelKeeper.addToRunQueue(harden({ type: 'startVat', vatID }));
+      }
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
         // about creation/termination of dynamic vats.
