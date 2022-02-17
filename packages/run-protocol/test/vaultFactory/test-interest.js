@@ -436,7 +436,7 @@ test('calculateCompoundedInterest', t => {
     [250n, BASIS_POINTS, M, 10, 1280090n, 5], // 2.5% APR over 10 year yields 28%
     // XXX resolution was 12 with banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
     [250n, BASIS_POINTS, M * M, 10, 1280084544199n, 8], // 2.5% APR over 10 year yields 28%
-    [250n, BASIS_POINTS, M, 100, 11813903n, 5], // 2.5% APR over 10 year yields 1181%
+    [250n, BASIS_POINTS, M, 100, 11813903n, 5], // 2.5% APR over 100 year yields 1181%
   ];
   for (const [
     rateNum,

@@ -103,11 +103,11 @@ export const makeVaultManager = (
 
   let vaultCounter = 0;
 
-  // A store for of vaultKits prioritized by their collaterization ratio.
+  // A store for vaultKits prioritized by their collaterization ratio.
   //
   // It should be set only once but it's a `let` because it can't be set until after the
   // definition of reschedulePriceCheck, which refers to sortedVaultKits
-  // XXX mutability and flow control, could be refactored with a listener
+  // XXX misleading mutability and confusing flow control; could be refactored with a listener
   /** @type {ReturnType<typeof makePrioritizedVaults>=} */
   let prioritizedVaults;
   /** @type {MutableQuote=} */
@@ -346,7 +346,7 @@ export const makeVaultManager = (
   observeNotifier(periodNotifier, timeObserver);
 
   /** @type {Parameters<typeof makeVaultKit>[1]} */
-  const managerFacade = harden({
+  const managerFacet = harden({
     ...shared,
     applyDebtDelta,
     reallocateReward,
@@ -367,7 +367,7 @@ export const makeVaultManager = (
 
     const vaultKit = makeVaultKit(
       zcf,
-      managerFacade,
+      managerFacet,
       notifier,
       vaultId,
       runMint,

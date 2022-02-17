@@ -89,7 +89,7 @@ export const makeVaultKit = (
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   /**
-   * Snapshot of the debt and compouneded interest when the principal was last changed
+   * Snapshot of the debt and compounded interest when the principal was last changed
    *
    * @type {{run: Amount, interest: Ratio}}
    */
@@ -99,7 +99,8 @@ export const makeVaultKit = (
   };
 
   /**
-   * Called whenever principal changes.
+   * Called whenever the debt is paid or created through a transaction,
+   * but not for interest accrual.
    *
    * @param {Amount} newDebt - principal and all accrued interest
    */
@@ -262,7 +263,7 @@ export const makeVaultKit = (
         throw Error(`unreachable vaultState: ${vaultState}`);
     }
   };
-  // XXX Echo notifications from the manager though all vaults
+  // XXX Echo notifications from the manager through all vaults
   // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
   observeNotifier(managerNotifier, {
     updateState: () => {
@@ -588,7 +589,6 @@ export const makeVaultKit = (
       want: { RUN: wantedRun },
     } = seat.getProposal();
 
-    if (typeof wantedRun.value !== 'bigint') throw new Error();
     // todo trigger process() check right away, in case the price dropped while we ran
 
     const fee = ceilMultiplyBy(wantedRun, manager.getLoanFee());
@@ -598,10 +598,10 @@ export const makeVaultKit = (
       );
     }
 
-    const runDebt = AmountMath.add(wantedRun, fee);
-    await assertSufficientCollateral(collateralAmount, runDebt);
+    const stagedDebt = AmountMath.add(wantedRun, fee);
+    await assertSufficientCollateral(collateralAmount, stagedDebt);
 
-    runMint.mintGains(harden({ RUN: runDebt }), vaultSeat);
+    runMint.mintGains(harden({ RUN: stagedDebt }), vaultSeat);
 
     seat.incrementBy(vaultSeat.decrementBy(harden({ RUN: wantedRun })));
     vaultSeat.incrementBy(
@@ -609,7 +609,7 @@ export const makeVaultKit = (
     );
     manager.reallocateReward(fee, vaultSeat, seat);
 
-    refreshLoanTracking(oldDebt, oldCollateral, runDebt);
+    refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
 
     updateUiState();
 

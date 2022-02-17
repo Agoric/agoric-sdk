@@ -8,8 +8,6 @@ import { toVaultKey } from './storeUtils.js';
 
 /** @typedef {import('./vault').VaultKit} VaultKit */
 
-// TODO put this with other ratio math
-
 /**
  *
  * @param {Amount<NatValue>} debtAmount
