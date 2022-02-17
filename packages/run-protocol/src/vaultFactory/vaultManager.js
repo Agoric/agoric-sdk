@@ -291,7 +291,6 @@ export const makeVaultManager = (
   const debtDelta = (oldDebt, newDebt) => {
     // Since newDebt includes accrued interest we need to use getDebtAmount()
     // to get a baseline that also includes accrued interest.
-    // XXXeslint-disable-next-line no-use-before-define
     const priorDebtValue = oldDebt.value;
     const newDebtValue = newDebt.value;
     // We can't used AmountMath because the delta can be negative.
@@ -410,7 +409,7 @@ export const makeVaultManager = (
     // TODO
     assert(prioritizedVaults);
     prioritizedVaults.addVault(vaultId, innerVault);
-    
+
     const vault = await innerVault.initVault(seat);
 
     seat.exit();

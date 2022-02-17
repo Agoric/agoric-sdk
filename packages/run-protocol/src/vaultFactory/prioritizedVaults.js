@@ -59,7 +59,8 @@ export const currentDebtToCollateral = vault =>
 /** @typedef {{debtToCollateral: Ratio, vault: InnerVault}} VaultRecord */
 
 /**
- * Really a prioritization of vault *kits.
+ * InnerVaults, ordered by their liquidation ratio so that all the
+ * vaults below a threshold can be quickly found and liquidated.
  *
  * @param {() => void} reschedulePriceCheck called when there is a new
  * least-collateralized vault
@@ -190,7 +191,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   };
 
   return harden({
-    addVault: addVault,
+    addVault,
     entries: vaults.entries,
     entriesPrioritizedGTE,
     highestRatio: () => oracleQueryThreshold,

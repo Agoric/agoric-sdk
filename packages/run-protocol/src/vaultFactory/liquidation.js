@@ -24,13 +24,7 @@ const trace = makeTracer('LIQ');
  * @param {Brand} collateralBrand
  * @returns {Promise<Vault>}
  */
-const liquidate = async (
-  zcf,
-  vault,
-  burnLosses,
-  strategy,
-  collateralBrand,
-) => {
+const liquidate = async (zcf, vault, burnLosses, strategy, collateralBrand) => {
   // ??? should we bail if it's already liquidating?
   // if so should that be done here or throw here and managed at the caller
   vault.liquidating();
@@ -43,7 +37,6 @@ const liquidate = async (
     'Collateral',
     collateralBrand,
   );
-
 
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
