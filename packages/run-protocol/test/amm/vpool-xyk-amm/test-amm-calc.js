@@ -13,17 +13,10 @@ const { add, multiply } = natSafeMath;
 const { brand: brandX } = makeIssuerKit('X');
 const { brand: brandY } = makeIssuerKit('Y');
 
-const oneB = 1_000_000_000n;
-// const dec18 = 1_000_000_000_000_000_000n; // 18 decimals as used in ETH
-
-const arbPoolX = fc
-  .bigUint({ max: oneB })
-  .map(value => m.make(brandX, 100n + value));
-const arbPoolY = fc
-  .bigUint({ max: oneB })
-  .map(value => m.make(brandY, 100n + value));
-const arbGiveX = fc.bigUint({ max: oneB }).map(value => m.make(brandX, value));
-const arbGiveY = fc.bigUint({ max: oneB }).map(value => m.make(brandY, value));
+const arbPoolX = fc.bigUint().map(value => m.make(brandX, 100n + value));
+const arbPoolY = fc.bigUint().map(value => m.make(brandY, 100n + value));
+const arbGiveX = fc.bigUint().map(value => m.make(brandX, value));
+const arbGiveY = fc.bigUint().map(value => m.make(brandY, value));
 
 // left and right are within 5% of each other.
 const withinEpsilon = (left, right) =>
