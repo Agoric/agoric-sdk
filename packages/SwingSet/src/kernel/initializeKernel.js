@@ -8,7 +8,8 @@ import { insistVatID } from './id.js';
 import { makeVatSlot } from '../parseVatSlots.js';
 import { insistStorageAPI } from '../storageAPI.js';
 import makeKernelKeeper from './state/kernelKeeper.js';
-import { exportRootObject, doQueueToKref } from './kernel.js';
+import { exportRootObject } from './kernel.js';
+import { makeKernelQueueHandler } from './kernelQueue.js';
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
@@ -182,6 +183,8 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       throw Error('bootstrap got unexpected pass-by-presence');
     }
 
+    const { queueToKref } = makeKernelQueueHandler({ kernelKeeper });
+
     const m = makeMarshal(convertValToSlot, undefined, {
       marshalName: 'kernel:bootstrap',
       // TODO Temporary hack.
@@ -191,8 +194,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     const args = harden([vatObj0s, deviceObj0s]);
     // doQueueToKref() takes kernel-refs (ko+NN, kd+NN) in s.slots
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
-    const resultKpid = doQueueToKref(
-      kernelKeeper,
+    const resultKpid = queueToKref(
       rootKref,
       'bootstrap',
       m.serialize(args),
