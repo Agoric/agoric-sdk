@@ -410,19 +410,9 @@ export const makeVaultManager = (
     assert(prioritizedVaults);
     prioritizedVaults.addVault(vaultId, innerVault);
 
-    const vault = await innerVault.initVault(seat);
-
+    const vaultKit = await innerVault.initVaultKit(seat);
     seat.exit();
-
-    return harden({
-      uiNotifier: vault.getNotifier(),
-      invitationMakers: Far('invitation makers', {
-        AdjustBalances: vault.makeAdjustBalancesInvitation,
-        CloseVault: vault.makeCloseInvitation,
-        // TransferVault: vault.makeTransferVaultInvitation,
-      }),
-      vault,
-    });
+    return vaultKit;
   };
 
   /** @type {VaultManager} */

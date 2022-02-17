@@ -111,17 +111,17 @@ export async function start(zcf, privateArgs) {
   zcf.setTestJig(() => ({ collateralKit, runMint, vault: innerVault, timer }));
 
   async function makeHook(seat) {
-    const vault = await innerVault.initVault(seat);
+    const vaultKit = await innerVault.initVaultKit(seat);
     return {
       vault: innerVault,
       runMint,
       collateralKit,
       actions: Far('vault actions', {
         add() {
-          return innerVault.makeAdjustBalancesInvitation();
+          return vaultKit.makeAdjustBalancesInvitation();
         },
       }),
-      notifier: vault.getNotifier(),
+      notifier: vaultKit.uiNotifier,
     };
   }
 
