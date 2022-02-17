@@ -130,6 +130,8 @@
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
  * @property {() => Promise<Invitation>} makeCloseInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
+ * @property {() => 'active' | 'liquidating' | 'closed'} getPhase
+ * @property {(phase: 'active' | 'liquidating' | 'closed') => void} setPhase
  */
 
 /**

@@ -19,6 +19,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import { makeKind } from '@agoric/swingset-vat/src/storeModule.js';
 import { makeTracer } from '../makeTracer.js';
 
 const { details: X, quote: q } = assert;
@@ -70,11 +71,12 @@ export const makeVaultKit = (
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
     zcf.makeEmptySeatKit(undefined);
 
-  /** @type {VAULT_STATE} */
-  let vaultState = VaultState.ACTIVE;
-
   const assertVaultIsOpen = () => {
-    assert(vaultState === VaultState.ACTIVE, X`vault must still be active`);
+    assert(
+      // eslint-disable-next-line no-use-before-define
+      vault.getPhase() === VaultState.ACTIVE,
+      X`vault must still be active`,
+    );
   };
 
   const collateralBrand = manager.getCollateralBrand();
@@ -236,6 +238,8 @@ export const makeVaultKit = (
     // await quoteGiven() here
     // [https://github.com/Agoric/dapp-token-economy/issues/123]
     const collateralizationRatio = await getCollateralizationRatio();
+    // eslint-disable-next-line no-use-before-define
+    const vaultState = vault.getPhase();
     /** @type {VaultUIState} */
     const uiState = harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
@@ -246,6 +250,7 @@ export const makeVaultKit = (
       debt: getDebtAmount(),
       collateralizationRatio,
       // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
+      // eslint-disable-next-line no-use-before-define
       liquidated: vaultState === VaultState.CLOSED,
       vaultState,
     });
@@ -266,7 +271,8 @@ export const makeVaultKit = (
   // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
   observeNotifier(managerNotifier, {
     updateState: () => {
-      if (vaultState !== VaultState.CLOSED) {
+      // eslint-disable-next-line no-use-before-define
+      if (vault.getPhase() !== VaultState.CLOSED) {
         updateUiState();
       }
     },
@@ -280,15 +286,18 @@ export const makeVaultKit = (
   const liquidated = newDebt => {
     updateDebtSnapshot(newDebt);
 
-    vaultState = VaultState.CLOSED;
+    // eslint-disable-next-line no-use-before-define
+    vault.setPhase(VaultState.CLOSED);
     updateUiState();
   };
 
   const liquidating = () => {
-    if (vaultState === VaultState.LIQUIDATING) {
+    // eslint-disable-next-line no-use-before-define
+    if (vault.getPhase() === VaultState.LIQUIDATING) {
       throw new Error('Vault already liquidating');
     }
-    vaultState = VaultState.LIQUIDATING;
+    // eslint-disable-next-line no-use-before-define
+    vault.setPhase(VaultState.LIQUIDATING);
     updateUiState();
   };
 
@@ -328,7 +337,8 @@ export const makeVaultKit = (
     runMint.burnLosses(harden({ RUN: getDebtAmount() }), burnSeat);
     seat.exit();
     burnSeat.exit();
-    vaultState = VaultState.CLOSED;
+    // eslint-disable-next-line no-use-before-define
+    vault.setPhase(VaultState.CLOSED);
     updateDebtSnapshot(AmountMath.makeEmpty(runBrand));
     updateUiState();
 
@@ -616,17 +626,38 @@ export const makeVaultKit = (
     return { notifier };
   };
 
-  /** @type {Vault} */
-  const vault = Far('vault', {
-    makeAdjustBalancesInvitation,
-    makeCloseInvitation,
+  const makeVault = makeKind(
+    /**
+     *
+     * @param {{
+     *  phase: VAULT_STATE,
+     * }} state
+     * @returns {*}
+     */
+    state => ({
+      init() {
+        state.phase = VaultState.ACTIVE;
+      },
+      self: Far('vault', {
+        makeAdjustBalancesInvitation,
+        makeCloseInvitation,
 
-    // for status/debugging
-    getCollateralAmount,
-    getDebtAmount,
-    getNormalizedDebt,
-    getLiquidationSeat: () => liquidationSeat,
-  });
+        getCollateralAmount,
+        getDebtAmount,
+        getNormalizedDebt,
+        getLiquidationSeat: () => liquidationSeat,
+
+        // state
+        getPhase: () => state.phase,
+        setPhase: phase => {
+          state.phase = phase;
+        },
+      }),
+    }),
+  );
+
+  /** @type {Vault} */
+  const vault = makeVault();
 
   const actions = Far('vaultAdmin', {
     openLoan,
