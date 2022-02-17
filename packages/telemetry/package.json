@@ -22,11 +22,18 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/store": "^0.6.8",
     "@endo/init": "^0.5.36",
     "@opentelemetry/api": "^1.0.0",
     "@opentelemetry/exporter-prometheus": "^0.27.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.27.0",
+    "@opentelemetry/resources": "^1.0.1",
     "@opentelemetry/sdk-metrics-base": "^0.27.0",
-    "bufferfromfile": "agoric-labs/BufferFromFile#Agoric-built"
+    "@opentelemetry/sdk-trace-base": "^1.0.1",
+    "@opentelemetry/semantic-conventions": "^1.0.1",
+    "better-sqlite3": "^7.4.1",
+    "bufferfromfile": "agoric-labs/BufferFromFile#Agoric-built",
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@endo/lockdown": "^0.1.8",
