@@ -6,7 +6,8 @@
  */
 
 /**
- * @typedef {Object} Amount
+ * @template {AmountValue} [V=AmountValue]
+ * @typedef {object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
  * AmountMath executes the logic of how amounts are changed when digital
@@ -17,7 +18,7 @@
  * portion.
  *
  * @property {Brand} brand
- * @property {AmountValue} value
+ * @property {V} value
  */
 
 /**
@@ -54,107 +55,6 @@
  * @typedef {'nat' | 'set' | 'copySet' | 'copyBag' } AssetKind
  *
  * See doc-comment for `AmountValue`.
- */
-
-/**
- * @callback MakeEmpty
- * @param {Brand} brand
- * @param {AssetKind=} assetKind
- * @returns {Amount}
- */
-
-/**
- * This section blindly imitates what Endo's ses/src/error/types.js
- * does to express type overloaded methods.
- *
- * @callback AmountMake
- * @param {Brand} brand
- * @param {AmountValue} allegedValue
- * @returns {Amount}
- *
- * @callback AmountCoerce
- * @param {Brand} brand
- * @param {Amount} allegedAmount
- * @returns {Amount}
- *
- * @callback AmountGetValue
- * @param {Brand} brand
- * @param {Amount} allegedAmount
- * @returns {AmountValue}
- */
-
-/**
- * @typedef {Object} AmountMath
- * Logic for manipulating amounts.
- *
- * Amounts are the canonical description of tradable goods. They are manipulated
- * by issuers and mints, and represent the goods and currency carried by purses
- * and
- * payments. They can be used to represent things like currency, stock, and the
- * abstract right to participate in a particular exchange.
- *
- * @property {AmountMake} make
- * Make an amount from a value by adding the brand.
- *
- * @property {AmountCoerce} coerce
- * Make sure this amount is valid enough, and return a corresponding
- * valid amount if so.
- *
- * @property {AmountGetValue} getValue
- * Extract and return the value.
- *
- * @property {MakeEmpty} makeEmpty
- * Return the amount representing an empty amount. This is the
- * identity element for MathHelpers.add and MatHelpers.subtract.
- *
- * @property {(amount: Amount) => Amount} makeEmptyFromAmount
- * Return the amount representing an empty amount, using another
- * amount as the template for the brand and assetKind.
- *
- * @property {(amount: Amount, brand?: Brand) => boolean} isEmpty
- * Return true if the Amount is empty. Otherwise false.
- *
- * @property {(
- *   leftAmount: Amount,
- *   rightAmount: Amount,
- *   brand?: Brand
- * ) => boolean} isGTE
- * Returns true if the leftAmount is greater than or equal to the
- * rightAmount. For non-scalars, "greater than or equal to" depends
- * on the kind of amount, as defined by the MathHelpers. For example,
- * whether rectangle A is greater than rectangle B depends on whether rectangle
- * A includes rectangle B as defined by the logic in MathHelpers.
- *
- * @property {(
- *   leftAmount: Amount,
- *   rightAmount: Amount,
- *   brand?: Brand
- * ) => boolean} isEqual
- * Returns true if the leftAmount equals the rightAmount. We assume
- * that if isGTE is true in both directions, isEqual is also true
- *
- * @property {(
- *   leftAmount: Amount,
- *   rightAmount: Amount,
- *   brand?: Brand
- * ) => Amount} add
- * Returns a new amount that is the union of both leftAmount and rightAmount.
- *
- * For fungible amount this means adding the values. For other kinds of
- * amount, it usually means including all of the elements from both
- * left and right.
- *
- * @property {(
- *   leftAmount: Amount,
- *   rightAmount: Amount,
- *   brand?: Brand
- * ) => Amount} subtract
- * Returns a new amount that is the leftAmount minus the rightAmount
- * (i.e. everything in the leftAmount that is not in the
- * rightAmount). If leftAmount doesn't include rightAmount
- * (subtraction results in a negative), throw  an error. Because the
- * left amount must include the right amount, this is NOT equivalent
- * to set subtraction.
  */
 
 /**
@@ -493,7 +393,7 @@
  */
 
 /**
- * @template V
+ * @template {AmountValue} V
  * @typedef {Object} MathHelpers<V>
  * All of the difference in how digital asset amount are manipulated can be
  * reduced to the behavior of the math on values. We extract this
