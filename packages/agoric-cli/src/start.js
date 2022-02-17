@@ -393,6 +393,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       create(hashFile, gci),
     ]);
 
+    if (!popts.restart) {
+      // Don't actually run the chain.
+      return 0;
+    }
+
     return chainSpawn(
       [...debugOpts, 'start'],
       {
