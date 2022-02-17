@@ -19,10 +19,10 @@ class FakeFinalizationRegistry {
 }
 
 export function makeFakeLiveSlotsStuff(options = {}) {
-  let vom;
-  function setVom(vomToUse) {
-    assert(!vom, 'vom already configured');
-    vom = vomToUse;
+  let vrm;
+  function setVrm(vrmToUse) {
+    assert(!vrm, 'vrm already configured');
+    vrm = vrmToUse;
   }
 
   const {
@@ -174,10 +174,10 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     const { type, virtual } = parseVatSlot(slot);
     assert.equal(type, 'object');
     if (virtual) {
-      if (vom) {
-        return vom.makeVirtualObjectRepresentative(slot);
+      if (vrm) {
+        return vrm.reanimate(slot, false);
       } else {
-        assert.fail('fake liveSlots stuff configured without vom');
+        assert.fail('fake liveSlots stuff configured without vrm');
       }
     } else {
       return getValForSlot(slot);
@@ -216,7 +216,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     addToPossiblyDeadSet,
     addToPossiblyRetiredSet,
     dumpStore,
-    setVom,
+    setVrm,
   };
 }
 
@@ -235,7 +235,7 @@ export function makeFakeVirtualStuff(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
-  fakeStuff.setVom(vom);
+  fakeStuff.setVrm(vrm);
   const cm = makeFakeCollectionManager(vrm, fakeStuff, options);
   return { fakeStuff, vrm, vom, cm };
 }
@@ -244,7 +244,7 @@ export function makeStandaloneFakeVirtualObjectManager(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
-  fakeStuff.setVom(vom);
+  fakeStuff.setVrm(vrm);
   return vom;
 }
 

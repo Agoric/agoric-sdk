@@ -168,12 +168,6 @@ export function makeCache(size, fetch, store) {
  *    instances, writing any changed state to the persistent store.  This
  *    provided for testing; it otherwise has little use.
  *
- * - `makeVirtualObjectRepresentative` will provide a useeable, in-memory
- *    version of a virtual object, given its vat slot ID.  This is used when
- *    deserializing a reference to an object that has been received in a message
- *    or is part of the persistent state of another virtual object that is being
- *    swapped in from storage.
- *
  * `makeKind` and `makeDurableKind` are made available to user vat code in the
  * `VatData` global.  The other two methods are for internal use by liveslots.
  */
