@@ -32,7 +32,7 @@ import {
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
-import { makeShutdown } from '@agoric/cosmic-swingset/src/shutdown.js';
+import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
 import {
   DEFAULT_METER_PROVIDER,
   makeSlogCallbacks,
