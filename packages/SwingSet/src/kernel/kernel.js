@@ -918,7 +918,7 @@ export default function buildKernel(
       if (ksc) {
         try {
           // this can throw if kernel is buggy
-          kres = kernelSyscallHandler.doKernelSyscall(ksc);
+          kres = kernelSyscallHandler(ksc);
 
           // kres is a KernelResult: ['ok', value] or ['error', problem],
           // where 'error' means we want the calling vat's syscall() to
@@ -1094,7 +1094,7 @@ export default function buildKernel(
         function deviceSyscallHandler(deviceSyscallObject) {
           const ksc =
             translators.deviceSyscallToKernelSyscall(deviceSyscallObject);
-          const kres = kernelSyscallHandler.doKernelSyscall(ksc);
+          const kres = kernelSyscallHandler(ksc);
           const dres = translators.kernelResultToDeviceResult(ksc[0], kres);
           assert.equal(dres[0], 'ok');
           return dres[1];

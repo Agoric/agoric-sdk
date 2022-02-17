@@ -320,7 +320,7 @@ export function makeKernelSyscallHandler(tools) {
    * @param { KernelSyscallObject } ksc
    * @returns {  KernelSyscallResult }
    */
-  function doKernelSyscall(ksc) {
+  function kernelSyscallHandler(ksc) {
     // this repeated pattern is necessary to get the typechecker to refine 'ksc' and 'args' properly
     switch (ksc[0]) {
       case 'send': {
@@ -376,9 +376,5 @@ export function makeKernelSyscallHandler(tools) {
     }
   }
 
-  const kernelSyscallHandler = harden({
-    send, // TODO remove these individual ones
-    doKernelSyscall,
-  });
-  return kernelSyscallHandler;
+  return harden(kernelSyscallHandler);
 }
