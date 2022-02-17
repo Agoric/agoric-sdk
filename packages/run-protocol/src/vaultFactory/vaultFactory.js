@@ -242,7 +242,7 @@ export const start = async (zcf, privateArgs) => {
 
   /** @type {VaultFactoryPublicFacet} */
   const publicFacet = Far('vaultFactory public facet', {
-    makeLoanInvitation: makeVaultInvitation, //deprecated
+    makeLoanInvitation: makeVaultInvitation, // deprecated
     makeVaultInvitation,
     getCollaterals,
     getRunIssuer: () => runIssuer,

@@ -35,6 +35,7 @@
 /**
  * @typedef  {Object} VaultFactoryPublicFacet - the public facet
  * @property {() => Promise<Invitation>} makeLoanInvitation
+ * @property {() => Promise<Invitation>} makeVaultInvitation
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Issuer} getRunIssuer
  * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
