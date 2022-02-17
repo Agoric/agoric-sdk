@@ -371,8 +371,7 @@ export const makeVaultManager = (
       priceAuthority,
     );
 
-    // Don't record the vault until it gets opened
-    // TODO
+    // TODO Don't record the vault until it gets opened
     assert(prioritizedVaults);
     const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
 

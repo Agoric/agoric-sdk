@@ -46,6 +46,7 @@ const makeOuterKit = inner => {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
 
   const assertActive = v => {
+    // console.log('OUTER', v, 'INNER', inner);
     assert(inner, X`Using ${v} after transfer`);
     return inner;
   };
@@ -56,8 +57,9 @@ const makeOuterKit = inner => {
       assertActive(vault).makeAdjustBalancesInvitation(),
     makeCloseInvitation: () => assertActive(vault).makeCloseInvitation(),
     makeTransferInvitation: () => {
+      const tmpInner = assertActive(vault);
       inner = null;
-      return assertActive(vault).makeTransferInvitation();
+      return tmpInner.makeTransferInvitation();
     },
     // for status/debugging
     getCollateralAmount: () => assertActive(vault).getCollateralAmount(),
@@ -625,7 +627,7 @@ export const makeInnerVault = (
       invitationMakers: Far('invitation makers', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
         CloseVault: vault.makeCloseInvitation,
-        // TransferVault: vault.makeTransferVaultInvitation,
+        TransferVault: vault.makeTransferInvitation,
       }),
       vault,
     });

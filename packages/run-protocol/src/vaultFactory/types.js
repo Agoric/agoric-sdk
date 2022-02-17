@@ -126,6 +126,7 @@
  * @typedef {Object} VaultMixin
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
  * @property {() => Promise<Invitation>} makeCloseInvitation
+ * @property {() => Promise<Invitation>} makeTransferInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
  * @property {() => Notifier<VaultUIState>} getNotifier
  */
