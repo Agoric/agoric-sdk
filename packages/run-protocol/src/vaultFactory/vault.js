@@ -31,14 +31,15 @@ const trace = makeTracer('Vault');
 /**
  * Constants for vault state.
  *
- * @typedef {'active' | 'liquidating' | 'closed'} VAULT_STATE
+ * @typedef {'active' | 'liquidating' | 'closed' | 'transfer'} VAULT_STATE
  *
- * @type {{ ACTIVE: 'active', LIQUIDATING: 'liquidating', CLOSED: 'closed' }}
+ * @type {{ ACTIVE: 'active', LIQUIDATING: 'liquidating', CLOSED: 'closed', TRANSFER: 'transfer' }}
  */
 export const VaultState = {
   ACTIVE: 'active',
   LIQUIDATING: 'liquidating',
   CLOSED: 'closed',
+  TRANSFER: 'transfer',
 };
 
 
@@ -110,13 +111,16 @@ export const makeInnerVault = (
   /** @type {Vault} */
   let outerVault;
   const assertActiveOuter = outer => {
-    assert(outerVault === outer, X`Using ${outer} after transfer/close`);
+    assert(outerVault === outer, X`Using ${outer} after transfer`);
     // assert(vaultState === VaultState.ACTIVE, X`vault must still be active (is ${vaultState})`);
   };
 
   let uiUpdater;
   const updateOuter = inner => {
     // ({ vault: outerVault, uiUpdater }) = makeOuterKit(inner);
+    if (uiUpdater) {
+      uiUpdater.finish(snapshotState(VaultState.TRANSFER));
+    }
     const { vault, uiUpdater: updater } = makeOuterKit(inner);
     outerVault = vault;
     uiUpdater = updater;
@@ -140,13 +144,27 @@ export const makeInnerVault = (
     interest: manager.getCompoundedInterest(),
   };
 
+  const snapshotState = (vstate, collateralizationRatio) => {
+    /** @type {VaultUIState} */
+    return harden({
+      // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
+      interestRate: manager.getInterestRate(),
+      liquidationRatio: manager.getLiquidationMargin(),
+      debtSnapshot,
+      locked: getCollateralAmount(),
+      debt: getDebtAmount(),
+      collateralizationRatio,
+      // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
+      liquidated: vaultState === VaultState.CLOSED,
+      vaultState: vstate,
+    });
+  }
   /**
    * @param {Amount} newDebt - principal and all accrued interest
    */
   const updateDebtSnapshot = newDebt => {
     // update local state
     debtSnapshot = { run: newDebt, interest: manager.getCompoundedInterest() };
-
     trace(`${idInManager} updateDebtSnapshot`, newDebt.value, debtSnapshot);
   };
 
@@ -282,19 +300,7 @@ export const makeInnerVault = (
     // [https://github.com/Agoric/dapp-token-economy/issues/123]
     const collateralizationRatio = await getCollateralizationRatio();
     /** @type {VaultUIState} */
-    const uiState = harden({
-      // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
-      interestRate: manager.getInterestRate(),
-      liquidationRatio: manager.getLiquidationMargin(),
-      debtSnapshot,
-      locked: getCollateralAmount(),
-      debt: getDebtAmount(),
-      collateralizationRatio,
-      // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
-      liquidated: vaultState === VaultState.CLOSED,
-      vaultState,
-    });
-
+    const uiState = snapshotState(vaultState, collateralizationRatio);
     trace('updateUiState', uiState);
 
     switch (vaultState) {
