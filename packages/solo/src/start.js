@@ -15,7 +15,10 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, details as X } from '@agoric/assert';
-import { makeSlogSenderFromModule } from '@agoric/telemetry';
+import {
+  makeSlogSenderFromModule,
+  getTelemetryProviders,
+} from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -30,6 +33,10 @@ import {
 import { openSwingStore } from '@agoric/swing-store';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
 import { makeShutdown } from '@agoric/cosmic-swingset/src/shutdown.js';
+import {
+  DEFAULT_METER_PROVIDER,
+  makeSlogCallbacks,
+} from '@agoric/cosmic-swingset/src/kernel-stats.js';
 
 import { deliver, addDeliveryTarget } from './outbound.js';
 import { connectToPipe } from './pipe.js';
@@ -144,6 +151,18 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
+  const env = {
+    ...process.env,
+    OTEL_EXPORTER_PROMETHEUS_PORT:
+      process.env.SOLO_OTEL_EXPORTER_PROMETHEUS_PORT,
+    OTEL_RESOURCE_ATTRIBUTES: process.env.SOLO_OTEL_RESOURCE_ATTRIBUTES,
+  };
+  const { metricsProvider = DEFAULT_METER_PROVIDER } = getTelemetryProviders({
+    console,
+    env,
+    serviceName: 'solo',
+  });
+
   const {
     SOLO_SLOGFILE: slogFile,
     SOLO_SLOGSENDER,
@@ -161,6 +180,12 @@ const buildSwingset = async (
     snapStore,
   };
 
+  // Not to be confused with the gas model, this meter is for OpenTelemetry.
+  const metricMeter = metricsProvider.getMeter('ag-solo');
+  const slogCallbacks = makeSlogCallbacks({
+    metricMeter,
+  });
+
   if (!swingsetIsInitialized(hostStorage)) {
     if (defaultManagerType && !config.defaultManagerType) {
       config.defaultManagerType = defaultManagerType;
@@ -169,11 +194,13 @@ const buildSwingset = async (
   }
   const slogSender = await makeSlogSenderFromModule(SOLO_SLOGSENDER, {
     stateDir: kernelStateDBDir,
+    serviceName: 'solo',
+    env,
   });
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogFile, slogSender },
+    { slogCallbacks, slogFile, slogSender },
   );
 
   async function saveState() {
