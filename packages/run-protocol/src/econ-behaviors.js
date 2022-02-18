@@ -483,7 +483,7 @@ harden(startRewardDistributor);
  * @param {Object} terms
  * @param {Ratio} terms.collateralPrice
  * @param {Ratio} terms.collateralizationRatio
- * @param {Issuer} stakeIssuer
+ * @param {ERef<Issuer>} stakeIssuer
  *
  * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartGetRun
  */
