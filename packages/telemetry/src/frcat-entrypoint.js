@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-/* global process, BigUint64Array */
+/* global process */
 // frcat - print out the contents of a flight recorder
 // NOTE: this only works on inactive recorder files where the writer has terminated
 

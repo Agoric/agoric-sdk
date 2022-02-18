@@ -4,7 +4,6 @@
  *
  */
 // TODO remove after release of https://github.com/endojs/endo/pull/1071
-/* global BigUint64Array */
 
 /** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
 

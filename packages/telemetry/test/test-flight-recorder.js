@@ -1,5 +1,4 @@
 // @ts-check
-/* global BigUint64Array */
 import tmp from 'tmp';
 import { test } from './prepare-test-env-ava.js';
 
