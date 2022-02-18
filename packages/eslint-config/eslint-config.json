@@ -3,6 +3,7 @@
     "@endo",
     "plugin:@jessie.js/recommended"
   ],
+  "plugins": ["prefer-arrow-functions"],
   "rules": {
     "jsdoc/no-multi-asterisks": "off",
     "jsdoc/multiline-blocks": "off",
@@ -22,6 +23,15 @@
           "**/demo*/**/*.js",
           "**/scripts/**/*.js"
         ]
+      }
+    ],
+    "prefer-arrow-functions/prefer-arrow-functions": [
+      "warn",
+      {
+        "classPropertiesAllowed": false,
+        "disallowPrototype": false,
+        "returnStyle": "unchanged",
+        "singleReturnOnly": false
       }
     ],
     "prettier/prettier": "warn" // @jessie.js/recommended errors. This repo checks format separately but keeps warn to maintain that "eslint --fix" prettifies
