@@ -229,7 +229,6 @@ export async function installOnChain({
 
   // declare governed params for the vaultFactory; addVaultType() sets actual rates
   const rates = {
-    initialMargin: makeRatio(120n, centralBrand),
     liquidationMargin: makeRatio(105n, centralBrand),
     interestRate: makeRatio(250n, centralBrand, BASIS_POINTS),
     loanFee: makeRatio(200n, centralBrand, BASIS_POINTS),

@@ -50,9 +50,6 @@ export async function start(zcf, privateArgs) {
     getLiquidationMargin() {
       return makeRatio(105n, runBrand);
     },
-    getInitialMargin() {
-      return makeRatio(150n, runBrand);
-    },
     getLoanFee() {
       return makeRatio(500n, runBrand, BASIS_POINTS);
     },
