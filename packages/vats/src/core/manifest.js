@@ -207,6 +207,31 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       produce: { economicCommittee: 'zoe' },
     },
   },
+  startGetRun: {
+    consume: {
+      zoe: 'zoe',
+      feeMintAccess: 'zoe',
+      getRUNBundle: true,
+      bridgeManager: true,
+      client: true,
+      chainTimerService: true,
+    },
+    installation: {
+      consume: { contractGovernor: 'zoe', committee: 'zoe' },
+      produce: { getRUN: 'zoe' },
+    },
+    instance: {
+      produce: { getRUN: 'getRUN' },
+    },
+    brand: {
+      consume: { BLD: true, RUN: 'zoe' },
+      produce: { Attestation: true },
+    },
+    issuer: {
+      consume: { BLD: true },
+      produce: { Attestation: true },
+    },
+  },
 });
 
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({
