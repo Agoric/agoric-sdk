@@ -94,6 +94,7 @@ export const makeClientManager = async (
   { template } = {
     template: {
       agoricNames: true,
+      attMaker: true,
       bank: true,
       namesByAddress: true,
       myAddressNameAdmin: true,
