@@ -552,7 +552,18 @@ export const startGetRun = async ({
     bridgeManager: bridgeP,
     client,
     chainTimerService,
-    nameAdmins,
+  },
+  installation: {
+    produce: { getRUN: getRUNinstallR },
+  },
+  instance: {
+    produce: { getRUN: getRUNinstanceR },
+  },
+  brand: {
+    produce: { Attestation: attestationBrandR },
+  },
+  issuer: {
+    produce: { Attestation: attestationIssuerR },
   },
 }) => {
   const stakeName = 'BLD'; // MAGIC STRING TODO TECHDEBT
@@ -601,22 +612,11 @@ export const startGetRun = async ({
 
   const reporter = bridgeManager && makeStakeReporter(bridgeManager, bldBrand);
 
-  const [brandAdmin, issuerAdmin, installAdmin, instanceAdmin] =
-    await collectNameAdmins(
-      ['brand', 'issuer', 'installation', 'instance'],
-      agoricNames,
-      nameAdmins,
-    );
-
-  const key = 'getRUN';
-  const attKey = 'Attestation';
-  assert(agoricNamesReserved.installation[key]);
-  assert(agoricNamesReserved.issuer[attKey]);
+  getRUNinstallR.resolve(installation);
+  getRUNinstanceR.resolve(instance);
+  attestationBrandR.resolve(attBrand);
+  attestationIssuerR.resolve(attIssuer);
   return Promise.all([
-    E(installAdmin).update(key, installation),
-    E(instanceAdmin).update(key, instance),
-    E(brandAdmin).update(attKey, attBrand),
-    E(issuerAdmin).update(attKey, attIssuer),
     // @ts-expect-error threading types thru governance is WIP
     ...(reporter ? [E(creatorFacet).addAuthority(reporter)] : []),
     E(client).assignBundle({
