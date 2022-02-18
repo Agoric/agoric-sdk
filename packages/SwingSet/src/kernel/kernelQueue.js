@@ -90,7 +90,7 @@ export function makeKernelQueueHandler(tools) {
    * @param {*} args  The message arguments
    * @param {ResolutionPolicy=} policy How the kernel should handle an eventual
    *    resolution or rejection of the message's result promise. Should be
-   *    one of 'sendOnly' (don't even create a result promise), 'ignore' (do
+   *    one of 'none' (don't even create a result promise), 'ignore' (do
    *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure'
    *    (log only rejections), or 'panic' (panic the kernel upon a
    *    rejection).
