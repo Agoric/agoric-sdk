@@ -174,63 +174,6 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     home: { produce: { faucet: true } },
   },
-
-  // @@@@
-  shareEconomyBundles: {
-    produce: {
-      ammBundle: true,
-      vaultBundles: true,
-      governanceBundles: true,
-    },
-  },
-  startEconomicCommittee: {
-    vatParameters: {
-      argv: { economicCommitteeAddresses: true },
-    },
-    consume: {
-      namesByAddress: true,
-      namesByAddressAdmin: true,
-      zoe: true,
-      governanceBundles: true,
-    },
-    produce: { economicCommitteeCreatorFacet: 'economicCommittee' },
-    installation: {
-      produce: {
-        contractGovernor: 'zoe',
-        binaryVoteCounter: 'zoe',
-        committee: 'zoe',
-        noActionElectorate: 'zoe',
-      },
-    },
-    instance: {
-      produce: { economicCommittee: 'zoe' },
-    },
-  },
-  startGetRun: {
-    consume: {
-      zoe: 'zoe',
-      feeMintAccess: 'zoe',
-      getRUNBundle: true,
-      bridgeManager: true,
-      client: true,
-      chainTimerService: true,
-    },
-    installation: {
-      consume: { contractGovernor: 'zoe', committee: 'zoe' },
-      produce: { getRUN: 'zoe' },
-    },
-    instance: {
-      produce: { getRUN: 'getRUN' },
-    },
-    brand: {
-      consume: { BLD: true, RUN: 'zoe' },
-      produce: { Attestation: true },
-    },
-    issuer: {
-      consume: { BLD: true },
-      produce: { Attestation: true },
-    },
-  },
 });
 
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({
@@ -303,6 +246,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       governanceBundles: true,
     },
   },
+
   startEconomicCommittee: {
     vatParameters: {
       argv: { economicCommitteeAddresses: true },
@@ -326,6 +270,33 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       produce: { economicCommittee: 'economicCommittee' },
     },
   },
+
+  startGetRun: {
+    consume: {
+      zoe: 'zoe',
+      feeMintAccess: 'zoe',
+      getRUNBundle: true,
+      bridgeManager: true,
+      client: true,
+      chainTimerService: true,
+    },
+    installation: {
+      consume: { contractGovernor: 'zoe', committee: 'zoe' },
+      produce: { getRUN: 'zoe' },
+    },
+    instance: {
+      produce: { getRUN: 'getRUN' },
+    },
+    brand: {
+      consume: { BLD: true, RUN: 'zoe' },
+      produce: { Attestation: true },
+    },
+    issuer: {
+      consume: { BLD: true },
+      produce: { Attestation: true },
+    },
+  },
+
   setupAmm: {
     consume: {
       chainTimerService: 'timer',
@@ -397,6 +368,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
         contractGovernor: 'zoe',
         noActionElectorate: 'zoe',
         binaryVoteCounter: 'zoe',
+        liquidate: 'zoe',
       },
     },
     instance: {
