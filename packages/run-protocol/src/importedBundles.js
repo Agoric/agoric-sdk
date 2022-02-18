@@ -8,7 +8,7 @@ import ammBundle from '../bundles/bundle-amm.js';
 import vaultFactoryBundle from '../bundles/bundle-vaultFactory.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 
-/** @type { Record<string, { moduleFormat: string }>} */
+/** @type { Record<'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter', { moduleFormat: string }>} */
 export const governanceBundles = {
   contractGovernor: contractGovernorBundle,
   committee: committeeBundle,
@@ -17,7 +17,7 @@ export const governanceBundles = {
 };
 harden(governanceBundles);
 
-/** @type { Record<string, { moduleFormat: string }>} */
+/** @type { Record<'liquidate' | 'amm' | 'VaultFactory' | 'centralSupply', { moduleFormat: string }>} */
 export const economyBundles = {
   liquidate: liquidateBundle,
   amm: ammBundle,
