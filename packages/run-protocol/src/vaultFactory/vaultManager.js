@@ -102,8 +102,8 @@ export const makeVaultManager = (
   let prioritizedVaults;
   /** @type {MutableQuote=} */
   let outstandingQuote;
-  /** @type {NatValue} */
-  let totalDebt = 0n;
+  /** @type {Amount<NatValue>} */
+  let totalDebt = AmountMath.make(runBrand, 0n);
   /** @type {Ratio}} */
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
@@ -115,7 +115,7 @@ export const makeVaultManager = (
     harden({
       compoundedInterest,
       latestInterestUpdate,
-      totalDebt: AmountMath.make(runBrand, totalDebt),
+      totalDebt,
     }),
   );
 
@@ -241,7 +241,7 @@ export const makeVaultManager = (
     const debtStatus = interestCalculator.calculateReportingPeriod(
       {
         latestInterestUpdate,
-        newDebt: totalDebt,
+        newDebt: totalDebt.value,
         interest: 0n, // XXX this is always zero, doesn't need to be an option
       },
       updateTime,
@@ -260,10 +260,14 @@ export const makeVaultManager = (
     // is over all debts of the vault the numbers will be reliably large.
     compoundedInterest = calculateCompoundedInterest(
       compoundedInterest,
-      totalDebt,
+      totalDebt.value,
       debtStatus.newDebt,
     );
-    totalDebt += interestAccrued;
+    // totalDebt += interestAccrued
+    totalDebt = AmountMath.add(
+      totalDebt,
+      AmountMath.make(runBrand, interestAccrued),
+    );
 
     // mint that much RUN for the reward pool
     const rewarded = AmountMath.make(runBrand, interestAccrued);
@@ -276,7 +280,7 @@ export const makeVaultManager = (
     const payload = harden({
       compoundedInterest,
       latestInterestUpdate,
-      totalDebt: AmountMath.make(runBrand, totalDebt),
+      totalDebt,
     });
     updater.updateState(payload);
 
@@ -300,10 +304,8 @@ export const makeVaultManager = (
       return;
     }
 
-    totalDebt += delta;
-    assert(totalDebt >= 0n, 'Negative delta greater than total debt');
-
-    trace('applyDebtDelta complete', { totalDebt });
+    // totalDebt += delta (Amount type ensures natural value)
+    totalDebt = AmountMath.make(runBrand, totalDebt.value + delta);
   };
 
   /**
