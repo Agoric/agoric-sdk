@@ -554,31 +554,31 @@ export const startGetRun = async ({
     // ISSUE: is there some reason Zoe shouldn't await this???
     feeMintAccess: feeMintAccessP,
     getRUNBundle,
-    agoricNames,
     bridgeManager: bridgeP,
     client,
     chainTimerService,
   },
   installation: {
+    consume: { contractGovernor, committee },
     produce: { getRUN: getRUNinstallR },
   },
   instance: {
     produce: { getRUN: getRUNinstanceR },
   },
   brand: {
+    consume: { BLD: bldBrandP, RUN: runBrandP },
     produce: { Attestation: attestationBrandR },
   },
   issuer: {
+    consume: { BLD: bldIssuer },
     produce: { Attestation: attestationIssuerR },
   },
 }) => {
-  const stakeName = 'BLD'; // MAGIC STRING TODO TECHDEBT
   const bridgeManager = await bridgeP;
 
   const bundle = await getRUNBundle;
   const [
     feeMintAccess,
-    bldIssuer,
     bldBrand,
     runBrand,
     governor,
@@ -586,12 +586,10 @@ export const startGetRun = async ({
     installation,
   ] = await Promise.all([
     feeMintAccessP,
-    E(agoricNames).lookup('issuer', stakeName),
-    E(agoricNames).lookup('brand', stakeName),
-    E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
-    // TODO: manage string constants that need to match
-    E(agoricNames).lookup('installation', 'contractGovernor'),
-    E(agoricNames).lookup('installation', 'committee'),
+    bldBrandP,
+    runBrandP,
+    contractGovernor,
+    committee,
     E(zoe).install(bundle),
   ]);
   const collateralPrice = makeRatio(65n, runBrand, 100n, bldBrand); // arbitrary price
@@ -625,10 +623,11 @@ export const startGetRun = async ({
   return Promise.all([
     // @ts-expect-error threading types thru governance is WIP
     ...(reporter ? [E(creatorFacet).addAuthority(reporter)] : []),
-    E(client).assignBundle({
-      // @ts-expect-error threading types thru governance is WIP
-      attMaker: address => E(creatorFacet).getAttMaker(address),
-    }),
+    E(client).assignBundle([
+      address => ({
+        attMaker: E(creatorFacet).getAttMaker(address),
+      }),
+    ]),
   ]);
 };
 harden(startGetRun);
