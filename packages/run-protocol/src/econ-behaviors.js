@@ -46,12 +46,7 @@ export const startEconomicCommittee = async (
     vatParameters: {
       argv: { economicCommitteeAddresses },
     },
-    consume: {
-      namesByAddress,
-      namesByAddressAdmin,
-      zoe,
-      governanceBundles,
-    },
+    consume: { namesByAddress, namesByAddressAdmin, zoe, governanceBundles },
     produce: { economicCommitteeCreatorFacet },
     installation,
     instance: {
@@ -67,12 +62,6 @@ export const startEconomicCommittee = async (
 
   const installations = await Collect.allValues(
     Collect.mapValues(bundles, bundle => E(zoe).install(bundle)),
-  );
-
-  const [installAdmin, instanceAdmin] = await collectNameAdmins(
-    ['installation', 'instance'],
-    agoricNames,
-    nameAdmins,
   );
 
   if (economicCommitteeAddresses) {
