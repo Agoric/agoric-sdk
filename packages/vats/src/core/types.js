@@ -78,7 +78,7 @@
  */
 
 /**
- * @typedef {{ resolve: (v: T) => void }} Producer<T>
+ * @typedef {{ resolve: (v: ERef<T>) => void }} Producer<T>
  * @template T
  */
 /**
