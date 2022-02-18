@@ -8,7 +8,6 @@
 
 /**
  * @typedef {Object} Collateral
- * @property {Ratio} initialMargin
  * @property {Ratio} liquidationMargin
  * @property {Ratio} stabilityFee
  * @property {Ratio} marketPrice
@@ -18,8 +17,6 @@
 
 /**
  * @typedef {Object} Rates
- * @property {Ratio} initialMargin - minimum over-collateralization
- * required to open a loan
  * @property {Ratio} liquidationMargin - margin below which collateral will be
  * liquidated to satisfy the debt.
  * @property {Ratio} interestRate - annual interest rate charged on loans
@@ -91,7 +88,6 @@
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getLoanFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getInitialMargin
  * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the loan.
@@ -205,14 +201,12 @@
 /**
  * @typedef {Object} VaultParamManager
  * @property {() => Record<Keyword, ParamShortDescription> & {
- *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
  *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
  *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
  *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
  * }} getParams
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
- * @property {(margin: Ratio) => void} updateInitialMargin
  * @property {(margin: Ratio) => void} updateLiquidationMargin
  * @property {(ratio: Ratio) => void} updateInterestRate
  * @property {(ratio: Ratio) => void} updateLoanFee
@@ -221,7 +215,6 @@
 /**
  * @callback GetGovernedVaultParams
  * @returns {{
- *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
  *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
  *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
  *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },

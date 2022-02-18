@@ -23,7 +23,6 @@ import { makeTracer } from '../makeTracer.js';
 import {
   RECORDING_PERIOD_KEY,
   LIQUIDATION_MARGIN_KEY,
-  INITIAL_MARGIN_KEY,
   LOAN_FEE_KEY,
   INTEREST_RATE_KEY,
   CHARGING_PERIOD_KEY,
@@ -85,7 +84,6 @@ export const makeVaultManager = (
     // loans below this margin may be liquidated
     getLiquidationMargin: () => getLoanParams()[LIQUIDATION_MARGIN_KEY].value,
     // loans must initially have at least 1.2x collateralization
-    getInitialMargin: () => getLoanParams()[INITIAL_MARGIN_KEY].value,
     getLoanFee: () => getLoanParams()[LOAN_FEE_KEY].value,
     getInterestRate: () => getLoanParams()[INTEREST_RATE_KEY].value,
     getChargingPeriod: () => timingParams[CHARGING_PERIOD_KEY].value,

@@ -34,13 +34,13 @@ The kernel will provide this device with three endowments:
 * getNamedBundleID(name) -> bundleID
 
 The root device node offers two methods to callers:
-* D(devices.bundle).getBundleCap(bundleID) -> devnode or undefined
-* D(devices.bundle).getNamedBundleCap(name) -> devnode or undefined
+* D(devices.bundle).getBundlecap(bundleID) -> devnode or undefined
+* D(devices.bundle).getNamedBundlecap(name) -> devnode or undefined
 
-The device node returned by getBundleCap() is called, unsurprisingly, a
+The device node returned by getBundlecap() is called, unsurprisingly, a
 "bundlecap". Most vats interact with bundlecaps, not bundleIDs (although of
-course somebody must call `getBundleCap()` first). Holding a bundlecap
-guarantees that the bundle contents are available, since `getBundleCap()`
+course somebody must call `getBundlecap()` first). Holding a bundlecap
+guarantees that the bundle contents are available, since `getBundlecap()`
 will fail unless the bundle is currently installed. When we implement
 refcounting GC for bundles, the bundlecap will maintain a reference and
 protect the bundle data from collection.
@@ -106,15 +106,15 @@ export function buildDevice(tools, endowments) {
       const args = unserialize(argsCapdata);
 
       if (dnid === ROOT) {
-        // D(devices.bundle).getBundleCap(id) -> bundlecap
-        if (method === 'getBundleCap') {
+        // D(devices.bundle).getBundlecap(id) -> bundlecap
+        if (method === 'getBundlecap') {
           const [bundleID] = args;
           assert.typeof(bundleID, 'string');
           assert(bundleIDRE.test(bundleID), 'not a bundleID');
           return returnCapForBundleID(bundleID);
         }
-        // D(devices.bundle).getNamedBundleCap(name) -> bundlecap
-        if (method === 'getNamedBundleCap') {
+        // D(devices.bundle).getNamedBundlecap(name) -> bundlecap
+        if (method === 'getNamedBundlecap') {
           const [name] = args;
           assert.typeof(name, 'string');
           let bundleID;

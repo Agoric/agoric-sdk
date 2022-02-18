@@ -24,15 +24,15 @@ export function buildRootObject(vatPowers) {
       return n;
     },
 
-    async byNamedBundleCap(name) {
-      const bcap = D(bundleDevice).getNamedBundleCap(name);
+    async byNamedBundlecap(name) {
+      const bcap = D(bundleDevice).getNamedBundlecap(name);
       const { root } = await E(admin).createVat(bcap);
       const n = await E(root).getANumber();
       return n;
     },
 
     async byID(id) {
-      const bcap = D(bundleDevice).getBundleCap(id);
+      const bcap = D(bundleDevice).getBundlecap(id);
       const { root } = await E(admin).createVat(bcap);
       const n = await E(root).getANumber();
       return n;
@@ -52,7 +52,7 @@ export function buildRootObject(vatPowers) {
       return E(admin).createVatByName(bundleName); // should reject
     },
 
-    async nonBundleCap() {
+    async nonBundlecap() {
       return E(admin).createVat(Far('non-bundlecap', {})); // should reject
     },
   });

@@ -19,7 +19,6 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
     makeDurableKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
-    makeVirtualObjectRepresentative,
     flushCache,
   } = makeVirtualObjectManager(
     fakeStuff.syscall,
@@ -37,7 +36,6 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
     makeDurableKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
-    makeVirtualObjectRepresentative,
   };
 
   const debugTools = {

@@ -33,3 +33,9 @@ test('stringifyNat wei to ether', t => {
 
   t.is(stringifyNat(100000000000000n * wei, 18, 2), '100000000000000.00');
 });
+
+test('stringifyNat limit decimal places to 100', t => {
+  const tinyCoin = 123456789n;
+
+  t.is(stringifyNat(tinyCoin, 105, 120), `0.${'1234'.padStart(100, '0')}`);
+});

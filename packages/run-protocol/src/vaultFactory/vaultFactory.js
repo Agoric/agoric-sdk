@@ -179,7 +179,6 @@ export const start = async (zcf, privateArgs) => {
             brand,
             interestRate: vm.getInterestRate(),
             liquidationMargin: vm.getLiquidationMargin(),
-            initialMargin: vm.getInitialMargin(),
             stabilityFee: vm.getLoanFee(),
             marketPrice: makeRatioFromAmounts(
               getAmountOut(priceQuote),
