@@ -125,7 +125,7 @@ export function makeCollectionManager(
   }
 
   // Not that it's only used for this purpose, what should it be called?
-  // Should we be using the new bigint encoding scheme instead, anyway?
+  // TODO Should we be using the new encodeBigInt scheme instead, anyway?
   const BIGINT_TAG_LEN = 10;
 
   function summonCollectionInternal(
