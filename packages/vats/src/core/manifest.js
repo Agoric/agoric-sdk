@@ -72,7 +72,12 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
     home: { produce: { bank: 'bank' } },
   },
   shareBootContractBundles: {
-    produce: { centralSupplyBundle: true, pegasusBundle: true },
+    produce: {
+      centralSupplyBundle: true,
+      pegasusBundle: true,
+      getRUNBundle: true, // @@ DEMO
+      governanceBundles: true, // @@ DEMO
+    },
   },
   mintInitialSupply: {
     vatParameters: {
