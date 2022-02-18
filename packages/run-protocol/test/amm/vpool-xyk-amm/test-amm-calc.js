@@ -47,24 +47,15 @@ test('balancesToReachRatio calculations are to spec', t => {
         giveY: arbGiveY,
       }),
       ({ poolX, poolY, giveX, giveY }) => {
-        const kBefore = Number(multiply(poolX.value, poolY.value));
-        const poolRatioAfter = Math.max(
-          Number(giveX.value + poolX.value) / Number(giveY.value + poolY.value),
-          Number(giveY.value + poolY.value) / Number(giveX.value + poolX.value),
-        );
         // skip cases where the target ratio is more than K at the start
-        fc.pre(poolRatioAfter < kBefore);
-        if (
-          imbalancedRequest(
+        fc.pre(
+          !imbalancedRequest(
             // use floats so we don't convert all fractions less than 1 to 0.
             Number(m.add(poolX, giveX).value) /
               Number(m.add(poolY, giveY).value),
             multiply(poolX.value, poolY.value),
-          )
-        ) {
-          t.pass();
-          return;
-        }
+          ),
+        );
         const { targetX, targetY } = balancesToReachRatio(
           poolX,
           poolY,
