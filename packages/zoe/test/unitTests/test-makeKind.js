@@ -1,5 +1,4 @@
 // @ts-check
-/* global VatData */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -8,6 +7,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 
 import { E } from '@endo/eventual-send';
+import { VatData } from '@agoric/swingset-vat';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 

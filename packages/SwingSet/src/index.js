@@ -21,3 +21,8 @@ export { buildPlugin } from './devices/plugin/plugin.js';
 
 // eslint-disable-next-line import/export
 export * from './types-external.js';
+
+/* global globalThis */
+const VatData = globalThis.VatData;
+assert(VatData, 'VatData global not defined');
+export { VatData };
