@@ -188,8 +188,6 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       argv: { economicCommitteeAddresses: true },
     },
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
       namesByAddress: true,
       namesByAddressAdmin: true,
       zoe: true,
