@@ -11,7 +11,7 @@ const gitURL = (relativeOrAbsoluteURL, base) => {
   return url.href;
 };
 
-export default async function initMain(_progname, rawArgs, priv, opts) {
+export default async (_progname, rawArgs, priv, opts) => {
   const { anylogger, spawn, fs } = priv;
   const log = anylogger('agoric:init');
 
@@ -84,4 +84,4 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
 
   log.info(chalk.bold.yellow(`Done initializing ${DIR}`));
   return 0;
-}
+};

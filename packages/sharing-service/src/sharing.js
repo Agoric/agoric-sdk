@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { makeSharedMap } from './sharedMap.js';
 
-function makeSharingService() {
+const makeSharingService = () => {
   // I'd have used PrivateNames, but they want objects (not Strings) as Keys.
   const sharedMaps = new Map();
   const brand = new WeakSet();
@@ -12,7 +12,7 @@ function makeSharingService() {
 
   const sharingService = Far('sharingService', {
     // retrieve and remove from the map.
-    grabSharedMap(key) {
+    grabSharedMap: key => {
       if (!sharedMaps.has(key)) {
         return undefined;
       }
@@ -25,7 +25,7 @@ function makeSharingService() {
       sharedMaps.set(key, tombstone);
       return result;
     },
-    createSharedMap(preferredName) {
+    createSharedMap: preferredName => {
       assert(
         !sharedMaps.has(preferredName),
         X`Entry already exists: ${preferredName}`,
@@ -35,7 +35,7 @@ function makeSharingService() {
       brand.add(sharedMap);
       return sharedMap;
     },
-    validate(allegedSharedMap) {
+    validate: allegedSharedMap => {
       assert(
         brand.has(allegedSharedMap),
         X`Unrecognized sharedMap: ${allegedSharedMap}`,
@@ -46,6 +46,6 @@ function makeSharingService() {
   });
 
   return sharingService;
-}
+};
 
 export { makeSharingService };

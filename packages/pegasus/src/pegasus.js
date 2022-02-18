@@ -75,15 +75,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
   const makePeg = (state, desc) => {
     /** @type {Peg} */
     const peg = Far(`${desc.allegedName} peg`, {
-      getAllegedName() {
-        return desc.allegedName;
-      },
-      getLocalBrand() {
-        return desc.localBrand;
-      },
-      getRemoteDenom() {
-        return desc.remoteDenom;
-      },
+      getAllegedName: () => desc.allegedName,
+      getLocalBrand: () => desc.localBrand,
+      getRemoteDenom: () => desc.remoteDenom,
     });
 
     pegToDenomState.init(peg, state);
@@ -109,7 +103,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
     /** @type {PegasusConnectionActions} */
     const pegasusConnectionActions = Far('pegasusConnectionActions', {
-      async rejectStuckTransfers(remoteDenom) {
+      rejectStuckTransfers: async remoteDenom => {
         checkAbort();
         const { remoteDenomToCourierPK } = localDenomState;
 
@@ -123,12 +117,12 @@ const makePegasus = (zcf, board, namesByAddress) => {
         // Allow new transfers to be initiated.
         remoteDenomToCourierPK.delete(remoteDenom);
       },
-      async pegRemote(
+      pegRemote: async (
         allegedName,
         remoteDenom,
         assetKind = undefined,
         displayInfo = undefined,
-      ) {
+      ) => {
         checkAbort();
         const { remoteDenomToCourierPK } = localDenomState;
 
@@ -170,7 +164,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
         return peg;
       },
 
-      async pegLocal(allegedName, localIssuer) {
+      pegLocal: async (allegedName, localIssuer) => {
         checkAbort();
 
         localDenomState.lastDenomNonce += 1n;
@@ -268,7 +262,9 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * @param {ERef<TransferProtocol>} [transferProtocol=DEFAULT_TRANSFER_PROTOCOL]
      * @returns {PegasusConnectionKit}
      */
-    makePegasusConnectionKit(transferProtocol = DEFAULT_TRANSFER_PROTOCOL) {
+    makePegasusConnectionKit: (
+      transferProtocol = DEFAULT_TRANSFER_PROTOCOL,
+    ) => {
       /**
        * @type {LegacyWeakMap<Connection, LocalDenomState>}
        */
@@ -285,7 +281,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
       /** @type {ConnectionHandler} */
       const handler = {
-        async onOpen(c, localAddr, remoteAddr) {
+        onOpen: async (c, localAddr, remoteAddr) => {
           // Register `c` with the table of Peg receivers.
           const {
             subscription: remoteDenomSubscription,
@@ -326,7 +322,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
           });
           connectionPublication.updateState(state);
         },
-        async onReceive(c, packetBytes) {
+        onReceive: async (c, packetBytes) => {
           const doReceive = async () => {
             // Dispatch the packet to the appropriate Peg for this connection.
             const parts = await E(transferProtocol).parseTransferPacket(
@@ -354,7 +350,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
             E(transferProtocol).makeTransferPacketAck(false, error),
           );
         },
-        async onClose(c) {
+        onClose: async c => {
           // Unregister `c`.  Pending transfers will be rejected by the Network
           // API.
           const {
@@ -390,9 +386,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
       });
     },
 
-    getLocalIssuer(localBrand) {
-      return zcf.getIssuerForBrand(localBrand);
-    },
+    getLocalIssuer: localBrand => zcf.getIssuerForBrand(localBrand),
 
     /**
      * Create a Zoe invitation to transfer assets over network to a deposit address.
@@ -401,7 +395,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * @param {DepositAddress} depositAddress the remote receiver's address
      * @returns {Promise<Invitation>} to transfer, make an offer of { give: { Transfer: pegAmount } } to this invitation
      */
-    async makeInvitationToTransfer(pegP, depositAddress) {
+    makeInvitationToTransfer: async (pegP, depositAddress) => {
       // Verify the peg.
       const peg = await pegP;
       const denomState = pegToDenomState.get(peg);

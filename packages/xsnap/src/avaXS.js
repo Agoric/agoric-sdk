@@ -55,9 +55,7 @@ const { keys } = Object;
  * @param {string} specimen
  * @param {string} pattern
  */
-function isMatch(specimen, pattern) {
-  return specimen.match(`^${pattern.replace(/\*/g, '.*')}$`);
-}
+const isMatch = (specimen, pattern) => specimen.match(`^${pattern.replace(/\*/g, '.*')}(PARAMS)RETURN_TYPE => );
 
 /**
  * Run one test script in an xsnap subprocess.
@@ -97,12 +95,7 @@ function isMatch(specimen, pattern) {
  * @typedef { 'ok' | 'not ok' | 'SKIP' } Status
  * @typedef {ReturnType<typeof import('./xsnap').xsnap>} XSnap
  */
-async function runTestScript(
-  filename,
-  preamble,
-  { verbose, titleMatch },
-  { spawnXSnap, bundleSource, resolve, dirname, basename },
-) {
+const runTestScript = async (filename, preamble, { verbose, titleMatch }, { spawnXSnap, bundleSource, resolve, dirname, basename }) => {
   const testBundle = await bundleSource(filename, 'getExport', { externals });
   let assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
   /** @type { number | null } */
@@ -210,7 +203,7 @@ async function runTestScript(
   }
 
   return testStatus;
-}
+};
 
 /**
  * Get ava / ava-xs config from package.json
@@ -232,7 +225,7 @@ async function runTestScript(
  * @property {boolean} verbose
  * @property {string=} titleMatch
  */
-async function avaConfig(args, options, { glob, readFile }) {
+const avaConfig = async (args, options, { glob, readFile }) => {
   /**
    * @param { string } pattern
    * @returns { Promise<string[]> }
@@ -306,7 +299,7 @@ async function avaConfig(args, options, { glob, readFile }) {
   );
   const config = { files, require, exclude, debug, verbose, titleMatch };
   return config;
-}
+};
 
 /**
  * @param {string[]} args - CLI args (excluding node interpreter, script name)
@@ -321,10 +314,7 @@ async function avaConfig(args, options, { glob, readFile }) {
  *   glob: typeof import('glob'),
  * }} io
  */
-export async function main(
-  args,
-  { bundleSource, spawn, osType, readFile, resolve, dirname, basename, glob },
-) {
+export const main = async (args, { bundleSource, spawn, osType, readFile, resolve, dirname, basename, glob }) => {
   const { files, require, exclude, debug, verbose, titleMatch } =
     await avaConfig(args, {}, { readFile, glob });
 
@@ -402,7 +392,7 @@ export async function main(
     }
   }
   return stats.fail.length > 0 ? 1 : 0;
-}
+};
 
 /**
  * Fix path resolution for test contract bundles.
@@ -411,7 +401,7 @@ export async function main(
  * @returns {ResolveFn}
  * @typedef {typeof import('path').resolve } ResolveFn
  */
-export function makeBundleResolve(path) {
+export const makeBundleResolve = (path) => {
   const bundleRoots = [
     { basename: 'zcfTesterContract', pkg: 'zoe', dir: 'test/unitTests/zcf' },
   ];
@@ -424,4 +414,4 @@ export function makeBundleResolve(path) {
     }
     return path.resolve(seg0, ...pathSegments);
   };
-}
+};

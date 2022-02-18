@@ -10,7 +10,7 @@ let inpBackground;
 let accessTokenParams;
 let hasAccessToken;
 
-function getAccessToken() {
+const getAccessToken = () => {
   // Fetch the access token from the window's URL.
   accessTokenParams = `?${window.location.hash.slice(1)}`;
   hasAccessToken = new URLSearchParams(accessTokenParams).get('accessToken');
@@ -47,7 +47,7 @@ function getAccessToken() {
     // Keep it clear.
     window.location.hash = '';
   });
-}
+};
 getAccessToken();
 
 if (!hasAccessToken) {
@@ -68,14 +68,14 @@ See the documentation?`,
   }
 }
 
-function run() {
+const run = () => {
   const disableFns = []; // Functions to run when the input should be disabled.
   resetFns.push(() => (document.querySelector('#history').innerHTML = ''));
 
   let nextHistNum = 0;
   let inputHistoryNum = 0;
 
-  async function call(req) {
+  const call = async req => {
     const res = await fetch(`/private/repl${accessTokenParams}`, {
       method: 'POST',
       body: JSON.stringify(req),
@@ -86,7 +86,7 @@ function run() {
       return j.res;
     }
     throw new Error(`server error: ${JSON.stringify(j.rej)}`);
-  }
+  };
 
   const protocol = window.location.protocol.replace(/^http/, 'ws');
   const socketEndpoint = `${protocol}//${window.location.host}/private/repl${accessTokenParams}`;
@@ -107,8 +107,8 @@ function run() {
 
   const commands = [];
 
-  function linesToHTML(lines) {
-    return lines
+  const linesToHTML = lines =>
+    lines
       .split('\n')
       .map(
         l =>
@@ -127,9 +127,8 @@ function run() {
             .replace(/ {2}/g, ' &nbsp;'), // try preserving whitespace
       )
       .join('<br />');
-  }
 
-  function addHistoryRow(h, histnum, kind, value, msgs) {
+  const addHistoryRow = (h, histnum, kind, value, msgs) => {
     if (histnum >= 0) {
       const row = document.createElement('div');
       row.className = `${kind}-line`;
@@ -153,16 +152,16 @@ function run() {
     row.appendChild(document.createElement('div'));
     row.appendChild(m);
     h.append(row);
-  }
+  };
 
-  function addHistoryEntry(histnum, command, result, consoles) {
+  const addHistoryEntry = (histnum, command, result, consoles) => {
     const h = document.getElementById('history');
     addHistoryRow(h, histnum, 'command', command, consoles.command || '');
     addHistoryRow(h, histnum, 'history', result, consoles.display || '');
     commands[histnum] = command;
-  }
+  };
 
-  function updateHistory(histnum, command, result, consoles = {}) {
+  const updateHistory = (histnum, command, result, consoles = {}) => {
     const h = document.getElementById('history');
     const isScrolledToBottom =
       h.scrollHeight - h.clientHeight <= h.scrollTop + 1;
@@ -188,18 +187,18 @@ function run() {
     if (isScrolledToBottom) {
       setTimeout(() => (h.scrollTop = h.scrollHeight), 0);
     }
-  }
+  };
 
-  function setNextHistNum(max = 0) {
+  const setNextHistNum = (max = 0) => {
     const thisHistNum = nextHistNum;
     nextHistNum = Math.max(nextHistNum, max);
     document.getElementById('historyNumber').textContent = nextHistNum;
     inputHistoryNum = nextHistNum;
     commands[inputHistoryNum] = '';
     return thisHistNum;
-  }
+  };
 
-  function handleMessage(obj) {
+  const handleMessage = obj => {
     // we receive commands to update result boxes
     if (obj.type === 'updateHistory') {
       // these args come from calls to vat-http.js updateHistorySlot()
@@ -207,7 +206,7 @@ function run() {
     } else {
       console.log(`unknown WS type in:`, obj);
     }
-  }
+  };
 
   // history updates (promises being resolved) are delivered by websocket
   // broadcasts
@@ -243,7 +242,7 @@ function run() {
 
   const inp = document.getElementById('input');
 
-  function inputHistory(delta) {
+  const inputHistory = delta => {
     const nextInput = inputHistoryNum + delta;
     if (nextInput < 0 || nextInput >= commands.length) {
       // Do nothing.
@@ -251,9 +250,9 @@ function run() {
     }
     inputHistoryNum = nextInput;
     inp.value = commands[inputHistoryNum];
-  }
+  };
 
-  function submitEval() {
+  const submitEval = () => {
     const command = inp.value;
     console.debug('submitEval', command);
     const number = setNextHistNum(nextHistNum + 1);
@@ -262,9 +261,9 @@ function run() {
     commands[commands.length] = '';
     inp.value = '';
     call({ type: 'doEval', number, body: command });
-  }
+  };
 
-  function inputKeyup(ev) {
+  const inputKeyup = ev => {
     switch (ev.key) {
       case 'Enter':
         submitEval();
@@ -297,7 +296,7 @@ function run() {
     }
     commands[commands.length - 1] = inp.value;
     return true;
-  }
+  };
   inp.addEventListener('keyup', inputKeyup);
   disableFns.push(() => inp.removeEventListener('keyup', inputKeyup));
 
@@ -314,7 +313,7 @@ function run() {
   resetFns.push(() =>
     document.getElementById('go').removeAttribute('disabled'),
   );
-}
+};
 
 run();
 

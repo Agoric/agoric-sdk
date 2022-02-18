@@ -61,7 +61,7 @@ export const makeNotifierKit = (...args) => {
 
   const baseNotifier = Far('baseNotifier', {
     // NaN matches nothing
-    getUpdateSince(updateCount = NaN) {
+    getUpdateSince: (updateCount = NaN) => {
       if (
         hasState() &&
         (final() ||
@@ -86,7 +86,7 @@ export const makeNotifierKit = (...args) => {
   });
 
   const updater = Far('updater', {
-    updateState(state) {
+    updateState: state => {
       if (final()) {
         throw new Error('Cannot update state after termination.');
       }
@@ -104,7 +104,7 @@ export const makeNotifierKit = (...args) => {
       }
     },
 
-    finish(finalState) {
+    finish: finalState => {
       if (final()) {
         throw new Error('Cannot finish after termination.');
       }
@@ -121,7 +121,7 @@ export const makeNotifierKit = (...args) => {
       }
     },
 
-    fail(reason) {
+    fail: reason => {
       if (final()) {
         throw new Error('Cannot fail after termination.');
       }
@@ -174,7 +174,7 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
    */
   const baseNotifier = Far('baseNotifier', {
     // NaN matches nothing
-    getUpdateSince(updateCount = NaN) {
+    getUpdateSince: (updateCount = NaN) => {
       if (
         hasState() &&
         (final() ||

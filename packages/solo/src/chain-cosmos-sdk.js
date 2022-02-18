@@ -96,14 +96,14 @@ const makeTempFile = async (prefix, contents) => {
   return tmpInfo;
 };
 
-export async function connectToChain(
+export const connectToChain = async (
   basedir,
   GCI,
   rpcAddresses,
   helperAddr,
   inbound,
   chainID,
-) {
+) => {
   // Each time we read our mailbox from the chain's state, and each time we
   // send an outbound message to the chain, we shell out to a one-shot copy
   // of 'agd', the swingset-flavored cosmos-sdk CLI tool.
@@ -128,14 +128,14 @@ export async function connectToChain(
 
   // Shuffle our rpcHrefs, to help distribute load.
   // Modern version of Fisher-Yates shuffle algorithm (in-place).
-  function shuffle(a) {
+  const shuffle = a => {
     for (let i = a.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
       const x = a[i];
       a[i] = a[j];
       a[j] = x;
     }
-  }
+  };
   shuffle(rpcHrefs);
 
   const helperDir = path.join(basedir, 'ag-cosmos-helper-statedir');
@@ -173,7 +173,7 @@ export async function connectToChain(
   );
 
   let lastGoodRpcHrefIndex = 0;
-  async function retryRpcHref(tryOnce) {
+  const retryRpcHref = async tryOnce => {
     let rpcHrefIndex = lastGoodRpcHrefIndex;
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -193,7 +193,7 @@ export async function connectToChain(
       await new Promise(resolve => setTimeout(resolve, 5000));
       rpcHrefIndex = (rpcHrefIndex + 1) % rpcHrefs.length;
     }
-  }
+  };
 
   let goodRpcHref = rpcHrefs[0];
   const runHelper = (args, stdin = undefined) => {
@@ -790,7 +790,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
   // Begin the sender when we get the first (empty) mailbox update.
   mbNotifier.getUpdateSince().then(() => recurseEachSend());
 
-  async function deliver(newMessages, acknum) {
+  const deliver = async (newMessages, acknum) => {
     let doSend = false;
     if (acknum > highestAck) {
       highestAck = acknum;
@@ -806,9 +806,9 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     if (doSend) {
       sendUpdater.updateState(true);
     }
-  }
+  };
 
   // Now that we've started consuming blocks, tell our caller how to deliver
   // messages.
   return makeBatchedDeliver(deliver, Math.min(DEFAULT_BATCH_TIMEOUT_MS, 2000));
-}
+};

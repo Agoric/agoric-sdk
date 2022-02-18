@@ -4,7 +4,7 @@ import { makePspawn, getSDKBinaries } from './helpers.js';
 
 const filename = new URL(import.meta.url).pathname;
 
-export default async function cosmosMain(progname, rawArgs, powers, opts) {
+export default async (progname, rawArgs, powers, opts) => {
   const IMAGE = `agoric/agoric-sdk`;
   const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:cosmos');
@@ -22,7 +22,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
 
   const pspawn = makePspawn({ env: pspawnEnv, log, spawn, chalk });
 
-  function helper(args, hopts = undefined) {
+  const helper = (args, hopts = undefined) => {
     if (!opts.dockerTag) {
       const sdkPrefixes = {};
       if (!opts.sdk) {
@@ -82,7 +82,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
       ],
       hopts,
     );
-  }
+  };
 
   if (popts.pull) {
     const exitStatus = await pspawn('docker', ['pull', IMAGE]);
@@ -92,4 +92,4 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
   }
 
   return helper(rawArgs.slice(1));
-}
+};

@@ -176,28 +176,28 @@ const buildSwingset = async (
     { slogFile, slogSender },
   );
 
-  async function saveState() {
+  const saveState = async () => {
     const ms = JSON.stringify(mbs.exportToData());
     await atomicReplaceFile(mailboxStateFile, ms);
     commit();
-  }
+  };
 
-  function deliverOutbound() {
+  const deliverOutbound = () => {
     deliver(mbs);
-  }
+  };
 
-  async function processKernel() {
+  const processKernel = async () => {
     await controller.run();
     if (swingSetRunning) {
       await saveState();
       deliverOutbound();
     }
-  }
+  };
 
   // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
   const queuedDeliverInboundToMbx = withInputQueue(
-    async function deliverInboundToMbx(sender, messages, ack) {
+    async (sender, messages, ack) => {
       assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
       // console.debug(`deliverInboundToMbx`, messages, ack);
       if (mb.deliverInbound(sender, messages, ack, true)) {
@@ -208,39 +208,37 @@ const buildSwingset = async (
 
   // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
-  const queuedBoxedDeliverInboundCommand = withInputQueue(
-    async function deliverInboundCommand(obj) {
-      // this promise could take an arbitrarily long time to resolve, so don't
-      // wait on it
-      const p = cm.inboundCommand(obj);
+  const queuedBoxedDeliverInboundCommand = withInputQueue(async obj => {
+    // this promise could take an arbitrarily long time to resolve, so don't
+    // wait on it
+    const p = cm.inboundCommand(obj);
 
-      // Register a handler in this turn so that we don't get complaints about
-      // asynchronously-handled callbacks.
-      p.catch(_ => {});
+    // Register a handler in this turn so that we don't get complaints about
+    // asynchronously-handled callbacks.
+    p.catch(_ => {});
 
-      // The turn passes...
-      await processKernel();
+    // The turn passes...
+    await processKernel();
 
-      // We box the promise, so that this queue isn't stalled.
-      // The queue protects the above cm.inboundCommand and
-      // processKernel calls.
-      //
-      // The promise to the box is resolved as the return value of
-      // this function (which releases the input queue shortly after
-      // the processKernel call has completed).
-      //
-      // The caller can determine if they want to wait for the
-      // unboxed promise (which represents the results of the inbound
-      // command), which may not ever resolve.
-      return [
-        p.catch(e => {
-          // Rethrow any inboundCommand rejection in the new turn so that our
-          // caller must handle it (or be an unhandledRejection).
-          throw e;
-        }),
-      ];
-    },
-  );
+    // We box the promise, so that this queue isn't stalled.
+    // The queue protects the above cm.inboundCommand and
+    // processKernel calls.
+    //
+    // The promise to the box is resolved as the return value of
+    // this function (which releases the input queue shortly after
+    // the processKernel call has completed).
+    //
+    // The caller can determine if they want to wait for the
+    // unboxed promise (which represents the results of the inbound
+    // command), which may not ever resolve.
+    return [
+      p.catch(e => {
+        // Rethrow any inboundCommand rejection in the new turn so that our
+        // caller must handle it (or be an unhandledRejection).
+        throw e;
+      }),
+    ];
+  });
 
   // Our typical user will always want to wait for the results of
   // the boxed promise, so by default, extract it and await it.
@@ -251,24 +249,22 @@ const buildSwingset = async (
 
   // Use the input queue to make sure it doesn't overlap with
   // other inbound messages.
-  const queuedMoveTimeForward = withInputQueue(
-    async function moveTimeForward() {
-      const now = Date.now();
-      try {
-        if (timer.poll(now)) {
-          await processKernel();
-          log.debug(`timer-provoked kernel crank complete ${now}`);
-        }
-      } catch (err) {
-        log.error(`timer-provoked kernel crank failed at ${now}:`, err);
-      } finally {
-        // We only rearm the timeout if moveTimeForward has completed, to
-        // make sure we don't have two copies of controller.run() executing
-        // at the same time.
-        setTimeout(queuedMoveTimeForward, intervalMillis);
+  const queuedMoveTimeForward = withInputQueue(async () => {
+    const now = Date.now();
+    try {
+      if (timer.poll(now)) {
+        await processKernel();
+        log.debug(`timer-provoked kernel crank complete ${now}`);
       }
-    },
-  );
+    } catch (err) {
+      log.error(`timer-provoked kernel crank failed at ${now}:`, err);
+    } finally {
+      // We only rearm the timeout if moveTimeForward has completed, to
+      // make sure we don't have two copies of controller.run() executing
+      // at the same time.
+      setTimeout(queuedMoveTimeForward, intervalMillis);
+    }
+  });
 
   // now let the bootstrap functions run
   await processKernel();
@@ -348,13 +344,13 @@ const start = async (basedir, argv) => {
   );
 
   let broadcastJSON;
-  function broadcast(obj) {
+  const broadcast = obj => {
     if (broadcastJSON) {
       broadcastJSON(obj);
     } else {
       log.error(`Called broadcast before HTTP listener connected.`);
     }
-  }
+  };
 
   const { wallet, defaultManagerType } = JSON.parse(
     fs.readFileSync('options.json', 'utf-8'),

@@ -23,14 +23,7 @@ const dirname = path.dirname(filename);
  * @param {string[]} egresses
  * @param {Record<string, any>} opts
  */
-export default function initBasedir(
-  basedir,
-  webport,
-  webhost,
-  _subdir,
-  egresses,
-  opts = {},
-) {
+export default (basedir, webport, webhost, _subdir, egresses, opts = {}) => {
   const { env = process.env } = opts;
   const {
     wallet = DEFAULT_WALLET,
@@ -129,4 +122,4 @@ export default function initBasedir(
 
   console.log(`ag-solo initialized in ${basedir}`);
   console.log(`HTTP/WebSocket will listen on ${webhost}:${webport}`);
-}
+};

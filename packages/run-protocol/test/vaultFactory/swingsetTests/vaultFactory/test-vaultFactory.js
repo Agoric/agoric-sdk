@@ -76,12 +76,12 @@ test.before(async t => {
   t.context.data = { kernelBundles, config };
 });
 
-async function main(t, argv) {
+const main = async (t, argv) => {
   const { kernelBundles, config } = t.context.data;
   const controller = buildVatController(config, argv, { kernelBundles });
   await E(controller).run();
   return E(controller).dump();
-}
+};
 
 // NB: yarn build if changing any of the contract bundles under test
 test.serial('vaultFactory', async t => {

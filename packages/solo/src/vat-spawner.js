@@ -2,12 +2,9 @@
 import { Far } from '@endo/marshal';
 import { makeSpawner } from '@agoric/spawner';
 
-function buildRootObject() {
-  return Far('root', {
-    buildSpawner(vatAdminSvc) {
-      return makeSpawner(vatAdminSvc);
-    },
+const buildRootObject = () =>
+  Far('root', {
+    buildSpawner: vatAdminSvc => makeSpawner(vatAdminSvc),
   });
-}
 harden(buildRootObject);
 export { buildRootObject };

@@ -9,13 +9,12 @@ import { importBundle } from '../src/index.js';
 const read = async location =>
   fs.promises.readFile(new URL(location, 'file:///').pathname);
 
-function transform1(src) {
-  return src
+const transform1 = src =>
+  src
     .replace('replaceme', 'substitution')
     .replace('two foot wide', 'sixty feet wide');
-}
 
-async function testBundle1(t, b1, mode, ew) {
+const testBundle1 = async (t, b1, mode, ew) => {
   const ns1 = await importBundle(b1, { endowments: ew });
   t.is(ns1.f1(1), 2, `ns1.f1 ${mode} ok`);
   t.is(ns1.f2(1), 3, `ns1.f2 ${mode} ok`);
@@ -44,13 +43,13 @@ async function testBundle1(t, b1, mode, ew) {
   t.is(ns4.f6ReadGlobal(), 3, `ns3.f6 ${mode} ok`);
   t.is(ns4.f6ReadGlobal(), 3, `ns4.f6 ${mode} ok`);
   t.is(ns4.f7ReadGlobalSubmodule(), 3, `ns3.f8 ${mode} ok`);
-}
+};
 
-test('test import', async function testImport(t) {
+test('test import', async t => {
   // nestedEvaluate requires a 'require' endowment, but doesn't call it
-  function req(what) {
+  const req = what => {
     console.log(`require(${what})`);
-  }
+  };
   harden(Object.getPrototypeOf(console));
   const endowments = { require: req, console };
 
@@ -73,7 +72,7 @@ test('test import', async function testImport(t) {
   await testBundle1(t, b1NestedEvaluate, 'nestedEvaluate', endowments);
 });
 
-test('test import archive', async function testImportArchive(t) {
+test('test import archive', async t => {
   const endowments = { console };
   const b1EndoZip = await makeArchive(
     read,
@@ -87,10 +86,10 @@ test('test import archive', async function testImportArchive(t) {
   await testBundle1(t, b1EndoZipBase64Bundle, 'endoZipBase64', endowments);
 });
 
-test('test missing sourceMap', async function testImport(t) {
-  function req(what) {
+test('test missing sourceMap', async t => {
+  const req = what => {
     console.log(`require(${what})`);
-  }
+  };
   harden(Object.getPrototypeOf(console));
   const endowments = { require: req, console };
 
@@ -103,14 +102,14 @@ test('test missing sourceMap', async function testImport(t) {
   t.is(ns1.f1(1), 2, `missing sourceMap ns.f1 ok`);
 });
 
-test('inescapable transforms', async function testInescapableTransforms(t) {
+test('inescapable transforms', async t => {
   const b1 = await bundleSource(
     new URL('bundle1.js', import.meta.url).pathname,
     'nestedEvaluate',
   );
-  function req(what) {
+  const req = what => {
     console.log(`require(${what})`);
-  }
+  };
   harden(Object.getPrototypeOf(console));
   const endowments = { require: req, console };
 
@@ -121,14 +120,14 @@ test('inescapable transforms', async function testInescapableTransforms(t) {
   t.is(ns.f4('is ok'), 'substitution is ok', `iT ns.f4 ok`);
 });
 
-test('inescapable globalLexicals', async function testInescapableGlobalLexicals(t) {
+test('inescapable globalLexicals', async t => {
   const b1 = await bundleSource(
     new URL('bundle1.js', import.meta.url).pathname,
     'nestedEvaluate',
   );
-  function req(what) {
+  const req = what => {
     console.log(`require(${what})`);
-  }
+  };
   harden(Object.getPrototypeOf(console));
   const endowments = { require: req, console };
 

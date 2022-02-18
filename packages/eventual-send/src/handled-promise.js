@@ -393,37 +393,37 @@ export const makeHandledPromise = () => {
 
   /** @type {import('.').HandledPromiseStaticMethods} */
   const staticMethods = {
-    get(target, prop) {
+    get: (target, prop) => {
       prop = coerceToObjectProperty(prop);
       return handle(target, 'get', [prop]);
     },
-    getSendOnly(target, prop) {
+    getSendOnly: (target, prop) => {
       prop = coerceToObjectProperty(prop);
       handle(target, 'getSendOnly', [prop]);
     },
-    applyFunction(target, args) {
+    applyFunction: (target, args) => {
       // Ensure args is an array.
       args = [...args];
       return handle(target, 'applyFunction', [args]);
     },
-    applyFunctionSendOnly(target, args) {
+    applyFunctionSendOnly: (target, args) => {
       // Ensure args is an array.
       args = [...args];
       handle(target, 'applyFunctionSendOnly', [args]);
     },
-    applyMethod(target, prop, args) {
+    applyMethod: (target, prop, args) => {
       prop = coerceToObjectProperty(prop);
       // Ensure args is an array.
       args = [...args];
       return handle(target, 'applyMethod', [prop, args]);
     },
-    applyMethodSendOnly(target, prop, args) {
+    applyMethodSendOnly: (target, prop, args) => {
       prop = coerceToObjectProperty(prop);
       // Ensure args is an array.
       args = [...args];
       handle(target, 'applyMethodSendOnly', [prop, args]);
     },
-    resolve(value) {
+    resolve: value => {
       // Resolving a Presence returns the pre-registered handled promise.
       let resolvedPromise = presenceToPromise.get(/** @type {any} */ (value));
       if (!resolvedPromise) {

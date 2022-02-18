@@ -2,11 +2,11 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '../../../src/index.js';
 
-function makeAliceMaker(log) {
-  return Far('aliceMaker', {
-    make(issuer, brand, oldPaymentP) {
+const makeAliceMaker = log =>
+  Far('aliceMaker', {
+    make: (issuer, brand, oldPaymentP) => {
       const alice = Far('alice', {
-        async testBasicFunctionality() {
+        testBasicFunctionality: async () => {
           // isLive
           const alive = await E(issuer).isLive(oldPaymentP);
           log('isLive: ', alive);
@@ -60,12 +60,8 @@ function makeAliceMaker(log) {
       return alice;
     },
   });
-}
 
-export function buildRootObject(vatPowers) {
-  return Far('root', {
-    makeAliceMaker() {
-      return harden(makeAliceMaker(vatPowers.testLog));
-    },
+export const buildRootObject = vatPowers =>
+  Far('root', {
+    makeAliceMaker: () => harden(makeAliceMaker(vatPowers.testLog)),
   });
-}

@@ -17,18 +17,16 @@ export const DEFAULT_LMDB_MAP_SIZE = 2 * 1024 * 1024 * 1024;
 
 export { makeSnapStore };
 
-export function makeSnapStoreIO() {
-  return {
-    tmpName,
-    existsSync: fs.existsSync,
-    createReadStream: fs.createReadStream,
-    createWriteStream: fs.createWriteStream,
-    rename: fs.promises.rename,
-    unlink: fs.promises.unlink,
-    unlinkSync: fs.unlinkSync,
-    resolve: path.resolve,
-  };
-}
+export const makeSnapStoreIO = () => ({
+  tmpName,
+  existsSync: fs.existsSync,
+  createReadStream: fs.createReadStream,
+  createWriteStream: fs.createWriteStream,
+  rename: fs.promises.rename,
+  unlink: fs.promises.unlink,
+  unlinkSync: fs.unlinkSync,
+  resolve: path.resolve,
+});
 
 /**
  * @typedef {{
@@ -107,7 +105,7 @@ export function makeSnapStoreIO() {
  *
  * @returns {SwingStore}
  */
-function makeSwingStore(dirPath, forceReset, options) {
+const makeSwingStore = (dirPath, forceReset, options) => {
   let txn = null;
 
   if (forceReset) {
@@ -152,17 +150,17 @@ function makeSwingStore(dirPath, forceReset, options) {
     create: true,
   });
 
-  function ensureTxn() {
+  const ensureTxn = () => {
     if (!txn) {
       txn = lmdbEnv.beginTxn();
     }
-  }
+  };
 
-  function diskUsage() {
+  const diskUsage = () => {
     const dataFilePath = `${dirPath}/data.mdb`;
     const stat = fs.statSync(dataFilePath);
     return stat.size;
-  }
+  };
 
   /**
    * Obtain the value stored for a given key.
@@ -174,7 +172,7 @@ function makeSwingStore(dirPath, forceReset, options) {
    *
    * @throws if key is not a string.
    */
-  function get(key) {
+  const get = key => {
     assert.typeof(key, 'string');
     ensureTxn();
     let result = txn.getString(dbi, key);
@@ -182,7 +180,7 @@ function makeSwingStore(dirPath, forceReset, options) {
       result = undefined;
     }
     return result;
-  }
+  };
 
   /**
    * Generator function that returns an iterator over all the keys within a
@@ -221,10 +219,10 @@ function makeSwingStore(dirPath, forceReset, options) {
    *
    * @throws if key is not a string.
    */
-  function has(key) {
+  const has = key => {
     assert.typeof(key, 'string');
     return get(key) !== undefined;
-  }
+  };
 
   /**
    * Store a value for a given key.  The value will replace any prior value if
@@ -235,12 +233,12 @@ function makeSwingStore(dirPath, forceReset, options) {
    *
    * @throws if either parameter is not a string.
    */
-  function set(key, value) {
+  const set = (key, value) => {
     assert.typeof(key, 'string');
     assert.typeof(value, 'string');
     ensureTxn();
     txn.putString(dbi, key, value);
-  }
+  };
 
   /**
    * Remove any stored value for a given key.  It is permissible for there to
@@ -250,13 +248,13 @@ function makeSwingStore(dirPath, forceReset, options) {
    *
    * @throws if key is not a string.
    */
-  function del(key) {
+  const del = key => {
     assert.typeof(key, 'string');
     if (has(key)) {
       ensureTxn();
       txn.del(dbi, key);
     }
-  }
+  };
 
   const kvStore = {
     has,
@@ -274,7 +272,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   /**
    * Commit unsaved changes.
    */
-  function commit() {
+  const commit = () => {
     if (txn) {
       txn.commit();
       txn = null;
@@ -286,13 +284,13 @@ function makeSwingStore(dirPath, forceReset, options) {
     //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
     //   but we'll fail to load it because it's been deleted already.
     snapStore.commitDeletes();
-  }
+  };
 
   /**
    * Close the database, abandoning any changes made since the last commit (if you want to save them, call
    * commit() first).
    */
-  function close() {
+  const close = () => {
     if (txn) {
       txn.abort();
       txn = null;
@@ -301,10 +299,10 @@ function makeSwingStore(dirPath, forceReset, options) {
     dbi = null;
     lmdbEnv.close();
     lmdbEnv = null;
-  }
+  };
 
   return harden({ kvStore, streamStore, snapStore, commit, close, diskUsage });
-}
+};
 
 /**
  * Create a new swingset store.  If given a directory path string, a persistent
@@ -321,14 +319,14 @@ function makeSwingStore(dirPath, forceReset, options) {
  *
  * @returns {SwingStore}
  */
-export function initSwingStore(dirPath, options = {}) {
+export const initSwingStore = (dirPath, options = {}) => {
   if (!dirPath) {
     return initEphemeralSwingStore();
   } else {
     assert.typeof(dirPath, 'string');
     return makeSwingStore(dirPath, true, options);
   }
-}
+};
 
 /**
  * Open a persistent swingset store.  If there is no existing store at the given
@@ -342,10 +340,10 @@ export function initSwingStore(dirPath, options = {}) {
  *
  * @returns {SwingStore}
  */
-export function openSwingStore(dirPath, options = {}) {
+export const openSwingStore = (dirPath, options = {}) => {
   assert.typeof(dirPath, 'string');
   return makeSwingStore(dirPath, false, options);
-}
+};
 
 /**
  * Is this directory a compatible swing store?
@@ -358,7 +356,7 @@ export function openSwingStore(dirPath, options = {}) {
  *   or openSwingStore, returns true. Else returns false.
  *
  */
-export function isSwingStore(dirPath) {
+export const isSwingStore = dirPath => {
   assert.typeof(dirPath, 'string');
   if (fs.existsSync(dirPath)) {
     const storeFile = path.resolve(dirPath, 'data.mdb');
@@ -367,6 +365,6 @@ export function isSwingStore(dirPath) {
     }
   }
   return false;
-}
+};
 
 export { getAllState, setAllState } from './ephemeralSwingStore.js';

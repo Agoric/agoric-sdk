@@ -68,12 +68,12 @@ export const DEFAULT_PROM_PORT = 26660;
 export const DEFAULT_API_PORT = 1317;
 
 // Rewrite the app.toml.
-export function finishCosmosApp({
+export const finishCosmosApp = ({
   appToml,
   enableCors,
   exportMetrics,
   portNum = `${DEFAULT_RPC_PORT}`,
-}) {
+}) => {
   const rpcPort = Number(portNum);
   const app = TOML.parse(appToml);
 
@@ -106,10 +106,10 @@ export function finishCosmosApp({
   }
 
   return TOML.stringify(app);
-}
+};
 
 // Rewrite the config.toml.
-export function finishTendermintConfig({
+export const finishTendermintConfig = ({
   configToml,
   enableCors,
   exportMetrics,
@@ -117,7 +117,7 @@ export function finishTendermintConfig({
   persistentPeers = '',
   seeds = '',
   unconditionalPeerIds = '',
-}) {
+}) => {
   const rpcPort = Number(portNum);
 
   // Adjust the config.toml.
@@ -156,10 +156,10 @@ export function finishTendermintConfig({
 
   // Stringify the new config.toml.
   return TOML.stringify(config);
-}
+};
 
 // Rewrite/import the genesis.json.
-export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
+export const finishCosmosGenesis = ({ genesisJson, exportedGenesisJson }) => {
   const genesis = JSON.parse(genesisJson);
   const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};
 
@@ -225,4 +225,4 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   }
 
   return djson.stringify(genesis);
-}
+};

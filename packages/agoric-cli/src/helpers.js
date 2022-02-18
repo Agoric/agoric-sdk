@@ -30,12 +30,8 @@ export const getSDKBinaries = ({
  * @param {Console} [param0.log] a console object
  * @param {(cmd: string, cargs: Array<string>, opts: any) => ChildProcess}param0.spawn the spawn function
  */
-export const makePspawn = ({
-  env: defaultEnv = process.env,
-  log = console,
-  chalk,
-  spawn,
-}) =>
+export const makePspawn =
+  ({ env: defaultEnv = process.env, log = console, chalk, spawn }) =>
   /**
    * Promisified spawn.
    *
@@ -49,11 +45,7 @@ export const makePspawn = ({
    * exit status. The return result has a `childProcess` property to obtain
    * control over the running process
    */
-  function pspawn(
-    cmd,
-    cargs,
-    { stdio = 'inherit', env = defaultEnv, ...rest } = {},
-  ) {
+  (cmd, cargs, { stdio = 'inherit', env = defaultEnv, ...rest } = {}) => {
     const color = (method, ...args) => {
       if (chalk && chalk[method]) {
         return chalk[method](...args);

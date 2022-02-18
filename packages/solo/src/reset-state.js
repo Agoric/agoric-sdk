@@ -3,7 +3,7 @@ import fs from 'fs';
 
 import { initSwingStore } from '@agoric/swing-store';
 
-export default async function resetState(basedir) {
+export default async basedir => {
   const mailboxStateFile = path.resolve(
     basedir,
     'swingset-kernel-mailbox.json',
@@ -13,4 +13,4 @@ export default async function resetState(basedir) {
   const { commit, close } = initSwingStore(kernelStateDBDir);
   commit();
   close();
-}
+};

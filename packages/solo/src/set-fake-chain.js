@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export default function setFakeChain(basedir, GCI, fakeDelay) {
+export default (basedir, GCI, fakeDelay) => {
   const fn = path.join(basedir, 'connections.json');
   const connsByType = {};
   const add = c => {
@@ -41,4 +41,4 @@ export default function setFakeChain(basedir, GCI, fakeDelay) {
     connections.push(...conns),
   );
   fs.writeFileSync(fn, `${JSON.stringify(connections, undefined, 2)}\n`);
-}
+};

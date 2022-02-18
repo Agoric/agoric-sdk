@@ -50,7 +50,7 @@ const makeTestIterable = fails => {
     [Symbol.asyncIterator]() {
       let i = 0;
       return harden({
-        next() {
+        next: () => {
           if (i < payloads.length) {
             const value = payloads[i];
             i += 1;
@@ -194,18 +194,18 @@ export const testAutoConsumer = async (t, iterable, lossy = false) => {
 export const makeTestIterationObserver = (t, lossy, fails) => {
   let i = 0;
   return harden({
-    updateState(newState) {
+    updateState: newState => {
       i = skip(i, newState, lossy);
       t.truthy(i < payloads.length);
       // Need precise equality
       t.truthy(Object.is(newState, payloads[i]));
       i += 1;
     },
-    finish(finalState) {
+    finish: finalState => {
       t.is(fails, false);
       t.is(finalState, refResult);
     },
-    fail(reason) {
+    fail: reason => {
       t.is(fails, true);
       t.is(reason, refReason);
     },

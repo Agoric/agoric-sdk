@@ -44,7 +44,7 @@ const GAS_ADJUSTMENT = '1.2';
  */
 const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
-export default async function startMain(progname, rawArgs, powers, opts) {
+export default async (progname, rawArgs, powers, opts) => {
   const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:start');
 
@@ -152,7 +152,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     ({ agSolo, agSoloBuild } = getSDKBinaries(sdkPrefixes));
   }
 
-  async function startFakeChain(profileName, _startArgs, popts) {
+  const startFakeChain = async (profileName, _startArgs, popts) => {
     const fakeDelay =
       popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
 
@@ -214,9 +214,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     });
     process.on('SIGINT', () => ps.childProcess.kill('SIGINT'));
     return ps;
-  }
+  };
 
-  async function startLocalChain(profileName, startArgs, popts) {
+  const startLocalChain = async (profileName, startArgs, popts) => {
     const portNum = startArgs[0] === undefined ? CHAIN_PORT : startArgs[0];
     if (`${portNum}` !== `${Number(portNum)}`) {
       log.error(`Argument to local-chain must be a port number`);
@@ -401,9 +401,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       // Accessible via either localhost or host.docker.internal
       [`--publish=127.0.0.1:${portNum}:${portNum}`, `--name=agoric-n0`],
     );
-  }
+  };
 
-  async function startLocalSolo(profileName, startArgs, popts) {
+  const startLocalSolo = async (profileName, startArgs, popts) => {
     const portNum = startArgs[0] === undefined ? PORT : startArgs[0];
     const provisionPowers = startArgs[1] === undefined ? [] : [startArgs[1]];
     if (`${portNum}` !== `${Number(portNum)}`) {
@@ -627,9 +627,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     return soloSpawn(['start'], { ...spawnOpts, env: nodeDebugEnv }, [
       `--publish=127.0.0.1:${portNum}:${portNum}`,
     ]);
-  }
+  };
 
-  async function startTestnetDocker(profileName, startArgs, popts) {
+  const startTestnetDocker = async (profileName, startArgs, popts) => {
     if (popts.dockerTag && popts.pull) {
       const exitStatus = await pspawn('docker', ['pull', SOLO_IMAGE]);
       if (exitStatus) {
@@ -662,9 +662,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       ]);
 
     return setupRun('setup', `--netconfig=${netconfig}`);
-  }
+  };
 
-  async function startTestnetSdk(profileName, startArgs, popts) {
+  const startTestnetSdk = async (profileName, startArgs, popts) => {
     const port = startArgs[0] || PORT;
     const netconfig = startArgs[1] || DEFAULT_NETCONFIG;
     const agServer = `_agstate/agoric-servers/${profileName}-${port}`;
@@ -681,7 +681,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       });
 
     return setupRun('setup', `--netconfig=${netconfig}`);
-  }
+  };
 
   const profiles = {
     dev: startFakeChain,
@@ -707,4 +707,4 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   return startFn(profileName, args[0] ? args.slice(1) : args, popts);
-}
+};

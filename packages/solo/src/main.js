@@ -24,7 +24,7 @@ const DEFAULT_EGRESSES = 'cosmos';
 const AG_SOLO_BASEDIR =
   process.env.AG_SOLO_BASEDIR && path.resolve(process.env.AG_SOLO_BASEDIR);
 
-function insistIsBasedir() {
+const insistIsBasedir = () => {
   if (AG_SOLO_BASEDIR) {
     process.chdir(AG_SOLO_BASEDIR);
   }
@@ -36,9 +36,9 @@ function insistIsBasedir() {
     throw `${basedir} doesn't appear to be an ag-solo base directory`;
   }
   return basedir;
-}
+};
 
-export default async function solo(progname, rawArgv) {
+export default async (progname, rawArgv) => {
   log.debug('solo', rawArgv);
   const { _: argv, ...opts } = parseArgs(rawArgv, {
     stopEarly: true,
@@ -154,4 +154,4 @@ start
     }
   }
   return 0;
-}
+};

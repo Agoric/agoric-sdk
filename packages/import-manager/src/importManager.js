@@ -23,7 +23,7 @@
  *
  * const genericFn = importer.lookupImport(name);
  */
-function importManager() {
+const importManager = () => {
   const entries = {};
 
   return harden({
@@ -32,13 +32,13 @@ function importManager() {
      * @param {T} obj Object to get own properties from
      * @returns {T}
      */
-    addExports(obj) {
+    addExports: obj => {
       for (const name of Object.getOwnPropertyNames(obj)) {
         entries[name] = obj[name];
       }
       return harden(entries);
     },
   });
-}
+};
 
 export { importManager };

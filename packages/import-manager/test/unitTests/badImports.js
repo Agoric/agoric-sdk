@@ -3,12 +3,12 @@
 import { importManager } from '../../src/importManager.js';
 import { listIsEmpty, numIsEmpty } from './valueOps.js';
 
-function makeBadImportManager() {
+const makeBadImportManager = () => {
   const mgr = importManager();
   const obj = { numIsEmpty };
   const fooSym = Symbol('foo');
   obj[fooSym] = listIsEmpty;
   return mgr.addExports(obj);
-}
+};
 
 export { makeBadImportManager };

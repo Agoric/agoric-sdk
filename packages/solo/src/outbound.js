@@ -22,7 +22,7 @@ const log = anylogger('outbound');
  */
 const knownTargets = new Map();
 
-export function deliver(mbs) {
+export const deliver = mbs => {
   const data = mbs.exportToData();
   log.debug(`deliver`, data);
   for (const target of Object.getOwnPropertyNames(data)) {
@@ -59,11 +59,11 @@ export function deliver(mbs) {
       t.highestAck = acknum;
     }
   }
-}
+};
 
-export function addDeliveryTarget(target, deliverator) {
+export const addDeliveryTarget = (target, deliverator) => {
   assert(!knownTargets.has(target), X`target ${target} already added`);
   /** @type {TargetRecord} */
   const targetRecord = { deliverator, highestSent: 0, highestAck: 0 };
   knownTargets.set(target, targetRecord);
-}
+};

@@ -15,7 +15,7 @@ const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
   ? parseInt(process.env.END_BLOCK_SPIN_MS, 10)
   : 0;
 
-export default function makeBlockManager({
+export default ({
   deliverInbound,
   doBridgeInbound,
   bootstrapBlock,
@@ -27,12 +27,12 @@ export default function makeBlockManager({
   savedActions,
   savedHeight,
   verboseBlocks = false,
-}) {
+}) => {
   let computedHeight = savedHeight;
   let runTime = 0;
   let chainTime;
 
-  async function kernelPerformAction(action) {
+  const kernelPerformAction = async action => {
     // TODO warner we could change this to run the kernel only during END_BLOCK
     const start = Date.now();
     const finish = res => {
@@ -112,12 +112,12 @@ export default function makeBlockManager({
     // Return the original promise so that the caller gets the original
     // resolution or rejection.
     return p;
-  }
+  };
 
   let currentActions = [];
   let decohered;
 
-  async function blockManager(action, savedChainSends) {
+  const blockManager = async (action, savedChainSends) => {
     if (decohered) {
       throw decohered;
     }
@@ -243,13 +243,13 @@ export default function makeBlockManager({
         currentActions.push(action);
       }
     }
-  }
+  };
 
   return blockManager;
-}
+};
 
 // TODO: Put this somewhere else.
-function deepEquals(a, b, already = new WeakSet()) {
+const deepEquals = (a, b, already = new WeakSet()) => {
   if (Object.is(a, b)) {
     return true;
   }
@@ -288,4 +288,4 @@ function deepEquals(a, b, already = new WeakSet()) {
     return false;
   }
   return true;
-}
+};

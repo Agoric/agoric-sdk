@@ -36,7 +36,7 @@ const makeAsyncIteratorFromSubscription = sub =>
 /**
  * @param {import('ava').Assertions} t
  */
-async function testRemotePeg(t) {
+const testRemotePeg = async t => {
   t.plan(20);
 
   /**
@@ -45,7 +45,7 @@ async function testRemotePeg(t) {
   const { promise: localDepositFacet, resolve: resolveLocalDepositFacet } =
     makePromiseKit();
   const fakeBoard = Far('fakeBoard', {
-    getValue(id) {
+    getValue: id => {
       if (id === '0x1234') {
         return localDepositFacet;
       }
@@ -54,7 +54,7 @@ async function testRemotePeg(t) {
     },
   });
   const fakeNamesByAddress = Far('fakeNamesByAddress', {
-    lookup(...keys) {
+    lookup: (...keys) => {
       t.is(keys[0], 'agoric1234567', 'unrecognized fakeNamesByAddress');
       t.is(keys[1], 'depositFacet', 'lookup not for the depositFacet');
       t.is(keys.length, 2);
@@ -91,12 +91,12 @@ async function testRemotePeg(t) {
   let gaiaConnection;
   E(portP).addListener(
     Far('acceptor', {
-      async onAccept(_p, _localAddr, _remoteAddr) {
-        return harden({
-          async onOpen(c) {
+      onAccept: async (_p, _localAddr, _remoteAddr) =>
+        harden({
+          onOpen: async c => {
             gaiaConnection = c;
           },
-          async onReceive(_c, packetBytes) {
+          onReceive: async (_c, packetBytes) => {
             const packet = JSON.parse(packetBytes);
             t.deepEqual(
               packet,
@@ -110,8 +110,7 @@ async function testRemotePeg(t) {
             );
             return JSON.stringify({ success: true });
           },
-        });
-      },
+        }),
     }),
   );
 
@@ -253,6 +252,6 @@ async function testRemotePeg(t) {
   await t.throwsAsync(() => remoteDenomAit.next(), {
     message: 'pegasusConnectionHandler closed',
   });
-}
+};
 
 test('remote peg', t => testRemotePeg(t));

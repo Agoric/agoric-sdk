@@ -4,10 +4,10 @@ import { decodeBase64 } from '@endo/base64';
 import { parseArchive } from '@endo/compartment-mapper/import-archive.js';
 import bundleSource from '../src/index.js';
 
-function evaluate(src, endowments) {
+const evaluate = (src, endowments) => {
   const c = new Compartment(endowments, {}, {});
   return c.evaluate(src);
-}
+};
 
 test('trailing comment', async t => {
   const { source: src1 } = await bundleSource(

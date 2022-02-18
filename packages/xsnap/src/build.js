@@ -29,7 +29,7 @@ const ModdableSDK = {
  *   spawn: typeof import('child_process').spawn,
  * }} io
  */
-function makeCLI(command, { spawn }) {
+const makeCLI = (command, { spawn }) => {
   /** @param { import('child_process').ChildProcess } child */
   const wait = child =>
     new Promise((resolve, reject) => {
@@ -77,7 +77,7 @@ function makeCLI(command, { spawn }) {
       return wait(child).then(() => output);
     },
   });
-}
+};
 
 /**
  * @param {string} path
@@ -154,7 +154,7 @@ const makeSubmodule = (path, repoUrl, { git }) => {
  *   }
  * }} io
  */
-async function main(args, { env, stdout, spawn, fs, os }) {
+const main = async (args, { env, stdout, spawn, fs, os }) => {
   const git = makeCLI('git', { spawn });
 
   // When changing/adding entries here, make sure to search the whole project
@@ -237,7 +237,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
       },
     );
   }
-}
+};
 
 main(process.argv.slice(2), {
   env: { ...process.env },

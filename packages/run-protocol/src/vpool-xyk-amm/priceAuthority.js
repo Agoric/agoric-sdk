@@ -36,7 +36,7 @@ export const makePriceAuthority = (
    * @param {PriceQuery} priceQuery
    * @returns {ERef<PriceQuote>=}
    */
-  function createQuote(priceQuery) {
+  const createQuote = priceQuery => {
     const quote = priceQuery(calcAmountOut, calcAmountIn);
     if (!quote) {
       return undefined;
@@ -48,7 +48,7 @@ export const makePriceAuthority = (
       .then(now =>
         authenticateQuote([{ amountIn, amountOut, timer, timestamp: now }]),
       );
-  }
+  };
 
   const priceAuthorityOptions = harden({
     timer,

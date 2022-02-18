@@ -8,14 +8,14 @@ import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-async function main(basedir, argv) {
+const main = async (basedir, argv) => {
   const dir = path.resolve(`${dirname}/..`, basedir);
   const config = await loadBasedir(dir, { includeDevDependencies: true });
   config.defaultManagerType = 'xs-worker';
   const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();
-}
+};
 
 const sharedMapContentsGolden = ['starting testSharedMapStorage'];
 

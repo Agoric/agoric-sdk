@@ -15,7 +15,7 @@ const DEFAULT_CHAIN_CONFIG = 'https://testnet.agoric.com/network-config';
  * @param {string=} chainConfig
  * @param {boolean} [force=false]
  */
-async function addChain(basedir, chainConfig, force = false) {
+const addChain = async (basedir, chainConfig, force = false) => {
   let actualConfig = chainConfig;
   const cache = path.join(basedir, 'add-chain-default.txt');
   if (actualConfig === undefined) {
@@ -82,6 +82,6 @@ async function addChain(basedir, chainConfig, force = false) {
     fs.writeFileSync(cache, actualConfig);
   }
   return 0;
-}
+};
 
 export default addChain;

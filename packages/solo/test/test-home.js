@@ -148,22 +148,18 @@ test.serial('home.localTimerService makeNotifier', async t => {
   t.truthy(update2.value > update1.value);
 });
 
-function makeHandler() {
+const makeHandler = () => {
   let calls = 0;
   const args = [];
   return Far('wake handler', {
-    getCalls() {
-      return calls;
-    },
-    getArgs() {
-      return args;
-    },
-    wake(arg) {
+    getCalls: () => calls,
+    getArgs: () => args,
+    wake: arg => {
       args.push(arg);
       calls += 1;
     },
   });
-}
+};
 
 test.serial('home.localTimerService makeRepeater', async t => {
   const { localTimerService } = E.get(home);

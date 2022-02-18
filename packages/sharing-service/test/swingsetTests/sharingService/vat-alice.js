@@ -3,25 +3,20 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-function makeAliceMaker() {
-  return Far('aliceMaker', {
-    make(sharingServiceP) {
+const makeAliceMaker = () =>
+  Far('aliceMaker', {
+    make: sharingServiceP => {
       const alice = Far('alice', {
-        shareSomething(someKey) {
-          return E(sharingServiceP)
+        shareSomething: someKey =>
+          E(sharingServiceP)
             .createSharedMap(someKey)
-            .then(sharedMap => E(sharedMap).addEntry(someKey, 42));
-        },
+            .then(sharedMap => E(sharedMap).addEntry(someKey, 42)),
       });
       return alice;
     },
   });
-}
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    makeAliceMaker(_host) {
-      return makeAliceMaker();
-    },
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    makeAliceMaker: _host => makeAliceMaker(),
   });
-}

@@ -162,7 +162,7 @@ test('amount with accessor properties', async t => {
     // returned, but afterwards 1 million is returned. Might be a nice
     // attack to withdraw a lot more than allowed.
     Object.defineProperty(amount, 'value', {
-      get() {
+      get: () => {
         if (checked) {
           return 1_000_000n;
         } else {

@@ -1,3 +1,1 @@
-export function bigint() {
-  return 37n;
-}
+export const bigint = () => 37n;

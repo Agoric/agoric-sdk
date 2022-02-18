@@ -36,7 +36,7 @@ const start = zcf => {
       return zcf.makeInvitation(() => {},
       `noActionElectorate doesn't allow posing questions`);
     },
-    addQuestion() {
+    addQuestion: () => {
       throw Error(`noActionElectorate doesn't add questions.`);
     },
     getVoterInvitations: () => {

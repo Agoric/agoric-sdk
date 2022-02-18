@@ -28,18 +28,18 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   let cache = new Map();
   let changedKeys = new Set();
   const storage = {
-    has(key) {
+    has: key => {
       // It's more efficient just to get the value.
       const val = storage.get(key);
       return !!val;
     },
-    set(key, obj) {
+    set: (key, obj) => {
       if (cache.get(key) !== obj) {
         cache.set(key, obj);
         changedKeys.add(key);
       }
     },
-    get(key) {
+    get: key => {
       if (cache.has(key)) {
         // Our cache has the value.
         return cache.get(key);
@@ -55,7 +55,7 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
       changedKeys.add(key);
       return obj;
     },
-    commit() {
+    commit: () => {
       for (const key of changedKeys.keys()) {
         const obj = cache.get(key);
         const value = stringify(exp(obj));
@@ -70,7 +70,7 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
       // Reset our state.
       storage.abort();
     },
-    abort() {
+    abort: () => {
       // Just reset our state.
       cache = new Map();
       changedKeys = new Set();
@@ -79,13 +79,13 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   return storage;
 };
 
-export default async function main(progname, args, { env, homedir, agcc }) {
+export default async (progname, args, { env, homedir, agcc }) => {
   const portNums = {};
 
   // TODO: use the 'basedir' pattern
 
   // Try to determine the cosmos chain home.
-  function getFlagValue(flagName, deflt) {
+  const getFlagValue = (flagName, deflt) => {
     let flagValue = deflt;
     const envValue = env[`AG_CHAIN_COSMOS_${flagName.toUpperCase()}`];
     if (envValue !== undefined) {
@@ -103,7 +103,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     }
     return flagValue;
-  }
+  };
 
   // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
   // is better than scribbling into the current directory.
@@ -114,7 +114,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   const portHandlers = {};
   let lastPort = 0;
-  function registerPortHandler(portHandler) {
+  const registerPortHandler = portHandler => {
     lastPort += 1;
     const port = lastPort;
     portHandlers[port] = async (...phArgs) => {
@@ -126,9 +126,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     };
     return port;
-  }
+  };
 
-  function fromGo(port, str, replier) {
+  const fromGo = (port, str, replier) => {
     // console.error(`inbound ${port} ${str}`);
     const handler = portHandlers[port];
     if (!handler) {
@@ -147,7 +147,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         replier.reject(`${(rej && rej.stack) || rej}`);
       },
     );
-  }
+  };
 
   // Actually run the main ag-chain-cosmos program.  Before we start the daemon,
   // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
@@ -161,16 +161,16 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   let savedChainSends = [];
 
   // Send a chain downcall, recording what we sent and received.
-  function chainSend(...sendArgs) {
+  const chainSend = (...sendArgs) => {
     const ret = agcc.send(...sendArgs);
     savedChainSends.push([sendArgs, ret]);
     return ret;
-  }
+  };
 
   // Flush the chain send queue.
   // If doReplay is truthy, replay each send and insist
   // it hase the same return result.
-  function flushChainSends(doReplay) {
+  const flushChainSends = doReplay => {
     // Remove our queue.
     const chainSends = savedChainSends;
     savedChainSends = [];
@@ -193,12 +193,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         );
       }
     }
-  }
+  };
 
   // this storagePort changes for every single message. We define it out here
   // so the 'externalStorage' object can close over the single mutable
   // instance, and we update the 'portNums.storage' value each time toSwingSet is called
-  async function launchAndInitializeSwingSet(bootMsg) {
+  const launchAndInitializeSwingSet = async bootMsg => {
     // this object is used to store the mailbox state.
     const mailboxStorage = makeChainStorage(
       msg => chainSend(portNums.storage, msg),
@@ -210,15 +210,15 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       },
       exportMailbox,
     );
-    function setActivityhash(activityhash) {
+    const setActivityhash = activityhash => {
       const msg = stringify({
         method: 'set',
         key: 'activityhash',
         value: activityhash,
       });
       chainSend(portNums.storage, msg);
-    }
-    function doOutboundBridge(dstID, obj) {
+    };
+    const doOutboundBridge = (dstID, obj) => {
       const portNum = portNums[dstID];
       if (portNum === undefined) {
         console.error(
@@ -235,7 +235,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       } catch (e) {
         assert.fail(X`cannot JSON.parse(${JSON.stringify(retStr)}): ${e}`);
       }
-    }
+    };
 
     const argv = {
       ROLE: 'chain',
@@ -275,10 +275,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       mapSize,
     });
     return s;
-  }
+  };
 
   let blockManager;
-  async function toSwingSet(action, _replier) {
+  const toSwingSet = async (action, _replier) => {
     // console.log(`toSwingSet`, action);
     if (action.vibcPort) {
       portNums.dibc = action.vibcPort;
@@ -315,5 +315,5 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
 
     return blockManager(action, savedChainSends);
-  }
-}
+  };
+};

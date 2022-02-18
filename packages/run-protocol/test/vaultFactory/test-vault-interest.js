@@ -51,7 +51,7 @@ const feeMintAccessP = makeFar(nonFarFeeMintAccess);
  * @param {ERef<ZoeService>} zoeP
  * @param {string} sourceRoot
  */
-async function launch(zoeP, sourceRoot) {
+const launch = async (zoeP, sourceRoot) => {
   const contractUrl = await importMetaResolve(sourceRoot, import.meta.url);
   const contractPath = new URL(contractUrl).pathname;
   const contractBundle = await bundleSource(contractPath);
@@ -85,7 +85,7 @@ async function launch(zoeP, sourceRoot) {
     creatorFacet,
     instance,
   };
-}
+};
 
 const helperContract = launch(zoe, vaultRoot);
 

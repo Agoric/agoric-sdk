@@ -8,7 +8,7 @@ import { getAccessToken } from '@agoric/access-token';
 // Ensure we're all using the same HandledPromise.
 export { E };
 
-export async function makeFixture(PORT, noisy = false) {
+export const makeFixture = async (PORT, noisy = false) => {
   const accessToken = await getAccessToken(PORT);
 
   let expectedToExit = false;
@@ -36,9 +36,9 @@ export async function makeFixture(PORT, noisy = false) {
 
   /** @type {WebSocket} */
   let ws;
-  function connect() {
+  const connect = () => {
     process.stdout.write('# connecting');
-    async function tryConnect(resolve, reject) {
+    const tryConnect = async (resolve, reject) => {
       process.stdout.write('.');
 
       /** @type {() => void} */
@@ -98,7 +98,7 @@ export async function makeFixture(PORT, noisy = false) {
         }
         ws = undefined;
       });
-    }
+    };
 
     return new Promise((resolve, reject) => {
       cp.addListener('exit', code => {
@@ -111,9 +111,9 @@ export async function makeFixture(PORT, noisy = false) {
       });
       tryConnect(resolve, reject);
     });
-  }
+  };
 
-  function kill() {
+  const kill = () => {
     // Try closing the WebSocket.
     expectedToExit = true;
     if (ws && ws.readyState === ws.OPEN) {
@@ -123,10 +123,10 @@ export async function makeFixture(PORT, noisy = false) {
     process.off('exit', kill);
     // console.log('killing!');
     process.kill(-cp.pid, 'SIGTERM');
-  }
+  };
 
   process.on('exit', kill);
   process.on('SIGINT', kill);
   process.on('SIGTERM', kill);
   return { homeP: connect(), kill };
-}
+};

@@ -42,14 +42,14 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   // Kill an entire process group.
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
-  function pspawnStdout(...args) {
+  const pspawnStdout = (...args) => {
     const ps = pspawn(...args);
     ps.childProcess.stdout.on('data', chunk => {
       process.stdout.write(chunk);
     });
     // ps.childProcess.unref();
     return ps;
-  }
+  };
 
   const defaultAgoricCmd = () => {
     // Run all main programs with the '--sdk' flag if we are in agoric-sdk.
@@ -61,15 +61,13 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   };
   const { AGORIC_CMD = JSON.stringify(defaultAgoricCmd()) } = process.env;
   const agoricCmd = JSON.parse(AGORIC_CMD);
-  function myMain(args, opts = {}) {
-    // console.error('running agoric-cli', ...extraArgs, ...args);
-    return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
+  const myMain = (args, opts = {}) =>
+    pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric' },
       detached: true,
       ...opts,
     });
-  }
 
   const olddir = process.cwd();
   const { name, removeCallback } = tmp.dirSync({

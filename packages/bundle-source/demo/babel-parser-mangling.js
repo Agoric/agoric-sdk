@@ -1,9 +1,8 @@
-function TokenType() {}
+const TokenType = () => {};
 const beforeExpr = 0;
 
-export function createBinop(name, binop) {
-  return new TokenType(name, {
+export const createBinop = (name, binop) =>
+  new TokenType(name, {
     beforeExpr,
     binop,
   });
-}

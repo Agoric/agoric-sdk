@@ -6,17 +6,17 @@ import { Far } from '@endo/marshal';
 import { makeSharedMap } from '../../../src/sharedMap.js';
 import { makeSharingService } from '../../../src/sharing.js';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.testLog;
-  function testSharedMapStorage() {
+  const testSharedMapStorage = () => {
     log('starting testSharedMapStorage');
     const wb = makeSharedMap('whiteboard');
     if (wb.getName() !== 'whiteboard') {
       log(`sharedMap name should be 'whiteboard', not ${wb.getName()}`);
     }
-  }
+  };
 
-  function testSharingStorage() {
+  const testSharingStorage = () => {
     log('starting testSharingStorage');
     const h = makeSharingService();
     if (h.grabSharedMap('missing') !== undefined) {
@@ -42,24 +42,18 @@ export function buildRootObject(vatPowers, vatParameters) {
     }
 
     const fakeSharedMap = Far('fakeSharedMap', {
-      lookup(propertyName) {
-        return `${propertyName}: value`;
-      },
-      addEntry(_) {
-        return 1;
-      },
-      getName() {
-        return 'rendezvous';
-      },
+      lookup: propertyName => `${propertyName}: value`,
+      addEntry: _ => 1,
+      getName: () => 'rendezvous',
     });
     try {
       h.validate(fakeSharedMap);
     } catch (error) {
       log('expected validate to throw');
     }
-  }
+  };
 
-  function testTwoVatSharing(aliceMaker, bobMaker, sharingService) {
+  const testTwoVatSharing = (aliceMaker, bobMaker, sharingService) => {
     const aliceP = E(aliceMaker).make(sharingService);
     const bobP = E(bobMaker).make(sharingService);
     log('starting testSharingStorage');
@@ -79,10 +73,10 @@ export function buildRootObject(vatPowers, vatParameters) {
             }
           });
       });
-  }
+  };
 
   return Far('root', {
-    async bootstrap(vats) {
+    bootstrap: async vats => {
       switch (vatParameters.argv[0]) {
         case 'sharedMap': {
           return testSharedMapStorage();
@@ -102,4 +96,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}
+};

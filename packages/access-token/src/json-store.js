@@ -15,7 +15,7 @@ const DATA_FILE = 'swingset-kernel-state.jsonlines';
  * @typedef {ReturnType<typeof makeStorageInMemory>['storage']} JSONStore
  */
 
-function safeUnlink(filePath) {
+const safeUnlink = filePath => {
   try {
     fs.unlinkSync(filePath);
   } catch (e) {
@@ -23,7 +23,7 @@ function safeUnlink(filePath) {
       throw e;
     }
   }
-}
+};
 
 /**
  * Create a new instance of a RAM-based implementation of the Storage API.
@@ -36,7 +36,7 @@ function safeUnlink(filePath) {
  *   state     // the underlying map that holds the state in memory
  * }
  */
-function makeStorageInMemory() {
+const makeStorageInMemory = () => {
   const state = new Map();
 
   /**
@@ -48,12 +48,12 @@ function makeStorageInMemory() {
    *
    * @throws if key is not a string.
    */
-  function has(key) {
+  const has = key => {
     if (`${key}` !== key) {
       throw new Error(`non-string key ${key}`);
     }
     return state.has(key);
-  }
+  };
 
   /**
    * Generator function that returns an iterator over all the keys within a
@@ -97,12 +97,12 @@ function makeStorageInMemory() {
    *
    * @throws if key is not a string.
    */
-  function get(key) {
+  const get = key => {
     if (`${key}` !== key) {
       throw new Error(`non-string key ${key}`);
     }
     return state.get(key);
-  }
+  };
 
   /**
    * Store a value for a given key.  The value will replace any prior value if
@@ -113,7 +113,7 @@ function makeStorageInMemory() {
    *
    * @throws if either parameter is not a string.
    */
-  function set(key, value) {
+  const set = (key, value) => {
     if (`${key}` !== key) {
       throw new Error(`non-string key ${key}`);
     }
@@ -121,7 +121,7 @@ function makeStorageInMemory() {
       throw new Error(`non-string value ${value}`);
     }
     state.set(key, value);
-  }
+  };
 
   /**
    * Remove any stored value for a given key.  It is permissible for there to
@@ -131,12 +131,12 @@ function makeStorageInMemory() {
    *
    * @throws if key is not a string.
    */
-  function del(key) {
+  const del = key => {
     if (`${key}` !== key) {
       throw new Error(`non-string key ${key}`);
     }
     state.delete(key);
-  }
+  };
 
   const storage = {
     has,
@@ -147,7 +147,7 @@ function makeStorageInMemory() {
   };
 
   return { storage, state };
-}
+};
 
 /**
  * Do the work of `initJSONStore` and `openJSONStore`.
@@ -162,7 +162,7 @@ function makeStorageInMemory() {
  *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
  * }}
  */
-function makeJSONStore(dirPath, forceReset = false) {
+const makeJSONStore = (dirPath, forceReset = false) => {
   const { storage, state } = makeStorageInMemory();
 
   let storeFile;
@@ -197,7 +197,7 @@ function makeJSONStore(dirPath, forceReset = false) {
   /**
    * Commit unsaved changes.
    */
-  function commit() {
+  const commit = () => {
     if (dirPath) {
       const tempFile = `${storeFile}-${process.pid}.tmp`;
       const fd = fs.openSync(tempFile, 'w');
@@ -210,18 +210,18 @@ function makeJSONStore(dirPath, forceReset = false) {
       fs.closeSync(fd);
       fs.renameSync(tempFile, storeFile);
     }
-  }
+  };
 
   /**
    * Close the "database", abandoning any changes made since the last commit
    * (if you want to save them, call commit() first).
    */
-  function close() {
+  const close = () => {
     // Nothing to do here.
-  }
+  };
 
   return { storage, commit, close };
-}
+};
 
 /**
  * Create a swingset store that is an in-memory map, normally backed by JSON
@@ -241,12 +241,12 @@ function makeJSONStore(dirPath, forceReset = false) {
  *            // changes
  * }
  */
-export function initJSONStore(dirPath) {
+export const initJSONStore = dirPath => {
   if (dirPath !== null && dirPath !== undefined && `${dirPath}` !== dirPath) {
     throw new Error('dirPath must be a string or nullish');
   }
   return makeJSONStore(dirPath, true);
-}
+};
 
 /**
  * Open a swingset store that is an in-memory map, backed by JSON serialized to
@@ -265,12 +265,12 @@ export function initJSONStore(dirPath) {
  *            // changes
  * }
  */
-export function openJSONStore(dirPath) {
+export const openJSONStore = dirPath => {
   if (`${dirPath}` !== dirPath) {
     throw new Error('dirPath must be a string');
   }
   return makeJSONStore(dirPath, false);
-}
+};
 
 /**
  * Produce a representation of all the state found in a JSON store.
@@ -285,7 +285,7 @@ export function openJSONStore(dirPath) {
  * @returns {Record<string, string>} an array representing all the current state in `storage`, one
  *    element of the form [key, value] per key/value pair.
  */
-export function getAllState(storage) {
+export const getAllState = storage => {
   /** @type { Record<string, string> } */
   const stuff = {};
   for (const key of Array.from(storage.getKeys('', ''))) {
@@ -293,7 +293,7 @@ export function getAllState(storage) {
     stuff[key] = storage.get(key);
   }
   return stuff;
-}
+};
 
 /**
  * Stuff a bunch of state into a JSON store.
@@ -305,11 +305,11 @@ export function getAllState(storage) {
  * @param {JSONStore} storage  The storage whose state is to be set.
  * @param {Array<[string, string]>} stuff  An array of key/value pairs, each element of the form [key, value]
  */
-export function setAllState(storage, stuff) {
+export const setAllState = (storage, stuff) => {
   for (const k of Object.getOwnPropertyNames(stuff)) {
     storage.set(k, stuff[k]);
   }
-}
+};
 
 /**
  * Is this directory a compatible JSON store?
@@ -322,7 +322,7 @@ export function setAllState(storage, stuff) {
  *   or openJSONStore, returns true. Else returns false.
  *
  */
-export function isJSONStore(dirPath) {
+export const isJSONStore = dirPath => {
   if (`${dirPath}` !== dirPath) {
     throw new Error('dirPath must be a string');
   }
@@ -333,4 +333,4 @@ export function isJSONStore(dirPath) {
     }
   }
   return false;
-}
+};

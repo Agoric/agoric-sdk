@@ -5,20 +5,20 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '../../../src/index.js';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const arg0 = vatParameters.argv[0];
 
-  function testSplitPayments(aliceMaker) {
+  const testSplitPayments = aliceMaker => {
     vatPowers.testLog('start test splitPayments');
     const { mint: moolaMint, issuer, brand } = makeIssuerKit('moola');
     const moolaPayment = moolaMint.mintPayment(AmountMath.make(brand, 1000n));
 
     const aliceP = E(aliceMaker).make(issuer, brand, moolaPayment);
     return E(aliceP).testSplitPayments();
-  }
+  };
 
   const obj0 = Far('root', {
-    async bootstrap(vats) {
+    bootstrap: async vats => {
       switch (arg0) {
         case 'splitPayments': {
           const aliceMaker = await E(vats.alice).makeAliceMaker();
@@ -31,4 +31,4 @@ export function buildRootObject(vatPowers, vatParameters) {
     },
   });
   return obj0;
-}
+};

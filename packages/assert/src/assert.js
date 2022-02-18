@@ -65,12 +65,12 @@ export { makeAssert };
  * @param {string} str The noun to prepend
  * @returns {string} The noun prepended with a/an
  */
-function an(str) {
+const an = str => {
   str = `${str}`;
   if (str.length >= 1 && 'aeiouAEIOU'.includes(str[0])) {
     return `an ${str}`;
   }
   return `a ${str}`;
-}
+};
 freeze(an);
 export { an };

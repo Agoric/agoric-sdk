@@ -14,22 +14,22 @@ import { defer } from './defer.js';
  * @template T
  * @returns {AsyncQueue<T>}
  */
-export function queue() {
+export const queue = () => {
   const ends = defer();
   return {
-    put(value) {
+    put: value => {
       const next = defer();
       const promise = next.promise;
       ends.resolve({ value, promise });
       ends.resolve = next.resolve;
     },
-    get() {
+    get: () => {
       const promise = ends.promise.then(next => next.value);
       ends.promise = ends.promise.then(next => next.promise);
       return promise;
     },
   };
-}
+};
 
 /**
  * @template T
@@ -53,15 +53,15 @@ export function queue() {
  */
 export function stream(acks, data) {
   return {
-    next(value) {
+    next: value => {
       data.put({ value, done: false });
       return acks.get();
     },
-    return(value) {
+    return: value => {
       data.put({ value, done: true });
       return acks.get();
     },
-    throw(error) {
+    throw: error => {
       data.put(Promise.reject(error));
       return acks.get();
     },
@@ -78,10 +78,10 @@ export function stream(acks, data) {
  * @template UReturn
  * @returns {[Stream<T, U, TReturn>, Stream<U, T, UReturn>]}
  */
-export function pipe() {
+export const pipe = () => {
   const syn = queue();
   const ack = queue();
   const input = stream(syn, ack);
   const output = stream(ack, syn);
   return [input, output];
-}
+};

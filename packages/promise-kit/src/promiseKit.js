@@ -43,7 +43,7 @@ const NOOP_INITIALIZER = harden(() => {});
  * @template T
  * @returns {PromiseKit<T>}
  */
-export function makePromiseKit() {
+export const makePromiseKit = () => {
   /** @type {(value: ERef<T>) => void} */
   let res = NOOP_INITIALIZER;
   /** @type {(reason: any) => void} */
@@ -64,16 +64,14 @@ export function makePromiseKit() {
     if (unsafe) {
       const originalDomain = p.domain;
       Object.defineProperty(p, 'domain', {
-        get() {
-          return originalDomain;
-        },
+        get: () => originalDomain,
       });
     } else {
       delete p.domain;
     }
   }
   return harden({ promise: p, resolve: res, reject: rej });
-}
+};
 harden(makePromiseKit);
 
 /**
@@ -82,7 +80,6 @@ harden(makePromiseKit);
  * @param {any} maybePromise The value to examine
  * @returns {maybePromise is Promise} Whether it is a promise
  */
-export function isPromise(maybePromise) {
-  return Promise.resolve(maybePromise) === maybePromise;
-}
+export const isPromise = maybePromise =>
+  Promise.resolve(maybePromise) === maybePromise;
 harden(isPromise);

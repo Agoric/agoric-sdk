@@ -8,24 +8,24 @@ test('resolveWithPresence with proxy options', async t => {
   l('proxy support now being tested');
   const log = [];
   const presenceEventualHandler = {
-    applyMethod(target, verb, args) {
+    applyMethod: (target, verb, args) => {
       log.push(['eventualSend', target, verb, args]);
       return undefined;
     },
-    apply(target, args) {
+    apply: (target, args) => {
       log.push(['eventualApply', target, args]);
       return undefined;
     },
-    get(target, property) {
+    get: (target, property) => {
       log.push(['eventualGet', target, property]);
       return undefined;
     },
-    set(target, property, value, receiver) {
+    set: (target, property, value, receiver) => {
       // this trap should never run, but it does the default hardcoded behaviour
       presenceEventualHandler.setOnly(target, property, value, receiver);
       return value;
     },
-    setOnly(target, property, value, receiver) {
+    setOnly: (target, property, value, receiver) => {
       log.push(['eventualSetOnly', target, property, value, receiver]);
       return undefined; // traps return value is always ignored
     },
@@ -33,23 +33,23 @@ test('resolveWithPresence with proxy options', async t => {
   const proxyTarget = {};
   let thenFetched = false;
   const presenceImmediateHandler = {
-    apply(target, thisArg, args) {
+    apply: (target, thisArg, args) => {
       log.push(['apply', target, thisArg, args]);
       return undefined;
     },
-    construct(target, args, newTarget) {
+    construct: (target, args, newTarget) => {
       log.push(['construct', target, args, newTarget]);
       return {};
     },
-    defineProperty(target, property, descriptor) {
+    defineProperty: (target, property, descriptor) => {
       log.push(['defineProperty', target, property, descriptor]);
       return false;
     },
-    deleteProperty(target, property) {
+    deleteProperty: (target, property) => {
       log.push(['deleteProperty', target, property]);
       return false;
     },
-    get(target, property, receiver) {
+    get: (target, property, receiver) => {
       log.push(['get', target, property, receiver]);
       if (property === 'then') {
         l('step: .then fetched');
@@ -100,35 +100,35 @@ test('resolveWithPresence with proxy options', async t => {
       }
       return undefined;
     },
-    getOwnPropertyDescriptor(target, property) {
+    getOwnPropertyDescriptor: (target, property) => {
       log.push(['getOwnPropertyDescriptor', target, property]);
       return undefined;
     },
-    getPrototypeOf(target) {
+    getPrototypeOf: target => {
       log.push(['getPrototypeOf', target]);
       return null;
     },
-    has(target, property) {
+    has: (target, property) => {
       log.push(['has', target, property]);
       return false;
     },
-    isExtensible(target) {
+    isExtensible: target => {
       log.push(['isExtensible', target]);
       return false;
     },
-    ownKeys(target) {
+    ownKeys: target => {
       log.push(['ownKeys', target]);
       return [];
     },
-    preventExtensions(target) {
+    preventExtensions: target => {
       log.push(['preventExtensions', target]);
       return false;
     },
-    set(target, property, value, receiver) {
+    set: (target, property, value, receiver) => {
       log.push(['set', target, property, value, receiver]);
       return false;
     },
-    setPrototypeOf(target, prototype) {
+    setPrototypeOf: (target, prototype) => {
       log.push(['setPrototypeOf', target, prototype]);
       return false;
     },
@@ -191,24 +191,24 @@ test('resolveWithPresence proxy with revoker', async t => {
   l('proxy support now being tested');
   const log = [];
   const presenceEventualHandler = {
-    applyMethod(target, verb, args) {
+    applyMethod: (target, verb, args) => {
       log.push(['eventualSend', target, verb, args]);
       return undefined;
     },
-    apply(target, args) {
+    apply: (target, args) => {
       log.push(['eventualApply', target, args]);
       return undefined;
     },
-    get(target, property) {
+    get: (target, property) => {
       log.push(['eventualGet', target, property]);
       return undefined;
     },
-    set(target, property, value, receiver) {
+    set: (target, property, value, receiver) => {
       // this trap should never run, but it does the default hardcoded behaviour
       presenceEventualHandler.setOnly(target, property, value, receiver);
       return value;
     },
-    setOnly(target, property, value, receiver) {
+    setOnly: (target, property, value, receiver) => {
       log.push(['eventualSetOnly', target, property, value, receiver]);
       return undefined; // traps return value is always ignored
     },
@@ -216,23 +216,23 @@ test('resolveWithPresence proxy with revoker', async t => {
   const proxyTarget = {};
   let thenFetched = false;
   const presenceImmediateHandler = {
-    apply(target, thisArg, args) {
+    apply: (target, thisArg, args) => {
       log.push(['apply', target, thisArg, args]);
       return undefined;
     },
-    construct(target, args, newTarget) {
+    construct: (target, args, newTarget) => {
       log.push(['construct', target, args, newTarget]);
       return {};
     },
-    defineProperty(target, property, descriptor) {
+    defineProperty: (target, property, descriptor) => {
       log.push(['defineProperty', target, property, descriptor]);
       return false;
     },
-    deleteProperty(target, property) {
+    deleteProperty: (target, property) => {
       log.push(['deleteProperty', target, property]);
       return false;
     },
-    get(target, property, receiver) {
+    get: (target, property, receiver) => {
       log.push(['get', target, property, receiver]);
       if (property === 'then') {
         l('step: .then fetched');
@@ -283,35 +283,35 @@ test('resolveWithPresence proxy with revoker', async t => {
       }
       return undefined;
     },
-    getOwnPropertyDescriptor(target, property) {
+    getOwnPropertyDescriptor: (target, property) => {
       log.push(['getOwnPropertyDescriptor', target, property]);
       return undefined;
     },
-    getPrototypeOf(target) {
+    getPrototypeOf: target => {
       log.push(['getPrototypeOf', target]);
       return null;
     },
-    has(target, property) {
+    has: (target, property) => {
       log.push(['has', target, property]);
       return false;
     },
-    isExtensible(target) {
+    isExtensible: target => {
       log.push(['isExtensible', target]);
       return false;
     },
-    ownKeys(target) {
+    ownKeys: target => {
       log.push(['ownKeys', target]);
       return [];
     },
-    preventExtensions(target) {
+    preventExtensions: target => {
       log.push(['preventExtensions', target]);
       return false;
     },
-    set(target, property, value, receiver) {
+    set: (target, property, value, receiver) => {
       log.push(['set', target, property, value, receiver]);
       return false;
     },
-    setPrototypeOf(target, prototype) {
+    setPrototypeOf: (target, prototype) => {
       log.push(['setPrototypeOf', target, prototype]);
       return false;
     },
@@ -388,24 +388,24 @@ test('resolveWithPresence test nr 6', async t => {
   l('proxy support now being tested');
   const log = [];
   const presenceEventualHandler = {
-    applyMethod(target, verb, args) {
+    applyMethod: (target, verb, args) => {
       log.push(['eventualSend', target, verb, args]);
       return undefined;
     },
-    apply(target, args) {
+    apply: (target, args) => {
       log.push(['eventualApply', target, args]);
       return undefined;
     },
-    get(target, property) {
+    get: (target, property) => {
       log.push(['eventualGet', target, property]);
       return undefined;
     },
-    set(target, property, value, receiver) {
+    set: (target, property, value, receiver) => {
       // this trap should never run, but it does the default hardcoded behaviour
       presenceEventualHandler.setOnly(target, property, value, receiver);
       return value;
     },
-    setOnly(target, property, value, receiver) {
+    setOnly: (target, property, value, receiver) => {
       log.push(['eventualSetOnly', target, property, value, receiver]);
       return undefined; // traps return value is always ignored
     },
@@ -413,23 +413,23 @@ test('resolveWithPresence test nr 6', async t => {
   const proxyTarget = {};
   let thenFetched = false;
   const presenceImmediateHandler = {
-    apply(target, thisArg, args) {
+    apply: (target, thisArg, args) => {
       log.push(['apply', target, thisArg, args]);
       return undefined;
     },
-    construct(target, args, newTarget) {
+    construct: (target, args, newTarget) => {
       log.push(['construct', target, args, newTarget]);
       return {};
     },
-    defineProperty(target, property, descriptor) {
+    defineProperty: (target, property, descriptor) => {
       log.push(['defineProperty', target, property, descriptor]);
       return false;
     },
-    deleteProperty(target, property) {
+    deleteProperty: (target, property) => {
       log.push(['deleteProperty', target, property]);
       return false;
     },
-    get(target, property, receiver) {
+    get: (target, property, receiver) => {
       log.push(['get', target, property, receiver]);
       if (property === 'then') {
         l('step: .then fetched');
@@ -480,35 +480,35 @@ test('resolveWithPresence test nr 6', async t => {
       }
       return undefined;
     },
-    getOwnPropertyDescriptor(target, property) {
+    getOwnPropertyDescriptor: (target, property) => {
       log.push(['getOwnPropertyDescriptor', target, property]);
       return undefined;
     },
-    getPrototypeOf(target) {
+    getPrototypeOf: target => {
       log.push(['getPrototypeOf', target]);
       return null;
     },
-    has(target, property) {
+    has: (target, property) => {
       log.push(['has', target, property]);
       return false;
     },
-    isExtensible(target) {
+    isExtensible: target => {
       log.push(['isExtensible', target]);
       return false;
     },
-    ownKeys(target) {
+    ownKeys: target => {
       log.push(['ownKeys', target]);
       return [];
     },
-    preventExtensions(target) {
+    preventExtensions: target => {
       log.push(['preventExtensions', target]);
       return false;
     },
-    set(target, property, value, receiver) {
+    set: (target, property, value, receiver) => {
       log.push(['set', target, property, value, receiver]);
       return false;
     },
-    setPrototypeOf(target, prototype) {
+    setPrototypeOf: (target, prototype) => {
       log.push(['setPrototypeOf', target, prototype]);
       return false;
     },

@@ -6,11 +6,11 @@ import path from 'path';
 import { openJSONStore } from './json-store.js';
 
 // Adapted from https://stackoverflow.com/a/43866992/14073862
-export function generateAccessToken({
+export const generateAccessToken = ({
   stringBase = 'base64url',
   byteLength = 48,
-} = {}) {
-  return new Promise((resolve, reject) =>
+} = {}) =>
+  new Promise((resolve, reject) =>
     crypto.randomBytes(byteLength, (err, buffer) => {
       if (err) {
         reject(err);
@@ -24,9 +24,8 @@ export function generateAccessToken({
       }
     }),
   );
-}
 
-export async function getAccessToken(port) {
+export const getAccessToken = async port => {
   if (typeof port === 'string') {
     const match = port.match(/^(.*:)?(\d+)$/);
     if (match) {
@@ -48,4 +47,4 @@ export async function getAccessToken(port) {
   const accessToken = storage.get(accessTokenKey);
   close();
   return accessToken;
-}
+};

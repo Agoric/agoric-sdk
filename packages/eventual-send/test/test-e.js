@@ -40,9 +40,7 @@ test('E.when', async t => {
 
 test('E method calls', async t => {
   const x = {
-    double(n) {
-      return 2 * n;
-    },
+    double: n => 2 * n,
   };
   const d = E(x).double(6);
   t.is(typeof d.then, 'function', 'return is a thenable');
@@ -57,7 +55,7 @@ test('E sendOnly method calls', async t => {
 
   let count = 0;
   const counter = {
-    incr(n) {
+    incr: n => {
       count += n;
       testIncrDoneResolve(); // only here for the test.
       return count;
@@ -71,9 +69,7 @@ test('E sendOnly method calls', async t => {
 
 test('E call missing method', async t => {
   const x = {
-    double(n) {
-      return 2 * n;
-    },
+    double: n => 2 * n,
   };
   await t.throwsAsync(() => E(x).triple(6), {
     message: 'target has no method "triple", has ["double"]',
@@ -83,7 +79,7 @@ test('E call missing method', async t => {
 test('E sendOnly call missing method', async t => {
   let count = 279;
   const counter = {
-    incr(n) {
+    incr: n => {
       count += n;
       return count;
     },
@@ -97,9 +93,7 @@ test('E sendOnly call missing method', async t => {
 
 test('E call undefined method', async t => {
   const x = {
-    double(n) {
-      return 2 * n;
-    },
+    double: n => 2 * n,
   };
   await t.throwsAsync(() => E(x)(6), {
     message: 'Cannot invoke target as a function; typeof target is "object"',

@@ -6,7 +6,7 @@ import { getReplHandler } from '@agoric/vats/src/repl.js';
 import { getCapTPHandler } from './captp.js';
 
 // This vat contains the HTTP request handler.
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { D } = vatPowers;
   let commandDevice;
   const channelIdToHandle = new Map();
@@ -21,7 +21,7 @@ export function buildRootObject(vatPowers) {
     local: {},
   };
 
-  function doneLoading(subsystems) {
+  const doneLoading = subsystems => {
     LOADING = LOADING.filter(subsys => !subsystems.includes(subsys));
     loadingUpdater.updateState(LOADING);
     if (LOADING.length) {
@@ -29,7 +29,7 @@ export function buildRootObject(vatPowers) {
     } else {
       delete replObjects.home.LOADING;
     }
-  }
+  };
 
   const send = (obj, channelHandles) => {
     // TODO: Make this sane by adding support for multicast to the commandDevice.
@@ -52,7 +52,7 @@ export function buildRootObject(vatPowers) {
   // Map an URL only to its latest handler.
   const urlToHandler = new Map();
 
-  async function registerURLHandler(handler, url) {
+  const registerURLHandler = async (handler, url) => {
     const fallback = await E(handler)
       .getCommandHandler()
       .catch(_ => undefined);
@@ -65,10 +65,10 @@ export function buildRootObject(vatPowers) {
       fallback,
     );
     urlToHandler.set(url, commandHandler);
-  }
+  };
 
   return Far('root', {
-    setCommandDevice(d) {
+    setCommandDevice: d => {
       commandDevice = d;
 
       const replHandler = getReplHandler(replObjects, send, vatPowers);
@@ -76,7 +76,7 @@ export function buildRootObject(vatPowers) {
 
       // Assign the captp handler.
       const captpHandler = Far('captpHandler', {
-        getBootstrap(_otherSide, _meta) {
+        getBootstrap: (_otherSide, _meta) => {
           // Harden only our exported objects, and fetch them afresh each time.
           const exported = {
             loadingNotifier,
@@ -99,16 +99,16 @@ export function buildRootObject(vatPowers) {
     send,
     doneLoading,
 
-    setWallet(wallet) {
+    setWallet: wallet => {
       replObjects.local.wallet = wallet;
       replObjects.home.wallet = wallet;
     },
 
-    setPresences(
+    setPresences: (
       privateObjects = undefined,
       decentralObjects = undefined,
       deprecatedObjects = undefined,
-    ) {
+    ) => {
       // We need to mutate the repl subobjects instead of replacing them.
       if (privateObjects) {
         Object.assign(replObjects.local, privateObjects);
@@ -131,7 +131,7 @@ export function buildRootObject(vatPowers) {
 
     // devices.command invokes our inbound() because we passed to
     // registerInboundHandler()
-    async inbound(count, rawObj) {
+    inbound: async (count, rawObj) => {
       // Launder the data, since the command device tends to pass device nodes
       // when there are empty objects, which screw things up for us.
       // Analysis is in https://github.com/Agoric/agoric-sdk/pull/1956
@@ -188,4 +188,4 @@ export function buildRootObject(vatPowers) {
       }
     },
   });
-}
+};

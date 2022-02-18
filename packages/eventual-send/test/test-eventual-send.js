@@ -30,20 +30,20 @@ test('handlers are always async', async t => {
   const queue = [];
   let target;
   const handler = {
-    applyMethod(o, fn, args) {
+    applyMethod: (o, fn, args) => {
       queue.push([o, fn, args]);
       return 'ful';
     },
   };
   let resolver2;
   const ep2 = new HandledPromise(resolve => (resolver2 = resolve), {
-    applyMethod(p, fn, args) {
+    applyMethod: (p, fn, args) => {
       queue.push(['ep2', fn, args]);
       return 'un';
     },
   });
   const unfulfilledHandler = {
-    applyMethod(p, fn, args) {
+    applyMethod: (p, fn, args) => {
       queue.push(['ep', fn, args]);
       return ep2;
     },
@@ -156,15 +156,9 @@ test('handlers are always async', async t => {
 
 test('new HandledPromise expected errors', async t => {
   const handler = {
-    get(o, _key) {
-      return o;
-    },
-    applyFunction(o, args) {
-      return args.join(',');
-    },
-    applyMethod(o, key, args) {
-      return [key, ...args].join(',');
-    },
+    get: (o, _key) => o,
+    applyFunction: (o, args) => args.join(','),
+    applyMethod: (o, key, args) => [key, ...args].join(','),
   };
 
   // Full handler succeeds.
@@ -259,18 +253,12 @@ test('new HandledPromise(executor, undefined)', async t => {
       const o = {
         num: 123,
         str: 'my string',
-        hello(name, punct = '') {
-          return `Hello, ${name}${punct}`;
-        },
+        hello: (name, punct = '') => `Hello, ${name}${punct}`,
       };
 
       const resolvedRelay = {
-        get(p, key) {
-          return o[key];
-        },
-        applyMethod(p, key, args) {
-          return o[key](...args);
-        },
+        get: (p, key) => o[key],
+        applyMethod: (p, key, args) => o[key](...args),
       };
       resolveWithPresence(resolvedRelay);
     }, 200);
@@ -417,7 +405,11 @@ test('eventual send expected errors', async t => {
     'applyMethod null.notfound()',
   );
   await t.throwsAsync(
-    HandledPromise.applyMethod({ present() {}, other() {} }, 'notfound', []),
+    HandledPromise.applyMethod(
+      { present: () => {}, other: () => {} },
+      'notfound',
+      [],
+    ),
     {
       instanceOf: TypeError,
       message: 'target has no method "notfound", has ["other","present"]',

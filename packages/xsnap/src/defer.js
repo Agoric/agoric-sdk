@@ -5,7 +5,7 @@
  * @param {boolean} _flag
  * @returns {asserts _flag}
  */
-function assert(_flag) {}
+const assert = _flag => {};
 
 /**
  * @template T
@@ -20,7 +20,7 @@ function assert(_flag) {}
  * @template T
  * @returns {Deferred<T>}
  */
-export function defer() {
+export const defer = () => {
   let resolve;
   let reject;
   const promise = new Promise((res, rej) => {
@@ -30,4 +30,4 @@ export function defer() {
   assert(resolve !== undefined);
   assert(reject !== undefined);
   return { promise, resolve, reject };
-}
+};

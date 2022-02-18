@@ -12,7 +12,7 @@ const REQUIRED_AGORIC_START_PACKAGES = [
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-export default async function installMain(progname, rawArgs, powers, opts) {
+export default async (progname, rawArgs, powers, opts) => {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
 
@@ -30,7 +30,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
 
-  async function getWorktreePackagePaths(cwd = '.', map = new Map()) {
+  const getWorktreePackagePaths = async (cwd = '.', map = new Map()) => {
     // run `yarn workspaces info` to get the list of directories to
     // use, instead of a hard-coded list
     const p = pspawn('yarn', ['workspaces', '--silent', 'info'], {
@@ -45,7 +45,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       map.set(name, path.resolve(cwd, location)),
     );
     return map;
-  }
+  };
 
   let subdirs;
   const workTrees = ['.'];
@@ -328,4 +328,4 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
   log.info(chalk.bold.green('Done installing with SDK links'));
   return 0;
-}
+};

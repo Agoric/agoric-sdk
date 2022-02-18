@@ -15,7 +15,7 @@ const streamPeek = new WeakMap(); // for tests to get raw access to the streams
  *
  * @returns {SwingStore}
  */
-export function initEphemeralSwingStore() {
+export const initEphemeralSwingStore = () => {
   const state = new Map();
 
   /**
@@ -27,10 +27,10 @@ export function initEphemeralSwingStore() {
    *
    * @throws if key is not a string.
    */
-  function has(key) {
+  const has = key => {
     assert.typeof(key, 'string');
     return state.has(key);
-  }
+  };
 
   /**
    * Generator function that returns an iterator over all the keys within a
@@ -70,10 +70,10 @@ export function initEphemeralSwingStore() {
    *
    * @throws if key is not a string.
    */
-  function get(key) {
+  const get = key => {
     assert.typeof(key, 'string');
     return state.get(key);
-  }
+  };
 
   /**
    * Store a value for a given key.  The value will replace any prior value if
@@ -84,11 +84,11 @@ export function initEphemeralSwingStore() {
    *
    * @throws if either parameter is not a string.
    */
-  function set(key, value) {
+  const set = (key, value) => {
     assert.typeof(key, 'string');
     assert.typeof(value, 'string');
     state.set(key, value);
-  }
+  };
 
   /**
    * Remove any stored value for a given key.  It is permissible for there to
@@ -98,10 +98,10 @@ export function initEphemeralSwingStore() {
    *
    * @throws if key is not a string.
    */
-  function del(key) {
+  const del = key => {
     assert.typeof(key, 'string');
     state.delete(key);
-  }
+  };
 
   const kvStore = {
     has,
@@ -119,28 +119,28 @@ export function initEphemeralSwingStore() {
 
   const STREAM_START = harden({ itemCount: 0 });
 
-  function insistStreamName(streamName) {
+  const insistStreamName = streamName => {
     assert.typeof(streamName, 'string');
     assert(
       streamName.match(/^[-\w]+$/),
       X`invalid stream name ${q(streamName)}`,
     );
-  }
+  };
 
-  function insistStreamPosition(position) {
+  const insistStreamPosition = position => {
     assert.typeof(position.itemCount, 'number');
     assert(position.itemCount >= 0);
-  }
+  };
 
   /**
    * Close a stream that's open for read or write.
    *
    * @param {string} streamName  The stream to close
    */
-  function closeStream(streamName) {
+  const closeStream = streamName => {
     insistStreamName(streamName);
     streamStatus.delete(streamName);
-  }
+  };
 
   /**
    * Generator function that returns an iterator over the items in a stream.
@@ -151,7 +151,7 @@ export function initEphemeralSwingStore() {
    *
    * @returns {Iterable<string>} an iterable for the items in the named stream
    */
-  function readStream(streamName, startPosition, endPosition) {
+  const readStream = (streamName, startPosition, endPosition) => {
     insistStreamName(streamName);
     const stream = streams.get(streamName) || [];
     assert(
@@ -188,7 +188,7 @@ export function initEphemeralSwingStore() {
       }
       return reader();
     }
-  }
+  };
 
   /**
    * Write to a stream.
@@ -199,7 +199,7 @@ export function initEphemeralSwingStore() {
    *
    * @returns {Object} the new position after writing
    */
-  function writeStreamItem(streamName, item, position) {
+  const writeStreamItem = (streamName, item, position) => {
     insistStreamName(streamName);
     insistStreamPosition(position);
     let stream = streams.get(streamName);
@@ -214,7 +214,7 @@ export function initEphemeralSwingStore() {
     }
     stream[position.itemCount] = item;
     return harden({ itemCount: position.itemCount + 1 });
-  }
+  };
 
   const streamStore = {
     readStream,
@@ -226,22 +226,22 @@ export function initEphemeralSwingStore() {
   /**
    * Commit unsaved changes.
    */
-  function commit() {
+  const commit = () => {
     // Nothing to do here.
-  }
+  };
 
   /**
    * Close the "database", abandoning any changes made since the last commit
    * (if you want to save them, call commit() first).
    */
-  function close() {
+  const close = () => {
     // Nothing to do here.
-  }
+  };
 
   streamPeek.set(streamStore, streams);
 
   return harden({ kvStore, streamStore, commit, close });
-}
+};
 
 /**
  * Produce a representation of all the state found in a swing store.
@@ -258,7 +258,7 @@ export function initEphemeralSwingStore() {
  *   streamStuff: Map<string, Array<string>>,
  * }}  A crude representation of all of the state of `swingStore`
  */
-export function getAllState(swingStore) {
+export const getAllState = swingStore => {
   const { kvStore, streamStore } = swingStore;
   /** @type { Record<string, string> } */
   const kvStuff = {};
@@ -274,7 +274,7 @@ export function getAllState(swingStore) {
     }
   }
   return { kvStuff, streamStuff };
-}
+};
 
 /**
  * Stuff a bunch of state into a swing store.
@@ -289,7 +289,7 @@ export function getAllState(swingStore) {
  *   streamStuff: Map<string, Array<string>>,
  * }} stuff  The state to stuff into `swingStore`
  */
-export function setAllState(swingStore, stuff) {
+export const setAllState = (swingStore, stuff) => {
   const { kvStore, streamStore } = swingStore;
   const { kvStuff, streamStuff } = stuff;
   for (const k of Object.getOwnPropertyNames(kvStuff)) {
@@ -302,4 +302,4 @@ export function setAllState(swingStore, stuff) {
     }
     streamStore.closeStream(streamName);
   }
-}
+};

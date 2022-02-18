@@ -16,7 +16,7 @@ import { defer } from './defer.js';
 
 const decoder = new TextDecoder();
 
-async function main() {
+const main = async () => {
   const xsnapOptions = {
     spawn: childProcess.spawn,
     os: os.type(),
@@ -29,10 +29,10 @@ async function main() {
    * @param {Uint8Array} message
    * @returns {Promise<Uint8Array>}
    */
-  async function handleCommand(message) {
+  const handleCommand = async message => {
     console.log(decoder.decode(message));
     return new Uint8Array();
-  }
+  };
 
   const rl = readline.createInterface({
     input: /** @type {NodeJS.ReadableStream} */ (process.stdin),
@@ -61,11 +61,11 @@ async function main() {
    * @param {string} prompt
    * @returns {Promise<string>}
    */
-  function ask(prompt) {
+  const ask = prompt => {
     const { promise, resolve } = /** @type {Deferred<string>} */ (defer());
     rl.question(prompt, resolve);
     return promise;
-  }
+  };
 
   for (;;) {
     const answer = await ask('xs> ');
@@ -85,6 +85,6 @@ async function main() {
 
   rl.close();
   return vat.close();
-}
+};
 
 main();

@@ -5,7 +5,7 @@ import { getAccessToken } from '@agoric/access-token';
 
 import { assert, details as X } from '@agoric/assert';
 
-export default async function walletMain(progname, rawArgs, powers, opts) {
+export default async (progname, rawArgs, powers, opts) => {
   const { anylogger, fs } = powers;
   const console = anylogger('agoric:wallet');
 
@@ -57,4 +57,4 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
     const browser = opener(walletUrl);
     await new Promise(resolve => browser.on('exit', resolve));
   }
-}
+};

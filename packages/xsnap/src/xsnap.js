@@ -34,9 +34,7 @@ const { freeze } = Object;
  * @param {Uint8Array} arg
  * @returns {Uint8Array}
  */
-function echoCommand(arg) {
-  return arg;
-}
+const echoCommand = arg => arg;
 
 /**
  * @param {XSnapOptions} options
@@ -54,7 +52,7 @@ function echoCommand(arg) {
  * @property {number} [meteringLimit]
  * @property {Record<string, string>} [env]
  */
-export function xsnap(options) {
+export const xsnap = options => {
   const {
     os,
     spawn,
@@ -156,7 +154,7 @@ export function xsnap(options) {
   /**
    * @returns {Promise<RunResult<Uint8Array>>}
    */
-  async function runToIdle() {
+  const runToIdle = async () => {
     for (;;) {
       const { done, value: message } = await messagesFromXsnap.next();
       if (done) {
@@ -197,64 +195,64 @@ export function xsnap(options) {
         await messagesToXsnap.next(await handleCommand(message.subarray(1)));
       }
     }
-  }
+  };
 
   /**
    * @param {string} code
    * @returns {Promise<RunResult<Uint8Array>>}
    */
-  async function evaluate(code) {
+  const evaluate = async code => {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`e${code}`));
       return runToIdle();
     });
     baton = result.then(() => {}).catch(() => {});
     return Promise.race([vatCancelled, result]);
-  }
+  };
 
   /**
    * @param {string} fileName
    * @returns {Promise<void>}
    */
-  async function execute(fileName) {
+  const execute = async fileName => {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`s${fileName}`));
       await runToIdle();
     });
     baton = result.catch(() => {});
     return Promise.race([vatCancelled, result]);
-  }
+  };
 
   /**
    * @param {string} fileName
    * @returns {Promise<void>}
    */
-  async function importModule(fileName) {
+  const importModule = async fileName => {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`m${fileName}`));
       await runToIdle();
     });
     baton = result.catch(() => {});
     return Promise.race([vatCancelled, result]);
-  }
+  };
 
   /**
    * @returns {Promise<void>}
    */
-  async function isReady() {
+  const isReady = async () => {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`R`));
       await runToIdle();
     });
     baton = result.catch(() => {});
     return Promise.race([vatCancelled, result]);
-  }
+  };
 
   /**
    * @param {Uint8Array} message
    * @returns {Promise<RunResult<Uint8Array>>}
    */
-  async function issueCommand(message) {
+  const issueCommand = async message => {
     const result = baton.then(async () => {
       const request = new Uint8Array(message.length + 1);
       request[0] = QUERY;
@@ -267,52 +265,52 @@ export function xsnap(options) {
       () => {},
     );
     return Promise.race([vatCancelled, result]);
-  }
+  };
 
   /**
    * @param {string} message
    * @returns {Promise<RunResult<string>>}
    */
-  async function issueStringCommand(message) {
+  const issueStringCommand = async message => {
     const result = await issueCommand(encoder.encode(message));
     return { ...result, reply: decoder.decode(result.reply) };
-  }
+  };
 
   /**
    * @param {string} file
    * @returns {Promise<void>}
    */
-  async function writeSnapshot(file) {
+  const writeSnapshot = async file => {
     const result = baton.then(async () => {
       await messagesToXsnap.next(encoder.encode(`w${file}`));
       await runToIdle();
     });
     baton = result.catch(() => {});
     return Promise.race([vatExit.promise, baton]);
-  }
+  };
 
   /**
    * @returns {Promise<void>}
    */
-  async function close() {
+  const close = async () => {
     baton = baton.then(async () => {
       await messagesToXsnap.return();
       throw new Error(`${name} closed`);
     });
     baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
     return vatExit.promise;
-  }
+  };
 
   /**
    * @returns {Promise<void>}
    */
-  async function terminate() {
+  const terminate = async () => {
     xsnapProcess.kill();
     baton = Promise.reject(new Error(`${name} terminated`));
     baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
     // Mute the vatExit exception: it is expected.
     return vatExit.promise.catch(() => {});
-  }
+  };
 
   return freeze({
     name,
@@ -326,4 +324,4 @@ export function xsnap(options) {
     import: importModule,
     snapshot: writeSnapshot,
   });
-}
+};

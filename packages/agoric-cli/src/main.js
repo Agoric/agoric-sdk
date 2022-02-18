@@ -25,7 +25,7 @@ const main = async (progname, rawArgs, powers) => {
 
   const program = new Command();
 
-  async function isNotBasedir() {
+  const isNotBasedir = async () => {
     try {
       await fs.stat(STAMP);
       return false;
@@ -34,14 +34,13 @@ const main = async (progname, rawArgs, powers) => {
       program.help();
     }
     return true;
-  }
+  };
 
-  function subMain(fn, args, options) {
-    return fn(progname, args, powers, options).then(
+  const subMain = (fn, args, options) =>
+    fn(progname, args, powers, options).then(
       // This seems to be the only way to propagate the exit code.
       code => process.exit(code || 0),
     );
-  }
 
   program.storeOptionsAsProperties(false);
 

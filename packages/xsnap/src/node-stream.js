@@ -46,7 +46,7 @@ export function writer(output, name = '<unnamed stream>') {
      * @param {Uint8Array} [chunk]
      * @returns {Promise<IteratorResult<void>>}
      */
-    async next(chunk) {
+    next: async chunk => {
       if (!chunk) {
         return continues;
       }
@@ -56,11 +56,11 @@ export function writer(output, name = '<unnamed stream>') {
       }
       return continues;
     },
-    async return() {
+    return: async () => {
       output.end();
       return drained.promise;
     },
-    async throw() {
+    throw: async () => {
       output.end();
       return drained.promise;
     },

@@ -26,7 +26,7 @@ const console = anylogger('fake-chain');
 const PRETEND_BLOCK_DELAY = 5;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
 
-async function makeMapStorage(file) {
+const makeMapStorage = async file => {
   let content;
   const map = new Map();
   map.commit = async () => {
@@ -46,9 +46,9 @@ async function makeMapStorage(file) {
   Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v)));
 
   return map;
-}
+};
 
-export async function connectToFakeChain(basedir, GCI, delay, inbound) {
+export const connectToFakeChain = async (basedir, GCI, delay, inbound) => {
   const initialHeight = 0;
   const mailboxFile = path.join(basedir, `fake-chain-${GCI}-mailbox.json`);
   const bootAddress = `${GCI}-client`;
@@ -77,9 +77,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     ),
   ).pathname;
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
-  function flushChainSends(replay) {
+  const flushChainSends = replay => {
     assert(!replay, X`Replay not implemented`);
-  }
+  };
 
   const { metricsProvider } = getTelemetryProviders({
     console,
@@ -122,59 +122,57 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
 
   const withBlockQueue = makeWithQueue();
-  const unhandledSimulateBlock = withBlockQueue(
-    async function unqueuedSimulateBlock() {
-      // Gather up the new messages into the latest block.
-      thisBlock.push(...intoChain);
-      intoChain = [];
+  const unhandledSimulateBlock = withBlockQueue(async () => {
+    // Gather up the new messages into the latest block.
+    thisBlock.push(...intoChain);
+    intoChain = [];
 
-      blockTime = scaleBlockTime(Date.now());
-      blockHeight += 1;
+    blockTime = scaleBlockTime(Date.now());
+    blockHeight += 1;
 
-      const params = DEFAULT_SIM_SWINGSET_PARAMS;
+    const params = DEFAULT_SIM_SWINGSET_PARAMS;
+    await blockManager(
+      { type: 'BEGIN_BLOCK', blockHeight, blockTime, params },
+      savedChainSends,
+    );
+    for (let i = 0; i < thisBlock.length; i += 1) {
+      const [newMessages, acknum] = thisBlock[i];
       await blockManager(
-        { type: 'BEGIN_BLOCK', blockHeight, blockTime, params },
+        {
+          type: 'DELIVER_INBOUND',
+          peer: bootAddress,
+          messages: newMessages,
+          ack: acknum,
+          blockHeight,
+          blockTime,
+          params,
+        },
         savedChainSends,
       );
-      for (let i = 0; i < thisBlock.length; i += 1) {
-        const [newMessages, acknum] = thisBlock[i];
-        await blockManager(
-          {
-            type: 'DELIVER_INBOUND',
-            peer: bootAddress,
-            messages: newMessages,
-            ack: acknum,
-            blockHeight,
-            blockTime,
-            params,
-          },
-          savedChainSends,
-        );
-      }
-      await blockManager(
-        { type: 'END_BLOCK', blockHeight, blockTime, params },
-        savedChainSends,
-      );
+    }
+    await blockManager(
+      { type: 'END_BLOCK', blockHeight, blockTime, params },
+      savedChainSends,
+    );
 
-      // Done processing, "commit the block".
-      await blockManager(
-        { type: 'COMMIT_BLOCK', blockHeight, blockTime },
-        savedChainSends,
-      );
+    // Done processing, "commit the block".
+    await blockManager(
+      { type: 'COMMIT_BLOCK', blockHeight, blockTime },
+      savedChainSends,
+    );
 
-      // We now advance to the next block.
-      thisBlock = [];
+    // We now advance to the next block.
+    thisBlock = [];
 
-      clearTimeout(nextBlockTimeout);
-      // eslint-disable-next-line no-use-before-define
-      nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
+    clearTimeout(nextBlockTimeout);
+    // eslint-disable-next-line no-use-before-define
+    nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
 
-      // TODO: maybe add latency to the inbound messages.
-      const mailbox = mailboxStorage.get(`${bootAddress}`);
-      const { outbox = [], ack = 0 } = mailbox ? exportMailbox(mailbox) : {};
-      inbound(GCI, outbox, ack);
-    },
-  );
+    // TODO: maybe add latency to the inbound messages.
+    const mailbox = mailboxStorage.get(`${bootAddress}`);
+    const { outbox = [], ack = 0 } = mailbox ? exportMailbox(mailbox) : {};
+    inbound(GCI, outbox, ack);
+  });
 
   const simulateBlock = () =>
     unhandledSimulateBlock().catch(e => {
@@ -183,7 +181,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     });
 
   let totalDeliveries = 0;
-  async function deliver(newMessages, acknum) {
+  const deliver = async (newMessages, acknum) => {
     totalDeliveries += 1;
     console.log(`delivering to ${GCI} (trips=${totalDeliveries})`);
 
@@ -193,7 +191,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       clearTimeout(nextBlockTimeout);
       await simulateBlock();
     }
-  }
+  };
 
   const bootSimChain = async () => {
     if (blockHeight) {
@@ -218,4 +216,4 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
   const batchDelayMs = delay ? delay * 1000 : undefined;
   return makeBatchedDeliver(deliver, batchDelayMs);
-}
+};

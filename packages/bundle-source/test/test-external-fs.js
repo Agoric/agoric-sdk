@@ -1,10 +1,10 @@
 import { test } from './prepare-test-env-ava.js';
 import bundleSource from '../src/index.js';
 
-function evaluate(src, endowments) {
+const evaluate = (src, endowments) => {
   const c = new Compartment(endowments, {}, {});
   return c.evaluate(src);
-}
+};
 
 test(`external require('fs')`, async t => {
   t.plan(1);

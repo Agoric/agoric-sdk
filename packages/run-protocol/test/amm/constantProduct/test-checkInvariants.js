@@ -71,7 +71,7 @@ const prepareRUNOutTest = ({
   ]);
 };
 
-function checkGetInput(t, args, result) {
+const checkGetInput = (t, args, result) => {
   t.falsy(AmountMath.isEmpty(result.swapperGets));
   t.truthy(AmountMath.isGTE(args[0], result.swapperGives));
   t.truthy(AmountMath.isGTE(result.swapperGets, args[2]));
@@ -91,9 +91,9 @@ function checkGetInput(t, args, result) {
   };
   const { x, y } = getXY(xyArgs);
   t.truthy(checkKInvariantSellingX(x, y, result.xIncrement, result.yDecrement));
-}
+};
 
-function checkGetOutput(t, args, result) {
+const checkGetOutput = (t, args, result) => {
   t.falsy(AmountMath.isEmpty(result.swapperGets));
   if (!AmountMath.isEmpty(args[0])) {
     t.truthy(AmountMath.isGTE(args[0], result.swapperGives));
@@ -115,7 +115,7 @@ function checkGetOutput(t, args, result) {
   };
   const { x, y } = getXY(xyArgs);
   t.truthy(checkKInvariantSellingX(x, y, result.xIncrement, result.yDecrement));
-}
+};
 
 const testGetInputPrice = (t, inputs, runIn) => {
   const args = runIn ? prepareRUNInTest(inputs) : prepareRUNOutTest(inputs);

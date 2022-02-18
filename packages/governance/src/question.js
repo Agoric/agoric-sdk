@@ -105,7 +105,7 @@ const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
 
 // QuestionSpec contains the subset of QuestionDetails that can be specified before
 /** @type {LooksLikeClosingRule} */
-function looksLikeClosingRule(closingRule) {
+const looksLikeClosingRule = closingRule => {
   assert(closingRule, X`argument to looksLikeClosingRule cannot be null`);
   assert.typeof(
     closingRule,
@@ -115,7 +115,7 @@ function looksLikeClosingRule(closingRule) {
   Nat(closingRule && closingRule.deadline);
   const timer = closingRule && closingRule.timer;
   assert(passStyleOf(timer) === 'remotable', X`Timer must be a timer ${timer}`);
-}
+};
 
 const assertEnumIncludes = (enumeration, value, name) => {
   assert(

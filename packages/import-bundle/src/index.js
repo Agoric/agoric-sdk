@@ -10,7 +10,7 @@ const { details: X } = assert;
 // importBundle takes the output of bundle-source, and returns a namespace
 // object (with .default, and maybe other properties for named exports)
 
-export async function importBundle(bundle, options = {}) {
+export const importBundle = async (bundle, options = {}) => {
   const {
     filePrefix,
     endowments: optEndowments = {},
@@ -93,7 +93,7 @@ export async function importBundle(bundle, options = {}) {
   const namespace = c.evaluate(actualSource)(filePrefix);
   // namespace.default has the default export
   return namespace;
-}
+};
 
 /*
 importBundle(bundle, { metering: { getMeter, meteringOptions } });

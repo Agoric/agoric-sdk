@@ -29,14 +29,14 @@ const console = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
 
-async function buildSwingset(
+const buildSwingset = async (
   mailboxStorage,
   bridgeOutbound,
   hostStorage,
   vatconfig,
   argv,
   { consensusMode, debugName = undefined, slogCallbacks, slogFile, slogSender },
-) {
+) => {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = await loadSwingsetConfigFile(vatconfig);
   if (config === null) {
@@ -68,12 +68,12 @@ async function buildSwingset(
     bridgeInbound = bd.deliverInbound;
   }
 
-  async function ensureSwingsetInitialized() {
+  const ensureSwingsetInitialized = async () => {
     if (swingsetIsInitialized(hostStorage)) {
       return;
     }
     await initializeSwingset(config, argv, hostStorage, { debugPrefix });
-  }
+  };
   await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(
     hostStorage,
@@ -90,24 +90,24 @@ async function buildSwingset(
   // (either on bootstrap block (0) or in endBlock).
 
   return { controller, mb, bridgeInbound, timer };
-}
+};
 
-function computronCounter({
+const computronCounter = ({
   [BeansPerBlockComputeLimit]: blockComputeLimit,
   [BeansPerVatCreation]: vatCreation,
   [BeansPerXsnapComputron]: xsnapComputron,
-}) {
+}) => {
   assert.typeof(blockComputeLimit, 'bigint');
   assert.typeof(vatCreation, 'bigint');
   assert.typeof(xsnapComputron, 'bigint');
   let totalBeans = 0n;
   /** @type { RunPolicy } */
   const policy = harden({
-    vatCreated() {
+    vatCreated: () => {
       totalBeans += vatCreation;
       return totalBeans < blockComputeLimit;
     },
-    crankComplete(details = {}) {
+    crankComplete: (details = {}) => {
       assert.typeof(details, 'object');
       if (details.computrons) {
         assert.typeof(details.computrons, 'bigint');
@@ -118,24 +118,23 @@ function computronCounter({
       }
       return totalBeans < blockComputeLimit;
     },
-    crankFailed() {
+    crankFailed: () => {
       const failedComputrons = 1000000n; // who knows, 1M is as good as anything
       totalBeans += failedComputrons * xsnapComputron;
       return totalBeans < blockComputeLimit;
     },
   });
   return policy;
-}
+};
 
-function neverStop() {
-  return harden({
+const neverStop = () =>
+  harden({
     vatCreated: () => true,
     crankComplete: () => true,
     crankFailed: () => true,
   });
-}
 
-export async function launch({
+export const launch = async ({
   kernelStateDBDir,
   mailboxStorage,
   setActivityhash,
@@ -148,7 +147,7 @@ export async function launch({
   slogSender,
   consensusMode = true,
   mapSize = DEFAULT_LMDB_MAP_SIZE,
-}) {
+}) => {
   console.info('Launching SwingSet kernel');
 
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
@@ -194,14 +193,14 @@ export async function launch({
       labels: METRIC_LABELS,
     });
 
-  async function crankScheduler(policy, clock = () => Date.now()) {
+  const crankScheduler = async (policy, clock = () => Date.now()) => {
     let now = clock();
     let crankStart = now;
     const blockStart = now;
 
     const instrumentedPolicy = harden({
       ...policy,
-      crankComplete(details) {
+      crankComplete: details => {
         const go = policy.crankComplete(details);
         schedulerCrankTimeHistogram.record(now - crankStart);
         crankStart = now;
@@ -213,9 +212,9 @@ export async function launch({
 
     now = Date.now();
     schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
-  }
+  };
 
-  async function bootstrapBlock(blockTime) {
+  const bootstrapBlock = async blockTime => {
     controller.writeSlogObject({
       type: 'cosmic-swingset-bootstrap-block-start',
       blockTime,
@@ -231,9 +230,9 @@ export async function launch({
     if (setActivityhash) {
       setActivityhash(controller.getActivityhash());
     }
-  }
+  };
 
-  async function endBlock(blockHeight, blockTime, params) {
+  const endBlock = async (blockHeight, blockTime, params) => {
     controller.writeSlogObject({
       type: 'cosmic-swingset-end-block-start',
       blockHeight,
@@ -250,22 +249,26 @@ export async function launch({
     if (setActivityhash) {
       setActivityhash(controller.getActivityhash());
     }
-  }
+  };
 
-  async function saveChainState() {
+  const saveChainState = async () => {
     // Save the mailbox state.
     await mailboxStorage.commit();
-  }
+  };
 
-  async function saveOutsideState(savedHeight, savedActions, savedChainSends) {
+  const saveOutsideState = async (
+    savedHeight,
+    savedActions,
+    savedChainSends,
+  ) => {
     kvStore.set(
       SWING_STORE_META_KEY,
       JSON.stringify([savedHeight, savedActions, savedChainSends]),
     );
     await commit();
-  }
+  };
 
-  async function deliverInbound(sender, messages, ack) {
+  const deliverInbound = async (sender, messages, ack) => {
     assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
     controller.writeSlogObject({
       type: 'cosmic-swingset-deliver-inbound',
@@ -276,9 +279,9 @@ export async function launch({
       return;
     }
     console.debug(`mboxDeliver:   ADDED messages`);
-  }
+  };
 
-  async function doBridgeInbound(source, body) {
+  const doBridgeInbound = async (source, body) => {
     controller.writeSlogObject({
       type: 'cosmic-swingset-bridge-inbound',
       source,
@@ -287,9 +290,9 @@ export async function launch({
     // the inbound bridge will push messages onto the kernel run-queue for
     // delivery+dispatch to some handler vat
     bridgeInbound(source, body);
-  }
+  };
 
-  async function beginBlock(blockHeight, blockTime, _params) {
+  const beginBlock = async (blockHeight, blockTime, _params) => {
     controller.writeSlogObject({
       type: 'cosmic-swingset-begin-block',
       blockHeight,
@@ -300,7 +303,7 @@ export async function launch({
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
       addedToQueue,
     );
-  }
+  };
 
   const [savedHeight, savedActions, savedChainSends] = JSON.parse(
     kvStore.get(SWING_STORE_META_KEY) || '[0, [], []]',
@@ -319,4 +322,4 @@ export async function launch({
     savedActions,
     savedChainSends,
   };
-}
+};

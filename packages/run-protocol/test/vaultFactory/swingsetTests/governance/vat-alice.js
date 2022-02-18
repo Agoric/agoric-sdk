@@ -95,9 +95,8 @@ const build = async (log, zoe, brands, payments, timer) => {
 };
 
 /** @type {BuildRootObjectForTestVat} */
-export function buildRootObject(vatPowers) {
-  return Far('root', {
+export const buildRootObject = vatPowers =>
+  Far('root', {
     build: (zoe, brands, payments, timer) =>
       build(vatPowers.testLog, zoe, brands, payments, timer),
   });
-}

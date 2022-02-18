@@ -44,13 +44,13 @@ const trace = makeTracer('TestST');
 
 const BASIS_POINTS = 10000n;
 
-async function makeBundle(sourceRoot) {
+const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
   const path = new URL(url).pathname;
   const contractBundle = await bundleSource(path);
   trace('makeBundle', sourceRoot);
   return contractBundle;
-}
+};
 
 // makeBundle is a slow step, so we do it once for all the tests.
 const bundlePs = {
@@ -59,26 +59,26 @@ const bundlePs = {
   VaultFactory: makeBundle(contractRoots.VaultFactory),
 };
 
-function setupAssets() {
+const setupAssets = () => {
   // setup collateral assets
   const aethKit = makeIssuerKit('aEth');
 
   return harden({
     aethKit,
   });
-}
+};
 
 // Some notifier updates aren't propagating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
 // have all their callbacks run
-async function waitForPromisesToSettle() {
+const waitForPromisesToSettle = async () => {
   const pk = makePromiseKit();
   setImmediate(pk.resolve);
   return pk.promise;
-}
+};
 
-function makeRates(runBrand) {
-  return harden({
+const makeRates = runBrand =>
+  harden({
     // margin required to maintain a loan
     liquidationMargin: makeRatio(105n, runBrand),
     // periodic interest rate (per charging period)
@@ -86,9 +86,8 @@ function makeRates(runBrand) {
     // charge to create or increase loan balance
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
   });
-}
 
-async function setupAmmAndElectorate(
+const setupAmmAndElectorate = async (
   timer,
   zoe,
   aethLiquidity,
@@ -96,7 +95,7 @@ async function setupAmmAndElectorate(
   runIssuer,
   aethIssuer,
   electorateTerms,
-) {
+) => {
   const runBrand = await E(runIssuer).getBrand();
   const centralR = { issuer: runIssuer, brand: runBrand };
 
@@ -147,7 +146,7 @@ async function setupAmmAndElectorate(
     invitationAmount,
     space,
   };
-}
+};
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -155,12 +154,12 @@ async function setupAmmAndElectorate(
  * @param {Brand} runBrand
  * @param {bigint} runInitialLiquidity
  */
-async function getRunFromFaucet(
+const getRunFromFaucet = async (
   zoe,
   feeMintAccess,
   runBrand,
   runInitialLiquidity,
-) {
+) => {
   const bundle = await bundlePs.faucet;
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
@@ -181,7 +180,7 @@ async function getRunFromFaucet(
 
   const runPayment = await E(faucetSeat).getPayout('RUN');
   return runPayment;
-}
+};
 
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
@@ -197,7 +196,7 @@ async function getRunFromFaucet(
  * @param {bigint} runInitialLiquidity
  * @param {Issuer} aethIssuer
  */
-async function setupServices(
+const setupServices = async (
   loanTiming,
   priceList,
   unitAmountIn,
@@ -208,7 +207,7 @@ async function setupServices(
   aethLiquidity,
   runInitialLiquidity,
   aethIssuer,
-) {
+) => {
   const { zoe, feeMintAccess } = await setUpZoeForTest();
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -294,7 +293,7 @@ async function setupServices(
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
   };
-}
+};
 
 test('first', async t => {
   const {

@@ -12,7 +12,7 @@ const dirname = path.dirname(filename);
 const srcDir = `${dirname}/../src`;
 const bundlesDir = `${dirname}/../bundles`;
 
-async function writeSourceBundle(contractFilename, outputPath) {
+const writeSourceBundle = async (contractFilename, outputPath) => {
   const bundlePath = new URL(
     await importMetaResolve(contractFilename, import.meta.url),
   ).pathname;
@@ -24,9 +24,9 @@ async function writeSourceBundle(contractFilename, outputPath) {
     });
     fs.writeFileSync(outputPath, `export default ${JSON.stringify(bundle)};`);
   });
-}
+};
 
-async function main() {
+const main = async () => {
   const contractOutputs = [
     [`${srcDir}/pegasus.js`, `${bundlesDir}/bundle-pegasus.js`],
   ];
@@ -34,7 +34,7 @@ async function main() {
     // eslint-disable-next-line no-await-in-loop
     await writeSourceBundle(contractFilename, outputPath);
   }
-}
+};
 
 main().then(
   _ => process.exit(0),

@@ -5,20 +5,19 @@ import { parseArchive } from '@endo/compartment-mapper/import-archive.js';
 import test from 'ava';
 import bundleSource from '../src/index.js';
 
-function evaluate(src, endowments) {
+const evaluate = (src, endowments) => {
   const c = new Compartment(endowments, {}, {});
   return c.evaluate(src);
-}
+};
 
-export function makeSanityTests(stackFiltering) {
+export const makeSanityTests = stackFiltering => {
   lockdown({ errorTaming: 'unsafe', stackFiltering });
   Error.stackTraceLimit = Infinity;
 
   const prefix = stackFiltering === 'concise' ? '' : '/bundled-source/.../';
 
-  function stackContains(stack, filePattern) {
-    return stack.indexOf(`${prefix}${filePattern}`) >= 0;
-  }
+  const stackContains = (stack, filePattern) =>
+    stack.indexOf(`${prefix}${filePattern}`) >= 0;
 
   test(`endoZipBase64`, async t => {
     const { endoZipBase64 } = await bundleSource(
@@ -170,4 +169,4 @@ export function makeSanityTests(stackFiltering) {
     // eslint-disable-next-line no-eval
     (1, eval)(`(${src1})`);
   });
-}
+};

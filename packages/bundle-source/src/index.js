@@ -27,7 +27,7 @@ const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 const readPowers = makeNodeReadPowers(fs);
 
-function rewriteComment(node, unmapLoc) {
+const rewriteComment = (node, unmapLoc) => {
   node.type = 'CommentBlock';
   // Within comments...
   node.value = node.value
@@ -44,9 +44,9 @@ function rewriteComment(node, unmapLoc) {
     unmapLoc(node.loc);
   }
   // console.log(JSON.stringify(node, undefined, 2));
-}
+};
 
-async function makeLocationUnmapper({ sourceMap, ast }) {
+const makeLocationUnmapper = async ({ sourceMap, ast }) => {
   // We rearrange the rolled-up chunk according to its sourcemap to move
   // its source lines back to the right place.
   // eslint-disable-next-line no-await-in-loop
@@ -77,11 +77,11 @@ async function makeLocationUnmapper({ sourceMap, ast }) {
   } finally {
     consumer.destroy();
   }
-}
+};
 
-function transformAst(ast, unmapLoc) {
+const transformAst = (ast, unmapLoc) => {
   (babelTraverse.default || babelTraverse)(ast, {
-    enter(p) {
+    enter: p => {
       const {
         loc,
         comments,
@@ -104,12 +104,12 @@ function transformAst(ast, unmapLoc) {
       (trailingComments || []).forEach(node => rewriteComment(node, unmapLoc));
     },
   });
-}
+};
 
-async function transformSource(
+const transformSource = async (
   code,
   { sourceMap, useLocationUnmap, sourceType } = {},
-) {
+) => {
   // Parse the rolled-up chunk with Babel.
   // We are prepared for different module systems.
   const ast = (babelParser.parse || babelParser)(code, {
@@ -128,15 +128,15 @@ async function transformSource(
 
   // Now generate the sources with the new positions.
   return (babelGenerate.default || babelGenerate)(ast, { retainLines: true });
-}
+};
 
-async function bundleZipBase64(startFilename, dev, powers = {}) {
+const bundleZipBase64 = async (startFilename, dev, powers = {}) => {
   const base = new URL(`file://${process.cwd()}`).toString();
   const entry = new URL(startFilename, base).toString();
   const bytes = await makeArchive({ ...readPowers, ...powers }, entry, {
     dev,
     moduleTransforms: {
-      async mjs(sourceBytes) {
+      mjs: async sourceBytes => {
         const source = textDecoder.decode(sourceBytes);
         const { code: object } = await transformSource(source, {
           sourceType: 'module',
@@ -148,13 +148,13 @@ async function bundleZipBase64(startFilename, dev, powers = {}) {
   });
   const endoZipBase64 = encodeBase64(bytes);
   return { endoZipBase64, moduleFormat: 'endoZipBase64' };
-}
+};
 
-async function bundleNestedEvaluateAndGetExports(
+const bundleNestedEvaluateAndGetExports = async (
   startFilename,
   moduleFormat,
   powers,
-) {
+) => {
   const {
     commonjsPlugin = commonjs0,
     rollup = rollup0,
@@ -257,7 +257,7 @@ ${sourceMap}`;
     // This function's source code is inlined in the output bundle.
     // It creates an evaluable string for a given module filename.
     const filePrefix = DEFAULT_FILE_PREFIX;
-    function createEvalString(filename) {
+    const createEvalString = filename => {
       const code = sourceBundle[filename];
       if (!code) {
         return undefined;
@@ -272,7 +272,7 @@ ${sourceMap}`;
 })
 //# sourceURL=${filePrefix}/${filename}
 `;
-    }
+    };
 
     // This function's source code is inlined in the output bundle.
     // It figures out the exports from a given module filename.
@@ -280,7 +280,7 @@ ${sourceMap}`;
     const nestedEvaluate = _src => {
       throw Error('need to override nestedEvaluate');
     };
-    function computeExports(filename, exportPowers, exports) {
+    const computeExports = (filename, exportPowers, exports) => {
       const { require: systemRequire, _log } = exportPowers;
       // This captures the endowed require.
       const match = filename.match(/^(.*)\/[^/]+$/);
@@ -352,7 +352,7 @@ ${sourceMap}`;
 
       // log('evaluating', code);
       return nestedEvaluate(code)(contextRequire, exports);
-    }
+    };
 
     source = `\
 function getExportWithNestedEvaluate(filePrefix) {
@@ -379,14 +379,10 @@ ${sourceMap}`;
 
   // console.log(sourceMap);
   return { source, sourceMap, moduleFormat };
-}
+};
 
 /** @type {BundleSource} */
-export default async function bundleSource(
-  startFilename,
-  options = {},
-  powers = undefined,
-) {
+export default async (startFilename, options = {}, powers = undefined) => {
   if (typeof options === 'string') {
     options = { format: options };
   }
@@ -399,4 +395,4 @@ export default async function bundleSource(
     return bundleZipBase64(startFilename, dev, powers);
   }
   return bundleNestedEvaluateAndGetExports(startFilename, moduleFormat, powers);
-}
+};

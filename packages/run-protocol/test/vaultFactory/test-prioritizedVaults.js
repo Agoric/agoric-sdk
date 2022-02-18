@@ -16,44 +16,44 @@ import { makePrioritizedVaults } from '../../src/vaultFactory/prioritizedVaults.
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
 // have all their callbacks run
-async function waitForPromisesToSettle() {
+const waitForPromisesToSettle = async () => {
   const pk = makePromiseKit();
   setImmediate(pk.resolve);
   return pk.promise;
-}
+};
 
-function makeCollector() {
+const makeCollector = () => {
   const ratios = [];
 
-  function lookForRatio(vaultPair) {
+  const lookForRatio = vaultPair => {
     ratios.push(vaultPair.debtToCollateral);
-  }
+  };
 
   return {
     lookForRatio,
     getRates: () => ratios,
   };
-}
+};
 
-function makeRescheduler() {
+const makeRescheduler = () => {
   let called = false;
 
-  async function fakeReschedule() {
+  const fakeReschedule = async () => {
     called = true;
     return called;
-  }
+  };
 
   return {
     called: () => called,
     resetCalled: () => (called = false),
     fakeReschedule,
   };
-}
+};
 
-function makeFakeVaultKit(
+const makeFakeVaultKit = (
   initDebt,
   initCollateral = AmountMath.make(initDebt.brand, 100n),
-) {
+) => {
   let debt = initDebt;
   let collateral = initCollateral;
   const vault = Far('Vault', {
@@ -66,7 +66,7 @@ function makeFakeVaultKit(
     vault,
     liquidate: () => {},
   });
-}
+};
 
 test('add to vault', async t => {
   const { brand } = makeIssuerKit('ducats');

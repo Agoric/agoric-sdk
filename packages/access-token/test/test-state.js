@@ -8,7 +8,7 @@ import {
   isJSONStore,
 } from '../src/json-store.js';
 
-function rimraf(dirPath) {
+const rimraf = dirPath => {
   try {
     // Node.js 16.8.0 warns:
     // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
@@ -23,9 +23,9 @@ function rimraf(dirPath) {
       throw e;
     }
   }
-}
+};
 
-function testStorage(t, storage) {
+const testStorage = (t, storage) => {
   t.falsy(storage.has('missing'));
   t.is(storage.get('missing'), undefined);
 
@@ -54,7 +54,7 @@ function testStorage(t, storage) {
     foo3: 'f3',
   };
   t.deepEqual(getAllState(storage), reference, 'check state after changes');
-}
+};
 
 test('storageInFile', t => {
   const dbDir = 'testdb';

@@ -3,27 +3,22 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-function makeBobMaker() {
-  return Far('bobMaker', {
-    make(sharingServiceP) {
+const makeBobMaker = () =>
+  Far('bobMaker', {
+    make: sharingServiceP => {
       const bob = Far('bob', {
-        findSomething(key) {
-          return E(sharingServiceP)
+        findSomething: key =>
+          E(sharingServiceP)
             .grabSharedMap(key)
             .then(sharedMap => {
               return E(E(sharingServiceP).validate(sharedMap)).lookup(key);
-            });
-        },
+            }),
       });
       return bob;
     },
   });
-}
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    makeBobMaker(_host) {
-      return makeBobMaker();
-    },
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    makeBobMaker: _host => makeBobMaker(),
   });
-}

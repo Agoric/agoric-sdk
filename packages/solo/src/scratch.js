@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 
-export default function makeScratchPad() {
+export default () => {
   const map = new Map();
 
   const keys = async () => {
@@ -36,4 +36,4 @@ export default function makeScratchPad() {
       return key;
     },
   });
-}
+};

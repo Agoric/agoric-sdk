@@ -60,12 +60,12 @@ test.before(async t => {
   t.context.data = { kernelBundles, config };
 });
 
-async function main(t, argv) {
+const main = async (t, argv) => {
   const { kernelBundles, config } = t.context.data;
   const controller = buildVatController(config, argv, { kernelBundles });
   await E(controller).run();
   return E(controller).dump();
-}
+};
 
 const expectedVaultFactoryLog = [
   '=> alice and the vaultFactory are set up',

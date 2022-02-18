@@ -4,11 +4,11 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '../../../src/index.js';
 
-function makeAliceMaker(log) {
-  return Far('aliceMaker', {
-    make(issuer, brand, oldPaymentP) {
+const makeAliceMaker = log =>
+  Far('aliceMaker', {
+    make: (issuer, brand, oldPaymentP) => {
       const alice = Far('alice', {
-        async testSplitPayments() {
+        testSplitPayments: async () => {
           log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentP));
           const splitPayments = await E(issuer).split(
             oldPaymentP,
@@ -27,12 +27,8 @@ function makeAliceMaker(log) {
       return alice;
     },
   });
-}
 
-export function buildRootObject(vatPowers) {
-  return Far('root', {
-    makeAliceMaker() {
-      return makeAliceMaker(vatPowers.testLog);
-    },
+export const buildRootObject = vatPowers =>
+  Far('root', {
+    makeAliceMaker: () => makeAliceMaker(vatPowers.testLog),
   });
-}

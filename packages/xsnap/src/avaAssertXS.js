@@ -15,7 +15,7 @@ const { assign, freeze, keys } = Object;
  * @type {(x: unknown, y: unknown) => Delta }
  * @typedef { null | { actual: unknown, expected?: unknown }} Delta
  */
-function deepDifference(x, y) {
+const deepDifference = (x, y) => {
   if (Object.is(x, y)) {
     return null;
   }
@@ -58,7 +58,7 @@ function deepDifference(x, y) {
     actual: { type: typeof x, value: x },
     expected: { type: typeof y, value: y },
   };
-}
+};
 
 /**
  * Test status reporting inspired by Test Anything Protocol (TAP)
@@ -70,30 +70,29 @@ function deepDifference(x, y) {
  * @typedef { ReturnType<typeof tapFormat> } TapFormat
  * @typedef {import('./avaXS').TapMessage} TapMessage
  */
-function tapFormat(send) {
-  return freeze({
+const tapFormat = send =>
+  freeze({
     /** @type {(qty: number) => void} */
-    plan(qty) {
+    plan: qty => {
       send({ plan: qty });
     },
     /** @type {(testNum: number, txt?: string) => void} */
-    ok(testNum, txt) {
+    ok: (testNum, txt) => {
       send({ status: 'ok', id: testNum, message: txt });
     },
     /** @type {(testNum: number, txt: string) => void} */
-    skip(testNum, txt) {
+    skip: (testNum, txt) => {
       send({ status: 'SKIP', id: testNum, message: txt });
     },
     /** @type {(testNum: number, txt?: string) => void} */
-    notOk(testNum, txt) {
+    notOk: (testNum, txt) => {
       send({ status: 'not ok', id: testNum, message: txt });
     },
     /** @type {(txt: string, label?: string) => void} */
-    diagnostic(txt, label) {
+    diagnostic: (txt, label) => {
       send({ note: txt, label });
     },
   });
-}
 
 /** @type { Harness | null } */
 let theHarness = null; // ISSUE: ambient
@@ -103,7 +102,7 @@ let theHarness = null; // ISSUE: ambient
  *
  * @typedef { ReturnType<typeof createHarness>} Harness
  */
-function createHarness(send) {
+const createHarness = send => {
   let testNum = 0;
   /** @type {((ot: { context: Object }) => Promise<void>)[]} */
   const beforeHooks = [];
@@ -117,29 +116,27 @@ function createHarness(send) {
       return context;
     },
     /** @type {(label: string, hook: () => Promise<void>) => void } */
-    before(_label, hook) {
+    before: (_label, hook) => {
       beforeHooks.push(hook);
     },
     /** @type { (ok: boolean) => number } */
-    finish(_ok) {
+    finish: _ok => {
       testNum += 1;
       return testNum;
     },
     /** @type { (name: string, thunk: () => Promise<void>) => void } */
-    queue(name, thunk) {
+    queue: (name, thunk) => {
       if (name in suitesToRun) {
         throw Error(`duplicate name ${name}`);
       }
       suitesToRun[name] = thunk;
     },
-    testNames() {
-      return keys(suitesToRun);
-    },
+    testNames: () => keys(suitesToRun),
     /**
      * @param {string} name
      * @returns { Promise<void> }
      */
-    async run(name) {
+    run: async name => {
       for await (const hook of beforeHooks) {
         await hook({ context });
       }
@@ -153,7 +150,7 @@ function createHarness(send) {
     theHarness = it;
   }
   return it;
-}
+};
 
 /**
  * @param {*} exc
@@ -161,7 +158,7 @@ function createHarness(send) {
  * @returns {null | { expected: unknown, actual: unknown }}
  * @typedef {{ instanceOf: Function } | { message: string | RegExp }=} Expectation
  */
-function checkExpectation(exc, expectation) {
+const checkExpectation = (exc, expectation) => {
   if (!expectation) return null;
   if ('instanceOf' in expectation) {
     if (exc instanceof expectation.instanceOf) {
@@ -183,7 +180,7 @@ function checkExpectation(exc, expectation) {
     }
   }
   throw Error(`not implemented: ${JSON.stringify(expectation)}`);
-}
+};
 
 /**
  * Emulate ava assertion API
@@ -195,39 +192,39 @@ function checkExpectation(exc, expectation) {
  *
  * @typedef {ReturnType<typeof makeTester>} Tester
  */
-function makeTester(htest, out) {
+const makeTester = (htest, out) => {
   /** @type {(result: boolean, info?: string) => void} */
-  function assert(result, info) {
+  const assert = (result, info) => {
     const testNum = htest.finish(result);
     if (result) {
       out.ok(testNum, info);
     } else {
       out.notOk(testNum, info);
     }
-  }
+  };
 
   /**
    * @param {unknown} value
    * @param {string=} msg
    */
-  function truthy(value, msg = 'should be truthy') {
+  const truthy = (value, msg = 'should be truthy') => {
     assert(!!value, msg);
-  }
+  };
 
   const t = freeze({
     /** @param {number} count */
-    plan(count) {
+    plan: count => {
       out.plan(count);
     },
     get context() {
       return htest.context;
     },
     /** @param {string} message */
-    pass(message) {
+    pass: message => {
       assert(true, message);
     },
     /** @param {string} message */
-    fail(message) {
+    fail: message => {
       assert(false, message);
     },
     assert,
@@ -236,47 +233,47 @@ function makeTester(htest, out) {
      * @param {unknown} value
      * @param {string=} message
      */
-    falsy(value, message = 'should be falsy') {
+    falsy: (value, message = 'should be falsy') => {
       assert(!value, message);
     },
     /**
      * @param {unknown} value
      * @param {string=} message
      */
-    true(value, message = 'should be true') {
+    true: (value, message = 'should be true') => {
       assert(value === true, message);
     },
     /**
      * @param {unknown} value
      * @param {string=} message
      */
-    false(value, message = 'should be false') {
+    false: (value, message = 'should be false') => {
       assert(value === false, message);
     },
     /** @type {(a: unknown, b: unknown, message?: string) => void} */
-    is(a, b, message = 'should be identical') {
+    is: (a, b, message = 'should be identical') => {
       assert(Object.is(a, b), message);
     },
     /** @type {(a: unknown, b: unknown, message?: string) => void} */
-    not(a, b, message = 'should not be identical') {
+    not: (a, b, message = 'should not be identical') => {
       assert(!Object.is(a, b), message);
     },
     /** @type {(actual: unknown, expected: unknown, message?: string) => void } */
-    deepEqual(actual, expected, message = 'should be deep equal') {
+    deepEqual: (actual, expected, message = 'should be deep equal') => {
       const delta = deepDifference(actual, expected);
       assert(delta === null, `${message}: ${JSON.stringify(delta)}`);
     },
     /** @type {(a: unknown, b: unknown, message?: string) => void} */
-    notDeepEqual(a, b, message = 'should not be deep equal') {
+    notDeepEqual: (a, b, message = 'should not be deep equal') => {
       const delta = deepDifference(a, b);
       assert(delta !== null, `${message}: ${JSON.stringify(delta)}`);
     },
     /** @type {(a: unknown, b: unknown, message?: string) => void} */
-    like(_a, _b, _message = 'should be like') {
+    like: (_a, _b, _message = 'should be like') => {
       throw Error('not implemented');
     },
     /** @type {(fn: () => unknown, e?: Expectation, message?: string) => void } */
-    throws(fn, expectation, message = `should throw like ${expectation}`) {
+    throws: (fn, expectation, message = `should throw like ${expectation}`) => {
       try {
         fn();
         assert(false, message);
@@ -286,7 +283,7 @@ function makeTester(htest, out) {
       }
     },
     /** @type {(fn: () => unknown, message?: string) => void } */
-    notThrows(fn, message) {
+    notThrows: (fn, message) => {
       try {
         fn();
       } catch (ex) {
@@ -296,11 +293,11 @@ function makeTester(htest, out) {
       assert(true, message);
     },
     /** @type {(thrower: () => Promise<unknown>, expectation?: Expectation, message?: string) => Promise<void> } */
-    async throwsAsync(
+    throwsAsync: async (
       thrower,
       expectation,
       message = `should reject like ${expectation}`,
-    ) {
+    ) => {
       try {
         await (typeof thrower === 'function' ? thrower() : thrower);
         assert(false, message);
@@ -310,7 +307,7 @@ function makeTester(htest, out) {
       }
     },
     /** @type {(thrower: () => Promise<unknown>, message?: string) => Promise<void> } */
-    async notThrowsAsync(nonThrower, message) {
+    notThrowsAsync: async (nonThrower, message) => {
       try {
         await (typeof nonThrower === 'function' ? nonThrower() : nonThrower);
       } catch (ex) {
@@ -322,7 +319,7 @@ function makeTester(htest, out) {
   });
 
   return t;
-}
+};
 
 /**
  * @param {string} label

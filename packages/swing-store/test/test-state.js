@@ -14,7 +14,7 @@ import {
   isSwingStore,
 } from '../src/swingStore.js';
 
-function rimraf(dirPath) {
+const rimraf = dirPath => {
   try {
     // Node.js 16.8.0 warns:
     // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
@@ -29,9 +29,9 @@ function rimraf(dirPath) {
       throw e;
     }
   }
-}
+};
 
-function testKVStore(t, store) {
+const testKVStore = (t, store) => {
   const kvStore = store.kvStore;
   t.falsy(kvStore.has('missing'));
   t.is(kvStore.get('missing'), undefined);
@@ -64,7 +64,7 @@ function testKVStore(t, store) {
     streamStuff: new Map(),
   };
   t.deepEqual(getAllState(store), reference, 'check state after changes');
-}
+};
 
 test('in-memory kvStore read/write', t => {
   testKVStore(t, initSwingStore(null));
@@ -90,7 +90,7 @@ test('persistent kvStore read/write/re-open', t => {
   close2();
 });
 
-function testStreamStore(t, dbDir) {
+const testStreamStore = (t, dbDir) => {
   const { streamStore, commit, close } = initSwingStore(dbDir);
 
   const start = streamStore.STREAM_START;
@@ -127,7 +127,7 @@ function testStreamStore(t, dbDir) {
 
   commit();
   close();
-}
+};
 
 test('in-memory streamStore read/write', t => {
   testStreamStore(t, null);
@@ -141,7 +141,7 @@ test('persistent streamStore read/write', t => {
   testStreamStore(t, dbDir);
 });
 
-function testStreamStoreModeInterlock(t, dbDir) {
+const testStreamStoreModeInterlock = (t, dbDir) => {
   const { streamStore, commit, close } = initSwingStore(dbDir);
   const start = streamStore.STREAM_START;
 
@@ -164,7 +164,7 @@ function testStreamStoreModeInterlock(t, dbDir) {
 
   commit();
   close();
-}
+};
 
 test('in-memory streamStore mode interlock', t => {
   testStreamStoreModeInterlock(t, null);

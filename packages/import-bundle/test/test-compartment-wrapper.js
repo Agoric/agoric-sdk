@@ -11,28 +11,26 @@ const { details: X } = assert;
 // this (pass in a hardened `addMilage` endowment), but there are metering
 // use cases that don't involve voluntary participation by oldSrc.
 
-function milageTransform(oldSrc) {
+const milageTransform = oldSrc => {
   assert(
     oldSrc.indexOf('getOdometer') === -1,
     X`forbidden access to 'getOdometer' in oldSrc`,
   );
   return oldSrc.replace(/addMilage\(\)/g, 'getOdometer().add(1)');
-}
+};
 
 // add a lexical that the original code cannot reach
-function makeOdometer() {
+const makeOdometer = () => {
   let counter = 0;
-  function add(count) {
+  const add = count => {
     counter += count;
-  }
-  function reset() {
+  };
+  const reset = () => {
     counter = 0; // forbidden
-  }
-  function read() {
-    return counter;
-  }
+  };
+  const read = () => counter;
   return { add, read, reset };
-}
+};
 
 const createChild = `() => new Compartment({console})`;
 const doAdd = `addMilage()`;
@@ -73,7 +71,7 @@ const attemptResetByTransform = `() => {
   c.evaluate('getTaboo().reset()');
 }`;
 
-function check(t, c, odometer, n) {
+const check = (t, c, odometer, n) => {
   t.is(odometer.read(), 0, `${n}.start`);
   c.evaluate(doAdd);
   t.is(odometer.read(), 1, `${n}.doAdd`);
@@ -132,13 +130,11 @@ function check(t, c, odometer, n) {
 
   t.is(c.evaluate('WeakMap'), 'replaced');
   t.is(c.evaluate('globalThis.WeakMap'), 'replaced');
-}
+};
 
 test('wrap', t => {
   const odometer = makeOdometer();
-  function getOdometer() {
-    return odometer;
-  }
+  const getOdometer = () => odometer;
 
   const inescapableTransforms = [milageTransform];
   const inescapableGlobalLexicals = { getOdometer };

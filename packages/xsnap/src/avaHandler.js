@@ -22,10 +22,10 @@ const decoder = new TextDecoder();
  *          TapMessage | Summary } item
  * @typedef {import('./avaXS').Summary} Summary
  */
-function send(item) {
+const send = item => {
   const msg = encoder.encode(JSON.stringify(item)).buffer;
   return issueCommand(msg);
-}
+};
 
 /**
  * @param { string } startFilename
@@ -38,7 +38,7 @@ const bundleSource = async (startFilename, ...args) => {
 
 const harness = test.createHarness(send); // ISSUE: global mutable state
 
-const testRequire = function require(specifier) {
+const testRequire = specifier => {
   switch (specifier) {
     case 'ava':
       return test;
@@ -63,7 +63,7 @@ const testRequire = function require(specifier) {
 };
 
 /** @param {ArrayBuffer} rawMessage */
-function handler(rawMessage) {
+const handler = rawMessage => {
   /**
    * @type {{ method: 'loadScript', source: string } | { method: 'runTest', name: string }}
    */
@@ -117,6 +117,6 @@ function handler(rawMessage) {
       console.log('bad method', msg);
   }
   return undefined;
-}
+};
 
 globalThis.handleCommand = harden(handler);

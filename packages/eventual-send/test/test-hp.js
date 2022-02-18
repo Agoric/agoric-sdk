@@ -8,7 +8,7 @@ test('chained properties', async t => {
   const data = {};
   const queue = [];
   const handler = {
-    applyMethod(_o, prop, args) {
+    applyMethod: (_o, prop, args) => {
       // Support: o~.[prop](...args) remote method invocation
       queue.push([0, prop, args]);
       return data;
@@ -45,7 +45,7 @@ test('chained properties', async t => {
 test('no local stalls', async t => {
   const log = [];
   const target = {
-    call(count) {
+    call: count => {
       log.push(`called ${count}`);
     },
   };
@@ -85,7 +85,7 @@ test('no local stalls', async t => {
 test('simple resolveWithPresence', async t => {
   const log = [];
   const presenceHandler = {
-    applyMethod(target, verb, args) {
+    applyMethod: (target, verb, args) => {
       log.push(['applyMethod', target, verb, args]);
       return undefined;
     },
@@ -103,14 +103,14 @@ test('simple resolveWithPresence', async t => {
 test('resolveWithPresence pipelining', async t => {
   const logA = [];
   const unresolvedHandler = {
-    applyMethod(target, verb, args) {
+    applyMethod: (target, verb, args) => {
       logA.push(['applyMethod', target, verb, args]);
       return undefined;
     },
   };
   const logB = [];
   const presenceHandler = {
-    applyMethod(target, verb, args) {
+    applyMethod: (target, verb, args) => {
       logB.push(['applyMethod', target, verb, args]);
       return undefined;
     },
@@ -136,7 +136,7 @@ test('resolveWithPresence pipelining', async t => {
 
 test('resolveWithPresence return value is resolution', async t => {
   const presenceHandler = {
-    applyMethod(target, verb, args) {
+    applyMethod: (target, verb, args) => {
       const muffler = [];
       muffler.push(target);
       muffler.push(verb);

@@ -12,29 +12,29 @@ const STREAM_START = { itemCount: 0 };
  * @param { unknown } streamName
  * @returns { asserts streamName is string }
  */
-function insistStreamName(streamName) {
+const insistStreamName = streamName => {
   assert.typeof(streamName, 'string');
   assert(streamName.match(/^[-\w]+$/), X`invalid stream name ${q(streamName)}`);
   return undefined;
-}
+};
 
 /**
  * @param {unknown} position
  * @returns { asserts position is StreamPosition }
  */
-function insistStreamPosition(position) {
+const insistStreamPosition = position => {
   assert.typeof(position, 'object');
   assert(position);
   assert.typeof(position.itemCount, 'number');
   assert(position.itemCount >= 0);
   return undefined;
-}
+};
 
 /**
  * @param {string} dbDir
  * @param {{ sqlite3?: typeof import('better-sqlite3') }} [io]
  */
-export function sqlStreamStore(dbDir, io) {
+export const sqlStreamStore = (dbDir, io) => {
   const { sqlite3 = sqlite3ambient } = io || {};
   const filePath = path.join(dbDir, 'streams.sqlite');
   const db = sqlite3(
@@ -57,7 +57,7 @@ export function sqlStreamStore(dbDir, io) {
    * @param {StreamPosition} startPosition
    * @param {StreamPosition} endPosition
    */
-  function readStream(streamName, startPosition, endPosition) {
+  const readStream = (streamName, startPosition, endPosition) => {
     insistStreamName(streamName);
     assert(
       !streamStatus.get(streamName),
@@ -103,7 +103,7 @@ export function sqlStreamStore(dbDir, io) {
     streamStatus.set(streamName, 'reading');
 
     return reader();
-  }
+  };
 
   /**
    * @param {string} streamName
@@ -149,4 +149,4 @@ export function sqlStreamStore(dbDir, io) {
     commit,
     STREAM_START,
   });
-}
+};

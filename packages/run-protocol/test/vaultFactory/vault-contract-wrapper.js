@@ -17,7 +17,7 @@ const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
 
 /** @type {ContractStartFn} */
-export async function start(zcf, privateArgs) {
+export const start = async (zcf, privateArgs) => {
   console.log(`contract started`);
   assert.typeof(privateArgs.feeMintAccess, 'object');
 
@@ -30,7 +30,7 @@ export async function start(zcf, privateArgs) {
 
   const { zcfSeat: vaultFactorySeat } = zcf.makeEmptySeatKit();
 
-  function reallocateReward(amount, fromSeat, otherSeat) {
+  const reallocateReward = (amount, fromSeat, otherSeat) => {
     vaultFactorySeat.incrementBy(
       fromSeat.decrementBy(
         harden({
@@ -43,28 +43,16 @@ export async function start(zcf, privateArgs) {
     } else {
       zcf.reallocate(vaultFactorySeat, fromSeat);
     }
-  }
+  };
 
   /** @type {InnerVaultManager} */
   const managerMock = Far('vault manager mock', {
-    getLiquidationMargin() {
-      return makeRatio(105n, runBrand);
-    },
-    getLoanFee() {
-      return makeRatio(500n, runBrand, BASIS_POINTS);
-    },
-    getInterestRate() {
-      return makeRatio(5n, runBrand);
-    },
-    getCollateralBrand() {
-      return collateralBrand;
-    },
-    getChargingPeriod() {
-      return SECONDS_PER_HOUR * 24n;
-    },
-    getRecordingPeriod() {
-      return SECONDS_PER_HOUR * 24n * 7n;
-    },
+    getLiquidationMargin: () => makeRatio(105n, runBrand),
+    getLoanFee: () => makeRatio(500n, runBrand, BASIS_POINTS),
+    getInterestRate: () => makeRatio(5n, runBrand),
+    getCollateralBrand: () => collateralBrand,
+    getChargingPeriod: () => SECONDS_PER_HOUR * 24n,
+    getRecordingPeriod: () => SECONDS_PER_HOUR * 24n * 7n,
     reallocateReward,
   });
 
@@ -89,7 +77,7 @@ export async function start(zcf, privateArgs) {
 
   zcf.setTestJig(() => ({ collateralKit, runMint, vault, timer }));
 
-  async function makeHook(seat) {
+  const makeHook = async seat => {
     const { notifier } = await openLoan(seat);
 
     return {
@@ -97,26 +85,20 @@ export async function start(zcf, privateArgs) {
       runMint,
       collateralKit,
       actions: Far('vault actions', {
-        add() {
-          return vault.makeAdjustBalancesInvitation();
-        },
+        add: () => vault.makeAdjustBalancesInvitation(),
         accrueInterestAndAddToPool,
       }),
       notifier,
     };
-  }
+  };
 
   console.log(`makeContract returning`);
 
   const vaultAPI = Far('vaultAPI', {
-    makeAdjustBalancesInvitation() {
-      return vault.makeAdjustBalancesInvitation();
-    },
-    mintRun(amount) {
-      return paymentFromZCFMint(zcf, runMint, amount);
-    },
+    makeAdjustBalancesInvitation: () => vault.makeAdjustBalancesInvitation(),
+    mintRun: amount => paymentFromZCFMint(zcf, runMint, amount),
   });
 
   const testInvitation = zcf.makeInvitation(makeHook, 'foo');
   return harden({ creatorInvitation: testInvitation, creatorFacet: vaultAPI });
-}
+};

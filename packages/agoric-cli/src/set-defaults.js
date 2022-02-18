@@ -6,7 +6,7 @@ import {
   finishCosmosGenesis,
 } from './chain-config.js';
 
-export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
+export default async (progname, rawArgs, powers, opts) => {
   const { anylogger, fs } = powers;
   const log = anylogger('agoric:set-defaults');
 
@@ -88,4 +88,4 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
     await create(genesisFile, newGenesisJson);
   }
-}
+};

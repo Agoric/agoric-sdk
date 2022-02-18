@@ -31,7 +31,7 @@ export const running = (process, { exec, spawn }) => {
       const cp = it.exec(cmd);
       let outbuf = '';
       const stdout = new Writable({
-        write(data, encoding, callback) {
+        write: (data, encoding, callback) => {
           outbuf += String(data);
           callback();
         },
@@ -83,7 +83,7 @@ export const running = (process, { exec, spawn }) => {
       }
       if (writeCb) {
         const writable = new Writable({
-          write(chunk, encoding, callback) {
+          write: (chunk, encoding, callback) => {
             try {
               writeCb(chunk, encoding);
             } catch (e) {

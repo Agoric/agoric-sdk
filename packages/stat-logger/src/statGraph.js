@@ -4,7 +4,7 @@ import path from 'path';
 
 const { details: X } = assert;
 
-function scanMax(filePath, fields) {
+const scanMax = (filePath, fields) => {
   const lines = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n');
   const headers = lines[0].split('\t');
   const headerMap = [];
@@ -35,9 +35,9 @@ function scanMax(filePath, fields) {
     }
   }
   return { field: maxField, value: maxValue, filePath };
-}
+};
 
-function scanMaxFile(filePaths, fields) {
+const scanMaxFile = (filePaths, fields) => {
   let max = {
     value: -1,
     field: null,
@@ -50,9 +50,9 @@ function scanMaxFile(filePaths, fields) {
     }
   }
   return max;
-}
+};
 
-export function initGraphSpec(filePaths, xField, xLabel, yFields, yLabel) {
+export const initGraphSpec = (filePaths, xField, xLabel, yFields, yLabel) => {
   const maxGraph = scanMaxFile(filePaths, yFields);
   const statsPath = maxGraph.filePath;
   const spec = {
@@ -117,18 +117,18 @@ export function initGraphSpec(filePaths, xField, xLabel, yFields, yLabel) {
     ],
   };
   return spec;
-}
+};
 
-export function addDataToGraphSpec(spec, statsPath) {
+export const addDataToGraphSpec = (spec, statsPath) => {
   const dataElement = {
     name: statsPath,
     format: { type: 'tsv' },
     url: `file://${statsPath}`,
   };
   spec.data.push(dataElement);
-}
+};
 
-export function addGraphToGraphSpec(spec, tag, statsPath, yField, color) {
+export const addGraphToGraphSpec = (spec, tag, statsPath, yField, color) => {
   if (!tag) {
     tag = path.basename(statsPath);
   }
@@ -150,9 +150,9 @@ export function addGraphToGraphSpec(spec, tag, statsPath, yField, color) {
     },
   };
   spec.marks.push(lineElement);
-}
+};
 
-export async function renderGraph(spec, outputPath, type = 'png') {
+export const renderGraph = async (spec, outputPath, type = 'png') => {
   if (spec.data.length === 0) {
     throw new Error('graph spec contains no data');
   } else if (spec.marks.length === 0) {
@@ -199,4 +199,4 @@ export async function renderGraph(spec, outputPath, type = 'png') {
   stream.on('data', chunk => {
     out.write(chunk);
   });
-}
+};

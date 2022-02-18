@@ -61,13 +61,13 @@ const verifyToken = (actual, expected) => {
   return !failed;
 };
 
-export async function makeHTTPListener(
+export const makeHTTPListener = async (
   basedir,
   port,
   host,
   rawInboundCommand,
   walletHtmlDir = undefined,
-) {
+) => {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (
     body,
@@ -113,7 +113,7 @@ export async function makeHTTPListener(
   app.use(
     morgan(`:method :url :status :res[content-length] - :response-time ms`, {
       stream: {
-        write(msg) {
+        write: msg => {
           log(msg.trimRight());
         },
       },
@@ -235,7 +235,7 @@ export async function makeHTTPListener(
 
   server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
 
-  const pingInterval = setInterval(function ping() {
+  const pingInterval = setInterval(() => {
     wss.clients.forEach(ws => {
       if (!ws.isAlive) {
         ws.terminate();
@@ -250,7 +250,7 @@ export async function makeHTTPListener(
 
   let lastChannelID = 0;
 
-  function newChannel(ws, req) {
+  const newChannel = (ws, req) => {
     lastChannelID += 1;
     const channelID = lastChannelID;
     const meta = { ...req, channelID };
@@ -306,10 +306,10 @@ export async function makeHTTPListener(
         ).catch(_ => {});
       }
     });
-  }
+  };
   wss.on('connection', newChannel);
 
-  function sendJSON(rawObj) {
+  const sendJSON = rawObj => {
     const { meta: { channelID } = {} } = rawObj;
     const obj = { ...rawObj };
     delete obj.meta;
@@ -325,7 +325,7 @@ export async function makeHTTPListener(
       // we no longer have active connections.
       log.debug(`[${channelID}]: channel not found`);
     }
-  }
+  };
 
   return sendJSON;
-}
+};

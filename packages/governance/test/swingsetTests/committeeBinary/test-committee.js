@@ -62,12 +62,12 @@ test.before(async t => {
   t.context.data = { kernelBundles, config };
 });
 
-async function main(t, argv) {
+const main = async (t, argv) => {
   const { kernelBundles, config } = t.context.data;
   const controller = await buildVatController(config, argv, { kernelBundles });
   await controller.run();
   return controller.dump();
-}
+};
 
 const expectedCommitteeBinaryStartLog = [
   '=> voter vat is set up',

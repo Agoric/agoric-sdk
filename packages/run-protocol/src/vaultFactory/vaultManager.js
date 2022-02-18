@@ -73,7 +73,7 @@ export const makeVaultManager = (
     getInterestRate: () => getLoanParams()[INTEREST_RATE_KEY].value,
     getChargingPeriod: () => timingParams[CHARGING_PERIOD_KEY].value,
     getRecordingPeriod: () => timingParams[RECORDING_PERIOD_KEY].value,
-    async getCollateralQuote() {
+    getCollateralQuote: async () => {
       // get a quote for one unit of the collateral
       const displayInfo = await E(collateralBrand).getDisplayInfo();
       const decimalPlaces = (displayInfo && displayInfo.decimalPlaces) || 0n;

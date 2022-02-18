@@ -4,10 +4,7 @@ import { E } from '@agoric/eventual-send';
 
 const PONG_TIMEOUT = 10_000;
 
-export default async function deployPlugin(
-  homePromise,
-  { installUnsafePlugin },
-) {
+export default async (homePromise, { installUnsafePlugin }) => {
   const plugin = await installUnsafePlugin('./src/plugin.js', {});
   const result = await Promise.race([
     E(plugin).ping(),
@@ -16,4 +13,4 @@ export default async function deployPlugin(
   if (result !== 'pong') {
     throw new Error(`ping failed ${result}`);
   }
-}
+};

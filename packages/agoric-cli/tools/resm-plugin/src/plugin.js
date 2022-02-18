@@ -4,12 +4,10 @@ import { start } from './output';
 
 export const bootPlugin = () => {
   return Far('plugin', {
-    start(_opts) {
+    start: _opts => {
       console.log(start);
       return Far('plugin start', {
-        async ping() {
-          return 'pong';
-        },
+        ping: async () => 'pong',
       });
     },
   });

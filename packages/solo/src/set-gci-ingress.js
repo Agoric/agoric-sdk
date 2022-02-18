@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
+export default (basedir, GCI, rpcAddresses, chainID) => {
   const myAddrFn = path.join(basedir, 'ag-cosmos-helper-address');
   const myAddr = fs.readFileSync(myAddrFn).toString().trim();
   const fn = path.join(basedir, 'connections.json');
@@ -73,4 +73,4 @@ export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
     connections.push(...conns),
   );
   fs.writeFileSync(fn, `${JSON.stringify(connections, undefined, 2)}\n`);
-}
+};

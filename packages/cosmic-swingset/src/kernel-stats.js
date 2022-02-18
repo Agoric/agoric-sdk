@@ -53,7 +53,7 @@ const recordToKey = record =>
     Object.entries(record).sort(([ka], [kb]) => (ka < kb ? -1 : 1)),
   );
 
-export function makeSlogCallbacks({ metricMeter, labels }) {
+export const makeSlogCallbacks = ({ metricMeter, labels }) => {
   // Legacy because ValueRecorder thing Does not seem to be a passable
   const nameToBaseMetric = makeLegacyMap('baseMetricName');
   nameToBaseMetric.init(
@@ -145,42 +145,37 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
    * time spent in the vat for startup and delivery.
    */
   const slogCallbacks = {
-    startup(_method, [vatID], finisher) {
-      return wrapDeltaMS(finisher, deltaMS => {
+    startup: (_method, [vatID], finisher) =>
+      wrapDeltaMS(finisher, deltaMS => {
         const group = getVatGroup(vatID);
         getGroupedMetric('swingset_vat_startup', group).record(deltaMS);
-      });
-    },
-    delivery(_method, [vatID], finisher) {
-      return wrapDeltaMS(
-        finisher,
-        (deltaMS, [[_status, _problem, meterUsage]]) => {
-          const group = getVatGroup(vatID);
-          getGroupedMetric('swingset_vat_delivery', group).record(deltaMS);
-          if (meterUsage) {
-            // Add to aggregated metering stats.
-            for (const [key, value] of Object.entries(meterUsage)) {
-              if (key === 'meterType') {
-                // eslint-disable-next-line no-continue
-                continue;
-              }
-              getGroupedMetric(`swingset_meter_usage`, group, {
-                // The meterType is an instance-specific label--a change in it
-                // will result in the old value being discarded.
-                ...(meterUsage.meterType && {
-                  meterType: meterUsage.meterType,
-                }),
-                stat: key,
-              }).record(value || 0);
+      }),
+    delivery: (_method, [vatID], finisher) =>
+      wrapDeltaMS(finisher, (deltaMS, [[_status, _problem, meterUsage]]) => {
+        const group = getVatGroup(vatID);
+        getGroupedMetric('swingset_vat_delivery', group).record(deltaMS);
+        if (meterUsage) {
+          // Add to aggregated metering stats.
+          for (const [key, value] of Object.entries(meterUsage)) {
+            if (key === 'meterType') {
+              // eslint-disable-next-line no-continue
+              continue;
             }
+            getGroupedMetric(`swingset_meter_usage`, group, {
+              // The meterType is an instance-specific label--a change in it
+              // will result in the old value being discarded.
+              ...(meterUsage.meterType && {
+                meterType: meterUsage.meterType,
+              }),
+              stat: key,
+            }).record(value || 0);
           }
-        },
-      );
-    },
+        }
+      }),
   };
 
   return harden(slogCallbacks);
-}
+};
 
 /**
  * @param {Object} param0
@@ -189,12 +184,12 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
  * @param {Console} param0.log
  * @param {Record<string, any>} param0.labels
  */
-export function exportKernelStats({
+export const exportKernelStats = ({
   controller,
   metricMeter,
   log = console,
   labels,
-}) {
+}) => {
   const kernelStatsMetrics = new Map();
   const expectedKernelStats = new Set();
 
@@ -214,14 +209,14 @@ export function exportKernelStats({
     );
   });
 
-  function warnUnexpectedKernelStat(key) {
+  const warnUnexpectedKernelStat = key => {
     if (!expectedKernelStats.has(key)) {
       log.warn(`Unexpected SwingSet kernel statistic`, key);
       expectedKernelStats.add(key);
     }
-  }
+  };
 
-  function checkKernelStats(stats) {
+  const checkKernelStats = stats => {
     const notYetFoundKernelStats = new Set(kernelStatsMetrics.keys());
     Object.keys(stats).forEach(key => {
       notYetFoundKernelStats.delete(key);
@@ -230,7 +225,7 @@ export function exportKernelStats({
     notYetFoundKernelStats.forEach(key => {
       log.warn(`Expected SwingSet kernel statistic`, key, `not found`);
     });
-  }
+  };
 
   // We check everything on initialization.  Other checks happen when scraping.
   checkKernelStats(controller.getStats());
@@ -261,4 +256,4 @@ export function exportKernelStats({
     .bind(labels);
 
   return { schedulerCrankTimeHistogram, schedulerBlockTimeHistogram };
-}
+};

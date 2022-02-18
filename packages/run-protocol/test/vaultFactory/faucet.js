@@ -7,13 +7,13 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 // VaultFactory can reliably liquidate.
 
 /** @type {ContractStartFn} */
-export async function start(zcf, privateArgs) {
+export const start = async (zcf, privateArgs) => {
   const { feeMintAccess } = privateArgs;
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
 
-  function makeFaucetInvitation() {
+  const makeFaucetInvitation = () => {
     /** @param {ZCFSeat} seat */
-    async function faucetHook(seat) {
+    const faucetHook = async seat => {
       assertProposalShape(seat, { want: { RUN: null } });
 
       const {
@@ -22,11 +22,11 @@ export async function start(zcf, privateArgs) {
       runMint.mintGains(harden({ RUN: runAmount }), seat);
       seat.exit();
       return `success ${runAmount.value}`;
-    }
+    };
 
     return zcf.makeInvitation(faucetHook, 'provide RUN');
-  }
+  };
 
   const creatorFacet = Far('faucetInvitationMaker', { makeFaucetInvitation });
   return harden({ creatorFacet });
-}
+};

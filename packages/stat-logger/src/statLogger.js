@@ -1,7 +1,7 @@
 import fs from 'fs';
 import process from 'process';
 
-export function makeStatLogger(tag, headers, options) {
+export const makeStatLogger = (tag, headers, options) => {
   const dir = (options && options.dir) || '.';
   if (!tag) {
     tag = `${process.pid}`;
@@ -11,14 +11,14 @@ export function makeStatLogger(tag, headers, options) {
   out.write(headers.join('\t'));
   out.write('\n');
 
-  function log(sample) {
+  const log = sample => {
     out.write(sample.join('\t'));
     out.write('\n');
-  }
+  };
 
-  function close() {
+  const close = () => {
     out.end();
-  }
+  };
 
   return { log, close };
-}
+};

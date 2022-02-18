@@ -29,7 +29,7 @@ const RETRY_DELAY_MS = 1000;
 
 const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
 
-export default async function deployMain(progname, rawArgs, powers, opts) {
+export default async (progname, rawArgs, powers, opts) => {
   const { anylogger, fs, makeWebSocket, now } = powers;
   const console = anylogger('agoric:deploy');
 
@@ -302,4 +302,4 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
   // Start the retry process.
   retryWebsocket();
   return exit.promise;
-}
+};

@@ -22,7 +22,7 @@ const { freeze } = Object;
  *   unlinkSync: typeof import('fs').unlinkSync,
  * }} io
  */
-export function makeSnapStore(
+export const makeSnapStore = (
   root,
   {
     tmpName,
@@ -34,7 +34,7 @@ export function makeSnapStore(
     unlink,
     unlinkSync,
   },
-) {
+) => {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
   /**
@@ -43,7 +43,7 @@ export function makeSnapStore(
    * @returns { Promise<T> }
    * @template T
    */
-  async function withTempName(thunk, prefix = 'tmp') {
+  const withTempName = async (thunk, prefix = 'tmp') => {
     const name = await ptmpName({
       tmpdir: root,
       template: `${prefix}-XXXXXX.xss`,
@@ -59,7 +59,7 @@ export function makeSnapStore(
       }
     }
     return result;
-  }
+  };
 
   /**
    * @param {string} dest basename, relative to root
@@ -67,7 +67,7 @@ export function makeSnapStore(
    * @returns { Promise<T> }
    * @template T
    */
-  async function atomicWrite(dest, thunk) {
+  const atomicWrite = async (dest, thunk) => {
     assert(!dest.includes('/'));
     const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
     let result;
@@ -82,29 +82,29 @@ export function makeSnapStore(
       }
     }
     return result;
-  }
+  };
 
   /** @type {(input: string, f: NodeJS.ReadWriteStream, output: string) => Promise<void>} */
-  async function filter(input, f, output) {
+  const filter = async (input, f, output) => {
     const source = createReadStream(input);
     const destination = createWriteStream(output);
     await pipe(source, f, destination);
-  }
+  };
 
   /** @type {(filename: string) => Promise<string>} */
-  async function fileHash(filename) {
+  const fileHash = async filename => {
     const hash = createHash('sha256');
     const input = createReadStream(filename);
     await pipe(input, hash);
     return hash.digest('hex');
-  }
+  };
 
   /** @param { unknown } hash */
-  function hashPath(hash) {
+  const hashPath = hash => {
     assert.typeof(hash, 'string');
     assert(!hash.includes('/'));
     return resolve(root, `${hash}.gz`);
-  }
+  };
 
   /** @type { Set<string> } */
   const toDelete = new Set();
@@ -113,8 +113,8 @@ export function makeSnapStore(
    * @param {(fn: string) => Promise<void>} saveRaw
    * @returns { Promise<string> } sha256 hash of (uncompressed) snapshot
    */
-  async function save(saveRaw) {
-    return withTempName(async snapFile => {
+  const save = async saveRaw =>
+    withTempName(async snapFile => {
       await saveRaw(snapFile);
       const h = await fileHash(snapFile);
       if (toDelete.has(h)) {
@@ -129,15 +129,14 @@ export function makeSnapStore(
       );
       return h;
     }, 'save-raw');
-  }
 
   /**
    * @param {string} hash
    * @param {(fn: string) => Promise<T>} loadRaw
    * @template T
    */
-  async function load(hash, loadRaw) {
-    return withTempName(async raw => {
+  const load = async (hash, loadRaw) =>
+    withTempName(async raw => {
       await filter(hashPath(hash), createGunzip(), raw);
       const actual = await fileHash(raw);
       // console.log('load', { raw, hash });
@@ -146,17 +145,16 @@ export function makeSnapStore(
       const result = await loadRaw(raw);
       return result;
     }, `${hash}-load`);
-  }
 
   /**
    * @param {string} hash
    */
-  function prepareToDelete(hash) {
+  const prepareToDelete = hash => {
     hashPath(hash); // check constraints early
     toDelete.add(hash);
-  }
+  };
 
-  function commitDeletes(ignoreErrors = false) {
+  const commitDeletes = (ignoreErrors = false) => {
     const errors = [];
     for (const hash of toDelete) {
       const fullPath = hashPath(hash);
@@ -174,7 +172,7 @@ export function makeSnapStore(
     if (errors.length) {
       throw Error(JSON.stringify(errors));
     }
-  }
+  };
 
   return freeze({ load, save, prepareToDelete, commitDeletes });
-}
+};
