@@ -66,7 +66,7 @@ test('createVat by named bundlecap', async t => {
   const { c } = await doTestSetup(t);
   const kpid = c.queueToVatRoot(
     'bootstrap',
-    'byNamedBundleCap',
+    'byNamedBundlecap',
     capargs(['new13']),
   );
   await c.run();
@@ -104,7 +104,7 @@ test('broken vat creation fails', async t => {
 
 test('error creating vat from non-bundle', async t => {
   const { c } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot('bootstrap', 'nonBundleCap', capargs([]));
+  const kpid = c.queueToVatRoot('bootstrap', 'nonBundlecap', capargs([]));
   await c.run();
   t.is(c.kpStatus(kpid), 'rejected');
   t.deepEqual(
