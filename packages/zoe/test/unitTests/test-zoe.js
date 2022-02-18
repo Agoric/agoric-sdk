@@ -41,16 +41,34 @@ test(`E(zoe).install bad bundle`, async t => {
   });
 });
 
-test(`E(zoe).install`, async t => {
+test(`E(zoe).install(bundle)`, async t => {
   const { zoe } = setup();
   const contractPath = `${dirname}/../../src/contracts/atomicSwap`;
   const bundle = await bundleSource(contractPath);
   const installation = await E(zoe).install(bundle);
+  t.is(passStyleOf(installation), 'remotable');
+});
+
+test(`E(zoe).installBundleID bad id`, async t => {
+  const { zoe } = setup();
+  // @ts-ignore deliberate invalid arguments for testing
+  await t.throwsAsync(() => E(zoe).installBundleID(), {
+    message: 'a bundle ID must be provided',
+  });
+});
+
+test(`E(zoe).installBundleID(bundleID)`, async t => {
+  const { zoe, vatAdminState } = setup();
+  const contractPath = `${dirname}/../../src/contracts/atomicSwap`;
+  const bundle = await bundleSource(contractPath);
+  vatAdminState.installBundle('b1-atomic', bundle);
+  const installation = await E(zoe).installBundleID('b1-atomic');
   // TODO Check the integrity of the installation by its hash.
   // https://github.com/Agoric/agoric-sdk/issues/3859
   // const hash = await E(installation).getHash();
   // assert.is(hash, 'XXX');
-  t.is(await E(installation).getBundle(), bundle);
+  // NOTE: the bundle ID is now the hash
+  t.is(await E(zoe).getBundleIDFromInstallation(installation), 'b1-atomic');
 });
 
 test(`E(zoe).startInstance bad installation`, async t => {

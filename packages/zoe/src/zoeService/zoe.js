@@ -16,6 +16,7 @@ import '../../exported.js';
 import '../internal-types.js';
 
 import { AssetKind } from '@agoric/ertp';
+import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -61,6 +62,8 @@ const makeZoeKit = (
     shutdownZoeVat,
   );
 
+  const getBundleCapFromID = bundleID => E(vatAdminSvc).getBundleCap(bundleID);
+
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
@@ -72,8 +75,10 @@ const makeZoeKit = (
     depositPayments,
     getAssetKindByBrand,
     makeZoeInstanceStorageManager,
-    install,
+    installBundle,
+    installBundleID,
     unwrapInstallation,
+    getBundleIDFromInstallation,
     getPublicFacet,
     getBrands,
     getIssuers,
@@ -83,6 +88,7 @@ const makeZoeKit = (
     invitationIssuer,
   } = makeZoeStorageManager(
     createZCFVat,
+    getBundleCapFromID,
     getFeeIssuerKit,
     shutdownZoeVat,
     feeIssuer,
@@ -117,7 +123,8 @@ const makeZoeKit = (
 
   /** @type {ZoeService} */
   const zoeService = Far('zoeService', {
-    install,
+    install: installBundle,
+    installBundleID,
     startInstance,
     offer,
     /**
@@ -145,6 +152,7 @@ const makeZoeKit = (
     getInstallation,
     getInvitationDetails,
     getConfiguration,
+    getBundleIDFromInstallation,
   });
 
   // startInstance must pass the ZoeService to the newly created ZCF
