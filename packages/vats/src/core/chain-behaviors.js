@@ -176,9 +176,10 @@ export const startTimerService = async ({
   devices: { timer: timerDevice },
   vats: { timer: timerVat },
   consume: { client },
-  produce: { chainTimerService },
+  produce: { chainTimerService: produceTimer },
 }) => {
-  chainTimerService.resolve(E(timerVat).createTimerService(timerDevice));
+  const chainTimerService = E(timerVat).createTimerService(timerDevice);
+  produceTimer.resolve(chainTimerService);
   return E(client).assignBundle([_addr => ({ chainTimerService })]);
 };
 harden(startTimerService);
