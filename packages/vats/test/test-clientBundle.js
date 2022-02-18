@@ -10,7 +10,7 @@ import { makeZoeKit } from '@agoric/zoe';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeClientManager } from '../src/core/chain-behaviors.js';
-import { makePromiseSpace } from '../src/core/utils.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 import { connectFaucet, showAmount } from '../src/demoIssuers.js';
 import { buildRootObject as bldMintRoot } from '../src/vat-mints.js';
 import { makeClientBanks } from '../src/core/basic-behaviors.js';
@@ -36,6 +36,8 @@ test('connectFaucet produces payments', async t => {
     /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat }} } */ (
       space
     );
+  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  produce.agoricNames.resolve(agoricNames);
 
   const { zoe, feeMintAccess } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
@@ -86,10 +88,10 @@ test('connectFaucet produces payments', async t => {
   };
 
   await Promise.all([
-    makeClientManager({ consume, produce }),
-    connectFaucet({ consume, produce }),
-    makeClientBanks({ consume, produce }),
-    stubProps({ consume, produce }),
+    makeClientManager({ consume, produce, ...spaces }),
+    connectFaucet({ consume, produce, ...spaces }),
+    makeClientBanks({ consume, produce, ...spaces }),
+    stubProps({ consume, produce, ...spaces }),
   ]);
   const m = await produce.mints;
   t.truthy(m);

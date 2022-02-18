@@ -373,5 +373,14 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
       vaultFactoryCreator: 'vaultFactory',
       zoe: true,
     },
+    issuer: {
+      consume: { RUN: 'zoe' },
+    },
+    brand: {
+      consume: { RUN: 'zoe' },
+    },
+    instance: {
+      consume: { amm: 'amm' },
+    },
   },
 });
