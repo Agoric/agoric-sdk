@@ -195,6 +195,8 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       produce: {
         contractGovernor: 'zoe',
         binaryVoteCounter: 'zoe',
+        committee: 'zoe',
+        noActionElectorate: 'zoe',
       },
     },
     instance: {
