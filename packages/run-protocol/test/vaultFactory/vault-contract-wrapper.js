@@ -1,20 +1,25 @@
-// @ts-nocheck
+// @ts-check
 
 import '@agoric/zoe/src/types.js';
 
-import { makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  makeRatio,
+  multiplyRatios,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 
+import { makeNotifierKit } from '@agoric/notifier';
 import { makeVaultKit } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
+const DAY = SECONDS_PER_HOUR * 24n;
 
 /** @type {ContractStartFn} */
 export async function start(zcf, privateArgs) {
@@ -29,6 +34,11 @@ export async function start(zcf, privateArgs) {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   const { zcfSeat: vaultFactorySeat } = zcf.makeEmptySeatKit();
+
+  let vaultCounter = 0;
+
+  let currentInterest = makeRatio(5n, runBrand); // 5%
+  let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
   function reallocateReward(amount, fromSeat, otherSeat) {
     vaultFactorySeat.incrementBy(
@@ -45,7 +55,7 @@ export async function start(zcf, privateArgs) {
     }
   }
 
-  /** @type {InnerVaultManager} */
+  /** @type {Parameters<typeof makeVaultKit>[1]} */
   const managerMock = Far('vault manager mock', {
     getLiquidationMargin() {
       return makeRatio(105n, runBrand);
@@ -54,21 +64,32 @@ export async function start(zcf, privateArgs) {
       return makeRatio(500n, runBrand, BASIS_POINTS);
     },
     getInterestRate() {
-      return makeRatio(5n, runBrand);
+      return currentInterest;
     },
     getCollateralBrand() {
       return collateralBrand;
     },
     getChargingPeriod() {
-      return SECONDS_PER_HOUR * 24n;
+      return DAY;
     },
     getRecordingPeriod() {
-      return SECONDS_PER_HOUR * 24n * 7n;
+      return DAY;
     },
     reallocateReward,
+    applyDebtDelta() {},
+    getCollateralQuote() {
+      return Promise.resolve({
+        quoteAmount: AmountMath.make(runBrand, 0n),
+        quotePayment: null,
+      });
+    },
+    getCompoundedInterest: () => compoundedInterest,
+    updateVaultPriority: () => {
+      // noop
+    },
   });
 
-  const timer = buildManualTimer(console.log, 0n, SECONDS_PER_HOUR * 24n);
+  const timer = buildManualTimer(console.log, 0n, DAY);
   const options = {
     actualBrandIn: collateralBrand,
     actualBrandOut: runBrand,
@@ -79,15 +100,46 @@ export async function start(zcf, privateArgs) {
   };
   const priceAuthority = makeFakePriceAuthority(options);
 
-  const { vault, openLoan, accrueInterestAndAddToPool } = await makeVaultKit(
+  const { notifier: managerNotifier } = makeNotifierKit();
+
+  const {
+    vault,
+    actions: { openLoan },
+  } = await makeVaultKit(
     zcf,
     managerMock,
+    managerNotifier,
+    // eslint-disable-next-line no-plusplus
+    String(vaultCounter++),
     runMint,
     priceAuthority,
-    timer.getCurrentTimestamp(),
   );
 
-  zcf.setTestJig(() => ({ collateralKit, runMint, vault, timer }));
+  const advanceRecordingPeriod = () => {
+    timer.tick();
+
+    // skip the debt calculation for this mock manager
+    const currentInterestAsMultiplicand = makeRatio(
+      100n + currentInterest.numerator.value,
+      currentInterest.numerator.brand,
+    );
+    compoundedInterest = multiplyRatios(
+      compoundedInterest,
+      currentInterestAsMultiplicand,
+    );
+  };
+
+  const setInterestRate = percent => {
+    currentInterest = makeRatio(percent, runBrand);
+  };
+
+  zcf.setTestJig(() => ({
+    advanceRecordingPeriod,
+    collateralKit,
+    runMint,
+    setInterestRate,
+    vault,
+  }));
 
   async function makeHook(seat) {
     const { notifier } = await openLoan(seat);
@@ -100,7 +152,6 @@ export async function start(zcf, privateArgs) {
         add() {
           return vault.makeAdjustBalancesInvitation();
         },
-        accrueInterestAndAddToPool,
       }),
       notifier,
     };

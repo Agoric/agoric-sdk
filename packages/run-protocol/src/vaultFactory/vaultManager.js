@@ -10,8 +10,9 @@ import {
   getAmountIn,
   ceilMultiplyBy,
   ceilDivideBy,
+  makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { observeNotifier } from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
@@ -26,29 +27,34 @@ import {
   INTEREST_RATE_KEY,
   CHARGING_PERIOD_KEY,
 } from './params.js';
+import {
+  calculateCompoundedInterest,
+  makeInterestCalculator,
+} from './interest.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer(' VM ');
-
-// Each VaultManager manages a single collateralType. It owns an autoswap
-// instance which trades this collateralType against RUN. It also manages
-// some number of outstanding loans, each called a Vault, for which the
-// collateral is provided in exchange for borrowed RUN.
+const trace = makeTracer('VM');
 
 /**
+ * Each VaultManager manages a single collateral type.
+ *
+ * It manages some number of outstanding loans, each called a Vault, for which
+ * the collateral is provided in exchange for borrowed RUN.
+ *
  * @param {ContractFacet} zcf
  * @param {ZCFMint} runMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {{
- *  'ChargingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
- *  'RecordingPeriod': ParamRecord<'relativeTime'> & { value: RelativeTime },
+ *  ChargingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
+ *  RecordingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
  * }} timingParams
  * @param {GetGovernedVaultParams} getLoanParams
  * @param {ReallocateReward} reallocateReward
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
+ * @param {Timestamp} startTimeStamp
  * @returns {VaultManager}
  */
 export const makeVaultManager = (
@@ -61,6 +67,7 @@ export const makeVaultManager = (
   reallocateReward,
   timerService,
   liquidationStrategy,
+  startTimeStamp,
 ) => {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
@@ -76,7 +83,7 @@ export const makeVaultManager = (
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
       const displayInfo = await E(collateralBrand).getDisplayInfo();
-      const decimalPlaces = (displayInfo && displayInfo.decimalPlaces) || 0n;
+      const decimalPlaces = displayInfo?.decimalPlaces || 0n;
       return E(priceAuthority).quoteGiven(
         AmountMath.make(collateralBrand, 10n ** Nat(decimalPlaces)),
         runBrand,
@@ -84,14 +91,58 @@ export const makeVaultManager = (
     },
   };
 
-  // A Map from vaultKits to their most recent ratio of debt to
-  // collateralization. (This representation won't be optimized; when we need
-  // better performance, use virtual objects.)
+  let vaultCounter = 0;
+
+  // A store for vaultKits prioritized by their collaterization ratio.
   //
-  // sortedVaultKits should only be set once, but can't be set until after the
+  // It should be set only once but it's a `let` because it can't be set until after the
   // definition of reschedulePriceCheck, which refers to sortedVaultKits
-  let sortedVaultKits;
+  // XXX misleading mutability and confusing flow control; could be refactored with a listener
+  /** @type {ReturnType<typeof makePrioritizedVaults>=} */
+  let prioritizedVaults;
+  /** @type {MutableQuote=} */
   let outstandingQuote;
+  /** @type {Amount<NatValue>} */
+  let totalDebt = AmountMath.make(runBrand, 0n);
+  /** @type {Ratio}} */
+  let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
+
+  // timestamp of most recent update to interest
+  /** @type {bigint} */
+  let latestInterestUpdate = startTimeStamp;
+
+  const { updater, notifier } = makeNotifierKit(
+    harden({
+      compoundedInterest,
+      latestInterestUpdate,
+      totalDebt,
+    }),
+  );
+
+  /**
+   *
+   * @param {[key: string, vaultKit: VaultKit]} record
+   */
+  const liquidateAndRemove = async ([key, vaultKit]) => {
+    assert(prioritizedVaults);
+    trace('liquidating', vaultKit.vaultSeat.getProposal());
+
+    try {
+      // Start liquidation (vaultState: LIQUIDATING)
+      await liquidate(
+        zcf,
+        vaultKit,
+        runMint.burnLosses,
+        liquidationStrategy,
+        collateralBrand,
+      );
+
+      await prioritizedVaults.removeVault(key);
+    } catch (e) {
+      // XXX should notify interested parties
+      console.error('liquidateAndRemove failed with', e);
+    }
+  };
 
   // When any Vault's debt ratio is higher than the current high-water level,
   // call reschedulePriceCheck() to request a fresh notification from the
@@ -102,7 +153,8 @@ export const makeVaultManager = (
   // when a priceQuote is received, we'll only reschedule if the high-water
   // level when the request was made matches the current high-water level.
   const reschedulePriceCheck = async () => {
-    const highestDebtRatio = sortedVaultKits.highestRatio();
+    assert(prioritizedVaults);
+    const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
       return;
@@ -114,7 +166,7 @@ export const makeVaultManager = (
     // with the highest debt to collateral ratio will no longer be valued at the
     // liquidationMargin above its debt.
     const triggerPoint = ceilMultiplyBy(
-      highestDebtRatio.numerator,
+      highestDebtRatio.numerator, // debt
       liquidationMargin,
     );
 
@@ -123,15 +175,16 @@ export const makeVaultManager = (
     // then make a new request to the priceAuthority, and when it resolves,
     // liquidate anything that's above the price level.
     if (outstandingQuote) {
+      // Safe to call extraneously (lightweight and idempotent)
       E(outstandingQuote).updateLevel(
-        highestDebtRatio.denominator,
+        highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
       return;
     }
 
     outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
-      highestDebtRatio.denominator,
+      highestDebtRatio.denominator, // collateral
       triggerPoint,
     );
 
@@ -149,48 +202,121 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
-    sortedVaultKits.forEachRatioGTE(quoteRatioPlusMargin, ({ vaultKit }) => {
-      trace('liquidating', vaultKit.vaultSeat.getProposal());
+    /** @type {Array<Promise<void>>} */
+    const toLiquidate = Array.from(
+      prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin),
+    ).map(liquidateAndRemove);
 
-      liquidate(
-        zcf,
-        vaultKit,
-        runMint.burnLosses,
-        liquidationStrategy,
-        collateralBrand,
-      );
-    });
     outstandingQuote = undefined;
+    // Ensure all vaults complete
+    await Promise.all(toLiquidate);
+
     reschedulePriceCheck();
   };
-  sortedVaultKits = makePrioritizedVaults(reschedulePriceCheck);
+  prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
 
-  const liquidateAll = () => {
-    const promises = sortedVaultKits.map(({ vaultKit }) =>
-      liquidate(
-        zcf,
-        vaultKit,
-        runMint.burnLosses,
-        liquidationStrategy,
-        collateralBrand,
-      ),
+  // In extreme situations, system health may require liquidating all vaults.
+  const liquidateAll = async () => {
+    assert(prioritizedVaults);
+    const toLiquidate = Array.from(prioritizedVaults.entries()).map(
+      liquidateAndRemove,
     );
-    return Promise.all(promises);
+    await Promise.all(toLiquidate);
   };
 
+  /**
+   *
+   * @param {bigint} updateTime
+   * @param {ZCFSeat} poolIncrementSeat
+   */
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
-    const poolIncrement = sortedVaultKits.reduce(
-      (total, vaultPair) =>
-        AmountMath.add(
-          total,
-          vaultPair.vaultKit.accrueInterestAndAddToPool(updateTime),
-        ),
-      AmountMath.makeEmpty(runBrand),
+    trace('chargeAllVault', { updateTime });
+    const interestCalculator = makeInterestCalculator(
+      shared.getInterestRate(),
+      shared.getChargingPeriod(),
+      shared.getRecordingPeriod(),
     );
-    sortedVaultKits.updateAllDebts();
+
+    // calculate delta of accrued debt
+    const debtStatus = interestCalculator.calculateReportingPeriod(
+      {
+        latestInterestUpdate,
+        newDebt: totalDebt.value,
+        interest: 0n, // XXX this is always zero, doesn't need to be an option
+      },
+      updateTime,
+    );
+    const interestAccrued = debtStatus.interest;
+
+    // done if none
+    if (interestAccrued === 0n) {
+      return;
+    }
+
+    // NB: This method of inferring the compounded rate from the ratio of debts
+    // acrrued suffers slightly from the integer nature of debts. However in
+    // testing with small numbers there's 5 digits of precision, and with large
+    // numbers the ratios tend towards ample precision. Because this calculation
+    // is over all debts of the vault the numbers will be reliably large.
+    compoundedInterest = calculateCompoundedInterest(
+      compoundedInterest,
+      totalDebt.value,
+      debtStatus.newDebt,
+    );
+    // totalDebt += interestAccrued
+    totalDebt = AmountMath.add(
+      totalDebt,
+      AmountMath.make(runBrand, interestAccrued),
+    );
+
+    // mint that much RUN for the reward pool
+    const rewarded = AmountMath.make(runBrand, interestAccrued);
+    runMint.mintGains(harden({ RUN: rewarded }), poolIncrementSeat);
+    reallocateReward(rewarded, poolIncrementSeat);
+
+    // update running tally of total debt against this collateral
+    ({ latestInterestUpdate } = debtStatus);
+
+    const payload = harden({
+      compoundedInterest,
+      latestInterestUpdate,
+      totalDebt,
+    });
+    updater.updateState(payload);
+
+    trace('chargeAllVaults complete', payload);
+
     reschedulePriceCheck();
-    runMint.mintGains(harden({ RUN: poolIncrement }), poolIncrementSeat);
-    reallocateReward(poolIncrement, poolIncrementSeat);
+  };
+
+  /**
+   * Update total debt of this manager given the change in debt on a vault
+   *
+   * @param {Amount<NatValue>} oldDebtOnVault
+   * @param {Amount<NatValue>} newDebtOnVault
+   */
+  // TODO https://github.com/Agoric/agoric-sdk/issues/4599
+  const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
+    const delta = newDebtOnVault.value - oldDebtOnVault.value;
+    trace(`updating total debt ${totalDebt} by ${delta}`);
+    if (delta === 0n) {
+      // nothing to do
+      return;
+    }
+
+    // totalDebt += delta (Amount type ensures natural value)
+    totalDebt = AmountMath.make(runBrand, totalDebt.value + delta);
+  };
+
+  /**
+   * @param {Amount<NatValue>} oldDebt
+   * @param {Amount<NatValue>} oldCollateral
+   * @param {VaultId} vaultId
+   */
+  const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {
+    assert(prioritizedVaults);
+    prioritizedVaults.refreshVaultPriority(oldDebt, oldCollateral, vaultId);
+    trace('updateVaultPriority complete', { totalDebt });
   };
 
   const periodNotifier = E(timerService).makeNotifier(
@@ -201,7 +327,7 @@ export const makeVaultManager = (
 
   const timeObserver = {
     updateState: updateTime =>
-      chargeAllVaults(updateTime, poolIncrementSeat).catch(_ => {}),
+      chargeAllVaults(updateTime, poolIncrementSeat).catch(console.error),
     fail: reason => {
       zcf.shutdownWithFailure(
         assert.error(X`Unable to continue without a timer: ${reason}`),
@@ -216,11 +342,14 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
-  /** @type {InnerVaultManager} */
-  const innerFacet = harden({
+  /** @type {Parameters<typeof makeVaultKit>[1]} */
+  const managerFacet = harden({
     ...shared,
+    applyDebtDelta,
     reallocateReward,
     getCollateralBrand: () => collateralBrand,
+    getCompoundedInterest: () => compoundedInterest,
+    updateVaultPriority,
   });
 
   /** @param {ZCFSeat} seat */
@@ -230,29 +359,43 @@ export const makeVaultManager = (
       want: { RUN: null },
     });
 
-    const startTimeStamp = await E(timerService).getCurrentTimestamp();
+    vaultCounter += 1;
+    const vaultId = String(vaultCounter);
+
     const vaultKit = makeVaultKit(
       zcf,
-      innerFacet,
+      managerFacet,
+      notifier,
+      vaultId,
       runMint,
       priceAuthority,
-      startTimeStamp,
     );
-
-    const { vault, openLoan } = vaultKit;
-    const { notifier } = await openLoan(seat);
-    sortedVaultKits.addVaultKit(vaultKit, notifier);
-
-    seat.exit();
-
-    return harden({
-      uiNotifier: notifier,
-      invitationMakers: Far('invitation makers', {
-        AdjustBalances: vault.makeAdjustBalancesInvitation,
-        CloseVault: vault.makeCloseInvitation,
-      }),
+    const {
       vault,
-    });
+      actions: { openLoan },
+    } = vaultKit;
+    assert(prioritizedVaults);
+    const addedVaultKey = prioritizedVaults.addVaultKit(vaultId, vaultKit);
+
+    try {
+      const vaultResult = await openLoan(seat);
+
+      seat.exit();
+
+      return harden({
+        uiNotifier: vaultResult.notifier,
+        invitationMakers: Far('invitation makers', {
+          AdjustBalances: vault.makeAdjustBalancesInvitation,
+          CloseVault: vault.makeCloseInvitation,
+        }),
+        vault,
+      });
+    } catch (err) {
+      // remove it from prioritizedVaults
+      // XXX openLoan shouldn't assume it's already in the prioritizedVaults
+      prioritizedVaults.removeVault(addedVaultKey);
+      throw err;
+    }
   };
 
   /** @type {VaultManager} */

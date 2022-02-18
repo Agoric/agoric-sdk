@@ -127,6 +127,8 @@ export const start = async (zcf, privateArgs) => {
     );
     const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
 
+    const startTimeStamp = await E(timerService).getCurrentTimestamp();
+
     const vm = makeVaultManager(
       zcf,
       runMint,
@@ -137,6 +139,7 @@ export const start = async (zcf, privateArgs) => {
       reallocateReward,
       timerService,
       liquidationStrategy,
+      startTimeStamp,
     );
     collateralTypes.init(collateralBrand, vm);
     return vm;
