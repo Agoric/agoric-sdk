@@ -41,7 +41,7 @@ test('bundles', async t => {
 
   // This one (with 'hi()') provides a named vat bundle, for a static vat,
   // exercising config.vats.NAME.bundleName . We also build dynamic vats to
-  // test D(devices.bundle).getNamedBundleCap and E(vatAdmin).createVatByName
+  // test D(devices.bundle).getNamedBundlecap and E(vatAdmin).createVatByName
   const namedBundleFilename = bfile('vat-named.js');
 
   // We save this vat bundle (with 'disk()') to disk, to exercise
@@ -113,24 +113,24 @@ test('bundles', async t => {
   await check('checkConfiguredVats', [undefined], ['hello']);
 
   // create dynamic vats from a named bundle created at config file
-  await check('vatFromNamedBundleCap', ['named', 'hi'], ['hello']);
+  await check('vatFromNamedBundlecap', ['named', 'hi'], ['hello']);
 
   // pre-made bundles can be loaded from disk, via a named bundle
-  await check('vatFromNamedBundleCap', ['disk', 'disk'], ['otech']);
+  await check('vatFromNamedBundlecap', ['disk', 'disk'], ['otech']);
 
   // vatAdminService~.createVatByName() still works, TODO until we remove it
   await check('vatByName', ['named', 'hi'], ['hello']);
 
-  // D(devices.bundle).getBundleCap(invalidBundleID) should throw
+  // D(devices.bundle).getBundlecap(invalidBundleID) should throw
   await checkRejects(
-    'getBundleCap',
+    'getBundlecap',
     [invalidBundleID],
     Error('syscall.callNow failed: device.invoke failed, see logs for details'),
   );
   // the logs would show "not a bundleID"
 
-  // D(devices.bundle).getBundleCap(missingBundleID) should return undefined
-  await check('getBundleCap', [missingBundleID], undefined);
+  // D(devices.bundle).getBundlecap(missingBundleID) should return undefined
+  await check('getBundlecap', [missingBundleID], undefined);
 
   // install a vat bundle at runtime, make sure we can load it by ID
   const bid1 = await c.validateAndInstallBundle(installableVatBundle);
@@ -145,7 +145,7 @@ test('bundles', async t => {
   await check('checkImportByName', ['importableNonVat'], ['importable', true]);
 
   // check the shape of a bundlecap
-  const [s1, d1] = await run('getBundleCap', [bid2]);
+  const [s1, d1] = await run('getBundlecap', [bid2]);
   t.is(s1, 'fulfilled');
   const res1 = JSON.parse(d1.body);
   const dev1 = { '@qclass': 'slot', iface: 'Alleged: device node', index: 0 };

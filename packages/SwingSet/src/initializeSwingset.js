@@ -365,7 +365,7 @@ export async function initializeSwingset(
   // The 'bundleName' option points into
   // config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec] , which can
   // also include arbitrary named bundles that will be made available to
-  // D(devices.bundle).getNamedBundleCap(bundleName) ,and temporarily as
+  // D(devices.bundle).getNamedBundlecap(bundleName) ,and temporarily as
   // E(vatAdminService).createVatByName(bundleName)
 
   // The 'kconfig' we pass through to initializeKernel has
