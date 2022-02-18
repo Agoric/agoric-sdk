@@ -4,7 +4,19 @@
     "bootstrap": {
       "sourceSpec": "./src/core/boot.js",
       "parameters": {
-        "governanceActions": true
+        "governanceActions": true,
+        "makeClientManager": {
+          "template": {
+            "agoricNames": true,
+            "attMaker": "getRUN",
+            "bank": "bank",
+            "namesByAddress": true,
+            "myAddressNameAdmin": true,
+            "board": "board",
+            "faucet": true,
+            "zoe": "zoe"
+          }
+        }
       }
     }
   },
