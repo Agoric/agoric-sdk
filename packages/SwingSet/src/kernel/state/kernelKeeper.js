@@ -603,7 +603,6 @@ export default function makeKernelKeeper(
     kvStore.delete(`${kpid}.policy`);
     kvStore.deletePrefixedKeys(`${kpid}.queue.`);
     kvStore.delete(`${kpid}.queue.nextID`);
-    kvStore.delete(`${kpid}.slot`);
     kvStore.delete(`${kpid}.data.body`);
     kvStore.delete(`${kpid}.data.slots`);
   }

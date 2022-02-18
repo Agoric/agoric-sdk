@@ -14,7 +14,8 @@ import { parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../message.js';
 import { insistDeviceID, insistVatID } from './id.js';
-import { makeKernelSyscallHandler, doSend } from './kernelSyscall.js';
+import { makeKernelQueueHandler } from './kernelQueue.js';
+import { makeKernelSyscallHandler } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
 import { makeDummyMeterControl } from './dummyMeterControl.js';
 import { getKpidsToRetire } from './cleanup.js';
@@ -70,42 +71,6 @@ export function doAddExport(kernelKeeper, fromVatID, vref) {
   // it's an import) so it will actually increment the count
   kernelKeeper.incrementRefCount(kref, 'doAddExport', { isExport: false });
   return kref;
-}
-
-/**
- * Enqueue a message to some kernel object, as if the message had been sent
- * by some other vat. This requires a kref as a target.
- *
- * @param {*} kernelKeeper  Kernel keeper managing persistent kernel state
- * @param {string} kref  Target of the message
- * @param {string} method  The message verb
- * @param {*} args  The message arguments
- * @param {string} policy How the kernel should handle an eventual resolution
- *    or rejection of the message's result promise. Should be one of
- *    'sendOnly' (don't even create a result promise), 'ignore' (do nothing),
- *    'logAlways' (log the resolution or rejection), 'logFailure' (log only
- *    rejections), or 'panic' (panic the kernel upon a rejection).
- *
- * @returns {string?} the kpid of the sent message's result promise
- */
-export function doQueueToKref(
-  kernelKeeper,
-  kref,
-  method,
-  args,
-  policy = 'ignore',
-) {
-  // queue a message on the end of the queue, with 'absolute' krefs.
-  // Use 'step' or 'run' to execute it
-  insistCapData(args);
-  args.slots.forEach(s => parseKernelSlot(s));
-  let resultKPID;
-  if (policy !== 'none') {
-    resultKPID = kernelKeeper.addKernelPromise(policy);
-  }
-  const msg = harden({ method, args, result: resultKPID });
-  doSend(kernelKeeper, kref, msg);
-  return resultKPID;
 }
 
 export default function buildKernel(
@@ -248,17 +213,6 @@ export default function buildKernel(
     return doAddExport(kernelKeeper, fromVatID, vatSlot);
   }
 
-  const kernelSyscallHandler = makeKernelSyscallHandler({
-    kernelKeeper,
-    ephemeral,
-    // eslint-disable-next-line no-use-before-define
-    notify,
-    // eslint-disable-next-line no-use-before-define
-    doResolve,
-    // eslint-disable-next-line no-use-before-define
-    setTerminationTrigger,
-  });
-
   // If `kernelPanic` is set to non-null, vat execution code will throw it as an
   // error at the first opportunity
   let kernelPanic = null;
@@ -269,61 +223,8 @@ export default function buildKernel(
     kernelPanic = err || new Error(`kernel panic ${problem}`);
   }
 
-  /**
-   * Enqueue a message to some kernel object, as if the message had been sent
-   * by some other vat.
-   *
-   * @param {string} kref  Target of the message
-   * @param {string} method  The message verb
-   * @param {*} args  The message arguments
-   * @param {ResolutionPolicy=} policy How the kernel should handle an eventual
-   *    resolution or rejection of the message's result promise. Should be
-   *    one of 'sendOnly' (don't even create a result promise), 'ignore' (do
-   *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure'
-   *    (log only rejections), or 'panic' (panic the kernel upon a
-   *    rejection).
-   * @returns {string?} the kpid of the sent message's result promise, if any
-   */
-  function queueToKref(kref, method, args, policy = 'ignore') {
-    return doQueueToKref(kernelKeeper, kref, method, args, policy);
-  }
-
-  function notify(vatID, kpid) {
-    const m = harden({ type: 'notify', vatID, kpid });
-    kernelKeeper.incrementRefCount(kpid, `enq|notify`);
-    kernelKeeper.addToRunQueue(m);
-  }
-
-  function doResolve(vatID, resolutions) {
-    if (vatID) {
-      insistVatID(vatID);
-    }
-    for (const resolution of resolutions) {
-      const [kpid, rejected, data] = resolution;
-      insistKernelType('promise', kpid);
-      insistCapData(data);
-      const p = kernelKeeper.getResolveablePromise(kpid, vatID);
-      const { subscribers } = p;
-      for (const subscriber of subscribers) {
-        if (subscriber !== vatID) {
-          notify(subscriber, kpid);
-        }
-      }
-      kernelKeeper.resolveKernelPromise(kpid, rejected, data);
-      const tag = rejected ? 'rejected' : 'fulfilled';
-      if (p.policy === 'logAlways' || (rejected && p.policy === 'logFailure')) {
-        console.log(
-          `${kpid}.policy ${p.policy}: ${tag} ${JSON.stringify(data)}`,
-        );
-      } else if (rejected && p.policy === 'panic') {
-        panic(`${kpid}.policy panic: ${tag} ${JSON.stringify(data)}`);
-      }
-    }
-  }
-
-  function resolveToError(kpid, errorData, expectedDecider) {
-    doResolve(expectedDecider, [[kpid, true, errorData]]);
-  }
+  const { doSend, doSubscribe, doResolve, resolveToError, queueToKref } =
+    makeKernelQueueHandler({ kernelKeeper, panic });
 
   /**
    * Terminate a vat; that is: delete vat DB state,
@@ -412,6 +313,15 @@ export default function buildKernel(
       terminationTrigger = { vatID, shouldAbortCrank, shouldReject, info };
     }
   }
+
+  const kernelSyscallHandler = makeKernelSyscallHandler({
+    kernelKeeper,
+    ephemeral,
+    doSend,
+    doSubscribe,
+    doResolve,
+    setTerminationTrigger,
+  });
 
   /**
    * Perform one delivery to a vat.
@@ -918,7 +828,7 @@ export default function buildKernel(
       if (ksc) {
         try {
           // this can throw if kernel is buggy
-          kres = kernelSyscallHandler.doKernelSyscall(ksc);
+          kres = kernelSyscallHandler(ksc);
 
           // kres is a KernelResult: ['ok', value] or ['error', problem],
           // where 'error' means we want the calling vat's syscall() to
@@ -1094,7 +1004,7 @@ export default function buildKernel(
         function deviceSyscallHandler(deviceSyscallObject) {
           const ksc =
             translators.deviceSyscallToKernelSyscall(deviceSyscallObject);
-          const kres = kernelSyscallHandler.doKernelSyscall(ksc);
+          const kres = kernelSyscallHandler(ksc);
           const dres = translators.kernelResultToDeviceResult(ksc[0], kres);
           assert.equal(dres[0], 'ok');
           return dres[1];
