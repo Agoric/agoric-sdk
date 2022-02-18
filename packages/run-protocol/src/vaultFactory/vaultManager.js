@@ -71,14 +71,6 @@ export const makeVaultManager = (
 ) => {
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const { updater, notifier } = makeNotifierKit(
-    harden({
-      compoundedInterest: makeRatio(1n, runBrand, 1n, runBrand),
-      latestInterestUpdate: 0n, // no previous update
-      totalDebt: AmountMath.makeEmpty(runBrand),
-    }),
-  );
-
   /** @type {GetVaultParams} */
   const shared = {
     // loans below this margin may be liquidated
@@ -118,6 +110,14 @@ export const makeVaultManager = (
   // timestamp of most recent update to interest
   /** @type {bigint} */
   let latestInterestUpdate = startTimeStamp;
+
+  const { updater, notifier } = makeNotifierKit(
+    harden({
+      compoundedInterest,
+      latestInterestUpdate,
+      totalDebt: AmountMath.make(runBrand, totalDebt),
+    }),
+  );
 
   /**
    *
