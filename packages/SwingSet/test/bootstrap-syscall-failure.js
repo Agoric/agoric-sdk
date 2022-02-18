@@ -1,16 +1,16 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { testLog } = vatPowers;
 
   const ourThing = Far('ourThing', {
-    pretendToBeAThing(from) {
+    pretendToBeAThing: from => {
       testLog(`pretendToBeAThing invoked from ${from}`);
     },
   });
   const self = Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       testLog('bootstrap');
       let badvat;
       if (vatParameters.beDynamic) {
@@ -43,4 +43,4 @@ export function buildRootObject(vatPowers, vatParameters) {
     },
   });
   return self;
-}
+};

@@ -2,23 +2,23 @@ import { Far } from '@endo/marshal';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-export function buildRootObject() {
+export const buildRootObject = () => {
   let nextPK;
-  function doPromise(args) {
+  const doPromise = args => {
     args[0]
       .then(doPromise)
       .catch(err => console.log(`left doPromise err`, err));
     const oldPK = nextPK;
     nextPK = makePromiseKit();
     oldPK.resolve([nextPK.promise]);
-  }
+  };
 
   const left = Far('left', {
-    doMessage(right, seqnum) {
+    doMessage: (right, seqnum) => {
       E(right).doMessage(left, seqnum);
     },
 
-    startPromise(right) {
+    startPromise: right => {
       nextPK = makePromiseKit();
       E(right)
         .startPromise([nextPK.promise])
@@ -29,4 +29,4 @@ export function buildRootObject() {
     },
   });
   return left;
-}
+};

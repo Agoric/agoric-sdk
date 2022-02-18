@@ -63,16 +63,16 @@ function* mergeSortedIterators(it1, it2) {
  * abortCrank,   // function to discard buffered mutations
  * }
  */
-export function buildCrankBuffer(
+export const buildCrankBuffer = (
   kvStore,
   createSHA256,
   isConsensusKey = () => true,
-) {
+) => {
   insistStorageAPI(kvStore);
   let crankhasher;
-  function resetCrankhash() {
+  const resetCrankhash = () => {
     crankhasher = createSHA256();
-  }
+  };
 
   // to avoid confusion, additions and deletions should never share a key
   const additions = new Map();
@@ -80,7 +80,7 @@ export function buildCrankBuffer(
   resetCrankhash();
 
   const crankBuffer = {
-    has(key) {
+    has: key => {
       if (additions.has(key)) {
         return true;
       }
@@ -132,7 +132,7 @@ export function buildCrankBuffer(
       }
     },
 
-    get(key) {
+    get: key => {
       assert.typeof(key, 'string');
       if (additions.has(key)) {
         return additions.get(key);
@@ -143,7 +143,7 @@ export function buildCrankBuffer(
       return kvStore.get(key);
     },
 
-    set(key, value) {
+    set: (key, value) => {
       assert.typeof(key, 'string');
       assert.typeof(value, 'string');
       additions.set(key, value);
@@ -158,7 +158,7 @@ export function buildCrankBuffer(
       }
     },
 
-    delete(key) {
+    delete: key => {
       assert.typeof(key, 'string');
       additions.delete(key);
       deletions.add(key);
@@ -177,7 +177,7 @@ export function buildCrankBuffer(
    *
    * @returns { { crankhash: string, activityhash: string } }
    */
-  function commitCrank() {
+  const commitCrank = () => {
     for (const [key, value] of additions) {
       kvStore.set(key, value);
     }
@@ -202,24 +202,24 @@ export function buildCrankBuffer(
     kvStore.set('activityhash', activityhash);
 
     return { crankhash, activityhash };
-  }
+  };
 
   /**
    * Discard any buffered mutations.
    */
-  function abortCrank() {
+  const abortCrank = () => {
     additions.clear();
     deletions.clear();
     resetCrankhash();
-  }
+  };
 
   return harden({ crankBuffer, commitCrank, abortCrank });
-}
+};
 
 /**
  * @param {KVStore} kvStore
  */
-export function addHelpers(kvStore) {
+export const addHelpers = kvStore => {
   // these functions are built on top of the DB interface
   insistStorageAPI(kvStore);
 
@@ -248,14 +248,14 @@ export function addHelpers(kvStore) {
     }
   }
 
-  function deletePrefixedKeys(prefix, start = 0) {
+  const deletePrefixedKeys = (prefix, start = 0) => {
     // this is kind of like a deleteRange() would be, but can be implemented
     // efficiently without backend DB support because it only looks at
     // numeric suffixes, in sequential order.
     for (const key of enumeratePrefixedKeys(prefix, start)) {
       kvStore.delete(key);
     }
-  }
+  };
 
   return harden({
     enumeratePrefixedKeys,
@@ -263,7 +263,7 @@ export function addHelpers(kvStore) {
     deletePrefixedKeys,
     ...kvStore,
   });
-}
+};
 
 // The "KeeperStorage" API is a set of functions { has, get, set, delete,
 // enumeratePrefixedKeys, getPrefixedValues, deletePrefixedKeys }. The Kernel
@@ -272,7 +272,7 @@ export function addHelpers(kvStore) {
 // write-back buffer wrapper (the CrankBuffer), but the keeper is unaware of
 // that.
 
-export function wrapStorage(kvStore, createSHA256, isConsensusKey) {
+export const wrapStorage = (kvStore, createSHA256, isConsensusKey) => {
   insistStorageAPI(kvStore);
   const { crankBuffer, commitCrank, abortCrank } = buildCrankBuffer(
     kvStore,
@@ -281,4 +281,4 @@ export function wrapStorage(kvStore, createSHA256, isConsensusKey) {
   );
   const enhancedCrankBuffer = addHelpers(crankBuffer);
   return { enhancedCrankBuffer, commitCrank, abortCrank };
-}
+};

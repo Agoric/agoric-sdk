@@ -1,10 +1,10 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const log = vatPowers.testLog;
   const obj0 = Far('root', {
-    callRight(arg1, right) {
+    callRight: (arg1, right) => {
       log(`left.callRight ${arg1}`);
       E(right)
         .bar(2)
@@ -13,4 +13,4 @@ export function buildRootObject(vatPowers) {
     },
   });
   return obj0;
-}
+};

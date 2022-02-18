@@ -11,7 +11,7 @@ import {
   makeVatConsole,
 } from './supervisor-helper.js';
 
-export function makeLocalVatManagerFactory(tools) {
+export const makeLocalVatManagerFactory = tools => {
   const { allVatPowers, kernelKeeper, vatEndowments, gcTools, kernelSlog } =
     tools;
 
@@ -20,7 +20,12 @@ export function makeLocalVatManagerFactory(tools) {
   };
   // testLog is also a vatPower, only for unit tests
 
-  function prepare(vatID, vatSyscallHandler, compareSyscalls, useTranscript) {
+  const prepare = (
+    vatID,
+    vatSyscallHandler,
+    compareSyscalls,
+    useTranscript,
+  ) => {
     const mk = makeManagerKit(
       vatID,
       kernelSlog,
@@ -31,22 +36,22 @@ export function makeLocalVatManagerFactory(tools) {
       useTranscript,
     );
 
-    function finish(dispatch) {
+    const finish = dispatch => {
       assert.typeof(dispatch, 'function');
       // this 'deliverToWorker' never throws, even if liveslots has an internal error
       mk.setDeliverToWorker(makeSupervisorDispatch(dispatch));
 
-      async function shutdown() {
+      const shutdown = async () => {
         // local workers don't need anything special to shut down between turns
-      }
+      };
 
       return mk.getManager(shutdown);
-    }
+    };
     const syscall = makeSupervisorSyscall(mk.syscallFromWorker, true);
     return { syscall, finish };
-  }
+  };
 
-  function createFromSetup(vatID, setup, managerOptions, vatSyscallHandler) {
+  const createFromSetup = (vatID, setup, managerOptions, vatSyscallHandler) => {
     assert.typeof(setup, 'function', 'setup is not an in-realm function');
 
     const { vatParameters, compareSyscalls, useTranscript } = managerOptions;
@@ -63,14 +68,14 @@ export function makeLocalVatManagerFactory(tools) {
 
     const dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
     return finish(dispatch);
-  }
+  };
 
-  async function createFromBundle(
+  const createFromBundle = async (
     vatID,
     bundle,
     managerOptions,
     vatSyscallHandler,
-  ) {
+  ) => {
     const {
       consensusMode,
       enableDisavow = false,
@@ -166,11 +171,11 @@ export function makeLocalVatManagerFactory(tools) {
     }
 
     return finish(dispatch);
-  }
+  };
 
   const localVatManagerFactory = harden({
     createFromBundle,
     createFromSetup,
   });
   return localVatManagerFactory;
-}
+};

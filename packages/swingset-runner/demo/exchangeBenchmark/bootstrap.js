@@ -5,14 +5,14 @@ import { Far } from '@endo/marshal';
 /* eslint-disable-next-line import/no-unresolved, import/extensions */
 import exchangeBundle from './bundle-simpleExchange.js';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export const buildRootObject = (_vatPowers, vatParameters) => {
   let alice;
   let bob;
   let round = 0;
   let quiet = false;
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       let primeContracts = false;
       for (const arg of vatParameters.argv) {
         if (arg === '--prime') {
@@ -39,11 +39,10 @@ export function buildRootObject(_vatPowers, vatParameters) {
       const issuers = all.map(objs => objs.issuer);
       const brands = all.map(objs => objs.brand);
 
-      function makePayments(values) {
-        return mints.map((mint, i) =>
+      const makePayments = values =>
+        mints.map((mint, i) =>
           mint.mintPayment(AmountMath.make(brands[i], values[i])),
         );
-      }
 
       const [alicePayments, bobPayments] = grubStake.map(v => makePayments(v));
 
@@ -67,7 +66,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
         await E(bob).initiateTrade(alice, quiet);
       }
     },
-    async runBenchmarkRound() {
+    runBenchmarkRound: async () => {
       round += 1;
       if (round % 2) {
         await E(alice).initiateTrade(bob, quiet);
@@ -78,4 +77,4 @@ export function buildRootObject(_vatPowers, vatParameters) {
       }
     },
   });
-}
+};

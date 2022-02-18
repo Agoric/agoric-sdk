@@ -31,7 +31,7 @@ import { buildPatterns } from './message-patterns.js';
 // See message-patterns.js for details.
 
 // eslint-disable-next-line no-unused-vars
-async function runWithTrace(c) {
+const runWithTrace = async c => {
   let count = 0;
   while (c.dump().runQueue.length) {
     console.log('-');
@@ -51,7 +51,7 @@ async function runWithTrace(c) {
       }
     }
   }
-}
+};
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -105,7 +105,7 @@ test.before(async t => {
   t.context.data = { localConfig, commsConfig, kernelBundles };
 });
 
-export async function runVatsLocally(t, name) {
+export const runVatsLocally = async (t, name) => {
   const { localConfig: config, kernelBundles } = t.context.data;
   const c = await buildVatController(config, [name], {
     kernelBundles,
@@ -114,19 +114,19 @@ export async function runVatsLocally(t, name) {
   // await runWithTrace(c);
   await c.run();
   return c.dump().log;
-}
+};
 
 const bp = buildPatterns();
-async function testLocalPattern(t, name) {
+const testLocalPattern = async (t, name) => {
   const logs = await runVatsLocally(t, name);
   t.deepEqual(logs, bp.expected[name]);
-}
+};
 testLocalPattern.title = (_, name) => `test pattern ${name} local`;
 for (const name of Array.from(bp.patterns.keys()).sort()) {
   test.serial('local patterns', testLocalPattern, name);
 }
 
-export async function runVatsInComms(t, name) {
+export const runVatsInComms = async (t, name) => {
   const { commsConfig, kernelBundles } = t.context.data;
   const { passOneMessage, loopboxSrcPath, loopboxEndowments } =
     buildLoopbox('queued');
@@ -153,9 +153,9 @@ export async function runVatsInComms(t, name) {
     await c.run();
   }
   return c.dump().log;
-}
+};
 
-async function testCommsPattern(t, name) {
+const testCommsPattern = async (t, name) => {
   const logs = await runVatsInComms(t, name);
   let expected;
   if (name in bp.expected_pipelined) {
@@ -164,7 +164,7 @@ async function testCommsPattern(t, name) {
     expected = bp.expected[name];
   }
   t.deepEqual(logs, expected);
-}
+};
 testCommsPattern.title = (_, name) => `test pattern ${name} comms`;
 for (const name of Array.from(bp.patterns.keys()).sort()) {
   test.serial('comms patterns', testCommsPattern, name);

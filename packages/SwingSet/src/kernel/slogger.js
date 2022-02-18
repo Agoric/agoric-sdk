@@ -4,7 +4,7 @@ const IDLE = 'idle';
 const STARTUP = 'startup';
 const DELIVERY = 'delivery';
 
-function makeCallbackRegistry(callbacks) {
+const makeCallbackRegistry = callbacks => {
   const todo = new Set(Object.keys(callbacks));
   return harden({
     /**
@@ -17,7 +17,7 @@ function makeCallbackRegistry(callbacks) {
      * @returns {(...args: Array<unknown>) => unknown} the wrapped method if the
      * callback is defined, or original method if not
      */
-    registerCallback(method, impl) {
+    registerCallback: (method, impl) => {
       todo.delete(method);
       const cb = callbacks[method];
       if (!cb) {
@@ -61,7 +61,7 @@ function makeCallbackRegistry(callbacks) {
      * @param {string} errorUnusedMsg message to display if there are callback
      * names that don't correspond to a registration
      */
-    doneRegistering(errorUnusedMsg = `Unrecognized callback names:`) {
+    doneRegistering: (errorUnusedMsg = `Unrecognized callback names:`) => {
       const cbNames = [...todo.keys()];
       if (!cbNames.length) {
         return;
@@ -69,7 +69,7 @@ function makeCallbackRegistry(callbacks) {
       console.warn(errorUnusedMsg, cbNames.map(quote).sort().join(', '));
     },
   });
-}
+};
 
 /**
  *
@@ -77,7 +77,7 @@ function makeCallbackRegistry(callbacks) {
  * @param {*} makeConsole
  * @returns { KernelSlog }
  */
-export function makeDummySlogger(slogCallbacks, makeConsole) {
+export const makeDummySlogger = (slogCallbacks, makeConsole) => {
   const { registerCallback: reg, doneRegistering } =
     makeCallbackRegistry(slogCallbacks);
   const dummySlogger = harden({
@@ -99,7 +99,7 @@ export function makeDummySlogger(slogCallbacks, makeConsole) {
   });
   doneRegistering(`Unrecognized makeDummySlogger slogCallbacks names:`);
   return dummySlogger;
-}
+};
 
 /**
  *
@@ -107,23 +107,23 @@ export function makeDummySlogger(slogCallbacks, makeConsole) {
  * @param {*} writeObj
  * @returns { KernelSlog }
  */
-export function makeSlogger(slogCallbacks, writeObj) {
+export const makeSlogger = (slogCallbacks, writeObj) => {
   const write = writeObj ? e => writeObj(e) : () => 0;
 
   const vatSlogs = new Map(); // vatID -> vatSlog
 
-  function makeVatSlog(vatID) {
+  const makeVatSlog = vatID => {
     let state = IDLE; // or STARTUP or DELIVERY
     let crankNum;
     let deliveryNum;
     let syscallNum;
     let replay = false;
 
-    function assertOldState(exp, msg) {
+    const assertOldState = (exp, msg) => {
       assert.equal(state, exp, X`vat ${vatID} in ${state}, not ${exp}: ${msg}`);
-    }
+    };
 
-    function vatConsole(origConsole) {
+    const vatConsole = origConsole => {
       const vc = {};
       for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
         vc[level] = (...args) => {
@@ -133,23 +133,29 @@ export function makeSlogger(slogCallbacks, writeObj) {
         };
       }
       return harden(vc);
-    }
+    };
 
-    function startup() {
+    const startup = () => {
       // provide a context for console calls during startup
       assertOldState(IDLE, 'did startup get called twice?');
       state = STARTUP;
       write({ type: 'vat-startup-start', vatID });
-      function finish() {
+      const finish = () => {
         assertOldState(STARTUP, 'startup-finish called twice?');
         state = IDLE;
         write({ type: 'vat-startup-finish', vatID });
-      }
+      };
       return harden(finish);
-    }
+    };
 
     // kd: kernelDelivery, vd: vatDelivery
-    function delivery(newCrankNum, newDeliveryNum, kd, vd, inReplay = false) {
+    const delivery = (
+      newCrankNum,
+      newDeliveryNum,
+      kd,
+      vd,
+      inReplay = false,
+    ) => {
       assertOldState(IDLE, 'reentrant delivery?');
       state = DELIVERY;
       crankNum = newCrankNum;
@@ -160,37 +166,37 @@ export function makeSlogger(slogCallbacks, writeObj) {
       syscallNum = 0;
 
       // dr: deliveryResult
-      function finish(dr) {
+      const finish = dr => {
         assertOldState(DELIVERY, 'delivery-finish called twice?');
         write({ type: 'deliver-result', ...when, dr });
         state = IDLE;
-      }
+      };
       return harden(finish);
-    }
+    };
 
     // ksc: kernelSyscallObject, vsc: vatSyscallObject
-    function syscall(ksc, vsc) {
+    const syscall = (ksc, vsc) => {
       assertOldState(DELIVERY, 'syscall invoked outside of delivery');
       const when = { crankNum, vatID, deliveryNum, syscallNum, replay };
       write({ type: 'syscall', ...when, ksc, vsc });
       syscallNum += 1;
 
       // ksr: kernelSyscallResult, vsr: vatSyscallResult
-      function finish(ksr, vsr) {
+      const finish = (ksr, vsr) => {
         assertOldState(DELIVERY, 'syscall finished after delivery?');
         write({ type: 'syscall-result', ...when, ksr, vsr });
-      }
+      };
       return harden(finish);
-    }
+    };
 
     // mode: 'import' | 'export' | 'drop'
-    function changeCList(crank, mode, kobj, vobj) {
+    const changeCList = (crank, mode, kobj, vobj) => {
       write({ type: 'clist', crankNum: crank, mode, vatID, kobj, vobj });
-    }
+    };
 
-    function terminateVat(shouldReject, info) {
+    const terminateVat = (shouldReject, info) => {
       write({ type: 'terminate', vatID, shouldReject, info });
-    }
+    };
 
     return harden({
       vatConsole,
@@ -200,9 +206,9 @@ export function makeSlogger(slogCallbacks, writeObj) {
       changeCList,
       terminateVat,
     });
-  }
+  };
 
-  function provideVatSlogger(
+  const provideVatSlogger = (
     vatID,
     dynamic,
     description,
@@ -210,7 +216,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     vatSourceBundle,
     managerType,
     vatParameters,
-  ) {
+  ) => {
     const found = vatSlogs.get(vatID);
     if (found) {
       return { vatSlog: found, starting: false };
@@ -228,15 +234,15 @@ export function makeSlogger(slogCallbacks, writeObj) {
       vatSourceBundle,
     });
     return { vatSlog, starting: true };
-  }
+  };
 
-  function replayVatTranscript(vatID) {
+  const replayVatTranscript = vatID => {
     write({ type: 'replay-transcript-start', vatID });
-    function finish() {
+    const finish = () => {
       write({ type: 'replay-transcript-finish', vatID });
-    }
+    };
     return harden(finish);
-  }
+  };
 
   // function annotateVat(vatID, data) {
   //   write({ type: 'annotate-vat', vatID, data });
@@ -269,4 +275,4 @@ export function makeSlogger(slogCallbacks, writeObj) {
   });
   doneRegistering(`Unrecognized makeSlogger slogCallbacks names:`);
   return slogger;
-}
+};

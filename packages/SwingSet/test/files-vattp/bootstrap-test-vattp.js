@@ -2,16 +2,16 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { D, testLog: log } = vatPowers;
   const receiver = Far('receiver', {
-    receive(body) {
+    receive: body => {
       log(`ch.receive ${body}`);
     },
   });
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const { argv } = vatParameters;
       D(devices.mailbox).registerInboundHandler(vats.vattp);
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
@@ -29,4 +29,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}
+};

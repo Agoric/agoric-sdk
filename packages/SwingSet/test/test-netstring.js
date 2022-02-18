@@ -36,7 +36,7 @@ test('setup', t => {
 });
 
 test('encode', t => {
-  function eq(input, expected) {
+  const eq = (input, expected) => {
     const encoded = encode(Buffer.from(input));
     const expBuf = Buffer.from(expected);
     if (encoded.compare(expBuf) !== 0) {
@@ -44,7 +44,7 @@ test('encode', t => {
       console.log(`want: ${expBuf}`);
     }
     t.deepEqual(encoded, expBuf);
-  }
+  };
 
   eq('', '0:,');
   eq('a', '1:a,');
@@ -77,14 +77,14 @@ test('encode stream', async t => {
 });
 
 test('decode', t => {
-  function eq(input, expPayloads, expLeftover) {
+  const eq = (input, expPayloads, expLeftover) => {
     const encPayloads = expPayloads.map(Buffer.from);
     const encLeftover = Buffer.from(expLeftover);
 
     const { payloads, leftover } = decode(Buffer.from(input));
     t.deepEqual(payloads, encPayloads);
     t.deepEqual(leftover, encLeftover);
-  }
+  };
 
   eq('', [], '');
   eq('0', [], '0');
@@ -101,9 +101,9 @@ test('decode', t => {
   expectedBuffer = Buffer.from(`25:${emoji},`, 'utf-8');
   eq(expectedBuffer, [emoji], '');
 
-  function bad(input, message) {
+  const bad = (input, message) => {
     t.throws(() => decode(Buffer.from(input)), { message });
-  }
+  };
 
   // bad('a', 'non-numeric length prefix');
   bad('a:', /unparseable size .*, should be integer/);
@@ -112,16 +112,16 @@ test('decode', t => {
 
 test('decode stream', async t => {
   const d = netstringDecoderStream();
-  function write(s) {
+  const write = s => {
     d.write(Buffer.from(s));
-  }
+  };
 
   const msgs = [];
   d.on('data', msg => msgs.push(msg));
 
-  function eq(expectedMessages) {
+  const eq = expectedMessages => {
     t.deepEqual(msgs, expectedMessages.map(Buffer.from));
-  }
+  };
 
   write('');
   eq([]);

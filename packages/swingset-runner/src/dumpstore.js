@@ -2,7 +2,7 @@ import fs from 'fs';
 import process from 'process';
 
 /* eslint-disable no-use-before-define */
-export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
+export const dumpStore = (swingStore, outfile, rawMode, truncate = true) => {
   const streamStore = swingStore.streamStore;
   let out;
   if (outfile) {
@@ -205,18 +205,18 @@ export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
     out.end('');
   }
 
-  function p(str) {
+  const p = str => {
     out.write(str);
     out.write('\n');
-  }
+  };
 
-  function pkv(key, value) {
+  const pkv = (key, value) => {
     p(`${key} :: ${value}`);
-  }
+  };
 
-  function gap() {
+  const gap = () => {
     p('');
-  }
+  };
 
   function* groupKeys(baseKey) {
     const subkeys = Array.from(state.keys()).sort();
@@ -228,7 +228,7 @@ export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
     }
   }
 
-  function pgroup(baseKey) {
+  const pgroup = baseKey => {
     const toSort = [];
     for (const key of groupKeys(baseKey)) {
       toSort.push([key, eat(key)]);
@@ -269,9 +269,9 @@ export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
     for (const [key, value] of toSort) {
       pkv(key, value);
     }
-  }
+  };
 
-  function eat(key) {
+  const eat = key => {
     if (state.has(key)) {
       const value = state.get(key);
       state.delete(key);
@@ -279,28 +279,28 @@ export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
     } else {
       return undefined;
     }
-  }
+  };
 
-  function popt(key) {
+  const popt = key => {
     const value = eat(key);
     if (value) {
       pkv(key, value);
     }
     return value;
-  }
+  };
 
-  function pkvBig(tag, key, value, maxWidth = 50) {
+  const pkvBig = (tag, key, value, maxWidth = 50) => {
     if (value.length > maxWidth && truncate) {
       pkv(key, `<<${tag} ${value.length}>>`);
     } else {
       pkv(key, value);
     }
-  }
+  };
 
-  function poptBig(tag, key) {
+  const poptBig = (tag, key) => {
     const value = eat(key);
     if (value) {
       pkvBig(tag, key, value);
     }
-  }
-}
+  };
+};

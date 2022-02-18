@@ -2,13 +2,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { loadBasedir, buildVatController } from '../../src/index.js';
 
-function canBlock(managerType) {
-  // nodeworker cannot block: the thread-to-thread port it uses provides a
-  // strictly async API. The subprocess-node worker *should* be able to
-  // block, but we didn't bother implementing the return pathway, so treat it
-  // as non-blocking.
-  return managerType === 'local' || managerType === 'local';
-}
+const canBlock = managerType =>
+  managerType === 'local' || managerType === 'local';
 const expected = [
   [
     'B good',
@@ -23,7 +18,7 @@ const expected = [
   'rp3 good',
 ];
 
-async function makeController(managerType) {
+const makeController = async managerType => {
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   config.vats.target.creationOptions = {
     managerType,
@@ -43,7 +38,7 @@ async function makeController(managerType) {
   };
   const c = await buildVatController(config, []);
   return c;
-}
+};
 
 test('local vat manager', async t => {
   const c = await makeController('local');

@@ -7,13 +7,9 @@ import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 import makeNextLog from '../make-nextlog.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
 test('weakMap in vat', async t => {
   const config = {
@@ -40,13 +36,13 @@ test('weakMap in vat', async t => {
   await c.run();
   t.deepEqual(c.kpResolution(bootstrapResult), capargs('bootstrap done'));
 
-  async function doSimple(method) {
+  const doSimple = async method => {
     const sendArgs = capargs([], []);
     const r = c.queueToVatRoot('bootstrap', method, sendArgs);
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     return c.kpResolution(r);
-  }
+  };
 
   const preGCResult = await doSimple('runProbes');
   t.deepEqual(preGCResult, capargs('probes done'));
@@ -85,17 +81,17 @@ test('weakMap vref handling', async t => {
     deleteEntry,
   } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
-  function addCListEntry(slot, val) {
+  const addCListEntry = (slot, val) => {
     registerEntry(slot, val);
-  }
+  };
 
-  function removeCListEntry(slot, val) {
+  const removeCListEntry = (slot, val) => {
     deleteEntry(slot, val);
-  }
+  };
 
   const weakMap = new VirtualObjectAwareWeakMap();
 
-  function checkMap(vref, label, useVRef) {
+  const checkMap = (vref, label, useVRef) => {
     const obj = {};
     addCListEntry(vref, obj);
     weakMap.set(obj, label);
@@ -114,7 +110,7 @@ test('weakMap vref handling', async t => {
       t.is(weakMap.get(obj), label);
       t.is(weakMap.get(obj2), undefined);
     }
-  }
+  };
 
   checkMap('o-1', 'imported presence', true);
   checkMap('o+2', 'exported remotable', false);
@@ -125,7 +121,7 @@ test('weakMap vref handling', async t => {
 
   const weakSet = new VirtualObjectAwareWeakSet();
 
-  function checkSet(vref, useVRef) {
+  const checkSet = (vref, useVRef) => {
     const obj = {};
     addCListEntry(vref, obj);
     weakSet.add(obj);
@@ -140,7 +136,7 @@ test('weakMap vref handling', async t => {
       t.truthy(weakSet.has(obj));
       t.falsy(weakSet.has(obj2));
     }
-  }
+  };
 
   checkSet('o-8', true);
   checkSet('o+9', false);

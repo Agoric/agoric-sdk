@@ -1,5 +1,3 @@
 /* global big globalThis */
 
-export function runTheCheck(world) {
-  return ['importable', big, globalThis.big, world];
-}
+export const runTheCheck = world => ['importable', big, globalThis.big, world];

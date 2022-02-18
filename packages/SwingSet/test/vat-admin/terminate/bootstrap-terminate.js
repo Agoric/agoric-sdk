@@ -1,12 +1,12 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { testLog } = vatPowers;
   const mode = vatParameters.argv[0];
 
   const self = Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
 
       // create a dynamic vat, send it a message and let it respond, to make
@@ -158,10 +158,10 @@ export function buildRootObject(vatPowers, vatParameters) {
 
       return 'bootstrap done';
     },
-    query(arg) {
+    query: arg => {
       testLog(`GOT QUERY ${arg}`);
       return arg;
     },
   });
   return self;
-}
+};

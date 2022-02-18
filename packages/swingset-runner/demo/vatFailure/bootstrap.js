@@ -1,14 +1,14 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export const buildRootObject = (_vatPowers, vatParameters) => {
   const ourThing = Far('thing-like', {
-    pretendToBeAThing(from) {
+    pretendToBeAThing: from => {
       console.log(`pretendToBeAThing invoked from ${from}`);
     },
   });
   const self = Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       let badvat;
       let done;
       if (vatParameters.argv[0] === '--bedynamic') {
@@ -49,4 +49,4 @@ export function buildRootObject(_vatPowers, vatParameters) {
     },
   });
   return self;
-}
+};

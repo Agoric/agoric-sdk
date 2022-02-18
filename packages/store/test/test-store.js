@@ -12,7 +12,7 @@ import { makeScalarWeakMapStore } from '../src/stores/scalarWeakMapStore.js';
 
 import '../src/types.js';
 
-function check(t, mode, objMaker) {
+const check = (t, mode, objMaker) => {
   // Check the full API, and make sure object identity isn't a problem by
   // creating two potentially-similar things for use as keys.
   let s;
@@ -26,13 +26,13 @@ function check(t, mode, objMaker) {
   const k1 = objMaker(1);
   const k2 = objMaker(2);
 
-  function checkEntries(entries) {
+  const checkEntries = entries => {
     if (mode === 'strong') {
       t.deepEqual(new Set(s.keys()), new Set(entries.map(([k, _v]) => k)));
       t.deepEqual(new Set(s.values()), new Set(entries.map(([_k, v]) => v)));
       t.deepEqual(new Set(s.entries()), new Set(entries));
     }
-  }
+  };
 
   checkEntries([]);
 
@@ -85,7 +85,7 @@ function check(t, mode, objMaker) {
   t.falsy(s.has(k1));
   t.falsy(s.has(k2));
   checkEntries([]);
-}
+};
 
 test('store', t => {
   // makeScalarMap

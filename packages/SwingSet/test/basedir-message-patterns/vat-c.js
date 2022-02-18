@@ -1,9 +1,9 @@
 import { Far } from '@endo/marshal';
 import { buildPatterns } from '../message-patterns.js';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const root = Far('root', {
-    init() {
+    init: () => {
       const { setC, objC } = buildPatterns(vatPowers.testLog);
       const carol = objC;
       const c = harden({ carol });
@@ -12,4 +12,4 @@ export function buildRootObject(vatPowers) {
     },
   });
   return root;
-}
+};

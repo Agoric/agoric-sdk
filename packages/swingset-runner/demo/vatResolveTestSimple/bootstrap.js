@@ -5,21 +5,21 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   const target = Far('target', {
-    one() {
+    one: () => {
       log(`target in one`);
     },
-    two() {
+    two: () => {
       log(`target in two`);
     },
   });
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       const bob = vats.bob;
       const p1 = E(bob).result();
       E(bob).promise(p1);
       E(bob).run(target);
     },
   });
-}
+};

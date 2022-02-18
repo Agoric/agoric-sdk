@@ -6,10 +6,10 @@ const A = 'A';
 const B = 'B';
 const C = 'C';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { D } = vatPowers;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const { loopbox } = devices;
 
       // machine A can send and receive through the loopbox
@@ -71,4 +71,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       await E(vats.a).run(which);
     },
   });
-}
+};

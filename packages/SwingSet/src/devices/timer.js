@@ -12,22 +12,22 @@ import { assert, details as X } from '@agoric/assert';
  * The host loop should call poll on a regular basis, and then call
  * controller.run() when it returns true.
  */
-export function buildTimer() {
+export const buildTimer = () => {
   const srcPath = new URL('timer-src', import.meta.url).pathname;
   let devicePollFunction;
 
-  function registerDevicePollFunction(pollFn) {
+  const registerDevicePollFunction = pollFn => {
     devicePollFunction = pollFn;
-  }
+  };
 
   // poll() is made available to the host loop so it can provide the time.
-  function poll(time) {
+  const poll = time => {
     try {
       return Boolean(devicePollFunction(Nat(time)));
     } catch (e) {
       assert.fail(X`error in devicePollFunction: ${e}`);
     }
-  }
+  };
 
   // srcPath and endowments are provided to buildRootDeviceNode() for use
   // during configuration.
@@ -36,4 +36,4 @@ export function buildTimer() {
     endowments: { registerDevicePollFunction },
     poll,
   };
-}
+};

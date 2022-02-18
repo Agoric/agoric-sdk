@@ -23,7 +23,7 @@ import { assert, details as X } from '@agoric/assert';
  *
  * @throws {Error} if the given string is syntactically incorrect.
  */
-export function parseKernelSlot(s) {
+export const parseKernelSlot = s => {
   assert.typeof(s, 'string');
   let type;
   let idSuffix;
@@ -41,7 +41,7 @@ export function parseKernelSlot(s) {
   }
   const id = Nat(BigInt(idSuffix));
   return { type, id };
-}
+};
 
 /**
  * Generate a kernel slot reference string given a type and id.
@@ -53,7 +53,7 @@ export function parseKernelSlot(s) {
  *
  * @throws {Error} if type is not one of the above known types.
  */
-export function makeKernelSlot(type, id) {
+export const makeKernelSlot = (type, id) => {
   if (type === 'object') {
     return `ko${Nat(id)}`;
   }
@@ -64,7 +64,7 @@ export function makeKernelSlot(type, id) {
     return `kp${Nat(id)}`;
   }
   assert.fail(X`unknown type ${type}`);
-}
+};
 
 /**
  * Assert function to ensure that a kernel slot reference string refers to a
@@ -77,9 +77,9 @@ export function makeKernelSlot(type, id) {
  *
  * @returns {void}
  */
-export function insistKernelType(type, kernelSlot) {
+export const insistKernelType = (type, kernelSlot) => {
   assert(
     type === parseKernelSlot(kernelSlot).type,
     X`kernelSlot ${kernelSlot} is not of type ${type}`,
   );
-}
+};

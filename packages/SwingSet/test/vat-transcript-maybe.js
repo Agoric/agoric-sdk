@@ -1,7 +1,7 @@
-export default function setup(syscall, _state, _helpers, vatPowers) {
+export default (syscall, _state, _helpers, vatPowers) => {
   let ephemeralCounter = 0;
 
-  function dispatch(vatDeliverObject) {
+  const dispatch = vatDeliverObject => {
     if (vatDeliverObject[0] === 'message') {
       ephemeralCounter += 1;
       let sturdyCounter = syscall.vatstoreGet('sturdyCounter');
@@ -15,6 +15,6 @@ export default function setup(syscall, _state, _helpers, vatPowers) {
         `ephemeralCounter=${ephemeralCounter} sturdyCounter=${sturdyCounter}`,
       );
     }
-  }
+  };
   return dispatch;
-}
+};

@@ -1,22 +1,20 @@
-export function buildPlugin(pluginDir, importPlugin, queueThunkForKernel) {
+export const buildPlugin = (pluginDir, importPlugin, queueThunkForKernel) => {
   const srcPath = new URL('plugin-src', import.meta.url).pathname;
   let resetter;
 
-  function reset() {
+  const reset = () => {
     const init = resetter;
     if (init) {
       resetter = undefined;
       init();
     }
-  }
+  };
 
-  function registerResetter(init) {
+  const registerResetter = init => {
     resetter = init;
-  }
+  };
 
-  function getPluginDir() {
-    return pluginDir;
-  }
+  const getPluginDir = () => pluginDir;
 
   // srcPath and endowments are provided to buildRootDeviceNode() for use
   // during configuration.
@@ -30,4 +28,4 @@ export function buildPlugin(pluginDir, importPlugin, queueThunkForKernel) {
     },
     reset,
   };
-}
+};

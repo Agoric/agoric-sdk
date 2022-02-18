@@ -5,10 +5,10 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { D } = vatPowers;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       log('=> bootstrap() called');
 
       const BOT = 'bot';
@@ -58,4 +58,4 @@ export function buildRootObject(vatPowers) {
         );
     },
   });
-}
+};

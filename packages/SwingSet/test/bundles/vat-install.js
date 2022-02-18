@@ -1,9 +1,6 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject() {
-  return Far('root', {
-    runtime() {
-      return 'installed';
-    },
+export const buildRootObject = () =>
+  Far('root', {
+    runtime: () => 'installed',
   });
-}

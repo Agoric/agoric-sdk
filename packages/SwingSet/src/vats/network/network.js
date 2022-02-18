@@ -52,13 +52,9 @@ export const makeConnection = (
    * @type {Connection}
    */
   const connection = Far('Connection', {
-    getLocalAddress() {
-      return localAddr;
-    },
-    getRemoteAddress() {
-      return remoteAddr;
-    },
-    async close() {
+    getLocalAddress: () => localAddr,
+    getRemoteAddress: () => remoteAddr,
+    close: async () => {
       if (closed) {
         throw closed;
       }
@@ -72,7 +68,7 @@ export const makeConnection = (
         .onClose(connection, undefined, handler)
         .catch(rethrowUnlessMissing);
     },
-    async send(data, opts) {
+    send: async (data, opts) => {
       // console.log('send', data, local === srcHandler);
       if (closed) {
         throw closed;
@@ -116,13 +112,13 @@ export const makeConnection = (
  * @param {WeakSet<Connection>} [current=new WeakSet()]
  * @returns {[Connection, Connection]}
  */
-export function crossoverConnection(
+export const crossoverConnection = (
   handler0,
   addr0,
   handler1,
   addr1,
   current = new WeakSet(),
-) {
+) => {
   /**
    * @type {Connection[]}
    */
@@ -136,16 +132,12 @@ export function crossoverConnection(
    */
   const addrs = [addr0, addr1];
 
-  function makeHalfConnection(l, r) {
+  const makeHalfConnection = (l, r) => {
     let closed;
     conns[l] = Far('Connection', {
-      getLocalAddress() {
-        return addrs[l];
-      },
-      getRemoteAddress() {
-        return addrs[r];
-      },
-      async send(packetBytes) {
+      getLocalAddress: () => addrs[l],
+      getRemoteAddress: () => addrs[r],
+      send: async packetBytes => {
         if (closed) {
           throw closed;
         }
@@ -154,7 +146,7 @@ export function crossoverConnection(
           .catch(rethrowUnlessMissing);
         return toBytes(ack || '');
       },
-      async close() {
+      close: async () => {
         if (closed) {
           throw closed;
         }
@@ -165,7 +157,7 @@ export function crossoverConnection(
           .catch(rethrowUnlessMissing);
       },
     });
-  }
+  };
 
   makeHalfConnection(0, 1);
   makeHalfConnection(1, 0);
@@ -174,26 +166,26 @@ export function crossoverConnection(
    * @param {number} l local side of the connection
    * @param {number} r remote side of the connection
    */
-  function openHalfConnection(l, r) {
+  const openHalfConnection = (l, r) => {
     current.add(conns[l]);
     E(handlers[l])
       .onOpen(conns[l], addrs[l], addrs[r], handlers[l])
       .catch(rethrowUnlessMissing);
-  }
+  };
 
   openHalfConnection(0, 1);
   openHalfConnection(1, 0);
 
   const [conn0, conn1] = conns;
   return [conn0, conn1];
-}
+};
 
 /**
  * Get the list of prefixes from longest to shortest.
  *
  * @param {string} addr
  */
-export function getPrefixes(addr) {
+export const getPrefixes = addr => {
   const parts = addr.split(ENDPOINT_SEPARATOR);
 
   /**
@@ -206,7 +198,7 @@ export function getPrefixes(addr) {
     ret.push(prefix);
   }
   return ret;
-}
+};
 
 /**
  * Create a protocol that has a handler.
@@ -214,7 +206,7 @@ export function getPrefixes(addr) {
  * @param {ProtocolHandler} protocolHandler
  * @returns {Protocol} the local capability for connecting and listening
  */
-export function makeNetworkProtocol(protocolHandler) {
+export const makeNetworkProtocol = protocolHandler => {
   /** @type {LegacyMap<Port, Set<Closable>>} */
   // Legacy because we're storing a JS Set
   const currentConnections = makeLegacyMap('port');
@@ -271,11 +263,8 @@ export function makeNetworkProtocol(protocolHandler) {
      * @type {Port}
      */
     const port = Far('Port', {
-      getLocalAddress() {
-        // Works even after revoke().
-        return localAddr;
-      },
-      async addListener(listenHandler) {
+      getLocalAddress: () => localAddr,
+      addListener: async listenHandler => {
         assert(!revoked, X`Port ${localAddr} is revoked`);
         assert(listenHandler, X`listenHandler is not defined`, TypeError);
         if (listening.has(localAddr)) {
@@ -302,7 +291,7 @@ export function makeNetworkProtocol(protocolHandler) {
           .onListen(port, listenHandler)
           .catch(rethrowUnlessMissing);
       },
-      async removeListener(listenHandler) {
+      removeListener: async listenHandler => {
         assert(listening.has(localAddr), X`Port ${localAddr} is not listening`);
         assert(
           listening.get(localAddr)[1] === listenHandler,
@@ -319,7 +308,7 @@ export function makeNetworkProtocol(protocolHandler) {
           .onRemove(port, listenHandler)
           .catch(rethrowUnlessMissing);
       },
-      async connect(remotePort, connectionHandler = {}) {
+      connect: async (remotePort, connectionHandler = {}) => {
         assert(!revoked, X`Port ${localAddr} is revoked`);
         /**
          * @type {Endpoint}
@@ -334,7 +323,7 @@ export function makeNetworkProtocol(protocolHandler) {
         }
         return conn;
       },
-      async revoke() {
+      revoke: async () => {
         assert(
           revoked !== RevokeState.REVOKED,
           X`Port ${localAddr} is already revoked`,
@@ -371,7 +360,7 @@ export function makeNetworkProtocol(protocolHandler) {
    */
   const protocolImpl = Far('ProtocolImpl', {
     bind,
-    async inbound(listenAddr, remoteAddr) {
+    inbound: async (listenAddr, remoteAddr) => {
       let lastFailure = Error(`No listeners for ${listenAddr}`);
       for (const listenPrefix of getPrefixes(listenAddr)) {
         if (!listening.has(listenPrefix)) {
@@ -398,14 +387,9 @@ export function makeNetworkProtocol(protocolHandler) {
         let consummated;
         const current = currentConnections.get(port);
         const inboundAttempt = Far('InboundAttempt', {
-          getLocalAddress() {
-            // Return address metadata.
-            return localAddr;
-          },
-          getRemoteAddress() {
-            return remoteAddr;
-          },
-          async close() {
+          getLocalAddress: () => localAddr,
+          getRemoteAddress: () => remoteAddr,
+          close: async () => {
             if (consummated) {
               throw consummated;
             }
@@ -415,11 +399,11 @@ export function makeNetworkProtocol(protocolHandler) {
               .onReject(port, localAddr, remoteAddr, listener)
               .catch(rethrowUnlessMissing);
           },
-          async accept({
+          accept: async ({
             localAddress = localAddr,
             remoteAddress = remoteAddr,
             handler: rchandler,
-          }) {
+          }) => {
             if (consummated) {
               throw consummated;
             }
@@ -447,7 +431,7 @@ export function makeNetworkProtocol(protocolHandler) {
       }
       throw lastFailure;
     },
-    async outbound(port, remoteAddr, lchandler) {
+    outbound: async (port, remoteAddr, lchandler) => {
       const localAddr =
         /** @type {string} */
         (await E(port).getLocalAddress());
@@ -508,41 +492,41 @@ export function makeNetworkProtocol(protocolHandler) {
 
   // Return the user-facing protocol.
   return Far('binder', { bind });
-}
+};
 
 /**
  * Create a ConnectionHandler that just echoes its packets.
  *
  * @returns {ConnectionHandler}
  */
-export function makeEchoConnectionHandler() {
+export const makeEchoConnectionHandler = () => {
   let closed;
   /**
    * @type {Connection}
    */
   return Far('ConnectionHandler', {
-    async onReceive(_connection, bytes, _connectionHandler) {
+    onReceive: async (_connection, bytes, _connectionHandler) => {
       if (closed) {
         throw closed;
       }
       return bytes;
     },
-    async onClose(_connection, _reason, _connectionHandler) {
+    onClose: async (_connection, _reason, _connectionHandler) => {
       if (closed) {
         throw closed;
       }
       closed = Error('Connection closed');
     },
   });
-}
+};
 
-export function makeNonceMaker(prefix = '', suffix = '') {
+export const makeNonceMaker = (prefix = '', suffix = '') => {
   let nonce = 0;
   return async () => {
     nonce += 1;
     return `${prefix}${nonce}${suffix}`;
   };
-}
+};
 
 /**
  * Create a protocol handler that just connects to itself.
@@ -550,9 +534,9 @@ export function makeNonceMaker(prefix = '', suffix = '') {
  * @param {ProtocolHandler['onInstantiate']} [onInstantiate]
  * @returns {ProtocolHandler} The localhost handler
  */
-export function makeLoopbackProtocolHandler(
+export const makeLoopbackProtocolHandler = (
   onInstantiate = makeNonceMaker('nonce/'),
-) {
+) => {
   /**
    * @type {Store<string, [Port, ListenHandler]>}
    */
@@ -562,16 +546,20 @@ export function makeLoopbackProtocolHandler(
 
   return Far('ProtocolHandler', {
     // eslint-disable-next-line no-empty-function
-    async onCreate(_impl, _protocolHandler) {
+    onCreate: async (_impl, _protocolHandler) => {
       // TODO
     },
-    async generatePortID(_protocolHandler) {
-      return makePortID();
-    },
-    async onBind(_port, _localAddr, _protocolHandler) {
+    generatePortID: async _protocolHandler => makePortID(),
+    onBind: async (_port, _localAddr, _protocolHandler) => {
       // TODO: Maybe handle a bind?
     },
-    async onConnect(_port, localAddr, remoteAddr, _chandler, protocolHandler) {
+    onConnect: async (
+      _port,
+      localAddr,
+      remoteAddr,
+      _chandler,
+      protocolHandler,
+    ) => {
       const [lport, lhandler] = listeners.get(remoteAddr);
       const rchandler =
         /** @type {ConnectionHandler} */
@@ -586,7 +574,7 @@ export function makeLoopbackProtocolHandler(
       };
     },
     onInstantiate,
-    async onListen(port, localAddr, listenHandler, _protocolHandler) {
+    onListen: async (port, localAddr, listenHandler, _protocolHandler) => {
       // TODO: Implement other listener replacement policies.
       if (listeners.has(localAddr)) {
         const lhandler = listeners.get(localAddr)[1];
@@ -598,7 +586,12 @@ export function makeLoopbackProtocolHandler(
         listeners.init(localAddr, [port, listenHandler]);
       }
     },
-    async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
+    onListenRemove: async (
+      port,
+      localAddr,
+      listenHandler,
+      _protocolHandler,
+    ) => {
       const [lport, lhandler] = listeners.get(localAddr);
       assert(lport === port, X`Port does not match listener on ${localAddr}`);
       assert(
@@ -607,8 +600,8 @@ export function makeLoopbackProtocolHandler(
       );
       listeners.delete(localAddr);
     },
-    async onRevoke(_port, _localAddr, _protocolHandler) {
+    onRevoke: async (_port, _localAddr, _protocolHandler) => {
       // TODO: maybe clean up?
     },
   });
-}
+};

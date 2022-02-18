@@ -11,7 +11,7 @@ import {
   addHelpers,
 } from '../src/kernel/state/storageWrapper.js';
 
-function checkState(t, getState, expected) {
+const checkState = (t, getState, expected) => {
   const state = getState();
   const got = [];
   for (const key of Object.getOwnPropertyNames(state)) {
@@ -20,7 +20,7 @@ function checkState(t, getState, expected) {
       got.push([key, state[key]]);
     }
   }
-  function compareStrings(a, b) {
+  const compareStrings = (a, b) => {
     if (a > b) {
       return 1;
     }
@@ -28,11 +28,11 @@ function checkState(t, getState, expected) {
       return -1;
     }
     return 0;
-  }
+  };
   t.deepEqual(got.sort(compareStrings), expected.sort(compareStrings));
-}
+};
 
-function testStorage(t, s, getState, commit) {
+const testStorage = (t, s, getState, commit) => {
   t.falsy(s.has('missing'));
   t.is(s.get('missing'), undefined);
 
@@ -63,7 +63,7 @@ function testStorage(t, s, getState, commit) {
     ['foo1', 'f1'],
     ['foo3', 'f3'],
   ]);
-}
+};
 
 test('storageInMemory', t => {
   const store = initSwingStore(null);
@@ -228,16 +228,16 @@ test('storage helpers', t => {
   ]);
 });
 
-function buildKeeperStorageInMemory() {
+const buildKeeperStorageInMemory = () => {
   const store = initSwingStore(null);
   return { getState: () => getAllState(store).kvStuff, ...store };
-}
+};
 
-function duplicateKeeper(getState) {
+const duplicateKeeper = getState => {
   const store = initSwingStore(null);
   setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
   return makeKernelKeeper(store, null, createSHA256);
-}
+};
 
 test('hostStorage param guards', async t => {
   const { kvStore } = buildKeeperStorageInMemory();

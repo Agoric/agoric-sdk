@@ -1,6 +1,6 @@
-export default function setup() {
-  function dispatch(_vatDeliverObject) {
+export default () => {
+  const dispatch = _vatDeliverObject => {
     // ignore everything
-  }
+  };
   return harden(dispatch);
-}
+};

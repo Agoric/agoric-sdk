@@ -13,53 +13,45 @@ import { initializeKernel } from '../src/kernel/initializeKernel.js';
 
 import { buildDispatch } from './util.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
-function oneResolution(promiseID, rejected, data) {
-  return [[promiseID, rejected, data]];
-}
+const oneResolution = (promiseID, rejected, data) => [
+  [promiseID, rejected, data],
+];
 
-function makeConsole(tag) {
+const makeConsole = tag => {
   const log = anylogger(tag);
   const cons = {};
   for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
     cons[level] = log[level];
   }
   return harden(cons);
-}
+};
 
-function makeEndowments() {
-  return {
-    waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
-    runEndOfCrank: () => {},
-    makeConsole,
-    WeakRef,
-    FinalizationRegistry,
-    createSHA256,
-  };
-}
+const makeEndowments = () => ({
+  waitUntilQuiescent,
+  hostStorage: provideHostStorage(),
+  runEndOfCrank: () => {},
+  makeConsole,
+  WeakRef,
+  FinalizationRegistry,
+  createSHA256,
+});
 
-async function buildRawVat(name, kernel, onDispatchCallback = undefined) {
+const buildRawVat = async (name, kernel, onDispatchCallback = undefined) => {
   const { log, dispatch } = buildDispatch(onDispatchCallback);
   let syscall;
-  function setup(s) {
+  const setup = s => {
     syscall = s;
     return dispatch;
-  }
+  };
   // our setup() won't be invoked until after the kernel starts
-  function getSyscall() {
-    return syscall;
-  }
+  const getSyscall = () => syscall;
   await kernel.createTestVat(name, setup);
   return { log, getSyscall };
-}
+};
 
 // The next batch of tests exercises how the kernel handles promise
 // identifiers ("vpid" strings) across various forms of resolution. Our
@@ -108,7 +100,7 @@ const slot0arg = { '@qclass': 'slot', index: 0 };
 
 const undefinedArg = { '@qclass': 'undefined' };
 
-function doResolveSyscall(syscallA, vpid, mode, targets) {
+const doResolveSyscall = (syscallA, vpid, mode, targets) => {
   switch (mode) {
     case 'presence':
       syscallA.resolve([[vpid, false, capargs(slot0arg, [targets.target2])]]);
@@ -133,9 +125,9 @@ function doResolveSyscall(syscallA, vpid, mode, targets) {
     default:
       assert.fail(X`unknown mode ${mode}`);
   }
-}
+};
 
-function resolutionOf(vpid, mode, targets) {
+const resolutionOf = (vpid, mode, targets) => {
   switch (mode) {
     case 'presence':
       return {
@@ -186,9 +178,9 @@ function resolutionOf(vpid, mode, targets) {
     default:
       assert.fail(X`unknown mode ${mode}`);
   }
-}
+};
 
-function clistVatToKernel(kernel, vatID, vpid) {
+const clistVatToKernel = (kernel, vatID, vpid) => {
   for (const row of kernel.dump().kernelTable) {
     const [kid0, vatID0, vid0] = row;
     if (vatID === vatID0 && vpid === vid0) {
@@ -196,10 +188,10 @@ function clistVatToKernel(kernel, vatID, vpid) {
     }
   }
   return undefined;
-}
+};
 
 // eslint-disable-next-line no-unused-vars
-function clistKernelToVat(kernel, vatID, kpid) {
+const clistKernelToVat = (kernel, vatID, kpid) => {
   for (const row of kernel.dump().kernelTable) {
     const [kid0, vatID0, vid0] = row;
     if (vatID === vatID0 && kpid === kid0) {
@@ -207,9 +199,9 @@ function clistKernelToVat(kernel, vatID, kpid) {
     }
   }
   return undefined;
-}
+};
 
-function inCList(kernel, vatID, kpid, vpid) {
+const inCList = (kernel, vatID, kpid, vpid) => {
   for (const row of kernel.dump().kernelTable) {
     const [kid0, vatID0, vid0] = row;
     if (vatID === vatID0 && kpid === kid0 && vpid === vid0) {
@@ -217,9 +209,9 @@ function inCList(kernel, vatID, kpid, vpid) {
     }
   }
   return false;
-}
+};
 
-async function doTest123(t, which, mode) {
+const doTest123 = async (t, which, mode) => {
   const endowments = makeEndowments();
   initializeKernel({}, endowments.hostStorage);
   const kernel = buildKernel(endowments, {}, {});
@@ -372,7 +364,7 @@ async function doTest123(t, which, mode) {
   t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
   t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
   t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
-}
+};
 // uncomment this when debugging specific problems
 // test.only(`XX`, async t => {
 //   await doTest123(t, 2, 'promise-data');
@@ -386,18 +378,18 @@ for (const caseNum of [1, 2, 3]) {
   }
 }
 
-async function doTest4567(t, which, mode) {
+const doTest4567 = async (t, which, mode) => {
   const endowments = makeEndowments();
   initializeKernel({}, endowments.hostStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatA is our primary actor
   let onDispatchCallback;
-  function odc(d) {
+  const odc = d => {
     if (onDispatchCallback) {
       onDispatchCallback(d);
     }
-  }
+  };
   const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
     'vatA',
     kernel,
@@ -548,7 +540,7 @@ async function doTest4567(t, which, mode) {
     localTarget: localTargetA,
     p1: dataPromiseA,
   };
-  onDispatchCallback = function odc1(d) {
+  onDispatchCallback = d => {
     t.deepEqual(d, resolutionOf(p1VatA, mode, targetsA));
     t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
   };
@@ -568,7 +560,7 @@ async function doTest4567(t, which, mode) {
   t.is(inCList(kernel, vatA, p1kernel, p1VatA), false);
   t.is(clistKernelToVat(kernel, vatA, p1kernel), undefined);
   t.is(clistVatToKernel(kernel, vatA, p1VatA), undefined);
-}
+};
 
 for (const caseNum of [4, 5, 6, 7]) {
   for (const mode of modes) {
@@ -585,11 +577,11 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatX controls the scenario, vatA and vatB are the players
   let onDispatchCallback;
-  function odc(d) {
+  const odc = d => {
     if (onDispatchCallback) {
       onDispatchCallback(d);
     }
-  }
+  };
   const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
     'vatA',
     kernel,

@@ -8,7 +8,7 @@ import { xsnap } from '@agoric/xsnap';
 import engineGC from '../src/engine-gc.js';
 import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
 
-function makeVictim() {
+const makeVictim = () => {
   const victim = { doomed: 'oh no' };
   const finalized = ['finalizer not called'];
   const fr = new FinalizationRegistry(_tag => {
@@ -17,9 +17,9 @@ function makeVictim() {
   const wr = new WeakRef(victim);
   fr.register(victim, 'tag');
   return { finalized, fr, wr };
-}
+};
 
-async function provokeGC(myGC) {
+const provokeGC = async myGC => {
   const gcAndFinalize = makeGcAndFinalize(myGC);
 
   // the transition from REACHABLE to UNREACHABLE happens as soon as makeVictim()
@@ -36,7 +36,7 @@ async function provokeGC(myGC) {
   const wrState = wr.deref() ? 'weakref is live' : 'weakref is dead';
   const finalizerState = finalized[0];
   return { wrState, finalizerState };
-}
+};
 
 let ltest = test;
 if (
@@ -63,14 +63,14 @@ const xsnapOptions = {
 
 const decoder = new TextDecoder();
 
-function options() {
+const options = () => {
   const messages = [];
-  async function handleCommand(message) {
+  const handleCommand = async message => {
     messages.push(decoder.decode(message));
     return new Uint8Array();
-  }
+  };
   return { ...xsnapOptions, handleCommand, messages };
-}
+};
 
 test(`can provoke gc on xsnap`, async t => {
   const opts = options();

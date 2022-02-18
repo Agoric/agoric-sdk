@@ -9,13 +9,13 @@ import { insistCapData } from '../capdata.js';
  * @param {CapData<unknown>} info
  * @param {(kref: string, method: string, args: unknown, policy?: string) => void} queueToKref
  */
-export function notifyTermination(
+export const notifyTermination = (
   vatID,
   vatAdminRootKref,
   shouldReject,
   info,
   queueToKref,
-) {
+) => {
   insistCapData(info);
 
   // Embedding the info capdata into the arguments list, taking advantage of
@@ -27,4 +27,4 @@ export function notifyTermination(
   };
 
   queueToKref(vatAdminRootKref, 'vatTerminated', args, 'logFailure');
-}
+};

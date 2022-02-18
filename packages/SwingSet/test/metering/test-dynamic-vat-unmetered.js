@@ -4,13 +4,9 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { buildVatController } from '../../src/index.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
 // Dynamic vats are created without metering by default
 

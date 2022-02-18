@@ -10,9 +10,9 @@ import { netstringEncoderStream, netstringDecoderStream } from './netstring.js';
 // JSON-serializable data.
 
 // eslint-disable-next-line no-unused-vars
-function parentLog(first, ...args) {
+const parentLog = (first, ...args) => {
   // console.error(`--parent: ${first}`, ...args);
-}
+};
 
 // we send on fd3, and receive on fd4. We pass fd1/2 (stdout/err) through, so
 // console log/err from the child shows up normally. We don't use Node's
@@ -20,7 +20,7 @@ function parentLog(first, ...args) {
 // always be Node.
 const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 
-export function startSubprocessWorker(execPath, procArgs = []) {
+export const startSubprocessWorker = (execPath, procArgs = []) => {
   const proc = spawn(execPath, procArgs, { stdio });
 
   const toChild = arrayEncoderStream();
@@ -45,9 +45,9 @@ export function startSubprocessWorker(execPath, procArgs = []) {
   });
   parentLog(`waiting on child`);
 
-  function terminate() {
+  const terminate = () => {
     proc.kill();
-  }
+  };
 
   // the Transform objects don't like being hardened, so we wrap the methods
   // that get used
@@ -64,4 +64,4 @@ export function startSubprocessWorker(execPath, procArgs = []) {
     terminate,
     done: pk.promise,
   });
-}
+};

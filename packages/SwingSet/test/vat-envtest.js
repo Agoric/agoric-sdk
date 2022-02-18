@@ -1,11 +1,11 @@
 /* global VatData */
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const log = vatPowers.testLog;
 
   return Far('root', {
-    bootstrap(_vats) {
+    bootstrap: _vats => {
       log(`control sample: ${typeof notThere}`);
       log(`harden: ${typeof harden}`);
       log(`VatData: ${typeof VatData}`);
@@ -14,4 +14,4 @@ export function buildRootObject(vatPowers) {
       }
     },
   });
-}
+};

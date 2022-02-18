@@ -11,22 +11,22 @@ import { createHash } from 'crypto';
  */
 
 /** @type { CreateSHA256 } */
-function createSHA256(initial = undefined) {
+const createSHA256 = (initial = undefined) => {
   const hash = createHash('sha256');
   let done = false;
-  function add(more) {
+  const add = more => {
     assert(!done);
     hash.update(more);
-  }
-  function finish() {
+  };
+  const finish = () => {
     assert(!done);
     done = true;
     return hash.digest('hex');
-  }
+  };
   if (initial) {
     add(initial);
   }
   return harden({ add, finish });
-}
+};
 harden(createSHA256);
 export { createSHA256 };

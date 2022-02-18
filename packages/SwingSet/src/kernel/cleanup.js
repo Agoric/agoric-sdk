@@ -1,9 +1,9 @@
 // import { kdebug } from './kdebug.js';
 import { parseKernelSlot } from './parseKernelSlots.js';
 
-export function getKpidsToRetire(kernelKeeper, rootKPID, rootKernelData) {
+export const getKpidsToRetire = (kernelKeeper, rootKPID, rootKernelData) => {
   const seen = new Set();
-  function scanKernelPromise(kpid, kernelData) {
+  const scanKernelPromise = (kpid, kernelData) => {
     // kdebug(`### scanning ${kpid} ${JSON.stringify(kernelData)}`);
     seen.add(kpid);
     if (kernelData) {
@@ -32,8 +32,8 @@ export function getKpidsToRetire(kernelKeeper, rootKPID, rootKernelData) {
     } else {
       // kdebug(`## ${kpid} has no data`);
     }
-  }
+  };
   // kdebug(`## scanning ${rootKPID}`);
   scanKernelPromise(rootKPID, rootKernelData);
   return Array.from(seen);
-}
+};

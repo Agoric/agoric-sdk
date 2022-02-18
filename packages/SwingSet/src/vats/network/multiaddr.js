@@ -22,7 +22,7 @@
  * @param {Textaddr} ma
  * @returns {Multiaddr}
  */
-export function parse(ma) {
+export const parse = ma => {
   if (typeof ma !== 'string') {
     return ma;
   }
@@ -47,7 +47,7 @@ export function parse(ma) {
     );
   }
   return acc;
-}
+};
 
 /**
  * Transform a parsed multiaddr to a string.
@@ -55,10 +55,10 @@ export function parse(ma) {
  * @param {Multiaddr|Textaddr} ma
  * @returns {Textaddr}
  */
-export function unparse(ma) {
+export const unparse = ma => {
   if (typeof ma === 'string') {
     return ma;
   }
   const joined = ma.map(kv => kv.join('/')).join('/');
   return `/${joined}`;
-}
+};

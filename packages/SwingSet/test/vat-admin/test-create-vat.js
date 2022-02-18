@@ -10,9 +10,7 @@ import {
 } from '../../src/index.js';
 import { capargs } from '../util.js';
 
-function nonBundleFunction(_E) {
-  return {};
-}
+const nonBundleFunction = _E => ({});
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -30,7 +28,7 @@ test.before(async t => {
   t.context.data = { kernelBundles, bundles };
 });
 
-async function doTestSetup(t) {
+const doTestSetup = async t => {
   const { bundles, kernelBundles } = t.context.data;
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   config.bundles = {
@@ -42,7 +40,7 @@ async function doTestSetup(t) {
   c.pinVatRoot('bootstrap');
   await c.run();
   return { c, id44, vat13Bundle: bundles.vat13Bundle };
-}
+};
 
 test('createVatByBundle', async t => {
   const { c, vat13Bundle } = await doTestSetup(t);

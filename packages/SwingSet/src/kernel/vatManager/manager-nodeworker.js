@@ -17,9 +17,9 @@ function wait10ms() {
 */
 
 // eslint-disable-next-line no-unused-vars
-function parentLog(first, ...args) {
+const parentLog = (first, ...args) => {
   // console.error(`--parent: ${first}`, ...args);
-}
+};
 
 /** @typedef { import ('worker_threads').Worker } Worker */
 
@@ -32,10 +32,15 @@ function parentLog(first, ...args) {
  * }} tools
  * @returns { VatManagerFactory }
  */
-export function makeNodeWorkerVatManagerFactory(tools) {
+export const makeNodeWorkerVatManagerFactory = tools => {
   const { makeNodeWorker, kernelKeeper, kernelSlog, testLog } = tools;
 
-  function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
+  const createFromBundle = (
+    vatID,
+    bundle,
+    managerOptions,
+    vatSyscallHandler,
+  ) => {
     const {
       consensusMode,
       vatParameters,
@@ -64,16 +69,16 @@ export function makeNodeWorkerVatManagerFactory(tools) {
 
     const { promise: workerP, resolve: gotWorker } = makePromiseKit();
 
-    function sendToWorker(msg) {
+    const sendToWorker = msg => {
       assert(msg instanceof Array);
       workerP.then(worker => worker.postMessage(msg));
-    }
+    };
 
     const { promise: dispatchReadyP, resolve: dispatchIsReady } =
       makePromiseKit();
     let waiting;
 
-    function handleUpstream([type, ...args]) {
+    const handleUpstream = ([type, ...args]) => {
       parentLog(`received`, type);
       if (type === 'setUplinkAck') {
         parentLog(`upload ready`);
@@ -100,7 +105,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       } else {
         parentLog(`unrecognized uplink message ${type}`);
       }
-    }
+    };
 
     const worker = makeNodeWorker();
     worker.on('message', handleUpstream);
@@ -117,25 +122,20 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       consensusMode,
     ]);
 
-    function deliverToWorker(delivery) {
+    const deliverToWorker = delivery => {
       parentLog(`sending delivery`, delivery);
       assert(!waiting, X`already waiting for delivery`);
       const pr = makePromiseKit();
       waiting = pr.resolve;
       sendToWorker(['deliver', delivery]);
       return pr.promise;
-    }
+    };
     mk.setDeliverToWorker(deliverToWorker);
 
-    function shutdown() {
-      // this returns a Promise that fulfills with 1 if we used
-      // worker.terminate(), otherwise with the `exitCode` passed to
-      // `process.exit(exitCode)` within the worker.
-      return worker.terminate().then(_ => undefined);
-    }
+    const shutdown = () => worker.terminate().then(_ => undefined);
     const manager = mk.getManager(shutdown);
     return dispatchReadyP.then(() => manager);
-  }
+  };
 
   return harden({ createFromBundle });
-}
+};

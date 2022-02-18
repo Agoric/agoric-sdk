@@ -5,10 +5,10 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   log(`=> setup called`);
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       log('=> bootstrap() called');
       E(vats.user)
         .talkToBot(vats.bot, 'encouragementBot')
@@ -24,4 +24,4 @@ export function buildRootObject(_vatPowers) {
         );
     },
   });
-}
+};

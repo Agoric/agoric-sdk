@@ -3,21 +3,21 @@ import { AmountMath } from '@agoric/ertp';
 
 import '@agoric/zoe/exported.js';
 
-export async function showPurseBalance(purseP, name, log) {
+export const showPurseBalance = async (purseP, name, log) => {
   try {
     const amount = await E(purseP).getCurrentAmount();
     log(name, ': balance ', amount);
   } catch (err) {
     console.error(err);
   }
-}
+};
 
 /**
  * @param {ZoeService} zoe
  * @param {Issuer[]} issuers
  * @param {Payment[]} payments
  */
-export async function setupPurses(zoe, issuers, payments) {
+export const setupPurses = async (zoe, issuers, payments) => {
   const purses = issuers.map(issuer => E(issuer).makeEmptyPurse());
   const [moolaIssuer, simoleanIssuer] = issuers;
   const moolaBrand = await E(moolaIssuer).getBrand();
@@ -36,4 +36,4 @@ export async function setupPurses(zoe, issuers, payments) {
     simoleans,
     purses,
   });
-}
+};

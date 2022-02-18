@@ -2,15 +2,15 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(vatPowers, _vatParameters) {
+export const buildRootObject = (vatPowers, _vatParameters) => {
   const log = vatPowers.testLog;
   let pingPongP;
   return Far('root', {
-    init(pingPong) {
+    init: pingPong => {
       log(`installing pingPongP`);
       pingPongP = pingPong;
     },
-    async inbound(msg) {
+    inbound: async msg => {
       try {
         switch (msg) {
           case 'pingpong': {
@@ -29,4 +29,4 @@ export function buildRootObject(vatPowers, _vatParameters) {
       }
     },
   });
-}
+};

@@ -11,9 +11,9 @@ import '../../types.js';
 import './types.js';
 
 // eslint-disable-next-line no-unused-vars
-function parentLog(first, ...args) {
+const parentLog = (first, ...args) => {
   // console.error(`--parent: ${first}`, ...args);
-}
+};
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -31,24 +31,24 @@ const decoder = new TextDecoder();
  * @typedef { { moduleFormat: 'getExport', source: string } } ExportBundle
  * @typedef { (msg: Uint8Array) => Promise<Uint8Array> } AsyncHandler
  */
-export function makeXsSubprocessFactory({
+export const makeXsSubprocessFactory = ({
   kernelKeeper,
   kernelSlog,
   startXSnap,
   testLog,
-}) {
+}) => {
   /**
    * @param { string } vatID
    * @param { unknown } bundle
    * @param { ManagerOptions } managerOptions
    * @param { (vso: VatSyscallObject) => VatSyscallResult } vatSyscallHandler
    */
-  async function createFromBundle(
+  const createFromBundle = async (
     vatID,
     bundle,
     managerOptions,
     vatSyscallHandler,
-  ) {
+  ) => {
     parentLog(vatID, 'createFromBundle', { vatID });
     const {
       consensusMode,
@@ -79,7 +79,7 @@ export function makeXsSubprocessFactory({
     );
 
     /** @type { (item: Tagged) => unknown } */
-    function handleUpstream([type, ...args]) {
+    const handleUpstream = ([type, ...args]) => {
       parentLog(vatID, `handleUpstream`, type, args.length);
       switch (type) {
         case 'syscall': {
@@ -107,14 +107,14 @@ export function makeXsSubprocessFactory({
         default:
           assert.fail(X`unrecognized uplink message ${type}`);
       }
-    }
+    };
 
     /** @type { (msg: Uint8Array) => Promise<Uint8Array> } */
-    async function handleCommand(msg) {
+    const handleCommand = async msg => {
       // parentLog('handleCommand', { length: msg.byteLength });
       const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
       return encoder.encode(JSON.stringify(tagged));
-    }
+    };
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const lastSnapshot = vatKeeper.getLastSnapshot();
@@ -128,14 +128,14 @@ export function makeXsSubprocessFactory({
     );
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */
-    async function issueTagged(item) {
+    const issueTagged = async item => {
       parentLog(item[0], '...', item.length - 1);
       const result = await worker.issueStringCommand(JSON.stringify(item));
       const reply = JSON.parse(result.reply);
       assert(Array.isArray(reply));
       const [tag, ...rest] = reply;
       return { ...result, reply: [tag, ...rest] };
-    }
+    };
 
     if (lastSnapshot) {
       parentLog(vatID, `snapshot loaded. dispatch ready.`);
@@ -164,7 +164,7 @@ export function makeXsSubprocessFactory({
      * @param { VatDeliveryObject} delivery
      * @returns { Promise<VatDeliveryResult> }
      */
-    async function deliverToWorker(delivery) {
+    const deliverToWorker = async delivery => {
       parentLog(vatID, `sending delivery`, delivery);
       let result;
       try {
@@ -198,22 +198,18 @@ export function makeXsSubprocessFactory({
       ]);
       insistVatDeliveryResult(deliverResult);
       return deliverResult;
-    }
+    };
     mk.setDeliverToWorker(deliverToWorker);
 
-    function shutdown() {
-      return worker.close().then(_ => undefined);
-    }
+    const shutdown = () => worker.close().then(_ => undefined);
     /**
      * @param {SnapStore} snapStore
      * @returns {Promise<string>}
      */
-    function makeSnapshot(snapStore) {
-      return snapStore.save(fn => worker.snapshot(fn));
-    }
+    const makeSnapshot = snapStore => snapStore.save(fn => worker.snapshot(fn));
 
     return mk.getManager(shutdown, makeSnapshot);
-  }
+  };
 
   return harden({ createFromBundle });
-}
+};

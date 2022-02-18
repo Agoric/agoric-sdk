@@ -4,13 +4,9 @@ import { buildVatController } from '../../src/index.js';
 
 const mUndefined = { '@qclass': 'undefined' };
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
 test('create with setup and buildRootObject', async t => {
   const config = {

@@ -1,12 +1,12 @@
 import { Far } from '@endo/marshal';
 import { buildPatterns } from '../message-patterns.js';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const amy = Far('amy', {});
   let alice;
 
   const root = Far('root', {
-    init(bob, bert, carol) {
+    init: (bob, bert, carol) => {
       const { setA, setB, setC, objA } = buildPatterns(vatPowers.testLog);
       alice = objA;
       const a = harden({ alice, amy });
@@ -16,9 +16,9 @@ export function buildRootObject(vatPowers) {
       return a;
     },
 
-    async run(which) {
+    run: async which => {
       await alice[which]();
     },
   });
   return root;
-}
+};

@@ -2,9 +2,9 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(vatPowers, vatParameters) {
-  return Far('root', {
-    bootstrap(vats) {
+export const buildRootObject = (vatPowers, vatParameters) =>
+  Far('root', {
+    bootstrap: vats => {
       const mode = vatParameters.argv[0];
       if (mode === 'one') {
         E(vats.left)
@@ -18,4 +18,3 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}

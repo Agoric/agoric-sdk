@@ -5,20 +5,19 @@ const log = console.log;
 // Return a string representation of a number with 4 digits of precision to the
 // right of the decimal point -- unless it's an integer, in which case, in the
 // interest of visual clarity, replace the fractional part with spaces.
-function pn(n) {
+const pn = n => {
   const str = n.toFixed(4);
   if (str.endsWith('.0000')) {
     return `${str.substring(0, str.length - 5)}     `;
   } else {
     return str;
   }
-}
+};
 
-function isMainKey(key) {
-  return !key.endsWith('Max') && !key.endsWith('Up') && !key.endsWith('Down');
-}
+const isMainKey = key =>
+  !key.endsWith('Max') && !key.endsWith('Up') && !key.endsWith('Down');
 
-export function organizeMainStats(rawStats, cranks) {
+export const organizeMainStats = (rawStats, cranks) => {
   const stats = {
     cranks,
     data: {},
@@ -38,9 +37,9 @@ export function organizeMainStats(rawStats, cranks) {
     }
   }
   return stats;
-}
+};
 
-export function printMainStats(stats) {
+export const printMainStats = stats => {
   const w1 = 32;
   const h1 = `${'Stat'.padEnd(w1)}`;
   const d1 = `${''.padEnd(w1, '-')}`;
@@ -88,9 +87,9 @@ export function printMainStats(stats) {
 
     log(`${col1} ${col2} ${col3} ${col4} ${col5}  ${col6}`);
   }
-}
+};
 
-export function organizeBenchmarkStats(rawBefore, rawAfter, cranks, rounds) {
+export const organizeBenchmarkStats = (rawBefore, rawAfter, cranks, rounds) => {
   const stats = {
     cranks,
     rounds,
@@ -109,9 +108,9 @@ export function organizeBenchmarkStats(rawBefore, rawAfter, cranks, rounds) {
     }
   }
   return stats;
-}
+};
 
-export function printBenchmarkStats(stats) {
+export const printBenchmarkStats = stats => {
   const w1 = 32;
   const h1 = `${'Stat'.padEnd(w1)}`;
   const d1 = `${''.padEnd(w1, '-')}`;
@@ -138,9 +137,9 @@ export function printBenchmarkStats(stats) {
     const col3 = `${pn(entry.deltaPerRound).padStart(w3)}`;
     log(`${col1} ${col2} ${col3}`);
   }
-}
+};
 
-export function outputStats(statsFile, main, benchmark) {
+export const outputStats = (statsFile, main, benchmark) => {
   const str = JSON.stringify({ main, benchmark }, undefined, 2);
   fs.writeFileSync(statsFile, str);
-}
+};

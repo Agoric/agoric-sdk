@@ -1,24 +1,22 @@
 import { Far } from '@endo/marshal';
 import { makeKind } from '../../src/storeModule.js';
 
-function makeHolderInnards(state) {
-  function init(value) {
+const makeHolderInnards = state => {
+  const init = value => {
     state.value = value;
-  }
+  };
   const self = Far('holder-vo', {
-    getValue() {
-      return state.value;
-    },
-    setValue(newValue) {
+    getValue: () => state.value,
+    setValue: newValue => {
       state.value = newValue;
     },
   });
   return { init, self };
-}
+};
 
 const makeHolder = makeKind(makeHolderInnards);
 
-export function buildRootObject() {
+export const buildRootObject = () => {
   const testWeakMap = new WeakMap();
   let memorableExportRemotable;
   let memorableExportVirtualObject;
@@ -28,7 +26,7 @@ export function buildRootObject() {
   let forgetableExportPromise;
 
   return Far('root', {
-    prepareWeakMap(theirStuff) {
+    prepareWeakMap: theirStuff => {
       memorableExportRemotable = Far('remember-exp', {});
       memorableExportVirtualObject = makeHolder('remember-exp-vo');
       memorableExportPromise = new Promise((_res, _rej) => {});
@@ -62,8 +60,6 @@ export function buildRootObject() {
 
       return result;
     },
-    probeWeakMap(probe) {
-      return testWeakMap.get(probe);
-    },
+    probeWeakMap: probe => testWeakMap.get(probe),
   });
-}
+};

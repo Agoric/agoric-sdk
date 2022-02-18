@@ -2,48 +2,46 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   // we use testLog to attempt to deliver messages even after we're supposed
   // to be cut off
   const { testLog } = vatPowers;
 
   return Far('root', {
-    foo(arg) {
+    foo: arg => {
       testLog(`FOO ${arg}`);
       return `FOO SAYS ${arg}`;
     },
 
-    never() {
-      return makePromiseKit().promise; // never fires
-    },
+    never: () => makePromiseKit().promise,
 
-    dieHappy(completion) {
+    dieHappy: completion => {
       vatPowers.exitVat(completion);
     },
 
-    dieSad(reason) {
+    dieSad: reason => {
       vatPowers.exitVatWithFailure(reason);
     },
 
-    dieHappyButTalkToMeFirst(other, completion) {
+    dieHappyButTalkToMeFirst: (other, completion) => {
       vatPowers.exitVat(completion);
       E(other).query('not dead quite yet');
     },
 
-    dieSadButTalkToMeFirst(other, reason) {
+    dieSadButTalkToMeFirst: (other, reason) => {
       vatPowers.exitVatWithFailure(reason);
       E(other).query('not dead quite yet (but soon)');
     },
 
-    dieReturningAPresence(other) {
+    dieReturningAPresence: other => {
       vatPowers.exitVat({ message: 'your ad here', emissary: other });
     },
 
-    async elsewhere(other, arg) {
+    elsewhere: async (other, arg) => {
       testLog(`QUERY ${arg}`);
       const answer = await E(other).query(arg);
       testLog(`ANSWER ${answer}`);
       return answer;
     },
   });
-}
+};

@@ -62,43 +62,41 @@ test('translation', t => {
   t.is(r.mapFromRemote('ro-30'), undefined);
 });
 
-function mockSyscall() {
+const mockSyscall = () => {
   const sends = [];
   const resolves = [];
   const gcs = [];
   const fakestore = new Map();
   const syscall = harden({
-    send(targetSlot, method, args, _result) {
+    send: (targetSlot, method, args, _result) => {
       sends.push([targetSlot, method, args]);
       // return 'r-1';
     },
-    resolve(resolutions) {
+    resolve: resolutions => {
       for (const resolution of resolutions) {
         resolves.push(resolution);
       }
     },
-    subscribe(_targetSlot) {},
-    vatstoreGet(key) {
-      return fakestore.get(key);
-    },
-    vatstoreSet(key, value) {
+    subscribe: _targetSlot => {},
+    vatstoreGet: key => fakestore.get(key),
+    vatstoreSet: (key, value) => {
       fakestore.set(key, value);
     },
-    vatstoreDelete(key) {
+    vatstoreDelete: key => {
       fakestore.delete(key);
     },
-    dropImports(vrefs) {
+    dropImports: vrefs => {
       gcs.push(['dropImports', vrefs]);
     },
-    retireImports(vrefs) {
+    retireImports: vrefs => {
       gcs.push(['retireImports', vrefs]);
     },
-    retireExports(vrefs) {
+    retireExports: vrefs => {
       gcs.push(['retireExports', vrefs]);
     },
   });
   return { syscall, sends, resolves, gcs, fakestore };
-}
+};
 
 /*
 function dumpFakestore(fakestore, prefix = '') {
@@ -114,13 +112,9 @@ function dumpFakestore(fakestore, prefix = '') {
 }
 */
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function encodeArgs(body) {
-  return capdata(JSON.stringify([body]), []);
-}
+const encodeArgs = body => capdata(JSON.stringify([body]), []);
 
 test('transmit', t => {
   // look at machine A, on which some local vat is sending messages to a
@@ -419,12 +413,12 @@ test('comms gc', t => {
   state.maybeInitialize();
   const transmitterID = 'o-1'; // vat-tp target for B
   const { remoteID, receiverID } = state.addRemote('B', transmitterID);
-  function didTx(exp) {
+  const didTx = exp => {
     t.deepEqual(sends.shift(), [transmitterID, 'transmit', encodeArgs(exp)]);
-  }
-  function rx(msg) {
+  };
+  const rx = msg => {
     dispatch(makeMessage(receiverID, 'receive', encodeArgs(msg)));
-  }
+  };
 
   // Alice is a Remoteable on some vat of machine A
   const aliceKernel = 'o-10';
@@ -1186,7 +1180,7 @@ test('return promise sent to third party', t => {
   done();
 });
 
-function twoAcksTest(t, aliceFirst) {
+const twoAcksTest = (t, aliceFirst) => {
   const {
     _,
     done,
@@ -1252,7 +1246,7 @@ function twoAcksTest(t, aliceFirst) {
   t.is(state.getPromiseStatus(plPromise), undefined);
 
   done();
-}
+};
 
 test('promise sent to two remotes, Alice acks before Bob', t => {
   twoAcksTest(t, true);
@@ -1262,7 +1256,7 @@ test('promise sent to two remotes, Bob acks before Alice', t => {
   twoAcksTest(t, false);
 });
 
-function nestedPromisesTestLarryOuter(t, larryInner) {
+const nestedPromisesTestLarryOuter = (t, larryInner) => {
   const {
     _,
     done,
@@ -1337,7 +1331,7 @@ function nestedPromisesTestLarryOuter(t, larryInner) {
   t.is(state.getPromiseStatus(plPromiseInner), undefined);
 
   done();
-}
+};
 
 test('Nested promises, Larry outer, Larry inner', t => {
   nestedPromisesTestLarryOuter(t, true);
@@ -1347,7 +1341,7 @@ test('Nested promises, Larry outer, Alice inner', t => {
   nestedPromisesTestLarryOuter(t, false);
 });
 
-function nestedPromisesTestAliceOuter(t, larryInner) {
+const nestedPromisesTestAliceOuter = (t, larryInner) => {
   const {
     _,
     done,
@@ -1419,7 +1413,7 @@ function nestedPromisesTestAliceOuter(t, larryInner) {
   t.is(state.getPromiseStatus(plPromiseInner), undefined);
 
   done();
-}
+};
 
 test('Nested promises, Alice outer, Larry inner', t => {
   nestedPromisesTestAliceOuter(t, true);

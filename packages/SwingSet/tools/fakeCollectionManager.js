@@ -1,6 +1,6 @@
 import { makeCollectionManager } from '../src/kernel/collectionManager.js';
 
-export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
+export const makeFakeCollectionManager = (vrm, fakeStuff, _options = {}) => {
   const {
     makeScalarBigMapStore,
     makeScalarBigWeakMapStore,
@@ -33,4 +33,4 @@ export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
   };
 
   return harden({ ...normalCM, ...debugTools });
-}
+};

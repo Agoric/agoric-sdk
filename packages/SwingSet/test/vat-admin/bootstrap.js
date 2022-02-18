@@ -1,44 +1,44 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { D } = vatPowers;
   let admin;
   let bundleDevice;
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       admin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       bundleDevice = devices.bundle;
     },
 
-    async byBundle(bundle) {
+    byBundle: async bundle => {
       const { root } = await E(admin).createVat(bundle);
       const n = await E(root).getANumber();
       return n;
     },
 
-    async byName(bundleName) {
+    byName: async bundleName => {
       const { root } = await E(admin).createVatByName(bundleName);
       const n = await E(root).getANumber();
       return n;
     },
 
-    async byNamedBundlecap(name) {
+    byNamedBundlecap: async name => {
       const bcap = D(bundleDevice).getNamedBundlecap(name);
       const { root } = await E(admin).createVat(bcap);
       const n = await E(root).getANumber();
       return n;
     },
 
-    async byID(id) {
+    byID: async id => {
       const bcap = D(bundleDevice).getBundlecap(id);
       const { root } = await E(admin).createVat(bcap);
       const n = await E(root).getANumber();
       return n;
     },
 
-    async counters(bundleName) {
+    counters: async bundleName => {
       const { root } = await E(admin).createVatByName(bundleName);
       const c = E(root).createRcvr(1);
       const log = [];
@@ -48,12 +48,8 @@ export function buildRootObject(vatPowers) {
       return log;
     },
 
-    async brokenVat(bundleName) {
-      return E(admin).createVatByName(bundleName); // should reject
-    },
+    brokenVat: async bundleName => E(admin).createVatByName(bundleName),
 
-    async nonBundlecap() {
-      return E(admin).createVat(Far('non-bundlecap', {})); // should reject
-    },
+    nonBundlecap: async () => E(admin).createVat(Far('non-bundlecap', {})),
   });
-}
+};

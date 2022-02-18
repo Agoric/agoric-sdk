@@ -12,7 +12,7 @@
  * @param {any} _
  * @param {any} val
  */
-function replacer(_, val) {
+const replacer = (_, val) => {
   if (typeof val === 'object') {
     const sortedObject = {};
     const names = Array.from(Object.getOwnPropertyNames(val));
@@ -23,7 +23,7 @@ function replacer(_, val) {
     return sortedObject;
   }
   return val;
-}
+};
 
 /**
  * Work-alike to JSON.stringify, but serializes object properties sorted
@@ -31,9 +31,7 @@ function replacer(_, val) {
  *
  * @param {any} val
  */
-function stringify(val) {
-  return JSON.stringify(val, replacer);
-}
+const stringify = val => JSON.stringify(val, replacer);
 
 /**
  * Equivalent to JSON.parse, provided so that djson may be used as a drop-in
@@ -41,8 +39,6 @@ function stringify(val) {
  *
  * @param {string} s
  */
-function parse(s) {
-  return JSON.parse(s);
-}
+const parse = s => JSON.parse(s);
 
 export default { stringify, parse };

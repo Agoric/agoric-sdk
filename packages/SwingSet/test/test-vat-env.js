@@ -12,15 +12,11 @@ test('harden from SES is in the test environment', t => {
   t.pass();
 });
 
-function makeThingInnards(_state) {
-  return {
-    self: Far('thing', {
-      ping() {
-        return 4;
-      },
-    }),
-  };
-}
+const makeThingInnards = _state => ({
+  self: Far('thing', {
+    ping: () => 4,
+  }),
+});
 
 test('kind makers are in the test environment', t => {
   // eslint-disable-next-line no-undef
@@ -55,7 +51,7 @@ test('store makers are in the test environment', t => {
   t.truthy(ws.has('key'));
 });
 
-async function testForExpectedGlobals(t, workerType) {
+const testForExpectedGlobals = async (t, workerType) => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -81,7 +77,7 @@ async function testForExpectedGlobals(t, workerType) {
     'VatData.makeScalarBigSetStore: function',
     'VatData.makeScalarBigWeakSetStore: function',
   ]);
-}
+};
 
 test('expected globals are in the local worker vat environment', async t => {
   await testForExpectedGlobals(t, 'local');

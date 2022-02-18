@@ -1,13 +1,11 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export const buildRootObject = (_vatPowers, vatParameters) => {
   const other = Far('other', {
-    something(arg) {
-      return arg;
-    },
+    something: arg => arg,
   });
 
-  function behave(mode) {
+  const behave = mode => {
     if (mode === 'data') {
       return 'a big hello to all intelligent lifeforms everywhere';
     } else if (mode === 'presence') {
@@ -16,14 +14,10 @@ export function buildRootObject(_vatPowers, vatParameters) {
       throw new Error('gratuitous error');
     }
     return undefined;
-  }
+  };
 
   return Far('root', {
-    bootstrap(_vats) {
-      return behave(vatParameters.argv[0]);
-    },
-    extra(mode) {
-      return behave(mode);
-    },
+    bootstrap: _vats => behave(vatParameters.argv[0]),
+    extra: mode => behave(mode),
   });
-}
+};

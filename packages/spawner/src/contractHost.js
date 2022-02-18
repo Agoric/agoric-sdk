@@ -7,12 +7,12 @@ import { Far } from '@endo/marshal';
 // spawnBundle is built with 'yarn build'
 import spawnBundle from '../bundles/bundle-spawn.js';
 
-function makeSpawner(vatAdminSvc) {
-  return Far('spawner', {
-    install(bundle, oldModuleFormat) {
+const makeSpawner = vatAdminSvc =>
+  Far('spawner', {
+    install: (bundle, oldModuleFormat) => {
       assert(!oldModuleFormat, 'oldModuleFormat not supported');
       return Far('installer', {
-        async spawn(argsP) {
+        spawn: async argsP => {
           const meter = await E(vatAdminSvc).createUnlimitedMeter();
           const opts = { meter };
           const { root } = await E(vatAdminSvc).createVat(spawnBundle, opts);
@@ -21,7 +21,6 @@ function makeSpawner(vatAdminSvc) {
       });
     },
   });
-}
 harden(makeSpawner);
 
 export { makeSpawner };

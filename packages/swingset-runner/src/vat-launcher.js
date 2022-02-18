@@ -21,11 +21,11 @@ import { Far } from '@endo/marshal';
  * co-resident swingsets as you care to ask for).  That's a fairly simple
  * extension of this, but this is not that.
  */
-export function buildRootObject(_vatPowers, vatParameters) {
+export const buildRootObject = (_vatPowers, vatParameters) => {
   let bootstrapRoot;
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       const vatRoots = {};
       for (const vatName of Object.keys(vatParameters.config.vats)) {
@@ -50,8 +50,6 @@ export function buildRootObject(_vatPowers, vatParameters) {
       // prettier-ignore
       return E(bootstrapRoot).bootstrap(harden(vatRoots), devices);
     },
-    runBenchmarkRound() {
-      return E(bootstrapRoot).runBenchmarkRound();
-    },
+    runBenchmarkRound: () => E(bootstrapRoot).runBenchmarkRound(),
   });
-}
+};

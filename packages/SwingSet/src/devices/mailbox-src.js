@@ -3,13 +3,13 @@ import { Far } from '@endo/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootDeviceNode(tools) {
+export const buildRootDeviceNode = tools => {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
 
   let deliverInboundMessages;
   let deliverInboundAck;
 
-  function inboundCallback(peer, messages, ack) {
+  const inboundCallback = (peer, messages, ack) => {
     if (!deliverInboundMessages) {
       throw new Error(
         `mailbox.inboundCallback(${peer}) called before handler was registered`,
@@ -26,7 +26,7 @@ export function buildRootDeviceNode(tools) {
     }
     deliverInboundAck(peer, ack);
     return true; // always didSomething
-  }
+  };
   endowments.registerInboundCallback(inboundCallback);
 
   // we keep no state in the device, it all lives elsewhere, as decided by
@@ -57,13 +57,13 @@ export function buildRootDeviceNode(tools) {
 
   // the Root Device Node.
   return Far('root', {
-    registerInboundHandler(handler) {
+    registerInboundHandler: handler => {
       assert(!inboundHandler, X`already registered`);
       inboundHandler = handler;
       setDeviceState(harden({ inboundHandler }));
     },
 
-    add(peer, msgnum, body) {
+    add: (peer, msgnum, body) => {
       try {
         endowments.add(`${peer}`, Nat(msgnum), `${body}`);
       } catch (e) {
@@ -71,7 +71,7 @@ export function buildRootDeviceNode(tools) {
       }
     },
 
-    remove(peer, msgnum) {
+    remove: (peer, msgnum) => {
       try {
         endowments.remove(`${peer}`, Nat(msgnum));
       } catch (e) {
@@ -79,7 +79,7 @@ export function buildRootDeviceNode(tools) {
       }
     },
 
-    ackInbound(peer, msgnum) {
+    ackInbound: (peer, msgnum) => {
       try {
         endowments.setAcknum(`${peer}`, Nat(msgnum));
       } catch (e) {
@@ -87,4 +87,4 @@ export function buildRootDeviceNode(tools) {
       }
     },
   });
-}
+};

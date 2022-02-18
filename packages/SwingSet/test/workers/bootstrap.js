@@ -2,12 +2,9 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject() {
+export const buildRootObject = () => {
   const callbackObj = Far('callback', {
-    callback(_arg1, _arg2) {
-      // console.log(`callback`, arg1, arg2);
-      return ['data', callbackObj]; // four, resolves pF
-    },
+    callback: (_arg1, _arg2) => ['data', callbackObj],
   });
 
   const precD = makePromiseKit();
@@ -15,25 +12,23 @@ export function buildRootObject() {
 
   const dropMe = Far('dropMe', {});
 
-  function checkResB(resB) {
+  const checkResB = resB => {
     if (resB === callbackObj) {
       return 'B good';
     }
     return `B bad: ${resB}`;
-  }
+  };
 
-  function checkResC(resC) {
-    return `C bad: not error, got ${resC}`;
-  }
+  const checkResC = resC => `C bad: not error, got ${resC}`;
 
-  function checkErrC(errC) {
+  const checkErrC = errC => {
     if (errC.message === 'oops') {
       return 'C good';
     }
     return `C wrong error ${errC.message}`;
-  }
+  };
 
-  function checkResF([resF1, resF2]) {
+  const checkResF = ([resF1, resF2]) => {
     if (resF1 !== 'data') {
       return 'F bad: data';
     }
@@ -41,14 +36,13 @@ export function buildRootObject() {
       return `F bad: callbackObj was ${callbackObj}`;
     }
     return 'F good';
-  }
+  };
 
-  function checkThree(three) {
-    return three === 3 ? 'three good' : `not three, got ${three}`;
-  }
+  const checkThree = three =>
+    three === 3 ? 'three good' : `not three, got ${three}`;
 
-  function checkA([pB, pC, pF, three, vs1, vs2, evt, evwft]) {
-    return Promise.all([
+  const checkA = ([pB, pC, pF, three, vs1, vs2, evt, evwft]) =>
+    Promise.all([
       pB.then(checkResB),
       pC.then(checkResC, checkErrC),
       pF.then(checkResF),
@@ -58,10 +52,9 @@ export function buildRootObject() {
       evt === 'function' ? 'exit good' : 'exit bad',
       evwft === 'function' ? 'exitWF good' : 'exitWF bad',
     ]);
-  }
 
   return Far('root', {
-    bootstrap(vats, devices) {
+    bootstrap: (vats, devices) => {
       const pA = E(vats.target).zero(
         callbackObj,
         precD.promise,
@@ -77,4 +70,4 @@ export function buildRootObject() {
       return done;
     },
   });
-}
+};

@@ -3,7 +3,7 @@ import { parseVatSlot, insistVatType } from '../../parseVatSlots.js';
 import { parseLocalSlot } from './parseLocalSlots.js';
 import { cdebug } from './cdebug.js';
 
-export function makeKernel(state, syscall) {
+export const makeKernel = (state, syscall) => {
   // *-KernelForLocal: comms vat sending out to kernel
   //
   // When we send new promises into the kernel, we need to remember to notify
@@ -19,7 +19,7 @@ export function makeKernel(state, syscall) {
   const setReachable = state.setReachableByKernel;
   // const clearReachable = state.clearReachableByKernel;
 
-  function getKernelForLocal(lref) {
+  const getKernelForLocal = lref => {
     const kfref = state.mapToKernel(lref);
     assert(kfref, X`${lref} must already be mapped to a kernel-facing ID`);
     const { type, allocatedByVat } = parseVatSlot(kfref);
@@ -28,9 +28,9 @@ export function makeKernel(state, syscall) {
       assert(isReachable(lref), X`comms sending to unreachable import ${lref}`);
     }
     return kfref;
-  }
+  };
 
-  function provideKernelForLocal(lref) {
+  const provideKernelForLocal = lref => {
     const { type } = parseLocalSlot(lref);
     let kfref = state.mapToKernel(lref);
     if (!kfref) {
@@ -67,9 +67,9 @@ export function makeKernel(state, syscall) {
     }
 
     return kfref;
-  }
+  };
 
-  function provideKernelForLocalResult(lpid) {
+  const provideKernelForLocalResult = lpid => {
     if (!lpid) {
       return undefined;
     }
@@ -82,9 +82,9 @@ export function makeKernel(state, syscall) {
     // cared.. well, it doesn't now
     state.unsubscribeKernelFromPromise(lpid);
     return provideKernelForLocal(lpid);
-  }
+  };
 
-  function retireKernelPromiseID(kfpid) {
+  const retireKernelPromiseID = kfpid => {
     insistVatType('promise', kfpid);
     const lpid = state.mapFromKernel(kfpid);
     assert(lpid, X`unknown kernel promise ${kfpid}`);
@@ -96,11 +96,11 @@ export function makeKernel(state, syscall) {
     );
     state.deleteKernelMapping(lpid);
     cdebug(`comms delete mapping l<->k ${kfpid}<=>${lpid}`);
-  }
+  };
 
   // *-LocalForKernel: kernel sending in to comms vat
 
-  function getLocalForKernel(kfref) {
+  const getLocalForKernel = kfref => {
     const lref = state.mapFromKernel(kfref);
     assert(lref, X`${kfref} must already be mapped to a local ID`);
     if (parseVatSlot(kfref).type === 'object') {
@@ -111,9 +111,9 @@ export function makeKernel(state, syscall) {
       );
     }
     return lref;
-  }
+  };
 
-  function addLocalObjectForKernel(kfoid) {
+  const addLocalObjectForKernel = kfoid => {
     assert(
       !state.mapFromKernel(kfoid),
       `I don't remember giving ${kfoid} to the kernel`,
@@ -122,9 +122,9 @@ export function makeKernel(state, syscall) {
     const loid = state.allocateObject('kernel');
     state.addKernelMapping(kfoid, loid);
     cdebug(`comms import kernel ${loid} ${kfoid}`);
-  }
+  };
 
-  function addLocalPromiseForKernel(kfpid) {
+  const addLocalPromiseForKernel = kfpid => {
     assert(
       !state.mapFromKernel(kfpid),
       `I don't remember giving ${kfpid} to the kernel`,
@@ -133,9 +133,9 @@ export function makeKernel(state, syscall) {
     state.changeDeciderToKernel(lpid);
     state.addKernelMapping(kfpid, lpid);
     cdebug(`comms import kernel ${lpid} ${kfpid}`);
-  }
+  };
 
-  function provideLocalForKernel(kfref, doNotSubscribeSet) {
+  const provideLocalForKernel = (kfref, doNotSubscribeSet) => {
     const { type, allocatedByVat } = parseVatSlot(kfref);
     if (type !== 'object' && type !== 'promise') {
       // TODO: reject the message rather than crashing weirdly, we
@@ -173,9 +173,9 @@ export function makeKernel(state, syscall) {
     }
 
     return lref;
-  }
+  };
 
-  function provideLocalForKernelResult(kfpid) {
+  const provideLocalForKernelResult = kfpid => {
     if (!kfpid) {
       return null;
     }
@@ -187,7 +187,7 @@ export function makeKernel(state, syscall) {
     state.changeDeciderFromKernelToComms(lpid);
     state.subscribeKernelToPromise(lpid);
     return lpid;
-  }
+  };
 
   return harden({
     getKernelForLocal,
@@ -198,4 +198,4 @@ export function makeKernel(state, syscall) {
     provideLocalForKernelResult,
     retireKernelPromiseID,
   });
-}
+};

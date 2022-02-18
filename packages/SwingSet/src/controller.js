@@ -29,19 +29,19 @@ import {
 } from './initializeSwingset.js';
 
 /** @param {string} tag */
-function makeConsole(tag) {
+const makeConsole = tag => {
   const log = anylogger(tag);
   const cons = {};
   for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
     cons[level] = log[level];
   }
   return harden(cons);
-}
+};
 
 /** @param {Error} e */
-function unhandledRejectionHandler(e) {
+const unhandledRejectionHandler = e => {
   console.error('UnhandledPromiseRejectionWarning:', e);
-}
+};
 
 /**
  * @param {{ moduleFormat: string, source: string }[]} bundles
@@ -51,7 +51,7 @@ function unhandledRejectionHandler(e) {
  *   env: Record<string, string | undefined>,
  * }} opts
  */
-export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
+export const makeStartXSnap = (bundles, { snapStore, env, spawn }) => {
   /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
@@ -82,12 +82,12 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
    * @param { boolean } [metered]
    * @param { string } [snapshotHash]
    */
-  async function startXSnap(
+  const startXSnap = async (
     name,
     handleCommand,
     metered,
     snapshotHash = undefined,
-  ) {
+  ) => {
     if (snapStore && snapshotHash) {
       // console.log('startXSnap from', { snapshotHash });
       return snapStore.load(snapshotHash, async snapshot => {
@@ -109,9 +109,9 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
     }
     return worker;
-  }
+  };
   return startXSnap;
-}
+};
 
 /**
  *
@@ -130,11 +130,11 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   env?: Record<string, string | undefined>
  * }} runtimeOptions
  */
-export async function makeSwingsetController(
+export const makeSwingsetController = async (
   hostStorage = provideHostStorage(),
   deviceEndowments = {},
   runtimeOptions = {},
-) {
+) => {
   const kvStore = hostStorage.kvStore;
   insistStorageAPI(kvStore);
 
@@ -159,7 +159,7 @@ export async function makeSwingsetController(
   const slogF =
     slogFile && (await fs.createWriteStream(slogFile, { flags: 'a' })); // append
 
-  function writeSlogObject(obj) {
+  const writeSlogObject = obj => {
     if (!slogSender && !slogF) {
       // Fast path; nothing to do.
       return;
@@ -186,7 +186,7 @@ export async function makeSwingsetController(
       slogF.write(jsonObj);
       slogF.write('\n');
     }
-  }
+  };
 
   // eslint-disable-next-line no-shadow
   const console = makeConsole(`${debugPrefix}SwingSet:controller`);
@@ -209,9 +209,9 @@ export async function makeSwingsetController(
     process.on('unhandledRejection', unhandledRejectionHandler);
   }
 
-  function kernelRequire(what) {
+  const kernelRequire = what => {
     assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
-  }
+  };
   // @ts-ignore assume kernelBundle is set
   const kernelBundle = JSON.parse(kvStore.get('kernelBundle'));
   writeSlogObject({ type: 'import-kernel-start' });
@@ -232,23 +232,23 @@ export async function makeSwingsetController(
   const vatEndowments = harden({});
 
   // this launches a worker in a Node.js thread (aka "Worker")
-  function makeNodeWorker() {
+  const makeNodeWorker = () => {
     const supercode = new URL(
       'kernel/vatManager/supervisor-nodeworker.js',
       import.meta.url,
     ).pathname;
     return new Worker(supercode);
-  }
+  };
 
   // launch a worker in a subprocess (which runs Node.js)
-  function startSubprocessWorkerNode() {
+  const startSubprocessWorkerNode = () => {
     const supercode = new URL(
       'kernel/vatManager/supervisor-subprocess-node.js',
       import.meta.url,
     ).pathname;
     const args = [supercode];
     return startSubprocessWorker(process.execPath, args);
-  }
+  };
 
   const bundles = [
     // @ts-ignore assume lockdownBundle is set
@@ -303,7 +303,7 @@ export async function makeSwingsetController(
    * @param { BundleID? } allegedBundleID
    * @returns { Promise<BundleID> }
    */
-  async function validateAndInstallBundle(bundle, allegedBundleID) {
+  const validateAndInstallBundle = async (bundle, allegedBundleID) => {
     // TODO: validation: unpack, parse sources, check hashes
 
     // this only computes the hash of the compartment map, it does not check
@@ -318,52 +318,38 @@ export async function makeSwingsetController(
     }
     kernel.installBundle(bundleID, bundle);
     return bundleID;
-  }
+  };
 
   // the kernel won't leak our objects into the Vats, we must do
   // the same in this wrapper
   const controller = harden({
-    log(str) {
+    log: str => {
       kernel.log(str);
     },
 
     writeSlogObject,
 
-    dump() {
-      return defensiveCopy(kernel.dump());
-    },
+    dump: () => defensiveCopy(kernel.dump()),
 
-    verboseDebugMode(flag) {
+    verboseDebugMode: flag => {
       kernel.kdebugEnable(flag);
     },
 
     validateAndInstallBundle,
 
-    async run(policy) {
-      return kernel.run(policy);
-    },
+    run: async policy => kernel.run(policy),
 
-    async step() {
-      return kernel.step();
-    },
+    step: async () => kernel.step(),
 
-    async shutdown() {
-      return kernel.shutdown();
-    },
+    shutdown: async () => kernel.shutdown(),
 
-    getStats() {
-      return defensiveCopy(kernel.getStats());
-    },
+    getStats: () => defensiveCopy(kernel.getStats()),
 
-    getStatus() {
-      return defensiveCopy(kernel.getStatus());
-    },
+    getStatus: () => defensiveCopy(kernel.getStatus()),
 
-    getActivityhash() {
-      return kernel.getActivityhash();
-    },
+    getActivityhash: () => kernel.getActivityhash(),
 
-    pinVatRoot(vatName) {
+    pinVatRoot: vatName => {
       const vatID = kernel.vatNameToID(vatName);
       const kref = kernel.getRootObject(vatID);
       kernel.pinObject(kref);
@@ -372,19 +358,11 @@ export async function makeSwingsetController(
 
     // these are for tests
 
-    kpStatus(kpid) {
-      return kernel.kpStatus(kpid);
-    },
+    kpStatus: kpid => kernel.kpStatus(kpid),
 
-    kpResolution(kpid) {
-      return kernel.kpResolution(kpid);
-    },
-    vatNameToID(vatName) {
-      return kernel.vatNameToID(vatName);
-    },
-    deviceNameToID(deviceName) {
-      return kernel.deviceNameToID(deviceName);
-    },
+    kpResolution: kpid => kernel.kpResolution(kpid),
+    vatNameToID: vatName => kernel.vatNameToID(vatName),
+    deviceNameToID: deviceName => kernel.deviceNameToID(deviceName),
 
     /**
      * @param {string} vatName
@@ -392,7 +370,7 @@ export async function makeSwingsetController(
      * @param {CapData<unknown>} args
      * @param {ResolutionPolicy} resultPolicy
      */
-    queueToVatRoot(vatName, method, args, resultPolicy = 'ignore') {
+    queueToVatRoot: (vatName, method, args, resultPolicy = 'ignore') => {
       const vatID = kernel.vatNameToID(vatName);
       assert.typeof(method, 'string');
       insistCapData(args);
@@ -406,7 +384,7 @@ export async function makeSwingsetController(
   });
 
   return controller;
-}
+};
 
 /**
  * NB: To be used only in tests. An app with this may not survive a reboot.
@@ -430,11 +408,11 @@ export async function makeSwingsetController(
  *   boolean }, slogFile?: string, }} runtimeOptions
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
-export async function buildVatController(
+export const buildVatController = async (
   config,
   argv = [],
   runtimeOptions = {},
-) {
+) => {
   const {
     hostStorage = provideHostStorage(),
     env,
@@ -470,4 +448,4 @@ export async function buildVatController(
     actualRuntimeOptions,
   );
   return harden({ bootstrapResult, ...controller });
-}
+};

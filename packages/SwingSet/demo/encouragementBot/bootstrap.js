@@ -3,10 +3,10 @@ import { Far } from '@endo/marshal';
 
 console.log(`=> loading bootstrap.js`);
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const log = vatPowers.testLog;
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       console.log('=> bootstrap() called');
       E(vats.user)
         .talkToBot(vats.bot, 'encouragementBot')
@@ -22,4 +22,4 @@ export function buildRootObject(vatPowers) {
         );
     },
   });
-}
+};

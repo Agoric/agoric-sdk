@@ -8,11 +8,11 @@ import util from 'util';
 import { loadBasedir, buildVatController } from '../src/index.js';
 import { buildLoopbox } from '../src/devices/loopbox.js';
 
-function deepLog(item) {
+const deepLog = item => {
   console.log(util.inspect(item, false, null, true));
-}
+};
 
-async function main() {
+const main = async () => {
   const argv = process.argv.splice(2);
   let withSES = true;
   if (argv[0] === '--no-ses') {
@@ -56,6 +56,6 @@ async function main() {
       controller.step();
     };
   }
-}
+};
 
 main();

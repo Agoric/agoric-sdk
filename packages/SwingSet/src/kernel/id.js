@@ -21,7 +21,7 @@ import { assert, details as X } from '@agoric/assert';
  *
  * @returns {void}
  */
-export function insistVatID(s) {
+export const insistVatID = s => {
   try {
     assert.typeof(s, 'string', X`not a string`);
     assert(s.startsWith(`v`), X`does not start with 'v'`);
@@ -29,7 +29,7 @@ export function insistVatID(s) {
   } catch (e) {
     assert.fail(X`'${s} is not a 'vNN'-style VatID: ${e}`);
   }
-}
+};
 
 /**
  * Generate a vat ID string given an index.
@@ -38,9 +38,7 @@ export function insistVatID(s) {
  *
  * @returns {string} a vat ID string of the form "vNN" where NN is the index.
  */
-export function makeVatID(index) {
-  return `v${Nat(index)}`;
-}
+export const makeVatID = index => `v${Nat(index)}`;
 
 /**
  * Assert function to ensure that something expected to be a device ID string
@@ -53,7 +51,7 @@ export function makeVatID(index) {
  *
  * @returns {void}
  */
-export function insistDeviceID(s) {
+export const insistDeviceID = s => {
   try {
     assert.typeof(s, 'string', X`not a string`);
     assert(s.startsWith(`d`), X`does not start with 'd'`);
@@ -61,7 +59,7 @@ export function insistDeviceID(s) {
   } catch (e) {
     assert.fail(X`'${s} is not a 'dNN'-style DeviceID: ${e}`);
   }
-}
+};
 
 /**
  * Generate a device ID string given an index.
@@ -70,9 +68,7 @@ export function insistDeviceID(s) {
  *
  * @returns {string} a device ID string of the form "dNN" where NN is the index.
  */
-export function makeDeviceID(index) {
-  return `d${Nat(index)}`;
-}
+export const makeDeviceID = index => `d${Nat(index)}`;
 
 /**
  * Parse a vat or device ID string into its constituent parts.
@@ -86,7 +82,7 @@ export function makeDeviceID(index) {
  *
  * @throws {Error} if the parameter is not a string or is malformed.
  */
-export function parseVatOrDeviceID(s) {
+export const parseVatOrDeviceID = s => {
   assert.typeof(
     s,
     'string',
@@ -105,4 +101,4 @@ export function parseVatOrDeviceID(s) {
     assert.fail(X`'${s}' is neither a VatID nor a DeviceID`);
   }
   return harden({ type, id: Nat(BigInt(idSuffix)) });
-}
+};

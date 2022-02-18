@@ -10,20 +10,16 @@ import {
   buildKernelBundles,
 } from '../../../src/index.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   t.context.data = { kernelBundles };
 });
 
-async function doTerminate(t, mode, reference, extraMessage = []) {
+const doTerminate = async (t, mode, reference, extraMessage = []) => {
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
@@ -52,7 +48,7 @@ async function doTerminate(t, mode, reference, extraMessage = []) {
     reference,
     'done',
   ]);
-}
+};
 
 test('terminate', async t => {
   await doTerminate(t, 'kill', 'done exception kill (Error=false)');

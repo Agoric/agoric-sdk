@@ -8,7 +8,7 @@ import { extractMessage, capdata, capargs, ignore } from './vat-util.js';
 
 export { extractMessage, capdata, capargs, ignore };
 
-function compareArraysOfStrings(a, b) {
+const compareArraysOfStrings = (a, b) => {
   a = a.join(' ');
   b = b.join(' ');
   if (a > b) {
@@ -18,9 +18,9 @@ function compareArraysOfStrings(a, b) {
     return -1;
   }
   return 0;
-}
+};
 
-export function checkKT(t, kernel, expected) {
+export const checkKT = (t, kernel, expected) => {
   // extract the "kernel table" (a summary of all Vat clists) and assert that
   // the contents match the expected list. This does a sort of the two lists
   // before a t.deepEqual, which makes it easier to incrementally add
@@ -31,9 +31,9 @@ export function checkKT(t, kernel, expected) {
   expected = Array.from(expected);
   expected.sort(compareArraysOfStrings);
   t.deepEqual(got, expected);
-}
+};
 
-export function dumpKT(kernel) {
+export const dumpKT = kernel => {
   const got = Array.from(kernel.dump().kernelTable).map(
     ([kid, vatdev, vid]) => [vatdev, vid, kid],
   );
@@ -41,12 +41,12 @@ export function dumpKT(kernel) {
   for (const [vatdev, vid, kid] of got) {
     console.log(`${vatdev}:${vid} <-> ${kid}`);
   }
-}
+};
 
-export function buildDispatch(onDispatchCallback = undefined) {
+export const buildDispatch = (onDispatchCallback = undefined) => {
   const log = [];
 
-  function dispatch(vatDeliverObject) {
+  const dispatch = vatDeliverObject => {
     const [type, ...vdoargs] = vatDeliverObject;
     if (type === 'message') {
       const [target, msg] = vdoargs;
@@ -72,86 +72,77 @@ export function buildDispatch(onDispatchCallback = undefined) {
     } else {
       throw Error(`unknown vatDeliverObject type ${type}`);
     }
-  }
+  };
 
   return { log, dispatch };
-}
+};
 
-export function capSlot(index) {
-  return { '@qclass': 'slot', iface: 'Alleged: export', index };
-}
+export const capSlot = index => ({
+  '@qclass': 'slot',
+  iface: 'Alleged: export',
+  index,
+});
 
-export function capdataOneSlot(slot) {
-  return capargs({ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }, [
-    slot,
-  ]);
-}
+export const capdataOneSlot = slot =>
+  capargs({ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }, [slot]);
 
-export function capargsOneSlot(slot) {
-  return capargs(
-    [{ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }],
-    [slot],
-  );
-}
+export const capargsOneSlot = slot =>
+  capargs([{ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }], [slot]);
 
-export function makeMessage(target, method, args, result = null) {
+export const makeMessage = (target, method, args, result = null) => {
   const msg = { method, args, result };
   const vatDeliverObject = harden(['message', target, msg]);
   return vatDeliverObject;
-}
+};
 
-export function makeBringOutYourDead() {
-  return harden(['bringOutYourDead']);
-}
+export const makeBringOutYourDead = () => harden(['bringOutYourDead']);
 
-export function makeResolutions(resolutions) {
+export const makeResolutions = resolutions => {
   const vatDeliverObject = harden(['notify', resolutions]);
   return vatDeliverObject;
-}
+};
 
-export function makeResolve(target, result) {
+export const makeResolve = (target, result) => {
   const resolutions = [[target, false, result]];
   return makeResolutions(resolutions);
-}
+};
 
-export function makeReject(target, result) {
+export const makeReject = (target, result) => {
   const resolutions = [[target, true, result]];
   const vatDeliverObject = harden(['notify', resolutions]);
   return vatDeliverObject;
-}
+};
 
-export function makeDropExports(...vrefs) {
+export const makeDropExports = (...vrefs) => {
   const vatDeliverObject = harden(['dropExports', vrefs]);
   return vatDeliverObject;
-}
+};
 
-export function makeRetireExports(...vrefs) {
+export const makeRetireExports = (...vrefs) => {
   const vatDeliverObject = harden(['retireExports', vrefs]);
   return vatDeliverObject;
-}
+};
 
-export function makeRetireImports(...vrefs) {
+export const makeRetireImports = (...vrefs) => {
   const vatDeliverObject = harden(['retireImports', vrefs]);
   return vatDeliverObject;
-}
+};
 
-function makeConsole(tag) {
+const makeConsole = tag => {
   const log = anylogger(tag);
   const cons = {};
   for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
     cons[level] = log[level];
   }
   return harden(cons);
-}
+};
 
-export function makeKernelEndowments() {
-  return {
-    waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
-    runEndOfCrank: () => {},
-    makeConsole,
-    WeakRef,
-    FinalizationRegistry,
-    createSHA256,
-  };
-}
+export const makeKernelEndowments = () => ({
+  waitUntilQuiescent,
+  hostStorage: provideHostStorage(),
+  runEndOfCrank: () => {},
+  makeConsole,
+  WeakRef,
+  FinalizationRegistry,
+  createSHA256,
+});

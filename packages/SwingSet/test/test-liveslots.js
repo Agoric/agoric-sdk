@@ -28,12 +28,12 @@ import {
 test('calls', async t => {
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
-    return Far('root', {
-      one() {
+  const build = _vatPowers =>
+    Far('root', {
+      one: () => {
         log.push('one');
       },
-      two(p) {
+      two: p => {
         log.push(`two ${E.resolve(p) === p}`);
         p.then(
           res => log.push(['res', res]),
@@ -41,7 +41,6 @@ test('calls', async t => {
         );
       },
     });
-  }
   const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -89,16 +88,15 @@ test('calls', async t => {
 test('liveslots pipelines to syscall.send', async t => {
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
-    return Far('root', {
-      one(x) {
+  const build = _vatPowers =>
+    Far('root', {
+      one: x => {
         const p1 = E(x).pipe1();
         const p2 = E(p1).pipe2();
         E(p2).pipe3();
         log.push('sent p1p2p3');
       },
     });
-  }
   const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -146,19 +144,19 @@ test('liveslots pipelines to syscall.send', async t => {
 test('liveslots pipeline/non-pipeline calls', async t => {
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     let p1;
     return Far('onetwo', {
-      one(p) {
+      one: p => {
         p1 = p;
         E(p1).pipe1();
         p1.then(o2 => E(o2).nonpipe2());
       },
-      two() {
+      two: () => {
         E(p1).nonpipe3();
       },
     });
-  }
+  };
   const dispatch = makeDispatch(syscall, build);
 
   t.deepEqual(log, []);
@@ -213,12 +211,12 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   t.deepEqual(log, []);
 });
 
-async function doOutboundPromise(t, mode) {
+const doOutboundPromise = async (t, mode) => {
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
-    return Far('root', {
-      run(target, resolution) {
+  const build = _vatPowers =>
+    Far('root', {
+      run: (target, resolution) => {
         let p; // vat creates the promise
         if (resolution === 'reject') {
           // eslint-disable-next-line prefer-promise-reject-errors
@@ -235,7 +233,6 @@ async function doOutboundPromise(t, mode) {
         Promise.resolve().then(() => E(target).two(p));
       },
     });
-  }
   const dispatch = makeDispatch(syscall, build);
 
   t.deepEqual(log, []);
@@ -311,7 +308,7 @@ async function doOutboundPromise(t, mode) {
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP2 });
 
   t.deepEqual(log, []);
-}
+};
 
 test('liveslots retires outbound promise IDs after resolve to presence', async t => {
   await doOutboundPromise(t, 'to presence');
@@ -330,9 +327,9 @@ test('liveslots retains pending exported promise', async t => {
   const { log, syscall } = buildSyscall();
   let watch;
   const success = [];
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const root = Far('root', {
-      make() {
+      make: () => {
         const pk = makePromiseKit();
         watch = new WeakRef(pk.promise);
         // we export the Promise, but do not retain resolve/reject
@@ -342,12 +339,12 @@ test('liveslots retains pending exported promise', async t => {
       // been collected by now, and calling check() will fail, because
       // liveslots can't create a new Promise import when the allocatedByVat
       // says it was an export
-      check(_p) {
+      check: _p => {
         success.push('yes');
       },
     });
     return root;
-  }
+  };
 
   const dispatch = makeDispatch(syscall, build);
   const rootA = 'o+0';
@@ -363,20 +360,20 @@ test('liveslots retains pending exported promise', async t => {
   t.deepEqual(success, ['yes']);
 });
 
-function hush(p) {
+const hush = p => {
   p.then(
     () => undefined,
     () => undefined,
   );
-}
+};
 
-async function doResultPromise(t, mode) {
+const doResultPromise = async (t, mode) => {
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     let pin;
     return Far('root', {
-      async run(target1) {
+      run: async target1 => {
         // inhibit GC of the Presence, so the tests see stable syscalls
         // eslint-disable-next-line no-unused-vars
         pin = target1;
@@ -391,7 +388,7 @@ async function doResultPromise(t, mode) {
         hush(p3);
       },
     });
-  }
+  };
   const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
@@ -466,7 +463,7 @@ async function doResultPromise(t, mode) {
   // #823 fails here for the non-presence cases: we expect no syscalls, but
   // instead we get a send to p+5
   t.deepEqual(log, []);
-}
+};
 
 test('liveslots retires result promise IDs after resolve to presence', async t => {
   await doResultPromise(t, 'to presence');
@@ -483,24 +480,22 @@ test('liveslots retires result promise IDs after reject', async t => {
 test('liveslots vs symbols', async t => {
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
-    return Far('root', {
+  const build = _vatPowers =>
+    Far('root', {
       [Symbol.asyncIterator](arg) {
         return ['ok', 'asyncIterator', arg];
       },
-      good(target) {
+      good: target => {
         E(target)[Symbol.asyncIterator]('arg');
       },
-      bad(target) {
-        return E(target)
+      bad: target =>
+        E(target)
           [Symbol.for('nope')]('arg')
           .then(
             _ok => 'oops no error',
             err => ['caught', err],
-          );
-      },
+          ),
     });
-  }
   const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -561,13 +556,12 @@ test('liveslots vs symbols', async t => {
 test('disable disavow', async t => {
   const { log, syscall } = buildSyscall();
 
-  function build(vatPowers) {
-    return Far('root', {
-      one() {
+  const build = vatPowers =>
+    Far('root', {
+      one: () => {
         log.push(!!vatPowers.disavow);
       },
     });
-  }
   const dispatch = makeDispatch(syscall, build, 'vatA', false);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -581,9 +575,9 @@ test('disable disavow', async t => {
 test('disavow', async t => {
   const { log, syscall } = buildSyscall();
 
-  function build(vatPowers) {
+  const build = vatPowers => {
     const root = Far('root', {
-      async one(pres1) {
+      one: async pres1 => {
         vatPowers.disavow(pres1);
         log.push('disavowed pres1');
 
@@ -624,7 +618,7 @@ test('disavow', async t => {
       },
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -635,11 +629,11 @@ test('disavow', async t => {
   t.deepEqual(log.shift(), { type: 'dropImports', slots: [import1] });
   t.deepEqual(log.shift(), 'disavowed pres1');
 
-  function loggedError(re) {
+  const loggedError = re => {
     const l = log.shift();
     t.truthy(l instanceof Error);
     t.truthy(re.test(l.message));
-  }
+  };
   loggedError(/attempt to disavow unknown/);
   t.deepEqual(log.shift(), 'tried duplicate disavow');
   loggedError(/attempt to disavow unknown/);
@@ -670,18 +664,18 @@ test('liveslots retains device nodes', async t => {
   let watch;
   const recognize = new WeakSet(); // real WeakSet
   const success = [];
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const root = Far('root', {
-      first(dn) {
+      first: dn => {
         watch = new WeakRef(dn);
         recognize.add(dn);
       },
-      second(dn) {
+      second: dn => {
         success.push(recognize.has(dn));
       },
     });
     return root;
-  }
+  };
 
   const dispatch = makeDispatch(syscall, build);
   const rootA = 'o+0';
@@ -696,21 +690,21 @@ test('liveslots retains device nodes', async t => {
 test('GC syscall.dropImports', async t => {
   const { log, syscall } = buildSyscall();
   let wr;
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     let presence1;
     const root = Far('root', {
-      one(arg) {
+      one: arg => {
         presence1 = arg;
         wr = new WeakRef(arg);
       },
-      two() {},
-      three() {
+      two: () => {},
+      three: () => {
         // eslint-disable-next-line no-unused-vars
         presence1 = undefined; // drops the import
       },
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -762,16 +756,16 @@ test('GC syscall.dropImports', async t => {
 
 test('GC dispatch.retireImports', async t => {
   const { log, syscall } = buildSyscall();
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     let presence1;
     const root = Far('root', {
-      one(arg) {
+      one: arg => {
         // eslint-disable-next-line no-unused-vars
         presence1 = arg;
       },
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -792,15 +786,13 @@ test('GC dispatch.retireImports', async t => {
 
 test('GC dispatch.retireExports', async t => {
   const { log, syscall } = buildSyscall();
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const ex1 = Far('export', {});
     const root = Far('root', {
-      one() {
-        return ex1;
-      },
+      one: () => ex1,
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -842,9 +834,9 @@ function makeMockGC() {
   const valToWeakRef = new Map();
   const allFRs = [];
   // eslint-disable-next-line no-unused-vars
-  function log(...args) {
+  const log = (...args) => {
     // console.log(...args);
-  }
+  };
 
   const mockWeakRefProto = {
     deref() {
@@ -858,7 +850,7 @@ function makeMockGC() {
   }
   mockWeakRef.prototype = mockWeakRefProto;
 
-  function kill(val) {
+  const kill = val => {
     log(`kill`, val);
     if (valToWeakRef.has(val)) {
       log(` killing weakref`);
@@ -873,7 +865,7 @@ function makeMockGC() {
       }
     }
     log(` kill done`);
-  }
+  };
 
   const mockFinalizationRegistryProto = {
     register(val, context) {
@@ -906,11 +898,9 @@ function makeMockGC() {
   }
   mockFinalizationRegistry.prototype = mockFinalizationRegistryProto;
 
-  function getAllFRs() {
-    return allFRs;
-  }
+  const getAllFRs = () => allFRs;
 
-  function mockGCAndFinalize() {}
+  const mockGCAndFinalize = () => {};
 
   return harden({
     WeakRef: mockWeakRef,
@@ -928,20 +918,20 @@ test('dropImports', async t => {
   const imports = [];
   const gcTools = makeMockGC();
 
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const root = Far('root', {
-      hold(imp) {
+      hold: imp => {
         imports.push(imp);
       },
-      free() {
+      free: () => {
         gcTools.kill(imports.pop());
       },
-      ignore(imp) {
+      ignore: imp => {
         gcTools.kill(imp);
       },
     });
     return root;
-  }
+  };
 
   const ls = makeLiveSlots(
     syscall,
@@ -1073,18 +1063,18 @@ test('dropImports', async t => {
 test('GC dispatch.dropExports', async t => {
   const { log, syscall } = buildSyscall();
   let wr;
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const root = Far('root', {
-      one() {
+      one: () => {
         const ex1 = Far('export', {});
         wr = new WeakRef(ex1);
         return ex1;
         // ex1 goes out of scope, dropping last userspace strongref
       },
-      two() {},
+      two: () => {},
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -1131,22 +1121,22 @@ test('GC dispatch.dropExports', async t => {
 test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   const { log, syscall } = buildSyscall();
   let wr;
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     let ex1;
     const root = Far('root', {
-      hold() {
+      hold: () => {
         ex1 = Far('export', {});
         wr = new WeakRef(ex1);
         return ex1;
       },
-      two() {},
-      drop() {
+      two: () => {},
+      drop: () => {
         // eslint-disable-next-line no-unused-vars
         ex1 = undefined; // drop the last userspace strongref
       },
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -1206,18 +1196,16 @@ const oneSlot = { '@qclass': 'slot', index: 0 };
 // unserializable resolutions
 test('simple promise resolution', async t => {
   const { log, syscall } = buildSyscall();
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const pkA = makePromiseKit();
     const root = Far('root', {
-      export() {
-        return harden({ p: pkA.promise });
-      },
-      resolve() {
+      export: () => harden({ p: pkA.promise }),
+      resolve: () => {
         pkA.resolve('data');
       },
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -1244,21 +1232,19 @@ test('simple promise resolution', async t => {
 
 test('promise cycle', async t => {
   const { log, syscall } = buildSyscall();
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const pkA = makePromiseKit();
     const pkB = makePromiseKit();
     pkA.resolve([pkB.promise]);
     pkB.resolve([pkA.promise]);
     const root = Far('root', {
-      export() {
-        return harden({ p: pkA.promise });
-      },
-      resolve() {
+      export: () => harden({ p: pkA.promise }),
+      resolve: () => {
         pkA.resolve('data');
       },
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -1307,18 +1293,16 @@ test('unserializable promise resolution', async t => {
   // serialized
   const unserializable = harden({ deliberate: () => {} });
   const { log, syscall } = buildSyscall();
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const pkA = makePromiseKit();
     const root = Far('root', {
-      export() {
-        return harden({ p: pkA.promise });
-      },
-      resolve() {
+      export: () => harden({ p: pkA.promise }),
+      resolve: () => {
         pkA.resolve(unserializable); // causes serialization error
       },
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
@@ -1367,18 +1351,16 @@ test('unserializable promise rejection', async t => {
   // serialized
   const unserializable = harden({ deliberate: () => {} });
   const { log, syscall } = buildSyscall();
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const pkA = makePromiseKit();
     const root = Far('root', {
-      export() {
-        return harden({ p: pkA.promise });
-      },
-      resolve() {
+      export: () => harden({ p: pkA.promise }),
+      resolve: () => {
         pkA.reject(unserializable); // causes serialization error
       },
     });
     return root;
-  }
+  };
   const dispatch = makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';

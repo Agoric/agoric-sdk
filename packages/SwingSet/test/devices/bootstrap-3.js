@@ -1,10 +1,10 @@
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { D, testLog: log } = vatPowers;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       if (vatParameters.argv[0] === 'write+read') {
         log(`w+r`);
         D(devices.d3).setState(harden({ s: 'new' }));
@@ -16,4 +16,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}
+};

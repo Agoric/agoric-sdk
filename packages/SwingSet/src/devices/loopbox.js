@@ -16,7 +16,7 @@ import { assert, details as X } from '@agoric/assert';
  *
  */
 
-export function buildLoopbox(deliverMode) {
+export const buildLoopbox = deliverMode => {
   assert(
     deliverMode === 'immediate' || deliverMode === 'queued',
     X`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`,
@@ -24,16 +24,14 @@ export function buildLoopbox(deliverMode) {
   const loopboxSrcPath = new URL('loopbox-src', import.meta.url).pathname;
 
   let loopboxPassOneMessage;
-  function registerPassOneMessage(lpom) {
+  const registerPassOneMessage = lpom => {
     loopboxPassOneMessage = lpom;
-  }
-  function passOneMessage() {
-    return loopboxPassOneMessage();
-  }
+  };
+  const passOneMessage = () => loopboxPassOneMessage();
 
   const loopboxEndowments = {
     registerPassOneMessage,
     deliverMode,
   };
   return harden({ passOneMessage, loopboxSrcPath, loopboxEndowments });
-}
+};

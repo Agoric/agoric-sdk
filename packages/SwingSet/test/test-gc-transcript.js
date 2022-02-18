@@ -6,31 +6,23 @@ import { makeManagerKit } from '../src/kernel/vatManager/manager-helper.js';
 
 const m1 = ['message', { method: 'foo', args: { body: '', slots: [] } }];
 
-function setup(storedTranscript = []) {
+const setup = (storedTranscript = []) => {
   const vatID = 'vatID';
   const slog = makeDummySlogger({}, () => console);
   const transcript = [];
   const vatKeeper = {
-    addToTranscript(entry) {
+    addToTranscript: entry => {
       transcript.push(entry);
     },
-    vatStats() {
-      return { transcriptCount: storedTranscript.length };
-    },
-    getTranscript() {
-      return storedTranscript;
-    },
-    closeTranscript() {},
+    vatStats: () => ({ transcriptCount: storedTranscript.length }),
+    getTranscript: () => storedTranscript,
+    closeTranscript: () => {},
     getLastSnapshot: () => undefined,
   };
   const kernelKeeper = {
-    provideVatKeeper() {
-      return vatKeeper;
-    },
+    provideVatKeeper: () => vatKeeper,
   };
-  function vatSyscallHandler(_vso) {
-    return ['ok', null];
-  }
+  const vatSyscallHandler = _vso => ['ok', null];
   const workerCanBlock = false;
   const mk = makeManagerKit(
     vatID,
@@ -42,7 +34,7 @@ function setup(storedTranscript = []) {
     true,
   );
   const { syscallFromWorker } = mk;
-  function deliver(_delivery) {
+  const deliver = _delivery => {
     // a syscall.subscribe is included in the transcript
     syscallFromWorker(['subscribe', 'p-1']);
     // but GC syscalls are not
@@ -51,12 +43,12 @@ function setup(storedTranscript = []) {
     syscallFromWorker(['retireExports', ['o+2']]);
     syscallFromWorker(['subscribe', 'p-2']);
     return Promise.resolve(['ok', null, { usage: 0 }]);
-  }
+  };
   mk.setDeliverToWorker(deliver);
-  function shutdown() {}
+  const shutdown = () => {};
   const manager = mk.getManager(shutdown);
   return { manager, transcript };
-}
+};
 
 test('gc syscalls are not included in transcript', async t => {
   const { manager, transcript } = setup();

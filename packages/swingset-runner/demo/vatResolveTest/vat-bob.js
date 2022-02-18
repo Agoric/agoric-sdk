@@ -3,26 +3,26 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-function makePR() {
+const makePR = () => {
   let r;
   const p = new Promise((resolve, _reject) => {
     r = resolve;
   });
   return [p, r];
-}
+};
 
-function hush(p) {
+const hush = p => {
   p.then(
     () => undefined,
     () => undefined,
   );
-}
+};
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let p1;
   const [p0, r0] = makePR();
   return Far('root', {
-    promise(p) {
+    promise: p => {
       p1 = p;
       p1.then(
         x => {
@@ -33,10 +33,8 @@ export function buildRootObject(_vatPowers) {
         },
       );
     },
-    result() {
-      return p0;
-    },
-    async run(target1, target2) {
+    result: () => p0,
+    run: async (target1, target2) => {
       log(`calling one()`);
       const p2 = E(target1).one(p1);
       hush(p2);
@@ -53,4 +51,4 @@ export function buildRootObject(_vatPowers) {
       log(`did all calls`);
     },
   });
-}
+};

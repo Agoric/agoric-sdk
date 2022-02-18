@@ -7,25 +7,21 @@ import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { makeTimedIterable } from './timed-iteration.js';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { D } = vatPowers;
   const repeaters = new Map();
 
-  async function createTimerService(timerNode) {
+  const createTimerService = async timerNode => {
     /** @type {TimerService} */
     const timerService = Far('timerService', {
-      getCurrentTimestamp() {
-        return Nat(D(timerNode).getLastPolled());
-      },
-      setWakeup(baseTime, handler) {
+      getCurrentTimestamp: () => Nat(D(timerNode).getLastPolled()),
+      setWakeup: (baseTime, handler) => {
         baseTime = Nat(baseTime);
         return D(timerNode).setWakeup(baseTime, handler);
       },
       // can be used after setWakeup(h) or schedule(h)
-      removeWakeup(handler) {
-        return D(timerNode).removeWakeup(handler);
-      },
-      makeRepeater(delay, interval) {
+      removeWakeup: handler => D(timerNode).removeWakeup(handler),
+      makeRepeater: (delay, interval) => {
         delay = Nat(delay);
         interval = Nat(interval);
         assert(
@@ -36,10 +32,8 @@ export function buildRootObject(vatPowers) {
         const index = D(timerNode).makeRepeater(delay, interval);
 
         const vatRepeater = Far('vatRepeater', {
-          schedule(h) {
-            return D(timerNode).schedule(index, h);
-          },
-          disable() {
+          schedule: h => D(timerNode).schedule(index, h),
+          disable: () => {
             repeaters.delete(index);
             return D(timerNode).deleteRepeater(index);
           },
@@ -47,7 +41,7 @@ export function buildRootObject(vatPowers) {
         repeaters.set(index, vatRepeater);
         return vatRepeater;
       },
-      makeNotifier(delay, interval) {
+      makeNotifier: (delay, interval) => {
         delay = Nat(delay);
         interval = Nat(interval);
         assert(
@@ -69,7 +63,7 @@ export function buildRootObject(vatPowers) {
 
         return notifier;
       },
-      delay(delay) {
+      delay: delay => {
         delay = Nat(delay);
         const now = timerService.getCurrentTimestamp();
         const baseTime = now + delay;
@@ -82,7 +76,7 @@ export function buildRootObject(vatPowers) {
       },
     });
     return timerService;
-  }
+  };
 
   return Far('root', { createTimerService });
-}
+};

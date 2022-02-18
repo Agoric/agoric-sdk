@@ -8,45 +8,31 @@ test('gc actions', t => {
   let actions = [];
   let newActions;
   let msg;
-  function setActions(a) {
+  const setActions = a => {
     actions = a;
     newActions = Array.from(a);
-  }
+  };
   const clistState = { v1: { ko1: {}, ko2: {} }, v2: { ko2: {} } };
 
   const kernelKeeper = {
-    getGCActions() {
-      return new Set(actions);
-    },
-    setGCActions(a) {
+    getGCActions: () => new Set(actions),
+    setGCActions: a => {
       newActions = Array.from(a);
       newActions.sort();
     },
-    kernelObjectExists(kref) {
-      return !!rc[kref];
-    },
-    getObjectRefCount(kref) {
+    kernelObjectExists: kref => !!rc[kref],
+    getObjectRefCount: kref => {
       const [reachable, recognizable] = rc[kref];
       return { reachable, recognizable };
     },
-    provideVatKeeper(vatID) {
-      return {
-        hasCListEntry(kref) {
-          return !!clistState[vatID][kref].exists;
-        },
-        getReachableFlag(kref) {
-          return !!clistState[vatID][kref].isReachable;
-        },
-      };
-    },
+    provideVatKeeper: vatID => ({
+      hasCListEntry: kref => !!clistState[vatID][kref].exists,
+      getReachableFlag: kref => !!clistState[vatID][kref].isReachable,
+    }),
   };
-  function process() {
-    return processNextGCAction(kernelKeeper);
-  }
+  const process = () => processNextGCAction(kernelKeeper);
 
-  function make(type, vatID, ...krefs) {
-    return { type, vatID, krefs };
-  }
+  const make = (type, vatID, ...krefs) => ({ type, vatID, krefs });
 
   // idle
   setActions([]);

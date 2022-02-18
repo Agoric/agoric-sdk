@@ -16,7 +16,7 @@ const log = makePrintLog();
  * @param {Payment[]} payments
  * @param {{ makeInvitation: () => Invitation }} publicFacet
  */
-async function build(name, zoe, issuers, payments, publicFacet) {
+const build = async (name, zoe, issuers, payments, publicFacet) => {
   const { moola, simoleans, purses } = await setupPurses(
     zoe,
     issuers,
@@ -26,28 +26,28 @@ async function build(name, zoe, issuers, payments, publicFacet) {
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
-  async function preReport(quiet) {
+  const preReport = async quiet => {
     const useLog = quiet ? () => {} : log;
     await showPurseBalance(moolaPurseP, `${name} moola before`, useLog);
     await showPurseBalance(simoleanPurseP, `${name} simoleans before`, useLog);
-  }
+  };
 
-  async function postReport(quiet) {
+  const postReport = async quiet => {
     const useLog = quiet ? () => {} : log;
     await showPurseBalance(moolaPurseP, `${name} moola after`, useLog);
     await showPurseBalance(simoleanPurseP, `${name} simoleans after`, useLog);
-  }
+  };
 
-  async function receivePayout(payoutP) {
+  const receivePayout = async payoutP => {
     const payout = await payoutP;
     const moolaPayout = await payout.Asset;
     const simoleanPayout = await payout.Price;
 
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);
-  }
+  };
 
-  async function initiateTrade(otherP, quiet) {
+  const initiateTrade = async (otherP, quiet) => {
     await preReport(quiet);
 
     const buyOrderInvitation = await E(publicFacet).makeInvitation();
@@ -72,9 +72,9 @@ async function build(name, zoe, issuers, payments, publicFacet) {
 
     await receivePayout(payoutP);
     await postReport(quiet);
-  }
+  };
 
-  async function respondToTrade(invitationP, quiet) {
+  const respondToTrade = async (invitationP, quiet) => {
     await preReport(quiet);
 
     const invitation = await invitationP;
@@ -98,17 +98,16 @@ async function build(name, zoe, issuers, payments, publicFacet) {
 
     await receivePayout(payoutP);
     await postReport(quiet);
-  }
+  };
 
   return harden({
     initiateTrade,
     respondToTrade,
   });
-}
+};
 
-export function buildRootObject(_vatPowers, vatParameters) {
-  return Far('root', {
+export const buildRootObject = (_vatPowers, vatParameters) =>
+  Far('root', {
     build: (zoe, issuers, payments, publicFacet) =>
       build(vatParameters.name, zoe, issuers, payments, publicFacet),
   });
-}

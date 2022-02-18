@@ -3,11 +3,11 @@ import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { makePluginManager } from '../../src/vats/plugin-manager.js';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { D } = vatPowers;
   const log = vatPowers.testLog;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       try {
         const { argv } = vatParameters;
         if (argv[0] === 'plugin') {
@@ -30,4 +30,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}
+};

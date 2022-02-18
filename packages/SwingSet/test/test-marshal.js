@@ -15,20 +15,18 @@ const gcTools = harden({
   meterControl: makeDummyMeterControl(),
 });
 
-function makeUnmeteredMarshaller(syscall) {
+const makeUnmeteredMarshaller = syscall => {
   const { m } = makeMarshaller(syscall, gcTools);
   const unmeteredUnserialize = gcTools.meterControl.unmetered(m.unserialize);
   return { m, unmeteredUnserialize };
-}
+};
 
 test('serialize exports', t => {
   const { m } = makeMarshaller(undefined, gcTools);
   const ser = m.serialize;
   const o1 = Far('o1', {});
   const o2 = Far('o2', {
-    meth1() {
-      return 4;
-    },
+    meth1: () => 4,
   });
   t.deepEqual(ser(o1), {
     body: '{"@qclass":"slot","iface":"Alleged: o1","index":0}',
@@ -96,7 +94,7 @@ test('serialize imports', async t => {
 test('serialize promise', async t => {
   const log = [];
   const syscall = {
-    resolve(resolutions) {
+    resolve: resolutions => {
       log.push(resolutions);
     },
   };
@@ -134,7 +132,7 @@ test('serialize promise', async t => {
 test('unserialize promise', async t => {
   const log = [];
   const syscall = {
-    subscribe(promiseID) {
+    subscribe: promiseID => {
       log.push(`subscribe-${promiseID}`);
     },
   };

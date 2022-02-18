@@ -4,15 +4,15 @@ import { insistVatID } from './id.js';
 
 const typePriority = ['dropExport', 'retireExport', 'retireImport'];
 
-function parseAction(s) {
+const parseAction = s => {
   const [vatID, type, kref] = s.split(' ');
   insistVatID(vatID);
   assert(typePriority.includes(type), `unknown type ${type}`);
   insistKernelType('object', kref);
   return { vatID, type, kref };
-}
+};
 
-export function processNextGCAction(kernelKeeper) {
+export const processNextGCAction = kernelKeeper => {
   const allActionsSet = kernelKeeper.getGCActions();
 
   // GC actions are each one of 'dropExport', 'retireExport', or
@@ -40,7 +40,7 @@ export function processNextGCAction(kernelKeeper) {
   // whether the current state of the c-lsits and reference counts warrants
   // permits the action to run, or if it should be negated/bypassed.
 
-  function filterAction(vatKeeper, action, type, kref) {
+  const filterAction = (vatKeeper, action, type, kref) => {
     const hasCList = vatKeeper.hasCListEntry(kref);
     const isReachable = hasCList ? vatKeeper.getReachableFlag(kref) : undefined;
     const exists = kernelKeeper.kernelObjectExists(kref);
@@ -63,7 +63,7 @@ export function processNextGCAction(kernelKeeper) {
       if (!hasCList) return false; // already
     }
     return true;
-  }
+  };
 
   // We process actions in groups (sorted first by vat, then by type), to
   // make it deterministic, and to ensure that `dropExport` happens before
@@ -80,7 +80,7 @@ export function processNextGCAction(kernelKeeper) {
   // may need to change to support that, to ensure that `dropExport` and
   // `retireExport` can both be delivered.
 
-  function filterActions(vatID, groupedActions) {
+  const filterActions = (vatID, groupedActions) => {
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const krefs = [];
     for (const action of groupedActions) {
@@ -91,7 +91,7 @@ export function processNextGCAction(kernelKeeper) {
       allActionsSet.delete(action);
     }
     return krefs;
-  }
+  };
 
   const grouped = new Map(); // grouped.get(vatID).get(type) = krefs to process
   for (const action of allActionsSet) {
@@ -128,5 +128,5 @@ export function processNextGCAction(kernelKeeper) {
   // remove negated items from the durable set
   kernelKeeper.setGCActions(allActionsSet);
   return undefined; // no GC work to do
-}
+};
 harden(processNextGCAction);

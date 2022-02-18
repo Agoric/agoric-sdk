@@ -1,10 +1,10 @@
 import { assert, details as X } from '@agoric/assert';
 import { extractMessage } from '../vat-util.js';
 
-export default function setup(syscall, state, _helpers, vatPowers) {
+export default (syscall, state, _helpers, vatPowers) => {
   const { testLog } = vatPowers;
   let deviceRef;
-  function dispatch(vatDeliverObject) {
+  const dispatch = vatDeliverObject => {
     const { method, args } = extractMessage(vatDeliverObject);
     if (method === 'bootstrap') {
       const argb = JSON.parse(args.body);
@@ -17,6 +17,6 @@ export default function setup(syscall, state, _helpers, vatPowers) {
       const ret = syscall.callNow(deviceRef, 'set', setArgs);
       testLog(JSON.stringify(ret));
     }
-  }
+  };
   return dispatch;
-}
+};

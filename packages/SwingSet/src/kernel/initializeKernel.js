@@ -11,11 +11,9 @@ import makeKernelKeeper from './state/kernelKeeper.js';
 import { exportRootObject } from './kernel.js';
 import { makeKernelQueueHandler } from './kernelQueue.js';
 
-function makeVatRootObjectSlot() {
-  return makeVatSlot('object', true, 0);
-}
+const makeVatRootObjectSlot = () => makeVatSlot('object', true, 0);
 
-export function initializeKernel(config, hostStorage, verbose = false) {
+export const initializeKernel = (config, hostStorage, verbose = false) => {
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(hostStorage.kvStore);
 
@@ -139,7 +137,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
 
   // ----------------------------------------------------------------------
 
-  function enqueueBootstrap(bootstrapVatID) {
+  const enqueueBootstrap = bootstrapVatID => {
     // we invoke obj[0].bootstrap with an object that contains 'vats'.
     insistVatID(bootstrapVatID);
     // each key of 'vats' will be serialized as a reference to its obj0
@@ -172,7 +170,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       logStartup(`adding dref ${name} [${deviceID}]`);
     }
 
-    function convertValToSlot(val) {
+    const convertValToSlot = val => {
       if (vrefs.has(val)) {
         return vrefs.get(val);
       }
@@ -181,7 +179,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       }
       console.error(`oops ${val}`, val);
       throw Error('bootstrap got unexpected pass-by-presence');
-    }
+    };
 
     const { queueToKref } = makeKernelQueueHandler({ kernelKeeper });
 
@@ -202,5 +200,5 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     );
     kernelKeeper.incrementRefCount(resultKpid, 'external');
     return resultKpid;
-  }
-}
+  };
+};

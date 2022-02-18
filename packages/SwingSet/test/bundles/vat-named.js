@@ -1,9 +1,6 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject() {
-  return Far('root', {
-    hi() {
-      return 'hello';
-    },
+export const buildRootObject = () =>
+  Far('root', {
+    hi: () => 'hello',
   });
-}

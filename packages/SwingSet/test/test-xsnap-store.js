@@ -41,7 +41,7 @@ const snapSize = {
  * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
  * @param {string} script to execute
  */
-async function bootWorker(name, handleCommand, script) {
+const bootWorker = async (name, handleCommand, script) => {
   const worker = xsnap({
     os: osType(),
     spawn,
@@ -54,18 +54,18 @@ async function bootWorker(name, handleCommand, script) {
 
   await worker.evaluate(script);
   return worker;
-}
+};
 
 /**
  * @param {string} name
  * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
  */
-async function bootSESWorker(name, handleCommand) {
+const bootSESWorker = async (name, handleCommand) => {
   const bootScript = await ld.asset(
     '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
   );
   return bootWorker(name, handleCommand, bootScript);
-}
+};
 
 test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, async t => {
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
@@ -174,7 +174,7 @@ Then commit the changes in .../snapshots/ path.
 `);
 });
 
-async function makeTestSnapshot(t) {
+const makeTestSnapshot = async t => {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
   // t.log({ pool: pool.name });
@@ -189,7 +189,7 @@ async function makeTestSnapshot(t) {
   const hash = await store.save(vat.snapshot);
   await vat.close();
   return hash;
-}
+};
 
 test('XS + SES snapshots are short-term deterministic', async t => {
   const h1 = await makeTestSnapshot(t);

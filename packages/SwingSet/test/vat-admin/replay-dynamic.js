@@ -1,15 +1,15 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject() {
+export const buildRootObject = () => {
   let counter = 0;
   return Far('root', {
-    first() {
+    first: () => {
       counter += 1;
       return counter;
     },
-    second() {
+    second: () => {
       counter += 20;
       return counter;
     },
   });
-}
+};

@@ -125,7 +125,7 @@ test('mailbox inbound', async t => {
   t.deepEqual(c.dump().log, expected);
 });
 
-async function initializeMailboxKernel(t) {
+const initializeMailboxKernel = async t => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const config = {
@@ -152,9 +152,9 @@ async function initializeMailboxKernel(t) {
     t.context.data,
   );
   return hostStorage;
-}
+};
 
-async function makeMailboxKernel(hostStorage) {
+const makeMailboxKernel = async hostStorage => {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const deviceEndowments = {
@@ -164,7 +164,7 @@ async function makeMailboxKernel(hostStorage) {
   c.pinVatRoot('bootstrap');
   await c.run();
   return [c, mb];
-}
+};
 
 test('mailbox determinism', async t => {
   // we run two kernels in parallel

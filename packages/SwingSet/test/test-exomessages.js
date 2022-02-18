@@ -2,7 +2,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { buildVatController } from '../src/index.js';
 
-async function beginning(t, mode) {
+const beginning = async (t, mode) => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -14,9 +14,9 @@ async function beginning(t, mode) {
   const controller = await buildVatController(config, [mode]);
   t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
   return controller;
-}
+};
 
-async function bootstrapSuccessfully(t, mode, body, slots) {
+const bootstrapSuccessfully = async (t, mode, body, slots) => {
   const controller = await beginning(t, mode);
   await controller.run();
   t.is(controller.kpStatus(controller.bootstrapResult), 'fulfilled');
@@ -24,7 +24,7 @@ async function bootstrapSuccessfully(t, mode, body, slots) {
     body,
     slots,
   });
-}
+};
 
 test('bootstrap returns data', async t => {
   await bootstrapSuccessfully(
@@ -49,7 +49,7 @@ test('bootstrap returns void', async t => {
   await bootstrapSuccessfully(t, 'void', '{"@qclass":"undefined"}', []);
 });
 
-async function testFailure(t) {
+const testFailure = async t => {
   const controller = await beginning(t, 'reject');
   let failureHappened = false;
   try {
@@ -67,13 +67,13 @@ async function testFailure(t) {
     body: '{"@qclass":"error","errorId":"error:liveSlots:v1#70001","message":"gratuitous error","name":"Error"}',
     slots: [],
   });
-}
+};
 
 test('bootstrap failure', async t => {
   await testFailure(t);
 });
 
-async function extraMessage(t, mode, status, body, slots) {
+const extraMessage = async (t, mode, status, body, slots) => {
   const controller = await beginning(t, 'data');
   controller.pinVatRoot('bootstrap');
   await controller.run();
@@ -90,7 +90,7 @@ async function extraMessage(t, mode, status, body, slots) {
     body,
     slots,
   });
-}
+};
 
 test('extra message returns data', async t => {
   await extraMessage(

@@ -13,17 +13,11 @@ import {
 } from '../../src/index.js';
 import buildCommand from '../../src/devices/command.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
-function dfile(name) {
-  return new URL(`./${name}`, import.meta.url).pathname;
-}
+const dfile = name => new URL(`./${name}`, import.meta.url).pathname;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -129,7 +123,7 @@ test.serial('d1', async t => {
   t.deepEqual(sharedArray, ['pushed']);
 });
 
-async function test2(t, mode) {
+const test2 = async (t, mode) => {
   const config = {
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
@@ -199,7 +193,7 @@ async function test2(t, mode) {
       'ret done',
     ]);
   }
-}
+};
 
 test.serial('d2.1', async t => {
   await test2(t, '1');

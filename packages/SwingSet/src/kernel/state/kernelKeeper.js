@@ -109,18 +109,18 @@ const enableKernelGC = true;
 // kp$NN.data.body = missing | JSON
 // kp$NN.data.slots = '' | $vatID[,$vatID..]
 
-export function commaSplit(s) {
+export const commaSplit = (s) => {
   if (s === '') {
     return [];
   }
   return s.split(',');
-}
+};
 
-function insistMeterID(m) {
+const insistMeterID = (m) => {
   assert.typeof(m, 'string');
   assert.equal(m[0], 'm');
   Nat(BigInt(m.slice(1)));
-}
+};
 
 // we use different starting index values for the various vNN/koNN/kdNN/kpNN
 // slots, to reduce confusing overlap when looking at debug messages (e.g.
@@ -145,11 +145,7 @@ const FIRST_METER_ID = 1n;
  * @param {KernelSlog} kernelSlog
  * @param {import('../../hasher.js').CreateSHA256} createSHA256
  */
-export default function makeKernelKeeper(
-  hostStorage,
-  kernelSlog,
-  createSHA256,
-) {
+export default (hostStorage, kernelSlog, createSHA256) => {
   // the kernelKeeper wraps the host's raw key-value store in a crank buffer
   const rawKVStore = hostStorage.kvStore;
   insistStorageAPI(rawKVStore);
@@ -305,7 +301,7 @@ export default function makeKernelKeeper(
     return getRequired('kernel.defaultReapInterval');
   }
 
-  const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
+  const bundleIDRE = new RegExp('^b1-[0-9a-f]{128});
 
   /**
    * @param { string } name
@@ -1482,4 +1478,4 @@ export default function makeKernelKeeper(
 
     dump,
   });
-}
+};

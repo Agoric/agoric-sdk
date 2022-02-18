@@ -1,14 +1,14 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   let count = 0;
   return Far('root', {
-    async elsewhere(other) {
+    elsewhere: async other => {
       const val = await E(other).query();
       console.log(`other returns ${val}`);
     },
-    dude(truth) {
+    dude: truth => {
       if (truth) {
         count += 1;
         return `DUDE${'!'.repeat(count - 1)}`;
@@ -16,11 +16,11 @@ export function buildRootObject(vatPowers) {
         throw Error('Sorry, dude');
       }
     },
-    dieHappy(completion) {
+    dieHappy: completion => {
       vatPowers.exitVat(completion);
     },
-    dieSad(reason) {
+    dieSad: reason => {
       vatPowers.exitVatWithFailure(reason);
     },
   });
-}
+};

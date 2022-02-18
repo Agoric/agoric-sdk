@@ -1,46 +1,42 @@
 // @ts-check
 import { assert } from '@agoric/assert';
 
-export function makeDummyMeterControl() {
+export const makeDummyMeterControl = () => {
   let meteringDisabled = 0;
 
-  function isMeteringDisabled() {
-    return !!meteringDisabled;
-  }
+  const isMeteringDisabled = () => !!meteringDisabled;
 
-  function assertIsMetered(msg) {
+  const assertIsMetered = msg => {
     assert(!meteringDisabled, msg);
-  }
+  };
 
-  function assertNotMetered(msg) {
+  const assertNotMetered = msg => {
     assert(!!meteringDisabled, msg);
-  }
+  };
 
-  function runWithoutMetering(thunk) {
+  const runWithoutMetering = thunk => {
     meteringDisabled += 1;
     try {
       return thunk();
     } finally {
       meteringDisabled -= 1;
     }
-  }
+  };
 
-  async function runWithoutMeteringAsync(thunk) {
+  const runWithoutMeteringAsync = async thunk => {
     meteringDisabled += 1;
     return Promise.resolve()
       .then(() => thunk())
       .finally(() => {
         meteringDisabled -= 1;
       });
-  }
+  };
 
   // return a version of f that runs outside metering
-  function unmetered(f) {
-    function wrapped(...args) {
-      return runWithoutMetering(() => f(...args));
-    }
+  const unmetered = f => {
+    const wrapped = (...args) => runWithoutMetering(() => f(...args));
     return harden(wrapped);
-  }
+  };
 
   /** @type { MeterControl } */
   const meterControl = {
@@ -52,4 +48,4 @@ export function makeDummyMeterControl() {
     unmetered,
   };
   return harden(meterControl);
-}
+};

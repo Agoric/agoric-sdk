@@ -5,7 +5,7 @@ import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker.js';
 import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';
 import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
-export function makeVatManagerFactory({
+export const makeVatManagerFactory = ({
   allVatPowers,
   kernelKeeper,
   vatEndowments,
@@ -15,7 +15,7 @@ export function makeVatManagerFactory({
   gcTools,
   defaultManagerType,
   kernelSlog,
-}) {
+}) => {
   const localFactory = makeLocalVatManagerFactory({
     allVatPowers,
     kernelKeeper,
@@ -46,7 +46,7 @@ export function makeVatManagerFactory({
     testLog: allVatPowers.testLog,
   });
 
-  function validateManagerOptions(managerOptions) {
+  const validateManagerOptions = managerOptions => {
     assertKnownOptions(managerOptions, [
       'consensusMode',
       'enablePipelining',
@@ -75,10 +75,10 @@ export function makeVatManagerFactory({
     );
     // todo maybe useless
     assert(!(setup && !enableSetup), X`setup() provided, but not enabled`);
-  }
+  };
 
   // returns promise for new vatManager
-  function vatManagerFactory(vatID, managerOptions, vatSyscallHandler) {
+  const vatManagerFactory = (vatID, managerOptions, vatSyscallHandler) => {
     validateManagerOptions(managerOptions);
     const {
       managerType = defaultManagerType,
@@ -154,7 +154,7 @@ export function makeVatManagerFactory({
     throw Error(
       `unknown type ${managerType}, not local/nodeWorker/node-subprocess`,
     );
-  }
+  };
 
   return harden(vatManagerFactory);
-}
+};

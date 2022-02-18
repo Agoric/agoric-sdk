@@ -1,12 +1,12 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const vatstore = vatPowers.vatstore;
   const log = vatPowers.testLog;
 
   return Far('root', {
-    bootstrap(_vats) {},
-    get(key) {
+    bootstrap: _vats => {},
+    get: key => {
       const value = vatstore.get(key);
       if (value) {
         log(`get ${key} -> "${value}"`);
@@ -15,11 +15,11 @@ export function buildRootObject(vatPowers) {
       }
       return value;
     },
-    store(key, value) {
+    store: (key, value) => {
       vatstore.set(key, value);
       log(`store ${key} <- "${value}"`);
     },
-    getAfter(priorKey, lowerBound, upperBound) {
+    getAfter: (priorKey, lowerBound, upperBound) => {
       const result = vatstore.getAfter(priorKey, lowerBound, upperBound);
       const [key, value] = result;
       log(
@@ -27,7 +27,7 @@ export function buildRootObject(vatPowers) {
       );
       return result;
     },
-    scan(prefix, threshold) {
+    scan: (prefix, threshold) => {
       if (threshold) {
         log(`scan ${prefix} ${threshold}:`);
       } else {
@@ -49,7 +49,7 @@ export function buildRootObject(vatPowers) {
         log(`    failure ${e}`);
       }
     },
-    scanRange(lower, upper) {
+    scanRange: (lower, upper) => {
       log(`scanRange ${lower} ${upper}:`);
       let key = '';
       let value;
@@ -59,7 +59,7 @@ export function buildRootObject(vatPowers) {
         [key, value] = vatstore.getAfter(key, lower, upper);
       }
     },
-    scanInterleaved(prefix1, prefix2) {
+    scanInterleaved: (prefix1, prefix2) => {
       log(`scanInterleaved ${prefix1} ${prefix2}:`);
       let done1 = false;
       let done2 = false;
@@ -86,7 +86,7 @@ export function buildRootObject(vatPowers) {
         }
       } while (!done1 || !done2);
     },
-    apiAbuse(prefix) {
+    apiAbuse: prefix => {
       log(`apiAbuse ${prefix}: use prefix as prior key (should work)`);
       const [key1, value1] = vatstore.getAfter(prefix, prefix);
       if (key1) {
@@ -120,7 +120,7 @@ export function buildRootObject(vatPowers) {
         log(`  getAfter("", "ab@%%$#") threw ${e}`);
       }
     },
-    scanWithActivity(prefix, delThreshold, toDel, addThreshold, toAdd) {
+    scanWithActivity: (prefix, delThreshold, toDel, addThreshold, toAdd) => {
       log(
         `scanWithActivity ${prefix} ${delThreshold} ${toDel} ${addThreshold} ${toAdd}`,
       );
@@ -137,9 +137,9 @@ export function buildRootObject(vatPowers) {
         [key, value] = vatstore.getAfter(key, prefix);
       }
     },
-    delete(key) {
+    delete: key => {
       vatstore.delete(key);
       log(`delete ${key}`);
     },
   });
-}
+};

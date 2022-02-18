@@ -6,7 +6,7 @@ import { insistCapData } from '../capdata.js';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
-export function makeDeviceSlots(
+export const makeDeviceSlots = (
   syscall,
   state,
   buildRootDeviceNode,
@@ -14,20 +14,20 @@ export function makeDeviceSlots(
   endowments,
   testLog,
   deviceParameters,
-) {
+) => {
   assert(state.get && state.set, 'deviceSlots.build got bad "state" argument');
   assert(
     typeof buildRootDeviceNode === 'function',
     'deviceSlots.build got bad "buildRootDeviceNode"',
   );
   const enableLSDebug = false;
-  function lsdebug(...args) {
+  const lsdebug = (...args) => {
     if (enableLSDebug) {
       console.log(...args);
     }
-  }
+  };
 
-  function makePresence(id, iface = undefined) {
+  const makePresence = (id, iface = undefined) => {
     const result = {
       [`_importID_${id}`]() {},
     };
@@ -35,25 +35,25 @@ export function makeDeviceSlots(
       return harden(result);
     }
     return Remotable(iface, undefined, result);
-  }
+  };
 
   const outstandingProxies = new WeakSet();
   const valToSlot = new WeakMap();
   const slotToVal = new Map();
   let nextExportID = 1;
 
-  function allocateExportID() {
+  const allocateExportID = () => {
     const exportID = nextExportID;
     nextExportID += 1;
     return exportID;
-  }
+  };
 
-  function exportPassByPresence() {
+  const exportPassByPresence = () => {
     const exportID = allocateExportID();
     return makeVatSlot('device', true, exportID);
-  }
+  };
 
-  function convertValToSlot(val) {
+  const convertValToSlot = val => {
     // lsdebug(`convertValToSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
     // previously-serialized local pass-by-presence object or
@@ -75,9 +75,9 @@ export function makeDeviceSlots(
       slotToVal.set(slot, val);
     }
     return valToSlot.get(val);
-  }
+  };
 
-  function convertSlotToVal(slot, iface = undefined) {
+  const convertSlotToVal = (slot, iface = undefined) => {
     if (!slotToVal.has(slot)) {
       let val;
       const { type, allocatedByVat } = parseVatSlot(slot);
@@ -96,7 +96,7 @@ export function makeDeviceSlots(
       valToSlot.set(val, slot);
     }
     return slotToVal.get(slot);
-  }
+  };
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `device:${forDeviceName}`,
@@ -105,26 +105,22 @@ export function makeDeviceSlots(
     errorIdNum: 50000,
   });
 
-  function PresenceHandler(importSlot) {
-    return {
-      get(target, prop) {
-        lsdebug(`PreH proxy.get(${String(prop)})`);
-        if (typeof prop !== 'string' && typeof prop !== 'symbol') {
-          return undefined;
-        }
-        const p = (...args) => {
-          const capdata = m.serialize(harden(args));
-          syscall.sendOnly(importSlot, prop, capdata);
-        };
-        return p;
-      },
-      has(_target, _prop) {
-        return true;
-      },
-    };
-  }
+  const PresenceHandler = importSlot => ({
+    get: (target, prop) => {
+      lsdebug(`PreH proxy.get(${String(prop)})`);
+      if (typeof prop !== 'string' && typeof prop !== 'symbol') {
+        return undefined;
+      }
+      const p = (...args) => {
+        const capdata = m.serialize(harden(args));
+        syscall.sendOnly(importSlot, prop, capdata);
+      };
+      return p;
+    },
+    has: (_target, _prop) => true,
+  });
 
-  function SO(x) {
+  const SO = x => {
     // SO(x).name(args)
     //
     // SO returns a proxy, like the E() in liveSlots. However SO's proxy does
@@ -142,22 +138,22 @@ export function makeDeviceSlots(
     const p = harden(new Proxy({}, handler));
     outstandingProxies.add(p);
     return p;
-  }
+  };
 
-  function getDeviceState() {
+  const getDeviceState = () => {
     const stateData = state.get();
     if (!stateData) {
       return undefined;
     }
     insistCapData(stateData);
     return m.unserialize(stateData);
-  }
+  };
 
-  function setDeviceState(deviceState) {
+  const setDeviceState = deviceState => {
     const ser = m.serialize(deviceState);
     insistCapData(ser);
     state.set(ser);
-  }
+  };
 
   // Here we finally invoke the device code, and get back the root devnode.
   // Note that we do *not* harden() the argument, since the provider might
@@ -189,7 +185,7 @@ export function makeDeviceSlots(
    * @param { SwingSetCapData } args
    * @returns { DeviceInvocationResult }
    */
-  function invoke(deviceID, method, args) {
+  const invoke = (deviceID, method, args) => {
     insistVatType('device', deviceID);
     insistCapData(args);
     lsdebug(
@@ -219,7 +215,7 @@ export function makeDeviceSlots(
     const ires = harden(['ok', vres]);
     lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
     return ires;
-  }
+  };
 
   return harden({ invoke });
-}
+};

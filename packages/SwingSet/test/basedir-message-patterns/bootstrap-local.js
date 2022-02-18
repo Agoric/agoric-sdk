@@ -1,9 +1,9 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers, vatParameters) {
-  return Far('root', {
-    async bootstrap(vats, _devices) {
+export const buildRootObject = (_vatPowers, vatParameters) =>
+  Far('root', {
+    bootstrap: async (vats, _devices) => {
       // initialize B, to get the object that we'll export to A
       const { bob, bert } = await E(vats.b).init();
       // initialize C, to get the object that we'll export to A
@@ -16,4 +16,3 @@ export function buildRootObject(_vatPowers, vatParameters) {
       await E(vats.a).run(which);
     },
   });
-}

@@ -4,7 +4,7 @@ import { makeCapTP } from '@endo/captp';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootDeviceNode(tools) {
+export const buildRootDeviceNode = tools => {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const restart = getDeviceState();
 
@@ -16,7 +16,7 @@ export function buildRootDeviceNode(tools) {
   const nextEpochs = restart ? [...restart.nextEpochs] : [];
   const connectedState = restart ? [...restart.connectedState] : [];
 
-  function saveState() {
+  const saveState = () => {
     setDeviceState(
       harden({
         registeredReceiver,
@@ -26,11 +26,11 @@ export function buildRootDeviceNode(tools) {
         connectedState: [...connectedState],
       }),
     );
-  }
+  };
   // Register our first state.
   saveState();
 
-  function register(mod, index) {
+  const register = (mod, index) => {
     if (connectedMods[index] === undefined) {
       connectedMods[index] = mod;
     }
@@ -43,7 +43,7 @@ export function buildRootDeviceNode(tools) {
     nextEpochs[index] = epoch + 1;
     saveState();
     return epoch;
-  }
+  };
 
   /**
    * Load a module and connect to it.
@@ -53,7 +53,7 @@ export function buildRootDeviceNode(tools) {
    * @param {number} epoch which generation of CapTP instances this is
    * @returns {Promise<(obj: Record<string, any>) => void>} send a message to the module
    */
-  async function createConnection(mod, index, epoch) {
+  const createConnection = async (mod, index, epoch) => {
     try {
       const modNS = await endowments.import(mod);
       const receiver = obj => {
@@ -67,11 +67,9 @@ export function buildRootDeviceNode(tools) {
       // Create a bootstrap reference from the module.
       const bootstrap = modNS.bootPlugin(
         harden({
-          getState() {
-            return connectedState[index];
-          },
-          setState(state) {
-            return new Promise(resolve => {
+          getState: () => connectedState[index],
+          setState: state =>
+            new Promise(resolve => {
               connectedState[index] = state;
               endowments.queueThunkForKernel(() => {
                 // TODO: This is not a synchronous call.
@@ -80,8 +78,7 @@ export function buildRootDeviceNode(tools) {
                 saveState();
                 resolve(undefined);
               });
-            });
-          },
+            }),
         }),
       );
 
@@ -93,7 +90,7 @@ export function buildRootDeviceNode(tools) {
       console.error(`Cannot connect to ${mod}:`, e);
       throw e;
     }
-  }
+  };
 
   /**
    * Load a module and connect to it.
@@ -102,7 +99,7 @@ export function buildRootDeviceNode(tools) {
    * @param {number} [index=connectedMods.length] the module instance index
    * @returns {number} the allocated index
    */
-  function connect(mod, index = connectedMods.length) {
+  const connect = (mod, index = connectedMods.length) => {
     const epoch = register(mod, index);
     if (senderPs[index] === undefined) {
       // Lazily create a fresh sender.
@@ -113,9 +110,9 @@ export function buildRootDeviceNode(tools) {
       senderPs[index] = senderP;
     }
     return index;
-  }
+  };
 
-  function send(index, obj) {
+  const send = (index, obj) => {
     const mod = connectedMods[index];
     // console.info('send', index, obj, mod);
     assert(mod, X`No module associated with ${index}`, TypeError);
@@ -132,7 +129,7 @@ export function buildRootDeviceNode(tools) {
       .catch(e => {
         console.error(e);
       });
-  }
+  };
 
   endowments.registerResetter(() => {
     connectedMods.forEach((mod, index) => {
@@ -144,15 +141,13 @@ export function buildRootDeviceNode(tools) {
   });
 
   return Far('root', {
-    getPluginDir() {
-      return endowments.getPluginDir();
-    },
+    getPluginDir: () => endowments.getPluginDir(),
     connect,
     send,
-    registerReceiver(receiver) {
+    registerReceiver: receiver => {
       assert(!registeredReceiver, X`registered receiver already set`);
       registeredReceiver = receiver;
       saveState();
     },
   });
-}
+};

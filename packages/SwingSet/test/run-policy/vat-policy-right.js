@@ -3,7 +3,7 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 
 // this takes about 5.7M computrons
-function consumeCPU() {
+const consumeCPU = () => {
   const a = new Array(100);
   for (let i = 0; i < a.length; i += 1) {
     a[i] = i;
@@ -12,21 +12,21 @@ function consumeCPU() {
     a.sort((first, second) => first - second);
     a.sort((first, second) => second - first);
   }
-}
+};
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const vatstore = vatPowers.vatstore;
   let counter = 0;
   // we cannot perform syscalls during startup, only during deliveries, so we
   // can't pre-initialize this
   // vatstore.set('counter', `${counter}`);
-  function increment() {
+  const increment = () => {
     counter += 1;
     vatstore.set('counter', `${counter}`);
-  }
+  };
 
   let nextPKR;
-  function doPromise(args) {
+  const doPromise = args => {
     increment();
     args[0]
       .then(doPromise)
@@ -34,10 +34,10 @@ export function buildRootObject(vatPowers) {
     const oldPK = nextPKR;
     nextPKR = makePromiseKit();
     oldPK.resolve([nextPKR.promise]);
-  }
+  };
 
   const right = Far('right', {
-    doMessage(left, seqnum) {
+    doMessage: (left, seqnum) => {
       increment();
       if (seqnum !== 'disabled') {
         // if enbled, do extra work once every 5 cranks, to exercise the
@@ -51,7 +51,7 @@ export function buildRootObject(vatPowers) {
       E(left).doMessage(right, seqnum);
     },
 
-    startPromise(args) {
+    startPromise: args => {
       nextPKR = makePromiseKit();
       args[0]
         .then(doPromise)
@@ -60,4 +60,4 @@ export function buildRootObject(vatPowers) {
     },
   });
   return right;
-}
+};

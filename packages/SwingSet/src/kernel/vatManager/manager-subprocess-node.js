@@ -8,14 +8,19 @@ import { makeManagerKit } from './manager-helper.js';
 // into it
 
 // eslint-disable-next-line no-unused-vars
-function parentLog(first, ...args) {
+const parentLog = (first, ...args) => {
   // console.error(`--parent: ${first}`, ...args);
-}
+};
 
-export function makeNodeSubprocessFactory(tools) {
+export const makeNodeSubprocessFactory = tools => {
   const { startSubprocessWorker, kernelKeeper, kernelSlog, testLog } = tools;
 
-  function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
+  const createFromBundle = (
+    vatID,
+    bundle,
+    managerOptions,
+    vatSyscallHandler,
+  ) => {
     const {
       consensusMode,
       vatParameters,
@@ -40,10 +45,10 @@ export function makeNodeSubprocessFactory(tools) {
     // start the worker and establish a connection
     const { fromChild, toChild, terminate, done } = startSubprocessWorker();
 
-    function sendToWorker(msg) {
+    const sendToWorker = msg => {
       assert(Array.isArray(msg));
       toChild.write(msg);
-    }
+    };
 
     // TODO: make the worker responsible for checking themselves: we send
     // both the delivery and the expected syscalls, and the supervisor
@@ -60,17 +65,17 @@ export function makeNodeSubprocessFactory(tools) {
      * @param { VatDeliveryObject } delivery
      * @returns { Promise<VatDeliveryResult> }
      */
-    function deliverToWorker(delivery) {
+    const deliverToWorker = delivery => {
       parentLog(`sending delivery`, delivery);
       assert(!waiting, X`already waiting for delivery`);
       const pr = makePromiseKit();
       waiting = pr.resolve;
       sendToWorker(['deliver', delivery]);
       return pr.promise;
-    }
+    };
     mk.setDeliverToWorker(deliverToWorker);
 
-    function handleUpstream([type, ...args]) {
+    const handleUpstream = ([type, ...args]) => {
       parentLog(`received`, type);
       if (type === 'setUplinkAck') {
         parentLog(`upload ready`);
@@ -97,7 +102,7 @@ export function makeNodeSubprocessFactory(tools) {
       } else {
         parentLog(`unrecognized uplink message ${type}`);
       }
-    }
+    };
 
     fromChild.on('data', handleUpstream);
 
@@ -112,13 +117,13 @@ export function makeNodeSubprocessFactory(tools) {
       consensusMode,
     ]);
 
-    function shutdown() {
+    const shutdown = () => {
       terminate();
       return done.then(_ => undefined);
-    }
+    };
     const manager = mk.getManager(shutdown);
     return dispatchReadyP.then(() => manager);
-  }
+  };
 
   return harden({ createFromBundle });
-}
+};

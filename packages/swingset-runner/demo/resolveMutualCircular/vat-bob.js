@@ -1,24 +1,24 @@
 import { Far } from '@endo/marshal';
 
-function makePR() {
+const makePR = () => {
   let r;
   const p = new Promise((resolve, _reject) => {
     r = resolve;
   });
   return [p, r];
-}
+};
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   const rs = new Map();
   return Far('root', {
-    genPromise(idx) {
+    genPromise: idx => {
       const [p, r] = makePR();
       rs.set(idx, r);
       return p;
     },
-    usePromise(idx, p) {
+    usePromise: (idx, p) => {
       const r = rs.get(idx);
       r(p);
     },
   });
-}
+};

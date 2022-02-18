@@ -4,10 +4,10 @@ import { Far } from '@endo/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.testLog;
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       const mode = vatParameters.argv[0];
       if (mode === 'flush') {
         Promise.resolve('then1').then(log);
@@ -31,7 +31,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         log(`b.call2`);
       } else if (mode === 'local1') {
         const t1 = Far('t1', {
-          foo(arg) {
+          foo: arg => {
             log(`local.foo ${arg}`);
             return 2;
           },
@@ -41,7 +41,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         log(`b.local1.finish`);
       } else if (mode === 'local2') {
         const t1 = Far('t1', {
-          foo(arg) {
+          foo: arg => {
             log(`local.foo ${arg}`);
             return 3;
           },
@@ -52,7 +52,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         log(`b.local2.finish`);
       } else if (mode === 'send-promise1') {
         const t1 = Far('t1', {
-          foo(arg) {
+          foo: arg => {
             log(`local.foo ${arg}`);
             return 3;
           },
@@ -79,4 +79,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}
+};

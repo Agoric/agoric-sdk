@@ -1,7 +1,7 @@
 import { assert } from '@agoric/assert';
 import { buildSerializationTools } from '../../src/deviceTools.js';
 
-export function buildDevice(tools, endowments) {
+export const buildDevice = (tools, endowments) => {
   const { syscall } = tools;
   const dtools = buildSerializationTools(syscall, 'dr0');
   const { unserialize, returnFromInvoke } = dtools;
@@ -100,4 +100,4 @@ export function buildDevice(tools, endowments) {
     },
   };
   return dispatch;
-}
+};

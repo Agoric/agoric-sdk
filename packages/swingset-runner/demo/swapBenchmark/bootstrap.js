@@ -8,7 +8,7 @@ import atomicSwapBundle from './bundle-atomicSwap.js';
 
 const log = makePrintLog();
 
-function setupBasicMints() {
+const setupBasicMints = () => {
   // prettier-ignore
   const all = [
     makeIssuerKit('moola'),
@@ -23,14 +23,12 @@ function setupBasicMints() {
     issuers,
     brands,
   });
-}
+};
 
-function makeVats(vats, zoe, installations, startingValues) {
+const makeVats = (vats, zoe, installations, startingValues) => {
   const { mints, issuers, brands } = setupBasicMints();
   // prettier-ignore
-  function makePayments(values) {
-    return mints.map((mint, i) => mint.mintPayment(AmountMath.make(brands[i], values[i])));
-  }
+  const makePayments = (values) => mints.map((mint, i) => mint.mintPayment(AmountMath.make(brands[i], values[i])));
   const [aliceValues, bobValues] = startingValues;
 
   // Setup Alice
@@ -56,14 +54,14 @@ function makeVats(vats, zoe, installations, startingValues) {
 
   log(`=> alice and bob are set up`);
   return harden(result);
-}
+};
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export const buildRootObject = (_vatPowers, vatParameters) => {
   let alice;
   let bob;
   let round = 0;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
@@ -86,11 +84,11 @@ export function buildRootObject(_vatPowers, vatParameters) {
         await E(bob).initiateSwap(alice);
       }
     },
-    async runBenchmarkRound() {
+    runBenchmarkRound: async () => {
       round += 1;
       await E(alice).initiateSwap(bob);
       await E(bob).initiateSwap(alice);
       return `round ${round} complete`;
     },
   });
-}
+};

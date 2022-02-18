@@ -6,9 +6,7 @@ import { provideHostStorage } from '../../src/hostStorage.js';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
 import { capargs } from '../util.js';
 
-function copy(data) {
-  return JSON.parse(JSON.stringify(data));
-}
+const copy = data => JSON.parse(JSON.stringify(data));
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

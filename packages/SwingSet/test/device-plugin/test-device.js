@@ -15,7 +15,7 @@ test.before('initialize storage', t => {
   t.context.hostStorage = provideHostStorage();
 });
 
-async function setupVatController(t) {
+const setupVatController = async t => {
   const inputQueue = [];
   const queueThunkForKernel = async thunk => {
     inputQueue.push(thunk);
@@ -71,7 +71,7 @@ async function setupVatController(t) {
     }
   };
   return { bridge, cycle, dump: c.dump, plugin, queueThunkForKernel };
-}
+};
 
 test.serial('plugin first time', async t => {
   const { bridge, cycle, dump, queueThunkForKernel } = await setupVatController(

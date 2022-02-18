@@ -48,7 +48,7 @@ import { makeIngressEgress } from './clist-xgress.js';
 // the Promises). If the message is headed to a remote machine, translate it
 // into the destination remote's slotspace.
 
-export function makeCListKit(state, syscall) {
+export const makeCListKit = (state, syscall) => {
   const {
     provideLocalForRemote,
     getLocalForRemote,
@@ -105,4 +105,4 @@ export function makeCListKit(state, syscall) {
     addEgress,
     addIngress,
   });
-}
+};

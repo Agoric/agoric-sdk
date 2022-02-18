@@ -64,7 +64,7 @@
  * dummy pre-resolved Promise.
  */
 
-export function makeGcAndFinalize(gcPower) {
+export const makeGcAndFinalize = gcPower => {
   if (typeof gcPower !== 'function') {
     if (gcPower !== false) {
       // We weren't explicitly disabled, so warn.
@@ -73,7 +73,7 @@ export function makeGcAndFinalize(gcPower) {
       );
     }
   }
-  return async function gcAndFinalize() {
+  return async () => {
     if (typeof gcPower !== 'function') {
       return;
     }
@@ -88,4 +88,4 @@ export function makeGcAndFinalize(gcPower) {
     // Node.js seems to need another for promises to get cleared out
     await new Promise(setImmediate);
   };
-}
+};

@@ -11,28 +11,28 @@ import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import { assert } from '@agoric/assert';
 
-function producePRR() {
+const producePRR = () => {
   const { promise, resolve, reject } = makePromiseKit();
   return [promise, { resolve, reject }];
-}
+};
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { D } = vatPowers;
   const pending = new Map(); // vatID -> { resolve, reject } for promise
   const running = new Map(); // vatID -> { resolve, reject } for doneP
   const meterByID = new Map(); // meterID -> { meter, updater }
   const meterIDByMeter = new WeakMap(); // meter -> meterID
 
-  function makeMeter(vatAdminNode, remaining, threshold) {
+  const makeMeter = (vatAdminNode, remaining, threshold) => {
     Nat(remaining);
     Nat(threshold);
     const meterID = D(vatAdminNode).createMeter(remaining, threshold);
     const { updater, notifier } = makeNotifierKit();
     const meter = Far('meter', {
-      addRemaining(delta) {
+      addRemaining: delta => {
         D(vatAdminNode).addMeterRemaining(meterID, Nat(delta));
       },
-      setThreshold(newThreshold) {
+      setThreshold: newThreshold => {
         D(vatAdminNode).setMeterThreshold(meterID, Nat(newThreshold));
       },
       get: () => D(vatAdminNode).getMeter(meterID), // returns BigInts
@@ -41,23 +41,23 @@ export function buildRootObject(vatPowers) {
     meterByID.set(meterID, harden({ meter, updater }));
     meterIDByMeter.set(meter, meterID);
     return meter;
-  }
+  };
 
-  function makeUnlimitedMeter(vatAdminNode) {
+  const makeUnlimitedMeter = vatAdminNode => {
     const meterID = D(vatAdminNode).createUnlimitedMeter();
     const { updater, notifier } = makeNotifierKit();
     const meter = Far('meter', {
-      addRemaining(_delta) {},
-      setThreshold(_newThreshold) {},
+      addRemaining: _delta => {},
+      setThreshold: _newThreshold => {},
       get: () => harden({ remaining: 'unlimited', threshold: 0 }),
       getNotifier: () => notifier, // will never fire
     });
     meterByID.set(meterID, harden({ meter, updater }));
     meterIDByMeter.set(meter, meterID);
     return meter;
-  }
+  };
 
-  function finishVatCreation(vatAdminNode, vatID) {
+  const finishVatCreation = (vatAdminNode, vatID) => {
     const [promise, pendingRR] = producePRR();
     pending.set(vatID, pendingRR);
 
@@ -66,19 +66,17 @@ export function buildRootObject(vatPowers) {
     doneP.catch(() => {}); // shut up false whine about unhandled rejection
 
     const adminNode = Far('adminNode', {
-      terminateWithFailure(reason) {
+      terminateWithFailure: reason => {
         D(vatAdminNode).terminateWithFailure(vatID, reason);
       },
-      done() {
-        return doneP;
-      },
+      done: () => doneP,
     });
     return promise.then(root => {
       return { adminNode, root };
     });
-  }
+  };
 
-  function convertOptions(origOptions) {
+  const convertOptions = origOptions => {
     const options = { ...origOptions };
     delete options.meterID;
     delete options.meter;
@@ -87,17 +85,14 @@ export function buildRootObject(vatPowers) {
       options.meterID = meterID;
     }
     return harden(options);
-  }
+  };
 
-  function createVatAdminService(vatAdminNode) {
-    return Far('vatAdminService', {
-      createMeter(remaining, threshold) {
-        return makeMeter(vatAdminNode, remaining, threshold);
-      },
-      createUnlimitedMeter() {
-        return makeUnlimitedMeter(vatAdminNode);
-      },
-      createVat(bundleOrBundlecap, options = {}) {
+  const createVatAdminService = vatAdminNode =>
+    Far('vatAdminService', {
+      createMeter: (remaining, threshold) =>
+        makeMeter(vatAdminNode, remaining, threshold),
+      createUnlimitedMeter: () => makeUnlimitedMeter(vatAdminNode),
+      createVat: (bundleOrBundlecap, options = {}) => {
         const co = convertOptions(options);
         let vatID;
         if (passStyleOf(bundleOrBundlecap) === 'remotable') {
@@ -120,7 +115,7 @@ export function buildRootObject(vatPowers) {
         }
         return finishVatCreation(vatAdminNode, vatID);
       },
-      createVatByName(bundleName, options = {}) {
+      createVatByName: (bundleName, options = {}) => {
         // eventually this option will go away: userspace will be obligated
         // to use D(devices.bundle).getNamedBundleId(name), probably during
         // bootstrap (so devices.bundle can be closely held), to fetch the
@@ -134,10 +129,9 @@ export function buildRootObject(vatPowers) {
         return finishVatCreation(vatAdminNode, vatID);
       },
     });
-  }
 
   // this message is queued to us by createVatDynamically
-  function newVatCallback(vatID, results) {
+  const newVatCallback = (vatID, results) => {
     const { resolve, reject } = pending.get(vatID);
     pending.delete(vatID);
     if (results.rootObject) {
@@ -145,15 +139,15 @@ export function buildRootObject(vatPowers) {
     } else {
       reject(Error(`Vat Creation Error: ${results.error}`));
     }
-  }
+  };
 
-  function meterCrossedThreshold(meterID, remaining) {
+  const meterCrossedThreshold = (meterID, remaining) => {
     const { updater } = meterByID.get(meterID);
     updater.updateState(remaining);
-  }
+  };
 
   // the kernel sends this when the vat halts
-  function vatTerminated(vatID, shouldReject, info) {
+  const vatTerminated = (vatID, shouldReject, info) => {
     if (!running.has(vatID)) {
       // a static vat terminated, so we have nobody to notify
       console.log(`DANGER: static vat ${vatID} terminated`);
@@ -168,7 +162,7 @@ export function buildRootObject(vatPowers) {
     } else {
       resolve(info);
     }
-  }
+  };
 
   return Far('root', {
     createVatAdminService,
@@ -176,4 +170,4 @@ export function buildRootObject(vatPowers) {
     vatTerminated,
     meterCrossedThreshold,
   });
-}
+};

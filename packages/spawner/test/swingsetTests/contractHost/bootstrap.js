@@ -4,10 +4,10 @@ import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.testLog;
 
-  async function trivialContractTest(spawner, trivialBundle) {
+  const trivialContractTest = async (spawner, trivialBundle) => {
     log('starting trivialContractTest');
     const installationP = E(spawner).install(trivialBundle);
     const trivial = await E(installationP).spawn('terms are provided');
@@ -16,9 +16,9 @@ export function buildRootObject(vatPowers, vatParameters) {
     const eight = await E(trivial).bar(7);
     log(`eight is: ${eight}`);
     log(`++ DONE`);
-  }
+  };
 
-  async function exhaustedContractTest(spawner, trivialBundle) {
+  const exhaustedContractTest = async (spawner, trivialBundle) => {
     log('starting exhaustedContractTest');
     const installationP = E(spawner).install(trivialBundle);
 
@@ -40,14 +40,14 @@ export function buildRootObject(vatPowers, vatParameters) {
         () => log(`wrong: loop2 still responding`),
         err => log(`loop2 dead: ${err}`),
       );
-  }
+  };
 
-  async function farFailureContractTest(spawner, trivialBundle) {
+  const farFailureContractTest = async (spawner, trivialBundle) => {
     log('starting farFailureContractTest');
     const installationP = E(spawner).install(trivialBundle);
     const trivial = await E(installationP).spawn('terms are provided');
     await E(trivial)
-      .getTerms(harden({ failureArg() {} }))
+      .getTerms(harden({ failureArg: () => {} }))
       .then(
         () => log(`wrong: far failure arg resolves`),
         err => log(`send non-Far: ${err}`),
@@ -59,10 +59,10 @@ export function buildRootObject(vatPowers, vatParameters) {
         err => log(`far failure: ${err}`),
       );
     log(`++ DONE`);
-  }
+  };
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
@@ -84,4 +84,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}
+};

@@ -6,7 +6,7 @@ import { assert, details as X } from '@agoric/assert';
 // message is "+" when the index was allocated by the recipient of that
 // message, and "-" when allocated by the sender of the message.
 
-export function parseRemoteSlot(s) {
+export const parseRemoteSlot = s => {
   assert.typeof(s, 'string');
   let type;
   let allocatedByRecipient;
@@ -34,9 +34,9 @@ export function parseRemoteSlot(s) {
 
   const id = Nat(BigInt(indexSuffix));
   return { type, allocatedByRecipient, id };
-}
+};
 
-export function makeRemoteSlot(type, allocatedByRecipient, id) {
+export const makeRemoteSlot = (type, allocatedByRecipient, id) => {
   let indexSuffix;
   if (allocatedByRecipient) {
     indexSuffix = `+${Nat(id)}`;
@@ -54,14 +54,14 @@ export function makeRemoteSlot(type, allocatedByRecipient, id) {
     return `rr${indexSuffix}`;
   }
   assert.fail(X`unknown type ${type}`);
-}
+};
 
-export function insistRemoteType(type, remoteSlot) {
+export const insistRemoteType = (type, remoteSlot) => {
   assert(
     type === parseRemoteSlot(remoteSlot).type,
     X`remoteSlot ${remoteSlot} is not of type ${type}`,
   );
-}
+};
 
 // The clist for each remote-machine has two sides: fromRemote (used to
 // parse inbound messages arriving from a remote machine) and toRemote (used
@@ -70,7 +70,7 @@ export function insistRemoteType(type, remoteSlot) {
 // table. The only time we must reverse the polarity of the flag is when we
 // add a new entry to the clist.
 
-export function flipRemoteSlot(remoteSlot) {
+export const flipRemoteSlot = remoteSlot => {
   const { type, allocatedByRecipient, id } = parseRemoteSlot(remoteSlot);
   return makeRemoteSlot(type, !allocatedByRecipient, id);
-}
+};

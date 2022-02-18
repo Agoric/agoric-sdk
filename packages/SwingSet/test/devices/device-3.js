@@ -1,19 +1,17 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootDeviceNode({
+export const buildRootDeviceNode = ({
   setDeviceState,
   getDeviceState,
   testLog,
-}) {
+}) => {
   testLog(typeof getDeviceState());
 
   return Far('root', {
-    setState(arg) {
+    setState: arg => {
       setDeviceState(arg);
       return 'ok';
     },
-    getState() {
-      return harden(getDeviceState());
-    },
+    getState: () => harden(getDeviceState()),
   });
-}
+};

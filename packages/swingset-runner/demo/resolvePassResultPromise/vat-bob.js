@@ -2,17 +2,17 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let resolver;
   return Far('root', {
-    first() {
+    first: () => {
       log('=> Bob: in first');
       const answer = new Promise((theResolver, _theRejector) => {
         resolver = theResolver;
       });
       return answer;
     },
-    second(p) {
+    second: p => {
       log('=> Bob: second begins');
       resolver('Bob answers first in second');
       p.then(
@@ -23,4 +23,4 @@ export function buildRootObject(_vatPowers) {
       return `Bob's second answer`;
     },
   });
-}
+};

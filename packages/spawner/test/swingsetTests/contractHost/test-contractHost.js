@@ -19,7 +19,7 @@ test.before(async t => {
   t.context.data = { kernelBundles, trivialBundle };
 });
 
-async function main(t, mode) {
+const main = async (t, mode) => {
   const config = await loadBasedir(dirname);
   config.defaultManagerType = 'xs-worker';
   const { kernelBundles, trivialBundle } = t.context.data;
@@ -27,7 +27,7 @@ async function main(t, mode) {
   const controller = await buildVatController(config, argv, { kernelBundles });
   await controller.run();
   return controller.dump();
-}
+};
 
 const contractTrivialGolden = [
   'starting trivialContractTest',

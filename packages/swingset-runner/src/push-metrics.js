@@ -34,7 +34,7 @@ if (!benchStatsFile) {
   process.exit(1);
 }
 
-function promHeader(name, metricType, help = undefined) {
+const promHeader = (name, metricType, help = undefined) => {
   let hdr = '';
   if (help !== undefined) {
     hdr += `\
@@ -45,9 +45,9 @@ function promHeader(name, metricType, help = undefined) {
 # TYPE ${NAME_PREFIX}${name} ${metricType}
 `;
   return hdr;
-}
+};
 
-function promValue(name, value, labels = []) {
+const promValue = (name, value, labels = []) => {
   let sep = '{';
   let labelstr = '';
 
@@ -63,9 +63,9 @@ function promValue(name, value, labels = []) {
   return `\
 ${NAME_PREFIX}${name}${labelstr} ${value}
 `;
-}
+};
 
-function generateCommonMetrics(obj, phaseLabels) {
+const generateCommonMetrics = (obj, phaseLabels) => {
   let metrics = '';
   for (const { key, metricType, name, description } of AUTOBENCH_METRICS) {
     let hdr = promHeader(name, metricType, description);
@@ -79,9 +79,9 @@ function generateCommonMetrics(obj, phaseLabels) {
     }
   }
   return metrics;
-}
+};
 
-function gatherMetrics(kind, data, labels, specs) {
+const gatherMetrics = (kind, data, labels, specs) => {
   const metricName = Object.fromEntries(
     specs.map(([prop, name]) => [prop, name]),
   );
@@ -113,20 +113,19 @@ function gatherMetrics(kind, data, labels, specs) {
     console.warn(`Unrecognized ${kind} data property ${key}`);
   }
   return Object.values(propMetrics).join('');
-}
+};
 
-function generateMetricsFromPrimeData(data, labels = undefined) {
-  return gatherMetrics('prime', data, labels, [
+const generateMetricsFromPrimeData = (data, labels = undefined) =>
+  gatherMetrics('prime', data, labels, [
     ['up', 'stat_up', 'counter', `Number of increments`],
     ['down', 'stat_down', 'counter', `Number of decrements`],
     ['max', 'stat_max', 'gauge', `Maximum value`],
     ['value', 'stat_value', 'gauge', 'Latest value'],
     ['perCrank', 'stat_per_crank', 'gauge', `Autobench value per crank`],
   ]);
-}
 
-function generateMetricsFromBenchmarkData(data, labels = undefined) {
-  return gatherMetrics('benchmark', data, labels, [
+const generateMetricsFromBenchmarkData = (data, labels = undefined) =>
+  gatherMetrics('benchmark', data, labels, [
     ['delta', 'stat_delta', 'gauge', `Autobench benchmark delta`],
     [
       'deltaPerRound',
@@ -135,9 +134,8 @@ function generateMetricsFromBenchmarkData(data, labels = undefined) {
       `Autobench benchmark delta per round`,
     ],
   ]);
-}
 
-function generateMetricsFromBenchStats(benchStats, labels = []) {
+const generateMetricsFromBenchStats = (benchStats, labels = []) => {
   const obj = JSON.parse(benchStats);
   const mainLabels = [['phase', 'prime'], ...labels];
   const benchmarkLabels = [['phase', 'bench'], ...labels];
@@ -155,7 +153,7 @@ function generateMetricsFromBenchStats(benchStats, labels = []) {
     );
   }
   return metrics;
-}
+};
 const benchStats = fs.readFileSync(benchStatsFile, 'utf-8');
 
 // We get the commit id to post.

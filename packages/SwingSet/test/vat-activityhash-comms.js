@@ -1,24 +1,24 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let comms;
 
-  async function addNewRemote(name) {
+  const addNewRemote = async name => {
     const transmitter = Far('tx', {});
     const setReceiver = Far('sr', {
-      setReceiver() {},
+      setReceiver: () => {},
     });
     await E(comms).addRemote(name, transmitter, setReceiver);
-  }
+  };
 
   return Far('root', {
-    async bootstrap(vats) {
+    bootstrap: async vats => {
       comms = vats.comms;
       await addNewRemote('remote1');
     },
-    async addRemote(name) {
+    addRemote: async name => {
       await addNewRemote(name);
     },
   });
-}
+};

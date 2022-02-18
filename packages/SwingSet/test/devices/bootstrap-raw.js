@@ -1,30 +1,28 @@
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-export function buildRootObject(vatPowers, _vatParameters) {
+export const buildRootObject = (vatPowers, _vatParameters) => {
   const { D } = vatPowers;
   let devices;
   return Far('root', {
-    bootstrap(vats, d0) {
+    bootstrap: (vats, d0) => {
       devices = d0;
     },
 
-    step1() {
-      return D(devices.dr).one(harden({ toPush: 'pushed', x: 4 }));
-    },
+    step1: () => D(devices.dr).one(harden({ toPush: 'pushed', x: 4 })),
 
-    async step2() {
+    step2: async () => {
       const pk1 = makePromiseKit();
       const pk2 = makePromiseKit();
       const got = [];
       // give the device an object to return and do sendOnly
       const target = Far('target', {
-        ping1(hello, p1) {
+        ping1: (hello, p1) => {
           got.push(hello); // should be 'hi ping1'
           got.push(p1 === target);
           pk1.resolve();
         },
-        ping2(hello, p2) {
+        ping2: (hello, p2) => {
           got.push(hello); // should be 'hi ping2'
           got.push(p2 === target);
           pk2.resolve();
@@ -38,14 +36,14 @@ export function buildRootObject(vatPowers, _vatParameters) {
       return got; // ['got', true, 'hi ping1', true, 'hi ping2', true]
     },
 
-    step3() {
+    step3: () => {
       const { dn1, dn2 } = D(devices.dr).three(); // returns new device nodes
       const ret1 = D(dn1).threeplus(21, dn1, dn2); // ['dn1', 21, true, true]
       const ret2 = D(dn2).threeplus(22, dn1, dn2); // ['dn2', 22, true, true]
       return [ret1, ret2];
     },
 
-    step4() {
+    step4: () => {
       const got1 = D(devices.dr).fourGet();
       D(devices.dr).fourSet('value1');
       const got2 = D(devices.dr).fourGet();
@@ -54,7 +52,7 @@ export function buildRootObject(vatPowers, _vatParameters) {
       return [got1, got2, got3];
     },
 
-    step5() {
+    step5: () => {
       try {
         D(devices.dr).fiveThrow();
         return false;
@@ -63,4 +61,4 @@ export function buildRootObject(vatPowers, _vatParameters) {
       }
     },
   });
-}
+};

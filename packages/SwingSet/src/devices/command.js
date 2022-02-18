@@ -3,14 +3,14 @@ import { Nat } from '@agoric/nat';
 
 import { assert, details as X } from '@agoric/assert';
 
-export default function buildCommand(broadcastCallback) {
+export default broadcastCallback => {
   assert(broadcastCallback, X`broadcastCallback must be provided.`);
   let inboundCallback;
   const srcPath = new URL('command-src.js', import.meta.url).pathname;
   let nextCount = 0n;
   const responses = new Map();
 
-  function inboundCommand(obj) {
+  const inboundCommand = obj => {
     // deliver the JSON-serializable object to the registered handler, and
     // return a promise that fires with a JSON-serializable object in
     // response
@@ -25,19 +25,19 @@ export default function buildCommand(broadcastCallback) {
       console.error(`error running inboundCallback:`, e);
     }
     return promise;
-  }
+  };
 
-  function sendBroadcast(kBodyString) {
+  const sendBroadcast = kBodyString => {
     const obj = JSON.parse(`${kBodyString}`);
     broadcastCallback(obj);
-  }
+  };
 
-  function registerInboundCallback(cb) {
+  const registerInboundCallback = cb => {
     assert(!inboundCallback, X`registerInboundCallback called more than once`);
     inboundCallback = cb;
-  }
+  };
 
-  function deliverResponse(kCount, kIsReject, kResponseString) {
+  const deliverResponse = (kCount, kIsReject, kResponseString) => {
     const count = Nat(kCount);
     const isReject = Boolean(kIsReject);
     let obj;
@@ -55,11 +55,11 @@ export default function buildCommand(broadcastCallback) {
     } else {
       resolve(obj);
     }
-  }
+  };
 
   return {
     srcPath,
     endowments: { registerInboundCallback, deliverResponse, sendBroadcast },
     inboundCommand, // for external access
   };
-}
+};

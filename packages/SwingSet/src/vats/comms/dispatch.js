@@ -11,18 +11,18 @@ import { makeGCKit } from './gc-comms.js';
 
 export const debugState = new WeakMap();
 
-export function buildCommsDispatch(
+export const buildCommsDispatch = (
   syscall,
   _state,
   _helpers,
   _vatPowers,
   vatParameters = {},
-) {
+) => {
   const { identifierBase = 0, sendExplicitSeqNums = true } = vatParameters;
   const state = makeState(syscall, identifierBase);
   const clistKit = makeCListKit(state, syscall);
 
-  function transmit(remoteID, msg) {
+  const transmit = (remoteID, msg) => {
     const remote = state.getRemote(remoteID);
     // the vat-tp "integrity layer" is a regular vat, so it expects an argument
     // encoded as JSON
@@ -34,7 +34,7 @@ export function buildCommsDispatch(
       slots: [],
     });
     syscall.send(remote.transmitterID(), 'transmit', args); // sendOnly
-  }
+  };
 
   const gcKit = makeGCKit(state, syscall, transmit);
   const { gcFromRemote, gcFromKernel, processGC } = gcKit;
@@ -51,11 +51,11 @@ export function buildCommsDispatch(
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
-  function maybeInitializeState() {
+  const maybeInitializeState = () => {
     state.maybeInitialize(controller);
-  }
+  };
 
-  function doDeliver(target, method, args, result) {
+  const doDeliver = (target, method, args, result) => {
     maybeInitializeState();
     // console.debug(`comms.deliver ${target} r=${result}`);
     insistCapData(args);
@@ -136,23 +136,12 @@ export function buildCommsDispatch(
       ),
     );
     return sendFromKernel(target, method, args, result);
-  }
+  };
 
-  function filterMetaObjects(vrefs) {
-    // Sometimes the bootstrap vat doesn't care very much about comms and
-    // allows the root object (the "controller") to be dropped, or one of the
-    // receiver objects we create during addRemote(). gc-comms.js doesn't
-    // know about these meta objects, so filter them out. Also, always filter
-    // out the controller (o+0) even if it isn't in the meta table, because
-    // some unit tests (test-demos-comms.js) create a comms vat but never
-    // talk to it, which means we never get a delivery, so initializeState()
-    // is never called, so o+0 is never added to the meta table.
-    return vrefs.filter(
-      vref => !(vref === controller || state.hasMetaObject(vref)),
-    );
-  }
+  const filterMetaObjects = vrefs =>
+    vrefs.filter(vref => !(vref === controller || state.hasMetaObject(vref)));
 
-  function doDispatch(vatDeliveryObject) {
+  const doDispatch = vatDeliveryObject => {
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
       case 'message': {
@@ -188,9 +177,9 @@ export function buildCommsDispatch(
         assert.fail(X`unknown delivery type ${type}`);
     }
     processGC();
-  }
+  };
 
-  function dispatch(vatDeliveryObject) {
+  const dispatch = vatDeliveryObject => {
     try {
       doDispatch(vatDeliveryObject);
     } catch (e) {
@@ -199,10 +188,10 @@ export function buildCommsDispatch(
       console.log(e);
       throw e;
     }
-  }
+  };
   harden(dispatch);
 
   debugState.set(dispatch, { state, clistKit });
 
   return dispatch;
-}
+};

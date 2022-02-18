@@ -5,9 +5,9 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    bootstrap(vats) {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    bootstrap: vats => {
       log('=> Alice: bootstrap() called');
 
       const p1 = E(vats.bob).first();
@@ -37,4 +37,3 @@ export function buildRootObject(_vatPowers) {
       return 'Alice started';
     },
   });
-}

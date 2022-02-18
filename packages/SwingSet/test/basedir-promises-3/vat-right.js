@@ -1,11 +1,11 @@
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@agoric/promise-kit';
 
-export function buildRootObject() {
+export const buildRootObject = () => {
   const pk3 = makePromiseKit();
   const pk4 = makePromiseKit();
   const t2 = Far('t2', {
-    four(arg) {
+    four: arg => {
       // arg should be a Promise that promptly resolves to 4
       const argP = Promise.resolve(arg);
       const wasP = argP === arg;
@@ -14,12 +14,10 @@ export function buildRootObject() {
   });
 
   return Far('root', {
-    one() {
-      return pk3.promise;
-    },
-    three() {
+    one: () => pk3.promise,
+    three: () => {
       pk3.resolve(t2);
       return pk4.promise;
     },
   });
-}
+};

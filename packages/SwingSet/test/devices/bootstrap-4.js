@@ -7,18 +7,14 @@ import { extractMessage } from '../vat-util.js';
 // identifier, we must bypass liveslots, which would otherwise protect us
 // against the vat-fatal mistake
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
-export default function setup(syscall, state, _helpers, vatPowers) {
+export default (syscall, state, _helpers, vatPowers) => {
   const { callNow } = syscall;
   const { testLog } = vatPowers;
-  function dispatch(vatDeliverObject) {
+  const dispatch = vatDeliverObject => {
     const { method, args } = extractMessage(vatDeliverObject);
     if (method === 'bootstrap') {
       // find the device slot
@@ -43,6 +39,6 @@ export default function setup(syscall, state, _helpers, vatPowers) {
     } else if (method === 'ping') {
       testLog('oops: still alive');
     }
-  }
+  };
   return dispatch;
-}
+};

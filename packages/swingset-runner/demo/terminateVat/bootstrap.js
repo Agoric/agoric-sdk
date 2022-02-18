@@ -1,11 +1,11 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export const buildRootObject = (_vatPowers, vatParameters) => {
   const mode = vatParameters.argv[0] || 'kill';
   let counter = 46;
   const self = Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       const dude = await E(vatMaker).createVatByName('dude');
       const succBefore = await E(dude.root).dude(true);
@@ -60,10 +60,10 @@ export function buildRootObject(_vatPowers, vatParameters) {
         console.log(`done() rejected with ${e} (${JSON.stringify(e)})`);
       }
     },
-    query() {
+    query: () => {
       counter += 1;
       return counter;
     },
   });
   return self;
-}
+};

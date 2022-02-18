@@ -35,7 +35,7 @@ const allValues = async obj =>
  * @param {Object} [options]
  * @param {ModuleFormat} [options.bundleFormat]
  */
-export async function buildKernelBundles(options = {}) {
+export const buildKernelBundles = async (options = {}) => {
   // this takes 2.7s on my computer
 
   const { bundleFormat = undefined } = options;
@@ -63,9 +63,9 @@ export async function buildKernelBundles(options = {}) {
   });
 
   return harden(bundles);
-}
+};
 
-function byName(a, b) {
+const byName = (a, b) => {
   if (a.name < b.name) {
     return -1;
   }
@@ -73,7 +73,7 @@ function byName(a, b) {
     return 1;
   }
   return 0;
-}
+};
 
 /**
  * Scan a directory for files defining the vats to bootstrap for a swingset, and
@@ -101,7 +101,7 @@ function byName(a, b) {
  *
  * Swingsets defined by scanning a directory in this manner define no devices.
  */
-export function loadBasedir(basedir, options = {}) {
+export const loadBasedir = (basedir, options = {}) => {
   const { includeDevDependencies = false, bundleFormat = undefined } = options;
   /** @type { SwingSetConfigDescriptor } */
   const vats = {};
@@ -144,7 +144,7 @@ export function loadBasedir(basedir, options = {}) {
     config.bootstrap = 'bootstrap';
   }
   return config;
-}
+};
 
 /**
  * Resolve a pathname found in a config descriptor.  First try to resolve it as
@@ -157,7 +157,7 @@ export function loadBasedir(basedir, options = {}) {
  * @returns {Promise<string>} the absolute path corresponding to `specPath` if it can be
  *    determined.
  */
-async function resolveSpecFromConfig(referrer, specPath) {
+const resolveSpecFromConfig = async (referrer, specPath) => {
   try {
     return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
   } catch (e) {
@@ -166,7 +166,7 @@ async function resolveSpecFromConfig(referrer, specPath) {
     }
   }
   return new URL(specPath, referrer).pathname;
-}
+};
 
 /**
  * For each entry in a config descriptor (i.e, `vats`, `bundles`, etc), convert
@@ -179,7 +179,7 @@ async function resolveSpecFromConfig(referrer, specPath) {
  * @param {boolean} expectParameters `true` if the entries should have parameters (for
  *    example, `true` for `vats` but `false` for bundles).
  */
-async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
+const normalizeConfigDescriptor = async (desc, referrer, expectParameters) => {
   const normalizeSpec = async (entry, key) => {
     return resolveSpecFromConfig(referrer, entry[key]).then(spec => {
       entry[key] = spec;
@@ -202,7 +202,7 @@ async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
     }
   }
   return Promise.all(jobs);
-}
+};
 
 /**
  * Read and parse a swingset config file and return it in normalized form.
@@ -215,7 +215,7 @@ async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
  * @throws {Error} if the file existed but was inaccessible, malformed, or otherwise
  *    invalid.
  */
-export async function loadSwingsetConfigFile(configPath) {
+export const loadSwingsetConfigFile = async configPath => {
   try {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const referrer = new URL(
@@ -238,11 +238,10 @@ export async function loadSwingsetConfigFile(configPath) {
       throw e;
     }
   }
-}
+};
 
-export function swingsetIsInitialized(hostStorage) {
-  return !!hostStorage.kvStore.get('initialized');
-}
+export const swingsetIsInitialized = hostStorage =>
+  !!hostStorage.kvStore.get('initialized');
 
 /**
  * @param {SwingSetConfig} config
@@ -251,13 +250,13 @@ export function swingsetIsInitialized(hostStorage) {
  * @param {{ kernelBundles?: Record<string, string>, verbose?: boolean }} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
-export async function initializeSwingset(
+export const initializeSwingset = async (
   config,
   argv = [],
   hostStorage,
   initializationOptions = {},
   runtimeOptions = {},
-) {
+) => {
   const kvStore = hostStorage.kvStore;
   insistStorageAPI(kvStore);
 
@@ -373,7 +372,7 @@ export async function initializeSwingset(
   // kconfig.namedBundleIDs.BUNDLENAME=bundleID , which both point into
   // kconfig.idToBundle.BUNDLEID=bundle
 
-  async function getBundle(desc, mode, nameToBundle) {
+  const getBundle = async (desc, mode, nameToBundle) => {
     if (mode === 'bundle') {
       return desc.bundle;
     } else if (mode === 'bundleSpec') {
@@ -390,19 +389,19 @@ export async function initializeSwingset(
       return bundle;
     }
     throw Error(`unknown mode ${mode}`);
-  }
+  };
 
   // fires with BundleWithID: { ...bundle, id }
-  async function addBundleID(bundle) {
+  const addBundleID = async bundle => {
     if (bundle.id) {
       // during config, we believe bundle.id, but not at runtime!
       return bundle;
     }
     return computeBundleID(bundle).then(id => ({ ...bundle, id }));
-  }
+  };
 
   // fires with BundleWithID: { ...bundle, id }
-  async function processDesc(desc, nameToBundle) {
+  const processDesc = async (desc, nameToBundle) => {
     const allModes = ['bundle', 'bundleSpec', 'sourceSpec', 'bundleName'];
     const modes = allModes.filter(mode => mode in desc);
     assert(
@@ -418,9 +417,9 @@ export async function initializeSwingset(
         desc.bundleID = bundleWithID.id;
         return bundleWithID;
       });
-  }
+  };
 
-  async function processGroup(groupName, nameToBundle) {
+  const processGroup = async (groupName, nameToBundle) => {
     const group = config[groupName] || {};
     const names = Array.from(Object.keys(group));
     const processP = names.map(name =>
@@ -439,7 +438,7 @@ export async function initializeSwingset(
       idToBundle[id] = bundle;
     }
     return [newNameToBundle, idToBundle];
-  }
+  };
 
   // for each config.bundles.NAME, do whatever bundling/reading is necessary
   // to get a bundle and bundleID, and return both the name->bundleID record
@@ -468,4 +467,4 @@ export async function initializeSwingset(
     kdebugEnable(true);
   }
   return initializeKernel(kconfig, hostStorage);
-}
+};

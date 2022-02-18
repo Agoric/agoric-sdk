@@ -28,18 +28,18 @@ const makeProtocolHandler = t => {
   let lp;
   let nonce = 0;
   return Far('ProtocolHandler', {
-    async onCreate(_protocol, _impl) {
+    onCreate: async (_protocol, _impl) => {
       log('created', _protocol, _impl);
     },
-    async generatePortID() {
+    generatePortID: async () => {
       nonce += 1;
       return `${nonce}`;
     },
-    async onBind(port, localAddr) {
+    onBind: async (port, localAddr) => {
       t.assert(port, `port is supplied to onBind`);
       t.assert(localAddr, `local address is supplied to onBind`);
     },
-    async onConnect(port, localAddr, remoteAddr) {
+    onConnect: async (port, localAddr, remoteAddr) => {
       t.assert(port, `port is tracked in onConnect`);
       t.assert(localAddr, `local address is supplied to onConnect`);
       t.assert(remoteAddr, `remote address is supplied to onConnect`);
@@ -50,7 +50,7 @@ const makeProtocolHandler = t => {
       }
       return { handler: makeEchoConnectionHandler() };
     },
-    async onListen(port, localAddr, listenHandler) {
+    onListen: async (port, localAddr, listenHandler) => {
       t.assert(port, `port is tracked in onListen`);
       t.assert(localAddr, `local address is supplied to onListen`);
       t.assert(listenHandler, `listen handler is tracked in onListen`);
@@ -58,7 +58,7 @@ const makeProtocolHandler = t => {
       l = listenHandler;
       log('listening', port.getLocalAddress(), listenHandler);
     },
-    async onListenRemove(port, localAddr, listenHandler) {
+    onListenRemove: async (port, localAddr, listenHandler) => {
       t.assert(port, `port is tracked in onListen`);
       t.assert(localAddr, `local address is supplied to onListen`);
       t.is(listenHandler, l, `listenHandler is tracked in onListenRemove`);
@@ -66,7 +66,7 @@ const makeProtocolHandler = t => {
       lp = undefined;
       log('port done listening', port.getLocalAddress());
     },
-    async onRevoke(port, localAddr) {
+    onRevoke: async (port, localAddr) => {
       t.assert(port, `port is tracked in onRevoke`);
       t.assert(localAddr, `local address is supplied to onRevoke`);
       log('port done revoking', port.getLocalAddress());
@@ -82,7 +82,7 @@ test('handled protocol', async t => {
   await port.connect(
     '/ibc/*/ordered/echo',
     Far('ProtocolHandler', {
-      async onOpen(connection, localAddr, remoteAddr) {
+      onOpen: async (connection, localAddr, remoteAddr) => {
         t.is(localAddr, '/ibc/*/ordered');
         t.is(remoteAddr, '/ibc/*/ordered/echo');
         const ack = await connection.send('ping');
@@ -90,11 +90,11 @@ test('handled protocol', async t => {
         t.is(`${ack}`, 'ping', 'received pong');
         connection.close();
       },
-      async onClose(_connection, reason) {
+      onClose: async (_connection, reason) => {
         t.is(reason, undefined, 'no close reason');
         closed.resolve();
       },
-      async onReceive(_connection, bytes) {
+      onReceive: async (_connection, bytes) => {
         t.is(`${bytes}`, 'ping');
         return 'pong';
       },
@@ -115,25 +115,30 @@ test('protocol connection listen', async t => {
    * @type {import('../src/vats/network').ListenHandler}
    */
   const listener = Far('listener', {
-    async onListen(p, listenHandler) {
+    onListen: async (p, listenHandler) => {
       t.is(p, port, `port is tracked in onListen`);
       t.assert(listenHandler, `listenHandler is tracked in onListen`);
     },
-    async onAccept(p, localAddr, remoteAddr, listenHandler) {
+    onAccept: async (p, localAddr, remoteAddr, listenHandler) => {
       t.assert(localAddr, `local address is passed to onAccept`);
       t.assert(remoteAddr, `remote address is passed to onAccept`);
       t.is(p, port, `port is tracked in onAccept`);
       t.is(listenHandler, listener, `listenHandler is tracked in onAccept`);
       let handler;
       return harden({
-        async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
+        onOpen: async (
+          connection,
+          _localAddr,
+          _remoteAddr,
+          connectionHandler,
+        ) => {
           t.assert(connectionHandler, `connectionHandler is tracked in onOpen`);
           handler = connectionHandler;
           const ack = await connection.send('ping');
           t.is(`${ack}`, 'ping', 'received pong');
           connection.close();
         },
-        async onClose(c, reason, connectionHandler) {
+        onClose: async (c, reason, connectionHandler) => {
           t.is(
             connectionHandler,
             handler,
@@ -144,7 +149,7 @@ test('protocol connection listen', async t => {
           t.is(reason, undefined, 'no close reason');
           closed.resolve();
         },
-        async onReceive(c, packet, connectionHandler) {
+        onReceive: async (c, packet, connectionHandler) => {
           t.is(
             connectionHandler,
             handler,
@@ -156,12 +161,12 @@ test('protocol connection listen', async t => {
         },
       });
     },
-    async onError(p, rej, listenHandler) {
+    onError: async (p, rej, listenHandler) => {
       t.is(p, port, `port is tracked in onError`);
       t.is(listenHandler, listener, `listenHandler is tracked in onError`);
       t.isNot(rej, rej, 'unexpected error');
     },
-    async onRemove(p, listenHandler) {
+    onRemove: async (p, listenHandler) => {
       t.is(listenHandler, listener, `listenHandler is tracked in onRemove`);
       t.is(p, port, `port is passed to onReset`);
     },
@@ -175,7 +180,7 @@ test('protocol connection listen', async t => {
     '/net/ordered/ordered/some-portname',
     Far('connectionHandlerWithOpen', {
       ...connectionHandler,
-      async onOpen(connection, localAddr, remoteAddr, c) {
+      onOpen: async (connection, localAddr, remoteAddr, c) => {
         if (connectionHandler.onOpen) {
           await connectionHandler.onOpen(connection, localAddr, remoteAddr, c);
         }
@@ -201,14 +206,13 @@ test('loopback protocol', async t => {
    * @type {import('../src/vats/network').ListenHandler}
    */
   const listener = Far('listener', {
-    async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
-      return harden({
-        async onReceive(c, packet, _connectionHandler) {
+    onAccept: async (_p, _localAddr, _remoteAddr, _listenHandler) =>
+      harden({
+        onReceive: async (c, packet, _connectionHandler) => {
           t.is(`${packet}`, 'ping', 'expected ping');
           return 'pingack';
         },
-      });
-    },
+      }),
   });
   await port.addListener(listener);
 
@@ -216,7 +220,7 @@ test('loopback protocol', async t => {
   await port2.connect(
     port.getLocalAddress(),
     Far('opener', {
-      async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
+      onOpen: async (c, localAddr, remoteAddr, _connectionHandler) => {
         t.is(localAddr, '/loopback/bar/nonce/1');
         t.is(remoteAddr, '/loopback/foo/nonce/2');
         const pingack = await c.send('ping');

@@ -2,9 +2,9 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    thisIsYourPromise(p) {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    thisIsYourPromise: p => {
       log('=> Bob: thisIsYourPromise begins');
       p.then(
         r => log(`=> Bob: the promise parameter resolved to '${r}'`),
@@ -14,4 +14,3 @@ export function buildRootObject(_vatPowers) {
       return 'Bob got the promise';
     },
   });
-}

@@ -28,7 +28,7 @@ const FIRST_DEVICE_ID = 70n;
  * @param {string} vatID The vat ID string of the vat in question
  * TODO: consider making this part of makeVatKeeper
  */
-export function initializeVatState(kvStore, streamStore, vatID) {
+export const initializeVatState = (kvStore, streamStore, vatID) => {
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
@@ -37,7 +37,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
     `${vatID}.t.endPosition`,
     `${JSON.stringify(streamStore.STREAM_START)}`,
   );
-}
+};
 
 /**
  * Produce a vat keeper for a vat.
@@ -63,7 +63,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  * @param { SnapStore= } snapStore
  * returns an object to hold and access the kernel's state for the given vat
  */
-export function makeVatKeeper(
+export const makeVatKeeper = (
   kvStore,
   streamStore,
   kernelSlog,
@@ -81,21 +81,21 @@ export function makeVatKeeper(
   decStat,
   getCrankNumber,
   snapStore = undefined,
-) {
+) => {
   insistVatID(vatID);
   const transcriptStream = `transcript-${vatID}`;
 
-  function getRequired(key) {
+  const getRequired = key => {
     const value = kvStore.get(key);
     assert(value !== undefined, `missing: ${key}`);
     return value;
-  }
+  };
 
   /**
    * @param {SourceOfBundle} source
    * @param {ManagerOptions} options
    */
-  function setSourceAndOptions(source, options) {
+  const setSourceAndOptions = (source, options) => {
     // take care with API change
     assert(options.managerType, X`vat options missing managerType`);
     assert(source);
@@ -105,27 +105,27 @@ export function makeVatKeeper(
     assert.typeof(options, 'object');
     kvStore.set(`${vatID}.source`, JSON.stringify(source));
     kvStore.set(`${vatID}.options`, JSON.stringify(options));
-  }
+  };
 
-  function getSourceAndOptions() {
+  const getSourceAndOptions = () => {
     const source = JSON.parse(getRequired(`${vatID}.source`));
     /** @type { ManagerOptions } */
     const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
     return harden({ source, options });
-  }
+  };
 
-  function getOptions() {
+  const getOptions = () => {
     /** @type { ManagerOptions } */
     const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
     return harden(options);
-  }
+  };
 
-  function initializeReapCountdown(count) {
+  const initializeReapCountdown = count => {
     kvStore.set(`${vatID}.reapInterval`, `${count}`);
     kvStore.set(`${vatID}.reapCountdown`, `${count}`);
-  }
+  };
 
-  function countdownToReap() {
+  const countdownToReap = () => {
     const rawCount = getRequired(`${vatID}.reapCountdown`);
     if (rawCount === 'never') {
       return false;
@@ -142,27 +142,27 @@ export function makeVatKeeper(
         return false;
       }
     }
-  }
+  };
 
-  function nextDeliveryNum() {
+  const nextDeliveryNum = () => {
     const num = Nat(BigInt(getRequired(`${vatID}.nextDeliveryNum`)));
     kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
     return num;
-  }
+  };
 
-  function getReachableFlag(kernelSlot) {
+  const getReachableFlag = kernelSlot => {
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const data = kvStore.get(kernelKey);
     const { isReachable } = parseReachableAndVatSlot(data);
     return isReachable;
-  }
+  };
 
-  function insistNotReachable(kernelSlot) {
+  const insistNotReachable = kernelSlot => {
     const isReachable = getReachableFlag(kernelSlot);
     assert.equal(isReachable, false, X`${kernelSlot} was reachable, oops`);
-  }
+  };
 
-  function setReachableFlag(kernelSlot, _tag) {
+  const setReachableFlag = (kernelSlot, _tag) => {
     const { type } = parseKernelSlot(kernelSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const { isReachable, vatSlot } = parseReachableAndVatSlot(
@@ -178,9 +178,9 @@ export function makeVatKeeper(
       // kdebug(`++ ${kernelSlot} ${tag} ${reachable},${recognizable}`);
       setObjectRefCount(kernelSlot, { reachable, recognizable });
     }
-  }
+  };
 
-  function clearReachableFlag(kernelSlot, _tag) {
+  const clearReachableFlag = (kernelSlot, _tag) => {
     const { type } = parseKernelSlot(kernelSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const { isReachable, vatSlot } = parseReachableAndVatSlot(
@@ -204,9 +204,9 @@ export function makeVatKeeper(
         addMaybeFreeKref(kernelSlot);
       }
     }
-  }
+  };
 
-  function importsKernelSlot(kernelSlot) {
+  const importsKernelSlot = kernelSlot => {
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const data = kvStore.get(kernelKey);
     if (data) {
@@ -217,7 +217,7 @@ export function makeVatKeeper(
       }
     }
     return false;
-  }
+  };
 
   /**
    * Provide the kernel slot corresponding to a given vat slot, allocating a
@@ -232,7 +232,7 @@ export function makeVatKeeper(
    * @throws {Error} if vatSlot is not a kind of thing that can be exported by vats
    * or is otherwise invalid.
    */
-  function mapVatSlotToKernelSlot(vatSlot, options = {}) {
+  const mapVatSlotToKernelSlot = (vatSlot, options = {}) => {
     const { setReachable = true, required = false } = options;
     assert.typeof(vatSlot, 'string', X`non-string vatSlot: ${vatSlot}`);
     const { type, allocatedByVat } = parseVatSlot(vatSlot);
@@ -292,7 +292,7 @@ export function makeVatKeeper(
       }
     }
     return kernelSlot;
-  }
+  };
 
   /**
    * Provide the vat slot corresponding to a given kernel slot, including
@@ -304,7 +304,7 @@ export function makeVatKeeper(
    * @throws {Error} if kernelSlot is not a kind of thing that can be imported by vats
    * or is otherwise invalid.
    */
-  function mapKernelSlotToVatSlot(kernelSlot, options = {}) {
+  const mapKernelSlotToVatSlot = (kernelSlot, options = {}) => {
     const { setReachable = true, required = false } = options;
     assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const kernelKey = `${vatID}.c.${kernelSlot}`;
@@ -361,7 +361,7 @@ export function makeVatKeeper(
       }
     }
     return vatSlot;
-  }
+  };
 
   /**
    * Test if there's a c-list entry for some slot.
@@ -370,9 +370,7 @@ export function makeVatKeeper(
    *
    * @returns {boolean} true iff this vat has a c-list entry mapping for `slot`.
    */
-  function hasCListEntry(slot) {
-    return kvStore.has(`${vatID}.c.${slot}`);
-  }
+  const hasCListEntry = slot => kvStore.has(`${vatID}.c.${slot}`);
 
   /**
    * Remove an entry from the vat's c-list.
@@ -380,7 +378,7 @@ export function makeVatKeeper(
    * @param {string} kernelSlot  The kernel slot being removed
    * @param {string} vatSlot  The vat slot being removed
    */
-  function deleteCListEntry(kernelSlot, vatSlot) {
+  const deleteCListEntry = (kernelSlot, vatSlot) => {
     parseKernelSlot(kernelSlot); // used for its assert()
     const { allocatedByVat } = parseVatSlot(vatSlot);
     const kernelKey = `${vatID}.c.${kernelSlot}`;
@@ -417,14 +415,14 @@ export function makeVatKeeper(
     decStat('clistEntries');
     kvStore.delete(kernelKey);
     kvStore.delete(vatKey);
-  }
+  };
 
-  function deleteCListEntriesForKernelSlots(kernelSlots) {
+  const deleteCListEntriesForKernelSlots = kernelSlots => {
     for (const kernelSlot of kernelSlots) {
       const vatSlot = mapKernelSlotToVatSlot(kernelSlot);
       deleteCListEntry(kernelSlot, vatSlot);
     }
-  }
+  };
 
   /**
    * Generator function to return the vat's transcript, one entry at a time.
@@ -449,7 +447,7 @@ export function makeVatKeeper(
    *
    * @param {Object} entry  The transcript entry to append.
    */
-  function addToTranscript(entry) {
+  const addToTranscript = entry => {
     const oldPos = JSON.parse(getRequired(`${vatID}.t.endPosition`));
     const newPos = streamStore.writeStreamItem(
       transcriptStream,
@@ -457,20 +455,19 @@ export function makeVatKeeper(
       oldPos,
     );
     kvStore.set(`${vatID}.t.endPosition`, `${JSON.stringify(newPos)}`);
-  }
+  };
 
   /** @returns { StreamPosition } */
-  function getTranscriptEndPosition() {
-    return JSON.parse(
+  const getTranscriptEndPosition = () =>
+    JSON.parse(
       kvStore.get(`${vatID}.t.endPosition`) ||
         assert.fail('missing endPosition'),
     );
-  }
 
   /**
    * @returns {{ snapshotID: string, startPos: StreamPosition } | undefined}
    */
-  function getLastSnapshot() {
+  const getLastSnapshot = () => {
     const notation = kvStore.get(`local.${vatID}.lastSnapshot`);
     if (!notation) {
       return undefined;
@@ -479,23 +476,23 @@ export function makeVatKeeper(
     assert.typeof(snapshotID, 'string');
     assert(startPos);
     return { snapshotID, startPos };
-  }
+  };
 
-  function transcriptSnapshotStats() {
+  const transcriptSnapshotStats = () => {
     const totalEntries = getTranscriptEndPosition().itemCount;
     const lastSnapshot = getLastSnapshot();
     const snapshottedEntries = lastSnapshot
       ? lastSnapshot.startPos.itemCount
       : 0;
     return { totalEntries, snapshottedEntries };
-  }
+  };
 
   /**
    * Add vatID to consumers of a snapshot.
    *
    * @param {string} snapshotID
    */
-  function addToSnapshot(snapshotID) {
+  const addToSnapshot = snapshotID => {
     const key = `local.snapshot.${snapshotID}`;
     const consumers = JSON.parse(kvStore.get(key) || '[]');
     assert(Array.isArray(consumers));
@@ -511,14 +508,14 @@ export function makeVatKeeper(
       kvStore.set(key, JSON.stringify(consumers));
       // console.log('addToSnapshot result:', { vatID, snapshotID, consumers });
     }
-  }
+  };
 
   /**
    * Remove vatID from consumers of a snapshot.
    *
    * @param {string} snapshotID
    */
-  function removeFromSnapshot(snapshotID) {
+  const removeFromSnapshot = snapshotID => {
     const key = `local.snapshot.${snapshotID}`;
     const consumersJSON = kvStore.get(key);
     assert(consumersJSON, X`cannot remove ${vatID}: ${key} key not defined`);
@@ -530,7 +527,7 @@ export function makeVatKeeper(
     // console.log('removeFromSnapshot done:', { vatID, snapshotID, consumers });
     kvStore.set(key, JSON.stringify(consumers));
     return consumers.length;
-  }
+  };
 
   /**
    * Store a snapshot, if given a snapStore.
@@ -538,7 +535,7 @@ export function makeVatKeeper(
    * @param { VatManager } manager
    * @returns { Promise<boolean> }
    */
-  async function saveSnapshot(manager) {
+  const saveSnapshot = async manager => {
     if (!snapStore || !manager.makeSnapshot) {
       return false;
     }
@@ -557,13 +554,13 @@ export function makeVatKeeper(
     );
     addToSnapshot(snapshotID);
     return true;
-  }
+  };
 
-  function vatStats() {
-    function getCount(key, first) {
+  const vatStats = () => {
+    const getCount = (key, first) => {
       const id = Nat(BigInt(getRequired(key)));
       return id - Nat(first);
-    }
+    };
 
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
@@ -579,14 +576,14 @@ export function makeVatKeeper(
       deviceCount: Number(deviceCount),
       transcriptCount: Number(transcriptCount),
     });
-  }
+  };
 
   /**
    * Produce a dump of this vat's state for debugging purposes.
    *
    * @returns {Array<[string, string, string]>} an array of this vat's state information
    */
-  function dumpState() {
+  const dumpState = () => {
     const res = [];
     const prefix = `${vatID}.c.`;
     for (const k of kvStore.getKeys(prefix, `${vatID}.c/`)) {
@@ -603,7 +600,7 @@ export function makeVatKeeper(
       }
     }
     return harden(res);
-  }
+  };
 
   return harden({
     setSourceAndOptions,
@@ -631,4 +628,4 @@ export function makeVatKeeper(
     getLastSnapshot,
     removeFromSnapshot,
   });
-}
+};

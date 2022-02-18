@@ -9,7 +9,7 @@ import { insistVatID } from './id.js';
  * @param {*} tools.kernelKeeper  Kernel keeper managing persistent kernel state
  * @param {(problem: unknown, err?: Error) => void } [tools.panic]
  */
-export function makeKernelQueueHandler(tools) {
+export const makeKernelQueueHandler = tools => {
   const {
     kernelKeeper,
     panic = (problem, err) => {
@@ -17,13 +17,13 @@ export function makeKernelQueueHandler(tools) {
     },
   } = tools;
 
-  function notify(vatID, kpid) {
+  const notify = (vatID, kpid) => {
     const m = harden({ type: 'notify', vatID, kpid });
     kernelKeeper.incrementRefCount(kpid, `enq|notify`);
     kernelKeeper.addToRunQueue(m);
-  }
+  };
 
-  function doSubscribe(vatID, kpid) {
+  const doSubscribe = (vatID, kpid) => {
     insistVatID(vatID);
     const p = kernelKeeper.getKernelPromise(kpid);
     if (p.state === 'unresolved') {
@@ -32,9 +32,9 @@ export function makeKernelQueueHandler(tools) {
       // otherwise it's already resolved, you probably want to know how
       notify(vatID, kpid);
     }
-  }
+  };
 
-  function doResolve(vatID, resolutions) {
+  const doResolve = (vatID, resolutions) => {
     if (vatID) {
       insistVatID(vatID);
     }
@@ -59,13 +59,13 @@ export function makeKernelQueueHandler(tools) {
         panic(`${kpid}.policy panic: ${tag} ${JSON.stringify(data)}`);
       }
     }
-  }
+  };
 
-  function resolveToError(kpid, errorData, expectedDecider) {
+  const resolveToError = (kpid, errorData, expectedDecider) => {
     doResolve(expectedDecider, [[kpid, true, errorData]]);
-  }
+  };
 
-  function doSend(target, msg) {
+  const doSend = (target, msg) => {
     parseKernelSlot(target);
     insistMessage(msg);
     const m = harden({ type: 'send', target, msg });
@@ -79,7 +79,7 @@ export function makeKernelQueueHandler(tools) {
       idx += 1;
     }
     kernelKeeper.addToRunQueue(m);
-  }
+  };
 
   /**
    * Enqueue a message to some kernel object, as if the message had been sent
@@ -96,7 +96,7 @@ export function makeKernelQueueHandler(tools) {
    *    rejection).
    * @returns {string?} the kpid of the sent message's result promise, if any
    */
-  function queueToKref(kref, method, args, policy = 'ignore') {
+  const queueToKref = (kref, method, args, policy = 'ignore') => {
     // queue a message on the end of the queue, with 'absolute' krefs.
     // Use 'step' or 'run' to execute it
     insistCapData(args);
@@ -111,7 +111,7 @@ export function makeKernelQueueHandler(tools) {
     const msg = harden({ method, args, result: resultKPID });
     doSend(kref, msg);
     return resultKPID;
-  }
+  };
 
   return harden({
     doSend,
@@ -121,4 +121,4 @@ export function makeKernelQueueHandler(tools) {
     resolveToError,
     queueToKref,
   });
-}
+};

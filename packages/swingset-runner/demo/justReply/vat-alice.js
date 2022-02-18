@@ -3,9 +3,9 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    sayHelloTo(other) {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    sayHelloTo: other => {
       log(`=> Alice.sayHelloTo`);
       const answer = E(other).hello();
       answer.then(
@@ -15,4 +15,3 @@ export function buildRootObject(_vatPowers) {
       return `Alice started\n`;
     },
   });
-}

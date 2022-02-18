@@ -33,7 +33,7 @@ import { Far } from '@endo/marshal';
 // If this turns out to be a problem, we could hold onto a mutable array of
 // hardened {time, handlers} records, and copy them when we make changes, which
 // would take many fewer copies than the current approach.
-function copyState(schedState) {
+const copyState = schedState => {
   if (!schedState) {
     return [];
   }
@@ -45,7 +45,7 @@ function copyState(schedState) {
     newSchedule.push({ time, handlers: handlers.slice(0) });
   }
   return newSchedule;
-}
+};
 
 /**
  * @typedef {Object} Event
@@ -73,7 +73,7 @@ function copyState(schedState) {
  *
  * @param {Array<Event>} [state=undefined]
  */
-function makeTimerMap(state = undefined) {
+const makeTimerMap = (state = undefined) => {
   /**
    * @type {Array<Event>} an array containing events that should be triggered
    * after specific times.  Multiple events can be stored with the same time
@@ -82,11 +82,9 @@ function makeTimerMap(state = undefined) {
    */
   const schedule = state ? copyState(state) : [];
 
-  function cloneSchedule() {
-    return copyState(schedule);
-  }
+  const cloneSchedule = () => copyState(schedule);
 
-  function eventsFor(time) {
+  const eventsFor = time => {
     assert.typeof(time, 'bigint');
     for (let i = 0; i < schedule.length && schedule[i].time <= time; i += 1) {
       if (schedule[i].time === time) {
@@ -96,12 +94,12 @@ function makeTimerMap(state = undefined) {
     const newRecord = { time, handlers: [] };
     schedule.push(newRecord);
     return newRecord;
-  }
+  };
 
   // There's some question as to whether it's important to invoke the handlers
   // in the order of their deadlines. If so, we should probably ensure that the
   // recorded deadlines don't have finer granularity than the turns.
-  function add(time, handler, repeater = undefined) {
+  const add = (time, handler, repeater = undefined) => {
     assert.typeof(time, 'bigint');
     const handlerRecord =
       typeof repeater === 'number' ? { handler, index: repeater } : { handler };
@@ -109,10 +107,10 @@ function makeTimerMap(state = undefined) {
     records.push(handlerRecord);
     schedule.sort((a, b) => Number(a.time - b.time));
     return time;
-  }
+  };
 
   // Remove and return all pairs indexed by numbers up to target
-  function removeEventsThrough(target) {
+  const removeEventsThrough = target => {
     assert.typeof(target, 'bigint');
     const returnValues = [];
     // remove events from last to first so as not to disturb the indexes.
@@ -129,10 +127,10 @@ function makeTimerMap(state = undefined) {
       schedule.splice(j, 1);
     }
     return returnValues;
-  }
+  };
 
   // We don't expect this to be called often, so we don't optimize for it.
-  function remove(targetHandler) {
+  const remove = targetHandler => {
     const droppedTimes = [];
     for (let i = 0; i < schedule.length; i += 1) {
       const { time, handlers } = schedule[i];
@@ -155,24 +153,30 @@ function makeTimerMap(state = undefined) {
       }
     }
     return droppedTimes;
-  }
+  };
   return harden({ add, remove, removeEventsThrough, cloneSchedule });
-}
+};
 
-function nextScheduleTime(index, repeaters, lastPolled) {
+const nextScheduleTime = (index, repeaters, lastPolled) => {
   assert.typeof(lastPolled, 'bigint');
   const { startTime, interval } = repeaters[index];
   assert.typeof(startTime, 'bigint');
   assert.typeof(interval, 'bigint');
   // return the smallest value of `startTime + N * interval` after lastPolled
   return lastPolled + interval - ((lastPolled - startTime) % interval);
-}
+};
 
 // curryPollFn provided at top level so it can be exported and tested.
-function curryPollFn(SO, repeaters, deadlines, getLastPolledFn, saveStateFn) {
+const curryPollFn = (
+  SO,
+  repeaters,
+  deadlines,
+  getLastPolledFn,
+  saveStateFn,
+) => {
   // poll() is intended to be called by the host loop. Now might be Date.now(),
   // or it might be a block height.
-  function poll(now) {
+  const poll = now => {
     const timeAndEvents = deadlines.removeEventsThrough(now);
     let wokeAnything = false;
     timeAndEvents.forEach(events => {
@@ -196,12 +200,12 @@ function curryPollFn(SO, repeaters, deadlines, getLastPolledFn, saveStateFn) {
     }
 
     return wokeAnything;
-  }
+  };
 
   return poll;
-}
+};
 
-export function buildRootDeviceNode(tools) {
+export const buildRootDeviceNode = tools => {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const restart = getDeviceState();
 
@@ -219,11 +223,9 @@ export function buildRootDeviceNode(tools) {
   let lastPolled = restart ? restart.lastPolled : 0n;
   let nextRepeater = restart ? restart.nextRepeater : 0;
 
-  function getLastPolled() {
-    return lastPolled;
-  }
+  const getLastPolled = () => lastPolled;
 
-  function saveState() {
+  const saveState = () => {
     setDeviceState(
       harden({
         lastPolled,
@@ -233,16 +235,16 @@ export function buildRootDeviceNode(tools) {
         deadlines: deadlines.cloneSchedule(),
       }),
     );
-  }
+  };
 
-  function updateTime(time) {
+  const updateTime = time => {
     assert(
       time >= lastPolled,
       X`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
     );
     lastPolled = time;
     saveState();
-  }
+  };
 
   const innerPoll = curryPollFn(
     SO,
@@ -265,13 +267,13 @@ export function buildRootDeviceNode(tools) {
   // but the repeated calls won't accumulate timing drift, so the trigger
   // point will be reached at consistent intervals.
   return Far('root', {
-    setWakeup(baseTime, handler) {
+    setWakeup: (baseTime, handler) => {
       baseTime = Nat(baseTime);
       deadlines.add(baseTime, handler);
       saveState();
       return baseTime;
     },
-    removeWakeup(handler) {
+    removeWakeup: handler => {
       const times = deadlines.remove(handler);
       saveState();
       return times;
@@ -283,7 +285,7 @@ export function buildRootDeviceNode(tools) {
     // identity of Repeaters using unique indexes. The indexes are exposed
     // directly to the wrapper vat, and we rely on the wrapper vat to manage
     // the authority they represent as capabilities.
-    makeRepeater(startTime, interval) {
+    makeRepeater: (startTime, interval) => {
       const index = nextRepeater;
       repeaters.push({
         startTime: Nat(startTime),
@@ -293,19 +295,19 @@ export function buildRootDeviceNode(tools) {
       saveState();
       return index;
     },
-    deleteRepeater(index) {
+    deleteRepeater: index => {
       repeaters[index] = undefined;
       saveState();
       return index;
     },
-    schedule(index, handler) {
+    schedule: (index, handler) => {
       const nextTime = nextScheduleTime(index, repeaters, lastPolled);
       deadlines.add(nextTime, handler, index);
       saveState();
       return nextTime;
     },
   });
-}
+};
 
 // exported for testing. Only buildRootDeviceNode is intended for production
 // use.

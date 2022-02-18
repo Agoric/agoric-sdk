@@ -5,12 +5,12 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   log(`=> setup called`);
   let alice;
   let bob;
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       alice = vats.alice;
       bob = vats.bob;
       log('=> bootstrap() called');
@@ -23,8 +23,8 @@ export function buildRootObject(_vatPowers) {
           e => log(`=> alice.introduceYourselfTo(bob) rejected as '${e}'`),
         );
     },
-    runBenchmarkRound() {
+    runBenchmarkRound: () => {
       E(alice).doPing('hey!');
     },
   });
-}
+};

@@ -17,12 +17,12 @@ test('arrayEncoderStream', async t => {
   e.on('data', data => chunks.push(data));
   e.write([]);
 
-  function eq(expected) {
+  const eq = expected => {
     t.deepEqual(
       chunks.map(buf => buf.toString()),
       expected,
     );
-  }
+  };
   eq([`[]`]);
 
   e.write(['command', { foo: 1 }]);
@@ -35,12 +35,12 @@ test('encode stream', async t => {
   aStream.pipe(nsStream);
   const chunks = [];
   nsStream.on('data', data => chunks.push(data));
-  function eq(expected) {
+  const eq = expected => {
     t.deepEqual(
       chunks.map(buf => buf.toString()),
       expected,
     );
-  }
+  };
 
   aStream.write([1]);
   eq(['3:[1],']);
@@ -53,16 +53,16 @@ test('decode stream', async t => {
   const nsStream = netstringDecoderStream();
   const aStream = arrayDecoderStream();
   nsStream.pipe(aStream);
-  function write(s) {
+  const write = s => {
     nsStream.write(Buffer.from(s));
-  }
+  };
 
   const msgs = [];
   aStream.on('data', msg => msgs.push(msg));
 
-  function eq(expected) {
+  const eq = expected => {
     t.deepEqual(msgs, expected);
-  }
+  };
 
   let buf = encode(Buffer.from(JSON.stringify([1])));
   write(buf.slice(0, 1));

@@ -2,18 +2,18 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 
-function ignore(p) {
+const ignore = p => {
   p.then(
     () => 0,
     () => 0,
   );
-}
+};
 
 // We arrange for this vat, 'vat-target', to receive a specific set of
 // inbound events ('dispatch'), which will provoke a set of outbound events
 // ('syscall'), that cover the full range of the dispatch/syscall interface
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   console.log(`vat does buildRootObject`); // make sure console works
   console.log(BigInt(0)); // make sure BigInt is tolerated: #2936
   const mutable = [];
@@ -41,7 +41,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   //   syscall.vatstoreDelete('key')
   //   syscall.vatstoreGet('key') -> undefined
   //   syscall.fulfillToData(pA, [pB, pC, 3, 'vsValue', undefined, 'function', 'function']);
-  function zero(obj, pD, pE, adder, dropMe) {
+  const zero = (obj, pD, pE, adder, dropMe) => {
     callbackObj = obj;
     const pF = E(callbackObj).callback(11, 12); // syscall.send
     ignore(pD);
@@ -63,18 +63,18 @@ export function buildRootObject(vatPowers, vatParameters) {
     const evwft = typeof vatPowers.exitVatWithFailure;
     // syscall.fulfillToData:
     return [precB.promise, precC.promise, pF, three, vs1, vs2, evt, evwft];
-  }
+  };
 
   // crank 2:
   //   dispatch.deliver(target, method="one", result=rp3, args=[])
   //   syscall.fulfillToPresence(pB, callbackObj)
   //   syscall.reject(pC, Error('oops'))
   //   syscall.fulfillToData(rp3, 'rp3 good')
-  function one() {
+  const one = () => {
     precB.resolve(callbackObj); // syscall.fulfillToPresence
     precC.reject(Error('oops')); // syscall.reject
     return 'rp3 good';
-  }
+  };
 
   // crank 3: dispatch.notify(pD, false, callbackObj)
   // crank 4: dispatch.notify(pE, true, Error('four'))
@@ -82,10 +82,10 @@ export function buildRootObject(vatPowers, vatParameters) {
   // crank 5: dispatch.notify(pF, false, ['data', callbackObj])
 
   const contents = [];
-  function append(thing) {
+  const append = thing => {
     contents.push(thing);
     return harden([...contents]);
-  }
+  };
 
   const target = Far('root', {
     zero,
@@ -94,4 +94,4 @@ export function buildRootObject(vatPowers, vatParameters) {
   });
 
   return target;
-}
+};

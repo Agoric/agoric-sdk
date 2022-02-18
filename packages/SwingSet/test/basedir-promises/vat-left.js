@@ -1,40 +1,39 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const log = vatPowers.testLog;
   const obj0 = Far('root', {
-    callRight(arg1, right) {
+    callRight: (arg1, right) => {
       log(`left.callRight ${arg1}`);
       E(right)
         .bar(2)
         .then(a => log(`left.then ${a}`));
       return 3;
     },
-    call2(arg) {
+    call2: arg => {
       log(`left.call2 ${arg}`);
       return Far('iface', {
-        call3(x) {
+        call3: x => {
           log(`left.call3 ${x}`);
           return 3;
         },
       });
     },
 
-    returnArg(arg) {
+    returnArg: arg => {
       log(`left.returnArg`);
       return arg;
     },
 
-    returnMyObject() {
-      return Far('iface', {
-        foo(x) {
+    returnMyObject: () =>
+      Far('iface', {
+        foo: x => {
           log(`left.myobject.call ${x}`);
         },
-      });
-    },
+      }),
 
-    takePromise(p1) {
+    takePromise: p1 => {
       log(`left.takePromise`);
       return harden(
         p1.then(t1 => {
@@ -46,4 +45,4 @@ export function buildRootObject(vatPowers) {
     },
   });
   return obj0;
-}
+};

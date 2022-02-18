@@ -8,7 +8,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadBasedir, buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
 
-async function makeController(managerType, runtimeOptions) {
+const makeController = async (managerType, runtimeOptions) => {
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   config.vats.target.creationOptions = { managerType, enableDisavow: true };
   config.vats.target2 = config.vats.target;
@@ -17,17 +17,13 @@ async function makeController(managerType, runtimeOptions) {
   const c = await buildVatController(config, [], runtimeOptions);
   c.pinVatRoot('bootstrap');
   return c;
-}
+};
 
 /** @type { (body: string, slots?: string[]) => SwingSetCapData } */
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
 /** @type { (args: unknown[], slots?: string[]) => SwingSetCapData } */
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
 const maxVatsOnline = 2;
 const steps = [
@@ -70,7 +66,7 @@ const steps = [
   },
 ];
 
-async function runSteps(c, t) {
+const runSteps = async (c, t) => {
   await c.run();
   for (const { vat, online } of steps) {
     t.log('sending to vat', vat);
@@ -90,7 +86,7 @@ async function runSteps(c, t) {
       online,
     );
   }
-}
+};
 
 test('4 vats in warehouse with 2 online', async t => {
   const c = await makeController('xs-worker', {
@@ -101,7 +97,7 @@ test('4 vats in warehouse with 2 online', async t => {
   await runSteps(c, t);
 });
 
-function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
+const unusedSnapshotsOnDisk = (kvStore, snapstorePath) => {
   const inUse = [];
   for (const k of kvStore.getKeys(`local.snapshot.`, `local.snapshot/`)) {
     const consumers = JSON.parse(kvStore.get(k));
@@ -119,7 +115,7 @@ function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
     }
   }
   return { inUse, onDisk, extra };
-}
+};
 
 test('snapshot after deliveries', async t => {
   const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;

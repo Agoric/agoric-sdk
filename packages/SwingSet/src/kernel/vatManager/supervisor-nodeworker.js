@@ -24,17 +24,17 @@ import {
 assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
 
 // eslint-disable-next-line no-unused-vars
-function workerLog(first, ...args) {
+const workerLog = (first, ...args) => {
   // console.error(`---worker: ${first}`, ...args);
-}
+};
 
 workerLog(`supervisor started`);
 
-function sendUplink(msg) {
+const sendUplink = msg => {
   assert(msg instanceof Array, X`msg must be an Array`);
   assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
   parentPort.postMessage(msg);
-}
+};
 
 let dispatch;
 
@@ -54,17 +54,17 @@ parentPort.on('message', ([type, ...margs]) => {
       consensusMode,
     ] = margs;
 
-    function testLog(...args) {
+    const testLog = (...args) => {
       sendUplink(['testLog', ...args]);
-    }
+    };
 
     /** @type {VatSyscaller} */
-    function syscallToManager(vatSyscallObject) {
+    const syscallToManager = vatSyscallObject => {
       sendUplink(['syscall', vatSyscallObject]);
       // we can't block for a result, so we always tell the vat that the
       // syscall was successful, and never has any result data
       return ['ok', null];
-    }
+    };
     const syscall = makeSupervisorSyscall(syscallToManager, false);
     const vatID = 'demo-vatID';
     const vatPowers = {

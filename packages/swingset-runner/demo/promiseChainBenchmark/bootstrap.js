@@ -5,10 +5,10 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let bob;
   let p;
-  function waitForNextResolution() {
+  const waitForNextResolution = () => {
     p.then(
       answer => {
         log(`Alice: Bob answers with value ${answer[0]}`);
@@ -19,16 +19,16 @@ export function buildRootObject(_vatPowers) {
         log(`=> Alice: Bob rejected, ${err}`);
       },
     );
-  }
+  };
 
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       bob = vats.bob;
       p = E(bob).init();
       E(bob).gen();
     },
-    runBenchmarkRound() {
+    runBenchmarkRound: () => {
       waitForNextResolution();
     },
   });
-}
+};

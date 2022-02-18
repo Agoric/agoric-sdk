@@ -3,9 +3,9 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    sendPromiseTo(other) {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    sendPromiseTo: other => {
       log('=> Alice: sendPromiseTo() begins');
       let resolver;
       const param = new Promise((theResolver, _theRejector) => {
@@ -21,4 +21,3 @@ export function buildRootObject(_vatPowers) {
       return 'Alice started';
     },
   });
-}

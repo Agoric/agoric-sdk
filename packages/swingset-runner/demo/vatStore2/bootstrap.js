@@ -7,31 +7,27 @@ const p = console.log;
 
 const randomness = makeXorShift128();
 
-function roll(limit) {
-  return randomness.randomUint32() % limit;
-}
+const roll = limit => randomness.randomUint32() % limit;
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let nextZotNumber = 1;
   const companions = [];
   const otherVats = [];
   const zots = [];
 
-  function makeZot() {
+  const makeZot = () => {
     const name = `zot-${nextZotNumber}`;
     nextZotNumber += 1;
     return Far('zot', {
-      say(message) {
+      say: message => {
         p(`${name} asked to say "${message}"`);
       },
-      getName() {
-        return name;
-      },
+      getName: () => name,
     });
-  }
+  };
 
   return Far('root', {
-    async bootstrap(vats) {
+    bootstrap: async vats => {
       otherVats.push({ vat: vats.alice, name: 'Alice' });
       otherVats.push({ vat: vats.bob, name: 'Bob' });
 
@@ -78,4 +74,4 @@ export function buildRootObject(_vatPowers) {
       return 'done';
     },
   });
-}
+};

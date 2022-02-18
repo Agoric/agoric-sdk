@@ -1,32 +1,32 @@
 import { Far } from '@endo/marshal';
 
-function makePR() {
+const makePR = () => {
   let r;
   const p = new Promise((resolve, _reject) => {
     r = resolve;
   });
   return [p, r];
-}
+};
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let pX;
   let rX;
   let pY;
   let rY;
   return Far('root', {
-    genPromiseX() {
+    genPromiseX: () => {
       [pX, rX] = makePR();
       return pX;
     },
-    genPromiseY() {
+    genPromiseY: () => {
       [pY, rY] = makePR();
       return pY;
     },
-    resPromiseX(v) {
+    resPromiseX: v => {
       rX(v);
     },
-    resPromiseY(v) {
+    resPromiseY: v => {
       rY(v);
     },
   });
-}
+};

@@ -9,7 +9,7 @@ import { provideHostStorage } from '../../src/hostStorage.js';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
 import { capargs } from '../util.js';
 
-async function prepare() {
+const prepare = async () => {
   const kernelBundles = await buildKernelBundles();
   // we'll give this bundle to the loader vat, which will use it to create a
   // new (metered) dynamic vat
@@ -20,18 +20,18 @@ async function prepare() {
     new URL('vat-load-dynamic.js', import.meta.url).pathname,
   );
   return { kernelBundles, dynamicVatBundle, bootstrapBundle };
-}
+};
 
 test.before(async t => {
   t.context.data = await prepare();
 });
 
-function extractSlot(t, data) {
+const extractSlot = (t, data) => {
   const marg = JSON.parse(data.body);
   t.is(marg['@qclass'], 'slot');
   t.is(marg.index, 0);
   return { marg, meterKref: data.slots[0] };
-}
+};
 
 test('meter objects', async t => {
   const { kernelBundles, bootstrapBundle } = t.context.data;
@@ -59,7 +59,7 @@ test('meter objects', async t => {
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const { marg, meterKref } = extractSlot(t, c.kpResolution(kp1));
-  async function doMeter(method, ...args) {
+  const doMeter = async (method, ...args) => {
     const kp = c.queueToVatRoot(
       'bootstrap',
       method,
@@ -67,11 +67,11 @@ test('meter objects', async t => {
     );
     await c.run();
     return c.kpResolution(kp);
-  }
-  async function getMeter() {
+  };
+  const getMeter = async () => {
     const res = await doMeter('getMeter');
     return parse(res.body);
-  }
+  };
 
   t.deepEqual(await getMeter(), { remaining: 10n, threshold: 5n });
   await doMeter('addMeterRemaining', 8n);
@@ -80,16 +80,22 @@ test('meter objects', async t => {
   t.deepEqual(await getMeter(), { remaining: 18n, threshold: 7n });
 });
 
-function kpidRejected(t, c, kpid, message) {
+const kpidRejected = (t, c, kpid, message) => {
   t.is(c.kpStatus(kpid), 'rejected');
   const resCapdata = c.kpResolution(kpid);
   t.deepEqual(resCapdata.slots, []);
   const body = JSON.parse(resCapdata.body);
   delete body.errorId;
   t.deepEqual(body, { '@qclass': 'error', name: 'Error', message });
-}
+};
 
-async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
+const createMeteredVat = async (
+  c,
+  t,
+  dynamicVatBundle,
+  capacity,
+  threshold,
+) => {
   assert.typeof(capacity, 'bigint');
   assert.typeof(threshold, 'bigint');
   const cmargs = capargs([capacity, threshold]);
@@ -114,16 +120,16 @@ async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
   t.is(JSON.parse(res2.body)[0], 'created', res2.body);
   const doneKPID = res2.slots[0];
 
-  async function getMeter() {
+  const getMeter = async () => {
     const args = capargs([marg], [meterKref]);
     const kp = c.queueToVatRoot('bootstrap', 'getMeter', args);
     await c.run();
     const res = c.kpResolution(kp);
     const { remaining } = parse(res.body);
     return remaining;
-  }
+  };
 
-  async function consume(shouldComplete) {
+  const consume = async shouldComplete => {
     const kp = c.queueToVatRoot('bootstrap', 'run', capargs([]));
     await c.run();
     if (shouldComplete) {
@@ -133,12 +139,12 @@ async function createMeteredVat(c, t, dynamicVatBundle, capacity, threshold) {
       t.is(c.kpStatus(kp), 'rejected');
       kpidRejected(t, c, kp, 'vat terminated');
     }
-  }
+  };
 
   return { consume, getMeter, notifyKPID, doneKPID };
-}
+};
 
-async function overflowCrank(t, explosion) {
+const overflowCrank = async (t, explosion) => {
   const managerType = 'xs-worker';
   const { kernelBundles, dynamicVatBundle, bootstrapBundle } = t.context.data;
   const config = {
@@ -230,7 +236,7 @@ async function overflowCrank(t, explosion) {
   const kp5 = c.queueToVatRoot('bootstrap', 'run', capargs([]));
   await c.run();
   kpidRejected(t, c, kp5, 'vat terminated');
-}
+};
 
 test('exceed allocate', t => {
   return overflowCrank(t, 'allocate');
@@ -385,16 +391,16 @@ test('unlimited meter', async t => {
   t.is(JSON.parse(res2.body)[0], 'created', res2.body);
   const doneKPID = res2.slots[0];
 
-  async function getMeter() {
+  const getMeter = async () => {
     const args = capargs([marg], [meterKref]);
     const kp = c.queueToVatRoot('bootstrap', 'getMeter', args);
     await c.run();
     const res = c.kpResolution(kp);
     const { remaining } = parse(res.body);
     return remaining;
-  }
+  };
 
-  async function consume(shouldComplete) {
+  const consume = async shouldComplete => {
     const kp = c.queueToVatRoot('bootstrap', 'run', capargs([]));
     await c.run();
     if (shouldComplete) {
@@ -404,7 +410,7 @@ test('unlimited meter', async t => {
       t.is(c.kpStatus(kp), 'rejected');
       kpidRejected(t, c, kp, 'vat terminated');
     }
-  }
+  };
 
   let remaining = await getMeter();
   t.is(remaining, 'unlimited');

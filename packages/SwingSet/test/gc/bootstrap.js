@@ -1,27 +1,27 @@
 import { Far } from '@endo/marshal';
 import { E } from '@agoric/eventual-send';
 
-export function buildRootObject() {
-  let A = Far('A', { hello() {} });
-  let B = Far('B', { hello() {} });
+export const buildRootObject = () => {
+  let A = Far('A', { hello: () => {} });
+  let B = Far('B', { hello: () => {} });
   let target;
   let zoe;
 
   return Far('root', {
-    async bootstrap(vats) {
+    bootstrap: async vats => {
       target = vats.target;
       zoe = vats.zoe;
     },
-    async one() {
+    one: async () => {
       await E(target).two(A, B);
     },
-    drop() {
+    drop: () => {
       A = null;
       B = null;
     },
 
-    async makeInvitation0() {
+    makeInvitation0: async () => {
       await E(target).makeInvitationTarget(zoe);
     },
   });
-}
+};

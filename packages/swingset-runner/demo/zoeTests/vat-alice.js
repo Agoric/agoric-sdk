@@ -257,13 +257,13 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  function logStateOnChanges(notifier, lastCount = undefined) {
+  const logStateOnChanges = (notifier, lastCount = undefined) => {
     const updateRecordP = E(notifier).getUpdateSince(lastCount);
     updateRecordP.then(updateRec => {
       log(updateRec.value);
       logStateOnChanges(notifier, updateRec.updateCount);
     });
-  }
+  };
 
   const doSimpleExchangeWithNotification = async bobP => {
     const issuerKeywordRecord = harden({
@@ -534,8 +534,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   });
 };
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
     build: (...args) => build(makePrintLog(), ...args),
   });
-}

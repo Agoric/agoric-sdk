@@ -2,17 +2,17 @@ import { assert, details as X } from '@agoric/assert';
 
 let enableKDebug = false;
 
-export function kdebugEnable(flag) {
+export const kdebugEnable = flag => {
   enableKDebug = !!flag;
-}
+};
 
-export function kdebug(...args) {
+export const kdebug = (...args) => {
   if (enableKDebug) {
     console.log(...args);
   }
-}
+};
 
-export function legibilizeValue(val, slots) {
+export const legibilizeValue = (val, slots) => {
   if (Array.isArray(val)) {
     let result = '[';
     for (const elem of val) {
@@ -55,12 +55,12 @@ export function legibilizeValue(val, slots) {
   } else {
     return JSON.stringify(val);
   }
-}
+};
 
-export function legibilizeMessageArgs(args) {
+export const legibilizeMessageArgs = args => {
   try {
     return JSON.parse(args.body).map(arg => legibilizeValue(arg, args.slots));
   } catch (e) {
     return [args];
   }
-}
+};

@@ -9,7 +9,7 @@ import {
   makeSwingsetController,
 } from '../src/index.js';
 
-async function main(basedir, argv) {
+const main = async (basedir, argv) => {
   const config = await loadBasedir(basedir);
   const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
 
@@ -33,7 +33,7 @@ async function main(basedir, argv) {
   );
   await controller.run();
   return controller.dump();
-}
+};
 
 const encouragementBotGolden = [
   '=> user.talkToBot is called with encouragementBot',

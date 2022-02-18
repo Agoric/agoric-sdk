@@ -44,7 +44,7 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  *
  * buildRootObject(vatPowers, vatParameters)
  */
-function build(
+const build = (
   syscall,
   forVatID,
   cacheSize,
@@ -54,14 +54,14 @@ function build(
   vatParameters,
   gcTools,
   console,
-) {
+) => {
   const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
-  function lsdebug(...args) {
+  const lsdebug = (...args) => {
     if (enableLSDebug) {
       console.log(...args);
     }
-  }
+  };
 
   let didRoot = false;
 
@@ -112,7 +112,7 @@ function build(
   const possiblyDeadSet = new Set(); // vrefs that need to be checked for being dead
   const possiblyRetiredSet = new Set(); // vrefs that might need to be rechecked for being retired
 
-  function retainExportedVref(vref) {
+  const retainExportedVref = vref => {
     // if the vref corresponds to a Remotable, keep a strong reference to it
     // until the kernel tells us to release it
     const { type, allocatedByVat, virtual } = parseVatSlot(vref);
@@ -127,7 +127,7 @@ function build(
         kernelRecognizableRemotables.add(vref);
       }
     }
-  }
+  };
 
   /*
     Imports are in one of 5 states: UNKNOWN, REACHABLE, UNREACHABLE,
@@ -175,7 +175,7 @@ function build(
 
   */
 
-  function finalizeDroppedImport(vref) {
+  const finalizeDroppedImport = vref => {
     // TODO: Ideally this function should assert that it is not metered.  This
     // appears to be fine in practice, but it breaks a number of unit tests in
     // ways that are not obvious how to fix.
@@ -196,10 +196,10 @@ function build(
       addToPossiblyDeadSet(vref);
       slotToVal.delete(vref);
     }
-  }
+  };
   const droppedImportRegistry = new FinalizationRegistry(finalizeDroppedImport);
 
-  async function scanForDeadObjects() {
+  const scanForDeadObjects = async () => {
     // `possiblyDeadSet` accumulates vrefs which have lost a supporting
     // pillar (in-memory, export, or virtualized data refcount) since the
     // last call to scanForDeadObjects. The vref might still be supported
@@ -287,7 +287,7 @@ function build(
       exportsToRetire.sort();
       syscall.retireExports(exportsToRetire);
     }
-  }
+  };
 
   /** Remember disavowed Presences which will kill the vat if you try to talk
    * to them */
@@ -298,7 +298,7 @@ function build(
   let nextExportID = 1;
   let nextPromiseID = 5;
 
-  function makeImportedPresence(slot, iface = `Alleged: presence ${slot}`) {
+  const makeImportedPresence = (slot, iface = `Alleged: presence ${slot}`) => {
     // Called by convertSlotToVal for type=object (an `o-NN` reference). We
     // build a Presence for application-level code to receive. This Presence
     // is associated with 'slot' so that all handled messages get sent to
@@ -306,7 +306,7 @@ function build(
 
     lsdebug(`makeImportedPresence(${slot})`);
     const fulfilledHandler = {
-      applyMethod(o, prop, args, returnedP) {
+      applyMethod: (o, prop, args, returnedP) => {
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
         if (disavowedPresences.has(o)) {
@@ -318,7 +318,7 @@ function build(
         return queueMessage(slot, prop, args, returnedP);
       },
       // FIXME: applyFunction(o, args, returnedP) { },
-      get(o, prop) {
+      get: (o, prop) => {
         lsdebug(`makeImportedPresence handler.get (${slot})`);
         if (disavowedPresences.has(o)) {
           // eslint-disable-next-line no-use-before-define
@@ -365,9 +365,9 @@ function build(
 
     // We harden the presence for the same safety reasons.
     return harden(remotePresence);
-  }
+  };
 
-  function makePipelinablePromise(vpid) {
+  const makePipelinablePromise = vpid => {
     // Called by convertSlotToVal(type=promise) for incoming promises (a
     // `p-NN` reference), and by queueMessage() for the result of an outbound
     // message (a `p+NN` reference). We build a Promise for application-level
@@ -386,7 +386,7 @@ function build(
     // this handler being used after it was supposed to be resolved
     let handlerActive = true;
     const unfulfilledHandler = {
-      applyMethod(_p, prop, args, returnedP) {
+      applyMethod: (_p, prop, args, returnedP) => {
         // Support: p~.[prop](...args) remote method invocation
         lsdebug(`makePipelinablePromise handler.applyMethod (${vpid})`);
         if (!handlerActive) {
@@ -396,7 +396,7 @@ function build(
         // eslint-disable-next-line no-use-before-define
         return queueMessage(vpid, prop, args, returnedP);
       },
-      get(p, prop) {
+      get: (p, prop) => {
         // Support: p~.[prop]
         lsdebug(`makePipelinablePromise handler.get (${vpid})`);
         if (!handlerActive) {
@@ -420,12 +420,12 @@ function build(
     // about how we interact with HandledPromise, just use harden({ resolve,
     // reject }).
     const pRec = harden({
-      resolve(resolution) {
+      resolve: resolution => {
         handlerActive = false;
         resolve(resolution);
       },
 
-      reject(rejection) {
+      reject: rejection => {
         handlerActive = false;
         reject(rejection);
       },
@@ -433,11 +433,10 @@ function build(
     importedPromisesByPromiseID.set(vpid, pRec);
 
     return harden(p);
-  }
+  };
 
-  function makeDeviceNode(id, iface = `Alleged: device ${id}`) {
-    return Remotable(iface);
-  }
+  const makeDeviceNode = (id, iface = `Alleged: device ${id}`) =>
+    Remotable(iface);
 
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
   // allocatePromiseID() returns a slot, exportPromise() uses the slot from
@@ -446,21 +445,21 @@ function build(
   // number or return a slot; both exportY fns should either create a slot or
   // use a slot from the corresponding allocateX
 
-  function allocateExportID() {
+  const allocateExportID = () => {
     const exportID = nextExportID;
     nextExportID += 1;
     return exportID;
-  }
+  };
 
-  function allocatePromiseID() {
+  const allocatePromiseID = () => {
     const promiseID = nextPromiseID;
     nextPromiseID += 1;
     return makeVatSlot('promise', true, promiseID);
-  }
+  };
 
   const knownResolutions = new WeakMap();
 
-  function exportPromise(p) {
+  const exportPromise = p => {
     const pid = allocatePromiseID();
     lsdebug(`Promise allocation ${forVatID}:${pid} in exportPromise`);
     if (!knownResolutions.has(p)) {
@@ -468,12 +467,12 @@ function build(
       p.then(thenResolve(p, pid), thenReject(p, pid));
     }
     return pid;
-  }
+  };
 
-  function exportPassByPresence() {
+  const exportPassByPresence = () => {
     const exportID = allocateExportID();
     return makeVatSlot('object', true, exportID);
-  }
+  };
 
   // eslint-disable-next-line no-use-before-define
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
@@ -490,30 +489,28 @@ function build(
   // eslint-disable-next-line no-use-before-define
   const unmeteredConvertSlotToVal = meterControl.unmetered(convertSlotToVal);
 
-  function getSlotForVal(val) {
-    return valToSlot.get(val);
-  }
+  const getSlotForVal = val => valToSlot.get(val);
 
-  function getValForSlot(slot) {
+  const getValForSlot = slot => {
     meterControl.assertNotMetered();
     const wr = slotToVal.get(slot);
     return wr && wr.deref();
-  }
+  };
 
-  function requiredValForSlot(slot) {
+  const requiredValForSlot = slot => {
     const wr = slotToVal.get(slot);
     const result = wr && wr.deref();
     assert(result, X`no value for ${slot}`);
     return result;
-  }
+  };
 
-  function addToPossiblyDeadSet(vref) {
+  const addToPossiblyDeadSet = vref => {
     possiblyDeadSet.add(vref);
-  }
+  };
 
-  function addToPossiblyRetiredSet(vref) {
+  const addToPossiblyRetiredSet = vref => {
     possiblyRetiredSet.add(vref);
-  }
+  };
 
   const vrm = makeVirtualReferenceManager(
     syscall,
@@ -549,7 +546,7 @@ function build(
     unmeteredUnserialize,
   );
 
-  function convertValToSlot(val) {
+  const convertValToSlot = val => {
     // lsdebug(`serializeToSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
     // previously-serialized local pass-by-presence object or
@@ -589,19 +586,19 @@ function build(
       }
     }
     return valToSlot.get(val);
-  }
+  };
 
   let importedPromises = null;
-  function beginCollectingPromiseImports() {
+  const beginCollectingPromiseImports = () => {
     importedPromises = new Set();
-  }
-  function finishCollectingPromiseImports() {
+  };
+  const finishCollectingPromiseImports = () => {
     const result = importedPromises;
     importedPromises = null;
     return result;
-  }
+  };
 
-  function registerValue(slot, val) {
+  const registerValue = (slot, val) => {
     const { type } = parseVatSlot(slot);
     slotToVal.set(slot, new WeakRef(val));
     valToSlot.set(val, slot);
@@ -609,7 +606,7 @@ function build(
     if (type === 'object') {
       droppedImportRegistry.register(val, slot, val);
     }
-  }
+  };
 
   // The meter usage of convertSlotToVal is strongly affected by GC, because
   // it only creates a new Presence if one does not already exist. Userspace
@@ -617,7 +614,7 @@ function build(
   // COLLECTED (and maybe FINALIZED) on its own, and we must not allow the
   // latter changes to affect metering. So every call to convertSlotToVal (or
   // m.unserialize) must be wrapped by unmetered().
-  function convertSlotToVal(slot, iface = undefined) {
+  const convertSlotToVal = (slot, iface = undefined) => {
     meterControl.assertNotMetered();
     const { type, allocatedByVat, virtual } = parseVatSlot(slot);
     let val = getValForSlot(slot);
@@ -670,13 +667,13 @@ function build(
     }
     registerValue(slot, val);
     return val;
-  }
+  };
 
-  function resolutionCollector() {
+  const resolutionCollector = () => {
     const resolutions = [];
     const doneResolutions = new Set();
 
-    function scanSlots(slots) {
+    const scanSlots = slots => {
       for (const slot of slots) {
         const { type } = parseVatSlot(slot);
         if (type === 'promise') {
@@ -690,9 +687,9 @@ function build(
           }
         }
       }
-    }
+    };
 
-    function collect(promiseID, rejected, value) {
+    const collect = (promiseID, rejected, value) => {
       doneResolutions.add(promiseID);
       meterControl.assertIsMetered(); // else userspace getters could escape
       let valueSer;
@@ -706,25 +703,25 @@ function build(
       valueSer.slots.map(retainExportedVref);
       resolutions.push([promiseID, rejected, valueSer]);
       scanSlots(valueSer.slots);
-    }
+    };
 
-    function forPromise(promiseID, rejected, value) {
+    const forPromise = (promiseID, rejected, value) => {
       collect(promiseID, rejected, value);
       return resolutions;
-    }
+    };
 
-    function forSlots(slots) {
+    const forSlots = slots => {
       scanSlots(slots);
       return resolutions;
-    }
+    };
 
     return {
       forPromise,
       forSlots,
     };
-  }
+  };
 
-  function queueMessage(targetSlot, prop, args, returnedP) {
+  const queueMessage = (targetSlot, prop, args, returnedP) => {
     if (typeof prop === 'symbol') {
       if (prop === Symbol.asyncIterator) {
         // special-case this Symbol for now, will be replaced in #2481
@@ -777,39 +774,37 @@ function build(
     // we do not use droppedImportRegistry for promises, even result promises
 
     return p;
-  }
+  };
 
-  function forbidPromises(serArgs) {
+  const forbidPromises = serArgs => {
     for (const slot of serArgs.slots) {
       assert(
         parseVatSlot(slot).type !== 'promise',
         X`D() arguments cannot include a Promise`,
       );
     }
-  }
+  };
 
-  function DeviceHandler(slot) {
-    return {
-      get(target, prop) {
-        if (typeof prop !== 'string' && typeof prop !== 'symbol') {
-          return undefined;
-        }
-        return (...args) => {
-          meterControl.assertIsMetered(); // userspace getters shouldn't escape
-          const serArgs = m.serialize(harden(args));
-          serArgs.slots.map(retainExportedVref);
-          forbidPromises(serArgs);
-          const ret = syscall.callNow(slot, prop, serArgs);
-          insistCapData(ret);
-          // but the unserialize must be unmetered, to prevent divergence
-          const retval = unmeteredUnserialize(ret);
-          return retval;
-        };
-      },
-    };
-  }
+  const DeviceHandler = slot => ({
+    get: (target, prop) => {
+      if (typeof prop !== 'string' && typeof prop !== 'symbol') {
+        return undefined;
+      }
+      return (...args) => {
+        meterControl.assertIsMetered(); // userspace getters shouldn't escape
+        const serArgs = m.serialize(harden(args));
+        serArgs.slots.map(retainExportedVref);
+        forbidPromises(serArgs);
+        const ret = syscall.callNow(slot, prop, serArgs);
+        insistCapData(ret);
+        // but the unserialize must be unmetered, to prevent divergence
+        const retval = unmeteredUnserialize(ret);
+        return retval;
+      };
+    },
+  });
 
-  function D(x) {
+  const D = x => {
     // results = D(devicenode).name(args)
     if (outstandingProxies.has(x)) {
       throw new Error('D(D(x)) is invalid');
@@ -822,9 +817,9 @@ function build(
     const pr = harden(new Proxy({}, handler));
     outstandingProxies.add(pr);
     return pr;
-  }
+  };
 
-  function deliver(target, method, argsdata, result) {
+  const deliver = (target, method, argsdata, result) => {
     assert(didRoot);
     insistCapData(argsdata);
     lsdebug(
@@ -881,9 +876,9 @@ function build(
       notifyFailure = thenReject(res, result);
     }
     res.then(notifySuccess, notifyFailure);
-  }
+  };
 
-  function retirePromiseID(promiseID) {
+  const retirePromiseID = promiseID => {
     lsdebug(`Retiring ${forVatID}:${promiseID}`);
     importedPromisesByPromiseID.delete(promiseID);
     const p = getValForSlot(promiseID);
@@ -892,9 +887,9 @@ function build(
       pendingPromises.delete(p);
     }
     slotToVal.delete(promiseID);
-  }
+  };
 
-  function thenHandler(p, promiseID, rejected) {
+  const thenHandler = (p, promiseID, rejected) => {
     // this runs metered
     insistVatType('promise', promiseID);
     return value => {
@@ -919,17 +914,13 @@ function build(
       }
       meterControl.runWithoutMetering(() => retirePromiseID(promiseID));
     };
-  }
+  };
 
-  function thenResolve(p, promiseID) {
-    return thenHandler(p, promiseID, false);
-  }
+  const thenResolve = (p, promiseID) => thenHandler(p, promiseID, false);
 
-  function thenReject(p, promiseID) {
-    return thenHandler(p, promiseID, true);
-  }
+  const thenReject = (p, promiseID) => thenHandler(p, promiseID, true);
 
-  function notifyOnePromise(promiseID, rejected, data) {
+  const notifyOnePromise = (promiseID, rejected, data) => {
     insistCapData(data);
     lsdebug(
       `ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`,
@@ -948,9 +939,9 @@ function build(
     } else {
       pRec.resolve(val);
     }
-  }
+  };
 
-  function notify(resolutions) {
+  const notify = resolutions => {
     assert(didRoot);
     beginCollectingPromiseImports();
     for (const resolution of resolutions) {
@@ -969,9 +960,9 @@ function build(
         syscall.subscribe(slot);
       }
     }
-  }
+  };
 
-  function dropExports(vrefs) {
+  const dropExports = vrefs => {
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
@@ -987,9 +978,9 @@ function build(
         vrm.setExportStatus(vref, 'recognizable');
       }
     }
-  }
+  };
 
-  function retireOneExport(vref) {
+  const retireOneExport = vref => {
     insistVatType('object', vref);
     const { virtual, allocatedByVat, type } = parseVatSlot(vref);
     assert(allocatedByVat);
@@ -1028,38 +1019,38 @@ function build(
         slotToVal.delete(vref);
       }
     }
-  }
+  };
 
-  function retireExports(vrefs) {
+  const retireExports = vrefs => {
     assert(Array.isArray(vrefs));
     vrefs.forEach(retireOneExport);
-  }
+  };
 
-  function retireImports(vrefs) {
+  const retireImports = vrefs => {
     assert(Array.isArray(vrefs));
     vrefs.map(vref => insistVatType('object', vref));
     vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
     vrefs.forEach(vrm.ceaseRecognition);
-  }
+  };
 
   // TODO: when we add notifyForward, guard against cycles
 
-  function exitVat(completion) {
+  const exitVat = completion => {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(completion));
     args.slots.map(retainExportedVref);
     syscall.exit(false, args);
-  }
+  };
 
   /** @type {ExitVatWithFailure} */
-  function exitVatWithFailure(reason) {
+  const exitVatWithFailure = reason => {
     meterControl.assertIsMetered(); // else userspace getters could escape
     const args = m.serialize(harden(reason));
     args.slots.map(retainExportedVref);
     syscall.exit(true, args);
-  }
+  };
 
-  function disavow(presence) {
+  const disavow = presence => {
     if (!valToSlot.has(presence)) {
       assert.fail(X`attempt to disavow unknown ${presence}`);
     }
@@ -1074,7 +1065,7 @@ function build(
     disavowedPresences.add(presence);
 
     syscall.dropImports([slot]);
-  }
+  };
 
   const vatGlobals = harden({
     VatData: {
@@ -1098,12 +1089,12 @@ function build(
     ...collectionManager.testHooks,
   });
 
-  function assertValidUserVatstoreKey(key) {
+  const assertValidUserVatstoreKey = key => {
     assert.typeof(key, 'string');
     assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
-  }
+  };
 
-  function setBuildRootObject(buildRootObject) {
+  const setBuildRootObject = buildRootObject => {
     assert(!didRoot);
     didRoot = true;
 
@@ -1185,13 +1176,13 @@ function build(
     slotToVal.set(rootSlot, new WeakRef(rootObject));
     retainExportedVref(rootSlot);
     // we do not use droppedImportRegistry for exports
-  }
+  };
 
   /**
    * @param { VatDeliveryObject } delivery
    * @returns { void }
    */
-  function dispatchToUserspace(delivery) {
+  const dispatchToUserspace = delivery => {
     const [type, ...args] = delivery;
     switch (type) {
       case 'message': {
@@ -1223,13 +1214,13 @@ function build(
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }
-  }
+  };
 
   // the first turn of each dispatch is spent in liveslots, and is not
   // metered
   const unmeteredDispatch = meterControl.unmetered(dispatchToUserspace);
 
-  async function bringOutYourDead() {
+  const bringOutYourDead = async () => {
     vom.flushCache();
     await gcTools.gcAndFinalize();
     const doMore = await scanForDeadObjects();
@@ -1237,7 +1228,7 @@ function build(
       return bringOutYourDead();
     }
     return undefined;
-  }
+  };
 
   /**
    * This 'dispatch' function is the entry point for the vat as a whole: the
@@ -1277,7 +1268,7 @@ function build(
    * @param { VatDeliveryObject } delivery
    * @returns { Promise<void> }
    */
-  async function dispatch(delivery) {
+  const dispatch = async delivery => {
     // We must short-circuit dispatch to bringOutYourDead here because it has to
     // be async
     if (delivery[0] === 'bringOutYourDead') {
@@ -1294,7 +1285,7 @@ function build(
       // supervisor (but only after userspace is idle).
       return gcTools.waitUntilQuiescent().then(() => p);
     }
-  }
+  };
   harden(dispatch);
 
   // we return 'possiblyDeadSet' for unit tests
@@ -1307,7 +1298,7 @@ function build(
     possiblyDeadSet,
     testHooks,
   });
-}
+};
 
 /**
  * Instantiate the liveslots layer for a new vat and then populate the vat with
@@ -1346,7 +1337,7 @@ function build(
  * (using, once again, the kernel syscall interface). D(x).foo(args) will
  * perform an immediate syscall.callNow on the device node.
  */
-export function makeLiveSlots(
+export const makeLiveSlots = (
   syscall,
   forVatID = 'unknown',
   vatPowers = harden({}),
@@ -1356,7 +1347,7 @@ export function makeLiveSlots(
   enableVatstore = false,
   gcTools,
   liveSlotsConsole = console,
-) {
+) => {
   const allVatPowers = {
     ...vatPowers,
     makeMarshal,
@@ -1388,10 +1379,10 @@ export function makeLiveSlots(
     possiblyDeadSet,
     testHooks,
   });
-}
+};
 
 // for tests
-export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
+export const makeMarshaller = (syscall, gcTools, vatID = 'forVatID') => {
   const { m } = build(
     syscall,
     vatID,
@@ -1404,4 +1395,4 @@ export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
     console,
   );
   return { m };
-}
+};

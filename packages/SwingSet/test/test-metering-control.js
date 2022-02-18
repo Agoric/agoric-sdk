@@ -13,10 +13,10 @@ test('dummy meter control', async t => {
   t.is(x, 1);
   await mc.runWithoutMeteringAsync(() => (x = 2));
   t.is(x, 2);
-  function set(y) {
+  const set = y => {
     x = y;
     return 'yes';
-  }
+  };
   const unmeteredSet = mc.unmetered(set);
   t.is(unmeteredSet(3), 'yes');
   t.is(x, 3);

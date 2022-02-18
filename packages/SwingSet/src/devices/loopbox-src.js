@@ -1,14 +1,14 @@
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
-export function buildRootDeviceNode(tools) {
+export const buildRootDeviceNode = tools => {
   const { SO, endowments, deviceParameters, getDeviceState, setDeviceState } =
     tools;
   const { registerPassOneMessage, deliverMode } = endowments;
 
-  function makeSender(sender) {
-    return Far('sender', {
-      add(peer, msgnum, body) {
+  const makeSender = sender =>
+    Far('sender', {
+      add: (peer, msgnum, body) => {
         const oldDS = getDeviceState();
         assert(oldDS.inboundHandlers[peer], X`unregistered peer '${peer}'`);
         const h = oldDS.inboundHandlers[peer];
@@ -26,10 +26,9 @@ export function buildRootDeviceNode(tools) {
         newDS.counts[sender] += 1;
         setDeviceState(harden(newDS));
       },
-      remove(_peer, _msgnum) {},
-      ackInbound(_peer, _msgnum) {},
+      remove: (_peer, _msgnum) => {},
+      ackInbound: (_peer, _msgnum) => {},
     });
-  }
 
   let deviceState = getDeviceState();
   if (!deviceState) {
@@ -72,7 +71,7 @@ export function buildRootDeviceNode(tools) {
   setDeviceState(harden(senders));
   setDeviceState(deviceState);
 
-  function loopboxPassOneMessage() {
+  const loopboxPassOneMessage = () => {
     const oldDS = getDeviceState();
     if (oldDS.queuedMessages.length) {
       const newDS = { ...oldDS };
@@ -83,11 +82,11 @@ export function buildRootDeviceNode(tools) {
       return true;
     }
     return false;
-  }
+  };
   registerPassOneMessage(loopboxPassOneMessage);
 
   return Far('root', {
-    registerInboundHandler(name, handler) {
+    registerInboundHandler: (name, handler) => {
       const oldDS = getDeviceState();
       assert(!oldDS.inboundHandlers[name], X`already registered`);
       const newDS = { ...oldDS };
@@ -96,8 +95,6 @@ export function buildRootDeviceNode(tools) {
       setDeviceState(harden(newDS));
     },
 
-    getSender(sender) {
-      return senderMap.get(sender);
-    },
+    getSender: sender => senderMap.get(sender),
   });
-}
+};

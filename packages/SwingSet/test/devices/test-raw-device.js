@@ -13,9 +13,7 @@ import {
 } from '../../src/index.js';
 import { capargs } from '../util.js';
 
-function dfile(name) {
-  return new URL(`./${name}`, import.meta.url).pathname;
-}
+const dfile = name => new URL(`./${name}`, import.meta.url).pathname;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

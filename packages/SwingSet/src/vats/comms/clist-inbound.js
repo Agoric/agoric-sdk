@@ -6,18 +6,16 @@ import {
 } from './parseRemoteSlot.js';
 import { cdebug } from './cdebug.js';
 
-function rname(remote) {
-  return `${remote.remoteID()} (${remote.name()})`;
-}
+const rname = remote => `${remote.remoteID()} (${remote.name()})`;
 
-export function makeInbound(state) {
+export const makeInbound = state => {
   // get-*: the entry must be present
   // add-*: the entry must not be present. add one.
   // provide-*: return an entry, adding one if necessary
 
   // *-LocalForRemote: receiving an object/promise from a remote machine
 
-  function retireRemotePromiseID(remoteID, rpid) {
+  const retireRemotePromiseID = (remoteID, rpid) => {
     insistRemoteType('promise', rpid);
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(rpid);
@@ -29,25 +27,25 @@ export function makeInbound(state) {
     );
     remote.deleteRemoteMapping(lpid);
     cdebug(`comms delete mapping r<->k ${remoteID} {rpid}<=>${lpid}`);
-  }
+  };
 
-  function beginRemotePromiseIDRetirement(remoteID, rpid) {
+  const beginRemotePromiseIDRetirement = (remoteID, rpid) => {
     insistRemoteType('promise', rpid);
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(flipRemoteSlot(rpid));
     remote.enqueueRetirement(rpid);
     cdebug(`comms begin retiring ${remoteID} ${rpid} ${lpid}`);
-  }
+  };
 
-  function retireAcknowledgedRemotePromiseIDs(remoteID, ackSeqNum) {
+  const retireAcknowledgedRemotePromiseIDs = (remoteID, ackSeqNum) => {
     const remote = state.getRemote(remoteID);
     const readyToRetire = remote.getReadyRetirements(ackSeqNum);
     for (const rpid of readyToRetire) {
       retireRemotePromiseID(remoteID, flipRemoteSlot(rpid));
     }
-  }
+  };
 
-  function getLocalForRemote(remoteID, rref) {
+  const getLocalForRemote = (remoteID, rref) => {
     const remote = state.getRemote(remoteID);
     const { mapFromRemote, isReachable } = remote;
     const lref = mapFromRemote(rref);
@@ -56,9 +54,9 @@ export function makeInbound(state) {
       assert(isReachable(lref), `remote sending to unreachable ${lref}`);
     }
     return lref;
-  }
+  };
 
-  function addLocalObjectForRemote(remote, roid) {
+  const addLocalObjectForRemote = (remote, roid) => {
     // The index must be allocated by them. If we allocated it, it should
     // have been in our table already, and the fact that it isn't means
     // they're reaching for something we haven't given them.
@@ -76,9 +74,9 @@ export function makeInbound(state) {
     cdebug(
       `comms import ${remote.remoteID()}/${remote.name()} ${loid} ${roid}`,
     );
-  }
+  };
 
-  function addLocalPromiseForRemote(remote, rpid) {
+  const addLocalPromiseForRemote = (remote, rpid) => {
     assert(
       !parseRemoteSlot(rpid).allocatedByRecipient,
       `I don't remember giving ${rpid} to remote ${rname(remote)}`,
@@ -90,9 +88,9 @@ export function makeInbound(state) {
     cdebug(
       `comms import ${remote.remoteID()}/${remote.name()} ${lpid} ${rpid}`,
     );
-  }
+  };
 
-  function provideLocalForRemote(remoteID, rref) {
+  const provideLocalForRemote = (remoteID, rref) => {
     // We're receiving a slot from a remote system. If they've sent it to us
     // previously, or if we're the ones who sent it to them earlier, it will be
     // in the inbound table already.
@@ -128,9 +126,9 @@ export function makeInbound(state) {
     }
 
     return lref;
-  }
+  };
 
-  function provideLocalForRemoteResult(remoteID, result) {
+  const provideLocalForRemoteResult = (remoteID, result) => {
     insistRemoteType('promise', result);
     const lpid = provideLocalForRemote(remoteID, result);
     // this asserts they had control over lpid, and that it wasn't already
@@ -140,7 +138,7 @@ export function makeInbound(state) {
     state.changeDeciderFromRemoteToComms(lpid, remoteID);
     state.subscribeRemoteToPromise(lpid, remoteID); // auto-subscribe sender
     return lpid;
-  }
+  };
 
   return harden({
     provideLocalForRemote,
@@ -150,4 +148,4 @@ export function makeInbound(state) {
     beginRemotePromiseIDRetirement,
     retireAcknowledgedRemotePromiseIDs,
   });
-}
+};

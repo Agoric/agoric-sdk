@@ -20,11 +20,11 @@ const FIRST_DEVICE_IMPORTED_PROMISE_ID = 30n;
  *
  * TODO move into makeDeviceKeeper?
  */
-export function initializeDeviceState(kvStore, deviceID) {
+export const initializeDeviceState = (kvStore, deviceID) => {
   kvStore.set(`${deviceID}.o.nextID`, `${FIRST_DEVICE_IMPORTED_OBJECT_ID}`);
   kvStore.set(`${deviceID}.d.nextID`, `${FIRST_DEVICE_IMPORTED_DEVICE_ID}`);
   kvStore.set(`${deviceID}.p.nextID`, `${FIRST_DEVICE_IMPORTED_PROMISE_ID}`);
-}
+};
 
 /**
  * Produce a device keeper for a device.
@@ -42,23 +42,23 @@ export function initializeDeviceState(kvStore, deviceID) {
  *         } tools
  * @returns {*} an object to hold and access the kernel's state for the given device
  */
-export function makeDeviceKeeper(kvStore, deviceID, tools) {
+export const makeDeviceKeeper = (kvStore, deviceID, tools) => {
   insistDeviceID(deviceID);
   const { addKernelDeviceNode, incrementRefCount } = tools;
 
-  function setSourceAndOptions(source, options) {
+  const setSourceAndOptions = (source, options) => {
     assert.typeof(source, 'object');
     assert(source && source.bundleID);
     assert.typeof(options, 'object');
     kvStore.set(`${deviceID}.source`, JSON.stringify(source));
     kvStore.set(`${deviceID}.options`, JSON.stringify(options));
-  }
+  };
 
-  function getSourceAndOptions() {
+  const getSourceAndOptions = () => {
     const source = JSON.parse(kvStore.get(`${deviceID}.source`));
     const options = JSON.parse(kvStore.get(`${deviceID}.options`));
     return harden({ source, options });
-  }
+  };
 
   /**
    * Provide the kernel slot corresponding to a given device slot, including
@@ -71,7 +71,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    * @throws {Error} if devSlot is not a kind of thing that can be exported by devices
    *    or is otherwise invalid.
    */
-  function mapDeviceSlotToKernelSlot(devSlot) {
+  const mapDeviceSlotToKernelSlot = devSlot => {
     assert.typeof(devSlot, 'string', X`non-string devSlot: ${devSlot}`);
     // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
@@ -101,7 +101,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
     }
 
     return kvStore.get(devKey);
-  }
+  };
 
   /**
    * Provide the device slot corresponding to a given kernel slot, including
@@ -114,7 +114,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    * @throws {Error} if kernelSlot is not a kind of thing that can be imported by
    *    devices or is otherwise invalid.
    */
-  function mapKernelSlotToDeviceSlot(kernelSlot) {
+  const mapKernelSlotToDeviceSlot = kernelSlot => {
     assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const kernelKey = `${deviceID}.c.${kernelSlot}`;
     if (!kvStore.has(kernelKey)) {
@@ -150,14 +150,14 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
     }
 
     return kvStore.get(kernelKey);
-  }
+  };
 
   /**
    * Obtain the device's state.
    *
    * @returns {any} this device's state, or undefined if it has none.
    */
-  function getDeviceState() {
+  const getDeviceState = () => {
     // this should return an object, generally CapData, or undefined
     const key = `${deviceID}.deviceState`;
     if (kvStore.has(key)) {
@@ -166,7 +166,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
       // .deviceState.slots as 'vatSlot[,vatSlot..]'
     }
     return undefined;
-  }
+  };
 
   /**
    * Set this device's state.
@@ -175,16 +175,16 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    *    (NOTE: the intent is that the structure here will eventually be more
    *    codified than it is now).
    */
-  function setDeviceState(value) {
+  const setDeviceState = value => {
     kvStore.set(`${deviceID}.deviceState`, JSON.stringify(value));
-  }
+  };
 
   /**
    * Produce a dump of this device's state for debugging purposes.
    *
    * @returns {Array<[string, string, string]>} an array of this device's state information
    */
-  function dumpState() {
+  const dumpState = () => {
     const res = [];
     const prefix = `${deviceID}.c.`;
     for (const k of kvStore.getKeys(prefix, `${deviceID}.c/`)) {
@@ -200,7 +200,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
       }
     }
     return harden(res);
-  }
+  };
 
   return harden({
     getSourceAndOptions,
@@ -211,4 +211,4 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
     setDeviceState,
     dumpState,
   });
-}
+};

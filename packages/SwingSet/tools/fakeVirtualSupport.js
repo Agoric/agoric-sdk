@@ -18,12 +18,12 @@ class FakeFinalizationRegistry {
   unregister(_unregisterToken) {}
 }
 
-export function makeFakeLiveSlotsStuff(options = {}) {
+export const makeFakeLiveSlotsStuff = (options = {}) => {
   let vrm;
-  function setVrm(vrmToUse) {
+  const setVrm = vrmToUse => {
     assert(!vrm, 'vrm already configured');
     vrm = vrmToUse;
-  }
+  };
 
   const {
     weak = false,
@@ -38,7 +38,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   let priorKeyReturned;
   let priorKeyIndex;
 
-  function s(v) {
+  const s = v => {
     switch (typeof v) {
       case 'symbol':
         return v.toString();
@@ -47,9 +47,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       default:
         return `${v}`;
     }
-  }
+  };
 
-  function ensureSorted() {
+  const ensureSorted = () => {
     if (!sortedKeys) {
       sortedKeys = [];
       for (const key of fakeStore.keys()) {
@@ -57,32 +57,32 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       }
       sortedKeys.sort((k1, k2) => k1.localeCompare(k2));
     }
-  }
+  };
 
-  function clearSorted() {
+  const clearSorted = () => {
     sortedKeys = undefined;
     priorKeyReturned = undefined;
     priorKeyIndex = -1;
-  }
+  };
 
-  function dumpStore() {
+  const dumpStore = () => {
     ensureSorted();
     const result = [];
     for (const key of sortedKeys) {
       result.push([key, fakeStore.get(key)]);
     }
     return result;
-  }
+  };
 
   const syscall = {
-    vatstoreGet(key) {
+    vatstoreGet: key => {
       const result = fakeStore.get(key);
       if (log) {
         log.push(`get ${s(key)} => ${s(result)}`);
       }
       return result;
     },
-    vatstoreSet(key, value) {
+    vatstoreSet: (key, value) => {
       if (log) {
         log.push(`set ${s(key)} ${s(value)}`);
       }
@@ -91,7 +91,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       }
       fakeStore.set(key, value);
     },
-    vatstoreDelete(key) {
+    vatstoreDelete: key => {
       if (log) {
         log.push(`delete ${s(key)}`);
       }
@@ -100,7 +100,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       }
       fakeStore.delete(key);
     },
-    vatstoreGetAfter(priorKey, start, end) {
+    vatstoreGetAfter: (priorKey, start, end) => {
       let actualEnd = end;
       if (!end) {
         const lastChar = String.fromCharCode(start.slice(-1).charCodeAt(0) + 1);
@@ -135,11 +135,11 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   };
 
   let nextExportID = 1;
-  function allocateExportID() {
+  const allocateExportID = () => {
     const exportID = nextExportID;
     nextExportID += 1;
     return exportID;
-  }
+  };
 
   // note: The real liveslots slotToVal() maps slots (vrefs) to a WeakRef,
   // and the WeakRef may or may not contain the target value. Use
@@ -148,29 +148,27 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   const valToSlot = new WeakMap();
   const slotToVal = new Map();
 
-  function getSlotForVal(val) {
-    return valToSlot.get(val);
-  }
+  const getSlotForVal = val => valToSlot.get(val);
 
-  function getValForSlot(slot) {
+  const getValForSlot = slot => {
     const d = slotToVal.get(slot);
     return d && (weak ? d.deref() : d);
-  }
+  };
 
-  function setValForSlot(slot, val) {
+  const setValForSlot = (slot, val) => {
     slotToVal.set(slot, weak ? new WeakRef(val) : val);
-  }
+  };
 
-  function convertValToSlot(val) {
+  const convertValToSlot = val => {
     if (!valToSlot.has(val)) {
       const slot = `o+${allocateExportID()}`;
       valToSlot.set(val, slot);
       setValForSlot(slot, val);
     }
     return valToSlot.get(val);
-  }
+  };
 
-  function convertSlotToVal(slot) {
+  const convertSlotToVal = slot => {
     const { type, virtual } = parseVatSlot(slot);
     assert.equal(type, 'object');
     if (virtual) {
@@ -182,22 +180,22 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     } else {
       return getValForSlot(slot);
     }
-  }
+  };
 
   const marshal = makeMarshal(convertValToSlot, convertSlotToVal);
 
-  function registerEntry(slot, val) {
+  const registerEntry = (slot, val) => {
     setValForSlot(slot, val);
     valToSlot.set(val, slot);
-  }
+  };
 
-  function deleteEntry(slot, val) {
+  const deleteEntry = (slot, val) => {
     if (!val) {
       val = getValForSlot(slot);
     }
     slotToVal.delete(slot);
     valToSlot.delete(val);
-  }
+  };
 
   return {
     syscall,
@@ -218,10 +216,10 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     dumpStore,
     setVrm,
   };
-}
+};
 
-export function makeFakeVirtualReferenceManager(fakeStuff) {
-  return makeVirtualReferenceManager(
+export const makeFakeVirtualReferenceManager = fakeStuff =>
+  makeVirtualReferenceManager(
     fakeStuff.syscall,
     fakeStuff.getSlotForVal,
     fakeStuff.getValForSlot,
@@ -229,30 +227,29 @@ export function makeFakeVirtualReferenceManager(fakeStuff) {
     fakeStuff.addToPossiblyDeadSet,
     fakeStuff.addToPossiblyRetiredSet,
   );
-}
 
-export function makeFakeVirtualStuff(options = {}) {
+export const makeFakeVirtualStuff = (options = {}) => {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
   fakeStuff.setVrm(vrm);
   const cm = makeFakeCollectionManager(vrm, fakeStuff, options);
   return { fakeStuff, vrm, vom, cm };
-}
+};
 
-export function makeStandaloneFakeVirtualObjectManager(options = {}) {
+export const makeStandaloneFakeVirtualObjectManager = (options = {}) => {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
   fakeStuff.setVrm(vrm);
   return vom;
-}
+};
 
-export function makeStandaloneFakeCollectionManager(options = {}) {
+export const makeStandaloneFakeCollectionManager = (options = {}) => {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   return makeFakeCollectionManager(vrm, fakeStuff, options);
-}
+};
 
 export {
   makeStandaloneFakeVirtualObjectManager as makeFakeVirtualObjectManager,

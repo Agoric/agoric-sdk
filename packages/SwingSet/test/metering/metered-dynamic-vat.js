@@ -2,20 +2,17 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 import { meterMe } from './metered-code.js';
 
-export function buildRootObject(_dynamicVatPowers) {
-  return Far('root', {
-    never() {
-      return makePromiseKit().promise;
-    },
+export const buildRootObject = _dynamicVatPowers =>
+  Far('root', {
+    never: () => makePromiseKit().promise,
 
-    async run() {
+    run: async () => {
       meterMe([], 'no');
       return 42;
     },
 
-    async explode(how) {
+    explode: async how => {
       meterMe([], how);
       return -1;
     },
   });
-}

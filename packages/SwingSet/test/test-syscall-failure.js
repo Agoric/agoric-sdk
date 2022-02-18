@@ -4,7 +4,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { provideHostStorage } from '../src/hostStorage.js';
 import { buildVatController } from '../src/index.js';
 
-async function vatSyscallFailure(t, beDynamic) {
+const vatSyscallFailure = async (t, beDynamic) => {
   const config = {
     bootstrap: 'bootstrap',
     bundles: {
@@ -69,7 +69,7 @@ async function vatSyscallFailure(t, beDynamic) {
     'p2 reject Error: vat terminated',
     'p3 reject Error: vat terminated',
   ]);
-}
+};
 
 test('static vat syscall failure', async t => {
   await vatSyscallFailure(t, false);

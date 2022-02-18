@@ -5,22 +5,20 @@ import { parseVatSlot } from './parseVatSlots.js';
 // raw devices can use this to build a set of convenience tools for
 // serialization/unserialization
 
-export function buildSerializationTools(syscall, deviceName) {
+export const buildSerializationTools = (syscall, deviceName) => {
   // TODO: prevent our Presence/DeviceNode objects from being accidentally be
   // marshal-serialized into persistent state
 
   const presences = new WeakMap();
   const myDeviceNodes = new WeakMap();
 
-  function slotFromPresence(p) {
-    return presences.get(p);
-  }
-  function presenceForSlot(slot) {
+  const slotFromPresence = p => presences.get(p);
+  const presenceForSlot = slot => {
     const { type, allocatedByVat } = parseVatSlot(slot);
     assert.equal(type, 'object');
     assert.equal(allocatedByVat, false);
     const p = Far('presence', {
-      send(method, args) {
+      send: (method, args) => {
         assert.typeof(method, 'string');
         assert(Array.isArray(args), args);
         // eslint-disable-next-line no-use-before-define
@@ -30,21 +28,19 @@ export function buildSerializationTools(syscall, deviceName) {
     });
     presences.set(p, slot);
     return p;
-  }
+  };
 
-  function slotFromMyDeviceNode(dn) {
-    return myDeviceNodes.get(dn);
-  }
-  function deviceNodeForSlot(slot) {
+  const slotFromMyDeviceNode = dn => myDeviceNodes.get(dn);
+  const deviceNodeForSlot = slot => {
     const { type, allocatedByVat } = parseVatSlot(slot);
     assert.equal(type, 'device');
     assert.equal(allocatedByVat, true);
     const dn = Far('device node', {});
     myDeviceNodes.set(dn, slot);
     return dn;
-  }
+  };
 
-  function convertSlotToVal(slot) {
+  const convertSlotToVal = slot => {
     const { type, allocatedByVat } = parseVatSlot(slot);
     if (type === 'object') {
       assert(!allocatedByVat, X`devices cannot yet allocate objects ${slot}`);
@@ -60,9 +56,9 @@ export function buildSerializationTools(syscall, deviceName) {
     } else {
       assert.fail(X`unrecognized slot type '${type}'`);
     }
-  }
+  };
 
-  function convertValToSlot(val) {
+  const convertValToSlot = val => {
     const objSlot = slotFromPresence(val);
     if (objSlot) {
       return objSlot;
@@ -72,7 +68,7 @@ export function buildSerializationTools(syscall, deviceName) {
       return devnodeSlot;
     }
     throw Error(X`unable to convert value ${val}`);
-  }
+  };
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `device:${deviceName}`,
@@ -97,5 +93,5 @@ export function buildSerializationTools(syscall, deviceName) {
   };
 
   return harden(tools);
-}
+};
 harden(buildSerializationTools);

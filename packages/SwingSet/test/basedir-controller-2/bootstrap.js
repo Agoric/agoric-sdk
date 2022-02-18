@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   vatPowers.testLog(`bootstrap called`);
   return Far('root', {});
-}
+};

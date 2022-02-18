@@ -91,18 +91,18 @@ import { parseRemoteSlot } from './parseRemoteSlot.js';
 //   the `retireImport` references an unknown object ID. It should simply
 //   ignore the message.
 
-function makeGCKit(state, syscall, transmit) {
+const makeGCKit = (state, syscall, transmit) => {
   /* messages from the kernel */
 
-  function checkFromKernel(kfref, shouldBeAllocatedByVat) {
+  const checkFromKernel = (kfref, shouldBeAllocatedByVat) => {
     const { type, allocatedByVat } = parseVatSlot(kfref);
     assert.equal(type, 'object');
     assert.equal(allocatedByVat, shouldBeAllocatedByVat);
     const lref = state.mapFromKernel(kfref);
     return lref;
-  }
+  };
 
-  function gcFromKernel(gc) {
+  const gcFromKernel = gc => {
     // console.log(`gcFromKernel:`, gc);
     const { dropExports = [], retireExports = [], retireImports = [] } = gc;
     for (const kfref of dropExports) {
@@ -133,11 +133,11 @@ function makeGCKit(state, syscall, transmit) {
         // processGC will notify the remaining importers
       }
     }
-  }
+  };
 
   /* messages from remotes */
 
-  function parseGCMessage(message) {
+  const parseGCMessage = message => {
     // the GC message is a newline-joined set of lines, each of the form
     // `gc:$type:$rref`, where $type is one of 'dropExport', 'retireExport',
     // or 'retireImport'
@@ -152,9 +152,9 @@ function makeGCKit(state, syscall, transmit) {
       gc[`${type}s`].push(rref);
     }
     return gc;
-  }
+  };
 
-  function checkFromRemote(remote, ackSeqNum, rref) {
+  const checkFromRemote = (remote, ackSeqNum, rref) => {
     // was this action 'informed'? i.e. had they seen our most recent export?
     const lref = remote.mapFromRemote(rref);
     // if we've forgotten about them entirely, clearly they were uninformed
@@ -163,9 +163,9 @@ function makeGCKit(state, syscall, transmit) {
       informed = true;
     }
     return { lref, informed };
-  }
+  };
 
-  function gcFromRemote(remoteID, message, ackSeqNum) {
+  const gcFromRemote = (remoteID, message, ackSeqNum) => {
     const remote = state.getRemote(remoteID);
     const gc = parseGCMessage(message);
     const { dropExports, retireExports, retireImports } = gc;
@@ -194,11 +194,11 @@ function makeGCKit(state, syscall, transmit) {
         // processGC will notify the remaining importers
       }
     }
-  }
+  };
 
   /* messages to kernel */
 
-  function gcToKernel(dropExports, retireExports, retireImports) {
+  const gcToKernel = (dropExports, retireExports, retireImports) => {
     let kfrefs = [];
     for (const lref of dropExports) {
       assert(state.isReachableByKernel(lref));
@@ -237,11 +237,11 @@ function makeGCKit(state, syscall, transmit) {
     if (kfrefs.length) {
       syscall.retireExports(kfrefs);
     }
-  }
+  };
 
   /* messages to remotes */
 
-  function gcToRemote(remoteID, dropExports, retireExports, retireImports) {
+  const gcToRemote = (remoteID, dropExports, retireExports, retireImports) => {
     const r = state.getRemote(remoteID);
     const msgs = [];
 
@@ -272,11 +272,11 @@ function makeGCKit(state, syscall, transmit) {
 
     // console.log(`commsGC transmit: ${msgs.join('  ')}`);
     transmit(remoteID, msgs.join('\n'));
-  }
+  };
 
   /* end-of-delivery processing, provokes outbound messages */
 
-  function processGC() {
+  const processGC = () => {
     const actions = state.processMaybeFree();
     // remote -> { dropExport, retireExport, retireImport }
     const work = new Map();
@@ -317,9 +317,9 @@ function makeGCKit(state, syscall, transmit) {
     // until the `actions` set is empty. For efficiency, we should accumulate
     // all the kernel and remote messages across all loops, and only send
     // them at the very end.
-  }
+  };
 
   return harden({ gcFromRemote, gcFromKernel, processGC });
-}
+};
 harden(makeGCKit);
 export { makeGCKit };

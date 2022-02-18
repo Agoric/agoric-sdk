@@ -21,13 +21,13 @@ import './types.js';
  *
  * @returns {Router} a new Router
  */
-export default function makeRouter() {
+export default () => {
   /**
    * @type {Store<string, any>}
    */
   const prefixToRoute = makeStore('prefix');
   return Far('Router', {
-    getRoutes(addr) {
+    getRoutes: addr => {
       const parts = addr.split(ENDPOINT_SEPARATOR);
       /**
        * @type {[string, Protocol][]}
@@ -50,10 +50,10 @@ export default function makeRouter() {
       }
       return harden(ret);
     },
-    register(prefix, route) {
+    register: (prefix, route) => {
       prefixToRoute.init(prefix, route);
     },
-    unregister(prefix, route) {
+    unregister: (prefix, route) => {
       assert(
         prefixToRoute.get(prefix) === route,
         X`Router is not registered at prefix ${prefix}`,
@@ -62,7 +62,7 @@ export default function makeRouter() {
       prefixToRoute.delete(prefix);
     },
   });
-}
+};
 /**
  * @typedef {Object} RouterProtocol
  * @property {(prefix: string) => Promise<Port>} bind
@@ -76,23 +76,23 @@ export default function makeRouter() {
  * @param {typeof defaultE} [E=defaultE] Eventual sender
  * @returns {RouterProtocol} The new delegated protocol
  */
-export function makeRouterProtocol(E = defaultE) {
+export const makeRouterProtocol = (E = defaultE) => {
   const router = makeRouter();
   const protocols = makeStore('prefix');
   const protocolHandlers = makeStore('prefix');
 
-  function registerProtocolHandler(paths, protocolHandler) {
+  const registerProtocolHandler = (paths, protocolHandler) => {
     const protocol = makeNetworkProtocol(protocolHandler);
     for (const prefix of paths) {
       router.register(prefix, protocol);
       protocols.init(prefix, protocol);
       protocolHandlers.init(prefix, protocolHandler);
     }
-  }
+  };
 
   // FIXME: Buggy.
   // Needs to account for multiple paths.
-  function unregisterProtocolHandler(prefix, protocolHandler) {
+  const unregisterProtocolHandler = (prefix, protocolHandler) => {
     const ph = protocolHandlers.get(prefix);
     assert(
       ph === protocolHandler,
@@ -102,10 +102,10 @@ export function makeRouterProtocol(E = defaultE) {
     router.unregister(prefix, ph);
     protocols.delete(prefix);
     protocolHandlers.delete(prefix);
-  }
+  };
 
   /** @type {Protocol['bind']} */
-  async function bind(localAddr) {
+  const bind = async localAddr => {
     const [route] = router.getRoutes(localAddr);
     assert(
       route !== undefined,
@@ -113,11 +113,11 @@ export function makeRouterProtocol(E = defaultE) {
       TypeError,
     );
     return E(route[1]).bind(localAddr);
-  }
+  };
 
   return Far('RouterProtocol', {
     bind,
     registerProtocolHandler,
     unregisterProtocolHandler,
   });
-}
+};

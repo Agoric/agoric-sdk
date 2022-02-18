@@ -40,42 +40,35 @@ test('multiMap remove key', t => {
   t.deepEqual(thirteens[0], { time: 13n, handlers: [{ handler: 'threeB' }] });
 });
 
-function fakeSO(o) {
-  return Far('fake SO', {
-    wake(arg = null) {
+const fakeSO = o =>
+  Far('fake SO', {
+    wake: (arg = null) => {
       o.wake(arg);
     },
   });
-}
 
-function makeHandler() {
+const makeHandler = () => {
   let calls = 0;
   const args = [];
   return Far('wake handler', {
-    getCalls() {
-      return calls;
-    },
-    getArgs() {
-      return args;
-    },
-    wake(arg) {
+    getCalls: () => calls,
+    getArgs: () => args,
+    wake: arg => {
       args.push(arg);
       calls += 1;
     },
   });
-}
+};
 
-function makeFakeTimer(initialVal) {
+const makeFakeTimer = initialVal => {
   let fakeTime = initialVal;
   return Far('fake timer', {
-    getLastPolled() {
-      return fakeTime;
-    },
-    setTime(t) {
+    getLastPolled: () => fakeTime,
+    setTime: t => {
       fakeTime = t;
     },
   });
-}
+};
 
 test('Timer schedule single event', t => {
   const schedule = makeTimerMap();

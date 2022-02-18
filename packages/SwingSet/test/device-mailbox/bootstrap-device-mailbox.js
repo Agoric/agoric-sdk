@@ -2,11 +2,11 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { D, testLog: log } = vatPowers;
   let numReceived = 0;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const { argv } = vatParameters;
       if (argv[0] === 'mailbox1') {
         D(devices.mailbox).add('peer1', 1, 'data1');
@@ -21,13 +21,13 @@ export function buildRootObject(vatPowers, vatParameters) {
         // should leave peer1: [data2,data3], peer2: [], peer3: [data5]
       } else if (argv[0] === 'mailbox2') {
         const handler = Far('mailbox', {
-          deliverInboundMessages(peer, messages) {
+          deliverInboundMessages: (peer, messages) => {
             log(`dm-${peer}`);
             messages.forEach(m => {
               log(`m-${m[0]}-${m[1]}`);
             });
           },
-          deliverInboundAck(peer, ack) {
+          deliverInboundAck: (peer, ack) => {
             log(`da-${peer}-${ack}`);
           },
         });
@@ -38,7 +38,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         const name = 'peer1';
         const { setReceiver } = await E(vats.vattp).addRemote(name);
         const receiver = Far('receiver', {
-          receive(body) {
+          receive: body => {
             numReceived += 1;
             log(`comms receive ${body}`);
           },
@@ -48,11 +48,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         assert.fail(X`unknown argv mode '${argv[0]}'`);
       }
     },
-    ping() {
-      return true;
-    },
-    getNumReceived() {
-      return numReceived;
-    },
+    ping: () => true,
+    getNumReceived: () => numReceived,
   });
-}
+};

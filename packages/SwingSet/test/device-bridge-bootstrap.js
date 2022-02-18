@@ -1,16 +1,16 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { D, testLog } = vatPowers;
   const handler = Far('handler', {
-    inbound(...args) {
+    inbound: (...args) => {
       testLog('inbound');
       testLog(JSON.stringify(args));
     },
   });
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const { argv } = vatParameters;
       harden(argv);
       D(devices.bridge).registerInboundHandler(handler);
@@ -20,4 +20,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       testLog(retval === undefined);
     },
   });
-}
+};

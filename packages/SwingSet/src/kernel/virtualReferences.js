@@ -19,14 +19,14 @@ import { parseVatSlot } from '../parseVatSlots.js';
  * @param {*} addToPossiblyRetiredSet  Function to record dead objects whose
  *   retirement should be reinvestigated
  */
-export function makeVirtualReferenceManager(
+export const makeVirtualReferenceManager = (
   syscall,
   getSlotForVal,
   requiredValForSlot,
   FinalizationRegistry,
   addToPossiblyDeadSet,
   addToPossiblyRetiredSet,
-) {
+) => {
   const droppedCollectionRegistry = new FinalizationRegistry(
     finalizeDroppedCollection,
   );
@@ -57,7 +57,7 @@ export function makeVirtualReferenceManager(
    *    possibly created a new GC opportunity, the second is true if the object
    *    should now be regarded as unrecognizable
    */
-  function possibleVirtualObjectDeath(vobjID) {
+  const possibleVirtualObjectDeath = vobjID => {
     const refCount = getRefCount(vobjID);
     const exportStatus = getExportStatus(vobjID);
     if (exportStatus !== 'reachable' && refCount === 0) {
@@ -68,18 +68,18 @@ export function makeVirtualReferenceManager(
       return [doMoreGC, exportStatus !== 'none'];
     }
     return [false, false];
-  }
+  };
 
-  function getRefCount(vobjID) {
+  const getRefCount = vobjID => {
     const raw = syscall.vatstoreGet(`vom.rc.${vobjID}`);
     if (raw) {
       return Number(raw);
     } else {
       return 0;
     }
-  }
+  };
 
-  function getExportStatus(vobjID) {
+  const getExportStatus = vobjID => {
     const raw = syscall.vatstoreGet(`vom.es.${vobjID}`);
     switch (raw) {
       case '0':
@@ -89,9 +89,9 @@ export function makeVirtualReferenceManager(
       default:
         return 'none';
     }
-  }
+  };
 
-  function setRefCount(vobjID, refCount) {
+  const setRefCount = (vobjID, refCount) => {
     const { virtual } = parseVatSlot(vobjID);
     syscall.vatstoreSet(`vom.rc.${vobjID}`, `${Nat(refCount)}`);
     if (refCount === 0) {
@@ -100,9 +100,9 @@ export function makeVirtualReferenceManager(
       }
       addToPossiblyDeadSet(vobjID);
     }
-  }
+  };
 
-  function setExportStatus(vobjID, exportStatus) {
+  const setExportStatus = (vobjID, exportStatus) => {
     const key = `vom.es.${vobjID}`;
     switch (exportStatus) {
       // POSSIBLE TODO: An anticipated refactoring may merge
@@ -128,18 +128,18 @@ export function makeVirtualReferenceManager(
       default:
         assert.fail(`invalid set export status ${exportStatus}`);
     }
-  }
+  };
 
-  function incRefCount(vobjID) {
+  const incRefCount = vobjID => {
     const oldRefCount = getRefCount(vobjID);
     setRefCount(vobjID, oldRefCount + 1);
-  }
+  };
 
-  function decRefCount(vobjID) {
+  const decRefCount = vobjID => {
     const oldRefCount = getRefCount(vobjID);
     assert(oldRefCount > 0, `attempt to decref ${vobjID} below 0`);
     setRefCount(vobjID, oldRefCount - 1);
-  }
+  };
 
   /**
    * Map from virtual object kind IDs to information about those kinds,
@@ -156,9 +156,9 @@ export function makeVirtualReferenceManager(
    * @param {(string) => boolean} deleter  Deleter function for the given kind.
    * @param {boolean} durable  Flag indicating if instances survive vat termination
    */
-  function registerKind(kindID, reanimator, deleter, durable) {
+  const registerKind = (kindID, reanimator, deleter, durable) => {
     kindInfoTable.set(`${kindID}`, { reanimator, deleter, durable });
-  }
+  };
 
   /**
    * Inquire if a given persistent object kind is a durable kind or not.
@@ -167,10 +167,10 @@ export function makeVirtualReferenceManager(
    *
    * @returns {boolean}  true if the indicated kind is durable.
    */
-  function isDurableKind(kindID) {
+  const isDurableKind = kindID => {
     const { durable } = kindInfoTable.get(`${kindID}`);
     return durable;
-  }
+  };
 
   /**
    * Inquire if a given vref is something that can be stored in a durable store
@@ -180,7 +180,7 @@ export function makeVirtualReferenceManager(
    *
    * @returns {boolean}  true if the indicated object reference is durable.
    */
-  function isDurable(vref) {
+  const isDurable = vref => {
     const { type, id, virtual, allocatedByVat } = parseVatSlot(vref);
     if (type !== 'object') {
       // promises and devices are not durable
@@ -195,7 +195,7 @@ export function makeVirtualReferenceManager(
       // otherwise it's not durable
       return false;
     }
-  }
+  };
 
   /**
    * Create an in-memory representation of a given object by reanimating it from
@@ -207,7 +207,7 @@ export function makeVirtualReferenceManager(
    *
    * @returns {Object}  A representative of the object identified by `vobjID`
    */
-  function reanimate(vobjID, proForma) {
+  const reanimate = (vobjID, proForma) => {
     const { id } = parseVatSlot(vobjID);
     const kindID = `${id}`;
     const { reanimator } = kindInfoTable.get(kindID);
@@ -216,14 +216,14 @@ export function makeVirtualReferenceManager(
     } else {
       assert.fail(X`unknown kind ${kindID}`);
     }
-  }
+  };
 
   /**
    * Delete the persistent representation of a virtual object given its ID
    *
    * @param {string} vobjID  The virtual object ID of the object to be expunged
    */
-  function deleteStoredRepresentation(vobjID) {
+  const deleteStoredRepresentation = vobjID => {
     const { id } = parseVatSlot(vobjID);
     const kindID = `${id}`;
     const { deleter } = kindInfoTable.get(kindID);
@@ -232,7 +232,7 @@ export function makeVirtualReferenceManager(
     } else {
       assert.fail(X`unknown kind ${kindID}`);
     }
-  }
+  };
 
   /**
    * Map of all Remotables which are reachable by our virtualized data, e.g.
@@ -253,7 +253,7 @@ export function makeVirtualReferenceManager(
   // set if they are actually unreferenced (including, notably, their absence
   // from the `remotableRefCounts` map).
 
-  function addReachableVref(vref) {
+  const addReachableVref = vref => {
     const { type, virtual, allocatedByVat } = parseVatSlot(vref);
     if (type === 'object') {
       if (allocatedByVat) {
@@ -271,9 +271,9 @@ export function makeVirtualReferenceManager(
         incRefCount(vref);
       }
     }
-  }
+  };
 
-  function removeReachableVref(vref) {
+  const removeReachableVref = vref => {
     let droppedMemoryReference = false;
     const { type, virtual, allocatedByVat } = parseVatSlot(vref);
     if (type === 'object') {
@@ -297,10 +297,10 @@ export function makeVirtualReferenceManager(
       }
     }
     return droppedMemoryReference;
-  }
+  };
 
   // for testing only
-  function getReachableRefCount(vref) {
+  const getReachableRefCount = vref => {
     const { type, virtual, allocatedByVat } = parseVatSlot(vref);
     assert(type === 'object');
     if (allocatedByVat) {
@@ -313,9 +313,9 @@ export function makeVirtualReferenceManager(
     } else {
       return getRefCount(vref);
     }
-  }
+  };
 
-  function updateReferenceCounts(beforeSlots, afterSlots) {
+  const updateReferenceCounts = (beforeSlots, afterSlots) => {
     // Note that the slots of a capdata object are not required to be
     // deduplicated nor are they expected to be presented in any particular
     // order, so the comparison of which references appear in the before state
@@ -345,7 +345,7 @@ export function makeVirtualReferenceManager(
           break;
       }
     }
-  }
+  };
 
   /**
    * Check if a given vref points to a reachable presence.
@@ -354,9 +354,7 @@ export function makeVirtualReferenceManager(
    *
    * @returns {boolean} true if the indicated presence remains reachable.
    */
-  function isPresenceReachable(vref) {
-    return !!getRefCount(vref);
-  }
+  const isPresenceReachable = vref => !!getRefCount(vref);
 
   /**
    * A map from vrefs (those which are recognizable by (i.e., used as keys in)
@@ -394,7 +392,7 @@ export function makeVirtualReferenceManager(
   /** @type {Map<string, Set<Recognizer>>} */
   const vrefRecognizers = new Map();
 
-  function addRecognizableValue(value, recognizer) {
+  const addRecognizableValue = (value, recognizer) => {
     const vref = getSlotForVal(value);
     if (vref) {
       const { type, allocatedByVat, virtual } = parseVatSlot(vref);
@@ -407,9 +405,9 @@ export function makeVirtualReferenceManager(
         recognizerSet.add(recognizer);
       }
     }
-  }
+  };
 
-  function removeRecognizableVref(vref, recognizer) {
+  const removeRecognizableVref = (vref, recognizer) => {
     const { type, allocatedByVat, virtual } = parseVatSlot(vref);
     if (type === 'object' && (!allocatedByVat || virtual)) {
       const recognizerSet = vrefRecognizers.get(vref);
@@ -422,14 +420,14 @@ export function makeVirtualReferenceManager(
         }
       }
     }
-  }
+  };
 
-  function removeRecognizableValue(value, recognizer) {
+  const removeRecognizableValue = (value, recognizer) => {
     const vref = getSlotForVal(value);
     if (vref) {
       removeRecognizableVref(vref, recognizer);
     }
-  }
+  };
 
   /**
    * Remove a given vref from all weak collections in which it was used as a
@@ -439,7 +437,7 @@ export function makeVirtualReferenceManager(
    *
    * @returns {boolean} true if this possibly creates a GC opportunity
    */
-  function ceaseRecognition(vref) {
+  const ceaseRecognition = vref => {
     const recognizerSet = vrefRecognizers.get(vref);
     let doMoreGC = false;
     if (recognizerSet) {
@@ -456,17 +454,15 @@ export function makeVirtualReferenceManager(
       }
     }
     return doMoreGC;
-  }
+  };
 
-  function isVrefRecognizable(vref) {
-    return vrefRecognizers.has(vref);
-  }
+  const isVrefRecognizable = vref => vrefRecognizers.has(vref);
 
-  function finalizeDroppedCollection(descriptor) {
+  const finalizeDroppedCollection = descriptor => {
     descriptor.collectionDeleter(descriptor);
-  }
+  };
 
-  function vrefKey(value) {
+  const vrefKey = value => {
     const vobjID = getSlotForVal(value);
     if (vobjID) {
       const { type, virtual, allocatedByVat } = parseVatSlot(vobjID);
@@ -475,12 +471,12 @@ export function makeVirtualReferenceManager(
       }
     }
     return undefined;
-  }
+  };
 
-  function countCollectionsForWeakKey(vref) {
+  const countCollectionsForWeakKey = vref => {
     const recognizerSet = vrefRecognizers.get(vref);
     return recognizerSet ? recognizerSet.size : 0;
-  }
+  };
 
   const testHooks = {
     getReachableRefCount,
@@ -506,4 +502,4 @@ export function makeVirtualReferenceManager(
     ceaseRecognition,
     testHooks,
   });
-}
+};

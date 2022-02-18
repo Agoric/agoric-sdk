@@ -4,11 +4,9 @@ import { assertKnownOptions } from '../assertOptions.js';
 import { makeVatSlot } from '../parseVatSlots.js';
 import { makeVatTranslators } from './vatTranslator.js';
 
-export function makeVatRootObjectSlot() {
-  return makeVatSlot('object', true, 0n);
-}
+export const makeVatRootObjectSlot = () => makeVatSlot('object', true, 0n);
 
-export function makeVatLoader(stuff) {
+export const makeVatLoader = stuff => {
   const {
     overrideVatManagerOptions = {},
     vatManagerFactory,
@@ -31,16 +29,16 @@ export function makeVatLoader(stuff) {
    *
    * @returns {Promise<VatManager>}
    */
-  function createVatDynamically(
+  const createVatDynamically = (
     vatID,
     source,
     translators,
     dynamicOptions = {},
-  ) {
+  ) => {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     // eslint-disable-next-line no-use-before-define
     return create(vatID, source, translators, dynamicOptions, true);
-  }
+  };
 
   /**
    * Recreate a dynamic vat from persistent state at kernel startup time.
@@ -52,17 +50,11 @@ export function makeVatLoader(stuff) {
    *
    * @returns {Promise<VatManager>} fires when the vat is ready for messages
    */
-  function recreateDynamicVat(vatID, source, translators, dynamicOptions) {
-    // eslint-disable-next-line no-use-before-define
-    return create(vatID, source, translators, dynamicOptions, true).catch(
-      err => {
-        panic(`unable to re-create vat ${vatID}`, err);
-        throw err;
-      },
-    );
-    // if we fail to recreate the vat during replay, crash the kernel,
-    // because we no longer have any way to inform the original caller
-  }
+  const recreateDynamicVat = (vatID, source, translators, dynamicOptions) =>
+    create(vatID, source, translators, dynamicOptions, true).catch(err => {
+      panic(`unable to re-create vat ${vatID}`, err);
+      throw err;
+    });
 
   /**
    * Recreate a static vat from persistent state at kernel startup time.
@@ -75,15 +67,11 @@ export function makeVatLoader(stuff) {
    * @returns {Promise<VatManager>} A Promise which fires when the
    * vat is ready for messages.
    */
-  function recreateStaticVat(vatID, source, translators, staticOptions) {
-    // eslint-disable-next-line no-use-before-define
-    return create(vatID, source, translators, staticOptions, false).catch(
-      err => {
-        panic(`unable to re-create vat ${vatID}`, err);
-        throw err;
-      },
-    );
-  }
+  const recreateStaticVat = (vatID, source, translators, staticOptions) =>
+    create(vatID, source, translators, staticOptions, false).catch(err => {
+      panic(`unable to re-create vat ${vatID}`, err);
+      throw err;
+    });
 
   const allowedDynamicOptions = [
     'description',
@@ -190,7 +178,7 @@ export function makeVatLoader(stuff) {
    * @returns {Promise<VatManager>} A Promise which fires when the
    * vat is ready for messages.
    */
-  async function create(vatID, source, translators, options, isDynamic) {
+  const create = async (vatID, source, translators, options, isDynamic) => {
     assert(
       'bundle' in source || 'bundleName' in source || 'bundleID' in source,
       'broken source',
@@ -270,9 +258,9 @@ export function makeVatLoader(stuff) {
     );
     starting && finish();
     return manager;
-  }
+  };
 
-  async function loadTestVat(vatID, setup, creationOptions) {
+  const loadTestVat = async (vatID, setup, creationOptions) => {
     const managerOptions = {
       ...creationOptions,
       setup,
@@ -289,7 +277,7 @@ export function makeVatLoader(stuff) {
       vatSyscallHandler,
     );
     return manager;
-  }
+  };
 
   return harden({
     createVatDynamically,
@@ -297,4 +285,4 @@ export function makeVatLoader(stuff) {
     recreateStaticVat,
     loadTestVat,
   });
-}
+};

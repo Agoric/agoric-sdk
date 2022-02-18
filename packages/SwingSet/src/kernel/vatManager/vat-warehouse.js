@@ -57,7 +57,7 @@ export const makeLRU = max => {
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
  */
-export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
+export const makeVatWarehouse = (kernelKeeper, vatLoader, policyOptions) => {
   const {
     maxVatsOnline = 50,
     // Often a large contract evaluation is among the first few deliveries,
@@ -87,7 +87,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /** @type {Map<string, VatTranslators> } */
   const xlate = new Map();
   /** @param { string } vatID */
-  function provideTranslators(vatID) {
+  const provideTranslators = vatID => {
     let translators = xlate.get(vatID);
     if (!translators) {
       // NOTE: makeVatTranslators assumes
@@ -96,14 +96,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       xlate.set(vatID, translators);
     }
     return translators;
-  }
+  };
 
   /**
    * @param {string} vatID
    * @param {boolean} recreate
    * @returns { Promise<VatInfo> }
    */
-  async function ensureVatOnline(vatID, recreate) {
+  const ensureVatOnline = async (vatID, recreate) => {
     const info = ephemeral.vats.get(vatID);
     if (info) return info;
 
@@ -153,19 +153,17 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // eslint-disable-next-line no-use-before-define
     await applyAvailabilityPolicy(vatID);
     return result;
-  }
+  };
 
   /**
    * Bring new dynamic vat online and run its (bootstrap) code.
    *
    * @param {string} vatID
    */
-  async function createDynamicVat(vatID) {
-    return ensureVatOnline(vatID, false);
-  }
+  const createDynamicVat = async vatID => ensureVatOnline(vatID, false);
 
   /** @param { typeof console.log } logStartup */
-  async function start(logStartup) {
+  const start = async logStartup => {
     const recreate = true; // note: PANIC on failure to recreate
 
     // NOTE: OPTIMIZATION OPPORTUNITY: replay vats in parallel
@@ -183,7 +181,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       // eslint-disable-next-line no-await-in-loop
       await ensureVatOnline(vatID, recreate);
     }
-  }
+  };
 
   /**
    * @param { string } vatID
@@ -191,7 +189,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    *  | undefined // if the vat is dead or never initialized
    * }
    */
-  function lookup(vatID) {
+  const lookup = vatID => {
     const liveInfo = ephemeral.vats.get(vatID);
     if (liveInfo) {
       const { enablePipelining } = liveInfo;
@@ -203,7 +201,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const { enablePipelining } = vatKeeper.getOptions();
     return { enablePipelining };
-  }
+  };
 
   const recent = makeLRU(maxVatsOnline);
 
@@ -214,7 +212,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @param {string} vatID
    * @returns { Promise<unknown> }
    */
-  async function evict(vatID) {
+  const evict = async vatID => {
     assert(lookup(vatID));
 
     recent.remove(vatID);
@@ -231,7 +229,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
     // console.log('evict: shutting down', vatID);
     return info.manager.shutdown();
-  }
+  };
 
   /**
    * Simple fixed-size LRU cache policy
@@ -243,7 +241,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    *
    * @param {string} currentVatID
    */
-  async function applyAvailabilityPolicy(currentVatID) {
+  const applyAvailabilityPolicy = async currentVatID => {
     const lru = recent.add(currentVatID);
     if (!lru) {
       return;
@@ -253,13 +251,13 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // } = ephemeral.vats.get(lru) || assert.fail();
     // console.info('evict', lru, description, managerType, 'for', currentVatID);
     await evict(lru);
-  }
+  };
 
   /** @type { string | undefined } */
   let lastVatID;
 
   /** @type {(vatID: string, kd: KernelDeliveryObject, d: VatDeliveryObject, vs: VatSlog) => Promise<VatDeliveryResult> } */
-  async function deliverToVat(vatID, kd, vd, vs) {
+  const deliverToVat = async (vatID, kd, vd, vs) => {
     await applyAvailabilityPolicy(vatID);
     lastVatID = vatID;
 
@@ -281,13 +279,13 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // log the delivery results, and return to caller for evaluation
     slogFinish(deliveryResult);
     return deliveryResult;
-  }
+  };
 
   /**
    * Save a snapshot of most recently used vat,
    * depending on snapshotInterval.
    */
-  async function maybeSaveSnapshot() {
+  const maybeSaveSnapshot = async () => {
     if (!lastVatID || !lookup(lastVatID)) {
       return false;
     }
@@ -314,26 +312,26 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     await vatKeeper.saveSnapshot(manager);
     lastVatID = undefined;
     return true;
-  }
+  };
 
   /**
    * @param {string} vatID
    * @param {unknown[]} kd
    * @returns { VatDeliveryObject }
    */
-  function kernelDeliveryToVatDelivery(vatID, kd) {
+  const kernelDeliveryToVatDelivery = (vatID, kd) => {
     const translators = provideTranslators(vatID);
 
     // @ts-ignore TODO: types for kernelDeliveryToVatDelivery
     return translators.kernelDeliveryToVatDelivery(kd);
-  }
+  };
 
   /**
    * @param {string} vatID
    * @param {unknown} setup
    * @param {ManagerOptions} creationOptions
    */
-  async function loadTestVat(vatID, setup, creationOptions) {
+  const loadTestVat = async (vatID, setup, creationOptions) => {
     const manager = await vatLoader.loadTestVat(vatID, setup, creationOptions);
 
     const translators = provideTranslators(vatID);
@@ -347,27 +345,27 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
       options: {},
     };
     ephemeral.vats.set(vatID, result);
-  }
+  };
 
   /**
    * @param {string} vatID
    * @returns { Promise<void> }
    */
-  async function vatWasTerminated(vatID) {
+  const vatWasTerminated = async vatID => {
     try {
       await evict(vatID);
     } catch (err) {
       console.debug('vat termination was already reported; ignoring:', err);
     }
-  }
+  };
 
   // mostly used by tests, only needed with thread/process-based workers
-  function shutdown() {
+  const shutdown = () => {
     const work = Array.from(ephemeral.vats.values(), ({ manager }) =>
       manager.shutdown(),
     );
     return Promise.all(work);
-  }
+  };
 
   return harden({
     start,
@@ -385,5 +383,5 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     vatWasTerminated,
     shutdown,
   });
-}
+};
 harden(makeVatWarehouse);

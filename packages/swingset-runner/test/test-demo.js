@@ -6,7 +6,7 @@ import url from 'url';
 
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-function rimraf(dirPath) {
+const rimraf = dirPath => {
   try {
     // Node.js 16.8.0 warns:
     // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
@@ -21,9 +21,9 @@ function rimraf(dirPath) {
       throw e;
     }
   }
-}
+};
 
-async function innerTest(t, extraFlags, dbdir) {
+const innerTest = async (t, extraFlags, dbdir) => {
   await new Promise(resolve => {
     const appDir = 'demo/encouragementBot';
     if (dbdir) {
@@ -51,7 +51,7 @@ async function innerTest(t, extraFlags, dbdir) {
       }
     });
   });
-}
+};
 
 test('run encouragmentBot demo with memdb', async t => {
   await innerTest(t, '--memdb');

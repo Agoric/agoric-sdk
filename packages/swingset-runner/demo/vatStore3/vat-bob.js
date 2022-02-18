@@ -4,30 +4,26 @@ import { makeKind } from '@agoric/swingset-vat/src/storeModule.js';
 
 const things = [];
 
-export function buildRootObject(_vatPowers) {
-  function makeThingInnards(state) {
-    return {
-      init(label) {
-        state.label = label;
-      },
-      self: Far('thing', {
-        getLabel() {
-          return state.label;
-        },
-      }),
-    };
-  }
+export const buildRootObject = _vatPowers => {
+  const makeThingInnards = state => ({
+    init: label => {
+      state.label = label;
+    },
+    self: Far('thing', {
+      getLabel: () => state.label,
+    }),
+  });
 
   const makeThing = makeKind(makeThingInnards);
   let nextThingNumber = 0;
 
   return Far('root', {
-    prepare() {
+    prepare: () => {
       for (let i = 1; i <= 9; i += 1) {
         things.push(makeThing(`thing #${i}`));
       }
     },
-    getThing(forWhom) {
+    getThing: forWhom => {
       let thing;
       do {
         thing = things[nextThingNumber];
@@ -45,7 +41,7 @@ export function buildRootObject(_vatPowers) {
       E(forWhom).deliverThing(thing);
       thing = null;
     },
-    finish() {
+    finish: () => {
       while (nextThingNumber < 7) {
         const deadThing = things[nextThingNumber];
         if (deadThing) {
@@ -57,4 +53,4 @@ export function buildRootObject(_vatPowers) {
       console.log(`Bob finishing`);
     },
   });
-}
+};

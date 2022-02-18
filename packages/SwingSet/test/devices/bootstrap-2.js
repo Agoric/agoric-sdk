@@ -2,10 +2,10 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { D, testLog: log } = vatPowers;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const { argv } = vatParameters;
       if (argv[0] === '1') {
         log(`calling d2.method1`);
@@ -27,7 +27,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         log(`calling d2.method4`);
         // now exercise sendOnly on pass-by-presence objects
         const o = Far('o', {
-          foo(obj) {
+          foo: obj => {
             log(`d2.m4 foo`);
             D(obj).bar('hello');
             log(`d2.m4 did bar`);
@@ -53,7 +53,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         D(devices.command).sendBroadcast({ hello: 'everybody' });
       } else if (argv[0] === 'command2') {
         const handler = Far('handler', {
-          inbound(count, body) {
+          inbound: (count, body) => {
             log(`handle-${count}-${body.piece}`);
             D(devices.command).sendResponse(count, body.doReject, {
               response: 'body',
@@ -76,8 +76,6 @@ export function buildRootObject(vatPowers, vatParameters) {
         assert.fail(X`unknown argv mode '${argv[0]}'`);
       }
     },
-    ping() {
-      return true;
-    },
+    ping: () => true,
   });
-}
+};

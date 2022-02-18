@@ -1,28 +1,28 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let bob;
   let me;
   let exportedThing;
   let exportedThingRecognizer;
   let exerciseWeakKeys;
 
-  function maybeRecognize(thing) {
+  const maybeRecognize = thing => {
     if (exerciseWeakKeys) {
       exportedThingRecognizer = new WeakSet();
       exportedThingRecognizer.add(thing);
     }
-  }
+  };
 
-  function maybeDontRecognizeAnything() {
+  const maybeDontRecognizeAnything = () => {
     if (exerciseWeakKeys) {
       exportedThingRecognizer = null;
     }
-  }
+  };
 
   return Far('root', {
-    async bootstrap(vats) {
+    bootstrap: async vats => {
       me = vats.bootstrap;
       bob = vats.bob;
       // exerciseWeakKeys = true;
@@ -40,7 +40,7 @@ export function buildRootObject(_vatPowers) {
       // E(me).continueTest('test5');
       E(me).continueTest('test6');
     },
-    async continueTest(testTag) {
+    continueTest: async testTag => {
       switch (testTag) {
         case 'test1': {
           // test 1:
@@ -213,4 +213,4 @@ export function buildRootObject(_vatPowers) {
       }
     },
   });
-}
+};

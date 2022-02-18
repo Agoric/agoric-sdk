@@ -66,8 +66,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
   });
 };
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
     build: (...args) => build(makePrintLog(), ...args),
   });
-}

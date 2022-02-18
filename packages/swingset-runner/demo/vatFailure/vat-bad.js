@@ -1,19 +1,15 @@
 import { assert } from '@agoric/assert';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
-export default function setup(syscall, _state, _helpers, _vatPowers) {
-  function deliver(target, method, args) {
+export default (syscall, _state, _helpers, _vatPowers) => {
+  const deliver = (target, method, args) => {
     const thing = method === 'begood' ? args.slots[0] : 'o-3414159';
     syscall.send(thing, 'pretendToBeAThing', capargs([method]));
-  }
-  function dispatch(vatDeliveryObject) {
+  };
+  const dispatch = vatDeliveryObject => {
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
       case 'message': {
@@ -24,7 +20,7 @@ export default function setup(syscall, _state, _helpers, _vatPowers) {
       default:
         assert.fail(`we only do deliveries here`);
     }
-  }
+  };
   harden(dispatch);
   return dispatch;
-}
+};

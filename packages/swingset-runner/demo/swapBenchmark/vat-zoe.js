@@ -4,8 +4,8 @@ import { Far } from '@endo/marshal';
 
 import { makeZoeKit } from '@agoric/zoe';
 
-export function buildRootObject(vatPowers, vatParameters) {
-  return Far('root', {
+export const buildRootObject = (vatPowers, vatParameters) =>
+  Far('root', {
     buildZoe: vatAdminSvc => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
       const { zoeService: zoe } = makeZoeKit(
@@ -16,4 +16,3 @@ export function buildRootObject(vatPowers, vatParameters) {
       return zoe;
     },
   });
-}

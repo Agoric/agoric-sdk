@@ -8,11 +8,11 @@ const COLON = 58;
 const COMMA = 44;
 
 // input is a Buffer, output is a netstring-wrapped Buffer
-export function encode(data) {
+export const encode = data => {
   const prefix = Buffer.from(`${data.length}:`);
   const suffix = Buffer.from(',');
   return Buffer.concat([prefix, data, suffix]);
-}
+};
 
 // input is a sequence of strings, output is a byte pipe
 export function netstringEncoderStream() {
@@ -37,7 +37,7 @@ export function netstringEncoderStream() {
 // leftover bytes. Output is zero or more decoded Buffers, one per netstring,
 // plus a Buffer of leftover bytes.
 //
-export function decode(data) {
+export const decode = data => {
   // TODO: it would be more efficient to accumulate pending data in an array,
   // rather than doing a concat each time
   let start = 0;
@@ -67,7 +67,7 @@ export function decode(data) {
 
   const leftover = data.subarray(start);
   return { leftover, payloads };
-}
+};
 
 // input is a byte pipe, output is a sequence of Buffers
 export function netstringDecoderStream() {

@@ -19,7 +19,7 @@ import { assert, details as X } from '@agoric/assert';
  *
  * @throws {Error} if the given string is syntactically incorrect.
  */
-export function parseLocalSlot(s) {
+export const parseLocalSlot = s => {
   assert.typeof(s, 'string');
   let type;
   let idSuffix;
@@ -34,7 +34,7 @@ export function parseLocalSlot(s) {
   }
   const id = Nat(BigInt(idSuffix));
   return { type, id };
-}
+};
 
 /**
  * Generate a local slot reference string given a type and id.
@@ -46,7 +46,7 @@ export function parseLocalSlot(s) {
  *
  * @throws {Error} if type is not one of the above known types.
  */
-export function makeLocalSlot(type, id) {
+export const makeLocalSlot = (type, id) => {
   if (type === 'object') {
     return `lo${Nat(id)}`;
   }
@@ -54,7 +54,7 @@ export function makeLocalSlot(type, id) {
     return `lp${Nat(id)}`;
   }
   assert.fail(X`unknown type ${type}`);
-}
+};
 
 /**
  * Assert function to ensure that a local slot reference string refers to a
@@ -67,9 +67,9 @@ export function makeLocalSlot(type, id) {
  *
  * @returns {void}
  */
-export function insistLocalType(type, localSlot) {
+export const insistLocalType = (type, localSlot) => {
   assert(
     type === parseLocalSlot(localSlot).type,
     X`localSlot ${localSlot} is not of type ${type}`,
   );
-}
+};

@@ -5,30 +5,27 @@ import { provideHostStorage } from '../../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargs } from '../util.js';
 
-function dumpObjects(c) {
+const dumpObjects = c => {
   const out = {};
   for (const row of c.dump().objects) {
     const [koid, owner, reachable, recognizable] = row;
     out[koid] = [owner, reachable, recognizable];
   }
   return out;
-}
+};
 
-function dumpClist(c) {
-  // returns array like [ko27/v3/o+1, ..]
-  return c.dump().kernelTable.map(e => `${e[0]}/${e[1]}/${e[2]}`);
-}
+const dumpClist = c => c.dump().kernelTable.map(e => `${e[0]}/${e[1]}/${e[2]}`);
 
-function findClist(c, vatID, kref) {
+const findClist = (c, vatID, kref) => {
   for (const e of c.dump().kernelTable) {
     if (e[0] === kref && e[1] === vatID) {
       return e[2];
     }
   }
   return undefined;
-}
+};
 
-async function dropPresence(t, dropExport) {
+const dropPresence = async (t, dropExport) => {
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker', // Avoid local vat nondeterminism
@@ -89,7 +86,7 @@ async function dropPresence(t, dropExport) {
     t.is(objs[krefA], undefined);
     t.is(objs[krefB], undefined);
   }
-}
+};
 
 test.serial('drop presence (export retains)', t => dropPresence(t, false));
 test.serial('drop presence (export drops)', t => dropPresence(t, true));

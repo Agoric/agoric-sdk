@@ -8,12 +8,12 @@ import { Far } from '@endo/marshal';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import { makeMessage, makeResolve, makeReject, capargs } from './util.js';
 
-function hush(p) {
+const hush = p => {
   p.then(
     () => undefined,
     () => undefined,
   );
-}
+};
 
 // The next batch of tests exercises how liveslots handles promise
 // identifiers ("vpid" strings) across various forms of resolution. Our
@@ -70,7 +70,7 @@ const modes = [
   'promise-reject', // reject to data that contains a promise ID
 ];
 
-function resolvePR(pr, mode, targets) {
+const resolvePR = (pr, mode, targets) => {
   switch (mode) {
     case 'presence':
       pr.resolve(targets.target2);
@@ -78,10 +78,10 @@ function resolvePR(pr, mode, targets) {
     case 'local-object':
       pr.resolve(
         Far('local-object', {
-          two() {
+          two: () => {
             /* console.log(`local two() called`); */
           },
-          four() {
+          four: () => {
             /* console.log(`local four() called`); */
           },
         }),
@@ -102,15 +102,13 @@ function resolvePR(pr, mode, targets) {
     default:
       assert.fail(X`unknown mode ${mode}`);
   }
-}
+};
 
-function slotArg(iface, index) {
-  return { '@qclass': 'slot', iface, index };
-}
+const slotArg = (iface, index) => ({ '@qclass': 'slot', iface, index });
 const slot0arg = { '@qclass': 'slot', index: 0 };
 const slot1arg = { '@qclass': 'slot', index: 1 };
 
-function resolutionOf(vpid, mode, targets) {
+const resolutionOf = (vpid, mode, targets) => {
   const resolution = {
     type: 'resolve',
     resolutions: [[vpid, false]],
@@ -149,16 +147,16 @@ function resolutionOf(vpid, mode, targets) {
       assert.fail(X`unknown mode ${mode}`);
   }
   return resolution;
-}
+};
 
-async function doVatResolveCase1(t, mode) {
+const doVatResolveCase1 = async (t, mode) => {
   // case 1
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     const pr = makePromiseKit();
     return Far('root', {
-      async run(target1, target2) {
+      run: async (target1, target2) => {
         const p1 = pr.promise;
         E(target1).one(p1);
         resolvePR(pr, mode, { target2, p1 });
@@ -168,7 +166,7 @@ async function doVatResolveCase1(t, mode) {
         E(target1).two(p1);
       },
     });
-  }
+  };
   const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
@@ -217,7 +215,7 @@ async function doVatResolveCase1(t, mode) {
   t.deepEqual(log.shift(), resolutionOf(expectedTwoArg, mode, targets2));
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultOfTwo });
   t.deepEqual(log, []);
-}
+};
 
 for (const mode of modes) {
   test(`liveslots vpid handling case1 ${mode}`, async t => {
@@ -243,19 +241,19 @@ for (const mode of modes) {
 // understand *why* it changed, and make sure the new order meets the
 // guarantees that we *do* provide, and then update this test to match.
 
-async function doVatResolveCase23(t, which, mode, stalls) {
+const doVatResolveCase23 = async (t, which, mode, stalls) => {
   // case 2 and 3
   const { log, syscall } = buildSyscall();
   let resolutionOfP1;
 
   let stashP1;
 
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     let p1;
     const pr = makePromiseKit();
     const p0 = pr.promise;
     return Far('root', {
-      promise(p) {
+      promise: p => {
         p1 = p;
         stashP1 = p1;
         p1.then(
@@ -269,10 +267,8 @@ async function doVatResolveCase23(t, which, mode, stalls) {
           },
         );
       },
-      result() {
-        return p0;
-      },
-      async run(target1, target2) {
+      result: () => p0,
+      run: async (target1, target2) => {
         // console.log(`calling one()`);
         const p2 = E(target1).one(p1);
         hush(p2);
@@ -322,7 +318,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
         // console.log(`did all calls`);
       },
     });
-  }
+  };
   const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
@@ -484,7 +480,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   } else if (mode === 'reject') {
     t.is(resolutionOfP1, 'rejected');
   }
-}
+};
 
 // uncomment this when debugging specific problems
 // test.only(`XX`, async t => {
@@ -511,25 +507,25 @@ for (const caseNum of [2, 3]) {
   }
 }
 
-async function doVatResolveCase4(t, mode) {
+const doVatResolveCase4 = async (t, mode) => {
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     let p1;
     return Far('local-object', {
-      async get(p) {
+      get: async p => {
         p1 = p;
         // if we don't add this, node will complain when the kernel notifies
         // us of the rejection
         hush(p1);
       },
-      async first(target1) {
+      first: async target1 => {
         const p2 = E(target1).one(p1);
         hush(p2);
         const p3 = E(p1).two();
         hush(p3);
       },
-      async second(target1) {
+      second: async target1 => {
         const p4 = E(target1).three(p1);
         hush(p4);
         const p5 = E(p1).four();
@@ -537,10 +533,10 @@ async function doVatResolveCase4(t, mode) {
       },
       // we re-use this root object as a resolution of p1 the 'local-object'
       // case, so make sure it can accept the messages
-      two() {},
-      four() {},
+      two: () => {},
+      four: () => {},
     });
-  }
+  };
   const dispatch = makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
@@ -548,11 +544,11 @@ async function doVatResolveCase4(t, mode) {
   const target1 = 'o-1';
   const p1 = 'p-8';
   let nextPnum = 5;
-  function nextP() {
+  const nextP = () => {
     const p = `p+${nextPnum}`;
     nextPnum += 1;
     return p;
-  }
+  };
   const target2 = 'o-2';
 
   await dispatch(makeMessage(rootA, 'get', capargs([slot0arg], [p1])));
@@ -634,7 +630,7 @@ async function doVatResolveCase4(t, mode) {
 
   // if p1 rejects or resolves to data, the kernel never hears about four()
   t.deepEqual(log, []);
-}
+};
 
 for (const mode of modes) {
   test(`liveslots vpid handling case4 ${mode}`, async t => {
@@ -645,30 +641,30 @@ for (const mode of modes) {
 // TODO unimplemented
 // cases 5 and 6 are not implemented due to #886
 
-function makePR() {
+const makePR = () => {
   let r;
   const p = new Promise((resolve, _reject) => {
     r = resolve;
   });
   return [p, r];
-}
+};
 
 test('inter-vat circular promise references', async t => {
   const { log, syscall } = buildSyscall();
 
-  function build(_vatPowers) {
+  const build = _vatPowers => {
     let p;
     let r;
     return Far('root', {
-      genPromise() {
+      genPromise: () => {
         [p, r] = makePR();
         return p;
       },
-      usePromise(pa) {
+      usePromise: pa => {
         r(pa);
       },
     });
-  }
+  };
   const dispatchA = makeDispatch(syscall, build, 'vatA');
   // const dispatchB = makeDispatch(syscall, build, 'vatB');
   t.deepEqual(log, []);

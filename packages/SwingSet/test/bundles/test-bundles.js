@@ -10,9 +10,7 @@ import { provideHostStorage } from '../../src/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargs } from '../util.js';
 
-function bfile(name) {
-  return new URL(name, import.meta.url).pathname;
-}
+const bfile = name => new URL(name, import.meta.url).pathname;
 
 // bundle IDs are hex SHA512, so this must be 128 characters long (plus the
 // 'b1-' version prefix)
@@ -88,26 +86,26 @@ test('bundles', async t => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  async function run(name, args) {
+  const run = async (name, args) => {
     assert(Array.isArray(args));
     const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
     await c.run();
     const status = c.kpStatus(kpid);
     const capdata = c.kpResolution(kpid);
     return [status, capdata];
-  }
+  };
 
-  async function check(name, args, expectedResult) {
+  const check = async (name, args, expectedResult) => {
     const [status, capdata] = await run(name, args);
     const result = parse(capdata.body);
     t.deepEqual([status, result], ['fulfilled', expectedResult]);
-  }
+  };
 
-  async function checkRejects(name, args, expectedResult) {
+  const checkRejects = async (name, args, expectedResult) => {
     const [status, capdata] = await run(name, args);
     const result = parse(capdata.body);
     t.deepEqual([status, result], ['rejected', expectedResult]);
-  }
+  };
 
   // all config.vats should work
   await check('checkConfiguredVats', [undefined], ['hello']);

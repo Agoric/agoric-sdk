@@ -9,72 +9,64 @@ import { makeGcAndFinalize } from '../../src/gc-and-finalize.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 // empty object, used as weak map store key
-function makeKeyInnards(_state) {
-  return {
-    init() {},
-    self: Far('key'),
-  };
-}
+const makeKeyInnards = _state => ({
+  init: () => {},
+  self: Far('key'),
+});
 
-function makeHolderInnards(state) {
-  return {
-    init(held) {
+const makeHolderInnards = state => ({
+  init: held => {
+    state.held = held;
+  },
+  self: Far('holder', {
+    setHeld: held => {
       state.held = held;
     },
-    self: Far('holder', {
-      setHeld(held) {
-        state.held = held;
-      },
-      getHeld() {
-        return state.held;
-      },
-    }),
-  };
-}
+    getHeld: () => state.held,
+  }),
+});
 
-function makeHeld() {
+const makeHeld = () => {
   const held = Far('held');
   const wr = new WeakRef(held);
   const ws = new WeakSet(); // note: real WeakSet, not vref-aware
   ws.add(held);
-  function isHeld(obj) {
-    return ws.has(obj);
-  }
+  const isHeld = obj => ws.has(obj);
   return { held, wr, isHeld };
-}
+};
 
-function prepareEphemeral(vom) {
+const prepareEphemeral = vom => {
   const ephemeral = Far('ephemeral');
   vom.registerEntry('o+12345', ephemeral);
   const wr = new WeakRef(ephemeral);
   return { wr };
-}
+};
 
-function stashRemotableOne(weakStore, key1) {
+const stashRemotableOne = (weakStore, key1) => {
   const { held, wr, isHeld } = makeHeld();
   weakStore.init(key1, held);
   return { wr, isHeld };
-}
+};
 
-function stashRemotableTwo(weakStore, key1) {
+const stashRemotableTwo = (weakStore, key1) => {
   const { held, wr, isHeld } = makeHeld();
   weakStore.init(key1, 'initial');
   weakStore.set(key1, held);
   return { wr, isHeld };
-}
+};
 
-function stashRemotableThree(holderMaker) {
+const stashRemotableThree = holderMaker => {
   const { held, wr, isHeld } = makeHeld();
   const holder = holderMaker(held);
   return { wr, isHeld, holder };
-}
+};
 
-function stashRemotableFour(holderMaker) {
+const stashRemotableFour = holderMaker => {
   const { held, wr, isHeld } = makeHeld();
   const holder = holderMaker('initial');
   holder.setHeld(held);
   return { wr, isHeld, holder };
-}
+};
 
 test('remotables retained by virtualized data', async t => {
   const gcAndFinalize = makeGcAndFinalize(engineGC);

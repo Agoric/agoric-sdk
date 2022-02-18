@@ -63,7 +63,7 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  * @param {{ [prop: string]: any, D: <T>(target: Device<T>) => T}} param1
  * @returns {PluginManager} admin facet for this handler
  */
-export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
+export const makePluginManager = (pluginDevice, { D, ...vatPowers }) => {
   /**
    * @typedef {Object} AbortDispatch
    * @property {(epoch: number) => void} reset
@@ -78,11 +78,11 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   // Dispatch object to the right index.
   D(pluginDevice).registerReceiver(
     Far('receiver', {
-      dispatch(index, obj) {
+      dispatch: (index, obj) => {
         const conn = modConnection.get(index);
         conn.dispatch(obj);
       },
-      reset(index, epoch) {
+      reset: (index, epoch) => {
         const conn = modConnection.get(index);
         conn.reset(epoch);
       },
@@ -90,16 +90,14 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   );
 
   return Far('plugin-manager', {
-    getPluginDir() {
-      return D(pluginDevice).getPluginDir();
-    },
+    getPluginDir: () => D(pluginDevice).getPluginDir(),
     /**
      * Load a module, and call resetter.onReset(pluginRootP) every time
      * it is instantiated.
      *
      * @type {LoadPlugin}
      */
-    load(specifier, opts = undefined, resetter = DEFAULT_RESETTER) {
+    load: (specifier, opts = undefined, resetter = DEFAULT_RESETTER) => {
       // This is the internal state: a promise kit that doesn't
       // resolve until we are connected.  It is replaced by
       // a new promise kit when we abort the prior module connection.
@@ -121,15 +119,13 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       modConnection.init(
         index,
         Far('connection', {
-          dispatch(obj) {
+          dispatch: obj => {
             if (obj.epoch !== currentEpoch) {
               return false;
             }
             return currentDispatch(obj);
           },
-          reset(epoch) {
-            return currentReset(epoch);
-          },
+          reset: epoch => currentReset(epoch),
         }),
       );
 
@@ -178,7 +174,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
          *
          * @type {MakeStableForwarder}
          */
-        makeStableForwarder(walker = DEFAULT_WALKER) {
+        makeStableForwarder: (walker = DEFAULT_WALKER) => {
           let pr;
           // eslint-disable-next-line no-new
           new HandledPromise((_resolve, _reject, resolveWithPresence) => {
@@ -187,12 +183,12 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
               'Alleged: stableForwarder',
               undefined,
               resolveWithPresence({
-                applyMethod(_p, name, args) {
+                applyMethod: (_p, name, args) => {
                   // console.warn('applying method epoch', currentEpoch);
                   const targetP = E(walker).walk(pluginRootPK.promise);
                   return HandledPromise.applyMethod(targetP, name, args);
                 },
-                get(_p, name) {
+                get: (_p, name) => {
                   // console.warn('applying get epoch', currentEpoch);
                   const targetP = E(walker).walk(pluginRootPK.promise);
                   return HandledPromise.get(targetP, name);
@@ -219,4 +215,4 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       });
     },
   });
-}
+};

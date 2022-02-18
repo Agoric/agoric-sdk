@@ -1,11 +1,11 @@
 let enableCDebug = false;
 
-export function cdebugEnable(flag) {
+export const cdebugEnable = flag => {
   enableCDebug = !!flag;
-}
+};
 
-export function cdebug(...args) {
+export const cdebug = (...args) => {
   if (enableCDebug) {
     console.log(...args);
   }
-}
+};

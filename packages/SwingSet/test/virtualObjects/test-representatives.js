@@ -9,20 +9,14 @@ import {
 } from '../../src/index.js';
 import makeNextLog from '../make-nextlog.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
-function slot0(iface, kid) {
-  return {
-    body: `{"@qclass":"slot","iface":"Alleged: ${iface}","index":0}`,
-    slots: [kid],
-  };
-}
+const slot0 = (iface, kid) => ({
+  body: `{"@qclass":"slot","iface":"Alleged: ${iface}","index":0}`,
+  slots: [kid],
+});
 
 test('virtual object representatives', async t => {
   const config = {
@@ -45,7 +39,7 @@ test('virtual object representatives', async t => {
   await c.run();
   t.deepEqual(c.kpResolution(c.bootstrapResult), capargs('bootstrap done'));
 
-  async function doTestA(mode, result) {
+  const doTestA = async (mode, result) => {
     const r = c.queueToVatRoot(
       'bootstrap',
       'testA',
@@ -55,11 +49,11 @@ test('virtual object representatives', async t => {
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), []);
     t.deepEqual(c.kpResolution(r), slot0('thing', result));
-  }
+  };
   await doTestA(1, 'ko25');
   await doTestA(2, 'ko26');
 
-  async function doTestB(mode, result) {
+  const doTestB = async (mode, result) => {
     const r = c.queueToVatRoot(
       'bootstrap',
       'testB',
@@ -74,13 +68,13 @@ test('virtual object representatives', async t => {
       `test${mode} initialSelf.name after rename "thing${mode} modified"`,
     ]);
     t.deepEqual(c.kpResolution(r), slot0('thing', result));
-  }
+  };
   await doTestB(3, 'ko27');
   await doTestB(4, 'ko28');
   await doTestB(5, 'ko29');
   await doTestB(6, 'ko30');
 
-  async function doTestC(mode) {
+  const doTestC = async mode => {
     const r = c.queueToVatRoot(
       'bootstrap',
       'testC',
@@ -89,13 +83,13 @@ test('virtual object representatives', async t => {
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), [`test${mode} result is "47"`]);
-  }
+  };
   await doTestC(7);
   await doTestC(8);
   await doTestC(9);
   await doTestC(10);
 
-  async function doTestD(mode) {
+  const doTestD = async mode => {
     const r = c.queueToVatRoot(
       'bootstrap',
       'testD',
@@ -104,11 +98,11 @@ test('virtual object representatives', async t => {
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), [`test${mode} result is "thing${mode}"`]);
-  }
+  };
   await doTestD(11);
   await doTestD(12);
 
-  async function doTestE(mode) {
+  const doTestE = async mode => {
     const r = c.queueToVatRoot(
       'bootstrap',
       'testE',
@@ -117,7 +111,7 @@ test('virtual object representatives', async t => {
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), [`test${mode} result is "thing${mode} modified"`]);
-  }
+  };
   await doTestE(13);
   await doTestE(14);
   await doTestE(15);
@@ -168,26 +162,24 @@ test.serial('exercise cache', async t => {
 
   const hostStorage = provideHostStorage();
   const kvStore = hostStorage.kvStore;
-  function vsKey(key) {
-    return key.match(/^\w+\.vs\./);
-  }
+  const vsKey = key => key.match(/^\w+\.vs\./);
   const loggingKVStore = {
     has: key => kvStore.has(key),
     getKeys: (start, end) => kvStore.getKeys(start, end),
-    get(key) {
+    get: key => {
       const result = kvStore.get(key);
       if (vsKey(key)) {
         log.push(['get', key, result]);
       }
       return result;
     },
-    set(key, value) {
+    set: (key, value) => {
       if (vsKey(key)) {
         log.push(['set', key, value]);
       }
       kvStore.set(key, value);
     },
-    delete(key) {
+    delete: key => {
       if (vsKey(key)) {
         log.push(['delete', key]);
       }
@@ -212,7 +204,7 @@ test.serial('exercise cache', async t => {
   await c.run();
   t.deepEqual(c.kpResolution(bootstrapResult), capargs('bootstrap done'));
 
-  async function doSimple(method, what, ...args) {
+  const doSimple = async (method, what, ...args) => {
     let sendArgs;
     if (what) {
       const whatArg = {
@@ -229,56 +221,49 @@ test.serial('exercise cache', async t => {
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), []);
     return r;
-  }
+  };
 
-  async function make(name, holdIt, expect) {
+  const make = async (name, holdIt, expect) => {
     const r = await doSimple('makeThing', null, name, holdIt);
     const result = c.kpResolution(r);
     t.deepEqual(result, slot0('thing', expect));
     return result.slots[0];
-  }
-  async function read(what, expect) {
+  };
+  const read = async (what, expect) => {
     const r = await doSimple('readThing', what);
     t.deepEqual(c.kpResolution(r), capargs(expect));
-  }
-  async function readHeld(expect) {
+  };
+  const readHeld = async expect => {
     const r = await doSimple('readHeldThing', null);
     t.deepEqual(c.kpResolution(r), capargs(expect));
-  }
-  async function write(what, newName) {
+  };
+  const write = async (what, newName) => {
     await doSimple('writeThing', what, newName);
-  }
-  async function writeHeld(newName) {
+  };
+  const writeHeld = async newName => {
     await doSimple('writeHeldThing', null, newName);
-  }
-  async function forgetHeld() {
+  };
+  const forgetHeld = async () => {
     await doSimple('forgetHeldThing', null);
-  }
-  async function hold(what) {
+  };
+  const hold = async what => {
     await doSimple('holdThing', what);
-  }
-  function dataKey(num) {
-    return `v1.vs.vom.o+1/${num}`;
-  }
-  function esKey(num) {
-    return `v1.vs.vom.es.o+1/${num}`;
-  }
-  function rcKey(num) {
-    return `v1.vs.vom.rc.o+1/${num}`;
-  }
-  function thingVal(name) {
-    return JSON.stringify({
+  };
+  const dataKey = num => `v1.vs.vom.o+1/${num}`;
+  const esKey = num => `v1.vs.vom.es.o+1/${num}`;
+  const rcKey = num => `v1.vs.vom.rc.o+1/${num}`;
+  const thingVal = name =>
+    JSON.stringify({
       name: capdata(JSON.stringify(name)),
     });
-  }
 
-  function ck(...stuff) {
+  const ck = (...stuff) => {
     t.deepEqual(log.shift(), [...stuff]);
-  }
+  };
 
-  function done() {
+  const done = () => {
     t.deepEqual(log, []);
-  }
+  };
 
   // expected kernel object ID allocations
   const T1 = 'ko25';

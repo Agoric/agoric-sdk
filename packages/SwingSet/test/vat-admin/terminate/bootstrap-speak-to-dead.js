@@ -2,14 +2,14 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { testLog } = vatPowers;
   let mediumRoot;
   let weatherwaxRoot;
   let rAfterG;
 
   const self = Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       mediumRoot = vats.medium;
 
@@ -47,7 +47,7 @@ export function buildRootObject(vatPowers) {
 
       return 'bootstrap done';
     },
-    async speakAgain() {
+    speakAgain: async () => {
       rAfterG('after');
       try {
         await E(mediumRoot).speak(weatherwaxRoot, '2');
@@ -57,4 +57,4 @@ export function buildRootObject(vatPowers) {
     },
   });
   return self;
-}
+};

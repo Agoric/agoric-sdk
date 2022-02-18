@@ -38,7 +38,7 @@ const FakeWeakRef = function WeakRef(target) {
   weakRefTarget.set(this, target);
 };
 
-const InertWeakRef = function WeakRef(_target) {
+const InertWeakRef = _target => {
   throw new TypeError('Not available');
 };
 
@@ -85,15 +85,13 @@ const FakeFinalizationRegistry = function FinalizationRegistry(
   // fall off the end with an empty instance
 };
 
-const InertFinalizationRegistry = function FinalizationRegistry(
-  _cleanupCallback,
-) {
+const InertFinalizationRegistry = _cleanupCallback => {
   throw new TypeError('Not available');
 };
 
 const FakeFinalizationRegistryPrototype = {
-  register() {},
-  unregister() {},
+  register: () => {},
+  unregister: () => {},
   [Symbol.toStringTag]: 'FinalizationRegistry',
 };
 

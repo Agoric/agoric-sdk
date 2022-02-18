@@ -2,52 +2,44 @@
 
 import { assert } from '@agoric/assert';
 
-export function foreverPolicy() {
-  /** @type { RunPolicy } */
-  return harden({
-    vatCreated(_details) {
-      return true;
-    },
-    crankComplete(_details) {
-      return true;
-    },
-    crankFailed(_details) {
-      return true;
-    },
+export const foreverPolicy = () =>
+  harden({
+    vatCreated: _details => true,
+    crankComplete: _details => true,
+    crankFailed: _details => true,
   });
-}
 
-export function crankCounter(maxCranks, maxCreateVats) {
+export const crankCounter = (maxCranks, maxCreateVats) => {
   let cranks = 0;
   let vats = 0;
   /** @type { RunPolicy } */
   const policy = harden({
-    vatCreated() {
+    vatCreated: () => {
       vats += 1;
       return vats < maxCreateVats;
     },
-    crankComplete(_details) {
+    crankComplete: _details => {
       cranks += 1;
       return cranks < maxCranks;
     },
-    crankFailed() {
+    crankFailed: () => {
       cranks += 1;
       return cranks < maxCranks;
     },
   });
   return policy;
-}
+};
 
-export function computronCounter(limit) {
+export const computronCounter = limit => {
   assert.typeof(limit, 'bigint');
   let total = 0n;
   /** @type { RunPolicy } */
   const policy = harden({
-    vatCreated() {
+    vatCreated: () => {
       total += 100000n; // pretend vat creation takes 100k computrons
       return total < limit;
     },
-    crankComplete(details = {}) {
+    crankComplete: (details = {}) => {
       assert.typeof(details, 'object');
       if (details.computrons) {
         assert.typeof(details.computrons, 'bigint');
@@ -55,15 +47,15 @@ export function computronCounter(limit) {
       }
       return total < limit;
     },
-    crankFailed() {
+    crankFailed: () => {
       total += 1000000n; // who knows, 1M is as good as anything
       return total < limit;
     },
   });
   return policy;
-}
+};
 
-export function wallClockWaiter(seconds) {
+export const wallClockWaiter = seconds => {
   const timeout = Date.now() + 1000 * seconds;
   /** @type { RunPolicy } */
   const policy = harden({
@@ -72,4 +64,4 @@ export function wallClockWaiter(seconds) {
     crankFailed: () => Date.now() < timeout,
   });
   return policy;
-}
+};

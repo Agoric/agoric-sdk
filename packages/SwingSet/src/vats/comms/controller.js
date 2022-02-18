@@ -15,14 +15,14 @@ const UNDEFINED = harden({
 // case (deliverFromRemote and deliverToRemote) don't need it. So we have to
 // reconstruct a little of it manually.
 
-export function deliverToController(
+export const deliverToController = (
   state,
   clistKit,
   method,
   controllerArgs,
   result,
   syscall,
-) {
+) => {
   const {
     addEgress,
     addIngress,
@@ -36,7 +36,7 @@ export function deliverToController(
   // handle {'@qclass':'slot', index} objects, which point into the
   // 'args.slots' array.
 
-  function doAddRemote() {
+  const doAddRemote = () => {
     // comms!addRemote(name, tx, setRx)
     //  we then do setRx!setReceiver(rx)
     const args = JSON.parse(controllerArgs.body);
@@ -67,9 +67,9 @@ export function deliverToController(
     // rather than giving the caller of comms!addRemote() something to
     // synchronize upon. I don't think it hurts, but might affect debugging.
     syscall.resolve([[result, false, UNDEFINED]]);
-  }
+  };
 
-  function doAddEgress() {
+  const doAddEgress = () => {
     // comms!addEgress(name, index, obj)
     const args = JSON.parse(controllerArgs.body);
     const { slots } = controllerArgs;
@@ -85,9 +85,9 @@ export function deliverToController(
     const localRef = provideLocalForKernel(slots[args[2].index]);
     addEgress(remoteID, remoteRefID, localRef);
     syscall.resolve([[result, false, UNDEFINED]]);
-  }
+  };
 
-  function doAddIngress() {
+  const doAddIngress = () => {
     // obj = comms!addIngress(name, index)
     const args = JSON.parse(controllerArgs.body);
 
@@ -105,7 +105,7 @@ export function deliverToController(
       data.body = `{"@qclass":"slot","iface":"${iface}","index":0}`;
     }
     syscall.resolve([[result, false, data]]);
-  }
+  };
 
   switch (method) {
     case 'addRemote':
@@ -117,4 +117,4 @@ export function deliverToController(
     default:
       assert.fail(X`method ${method} is not available`);
   }
-}
+};

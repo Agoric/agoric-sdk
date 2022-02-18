@@ -11,7 +11,7 @@ import { assert, details as X } from '@agoric/assert';
  *   criteria.
  * @returns {asserts capdata is CapData<unknown>}
  */
-export function insistCapData(capdata) {
+export const insistCapData = capdata => {
   assert.typeof(
     capdata.body,
     'string',
@@ -22,4 +22,4 @@ export function insistCapData(capdata) {
     X`capdata has non-Array slots ${capdata.slots}`,
   );
   // TODO check that the .slots array elements are actually strings
-}
+};

@@ -2,19 +2,19 @@ import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { D } = vatPowers;
   const { promise: vatAdminSvc, resolve: gotVatAdminSvc } = makePromiseKit();
   let root;
   let devices;
 
   return Far('root', {
-    async bootstrap(vats, devs) {
+    bootstrap: async (vats, devs) => {
       devices = devs;
       gotVatAdminSvc(E(vats.vatAdmin).createVatAdminService(devices.vatAdmin));
     },
 
-    async createVat() {
+    createVat: async () => {
       const bcap = D(devices.bundle).getNamedBundlecap('dynamic');
       const vc = await E(vatAdminSvc).createVat(bcap);
       root = vc.root;
@@ -30,9 +30,9 @@ export function buildRootObject(vatPowers) {
     // if the vat exists but its transcript was not replayed, the +=1 will
     // not have happened, and root~.second() will return 20, not 21
 
-    async check() {
+    check: async () => {
       const count = await E(root).second();
       return count === 21 ? 'ok' : `wrong counter ${count}`;
     },
   });
-}
+};

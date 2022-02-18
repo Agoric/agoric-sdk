@@ -1,12 +1,12 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { testLog: log } = vatPowers;
   let count = 0;
   return Far('root', {
-    count() {
+    count: () => {
       log(`count = ${count}`);
       count += 1;
     },
   });
-}
+};

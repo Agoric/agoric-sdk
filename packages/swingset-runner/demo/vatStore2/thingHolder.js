@@ -7,54 +7,52 @@ import {
 
 const p = console.log;
 
-function build(name) {
-  function makeThingInnards(state) {
-    return {
-      init(label, companion, companionName) {
-        p(`${name}'s thing ${label}: initialize ${companionName}`);
-        state.label = label;
-        state.companion = companion;
-        state.companionName = companionName;
-        state.count = 0;
+const build = name => {
+  const makeThingInnards = state => ({
+    init: (label, companion, companionName) => {
+      p(`${name}'s thing ${label}: initialize ${companionName}`);
+      state.label = label;
+      state.companion = companion;
+      state.companionName = companionName;
+      state.count = 0;
+    },
+    self: Far('thing', {
+      echo: message => {
+        state.count += 1;
+        E(state.companion).say(message);
       },
-      self: Far('thing', {
-        echo(message) {
-          state.count += 1;
-          E(state.companion).say(message);
-        },
-        async changePartner(newCompanion) {
-          state.count += 1;
-          state.companion = newCompanion;
-          const companionName = await E(newCompanion).getName();
-          state.companionName = companionName;
-          p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
-        },
-        getLabel() {
-          const label = state.label;
-          p(`${name}'s thing ${label}: getLabel`);
-          state.count += 1;
-          return label;
-        },
-        report() {
-          p(`${name}'s thing ${state.label} invoked ${state.count} times`);
-        },
-      }),
-    };
-  }
+      changePartner: async newCompanion => {
+        state.count += 1;
+        state.companion = newCompanion;
+        const companionName = await E(newCompanion).getName();
+        state.companionName = companionName;
+        p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
+      },
+      getLabel: () => {
+        const label = state.label;
+        p(`${name}'s thing ${label}: getLabel`);
+        state.count += 1;
+        return label;
+      },
+      report: () => {
+        p(`${name}'s thing ${state.label} invoked ${state.count} times`);
+      },
+    }),
+  });
 
   const makeThing = makeKind(makeThingInnards);
   let nextThingNumber = 0;
 
   let myThings;
 
-  function ensureCollection() {
+  const ensureCollection = () => {
     if (!myThings) {
       myThings = makeScalarBigWeakMapStore('things');
     }
-  }
+  };
 
   return Far('root', {
-    async introduce(other) {
+    introduce: async other => {
       const otherName = await E(other).getName();
       const thing = makeThing(`thing-${nextThingNumber}`, other, otherName);
       nextThingNumber += 1;
@@ -62,7 +60,7 @@ function build(name) {
       myThings.init(thing, 0);
       return thing;
     },
-    doYouHave(thing) {
+    doYouHave: thing => {
       ensureCollection();
       if (myThings.has(thing)) {
         const queryCount = myThings.get(thing) + 1;
@@ -75,8 +73,7 @@ function build(name) {
       }
     },
   });
-}
+};
 
-export function buildRootObject(_vatPowers, vatParameters) {
-  return build(vatParameters.name);
-}
+export const buildRootObject = (_vatPowers, vatParameters) =>
+  build(vatParameters.name);

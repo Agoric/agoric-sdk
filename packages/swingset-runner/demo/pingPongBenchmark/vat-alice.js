@@ -3,36 +3,35 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let myNickname;
   let otherNickname = 'unknown';
   let otherContact = null;
 
-  function makeContact() {
-    return Far('contact', {
-      myNameIs(nickname) {
+  const makeContact = () =>
+    Far('contact', {
+      myNameIs: nickname => {
         otherNickname = nickname;
         log(`${myNickname}: contact is now named ${otherNickname}`);
       },
-      pong(tag, ponger) {
+      pong: (tag, ponger) => {
         log(`${myNickname}: ponged with "${tag}" by ${ponger}`);
       },
     });
-  }
 
   return Far('root', {
-    setNickname(nickname) {
+    setNickname: nickname => {
       myNickname = nickname;
     },
-    introduceYourselfTo(other) {
+    introduceYourselfTo: other => {
       log(`${myNickname}.introduce`);
       const myContact = makeContact();
       otherContact = E(other).hello(myContact, myNickname);
       return `${myNickname} setup done\n${myNickname} vat is happy\n`;
     },
-    doPing(tag) {
+    doPing: tag => {
       log(`${myNickname}: pings ${otherNickname} with ${tag}`);
       E(otherContact).ping(tag);
     },
   });
-}
+};

@@ -1,15 +1,9 @@
-function sub() {
-  return 4;
-}
+const sub = () => 4;
 
-function delveForeverIntoTheRecursiveDepths() {
-  // Two calls defeat tail call optimization in engines such as XS.
-  return (
-    delveForeverIntoTheRecursiveDepths() + delveForeverIntoTheRecursiveDepths()
-  );
-}
+const delveForeverIntoTheRecursiveDepths = () =>
+  delveForeverIntoTheRecursiveDepths() + delveForeverIntoTheRecursiveDepths();
 
-export function meterMe(log2, explode = 'no') {
+export const meterMe = (log2, explode = 'no') => {
   log2.push('started');
   harden({});
   // console.log(`explode mode ${explode}`);
@@ -41,4 +35,4 @@ export function meterMe(log2, explode = 'no') {
     log2.push('caught');
   }
   return 5;
-}
+};

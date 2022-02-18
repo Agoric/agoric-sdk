@@ -13,11 +13,11 @@
 
 const QCLASS = '@';
 
-export function makeUndeliverableError(method) {
+export const makeUndeliverableError = method => {
   const s = {
     [QCLASS]: 'error',
     name: 'TypeError',
     message: `data is not callable, has no method ${method}`,
   };
   return harden({ body: JSON.stringify(s), slots: [] });
-}
+};

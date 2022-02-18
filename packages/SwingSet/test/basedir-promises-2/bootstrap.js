@@ -3,10 +3,10 @@ import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.testLog;
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       const { argv } = vatParameters;
       const mode = argv[0];
       if (mode === 'harden-promise-1') {
@@ -34,4 +34,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}
+};

@@ -108,7 +108,7 @@ import { makeTranscriptManager } from './transcript.js';
  * @returns { ManagerKit }
  */
 
-function makeManagerKit(
+const makeManagerKit = (
   vatID,
   kernelSlog,
   kernelKeeper,
@@ -116,7 +116,7 @@ function makeManagerKit(
   workerCanBlock,
   compareSyscalls,
   useTranscript,
-) {
+) => {
   assert(kernelSlog);
   const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
   let transcriptManager;
@@ -134,17 +134,17 @@ function makeManagerKit(
   /**
    * @param { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } dtw
    */
-  function setDeliverToWorker(dtw) {
+  const setDeliverToWorker = dtw => {
     assert(!deliverToWorker, `setDeliverToWorker called twice`);
     deliverToWorker = dtw;
-  }
+  };
 
   /**
    *
    * @param { VatDeliveryObject } delivery
    * @returns { Promise<VatDeliveryResult> } // or Error
    */
-  async function deliver(delivery) {
+  const deliver = async delivery => {
     if (transcriptManager) {
       transcriptManager.startDispatch(delivery);
     }
@@ -162,9 +162,9 @@ function makeManagerKit(
       transcriptManager.finishDispatch();
     }
     return status;
-  }
+  };
 
-  async function replayOneDelivery(delivery, expectedSyscalls, deliveryNum) {
+  const replayOneDelivery = async (delivery, expectedSyscalls, deliveryNum) => {
     assert(transcriptManager, `delivery replay with no transcript`);
     transcriptManager.startReplay();
     transcriptManager.startReplayDelivery(expectedSyscalls);
@@ -190,13 +190,13 @@ function makeManagerKit(
     transcriptManager.checkReplayError();
     transcriptManager.finishReplay();
     return status;
-  }
+  };
 
   /**
    * @param {StreamPosition | undefined} startPos
    * @returns { Promise<number?> } number of deliveries, or null if !useTranscript
    */
-  async function replayTranscript(startPos) {
+  const replayTranscript = async startPos => {
     // console.log('replay from', { vatID, startPos });
 
     if (transcriptManager) {
@@ -226,7 +226,7 @@ function makeManagerKit(
     }
 
     return null;
-  }
+  };
 
   /**
    * vatSyscallObject is an array that starts with the syscall name ('send',
@@ -238,7 +238,7 @@ function makeManagerKit(
    * @param { VatSyscallObject } vso
    * @returns { VatSyscallResult }
    */
-  function syscallFromWorker(vso) {
+  const syscallFromWorker = vso => {
     if (transcriptManager && transcriptManager.inReplay()) {
       // We're replaying old messages to bring the vat's internal state
       // up-to-date. It will make syscalls like a puppy chasing rabbits in
@@ -262,7 +262,7 @@ function makeManagerKit(
       }
     }
     return vres;
-  }
+  };
 
   /**
    *
@@ -270,17 +270,16 @@ function makeManagerKit(
    * @param { (ss: SnapStore) => Promise<string> } makeSnapshot
    * @returns { VatManager }
    */
-  function getManager(shutdown, makeSnapshot) {
-    return harden({
+  const getManager = (shutdown, makeSnapshot) =>
+    harden({
       replayTranscript,
       replayOneDelivery,
       deliver,
       shutdown,
       makeSnapshot,
     });
-  }
 
   return harden({ getManager, syscallFromWorker, setDeliverToWorker });
-}
+};
 harden(makeManagerKit);
 export { makeManagerKit };

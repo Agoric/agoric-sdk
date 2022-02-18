@@ -7,12 +7,10 @@ import {
 } from './parseRemoteSlot.js';
 import { cdebug } from './cdebug.js';
 
-function rname(remote) {
-  return `${remote.remoteID()} (${remote.name()})`;
-}
+const rname = remote => `${remote.remoteID()} (${remote.name()})`;
 
-export function makeOutbound(state) {
-  function getRemoteForLocal(remoteID, lref) {
+export const makeOutbound = state => {
+  const getRemoteForLocal = (remoteID, lref) => {
     const remote = state.getRemote(remoteID);
     const { mapToRemote, isReachable } = remote;
     const rref = mapToRemote(lref);
@@ -21,9 +19,9 @@ export function makeOutbound(state) {
       assert(isReachable(lref), `sending unreachable ${lref} to remote`);
     }
     return rref;
-  }
+  };
 
-  function addRemoteObjectForLocal(remote, loid) {
+  const addRemoteObjectForLocal = (remote, loid) => {
     const owner = state.getObject(loid);
     assert(
       owner !== remote,
@@ -37,9 +35,9 @@ export function makeOutbound(state) {
     cdebug(
       `comms export ${remote.remoteID()}/${remote.name()} ${loid} ${roid}`,
     );
-  }
+  };
 
-  function addRemotePromiseForLocal(remote, lpid) {
+  const addRemotePromiseForLocal = (remote, lpid) => {
     const status = state.getPromiseStatus(lpid);
     assert(status, X`promise ${lpid} wasn't being tracked`);
 
@@ -53,9 +51,9 @@ export function makeOutbound(state) {
       // arrange to send it later, once it resolves
       state.subscribeRemoteToPromise(lpid, remote.remoteID());
     }
-  }
+  };
 
-  function provideRemoteForLocal(remoteID, lref) {
+  const provideRemoteForLocal = (remoteID, lref) => {
     // We're sending a slot to a remote system. If we've ever sent it before,
     // or if they're the ones who sent it to us in the first place, it will be
     // in the outbound table already.
@@ -100,9 +98,9 @@ export function makeOutbound(state) {
     }
 
     return rref;
-  }
+  };
 
-  function provideRemoteForLocalResult(remoteID, lpid) {
+  const provideRemoteForLocalResult = (remoteID, lpid) => {
     // TODO: if this fails, we somehow tried to use a previously-resolved
     // promise as a result. I think we check for this on the way in
     // (sendFromKernel and sendFromRemote), so I don't think we should be
@@ -129,11 +127,11 @@ export function makeOutbound(state) {
     // is currently ignored but might prompt a vat shutdown in the future.
 
     return rpid;
-  }
+  };
 
   return harden({
     getRemoteForLocal,
     provideRemoteForLocal,
     provideRemoteForLocalResult,
   });
-}
+};

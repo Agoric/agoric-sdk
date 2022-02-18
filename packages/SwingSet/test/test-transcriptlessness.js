@@ -5,7 +5,7 @@ import { provideHostStorage } from '../src/hostStorage.js';
 import { buildVatController } from '../src/index.js';
 import { capargs } from './util.js';
 
-async function testTranscriptlessness(t, useTranscript) {
+const testTranscriptlessness = async (t, useTranscript) => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -39,7 +39,7 @@ async function testTranscriptlessness(t, useTranscript) {
   } else {
     t.deepEqual(c2.dump().log, ['ephemeralCounter=1 sturdyCounter=2']);
   }
-}
+};
 
 test('transcript on', async t => {
   await testTranscriptlessness(t, true);

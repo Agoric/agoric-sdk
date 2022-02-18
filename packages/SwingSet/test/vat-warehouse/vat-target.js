@@ -1,15 +1,15 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers, _vatParameters) {
+export const buildRootObject = (_vatPowers, _vatParameters) => {
   const contents = [];
-  function append(thing) {
+  const append = thing => {
     contents.push(thing);
     return harden([...contents]);
-  }
+  };
 
   const target = Far('root', {
     append,
   });
 
   return target;
-}
+};

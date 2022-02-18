@@ -8,44 +8,38 @@ import { initializeKernel } from '../src/kernel/initializeKernel.js';
 import { makeVatSlot } from '../src/parseVatSlots.js';
 import { checkKT, extractMessage, makeKernelEndowments } from './util.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args), slots);
-}
+const capargs = (args, slots = []) => capdata(JSON.stringify(args), slots);
 
 const slot0arg = { '@qclass': 'slot', index: 0 };
 
-function oneResolution(promiseID, rejected, data) {
-  return [[promiseID, rejected, data]];
-}
+const oneResolution = (promiseID, rejected, data) => [
+  [promiseID, rejected, data],
+];
 
-function checkPromises(t, kernel, expected) {
+const checkPromises = (t, kernel, expected) => {
   // extract the kernel promise table and assert that the contents match the
   // expected list. This sorts on the promise ID, then does a t.deepEqual
-  function comparePromiseIDs(a, b) {
-    return Number(a.id - b.id);
-  }
+  const comparePromiseIDs = (a, b) => Number(a.id - b.id);
 
   const got = Array.from(kernel.dump().promises);
   got.sort(comparePromiseIDs);
   expected = Array.from(expected);
   expected.sort(comparePromiseIDs);
   t.deepEqual(got, expected);
-}
+};
 
-function emptySetup(_syscall) {
-  function dispatch() {}
+const emptySetup = _syscall => {
+  const dispatch = () => {};
   return dispatch;
-}
+};
 
-function makeKernel() {
+const makeKernel = () => {
   const endowments = makeKernelEndowments();
   initializeKernel({}, endowments.hostStorage);
   return buildKernel(endowments, {}, {});
-}
+};
 
 test('build kernel', async t => {
   const kernel = makeKernel();
@@ -59,15 +53,15 @@ test('simple call', async t => {
   const kernel = makeKernel();
   await kernel.start();
   const log = [];
-  function setup1(syscall, state, _helpers, vatPowers) {
-    function dispatch(vatDeliverObject) {
+  const setup1 = (syscall, state, _helpers, vatPowers) => {
+    const dispatch = vatDeliverObject => {
       // TODO: just push the vatDeliverObject
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push([facetID, method, args]);
       vatPowers.testLog(JSON.stringify({ facetID, method, args }));
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vat1', setup1);
   const vat1 = kernel.vatNameToID('vat1');
   let data = kernel.dump();
@@ -106,8 +100,8 @@ test('vat store', async t => {
   const kernel = makeKernel();
   await kernel.start();
   const log = [];
-  function setup(syscall, _state, _helpers, _vatPowers) {
-    function dispatch(vatDeliverObject) {
+  const setup = (syscall, _state, _helpers, _vatPowers) => {
+    const dispatch = vatDeliverObject => {
       const { method, args } = extractMessage(vatDeliverObject);
       switch (method) {
         case 'get': {
@@ -128,9 +122,9 @@ test('vat store', async t => {
         default:
           assert.fail(X`this can't happen`);
       }
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vat', setup);
   const vat = kernel.vatNameToID('vat');
 
@@ -159,13 +153,13 @@ test('map inbound', async t => {
   const kernel = makeKernel();
   await kernel.start();
   const log = [];
-  function setup1(_syscall) {
-    function dispatch(vatDeliverObject) {
+  const setup1 = _syscall => {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push([facetID, method, args]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vat1', setup1);
   await kernel.createTestVat('vat2', setup1);
   const vat1 = kernel.vatNameToID('vat1');
@@ -208,10 +202,10 @@ test('map inbound', async t => {
 test('addImport', async t => {
   const kernel = makeKernel();
   await kernel.start();
-  function setup(_syscall) {
-    function dispatch() {}
+  const setup = _syscall => {
+    const dispatch = () => {};
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vat1', setup);
   await kernel.createTestVat('vat2', setup);
   const vat1 = kernel.vatNameToID('vat1');
@@ -232,14 +226,14 @@ test('outbound call', async t => {
   let v1tovat25;
   const p7 = 'p+7';
 
-  function setup1(syscall) {
+  const setup1 = syscall => {
     let nextPromiseIndex = 5;
-    function allocatePromise() {
+    const allocatePromise = () => {
       const index = nextPromiseIndex;
       nextPromiseIndex += 1;
       return makeVatSlot('promise', true, index);
-    }
-    function dispatch(vatDeliverObject) {
+    };
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`d1/${facetID} called`);
       log.push(['d1', facetID, method, args]);
@@ -250,20 +244,20 @@ test('outbound call', async t => {
         capdata('bargs', [v1tovat25, 'o+7', p7]),
         pid,
       );
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vat1', setup1);
 
-  function setup2(_syscall) {
-    function dispatch(vatDeliverObject) {
+  const setup2 = _syscall => {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`d2/${facetID} called`);
       log.push(['d2', facetID, method, args]);
       log.push(['d2 promises', kernel.dump().promises]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vat2', setup2);
   const vat1 = kernel.vatNameToID('vat1');
   const vat2 = kernel.vatNameToID('vat2');
@@ -441,42 +435,42 @@ test('three-party', async t => {
   let bobForA;
   let carolForA;
 
-  function setupA(syscall) {
+  const setupA = syscall => {
     let nextPromiseIndex = 5;
-    function allocatePromise() {
+    const allocatePromise = () => {
       const index = nextPromiseIndex;
       nextPromiseIndex += 1;
       return makeVatSlot('promise', true, index);
-    }
-    function dispatch(vatDeliverObject) {
+    };
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`vatA/${facetID} called`);
       log.push(['vatA', facetID, method, args]);
       const pid = allocatePromise();
       syscall.send(bobForA, 'intro', capdata('bargs', [carolForA]), pid);
       log.push(['vatA', 'promiseID', pid]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
 
-  function setupB(_syscall) {
-    function dispatch(vatDeliverObject) {
+  const setupB = _syscall => {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`vatB/${facetID} called`);
       log.push(['vatB', facetID, method, args]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB);
 
-  function setupC(_syscall) {
-    function dispatch(vatDeliverObject) {
+  const setupC = _syscall => {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push(['vatC', facetID, method, args]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatC', setupC);
 
   const vatA = kernel.vatNameToID('vatA');
@@ -575,26 +569,26 @@ test('transfer promise', async t => {
   await kernel.start();
   let syscallA;
   const logA = [];
-  function setupA(syscall) {
+  const setupA = syscall => {
     syscallA = syscall;
-    function dispatch(vatDeliverObject) {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       logA.push([facetID, method, args]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
 
   let syscallB;
   const logB = [];
-  function setupB(syscall) {
+  const setupB = syscall => {
     syscallB = syscall;
-    function dispatch(vatDeliverObject) {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       logB.push([facetID, method, args]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB);
 
   const vatA = kernel.vatNameToID('vatA');
@@ -680,14 +674,14 @@ test('subscribe to promise', async t => {
   await kernel.start();
   let syscall;
   const log = [];
-  function setup(s) {
+  const setup = s => {
     syscall = s;
-    function dispatch(vatDeliverObject) {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push(['deliver', facetID, method, args]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vat1', setup);
   await kernel.createTestVat('vat2', emptySetup);
 
@@ -724,21 +718,21 @@ test('promise resolveToData', async t => {
   const log = [];
 
   let syscallA;
-  function setupA(s) {
+  const setupA = s => {
     syscallA = s;
-    function dispatch(vatDeliverObject) {
+    const dispatch = vatDeliverObject => {
       log.push(vatDeliverObject);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
 
   let syscallB;
-  function setupB(s) {
+  const setupB = s => {
     syscallB = s;
-    function dispatch() {}
+    const dispatch = () => {};
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB);
 
   const vatA = kernel.vatNameToID('vatA');
@@ -793,21 +787,21 @@ test('promise resolveToPresence', async t => {
   const log = [];
 
   let syscallA;
-  function setupA(s) {
+  const setupA = s => {
     syscallA = s;
-    function dispatch(vatDeliverObject) {
+    const dispatch = vatDeliverObject => {
       log.push(vatDeliverObject);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
 
   let syscallB;
-  function setupB(s) {
+  const setupB = s => {
     syscallB = s;
-    function dispatch() {}
+    const dispatch = () => {};
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB);
 
   const vatA = kernel.vatNameToID('vatA');
@@ -869,21 +863,21 @@ test('promise reject', async t => {
   const log = [];
 
   let syscallA;
-  function setupA(s) {
+  const setupA = s => {
     syscallA = s;
-    function dispatch(vatDeliverObject) {
+    const dispatch = vatDeliverObject => {
       log.push(vatDeliverObject);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
 
   let syscallB;
-  function setupB(s) {
+  const setupB = s => {
     syscallB = s;
-    function dispatch() {}
+    const dispatch = () => {};
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB);
 
   const vatA = kernel.vatNameToID('vatA');
@@ -937,15 +931,15 @@ test('transcript', async t => {
   const kernel = makeKernel();
   await kernel.start();
 
-  function setup(syscall, _state) {
-    function dispatch(vatDeliverObject) {
+  const setup = (syscall, _state) => {
+    const dispatch = vatDeliverObject => {
       const { facetID, args } = extractMessage(vatDeliverObject);
       if (facetID === aliceForAlice) {
         syscall.send(args.slots[1], 'foo', capdata('fooarg'), 'p+5');
       }
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setup);
   await kernel.createTestVat('vatB', emptySetup);
   const vatA = kernel.vatNameToID('vatA');
@@ -995,21 +989,21 @@ test('non-pipelined promise queueing', async t => {
   const log = [];
 
   let syscall;
-  function setupA(s) {
+  const setupA = s => {
     syscall = s;
-    function dispatch() {}
+    const dispatch = () => {};
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
 
-  function setupB(_s) {
-    function dispatch(vatDeliverObject) {
+  const setupB = _s => {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args, result } =
         extractMessage(vatDeliverObject);
       log.push([facetID, method, args, result]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB);
 
   const vatA = kernel.vatNameToID('vatA');
@@ -1119,21 +1113,21 @@ test('pipelined promise queueing', async t => {
   const log = [];
 
   let syscall;
-  function setupA(s) {
+  const setupA = s => {
     syscall = s;
-    function dispatch() {}
+    const dispatch = () => {};
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
 
-  function setupB(_s) {
-    function dispatch(vatDeliverObject) {
+  const setupB = _s => {
+    const dispatch = vatDeliverObject => {
       const { facetID, method, args, result } =
         extractMessage(vatDeliverObject);
       log.push([facetID, method, args, result]);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB, {}, { enablePipelining: true });
 
   const vatA = kernel.vatNameToID('vatA');
@@ -1236,41 +1230,37 @@ test('xs-worker default manager type', async t => {
   );
 });
 
-async function reapTest(t, freq) {
+const reapTest = async (t, freq) => {
   const kernel = makeKernel();
   await kernel.start();
   const log = [];
-  function setup() {
-    function dispatch(vatDeliverObject) {
+  const setup = () => {
+    const dispatch = vatDeliverObject => {
       log.push(vatDeliverObject);
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vat1', setup, {}, { reapInterval: freq });
   const vat1 = kernel.vatNameToID('vat1');
   t.deepEqual(log, []);
 
   const vatRoot = kernel.addExport(vat1, 'o+1');
-  function deliverMessage(ordinal) {
+  const deliverMessage = ordinal => {
     kernel.queueToKref(vatRoot, `msg_${ordinal}`, capdata('[]'));
-  }
-  function matchMsg(ordinal) {
-    return [
-      'message',
-      'o+1',
-      {
-        args: {
-          body: '[]',
-          slots: [],
-        },
-        method: `msg_${ordinal}`,
-        result: `p-${60 + ordinal}`,
+  };
+  const matchMsg = ordinal => [
+    'message',
+    'o+1',
+    {
+      args: {
+        body: '[]',
+        slots: [],
       },
-    ];
-  }
-  function matchReap() {
-    return ['bringOutYourDead'];
-  }
+      method: `msg_${ordinal}`,
+      result: `p-${60 + ordinal}`,
+    },
+  ];
+  const matchReap = () => ['bringOutYourDead'];
 
   for (let i = 0; i < 100; i += 1) {
     deliverMessage(i);
@@ -1284,7 +1274,7 @@ async function reapTest(t, freq) {
     }
   }
   t.deepEqual(log, []);
-}
+};
 
 test('reap interval 1', async t => {
   await reapTest(t, 1);

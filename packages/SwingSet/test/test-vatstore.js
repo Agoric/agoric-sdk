@@ -23,9 +23,9 @@ test('vatstore', async t => {
   });
   c.pinVatRoot('bootstrap');
 
-  function send(msg, ...args) {
+  const send = (msg, ...args) => {
     c.queueToVatRoot('bootstrap', msg, capargs(args));
-  }
+  };
 
   send('get', 'zot');
   await c.run();

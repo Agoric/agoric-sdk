@@ -2,16 +2,16 @@ import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers, vatParameters) {
+export const buildRootObject = (vatPowers, vatParameters) => {
   const { D } = vatPowers;
   const log = vatPowers.testLog;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       const { argv } = vatParameters;
       if (argv[0] === 'timer') {
         log(`starting wake test`);
         const handler = Far('handler', {
-          wake() {
+          wake: () => {
             log(`handler.wake()`);
           },
         });
@@ -20,7 +20,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         log(`starting repeater test`);
         let handlerCalled = 0;
         const handler = Far('handler', {
-          wake(h) {
+          wake: h => {
             handlerCalled += 1;
             log(
               `handler.wake(${h || 'handler'}) called ${handlerCalled} times.`,
@@ -35,4 +35,4 @@ export function buildRootObject(vatPowers, vatParameters) {
       }
     },
   });
-}
+};

@@ -33,7 +33,7 @@ import { assert, details as X } from '@agoric/assert';
  *
  * @throws if the given string is syntactically incorrect.
  */
-export function parseVatSlot(s) {
+export const parseVatSlot = s => {
   assert.typeof(s, 'string');
   let type;
   let allocatedByVat;
@@ -73,7 +73,7 @@ export function parseVatSlot(s) {
   }
 
   return { type, allocatedByVat, virtual, id, subid };
-}
+};
 
 /**
  * Generate a vat slot reference string given a type, ownership, and id.
@@ -86,7 +86,7 @@ export function parseVatSlot(s) {
  *
  * @throws if type is not one of the above known types.
  */
-export function makeVatSlot(type, allocatedByVat, id) {
+export const makeVatSlot = (type, allocatedByVat, id) => {
   let idSuffix;
   if (allocatedByVat) {
     idSuffix = `+${Nat(id)}`;
@@ -104,7 +104,7 @@ export function makeVatSlot(type, allocatedByVat, id) {
     return `p${idSuffix}`;
   }
   assert.fail(X`unknown type ${type}`);
-}
+};
 
 /**
  * Assert function to ensure that a vat slot reference string refers to a
@@ -117,10 +117,10 @@ export function makeVatSlot(type, allocatedByVat, id) {
  *
  * @returns {void}
  */
-export function insistVatType(type, vatSlot) {
+export const insistVatType = (type, vatSlot) => {
   assert.equal(
     type,
     parseVatSlot(vatSlot).type,
     `vatSlot ${vatSlot} is not of type ${type}`,
   );
-}
+};

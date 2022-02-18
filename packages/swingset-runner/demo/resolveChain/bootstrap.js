@@ -5,9 +5,9 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers, options) {
+export const buildRootObject = (_vatPowers, options) => {
   let count;
-  function waitFor(who, p) {
+  const waitFor = (who, p) => {
     p.then(
       answer => {
         if (count > 0 && count < 50) {
@@ -22,10 +22,10 @@ export function buildRootObject(_vatPowers, options) {
         log(`=> Alice: Bob rejected, ${err}`);
       },
     );
-  }
+  };
 
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       count = options.argv[0] ? Number(options.argv[0]) : 3;
       const bob = vats.bob;
       const p = E(bob).init();
@@ -33,4 +33,4 @@ export function buildRootObject(_vatPowers, options) {
       waitFor(bob, p);
     },
   });
-}
+};

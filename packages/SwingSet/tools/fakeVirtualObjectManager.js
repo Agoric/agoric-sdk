@@ -11,7 +11,7 @@ import { makeVirtualObjectManager } from '../src/kernel/virtualObjectManager.js'
 // it *will* execute virtual object manager operations in the same way that the
 // real one will because underneath it *is* the real one.
 
-export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
+export const makeFakeVirtualObjectManager = (vrm, fakeStuff, options = {}) => {
   const { cacheSize = 100 } = options;
 
   const {
@@ -48,4 +48,4 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
   };
 
   return harden({ ...normalVOM, ...debugTools });
-}
+};

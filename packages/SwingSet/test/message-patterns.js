@@ -41,36 +41,22 @@ import { ignore } from './vat-util.js';
 // All messages should be sent twice, to check that the recipient gets the
 // same object reference in both messages
 
-function NonError(message) {
-  // marshal emits a warning (with stack trace) to the console each time it
-  // serializes an Error, which makes it look like tests are failing. We have
-  // tests which test 'throw' and Promise rejection to make sure they are
-  // signalled correctly. We previously used 'throw Error()' for this, but
-  // that provokes the scary-looking warning. Since we aren't trying to
-  // exercise *Error* serialization here, merely Promise rejection, we can
-  // use a non-Error instead, which avoids the warning.
+const NonError = message => harden({ message });
 
-  // We use a pass-by-copy object, so the receiving side can log a quoted
-  // (JSON.stringify) version, and not wind up with Presence object-ids in
-  // the log. This does require changes to how the tests log "errors", and to
-  // the strings we compare those logs against.
-  return harden({ message });
-}
-
-export function buildPatterns(log) {
+export const buildPatterns = log => {
   let a;
   let b;
   let c;
 
-  function setA(newA) {
+  const setA = newA => {
     a = newA;
-  }
-  function setB(newB) {
+  };
+  const setB = newB => {
     b = newB;
-  }
-  function setC(newC) {
+  };
+  const setC = newC => {
     c = newC;
-  }
+  };
 
   const patterns = new Map();
   let objA = { toString: () => 'obj-alice' };
@@ -500,10 +486,10 @@ export function buildPatterns(log) {
     objB.b70_pipe1 = async () => {
       log(`pipe1`);
       const pipe2 = Far('pipe2', {
-        pipe2() {
+        pipe2: () => {
           log(`pipe2`);
           const pipe3 = Far('pipe3', {
-            pipe3() {
+            pipe3: () => {
               log(`pipe3`);
             },
           });
@@ -544,13 +530,13 @@ export function buildPatterns(log) {
     objB.b71_getpx = async () => p1.promise;
     objB.b71_resolvex = async () => {
       const x = Far('x', {
-        pipe1() {
+        pipe1: () => {
           log(`pipe1`);
           const pipe2 = Far('pipe2', {
-            pipe2() {
+            pipe2: () => {
               log(`pipe2`);
               const pipe3 = Far('pipe3', {
-                pipe3() {
+                pipe3: () => {
                   log(`pipe3`);
                 },
               });
@@ -595,13 +581,13 @@ export function buildPatterns(log) {
     objB.b72_getpx = async () => p1.promise;
     objB.b72_resolvex = async () => {
       const x = Far('x', {
-        pipe1() {
+        pipe1: () => {
           log(`pipe1`);
           const pipe2 = Far('pipe2', {
-            pipe2() {
+            pipe2: () => {
               log(`pipe2`);
               const pipe3 = Far('pipe3', {
-                pipe3() {
+                pipe3: () => {
                   log(`pipe3`);
                 },
               });
@@ -967,4 +953,4 @@ export function buildPatterns(log) {
     expected: out,
     expected_pipelined: outPipelined,
   });
-}
+};

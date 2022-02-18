@@ -1,6 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 
-export function parseReachableAndVatSlot(value) {
+export const parseReachableAndVatSlot = value => {
   assert.typeof(value, 'string', X`non-string value: ${value}`);
   const flag = value.slice(0, 1);
   assert.equal(value.slice(1, 2), ' ');
@@ -15,10 +15,9 @@ export function parseReachableAndVatSlot(value) {
     assert(`flag (${flag}) must be 'R' or '_'`);
   }
   return { isReachable, vatSlot };
-}
+};
 harden(parseReachableAndVatSlot);
 
-export function buildReachableAndVatSlot(isReachable, vatSlot) {
-  return `${isReachable ? 'R' : '_'} ${vatSlot}`;
-}
+export const buildReachableAndVatSlot = (isReachable, vatSlot) =>
+  `${isReachable ? 'R' : '_'} ${vatSlot}`;
 harden(buildReachableAndVatSlot);

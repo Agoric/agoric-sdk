@@ -5,10 +5,10 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export const buildRootObject = (_vatPowers, vatParameters) => {
   log(`=> setup called`);
   return Far('root', {
-    bootstrap(vats) {
+    bootstrap: vats => {
       console.log('=> bootstrap() called');
       E(vats.alice).setNickname('alice');
       E(vats.bob).setNickname('bob');
@@ -22,4 +22,4 @@ export function buildRootObject(_vatPowers, vatParameters) {
       E(vats.alice).grind('hey!', count);
     },
   });
-}
+};

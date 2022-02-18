@@ -7,17 +7,17 @@ import {
   parseRemoteSlot,
 } from './parseRemoteSlot.js';
 
-export function insistRemoteID(remoteID) {
+export const insistRemoteID = remoteID => {
   assert(/^r\d+$/.test(remoteID), X`not a remoteID: ${remoteID}`);
-}
+};
 
-export function initializeRemoteState(
+export const initializeRemoteState = (
   store,
   remoteID,
   identifierBase,
   name,
   transmitterID,
-) {
+) => {
   assert(
     !store.get(`${remoteID}.initialized`),
     X`remote ${remoteID} already exists`,
@@ -30,40 +30,28 @@ export function initializeRemoteState(
   store.set(`${remoteID}.transmitterID`, transmitterID);
   store.set(`${remoteID}.name`, name);
   store.set(`${remoteID}.initialized`, 'true');
-}
+};
 
-export function makeRemote(state, store, remoteID) {
+export const makeRemote = (state, store, remoteID) => {
   insistRemoteID(remoteID);
   assert(store.get(`${remoteID}.initialized`), X`missing ${remoteID}`);
 
-  function name() {
-    return store.get(`${remoteID}.name`);
-  }
+  const name = () => store.get(`${remoteID}.name`);
 
-  function transmitterID() {
-    return store.get(`${remoteID}.transmitterID`);
-  }
+  const transmitterID = () => store.get(`${remoteID}.transmitterID`);
 
-  function mapFromRemote(rref) {
-    // ro-NN -> loNN (imported/importing from remote machine)
-    // ro+NN -> loNN (previously exported to remote machine)
-    return store.get(`${remoteID}.c.${rref}`);
-  }
+  const mapFromRemote = rref => store.get(`${remoteID}.c.${rref}`);
 
-  function mapToRemote(lref) {
-    // loNN -> ro+NN (previously imported from remote machine)
-    // loNN -> ro-NN (exported/exporting to remote machine)
-    return store.get(`${remoteID}.c.${lref}`);
-  }
+  const mapToRemote = lref => store.get(`${remoteID}.c.${lref}`);
 
   // is/set/clear are used on both imports and exports, but set/clear needs
   // to be told which one it is
 
-  function isReachable(lref) {
+  const isReachable = lref => {
     assert.equal(parseLocalSlot(lref).type, 'object');
     return !!store.get(`${remoteID}.cr.${lref}`);
-  }
-  function setReachable(lref, isImportFromComms) {
+  };
+  const setReachable = (lref, isImportFromComms) => {
     const wasReachable = isReachable(lref);
     if (!wasReachable) {
       store.set(`${remoteID}.cr.${lref}`, `1`);
@@ -71,8 +59,8 @@ export function makeRemote(state, store, remoteID) {
         state.changeReachable(lref, 1n);
       }
     }
-  }
-  function clearReachable(lref, isImportFromComms) {
+  };
+  const clearReachable = (lref, isImportFromComms) => {
     const wasReachable = isReachable(lref);
     if (wasReachable) {
       store.delete(`${remoteID}.cr.${lref}`);
@@ -83,30 +71,30 @@ export function makeRemote(state, store, remoteID) {
         }
       }
     }
-  }
+  };
 
-  function setLastSent(lref, seqNum) {
+  const setLastSent = (lref, seqNum) => {
     insistLocalType('object', lref);
     const key = `${remoteID}.lastSent.${lref}`;
     store.set(key, `${seqNum}`);
-  }
+  };
 
-  function getLastSent(lref) {
+  const getLastSent = lref => {
     // for objects only, what was the outgoing seqnum on the most recent
     // message that could have re-exported the object?
     insistLocalType('object', lref);
     const key = `${remoteID}.lastSent.${lref}`;
     return Number(store.getRequired(key));
-  }
+  };
 
-  function deleteLastSent(lref) {
+  const deleteLastSent = lref => {
     insistLocalType('object', lref);
     const key = `${remoteID}.lastSent.${lref}`;
     store.delete(key);
-  }
+  };
 
   // rref is what we would get from them, so + means our export
-  function addRemoteMapping(rref, lref) {
+  const addRemoteMapping = (rref, lref) => {
     const { type, allocatedByRecipient } = parseRemoteSlot(rref);
     const isImportFromComms = allocatedByRecipient;
     const fromKey = `${remoteID}.c.${rref}`;
@@ -123,9 +111,9 @@ export function makeRemote(state, store, remoteID) {
         setLastSent(lref, '1'); // should be updated momentarily
       }
     }
-  }
+  };
 
-  function deleteRemoteMapping(lref) {
+  const deleteRemoteMapping = lref => {
     const rrefOutbound = store.get(`${remoteID}.c.${lref}`);
     const rrefInbound = flipRemoteSlot(rrefOutbound);
     let mode = 'data'; // close enough
@@ -148,63 +136,61 @@ export function makeRemote(state, store, remoteID) {
         state.lrefMightBeFree(lref);
       }
     }
-  }
+  };
 
-  function nextSendSeqNum() {
-    return parseInt(store.getRequired(`${remoteID}.sendSeq`), 10);
-  }
+  const nextSendSeqNum = () =>
+    parseInt(store.getRequired(`${remoteID}.sendSeq`), 10);
 
-  function advanceSendSeqNum() {
+  const advanceSendSeqNum = () => {
     const key = `${remoteID}.sendSeq`;
     const seqNum = parseInt(store.getRequired(key), 10);
     store.set(key, `${seqNum + 1}`);
-  }
+  };
 
-  function lastReceivedSeqNum() {
-    return parseInt(store.getRequired(`${remoteID}.recvSeq`), 10);
-  }
+  const lastReceivedSeqNum = () =>
+    parseInt(store.getRequired(`${remoteID}.recvSeq`), 10);
 
-  function advanceReceivedSeqNum() {
+  const advanceReceivedSeqNum = () => {
     const key = `${remoteID}.recvSeq`;
     let seqNum = parseInt(store.getRequired(key), 10);
     seqNum += 1;
     store.set(key, `${seqNum}`);
     return seqNum;
-  }
+  };
 
-  function allocateRemoteObject() {
+  const allocateRemoteObject = () => {
     const key = `${remoteID}.o.nextID`;
     const index = Nat(BigInt(store.getRequired(key)));
     store.set(key, `${index + 1n}`);
     // The recipient will receive ro-NN
     return makeRemoteSlot('object', false, index);
-  }
+  };
 
-  function skipRemoteObjectID(remoteRefID) {
+  const skipRemoteObjectID = remoteRefID => {
     const key = `${remoteID}.o.nextID`;
     const index = Nat(BigInt(store.getRequired(key)));
     if (index <= remoteRefID) {
       store.set(key, `${remoteRefID + 1n}`);
     }
-  }
+  };
 
-  function allocateRemotePromise() {
+  const allocateRemotePromise = () => {
     const key = `${remoteID}.p.nextID`;
     const index = Nat(BigInt(store.getRequired(key)));
     store.set(key, `${index + 1n}`);
     // The recipient will receive rp-NN
     return makeRemoteSlot('promise', false, index);
-  }
+  };
 
-  function enqueueRetirement(rpid) {
+  const enqueueRetirement = rpid => {
     const seqNum = nextSendSeqNum();
     const queueKey = `${remoteID}.rq`;
     const retirementQueue = JSON.parse(store.getRequired(queueKey));
     retirementQueue.push([seqNum, rpid]);
     store.set(queueKey, JSON.stringify(retirementQueue));
-  }
+  };
 
-  function getReadyRetirements(ackSeqNum) {
+  const getReadyRetirements = ackSeqNum => {
     const key = `${remoteID}.rq`;
     const retirementQueue = JSON.parse(store.getRequired(key));
     const ready = [];
@@ -220,7 +206,7 @@ export function makeRemote(state, store, remoteID) {
       store.set(key, JSON.stringify(retirementQueue));
     }
     return ready;
-  }
+  };
 
   return harden({
     remoteID: () => remoteID,
@@ -247,4 +233,4 @@ export function makeRemote(state, store, remoteID) {
     enqueueRetirement,
     getReadyRetirements,
   });
-}
+};

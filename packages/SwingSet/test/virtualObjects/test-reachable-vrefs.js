@@ -7,28 +7,22 @@ import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 // empty object, used as weap map store key
-function makeKeyInnards(_state) {
-  return {
-    init() {},
-    self: Far('key'),
-  };
-}
+const makeKeyInnards = _state => ({
+  init: () => {},
+  self: Far('key'),
+});
 
-function makeHolderInnards(state) {
-  return {
-    init(held) {
+const makeHolderInnards = state => ({
+  init: held => {
+    state.held = held;
+  },
+  self: Far('holder', {
+    setHeld: held => {
       state.held = held;
     },
-    self: Far('holder', {
-      setHeld(held) {
-        state.held = held;
-      },
-      getHeld() {
-        return state.held;
-      },
-    }),
-  };
-}
+    getHeld: () => state.held,
+  }),
+});
 
 test('VOM tracks reachable vrefs', async t => {
   const vomOptions = { cacheSize: 3 };
@@ -40,7 +34,7 @@ test('VOM tracks reachable vrefs', async t => {
   const makeHolder = makeKind(makeHolderInnards);
 
   let count = 1001;
-  function makePresence() {
+  const makePresence = () => {
     // Both Remotable() and the Far() convenience wrapper mark things as
     // pass-by-reference. They are used when creating an (imported) Presence,
     // not just an (exported) "Remotable".
@@ -49,7 +43,7 @@ test('VOM tracks reachable vrefs', async t => {
     vom.registerEntry(vref, pres);
     count += 1;
     return [vref, pres];
-  }
+  };
 
   const [vref1, obj1] = makePresence();
   const key1 = makeKey();

@@ -12,11 +12,11 @@ import { assert, details as X } from '@agoric/assert';
  *
  * @returns {void}
  */
-export function insistStorageAPI(kvStore) {
+export const insistStorageAPI = kvStore => {
   for (const n of ['has', 'getKeys', 'get', 'set', 'delete']) {
     assert(n in kvStore, X`kvStore.${n} is missing, cannot use`);
   }
-}
+};
 
 /**
  * Assert function to ensure that something expected to be an enhanced storage
@@ -31,7 +31,7 @@ export function insistStorageAPI(kvStore) {
  *
  * @returns {void}
  */
-export function insistEnhancedStorageAPI(kvStore) {
+export const insistEnhancedStorageAPI = kvStore => {
   insistStorageAPI(kvStore);
   for (const n of [
     'enumeratePrefixedKeys',
@@ -40,4 +40,4 @@ export function insistEnhancedStorageAPI(kvStore) {
   ]) {
     assert(n in kvStore, X`kvStore.${n} is missing, cannot use`);
   }
-}
+};

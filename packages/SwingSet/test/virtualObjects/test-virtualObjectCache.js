@@ -2,25 +2,25 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { makeCache } from '../../src/kernel/virtualObjectManager.js';
 
-function makeFakeStore() {
+const makeFakeStore = () => {
   const backing = new Map();
   let log = [];
   return {
-    fetch(key) {
+    fetch: key => {
       const result = backing.get(key);
       log.push(['fetch', key, result]);
       return result;
     },
-    store(key, value) {
+    store: (key, value) => {
       log.push(['store', key, value]);
       backing.set(key, value);
     },
-    getLog() {
+    getLog: () => {
       const result = log;
       log = [];
       return result;
     },
-    dump() {
+    dump: () => {
       const result = [];
       for (const entry of backing.entries()) {
         result.push(entry);
@@ -29,17 +29,13 @@ function makeFakeStore() {
       return result;
     },
   };
-}
+};
 
-function makeThing(n) {
-  // for testing purposes, all we create is the inner self; there's no actual
-  // object above it
-  return {
-    vobjID: `t${n}`,
-    rawData: `thing #${n}`,
-    dirty: false,
-  };
-}
+const makeThing = n => ({
+  vobjID: `t${n}`,
+  rawData: `thing #${n}`,
+  dirty: false,
+});
 
 test('cache overflow and refresh', t => {
   const store = makeFakeStore();

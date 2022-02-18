@@ -1,5 +1,3 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootDeviceNode() {
-  return Far('root', {});
-}
+export const buildRootDeviceNode = () => Far('root', {});

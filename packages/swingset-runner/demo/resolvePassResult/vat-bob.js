@@ -2,13 +2,13 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    first() {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    first: () => {
       log('=> Bob: in first');
       return `Bob's first answer`;
     },
-    second(p) {
+    second: p => {
       log('=> Bob: second begins');
       p.then(
         r => log(`=> Bob: the parameter to second resolved to '${r}'`),
@@ -18,4 +18,3 @@ export function buildRootObject(_vatPowers) {
       return `Bob's second answer`;
     },
   });
-}

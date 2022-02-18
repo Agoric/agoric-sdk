@@ -14,7 +14,7 @@ import { insistCapData } from './capdata.js';
  *
  * @returns { asserts message is Message }
  */
-export function insistMessage(message) {
+export const insistMessage = message => {
   assert.typeof(
     message.method,
     'string',
@@ -29,13 +29,13 @@ export function insistMessage(message) {
     );
   }
   return undefined;
-}
+};
 
 /**
  * @param {unknown} vdo
  * @returns { asserts vdo is VatDeliveryObject }
  */
-export function insistVatDeliveryObject(vdo) {
+export const insistVatDeliveryObject = vdo => {
   assert(Array.isArray(vdo));
   const [type, ...rest] = vdo;
   switch (type) {
@@ -73,13 +73,13 @@ export function insistVatDeliveryObject(vdo) {
       assert.fail(`unknown delivery type ${type}`);
   }
   return undefined;
-}
+};
 
 /**
  * @param {unknown} vdr
  * @returns { asserts vdr is VatDeliveryResult }
  */
-export function insistVatDeliveryResult(vdr) {
+export const insistVatDeliveryResult = vdr => {
   assert(Array.isArray(vdr));
   const [type, problem, _usage] = vdr;
   switch (type) {
@@ -95,14 +95,14 @@ export function insistVatDeliveryResult(vdr) {
       assert.fail(`unknown delivery result type ${type}`);
   }
   return undefined;
-}
+};
 
 /**
  *
  * @param {unknown} vso
  * @returns { asserts vso is VatSyscallObject }
  */
-export function insistVatSyscallObject(vso) {
+export const insistVatSyscallObject = vso => {
   assert(Array.isArray(vso));
   const [type, ...rest] = vso;
   switch (type) {
@@ -179,13 +179,13 @@ export function insistVatSyscallObject(vso) {
       assert.fail(`unknown syscall type ${type}`);
   }
   return undefined;
-}
+};
 
 /**
  * @param { unknown } vsr
  * @returns { asserts vsr is VatSyscallResult }
  */
-export function insistVatSyscallResult(vsr) {
+export const insistVatSyscallResult = vsr => {
   assert(Array.isArray(vsr));
   const [type, ...rest] = vsr;
   switch (type) {
@@ -201,4 +201,4 @@ export function insistVatSyscallResult(vsr) {
       assert.fail(`unknown syscall result type ${type}`);
   }
   return undefined;
-}
+};

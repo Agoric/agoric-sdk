@@ -21,16 +21,14 @@ import '../../types.js';
  * @param { VatDispatcherSyncAsync } dispatch
  * @returns { VatDispatcher }
  */
-function makeSupervisorDispatch(dispatch) {
+const makeSupervisorDispatch = dispatch => {
   /**
    * @param { VatDeliveryObject } delivery
    * @returns { Promise<VatDeliveryResult> }
    *
    */
-  async function dispatchToVat(delivery) {
-    // the (low-level) vat is responsible for giving up agency, but we still
-    // protect against exceptions
-    return Promise.resolve(delivery)
+  const dispatchToVat = async delivery =>
+    Promise.resolve(delivery)
       .then(dispatch)
       .then(
         () => harden(['ok', null, null]),
@@ -40,10 +38,9 @@ function makeSupervisorDispatch(dispatch) {
           return harden(['error', `${err.message}`, null]);
         },
       );
-  }
 
   return harden(dispatchToVat);
-}
+};
 harden(makeSupervisorDispatch);
 export { makeSupervisorDispatch };
 
@@ -61,8 +58,8 @@ export { makeSupervisorDispatch };
  * @typedef { unknown } TheSyscallObjectWithMethodsThatLiveslotsWants
  * @returns { TheSyscallObjectWithMethodsThatLiveslotsWants }
  */
-function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
-  function doSyscall(fields) {
+const makeSupervisorSyscall = (syscallToManager, workerCanBlock) => {
+  const doSyscall = fields => {
     insistVatSyscallObject(fields);
     /** @type { VatSyscallObject } */
     const vso = harden(fields);
@@ -92,7 +89,7 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
       default:
         throw Error(`unknown result type ${type}`);
     }
-  }
+  };
 
   // this will be given to liveslots, it should have distinct methods that
   // return immediate results or throw errors
@@ -147,7 +144,7 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
   }
 
   return harden(syscallForVat);
-}
+};
 
 harden(makeSupervisorSyscall);
 export { makeSupervisorSyscall };
@@ -160,15 +157,14 @@ export { makeSupervisorSyscall };
  *
  * @param {(level: string) => (...args: any[]) => void} makeLog
  */
-function makeVatConsole(makeLog) {
-  return harden({
+const makeVatConsole = makeLog =>
+  harden({
     debug: makeLog('debug'),
     log: makeLog('log'),
     info: makeLog('info'),
     warn: makeLog('warn'),
     error: makeLog('error'),
   });
-}
 
 harden(makeVatConsole);
 export { makeVatConsole };

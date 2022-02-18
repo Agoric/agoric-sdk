@@ -11,11 +11,11 @@ import {
 
 test('bridge device', async t => {
   const outboundLog = [];
-  function outboundCallback(argv0, argv1) {
+  const outboundCallback = (argv0, argv1) => {
     outboundLog.push(argv0);
     outboundLog.push(argv1);
     return ['the', { retval: 'is' }, 4];
-  }
+  };
   const bd = buildBridge(outboundCallback);
 
   const hostStorage = provideHostStorage();
@@ -70,11 +70,11 @@ test('bridge device', async t => {
   // now reload it from a saved state, to make sure the inboundHandler is
   // still registered properly
   const outboundLog2 = [];
-  function outboundCallback2(argv0, argv1) {
+  const outboundCallback2 = (argv0, argv1) => {
     outboundLog2.push(argv0);
     outboundLog2.push(argv1);
     return ['new', { retval: 'is' }, 5];
-  }
+  };
   const bd2 = buildBridge(outboundCallback2);
   const endowments2 = {
     bridge: { ...bd2.endowments },
@@ -116,11 +116,11 @@ test('bridge device', async t => {
 
 test('bridge device can return undefined', async t => {
   const outboundLog = [];
-  function outboundCallback(argv0, argv1) {
+  const outboundCallback = (argv0, argv1) => {
     outboundLog.push(argv0);
     outboundLog.push(argv1);
     return undefined;
-  }
+  };
   const bd = buildBridge(outboundCallback);
 
   const hostStorage = provideHostStorage();

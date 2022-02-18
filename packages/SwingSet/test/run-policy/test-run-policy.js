@@ -10,7 +10,7 @@ import {
   wallClockWaiter,
 } from '../../src/runPolicies.js';
 
-async function testCranks(t, mode) {
+const testCranks = async (t, mode) => {
   const config = {
     defaultReapInterval: 'never',
     vats: {
@@ -56,12 +56,12 @@ async function testCranks(t, mode) {
   }
 
   let oldCrankNum = parseInt(hostStorage.kvStore.get('crankNumber'), 10);
-  function elapsedCranks() {
+  const elapsedCranks = () => {
     const newCrankNum = parseInt(hostStorage.kvStore.get('crankNumber'), 10);
     const elapsed = newCrankNum - oldCrankNum;
     oldCrankNum = newCrankNum;
     return elapsed;
-  }
+  };
 
   let more;
 
@@ -106,7 +106,7 @@ async function testCranks(t, mode) {
     // console.log(`elapsed`, elapsed, more);
     t.true(elapsed < 200.0, `time distort: ${elapsed} >= 200.0s`);
   }
-}
+};
 
 test('run policy - cranks - messages', t => testCranks(t, 'messages'));
 test('run policy - cranks - resolutions', t => testCranks(t, 'resolutions'));

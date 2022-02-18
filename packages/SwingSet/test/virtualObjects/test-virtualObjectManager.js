@@ -7,99 +7,84 @@ import {
   makeFakeVirtualStuff,
 } from '../../tools/fakeVirtualSupport.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function makeThingInnards(state) {
-  return {
-    init(label = 'thing', counter = 0) {
-      state.counter = counter;
-      state.label = label;
-      state.resetCounter = 0;
+const makeThingInnards = state => ({
+  init: (label = 'thing', counter = 0) => {
+    state.counter = counter;
+    state.label = label;
+    state.resetCounter = 0;
+  },
+  self: Far('thing', {
+    inc: () => {
+      state.counter += 1;
+      return state.counter;
     },
-    self: Far('thing', {
-      inc() {
-        state.counter += 1;
-        return state.counter;
-      },
-      reset(newStart) {
-        state.counter = newStart;
-        state.resetCounter += 1;
-        return state.resetCounter;
-      },
-      relabel(newLabel) {
-        state.label = newLabel;
-      },
-      get() {
-        return state.counter;
-      },
-      describe() {
-        return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
-      },
-    }),
-  };
-}
+    reset: newStart => {
+      state.counter = newStart;
+      state.resetCounter += 1;
+      return state.resetCounter;
+    },
+    relabel: newLabel => {
+      state.label = newLabel;
+    },
+    get: () => state.counter,
+    describe: () =>
+      `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`,
+  }),
+});
 
-function thingVal(counter, label, resetCounter) {
-  return JSON.stringify({
+const thingVal = (counter, label, resetCounter) =>
+  JSON.stringify({
     counter: capdata(JSON.stringify(counter)),
     label: capdata(JSON.stringify(label)),
     resetCounter: capdata(JSON.stringify(resetCounter)),
   });
-}
 
-function minThing(label) {
-  return thingVal(0, label, 0);
-}
+const minThing = label => thingVal(0, label, 0);
 
-function makeRefInnards(state) {
-  return {
-    init(value) {
+const makeRefInnards = state => ({
+  init: value => {
+    state.value = value;
+  },
+  self: Far('ref', {
+    setVal: value => {
       state.value = value;
     },
-    self: Far('ref', {
-      setVal(value) {
-        state.value = value;
-      },
-    }),
-  };
-}
+  }),
+});
 
-function makeZotInnards(state) {
-  return {
-    init(arbitrary = 47, name = 'Bob', tag = 'say what?') {
-      state.arbitrary = arbitrary;
-      state.name = name;
-      state.tag = tag;
-      state.count = 0;
+const makeZotInnards = state => ({
+  init: (arbitrary = 47, name = 'Bob', tag = 'say what?') => {
+    state.arbitrary = arbitrary;
+    state.name = name;
+    state.tag = tag;
+    state.count = 0;
+  },
+  self: Far('zot', {
+    sayHello: msg => {
+      state.count += 1;
+      return `${msg} ${state.name}`;
     },
-    self: Far('zot', {
-      sayHello(msg) {
-        state.count += 1;
-        return `${msg} ${state.name}`;
-      },
-      rename(newName) {
-        state.name = newName;
-        state.count += 1;
-        return state.name;
-      },
-      getInfo() {
-        state.count += 1;
-        return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
-      },
-    }),
-  };
-}
+    rename: newName => {
+      state.name = newName;
+      state.count += 1;
+      return state.name;
+    },
+    getInfo: () => {
+      state.count += 1;
+      return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
+    },
+  }),
+});
 
-function zotVal(arbitrary, name, tag, count) {
-  return JSON.stringify({
+const zotVal = (arbitrary, name, tag, count) =>
+  JSON.stringify({
     arbitrary: capdata(JSON.stringify(arbitrary)),
     name: capdata(JSON.stringify(name)),
     tag: capdata(JSON.stringify(tag)),
     count: capdata(JSON.stringify(count)),
   });
-}
 
 // prettier-ignore
 test('virtual object operations', t => {
@@ -348,10 +333,10 @@ test('virtual object gc', t => {
   ]);
 
   // This is what the finalizer would do if the local reference was dropped and GC'd
-  function pretendGC(vref) {
+  const pretendGC = vref => {
     deleteEntry(vref);
     possibleVirtualObjectDeath(vref);
-  }
+  };
 
   // case 1: export, drop local ref, drop export
   // export
@@ -539,16 +524,14 @@ test('virtual object gc', t => {
   ]);
 });
 
-function makeDefectivelyNonFarThingInnards(state) {
-  return {
-    init(label = 'thing') {
-      state.label = label;
-    },
-    self: {
-      noop() {},
-    },
-  };
-}
+const makeDefectivelyNonFarThingInnards = state => ({
+  init: (label = 'thing') => {
+    state.label = label;
+  },
+  self: {
+    noop: () => {},
+  },
+});
 
 test('demand farhood', t => {
   const { makeKind } = makeFakeVirtualObjectManager({ cacheSize: 3 });

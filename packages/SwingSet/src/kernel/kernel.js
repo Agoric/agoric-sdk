@@ -25,7 +25,7 @@ import { makeVatLoader } from './loadVat.js';
 import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 
-function abbreviateReplacer(_, arg) {
+const abbreviateReplacer = (_, arg) => {
   if (typeof arg === 'bigint') {
     return Number(arg);
   }
@@ -34,13 +34,13 @@ function abbreviateReplacer(_, arg) {
     return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
   }
   return arg;
-}
+};
 
-function makeError(message, name = 'Error') {
+const makeError = (message, name = 'Error') => {
   assert.typeof(message, 'string');
   const err = { '@qclass': 'error', name, message };
   return harden({ body: JSON.stringify(err), slots: [] });
-}
+};
 
 const VAT_TERMINATION_ERROR = makeError('vat terminated');
 
@@ -52,17 +52,17 @@ const VAT_TERMINATION_ERROR = makeError('vat terminated');
  *
  * @returns {string} the kref of the root object of the given vat.
  */
-export function exportRootObject(kernelKeeper, vatID) {
+export const exportRootObject = (kernelKeeper, vatID) => {
   insistVatID(vatID);
   const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
   return vatKeeper.mapVatSlotToKernelSlot('o+0');
-}
+};
 
 /*
  * Pretend that a vat just exported an object, and increment the refcount on
  * the resulting kref so nothing tries to delete it for being unreferenced.
  */
-export function doAddExport(kernelKeeper, fromVatID, vref) {
+export const doAddExport = (kernelKeeper, fromVatID, vref) => {
   insistVatID(fromVatID);
   assert(parseVatSlot(vref).allocatedByVat);
   const vatKeeper = kernelKeeper.provideVatKeeper(fromVatID);
@@ -71,13 +71,9 @@ export function doAddExport(kernelKeeper, fromVatID, vref) {
   // it's an import) so it will actually increment the count
   kernelKeeper.incrementRefCount(kref, 'doAddExport', { isExport: false });
   return kref;
-}
+};
 
-export default function buildKernel(
-  kernelEndowments,
-  deviceEndowments,
-  kernelOptions = {},
-) {
+export default (kernelEndowments, deviceEndowments, kernelOptions = {}) => {
   const {
     waitUntilQuiescent,
     hostStorage,
@@ -131,15 +127,15 @@ export default function buildKernel(
   // see whether vats made progress or not. The array it appends to is
   // available as c.dump().log . New unit tests should instead use the
   // 'result' value returned by c.queueToKref()
-  function testLog(...args) {
+  const testLog = (...args) => {
     const rendered = args.map(arg =>
       typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReplacer),
     );
     ephemeral.log.push(rendered.join(''));
-  }
+  };
   harden(testLog);
 
-  function makeVatConsole(kind, vatID) {
+  const makeVatConsole = (kind, vatID) => {
     const origConsole = makeConsole(`${debugPrefix}SwingSet:${kind}:${vatID}`);
     if (kind === 'ls') {
       // LiveSlots is not recorded to kernelSlog.
@@ -148,7 +144,7 @@ export default function buildKernel(
       return origConsole;
     }
     return kernelSlog.vatConsole(vatID, origConsole);
-  }
+  };
 
   // runQueue entries are {type, vatID, more..}. 'more' depends on type:
   // * deliver: target, msg
@@ -177,19 +173,19 @@ export default function buildKernel(
     testLog,
   });
 
-  function vatNameToID(name) {
+  const vatNameToID = name => {
     const vatID = kernelKeeper.getVatIDForName(name);
     insistVatID(vatID);
     return vatID;
-  }
+  };
 
-  function deviceNameToID(name) {
+  const deviceNameToID = name => {
     const deviceID = kernelKeeper.getDeviceIDForName(name);
     insistDeviceID(deviceID);
     return deviceID;
-  }
+  };
 
-  function addImport(forVatID, what) {
+  const addImport = (forVatID, what) => {
     if (!started) {
       throw new Error('must do kernel.start() before addImport()');
       // because otherwise we can't get the vatManager
@@ -199,29 +195,29 @@ export default function buildKernel(
     parseKernelSlot(what);
     const vatKeeper = kernelKeeper.provideVatKeeper(forVatID);
     return vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
-  }
+  };
 
-  function pinObject(kref) {
+  const pinObject = kref => {
     kernelKeeper.pinObject(kref);
-  }
+  };
 
-  function addExport(fromVatID, vatSlot) {
+  const addExport = (fromVatID, vatSlot) => {
     if (!started) {
       throw new Error('must do kernel.start() before addExport()');
       // because otherwise we can't get the vatKeeper
     }
     return doAddExport(kernelKeeper, fromVatID, vatSlot);
-  }
+  };
 
   // If `kernelPanic` is set to non-null, vat execution code will throw it as an
   // error at the first opportunity
   let kernelPanic = null;
 
   /** @type {(problem: unknown, err?: Error) => void } */
-  function panic(problem, err = undefined) {
+  const panic = (problem, err = undefined) => {
     console.error(`##### KERNEL PANIC: ${problem} #####`);
     kernelPanic = err || new Error(`kernel panic ${problem}`);
-  }
+  };
 
   const { doSend, doSubscribe, doResolve, resolveToError, queueToKref } =
     makeKernelQueueHandler({ kernelKeeper, panic });
@@ -235,7 +231,7 @@ export default function buildKernel(
    * @param {boolean} shouldReject
    * @param {SwingSetCapData} info
    */
-  function terminateVat(vatID, shouldReject, info) {
+  const terminateVat = (vatID, shouldReject, info) => {
     insistCapData(info);
     if (kernelKeeper.vatIsAlive(vatID)) {
       const isDynamic = kernelKeeper.getDynamicVats().includes(vatID);
@@ -262,28 +258,28 @@ export default function buildKernel(
       // eslint-disable-next-line no-use-before-define
       vatWarehouse.vatWasTerminated(vatID);
     }
-  }
+  };
 
   let terminationTrigger;
   let postAbortActions;
 
-  function resetDeliveryTriggers() {
+  const resetDeliveryTriggers = () => {
     terminationTrigger = undefined;
     postAbortActions = {
       meterDeductions: [], // list of { meterID, compute }
     };
-  }
+  };
   resetDeliveryTriggers();
 
-  function notifyMeterThreshold(meterID) {
+  const notifyMeterThreshold = meterID => {
     // tell vatAdmin that a meter has dropped below its notifyThreshold
     const { remaining } = kernelKeeper.getMeter(meterID);
     const args = { body: stringify(harden([meterID, remaining])), slots: [] };
     assert.typeof(vatAdminRootKref, 'string', 'vatAdminRootKref missing');
     queueToKref(vatAdminRootKref, 'meterCrossedThreshold', args, 'logFailure');
-  }
+  };
 
-  function deductMeter(meterID, compute, firstTime) {
+  const deductMeter = (meterID, compute, firstTime) => {
     assert.typeof(compute, 'bigint');
     const res = kernelKeeper.deductMeter(meterID, compute);
 
@@ -301,18 +297,23 @@ export default function buildKernel(
       notifyMeterThreshold(meterID);
     }
     return res.underflow;
-  }
+  };
 
   // this is called for syscall.exit (shouldAbortCrank=false), and for any
   // vat-fatal errors (shouldAbortCrank=true)
-  function setTerminationTrigger(vatID, shouldAbortCrank, shouldReject, info) {
+  const setTerminationTrigger = (
+    vatID,
+    shouldAbortCrank,
+    shouldReject,
+    info,
+  ) => {
     if (shouldAbortCrank) {
       assert(shouldReject);
     }
     if (!terminationTrigger || shouldAbortCrank) {
       terminationTrigger = { vatID, shouldAbortCrank, shouldReject, info };
     }
-  }
+  };
 
   const kernelSyscallHandler = makeKernelSyscallHandler({
     kernelKeeper,
@@ -332,7 +333,7 @@ export default function buildKernel(
    * @param {boolean} useMeter
    * @returns {Promise<PolicyInput>}
    */
-  async function deliverAndLogToVat(vatID, kd, vd, useMeter) {
+  const deliverAndLogToVat = async (vatID, kd, vd, useMeter) => {
     /** @type {PolicyInputCrankComplete} */
     let policyInput = ['crank', {}];
     // eslint-disable-next-line no-use-before-define
@@ -387,7 +388,7 @@ export default function buildKernel(
       throw e;
     }
     return harden(policyInput);
-  }
+  };
 
   /**
    * Deliver one message to a vat.
@@ -397,7 +398,7 @@ export default function buildKernel(
    * @param { * } msg
    * @returns { Promise<PolicyInput> }
    */
-  async function deliverToVat(vatID, target, msg) {
+  const deliverToVat = async (vatID, target, msg) => {
     insistMessage(msg);
     /** @type { PolicyInput } */
     let policyInput = ['none'];
@@ -415,9 +416,9 @@ export default function buildKernel(
       policyInput = await deliverAndLogToVat(vatID, kd, vd, true);
     }
     return harden(policyInput);
-  }
+  };
 
-  function extractPresenceIfPresent(data) {
+  const extractPresenceIfPresent = data => {
     const body = JSON.parse(data.body);
     if (
       body &&
@@ -434,9 +435,9 @@ export default function buildKernel(
       }
     }
     return null;
-  }
+  };
 
-  async function deliverToTarget(target, msg) {
+  const deliverToTarget = async (target, msg) => {
     insistMessage(msg);
     /** @type { PolicyInput } */
     let policyInput = ['none'];
@@ -494,14 +495,14 @@ export default function buildKernel(
       assert.fail(X`unable to send() to slot.type ${type}`);
     }
     return harden(policyInput);
-  }
+  };
 
   /**
    *
    * @param { * } message
    * @returns { Promise<PolicyInput> }
    */
-  async function processNotify(message) {
+  const processNotify = async message => {
     const { vatID, kpid } = message;
     /** @type { PolicyInput } */
     let policyInput = ['none'];
@@ -539,14 +540,14 @@ export default function buildKernel(
       policyInput = await deliverAndLogToVat(vatID, kd, vd, true);
     }
     return harden(policyInput);
-  }
+  };
 
   /**
    *
    * @param { * } message
    * @returns { Promise<PolicyInput> }
    */
-  async function processGCMessage(message) {
+  const processGCMessage = async message => {
     // used for dropExports, retireExports, and retireImports
     /** @type { PolicyInput } */
     let policyInput = ['none'];
@@ -570,14 +571,14 @@ export default function buildKernel(
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     policyInput = await deliverAndLogToVat(vatID, kd, vd, false);
     return harden(policyInput);
-  }
+  };
 
   /**
    *
    * @param { * } message
    * @returns { Promise<PolicyInput> }
    */
-  async function processBringOutYourDead(message) {
+  const processBringOutYourDead = async message => {
     /** @type { PolicyInput } */
     let policyInput = ['none'];
     const { type, vatID } = message;
@@ -592,14 +593,14 @@ export default function buildKernel(
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     policyInput = await deliverAndLogToVat(vatID, kd, vd, false);
     return harden(policyInput);
-  }
+  };
 
   /**
    *
    * @param { * } message
    * @returns { Promise<PolicyInput> }
    */
-  async function processCreateVat(message) {
+  const processCreateVat = async message => {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, dynamicOptions } = message;
     kernelKeeper.addDynamicVatID(vatID);
@@ -614,7 +615,7 @@ export default function buildKernel(
     vatKeeper.setSourceAndOptions(source, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
-    function makeSuccessResponse() {
+    const makeSuccessResponse = () => {
       // build success message, giving admin vat access to the new vat's root
       // object
       const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
@@ -625,21 +626,21 @@ export default function buildKernel(
         ]),
         slots: [kernelRootObjSlot],
       };
-    }
+    };
 
-    function makeErrorResponse(error) {
+    const makeErrorResponse = error => {
       // delete partial vat state
       kernelKeeper.cleanupAfterTerminatedVat(vatID);
       return {
         body: JSON.stringify([vatID, { error: `${error}` }]),
         slots: [],
       };
-    }
+    };
 
-    function sendResponse(args) {
+    const sendResponse = args => {
       // @ts-ignore see assert(...) above
       queueToKref(vatAdminRootKref, 'newVatCallback', args, 'logFailure');
-    }
+    };
 
     /** @type { PolicyInput } */
     const policyInput = harden(['create-vat', {}]);
@@ -651,9 +652,9 @@ export default function buildKernel(
       .then(sendResponse)
       .catch(err => console.error(`error in vat creation`, err))
       .then(() => policyInput);
-  }
+  };
 
-  function legibilizeMessage(message) {
+  const legibilizeMessage = message => {
     if (message.type === 'send') {
       const msg = message.msg;
       const argList = legibilizeMessageArgs(msg.args).join(', ');
@@ -670,12 +671,12 @@ export default function buildKernel(
     } else {
       return `unknown message type ${message.type}`;
     }
-  }
+  };
 
   const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
 
   let processQueueRunning;
-  async function processQueueMessage(message) {
+  const processQueueMessage = async message => {
     kdebug(`processQ ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
     if (processQueueRunning) {
@@ -755,7 +756,7 @@ export default function buildKernel(
       processQueueRunning = undefined;
     }
     return harden(policyInput);
-  }
+  };
 
   const gcTools = harden({
     WeakRef,
@@ -776,7 +777,7 @@ export default function buildKernel(
     kernelSlog,
   });
 
-  function buildVatSyscallHandler(vatID, translators) {
+  const buildVatSyscallHandler = (vatID, translators) => {
     // This handler never throws. The VatSyscallResult it returns is one of:
     // * success, no response data: ['ok', null]
     // * success, capdata (callNow) ['ok', capdata]
@@ -789,7 +790,7 @@ export default function buildKernel(
      * @param { VatSyscallObject } vatSyscallObject
      * @returns { VatSyscallResult }
      */
-    function vatSyscallHandler(vatSyscallObject) {
+    const vatSyscallHandler = vatSyscallObject => {
       // eslint-disable-next-line no-use-before-define
       if (!vatWarehouse.lookup(vatID)) {
         // This is a safety check -- this case should never happen unless the
@@ -857,9 +858,9 @@ export default function buildKernel(
       }
       finish(kres, vres);
       return vres;
-    }
+    };
     return vatSyscallHandler;
-  }
+  };
 
   const vatLoader = makeVatLoader({
     vatManagerFactory,
@@ -897,12 +898,12 @@ export default function buildKernel(
    * This function is intended to provide minimal scaffolding for unit tests and
    * should never be used in a production environment.
    */
-  async function createTestVat(
+  const createTestVat = async (
     name,
     setup,
     vatParameters = {},
     creationOptions = {},
-  ) {
+  ) => {
     assert.typeof(
       setup,
       'function',
@@ -928,9 +929,9 @@ export default function buildKernel(
 
     await vatWarehouse.loadTestVat(vatID, setup, creationOptions);
     return vatID;
-  }
+  };
 
-  async function start() {
+  const start = async () => {
     if (started) {
       throw Error('kernel.start already called');
     }
@@ -941,7 +942,7 @@ export default function buildKernel(
 
     // the admin device is endowed directly by the kernel
     deviceEndowments.vatAdmin = {
-      pushCreateVatBundleEvent(bundle, dynamicOptions) {
+      pushCreateVatBundleEvent: (bundle, dynamicOptions) => {
         const source = { bundle };
         const vatID = kernelKeeper.allocateUnusedVatID();
         const event = { type: 'create-vat', vatID, source, dynamicOptions };
@@ -950,7 +951,7 @@ export default function buildKernel(
         // later when it is created and a root object is available
         return vatID;
       },
-      pushCreateVatIDEvent(bundleID, dynamicOptions) {
+      pushCreateVatIDEvent: (bundleID, dynamicOptions) => {
         assert(kernelKeeper.hasBundle(bundleID), bundleID);
         const source = { bundleID };
         const vatID = kernelKeeper.allocateUnusedVatID();
@@ -960,10 +961,8 @@ export default function buildKernel(
         // later when it is created and a root object is available
         return vatID;
       },
-      getBundleIDByName(bundleName) {
-        // this throws if the name is unknown
-        return kernelKeeper.getNamedBundleID(bundleName);
-      },
+      getBundleIDByName: bundleName =>
+        kernelKeeper.getNamedBundleID(bundleName),
       terminate: (vatID, reason) => terminateVat(vatID, true, reason),
       meterCreate: (remaining, threshold) =>
         kernelKeeper.allocateMeter(remaining, threshold),
@@ -1001,23 +1000,21 @@ export default function buildKernel(
 
       if (deviceEndowments[name] || unendowed) {
         const translators = makeDeviceTranslators(deviceID, name, kernelKeeper);
-        function deviceSyscallHandler(deviceSyscallObject) {
+        const deviceSyscallHandler = deviceSyscallObject => {
           const ksc =
             translators.deviceSyscallToKernelSyscall(deviceSyscallObject);
           const kres = kernelSyscallHandler(ksc);
           const dres = translators.kernelResultToDeviceResult(ksc[0], kres);
           assert.equal(dres[0], 'ok');
           return dres[1];
-        }
+        };
 
         // Wrapper for state, to give to the device to access its state.
         // Devices are allowed to get their state at startup, and set it anytime.
         // They do not use orthogonal persistence or transcripts.
         const state = harden({
-          get() {
-            return deviceKeeper.getDeviceState();
-          },
-          set(value) {
+          get: () => deviceKeeper.getDeviceState(),
+          set: value => {
             deviceKeeper.setDeviceState(value);
           },
         });
@@ -1040,9 +1037,9 @@ export default function buildKernel(
     }
 
     kernelKeeper.loadStats();
-  }
+  };
 
-  function getNextMessage() {
+  const getNextMessage = () => {
     const gcMessage = processNextGCAction(kernelKeeper);
     if (gcMessage) {
       return gcMessage;
@@ -1056,9 +1053,9 @@ export default function buildKernel(
       return kernelKeeper.getNextMsg();
     }
     return undefined;
-  }
+  };
 
-  async function step() {
+  const step = async () => {
     if (kernelPanic) {
       throw kernelPanic;
     }
@@ -1078,7 +1075,7 @@ export default function buildKernel(
       kernelKeeper.commitCrank();
       return 0;
     }
-  }
+  };
 
   /**
    * Run the kernel until the policy says to stop, or the queue is empty.
@@ -1087,7 +1084,7 @@ export default function buildKernel(
    * @returns { Promise<number> } The number of cranks that were executed.
    */
 
-  async function run(policy = foreverPolicy()) {
+  const run = async (policy = foreverPolicy()) => {
     assert(policy);
     if (kernelPanic) {
       throw kernelPanic;
@@ -1132,12 +1129,10 @@ export default function buildKernel(
     }
     kernelKeeper.commitCrank();
     return count;
-  }
+  };
 
   // mostly used by tests, only needed with thread/process-based workers
-  function shutdown() {
-    return vatWarehouse.shutdown();
-  }
+  const shutdown = () => vatWarehouse.shutdown();
 
   /**
    * Install a pre-validated bundle under the given ID.
@@ -1145,19 +1140,19 @@ export default function buildKernel(
    * @param { BundleID } bundleID
    * @param { EndoZipBase64Bundle } bundle
    */
-  async function installBundle(bundleID, bundle) {
+  const installBundle = async (bundleID, bundle) => {
     // bundleID is b1-HASH
     if (!kernelKeeper.hasBundle(bundleID)) {
       kernelKeeper.addBundle(bundleID, bundle);
       kernelKeeper.commitCrank();
     }
-  }
+  };
 
-  function kpRegisterInterest(kpid) {
+  const kpRegisterInterest = kpid => {
     kernelKeeper.incrementRefCount(kpid, 'external');
-  }
+  };
 
-  function kpStatus(kpid) {
+  const kpStatus = kpid => {
     try {
       const p = kernelKeeper.getKernelPromise(kpid);
       if (p) {
@@ -1168,9 +1163,9 @@ export default function buildKernel(
     } catch (e) {
       return 'unknown';
     }
-  }
+  };
 
-  function kpResolution(kpid) {
+  const kpResolution = kpid => {
     const p = kernelKeeper.getKernelPromise(kpid);
     switch (p.state) {
       case 'unresolved':
@@ -1185,7 +1180,7 @@ export default function buildKernel(
       default:
         assert.fail(X`invalid state for ${kpid}: ${p.state}`);
     }
-  }
+  };
 
   const kernel = harden({
     // these are meant for the controller
@@ -1199,39 +1194,25 @@ export default function buildKernel(
 
     createTestVat,
 
-    log(str) {
+    log: str => {
       ephemeral.log.push(`${str}`);
     },
 
-    getStats() {
-      return kernelKeeper.getStats();
-    },
+    getStats: () => kernelKeeper.getStats(),
 
-    getStatus() {
-      return harden({
+    getStatus: () =>
+      harden({
         activeVats: vatWarehouse.activeVatsInfo(),
-      });
-    },
+      }),
 
-    getActivityhash() {
-      return kernelKeeper.getActivityhash();
-    },
+    getActivityhash: () => kernelKeeper.getActivityhash(),
 
-    dump() {
-      // note: dump().log is not deterministic, since log() does not go
-      // through the syscall interface (and we replay transcripts one vat at
-      // a time, so any log() calls that were interleaved during their
-      // original execution will be sorted by vat in the replay). Logs are
-      // not kept in the persistent state, only in ephemeral state.
-      return { log: ephemeral.log, ...kernelKeeper.dump() };
-    },
+    dump: () => ({ log: ephemeral.log, ...kernelKeeper.dump() }),
     kdebugEnable,
 
     addImport,
     addExport,
-    getRootObject(vatID) {
-      return exportRootObject(kernelKeeper, vatID);
-    },
+    getRootObject: vatID => exportRootObject(kernelKeeper, vatID),
     pinObject,
     vatNameToID,
     deviceNameToID,
@@ -1242,4 +1223,4 @@ export default function buildKernel(
   });
 
   return kernel;
-}
+};

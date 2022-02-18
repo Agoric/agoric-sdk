@@ -79,7 +79,7 @@
 
 */
 
-function sanitize(data) {
+const sanitize = data => {
   if (data === undefined) {
     return undefined;
   }
@@ -92,39 +92,31 @@ function sanitize(data) {
       typeof value === 'bigint' ? value.toString() : value,
     ),
   );
-}
+};
 
-export function buildBridge(outboundCallback) {
+export const buildBridge = outboundCallback => {
   const srcPath = new URL('bridge-src.js', import.meta.url).pathname;
   let inboundCallback;
 
-  function registerInboundCallback(inbound) {
+  const registerInboundCallback = inbound => {
     if (inboundCallback) {
       throw new Error('inboundCallback already registered');
     }
     inboundCallback = inbound;
-  }
+  };
 
-  function deliverInbound(...args) {
+  const deliverInbound = (...args) => {
     if (!inboundCallback) {
       throw new Error('inboundCallback not yet registered');
     }
     inboundCallback(...args);
-  }
+  };
 
-  function callOutbound(...args) {
-    // TODO: prevent cross-Realm contamination by serializing/deserializing
-    // all the data that crosses this boundary. Inside the device
-    // (bridge-src.js), we know we're immediately serializaing this data, so
-    // we don't need to sanitize it there. But here, we have no idea what
-    // outboundCallback() might do, so we want to avoid confusion. When we
-    // switch to new-SES, we can remove this protection.
-    return outboundCallback(...sanitize(args));
-  }
+  const callOutbound = (...args) => outboundCallback(...sanitize(args));
 
   return {
     srcPath,
     endowments: { registerInboundCallback, callOutbound },
     deliverInbound, // for external access
   };
-}
+};

@@ -7,7 +7,7 @@ import { getAllState, setAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../src/hostStorage.js';
 import { buildVatController, loadBasedir } from '../src/index.js';
 
-async function buildTrace(c, storage) {
+const buildTrace = async (c, storage) => {
   const states = [];
   while (c.dump().runQueue.length && c.dump().gcActions.length) {
     states.push(getAllState(storage));
@@ -17,7 +17,7 @@ async function buildTrace(c, storage) {
   states.push(getAllState(storage));
   await c.shutdown();
   return states;
-}
+};
 
 test('transcript-one save', async t => {
   const config = await loadBasedir(

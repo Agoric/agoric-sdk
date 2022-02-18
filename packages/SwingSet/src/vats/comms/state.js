@@ -15,7 +15,7 @@ const KERNEL = 'kernel';
 
 const enableLocalPromiseGC = true;
 
-function makeEphemeralSyscallVatstore() {
+const makeEphemeralSyscallVatstore = () => {
   console.log('making fake vatstore');
   const map = new Map();
   return harden({
@@ -23,33 +23,32 @@ function makeEphemeralSyscallVatstore() {
     vatstoreSet: (key, value) => map.set(key, value),
     vatstoreDelete: key => map.delete(key),
   });
-}
+};
 
-function makeSyscallStore(syscall) {
-  return harden({
-    get(key) {
+const makeSyscallStore = syscall =>
+  harden({
+    get: key => {
       assert.typeof(key, 'string');
       return syscall.vatstoreGet(key);
     },
-    set(key, value) {
+    set: (key, value) => {
       assert.typeof(key, 'string');
       assert.typeof(value, 'string');
       syscall.vatstoreSet(key, value);
     },
-    delete(key) {
+    delete: key => {
       assert.typeof(key, 'string');
       return syscall.vatstoreDelete(key);
     },
-    getRequired(key) {
+    getRequired: key => {
       assert.typeof(key, 'string');
       const result = syscall.vatstoreGet(key);
       assert(result !== undefined, X`store lacks required key ${key}`);
       return result;
     },
   });
-}
 
-function commaSplit(s) {
+const commaSplit = s => {
   // 's' might be 'undefined' (because the DB key that feeds it was not
   // present, and undefined is the obvious return value from a
   // .get(missingKey), or null (because the DB lookup actually happened on
@@ -62,7 +61,7 @@ function commaSplit(s) {
     return [];
   }
   return s.split(',');
-}
+};
 
 // We maintain one clist for each remote.
 // The remote clists map remote-side `ro+NN/ro-NN` identifiers to the `o+NN/o-NN`
@@ -80,7 +79,7 @@ function commaSplit(s) {
 // record the new `p+NN` value anywhere. The counter we use for allocation
 // will continue on to the next higher NN.
 
-export function makeState(syscall, identifierBase = 0) {
+export const makeState = (syscall, identifierBase = 0) => {
   // Comms vat state is kept in the vatstore, which is managed by the kernel and
   // accessed as part of the syscall interface.  The schema used here is very
   // similar to (in fact, modelled upon) the schema the kernel uses for its own
@@ -139,7 +138,7 @@ export function makeState(syscall, identifierBase = 0) {
   }
   const store = makeSyscallStore(syscall);
 
-  function maybeInitialize(controller) {
+  const maybeInitialize = controller => {
     if (!store.get('initialized')) {
       store.set('identifierBase', `${identifierBase}`);
       store.set('lo.nextID', `${identifierBase + 10}`);
@@ -154,9 +153,9 @@ export function makeState(syscall, identifierBase = 0) {
         cdebug(`comms controller is ${controller}`);
       }
     }
-  }
+  };
 
-  function deleteLocalPromiseState(lpid) {
+  const deleteLocalPromiseState = lpid => {
     store.delete(`${lpid}.status`);
     store.delete(`${lpid}.decider`);
     store.delete(`${lpid}.kernelSubscribed`);
@@ -164,9 +163,9 @@ export function makeState(syscall, identifierBase = 0) {
     store.delete(`${lpid}.data.body`);
     store.delete(`${lpid}.data.slots`);
     store.delete(`${lpid}.refCount`);
-  }
+  };
 
-  function deleteLocalPromise(lpid) {
+  const deleteLocalPromise = lpid => {
     const status = store.getRequired(`${lpid}.status`);
     switch (status) {
       case 'unresolved':
@@ -179,7 +178,7 @@ export function makeState(syscall, identifierBase = 0) {
         assert.fail(X`unknown status for ${lpid}: ${status}`);
     }
     deleteLocalPromiseState(lpid);
-  }
+  };
 
   /* we need syscall.vatstoreGetKeys to do it this way
   function addImporter(lref, remoteID) {
@@ -208,25 +207,25 @@ export function makeState(syscall, identifierBase = 0) {
   }
   */
 
-  function addImporter(lref, remoteID) {
+  const addImporter = (lref, remoteID) => {
     const key = `imps.${lref}`;
     const value = JSON.parse(store.get(key) || '[]');
     value.push(remoteID);
     value.sort();
     store.set(key, JSON.stringify(value));
-  }
-  function removeImporter(lref, remoteID) {
+  };
+  const removeImporter = (lref, remoteID) => {
     assert(!lref.includes('.'), lref);
     const key = `imps.${lref}`;
     let value = JSON.parse(store.get(key) || '[]');
     value = value.filter(r => r !== remoteID);
     store.set(key, JSON.stringify(value));
-  }
-  function getImporters(lref) {
+  };
+  const getImporters = lref => {
     const key = `imps.${lref}`;
     const remoteIDs = JSON.parse(store.get(key) || '[]');
     return harden(remoteIDs);
-  }
+  };
 
   /* A mode of 'clist-import' means we increment recognizable, but not
    * reachable, because the translation function will call setReachable in a
@@ -237,25 +236,25 @@ export function makeState(syscall, identifierBase = 0) {
    */
   const referenceModes = harden(['data', 'clist-export', 'clist-import']);
 
-  function changeRecognizable(lref, delta) {
+  const changeRecognizable = (lref, delta) => {
     const key = `${lref}.recognizable`;
     const recognizable = Nat(BigInt(store.getRequired(key))) + delta;
     store.set(key, `${Nat(recognizable)}`);
     return recognizable;
-  }
+  };
 
-  function changeReachable(lref, delta) {
+  const changeReachable = (lref, delta) => {
     const key = `${lref}.reachable`;
     const reachable = Nat(BigInt(store.getRequired(key))) + delta;
     store.set(key, `${Nat(reachable)}`);
     return reachable;
-  }
+  };
 
   const maybeFree = new Set(); // lrefs
 
-  function lrefMightBeFree(lref) {
+  const lrefMightBeFree = lref => {
     maybeFree.add(lref);
-  }
+  };
 
   /**
    * Increment the reference count associated with some local object.
@@ -267,7 +266,7 @@ export function makeState(syscall, identifierBase = 0) {
    * @param {string} _tag  Descriptive label for use in diagnostics
    * @param {string} mode  Reference type
    */
-  function incrementRefCount(lref, _tag, mode = 'data') {
+  const incrementRefCount = (lref, _tag, mode = 'data') => {
     assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
@@ -283,7 +282,7 @@ export function makeState(syscall, identifierBase = 0) {
         changeReachable(lref, 1n);
       }
     }
-  }
+  };
 
   /**
    * Decrement the reference counts associated with some local object/promise.
@@ -293,7 +292,7 @@ export function makeState(syscall, identifierBase = 0) {
    * @param {string} mode  Reference type
    * @throws if this tries to decrement a reference count below zero.
    */
-  function decrementRefCount(lref, tag, mode = 'data') {
+  const decrementRefCount = (lref, tag, mode = 'data') => {
     assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
@@ -330,15 +329,15 @@ export function makeState(syscall, identifierBase = 0) {
         }
       }
     }
-  }
+  };
 
-  function getRefCounts(lref) {
+  const getRefCounts = lref => {
     const reaKey = `${lref}.reachable`;
     const reachable = Nat(BigInt(store.getRequired(reaKey)));
     const recKey = `${lref}.recognizable`;
     const recognizable = Nat(BigInt(store.getRequired(recKey)));
     return { reachable, recognizable };
-  }
+  };
 
   /**
    * Delete any local promises that have zero references. Return a list of
@@ -347,7 +346,7 @@ export function makeState(syscall, identifierBase = 0) {
    * Note that this should only be called *after* all work for a crank is done,
    * because transient zero refCounts are possible during the middle of a crank.
    */
-  function processMaybeFree() {
+  const processMaybeFree = () => {
     const actions = new Set();
     // We make a copy of the set, iterate over that, then try again, until
     // the set is empty. TC39 went to a lot of trouble to make sure you can
@@ -413,26 +412,20 @@ export function makeState(syscall, identifierBase = 0) {
     }
 
     return actions;
-  }
+  };
 
-  function mapFromKernel(kfref) {
-    // o+NN/o-NN/p+NN/p-NN -> loNN/lpNN
-    return store.get(`c.${kfref}`);
-  }
+  const mapFromKernel = kfref => store.get(`c.${kfref}`);
 
-  function mapToKernel(lref) {
-    // loNN/lpNN -> o+NN/o-NN/p+NN/p-NN
-    return store.get(`c.${lref}`);
-  }
+  const mapToKernel = lref => store.get(`c.${lref}`);
 
   // is/set/clear are used on both imports and exports, but set/clear needs
   // to be told which one it is
 
-  function isReachableByKernel(lref) {
+  const isReachableByKernel = lref => {
     assert.equal(parseLocalSlot(lref).type, 'object');
     return !!store.get(`cr.${lref}`);
-  }
-  function setReachableByKernel(lref, isImportFromComms) {
+  };
+  const setReachableByKernel = (lref, isImportFromComms) => {
     const wasReachable = isReachableByKernel(lref);
     if (!wasReachable) {
       store.set(`cr.${lref}`, `1`);
@@ -440,8 +433,8 @@ export function makeState(syscall, identifierBase = 0) {
         changeReachable(lref, 1n);
       }
     }
-  }
-  function clearReachableByKernel(lref, isImportFromComms) {
+  };
+  const clearReachableByKernel = (lref, isImportFromComms) => {
     const wasReachable = isReachableByKernel(lref);
     if (wasReachable) {
       store.delete(`cr.${lref}`);
@@ -452,11 +445,11 @@ export function makeState(syscall, identifierBase = 0) {
         }
       }
     }
-  }
+  };
 
   // translators should addKernelMapping for new imports/exports, then
   // setReachableByKernel
-  function addKernelMapping(kfref, lref) {
+  const addKernelMapping = (kfref, lref) => {
     const { type, allocatedByVat } = parseVatSlot(kfref);
     // isImportFromComms===true means kernel is downstream importer
     const isImportFromComms = allocatedByVat;
@@ -469,11 +462,11 @@ export function makeState(syscall, identifierBase = 0) {
         addImporter(lref, 'kernel');
       }
     }
-  }
+  };
 
   // GC or delete-remote should just call deleteKernelMapping without any
   // extra clearReachableByKernel
-  function deleteKernelMapping(lref) {
+  const deleteKernelMapping = lref => {
     const kfref = store.get(`c.${lref}`);
     let mode = 'data'; // close enough
     const { type, allocatedByVat } = parseVatSlot(kfref);
@@ -494,33 +487,29 @@ export function makeState(syscall, identifierBase = 0) {
         lrefMightBeFree(lref);
       }
     }
-  }
+  };
 
-  function hasMetaObject(kfref) {
-    return !!store.get(`meta.${kfref}`);
-  }
+  const hasMetaObject = kfref => !!store.get(`meta.${kfref}`);
 
-  function addMetaObject(kfref) {
+  const addMetaObject = kfref => {
     store.set(`meta.${kfref}`, 'true');
-  }
+  };
 
-  function allocateKernelObjectID() {
+  const allocateKernelObjectID = () => {
     const index = Nat(BigInt(store.getRequired('o.nextID')));
     store.set('o.nextID', `${index + 1n}`);
     return makeVatSlot('object', true, index);
-  }
+  };
 
-  function allocateKernelPromiseID() {
+  const allocateKernelPromiseID = () => {
     const index = Nat(BigInt(store.getRequired('p.nextID')));
     store.set('p.nextID', `${index + 1n}`);
     return makeVatSlot('promise', true, index);
-  }
+  };
 
-  function getObject(loid) {
-    return store.get(`${loid}.owner`);
-  }
+  const getObject = loid => store.get(`${loid}.owner`);
 
-  function allocateObject(owner) {
+  const allocateObject = owner => {
     const index = Nat(BigInt(store.getRequired('lo.nextID')));
     store.set('lo.nextID', `${index + 1n}`);
     const loid = makeLocalSlot('object', index);
@@ -528,9 +517,9 @@ export function makeState(syscall, identifierBase = 0) {
     store.set(`${loid}.reachable`, `0`);
     store.set(`${loid}.recognizable`, `0`);
     return loid;
-  }
+  };
 
-  function allocatePromise() {
+  const allocatePromise = () => {
     const index = Nat(BigInt(store.getRequired('lp.nextID')));
     store.set('lp.nextID', `${index + 1n}`);
     const lpid = makeLocalSlot('promise', index);
@@ -539,9 +528,9 @@ export function makeState(syscall, identifierBase = 0) {
     store.set(`${lpid}.subscribers`, '');
     store.set(`${lpid}.refCount`, '0');
     return lpid;
-  }
+  };
 
-  function getOwnerAndStatus(lref) {
+  const getOwnerAndStatus = lref => {
     const owner = getObject(lref);
     let isReachable;
     let isRecognizable;
@@ -555,137 +544,135 @@ export function makeState(syscall, identifierBase = 0) {
       isRecognizable = !!remote.mapToRemote(lref);
     }
     return { owner, isReachable, isRecognizable };
-  }
+  };
 
-  function deciderIsKernel(lpid) {
+  const deciderIsKernel = lpid => {
     const decider = store.getRequired(`${lpid}.decider`);
     return decider === KERNEL;
-  }
+  };
 
-  function deciderIsRemote(lpid) {
+  const deciderIsRemote = lpid => {
     const decider = store.getRequired(`${lpid}.decider`);
     if (decider === KERNEL || decider === COMMS) {
       return undefined;
     }
     insistRemoteID(decider);
     return decider;
-  }
+  };
 
-  function insistDeciderIsRemote(lpid, remoteID) {
+  const insistDeciderIsRemote = (lpid, remoteID) => {
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(
       decider,
       remoteID,
       `${lpid} is decided by ${decider}, not ${remoteID}`,
     );
-  }
+  };
 
-  function insistDeciderIsComms(lpid) {
+  const insistDeciderIsComms = lpid => {
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(
       decider,
       COMMS,
       `${decider} is the decider for ${lpid}, not me`,
     );
-  }
+  };
 
-  function insistDeciderIsKernel(lpid) {
+  const insistDeciderIsKernel = lpid => {
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(
       decider,
       KERNEL,
       `${decider} is the decider for ${lpid}, not kernel`,
     );
-  }
+  };
 
   // Decision authority always transfers through the comms vat, so the only
   // legal transitions are remote <-> comms <-> kernel.
 
-  function changeDeciderToRemote(lpid, newDecider) {
+  const changeDeciderToRemote = (lpid, newDecider) => {
     // cdebug(`changeDecider ${lpid}: COMMS->${newDecider}`);
     insistRemoteID(newDecider);
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(decider, COMMS);
     store.set(`${lpid}.decider`, newDecider);
-  }
+  };
 
-  function changeDeciderFromRemoteToComms(lpid, oldDecider) {
+  const changeDeciderFromRemoteToComms = (lpid, oldDecider) => {
     // cdebug(`changeDecider ${lpid}: ${oldDecider}->COMMS`);
     insistRemoteID(oldDecider);
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(decider, oldDecider);
     store.set(`${lpid}.decider`, COMMS);
-  }
+  };
 
-  function changeDeciderToKernel(lpid) {
+  const changeDeciderToKernel = lpid => {
     // cdebug(`changeDecider ${lpid}: COMMS->KERNEL`);
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(decider, COMMS);
     store.set(`${lpid}.decider`, KERNEL);
-  }
+  };
 
-  function changeDeciderFromKernelToComms(lpid) {
+  const changeDeciderFromKernelToComms = lpid => {
     // cdebug(`changeDecider ${lpid}: KERNEL->COMMS`);
     const decider = store.getRequired(`${lpid}.decider`);
     assert.equal(decider, KERNEL);
     store.set(`${lpid}.decider`, COMMS);
-  }
+  };
 
-  function getPromiseStatus(lpid) {
-    return store.get(`${lpid}.status`);
-  }
+  const getPromiseStatus = lpid => store.get(`${lpid}.status`);
 
-  function getPromiseData(lpid) {
+  const getPromiseData = lpid => {
     const body = store.get(`${lpid}.data.body`);
     const slots = commaSplit(store.get(`${lpid}.data.slots`));
     return { body, slots };
-  }
+  };
 
-  function getPromiseSubscribers(lpid) {
+  const getPromiseSubscribers = lpid => {
     const rawSubscribers = store.get(`${lpid}.subscribers`);
     const subscribers = commaSplit(rawSubscribers);
     const kernelIsSubscribed = !!store.get(`${lpid}.kernelSubscribed`);
     return { subscribers, kernelIsSubscribed };
-  }
+  };
 
-  function insistPromiseIsUnresolved(lpid) {
+  const insistPromiseIsUnresolved = lpid => {
     const status = store.getRequired(`${lpid}.status`);
     assert(status === 'unresolved', X`${lpid} already resolved`);
-  }
+  };
 
-  function subscribeRemoteToPromise(lpid, subscriber) {
+  const subscribeRemoteToPromise = (lpid, subscriber) => {
     insistPromiseIsUnresolved(lpid);
     const key = `${lpid}.subscribers`;
     const rawSubscribers = store.get(key);
     const subscribers = commaSplit(rawSubscribers);
     subscribers.push(subscriber);
     store.set(key, subscribers.sort().join(','));
-  }
+  };
 
-  function unsubscribeRemoteFromPromise(lpid, subscriber) {
+  const unsubscribeRemoteFromPromise = (lpid, subscriber) => {
     insistPromiseIsUnresolved(lpid);
     const key = `${lpid}.subscribers`;
     const rawSubscribers = store.getRequired(key);
     const subscribers = commaSplit(rawSubscribers);
     const newSubscribers = subscribers.filter(s => s !== subscriber);
     store.set(key, newSubscribers.join(','));
-  }
+  };
 
-  function subscribeKernelToPromise(lpid) {
+  const subscribeKernelToPromise = lpid => {
     insistPromiseIsUnresolved(lpid);
     const decider = store.getRequired(`${lpid}.decider`);
     assert(decider !== KERNEL, X`kernel is decider for ${lpid}, hush`);
     // cdebug(`subscribeKernelToPromise ${lpid} d=${decider}`);
     store.set(`${lpid}.kernelSubscribed`, 'true');
-  }
+  };
 
-  function unsubscribeKernelFromPromise(lpid) {
+  const unsubscribeKernelFromPromise = lpid => {
     insistPromiseIsUnresolved(lpid);
     // cdebug(`unsubscribeKernelFromPromise ${lpid} d=${decider}`);
     store.delete(`${lpid}.kernelSubscribed`);
-  }
+  };
 
-  function markPromiseAsResolved(lpid, rejected, data) {
+  const markPromiseAsResolved = (lpid, rejected, data) => {
     insistPromiseIsUnresolved(lpid);
     insistCapData(data);
     store.set(`${lpid}.status`, rejected ? 'rejected' : 'fulfilled');
@@ -699,9 +686,9 @@ export function makeState(syscall, identifierBase = 0) {
     store.delete(`${lpid}.decider`);
     store.delete(`${lpid}.subscribers`);
     store.delete(`${lpid}.kernelSubscribed`);
-  }
+  };
 
-  function addRemote(name, transmitterID) {
+  const addRemote = (name, transmitterID) => {
     assert(/^[-\w.+]+$/.test(name), `not a valid remote name: ${name}`);
     const nameKey = `rname.${name}`;
     assert(!store.get(nameKey), X`remote name ${name} already in use`);
@@ -726,15 +713,11 @@ export function makeState(syscall, identifierBase = 0) {
     // prettier-ignore
     cdebug(`comms add remote ${remoteID}/${name} xmit:${transmitterID} recv:${receiverID}`);
     return { remoteID, receiverID };
-  }
+  };
 
-  function getRemoteIDForName(remoteName) {
-    return store.get(`rname.${remoteName}`);
-  }
+  const getRemoteIDForName = remoteName => store.get(`rname.${remoteName}`);
 
-  function getRemoteReceiver(receiverID) {
-    return store.get(`r.${receiverID}`);
-  }
+  const getRemoteReceiver = receiverID => store.get(`r.${receiverID}`);
 
   const state = harden({
     maybeInitialize,
@@ -799,9 +782,7 @@ export function makeState(syscall, identifierBase = 0) {
     getRemoteReceiver,
   });
 
-  function getRemote(remoteID) {
-    return makeRemote(state, store, remoteID);
-  }
+  const getRemote = remoteID => makeRemote(state, store, remoteID);
 
   return state;
-}
+};

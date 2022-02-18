@@ -1,11 +1,11 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { testLog } = vatPowers;
 
   const self = Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       testLog('preparing dynamic vat');
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       const dude = await E(vatMaker).createVatByName('dude');
@@ -21,9 +21,9 @@ export function buildRootObject(vatPowers) {
       testLog('done');
     },
 
-    talkBack(arg) {
+    talkBack: arg => {
       testLog(`talkback ${arg}`);
     },
   });
   return self;
-}
+};

@@ -1,5 +1,3 @@
 /* global big globalThis */
 
-export function runTheCheck(world) {
-  return ['installable', big, globalThis.big, world];
-}
+export const runTheCheck = world => ['installable', big, globalThis.big, world];

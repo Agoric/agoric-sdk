@@ -1,9 +1,9 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers, _vatParameters) {
+export const buildRootObject = (vatPowers, _vatParameters) => {
   const { D } = vatPowers;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       let got;
       try {
         // ideally, device nodes can round-trip through unrelated devices
@@ -19,4 +19,4 @@ export function buildRootObject(vatPowers, _vatParameters) {
       return harden(['got', got]);
     },
   });
-}
+};

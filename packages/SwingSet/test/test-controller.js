@@ -12,11 +12,9 @@ import {
 } from '../src/index.js';
 import { checkKT } from './util.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const capdata = (body, slots = []) => harden({ body, slots });
 
-function removeTriple(arr, a, b, c) {
+const removeTriple = (arr, a, b, c) => {
   for (let i = 0; i < arr.length; i += 1) {
     const elem = arr[i];
     if (elem[0] === a && elem[1] === b && elem[2] === c) {
@@ -24,7 +22,7 @@ function removeTriple(arr, a, b, c) {
       return;
     }
   }
-}
+};
 
 test('load empty', async t => {
   const config = {};
@@ -33,7 +31,7 @@ test('load empty', async t => {
   t.truthy(true);
 });
 
-async function simpleCall(t) {
+const simpleCall = async t => {
   const config = {
     vats: {
       vat1: {
@@ -99,7 +97,7 @@ async function simpleCall(t) {
   const ah = controller.getActivityhash();
   t.is(typeof ah, 'string', ah);
   t.truthy(/^[0-9a-f]{64}$/.test(ah), ah);
-}
+};
 
 test('simple call', async t => {
   await simpleCall(t);
@@ -150,7 +148,7 @@ test('static vats are unmetered on XS', async t => {
     hostStorage,
     {},
     {
-      spawn(command, args, options) {
+      spawn: (command, args, options) => {
         limited.push(args.includes('-l'));
         return spawn(command, args, options);
       },
@@ -245,7 +243,7 @@ test.serial('bootstrap export', async t => {
   // this test was designed before GC, and wants to single-step the kernel,
   // but doesn't care about the GC action steps, so we use this helper
   // function
-  async function stepGC() {
+  const stepGC = async () => {
     while (c.dump().gcActions.length) {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
@@ -255,7 +253,7 @@ test.serial('bootstrap export', async t => {
       await c.step();
     }
     await c.step(); // the non- GC action
-  }
+  };
 
   t.deepEqual(c.dump().log, []);
   // console.log('--- c.step() running bootstrap.obj0.bootstrap');

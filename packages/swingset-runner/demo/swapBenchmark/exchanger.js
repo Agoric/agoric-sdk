@@ -16,7 +16,7 @@ const log = makePrintLog();
  * @param {Payment[]} payments
  * @param {Record<string,Installation>} installations
  */
-async function build(name, zoe, issuers, payments, installations) {
+const build = async (name, zoe, issuers, payments, installations) => {
   const { moola, simoleans, purses } = await setupPurses(
     zoe,
     issuers,
@@ -31,26 +31,26 @@ async function build(name, zoe, issuers, payments, installations) {
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const { atomicSwap } = installations;
 
-  async function preReport() {
+  const preReport = async () => {
     await showPurseBalance(moolaPurseP, `${name} moola before`, log);
     await showPurseBalance(simoleanPurseP, `${name} simoleans before`, log);
-  }
+  };
 
-  async function postReport() {
+  const postReport = async () => {
     await showPurseBalance(moolaPurseP, `${name} moola after`, log);
     await showPurseBalance(simoleanPurseP, `${name} simoleans after`, log);
-  }
+  };
 
-  async function receivePayouts(payoutsP) {
+  const receivePayouts = async payoutsP => {
     const payouts = await payoutsP;
     const moolaPayout = await payouts.Asset;
     const simoleanPayout = await payouts.Price;
 
     await E(moolaPurseP).deposit(moolaPayout);
     await E(simoleanPurseP).deposit(simoleanPayout);
-  }
+  };
 
-  async function initiateSwap(otherP) {
+  const initiateSwap = async otherP => {
     await preReport();
 
     const { creatorInvitation: invitation } = await E(zoe).startInstance(
@@ -73,9 +73,9 @@ async function build(name, zoe, issuers, payments, installations) {
 
     await receivePayouts(payoutsP);
     await postReport();
-  }
+  };
 
-  async function respondToSwap(invitation) {
+  const respondToSwap = async invitation => {
     await preReport();
 
     const exclInvitation = await E(invitationIssuer).claim(invitation);
@@ -99,17 +99,16 @@ async function build(name, zoe, issuers, payments, installations) {
 
     await receivePayouts(payoutsP);
     await postReport();
-  }
+  };
 
   return Far('exchanger', {
     initiateSwap,
     respondToSwap,
   });
-}
+};
 
-export function buildRootObject(_vatPowers, vatParameters) {
-  return Far('root', {
+export const buildRootObject = (_vatPowers, vatParameters) =>
+  Far('root', {
     build: (zoe, issuers, payments, installations) =>
       build(vatParameters.name, zoe, issuers, payments, installations),
   });
-}

@@ -26,7 +26,7 @@ const colors = [
 
 const appName = path.basename(process.argv[1]);
 
-function usage(showFields) {
+const usage = showFields => {
   let fieldsLine = '';
   if (showFields) {
     fieldsLine =
@@ -50,17 +50,17 @@ all the fields being graphed.  Files may be labeled in the graph key with the
 --label option, one --label option per file, applied in the same order as the
 data file ARGS (and may be interleaved with them on the command line).
 `);
-}
+};
 
-function fail(message, printUsage, showFields) {
+const fail = (message, printUsage, showFields) => {
   console.log(message);
   if (printUsage) {
     usage(showFields);
   }
   process.exit(1);
-}
+};
 
-export async function dataGraphApp(xField, xLabel, yField, yLabel, fields) {
+export const dataGraphApp = async (xField, xLabel, yField, yLabel, fields) => {
   const argv = process.argv.slice(2);
 
   let outfile = null;
@@ -135,4 +135,4 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, fields) {
   }
 
   await renderGraph(spec, outfile, type);
-}
+};

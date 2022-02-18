@@ -26,11 +26,11 @@ test('install bundle', async t => {
   // console.log(bundleID);
 
   // confirm that Endo agrees
-  function computeSha512(bytes) {
+  const computeSha512 = bytes => {
     const hash = crypto.createHash('sha512');
     hash.update(bytes);
     return hash.digest().toString('hex');
-  }
+  };
   const expectedSha512 = bundleID.slice(3);
   // eslint-disable-next-line no-unused-vars
   const a = await parseArchive(

@@ -2,7 +2,7 @@
 
 import { dataGraphApp } from './dataGraphApp.js';
 
-export async function main() {
+export const main = async () => {
   // prettier-ignore
   await dataGraphApp(
     'block',
@@ -11,6 +11,6 @@ export async function main() {
     'Memory usage',
     ['rss', 'heapTotal', 'heapUsed', 'external'],
   );
-}
+};
 
 main();

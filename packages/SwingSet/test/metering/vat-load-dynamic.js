@@ -1,45 +1,36 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { D, testLog: log } = vatPowers;
   let bundleDev;
   let service;
   let control;
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       service = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       bundleDev = devices.bundle;
     },
 
-    createMeter(remaining, notifyThreshold) {
-      return E(service).createMeter(remaining, notifyThreshold);
-    },
+    createMeter: (remaining, notifyThreshold) =>
+      E(service).createMeter(remaining, notifyThreshold),
 
-    createUnlimitedMeter() {
-      return E(service).createUnlimitedMeter();
-    },
+    createUnlimitedMeter: () => E(service).createUnlimitedMeter(),
 
-    addMeterRemaining(meter, remaining) {
-      return E(meter).addRemaining(remaining);
-    },
+    addMeterRemaining: (meter, remaining) => E(meter).addRemaining(remaining),
 
-    setMeterThreshold(meter, threshold) {
-      return E(meter).setThreshold(threshold);
-    },
+    setMeterThreshold: (meter, threshold) => E(meter).setThreshold(threshold),
 
-    getMeter(meter) {
-      return E(meter).get();
-    },
+    getMeter: meter => E(meter).get(),
 
-    async whenMeterNotifiesNext(meter) {
+    whenMeterNotifiesNext: async meter => {
       const notifier = await E(meter).getNotifier();
       const initial = await E(notifier).getUpdateSince();
       return E(notifier).getUpdateSince(initial);
     },
 
-    async createVat(name, dynamicOptions) {
+    createVat: async (name, dynamicOptions) => {
       const bundleID = D(bundleDev).getNamedBundlecap(name);
       control = await E(service).createVat(bundleID, dynamicOptions);
       const done = E(control.adminNode).done();
@@ -47,22 +38,18 @@ export function buildRootObject(vatPowers) {
       return ['created', done];
     },
 
-    getNever() {
+    getNever: () => {
       // grab a Promise which won't resolve until the vat dies
       const neverP = E(control.root).never();
       neverP.catch(() => 'hush');
       return [neverP];
     },
 
-    run() {
-      return E(control.root).run();
-    },
+    run: () => E(control.root).run(),
 
-    explode(how) {
-      return E(control.root).explode(how);
-    },
+    explode: how => E(control.root).explode(how),
 
-    async bundleRun() {
+    bundleRun: async () => {
       try {
         await E(control.root).meterThem('no');
         log('did run');
@@ -71,7 +58,7 @@ export function buildRootObject(vatPowers) {
       }
     },
 
-    async bundleExplode(how) {
+    bundleExplode: async how => {
       try {
         await E(control.root).meterThem(how);
         log('failed to explode');
@@ -80,4 +67,4 @@ export function buildRootObject(vatPowers) {
       }
     },
   });
-}
+};

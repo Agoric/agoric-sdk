@@ -15,11 +15,9 @@ import {
 import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../parseVatSlots.js';
 
-function pattEq(p1, p2) {
-  return compareRank(p1, p2) === 0;
-}
+const pattEq = (p1, p2) => compareRank(p1, p2) === 0;
 
-export function makeCollectionManager(
+export const makeCollectionManager = (
   syscall,
   vrm,
   allocateExportID,
@@ -28,7 +26,7 @@ export function makeCollectionManager(
   registerEntry,
   serialize,
   unserialize,
-) {
+) => {
   const storeKindIDToName = new Map();
 
   let storeKindInfoNeedsInitialization = true;
@@ -91,11 +89,10 @@ export function makeCollectionManager(
     },
   };
 
-  function prefixc(collectionID, dbEntryKey) {
-    return `vc.${collectionID}.${dbEntryKey}`;
-  }
+  const prefixc = (collectionID, dbEntryKey) =>
+    `vc.${collectionID}.${dbEntryKey}`;
 
-  function obtainStoreKindID(kindName) {
+  const obtainStoreKindID = kindName => {
     if (storeKindInfoNeedsInitialization) {
       storeKindInfoNeedsInitialization = false;
 
@@ -123,23 +120,21 @@ export function makeCollectionManager(
       syscall.vatstoreSet('storeKindIDTable', JSON.stringify(storeKindIDs));
     }
     return storeKindInfo[kindName].kindID;
-  }
+  };
 
-  function summonCollectionInternal(
+  const summonCollectionInternal = (
     _initial,
     label,
     collectionID,
     kindName,
     keySchema = M.any(),
     valueSchema,
-  ) {
+  ) => {
     const { hasWeakKeys, durable } = storeKindInfo[kindName];
     const dbKeyPrefix = `vc.${collectionID}.`;
     let currentGenerationNumber = 0;
 
-    function prefix(dbEntryKey) {
-      return `${dbKeyPrefix}${dbEntryKey}`;
-    }
+    const prefix = dbEntryKey => `${dbKeyPrefix}${dbEntryKey}`;
 
     const encodeRemotable = remotable => {
       // eslint-disable-next-line no-use-before-define
@@ -156,7 +151,7 @@ export function makeCollectionManager(
 
     const decodeKey = makeDecodeKey(decodeRemotable);
 
-    function generateOrdinal(remotable) {
+    const generateOrdinal = remotable => {
       const nextOrdinal = Number.parseInt(
         syscall.vatstoreGet(prefix('|nextOrdinal')),
         10,
@@ -166,26 +161,23 @@ export function makeCollectionManager(
         `${nextOrdinal}`,
       );
       syscall.vatstoreSet(prefix('|nextOrdinal'), `${nextOrdinal + 1}`);
-    }
+    };
 
-    function getOrdinal(remotable) {
-      return syscall.vatstoreGet(prefix(`|${convertValToSlot(remotable)}`));
-    }
+    const getOrdinal = remotable =>
+      syscall.vatstoreGet(prefix(`|${convertValToSlot(remotable)}`));
 
-    function deleteOrdinal(remotable) {
+    const deleteOrdinal = remotable => {
       syscall.vatstoreDelete(prefix(`|${convertValToSlot(remotable)}`));
-    }
+    };
 
-    function keyToDBKey(key) {
-      return prefix(encodeKey(key));
-    }
+    const keyToDBKey = key => prefix(encodeKey(key));
 
-    function dbKeyToKey(dbKey) {
+    const dbKeyToKey = dbKey => {
       const dbEntryKey = dbKey.substring(dbKeyPrefix.length);
       return decodeKey(dbEntryKey);
-    }
+    };
 
-    function has(key) {
+    const has = key => {
       if (!matches(key, keySchema)) {
         return false;
       }
@@ -194,9 +186,9 @@ export function makeCollectionManager(
       } else {
         return syscall.vatstoreGet(keyToDBKey(key)) !== undefined;
       }
-    }
+    };
 
-    function get(key) {
+    const get = key => {
       assert(
         matches(key, keySchema),
         X`invalid key type for collection ${q(label)}`,
@@ -206,9 +198,9 @@ export function makeCollectionManager(
         return unserialize(JSON.parse(result));
       }
       assert.fail(X`key ${key} not found in collection ${q(label)}`);
-    }
+    };
 
-    function updateEntryCount(delta) {
+    const updateEntryCount = delta => {
       if (!hasWeakKeys) {
         const entryCount = Number.parseInt(
           syscall.vatstoreGet(prefix('|entryCount')),
@@ -216,17 +208,17 @@ export function makeCollectionManager(
         );
         syscall.vatstoreSet(prefix('|entryCount'), `${entryCount + delta}`);
       }
-    }
+    };
 
-    function entryDeleter(vobjID) {
+    const entryDeleter = vobjID => {
       const ordinalKey = prefix(`|${vobjID}`);
       const ordinalString = syscall.vatstoreGet(ordinalKey);
       syscall.vatstoreDelete(ordinalKey);
       const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
       syscall.vatstoreDelete(prefix(`r${ordinalTag}:${vobjID}`));
-    }
+    };
 
-    function init(key, value) {
+    const init = (key, value) => {
       assert(
         matches(key, keySchema),
         X`invalid key type for collection ${q(label)}`,
@@ -263,9 +255,9 @@ export function makeCollectionManager(
       serializedValue.slots.map(vrm.addReachableVref);
       syscall.vatstoreSet(keyToDBKey(key), JSON.stringify(serializedValue));
       updateEntryCount(1);
-    }
+    };
 
-    function set(key, value) {
+    const set = (key, value) => {
       assert(
         matches(key, keySchema),
         X`invalid key type for collection ${q(label)}`,
@@ -288,9 +280,9 @@ export function makeCollectionManager(
       const before = JSON.parse(rawBefore);
       vrm.updateReferenceCounts(before.slots, after.slots);
       syscall.vatstoreSet(dbKey, JSON.stringify(after));
-    }
+    };
 
-    function deleteInternal(key) {
+    const deleteInternal = key => {
       assert(
         matches(key, keySchema),
         X`invalid key type for collection ${q(label)}`,
@@ -311,19 +303,19 @@ export function makeCollectionManager(
         }
       }
       return doMoreGC;
-    }
+    };
 
-    function del(key) {
+    const del = key => {
       deleteInternal(key);
       updateEntryCount(-1);
-    }
+    };
 
-    function entriesInternal(
+    const entriesInternal = (
       needKeys,
       needValues,
       keyPatt = M.any(),
       valuePatt = M.any(),
-    ) {
+    ) => {
       assert(needKeys || needValues);
       assertKeyPattern(keyPatt);
       assertPattern(valuePatt);
@@ -373,18 +365,18 @@ export function makeCollectionManager(
         }
       }
       return iter();
-    }
+    };
 
-    function keys(keyPatt, valuePatt) {
+    const keys = (keyPatt, valuePatt) => {
       function* iter() {
         for (const entry of entriesInternal(true, false, keyPatt, valuePatt)) {
           yield entry[0];
         }
       }
       return iter();
-    }
+    };
 
-    function clearInternal(isDeleting, keyPatt, valuePatt) {
+    const clearInternal = (isDeleting, keyPatt, valuePatt) => {
       let doMoreGC = false;
       for (const k of keys(keyPatt, valuePatt)) {
         doMoreGC = doMoreGC || deleteInternal(k);
@@ -393,40 +385,40 @@ export function makeCollectionManager(
         syscall.vatstoreSet(prefix('|entryCount'), '0');
       }
       return doMoreGC;
-    }
+    };
 
-    function clear(keyPatt, valuePatt) {
+    const clear = (keyPatt, valuePatt) => {
       clearInternal(false, keyPatt, valuePatt);
-    }
+    };
 
-    function values(keyPatt, valuePatt) {
+    const values = (keyPatt, valuePatt) => {
       function* iter() {
         for (const entry of entriesInternal(false, true, keyPatt, valuePatt)) {
           yield entry[1];
         }
       }
       return iter();
-    }
+    };
 
-    function entries(keyPatt, valuePatt) {
+    const entries = (keyPatt, valuePatt) => {
       function* iter() {
         for (const entry of entriesInternal(true, true, keyPatt, valuePatt)) {
           yield entry;
         }
       }
       return iter();
-    }
+    };
 
-    function countEntries(keyPatt, valuePatt) {
+    const countEntries = (keyPatt, valuePatt) => {
       let count = 0;
       // eslint-disable-next-line no-use-before-define, no-unused-vars
       for (const k of keys(keyPatt, valuePatt)) {
         count += 1;
       }
       return count;
-    }
+    };
 
-    function getSize(keyPatt, valuePatt) {
+    const getSize = (keyPatt, valuePatt) => {
       if (
         (keyPatt === undefined || pattEq(keyPatt, M.any())) &&
         (valuePatt === undefined || pattEq(valuePatt, M.any()))
@@ -434,15 +426,13 @@ export function makeCollectionManager(
         return Number.parseInt(syscall.vatstoreGet(prefix('|entryCount')), 10);
       }
       return countEntries(keyPatt, valuePatt);
-    }
+    };
 
-    function sizeInternal() {
-      return countEntries();
-    }
+    const sizeInternal = () => countEntries();
 
-    function snapshot() {
+    const snapshot = () => {
       assert.fail(X`snapshot not yet implemented`);
-    }
+    };
 
     return {
       has,
@@ -459,16 +449,16 @@ export function makeCollectionManager(
       clear,
       clearInternal,
     };
-  }
+  };
 
-  function summonCollection(
+  const summonCollection = (
     initial,
     label,
     collectionID,
     kindName,
     keySchema,
     valueSchema,
-  ) {
+  ) => {
     const hasWeakKeys = storeKindInfo[kindName].hasWeakKeys;
     const raw = summonCollectionInternal(
       initial,
@@ -506,16 +496,16 @@ export function makeCollectionManager(
       };
     }
     return collection;
-  }
+  };
 
-  function storeSizeInternal(vobjID) {
+  const storeSizeInternal = vobjID => {
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
     const collection = summonCollectionInternal(false, 'test', subid, kindName);
     return collection.sizeInternal();
-  }
+  };
 
-  function deleteCollection(vobjID) {
+  const deleteCollection = vobjID => {
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
     const collection = summonCollectionInternal(false, 'GC', subid, kindName);
@@ -531,11 +521,11 @@ export function makeCollectionManager(
       syscall.vatstoreDelete(priorKey);
     }
     return doMoreGC;
-  }
+  };
 
   let nextCollectionID = 1;
 
-  function makeCollection(label, kindName, keySchema, valueSchema) {
+  const makeCollection = (label, kindName, keySchema, valueSchema) => {
     assert.typeof(label, 'string');
     assert(storeKindInfo[kindName]);
     assertKeyPattern(keySchema);
@@ -571,17 +561,14 @@ export function makeCollectionManager(
         valueSchema,
       ),
     ];
-  }
+  };
 
-  function collectionToMapStore(collection) {
-    return Far('mapStore', collection);
-  }
+  const collectionToMapStore = collection => Far('mapStore', collection);
 
-  function collectionToWeakMapStore(collection) {
-    return Far('weakMapStore', collection);
-  }
+  const collectionToWeakMapStore = collection =>
+    Far('weakMapStore', collection);
 
-  function collectionToSetStore(collection) {
+  const collectionToSetStore = collection => {
     const {
       has,
       init,
@@ -597,11 +584,11 @@ export function makeCollectionManager(
         yield [k, k];
       }
     }
-    function addAll(elems) {
+    const addAll = elems => {
       for (const elem of elems) {
         init(elem, null);
       }
-    }
+    };
 
     const setStore = {
       has,
@@ -617,15 +604,15 @@ export function makeCollectionManager(
       clear,
     };
     return Far('setStore', setStore);
-  }
+  };
 
-  function collectionToWeakSetStore(collection) {
+  const collectionToWeakSetStore = collection => {
     const { has, init, delete: del } = collection;
-    function addAll(elems) {
+    const addAll = elems => {
       for (const elem of elems) {
         init(elem, null);
       }
-    }
+    };
 
     const weakSetStore = {
       has,
@@ -634,7 +621,7 @@ export function makeCollectionManager(
       delete: del,
     };
     return Far('weakSetStore', weakSetStore);
-  }
+  };
 
   /**
    * Produce a *scalar* big map: keys can only be atomic values, primitives, or
@@ -645,10 +632,10 @@ export function makeCollectionManager(
    * @param {StoreOptions=} options
    * @returns {MapStore<K,V>}
    */
-  function makeScalarBigMapStore(
+  const makeScalarBigMapStore = (
     label = 'map',
     { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
-  ) {
+  ) => {
     const kindName = durable ? 'scalarDurableMapStore' : 'scalarMapStore';
     const [vobjID, collection] = makeCollection(
       label,
@@ -659,7 +646,7 @@ export function makeCollectionManager(
     const store = collectionToMapStore(collection);
     registerEntry(vobjID, store);
     return store;
-  }
+  };
 
   /**
    * Produce a *scalar* weak big map: keys can only be atomic values,
@@ -670,10 +657,10 @@ export function makeCollectionManager(
    * @param {StoreOptions=} options
    * @returns {WeakMapStore<K,V>}
    */
-  function makeScalarBigWeakMapStore(
+  const makeScalarBigWeakMapStore = (
     label = 'weakMap',
     { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
-  ) {
+  ) => {
     const kindName = durable
       ? 'scalarDurableWeakMapStore'
       : 'scalarWeakMapStore';
@@ -686,7 +673,7 @@ export function makeCollectionManager(
     const store = collectionToWeakMapStore(collection);
     registerEntry(vobjID, store);
     return store;
-  }
+  };
 
   /**
    * Produce a *scalar* big set: keys can only be atomic values, primitives, or
@@ -697,10 +684,10 @@ export function makeCollectionManager(
    * @param {StoreOptions=} options
    * @returns {SetStore<K>}
    */
-  function makeScalarBigSetStore(
+  const makeScalarBigSetStore = (
     label = 'set',
     { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
-  ) {
+  ) => {
     const kindName = durable ? 'scalarDurableSetStore' : 'scalarSetStore';
     const [vobjID, collection] = makeCollection(
       label,
@@ -711,7 +698,7 @@ export function makeCollectionManager(
     const store = collectionToSetStore(collection);
     registerEntry(vobjID, store);
     return store;
-  }
+  };
 
   /**
    * Produce a *scalar* weak big set: keys can only be atomic values,
@@ -722,10 +709,10 @@ export function makeCollectionManager(
    * @param {StoreOptions=} options
    * @returns {WeakSetStore<K>}
    */
-  function makeScalarBigWeakSetStore(
+  const makeScalarBigWeakSetStore = (
     label = 'weakSet',
     { keySchema = M.scalar(), valueSchema = undefined, durable = false } = {},
-  ) {
+  ) => {
     const kindName = durable
       ? 'scalarDurableWeakSetStore'
       : 'scalarWeakSetStore';
@@ -738,9 +725,9 @@ export function makeCollectionManager(
     const store = collectionToWeakSetStore(collection);
     registerEntry(vobjID, store);
     return store;
-  }
+  };
 
-  function reanimateCollection(vobjID) {
+  const reanimateCollection = vobjID => {
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
     const rawSchemata = JSON.parse(
@@ -756,27 +743,19 @@ export function makeCollectionManager(
       keySchema,
       valueSchema,
     );
-  }
+  };
 
-  function reanimateScalarMapStore(vobjID, proForma) {
-    return proForma ? null : collectionToMapStore(reanimateCollection(vobjID));
-  }
+  const reanimateScalarMapStore = (vobjID, proForma) =>
+    proForma ? null : collectionToMapStore(reanimateCollection(vobjID));
 
-  function reanimateScalarWeakMapStore(vobjID, proForma) {
-    return proForma
-      ? null
-      : collectionToWeakMapStore(reanimateCollection(vobjID));
-  }
+  const reanimateScalarWeakMapStore = (vobjID, proForma) =>
+    proForma ? null : collectionToWeakMapStore(reanimateCollection(vobjID));
 
-  function reanimateScalarSetStore(vobjID, proForma) {
-    return proForma ? null : collectionToSetStore(reanimateCollection(vobjID));
-  }
+  const reanimateScalarSetStore = (vobjID, proForma) =>
+    proForma ? null : collectionToSetStore(reanimateCollection(vobjID));
 
-  function reanimateScalarWeakSetStore(vobjID, proForma) {
-    return proForma
-      ? null
-      : collectionToWeakSetStore(reanimateCollection(vobjID));
-  }
+  const reanimateScalarWeakSetStore = (vobjID, proForma) =>
+    proForma ? null : collectionToWeakSetStore(reanimateCollection(vobjID));
 
   const testHooks = { storeSizeInternal, makeCollection };
 
@@ -787,4 +766,4 @@ export function makeCollectionManager(
     makeScalarBigWeakSetStore,
     testHooks,
   });
-}
+};

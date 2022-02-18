@@ -10,7 +10,7 @@ import { encodeBase64, decodeBase64 } from '@endo/base64';
  * @param {Data} data
  * @returns {Bytes}
  */
-export function toBytes(data) {
+export const toBytes = data => {
   /** @type {Data | number[]} */
   let bytes = data;
   // TODO: We really need marshallable TypedArrays.
@@ -22,7 +22,7 @@ export function toBytes(data) {
   // the String's representation.
   const buf = new Uint8Array(bytes);
   return String.fromCharCode.apply(null, buf);
-}
+};
 
 /**
  * Convert bytes to a String.
@@ -30,9 +30,7 @@ export function toBytes(data) {
  * @param {Bytes} bytes
  * @returns {string}
  */
-export function bytesToString(bytes) {
-  return bytes;
-}
+export const bytesToString = bytes => bytes;
 
 /**
  * Base64, as specified in https://tools.ietf.org/html/rfc4648#section-4
@@ -40,7 +38,7 @@ export function bytesToString(bytes) {
  * @param {Data} data
  * @returns {string} base64 encoding
  */
-export function dataToBase64(data) {
+export const dataToBase64 = data => {
   /** @type {Uint8Array?} */
   let bytes;
   if (typeof data === 'string') {
@@ -52,7 +50,7 @@ export function dataToBase64(data) {
     bytes = new Uint8Array(data);
   }
   return encodeBase64(bytes);
-}
+};
 
 /**
  * Decodes a string into base64.
@@ -60,6 +58,4 @@ export function dataToBase64(data) {
  * @param {string} string Base64-encoded string
  * @returns {Bytes} decoded bytes
  */
-export function base64ToBytes(string) {
-  return toBytes(decodeBase64(string));
-}
+export const base64ToBytes = string => toBytes(decodeBase64(string));

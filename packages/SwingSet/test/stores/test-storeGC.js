@@ -22,7 +22,7 @@ let aWeakSetStore;
 
 const mainHolderIdx = 1;
 
-function buildRootObject(vatPowers) {
+const buildRootObject = vatPowers => {
   const { VatData } = vatPowers;
   const {
     makeScalarBigMapStore,
@@ -35,71 +35,69 @@ function buildRootObject(vatPowers) {
 
   const holders = [];
 
-  function makeMapStore() {
+  const makeMapStore = () => {
     const result = makeScalarBigMapStore(`store #${nextStoreNumber}`, {
       keySchema: M.any(),
     });
     nextStoreNumber += 1;
     return result;
-  }
+  };
 
-  function makeWeakMapStore() {
+  const makeWeakMapStore = () => {
     const result = makeScalarBigWeakMapStore(`store #${nextStoreNumber}`, {
       keySchema: M.any(),
     });
     nextStoreNumber += 1;
     return result;
-  }
+  };
 
-  function makeWeakSetStore() {
+  const makeWeakSetStore = () => {
     const result = makeScalarBigWeakSetStore(`store #${nextStoreNumber}`, {
       keySchema: M.any(),
     });
     nextStoreNumber += 1;
     return result;
-  }
+  };
 
-  function makeHolder(stuff) {
+  const makeHolder = stuff => {
     const result = makeMapStore();
     result.init('foo', stuff);
     return result;
-  }
+  };
 
   const mainHolder = makeHolder(null);
 
   return Far('root', {
-    makeAndHold() {
+    makeAndHold: () => {
       heldStore = makeMapStore();
     },
-    makeAndHoldAndKey() {
+    makeAndHoldAndKey: () => {
       aWeakMapStore = makeWeakMapStore();
       aWeakSetStore = makeWeakSetStore();
       heldStore = makeMapStore();
       aWeakMapStore.init(heldStore, 'arbitrary');
       aWeakSetStore.add(heldStore);
     },
-    makeAndHoldRemotable() {
+    makeAndHoldRemotable: () => {
       heldStore = Far('thing', {});
     },
-    dropHeld() {
+    dropHeld: () => {
       heldStore = null;
     },
-    storeHeld() {
+    storeHeld: () => {
       mainHolder.set('foo', heldStore);
     },
-    dropStored() {
+    dropStored: () => {
       mainHolder.set('foo', null);
     },
-    fetchAndHold() {
+    fetchAndHold: () => {
       heldStore = mainHolder.get('foo');
     },
-    exportHeld() {
-      return heldStore;
-    },
-    importAndHold(thing) {
+    exportHeld: () => heldStore,
+    importAndHold: thing => {
       heldStore = thing;
     },
-    importAndHoldAndKey(key) {
+    importAndHoldAndKey: key => {
       aWeakMapStore = makeWeakMapStore();
       aWeakSetStore = makeWeakSetStore();
       heldStore = key;
@@ -107,42 +105,42 @@ function buildRootObject(vatPowers) {
       aWeakSetStore.add(key);
     },
 
-    prepareStore3() {
+    prepareStore3: () => {
       holders.push(makeHolder(heldStore));
       holders.push(makeHolder(heldStore));
       holders.push(makeHolder(heldStore));
       heldStore = null;
     },
-    finishClearHolders() {
+    finishClearHolders: () => {
       for (let i = 0; i < holders.length; i += 1) {
         holders[i].set('foo', null);
       }
     },
-    finishDropHolders() {
+    finishDropHolders: () => {
       for (let i = 0; i < holders.length; i += 1) {
         holders[i] = null;
       }
     },
-    prepareStoreLinked() {
+    prepareStoreLinked: () => {
       let holder = makeHolder(heldStore);
       holder = makeHolder(holder);
       holder = makeHolder(holder);
       holders.push(holder);
       heldStore = null;
     },
-    noOp() {
+    noOp: () => {
       // used when an extra cycle is needed to pump GC
     },
   });
-}
+};
 
-function makeRPMaker() {
+const makeRPMaker = () => {
   let idx = 0;
   return () => {
     idx += 1;
     return `p-${idx}`;
   };
-}
+};
 
 const qcUndefined = { '@qclass': 'undefined' };
 const NONE = undefined;
@@ -152,110 +150,81 @@ const anySchema = JSON.stringify(
   capargs([{ '@qclass': 'tagged', tag: 'match:any', payload: qcUndefined }]),
 );
 
-function stringVal(str) {
-  return {
-    body: JSON.stringify(str),
-    slots: [],
-  };
-}
+const stringVal = str => ({
+  body: JSON.stringify(str),
+  slots: [],
+});
 
-function stringValString(str) {
-  return JSON.stringify(stringVal(str));
-}
+const stringValString = str => JSON.stringify(stringVal(str));
 
-function refVal(vref, type) {
-  return {
-    body: JSON.stringify({
-      '@qclass': 'slot',
-      iface: `Alleged: ${type}`,
-      index: 0,
-    }),
-    slots: [vref],
-  };
-}
+const refVal = (vref, type) => ({
+  body: JSON.stringify({
+    '@qclass': 'slot',
+    iface: `Alleged: ${type}`,
+    index: 0,
+  }),
+  slots: [vref],
+});
 
-function refValString(vref, type) {
-  return JSON.stringify(refVal(vref, type));
-}
+const refValString = (vref, type) => JSON.stringify(refVal(vref, type));
 
-function refArg(vref, type) {
-  return capargs(
-    [{ '@qclass': 'slot', iface: `Alleged: ${type}`, index: 0 }],
-    [vref],
-  );
-}
+const refArg = (vref, type) =>
+  capargs([{ '@qclass': 'slot', iface: `Alleged: ${type}`, index: 0 }], [vref]);
 
-function thingArg(vref) {
-  return capargs(
-    [{ '@qclass': 'slot', iface: 'Alleged: thing', index: 0 }],
-    [vref],
-  );
-}
+const thingArg = vref =>
+  capargs([{ '@qclass': 'slot', iface: 'Alleged: thing', index: 0 }], [vref]);
 
-function thingRefValString(vref) {
-  return refValString(vref, 'thing');
-}
+const thingRefValString = vref => refValString(vref, 'thing');
 
 const nullValString = JSON.stringify({ body: 'null', slots: [] });
 
-function mapRef(idx) {
-  return `o+1/${idx}`;
-}
+const mapRef = idx => `o+1/${idx}`;
 
-function mapRefArg(idx) {
-  return refArg(mapRef(idx), 'mapStore');
-}
+const mapRefArg = idx => refArg(mapRef(idx), 'mapStore');
 
-function mapRefVal(idx) {
-  return refVal(mapRef(idx), 'mapStore');
-}
+const mapRefVal = idx => refVal(mapRef(idx), 'mapStore');
 
-function mapRefValString(idx) {
-  return refValString(mapRef(idx), 'mapStore');
-}
+const mapRefValString = idx => refValString(mapRef(idx), 'mapStore');
 
-function matchResolveOne(vref, value) {
-  return { type: 'resolve', resolutions: [[vref, false, value]] };
-}
+const matchResolveOne = (vref, value) => ({
+  type: 'resolve',
+  resolutions: [[vref, false, value]],
+});
 
-function matchVatstoreGet(key, result) {
-  return { type: 'vatstoreGet', key, result };
-}
+const matchVatstoreGet = (key, result) => ({
+  type: 'vatstoreGet',
+  key,
+  result,
+});
 
-function matchVatstoreGetAfter(priorKey, start, end, result) {
-  return { type: 'vatstoreGetAfter', priorKey, start, end, result };
-}
+const matchVatstoreGetAfter = (priorKey, start, end, result) => ({
+  type: 'vatstoreGetAfter',
+  priorKey,
+  start,
+  end,
+  result,
+});
 
-function matchVatstoreDelete(key) {
-  return { type: 'vatstoreDelete', key };
-}
+const matchVatstoreDelete = key => ({ type: 'vatstoreDelete', key });
 
-function matchVatstoreSet(key, value) {
-  return { type: 'vatstoreSet', key, value };
-}
+const matchVatstoreSet = (key, value) => ({ type: 'vatstoreSet', key, value });
 
-function matchRetireExports(...slots) {
-  return { type: 'retireExports', slots };
-}
+const matchRetireExports = (...slots) => ({ type: 'retireExports', slots });
 
-function matchDropImports(...slots) {
-  return { type: 'dropImports', slots };
-}
+const matchDropImports = (...slots) => ({ type: 'dropImports', slots });
 
-function matchRetireImports(...slots) {
-  return { type: 'retireImports', slots };
-}
+const matchRetireImports = (...slots) => ({ type: 'retireImports', slots });
 
 const root = 'o+0';
 
-function setupLifecycleTest(t) {
+const setupLifecycleTest = t => {
   const { log, syscall } = buildSyscall();
   const nextRP = makeRPMaker();
   const th = [];
   const dispatch = makeDispatch(syscall, buildRootObject, 'bob', false, 0, th);
   const [testHooks] = th;
 
-  async function dispatchMessage(message, args = capargs([])) {
+  const dispatchMessage = async (message, args = capargs([])) => {
     const rp = nextRP();
     await dispatch(makeMessage(root, message, args, rp));
     // XXX TERRIBLE HACK WARNING XXX The following GC call is terrible but
@@ -282,19 +251,19 @@ function setupLifecycleTest(t) {
     engineGC();
     await dispatch(makeBringOutYourDead());
     return rp;
-  }
-  async function dispatchDropExports(...vrefs) {
+  };
+  const dispatchDropExports = async (...vrefs) => {
     await dispatch(makeDropExports(...vrefs));
     await dispatch(makeBringOutYourDead());
-  }
-  async function dispatchRetireImports(...vrefs) {
+  };
+  const dispatchRetireImports = async (...vrefs) => {
     await dispatch(makeRetireImports(...vrefs));
     await dispatch(makeBringOutYourDead());
-  }
-  async function dispatchRetireExports(...vrefs) {
+  };
+  const dispatchRetireExports = async (...vrefs) => {
     await dispatch(makeRetireExports(...vrefs));
     await dispatch(makeBringOutYourDead());
-  }
+  };
 
   const v = { t, log };
 
@@ -306,66 +275,66 @@ function setupLifecycleTest(t) {
     dispatchRetireImports,
     testHooks,
   };
-}
+};
 
-function validate(v, match) {
+const validate = (v, match) => {
   v.t.deepEqual(v.log.shift(), match);
-}
+};
 
-function validateDone(v) {
+const validateDone = v => {
   v.t.deepEqual(v.log, []);
-}
+};
 
-function validateReturned(v, rp) {
+const validateReturned = (v, rp) => {
   validate(v, matchResolveOne(rp, undefinedVal));
-}
+};
 
-function validateRefCountCheck(v, vref, rc) {
+const validateRefCountCheck = (v, vref, rc) => {
   validate(v, matchVatstoreGet(`vom.rc.${vref}`, rc));
-}
+};
 
-function validateExportStatusCheck(v, vref, es) {
+const validateExportStatusCheck = (v, vref, es) => {
   validate(v, matchVatstoreGet(`vom.es.${vref}`, es));
-}
+};
 
-function validateStatusCheck(v, vref, rc, es) {
+const validateStatusCheck = (v, vref, rc, es) => {
   validateRefCountCheck(v, vref, rc);
   validateExportStatusCheck(v, vref, es);
-}
+};
 
-function validateCreate(v, idx, isWeak = false) {
+const validateCreate = (v, idx, isWeak = false) => {
   validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
   if (!isWeak) {
     validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
   }
   validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, anySchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, `store #${idx}`));
-}
+};
 
-function validateCreateStore(v, idx, isWeak) {
+const validateCreateStore = (v, idx, isWeak) => {
   validateCreate(v, idx, isWeak);
-}
+};
 
-function validateUpdate(v, key, before, after) {
+const validateUpdate = (v, key, before, after) => {
   validate(v, matchVatstoreGet(key, before));
   validate(v, matchVatstoreSet(key, after));
-}
+};
 
-function validateMakeAndHold(v, rp) {
+const validateMakeAndHold = (v, rp) => {
   validateCreateStore(v, 2);
   validateReturned(v, rp);
   validateDone(v);
-}
+};
 
-function validateStoreHeld(v, rp, rcBefore, rcAfter) {
+const validateStoreHeld = (v, rp, rcBefore, rcAfter) => {
   validate(v, matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, nullValString));
   validateUpdate(v, `vom.rc.${mapRef(2)}`, rcBefore, rcAfter);
   validate(v, matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(2)));
   validateReturned(v, rp);
   validateDone(v);
-}
+};
 
-function validateDeleteMetadataOnly(
+const validateDeleteMetadataOnly = (
   v,
   idx,
   entries,
@@ -373,7 +342,7 @@ function validateDeleteMetadataOnly(
   contentType,
   rc,
   nonVirtual,
-) {
+) => {
   if (contentRef !== NONE) {
     validate(
       v,
@@ -447,9 +416,9 @@ function validateDeleteMetadataOnly(
   );
   validate(v, matchVatstoreDelete(`vom.rc.${mapRef(idx)}`));
   validate(v, matchVatstoreDelete(`vom.es.${mapRef(idx)}`));
-}
+};
 
-function validateDeleteMetadata(
+const validateDeleteMetadata = (
   v,
   es,
   idx,
@@ -458,7 +427,7 @@ function validateDeleteMetadata(
   contentType,
   rc,
   nonVirtual,
-) {
+) => {
   validateExportStatusCheck(v, mapRef(idx), es);
   validateDeleteMetadataOnly(
     v,
@@ -469,9 +438,9 @@ function validateDeleteMetadata(
     rc,
     nonVirtual,
   );
-}
+};
 
-function validateDropStored(v, rp, postCheck, rc, es, deleteMetadata) {
+const validateDropStored = (v, rp, postCheck, rc, es, deleteMetadata) => {
   validate(v, matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(2)));
   validateUpdate(v, `vom.rc.${mapRef(2)}`, '1', '0');
   validate(v, matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, nullValString));
@@ -485,9 +454,9 @@ function validateDropStored(v, rp, postCheck, rc, es, deleteMetadata) {
     }
   }
   validateDone(v);
-}
+};
 
-function validateDropStoredWithGCAndRetire(v, rp, postCheck, rc, es) {
+const validateDropStoredWithGCAndRetire = (v, rp, postCheck, rc, es) => {
   validate(v, matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(2)));
   validateUpdate(v, `vom.rc.${mapRef(2)}`, '1', '0');
   validate(v, matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, nullValString));
@@ -498,9 +467,9 @@ function validateDropStoredWithGCAndRetire(v, rp, postCheck, rc, es) {
   }
   validate(v, matchRetireExports(mapRef(2)));
   validateDone(v);
-}
+};
 
-function validateFetchAndHold(v, rp, idx) {
+const validateFetchAndHold = (v, rp, idx) => {
   validate(
     v,
     matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(idx)),
@@ -509,39 +478,39 @@ function validateFetchAndHold(v, rp, idx) {
   validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
   validateReturned(v, rp);
   validateDone(v);
-}
+};
 
-function validateExportHeld(v, rp, idx) {
+const validateExportHeld = (v, rp, idx) => {
   validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, '1'));
   validate(v, matchResolveOne(rp, mapRefVal(idx)));
   validateDone(v);
-}
+};
 
-function validateImportAndHold(v, rp, idx) {
+const validateImportAndHold = (v, rp, idx) => {
   if (idx !== NONE) {
     validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, anySchema));
     validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
   }
   validateReturned(v, rp);
   validateDone(v);
-}
+};
 
-function validateDropHeldWithGC(v, rp, rc, es) {
+const validateDropHeldWithGC = (v, rp, rc, es) => {
   validateReturned(v, rp);
   validateRefCountCheck(v, mapRef(2), rc);
   validateDeleteMetadata(v, es, 2, 0);
   validateDone(v);
-}
+};
 
-function validateCreateHolder(v, idx) {
+const validateCreateHolder = (v, idx) => {
   validateCreate(v, idx);
   validate(v, matchVatstoreGet(`vc.${idx}.sfoo`));
   validate(v, matchVatstoreSet(`vc.${idx}.sfoo`, nullValString));
   validate(v, matchVatstoreGet(`vc.${idx}.|entryCount`, '0'));
   validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, '1'));
-}
+};
 
-function validateInit(v) {
+const validateInit = v => {
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
     v,
@@ -551,42 +520,42 @@ function validateInit(v) {
     ),
   );
   validateCreateHolder(v, 1);
-}
+};
 
-function validateDropHeld(v, rp, rc, es) {
+const validateDropHeld = (v, rp, rc, es) => {
   validateReturned(v, rp);
   validate(v, matchVatstoreGet(`vom.rc.${mapRef(2)}`, rc));
   validate(v, matchVatstoreGet(`vom.es.${mapRef(2)}`, es));
   validateDone(v);
-}
+};
 
-function validateDropHeldWithGCAndRetire(v, rp) {
+const validateDropHeldWithGCAndRetire = (v, rp) => {
   validateReturned(v, rp);
   validateRefCountCheck(v, mapRef(2), NONE);
   validateDeleteMetadata(v, '0', 2, 0);
   validate(v, matchRetireExports(mapRef(2)));
   validateDone(v);
-}
+};
 
-function validateDropExports(v, idx, rc, es) {
+const validateDropExports = (v, idx, rc, es) => {
   validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, es));
   validate(v, matchVatstoreGet(`vom.rc.${mapRef(idx)}`, rc));
   validateDone(v);
-}
+};
 
-function validateDropExportsWithGCAndRetire(v, idx, rc, es) {
+const validateDropExportsWithGCAndRetire = (v, idx, rc, es) => {
   validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, es));
   validate(v, matchVatstoreGet(`vom.rc.${mapRef(idx)}`, rc));
   validateRefCountCheck(v, mapRef(2), rc);
   validateDeleteMetadata(v, es, 2, 0);
   validate(v, matchRetireExports(mapRef(2)));
   validateDone(v);
-}
+};
 
-function validateRetireExports(v, idx) {
+const validateRetireExports = (v, idx) => {
   validate(v, matchVatstoreDelete(`vom.es.${mapRef(idx)}`));
   validateDone(v);
-}
+};
 
 // NOTE: these tests must be run serially, since they share a heap and garbage
 // collection during one test can interfere with the deterministic behavior of a
@@ -872,7 +841,7 @@ test.serial('store lifecycle 8', async t => {
   validateDropExportsWithGCAndRetire(v, 2, '0', '0');
 });
 
-function validatePrepareStore3(
+const validatePrepareStore3 = (
   v,
   rp,
   base,
@@ -880,7 +849,7 @@ function validatePrepareStore3(
   content,
   checkES,
   nonVirtual,
-) {
+) => {
   validateCreate(v, base);
   validate(v, matchVatstoreGet(`vc.${base}.sfoo`, NONE));
   if (!nonVirtual) {
@@ -916,7 +885,7 @@ function validatePrepareStore3(
     }
   }
   validateDone(v);
-}
+};
 
 test.serial('store refcount management 1', async t => {
   const { v, dispatchMessage } = setupLifecycleTest(t);

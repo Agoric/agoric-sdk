@@ -20,10 +20,10 @@ directly.
  *
  * @returns {HostStore} a host store as described by the parameters
  */
-export function provideHostStorage(
+export const provideHostStorage = (
   initialize = true,
   kernelStateDBDir = undefined,
-) {
+) => {
   let swingStore;
   if (kernelStateDBDir) {
     if (initialize) {
@@ -38,4 +38,4 @@ export function provideHostStorage(
     kvStore: swingStore.kvStore,
     streamStore: swingStore.streamStore,
   };
-}
+};

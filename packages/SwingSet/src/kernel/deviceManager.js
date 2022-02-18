@@ -26,7 +26,7 @@ import '../types.js';
  * @param {*} deviceParameters  Parameters from the device's config entry
  * @param {*} deviceSyscallHandler
  */
-export default function makeDeviceManager(
+export default (
   deviceName,
   deviceNamespace,
   state,
@@ -34,7 +34,7 @@ export default function makeDeviceManager(
   testLog,
   deviceParameters,
   deviceSyscallHandler,
-) {
+) => {
   const syscall = harden({
     sendOnly: (target, method, args) => {
       const dso = harden(['sendOnly', target, method, args]);
@@ -84,7 +84,7 @@ export default function makeDeviceManager(
    * @param { DeviceInvocation } deviceInvocation
    * @returns { DeviceInvocationResult }
    */
-  function invoke(deviceInvocation) {
+  const invoke = deviceInvocation => {
     const [target, method, args] = deviceInvocation;
     try {
       /** @type { DeviceInvocationResult } */
@@ -102,10 +102,10 @@ export default function makeDeviceManager(
       console.log(`dm.invoke failed, informing calling vat`, e);
       return harden(['error', 'device.invoke failed, see logs for details']);
     }
-  }
+  };
 
   const manager = {
     invoke,
   };
   return manager;
-}
+};

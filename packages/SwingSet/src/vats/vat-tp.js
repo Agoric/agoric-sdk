@@ -19,24 +19,24 @@ import { Far } from '@endo/marshal';
 //   const receiver = await E(vats.comms).addRemote(name, transmitter);
 //   await E(setReceiver).setReceiver(receiver);
 
-function makeCounter(render, initialValue = 7) {
+const makeCounter = (render, initialValue = 7) => {
   let nextValue = initialValue;
-  function get() {
+  const get = () => {
     const n = nextValue;
     nextValue += 1;
     return render(n);
-  }
+  };
   return harden(get);
-}
+};
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { D } = vatPowers;
   let mailbox; // mailbox device
   const remotes = new Map();
   // { outbound: { highestRemoved, highestAdded },
   //   inbound: { highestDelivered, receiver } }
 
-  function getRemote(name) {
+  const getRemote = name => {
     if (!remotes.has(name)) {
       remotes.set(name, {
         outbound: { highestRemoved: 0, highestAdded: 0 },
@@ -44,7 +44,7 @@ export function buildRootObject(vatPowers) {
       });
     }
     return remotes.get(name);
-  }
+  };
 
   const receivers = new WeakMap(); // connection -> receiver
   const connectionNames = new WeakMap(); // hostHandle -> name
@@ -66,15 +66,13 @@ export function buildRootObject(vatPowers) {
    E(E(host).lookup(helloAddress)).hello()
   */
 
-  function makeNetworkHost(allegedName, comms, cons = console) {
+  const makeNetworkHost = (allegedName, comms, cons = console) => {
     const makeAddress = makeCounter(
       n => `/alleged-name/${allegedName}/egress/${n}`,
     );
     const exportedObjects = new Map(); // address -> object
     const locatorUnum = harden({
-      lookup(address) {
-        return exportedObjects.get(address);
-      },
+      lookup: address => exportedObjects.get(address),
     });
     const { promise: theirLocatorUnum, resolve: gotTheirLocatorUnum } =
       makePromiseKit();
@@ -82,25 +80,23 @@ export function buildRootObject(vatPowers) {
     let openCalled = false;
     assert(!connectionNames.has(name), X`already have host for ${name}`);
     const host = Far('host', {
-      publish(obj) {
+      publish: obj => {
         const address = makeAddress();
         exportedObjects.set(address, obj);
         return address;
       },
-      lookup(address) {
-        return E(theirLocatorUnum).lookup(address);
-      },
+      lookup: address => E(theirLocatorUnum).lookup(address),
     });
 
     const handler = Far('host handler', {
-      async onOpen(connection, ..._args) {
+      onOpen: async (connection, ..._args) => {
         // make a new Remote for this new connection
         assert(!openCalled, X`host ${name} already opened`);
         openCalled = true;
 
         // transmitter
         const transmitter = harden({
-          transmit(msg) {
+          transmit: msg => {
             // 'msg' will be a string (vats/comms/outbound.js deliverToRemote)
             E(connection).send(msg);
           },
@@ -110,7 +106,7 @@ export function buildRootObject(vatPowers) {
         // wired to comms's tx/rx pair. Somebody has to go first, so there's
         // a cycle. TODO: maybe change comms to be easier
         const receiverReceiver = harden({
-          setReceiver(receiver) {
+          setReceiver: receiver => {
             receivers.set(connection, receiver);
           },
         });
@@ -118,25 +114,25 @@ export function buildRootObject(vatPowers) {
         await E(comms).addEgress(name, 0, locatorUnum);
         gotTheirLocatorUnum(E(comms).addIngress(name, 0));
       },
-      onReceive(connection, msg) {
+      onReceive: (connection, msg) => {
         // setReceiver ought to be called before there's any chance of
         // onReceive being called
         E(receivers.get(connection)).receive(msg);
       },
-      onClose(connection, ..._args) {
+      onClose: (connection, ..._args) => {
         receivers.delete(connection);
         console.warn(`deleting connection is not fully supported in comms`);
       },
-      infoMessage(...args) {
+      infoMessage: (...args) => {
         E(cons).log('VatTP connection info:', ...args);
       },
     });
 
     return harden({ host, handler });
-  }
+  };
 
   const handler = Far('vat-tp handler', {
-    registerMailboxDevice(mailboxDevnode) {
+    registerMailboxDevice: mailboxDevnode => {
       mailbox = mailboxDevnode;
     },
 
@@ -144,11 +140,11 @@ export function buildRootObject(vatPowers) {
      * 'name' is a string, and must match the name you pass to
      * deliverInboundMessages/deliverInboundAck
      */
-    addRemote(name) {
+    addRemote: name => {
       assert(!remotes.has(name), X`already have remote ${name}`);
       const r = getRemote(name);
       const transmitter = Far('transmitter', {
-        transmit(msg) {
+        transmit: msg => {
           const o = r.outbound;
           const num = o.highestAdded + 1;
           // console.debug(`transmit to ${name}[${num}]: ${msg}`);
@@ -157,7 +153,7 @@ export function buildRootObject(vatPowers) {
         },
       });
       const setReceiver = Far('receiver setter', {
-        setReceiver(newReceiver) {
+        setReceiver: newReceiver => {
           assert(!r.inbound.receiver, X`setReceiver is call-once`);
           r.inbound.receiver = newReceiver;
         },
@@ -165,7 +161,7 @@ export function buildRootObject(vatPowers) {
       return harden({ transmitter, setReceiver });
     },
 
-    deliverInboundMessages(name, newMessages) {
+    deliverInboundMessages: (name, newMessages) => {
       const i = getRemote(name).inbound;
       newMessages.forEach(m => {
         const [num, body] = m;
@@ -179,7 +175,7 @@ export function buildRootObject(vatPowers) {
       });
     },
 
-    deliverInboundAck(name, ack) {
+    deliverInboundAck: (name, ack) => {
       const o = getRemote(name).outbound;
       let num = o.highestRemoved + 1;
       while (num <= o.highestAdded && num <= ack) {
@@ -193,4 +189,4 @@ export function buildRootObject(vatPowers) {
   });
 
   return handler;
-}
+};

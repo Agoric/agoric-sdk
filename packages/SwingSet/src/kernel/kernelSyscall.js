@@ -8,7 +8,7 @@ import { insistDeviceID, insistVatID } from './id.js';
 /** @type { KernelSyscallResult } */
 const OKNULL = harden(['ok', null]);
 
-export function makeKernelSyscallHandler(tools) {
+export const makeKernelSyscallHandler = tools => {
   const {
     kernelKeeper,
     ephemeral,
@@ -20,39 +20,35 @@ export function makeKernelSyscallHandler(tools) {
 
   const { kvStore } = kernelKeeper;
 
-  function send(target, msg) {
+  const send = (target, msg) => {
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallSend');
     doSend(target, msg);
     return OKNULL;
-  }
+  };
 
-  function exit(vatID, isFailure, info) {
+  const exit = (vatID, isFailure, info) => {
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallExit');
     setTerminationTrigger(vatID, false, !!isFailure, info);
     return OKNULL;
-  }
+  };
 
-  function vatstoreKeyKey(vatID, key) {
-    return `${vatID}.vs.${key}`;
-  }
+  const vatstoreKeyKey = (vatID, key) => `${vatID}.vs.${key}`;
 
-  function descopeVatstoreKey(key) {
-    return key.replace(/^([^.]+)\.vs\.(.+)$/, '$2');
-  }
+  const descopeVatstoreKey = key => key.replace(/^([^.]+)\.vs\.(.+)$/, '$2');
 
   let workingPriorKey;
   let workingLowerBound;
   let workingUpperBound;
   let workingKeyIterator;
 
-  function clearVatStoreIteration() {
+  const clearVatStoreIteration = () => {
     workingPriorKey = undefined;
     workingLowerBound = undefined;
     workingUpperBound = undefined;
     workingKeyIterator = undefined;
-  }
+  };
 
   /**
    *
@@ -60,13 +56,13 @@ export function makeKernelSyscallHandler(tools) {
    * @param { string } key
    * @returns { KernelSyscallResult }
    */
-  function vatstoreGet(vatID, key) {
+  const vatstoreGet = (vatID, key) => {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreGet');
     const value = kvStore.get(actualKey);
     return harden(['ok', value || null]);
-  }
+  };
 
   /**
    *
@@ -75,14 +71,14 @@ export function makeKernelSyscallHandler(tools) {
    * @param { string } value
    * @returns { KernelSyscallResult }
    */
-  function vatstoreSet(vatID, key, value) {
+  const vatstoreSet = (vatID, key, value) => {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreSet');
     kvStore.set(actualKey, value);
     clearVatStoreIteration();
     return OKNULL;
-  }
+  };
 
   /**
    * Execute one step of iteration over a range of vatstore keys.
@@ -145,7 +141,7 @@ export function makeKernelSyscallHandler(tools) {
    * 'baz', 'plugh'     baz, foocount, foopriority, joober
    * 'bar', '~'         bar, baz, foocount, foopriority, joober, plugh.3, plugh.47, plugh.8, zot
    */
-  function vatstoreGetAfter(vatID, priorKey, lowerBound, upperBound) {
+  const vatstoreGetAfter = (vatID, priorKey, lowerBound, upperBound) => {
     const actualPriorKey = vatstoreKeyKey(vatID, priorKey);
     const actualLowerBound = vatstoreKeyKey(vatID, lowerBound);
     let actualUpperBound;
@@ -206,7 +202,7 @@ export function makeKernelSyscallHandler(tools) {
       const resultKey = descopeVatstoreKey(nextKey);
       return harden(['ok', [resultKey, resultValue]]);
     }
-  }
+  };
 
   /**
    *
@@ -215,14 +211,14 @@ export function makeKernelSyscallHandler(tools) {
    * @returns { KernelSyscallResult }
    */
 
-  function vatstoreDelete(vatID, key) {
+  const vatstoreDelete = (vatID, key) => {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreDelete');
     kvStore.delete(actualKey);
     clearVatStoreIteration();
     return OKNULL;
-  }
+  };
 
   /**
    *
@@ -231,7 +227,7 @@ export function makeKernelSyscallHandler(tools) {
    * @param { SwingSetCapData } args
    * @returns { KernelSyscallResult }
    */
-  function invoke(deviceSlot, method, args) {
+  const invoke = (deviceSlot, method, args) => {
     insistKernelType('device', deviceSlot);
     insistCapData(args);
     kernelKeeper.incStat('syscalls');
@@ -254,36 +250,36 @@ export function makeKernelSyscallHandler(tools) {
       assert.typeof(kr[1], 'string');
     }
     return kr;
-  }
+  };
 
-  function subscribe(vatID, kpid) {
+  const subscribe = (vatID, kpid) => {
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallSubscribe');
     doSubscribe(vatID, kpid);
     return OKNULL;
-  }
+  };
 
-  function resolve(vatID, resolutions) {
+  const resolve = (vatID, resolutions) => {
     insistVatID(vatID);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallResolve');
     doResolve(vatID, resolutions);
     return OKNULL;
-  }
+  };
 
-  function dropImports(koids) {
+  const dropImports = koids => {
     assert(Array.isArray(koids), X`dropImports given non-Array ${koids}`);
     // all the work was done during translation, there's nothing to do here
     return OKNULL;
-  }
+  };
 
-  function retireImports(koids) {
+  const retireImports = koids => {
     assert(Array.isArray(koids), X`retireImports given non-Array ${koids}`);
     // all the work was done during translation, there's nothing to do here
     return OKNULL;
-  }
+  };
 
-  function retireExports(koids) {
+  const retireExports = koids => {
     assert(Array.isArray(koids), X`retireExports given non-Array ${koids}`);
     const newActions = [];
     for (const koid of koids) {
@@ -296,13 +292,13 @@ export function makeKernelSyscallHandler(tools) {
     }
     kernelKeeper.addGCActions(newActions);
     return OKNULL;
-  }
+  };
 
   /**
    * @param { KernelSyscallObject } ksc
    * @returns {  KernelSyscallResult }
    */
-  function kernelSyscallHandler(ksc) {
+  const kernelSyscallHandler = ksc => {
     // this repeated pattern is necessary to get the typechecker to refine 'ksc' and 'args' properly
     switch (ksc[0]) {
       case 'send': {
@@ -356,7 +352,7 @@ export function makeKernelSyscallHandler(tools) {
       default:
         assert.fail(X`unknown vatSyscall type ${ksc[0]}`);
     }
-  }
+  };
 
   return harden(kernelSyscallHandler);
-}
+};

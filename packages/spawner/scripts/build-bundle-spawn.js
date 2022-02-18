@@ -8,18 +8,18 @@ import bundleSource from '@endo/bundle-source';
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-async function writeSourceBundle(contractFilename, outputPath) {
+const writeSourceBundle = async (contractFilename, outputPath) => {
   await bundleSource(contractFilename).then(bundle => {
     fs.mkdirSync(`${dirname}/../bundles`, { recursive: true });
     fs.writeFileSync(outputPath, `export default ${JSON.stringify(bundle)};`);
   });
-}
+};
 
-async function main() {
+const main = async () => {
   const contractFilename = `${dirname}/../src/vat-spawned.js`;
   const outputPath = `${dirname}/../bundles/bundle-spawn.js`;
   await writeSourceBundle(contractFilename, outputPath);
-}
+};
 
 main().then(
   _ => process.exit(0),

@@ -9,7 +9,7 @@ import {
   makeSwingsetController,
 } from '../src/index.js';
 
-async function main(basedir, argv) {
+const main = async (basedir, argv) => {
   const config = await loadBasedir(basedir);
   const enableSetup = true;
   config.defaultReapInterval = 'never';
@@ -41,7 +41,7 @@ async function main(basedir, argv) {
 
   await controller.run();
   return controller.dump();
-}
+};
 
 const encouragementBotCommsGolden = [
   '=> user.talkToBot is called with bot',

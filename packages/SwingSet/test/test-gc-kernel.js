@@ -24,56 +24,54 @@ import {
   capdataOneSlot,
 } from './util.js';
 
-function makeConsole(tag) {
+const makeConsole = tag => {
   const log = anylogger(tag);
   const cons = {};
   for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
     cons[level] = log[level];
   }
   return harden(cons);
-}
+};
 
-function writeSlogObject(o) {
-  function bigintReplacer(_, arg) {
+const writeSlogObject = o => {
+  const bigintReplacer = (_, arg) => {
     if (typeof arg === 'bigint') {
       return Number(arg);
     }
     return arg;
-  }
-  0 && console.log(JSON.stringify(o, bigintReplacer));
-}
-
-function makeEndowments() {
-  return {
-    waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
-    runEndOfCrank: () => {},
-    makeConsole,
-    writeSlogObject,
-    WeakRef,
-    FinalizationRegistry,
-    createSHA256,
   };
-}
+  0 && console.log(JSON.stringify(o, bigintReplacer));
+};
 
-function makeKernel() {
+const makeEndowments = () => ({
+  waitUntilQuiescent,
+  hostStorage: provideHostStorage(),
+  runEndOfCrank: () => {},
+  makeConsole,
+  writeSlogObject,
+  WeakRef,
+  FinalizationRegistry,
+  createSHA256,
+});
+
+const makeKernel = () => {
   const endowments = makeEndowments();
   const { kvStore } = endowments.hostStorage;
   initializeKernel({}, endowments.hostStorage);
   const kernel = buildKernel(endowments, {}, {});
   return { kernel, kvStore };
-}
+};
 
-function dumpObjects(kernel) {
+const dumpObjects = kernel => {
   const out = {};
   for (const row of kernel.dump().objects) {
     const [koid, owner, reachable, recognizable] = row;
     out[koid] = [owner, reachable, recognizable];
   }
   return out;
-}
+};
 
-function dumpVatClist(kernel, vatID) {
+const dumpVatClist = (kernel, vatID) => {
   const ktov = {};
   const vtok = {};
   for (const row of kernel.dump().kernelTable) {
@@ -84,7 +82,7 @@ function dumpVatClist(kernel, vatID) {
     }
   }
   return { ktov, vtok };
-}
+};
 
 // basic drop/retire case analysis (one importing vat)
 // - importer does 1: drop+retire, 2: drop then retire in separate cranks
@@ -102,7 +100,7 @@ function dumpVatClist(kernel, vatID) {
 //       - A: alice emits retire, gc-action retire, bob cannot emit retire
 //       - B: bob emits retire, gc-action retire, alice cannot emit retire
 
-async function prep(t, options = {}) {
+const prep = async (t, options = {}) => {
   const {
     aliceRetiresImmediately = true,
     addCarol = false,
@@ -123,8 +121,8 @@ async function prep(t, options = {}) {
 
   vrefs.amyForAlice = 'o+101';
   const logA = [];
-  function setupA(syscall, _state, _helpers, _vatPowers) {
-    function dispatch(vd) {
+  const setupA = (syscall, _state, _helpers, _vatPowers) => {
+    const dispatch = vd => {
       // console.log(`dispatchA`, vd);
       logA.push(vd);
       if (vd[0] === 'message' && vd[2].method === 'one-alice') {
@@ -163,9 +161,9 @@ async function prep(t, options = {}) {
         // or, pretend a local strongref was dropped somewhat later
         syscall.retireExports([vrefs.amyForAlice]);
       }
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
   const vatA = kernel.vatNameToID('vatA');
   vrefs.aliceForAlice = 'o+100';
@@ -174,8 +172,8 @@ async function prep(t, options = {}) {
   vrefs.promiseForBob = 'p+5';
   vrefs.resultPromiseForBob = 'p+6';
   const logB = [];
-  function setupB(syscall, _state, _helpers, _vatPowers) {
-    function dispatch(vd) {
+  const setupB = (syscall, _state, _helpers, _vatPowers) => {
+    const dispatch = vd => {
       logB.push(vd);
       // console.log(`dispatchB`, vd);
       if (vd[0] === 'message' && vd[2].method === 'two') {
@@ -238,17 +236,17 @@ async function prep(t, options = {}) {
         syscall.dropImports([vrefs.amyForBob]);
         syscall.retireImports([vrefs.amyForBob]);
       }
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB);
   const vatB = kernel.vatNameToID('vatB');
   vrefs.bobForBob = 'o+200';
   const bob = kernel.addExport(vatB, vrefs.bobForBob);
 
   const logC = [];
-  function setupC(syscall, _state, _helpers, _vatPowers) {
-    function dispatch(vd) {
+  const setupC = (syscall, _state, _helpers, _vatPowers) => {
+    const dispatch = vd => {
       logC.push(vd);
       if (vd[0] === 'message' && vd[2].method === 'two') {
         vrefs.amyForCarol = vd[2].args.slots[0];
@@ -291,9 +289,9 @@ async function prep(t, options = {}) {
         t.false(isReject);
         vrefs.amyForCarol = data.slots[0];
       }
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatC', setupC);
   const vatC = kernel.vatNameToID('vatC');
   vrefs.carolForCarol = 'o+200';
@@ -388,22 +386,13 @@ async function prep(t, options = {}) {
     );
   }
 
-  function aliceClistPresent() {
-    return !!dumpVatClist(kernel, vatA).ktov[amy];
-  }
-  function bobClistPresent() {
-    return !!dumpVatClist(kernel, vatB).ktov[amy];
-  }
-  function carolClistPresent() {
-    return !!dumpVatClist(kernel, vatC).ktov[amy];
-  }
-  function amyRetired() {
-    // console.log(`+ amy:`, JSON.stringify(dumpObjects(kernel)[amy]));
-    return dumpObjects(kernel)[amy] === undefined;
-  }
-  function gcActionsAre(expected) {
+  const aliceClistPresent = () => !!dumpVatClist(kernel, vatA).ktov[amy];
+  const bobClistPresent = () => !!dumpVatClist(kernel, vatB).ktov[amy];
+  const carolClistPresent = () => !!dumpVatClist(kernel, vatC).ktov[amy];
+  const amyRetired = () => dumpObjects(kernel)[amy] === undefined;
+  const gcActionsAre = expected => {
     t.deepEqual(kernel.dump().gcActions, expected);
-  }
+  };
   const krefs = { alice, amy, bob, carol };
   const logs = { logA, logB, logC };
   const vats = { vatA, vatB, vatC };
@@ -415,10 +404,10 @@ async function prep(t, options = {}) {
     gcActionsAre,
   };
   return { kernel, vrefs, ...krefs, ...logs, ...vats, ...preds };
-}
+};
 
 // bob emits drop+retire on the same delivery: modes 13 and 14
-async function testDropAndRetire(t, mode) {
+const testDropAndRetire = async (t, mode) => {
   const aliceRetiresImmediately = mode === '13';
   const p = await prep(t, { aliceRetiresImmediately });
   const { amy, bob, vatA, vrefs } = p;
@@ -458,7 +447,7 @@ async function testDropAndRetire(t, mode) {
   t.false(p.aliceClistPresent());
   t.true(p.amyRetired());
   p.gcActionsAre([]);
-}
+};
 
 test('mode13', async t => {
   return testDropAndRetire(t, '13');
@@ -469,7 +458,7 @@ test('mode14', async t => {
 });
 
 // bob emits only drop during the first delivery: modes 23, 24A, 24B
-async function testDrop(t, mode) {
+const testDrop = async (t, mode) => {
   const aliceRetiresImmediately = mode === '23';
   const p = await prep(t, { aliceRetiresImmediately });
   const { amy, alice, bob, vatA, vatB, vrefs } = p;
@@ -529,7 +518,7 @@ async function testDrop(t, mode) {
   t.false(p.bobClistPresent());
   t.true(p.amyRetired());
   p.gcActionsAre([]);
-}
+};
 
 test('mode23', async t => {
   return testDrop(t, '23');
@@ -548,25 +537,25 @@ test('retire before drop is error', async t => {
   await kernel.start();
 
   const amyForAlice = 'o+101';
-  function setupA(syscall, _state, _helpers, _vatPowers) {
-    function dispatch(vd) {
+  const setupA = (syscall, _state, _helpers, _vatPowers) => {
+    const dispatch = vd => {
       // console.log(`dispatchA`, vd);
       if (vd[0] === 'message' && vd[2].method === 'one') {
         const bobForAlice = vd[2].args.slots[0];
         syscall.send(bobForAlice, 'two', capdataOneSlot(amyForAlice));
       }
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatA', setupA);
   const vatA = kernel.vatNameToID('vatA');
   const aliceForAlice = 'o+100';
   const alice = kernel.addExport(vatA, aliceForAlice);
 
   let syscallError;
-  function setupB(syscall, _state, _helpers, _vatPowers) {
+  const setupB = (syscall, _state, _helpers, _vatPowers) => {
     let amyForBob;
-    function dispatch(vd) {
+    const dispatch = vd => {
       // console.log(`dispatchB`, vd);
       if (vd[0] === 'message' && vd[2].method === 'two') {
         amyForBob = vd[2].args.slots[0];
@@ -584,9 +573,9 @@ test('retire before drop is error', async t => {
           // we're doomed
         }
       }
-    }
+    };
     return dispatch;
-  }
+  };
   await kernel.createTestVat('vatB', setupB);
   const vatB = kernel.vatNameToID('vatB');
   const bobForBob = 'o+200';
@@ -1019,14 +1008,14 @@ test('terminated vat', async t => {
   const c = await buildVatController(config, []);
   c.pinVatRoot('bootstrap');
 
-  function getRefCountsAndOwners() {
+  const getRefCountsAndOwners = () => {
     const refcounts = {};
     const data = c.dump();
     data.objects.forEach(o => (refcounts[o[0]] = [o[2], o[3]]));
     const owners = {};
     data.objects.forEach(o => (owners[o[0]] = o[1]));
     return [refcounts, owners];
-  }
+  };
 
   await c.run();
   const bootstrapVat = c.vatNameToID('bootstrap');
@@ -1036,7 +1025,7 @@ test('terminated vat', async t => {
   allVatIDs.sort();
   const doomedVat = allVatIDs[allVatIDs.length - 1];
   t.is(doomedVat, 'v6');
-  function vrefsUsedByDoomed() {
+  const vrefsUsedByDoomed = () => {
     const usedByDoomed = c
       .dump()
       .kernelTable.filter(o => o[1] === doomedVat)
@@ -1044,7 +1033,7 @@ test('terminated vat', async t => {
     const vrefs = {};
     usedByDoomed.forEach(([kref, vref]) => (vrefs[vref] = kref));
     return vrefs;
-  }
+  };
   // console.log(`usedByDoomed vrefs`, vrefs);
   let vrefs = vrefsUsedByDoomed();
   const imports = Object.keys(vrefs).filter(vref => vref.startsWith('o-'));
@@ -1141,11 +1130,9 @@ test('terminated vat', async t => {
 // device receives object from vat a, returns to vat b
 
 test.serial('device transfer', async t => {
-  function vatpath(fn) {
-    return {
-      sourceSpec: new URL(`gc-device-transfer/${fn}`, import.meta.url).pathname,
-    };
-  }
+  const vatpath = fn => ({
+    sourceSpec: new URL(`gc-device-transfer/${fn}`, import.meta.url).pathname,
+  });
   const config = {
     vats: {
       bootstrap: vatpath('bootstrap-gc.js'),
@@ -1182,9 +1169,7 @@ test.serial('device transfer', async t => {
   t.is(dref, 'o-10'); // arbitrary but this is what we expect
   const kref = kvStore.get(`${deviceID}.c.${dref}`);
   t.is(kref, 'ko27'); // ditto
-  function getRefCounts() {
-    return kvStore.get(`${kref}.refCount`); // e.g. "1,1"
-  }
+  const getRefCounts = () => kvStore.get(`${kref}.refCount`);
   // the device should hold a reachable+recognizable reference, vat-left (which
   // forgot about amy) does not contribute to either form of revcount, making
   // the expected count 1,1. If deviceKeeper.js failed to establish a reference,

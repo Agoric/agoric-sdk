@@ -148,32 +148,30 @@ const oCommsRoot = '@o+0'; // Always the root of the comms vat
  *
  * @returns {unknown} a syscall object
  */
-function loggingSyscall(log) {
+const loggingSyscall = log => {
   const fakestore = new Map();
   return harden({
-    send(target, method, args, result) {
+    send: (target, method, args, result) => {
       // console.log(`<< send ${target}, ${method}, ${JSON.stringify(args)}, ${result}`);
       log.push([target, method, args, result]);
     },
-    resolve(resolutions) {
+    resolve: resolutions => {
       // console.log(`<< resolve ${JSON.stringify(resolutions)}`);
       log.push(resolutions);
     },
-    subscribe(slot) {
+    subscribe: slot => {
       // console.log(`<< subscribe ${slot}`);
       log.push(slot);
     },
-    vatstoreGet(key) {
-      return fakestore.get(key);
-    },
-    vatstoreSet(key, value) {
+    vatstoreGet: key => fakestore.get(key),
+    vatstoreSet: (key, value) => {
       fakestore.set(key, value);
     },
-    vatstoreDelete(key) {
+    vatstoreDelete: key => {
       fakestore.delete(key);
     },
   });
-}
+};
 
 /**
  * Extract the vref or rref embedded in a reference string as found in a test
@@ -184,7 +182,7 @@ function loggingSyscall(log) {
  *
  * @returns {string} the ref embedded within `scriptRef`
  */
-function refOf(scriptRef) {
+const refOf = scriptRef => {
   assert(
     scriptRef[0] === '@',
     X`expected reference ${scriptRef} to start with '@'`,
@@ -197,11 +195,9 @@ function refOf(scriptRef) {
     ref = scriptRef.substring(1, delim);
   }
   return ref;
-}
+};
 
-function flipRefOf(scriptRef) {
-  return flipRemoteSlot(refOf(scriptRef));
-}
+const flipRefOf = scriptRef => flipRemoteSlot(refOf(scriptRef));
 
 /**
  * Extract the interface name embedded in a reference string as found in a test
@@ -213,14 +209,14 @@ function flipRefOf(scriptRef) {
  *
  * @returns {string|undefined} the ref embedded within `scriptRef`
  */
-function ifaceOf(scriptRef) {
+const ifaceOf = scriptRef => {
   const delim = scriptRef.indexOf(':');
   if (delim < 0) {
     return undefined;
   } else {
     return scriptRef.substring(delim + 1);
   }
-}
+};
 
 /**
  * Generate a capdata object from an arbitrary (more or less) value.  This is
@@ -231,10 +227,10 @@ function ifaceOf(scriptRef) {
  *
  * @returns {unknown} a capdata object kinda sorta representing `from`
  */
-function capdata(from) {
+const capdata = from => {
   const slots = [];
 
-  function encodeValue(value) {
+  const encodeValue = value => {
     const typestr = typeof value;
     switch (typestr) {
       case 'object':
@@ -266,11 +262,11 @@ function capdata(from) {
       default:
         assert.fail(`cannot use ${typestr} values in test script`);
     }
-  }
+  };
 
   const bodyObj = encodeValue(from);
   return { body: JSON.stringify(bodyObj), slots };
-}
+};
 
 /**
  * Translate a message into the form used by the comms protocol.
@@ -284,7 +280,7 @@ function capdata(from) {
  *
  * @returns {string} the message encoded in comms protocol format
  */
-function remoteMessage(doFlip, target, method, args, result) {
+const remoteMessage = (doFlip, target, method, args, result) => {
   const slots = doFlip
     ? args.slots.map(rref => flipRemoteSlot(rref))
     : args.slots;
@@ -299,7 +295,7 @@ function remoteMessage(doFlip, target, method, args, result) {
     result = doFlip ? flipRemoteSlot(result) : result;
   }
   return `deliver:${target}:${method}:${result}${ss};${args.body}`;
-}
+};
 
 /**
  * @typedef {[string, boolean, unknown]} Resolution
@@ -319,7 +315,7 @@ function remoteMessage(doFlip, target, method, args, result) {
  *
  * @returns {string} the resolutions encoded in comms protocol format
  */
-function remoteResolutions(doFlip, resolutions) {
+const remoteResolutions = (doFlip, resolutions) => {
   const msgs = [];
   for (const resolution of resolutions) {
     const [target, rejected, data] = resolution;
@@ -335,7 +331,7 @@ function remoteResolutions(doFlip, resolutions) {
     msgs.push(`resolve:${rejectedTag}:${rtarget}${ss};${data.body}`);
   }
   return msgs.join('\n');
-}
+};
 
 /**
  * Construct and return a new comms vat driver.
@@ -346,7 +342,7 @@ function remoteResolutions(doFlip, resolutions) {
  *
  * @returns {unknown} a new vat driver instance
  */
-export function commsVatDriver(t, verbose = false) {
+export const commsVatDriver = (t, verbose = false) => {
   const log = [];
   const syscall = loggingSyscall(log);
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
@@ -364,7 +360,7 @@ export function commsVatDriver(t, verbose = false) {
    * @returns {unknown} A capdata representation of `msg` (with the appropriate
    *   sequence numbers attached) for delivery to `remote`.
    */
-  function prepareTransmit(remote, msg) {
+  const prepareTransmit = (remote, msg) => {
     // prettier-ignore
     const encodedMsg = [`${remote.sendFromSeqNum}:${remote.lastToSeqNum}:${msg}`];
     if (verbose) {
@@ -380,7 +376,7 @@ export function commsVatDriver(t, verbose = false) {
       body: JSON.stringify(encodedMsg),
       slots: [],
     };
-  }
+  };
 
   /**
    * Generate args for a 'receive' message delivering a comms protocol message
@@ -392,7 +388,7 @@ export function commsVatDriver(t, verbose = false) {
    * @returns {unknown} A capdata representation of `msg` (with the appropriate
    *   sequence numbers attached) for delivery from `remote`.
    */
-  function prepareReceive(remote, msg) {
+  const prepareReceive = (remote, msg) => {
     const encodedMsg = [
       `${remote.sendToSeqNum}:${remote.lastFromSeqNum - remote.lag}:${msg}`,
     ];
@@ -406,7 +402,7 @@ export function commsVatDriver(t, verbose = false) {
       body: JSON.stringify(encodedMsg),
       slots: [],
     };
-  }
+  };
 
   /**
    * Deliver a message into the comms vat.  It will be a test failure if the log
@@ -421,7 +417,7 @@ export function commsVatDriver(t, verbose = false) {
    * @param {string|undefined} result  Scriptref of the result promise or
    *   undefined to indicate a one-way message.
    */
-  function injectSend(who, target, method, args, result) {
+  const injectSend = (who, target, method, args, result) => {
     t.deepEqual(log, []);
     if (who === 'k') {
       dispatch(makeMessage(target, method, args, result));
@@ -433,7 +429,7 @@ export function commsVatDriver(t, verbose = false) {
       );
       dispatch(makeMessage(remote.receiver, 'receive', msg));
     }
-  }
+  };
 
   /**
    * Observe a message sent by the comms vat via a send syscall.  It will be a
@@ -448,7 +444,7 @@ export function commsVatDriver(t, verbose = false) {
    * @param {string|undefined} result  Scriptref of the result promise or
    *   undefined to indicate a one-way message.
    */
-  function observeSend(who, target, method, args, result) {
+  const observeSend = (who, target, method, args, result) => {
     if (who === 'k') {
       t.deepEqual(log.shift(), [target, method, args, result]);
     } else {
@@ -464,7 +460,7 @@ export function commsVatDriver(t, verbose = false) {
         undefined,
       ]);
     }
-  }
+  };
 
   /**
    * Deliver a group of promise resolutions into the comms vat.  It will be a
@@ -474,7 +470,7 @@ export function commsVatDriver(t, verbose = false) {
    *   the kernel, or 'a', b', or 'c', one of the remotes.
    * @param {Resolution[]} resolutions  Array of resolutions
    */
-  function injectResolutions(who, resolutions) {
+  const injectResolutions = (who, resolutions) => {
     t.deepEqual(log, []);
     if (who === 'k') {
       dispatch(makeResolutions(resolutions));
@@ -483,7 +479,7 @@ export function commsVatDriver(t, verbose = false) {
       const msg = prepareReceive(remote, remoteResolutions(false, resolutions));
       dispatch(makeMessage(remote.receiver, 'receive', msg));
     }
-  }
+  };
 
   /**
    * Observe a group of promise resolutions originating in the comms vat via a
@@ -494,7 +490,7 @@ export function commsVatDriver(t, verbose = false) {
    *   the kernel, or 'a', b', or 'c', one of the remotes.
    * @param {Resolution[]} resolutions  Array of resolutions
    */
-  function observeResolutions(who, resolutions) {
+  const observeResolutions = (who, resolutions) => {
     if (who === 'k') {
       t.deepEqual(log.shift(), resolutions);
     } else {
@@ -507,7 +503,7 @@ export function commsVatDriver(t, verbose = false) {
         undefined,
       ]);
     }
-  }
+  };
 
   /**
    * Observe the comms vat subscribing to a promise.  This is always directed to
@@ -516,9 +512,9 @@ export function commsVatDriver(t, verbose = false) {
    *
    * @param {string} target  vref of the promise being subscribed to
    */
-  function observeSubscribe(target) {
+  const observeSubscribe = target => {
     t.deepEqual(log.shift(), target);
-  }
+  };
 
   /**
    * Inject a message acknowledgement lag into the simulation of traffic between
@@ -534,7 +530,7 @@ export function commsVatDriver(t, verbose = false) {
    *   lag:'a', b', or 'c'.
    * @param {number} lag  How much lag the remote will be subjected to.
    */
-  function injectLag(who, lag = 1) {
+  const injectLag = (who, lag = 1) => {
     assert(typeof lag === 'number' && lag >= 0);
     const remote = remotes.get(who);
     if (lag > remote.lag) {
@@ -542,7 +538,7 @@ export function commsVatDriver(t, verbose = false) {
     } else {
       remote.lag = lag;
     }
-  }
+  };
 
   /**
    * Generate a new remote and add it to the table of remotes.
@@ -553,7 +549,7 @@ export function commsVatDriver(t, verbose = false) {
    * @param {string}  receiver Scriptref of the receiver objec that will be sent
    *   to by the other end
    */
-  function makeNewRemote(name, transmitter, receiver) {
+  const makeNewRemote = (name, transmitter, receiver) => {
     remotes.set(name, {
       transmitter: refOf(transmitter),
       receiver: refOf(receiver),
@@ -565,11 +561,11 @@ export function commsVatDriver(t, verbose = false) {
       lag: 0,
       name,
     });
-  }
+  };
 
-  function insistProperActor(who) {
+  const insistProperActor = who => {
     assert(who === 'k' || who === 'a' || who === 'b' || who === 'c');
-  }
+  };
 
   const importPromiseCounter = { k: 10, a: 40, b: 40, c: 40 };
   /**
@@ -581,7 +577,7 @@ export function commsVatDriver(t, verbose = false) {
    * @returns {string} a scriptref ('@p-NN' or '@rp-NN' as appropriate) for an
    *   imported promise
    */
-  function newImportPromise(from) {
+  const newImportPromise = from => {
     insistProperActor(from);
     if (from === 'k') {
       const result = `@p-${importPromiseCounter.k}`;
@@ -592,7 +588,7 @@ export function commsVatDriver(t, verbose = false) {
       importPromiseCounter[from] += 1;
       return result;
     }
-  }
+  };
 
   const exportPromiseCounter = { k: 40, a: 40, b: 1040, c: 2040 };
   /**
@@ -604,7 +600,7 @@ export function commsVatDriver(t, verbose = false) {
    * @returns {string} a scriptref ('@p+NN' or '@rp+NN' as appropriate) for an
    *   exported promise
    */
-  function newExportPromise(to) {
+  const newExportPromise = to => {
     insistProperActor(to);
     if (to === 'k') {
       const result = `@p+${exportPromiseCounter.k}`;
@@ -615,7 +611,7 @@ export function commsVatDriver(t, verbose = false) {
       exportPromiseCounter[to] += 1;
       return result;
     }
-  }
+  };
 
   const importObjectCounter = { k: 60, a: 160, b: 160, c: 160 };
   /**
@@ -627,7 +623,7 @@ export function commsVatDriver(t, verbose = false) {
    * @returns {string} a scriptref ('@o-NN' or '@ro-NN' as appropriate) for an
    *   imported object
    */
-  function newImportObject(from) {
+  const newImportObject = from => {
     insistProperActor(from);
     if (from === 'k') {
       const result = `@o-${importObjectCounter.k}`;
@@ -638,7 +634,7 @@ export function commsVatDriver(t, verbose = false) {
       importObjectCounter[from] += 1;
       return result;
     }
-  }
+  };
 
   const exportObjectCounter = { k: 30, a: 20, b: 1020, c: 2020 };
   /**
@@ -651,7 +647,7 @@ export function commsVatDriver(t, verbose = false) {
    * @returns {string} a scriptref ('@o+NN', '@o+NN:IFACE', '@ro+NN', or
    *   '@ro+NN:IFACE' as appropriate) for an exported object
    */
-  function newExportObject(to, iface) {
+  const newExportObject = (to, iface) => {
     insistProperActor(to);
     if (to === 'k') {
       const result = `@o+${exportObjectCounter.k}`;
@@ -662,17 +658,17 @@ export function commsVatDriver(t, verbose = false) {
       exportObjectCounter[to] += 1;
       return result;
     }
-  }
+  };
 
   /**
    * Indicate that the test is completed.  At this point it is a test failure if
    * the log is not empty (i.e., if there are any unobserved syscalls remaining.
    */
-  function done() {
+  const done = () => {
     t.deepEqual(log, []);
-  }
+  };
 
-  function _(what, ...params) {
+  const _ = (what, ...params) => {
     if (verbose) {
       console.log(`---- ${what} ${params}`);
     }
@@ -728,7 +724,7 @@ export function commsVatDriver(t, verbose = false) {
         assert.fail(`illegal op ${op}`);
       }
     }
-  }
+  };
 
   /**
    * Setup a new remote.  This will install a new entry in the remotes table and
@@ -740,7 +736,7 @@ export function commsVatDriver(t, verbose = false) {
    *   'b', or 'c', but there's nothing in the mechanism here that requires
    *   this.
    */
-  function setupRemote(remoteName) {
+  const setupRemote = remoteName => {
     // objects from ersatz, hypothetical vattp vat:
     const oXmit = newImportObject('k'); // transmitter for sends to the remote
     const oSetRecv = newImportObject('k'); // object to inform remote about receiver to send to local
@@ -753,7 +749,7 @@ export function commsVatDriver(t, verbose = false) {
     _('k<r', [pResult, false, undefined]);
 
     makeNewRemote(remoteName, oXmit, oRecv);
-  }
+  };
 
   /**
    * Import a notional object from a remote into the local swingset.
@@ -767,14 +763,14 @@ export function commsVatDriver(t, verbose = false) {
    *   rref by which it will be referred when talking to the remote (the latter
    *   is needed to correctly observe message sends to the remote).
    */
-  function importFromRemote(remoteName, index, iface) {
+  const importFromRemote = (remoteName, index, iface) => {
     const oRef = newExportObject('k', iface);
     const pResult = newImportPromise('k');
     _('k>m', oCommsRoot, 'addIngress', pResult, remoteName, index, iface);
     _('k<r', [pResult, false, oRef]);
     const orRef = `@ro-${index}`;
     return [oRef, orRef];
-  }
+  };
 
   /**
    * Export an object from the local swingset to a remote.
@@ -783,12 +779,12 @@ export function commsVatDriver(t, verbose = false) {
    * @param {number} index  Index number in the comms vat of the object to be exported
    * @param {string} objRef  Scriptref of the object in the local swingset
    */
-  function exportToRemote(remoteName, index, objRef) {
+  const exportToRemote = (remoteName, index, objRef) => {
     const pResult = newImportPromise('k');
     _('k>m', oCommsRoot, 'addEgress', pResult, remoteName, index, objRef);
     _('k<r', [pResult, false, undefined]);
     return `@ro+${index}`;
-  }
+  };
 
   return {
     _,
@@ -804,4 +800,4 @@ export function commsVatDriver(t, verbose = false) {
     refOf,
     flipRefOf,
   };
-}
+};

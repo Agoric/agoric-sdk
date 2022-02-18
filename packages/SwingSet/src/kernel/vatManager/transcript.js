@@ -1,6 +1,6 @@
 import djson from '../djson.js';
 
-export function requireIdentical(vatID, originalSyscall, newSyscall) {
+export const requireIdentical = (vatID, originalSyscall, newSyscall) => {
   if (djson.stringify(originalSyscall) !== djson.stringify(newSyscall)) {
     console.log(`anachrophobia strikes vat ${vatID}`);
     console.log(`expected:`, djson.stringify(originalSyscall));
@@ -8,27 +8,27 @@ export function requireIdentical(vatID, originalSyscall, newSyscall) {
     return new Error(`historical inaccuracy in replay of ${vatID}`);
   }
   return undefined;
-}
+};
 
-export function makeTranscriptManager(
+export const makeTranscriptManager = (
   vatKeeper,
   vatID,
   compareSyscalls = requireIdentical,
-) {
+) => {
   let weAreInReplay = false;
   let playbackSyscalls;
   let currentEntry;
 
-  function startDispatch(d) {
+  const startDispatch = d => {
     currentEntry = {
       d,
       syscalls: [],
     };
-  }
+  };
 
   const gcSyscalls = new Set(['dropImports', 'retireImports', 'retireExports']);
 
-  function addSyscall(d, response) {
+  const addSyscall = (d, response) => {
     const type = d[0];
     if (gcSyscalls.has(type)) {
       return;
@@ -36,35 +36,33 @@ export function makeTranscriptManager(
     if (currentEntry) {
       currentEntry.syscalls.push({ d, response });
     }
-  }
+  };
 
-  function finishDispatch() {
+  const finishDispatch = () => {
     if (!weAreInReplay) {
       vatKeeper.addToTranscript(currentEntry);
     }
-  }
+  };
 
   // replay
 
-  function startReplay() {
+  const startReplay = () => {
     weAreInReplay = true;
-  }
+  };
 
-  function startReplayDelivery(syscalls) {
+  const startReplayDelivery = syscalls => {
     playbackSyscalls = Array.from(syscalls);
-  }
+  };
 
-  function inReplay() {
-    return weAreInReplay;
-  }
+  const inReplay = () => weAreInReplay;
 
-  function finishReplay() {
+  const finishReplay = () => {
     weAreInReplay = false;
-  }
+  };
 
   let replayError;
 
-  function simulateSyscall(newSyscall) {
+  const simulateSyscall = newSyscall => {
     const type = newSyscall[0];
     if (gcSyscalls.has(type)) {
       return undefined;
@@ -76,9 +74,9 @@ export function makeTranscriptManager(
       throw replayError;
     }
     return s.response;
-  }
+  };
 
-  function finishReplayDelivery() {
+  const finishReplayDelivery = () => {
     if (playbackSyscalls.length !== 0) {
       console.log(`anachrophobia strikes vat ${vatID}`);
       console.log(
@@ -92,13 +90,13 @@ export function makeTranscriptManager(
       }
       throw replayError;
     }
-  }
+  };
 
-  function checkReplayError() {
+  const checkReplayError = () => {
     if (replayError) {
       throw replayError;
     }
-  }
+  };
 
   return harden({
     startDispatch,
@@ -112,4 +110,4 @@ export function makeTranscriptManager(
     checkReplayError,
     inReplay,
   });
-}
+};

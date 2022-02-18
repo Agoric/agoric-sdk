@@ -1,20 +1,20 @@
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   // we use testLog to attempt to deliver messages even after we're supposed
   // to be dead and gone
   const { testLog } = vatPowers;
   let resolvers;
 
   return Far('root', {
-    live() {
+    live: () => {
       testLog(`w: I ate'nt dead`);
       if (resolvers && resolvers.length) {
         resolvers.shift()('I so resolve');
       }
     },
-    rememberThese(p1, p2) {
+    rememberThese: (p1, p2) => {
       p1.then(v => testLog(`w: p1 = ${v}`));
       p2.then(v => testLog(`w: p2 = ${v}`));
       const { promise: pBefore, resolve: rBefore } = makePromiseKit();
@@ -23,4 +23,4 @@ export function buildRootObject(vatPowers) {
       return [pBefore, pAfter];
     },
   });
-}
+};

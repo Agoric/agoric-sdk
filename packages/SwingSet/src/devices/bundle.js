@@ -57,14 +57,14 @@ entirely.
 
 */
 
-export function buildDevice(tools, endowments) {
+export const buildDevice = (tools, endowments) => {
   const { hasBundle, getBundle, getNamedBundleID } = endowments;
   const { syscall } = tools;
   const dtools = buildSerializationTools(syscall, 'bundle');
   const { unserialize, returnFromInvoke, deviceNodeForSlot } = dtools;
 
   const ROOT = 'd+0';
-  const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
+  const bundleIDRE = new RegExp('^b1-[0-9a-f]{128});
   const nextDeviceNodeIDKey = 'nextDev';
 
   // reminder: you may not perform vatstore writes during buildDevice(),
@@ -146,4 +146,4 @@ export function buildDevice(tools, endowments) {
     },
   };
   return dispatch;
-}
+};

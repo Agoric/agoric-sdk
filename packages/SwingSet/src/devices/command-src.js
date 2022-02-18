@@ -3,7 +3,7 @@ import { Far } from '@endo/marshal';
 
 import { assert, details as X } from '@agoric/assert';
 
-export function buildRootDeviceNode(tools) {
+export const buildRootDeviceNode = tools => {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
   const { registerInboundCallback, deliverResponse, sendBroadcast } =
     endowments;
@@ -25,12 +25,12 @@ export function buildRootDeviceNode(tools) {
   });
 
   return Far('root', {
-    registerInboundHandler(handler) {
+    registerInboundHandler: handler => {
       inboundHandler = handler;
       setDeviceState(harden({ inboundHandler }));
     },
 
-    sendResponse(count, isReject, obj) {
+    sendResponse: (count, isReject, obj) => {
       try {
         deliverResponse(count, isReject, JSON.stringify(obj));
       } catch (e) {
@@ -38,7 +38,7 @@ export function buildRootDeviceNode(tools) {
       }
     },
 
-    sendBroadcast(obj) {
+    sendBroadcast: obj => {
       try {
         sendBroadcast(JSON.stringify(obj));
       } catch (e) {
@@ -46,4 +46,4 @@ export function buildRootDeviceNode(tools) {
       }
     },
   });
-}
+};

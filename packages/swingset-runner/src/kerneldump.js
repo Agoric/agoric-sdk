@@ -8,7 +8,7 @@ import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
 import { organizeMainStats, printMainStats } from './printStats.js';
 
-function usage() {
+const usage = () => {
   console.log(`
 Command line:
   kerneldump [FLAGS...] [TARGET]
@@ -28,17 +28,17 @@ TARGET is one of: the base directory where a swingset's vats live, a swingset
 data store directory, or the path to a swingset database file.  If omitted, it
 defaults to the current working directory.
 `);
-}
+};
 
-function fail(message, printUsage) {
+const fail = (message, printUsage) => {
   console.log(message);
   if (printUsage) {
     usage();
   }
   process.exit(1);
-}
+};
 
-function dirContains(dirpath, suffix) {
+const dirContains = (dirpath, suffix) => {
   try {
     const files = fs.readdirSync(dirpath);
     for (const file of files) {
@@ -50,9 +50,9 @@ function dirContains(dirpath, suffix) {
   } catch (e) {
     return false;
   }
-}
+};
 
-export function main() {
+export const main = () => {
   const argv = process.argv.slice(2);
   let rawMode = false;
   let refCounts = false;
@@ -132,4 +132,4 @@ export function main() {
       auditRefCounts(swingStore.kvStore, refDump, doDump);
     }
   }
-}
+};

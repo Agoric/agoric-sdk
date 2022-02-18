@@ -33,7 +33,7 @@ test('vat reload from snapshot', async t => {
   c1.pinVatRoot('target');
   const vatID = c1.vatNameToID('target');
 
-  function getPositions() {
+  const getPositions = () => {
     const lastSnapshot = hostStorage.kvStore.get(`local.${vatID}.lastSnapshot`);
     const start = lastSnapshot
       ? JSON.parse(lastSnapshot).startPos.itemCount
@@ -41,7 +41,7 @@ test('vat reload from snapshot', async t => {
     const endPosition = hostStorage.kvStore.get(`${vatID}.t.endPosition`);
     const end = JSON.parse(endPosition).itemCount;
     return [start, end];
-  }
+  };
 
   const expected1 = [];
   c1.queueToVatRoot('target', 'count', capargs([]));

@@ -72,7 +72,7 @@ import { assert, details as X } from '@agoric/assert';
 // replace it with one that tracks which parts of the state have been
 // modified, to build more efficient Merkle proofs.
 
-export function importMailbox(data, inout = {}) {
+export const importMailbox = (data, inout = {}) => {
   const outbox = new Map();
   data.outbox.forEach(m => {
     outbox.set(Nat(m[0]), m[1]);
@@ -80,9 +80,9 @@ export function importMailbox(data, inout = {}) {
   inout.ack = Nat(data.ack);
   inout.outbox = outbox;
   return inout;
-}
+};
 
-export function exportMailbox(inout) {
+export const exportMailbox = inout => {
   const messages = [];
   inout.outbox.forEach((body, msgnum) => {
     messages.push([Number(msgnum), body]);
@@ -92,10 +92,10 @@ export function exportMailbox(inout) {
     ack: Number(inout.ack),
     outbox: messages,
   };
-}
+};
 
-export function buildMailboxStateMap(state = harden(new Map())) {
-  function getOrCreatePeer(peer) {
+export const buildMailboxStateMap = (state = harden(new Map())) => {
+  const getOrCreatePeer = peer => {
     if (!state.has(peer)) {
       const inout = {
         outbox: harden(new Map()),
@@ -104,22 +104,22 @@ export function buildMailboxStateMap(state = harden(new Map())) {
       state.set(peer, inout);
     }
     return state.get(peer);
-  }
+  };
 
-  function add(peer, msgnum, body) {
+  const add = (peer, msgnum, body) => {
     getOrCreatePeer(`${peer}`).outbox.set(Nat(msgnum), `${body}`);
-  }
+  };
 
-  function remove(peer, msgnum) {
+  const remove = (peer, msgnum) => {
     const messages = getOrCreatePeer(`${peer}`).outbox;
     messages.delete(Nat(msgnum));
-  }
+  };
 
-  function setAcknum(peer, msgnum) {
+  const setAcknum = (peer, msgnum) => {
     getOrCreatePeer(`${peer}`).ack = Nat(msgnum);
-  }
+  };
 
-  function exportToData() {
+  const exportToData = () => {
     const data = {};
     state.forEach((inout, peer) => {
       const exported = exportMailbox(inout);
@@ -129,9 +129,9 @@ export function buildMailboxStateMap(state = harden(new Map())) {
       };
     });
     return harden(data);
-  }
+  };
 
-  function populateFromData(data) {
+  const populateFromData = data => {
     assert(!state.size, X`cannot populateFromData: outbox is not empty`);
     for (const peer of Object.getOwnPropertyNames(data)) {
       const inout = getOrCreatePeer(peer);
@@ -144,7 +144,7 @@ export function buildMailboxStateMap(state = harden(new Map())) {
         inout,
       );
     }
-  }
+  };
 
   return harden({
     add,
@@ -153,41 +153,41 @@ export function buildMailboxStateMap(state = harden(new Map())) {
     exportToData,
     populateFromData,
   });
-}
+};
 
-export function buildMailbox(state) {
+export const buildMailbox = state => {
   const srcPath = new URL('mailbox-src', import.meta.url).pathname;
 
   // endowments made available to the inner half
   let inboundCallback;
 
-  function registerInboundCallback(cb) {
+  const registerInboundCallback = cb => {
     inboundCallback = cb;
-  }
+  };
 
-  function add(peer, msgnum, body) {
+  const add = (peer, msgnum, body) => {
     state.add(`${peer}`, Nat(msgnum), `${body}`);
-  }
+  };
 
-  function remove(peer, msgnum) {
+  const remove = (peer, msgnum) => {
     state.remove(`${peer}`, Nat(msgnum));
-  }
+  };
 
-  function setAcknum(peer, msgnum) {
+  const setAcknum = (peer, msgnum) => {
     state.setAcknum(`${peer}`, Nat(msgnum));
-  }
+  };
 
   // deliverInbound is made available to the host; it is used for inbound
   // messages and acks. The outbound direction uses the mailboxState object.
   // deliverInbound returns true if something changed, and the caller should
   // run the kernel's event loop.
-  function deliverInbound(peer, messages, ack) {
+  const deliverInbound = (peer, messages, ack) => {
     try {
       return Boolean(inboundCallback(peer, messages, ack));
     } catch (e) {
       assert.fail(X`error in inboundCallback: ${e}`);
     }
-  }
+  };
 
   // srcPath and endowments are used at confg time by makeDeviceSlots.
   // deliverInbound is called to deliver each incoming message.
@@ -196,4 +196,4 @@ export function buildMailbox(state) {
     endowments: { registerInboundCallback, add, remove, setAcknum },
     deliverInbound,
   };
-}
+};

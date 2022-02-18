@@ -5,9 +5,9 @@ const log = console.log;
 
 log(`=> loading bootstrap.js`);
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    bootstrap(vats) {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    bootstrap: vats => {
       log('=> Bootstrap: bootstrap() called');
       // prettier-ignore
       E(vats.alice)
@@ -19,4 +19,3 @@ export function buildRootObject(_vatPowers) {
       log('=> Bootstrap: bootstrap() done');
     },
   });
-}

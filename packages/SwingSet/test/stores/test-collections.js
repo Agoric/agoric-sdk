@@ -12,13 +12,10 @@ const {
   makeScalarBigWeakSetStore,
 } = makeFakeCollectionManager();
 
-function makeGenericRemotable(typeName) {
-  return Far(typeName, {
-    aMethod() {
-      return 'whatever';
-    },
+const makeGenericRemotable = typeName =>
+  Far(typeName, {
+    aMethod: () => 'whatever',
   });
-}
 
 const something = makeGenericRemotable('something');
 const somethingElse = makeGenericRemotable('something else');
@@ -53,23 +50,21 @@ const stuff = [
   [symbolKrusty, 'symbol krusty'],
 ];
 
-function m(s) {
-  return { message: s };
-}
+const m = s => ({ message: s });
 
-function fillBasicMapStore(store) {
+const fillBasicMapStore = store => {
   for (const item of stuff) {
     store.init(item[0], item[1]);
   }
-}
+};
 
-function fillBasicSetStore(store) {
+const fillBasicSetStore = store => {
   for (const item of stuff) {
     store.add(item[0]);
   }
-}
+};
 
-function exerciseMapOperations(t, collectionName, testStore) {
+const exerciseMapOperations = (t, collectionName, testStore) => {
   fillBasicMapStore(testStore);
   for (const item of stuff) {
     t.is(testStore.get(item[0]), item[1]);
@@ -112,9 +107,9 @@ function exerciseMapOperations(t, collectionName, testStore) {
     () => testStore.delete(22),
     m(`key 22 not found in collection "${collectionName}"`),
   );
-}
+};
 
-function exerciseSetOperations(t, collectionName, testStore) {
+const exerciseSetOperations = (t, collectionName, testStore) => {
   fillBasicSetStore(testStore);
   for (const item of stuff) {
     t.truthy(testStore.has(item[0]));
@@ -132,7 +127,7 @@ function exerciseSetOperations(t, collectionName, testStore) {
     () => testStore.delete(22),
     m(`key 22 not found in collection "${collectionName}"`),
   );
-}
+};
 
 test('basic map operations', t => {
   exerciseMapOperations(

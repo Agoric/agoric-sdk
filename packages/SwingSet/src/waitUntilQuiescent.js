@@ -4,7 +4,7 @@ import { makePromiseKit } from '@agoric/promise-kit';
 // This can only be imported from the Start Compartment, where 'setImmediate'
 // is available.
 
-export function waitUntilQuiescent() {
+export const waitUntilQuiescent = () => {
   // the delivery might cause some number of (native) Promises to be
   // created and resolved, so we use the IO queue to detect when the
   // Promise queue is empty. The IO queue (setImmediate and setTimeout) is
@@ -14,4 +14,4 @@ export function waitUntilQuiescent() {
   const { promise: queueEmptyP, resolve } = makePromiseKit();
   setImmediate(() => resolve());
   return queueEmptyP;
-}
+};

@@ -1,14 +1,12 @@
 import { Far } from '@endo/marshal';
 
-export function buildRootDeviceNode({ setDeviceState }) {
+export const buildRootDeviceNode = ({ setDeviceState }) => {
   let stash;
   return Far('root', {
-    set(arg) {
+    set: arg => {
       setDeviceState(arg);
       stash = arg;
     },
-    get() {
-      return stash;
-    },
+    get: () => stash,
   });
-}
+};

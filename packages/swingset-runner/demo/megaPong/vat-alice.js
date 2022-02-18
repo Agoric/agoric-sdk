@@ -4,7 +4,7 @@ import { Far } from '@endo/marshal';
 const log = console.log;
 
 // Ping Print Predicate, a hack to reduce log spam
-function ppp(count) {
+const ppp = count => {
   if (count > 9999) {
     return count % 9999 === 0;
   } else if (count > 999) {
@@ -16,18 +16,18 @@ function ppp(count) {
   } else {
     return true;
   }
-}
+};
 
-export function buildRootObject(_vatPowers) {
+export const buildRootObject = _vatPowers => {
   let myNickname;
   let otherContact = null;
 
-  function makeContact() {
+  const makeContact = () => {
     let otherNickname = 'unknown';
     let total = 0;
 
     return Far('contact', {
-      ping(tag, count) {
+      ping: (tag, count) => {
         total += 1;
         if (count > 0) {
           if (ppp(count)) {
@@ -45,25 +45,25 @@ export function buildRootObject(_vatPowers) {
           E(otherContact).ping(tag, count);
         }
       },
-      myNameIs(nickname) {
+      myNameIs: nickname => {
         otherNickname = nickname;
         log(`=> ${myNickname} contact is now named ${otherNickname}`);
       },
     });
-  }
+  };
 
   return Far('root', {
-    setNickname(nickname) {
+    setNickname: nickname => {
       myNickname = nickname;
     },
-    introduceYourselfTo(other) {
+    introduceYourselfTo: other => {
       log(`=> ${myNickname}.introduce`);
       const myContact = makeContact();
       otherContact = E(other).hello(myContact, myNickname);
       return `${myNickname} setup done\n${myNickname} vat is happy\n`;
     },
-    grind(tag, count) {
+    grind: (tag, count) => {
       E(otherContact).ping(tag, count);
     },
   });
-}
+};

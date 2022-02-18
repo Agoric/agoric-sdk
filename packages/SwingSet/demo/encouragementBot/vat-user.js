@@ -1,10 +1,10 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const log = vatPowers.testLog;
   return Far('root', {
-    talkToBot(bot, botName) {
+    talkToBot: (bot, botName) => {
       log(`=> user.talkToBot is called with ${botName}`);
       E(bot)
         .encourageMe('user')
@@ -14,4 +14,4 @@ export function buildRootObject(vatPowers) {
       return 'Thanks for the setup. I sure hope I get some encouragement...';
     },
   });
-}
+};

@@ -3,7 +3,7 @@ import { parseReachableAndVatSlot } from '@agoric/swingset-vat/src/kernel/state/
 import { parseVatSlot } from '@agoric/swingset-vat/src/parseVatSlots.js';
 
 /* eslint-disable no-use-before-define */
-export function auditRefCounts(store, doDump, printPrefix) {
+export const auditRefCounts = (store, doDump, printPrefix) => {
   const refCounts = new Map();
   const refSites = new Map();
 
@@ -108,7 +108,7 @@ export function auditRefCounts(store, doDump, printPrefix) {
     }
   }
 
-  function refCountMsg(msg, site) {
+  const refCountMsg = (msg, site) => {
     if (msg.type === 'notify') {
       incRefCount(msg.kpid, `${site}.kpid`);
     } else if (msg.type === 'send') {
@@ -122,9 +122,9 @@ export function auditRefCounts(store, doDump, printPrefix) {
     } else {
       assert.fail(X`unknown message type ${msg.type}`);
     }
-  }
+  };
 
-  function incRefCount(kref, site, reachableOnly) {
+  const incRefCount = (kref, site, reachableOnly) => {
     if (kref && (kref.startsWith('kp') || kref.startsWith('ko'))) {
       let refCount = refCounts.get(kref);
       if (refCount) {
@@ -143,12 +143,12 @@ export function auditRefCounts(store, doDump, printPrefix) {
       }
       refCounts.set(kref, refCount);
     }
-  }
+  };
 
-  function commaSplit(s) {
+  const commaSplit = s => {
     if (s === '') {
       return [];
     }
     return s.split(',');
-  }
-}
+  };
+};

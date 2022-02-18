@@ -21,7 +21,7 @@ import { Far } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import { assert } from '@agoric/assert';
 
-export function buildRootDeviceNode({ endowments, serialize }) {
+export const buildRootDeviceNode = ({ endowments, serialize }) => {
   const {
     pushCreateVatBundleEvent,
     pushCreateVatIDEvent,
@@ -35,35 +35,30 @@ export function buildRootDeviceNode({ endowments, serialize }) {
 
   // The Root Device Node.
   return Far('root', {
-    createMeter(remaining, threshold) {
-      return meterCreate(Nat(remaining), Nat(threshold));
-    },
-    createUnlimitedMeter() {
-      return meterCreate('unlimited', 0n);
-    },
-    addMeterRemaining(meterID, delta) {
+    createMeter: (remaining, threshold) =>
+      meterCreate(Nat(remaining), Nat(threshold)),
+    createUnlimitedMeter: () => meterCreate('unlimited', 0n),
+    addMeterRemaining: (meterID, delta) => {
       meterAddRemaining(meterID, Nat(delta));
     },
-    setMeterThreshold(meterID, threshold) {
+    setMeterThreshold: (meterID, threshold) => {
       meterSetThreshold(meterID, Nat(threshold));
     },
-    getMeter(meterID) {
-      return meterGet(meterID);
-    },
+    getMeter: meterID => meterGet(meterID),
 
     // Called by the wrapper vat to create a new vat. Gets a new ID from the
     // kernel's vat creator fn. Remember that the root object will arrive
     // separately. Clean up the outgoing and incoming arguments.
-    createByBundle(bundle, options = {}) {
+    createByBundle: (bundle, options = {}) => {
       const vatID = pushCreateVatBundleEvent(bundle, options);
       return vatID;
     },
-    createByBundleID(bundleID, options = {}) {
+    createByBundleID: (bundleID, options = {}) => {
       assert.typeof(bundleID, 'string');
       const vatID = pushCreateVatIDEvent(bundleID, options);
       return vatID;
     },
-    createByName(bundleName, options = {}) {
+    createByName: (bundleName, options = {}) => {
       assert.typeof(bundleName, 'string');
       let bundleID;
       try {
@@ -74,8 +69,8 @@ export function buildRootDeviceNode({ endowments, serialize }) {
       const vatID = pushCreateVatIDEvent(bundleID, options);
       return vatID;
     },
-    terminateWithFailure(vatID, reason) {
+    terminateWithFailure: (vatID, reason) => {
       kernelTerminateVatFn(vatID, serialize(reason));
     },
   });
-}
+};

@@ -7,19 +7,19 @@ import { assert, details as X } from '@agoric/assert';
 
 /* eslint-disable no-use-before-define */
 
-function usage() {
+const usage = () => {
   console.error('usage message goes here');
-}
+};
 
-function fail(message, printUsage) {
+const fail = (message, printUsage) => {
   console.error(message);
   if (printUsage) {
     usage();
   }
   process.exit(1);
-}
+};
 
-export function main() {
+export const main = () => {
   const argv = yargs(process.argv.slice(2))
     .string('out')
     .default('out', undefined, '<STDOUT>')
@@ -224,28 +224,26 @@ export function main() {
     }
   }
 
-  function p(str) {
+  const p = str => {
     out.write(str);
     out.write('\n');
-  }
+  };
 
-  function defaultHandler(entry) {
+  const defaultHandler = entry => {
     p(`@ ${entry.type}: ${JSON.stringify(entry)}`);
-  }
+  };
 
-  function vatLabel(entry) {
-    return vatNames.get(entry.vatID) || '<no name>';
-  }
+  const vatLabel = entry => vatNames.get(entry.vatID) || '<no name>';
 
-  function handleCreateVat(entry) {
+  const handleCreateVat = entry => {
     if (entry.name) {
       vatNames.set(entry.vatID, entry.name);
     }
     // prettier-ignore
     p(`create-vat: ${entry.vatID} ${vatLabel(entry)} ${entry.dynamic ? 'dynamic' : 'static'} ${entry.description}`);
-  }
+  };
 
-  function pref(ref, ks = kernelSpace) {
+  const pref = (ref, ks = kernelSpace) => {
     let name;
     if (ks) {
       name = kernelRefs.get(ref);
@@ -254,9 +252,9 @@ export function main() {
       name = subTable && subTable.get(ref);
     }
     return name ? `<${name}>` : `@${ref}`;
-  }
+  };
 
-  function legibilizeValue(val, slots) {
+  const legibilizeValue = (val, slots) => {
     let result = '';
     if (Array.isArray(val)) {
       result = '[';
@@ -303,33 +301,29 @@ export function main() {
       result = JSON.stringify(val);
     }
     return result.length > bigWidth ? '<BIG>' : result;
-  }
+  };
 
-  function legibilizeMessageArgs(args) {
+  const legibilizeMessageArgs = args => {
     try {
       return JSON.parse(args.body).map(arg => legibilizeValue(arg, args.slots));
     } catch (e) {
       console.error(e);
       return [args];
     }
-  }
+  };
 
-  function pargs(args) {
-    return legibilizeMessageArgs(args).join(', ');
-  }
+  const pargs = args => legibilizeMessageArgs(args).join(', ');
 
-  function pdata(data) {
-    return legibilizeValue(JSON.parse(data.body), data.slots);
-  }
+  const pdata = data => legibilizeValue(JSON.parse(data.body), data.slots);
 
-  function doDeliverMessage(delivery, prefix = '') {
+  const doDeliverMessage = (delivery, prefix = '') => {
     const target = delivery[1];
     const msg = delivery[2];
     // prettier-ignore
     p(`${prefix}deliver: ${pref(target)} <- ${msg.method}(${pargs(msg.args)}): ${pref(msg.result)}`);
-  }
+  };
 
-  function doDeliverNotify(delivery, prefix = '') {
+  const doDeliverNotify = (delivery, prefix = '') => {
     const resolutions = delivery[1];
     let idx = 0;
     for (const resolution of resolutions) {
@@ -369,14 +363,14 @@ export function main() {
       }
       idx += 1;
     }
-  }
+  };
 
-  function doDeliverDropRetire(delivery, prefix = '') {
+  const doDeliverDropRetire = (delivery, prefix = '') => {
     // prettier-ignore
     p(`${prefix}recv-${delivery[0]}: [${delivery[1].map(r => pref(r)).join(' ')}]`);
-  }
+  };
 
-  function doDeliver(delivery, prefix) {
+  const doDeliver = (delivery, prefix) => {
     switch (delivery[0]) {
       case 'message':
         doDeliverMessage(delivery, prefix);
@@ -393,20 +387,20 @@ export function main() {
         p(`deliver: unknown deliver type "${delivery[0]}"`);
         break;
     }
-  }
+  };
 
-  function handleDeliver(entry) {
+  const handleDeliver = entry => {
     doDeliver(kernelSpace ? entry.kd : entry.vd);
-  }
+  };
 
-  function handleDeliverResult(entry) {
+  const handleDeliverResult = entry => {
     const [status, problem] = entry.dr;
     if (status !== 'ok') {
       p(`deliver-result: ${status} ${problem}`);
     }
-  }
+  };
 
-  function doSyscallSend(tag, entry) {
+  const doSyscallSend = (tag, entry) => {
     const target = entry[1];
     let method;
     let args;
@@ -422,9 +416,9 @@ export function main() {
       result = entry[4];
     }
     p(`${tag}: ${pref(target)} <- ${method}(${pargs(args)}): ${pref(result)}`);
-  }
+  };
 
-  function doSyscallResolve(tag, entry) {
+  const doSyscallResolve = (tag, entry) => {
     let idx = 0;
     const resolutions = kernelSpace ? entry[2] : entry[1];
     for (const resolution of resolutions) {
@@ -433,22 +427,22 @@ export function main() {
       p(`${tag} ${idx} ${rejTag}: ${pref(target)} = ${pdata(value)}`);
       idx += 1;
     }
-  }
+  };
 
-  function doSyscallInvoke(tag, entry) {
+  const doSyscallInvoke = (tag, entry) => {
     p(`${tag}: ${pref(entry[1])}.${entry[2]}(${pargs(entry[3])})`);
-  }
+  };
 
-  function doSyscallSubscribe(tag, entry) {
+  const doSyscallSubscribe = (tag, entry) => {
     p(`${tag}: ${pref(kernelSpace ? entry[2] : entry[1])}`);
-  }
+  };
 
-  function doSyscallVatstoreDeleteOrGet(tag, entry) {
+  const doSyscallVatstoreDeleteOrGet = (tag, entry) => {
     const key = kernelSpace ? entry[2] : entry[1];
     p(`${tag}: '${key}' (${pref(key, false)})`);
-  }
+  };
 
-  function doSyscallVatstoreSet(tag, entry) {
+  const doSyscallVatstoreSet = (tag, entry) => {
     const key = kernelSpace ? entry[2] : entry[1];
     const value = kernelSpace ? entry[3] : entry[2];
     /*
@@ -464,19 +458,19 @@ export function main() {
     }
     */
     p(`${tag}: ${key} := '${value}'`);
-  }
+  };
 
-  function doSyscallDropRetire(tag, entry) {
+  const doSyscallDropRetire = (tag, entry) => {
     p(`send-${tag}: [${entry[1].map(r => pref(r)).join(' ')}]`);
-  }
+  };
 
-  function doSyscallExit(tag, entry) {
+  const doSyscallExit = (tag, entry) => {
     const failure = kernelSpace ? entry[2] : entry[1];
     const value = kernelSpace ? entry[3] : entry[2];
     p(`${tag}: (${failure ? 'failure' : 'success'}) ${pdata(value)}`);
-  }
+  };
 
-  function doSyscall(syscall) {
+  const doSyscall = syscall => {
     currentSyscallName = syscall[0];
     const tag = terse ? currentSyscallName : `syscall ${currentSyscallName}`;
     switch (currentSyscallName) {
@@ -511,68 +505,68 @@ export function main() {
         p(`syscall: unknown syscall ${currentSyscallName}`);
         break;
     }
-  }
+  };
 
-  function handleImportKernelStart(entry) {
+  const handleImportKernelStart = entry => {
     importKernelStartTime = entry.time;
-  }
+  };
 
-  function handleImportKernelFinish(entry) {
+  const handleImportKernelFinish = entry => {
     p(`kernel-import: ${entry.time - importKernelStartTime}`);
-  }
+  };
 
-  function handleVatStartupStart(entry) {
+  const handleVatStartupStart = entry => {
     vatStartupStartTime = entry.time;
     vatStartupVat = entry.vatID;
-  }
+  };
 
-  function handleVatStartupFinish(entry) {
+  const handleVatStartupFinish = entry => {
     // prettier-ignore
     if (entry.vatID !== vatStartupVat) {
       p(`vat-startup-finish vat ${entry.vatID} doesn't match vat-startup-start vat ${vatStartupVat}`);
     } else {
       p(`vat-startup: ${entry.vatID} ${entry.time - vatStartupStartTime}`);
     }
-  }
+  };
 
-  function handleReplayTranscriptStart(entry) {
+  const handleReplayTranscriptStart = entry => {
     replayTranscriptStartTime = entry.time;
     replayTranscriptVat = entry.vatID;
     p(`replay-transcript-start: ${entry.vatID}`);
-  }
+  };
 
-  function handleReplayTranscriptFinish(entry) {
+  const handleReplayTranscriptFinish = entry => {
     // prettier-ignore
     if (entry.vatID !== replayTranscriptVat) {
       p(`replay-transcript-finish vat ${entry.vatID} doesn't match replay-transcript-start vat ${replayTranscriptVat}`);
     } else {
       p(`replay-transcript-finish: ${entry.vatID} ${entry.time - replayTranscriptStartTime}`);
     }
-  }
+  };
 
-  function handleStartReplay(entry) {
+  const handleStartReplay = entry => {
     replayStartTime = entry.time;
     replayVat = entry.vatID;
     p(`start-replay: ${entry.vatID} ${entry.deliveries}`);
-  }
+  };
 
-  function handleFinishReplay(entry) {
+  const handleFinishReplay = entry => {
     // prettier-ignore
     if (entry.vatID !== replayVat) {
       p(`finish-replay vat ${entry.vatID} doesn't match start-replay vat ${replayVat}`);
     } else {
       p(`finish-replay ${entry.vatID} ${entry.time - replayStartTime}`);
     }
-  }
+  };
 
-  function handleStartReplayDelivery(entry) {
+  const handleStartReplayDelivery = entry => {
     replayDeliveryStartTime = entry.time;
     replayDeliveryVat = entry.vatID;
     replayDeliveryNum = entry.deliveryNum;
     replayDeliveryDelivery = entry.delivery;
-  }
+  };
 
-  function handleFinishReplayDelivery(entry) {
+  const handleFinishReplayDelivery = entry => {
     // prettier-ignore
     if (entry.vatID !== replayDeliveryVat) {
       p(`finish-replay-delivery vat ${entry.vatID} doesn't match start-replay-delivery vat ${replayDeliveryVat}`);
@@ -582,16 +576,16 @@ export function main() {
       const prefix = `replay ${entry.vatID} ${entry.deliveryNum} ${entry.time - replayDeliveryStartTime} `;
       doDeliver(replayDeliveryDelivery, prefix);
     }
-  }
+  };
 
-  function handleCosmicSwingsetBeginBlock(entry) {
+  const handleCosmicSwingsetBeginBlock = entry => {
     cosmicSwingsetBeginBlockTime = entry.time;
     cosmicSwingsetBlockTime = entry.blockTime;
     cosmicSwingsetBlockHeight = entry.blockHeight;
     p(`cosmic-swingset-begin-block: ${entry.blockHeight} ${entry.blockTime}`);
-  }
+  };
 
-  function handleCosmicSwingsetEndBlockStart(entry) {
+  const handleCosmicSwingsetEndBlockStart = entry => {
     cosmicSwingsetEndBlockStartTime = entry.time;
     // prettier-ignore
     if (entry.blockTime !== cosmicSwingsetBlockTime) {
@@ -601,9 +595,9 @@ export function main() {
     } else {
       p(`cosmic-swingset-end-block-start`);
     }
-  }
+  };
 
-  function handleCosmicSwingsetEndBlockFinish(entry) {
+  const handleCosmicSwingsetEndBlockFinish = entry => {
     cosmicSwingsetEndBlockStartTime = entry.time;
     // prettier-ignore
     if (entry.blockTime !== cosmicSwingsetBlockTime) {
@@ -613,17 +607,17 @@ export function main() {
     } else {
       p(`cosmic-swingset-end-block:  ${entry.blockHeight} ${entry.blockTime} ${cosmicSwingsetEndBlockStartTime - cosmicSwingsetBeginBlockTime}+${entry.time - cosmicSwingsetEndBlockStartTime}`);
     }
-  }
+  };
 
-  function handleCosmicSwingsetDeliverInbound(entry) {
+  const handleCosmicSwingsetDeliverInbound = entry => {
     p(`cosmic-swingset-deliver-inbound: ${entry.count} ${entry.sender}`);
-  }
+  };
 
-  function handleSyscall(entry) {
+  const handleSyscall = entry => {
     doSyscall(kernelSpace ? entry.ksc : entry.vsc);
-  }
+  };
 
-  function handleSyscallResult(entry) {
+  const handleSyscallResult = entry => {
     const [status, value] = kernelSpace ? entry.ksr : entry.vsr;
     const tag = terse ? 'result' : `syscall-result ${currentSyscallName}`;
     if (status !== 'ok') {
@@ -653,27 +647,27 @@ export function main() {
         p(`syscall-result missing start of syscall`);
         break;
     }
-  }
+  };
 
-  function handleConsole(entry) {
+  const handleConsole = entry => {
     const { state, level, args } = entry;
     const tag = terse ? level : `console ${level} (${state})`;
     p(`${tag}: ${args.join(' ')}`);
-  }
+  };
 
-  function handleCList(entry) {
+  const handleCList = entry => {
     if (argv.clist) {
       const { mode, vatID, kobj, vobj } = entry;
       const tag = terse ? mode : `clist ${mode}`;
       p(`${tag}: ${vatID}:${pref(vobj, false)} :: ${pref(kobj, true)}`);
     }
-  }
+  };
 
-  function handleTerminate(entry) {
+  const handleTerminate = entry => {
     const { shouldReject, info } = entry;
     const reject = terse ? '!' : ' reject';
     const noReject = terse ? '' : ' no reject';
     const suffix = shouldReject ? reject : noReject;
     p(`terminate${suffix}: ${pdata(info)}`);
-  }
-}
+  };
+};

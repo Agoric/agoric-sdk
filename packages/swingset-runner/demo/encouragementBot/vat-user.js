@@ -3,9 +3,9 @@ import { Far } from '@endo/marshal';
 
 const log = console.log;
 
-export function buildRootObject(_vatPowers) {
-  return Far('root', {
-    talkToBot(bot, botName) {
+export const buildRootObject = _vatPowers =>
+  Far('root', {
+    talkToBot: (bot, botName) => {
       log(`=> user.talkToBot is called with ${botName}`);
       E(bot)
         .encourageMe('user')
@@ -15,4 +15,3 @@ export function buildRootObject(_vatPowers) {
       return 'Thanks for the setup. I sure hope I get some encouragement...\nuser vat is happy\n';
     },
   });
-}

@@ -10,18 +10,16 @@ const { makeScalarBigMapStore, makeScalarBigSetStore } = cm;
 
 const { makeKind, makeDurableKind } = vom;
 
-function makeHolderInnards(state) {
-  return {
-    init(value = null) {
+const makeHolderInnards = state => ({
+  init: (value = null) => {
+    state.held = value;
+  },
+  self: Far('holder', {
+    hold: value => {
       state.held = value;
     },
-    self: Far('holder', {
-      hold(value) {
-        state.held = value;
-      },
-    }),
-  };
-}
+  }),
+});
 
 const makeVirtualHolder = makeKind(makeHolderInnards);
 const makeDurableHolder = makeDurableKind(makeHolderInnards);
@@ -30,9 +28,7 @@ const aString = 'zorch!';
 const aVirtualObject = makeVirtualHolder();
 const aDurableObject = makeDurableHolder();
 const aRemotableObject = Far('what', {
-  aMethod() {
-    return 'remote whatever';
-  },
+  aMethod: () => 'remote whatever',
 });
 const aVirtualStore = makeScalarBigMapStore('vstore');
 const aDurableStore = makeScalarBigMapStore('dstore', { durable: true });
@@ -64,9 +60,7 @@ const anArrayFullOfDurableStuff = harden([
   aDurableStore,
 ]);
 
-function m(s) {
-  return { message: s };
-}
+const m = s => ({ message: s });
 
 // prettier-ignore
 test('durability checks', t => {

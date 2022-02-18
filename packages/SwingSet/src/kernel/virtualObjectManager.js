@@ -22,14 +22,14 @@ const initializationsInProgress = new WeakSet();
  * This cache is part of the virtual object manager and is not intended to be
  * used independently; it is exported only for the benefit of test code.
  */
-export function makeCache(size, fetch, store) {
+export const makeCache = (size, fetch, store) => {
   let lruHead;
   let lruTail;
   let dirtyCount = 0;
   const liveTable = new Map();
 
   const cache = {
-    makeRoom() {
+    makeRoom: () => {
       while (liveTable.size > size && lruTail) {
         if (initializationsInProgress.has(lruTail.rawData)) {
           let refreshCount = 1;
@@ -61,13 +61,13 @@ export function makeCache(size, fetch, store) {
         deadEntry.prev = undefined;
       }
     },
-    markDirty(entry) {
+    markDirty: entry => {
       if (!entry.dirty) {
         entry.dirty = true;
         dirtyCount += 1;
       }
     },
-    flush() {
+    flush: () => {
       if (dirtyCount > 0) {
         let entry = lruTail;
         while (entry) {
@@ -80,7 +80,7 @@ export function makeCache(size, fetch, store) {
         dirtyCount = 0;
       }
     },
-    remember(innerObj) {
+    remember: innerObj => {
       if (liveTable.has(innerObj.vobjID)) {
         return;
       }
@@ -97,7 +97,7 @@ export function makeCache(size, fetch, store) {
       }
       // kdebug(`### vo LRU remember ${lruHead.vobjID}`);
     },
-    refresh(innerObj) {
+    refresh: innerObj => {
       if (innerObj !== lruHead) {
         const oldPrev = innerObj.prev;
         const oldNext = innerObj.next;
@@ -118,7 +118,7 @@ export function makeCache(size, fetch, store) {
         // kdebug(`### vo LRU refresh ${lruHead.vobjID}`);
       }
     },
-    lookup(vobjID, load) {
+    lookup: (vobjID, load) => {
       let innerObj = liveTable.get(vobjID);
       if (innerObj) {
         cache.refresh(innerObj);
@@ -133,7 +133,7 @@ export function makeCache(size, fetch, store) {
     },
   };
   return cache;
-}
+};
 
 /**
  * Create a new virtual object manager.  There is one of these for each vat.
@@ -190,14 +190,14 @@ export function makeVirtualObjectManager(
    *    being fetched.
    * @returns {*} an object representing the object's stored state.
    */
-  function fetch(vobjID) {
+  const fetch = vobjID => {
     const raw = syscall.vatstoreGet(`vom.${vobjID}`);
     if (raw) {
       return JSON.parse(raw);
     } else {
       return undefined;
     }
-  }
+  };
 
   /**
    * Write an object's state to secondary storage.
@@ -206,20 +206,20 @@ export function makeVirtualObjectManager(
    *    being stored.
    * @param {*} rawData  A data object representing the state to be written.
    */
-  function store(vobjID, rawData) {
+  const store = (vobjID, rawData) => {
     syscall.vatstoreSet(`vom.${vobjID}`, JSON.stringify(rawData));
-  }
+  };
 
   /* eslint max-classes-per-file: ["error", 2] */
 
   const actualWeakMaps = new WeakMap();
   const virtualObjectMaps = new WeakMap();
 
-  function voAwareWeakMapDeleter(descriptor) {
+  const voAwareWeakMapDeleter = descriptor => {
     for (const vref of descriptor.vmap.keys()) {
       vrm.removeRecognizableVref(vref, descriptor.vmap);
     }
-  }
+  };
 
   class VirtualObjectAwareWeakMap {
     constructor() {
@@ -290,11 +290,11 @@ export function makeVirtualObjectManager(
   const actualWeakSets = new WeakMap();
   const virtualObjectSets = new WeakMap();
 
-  function voAwareWeakSetDeleter(descriptor) {
+  const voAwareWeakSetDeleter = descriptor => {
     for (const vref of descriptor.vset.values()) {
       vrm.removeRecognizableVref(vref, descriptor.vset);
     }
-  }
+  };
 
   class VirtualObjectAwareWeakSet {
     constructor() {
@@ -433,12 +433,12 @@ export function makeVirtualObjectManager(
    * reference to the state is nulled out and the object holding the state
    * becomes garbage collectable.
    */
-  function makeKindInternal(instanceKitMaker, durable) {
+  const makeKindInternal = (instanceKitMaker, durable) => {
     const kindID = `${allocateExportID()}`;
     let nextInstanceID = 1;
     const propertyNames = new Set();
 
-    function makeRepresentative(innerSelf, initializing, proForma) {
+    const makeRepresentative = (innerSelf, initializing, proForma) => {
       if (!proForma) {
         assert(
           innerSelf.repCount === 0,
@@ -447,15 +447,15 @@ export function makeVirtualObjectManager(
         innerSelf.repCount += 1;
       }
 
-      function ensureState() {
+      const ensureState = () => {
         if (innerSelf.rawData) {
           cache.refresh(innerSelf);
         } else {
           innerSelf = cache.lookup(innerSelf.vobjID, true);
         }
-      }
+      };
 
-      function wrapData(target) {
+      const wrapData = target => {
         assert(
           !initializationsInProgress.has(target),
           `object is still being initialized`,
@@ -486,7 +486,7 @@ export function makeVirtualObjectManager(
         }
         innerSelf.wrapData = undefined;
         harden(target);
-      }
+      };
 
       let instanceKit;
       if (initializing) {
@@ -499,9 +499,9 @@ export function makeVirtualObjectManager(
         instanceKit = harden(instanceKitMaker(activeData));
       }
       return instanceKit;
-    }
+    };
 
-    function reanimate(vobjID, proForma) {
+    const reanimate = (vobjID, proForma) => {
       // kdebug(`vo reanimate ${vobjID}`);
       const innerSelf = cache.lookup(vobjID, false);
       const representative = makeRepresentative(
@@ -515,9 +515,9 @@ export function makeVirtualObjectManager(
         innerSelf.representative = representative;
         return representative;
       }
-    }
+    };
 
-    function deleteStoredVO(vobjID) {
+    const deleteStoredVO = vobjID => {
       let doMoreGC = false;
       const state = fetch(vobjID);
       if (state) {
@@ -529,11 +529,11 @@ export function makeVirtualObjectManager(
       }
       syscall.vatstoreDelete(`vom.${vobjID}`);
       return doMoreGC;
-    }
+    };
 
     vrm.registerKind(kindID, reanimate, deleteStoredVO, durable);
 
-    function makeNewInstance(...args) {
+    const makeNewInstance = (...args) => {
       const vobjID = `o+${kindID}/${nextInstanceID}`;
       nextInstanceID += 1;
 
@@ -572,20 +572,18 @@ export function makeVirtualObjectManager(
       innerSelf.wrapData(initialData);
       cache.markDirty(innerSelf);
       return initialRepresentative;
-    }
+    };
 
     return makeNewInstance;
-  }
+  };
 
-  function makeKind(instanceKitMaker) {
-    return makeKindInternal(instanceKitMaker, false);
-  }
+  const makeKind = instanceKitMaker =>
+    makeKindInternal(instanceKitMaker, false);
 
-  function makeDurableKind(instanceKitMaker) {
-    return makeKindInternal(instanceKitMaker, true);
-  }
+  const makeDurableKind = instanceKitMaker =>
+    makeKindInternal(instanceKitMaker, true);
 
-  function countWeakKeysForCollection(collection) {
+  const countWeakKeysForCollection = collection => {
     const virtualObjectMap = virtualObjectMaps.get(collection);
     if (virtualObjectMap) {
       return virtualObjectMap.size;
@@ -595,7 +593,7 @@ export function makeVirtualObjectManager(
       return virtualObjectSet.size;
     }
     return 0;
-  }
+  };
 
   const testHooks = {
     countWeakKeysForCollection,

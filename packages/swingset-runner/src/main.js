@@ -28,15 +28,11 @@ import {
 
 const log = console.log;
 
-function p(item) {
-  return util.inspect(item, false, null, true);
-}
+const p = item => util.inspect(item, false, null, true);
 
-function readClock() {
-  return process.hrtime.bigint();
-}
+const readClock = () => process.hrtime.bigint();
 
-function usage() {
+const usage = () => {
   log(`
 Command line:
   runner [FLAGS...] CMD [{BASEDIR|--} [ARGS...]]
@@ -85,17 +81,17 @@ BASEDIR is the base directory for locating the swingset's vat definitions.
 
 Any remaining args are passed to the swingset's bootstrap vat.
 `);
-}
+};
 
-function fail(message, printUsage) {
+const fail = (message, printUsage) => {
   log(message);
   if (printUsage) {
     usage();
   }
   process.exit(1);
-}
+};
 
-function generateIndirectConfig(baseConfig) {
+const generateIndirectConfig = baseConfig => {
   const config = {
     bootstrap: 'launcher',
     bundles: {},
@@ -140,14 +136,14 @@ function generateIndirectConfig(baseConfig) {
     }
   }
   return config;
-}
+};
 
 /* eslint-disable no-use-before-define */
 
 /**
  * Command line utility to run a swingset for development and testing purposes.
  */
-export async function main() {
+export const main = async () => {
   const argv = process.argv.slice(2);
 
   let forceReset = false;
@@ -538,16 +534,14 @@ export async function main() {
   }
   controller.shutdown();
 
-  function getCrankNumber() {
-    return Number(swingStore.kvStore.get('crankNumber'));
-  }
+  const getCrankNumber = () => Number(swingStore.kvStore.get('crankNumber'));
 
-  function kernelStateDump() {
+  const kernelStateDump = () => {
     const dumpPath = `${dumpDir}/${dumpTag}${crankNumber}`;
     dumpStore(swingStore, dumpPath, rawMode);
-  }
+  };
 
-  async function runBenchmark(rounds) {
+  const runBenchmark = async rounds => {
     const cranksPre = getCrankNumber();
     const rawStatsPre = controller.getStats();
     const args = { body: '[]', slots: [] };
@@ -582,9 +576,9 @@ export async function main() {
     );
     printBenchmarkStats(benchmarkStats);
     return [totalSteps, totalDeltaT];
-  }
+  };
 
-  async function runBlock(requestedSteps, doCommit) {
+  const runBlock = async (requestedSteps, doCommit) => {
     const blockStartTime = readClock();
     let actualSteps = 0;
     if (verbose) {
@@ -647,9 +641,9 @@ export async function main() {
       statLogger.log(data);
     }
     return actualSteps;
-  }
+  };
 
-  async function runBatch(stepLimit, doCommit) {
+  const runBatch = async (stepLimit, doCommit) => {
     const startTime = readClock();
     let totalSteps = 0;
     let steps;
@@ -661,14 +655,14 @@ export async function main() {
       stepLimit -= steps;
     } while ((runAll || stepLimit > 0) && steps >= blockSize);
     return [totalSteps, readClock() - startTime];
-  }
+  };
 
-  function kernelFailure(err) {
+  const kernelFailure = err => {
     log(`kernel failure in crank ${crankNumber}: ${err}`, err);
     process.exit(1);
-  }
+  };
 
-  async function commandRun(stepLimit, runInBlockMode) {
+  const commandRun = async (stepLimit, runInBlockMode) => {
     if (doDumps) {
       kernelStateDump();
     }
@@ -718,5 +712,5 @@ export async function main() {
     } else {
       log(`runner finished replay in ${deltaT} ns`);
     }
-  }
-}
+  };
+};

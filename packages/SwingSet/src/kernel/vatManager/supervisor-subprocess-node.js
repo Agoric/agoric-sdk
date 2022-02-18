@@ -30,9 +30,9 @@ import {
 } from './supervisor-helper.js';
 
 // eslint-disable-next-line no-unused-vars
-function workerLog(first, ...args) {
+const workerLog = (first, ...args) => {
   // console.error(`---worker: ${first}`, ...args);
-}
+};
 
 workerLog(`supervisor started`);
 
@@ -48,10 +48,10 @@ const fromParent = fs
   .pipe(netstringDecoderStream())
   .pipe(arrayDecoderStream());
 
-function sendUplink(msg) {
+const sendUplink = msg => {
   assert(msg instanceof Array, X`msg must be an Array`);
   toParent.write(msg);
-}
+};
 
 // fromParent.on('data', data => {
 //  workerLog('data from parent', data);
@@ -74,14 +74,14 @@ fromParent.on('data', ([type, ...margs]) => {
       consensusMode,
     ] = margs;
 
-    function testLog(...args) {
+    const testLog = (...args) => {
       sendUplink(['testLog', ...args]);
-    }
+    };
 
     // syscallToManager can throw or return OK/ERR
-    function syscallToManager(vatSyscallObject) {
+    const syscallToManager = vatSyscallObject => {
       sendUplink(['syscall', vatSyscallObject]);
-    }
+    };
     // this 'syscall' throws or returns data
     // @ts-expect-error the syscaller can return void when the second argument is false
     const syscall = makeSupervisorSyscall(syscallToManager, false);

@@ -5,30 +5,26 @@ let stuff;
 
 let initialSelf;
 
-function makeThingInnards(state) {
-  function init(name) {
+const makeThingInnards = state => {
+  const init = name => {
     state.name = name;
     // eslint-disable-next-line no-use-before-define
     initialSelf = self;
-  }
+  };
   const self = Far('thing', {
-    getName() {
-      return state.name;
-    },
-    rename(newName) {
+    getName: () => state.name,
+    rename: newName => {
       state.name = newName;
     },
-    getSelf() {
-      return self;
-    },
+    getSelf: () => self,
   });
   return { init, self };
-}
+};
 
 const makeThing = makeKind(makeThingInnards);
 
-function makeZotInnards(state) {
-  function init(name, forceOverflow) {
+const makeZotInnards = state => {
+  const init = (name, forceOverflow) => {
     state.name = name;
     // enough instances to push me out of the cache
     for (let i = 0; i < 5; i += 1) {
@@ -38,64 +34,60 @@ function makeZotInnards(state) {
       // eslint-disable-next-line no-use-before-define
       makeZot('recur', true);
     }
-  }
+  };
   const self = Far('zot', {
-    getName() {
-      return state.name;
-    },
-    rename(newName) {
+    getName: () => state.name,
+    rename: newName => {
       state.name = newName;
     },
   });
   return { init, self };
-}
+};
 
 const makeZot = makeKind(makeZotInnards);
 
-export function buildRootObject(vatPowers) {
+export const buildRootObject = vatPowers => {
   const { testLog } = vatPowers;
   let heldThing;
 
   return Far('root', {
-    bootstrap() {
+    bootstrap: () => {
       stuff = makeScalarBigWeakMapStore();
       return 'bootstrap done';
     },
-    makeThing(name, hold) {
+    makeThing: (name, hold) => {
       const thing = makeThing(name);
       if (hold) {
         heldThing = thing;
       }
       return thing;
     },
-    readThing(what) {
-      return what.getName();
-    },
-    readHeldThing() {
+    readThing: what => what.getName(),
+    readHeldThing: () => {
       if (heldThing) {
         return heldThing.getName();
       } else {
         throw Error('no held thing');
       }
     },
-    writeThing(what, newName) {
+    writeThing: (what, newName) => {
       what.rename(newName);
     },
-    writeHeldThing(newName) {
+    writeHeldThing: newName => {
       if (heldThing) {
         heldThing.rename(newName);
       } else {
         throw Error('no held thing');
       }
     },
-    holdThing(what) {
+    holdThing: what => {
       heldThing = what;
     },
-    forgetHeldThing() {
+    forgetHeldThing: () => {
       heldThing = null;
     },
 
-    testA(name, mode) {
+    testA: (name, mode) => {
       // mode 1: make thing, return thing
       // mode 2: make thing, return initial self
       const thing = makeThing(name);
@@ -108,7 +100,7 @@ export function buildRootObject(vatPowers) {
           return `this can't happen`;
       }
     },
-    testB(name, mode) {
+    testB: (name, mode) => {
       // mode 3: make thing, rename thing, return thing
       // mode 4: make thing, rename initial self, return thing
       // mode 5: make thing, rename thing, return initial self
@@ -143,7 +135,7 @@ export function buildRootObject(vatPowers) {
           return `this can't happen`;
       }
     },
-    testC(name, mode) {
+    testC: (name, mode) => {
       // mode 7: make thing, use thing as key in weakstore, lookup value keyed to thing in weakstore
       // mode 8: make thing, use initial self as key in weakstore, lookup value keyed to thing in weakstore
       // mode 9: make thing, use thing as key in weakstore, lookup value keyed to initial self in weakstore
@@ -177,7 +169,7 @@ export function buildRootObject(vatPowers) {
       testLog(`test${mode} result is "${result}"`);
       return result;
     },
-    testD(name, mode) {
+    testD: (name, mode) => {
       // mode 11: make thing, store thing as value in weakstore, lookup value and return name of value
       // mode 12: make thing, store initial self as value in weakstore, lookup value and return name of value
       const thing = makeThing(name);
@@ -196,7 +188,7 @@ export function buildRootObject(vatPowers) {
       testLog(`test${mode} result is "${result}"`);
       return result;
     },
-    testE(name, mode) {
+    testE: (name, mode) => {
       // mode 13: make thing, rename thing, store thing as value in weakstore, lookup and return name of value
       // mode 14: make thing, rename thing, store initial self as value in weakstore, lookup and return name of value
       // mode 15: make thing, rename initial self, store thing as value in weakstore, lookup and return name of value
@@ -252,7 +244,7 @@ export function buildRootObject(vatPowers) {
       testLog(`test${mode} result is "${result}"`);
       return result;
     },
-    testCacheOverflow(name, forceOverflow) {
+    testCacheOverflow: (name, forceOverflow) => {
       try {
         return makeZot(name, forceOverflow);
       } catch (e) {
@@ -261,4 +253,4 @@ export function buildRootObject(vatPowers) {
       }
     },
   });
-}
+};
