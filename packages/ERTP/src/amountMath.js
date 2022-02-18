@@ -252,10 +252,12 @@ const AmountMath = {
    *
    * @template {AssetKind} K
    * @param {Brand} brand
-   * @param {AssetKind=} assetKind
+   * @param {K=} [assetKind='nat']
    * @returns {Amount<K extends 'nat' ? NatValue: K extends 'set' ? SetValue: K extends 'copySet' ? CopySetValue: K extends 'copyBag' ? CopyBagValue : never>}
    */
-  makeEmpty: (brand, assetKind = AssetKind.NAT) => {
+  // @ts-expect-error TS/jsdoc things 'nat' can't be assigned to K subclassing AssetKind
+  // If we were using TypeScript we'd simply overload the function definition for each case.
+  makeEmpty: (brand, assetKind = 'nat') => {
     assertRemotable(brand, 'brand');
     assertAssetKind(assetKind);
     const value = helpers[assetKind].doMakeEmpty();

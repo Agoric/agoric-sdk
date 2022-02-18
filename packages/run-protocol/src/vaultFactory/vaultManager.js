@@ -103,7 +103,7 @@ export const makeVaultManager = (
   /** @type {MutableQuote=} */
   let outstandingQuote;
   /** @type {Amount<NatValue>} */
-  let totalDebt = AmountMath.make(runBrand, 0n);
+  let totalDebt = AmountMath.makeEmpty(runBrand, 'nat');
   /** @type {Ratio}} */
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
