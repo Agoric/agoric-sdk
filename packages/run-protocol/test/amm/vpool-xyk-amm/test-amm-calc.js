@@ -14,16 +14,23 @@ const { brand: brandX } = makeIssuerKit('X');
 const { brand: brandY } = makeIssuerKit('Y');
 
 const oneB = 1_000_000_000n;
-// const dec18 = 1_000_000_000_000_000_000n; // 18 decimals as used in ETH
+const dec18 = 1_000_000_000_000_000_000n; // 18 decimals as used in ETH
 
+// The starting balances in the pools will be between 10^4 and  10^27
 const arbPoolX = fc
-  .bigUint({ max: oneB })
-  .map(value => m.make(brandX, 100n + value));
+  .bigUint({ max: oneB * dec18 })
+  .map(value => m.make(brandX, 10_000n + value));
 const arbPoolY = fc
-  .bigUint({ max: oneB })
-  .map(value => m.make(brandY, 100n + value));
-const arbGiveX = fc.bigUint({ max: oneB }).map(value => m.make(brandX, value));
-const arbGiveY = fc.bigUint({ max: oneB }).map(value => m.make(brandY, value));
+  .bigUint({ max: oneB * dec18 })
+  .map(value => m.make(brandY, 10_000n + value));
+
+// The amounts to be deposited will be less than 10^27
+const arbGiveX = fc
+  .bigUint({ max: oneB * dec18 })
+  .map(value => m.make(brandX, value));
+const arbGiveY = fc
+  .bigUint({ max: oneB * dec18 })
+  .map(value => m.make(brandY, value));
 
 // left and right are within 5% of each other.
 const withinEpsilon = (left, right) =>
@@ -40,6 +47,13 @@ test('balancesToReachRatio calculations are to spec', t => {
         giveY: arbGiveY,
       }),
       ({ poolX, poolY, giveX, giveY }) => {
+        const kBefore = Number(multiply(poolX.value, poolY.value));
+        const poolRatioAfter = Math.max(
+          Number(giveX.value + poolX.value) / Number(giveY.value + poolY.value),
+          Number(giveY.value + poolY.value) / Number(giveX.value + poolX.value),
+        );
+        // skip cases where the target ratio is more than K at the start
+        fc.pre(poolRatioAfter < kBefore);
         if (
           imbalancedRequest(
             // use floats so we don't convert all fractions less than 1 to 0.
