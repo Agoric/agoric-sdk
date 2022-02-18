@@ -214,10 +214,19 @@ harden(connectChainFaucet);
 
 /** @param {BootstrapPowers} powers */
 export const shareBootContractBundles = async ({
-  produce: { centralSupplyBundle: centralP, pegasusBundle: pegasusP },
+  produce: {
+    centralSupplyBundle: centralP,
+    pegasusBundle: pegasusP,
+    governanceBundles: govP,
+    getRUNBundle,
+  },
 }) => {
   centralP.resolve(economyBundles.centralSupply);
   pegasusP.resolve(pegasusBundle);
+
+  // @@demo
+  govP.resolve(governanceBundles);
+  getRUNBundle.resolve(economyBundles.getRUN);
 };
 
 /** @param {BootstrapPowers} powers */
