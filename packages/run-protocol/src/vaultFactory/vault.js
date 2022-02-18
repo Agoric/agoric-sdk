@@ -136,7 +136,7 @@ export const makeVaultKit = (
    * @see getNormalizedDebt
    * @returns {Amount<NatValue>}
    */
-  // TODO rename to calculateActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
+  // TODO rename to getActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
   const getDebtAmount = () => {
     // divide compounded interest by the snapshot
     const interestSinceSnapshot = multiplyRatios(
@@ -311,22 +311,23 @@ export const makeVaultKit = (
 
     // you must pay off the entire remainder but if you offer too much, we won't
     // take more than you owe
+    const runDebt = getDebtAmount();
     assert(
-      AmountMath.isGTE(runReturned, getDebtAmount()),
-      X`You must pay off the entire debt ${runReturned} > ${getDebtAmount()}`,
+      AmountMath.isGTE(runReturned, runDebt),
+      X`You must pay off the entire debt ${runReturned} > ${runDebt}`,
     );
 
     // Return any overpayment
 
     const { zcfSeat: burnSeat } = zcf.makeEmptySeatKit();
-    burnSeat.incrementBy(seat.decrementBy(harden({ RUN: getDebtAmount() })));
+    burnSeat.incrementBy(seat.decrementBy(harden({ RUN: runDebt })));
     seat.incrementBy(
       vaultSeat.decrementBy(
         harden({ Collateral: getCollateralAllocated(vaultSeat) }),
       ),
     );
     zcf.reallocate(seat, vaultSeat, burnSeat);
-    runMint.burnLosses(harden({ RUN: getDebtAmount() }), burnSeat);
+    runMint.burnLosses(harden({ RUN: runDebt }), burnSeat);
     seat.exit();
     burnSeat.exit();
     vaultState = VaultState.CLOSED;

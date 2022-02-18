@@ -101,6 +101,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       ratioGTE(debtToCollateral, oracleQueryThreshold)
     ) {
       // don't call reschedulePriceCheck, but do reset the highest.
+      // This could be expensive if we delete individual entries in order. Will know once we have perf data.
       oracleQueryThreshold = firstDebtRatio();
     }
     return vk;

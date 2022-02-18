@@ -9,7 +9,7 @@ By convention there is one well-known **VaultFactory**. By governance it creates
 Anyone can make a **Vault** by putting up collateral with the appropriate VaultManager. Then
 they can request RUN that is backed by that collateral.
 
-In any vat, when the ratio of the debt to the collateral exceeds a governed threshold, it is
+In any vault, when the ratio of the debt to the collateral exceeds a governed threshold, it is
 deemed undercollateralized. If the result of a price check shows that a vault is
 undercollateralized, the VaultManager liquidates it.
 ## Persistence

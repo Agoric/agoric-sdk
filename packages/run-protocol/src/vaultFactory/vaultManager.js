@@ -286,9 +286,12 @@ export const makeVaultManager = (
   };
 
   /**
+   * Update total debt of this manager given the change in debt on a vault
+   *
    * @param {Amount<NatValue>} oldDebtOnVault
    * @param {Amount<NatValue>} newDebtOnVault
    */
+  // TODO https://github.com/Agoric/agoric-sdk/issues/4599
   const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
     const delta = newDebtOnVault.value - oldDebtOnVault.value;
     trace(`updating total debt ${totalDebt} by ${delta}`);
@@ -297,15 +300,9 @@ export const makeVaultManager = (
       return;
     }
 
-    if (delta > 0n) {
-      // add the amount
-      totalDebt += delta;
-    } else {
-      // negate the amount so that it's a natural number, then subtract
-      const absDelta = -delta;
-      assert(!(absDelta > totalDebt), 'Negative delta greater than total debt');
-      totalDebt -= absDelta;
-    }
+    totalDebt += delta;
+    assert(totalDebt >= 0n, 'Negative delta greater than total debt');
+
     trace('applyDebtDelta complete', { totalDebt });
   };
 
