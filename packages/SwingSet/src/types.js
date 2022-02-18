@@ -87,7 +87,7 @@
  * result: string | undefined | null,
  * }} Message
  *
- * @typedef { 'sendOnly' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
+ * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} VatDeliveryMessage
  * @typedef { [vpid: string, isReject: boolean, data: SwingSetCapData ] } VatOneResolution
