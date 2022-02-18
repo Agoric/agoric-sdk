@@ -33,7 +33,7 @@ harden(zeroPad);
 const asNumber = new Float64Array(1);
 const asBits = new BigUint64Array(asNumber.buffer);
 
-// JavaScript numbers are encode as keys by outputting the base-16
+// JavaScript numbers are encoded as keys by outputting the base-16
 // representation of the binary value of the underlying IEEE floating point
 // representation.  For negative values, all bits of this representation are
 // complemented prior to the base-16 conversion, while for positive values, the
@@ -44,15 +44,14 @@ const asBits = new BigUint64Array(asNumber.buffer);
 // of the corresponding numbers.
 
 // TODO Choose the same canonical NaN encoding that cosmWasm and ewasm chose.
-const CanonicalNaN = 'ffff8000000000000';
+const CanonicalNaNBits = 'fff8000000000000';
 
-// Normalize -0 to 0
-
-const numberToDBEntryKey = n => {
+const encodeBinary64 = n => {
+  // Normalize -0 to 0 and NaN to a canonical encoding
   if (is(n, -0)) {
     n = 0;
   } else if (is(n, NaN)) {
-    return CanonicalNaN;
+    return `f${CanonicalNaNBits}`;
   }
   asNumber[0] = n;
   let bits = asBits[0];
@@ -67,9 +66,10 @@ const numberToDBEntryKey = n => {
   return `f${zeroPad(bits.toString(16), 16)}`;
 };
 
-const dbEntryKeyToNumber = k => {
-  let bits = BigInt(`0x${k.substring(1)}`);
-  if (k[1] < '8') {
+const decodeBinary64 = encodedKey => {
+  assert(encodedKey.startsWith('f'), X`Encoded number expected: ${encodedKey}`);
+  let bits = BigInt(`0x${encodedKey.substring(1)}`);
+  if (encodedKey[1] < '8') {
     // eslint-disable-next-line no-bitwise
     bits ^= 0xffffffffffffffffn;
   } else {
@@ -78,6 +78,9 @@ const dbEntryKeyToNumber = k => {
   }
   asBits[0] = bits;
   const result = asNumber[0];
+
+  // Normalize -0 to 0
+  // XXX We never expect to decode -0, should this instead assert that?
   if (is(result, -0)) {
     return 0;
   }
@@ -91,7 +94,7 @@ const dbEntryKeyToNumber = k => {
  * @param {bigint} n
  * @returns {string}
  */
-const bigintToDBEntryKey = n => {
+const encodeBigInt = n => {
   const nn = n < 0n ? -n : n;
   const nDigits = nn.toString().length;
   const lDigits = nDigits.toString().length;
@@ -153,7 +156,7 @@ const NonNullish = x => {
  * @param {string} k
  * @returns {bigint}
  */
-const dbEntryKeyToBigint = k => {
+const decodeBigInt = k => {
   const ch = k[0];
   let rem = k.slice(1);
   switch (ch) {
@@ -296,7 +299,7 @@ export const makeEncodeKey = encodeRemotable => {
         return 'z';
       }
       case 'number': {
-        return numberToDBEntryKey(key);
+        return encodeBinary64(key);
       }
       case 'string': {
         return `s${key}`;
@@ -305,7 +308,7 @@ export const makeEncodeKey = encodeRemotable => {
         return `b${key}`;
       }
       case 'bigint': {
-        return bigintToDBEntryKey(key);
+        return encodeBigInt(key);
       }
       case 'remotable': {
         const result = encodeRemotable(key);
@@ -346,7 +349,7 @@ export const makeDecodeKey = decodeRemotable => {
         return undefined;
       }
       case 'f': {
-        return dbEntryKeyToNumber(encodedKey);
+        return decodeBinary64(encodedKey);
       }
       case 's': {
         return encodedKey.substring(1);
@@ -356,7 +359,7 @@ export const makeDecodeKey = decodeRemotable => {
       }
       case 'n':
       case 'p': {
-        return dbEntryKeyToBigint(encodedKey);
+        return decodeBigInt(encodedKey);
       }
       case 'r': {
         return decodeRemotable(encodedKey);
