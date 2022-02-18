@@ -1,3 +1,4 @@
+/* global solo */
 import fs from 'fs';
 import path from 'path';
 import parseArgs from 'minimist';
