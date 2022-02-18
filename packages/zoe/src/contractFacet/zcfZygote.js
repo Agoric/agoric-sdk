@@ -2,7 +2,7 @@
 
 import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { Far, Remotable } from '@endo/marshal';
+import { Far, Remotable, passStyleOf } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@agoric/promise-kit';
@@ -340,7 +340,15 @@ export const makeZCFZygote = (
    * @type {ZCFZygote}
    * */
   const zcfZygote = {
-    evaluateContract: bundle => {
+    evaluateContract: bundleOrBundlecap => {
+      let bundle;
+      if (passStyleOf(bundleOrBundlecap) === 'remotable') {
+        const bundlecap = bundleOrBundlecap;
+        // @ts-ignore powers is not typed correctly: https://github.com/Agoric/agoric-sdk/issues/3239s
+        bundle = powers.D(bundlecap).getBundle();
+      } else {
+        bundle = bundleOrBundlecap;
+      }
       contractCode = evalContractBundle(bundle);
       handlePWarning(contractCode);
     },

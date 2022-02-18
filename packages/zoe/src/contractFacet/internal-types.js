@@ -16,7 +16,7 @@
 
 /**
  * @typedef ZCFZygote
- * @property {(bundle: SourceBundle) => void} evaluateContract
+ * @property {(bundleOrBundlecap: SourceBundle | Bundlecap) => void} evaluateContract
  * @property {(instanceAdminFromZoe: ERef<ZoeInstanceAdmin>,
  *     instanceRecordFromZoe: InstanceRecord,
  *     issuerStorageFromZoe: IssuerRecords,

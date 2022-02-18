@@ -29,7 +29,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
   /** @type {ExecuteContract} */
   const executeContract = (
-    bundle,
+    bundleOrBundlecap,
     zoeService,
     invitationIssuer,
     zoeInstanceAdmin,
@@ -44,7 +44,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       invitationIssuer,
       testJigSetter,
     );
-    zcfZygote.evaluateContract(bundle);
+    zcfZygote.evaluateContract(bundleOrBundlecap);
     return zcfZygote.startContract(
       zoeInstanceAdmin,
       instanceRecordFromZoe,
