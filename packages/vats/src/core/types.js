@@ -123,7 +123,7 @@
 /**
  * @typedef {{
  *   issuer: |
- *     'RUN' | 'BLD',
+ *     'RUN' | 'BLD' | 'Attestation',
  *   installation: |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'getRUN' |
