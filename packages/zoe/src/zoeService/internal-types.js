@@ -54,14 +54,20 @@
  */
 
 /**
+ * @typedef { SourceBundle | Bundlecap } BundleOrBundlecap
+ */
+
+/**
  * @callback UnwrapInstallation
  *
- * Assert the installation is known, and return the bundle and
+ * Assert the installation is known, and return the bundle/bundlecap and
  * installation
  *
  * @param {ERef<Installation>} installationP
  * @returns {Promise<{
- *   bundle: SourceBundle,
+ *   bundle?: SourceBundle,
+ *   bundlecap?: Bundlecap,
+ *   bundleID?: BundleID,
  *   installation:Installation
  * }>}
  */
@@ -106,12 +112,20 @@
  */
 
 /**
+ * @callback GetBundlecapForID
+ * @param {BundleID} id
+ * @returns {Promise<Bundlecap>}
+ */
+
+/**
  * @typedef ZoeStorageManager
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
  * @property {DepositPayments} depositPayments
  * @property {Issuer} invitationIssuer
- * @property {Install} install
+ * @property {InstallBundle} installBundle
+ * @property {InstallBundleID} installBundleID
+ * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
  * @property {GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers

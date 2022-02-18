@@ -26,6 +26,7 @@ import { makeInstallationStorage } from './installationStorage.js';
  *
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
+ * @param {GetBundlecapForID} getBundlecapForID
  * @param {GetFeeIssuerKit} getFeeIssuerKit
  * @param {ShutdownWithFailure} shutdownZoeVat
  * @param {Issuer} feeIssuer
@@ -34,6 +35,7 @@ import { makeInstallationStorage } from './installationStorage.js';
  */
 export const makeZoeStorageManager = (
   createZCFVat,
+  getBundlecapForID,
   getFeeIssuerKit,
   shutdownZoeVat,
   feeIssuer,
@@ -82,7 +84,12 @@ export const makeZoeStorageManager = (
   // Zoe stores "installations" - identifiable bundles of contract
   // code that can be reused again and again to create new contract
   // instances
-  const { install, unwrapInstallation } = makeInstallationStorage();
+  const {
+    installBundle,
+    installBundleID,
+    unwrapInstallation,
+    getBundleIDFromInstallation,
+  } = makeInstallationStorage(getBundlecapForID);
 
   /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
@@ -237,7 +244,9 @@ export const makeZoeStorageManager = (
     getAssetKindByBrand: issuerStorage.getAssetKindByBrand,
     depositPayments: escrowStorage.depositPayments,
     invitationIssuer,
-    install,
+    installBundle,
+    installBundleID,
+    getBundleIDFromInstallation,
     getPublicFacet,
     getBrands,
     getIssuers,
