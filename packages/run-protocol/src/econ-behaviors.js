@@ -339,6 +339,7 @@ export const configureVaultFactoryUI = async ({
       contractGovernor,
       noActionElectorate,
       binaryVoteCounter,
+      liquidate,
     },
   },
   instance: {
@@ -352,6 +353,7 @@ export const configureVaultFactoryUI = async ({
     contractGovernor,
     noActionElectorate,
     binaryVoteCounter,
+    liquidate,
   });
   const instances = await Collect.allValues({
     amm: ammInstance,
@@ -380,7 +382,7 @@ export const configureVaultFactoryUI = async ({
     ['RUN_ISSUER_BOARD_ID', centralIssuer],
     ['RUN_BRAND_BOARD_ID', centralBrand],
     ['AMM_INSTALLATION_BOARD_ID', installs.amm],
-    ['LIQ_INSTALLATION_BOARD_ID', installs.liquidation],
+    ['LIQ_INSTALLATION_BOARD_ID', installs.liquidate],
     ['BINARY_COUNTER_INSTALLATION_BOARD_ID', installs.binaryVoteCounter],
     ['NO_ACTION_INSTALLATION_BOARD_ID', installs.noActionElectorate],
     ['CONTRACT_GOVERNOR_INSTALLATION_BOARD_ID', installs.contractGovernor],
