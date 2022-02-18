@@ -87,111 +87,92 @@ const decodeBinary64 = encodedKey => {
   return result;
 };
 
-/**
- * See https://github.com/Agoric/agoric-sdk/pull/4469#issuecomment-1030770373
- * TODO Move that text into an .md file
- *
- * @param {bigint} n
- * @returns {string}
- */
+// JavaScript bigints are encoded using a variant of Elias delta coding, with an
+// initial component for the length of the digit count as a unary string, a
+// second component for the decimal digit count, and a third component for the
+// decimal digits preceded by a gratuitous separating colon.
+// To ensure that the lexicographic sort order of encoded values matches the
+// numeric sort order of the corresponding numbers, the characters of the unary
+// prefix are different for negative values (type "n" followed by any number of
+// "#"s [which sort before decimal digits]) vs. positive and zero values (type
+// "p" followed by any number of "~"s [which sort after decimal digits]) and
+// each decimal digit of the encoding for a negative value is replaced with its
+// nines' complement (so that negative values of the same scale sort by
+// *descending* absolute value).
 const encodeBigInt = n => {
-  const nn = n < 0n ? -n : n;
-  const nDigits = nn.toString().length;
+  const abs = n < 0n ? -n : n;
+  const nDigits = abs.toString().length;
   const lDigits = nDigits.toString().length;
   if (n < 0n) {
     return `n${
-      // A zero for each digit beyond the first
+      // A "#" for each digit beyond the first
       // in the decimal *count* of decimal digits.
-      '0'.repeat(lDigits - 1)
+      '#'.repeat(lDigits - 1)
     }${
-      // The count of digits, offset to be a
-      // number of lDigits digits
-      // that never starts with zero.
-      // * lDigits=1: nDigits 1-9 => 9-1
-      // * lDigits=2: nDigits 10-99 => 99-10
-      // * lDigits=3: nDigits 100-999 => 999-100
-      // * lDigits=4: nDigits 1000-9999 => 9999-1000
-      // * ...
-      10 ** lDigits + 10 ** (lDigits - 1) - 1 - nDigits
-    }${
-      // The digits in a complementary representation
-      // for reverse sorting.
+      // The nines' complement of the count of digits.
+      (10 ** lDigits - 1 - nDigits).toString().padStart(lDigits, '0')
+    }:${
+      // The nines' complement of the digits.
       (10n ** BigInt(nDigits) - 1n + n).toString().padStart(nDigits, '0')
-      /* or e.g. 10n**nDigits + 10n**(nDigits-1n) - 1n + n */
     }`;
-  } else if (n === 0n) {
-    return `o`;
   } else {
     return `p${
-      // A nine for each digit beyond the first
+      // A "~" for each digit beyond the first
       // in the decimal *count* of decimal digits.
-      '9'.repeat(lDigits - 1)
+      '~'.repeat(lDigits - 1)
     }${
-      // The count of digits,
-      // offset to never start with a nine
-      // and padded to lDigits digits.
-      // * lDigits=1: nDigits 1-9 => 0-8
-      // * lDigits=2: nDigits 10-99 => 00-89
-      // * lDigits=3: nDigits 100-999 => 000-899
-      // * lDigits=4: nDigits 1000-9999 => 0000-8999
-      // * ...
-      (nDigits - 10 ** (lDigits - 1)).toString().padStart(lDigits, '0')
-    }${
+      // The count of digits.
+      nDigits
+    }:${
       // The digits.
       n
     }`;
   }
 };
 
-// TODO Replace with the NonNullish that is coming. What PR?
-const NonNullish = x => {
-  assert(x !== null && x !== undefined, X`Must not be nullish: ${x}`);
-  return x;
-};
+const decodeBigInt = encodedKey => {
+  const typePrefix = encodedKey[0];
+  let rem = encodedKey.slice(1);
+  assert(
+    typePrefix === 'p' || typePrefix === 'n',
+    X`Encoded bigint expected: ${encodedKey}`,
+  );
 
-/**
- * See https://github.com/Agoric/agoric-sdk/pull/4469#issuecomment-1030770373
- * TODO Move that text into an .md file
- *
- * @param {string} k
- * @returns {bigint}
- */
-const decodeBigInt = k => {
-  const ch = k[0];
-  let rem = k.slice(1);
-  switch (ch) {
-    case 'o': {
-      if (rem.length > 0) throw new Error(`"o" must stand alone: ${k}`);
-      return 0n;
-    }
-    case 'n': {
-      const lDigits = NonNullish(rem.match(/^0*/))[0].length + 1;
-      rem = rem.slice(lDigits - 1);
-      if (rem.length < lDigits) throw new Error(`incomplete digit count: ${k}`);
-      const snDigits = rem.slice(0, lDigits);
-      rem = rem.slice(lDigits);
-      if (!/^[0-9]*$/.test(snDigits)) throw new Error(`invalid nDigits: ${k}`);
-      const cnDigits = parseInt(snDigits, 10);
-      const nDigits = 10 ** lDigits + 10 ** (lDigits - 1) - 1 - cnDigits;
-      if (rem.length !== nDigits) throw new Error(`digit count mismatch: ${k}`);
-      const cn = BigInt(rem);
-      const n = cn - 10n ** BigInt(nDigits) + 1n;
-      return n;
-    }
-    case 'p': {
-      const lDigits = NonNullish(rem.match(/^9*/))[0].length + 1;
-      rem = rem.slice(lDigits - 1);
-      if (rem.length < lDigits) throw new Error(`incomplete digit count: ${k}`);
-      const snDigits = rem.slice(0, lDigits);
-      rem = rem.slice(lDigits);
-      if (!/^[0-9]*$/.test(snDigits)) throw new Error(`invalid nDigits: ${k}`);
-      const nDigits = parseInt(snDigits, 10) + 10 ** (lDigits - 1);
-      if (rem.length !== nDigits) throw new Error(`digit count mismatch: ${k}`);
-      return BigInt(rem);
-    }
-    default:
-      throw new Error(`invalid first character: ${k}`);
+  const lDigits = rem.search(/[0-9]/) + 1;
+  assert(lDigits >= 1, X`Digit count expected: ${encodedKey}`);
+  rem = rem.slice(lDigits - 1);
+
+  assert(
+    rem.length >= lDigits,
+    X`Complete digit count expected: ${encodedKey}`,
+  );
+  const snDigits = rem.slice(0, lDigits);
+  rem = rem.slice(lDigits);
+
+  assert(
+    /^[0-9]+/.test(snDigits),
+    X`Decimal digit count expected: ${encodedKey}`,
+  );
+  let nDigits = parseInt(snDigits, 10);
+  if (typePrefix === 'n') {
+    // TODO Assert to reject forbidden encodings like "n9:" and "n9…:…"?
+    nDigits = 10 ** lDigits - 1 - nDigits;
   }
+
+  assert(rem.startsWith(':'), X`Separator expected: ${encodedKey}`);
+  rem = rem.slice(1);
+
+  assert(
+    rem.length === nDigits,
+    X`Fixed-length digit sequence expected: ${encodedKey}`,
+  );
+  let n = BigInt(rem);
+  if (typePrefix === 'n') {
+    // TODO Assert to reject forbidden encodings like "n…:9…"?
+    n = n - 10n ** BigInt(nDigits) + 1n;
+  }
+
+  return n;
 };
 
 // `'\u0000'` is the terminator after elements.
