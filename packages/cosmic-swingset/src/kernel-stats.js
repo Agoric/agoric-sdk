@@ -8,6 +8,13 @@ import {
   KERNEL_STATS_UPDOWN_METRICS,
 } from '@agoric/swingset-vat/src/kernel/metrics.js';
 
+// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+
+// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
+
+/** @typedef {import('@opentelemetry/api-metrics').Attributes} Attributes */
+/** @typedef {import('@opentelemetry/api-metrics').Histogram} Histogram */
+
 export { getTelemetryProviders } from '@agoric/telemetry';
 
 /**
@@ -56,10 +63,10 @@ const recordToKey = record =>
 /**
  * @param {{
  *   metricMeter: import('@opentelemetry/sdk-metrics-base').Meter,
- *   labels: Record<string, string>
+ *   attributes: import('@opentelemetry/api-metrics').Attributes,
  * }} param0
  */
-export function makeSlogCallbacks({ metricMeter, labels }) {
+export function makeSlogCallbacks({ metricMeter, attributes }) {
   // Legacy because Histogram thing Does not seem to be a passable
   const nameToMetricOpts = makeLegacyMap('baseMetricName');
   nameToMetricOpts.init('swingset_vat_startup', {
@@ -75,56 +82,65 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
     boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
   });
   // Legacy because legacyMaps are not passable
-  const groupToMetrics = makeLegacyMap('metricGroup');
+  const groupToRecorder = makeLegacyMap('metricGroup');
 
   /**
    * This function reuses or creates per-group named metrics.
    *
    * @param {string} name name of the base metric
-   * @param {Record<string, string>} [group] the labels to associate with a
-   * group
-   * @param {Record<string, string>} [instance] the specific metric labels
-   * @returns {any} the labelled metric
+   * @param {Attributes} [group] the
+   * attributes to associate with a group
+   * @param {Attributes} [instance] the specific metric attributes
+   * @returns {Pick<Histogram, 'record'>} the attribute-aware recorder
    */
-  const getGroupedMetric = (name, group = undefined, instance = {}) => {
-    let nameToMetric;
+  const getGroupedRecorder = (name, group = undefined, instance = {}) => {
+    let nameToRecorder;
     const groupKey = group && recordToKey(group);
     const instanceKey = recordToKey(instance);
-    if (groupToMetrics.has(groupKey)) {
+    if (groupToRecorder.has(groupKey)) {
       let oldInstanceKey;
-      [nameToMetric, oldInstanceKey] = groupToMetrics.get(groupKey);
+      [nameToRecorder, oldInstanceKey] = groupToRecorder.get(groupKey);
       if (group) {
         if (instanceKey !== oldInstanceKey) {
-          for (const metric of nameToMetric.values()) {
+          for (const metric of nameToRecorder.values()) {
             // FIXME: Delete all the metrics of the old instance.
             metric;
           }
           // Refresh the metric group.
           // Legacy because Metric thing does not seem to be a passable
-          nameToMetric = makeLegacyMap('metricName');
-          groupToMetrics.set(groupKey, [nameToMetric, instanceKey]);
+          nameToRecorder = makeLegacyMap('metricName');
+          groupToRecorder.set(groupKey, [nameToRecorder, instanceKey]);
         }
       }
     } else {
       // Legacy because Metric thing does not seem to be a passable
-      nameToMetric = makeLegacyMap('metricName');
-      groupToMetrics.init(groupKey, [nameToMetric, instanceKey]);
+      nameToRecorder = makeLegacyMap('metricName');
+      groupToRecorder.init(groupKey, [nameToRecorder, instanceKey]);
     }
 
-    let metric;
-    if (nameToMetric.has(name)) {
-      metric = nameToMetric.get(name);
+    /** @type {Histogram} */
+    let recorder;
+    if (nameToRecorder.has(name)) {
+      recorder = nameToRecorder.get(name);
     } else {
-      // Bind the base metric to the group and instance labels.
-      metric = metricMeter.createHistogram(name, {
-        ...nameToMetricOpts.get(name),
-        constantAttributes: new Map(
-          Object.entries({ ...labels, ...group, ...instance }),
-        ),
+      // Bind the base metric to the group and instance attributes.
+      const metric = metricMeter.createHistogram(
+        name,
+        nameToMetricOpts.get(name),
+      );
+      // Create a value recorder with the specfic attributes.
+      recorder = harden({
+        record: (value, attrs) =>
+          metric.record(value, {
+            ...attributes,
+            ...group,
+            ...instance,
+            ...attrs,
+          }),
       });
-      nameToMetric.init(name, metric);
+      nameToRecorder.init(name, recorder);
     }
-    return metric;
+    return recorder;
   };
 
   /**
@@ -148,7 +164,7 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
     startup(_method, [vatID], finisher) {
       return wrapDeltaMS(finisher, deltaMS => {
         const group = getVatGroup(vatID);
-        getGroupedMetric('swingset_vat_startup', group).record(deltaMS);
+        getGroupedRecorder('swingset_vat_startup', group).record(deltaMS);
       });
     },
     delivery(_method, [vatID], finisher) {
@@ -156,7 +172,7 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
         finisher,
         (deltaMS, [[_status, _problem, meterUsage]]) => {
           const group = getVatGroup(vatID);
-          getGroupedMetric('swingset_vat_delivery', group).record(deltaMS);
+          getGroupedRecorder('swingset_vat_delivery', group).record(deltaMS);
           if (meterUsage) {
             // Add to aggregated metering stats.
             for (const [key, value] of Object.entries(meterUsage)) {
@@ -164,9 +180,9 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
                 // eslint-disable-next-line no-continue
                 continue;
               }
-              getGroupedMetric(`swingset_meter_usage`, group, {
-                // The meterType is an instance-specific label--a change in it
-                // will result in the old value being discarded.
+              getGroupedRecorder(`swingset_meter_usage`, group, {
+                // The meterType is an instance-specific attribute--a change in
+                // it will result in the old value being discarded.
                 ...(meterUsage.meterType && {
                   meterType: meterUsage.meterType,
                 }),
@@ -187,13 +203,13 @@ export function makeSlogCallbacks({ metricMeter, labels }) {
  * @param {any} param0.controller
  * @param {import('@opentelemetry/sdk-metrics-base').Meter} param0.metricMeter
  * @param {Console} param0.log
- * @param {Record<string, any>} param0.labels
+ * @param {Attributes} param0.attributes
  */
 export function exportKernelStats({
   controller,
   metricMeter,
   log = console,
-  labels,
+  attributes = {},
 }) {
   const kernelStatsMetrics = new Map();
   const expectedKernelStats = new Set();
@@ -225,7 +241,7 @@ export function exportKernelStats({
     kernelStatsMetrics.set(
       key,
       metricMeter.createObservableCounter(name, options, observableResult => {
-        observableResult.observe(getKernelStats()[key], {});
+        observableResult.observe(getKernelStats()[key], attributes);
       }),
     );
   });
@@ -241,7 +257,7 @@ export function exportKernelStats({
         name,
         options,
         observableResult => {
-          observableResult.observe(getKernelStats()[key], {});
+          observableResult.observe(getKernelStats()[key], attributes);
         },
       ),
     );
@@ -266,7 +282,6 @@ export function exportKernelStats({
     {
       description: 'Processing time per crank (ms)',
       boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
-      constantAttributes: new Map(Object.entries(labels)),
     },
   );
 
@@ -275,9 +290,33 @@ export function exportKernelStats({
     {
       description: 'Processing time per block',
       boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
-      constantAttributes: new Map(Object.entries(labels)),
     },
   );
 
-  return { schedulerCrankTimeHistogram, schedulerBlockTimeHistogram };
+  async function crankScheduler(policy, clock = () => Date.now()) {
+    let now = clock();
+    let crankStart = now;
+    const blockStart = now;
+
+    const instrumentedPolicy = harden({
+      ...policy,
+      crankComplete(details) {
+        const go = policy.crankComplete(details);
+        schedulerCrankTimeHistogram.record(now - crankStart, attributes);
+        crankStart = now;
+        now = clock();
+        return go;
+      },
+    });
+    await controller.run(instrumentedPolicy);
+
+    now = Date.now();
+    schedulerBlockTimeHistogram.record((now - blockStart) / 1000, attributes);
+  }
+
+  return {
+    crankScheduler,
+    schedulerCrankTimeHistogram,
+    schedulerBlockTimeHistogram,
+  };
 }

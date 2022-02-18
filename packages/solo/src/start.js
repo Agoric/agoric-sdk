@@ -36,6 +36,7 @@ import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
 import {
   DEFAULT_METER_PROVIDER,
   makeSlogCallbacks,
+  exportKernelStats,
 } from '@agoric/cosmic-swingset/src/kernel-stats.js';
 
 import { deliver, addDeliveryTarget } from './outbound.js';
@@ -86,6 +87,14 @@ const atomicReplaceFile = async (filename, contents) => {
     }
     throw e;
   }
+};
+
+const neverStop = () => {
+  return harden({
+    vatCreated: () => true,
+    crankComplete: () => true,
+    crankFailed: () => true,
+  });
 };
 
 const buildSwingset = async (
@@ -203,6 +212,12 @@ const buildSwingset = async (
     { slogCallbacks, slogFile, slogSender },
   );
 
+  const { crankScheduler } = exportKernelStats({
+    controller,
+    metricMeter,
+    log: console,
+  });
+
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
     await atomicReplaceFile(mailboxStateFile, ms);
@@ -213,8 +228,10 @@ const buildSwingset = async (
     deliver(mbs);
   }
 
+  const policy = neverStop();
+
   async function processKernel() {
-    await controller.run();
+    await crankScheduler(policy);
     if (swingSetRunning) {
       await saveState();
       deliverOutbound();

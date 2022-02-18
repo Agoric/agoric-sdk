@@ -243,5 +243,5 @@ export const makeMemoryMappedCircularBuffer = async ({
 
 export const makeSlogSender = async opts => {
   const { writeJSON } = await makeMemoryMappedCircularBuffer(opts);
-  return writeJSON;
+  return Object.assign(writeJSON, { forceFlush: () => {} });
 };
