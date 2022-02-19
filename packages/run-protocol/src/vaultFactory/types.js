@@ -102,18 +102,12 @@
 
 /**
  * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<LoanKit>}  makeVaultKit
+ * @property {(seat: ZCFSeat) => Promise<VaultKit>}  makeVaultKit
  * @property {() => void} liquidateAll
  */
 
 /**
  * @typedef {VaultManagerBase & GetVaultParams} VaultManager
- */
-
-/**
- * @typedef {Object} OpenLoanKit
- * @property {Notifier<VaultUIState>} notifier
- * @property {Promise<PaymentPKeywordRecord>} collateralPayoutP
  */
 
 /**
@@ -142,7 +136,7 @@
  */
 
 /**
- * @typedef {Object} LoanKit
+ * @typedef {Object} VaultKit
  * @property {Vault} vault
  * @property {Notifier<VaultUIState>} uiNotifier
  */
