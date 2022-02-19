@@ -979,7 +979,6 @@ test('adjust balances', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const priceConversion = makeRatio(15n, runBrand, 1n, aethBrand);
   const rates = makeRates(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
@@ -1146,6 +1145,7 @@ test('adjust balances', async t => {
 
   debtAmount = await E(aliceVault).getDebtAmount();
   t.deepEqual(debtAmount, runDebtLevel);
+  t.deepEqual(collateralLevel, await E(aliceVault).getCollateralAmount());
 
   const { RUN: lentAmount4 } = await E(
     aliceReduceCollateralSeat,
@@ -1181,7 +1181,6 @@ test('adjust balances', async t => {
     runDebtLevel,
     AmountMath.add(withdrawRunAmount, withdrawRun3WithFees),
   );
-  collateralLevel = AmountMath.subtract(collateralLevel, collateralDecr2);
   const aliceReduceCollateralSeat2 = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
@@ -1555,7 +1554,6 @@ test('mutable liquidity triggers and interest', async t => {
   const aliceDebtAmount = await E(aliceVault).getDebtAmount();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
-  let aliceCollateralLevel = AmountMath.make(aethBrand, 1000n);
 
   t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
   const { RUN: aliceLentAmount } = await E(
@@ -1617,10 +1615,6 @@ test('mutable liquidity triggers and interest', async t => {
   // Alice reduce collateral by 300. That leaves her at 700 * 10 > 1.05 * 5000.
   // Prices will drop from 10 to 7, she'll be liquidated: 700 * 7 < 1.05 * 5000.
   const collateralDecrement = AmountMath.make(aethBrand, 300n);
-  aliceCollateralLevel = AmountMath.subtract(
-    aliceCollateralLevel,
-    collateralDecrement,
-  );
   const aliceReduceCollateralSeat = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
@@ -2064,7 +2058,6 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   const aliceDebtAmount = await E(aliceVault).getDebtAmount();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
-  let aliceCollateralLevel = AmountMath.make(aethBrand, 1000n);
 
   t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
   const { RUN: aliceLentAmount } = await E(
@@ -2126,10 +2119,6 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   // Alice reduce collateral by 300. That leaves her at 700 * 10 > 1.05 * 5000.
   // Prices will drop from 10 to 7, she'll be liquidated: 700 * 7 < 1.05 * 5000.
   const collateralDecrement = AmountMath.make(aethBrand, 211n);
-  aliceCollateralLevel = AmountMath.subtract(
-    aliceCollateralLevel,
-    collateralDecrement,
-  );
   const aliceReduceCollateralSeat = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
@@ -2152,7 +2141,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debt, aliceRunDebtLevel);;
+  t.deepEqual(aliceUpdate.value.debt, aliceRunDebtLevel);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.
