@@ -6,6 +6,8 @@ import { AmountMath } from '@agoric/ertp';
 import { daysForVoting } from './bootstrap';
 import { ONE_DAY } from '../setup';
 
+import '@agoric/swingset-vat/src/kernel/vatManager/types.js';
+
 const { details: X, quote: q } = assert;
 
 /**

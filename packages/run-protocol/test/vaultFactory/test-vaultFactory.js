@@ -151,7 +151,7 @@ async function setupAmmAndElectorate(
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<FeeMintAccess>} feeMintAccess
+ * @param {ERef<Handle<'feeMintAccess'>>} feeMintAccess
  * @param {Brand} runBrand
  * @param {bigint} runInitialLiquidity
  */

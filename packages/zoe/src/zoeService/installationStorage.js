@@ -1,5 +1,8 @@
 // @ts-check
 
+// XXX necessary for CLI
+import '@agoric/swingset-vat/src/types.js';
+
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { E } from '@agoric/eventual-send';

@@ -3,6 +3,8 @@
 import { Far } from '@endo/marshal';
 import { buildOwner } from '../setup.js';
 
+import '@agoric/swingset-vat/src/kernel/vatManager/types.js';
+
 // VaultFactory owner
 
 /** @type {BuildRootObjectForTestVat} */

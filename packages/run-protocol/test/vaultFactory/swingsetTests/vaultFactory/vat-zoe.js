@@ -4,6 +4,8 @@ import { Far } from '@endo/marshal';
 
 import { makeZoeKit } from '@agoric/zoe';
 
+import '@agoric/swingset-vat/src/kernel/vatManager/types.js';
+
 /** @type {BuildRootObjectForTestVat} */
 export function buildRootObject(vatPowers) {
   return Far('root', {

@@ -1,5 +1,8 @@
 // @ts-check
 
+// XXX necessary for CLI
+import '@agoric/swingset-vat/src/types.js';
+
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@agoric/promise-kit';
 import { Far } from '@endo/marshal';

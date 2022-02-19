@@ -7,6 +7,8 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { INTEREST_RATE_KEY } from '../../../../src/vaultFactory/params';
 import { ONE_DAY, createCommittee, installContracts, makeVats } from '../setup';
 
+import '@agoric/swingset-vat/src/kernel/vatManager/types.js';
+
 const BASIS_POINTS = 10000n;
 
 export const daysForVoting = 3;

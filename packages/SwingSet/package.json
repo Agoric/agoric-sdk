@@ -4,6 +4,7 @@
   "description": "Vat/Container Launcher",
   "type": "module",
   "main": "src/index.js",
+  "types": "./dist/src/index.d.ts",
   "engines": {
     "node": ">=11.0"
   },

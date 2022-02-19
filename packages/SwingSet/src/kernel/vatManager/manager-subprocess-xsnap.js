@@ -127,6 +127,13 @@ export function makeXsSubprocessFactory({
       lastSnapshot ? lastSnapshot.snapshotID : undefined,
     );
 
+    /**
+     * @typedef { [unknown, ...unknown[]] } Tagged
+     * @typedef { { meterType: string, allocate: number|null, compute: number|null } }
+     * MeterUsage
+     * @typedef { { reply: Tagged, meterUsage: MeterUsage } } CrankResults
+     */
+
     /** @type { (item: Tagged) => Promise<CrankResults> } */
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);

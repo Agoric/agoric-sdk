@@ -4,6 +4,7 @@
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "type": "module",
   "main": "./src/zoeService/zoe.js",
+  "types": "./dist/src/zoeService/zoe.d.ts",
   "engines": {
     "node": ">=11.0"
   },

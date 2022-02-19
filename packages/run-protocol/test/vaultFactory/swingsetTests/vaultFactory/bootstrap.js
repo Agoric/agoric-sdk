@@ -4,6 +4,8 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { installContracts, makeVats } from '../setup';
 
+import '@agoric/swingset-vat/src/kernel/vatManager/types.js';
+
 function makeBootstrap(argv, cb, vatPowers) {
   return async (vats, devices) => {
     const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(

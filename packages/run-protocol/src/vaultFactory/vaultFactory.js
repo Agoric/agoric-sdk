@@ -39,7 +39,7 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 
 const { details: X } = assert;
 
-/** @type {ContractStartFn<{feeMintAccess: FeeMintAccess, initialPoserInvitation: Payment}>} */
+/** @type {ContractStartFn<{feeMintAccess: Handle<'feeMintAccess'>, initialPoserInvitation: Payment}>} */
 export const start = async (zcf, privateArgs) => {
   const {
     ammPublicFacet,

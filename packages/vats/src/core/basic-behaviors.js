@@ -19,6 +19,7 @@ export const makeVatsFromBundles = ({
   produce: { vatAdminSvc, loadVat },
 }) => {
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+  // @ts-expect-error svg missing getBundlecap, getNamedBundlecap
   vatAdminSvc.resolve(svc);
   // TODO: getVat? do we need to memoize this by name?
   // TODO: rename loadVat to createVatByName?

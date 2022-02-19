@@ -5,6 +5,8 @@ import { Far } from '@endo/marshal';
 import { assert, details as X, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
+import '@agoric/swingset-vat/src/kernel/vatManager/types.js';
+
 /**
  *
  * @param {(msg: any)=> void} log

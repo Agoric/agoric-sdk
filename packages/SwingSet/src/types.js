@@ -1,5 +1,6 @@
 // @ts-check
 
+// XXX CapData is defined by @endo/marshal but importing this breaks lots of other things
 // import '@endo/marshal/src/types.js';
 
 /**

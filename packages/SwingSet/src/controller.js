@@ -339,6 +339,11 @@ export async function makeSwingsetController(
 
     validateAndInstallBundle,
 
+    /**
+     *
+     * @param {RunPolicy} [policy]
+     * @returns {Promise<number>} count of cranks that were executed
+     */
     async run(policy) {
       return kernel.run(policy);
     },
