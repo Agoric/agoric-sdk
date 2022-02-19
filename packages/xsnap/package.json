@@ -33,6 +33,8 @@
     "@agoric/eventual-send": "^0.14.0",
     "@endo/init": "^0.5.35",
     "@endo/netstring": "^0.3.5",
+    "@endo/stream": "^0.3.4",
+    "@endo/stream-node": "^0.2.5",
     "glob": "^7.1.6"
   },
   "devDependencies": {

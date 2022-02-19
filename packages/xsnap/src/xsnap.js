@@ -11,10 +11,10 @@
  * @typedef {import('./defer').Deferred<T>} Deferred
  */
 
-import { netstringReader, netstringWriter } from '@endo/netstring';
+import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
+import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
-import * as node from './node-stream.js';
 
 // This will need adjustment, but seems to be fine for a start.
 export const DEFAULT_CRANK_METERING_LIMIT = 1e8;
@@ -133,14 +133,14 @@ export function xsnap(options) {
     throw Error(`${name} exited`);
   });
 
-  const messagesToXsnap = netstringWriter(
-    node.writer(
-      /** @type {NodeJS.WritableStream} */ (xsnapProcess.stdio[3]),
-      `messages to ${name}`,
-    ),
+  const writer = xsnapProcess.stdio[3];
+  const reader = xsnapProcess.stdio[4];
+
+  const messagesToXsnap = makeNetstringWriter(
+    makeNodeWriter(/** @type {import('stream').Writable} */ (writer)),
   );
-  const messagesFromXsnap = netstringReader(
-    /** @type {AsyncIterable<Uint8Array>} */ (xsnapProcess.stdio[4]),
+  const messagesFromXsnap = makeNetstringReader(
+    makeNodeReader(/** @type {import('stream').Readable} */ (reader)),
   );
 
   /** @type {Promise<void>} */
@@ -158,11 +158,12 @@ export function xsnap(options) {
    */
   async function runToIdle() {
     for (;;) {
-      const { done, value: message } = await messagesFromXsnap.next();
-      if (done) {
+      const iteration = await messagesFromXsnap.next(undefined);
+      if (iteration.done) {
         xsnapProcess.kill();
         return vatCancelled;
       }
+      const { value: message } = iteration;
       if (message.byteLength === 0) {
         // A protocol error kills the xsnap child process and breaks the baton
         // chain with a terminal error.
@@ -296,7 +297,7 @@ export function xsnap(options) {
    */
   async function close() {
     baton = baton.then(async () => {
-      await messagesToXsnap.return();
+      await messagesToXsnap.return(undefined);
       throw new Error(`${name} closed`);
     });
     baton.catch(() => {}); // Suppress Node.js unhandled exception warning.
