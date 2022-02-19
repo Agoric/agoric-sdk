@@ -11,6 +11,8 @@
 /**
  * @typedef AttMaker
  * @property {(amountToLien: Amount) => Promise<Payment>} makeAttestation
+ * @property {() => Amount }  getLiened
+ * @property {() => Promise<AccountState>} getAccountState
  * @property {MakeReturnAttInvitation} makeReturnAttInvitation
  */
 
