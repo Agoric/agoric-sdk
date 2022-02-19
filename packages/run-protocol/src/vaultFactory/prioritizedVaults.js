@@ -79,8 +79,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       return undefined;
     }
 
-    // TODO isn't this just `values`?
-    const [[_, vault]] = vaults.entries();
+    const [vault] = vaults.values();
     const collateralAmount = vault.getCollateralAmount();
     if (AmountMath.isEmpty(collateralAmount)) {
       // Would be an infinite ratio
