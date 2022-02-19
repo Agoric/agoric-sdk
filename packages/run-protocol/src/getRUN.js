@@ -6,7 +6,6 @@ import {
   makeParamManagerBuilder,
 } from '@agoric/governance';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeAttestationFacets } from '@agoric/zoe/src/contracts/attestation/attestation.js';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 import {
@@ -14,6 +13,7 @@ import {
   ceilMultiplyBy,
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeAttestationFacets } from './attestation/attestation.js';
 
 const { details: X } = assert;
 
