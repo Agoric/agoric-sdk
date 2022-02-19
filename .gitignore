@@ -10,6 +10,17 @@ lib-cov
 # Coverage directory used by tools like istanbul
 coverage
 
+################
+# Build output #
+################
+# Endo bundler
+bundle-*.js
+# Generic, including TypeScript type emissions
+dist
+# something in ui-components/
+compiled
+
+
 # nyc test coverage
 .nyc_output
 
@@ -53,13 +64,11 @@ typings/
 # next.js build output
 .next
 
-# bundles
-bundle-*.js
 /.vagrant
 .DS_Store
+
+# IDE config
 .vscode/
 .idea/
 
 /packages.png
-packages/ui-components/compiled
-packages/ui-components/dist

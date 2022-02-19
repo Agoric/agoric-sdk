@@ -4,13 +4,12 @@
     "target": "esnext",
     "module": "esnext",
 
-    "noEmit": true,
-/*
-    // The following flags are for creating .d.ts files:
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,
-*/
+    "outDir": "dist",
+    "declarationMap": true,
+
     "downlevelIteration": true,
     "strictNullChecks": true,
     "moduleResolution": "node",
