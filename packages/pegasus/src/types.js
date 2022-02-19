@@ -23,10 +23,21 @@
  */
 
 /**
+ * @typedef {Object} DenomTransformer
+ * @property {(remoteDenom: Denom, localAddr: Address, remoteAddr: Address)
+ *   => Promise<{ sendDenom: Denom, receiveDenom: Denom }>
+ * } getDenomsForLocalPeg
+ * @property {(remoteDenom: Denom, localAddr: Address, remoteAddr: Address)
+ *   => Promise<{ sendDenom: Denom, receiveDenom: Denom }>
+ * } getDenomsForRemotePeg
+ */
+
+/**
  * @typedef {Object} Peg
  * @property {() => string} getAllegedName get the debug name
  * @property {() => Brand} getLocalBrand get the brand associated with the peg
- * @property {() => Denom} getRemoteDenom get the denomination identifier
+ * @property {() => Denom} getReceiveDenom get the remote denomination identifier we receive
+ * @property {() => Denom} getSendDenom get the remote denomination identifier we send
  */
 
 /**
@@ -45,15 +56,15 @@
 
 /**
  * @callback RejectStuckTransfers
- * Abort any in-progress remoteDenom transfers if there has not yet been a
- * pegRemote or pegLocal for it.
+ * Abort any in-progress receiveDenom transfers if there has not yet been a
+ * pegRemote or pegLocal corresponding to it.
  *
  * This races against any attempts to obtain metadata and establish a given
  * peg.
  *
  * It's alright to expose to the holder of the connection.
  *
- * @param {Denom} remoteDenom
+ * @param {Denom} receiveDenom
  * @returns {Promise<void>}
  */
 

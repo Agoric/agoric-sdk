@@ -12,9 +12,11 @@ import '@agoric/swingset-vat/src/vats/network/types.js';
 import '@agoric/zoe/exported.js';
 
 import '../exported.js';
+import { IBCSourceTraceDenomTransformer } from './ibc-trace.js';
 import { ICS20TransferProtocol } from './ics20.js';
 import { makeCourierMaker, getCourierPK } from './courier.js';
 
+const DEFAULT_DENOM_TRANSFORMER = IBCSourceTraceDenomTransformer;
 const DEFAULT_TRANSFER_PROTOCOL = ICS20TransferProtocol;
 
 const TRANSFER_PROPOSAL_SHAPE = {
@@ -35,8 +37,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
    * @typedef {Object} LocalDenomState
    * @property {Address} localAddr
    * @property {Address} remoteAddr
-   * @property {LegacyMap<Denom, PromiseRecord<Courier>>} remoteDenomToCourierPK
-   * @property {IterationObserver<Denom>} remoteDenomPublication
+   * @property {LegacyMap<Denom, PromiseRecord<Courier>>} receiveDenomToCourierPK
+   * @property {IterationObserver<Denom>} receiveDenomPublication
    * @property {Subscription<Denom>} remoteDenomSubscription
    * @property {bigint} lastDenomNonce Distinguish Pegasus-created denom names
    * that are sent and received from a remote connection
@@ -65,7 +67,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
    *
    * @typedef {Object} PegasusDescriptor
    * @property {Brand} localBrand
-   * @property {Denom} remoteDenom
+   * @property {Denom} receiveDenom
+   * @property {Denom} sendDenom
    * @property {string} allegedName
    *
    * @param {LocalDenomState} state
@@ -81,8 +84,11 @@ const makePegasus = (zcf, board, namesByAddress) => {
       getLocalBrand() {
         return desc.localBrand;
       },
-      getRemoteDenom() {
-        return desc.remoteDenom;
+      getReceiveDenom() {
+        return desc.receiveDenom;
+      },
+      getSendDenom() {
+        return desc.sendDenom;
       },
     });
 
@@ -95,12 +101,14 @@ const makePegasus = (zcf, board, namesByAddress) => {
    * @param {ReturnType<typeof makeCourierMaker>} param0.makeCourier
    * @param {LocalDenomState} param0.localDenomState
    * @param {ERef<TransferProtocol>} param0.transferProtocol
+   * @param {ERef<DenomTransformer>} param0.denomTransformer
    * @returns {PegasusConnectionActions}
    */
   const makePegasusConnectionActions = ({
     makeCourier,
     localDenomState,
     transferProtocol,
+    denomTransformer,
   }) => {
     let checkAbort = () => {};
 
@@ -109,19 +117,19 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
     /** @type {PegasusConnectionActions} */
     const pegasusConnectionActions = Far('pegasusConnectionActions', {
-      async rejectStuckTransfers(remoteDenom) {
+      async rejectStuckTransfers(receiveDenom) {
         checkAbort();
-        const { remoteDenomToCourierPK } = localDenomState;
+        const { receiveDenomToCourierPK } = localDenomState;
 
-        const { reject, promise } = remoteDenomToCourierPK.get(remoteDenom);
+        const { reject, promise } = receiveDenomToCourierPK.get(receiveDenom);
         // If rejected, the rejection is returned to our caller, so we have
         // handled it correctly and that flow doesn't need to trigger an
         // additional UnhandledRejectionWarning in our vat.
         promise.catch(() => {});
-        reject(assert.error(X`${remoteDenom} is temporarily unavailable`));
+        reject(assert.error(X`${receiveDenom} is temporarily unavailable`));
 
         // Allow new transfers to be initiated.
-        remoteDenomToCourierPK.delete(remoteDenom);
+        receiveDenomToCourierPK.delete(receiveDenom);
       },
       async pegRemote(
         allegedName,
@@ -130,7 +138,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
         displayInfo = undefined,
       ) {
         checkAbort();
-        const { remoteDenomToCourierPK } = localDenomState;
+        const { receiveDenomToCourierPK } = localDenomState;
 
         // Create the issuer for the local erights corresponding to the remote values.
         const localKeyword = createLocalIssuerKeyword();
@@ -142,13 +150,22 @@ const makePegasus = (zcf, board, namesByAddress) => {
         checkAbort();
         const { brand: localBrand } = zcfMint.getIssuerRecord();
 
+        const { sendDenom, receiveDenom } = await E(
+          denomTransformer,
+        ).getDenomsForRemotePeg(
+          remoteDenom,
+          localDenomState.localAddr,
+          localDenomState.remoteAddr,
+        );
+        checkAbort();
+
         // Describe how to retain/redeem pegged shadow erights.
         const courier = makeCourier({
           zcf,
           localBrand,
           board,
           namesByAddress,
-          remoteDenom,
+          remoteDenom: sendDenom,
           retain: (zcfSeat, amounts) =>
             zcfMint.burnLosses(harden(amounts), zcfSeat),
           redeem: (zcfSeat, amounts) => {
@@ -157,13 +174,14 @@ const makePegasus = (zcf, board, namesByAddress) => {
           transferProtocol,
         });
 
-        const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+        const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
         courierPK.resolve(courier);
 
         checkAbort();
         const peg = makePeg(localDenomState, {
           localBrand,
-          remoteDenom,
+          sendDenom,
+          receiveDenom,
           allegedName,
         });
         pegs.add(peg);
@@ -184,6 +202,15 @@ const makePegasus = (zcf, board, namesByAddress) => {
         const { brand: localBrand } = await zcf.saveIssuer(
           localIssuer,
           localKeyword,
+        );
+        checkAbort();
+
+        const { sendDenom, receiveDenom } = await E(
+          denomTransformer,
+        ).getDenomsForLocalPeg(
+          remoteDenom,
+          localDenomState.localAddr,
+          localDenomState.remoteAddr,
         );
         checkAbort();
 
@@ -214,7 +241,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
           zcf,
           board,
           namesByAddress,
-          remoteDenom,
+          remoteDenom: sendDenom,
           localBrand,
           retain: (transferSeat, amounts) =>
             transferAmountFrom(
@@ -235,14 +262,15 @@ const makePegasus = (zcf, board, namesByAddress) => {
           transferProtocol,
         });
 
-        const { remoteDenomToCourierPK } = localDenomState;
+        const { receiveDenomToCourierPK } = localDenomState;
 
-        const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+        const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
         courierPK.resolve(courier);
 
         const peg = makePeg(localDenomState, {
           localBrand,
-          remoteDenom,
+          sendDenom,
+          receiveDenom,
           allegedName,
         });
         pegs.add(peg);
@@ -266,9 +294,13 @@ const makePegasus = (zcf, board, namesByAddress) => {
      * Return a handler that can be used with the Network API.
      *
      * @param {ERef<TransferProtocol>} [transferProtocol=DEFAULT_TRANSFER_PROTOCOL]
+     * @param {ERef<DenomTransformer>} [denomTransformer=DEFAULT_DENOM_TRANSFORMER]
      * @returns {PegasusConnectionKit}
      */
-    makePegasusConnectionKit(transferProtocol = DEFAULT_TRANSFER_PROTOCOL) {
+    makePegasusConnectionKit(
+      transferProtocol = DEFAULT_TRANSFER_PROTOCOL,
+      denomTransformer = DEFAULT_DENOM_TRANSFORMER,
+    ) {
       /**
        * @type {LegacyWeakMap<Connection, LocalDenomState>}
        */
@@ -289,17 +321,17 @@ const makePegasus = (zcf, board, namesByAddress) => {
           // Register `c` with the table of Peg receivers.
           const {
             subscription: remoteDenomSubscription,
-            publication: remoteDenomPublication,
+            publication: receiveDenomPublication,
           } = makeSubscriptionKit();
-          const remoteDenomToCourierPK = makeLegacyMap('Denomination');
+          const receiveDenomToCourierPK = makeLegacyMap('Denomination');
 
           /** @type {LocalDenomState} */
           const localDenomState = {
             localAddr,
             remoteAddr,
-            remoteDenomToCourierPK,
+            receiveDenomToCourierPK,
             lastDenomNonce: 0n,
-            remoteDenomPublication,
+            receiveDenomPublication,
             remoteDenomSubscription,
             abort: reason => {
               // eslint-disable-next-line no-use-before-define
@@ -313,6 +345,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
             localDenomState,
             makeCourier,
             transferProtocol,
+            denomTransformer,
           });
 
           connectionToLocalDenomState.init(c, localDenomState);
@@ -333,19 +366,22 @@ const makePegasus = (zcf, board, namesByAddress) => {
               packetBytes,
             );
 
-            const { remoteDenom } = parts;
-            assert.typeof(remoteDenom, 'string');
+            const { remoteDenom: receiveDenom } = parts;
+            assert.typeof(receiveDenom, 'string');
 
-            const { remoteDenomToCourierPK, remoteDenomPublication } =
+            const { receiveDenomToCourierPK, receiveDenomPublication } =
               connectionToLocalDenomState.get(c);
 
-            if (!remoteDenomToCourierPK.has(remoteDenom)) {
+            if (!receiveDenomToCourierPK.has(receiveDenom)) {
               // This is the first time we've heard of this denomination.
-              remoteDenomPublication.updateState(remoteDenom);
+              receiveDenomPublication.updateState(receiveDenom);
             }
 
             // Wait for the courier to be instantiated.
-            const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+            const courierPK = getCourierPK(
+              receiveDenom,
+              receiveDenomToCourierPK,
+            );
             const { receive } = await courierPK.promise;
             return receive(parts);
           };
@@ -358,22 +394,22 @@ const makePegasus = (zcf, board, namesByAddress) => {
           // Unregister `c`.  Pending transfers will be rejected by the Network
           // API.
           const {
-            remoteDenomPublication,
-            remoteDenomToCourierPK,
+            receiveDenomPublication,
+            receiveDenomToCourierPK,
             localAddr,
             remoteAddr,
             abort,
           } = connectionToLocalDenomState.get(c);
           connectionToLocalDenomState.delete(c);
           const err = assert.error(X`pegasusConnectionHandler closed`);
-          remoteDenomPublication.fail(err);
+          receiveDenomPublication.fail(err);
           /** @type {PegasusConnection} */
           const state = harden({
             localAddr,
             remoteAddr,
           });
           connectionPublication.updateState(state);
-          for (const courierPK of remoteDenomToCourierPK.values()) {
+          for (const courierPK of receiveDenomToCourierPK.values()) {
             try {
               courierPK.reject(err);
             } catch (e) {
@@ -407,10 +443,13 @@ const makePegasus = (zcf, board, namesByAddress) => {
       const denomState = pegToDenomState.get(peg);
 
       // Get details from the peg.
-      const remoteDenom = await E(peg).getRemoteDenom();
-      const { remoteDenomToCourierPK } = denomState;
+      const [receiveDenom, sendDenom] = await Promise.all([
+        E(peg).getReceiveDenom(),
+        E(peg).getSendDenom(),
+      ]);
+      const { receiveDenomToCourierPK } = denomState;
 
-      const courierPK = getCourierPK(remoteDenom, remoteDenomToCourierPK);
+      const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
       const { send } = await courierPK.promise;
 
       /**
@@ -423,10 +462,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
         send(zcfSeat, depositAddress);
       };
 
-      return zcf.makeInvitation(
-        offerHandler,
-        `pegasus ${remoteDenom} transfer`,
-      );
+      return zcf.makeInvitation(offerHandler, `pegasus ${sendDenom} transfer`);
     },
   });
 };

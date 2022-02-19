@@ -12,6 +12,9 @@ import { assert, details as X } from '@agoric/assert';
  * @property {DepositAddress} receiver The receiver deposit address
  */
 
+// As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
+const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
+
 // ibc-go as late as v3 requires the `sender` to be nonempty, but doesn't
 // actually use it on the receiving side.  We don't need it on the sending side,
 // either, so we can just omit it.
@@ -96,8 +99,14 @@ export const makeICS20TransferPacket = async ({
  * @returns {Promise<void>}
  */
 export const assertICS20TransferPacketAck = async ack => {
-  const { success, error } = safeJSONParseObject(ack);
-  assert(success, X`ICS20 transfer error ${error}`);
+  const { result, error } = safeJSONParseObject(ack);
+  assert(error === undefined, X`ICS20 transfer error ${error}`);
+  assert(result !== undefined, X`ICS20 transfer missing result in ${ack}`);
+  if (result !== ICS20_TRANSFER_SUCCESS_RESULT) {
+    // We don't want to throw an error here, because we want only to be able to
+    // differentiate between a transfer that failed and a transfer that succeeded.
+    console.warn(`ICS20 transfer succeeded with unexpected result: ${result}`);
+  }
 };
 
 /**
@@ -110,10 +119,10 @@ export const assertICS20TransferPacketAck = async ack => {
  */
 export const makeICS20TransferPacketAck = async (success, error) => {
   if (success) {
-    const ack = { success: true };
+    const ack = { result: ICS20_TRANSFER_SUCCESS_RESULT };
     return JSON.stringify(ack);
   }
-  const nack = { success: false, error: `${error}` };
+  const nack = { error: `${error}` };
   return JSON.stringify(nack);
 };
 
