@@ -1495,7 +1495,11 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
+  const attMakerPK = makePromiseKit();
+
   const wallet = Far('wallet', {
+    resolveAttMaker: attMaker => attMakerPK.resolve(attMaker),
+    getAttMaker: () => attMakerPK.promise,
     saveOfferResult,
     getOfferResult,
     waitForDappApproval,
