@@ -14,7 +14,6 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 
 import {
   invertRatio,
-  makeRatio,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
@@ -240,7 +239,7 @@ export const makeInnerVault = (
       : getCollateralAllocated(vaultSeat);
   };
 
-  const snapshotState = (vstate) => {
+  const snapshotState = vstate => {
     /** @type {VaultUIState} */
     return harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
@@ -256,7 +255,7 @@ export const makeInnerVault = (
   };
 
   // call this whenever anything changes!
-  const updateUiState = async () => {
+  const updateUiState = () => {
     if (!outerUpdater) {
       return;
     }
