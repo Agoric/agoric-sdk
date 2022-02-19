@@ -216,9 +216,10 @@
  */
 
 /**
+ * @template {Record<string, any>} [PA=any]
  * @callback ContractStartFn
  * @param {ContractFacet} zcf
- * @param {Object=} privateArgs
+ * @param {PA} privateArgs
  * @returns {ContractStartFnResult}
  */
 

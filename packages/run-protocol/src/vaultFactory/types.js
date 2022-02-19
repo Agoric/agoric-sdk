@@ -1,19 +1,5 @@
 // @ts-check
-
-/**
- * @typedef  {Object} AutoswapLocal
- * @property {(amount: Amount, brand: Brand) => Amount} getInputPrice
- * @property {() => Invitation} makeSwapInvitation
- */
-
-/**
- * @typedef {Object} Collateral
- * @property {Ratio} liquidationMargin
- * @property {Ratio} stabilityFee
- * @property {Ratio} marketPrice
- * @property {Ratio} interestRate
- * @property {Brand} brand
- */
+/// <reference types="." />
 
 /**
  * @typedef {Object} Rates
@@ -43,16 +29,6 @@
  * @property {() => Record<Keyword, ParamShortDescription>} getGovernedParams
  * @property {() => Promise<GovernorPublic>} getContractGovernor
  * @property {(name: string) => Amount} getInvitationAmount
- */
-
-/**
- * @typedef  {Object} VaultFactory - the creator facet
- * @property {AddVaultType} addVaultType
- * @property {() => Promise<Array<Collateral>>} getCollaterals
- * @property {() => Allocation} getRewardAllocation,
- * @property {() => Promise<Payment>} getBootstrapPayment
- * @property {() => Instance} getContractGovernor
- * @property {() => Promise<Invitation>} makeCollectFeesInvitation
  */
 
 /**
@@ -126,16 +102,6 @@
  */
 
 /**
- * @typedef {Object} LineOfCreditKit
- * @property {Notifier<BaseUIState>} uiNotifier
- * @property {BaseVault} vault
- * @property {{
- *    AdjustBalances: () => Promise<Invitation>,
- *    CloseVault: () => Promise<Invitation>,
- *  }} invitationMakers
- */
-
-/**
  * @typedef {Object} LoanKit
  * @property {Vault} vault
  * @property {Notifier<VaultUIState>} uiNotifier
@@ -145,12 +111,6 @@
  * @typedef {Object} LoanTiming
  * @property {RelativeTime} chargingPeriod
  * @property {RelativeTime} recordingPeriod
- */
-
-/**
- * @typedef {Object} AMMFees
- * @property {bigint} poolFee
- * @property {bigint} protocolFee
  */
 
 /**

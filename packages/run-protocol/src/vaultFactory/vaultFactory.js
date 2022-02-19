@@ -39,7 +39,7 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 
 const { details: X } = assert;
 
-/** @type {ContractStartFn} */
+/** @type {ContractStartFn<{feeMintAccess: FeeMintAccess, initialPoserInvitation: Payment}>} */
 export const start = async (zcf, privateArgs) => {
   const {
     ammPublicFacet,
@@ -106,7 +106,12 @@ export const start = async (zcf, privateArgs) => {
   /** @type { Store<Brand, VaultParamManager> } */
   const vaultParamManagers = makeScalarMap('brand');
 
-  /** @type {AddVaultType} */
+  /**
+   * @param {Issuer} collateralIssuer
+   * @param {Keyword} collateralKeyword
+   * @param {Rates} rates
+   * @returns {Promise<import('./vaultManager').VaultManager>}
+   */
   const addVaultType = async (collateralIssuer, collateralKeyword, rates) => {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
@@ -269,7 +274,7 @@ export const start = async (zcf, privateArgs) => {
       },
     });
 
-  /** @type {VaultFactory} */
+  // TODO cut this from types.js and define these types based on what gets returned
   const vaultFactory = Far('vaultFactory machine', {
     addVaultType,
     getCollaterals,
