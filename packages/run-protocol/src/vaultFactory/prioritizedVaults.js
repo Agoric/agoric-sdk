@@ -47,9 +47,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // To deal with fluctuating prices and varying collateralization, we schedule a
   // new request to the priceAuthority when some vault's debtToCollateral ratio
   // surpasses the current high-water mark. When the request that is at the
-  // current high-water mark fires, we reschedule
-  // (which should be lower, as we will have liquidated any that were at least
-  // as high.)
+  // current high-water mark fires, we reschedule at the new (presumably
+  // lower) rate.
   // Without this we'd be calling reschedulePriceCheck() unnecessarily
   /** @type {Ratio=} */
   let oracleQueryThreshold;
