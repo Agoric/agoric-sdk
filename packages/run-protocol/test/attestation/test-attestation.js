@@ -11,13 +11,13 @@ import { Far } from '@endo/marshal';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 
-import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
+import { makeZoeKit } from '@agoric/zoe';
+import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const attestationRoot = `${dirname}/../../../../src/contracts/attestation/attestation.js`;
+const attestationRoot = `${dirname}/../../src/attestation/attestation.js`;
 
 test('attestation contract basic tests', async t => {
   const bundle = await bundleSource(attestationRoot);
