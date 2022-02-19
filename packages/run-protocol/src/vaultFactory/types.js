@@ -59,7 +59,6 @@
  * @typedef {Object} BaseUIState
  * @property {Amount<NatValue>} locked Amount of Collateral locked
  * @property {Amount<NatValue>} debt Amount of Loan (including accrued interest)
- * @property {Ratio} collateralizationRatio
  */
 
 /**
