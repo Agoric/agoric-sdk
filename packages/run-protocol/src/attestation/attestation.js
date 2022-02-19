@@ -5,7 +5,6 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import '../../../exported.js';
 import { setupAttestation as setupReturnableAttestation } from './returnable/returnableNFT.js';
 import { makeStoredTime } from './storedTime.js';
 import { assertPrerequisites } from './prerequisites.js';
