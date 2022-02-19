@@ -469,6 +469,7 @@ test('price drop', async t => {
     500n,
     aethIssuer,
   );
+  trace('setup');
 
   const {
     zoe,
@@ -493,8 +494,10 @@ test('price drop', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
+  trace('loan made', loanAmount);
 
   const { vault, uiNotifier } = await E(loanSeat).getOfferResult();
+  trace('offer result', vault);
   const debtAmount = await E(vault).getDebtAmount();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 270n), rates.loanFee);
   t.deepEqual(
@@ -505,6 +508,7 @@ test('price drop', async t => {
 
   /** @type {UpdateRecord<VaultUIState>} */
   let notification = await E(uiNotifier).getUpdateSince();
+  trace('got notificaation', notification);
 
   t.falsy(notification.value.liquidated);
   t.deepEqual(
@@ -518,13 +522,13 @@ test('price drop', async t => {
     AmountMath.make(aethBrand, 400n),
     'vault holds 11 Collateral',
   );
-
   await manualTimer.tick();
   notification = await E(uiNotifier).getUpdateSince();
   t.falsy(notification.value.liquidated);
 
   await manualTimer.tick();
   notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
+  trace('price changed to liquidate', notification.value.vaultState);
   t.falsy(notification.value.liquidated);
   t.is(notification.value.vaultState, VaultState.LIQUIDATING);
 
@@ -1238,6 +1242,142 @@ test('adjust balances', async t => {
     message: / is more than the collateralization ratio allows:/,
     // message: /The requested debt {.*} is more than the collateralization ratio allows: {.*}/,
   });
+});
+
+test('transfer vault', async t => {
+  const loanTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 6n,
+  };
+
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
+  const aethLiquidity = {
+    proposal: aethInitialLiquidity,
+    payment: aethMint.mintPayment(aethInitialLiquidity),
+  };
+
+  const services = await setupServices(
+    loanTiming,
+    [15n],
+    AmountMath.make(aethBrand, 1n),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
+    buildManualTimer(console.log),
+    undefined,
+    aethLiquidity,
+    500n,
+    aethIssuer,
+  );
+  const {
+    zoe,
+    runKit: { issuer: runIssuer, brand: runBrand },
+  } = services;
+  const { vaultFactory, lender } = services.vaultFactory;
+
+  const rates = makeRates(runBrand);
+  await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
+
+  // initial loan /////////////////////////////////////
+
+  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  const collateralAmount = AmountMath.make(aethBrand, 1000n);
+  const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  const aliceLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: aliceLoanAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(collateralAmount),
+    }),
+  );
+  const { vault: aliceVault, uiNotifier: aliceNotifier } = await E(
+    aliceLoanSeat,
+  ).getOfferResult();
+
+  const debtAmount = await E(aliceVault).getDebtAmount();
+
+  // TODO this should not need `await`
+  const transferInvite = await E(aliceVault).makeTransferInvitation();
+  const transferSeat = await E(zoe).offer(transferInvite);
+  const { vault: transferVault, uiNotifier: transferNotifier } = await E(
+    transferSeat,
+  ).getOfferResult();
+  t.throwsAsync(() => E(aliceVault).getDebtAmount());
+  const debtAfter = await E(transferVault).getDebtAmount();
+  t.deepEqual(debtAmount, debtAfter, 'vault lent 5000 RUN + fees');
+  const collateralAfter = await E(transferVault).getCollateralAmount();
+  t.deepEqual(collateralAmount, collateralAfter, 'vault has 1000n aEth');
+
+  const aliceFinish = await E(aliceNotifier).getUpdateSince();
+  t.deepEqual(
+    aliceFinish.value.vaultState,
+    VaultState.TRANSFER,
+    'transfer closed old notifier',
+  );
+
+  const transferStatus = await E(transferNotifier).getUpdateSince();
+  t.deepEqual(
+    transferStatus.value.vaultState,
+    VaultState.ACTIVE,
+    'new notifier is active',
+  );
+
+  // Interleave with `adjustVault`
+  // make the invitation first so that we can arrange the interleaving
+  // of adjust and tranfer
+  // TODO this should not need `await`
+  const adjustInvitation = await E(
+    transferVault,
+  ).makeAdjustBalancesInvitation();
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const aliceProceeds = await E(aliceLoanSeat).getPayouts();
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
+  const borrowedRun = await aliceProceeds.RUN;
+  const payoffRun2 = AmountMath.make(runBrand, 600n);
+  const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
+    borrowedRun,
+    payoffRun2,
+  );
+
+  // Adjust is multi-turn. Confirm that an interleaved transfer prevents it
+  const adjustPromise = E(zoe).offer(
+    adjustInvitation,
+    harden({
+      give: { RUN: payoffRun2 },
+    }),
+    harden({ RUN: paybackPayment }),
+  );
+  const t2Invite = await E(transferVault).makeTransferInvitation();
+  const t2Seat = await E(zoe).offer(t2Invite);
+  const { vault: t2Vault, uiNotifier: t2Notifier } = await E(
+    t2Seat,
+  ).getOfferResult();
+  t.throwsAsync(async () => E(adjustPromise).getOfferResult());
+  t.throwsAsync(() => E(transferVault).getDebtAmount());
+  const debtAfter2 = await E(t2Vault).getDebtAmount();
+  t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 RUN + fees');
+
+  const collateralAfter2 = await E(t2Vault).getCollateralAmount();
+  t.deepEqual(collateralAmount, collateralAfter2, 'vault has 1000n aEth');
+
+  const transferFinish = await E(transferNotifier).getUpdateSince();
+  t.deepEqual(
+    transferFinish.value.vaultState,
+    VaultState.TRANSFER,
+    't2 closed old notifier',
+  );
+
+  const t2Status = await E(t2Notifier).getUpdateSince();
+  t.deepEqual(
+    t2Status.value.vaultState,
+    VaultState.ACTIVE,
+    'new notifier is active',
+  );
 });
 
 // Alice will over repay her borrowed RUN. In order to make that possible,

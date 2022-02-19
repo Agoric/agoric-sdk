@@ -41,7 +41,7 @@ const build = async (log, zoe, brands, payments, timer) => {
       }),
     );
 
-    /** @type {LoanKit} */
+    /** @type {VaultKit} */
     const { vault, uiNotifier } = await E(loanSeat).getOfferResult();
 
     const timeLog = async msg =>

@@ -35,6 +35,7 @@
 /**
  * @typedef  {Object} VaultFactoryPublicFacet - the public facet
  * @property {() => Promise<Invitation>} makeLoanInvitation
+ * @property {() => Promise<Invitation>} makeVaultInvitation
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Issuer} getRunIssuer
  * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
@@ -101,18 +102,12 @@
 
 /**
  * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<LoanKit>}  makeLoanKit
+ * @property {(seat: ZCFSeat) => Promise<VaultKit>}  makeVaultKit
  * @property {() => void} liquidateAll
  */
 
 /**
  * @typedef {VaultManagerBase & GetVaultParams} VaultManager
- */
-
-/**
- * @typedef {Object} OpenLoanKit
- * @property {Notifier<VaultUIState>} notifier
- * @property {Promise<PaymentPKeywordRecord>} collateralPayoutP
  */
 
 /**
@@ -125,7 +120,9 @@
  * @typedef {Object} VaultMixin
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
  * @property {() => Promise<Invitation>} makeCloseInvitation
+ * @property {() => Promise<Invitation>} makeTransferInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
+ * @property {() => Notifier<VaultUIState>} getNotifier
  */
 
 /**
@@ -139,7 +136,7 @@
  */
 
 /**
- * @typedef {Object} LoanKit
+ * @typedef {Object} VaultKit
  * @property {Vault} vault
  * @property {Notifier<VaultUIState>} uiNotifier
  */
@@ -221,4 +218,4 @@
  * }}
  */
 
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vault').InnerVault} InnerVault */

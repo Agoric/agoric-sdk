@@ -13,39 +13,38 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
  * first.)
  */
 
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vault').InnerVault} InnerVault */
 /** @typedef {import('./storeUtils').CompositeKey} CompositeKey */
 
 export const makeOrderedVaultStore = () => {
   // TODO make it work durably https://github.com/Agoric/agoric-sdk/issues/4550
-  /** @type {MapStore<string, VaultKit>} */
+  /** @type {MapStore<string, InnerVault>} */
   const store = makeScalarBigMapStore('orderedVaultStore', { durable: false });
 
   /**
    *
    * @param {string} vaultId
-   * @param {VaultKit} vaultKit
+   * @param {InnerVault} vault
    */
-  const addVaultKit = (vaultId, vaultKit) => {
-    const { vault } = vaultKit;
+  const addVault = (vaultId, vault) => {
     const debt = vault.getDebtAmount();
     const collateral = vault.getCollateralAmount();
     const key = toVaultKey(debt, collateral, vaultId);
-    store.init(key, vaultKit);
+    store.init(key, vault);
     return key;
   };
 
   /**
    *
    * @param {string} key
-   * @returns {VaultKit}
+   * @returns {InnerVault}
    */
   const removeByKey = key => {
     try {
-      const vaultKit = store.get(key);
-      assert(vaultKit);
+      const vault = store.get(key);
+      assert(vault);
       store.delete(key);
-      return vaultKit;
+      return vault;
     } catch (e) {
       const keys = Array.from(store.keys());
       console.error(
@@ -61,7 +60,7 @@ export const makeOrderedVaultStore = () => {
   };
 
   return harden({
-    addVaultKit,
+    addVault,
     removeByKey,
     keys: store.keys,
     entries: store.entries,

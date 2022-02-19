@@ -16,7 +16,7 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeVaultKit } from './vault.js';
+import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -103,7 +103,7 @@ export const makeVaultManager = (
   /** @type {MutableQuote=} */
   let outstandingQuote;
   /** @type {Amount<NatValue>} */
-  let totalDebt = AmountMath.make(runBrand, 0n);
+  let totalDebt = AmountMath.makeEmpty(runBrand, 'nat');
   /** @type {Ratio}} */
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
@@ -111,7 +111,7 @@ export const makeVaultManager = (
   /** @type {bigint} */
   let latestInterestUpdate = startTimeStamp;
 
-  const { updater, notifier } = makeNotifierKit(
+  const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
     harden({
       compoundedInterest,
       latestInterestUpdate,
@@ -121,17 +121,17 @@ export const makeVaultManager = (
 
   /**
    *
-   * @param {[key: string, vaultKit: VaultKit]} record
+   * @param {[key: string, vaultKit: InnerVault]} record
    */
-  const liquidateAndRemove = async ([key, vaultKit]) => {
+  const liquidateAndRemove = async ([key, vault]) => {
     assert(prioritizedVaults);
-    trace('liquidating', vaultKit.vaultSeat.getProposal());
+    trace('liquidating', vault.getVaultSeat().getProposal());
 
     try {
       // Start liquidation (vaultState: LIQUIDATING)
       await liquidate(
         zcf,
-        vaultKit,
+        vault,
         runMint.burnLosses,
         liquidationStrategy,
         collateralBrand,
@@ -282,7 +282,7 @@ export const makeVaultManager = (
       latestInterestUpdate,
       totalDebt,
     });
-    updater.updateState(payload);
+    assetUpdater.updateState(payload);
 
     trace('chargeAllVaults complete', payload);
 
@@ -342,7 +342,7 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
-  /** @type {Parameters<typeof makeVaultKit>[1]} */
+  /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerFacet = harden({
     ...shared,
     applyDebtDelta,
@@ -353,7 +353,7 @@ export const makeVaultManager = (
   });
 
   /** @param {ZCFSeat} seat */
-  const makeLoanKit = async seat => {
+  const makeVaultKit = async seat => {
     assertProposalShape(seat, {
       give: { Collateral: null },
       want: { RUN: null },
@@ -362,34 +362,23 @@ export const makeVaultManager = (
     vaultCounter += 1;
     const vaultId = String(vaultCounter);
 
-    const vaultKit = makeVaultKit(
+    const innerVault = makeInnerVault(
       zcf,
       managerFacet,
-      notifier,
+      assetNotifer,
       vaultId,
       runMint,
       priceAuthority,
     );
-    const {
-      vault,
-      actions: { openLoan },
-    } = vaultKit;
+
+    // TODO Don't record the vault until it gets opened
     assert(prioritizedVaults);
-    const addedVaultKey = prioritizedVaults.addVaultKit(vaultId, vaultKit);
+    const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
 
     try {
-      const vaultResult = await openLoan(seat);
-
+      const vaultKit = await innerVault.initVaultKit(seat);
       seat.exit();
-
-      return harden({
-        uiNotifier: vaultResult.notifier,
-        invitationMakers: Far('invitation makers', {
-          AdjustBalances: vault.makeAdjustBalancesInvitation,
-          CloseVault: vault.makeCloseInvitation,
-        }),
-        vault,
-      });
+      return vaultKit;
     } catch (err) {
       // remove it from prioritizedVaults
       // XXX openLoan shouldn't assume it's already in the prioritizedVaults
@@ -401,7 +390,7 @@ export const makeVaultManager = (
   /** @type {VaultManager} */
   return Far('vault manager', {
     ...shared,
-    makeLoanKit,
+    makeVaultKit,
     liquidateAll,
   });
 };

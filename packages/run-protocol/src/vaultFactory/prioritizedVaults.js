@@ -6,7 +6,7 @@ import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
 
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vault').InnerVault} InnerVault */
 
 /**
  *
@@ -26,16 +26,17 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
 
 /**
  *
- * @param {Vault} vault
+ * @param {InnerVault} vault
  * @returns {Ratio}
  */
 export const currentDebtToCollateral = vault =>
   calculateDebtToCollateral(vault.getDebtAmount(), vault.getCollateralAmount());
 
-/** @typedef {{debtToCollateral: Ratio, vaultKit: VaultKit}} VaultKitRecord */
+/** @typedef {{debtToCollateral: Ratio, vault: InnerVault}} VaultRecord */
 
 /**
- * Really a prioritization of vault *kits*.
+ * InnerVaults, ordered by their liquidation ratio so that all the
+ * vaults below a threshold can be quickly found and liquidated.
  *
  * @param {() => void} reschedulePriceCheck called when there is a new
  * least-collateralized vault
@@ -46,9 +47,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   // To deal with fluctuating prices and varying collateralization, we schedule a
   // new request to the priceAuthority when some vault's debtToCollateral ratio
   // surpasses the current high-water mark. When the request that is at the
-  // current high-water mark fires, we reschedule at the new highest ratio
-  // (which should be lower, as we will have liquidated any that were at least
-  // as high.)
+  // current high-water mark fires, we reschedule at the new (presumably
+  // lower) rate.
   // Without this we'd be calling reschedulePriceCheck() unnecessarily
   /** @type {Ratio=} */
   let oracleQueryThreshold;
@@ -78,8 +78,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       return undefined;
     }
 
-    const [[_, vaultKit]] = vaults.entries();
-    const { vault } = vaultKit;
+    const [vault] = vaults.values();
     const collateralAmount = vault.getCollateralAmount();
     if (AmountMath.isEmpty(collateralAmount)) {
       // Would be an infinite ratio
@@ -91,11 +90,11 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
 
   /**
    * @param {string} key
-   * @returns {VaultKit}
+   * @returns {InnerVault}
    */
   const removeVault = key => {
-    const vk = vaults.removeByKey(key);
-    const debtToCollateral = currentDebtToCollateral(vk.vault);
+    const vault = vaults.removeByKey(key);
+    const debtToCollateral = currentDebtToCollateral(vault);
     if (
       !oracleQueryThreshold ||
       ratioGTE(debtToCollateral, oracleQueryThreshold)
@@ -104,7 +103,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       // This could be expensive if we delete individual entries in order. Will know once we have perf data.
       oracleQueryThreshold = firstDebtRatio();
     }
-    return vk;
+    return vault;
   };
 
   /**
@@ -121,12 +120,12 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   /**
    *
    * @param {VaultId} vaultId
-   * @param {VaultKit} vaultKit
+   * @param {InnerVault} vault
    */
-  const addVaultKit = (vaultId, vaultKit) => {
-    const key = vaults.addVaultKit(vaultId, vaultKit);
+  const addVault = (vaultId, vault) => {
+    const key = vaults.addVault(vaultId, vault);
 
-    const debtToCollateral = currentDebtToCollateral(vaultKit.vault);
+    const debtToCollateral = currentDebtToCollateral(vault);
     rescheduleIfHighest(debtToCollateral);
     return key;
   };
@@ -139,16 +138,16 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * Redundant tags until https://github.com/Microsoft/TypeScript/issues/23857
    *
    * @param {Ratio} ratio
-   * @yields {[string, VaultKit]}
-   * @returns {IterableIterator<[string, VaultKit]>}
+   * @yields {[string, InnerVault]>}
+   * @returns {IterableIterator<[string, InnerVault]>}
    */
   // eslint-disable-next-line func-names
   function* entriesPrioritizedGTE(ratio) {
     // TODO use a Pattern to limit the query https://github.com/Agoric/agoric-sdk/issues/4550
-    for (const [key, vk] of vaults.entries()) {
-      const debtToCollateral = currentDebtToCollateral(vk.vault);
+    for (const [key, vault] of vaults.entries()) {
+      const debtToCollateral = currentDebtToCollateral(vault);
       if (ratioGTE(debtToCollateral, ratio)) {
-        yield [key, vk];
+        yield [key, vault];
       } else {
         // stop once we are below the target ratio
         break;
@@ -162,12 +161,12 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * @param {string} vaultId
    */
   const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {
-    const vaultKit = removeVaultByAttributes(oldDebt, oldCollateral, vaultId);
-    addVaultKit(vaultId, vaultKit);
+    const vault = removeVaultByAttributes(oldDebt, oldCollateral, vaultId);
+    addVault(vaultId, vault);
   };
 
   return harden({
-    addVaultKit,
+    addVault,
     entries: vaults.entries,
     entriesPrioritizedGTE,
     highestRatio: () => oracleQueryThreshold,
