@@ -5,8 +5,6 @@ import { Far } from '@endo/marshal';
 import { E } from '@agoric/eventual-send';
 import { makeWeakStore } from '@agoric/store';
 
-/** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
-
 /**
  * @param {GetBundlecapForID} getBundlecapForID
  */

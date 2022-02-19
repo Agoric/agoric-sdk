@@ -12,6 +12,3 @@ export { buildTimer } from './devices/timer.js';
 export { buildBridge } from './devices/bridge.js';
 export { default as buildCommand } from './devices/command.js';
 export { buildPlugin } from './devices/plugin.js';
-
-/** @typedef { import('./types').BundleID } BundleID */
-/** @typedef { import('./types').EndoZipBase64Bundle } EndoZipBase64Bundle */
