@@ -78,12 +78,7 @@ const decodeBinary64 = encodedKey => {
   }
   asBits[0] = bits;
   const result = asNumber[0];
-
-  // Normalize -0 to 0
-  // XXX We never expect to decode -0, should this instead assert that?
-  if (is(result, -0)) {
-    return 0;
-  }
+  assert(!is(result, -0), X`Unexpected negative zero: ${encodedKey}`);
   return result;
 };
 
@@ -150,7 +145,7 @@ const decodeBigInt = encodedKey => {
   rem = rem.slice(lDigits);
 
   assert(
-    /^[0-9]+/.test(snDigits),
+    /^[0-9]+$/.test(snDigits),
     X`Decimal digit count expected: ${encodedKey}`,
   );
   let nDigits = parseInt(snDigits, 10);
