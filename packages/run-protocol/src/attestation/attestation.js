@@ -22,6 +22,7 @@ export const makeAttestationFacets = async (
   underlyingBrand,
   returnableAttName,
 ) => {
+  /** @type { PromiseRecord<StakingAuthority>} */
   const authorityPromiseKit = makePromiseKit();
 
   const { assetKind: underlyingAssetKind } = await E(
@@ -91,15 +92,21 @@ export const makeAttestationFacets = async (
   // the resulting liens on their underlying tokens.
 
   /** @type {MakeAttMaker} */
-  const makeAttMaker = address => {
-    /** @type {AttMaker} */
-    return Far('attMaker', {
+  const makeAttMaker = address =>
+    Far('attMaker', {
       makeAttestation: amountToLien =>
         makeAttestationsInternal(address, amountToLien),
+      // TODO: should this getLiened take currentTime as a parameter?
+      // TODO: should we provide a notifier?
+      getLiened: () =>
+        getLiened(address, storedTime.getTime(), underlyingBrand),
+      getAccountState: () =>
+        E(authorityPromiseKit.promise).getAccountState(
+          address,
+          underlyingBrand,
+        ),
       makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
     });
-  };
-
   const getAttMaker = makeGetAttMaker(makeAttMaker);
 
   // The authority is used to confirm that the underlying assets are escrowed appropriately.
