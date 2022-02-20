@@ -33,7 +33,7 @@
     "@endo/captp": "^2.0.1",
     "@endo/init": "^0.5.35",
     "@agoric/nat": "^4.1.0",
-    "@endo/promise-kit": "^0.2.29",
+    "@endo/promise-kit": "^0.2.35",
     "@endo/compartment-mapper": "^0.6.7",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
