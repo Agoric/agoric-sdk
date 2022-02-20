@@ -3,12 +3,6 @@
  */
 
 /**
- * @callback GetAttMaker
- * @param {Address} address
- * @returns {AttMaker}
- */
-
-/**
  * @typedef AttMaker
  * @property {(amountToLien: Amount) => Promise<Payment>} makeAttestation
  * @property {() => Amount }  getLiened
@@ -23,67 +17,9 @@
  */
 
 /**
- * @callback Max
- * Return the greater of two Amounts.
- *
- * @param {Amount} x
- * @param {Amount} y
- * @returns {Amount}
- */
-
-/**
- * @callback GetLienAmount
- *
- * @param {Address} address
- * @param {Timestamp} currentTime
- * @returns {Amount}
- */
-
-/**
- * @callback GetReturnableLienAmount
- *
- * @param {Address} address
- * @returns {Amount}
- */
-
-/**
- * @callback AddReturnableLien
- *
- * Given an address string and an Amount to put a lien on, record that
- * the Amount is "liened", and mint an attestation payment for the
- * amount liened. Return the payment.
- *
- * @param {Address} address
- * @param {Amount} amount
- * @returns {Promise<Payment>}
- */
-
-/**
  * @typedef {Object} ReturnableAttElem
  * @property {Address} address
  * @property {Amount} amountLiened
- */
-
-/**
- * @callback ReturnAttestation
- * @param {ZCFSeat} seat
- * @returns {void}
- */
-
-/**
- * @callback DisallowExtensions
- * @param {Address} address
- * @returns {void}
- */
-
-/**
- * @callback Slashed
- *
- * On slashing, we disallow any extensions. We do not reduce the liens.
- *
- * @param {Array<Address>} addresses
- * @param {Timestamp} currentTime
- * @returns {void}
  */
 
 /**

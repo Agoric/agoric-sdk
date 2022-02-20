@@ -17,10 +17,6 @@ const { details: X } = assert;
  * token
  * @param {Amount} empty
  * @param {ContractFacet} zcf
- * @returns {Promise<{makeReturnAttInvitation:
- * MakeReturnAttInvitation, addReturnableLien: AddReturnableLien,
- * getLienAmount: GetReturnableLienAmount, getIssuer: () => Issuer,
- * getBrand: () => Brand}>}
  */
 const setupAttestation = async (attestationTokenName, empty, zcf) => {
   assert(AmountMath.isEmpty(empty), X`empty ${empty} was not empty`);
@@ -41,7 +37,15 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
   // The owner must consent to adding a lien, and non-owners must not
   // be able to initiate a lien for another account.
 
-  /** @type {AddReturnableLien} */
+  /**
+   * Given an address string and an Amount to put a lien on, record that
+   * the Amount is "liened", and mint an attestation payment for the
+   * amount liened. Return the payment.
+   *
+   * @param {Address} address
+   * @param {Amount} amount
+   * @returns {Promise<Payment>}
+   */
   const addReturnableLien = (address, amount) => {
     const amountToLien = validateInputs(externalBrand, address, amount);
 
@@ -92,7 +96,9 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     });
   };
 
-  /** @type {GetReturnableLienAmount} */
+  /**
+   * @param {Address} address
+   */
   const getLienAmount = address => {
     assert.typeof(address, 'string');
     if (lienedAmounts.has(address)) {
@@ -102,7 +108,6 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
     }
   };
 
-  /** @type {MakeReturnAttInvitation} */
   const makeReturnAttInvitation = () =>
     zcf.makeInvitation(returnAttestation, 'ReturnAtt', {
       brand: attestationBrand,

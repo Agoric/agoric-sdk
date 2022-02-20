@@ -6,7 +6,10 @@ const makeGetAttMaker = makeAttMaker => {
   /** @type {Store<Address, AttMaker>} */
   const addressToAttMaker = makeStore('address');
 
-  /** @type {GetAttMaker} */
+  /**
+   * @param {Address} address
+   * @returns {AttMaker}
+   */
   const getAttMaker = address => {
     assert.typeof(address, 'string');
     if (addressToAttMaker.has(address)) {

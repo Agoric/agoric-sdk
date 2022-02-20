@@ -40,7 +40,13 @@ export const makeAttestationFacets = async (
   );
   // AWAIT ///
 
-  /** @type {GetLiened} */
+  /**
+   * Get the amount currently liened for the address and brand.
+   *
+   * @param {Address} address
+   * @param {Timestamp} currentTime
+   * @param {Brand} brand
+   */
   const getLiened = (address, currentTime, brand) => {
     assert(
       brand === underlyingBrand,
@@ -91,7 +97,10 @@ export const makeAttestationFacets = async (
   // address. Only the owner should be able to create attestations and
   // the resulting liens on their underlying tokens.
 
-  /** @type {MakeAttMaker} */
+  /**
+   * @param {Address} address
+   * @returns {AttMaker}
+   */
   const makeAttMaker = address =>
     Far('attMaker', {
       makeAttestation: amountToLien =>
