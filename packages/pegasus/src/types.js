@@ -55,7 +55,7 @@
  */
 
 /**
- * @callback RejectStuckTransfers
+ * @callback RejectTransfersWaitingForPegRemote
  * Abort any in-progress receiveDenom transfers if there has not yet been a
  * pegRemote or pegLocal corresponding to it.
  *
@@ -93,7 +93,7 @@
  * @typedef {Object} PegasusConnectionActions
  * @property {PegLocal} pegLocal
  * @property {PegRemote} pegRemote
- * @property {RejectStuckTransfers} rejectStuckTransfers
+ * @property {RejectTransfersWaitingForPegRemote} rejectTransfersWaitingForPegRemote
  * @property {(reason?: any) => void} abort
  */
 

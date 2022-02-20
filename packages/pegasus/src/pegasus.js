@@ -117,18 +117,34 @@ const makePegasus = (zcf, board, namesByAddress) => {
 
     /** @type {PegasusConnectionActions} */
     const pegasusConnectionActions = Far('pegasusConnectionActions', {
-      async rejectStuckTransfers(receiveDenom) {
+      async rejectTransfersWaitingForPegRemote(remoteDenom) {
         checkAbort();
         const { receiveDenomToCourierPK } = localDenomState;
 
+        const { receiveDenom } = await E(
+          denomTransformer,
+        ).getDenomsForRemotePeg(
+          remoteDenom,
+          localDenomState.localAddr,
+          localDenomState.remoteAddr,
+        );
+        checkAbort();
+
         const { reject, promise } = receiveDenomToCourierPK.get(receiveDenom);
+
+        // Only continue if the promise isn't already resolved.
+        const raceWinner = await Promise.race([promise, null]);
+        checkAbort();
+
+        assert(!raceWinner, X`${receiveDenom} is already resolved`);
+
         // If rejected, the rejection is returned to our caller, so we have
         // handled it correctly and that flow doesn't need to trigger an
         // additional UnhandledRejectionWarning in our vat.
         promise.catch(() => {});
         reject(assert.error(X`${receiveDenom} is temporarily unavailable`));
 
-        // Allow new transfers to be initiated.
+        // Allow new transfers to be initiated after this rejection.
         receiveDenomToCourierPK.delete(receiveDenom);
       },
       async pegRemote(
@@ -165,7 +181,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
           localBrand,
           board,
           namesByAddress,
-          remoteDenom: sendDenom,
+          sendDenom,
           retain: (zcfSeat, amounts) =>
             zcfMint.burnLosses(harden(amounts), zcfSeat),
           redeem: (zcfSeat, amounts) => {
@@ -241,7 +257,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
           zcf,
           board,
           namesByAddress,
-          remoteDenom: sendDenom,
+          sendDenom,
           localBrand,
           retain: (transferSeat, amounts) =>
             transferAmountFrom(

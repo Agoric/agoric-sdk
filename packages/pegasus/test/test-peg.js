@@ -212,7 +212,7 @@ async function testRemotePeg(t) {
 
   // Wait for the packet to go through.
   t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'umuon' });
-  E(pegConnActions).rejectStuckTransfers('umuon');
+  E(pegConnActions).rejectTransfersWaitingForPegRemote('umuon');
 
   const sendAckData3 = await sendAckData3P;
   const sendAck3 = JSON.parse(sendAckData3);

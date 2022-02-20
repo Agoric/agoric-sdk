@@ -33,7 +33,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
  * @property {ContractFacet} zcf
  * @property {ERef<BoardDepositFacet>} board
  * @property {ERef<NameHub>} namesByAddress
- * @property {Denom} remoteDenom
+ * @property {Denom} sendDenom
  * @property {Brand} localBrand
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} retain
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} redeem
@@ -47,7 +47,7 @@ export const makeCourierMaker =
     zcf,
     board,
     namesByAddress,
-    remoteDenom,
+    sendDenom,
     localBrand,
     retain,
     redeem,
@@ -59,7 +59,7 @@ export const makeCourierMaker =
         const amount = zcfSeat.getAmountAllocated('Transfer', localBrand);
         const transferPacket = await E(transferProtocol).makeTransferPacket({
           value: amount.value,
-          remoteDenom,
+          remoteDenom: sendDenom,
           depositAddress,
         });
 
