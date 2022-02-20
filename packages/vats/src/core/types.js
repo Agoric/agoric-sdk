@@ -164,10 +164,7 @@
  */
 
 /**
- * @typedef { WellKnownSpaces & {
- *   vatParameters: { argv: {
- *     economicCommitteeAddresses?: string[],
- *   }},
+ * @typedef {{
  *   consume: {
  *     agoricNames: Promise<NameHub>,
  *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
