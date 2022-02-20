@@ -59,7 +59,13 @@ export const assertIsRatio = ratio => {
   );
 };
 
-/** @type {MakeRatio} */
+/**
+ * @param {bigint} numerator
+ * @param {Brand} numeratorBrand
+ * @param {bigint=} denominator The default denominator is 100
+ * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
+ * @returns {Ratio}
+ */
 export const makeRatio = (
   numerator,
   numeratorBrand,
@@ -77,14 +83,19 @@ export const makeRatio = (
   });
 };
 
-/** @type {MakeRatioFromAmounts} */
+/**
+ * @param {Amount} numeratorAmount
+ * @param {Amount} denominatorAmount
+ * @returns {Ratio}
+ */
 export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   AmountMath.coerce(numeratorAmount.brand, numeratorAmount);
   AmountMath.coerce(denominatorAmount.brand, denominatorAmount);
   return makeRatio(
-    /** @type {NatValue} */ (numeratorAmount.value),
+    // @ts-ignore value can be any AmountValue but makeRatio() supports only bigint
+    numeratorAmount.value,
     numeratorAmount.brand,
-    /** @type {NatValue} */ (denominatorAmount.value),
+    denominatorAmount.value,
     denominatorAmount.brand,
   );
 };
@@ -108,13 +119,15 @@ const multiplyHelper = (amount, ratio, divideOp) => {
   );
 };
 
-/** @type {FloorMultiplyBy} */
+/** @type {ScaleAmount} */
 export const floorMultiplyBy = (amount, ratio) => {
+  // @ts-ignore cast
   return multiplyHelper(amount, ratio, floorDivide);
 };
 
-/** @type {CeilMultiplyBy} */
+/** @type {ScaleAmount} */
 export const ceilMultiplyBy = (amount, ratio) => {
+  // @ts-ignore cast
   return multiplyHelper(amount, ratio, ceilDivide);
 };
 
@@ -137,17 +150,23 @@ const divideHelper = (amount, ratio, divideOp) => {
   );
 };
 
-/** @type {FloorDivideBy} */
+/** @type {ScaleAmount} */
 export const floorDivideBy = (amount, ratio) => {
+  // @ts-ignore cast
   return divideHelper(amount, ratio, floorDivide);
 };
 
-/** @type {CeilDivideBy} */
+/** @type {ScaleAmount} */
 export const ceilDivideBy = (amount, ratio) => {
+  // @ts-ignore cast
   return divideHelper(amount, ratio, ceilDivide);
 };
 
-/** @type {InvertRatio} */
+/**
+ *
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
 export const invertRatio = ratio => {
   assertIsRatio(ratio);
 
@@ -159,7 +178,11 @@ export const invertRatio = ratio => {
   );
 };
 
-/** @type {AddRatios} */
+/**
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {Ratio}
+ */
 export const addRatios = (left, right) => {
   assertIsRatio(right);
   assertIsRatio(left);
@@ -180,7 +203,11 @@ export const addRatios = (left, right) => {
   );
 };
 
-/** @type {MultiplyRatios} */
+/**
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {Ratio}
+ */
 export const multiplyRatios = (left, right) => {
   assertIsRatio(right);
   assertIsRatio(left);
@@ -198,8 +225,12 @@ export const multiplyRatios = (left, right) => {
   );
 };
 
-// If ratio is between 0 and 1, subtract from 1.
-/** @type {OneMinus} */
+/**
+ * If ratio is between 0 and 1, subtract from 1.
+ *
+ * @param {Ratio} ratio
+ * @returns {Ratio}
+ */
 export const oneMinus = ratio => {
   assertIsRatio(ratio);
   assert(
@@ -213,8 +244,47 @@ export const oneMinus = ratio => {
   return makeRatio(
     subtract(ratio.denominator.value, ratio.numerator.value),
     ratio.numerator.brand,
-    // @ts-ignore asserts ensure values are Nats
+    // @ts-ignore value can be any AmountValue but makeRatio() supports only bigint
     ratio.denominator.value,
     ratio.numerator.brand,
+  );
+};
+
+/**
+ *
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {boolean}
+ */
+export const ratioGTE = (left, right) => {
+  assert(
+    left.numerator.brand === right.numerator.brand &&
+      left.denominator.brand === right.denominator.brand,
+    `brands must match`,
+  );
+  return natSafeMath.isGTE(
+    multiply(left.numerator.value, right.denominator.value),
+    multiply(right.numerator.value, left.denominator.value),
+  );
+};
+
+/**
+ * Make an equivalant ratio with a new denominator
+ *
+ * @param {Ratio} ratio
+ * @param {bigint} newDen
+ * @returns {Ratio}
+ */
+export const quantize = (ratio, newDen) => {
+  const oldDen = ratio.denominator.value;
+  const oldNum = ratio.numerator.value;
+  const newNum =
+    // TODO adopt banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
+    newDen === oldDen ? oldNum : ceilDivide(oldNum * newDen, oldDen);
+  return makeRatio(
+    newNum,
+    ratio.numerator.brand,
+    newDen,
+    ratio.denominator.brand,
   );
 };

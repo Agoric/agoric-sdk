@@ -127,6 +127,8 @@ export const start = async (zcf, privateArgs) => {
     );
     const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
 
+    const startTimeStamp = await E(timerService).getCurrentTimestamp();
+
     const vm = makeVaultManager(
       zcf,
       runMint,
@@ -137,13 +139,14 @@ export const start = async (zcf, privateArgs) => {
       reallocateReward,
       timerService,
       liquidationStrategy,
+      startTimeStamp,
     );
     collateralTypes.init(collateralBrand, vm);
     return vm;
   };
 
   /** Make a loan in the vaultManager based on the collateral type. */
-  const makeLoanInvitation = () => {
+  const makeVaultInvitation = () => {
     /** @param {ZCFSeat} seat */
     const makeLoanHook = async seat => {
       assertProposalShape(seat, {
@@ -160,7 +163,7 @@ export const start = async (zcf, privateArgs) => {
       );
       /** @type {VaultManager} */
       const mgr = collateralTypes.get(brandIn);
-      return mgr.makeLoanKit(seat);
+      return mgr.makeVaultKit(seat);
     };
 
     return zcf.makeInvitation(makeLoanHook, 'MakeLoan');
@@ -239,7 +242,8 @@ export const start = async (zcf, privateArgs) => {
 
   /** @type {VaultFactoryPublicFacet} */
   const publicFacet = Far('vaultFactory public facet', {
-    makeLoanInvitation,
+    makeLoanInvitation: makeVaultInvitation, // deprecated
+    makeVaultInvitation,
     getCollaterals,
     getRunIssuer: () => runIssuer,
     getNatParamState,

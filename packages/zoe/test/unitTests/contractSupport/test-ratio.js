@@ -16,7 +16,8 @@ import {
   oneMinus,
   multiplyRatios,
   addRatios,
-} from '../../../src/contractSupport/index.js';
+  quantize,
+} from '../../../src/contractSupport/ratio.js';
 
 function amountsEqual(t, a1, a2, brand) {
   const brandEqual = a1.brand === a2.brand;
@@ -333,4 +334,38 @@ test('ratio - complement', t => {
   t.throws(() => oneMinus(makeRatioFromAmounts(moe(30n), moe(20n))), {
     message: /Parameter must be less than or equal to 1: .*/,
   });
+});
+
+// Rounding
+const { brand } = makeIssuerKit('moe');
+
+test('ratio - quantize', t => {
+  /** @type {Array<[numBefore: bigint, denBefore: bigint, numAfter: bigint, denAfter: bigint]>} */
+  const cases = /** @type {const} */ [
+    [1n, 1n, 1n, 1n],
+    [10n, 10n, 10n, 10n],
+    [2n * 10n ** 9n, 1n * 10n ** 9n, 20n, 10n],
+
+    [12345n, 12345n, 100n, 100n],
+    [12345n, 12345n, 100000n, 100000n],
+    [12345n, 12345n, 10n ** 15n, 10n ** 15n],
+
+    [12345n, 123n, 100365854n, 10n ** 6n],
+    [12345n, 123n, 10036586n, 10n ** 5n],
+    [12345n, 123n, 1003659n, 10n ** 4n],
+    [12345n, 123n, 100366n, 10n ** 3n],
+    [12345n, 123n, 10037n, 10n ** 2n],
+    [12345n, 123n, 1004n, 10n ** 1n],
+    [12345n, 123n, 101n, 10n ** 0n],
+  ];
+
+  for (const [numBefore, denBefore, numAfter, denAfter] of cases) {
+    const before = makeRatio(numBefore, brand, denBefore, brand);
+    const after = makeRatio(numAfter, brand, denAfter, brand);
+    t.deepEqual(
+      quantize(before, denAfter),
+      after,
+      `${numBefore}/${denBefore} quantized to ${denAfter} should be ${numAfter}/${denAfter}`,
+    );
+  }
 });
