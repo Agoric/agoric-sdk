@@ -44,6 +44,18 @@ export const makeStakeReporter = (bridgeManager, stake) => {
 
   /** @type {StakingAuthority} */
   const stakeReporter = Far('stakeReporter', {
+    setLiened: async (address, amount) => {
+      assert(
+        amount.brand === stake,
+        X`Cannot setLiened for ${amount.brand}. Expected ${stake}.`,
+      );
+      await E(bridgeManager).toBridge(XLien.name, {
+        type: 'LIEN_SET_LIENED',
+        address,
+        denom: XLien.denom,
+        amount: `${amount.value}`,
+      });
+    },
     getAccountState: async (address, wantedBrand) => {
       assert(
         wantedBrand === stake,

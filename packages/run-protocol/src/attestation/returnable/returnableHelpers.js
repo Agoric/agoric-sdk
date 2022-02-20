@@ -10,12 +10,15 @@ import { AmountMath } from '@agoric/ertp';
  * @param {Amount} amountToLien
  */
 const addToLiened = (store, address, amountToLien) => {
+  let updated;
   if (store.has(address)) {
-    const updated = AmountMath.add(store.get(address), amountToLien);
+    updated = AmountMath.add(store.get(address), amountToLien);
     store.set(address, updated);
   } else {
+    updated = amountToLien;
     store.init(address, amountToLien);
   }
+  return updated;
 };
 harden(addToLiened);
 export { addToLiened };

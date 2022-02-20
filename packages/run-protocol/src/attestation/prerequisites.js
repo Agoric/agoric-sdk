@@ -13,6 +13,8 @@ const { details: X } = assert;
 /**
  * Assert the cosmos-specific prerequisites
  *
+ * @@ Is this redundant w.r.t. golang checks???
+ *
  * @param {ERef<StakingAuthority>} stakeReporter
  * @param {StoredTime} storedTime
  * @param {GetLiened} getLiened
