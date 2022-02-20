@@ -29,10 +29,10 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.15",
-    "@endo/captp": "^1.10.12",
+    "@endo/captp": "^2.0.1",
     "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
-    "@endo/marshal": "^0.5.4",
+    "@endo/marshal": "^0.6.1",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
@@ -41,13 +41,13 @@
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
-    "@endo/bundle-source": "^2.0.5",
-    "@endo/init": "^0.5.33",
+    "@endo/bundle-source": "^2.0.7",
+    "@endo/init": "^0.5.35",
     "@agoric/swingset-vat": "^0.24.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1",
-    "ses": "^0.15.7"
+    "ses": "^0.15.9"
   },
   "files": [
     "README.md",

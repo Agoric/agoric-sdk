@@ -25,12 +25,12 @@
     "@agoric/access-token": "^0.4.16",
     "@agoric/assert": "^0.3.15",
     "@agoric/telemetry": "^0.1.0",
-    "@endo/captp": "^1.10.12",
+    "@endo/captp": "^2.0.1",
     "@agoric/cosmic-swingset": "^0.34.4",
     "@agoric/eventual-send": "^0.14.0",
-    "@endo/import-bundle": "^0.2.37",
-    "@endo/init": "^0.5.33",
-    "@endo/marshal": "^0.5.4",
+    "@endo/import-bundle": "^0.2.39",
+    "@endo/init": "^0.5.35",
+    "@endo/marshal": "^0.6.1",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
     "@agoric/spawner": "^0.4.33",
@@ -55,7 +55,7 @@
     "ws": "^7.2.0"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^2.0.5",
+    "@endo/bundle-source": "^2.0.7",
     "@agoric/ertp": "^0.13.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2"

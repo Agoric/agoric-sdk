@@ -38,14 +38,14 @@
   "dependencies": {
     "@agoric/assert": "^0.3.15",
     "@agoric/eventual-send": "^0.14.0",
-    "@endo/marshal": "^0.5.4",
+    "@endo/marshal": "^0.6.1",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
     "@agoric/store": "^0.6.8"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^2.0.5",
+    "@endo/bundle-source": "^2.0.7",
     "@agoric/swingset-vat": "^0.24.1",
     "ava": "^3.12.1",
     "fast-check": "^2.21.0"

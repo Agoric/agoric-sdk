@@ -35,11 +35,11 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.15",
-    "@endo/bundle-source": "^2.0.5",
+    "@endo/bundle-source": "^2.0.7",
     "@agoric/ertp": "^0.13.1",
     "@agoric/eventual-send": "^0.14.0",
     "@agoric/import-manager": "^0.2.33",
-    "@endo/marshal": "^0.5.4",
+    "@endo/marshal": "^0.6.1",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/promise-kit": "^0.2.29",
