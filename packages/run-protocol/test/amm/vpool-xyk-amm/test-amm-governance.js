@@ -21,7 +21,7 @@ import { setupAmmServices, setupAMMBootstrap } from './setup.js';
 test('start Economic Committee', async t => {
   const space = await setupAMMBootstrap();
   const { consume } = space;
-  startEconomicCommittee(space);
+  startEconomicCommittee({ vatParameters: { argv: {} }, ...space });
   const agoricNames = await consume.agoricNames;
   const instance = await E(agoricNames).lookup('instance', 'economicCommittee');
   t.truthy(instance);
