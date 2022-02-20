@@ -13,6 +13,7 @@ import { E } from '@agoric/eventual-send';
 
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeCopyBag } from '@agoric/store';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -91,15 +92,7 @@ test('attestation contract basic tests', async t => {
 
   t.deepEqual(
     await E(issuer).getAmountOf(returnable1),
-    AmountMath.make(
-      brand,
-      harden([
-        {
-          address: 'address1',
-          amountLiened: amount50,
-        },
-      ]),
-    ),
+    AmountMath.make(brand, makeCopyBag([['address1', 50n]])),
   );
 
   const liened2 = await E(creatorFacet).getLiened(
@@ -116,15 +109,7 @@ test('attestation contract basic tests', async t => {
 
   t.deepEqual(
     await E(issuer).getAmountOf(returnable2),
-    AmountMath.make(
-      brand,
-      harden([
-        {
-          address: 'address1',
-          amountLiened: amount25,
-        },
-      ]),
-    ),
+    AmountMath.make(brand, makeCopyBag([['address1', 25n]])),
   );
 
   const liened3 = await E(creatorFacet).getLiened(

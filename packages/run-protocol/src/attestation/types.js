@@ -7,37 +7,11 @@
  * @property {(amountToLien: Amount) => Promise<Payment>} makeAttestation
  * @property {() => Amount }  getLiened
  * @property {() => Promise<AccountState>} getAccountState
- * @property {MakeReturnAttInvitation} makeReturnAttInvitation
+ * @property {() => Promise<Invitation>} makeReturnAttInvitation Make an invitation for returning a returnable attestation.
  */
 
 /**
- * @callback MakeAttMaker
- * @param {Address} address
- * @returns {AttMaker}
- */
-
-/**
- * @typedef {Object} ReturnableAttElem
- * @property {Address} address
- * @property {Amount} amountLiened
- */
-
-/**
- * @callback MakeReturnAttInvitation
- *
- * Make an invitation for returning a returnable attestation.
- *
- * @returns {Promise<Invitation>}
- */
-
-/**
- * @callback GetLiened
- * Get the amount currently liened for the address and brand.
- *
- * @param {Address} addresses
- * @param {Timestamp} currentTime
- * @param {Brand} brand
- * @returns {Amount}
+ * @typedef {CopyBag<Address>} ReturnableAttValue
  */
 
 /**
