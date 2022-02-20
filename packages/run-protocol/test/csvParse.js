@@ -4,10 +4,7 @@ export const fieldPattern = /("(?:(?:"")*[^"]*)*"|[^",\n]*)(?:,|\n|$)/g;
 
 /** @param { string } field */
 export const unquote = field =>
-  field
-    .replace(/""/g, '"')
-    .replace(/^"/, '')
-    .replace(/"$/, '');
+  field.replace(/""/g, '"').replace(/^"/, '').replace(/"$/, '');
 
 /** @param { string } line */
 export const splitFields = line =>
