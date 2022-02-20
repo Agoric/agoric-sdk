@@ -52,6 +52,10 @@ test('attestation contract basic tests', async t => {
           currentTime,
         });
       },
+      setLiened: (address, amount) => {
+        t.log('setLiened:', { address, amount });
+        // TODO: check that we got the right stuff.
+      },
     }),
   );
 
@@ -67,6 +71,7 @@ test('attestation contract basic tests', async t => {
 
   await E(creatorFacet).addAuthority(mockAuthority);
   const brand = await E(publicFacet).getBrand();
+  /** @type { Issuer } */
   const issuer = await E(publicFacet).getIssuer();
 
   const address1 = 'address1';
@@ -133,8 +138,16 @@ test('attestation contract basic tests', async t => {
     return userSeat;
   };
 
+  const attBrand = await E(issuer).getBrand();
+  const [p1, p2] = await E(issuer).split(
+    returnable1,
+    AmountMath.make(attBrand, makeCopyBag([[address1, 20n]])),
+  );
+  await returnAttestation(p1);
+  await returnAttestation(p2);
+
   // Return returnable1 for 50 bld
-  await returnAttestation(returnable1);
+  // @@@ await returnAttestation(returnable1);
 
   // Total liened amount is reduced
   const liened4 = await E(creatorFacet).getLiened(

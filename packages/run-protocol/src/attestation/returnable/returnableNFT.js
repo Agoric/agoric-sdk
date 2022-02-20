@@ -3,6 +3,7 @@
 import { makeCopyBag, getCopyBagEntries, makeStore } from '@agoric/store';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 
+import { E } from '@endo/far';
 import {
   mintZCFMintPayment,
   validateInputs,
@@ -17,8 +18,14 @@ const { details: X } = assert;
  * token
  * @param {Amount} empty
  * @param {ContractFacet} zcf
+ * @param {ERef<StakingAuthority>} lienBridge
  */
-const setupAttestation = async (attestationTokenName, empty, zcf) => {
+const setupAttestation = async (
+  attestationTokenName,
+  empty,
+  zcf,
+  lienBridge,
+) => {
   assert(AmountMath.isEmpty(empty), X`empty ${empty} was not empty`);
   const zcfMint = await zcf.makeZCFMint(
     attestationTokenName,
@@ -49,11 +56,12 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
    * @param {Amount} amount
    * @returns {Promise<Payment>}
    */
-  const addReturnableLien = (address, amount) => {
+  const addReturnableLien = async (address, amount) => {
     const amountToLien = validateInputs(externalBrand, address, amount);
 
-    addToLiened(lienedAmounts, address, amountToLien);
-    assert.typeof(amountToLien.value, 'bigint'); // TODO constrain to Amount<NatValue> throughout
+    const newAmount = addToLiened(lienedAmounts, address, amountToLien);
+    await E(lienBridge).setLiened(address, newAmount);
+    // TODO: tell the golang side: LIEN_SET_LIENED
     const amountToMint = AmountMath.make(
       attestationBrand,
       makeCopyBag([[address, amountToLien.value]]),
@@ -63,7 +71,7 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
   };
 
   /** @param {ZCFSeat} seat */
-  const returnAttestation = seat => {
+  const returnAttestation = async seat => {
     const attestationAmount = checkOfferShape(seat, attestationBrand);
 
     // Burn the escrowed attestation payment and exit the seat
@@ -74,27 +82,32 @@ const setupAttestation = async (attestationTokenName, empty, zcf) => {
       attestationAmount.value
     );
 
-    getCopyBagEntries(attestationValue).forEach(
-      ([address, valueReturned], _ix) => {
-        const amountReturned = AmountMath.make(externalBrand, valueReturned);
-        assert(
-          lienedAmounts.has(address),
-          X`We have no record of anything liened for address ${address}`,
-        );
-        // No need to validate the address and amountLiened because we
-        // get the address and the amountLiened from the escrowed
-        // amount, which Zoe verifies is from a real attestation payment
-        const liened = lienedAmounts.get(address);
-        // This assertion should always be true.
-        // TODO: Escalate appropriately, such as shutting down the vat
-        // if false.
-        assert(
-          AmountMath.isGTE(liened, amountReturned),
-          X`The returned amount ${amountReturned} was greater than the amount liened ${liened}. Something very wrong occurred.`,
-        );
-        const updated = AmountMath.subtract(liened, amountReturned);
-        lienedAmounts.set(address, updated);
-      },
+    // TODO: review error cases / commit point.
+
+    await Promise.all(
+      getCopyBagEntries(attestationValue).map(
+        async ([address, valueReturned], _ix) => {
+          const amountReturned = AmountMath.make(externalBrand, valueReturned);
+          assert(
+            lienedAmounts.has(address),
+            X`We have no record of anything liened for address ${address}`,
+          );
+          // No need to validate the address and amountLiened because we
+          // get the address and the amountLiened from the escrowed
+          // amount, which Zoe verifies is from a real attestation payment
+          const liened = lienedAmounts.get(address);
+          // This assertion should always be true.
+          // TODO: Escalate appropriately, such as shutting down the vat
+          // if false.
+          assert(
+            AmountMath.isGTE(liened, amountReturned),
+            X`The returned amount ${amountReturned} was greater than the amount liened ${liened}. Something very wrong occurred.`,
+          );
+          const updated = AmountMath.subtract(liened, amountReturned);
+          lienedAmounts.set(address, updated);
+          return E(lienBridge).setLiened(address, updated);
+        },
+      ),
     );
   };
 

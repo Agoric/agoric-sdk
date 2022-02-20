@@ -5,10 +5,10 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
+import { makeStore } from '@agoric/store';
 import { setupAttestation as setupReturnableAttestation } from './returnable/returnableNFT.js';
 import { makeStoredTime } from './storedTime.js';
 import { assertPrerequisites } from './prerequisites.js';
-import { makeGetAttMaker } from './attMaker.js';
 
 const { details: X } = assert;
 
@@ -37,6 +37,7 @@ export const makeAttestationFacets = async (
     returnableAttName, // e.g. 'BldAttLoc'
     empty,
     zcf,
+    authorityPromiseKit.promise,
   );
   // AWAIT ///
 
@@ -68,7 +69,6 @@ export const makeAttestationFacets = async (
    */
   const makeAttestationsInternal = async (address, amountToLien) => {
     amountToLien = AmountMath.coerce(underlyingBrand, amountToLien);
-
     await assertPrerequisites(
       authorityPromiseKit.promise,
       storedTime,
@@ -77,14 +77,7 @@ export const makeAttestationFacets = async (
       address,
       amountToLien,
     );
-    // AWAIT ///
-
-    const returnableAttPayment = returnableAttManager.addReturnableLien(
-      address,
-      amountToLien,
-    );
-
-    return harden(returnableAttPayment);
+    return returnableAttManager.addReturnableLien(address, amountToLien);
   };
 
   const publicFacet = Far('attestation publicFacet', {
@@ -116,14 +109,29 @@ export const makeAttestationFacets = async (
         ),
       makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
     });
-  const getAttMaker = makeGetAttMaker(makeAttMaker);
+
+  /** @type {Store<Address, AttMaker>} */
+  const addressToAttMaker = makeStore('address');
+  /**
+   * @param {Address} address
+   * @returns {AttMaker}
+   */
+  const getAttMaker = address => {
+    assert.typeof(address, 'string');
+    if (addressToAttMaker.has(address)) {
+      return addressToAttMaker.get(address);
+    }
+    const attMaker = makeAttMaker(address);
+    addressToAttMaker.init(address, attMaker);
+    return attMaker;
+  };
 
   // The authority is used to confirm that the underlying assets are escrowed appropriately.
   const addAuthority = authority => authorityPromiseKit.resolve(authority);
 
   const creatorFacet = Far('attestation creatorFacet', {
     getLiened,
-    getAttMaker,
+    getAttMaker, // @@provide...
     addAuthority,
   });
 
