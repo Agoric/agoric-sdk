@@ -38,7 +38,10 @@ const DEFAULT_PROTOCOL_FEE = 6n;
 const CENTRAL_DENOM_NAME = 'urun';
 
 /**
- * @param {EconomyBootstrapPowers} powers
+ * @param {WellKnownSpaces & EconomyBootstrapPowers & {
+ *   vatParameters: {
+ *     argv: { economicCommitteeAddresses?: string[] },
+ *   }}} powers
  * @param {{ committeeName: string, committeeSize: number }} electorateTerms
  */
 export const startEconomicCommittee = async (
@@ -106,7 +109,7 @@ export const startEconomicCommittee = async (
 };
 harden(startEconomicCommittee);
 
-/** @param { EconomyBootstrapPowers } powers */
+/** @param { WellKnownSpaces & EconomyBootstrapPowers } powers */
 export const setupAmm = async ({
   consume: {
     chainTimerService,
@@ -211,7 +214,7 @@ export const startPriceAuthority = async ({
 harden(startPriceAuthority);
 
 /**
- * @param { EconomyBootstrapPowers } powers
+ * @param { WellKnownSpaces & EconomyBootstrapPowers } powers
  * @param { Object } config
  * @param { LoanTiming } config.loanParams
  */
@@ -619,6 +622,7 @@ export const startGetRun = async ({
     ...(reporter ? [E(creatorFacet).addAuthority(reporter)] : []),
     E(client).assignBundle([
       address => ({
+        // @ts-expect-error threading types thru governance is WIP
         attMaker: E(creatorFacet).getAttMaker(address),
       }),
     ]),
