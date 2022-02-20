@@ -7,7 +7,7 @@ import '@endo/init';
 import test from 'ava';
 import * as proc from 'child_process';
 import * as os from 'os';
-import { encodeBase64, decodeBase64 } from '@endo/base64';
+import { encodeBase64 } from '@endo/base64';
 import { xsnap } from '../src/xsnap.js';
 import { options } from './message-tools.js';
 
