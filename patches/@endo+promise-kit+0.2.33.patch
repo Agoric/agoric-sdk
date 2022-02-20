@@ -1,7 +1,0 @@
-diff --git a/node_modules/@endo/promise-kit/index.d.ts b/node_modules/@endo/promise-kit/index.d.ts
-deleted file mode 100644
-index 6f597a9..0000000
---- a/node_modules/@endo/promise-kit/index.d.ts
-+++ /dev/null
-@@ -1 +0,0 @@
--export { makePromiseKit, isPromise } from './index.js';
