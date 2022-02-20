@@ -5,7 +5,7 @@ import 'node-lmdb';
 import '@endo/init';
 
 import { parse, stringify } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import '@agoric/cosmic-swingset/src/anylogger-agoric.js';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';

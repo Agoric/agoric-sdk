@@ -5,7 +5,7 @@ import { E } from '@agoric/eventual-send';
 import { Far, Remotable } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { cleanProposal, coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { evalContractBundle } from './evalContractCode.js';

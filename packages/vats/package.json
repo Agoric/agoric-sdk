@@ -29,7 +29,7 @@
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.33",
     "@agoric/pegasus": "^0.5.1",
-    "@agoric/promise-kit": "^0.2.29",
+    "@endo/promise-kit": "^0.2.29",
     "@agoric/run-protocol": "^0.7.1",
     "@agoric/sharing-service": "^0.1.33",
     "@agoric/sparse-ints": "^0.1.24",

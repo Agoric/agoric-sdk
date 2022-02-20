@@ -5,7 +5,7 @@ import {
   makeMarshal,
 } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { isPromise } from '@agoric/promise-kit';
+import { isPromise } from '@endo/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage } from '../message.js';

@@ -4,7 +4,7 @@
 
 import { HandledPromise, E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import './types.js';
 

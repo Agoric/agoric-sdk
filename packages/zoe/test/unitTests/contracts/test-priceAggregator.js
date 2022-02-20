@@ -9,7 +9,7 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';

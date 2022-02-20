@@ -1,4 +1,4 @@
-import { isPromise } from '@agoric/promise-kit';
+import { isPromise } from '@endo/promise-kit';
 import { Far } from '@endo/far';
 import * as farExports from '@endo/far';
 

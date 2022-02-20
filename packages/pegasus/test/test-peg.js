@@ -16,7 +16,7 @@ import { Far } from '@endo/marshal';
 import { makeSubscription } from '@agoric/notifier';
 
 import '@agoric/ertp/exported.js';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);

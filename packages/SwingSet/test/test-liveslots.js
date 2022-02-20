@@ -4,7 +4,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import engineGC from '../src/engine-gc.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';

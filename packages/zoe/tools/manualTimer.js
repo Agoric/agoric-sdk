@@ -9,7 +9,7 @@ import { Far } from '@endo/marshal';
 import './types.js';
 import './internal-types.js';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * A fake clock that also logs progress.

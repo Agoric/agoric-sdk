@@ -4,7 +4,7 @@
 // test.stuff patterns.
 
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { quote as q } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { ignore } from './vat-util.js';

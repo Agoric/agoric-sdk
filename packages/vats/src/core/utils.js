@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 import { AssetKind } from '@agoric/ertp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeStore } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
 
