@@ -7,7 +7,6 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeStore } from '@agoric/store';
 import { setupAttestation as setupReturnableAttestation } from './returnable/returnableNFT.js';
-import { makeStoredTime } from './storedTime.js';
 import { assertPrerequisites } from './prerequisites.js';
 
 const { details: X } = assert;
@@ -30,7 +29,6 @@ export const makeAttestationFacets = async (
   ).getDisplayInfo();
   // AWAIT ///
 
-  const storedTime = makeStoredTime();
   const empty = AmountMath.makeEmpty(underlyingBrand, underlyingAssetKind);
 
   const returnableAttManager = await setupReturnableAttestation(
@@ -45,15 +43,13 @@ export const makeAttestationFacets = async (
    * Get the amount currently liened for the address and brand.
    *
    * @param {Address} address
-   * @param {Timestamp} currentTime
    * @param {Brand} brand
    */
-  const getLiened = (address, currentTime, brand) => {
+  const getLiened = (address, brand) => {
     assert(
       brand === underlyingBrand,
       X`This contract can only make attestations for ${brand}`,
     );
-    storedTime.updateTime(currentTime);
     return returnableAttManager.getLienAmount(address);
   };
 
@@ -71,7 +67,6 @@ export const makeAttestationFacets = async (
     amountToLien = AmountMath.coerce(underlyingBrand, amountToLien);
     await assertPrerequisites(
       authorityPromiseKit.promise,
-      storedTime,
       getLiened,
       underlyingBrand,
       address,
@@ -98,10 +93,8 @@ export const makeAttestationFacets = async (
     Far('attMaker', {
       makeAttestation: amountToLien =>
         makeAttestationsInternal(address, amountToLien),
-      // TODO: should this getLiened take currentTime as a parameter?
       // TODO: should we provide a notifier?
-      getLiened: () =>
-        getLiened(address, storedTime.getTime(), underlyingBrand),
+      getLiened: () => getLiened(address, underlyingBrand),
       getAccountState: () =>
         E(authorityPromiseKit.promise).getAccountState(
           address,
