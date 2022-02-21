@@ -69,13 +69,13 @@ const makeContext = async t => {
     harden({
       returnableAttName: 'BldAttLoc',
     }),
+    harden({ lienBridge: makeMockLienBridge(uBrand, t) }),
   );
   const { publicFacet, creatorFacet } = await result;
 
   return {
     zoe,
     stakeKit,
-    lienBridge: makeMockLienBridge(uBrand, t),
     publicFacet,
     creatorFacet,
   };
@@ -87,11 +87,10 @@ test.before(async t => {
 });
 
 test('refuse to attest to more than liened amount', async t => {
-  const { stakeKit, creatorFacet, lienBridge } =
+  const { stakeKit, creatorFacet } =
     await /** @type { ReturnType<typeof makeContext> } */ (t.context);
 
   const uBrand = stakeKit.brand;
-  await E(creatorFacet).addAuthority(lienBridge);
 
   const address1 = 'address01'; // note: keep addresses distinct among parallel tests
 
@@ -109,10 +108,8 @@ test('refuse to attest to more than liened amount', async t => {
 });
 
 test('attestations can be combined and split', async t => {
-  const { zoe, stakeKit, publicFacet, creatorFacet, lienBridge } =
+  const { zoe, stakeKit, publicFacet, creatorFacet } =
     await /** @type { ReturnType<typeof makeContext> } */ (t.context);
-
-  await E(creatorFacet).addAuthority(lienBridge);
 
   const issuer = await E(publicFacet).getIssuer();
   const brand = await E(publicFacet).getBrand();

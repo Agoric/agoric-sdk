@@ -13,6 +13,7 @@ import {
   ceilMultiplyBy,
   floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { fit, getCopyBagEntries, M } from '@agoric/store';
 import { makeAttestationFacets } from './attestation/attestation.js';
 
 const { details: X } = assert;
@@ -158,7 +159,7 @@ export const makeLineOfCreditKit = (
 };
 
 /**
- * @param {{ RUN: Brand, Attestation: Brand }} brands
+ * @param {{ RUN: Brand, Attestation: Brand, Stake: Brand }} brands
  * @param {(name: string) => Ratio} getRatio
  */
 const makeCreditPolicy = (brands, getRatio) => {
@@ -178,12 +179,10 @@ const makeCreditPolicy = (brands, getRatio) => {
       attestationGiven.brand === brands.Attestation,
       X`Invalid Attestation ${attestationGiven}. Expected brand ${brands.Attestation}`,
     );
-    assert(
-      Array.isArray(attestationGiven.value) &&
-        attestationGiven.value.length === 1,
-      X`expected SET value with 1 item; found ${attestationGiven.value}`,
-    );
-    const [{ amountLiened }] = attestationGiven.value;
+    // TODO: what to do if more than 1 address is given???
+    fit(attestationGiven.value, M.bagOf([M.string(), M.bigint()]));
+    const [[_addr, valueLiened]] = getCopyBagEntries(attestationGiven.value);
+    const amountLiened = AmountMath.make(brands.Stake, valueLiened);
     const maxAvailable = floorMultiplyBy(amountLiened, collateralPrice);
     const collateralizedRun = ceilMultiplyBy(runWanted, collateralizationRatio);
     assert(
@@ -221,16 +220,25 @@ const makeCreditPolicy = (brands, getRatio) => {
  * @param {{
  *   feeMintAccess: FeeMintAccess,
  *   initialPoserInvitation: Invitation,
+ *   lienBridge: ERef<StakingAuthority>,
  * }} privateArgs
  */
-const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
+const start = async (
+  zcf,
+  { feeMintAccess, initialPoserInvitation, lienBridge },
+) => {
   const {
     main: initialValue,
     brands: { Stake: stakeBrand },
     lienAttestationName = 'BldLienAtt',
   } = zcf.getTerms();
 
-  const att = await makeAttestationFacets(zcf, stakeBrand, lienAttestationName);
+  const att = await makeAttestationFacets(
+    zcf,
+    stakeBrand,
+    lienAttestationName,
+    lienBridge,
+  );
   const attestBrand = await E(att.publicFacet).getBrand();
 
   const builder = makeParamManagerBuilder(zcf.getZoeService())
@@ -252,7 +260,7 @@ const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
   const { brand: runBrand, issuer: runIssuer } = runMint.getIssuerRecord();
   const creditPolicy = makeCreditPolicy(
-    { Attestation: attestBrand, RUN: runBrand },
+    { Attestation: attestBrand, RUN: runBrand, Stake: stakeBrand },
     getRatio,
   );
 
