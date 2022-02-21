@@ -20,6 +20,32 @@ const dirname = path.dirname(filename);
 
 const attestationRoot = `${dirname}/../../src/attestation/attestation.js`;
 
+/**
+ * @param {Brand} uBrand
+ * @param {*} t
+ * @returns {StakingAuthority}
+ */
+export const makeMockLienBridge = (uBrand, t) => {
+  const currentTime = 10n;
+  const liened = new Map();
+  return Far('stakeReporter', {
+    getAccountState: (address, _brand) => {
+      return harden({
+        total: AmountMath.make(uBrand, 500n),
+        bonded: AmountMath.make(uBrand, 200n),
+        locked: AmountMath.make(uBrand, 10n),
+        liened: liened.get(address),
+        unbonding: AmountMath.make(uBrand, 0n),
+        currentTime,
+      });
+    },
+    setLiened: async (address, amount) => {
+      t.log('setLiened:', { address, amount });
+      liened.set(address, amount);
+    },
+  });
+};
+
 const makeContext = async t => {
   const bundle = await bundleSource(attestationRoot);
 
@@ -36,27 +62,6 @@ const makeContext = async t => {
   const uBrand = stakeKit.brand;
   const uIssuer = stakeKit.issuer;
 
-  const currentTime = 10n;
-
-  const mockAuthority = Far(
-    'stakeReporter',
-    /** @type {{getAccountState: (address: Address, brand: Brand) => {total: Amount,
-     * bonded: Amount, locked: Amount, currentTime: Timestamp}}} */ ({
-      getAccountState: (_address, _brand) => {
-        return harden({
-          total: AmountMath.make(uBrand, 500n),
-          bonded: AmountMath.make(uBrand, 200n),
-          locked: AmountMath.make(uBrand, 10n),
-          currentTime,
-        });
-      },
-      setLiened: (address, amount) => {
-        t.log('setLiened:', { address, amount });
-        // TODO: check that we got the right stuff.
-      },
-    }),
-  );
-
   /** @type {ReturnType<typeof import('../../src/attestation/attestation.js').makeAttestationFacets>} */
   const result = E(zoe).startInstance(
     installation,
@@ -70,7 +75,7 @@ const makeContext = async t => {
   return {
     zoe,
     stakeKit,
-    lienBridge: mockAuthority,
+    lienBridge: makeMockLienBridge(uBrand, t),
     publicFacet,
     creatorFacet,
   };
