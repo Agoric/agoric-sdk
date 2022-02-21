@@ -30,4 +30,6 @@
  * @property {Amount} total
  * @property {Amount} unbonding
  * @property {bigint} currentTime
+ *
+ * @typedef {(address: string, brand: Brand) => Amount} GetLiened
  */
