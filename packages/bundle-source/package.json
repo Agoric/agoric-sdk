@@ -1,6 +1,6 @@
 {
   "name": "@agoric/bundle-source",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Create source bundles from ES Modules",
   "type": "module",
   "main": "src/index.js",

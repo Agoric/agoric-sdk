@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.34.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.4...@agoric/cosmic-swingset@0.34.5) (2022-02-21)
+
+
+### Features
+
+* **cosmic-swingset:** honour `CHAIN_BOOTSTRAP_VAT_CONFIG` ([cf93481](https://github.com/Agoric/agoric-sdk/commit/cf93481969043948985e21a78d1680bc7925cd62))
+* **cosmic-swingset:** use `bootMsg.params.bootstrap_vat_config` ([28d3efd](https://github.com/Agoric/agoric-sdk/commit/28d3efdab7f7f91e17ba49cdb57408988dc5c58e))
+* **solo:** run sim-chain in a separate process ([a9bc83d](https://github.com/Agoric/agoric-sdk/commit/a9bc83dc8f74a77a39feef4f1de45a0eee9439ae))
+* **swing-store:** enable `LMDB_MAP_SIZE` and `SOLO_LMDB_MAP_SIZE` ([77f67a8](https://github.com/Agoric/agoric-sdk/commit/77f67a8010d84b4f595e1fbd524b344050ae47d6))
+* **telemetry:** use `makeSlogSenderFromModule` ([2892da9](https://github.com/Agoric/agoric-sdk/commit/2892da96eff902c5f616424d6fb9946aaaef1b0f))
+
+
+### Bug Fixes
+
+* **anylogger:** coherent DEBUG levels, `$DEBUG` always says more ([5e482fe](https://github.com/Agoric/agoric-sdk/commit/5e482feb3912a0a3dd409d5f028ebe17e6b8ec0b))
+* **cosmic-swingset:** enforce consensusMode, not by sniffing `$DEBUG` ([960aa17](https://github.com/Agoric/agoric-sdk/commit/960aa173c33fedead0ff22e32971798c2f01a911))
+* **cosmic-swingset:** straighten out shutdown signals and exit code ([118fc21](https://github.com/Agoric/agoric-sdk/commit/118fc21b62b8f03333831640c60d508b79790bd5))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* **cosmic-swingset:** use `@agoric/telemetry` ([e22742a](https://github.com/Agoric/agoric-sdk/commit/e22742a73949d63d599ba6e9e433624a31582d86))
+* make `default-params.go` match `sim-params.js` ([550ba3a](https://github.com/Agoric/agoric-sdk/commit/550ba3a058cc2f7e0200479c6c3ceaf5dc39e21e))
+* **sim-params:** update parameters to charge higher SwingSet fees ([341ddbb](https://github.com/Agoric/agoric-sdk/commit/341ddbbf43637c38eb194f3e7c6fd20fb1e5cb4e))
+
+
+
 ### [0.34.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.3...@agoric/cosmic-swingset@0.34.4) (2021-12-22)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

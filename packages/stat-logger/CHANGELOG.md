@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.25](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.4.24...@agoric/stat-logger@0.4.25) (2022-02-21)
+
+**Note:** Version bump only for package @agoric/stat-logger
+
+
+
+
+
 ### [0.4.24](https://github.com/Agoric/agoric-sdk/compare/@agoric/stat-logger@0.4.23...@agoric/stat-logger@0.4.24) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/stat-logger

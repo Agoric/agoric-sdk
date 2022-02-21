@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.34](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.33...@agoric/notifier@0.3.34) (2022-02-21)
+
+
+### Bug Fixes
+
+* **notifier:** make the `Updater` a Far object ([20707a1](https://github.com/Agoric/agoric-sdk/commit/20707a137fe8ccb7f685fb4bb79b66094efa902b))
+* **store:** use explicit `import('@endo/marshal')` JSDoc ([4795147](https://github.com/Agoric/agoric-sdk/commit/47951473d4679c7e95104f5ae32fe63c8547598e))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+
+
+
 ### [0.3.33](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.3.32...@agoric/notifier@0.3.33) (2021-12-22)
 
 **Note:** Version bump only for package @agoric/notifier

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### 0.7.2 (2022-02-21)
+
+
+### Features
+
+* **run-protocol:** interest charging O(1) for all vaults in a manager ([#4527](https://github.com/Agoric/agoric-sdk/issues/4527)) ([58103ac](https://github.com/Agoric/agoric-sdk/commit/58103ac216f4ce28cbbe73494af2ea11b5a110c0))
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+* **run-protocol:** variable rate vault/loan ([54d509e](https://github.com/Agoric/agoric-sdk/commit/54d509e74517c4385183b13cbf30c2976944ddd0))
+
+
+### Bug Fixes
+
+* dropping the max on the property-based tests led to problems ([#4600](https://github.com/Agoric/agoric-sdk/issues/4600)) ([3ddd160](https://github.com/Agoric/agoric-sdk/commit/3ddd160f343a7ad6faebeee8e09787310a63e211))
+* Remove extraneous eslint globals ([17087e4](https://github.com/Agoric/agoric-sdk/commit/17087e4605db7d3b30dfccf2434b2850b45e3408))
+* **amm:** Prevent creation of constant product AMM with non-fungible central token ([#4476](https://github.com/Agoric/agoric-sdk/issues/4476)) ([4f2d036](https://github.com/Agoric/agoric-sdk/commit/4f2d03612b2130c3fa053d239bde0c927245d1ff))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* when trades for zero are requested don't throw ([4516e5b](https://github.com/Agoric/agoric-sdk/commit/4516e5b6a2ab9176033956ee197687b5c6574647))
+* **run-protocol:** update `makeRatio` import ([20965f1](https://github.com/Agoric/agoric-sdk/commit/20965f14c2212024cee9796a2454b5435aa3fcb8))
+
+
+
 ### [0.7.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.7.0...@agoric/treasury@0.7.1) (2021-12-22)
 
 

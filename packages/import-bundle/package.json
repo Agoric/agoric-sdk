@@ -1,6 +1,6 @@
 {
   "name": "@agoric/import-bundle",
-  "version": "0.2.33",
+  "version": "0.2.34",
   "description": "load modules created by @endo/bundle-source",
   "type": "module",
   "main": "src/index.js",

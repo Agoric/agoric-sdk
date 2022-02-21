@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.5.1...@agoric/pegasus@0.6.0) (2022-02-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **pegasus:** make more robust and remove public state
+
+### Features
+
+* **pegasus:** implement correct result and denom trace handling ([aacf1c3](https://github.com/Agoric/agoric-sdk/commit/aacf1c39f840beb31702f3fcd3565771ccaf7817))
+* **pegasus:** make more robust and remove public state ([a5413f7](https://github.com/Agoric/agoric-sdk/commit/a5413f781fc694e3e11804b5288740e9319928ee))
+* **pegasus:** properly abort on connection close ([1b17f7a](https://github.com/Agoric/agoric-sdk/commit/1b17f7aa4de11ccd5a1ec26fc7b6fff017d70ac1))
+* **pegasus:** rejectStuckTransfers, getRemoteDenomSubscription ([54bf0bc](https://github.com/Agoric/agoric-sdk/commit/54bf0bc4e83172396962295ba76b8af3a8846df9))
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+
+
+### Bug Fixes
+
+* **pegasus:** more POLA and less global state ([e7ea320](https://github.com/Agoric/agoric-sdk/commit/e7ea32047f5a87a18c5ed4722d4d6e2163f7f2aa))
+* **pegasus:** more robust ics20 JSON parsing ([208109f](https://github.com/Agoric/agoric-sdk/commit/208109f2e4df9e4df5c2371c6a299a42349d5c69))
+* **pegasus:** only reject transfers waiting for pegRemote ([f1801f6](https://github.com/Agoric/agoric-sdk/commit/f1801f63ad81ec06fc3b86c3a44e98130b310351))
+* **pegasus:** use bigints for nonces ([9065d6e](https://github.com/Agoric/agoric-sdk/commit/9065d6ee205082efd2253e6bd06ee08676535b50))
+* **pegasus:** use dummy ICS20-1 transfer `sender` ([c4056bc](https://github.com/Agoric/agoric-sdk/commit/c4056bcd48800b6bfadb4de5eaccb66af6446ef4))
+* `rejectStuckTransfers` sends a TransferProtocol-level error ([8374f94](https://github.com/Agoric/agoric-sdk/commit/8374f941597e22ac20f40b959381218f03563f65))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+
+
+
 ### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.5.0...@agoric/pegasus@0.5.1) (2021-12-22)
 
 **Note:** Version bump only for package @agoric/pegasus

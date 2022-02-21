@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.4.1...@agoric/governance@0.4.2) (2022-02-21)
+
+
+### Bug Fixes
+
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* extract early changes from PR 4136 ([#4190](https://github.com/Agoric/agoric-sdk/issues/4190)) ([fea822e](https://github.com/Agoric/agoric-sdk/commit/fea822ec75c27c8758b872730424c0a3f1a1c623))
+
+
+
 ### [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.4.0...@agoric/governance@0.4.1) (2021-12-22)
 
 
