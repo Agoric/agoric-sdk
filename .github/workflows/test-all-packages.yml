@@ -76,8 +76,6 @@ jobs:
         run: cd packages/eventual-send && yarn test
       - name: yarn test (governance)
         run: cd packages/governance && yarn test
-      - name: yarn test (import-bundle)
-        run: cd packages/import-bundle && yarn test
       - name: yarn test (import-manager)
         run: cd packages/import-manager && yarn test
       - name: yarn test (notifier)
