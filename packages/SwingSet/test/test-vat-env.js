@@ -1,9 +1,6 @@
 /* global VatData */
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
-import { Far } from '@endo/marshal';
-
 import { provideHostStorage } from '../src/hostStorage.js';
 import { buildVatController } from '../src/index.js';
 
@@ -12,23 +9,17 @@ test('harden from SES is in the test environment', t => {
   t.pass();
 });
 
-function makeThingInnards(_state) {
-  return {
-    self: Far('thing', {
-      ping() {
-        return 4;
-      },
-    }),
-  };
-}
+const actualizeThing = _state => ({
+  ping: () => 4,
+});
 
 test('kind makers are in the test environment', t => {
   // eslint-disable-next-line no-undef
-  const makeVThing = VatData.makeKind(makeThingInnards);
+  const makeVThing = VatData.defineKind('thing', null, actualizeThing);
   const vthing = makeVThing('vthing');
   t.is(vthing.ping(), 4);
 
-  const makeDThing = VatData.makeDurableKind(makeThingInnards);
+  const makeDThing = VatData.defineDurableKind('thing', null, actualizeThing);
   const dthing = makeDThing('dthing');
   t.is(dthing.ping(), 4);
 });
@@ -74,8 +65,8 @@ async function testForExpectedGlobals(t, workerType) {
     'control sample: undefined',
     'harden: function',
     'VatData: object',
-    'VatData.makeKind: function',
-    'VatData.makeDurableKind: function',
+    'VatData.defineKind: function',
+    'VatData.defineDurableKind: function',
     'VatData.makeScalarBigMapStore: function',
     'VatData.makeScalarBigWeakMapStore: function',
     'VatData.makeScalarBigSetStore: function',

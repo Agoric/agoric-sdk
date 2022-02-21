@@ -1,7 +1,5 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
-import { Far } from '@endo/marshal';
 import {
   makeFakeVirtualObjectManager,
   makeFakeVirtualStuff,
@@ -11,33 +9,29 @@ function capdata(body, slots = []) {
   return harden({ body, slots });
 }
 
-function makeThingInnards(state) {
+function initThing(label = 'thing', counter = 0) {
+  return { counter, label, resetCounter: 0 };
+}
+function actualizeThing(state) {
   return {
-    init(label = 'thing', counter = 0) {
-      state.counter = counter;
-      state.label = label;
-      state.resetCounter = 0;
+    inc() {
+      state.counter += 1;
+      return state.counter;
     },
-    self: Far('thing', {
-      inc() {
-        state.counter += 1;
-        return state.counter;
-      },
-      reset(newStart) {
-        state.counter = newStart;
-        state.resetCounter += 1;
-        return state.resetCounter;
-      },
-      relabel(newLabel) {
-        state.label = newLabel;
-      },
-      get() {
-        return state.counter;
-      },
-      describe() {
-        return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
-      },
-    }),
+    reset(newStart) {
+      state.counter = newStart;
+      state.resetCounter += 1;
+      return state.resetCounter;
+    },
+    relabel(newLabel) {
+      state.label = newLabel;
+    },
+    get() {
+      return state.counter;
+    },
+    describe() {
+      return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
+    },
   };
 }
 
@@ -53,42 +47,24 @@ function minThing(label) {
   return thingVal(0, label, 0);
 }
 
-function makeRefInnards(state) {
-  return {
-    init(value) {
-      state.value = value;
-    },
-    self: Far('ref', {
-      setVal(value) {
-        state.value = value;
-      },
-    }),
-  };
+function initZot(arbitrary = 47, name = 'Bob', tag = 'say what?') {
+  return { arbitrary, name, tag, count: 0 };
 }
-
-function makeZotInnards(state) {
+function actualizeZot(state) {
   return {
-    init(arbitrary = 47, name = 'Bob', tag = 'say what?') {
-      state.arbitrary = arbitrary;
-      state.name = name;
-      state.tag = tag;
-      state.count = 0;
+    sayHello(msg) {
+      state.count += 1;
+      return `${msg} ${state.name}`;
     },
-    self: Far('zot', {
-      sayHello(msg) {
-        state.count += 1;
-        return `${msg} ${state.name}`;
-      },
-      rename(newName) {
-        state.name = newName;
-        state.count += 1;
-        return state.name;
-      },
-      getInfo() {
-        state.count += 1;
-        return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
-      },
-    }),
+    rename(newName) {
+      state.name = newName;
+      state.count += 1;
+      return state.name;
+    },
+    getInfo() {
+      state.count += 1;
+      return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
+    },
   };
 }
 
@@ -104,10 +80,10 @@ function zotVal(arbitrary, name, tag, count) {
 // prettier-ignore
 test('virtual object operations', t => {
   const log = [];
-  const { makeKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
+  const { defineKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
-  const makeThing = makeKind(makeThingInnards);
-  const makeZot = makeKind(makeZotInnards);
+  const makeThing = defineKind('thing', initThing, actualizeThing);
+  const makeZot = defineKind('zot', initZot, actualizeZot);
 
   // phase 0: start
   t.deepEqual(dumpStore(), []);
@@ -320,12 +296,20 @@ test('virtual object operations', t => {
 test('virtual object gc', t => {
   const log = [];
   const { vom, vrm, fakeStuff } = makeFakeVirtualStuff({ cacheSize: 3, log });
-  const { makeKind } = vom;
+  const { defineKind } = vom;
   const { setExportStatus, possibleVirtualObjectDeath } = vrm;
   const { deleteEntry, dumpStore } = fakeStuff;
 
-  const makeThing = makeKind(makeThingInnards);
-  const makeRef = makeKind(makeRefInnards);
+  const makeThing = defineKind('thing', initThing, actualizeThing);
+  const makeRef = defineKind(
+    'ref',
+    value => ({ value }),
+    state => ({
+      setVal: value => {
+        state.value = value;
+      },
+    }),
+  );
 
   // make a bunch of things which we'll use
   // all virtual objects are born locally ref'd
@@ -442,9 +426,9 @@ test('virtual object gc', t => {
   // ref virtually
   // eslint-disable-next-line no-unused-vars
   const ref1 = makeRef(things[3]);
-  t.is(log.shift(), `set vom.o+1/6 ${minThing('thing #6')}`);
   t.is(log.shift(), `get vom.rc.o+1/4 => undefined`);
   t.is(log.shift(), `set vom.rc.o+1/4 1`);
+  t.is(log.shift(), `set vom.o+1/6 ${minThing('thing #6')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['vom.o+1/4', minThing('thing #4')],
@@ -475,9 +459,9 @@ test('virtual object gc', t => {
   // ref virtually
   // eslint-disable-next-line no-unused-vars
   const ref2 = makeRef(things[4]);
-  t.is(log.shift(), `set vom.o+1/7 ${minThing('thing #7')}`);
   t.is(log.shift(), `get vom.rc.o+1/5 => undefined`);
   t.is(log.shift(), `set vom.rc.o+1/5 1`);
+  t.is(log.shift(), `set vom.o+1/7 ${minThing('thing #7')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['vom.es.o+1/4', '0'],
@@ -504,9 +488,9 @@ test('virtual object gc', t => {
   // ref virtually
   // eslint-disable-next-line no-unused-vars
   const ref3 = makeRef(things[5]);
-  t.is(log.shift(), `set vom.o+1/8 ${minThing('thing #8')}`);
   t.is(log.shift(), `get vom.rc.o+1/6 => undefined`);
   t.is(log.shift(), `set vom.rc.o+1/6 1`);
+  t.is(log.shift(), `set vom.o+1/8 ${minThing('thing #8')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['vom.es.o+1/4', '0'],
@@ -539,31 +523,13 @@ test('virtual object gc', t => {
   ]);
 });
 
-function makeDefectivelyNonFarThingInnards(state) {
-  return {
-    init(label = 'thing') {
-      state.label = label;
-    },
-    self: {
-      noop() {},
-    },
-  };
-}
-
-test('demand farhood', t => {
-  const { makeKind } = makeFakeVirtualObjectManager({ cacheSize: 3 });
-
-  const makeThing = makeKind(makeDefectivelyNonFarThingInnards);
-  t.throws(() => makeThing('thing'), { message: 'self must be declared Far' });
-});
-
 test('weak store operations', t => {
   const { vom, cm } = makeFakeVirtualStuff({ cacheSize: 3 });
-  const { makeKind } = vom;
+  const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;
 
-  const makeThing = makeKind(makeThingInnards);
-  const makeZot = makeKind(makeZotInnards);
+  const makeThing = defineKind('thing', initThing, actualizeThing);
+  const makeZot = defineKind('zot', initZot, actualizeZot);
 
   const thing1 = makeThing('t1');
   const thing2 = makeThing('t2');
@@ -604,11 +570,11 @@ test('virtualized weak collection operations', t => {
   // TODO: don't yet have a way to test the weakness of the virtualized weak
   // collections
 
-  const { VirtualObjectAwareWeakMap, VirtualObjectAwareWeakSet, makeKind } =
+  const { VirtualObjectAwareWeakMap, VirtualObjectAwareWeakSet, defineKind } =
     makeFakeVirtualObjectManager({ cacheSize: 3 });
 
-  const makeThing = makeKind(makeThingInnards);
-  const makeZot = makeKind(makeZotInnards);
+  const makeThing = defineKind('thing', initThing, actualizeThing);
+  const makeZot = defineKind('zot', initZot, actualizeZot);
 
   const thing1 = makeThing('t1');
   const thing2 = makeThing('t2');

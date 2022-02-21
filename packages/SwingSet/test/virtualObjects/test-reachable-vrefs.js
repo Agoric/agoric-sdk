@@ -1,43 +1,34 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Far, Remotable } from '@endo/marshal';
+import { Remotable } from '@endo/marshal';
 
 import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
-// empty object, used as weap map store key
-function makeKeyInnards(_state) {
-  return {
-    init() {},
-    self: Far('key'),
-  };
-}
-
-function makeHolderInnards(state) {
-  return {
-    init(held) {
-      state.held = held;
-    },
-    self: Far('holder', {
-      setHeld(held) {
-        state.held = held;
-      },
-      getHeld() {
-        return state.held;
-      },
-    }),
-  };
-}
-
 test('VOM tracks reachable vrefs', async t => {
   const vomOptions = { cacheSize: 3 };
   const { vom, vrm, cm } = makeFakeVirtualStuff(vomOptions);
-  const { makeKind } = vom;
+  const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;
   const weakStore = makeScalarBigWeakMapStore('test');
-  const makeKey = makeKind(makeKeyInnards);
-  const makeHolder = makeKind(makeHolderInnards);
+
+  // empty object, used as weap map store key
+  const makeKey = defineKind(
+    'key',
+    () => ({}),
+    _state => ({}),
+  );
+  const makeHolder = defineKind(
+    'holder',
+    held => ({ held }),
+    state => ({
+      setHeld: held => {
+        state.held = held;
+      },
+      getHeld: () => state.held,
+    }),
+  );
 
   let count = 1001;
   function makePresence() {

@@ -138,40 +138,26 @@ let aWeakSet;
 function buildRootObject(vatPowers) {
   const { VatData, WeakMap, WeakSet } = vatPowers;
 
-  const { makeKind } = VatData;
+  const { defineKind } = VatData;
 
-  function makeThingInnards(state) {
-    return {
-      init(label) {
-        state.label = label;
-      },
-      self: Far('thing', {
-        getLabel() {
-          return state.label;
-        },
-      }),
-    };
-  }
-
-  function makeVirtualHolderInnards(state) {
-    return {
-      init(value = null) {
+  const makeThing = defineKind(
+    'thing',
+    label => ({ label }),
+    state => ({
+      getLabel: () => state.label,
+    }),
+  );
+  const cacheDisplacer = makeThing('cacheDisplacer');
+  const makeVirtualHolder = defineKind(
+    'holder',
+    (held = null) => ({ held }),
+    state => ({
+      setValue: value => {
         state.held = value;
       },
-      self: Far('holder', {
-        setValue(value) {
-          state.held = value;
-        },
-        getValue() {
-          return state.held;
-        },
-      }),
-    };
-  }
-
-  const makeThing = makeKind(makeThingInnards);
-  const cacheDisplacer = makeThing('cacheDisplacer');
-  const makeVirtualHolder = makeKind(makeVirtualHolderInnards);
+      getValue: () => state.held,
+    }),
+  );
   const virtualHolder = makeVirtualHolder();
   let nextThingNumber = 0;
   let heldThing = null;
@@ -816,12 +802,12 @@ test.serial('VO lifecycle 8', async t => {
 function validatePrepareStore3(v, rp) {
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+1/2', '2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o+1/2')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
@@ -902,12 +888,12 @@ test.serial('VO refcount management 3', async t => {
   rp = await dispatchMessage('prepareStoreLinked');
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+2/2'));
   validate(v, matchVatstoreSet('vom.rc.o+2/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldHolderValue('o+2/2')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+2/3'));
   validate(v, matchVatstoreSet('vom.rc.o+2/3', '1'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldHolderValue('o+2/2')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldHolderValue('o+2/3')));
   validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
@@ -956,12 +942,12 @@ test.serial('presence refcount management 1', async t => {
   rp = await dispatchMessage('prepareStore3');
   validate(v, matchVatstoreGet('vom.rc.o-5'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
@@ -1003,12 +989,12 @@ test.serial('presence refcount management 2', async t => {
   rp = await dispatchMessage('prepareStore3');
   validate(v, matchVatstoreGet('vom.rc.o-5'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);

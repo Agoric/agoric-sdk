@@ -1,48 +1,42 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import {
-  makeKind,
+  defineKind,
   makeScalarBigWeakMapStore,
 } from '@agoric/swingset-vat/src/storeModule.js';
 
 const p = console.log;
 
 function build(name) {
-  function makeThingInnards(state) {
-    return {
-      init(label, companion, companionName) {
-        p(`${name}'s thing ${label}: initialize ${companionName}`);
-        state.label = label;
-        state.companion = companion;
-        state.companionName = companionName;
-        state.count = 0;
+  const makeThing = defineKind(
+    'thing',
+    (label, companion, companionName) => {
+      p(`${name}'s thing ${label}: initialize ${companionName}`);
+      return { label, companion, companionName, count: 0 };
+    },
+    state => ({
+      echo(message) {
+        state.count += 1;
+        E(state.companion).say(message);
       },
-      self: Far('thing', {
-        echo(message) {
-          state.count += 1;
-          E(state.companion).say(message);
-        },
-        async changePartner(newCompanion) {
-          state.count += 1;
-          state.companion = newCompanion;
-          const companionName = await E(newCompanion).getName();
-          state.companionName = companionName;
-          p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
-        },
-        getLabel() {
-          const label = state.label;
-          p(`${name}'s thing ${label}: getLabel`);
-          state.count += 1;
-          return label;
-        },
-        report() {
-          p(`${name}'s thing ${state.label} invoked ${state.count} times`);
-        },
-      }),
-    };
-  }
-
-  const makeThing = makeKind(makeThingInnards);
+      async changePartner(newCompanion) {
+        state.count += 1;
+        state.companion = newCompanion;
+        const companionName = await E(newCompanion).getName();
+        state.companionName = companionName;
+        p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
+      },
+      getLabel() {
+        const label = state.label;
+        p(`${name}'s thing ${label}: getLabel`);
+        state.count += 1;
+        return label;
+      },
+      report() {
+        p(`${name}'s thing ${state.label} invoked ${state.count} times`);
+      },
+    }),
+  );
   let nextThingNumber = 0;
 
   let myThings;

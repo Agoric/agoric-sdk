@@ -76,7 +76,7 @@ const expected = [
   '{"adminFacet":{},"creatorFacet":{},"instance":{},"publicFacet":{}}',
 ];
 
-test.serial('makeKind swingset', async t => {
+test.serial('defineKind swingset', async t => {
   const dump = await main(t);
   t.deepEqual(dump.log, expected);
 });

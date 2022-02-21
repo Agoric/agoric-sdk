@@ -1,8 +1,8 @@
 /* global VatData */
 
 export const {
-  makeKind,
-  makeDurableKind,
+  defineKind,
+  defineDurableKind,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
   makeScalarBigSetStore,

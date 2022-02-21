@@ -1,73 +1,62 @@
 import { Far } from '@endo/marshal';
-import { makeKind } from '@agoric/swingset-vat/src/storeModule.js';
+import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
 
 const p = console.log;
 
-function makeThingInnards(state) {
-  return {
-    init(label = 'thing', counter = 0) {
-      p(`@@@ thing.initialize(${label}, ${counter})`);
-      state.counter = counter;
-      state.label = label;
-      state.resetCounter = 0;
+const makeThing = defineKind(
+  'thing',
+  (label = 'thing', counter = 0) => {
+    p(`@@@ thing.initialize(${label}, ${counter})`);
+    return { counter, label, resetCounter: 0 };
+  },
+  state => ({
+    inc() {
+      state.counter += 1;
+      p(`#thing# ${state.label} inc() counter now ${state.counter}`);
     },
-    self: Far('thing', {
-      inc() {
-        state.counter += 1;
-        p(`#thing# ${state.label} inc() counter now ${state.counter}`);
-      },
-      reset(newStart) {
-        p(`#thing# ${state.label} reset(${newStart})`);
-        state.counter = newStart;
-        state.resetCounter += 1;
-      },
-      relabel(newLabel) {
-        p(`#thing# ${state.label} relabel(${newLabel})`);
-        state.label = newLabel;
-      },
-      get() {
-        p(`#thing# ${state.label} get()=>${state.counter}`);
-        return state.counter;
-      },
-      describe() {
-        p(`#thing# ${state.label} describe()`);
-        return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
-      },
-    }),
-  };
-}
-
-const makeThing = makeKind(makeThingInnards);
-
-function makeZotInstance(state) {
-  return {
-    init(arbitrary = 47, name = 'Bob', tag = 'say what?') {
-      p(`@@@ zot.initialize(${arbitrary}, ${name}, ${tag})`);
-      state.arbitrary = arbitrary;
-      state.name = name;
-      state.tag = tag;
-      state.count = 0;
+    reset(newStart) {
+      p(`#thing# ${state.label} reset(${newStart})`);
+      state.counter = newStart;
+      state.resetCounter += 1;
     },
-    self: Far('zot', {
-      sayHello(msg) {
-        p(`#zot# ${msg} ${state.name}`);
-        state.count += 1;
-      },
-      rename(newName) {
-        p(`#zot# ${state.name} rename(${newName})`);
-        state.name = newName;
-        state.count += 1;
-      },
-      printInfo() {
-        // prettier-ignore
-        p(`#zot# ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`);
-        state.count += 1;
-      },
-    }),
-  };
-}
+    relabel(newLabel) {
+      p(`#thing# ${state.label} relabel(${newLabel})`);
+      state.label = newLabel;
+    },
+    get() {
+      p(`#thing# ${state.label} get()=>${state.counter}`);
+      return state.counter;
+    },
+    describe() {
+      p(`#thing# ${state.label} describe()`);
+      return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
+    },
+  }),
+);
 
-const makeZot = makeKind(makeZotInstance);
+const makeZot = defineKind(
+  'zot',
+  (arbitrary = 47, name = 'Bob', tag = 'say what?') => {
+    p(`@@@ zot.initialize(${arbitrary}, ${name}, ${tag})`);
+    return { arbitrary, name, tag, count: 0 };
+  },
+  state => ({
+    sayHello(msg) {
+      p(`#zot# ${msg} ${state.name}`);
+      state.count += 1;
+    },
+    rename(newName) {
+      p(`#zot# ${state.name} rename(${newName})`);
+      state.name = newName;
+      state.count += 1;
+    },
+    printInfo() {
+      // prettier-ignore
+      p(`#zot# ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`);
+      state.count += 1;
+    },
+  }),
+);
 
 export function buildRootObject(_vatPowers) {
   let thing1;
