@@ -8,23 +8,21 @@ const { vom, cm } = makeFakeVirtualStuff({ cacheSize: 3 });
 
 const { makeScalarBigMapStore, makeScalarBigSetStore } = cm;
 
-const { makeKind, makeDurableKind } = vom;
+const { defineKind, defineDurableKind } = vom;
 
-function makeHolderInnards(state) {
-  return {
-    init(value = null) {
-      state.held = value;
-    },
-    self: Far('holder', {
-      hold(value) {
-        state.held = value;
-      },
-    }),
-  };
-}
+const initHolder = (held = null) => ({ held });
+const actualizeHolder = state => ({
+  hold: value => {
+    state.held = value;
+  },
+});
 
-const makeVirtualHolder = makeKind(makeHolderInnards);
-const makeDurableHolder = makeDurableKind(makeHolderInnards);
+const makeVirtualHolder = defineKind('holder', initHolder, actualizeHolder);
+const makeDurableHolder = defineDurableKind(
+  'holder',
+  initHolder,
+  actualizeHolder,
+);
 
 const aString = 'zorch!';
 const aVirtualObject = makeVirtualHolder();

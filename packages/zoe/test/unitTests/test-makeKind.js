@@ -16,12 +16,12 @@ const dirname = path.dirname(filename);
 
 const root = `${dirname}/../minimalMakeKindContract.js`;
 
-test('makeKind non-swingset', async t => {
+test('defineKind non-swingset', async t => {
   const bundle = await bundleSource(root);
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const installation = await E(zoe).install(bundle);
-  t.notThrows(() => VatData.makeKind());
-  t.notThrows(() => VatData.makeDurableKind());
+  t.notThrows(() => VatData.defineKind());
+  t.notThrows(() => VatData.defineDurableKind());
   t.notThrows(() => VatData.makeScalarBigMapStore());
   t.notThrows(() => VatData.makeScalarBigWeakMapStore());
   t.notThrows(() => VatData.makeScalarBigSetStore());

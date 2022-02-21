@@ -1,24 +1,17 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeKind } from '../../src/storeModule.js';
+import { defineKind } from '../../src/storeModule.js';
 
 const things = [];
 
 export function buildRootObject(_vatPowers) {
-  function makeThingInnards(state) {
-    return {
-      init(label) {
-        state.label = label;
-      },
-      self: Far('thing', {
-        getLabel() {
-          return state.label;
-        },
-      }),
-    };
-  }
-
-  const makeThing = makeKind(makeThingInnards);
+  const makeThing = defineKind(
+    'thing',
+    label => ({ label }),
+    state => ({
+      getLabel: () => state.label,
+    }),
+  );
   let nextThingNumber = 0;
 
   return Far('root', {

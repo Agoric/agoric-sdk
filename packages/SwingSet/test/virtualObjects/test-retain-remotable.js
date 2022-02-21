@@ -8,30 +8,6 @@ import engineGC from '../../src/engine-gc.js';
 import { makeGcAndFinalize } from '../../src/gc-and-finalize.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
-// empty object, used as weak map store key
-function makeKeyInnards(_state) {
-  return {
-    init() {},
-    self: Far('key'),
-  };
-}
-
-function makeHolderInnards(state) {
-  return {
-    init(held) {
-      state.held = held;
-    },
-    self: Far('holder', {
-      setHeld(held) {
-        state.held = held;
-      },
-      getHeld() {
-        return state.held;
-      },
-    }),
-  };
-}
-
 function makeHeld() {
   const held = Far('held');
   const wr = new WeakRef(held);
@@ -80,11 +56,25 @@ test('remotables retained by virtualized data', async t => {
   const gcAndFinalize = makeGcAndFinalize(engineGC);
   const vomOptions = { cacheSize: 3, weak: true };
   const { vom, cm } = makeFakeVirtualStuff(vomOptions);
-  const { makeKind } = vom;
+  const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;
   const weakStore = makeScalarBigWeakMapStore('ws');
-  const makeKey = makeKind(makeKeyInnards);
-  const makeHolder = makeKind(makeHolderInnards);
+  // empty object, used as weak map store key
+  const makeKey = defineKind(
+    'key',
+    () => ({}),
+    _state => ({}),
+  );
+  const makeHolder = defineKind(
+    'holder',
+    held => ({ held }),
+    state => ({
+      setHeld: held => {
+        state.held = held;
+      },
+      getHeld: () => state.held,
+    }),
+  );
 
   // create a Remotable and assign it a vref, then drop it, to make sure the
   // fake VOM isn't holding onto a strong reference, which would cause a
