@@ -4,11 +4,12 @@ import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { isPromise } from '@agoric/promise-kit';
 import { Far, assertCopyArray } from '@endo/marshal';
-import { makeWeakStore, fit } from '@agoric/store';
+import { fit } from '@agoric/store';
+import { makeScalarBigWeakMapStore } from '@agoric/swingset-vat/src/storeModule.js';
 
 import { AmountMath } from './amountMath.js';
-import { makePayment } from './payment.js';
-import { makePurse } from './purse.js';
+import { makePaymentMaker } from './payment.js';
+import { makePurseMaker } from './purse.js';
 
 import '@agoric/store/exported.js';
 
@@ -30,6 +31,8 @@ export const makePaymentLedger = (
   displayInfo,
   optShutdownWithFailure = undefined,
 ) => {
+  const makePayment = makePaymentMaker(allegedName, brand);
+
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
     // TODO This should also destroy ledger state.
@@ -46,7 +49,7 @@ export const makePaymentLedger = (
   };
 
   /** @type {WeakStore<Payment, Amount>} */
-  const paymentLedger = makeWeakStore('payment');
+  const paymentLedger = makeScalarBigWeakMapStore('payment');
 
   /** @type {(left: Amount, right: Amount) => Amount } */
   const add = (left, right) => AmountMath.add(left, right, brand);
@@ -141,7 +144,7 @@ export const makePaymentLedger = (
       payments.forEach(payment => paymentLedger.delete(payment));
 
       newPayments = newPaymentBalances.map(balance => {
-        const newPayment = makePayment(allegedName, brand);
+        const newPayment = makePayment();
         paymentLedger.init(newPayment, balance);
         return newPayment;
       });
@@ -251,7 +254,7 @@ export const makePaymentLedger = (
   /** @type {MintPayment} */
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
-    const payment = makePayment(allegedName, brand);
+    const payment = makePayment();
     paymentLedger.init(payment, newAmount);
     return payment;
   };
@@ -313,7 +316,7 @@ export const makePaymentLedger = (
     );
     const newPurseBalance = subtract(currentBalance, amount);
 
-    const payment = makePayment(allegedName, brand);
+    const payment = makePayment();
     try {
       // COMMIT POINT Move the withdrawn assets from this purse into
       // payment. Total assets must remain conserved.
@@ -331,6 +334,13 @@ export const makePaymentLedger = (
     withdraw,
   };
 
+  const makeEmptyPurse = makePurseMaker(
+    allegedName,
+    assetKind,
+    brand,
+    purseMethods,
+  );
+
   /** @type {Issuer} */
   const issuer = Far(`${allegedName} issuer`, {
     isLive,
@@ -344,8 +354,7 @@ export const makePaymentLedger = (
     getAllegedName: () => allegedName,
     getAssetKind: () => assetKind,
     getDisplayInfo: () => displayInfo,
-    makeEmptyPurse: () =>
-      makePurse(allegedName, assetKind, brand, purseMethods),
+    makeEmptyPurse,
   });
 
   /** @type {Mint} */

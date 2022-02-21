@@ -1,43 +1,78 @@
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@endo/marshal';
+import {
+  defineKind,
+  makeScalarBigWeakMapStore,
+} from '@agoric/swingset-vat/src/storeModule.js';
 import { AmountMath } from './amountMath.js';
 
-export const makePurse = (allegedName, assetKind, brand, purseMethods) => {
-  let currentBalance = AmountMath.makeEmpty(brand, assetKind);
+export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
+  /** @type {WeakMap<Purse, PurseDeposit>} */
+  const depositFacets = makeScalarBigWeakMapStore('deposit facets');
 
-  /** @type {NotifierRecord<Amount>} */
-  const { notifier: balanceNotifier, updater: balanceUpdater } =
-    makeNotifierKit(currentBalance);
+  /** @type {() => Purse} */
+  const makePurseInternal = defineKind(
+    `${allegedName} purse`,
+    () => {
+      const currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
-  const updatePurseBalance = newPurseBalance => {
-    currentBalance = newPurseBalance;
-    balanceUpdater.updateState(currentBalance);
-  };
+      /** @type {NotifierRecord<Amount>} */
+      const { notifier: balanceNotifier, updater: balanceUpdater } =
+        makeNotifierKit(currentBalance);
 
-  /** @type {Purse} */
-  const purse = Far(`${allegedName} purse`, {
-    deposit: (srcPayment, optAmountShape = undefined) => {
-      // Note COMMIT POINT within deposit.
-      return purseMethods.deposit(
+      return {
         currentBalance,
-        updatePurseBalance,
-        srcPayment,
-        optAmountShape,
-      );
+        balanceNotifier,
+        balanceUpdater,
+      };
     },
-    withdraw: amount =>
-      // Note COMMIT POINT within withdraw.
-      purseMethods.withdraw(currentBalance, updatePurseBalance, amount),
-    getCurrentAmount: () => currentBalance,
-    getCurrentAmountNotifier: () => balanceNotifier,
-    getAllegedBrand: () => brand,
-    // eslint-disable-next-line no-use-before-define
-    getDepositFacet: () => depositFacet,
-  });
+    state => {
+      const updatePurseBalance = newPurseBalance => {
+        state.currentBalance = newPurseBalance;
+        state.balanceUpdater.updateState(newPurseBalance);
+      };
+      const purse = {
+        deposit: (srcPayment, optAmountShape = undefined) => {
+          // Note COMMIT POINT within deposit.
+          return purseMethods.deposit(
+            state.currentBalance,
+            updatePurseBalance,
+            srcPayment,
+            optAmountShape,
+          );
+        },
+        withdraw: amount =>
+          // Note COMMIT POINT within withdraw.
+          purseMethods.withdraw(
+            state.currentBalance,
+            updatePurseBalance,
+            amount,
+          ),
+        getCurrentAmount: () => state.currentBalance,
+        getCurrentAmountNotifier: () => state.balanceNotifier,
+        getAllegedBrand: () => brand,
+        getDepositFacet: () => depositFacets.get(purse),
+      };
+      return purse;
+    },
+  );
 
-  const depositFacet = Far(`${allegedName} depositFacet`, {
-    receive: purse.deposit,
-  });
+  const makeDepositFacet = defineKind(
+    `${allegedName} depositFacet`,
+    purse => ({ purse }),
+    state => ({
+      receive: (srcPayment, optAmountShape = undefined) =>
+        state.purse.deposit(srcPayment, optAmountShape),
+    }),
+  );
 
-  return purse;
+  const makePurse = () => {
+    const purse = makePurseInternal();
+    const depositFacet = makeDepositFacet(purse);
+    depositFacets.init(purse, depositFacet);
+    return purse;
+  };
+  harden(makePurse);
+
+  return makePurse;
 };
+harden(makePurseMaker);

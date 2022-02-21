@@ -438,6 +438,9 @@ export function makeVirtualObjectManager(
 
     function makeRepresentative(innerSelf, initializing, proForma) {
       if (!proForma) {
+        if (innerSelf.repCount !== 0) {
+          debugger;
+        }
         assert(
           innerSelf.repCount === 0,
           X`${innerSelf.vobjID} already has a representative`,
