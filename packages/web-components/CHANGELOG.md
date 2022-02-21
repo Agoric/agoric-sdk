@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/web-components@0.1.3...@agoric/web-components@0.1.4) (2022-02-21)
+
+
+### Features
+
+* **web-components:** add petimage component ([697fc38](https://github.com/Agoric/agoric-sdk/commit/697fc382d5b0f79ab66987cc13ee62432a2c0a77))
+* **web-components:** Add Powerbox-compatible petname component ([4afa736](https://github.com/Agoric/agoric-sdk/commit/4afa736607178dacfec606d43036f7c2b0ed8024))
+
+
+### Bug Fixes
+
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* **web-components:** add 100ms delay to deflake test ([c5b8bb4](https://github.com/Agoric/agoric-sdk/commit/c5b8bb407cb15de9e4ae10c9fac17e057a30ba5f))
+* **web-components:** attempt to de-flake test ([174554c](https://github.com/Agoric/agoric-sdk/commit/174554cd2ebb4aeae3b3fc48acbd29f28073b408))
+* **web-components:** fix change in update warning ([2ee65b6](https://github.com/Agoric/agoric-sdk/commit/2ee65b64cef5474086e3b28f936de0afb2cd0046))
+* log warning instead of throwing ([0b8e4fe](https://github.com/Agoric/agoric-sdk/commit/0b8e4fe4bb8a756aa20598833f43b8dd89e50c8a))
+
+
+
 ### 0.1.3 (2021-12-22)
 
 **Note:** Version bump only for package @agoric/web-components

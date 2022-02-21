@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [2.0.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/bundle-source@2.0.1...@agoric/bundle-source@2.0.2) (2022-02-21)
+
+
+### Bug Fixes
+
+* **bundle-source:** Relax line number test for better prefixes ([78a2575](https://github.com/Agoric/agoric-sdk/commit/78a25753516e6c81f6c5d1e2e703066576f08f34))
+
+
+
 ### [2.0.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/bundle-source@2.0.0...@agoric/bundle-source@2.0.1) (2021-12-02)
 
 

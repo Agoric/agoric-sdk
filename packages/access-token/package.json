@@ -1,6 +1,6 @@
 {
   "name": "@agoric/access-token",
-  "version": "0.4.16",
+  "version": "0.4.17",
   "description": "Persistent credentials for Agoric users, backed by a simple JSON file",
   "type": "module",
   "main": "src/access-token.js",
@@ -16,7 +16,7 @@
     "lint": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
+    "@agoric/assert": "^0.3.16",
     "n-readlines": "^1.0.0"
   },
   "devDependencies": {

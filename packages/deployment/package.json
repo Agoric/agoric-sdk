@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deployment",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Set up Agoric public chain nodes",
   "type": "module",
   "private": true,
@@ -19,7 +19,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
+    "@agoric/assert": "^0.3.16",
     "@endo/init": "^0.5.35",
     "@endo/marshal": "^0.6.1",
     "chalk": "^2.4.2",
