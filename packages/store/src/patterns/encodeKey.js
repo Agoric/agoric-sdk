@@ -92,7 +92,7 @@ const decodeBinary64 = encodedKey => {
 // "#"s [which sort before decimal digits]) vs. positive and zero values (type
 // "p" followed by any number of "~"s [which sort after decimal digits]) and
 // each decimal digit of the encoding for a negative value is replaced with its
-// nines' complement (so that negative values of the same scale sort by
+// ten's complement (so that negative values of the same scale sort by
 // *descending* absolute value).
 const encodeBigInt = n => {
   const abs = n < 0n ? -n : n;
@@ -104,11 +104,11 @@ const encodeBigInt = n => {
       // in the decimal *count* of decimal digits.
       '#'.repeat(lDigits - 1)
     }${
-      // The nines' complement of the count of digits.
-      (10 ** lDigits - 1 - nDigits).toString().padStart(lDigits, '0')
+      // The ten's complement of the count of digits.
+      (10 ** lDigits - nDigits).toString().padStart(lDigits, '0')
     }:${
-      // The nines' complement of the digits.
-      (10n ** BigInt(nDigits) - 1n + n).toString().padStart(nDigits, '0')
+      // The ten's complement of the digits.
+      (10n ** BigInt(nDigits) + n).toString().padStart(nDigits, '0')
     }`;
   } else {
     return `p${
@@ -150,8 +150,9 @@ const decodeBigInt = encodedKey => {
   );
   let nDigits = parseInt(snDigits, 10);
   if (typePrefix === 'n') {
-    // TODO Assert to reject forbidden encodings like "n9:" and "n9…:…"?
-    nDigits = 10 ** lDigits - 1 - nDigits;
+    // TODO Assert to reject forbidden encodings
+    // like "n0:" and "n00:…" and "n91:…" through "n99:…"?
+    nDigits = 10 ** lDigits - nDigits;
   }
 
   assert(rem.startsWith(':'), X`Separator expected: ${encodedKey}`);
@@ -163,8 +164,9 @@ const decodeBigInt = encodedKey => {
   );
   let n = BigInt(rem);
   if (typePrefix === 'n') {
-    // TODO Assert to reject forbidden encodings like "n…:9…"?
-    n = n - 10n ** BigInt(nDigits) + 1n;
+    // TODO Assert to reject forbidden encodings
+    // like "n9:0" and "n8:00" and "n8:91" through "n8:99"?
+    n = n - 10n ** BigInt(nDigits);
   }
 
   return n;
