@@ -3,12 +3,20 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
-import { subtractOrMakeEmpty } from './helpers.js';
-
 const { details: X } = assert;
 
 // TODO: Make the attestation contract more generic by allowing this
 // to be parameterized
+
+// If x is greater than or equal to y, subtract. If not, return empty.
+const subtractOrMakeEmpty = (x, y) => {
+  if (AmountMath.isGTE(x, y)) {
+    return AmountMath.subtract(x, y);
+  } else {
+    return AmountMath.makeEmptyFromAmount(x);
+  }
+};
+harden(subtractOrMakeEmpty);
 
 /**
  * Assert the cosmos-specific prerequisites

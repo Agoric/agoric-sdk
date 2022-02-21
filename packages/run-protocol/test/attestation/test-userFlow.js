@@ -8,7 +8,7 @@ import { E } from '@agoric/eventual-send';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 
 import { makeCopyBag } from '@agoric/store';
-import { setupAttestation } from '../../src/attestation/returnable/returnableNFT.js';
+import { setupAttestation } from '../../src/attestation/attestation.js';
 import { makeMockLienBridge } from './test-attestation.js';
 
 const makeDoReturnAttestation =
