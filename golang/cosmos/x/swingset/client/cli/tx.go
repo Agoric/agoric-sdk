@@ -5,11 +5,14 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	govcli "github.com/cosmos/cosmos-sdk/x/gov/client/cli"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -111,5 +114,91 @@ func GetCmdProvisionOne() *cobra.Command {
 	}
 
 	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+func NewCmdSubmitCoreEvalProposal() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "swingset-core-eval [[permit.json] [code.js]]...",
+		Args:  cobra.MinimumNArgs(2),
+		Short: "Submit a proposal to evaluate code in the SwingSet core",
+		Long: `Submit a SwingSet evaluate core Compartment code proposal along with an initial deposit.
+Specify at least one pair of permit.json and code.js files`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args)%2 != 0 {
+				return fmt.Errorf("must specify an even number of permit.json and code.js files")
+			}
+
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			title, err := cmd.Flags().GetString(govcli.FlagTitle)
+			if err != nil {
+				return err
+			}
+
+			description, err := cmd.Flags().GetString(govcli.FlagDescription)
+			if err != nil {
+				return err
+			}
+
+			npairs := len(args) / 2
+			evals := make([]types.CoreEval, 0, npairs)
+			for j := 0; j < npairs; j++ {
+				permitFile := args[j*2]
+				permit, err := ioutil.ReadFile(permitFile)
+				if err != nil {
+					return errors.Wrapf(err, "failed to read permit %s", permitFile)
+				}
+
+				codeFile := args[j*2+1]
+				code, err := ioutil.ReadFile(codeFile)
+				if err != nil {
+					return errors.Wrapf(err, "failed to read code %s", codeFile)
+				}
+
+				ce := types.CoreEval{
+					JsonPermits: string(permit),
+					JsCode:      string(code),
+				}
+				if err = ce.ValidateBasic(); err != nil {
+					return errors.Wrapf(err, "cannot validate permit=%s, code=%s", permitFile, codeFile)
+				}
+
+				evals = append(evals, ce)
+			}
+
+			from := clientCtx.GetFromAddress()
+			content := types.NewCoreEvalProposal(title, description, evals)
+
+			depositStr, err := cmd.Flags().GetString(govcli.FlagDeposit)
+			if err != nil {
+				return err
+			}
+
+			deposit, err := sdk.ParseCoinsNormalized(depositStr)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+
+			if err = msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	cmd.Flags().String(govcli.FlagTitle, "", "title of proposal")
+	cmd.Flags().String(govcli.FlagDescription, "", "description of proposal")
+	cmd.Flags().String(govcli.FlagDeposit, "", "deposit for proposal")
+
 	return cmd
 }

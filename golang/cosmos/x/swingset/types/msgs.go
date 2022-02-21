@@ -1,6 +1,8 @@
 package types
 
 import (
+	"strings"
+
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -8,7 +10,7 @@ import (
 
 const RouterKey = ModuleName // this was defined in your key.go file
 
-var _, _ sdk.Msg = &MsgDeliverInbound{}, &MsgProvision{}
+var _, _, _, _ sdk.Msg = &MsgDeliverInbound{}, &MsgProvision{}, &MsgWalletAction{}, &MsgWalletSpendAction{}
 var _ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
 
 func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverInbound {
@@ -81,6 +83,36 @@ func (msg MsgDeliverInbound) GetSignBytes() []byte {
 // GetSigners defines whose signature is required
 func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Submitter}
+}
+
+func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Owner}
+}
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgWalletAction) ValidateBasic() error {
+	if msg.Owner.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
+	}
+	if len(strings.TrimSpace(msg.Action)) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Action cannot be empty")
+	}
+	return nil
+}
+
+func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Owner}
+}
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgWalletSpendAction) ValidateBasic() error {
+	if msg.Owner.Empty() {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
+	}
+	if len(strings.TrimSpace(msg.SpendAction)) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Spend action cannot be empty")
+	}
+	return nil
 }
 
 func NewMsgProvision(nickname string, addr sdk.AccAddress, powerFlags []string, submitter sdk.AccAddress) *MsgProvision {
