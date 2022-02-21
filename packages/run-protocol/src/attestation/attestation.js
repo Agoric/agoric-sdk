@@ -3,7 +3,6 @@
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
 
 import { getCopyBagEntries, makeCopyBag, makeStore } from '@agoric/store';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -66,7 +65,7 @@ harden(mintZCFMintPayment);
  * @param {Brand} attestationBrand
  * @returns {Amount}
  */
-const checkOfferShape = (seat, attestationBrand) => {
+const checkReturnOfferShape = (seat, attestationBrand) => {
   assertProposalShape(seat, { give: { Attestation: null }, want: {} });
   const attestationAmount = seat.getAmountAllocated('Attestation');
   assert(
@@ -75,11 +74,9 @@ const checkOfferShape = (seat, attestationBrand) => {
   );
   return attestationAmount;
 };
-harden(checkOfferShape);
 
 /**
- * @param {string} attestationTokenName - the name for the attestation
- * token
+ * @param {string} attestationTokenName
  * @param {Amount} empty
  * @param {ContractFacet} zcf
  * @param {ERef<StakingAuthority>} lienBridge
@@ -117,15 +114,15 @@ const setupAttestation = async (
    * amount liened. Return the payment.
    *
    * @param {Address} address
-   * @param {Amount} amount
+   * @param {Amount<NatValue>} amount
    * @returns {Promise<Payment>}
    */
   const addReturnableLien = async (address, amount) => {
-    const amountToLien = validateInputs(externalBrand, address, amount);
+    assert.typeof(address, 'string');
+    const amountToLien = AmountMath.coerce(externalBrand, amount);
 
     const newAmount = addToLiened(lienedAmounts, address, amountToLien);
     await E(lienBridge).setLiened(address, newAmount);
-    // TODO: tell the golang side: LIEN_SET_LIENED
     const amountToMint = AmountMath.make(
       attestationBrand,
       makeCopyBag([[address, amountToLien.value]]),
@@ -136,7 +133,7 @@ const setupAttestation = async (
 
   /** @param {ZCFSeat} seat */
   const returnAttestation = async seat => {
-    const attestationAmount = checkOfferShape(seat, attestationBrand);
+    const attestationAmount = checkReturnOfferShape(seat, attestationBrand);
 
     // Burn the escrowed attestation payment and exit the seat
     zcfMint.burnLosses(harden({ Attestation: attestationAmount }), seat);
@@ -207,19 +204,17 @@ export { setupAttestation };
  * @param {ContractFacet} zcf
  * @param {Brand} underlyingBrand
  * @param {string} returnableAttName
+ * @param {ERef<StakingAuthority>} lienBridge
  */
 export const makeAttestationFacets = async (
   zcf,
   underlyingBrand,
   returnableAttName,
+  lienBridge,
 ) => {
-  /** @type { PromiseRecord<StakingAuthority>} */
-  const authorityPromiseKit = makePromiseKit();
-
   const { assetKind: underlyingAssetKind } = await E(
     underlyingBrand,
   ).getDisplayInfo();
-  // AWAIT ///
 
   const empty = AmountMath.makeEmpty(underlyingBrand, underlyingAssetKind);
 
@@ -227,7 +222,7 @@ export const makeAttestationFacets = async (
     returnableAttName, // e.g. 'BldAttLoc'
     empty,
     zcf,
-    authorityPromiseKit.promise,
+    lienBridge,
   );
   // AWAIT ///
 
@@ -258,7 +253,7 @@ export const makeAttestationFacets = async (
   const makeAttestationsInternal = async (address, amountToLien) => {
     amountToLien = AmountMath.coerce(underlyingBrand, amountToLien);
     await assertPrerequisites(
-      authorityPromiseKit.promise,
+      lienBridge,
       getLiened,
       underlyingBrand,
       address,
@@ -288,10 +283,7 @@ export const makeAttestationFacets = async (
       // TODO: should we provide a notifier?
       getLiened: () => getLiened(address, underlyingBrand),
       getAccountState: () =>
-        E(authorityPromiseKit.promise).getAccountState(
-          address,
-          underlyingBrand,
-        ),
+        E(lienBridge).getAccountState(address, underlyingBrand),
       makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
     });
 
@@ -311,13 +303,9 @@ export const makeAttestationFacets = async (
     return attMaker;
   };
 
-  // The authority is used to confirm that the underlying assets are escrowed appropriately.
-  const addAuthority = authority => authorityPromiseKit.resolve(authority);
-
   const creatorFacet = Far('attestation creatorFacet', {
     getLiened,
     getAttMaker, // @@provide...
-    addAuthority,
   });
 
   return harden({ creatorFacet, publicFacet });
@@ -325,13 +313,21 @@ export const makeAttestationFacets = async (
 
 /**
  * @param {ContractFacet} zcf
+ * @param {Object} privateArgs
+ * @param {ERef<StakingAuthority>} privateArgs.lienBridge The authority
+ *   is used to confirm that the underlying assets are escrowed appropriately.
  */
-const start = async zcf => {
+const start = async (zcf, { lienBridge }) => {
   const {
     brands: { Underlying: underlyingBrand },
     returnableAttName,
   } = zcf.getTerms();
-  return makeAttestationFacets(zcf, underlyingBrand, returnableAttName);
+  return makeAttestationFacets(
+    zcf,
+    underlyingBrand,
+    returnableAttName,
+    lienBridge,
+  );
 };
 harden(start);
 

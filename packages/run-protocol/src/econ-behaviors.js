@@ -493,6 +493,7 @@ harden(startRewardDistributor);
  * @param {Ratio} terms.collateralPrice
  * @param {Ratio} terms.collateralizationRatio
  * @param {ERef<Issuer>} stakeIssuer
+ * @param {ERef<StakingAuthority>} lienBridge
  *
  * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartGetRun
  */
@@ -503,6 +504,7 @@ export const bootstrapRunLoC = async (
   installations,
   { collateralPrice, collateralizationRatio },
   stakeIssuer,
+  lienBridge,
 ) => {
   // TODO: refactor to use consume.economicCommittee
   const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
@@ -535,7 +537,7 @@ export const bootstrapRunLoC = async (
       governed: harden({
         terms: { main },
         issuerKeywordRecord: { Stake: stakeIssuer },
-        privateArgs: { feeMintAccess, initialPoserInvitation },
+        privateArgs: { feeMintAccess, initialPoserInvitation, lienBridge },
       }),
     },
     harden({ electorateCreatorFacet }),
@@ -604,6 +606,12 @@ export const startGetRun = async ({
     getRUN: installation,
   };
 
+  /** @type { ERef<StakingAuthority> } */
+  const waitForever = new Promise(() => {});
+  const lienBridge = bridgeManager
+    ? makeStakeReporter(bridgeManager, bldBrand)
+    : waitForever;
+
   // TODO: finish renaming bootstrapRunLoC etc.
   // TODO: produce getRUNGovernorCreatorFacet, getRUNCreatorFacet, ...
   const { instance, publicFacet, creatorFacet } = await bootstrapRunLoC(
@@ -613,19 +621,16 @@ export const startGetRun = async ({
     installations,
     { collateralPrice, collateralizationRatio },
     bldIssuer,
+    lienBridge,
   );
   const attIssuer = E(publicFacet).getIssuer();
   const attBrand = await E(attIssuer).getBrand();
-
-  const reporter = bridgeManager && makeStakeReporter(bridgeManager, bldBrand);
 
   getRUNinstallR.resolve(installation);
   getRUNinstanceR.resolve(instance);
   attestationBrandR.resolve(attBrand);
   attestationIssuerR.resolve(attIssuer);
   return Promise.all([
-    // @ts-expect-error threading types thru governance is WIP
-    ...(reporter ? [E(creatorFacet).addAuthority(reporter)] : []),
     E(client).assignBundle([
       address => ({
         // @ts-expect-error threading types thru governance is WIP
