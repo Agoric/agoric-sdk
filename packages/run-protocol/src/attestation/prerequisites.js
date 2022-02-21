@@ -16,7 +16,6 @@ const { details: X } = assert;
  * @@ Is this redundant w.r.t. golang checks???
  *
  * @param {ERef<StakingAuthority>} stakeReporter
- * @param {StoredTime} storedTime
  * @param {GetLiened} getLiened
  * @param {Brand} underlyingBrand
  * @param {Address} address
@@ -24,7 +23,6 @@ const { details: X } = assert;
  */
 const assertPrerequisites = async (
   stakeReporter,
-  storedTime,
   getLiened,
   underlyingBrand,
   address,
@@ -37,9 +35,6 @@ const assertPrerequisites = async (
   // AWAIT ///
 
   let { total, bonded, locked } = accountState;
-  const { currentTime } = accountState;
-  assert.typeof(currentTime, 'bigint');
-  storedTime.updateTime(currentTime);
 
   total = AmountMath.coerce(underlyingBrand, total);
   bonded = AmountMath.coerce(underlyingBrand, bonded);
@@ -51,7 +46,7 @@ const assertPrerequisites = async (
   // NOTE: the total (and other values in the accountState) may
   // be less than the amount liened, due to slashing affecting the
   // cosmos balances but not affecting the amount liened.
-  const liened = getLiened(address, currentTime, underlyingBrand);
+  const liened = getLiened(address, underlyingBrand);
 
   const unliened = subtractOrMakeEmpty(total, liened);
   const bondedAndUnliened = subtractOrMakeEmpty(bonded, liened);
@@ -75,8 +70,6 @@ const assertPrerequisites = async (
     AmountMath.isGTE(unlockedAndUnliened, amountToLien),
     X`Only ${unlockedAndUnliened} was unlocked and unliened, but an attestation was attempted for ${amountToLien}`,
   );
-
-  return currentTime;
 };
 harden(assertPrerequisites);
 export { assertPrerequisites };
