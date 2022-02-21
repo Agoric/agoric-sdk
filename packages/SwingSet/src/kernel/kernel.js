@@ -150,9 +150,10 @@ export default function buildKernel(
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
-  // runQueue entries are {type, vatID, more..}. 'more' depends on type:
-  // * deliver: target, msg
-  // * notify: kernelPromiseID
+  // runQueue and acceptanceQueue entries are {type, more..}. 'more' depends on type:
+  // * send: target, msg
+  // * notify: vatID, kpid
+  // * create-vat: vatID, source, dynamicOptions
 
   // in the kernel table, promises and resolvers are both indexed by the same
   // value. kernelPromises[promiseID] = { decider, subscribers }
@@ -1113,7 +1114,7 @@ export default function buildKernel(
     }
 
     if (!kernelKeeper.isRunQueueEmpty()) {
-      return kernelKeeper.getNextMsg();
+      return kernelKeeper.getNextRunQueueMsg();
     }
     return undefined;
   }
