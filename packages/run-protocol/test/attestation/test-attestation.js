@@ -69,7 +69,6 @@ const makeContext = async t => {
 
   return {
     zoe,
-    currentTime,
     stakeKit,
     lienBridge: mockAuthority,
     publicFacet,
@@ -83,7 +82,7 @@ test.before(async t => {
 });
 
 test('refuse to attest to more than liened amount', async t => {
-  const { stakeKit, currentTime, creatorFacet, lienBridge } =
+  const { stakeKit, creatorFacet, lienBridge } =
     await /** @type { ReturnType<typeof makeContext> } */ (t.context);
 
   const uBrand = stakeKit.brand;
@@ -100,12 +99,12 @@ test('refuse to attest to more than liened amount', async t => {
   });
 
   // check that no lien was successful so far
-  const liened = await E(creatorFacet).getLiened(address1, currentTime, uBrand);
+  const liened = await E(creatorFacet).getLiened(address1, uBrand);
   t.deepEqual(liened, AmountMath.makeEmpty(uBrand));
 });
 
 test('attestations can be combined and split', async t => {
-  const { zoe, stakeKit, currentTime, publicFacet, creatorFacet, lienBridge } =
+  const { zoe, stakeKit, publicFacet, creatorFacet, lienBridge } =
     await /** @type { ReturnType<typeof makeContext> } */ (t.context);
 
   await E(creatorFacet).addAuthority(lienBridge);
@@ -124,10 +123,7 @@ test('attestations can be combined and split', async t => {
   const attest50amt = AmountMath.make(brand, makeCopyBag([[address1, 50n]]));
   t.deepEqual(await E(issuer).getAmountOf(attest50pmt), attest50amt);
 
-  t.deepEqual(
-    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
-    stake50,
-  );
+  t.deepEqual(await E(creatorFacet).getLiened(address1, uBrand), stake50);
 
   // Make another normal lien
   const stake25 = AmountMath.make(uBrand, 25n);
@@ -139,7 +135,7 @@ test('attestations can be combined and split', async t => {
   );
 
   t.deepEqual(
-    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
+    await E(creatorFacet).getLiened(address1, uBrand),
     AmountMath.add(stake50, stake25),
   );
 
@@ -167,23 +163,20 @@ test('attestations can be combined and split', async t => {
   // return 1st part
   await returnAttestation(attest20pmt);
   t.deepEqual(
-    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
+    await E(creatorFacet).getLiened(address1, uBrand),
     AmountMath.make(uBrand, 55n),
   );
 
   // return 2nd part
   await returnAttestation(attestRestPmt);
-  t.deepEqual(
-    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
-    stake25,
-  );
+  t.deepEqual(await E(creatorFacet).getLiened(address1, uBrand), stake25);
 
   // Return the original attestation for 25
   await returnAttestation(attest25pmt);
 
   // Now the liened Amount should be empty
   t.deepEqual(
-    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
+    await E(creatorFacet).getLiened(address1, uBrand),
     AmountMath.makeEmpty(uBrand),
   );
 });
