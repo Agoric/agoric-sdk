@@ -288,7 +288,10 @@
  */
 
 /**
- * @typedef {Handle<'Bundlecap'>} Bundlecap
+ * @typedef {Handle<'Bundlecap'> & {
+ *  getBundleID: () => string,
+ *  getBundle: () => string
+ * }} Bundlecap
  */
 
 /**

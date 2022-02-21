@@ -12,8 +12,10 @@ import { makeHandle } from '../src/makeHandle.js';
 import zcfContractBundle from '../bundles/bundle-contractFacet.js';
 
 // this simulates a bundlecap, which is normally a swingset "device node"
-/** @type {Bundlecap} */
-export const zcfBundlecap = makeHandle('Bundlecap');
+/** @type {() => Bundlecap} */
+// @ts-expect-error mock type
+const fakeBundlecap = () => makeHandle('Bundlecap');
+export const zcfBundlecap = fakeBundlecap();
 
 /**
  * @param { (...args) => unknown } [testContextSetter]
@@ -51,7 +53,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   const admin = Far('vatAdmin', {
     getBundlecap: bundleID => {
       if (!idToBundlecap.has(bundleID)) {
-        idToBundlecap.init(bundleID, makeHandle('Bundlecap'));
+        idToBundlecap.init(bundleID, fakeBundlecap());
       }
       return Promise.resolve(idToBundlecap.get(bundleID));
     },
@@ -95,7 +97,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
         );
         return;
       }
-      const bundlecap = makeHandle('Bundlecap');
+      const bundlecap = fakeBundlecap();
       idToBundlecap.init(id, bundlecap);
       bundlecapToBundle.init(bundlecap, bundle);
     },

@@ -54,10 +54,6 @@
  */
 
 /**
- * @typedef { SourceBundle | Bundlecap } BundleOrBundlecap
- */
-
-/**
  * @callback UnwrapInstallation
  *
  * Assert the installation is known, and return the bundle/bundlecap and

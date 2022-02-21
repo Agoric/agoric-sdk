@@ -60,6 +60,7 @@
  * @typedef {{
  *   Remotable: unknown,
  *   getInterfaceOf: unknown,
+ *   D: <T>(target: import('./vats/plugin-manager').Device<T>) => T,
  * }} MarshallingVatPowers
  *
  * @typedef {{

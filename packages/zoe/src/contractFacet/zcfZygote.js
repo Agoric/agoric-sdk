@@ -275,7 +275,6 @@ export const makeZCFZygote = (
     shutdown: completion => {
       E(zoeInstanceAdmin).exitAllSeats(completion);
       dropAllReferences();
-      // @ts-ignore powers is not typed correctly: https://github.com/Agoric/agoric-sdk/issues/3239s
       powers.exitVat(completion);
     },
     shutdownWithFailure,
@@ -344,7 +343,6 @@ export const makeZCFZygote = (
       let bundle;
       if (passStyleOf(bundleOrBundlecap) === 'remotable') {
         const bundlecap = bundleOrBundlecap;
-        // @ts-ignore powers is not typed correctly: https://github.com/Agoric/agoric-sdk/issues/3239s
         bundle = powers.D(bundlecap).getBundle();
       } else {
         bundle = bundleOrBundlecap;
