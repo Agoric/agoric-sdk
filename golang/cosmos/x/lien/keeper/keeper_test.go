@@ -275,7 +275,7 @@ func TestAccountState(t *testing.T) {
 }
 
 func TestVesting(t *testing.T) {
-	ctx, ak, bk, _, keeper := makeTestKit()
+	ctx, ak, bk, sk, keeper := makeTestKit()
 
 	amt := ubld(1000)
 	err := bk.MintCoins(ctx, authtypes.Minter, amt)
@@ -287,7 +287,7 @@ func TestVesting(t *testing.T) {
 		t.Fatalf("cannot send coins: %v", err)
 	}
 
-	vestingMsgServer := vesting.NewMsgServerImpl(ak, bk)
+	vestingMsgServer := vesting.NewMsgServerImpl(ak, bk, sk)
 	_, err = vestingMsgServer.CreateVestingAccount(sdk.WrapSDKContext(ctx), &vestingtypes.MsgCreateVestingAccount{
 		FromAddress: addr1.String(),
 		ToAddress:   addr2.String(),

@@ -138,6 +138,8 @@ replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0
 // We need a fork of cosmos-sdk until all of the differences are merged.
 replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.45.1-alpha.agoric.1
 
+replace github.com/cosmos/gaia/v6 => github.com/Agoric/ag0/v6 v6.0.3-alpha.agoric.1
+
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk
 
