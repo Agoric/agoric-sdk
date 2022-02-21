@@ -166,7 +166,7 @@ const decodeBigInt = encodedKey => {
   if (typePrefix === 'n') {
     // TODO Assert to reject forbidden encodings
     // like "n9:0" and "n8:00" and "n8:91" through "n8:99"?
-    n = n - 10n ** BigInt(nDigits);
+    n = -(10n ** BigInt(nDigits) - n);
   }
 
   return n;
