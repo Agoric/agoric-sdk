@@ -11,6 +11,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
+import { makeCopyBag } from '@agoric/store';
 import { bootstrapRunLoC } from '../src/econ-behaviors.js';
 import * as Collect from '../src/collect.js';
 import * as testCases from './runLoC-test-case-sheet.js';
@@ -84,6 +85,9 @@ const mockBridge = stakingBrand => {
         unbonding: ubld(0n),
         currentTime,
       });
+    },
+    setLiened: async (_address, _amount) => {
+      // t.log(amount);
     },
   });
 };
@@ -223,6 +227,7 @@ const testLoC = (
       installations,
       { collateralPrice, collateralizationRatio },
       bld.issuer,
+      mockBridge(bld.brand),
     );
     const attIssuer = await E(publicFacet).getIssuer();
     const attBrand = await E(attIssuer).getBrand();
@@ -240,8 +245,6 @@ const testLoC = (
       assert.fail(X`no matching account: ${staked}`);
     // @ts-ignore threading types thru governance is tricky.
     const attMaker = E(creatorFacet).getAttMaker(addrFromStake);
-    // @ts-ignore threading types thru governance is tricky.
-    await E(creatorFacet).addAuthority(mockBridge(bld.brand));
 
     // @ts-ignore governance wrapper obscures publicFace type :-/
     const lineOfCreditInvitation = await E(publicFacet).makeLoanInvitation();
@@ -323,7 +326,7 @@ const testLoC = (
         harden({
           give: { RUN: run(-borrowed.delta) },
           want: {
-            Attestation: AmountMath.makeEmpty(attBrand, AssetKind.SET),
+            Attestation: AmountMath.makeEmpty(attBrand, AssetKind.COPY_BAG),
           },
         }),
         harden({ RUN: payouts.RUN }),
@@ -333,12 +336,7 @@ const testLoC = (
       const amt = await E(attIssuer).getAmountOf(attBack);
       t.deepEqual(amt, {
         brand: attBrand,
-        value: [
-          {
-            address: addrFromStake,
-            amountLiened: ubld(liened.before),
-          },
-        ],
+        value: makeCopyBag([[addrFromStake, liened.before]]),
       });
     };
 
@@ -369,7 +367,7 @@ const testLoC = (
           harden({
             give: { RUN: run(-borrowed.delta) },
             want: {
-              Attestation: AmountMath.makeEmpty(attBrand, AssetKind.SET),
+              Attestation: AmountMath.makeEmpty(attBrand, AssetKind.COPY_BAG),
             },
           }),
           harden({ RUN: runPayment }),

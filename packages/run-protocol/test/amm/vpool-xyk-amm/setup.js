@@ -111,7 +111,10 @@ export const setupAmmServices = async (
   issuer.produce.RUN.resolve(centralR.issuer);
 
   await Promise.all([
-    startEconomicCommittee(space, electorateTerms),
+    startEconomicCommittee(
+      { vatParameters: { argv: {} }, ...space },
+      electorateTerms,
+    ),
     setupAmm(space),
   ]);
 
