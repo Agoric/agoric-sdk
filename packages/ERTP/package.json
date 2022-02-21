@@ -42,10 +42,10 @@
     "@agoric/notifier": "^0.3.34",
     "@agoric/store": "^0.6.9",
     "@endo/marshal": "^0.6.1",
-    "@endo/promise-kit": "^0.2.35"
+    "@endo/promise-kit": "^0.2.35",
+    "@agoric/swingset-vat": "^0.25.0"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.25.0",
     "@endo/bundle-source": "^2.0.7",
     "ava": "^3.12.1",
     "fast-check": "^2.21.0"
