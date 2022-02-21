@@ -5,7 +5,7 @@ import {
   base64ToBytes,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { makeStore, makeLegacyMap } from '@agoric/store';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/far';
 

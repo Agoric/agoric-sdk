@@ -1,5 +1,5 @@
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export function buildRootObject(vatPowers, _vatParameters) {
   const { D } = vatPowers;

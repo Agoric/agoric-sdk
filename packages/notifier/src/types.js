@@ -2,12 +2,12 @@
 
 /**
  * @template T
- * @typedef {import('@agoric/promise-kit').ERef<T>} ERef
+ * @typedef {import('@endo/promise-kit').ERef<T>} ERef
  */
 
 /**
  * @template T
- * @typedef {import('@agoric/promise-kit').PromiseRecord<T>} PromiseRecord
+ * @typedef {import('@endo/promise-kit').PromiseRecord<T>} PromiseRecord
  */
 
 /**

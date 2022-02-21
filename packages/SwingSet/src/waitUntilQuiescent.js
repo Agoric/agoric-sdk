@@ -1,5 +1,5 @@
 /* global setImmediate */
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 // This can only be imported from the Start Compartment, where 'setImmediate'
 // is available.

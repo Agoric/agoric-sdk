@@ -3,7 +3,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import '../../../exported.js';
 import { setupAttestation as setupReturnableAttestation } from './returnable/returnableNFT.js';

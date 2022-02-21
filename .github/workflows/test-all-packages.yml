@@ -198,8 +198,6 @@ jobs:
         run: cd packages/import-manager && yarn test
       - name: yarn test (notifier)
         run: cd packages/notifier && yarn test
-      - name: yarn test (promise-kit)
-        run: cd packages/promise-kit && yarn test
       - name: yarn test (same-structure)
         run: cd packages/same-structure && yarn test
       - name: yarn test (sharing-service)

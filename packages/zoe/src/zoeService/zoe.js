@@ -17,7 +17,7 @@ import '../internal-types.js';
 
 import { AssetKind } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';

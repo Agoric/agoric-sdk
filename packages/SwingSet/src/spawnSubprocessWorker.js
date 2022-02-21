@@ -1,6 +1,6 @@
 // this file is loaded by the controller, in the start compartment
 import { spawn } from 'child_process';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 import { netstringEncoderStream, netstringDecoderStream } from './netstring.js';
 

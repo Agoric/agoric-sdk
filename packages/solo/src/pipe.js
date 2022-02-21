@@ -2,7 +2,7 @@
 import { fork } from 'child_process';
 import path from 'path';
 
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { parse, stringify } from '@endo/marshal';
 
 import { makeShutdown } from '@agoric/cosmic-swingset/src/shutdown.js';

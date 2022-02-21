@@ -2,7 +2,7 @@
 /* eslint-disable no-await-in-loop */
 
 import { E, makeCapTP } from '@endo/captp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import bundleSource from '@endo/bundle-source';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
 import path from 'path';

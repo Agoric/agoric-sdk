@@ -3,7 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';

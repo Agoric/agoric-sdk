@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 // this takes about 5.7M computrons
 function consumeCPU() {

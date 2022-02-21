@@ -5,7 +5,7 @@
  * must ensure that only data goes in and out. It's also responsible for turning
  * device affordances into objects that can be used by code in other vats.
  */
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@agoric/nat';

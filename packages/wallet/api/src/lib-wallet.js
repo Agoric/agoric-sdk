@@ -23,7 +23,7 @@ import {
   observeIteration,
   observeNotifier,
 } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeIssuerTable } from './issuerTable.js';
 import { makeDehydrator } from './lib-dehydrate.js';

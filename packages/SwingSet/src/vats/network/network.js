@@ -3,7 +3,7 @@
 import { makeScalarMap, makeLegacyMap } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { toBytes } from './bytes.js';
 

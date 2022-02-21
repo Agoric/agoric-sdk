@@ -5,7 +5,7 @@ import { html, css, LitElement } from 'lit';
 import { assert, details as X } from '@agoric/assert';
 import { makeCapTP as defaultMakeCapTP } from '@endo/captp';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import 'robot3/debug';
 import { interpret } from 'robot3';

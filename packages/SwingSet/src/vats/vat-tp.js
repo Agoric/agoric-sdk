@@ -1,6 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 
 // See ../../docs/delivery.md for a description of the architecture of the
