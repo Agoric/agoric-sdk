@@ -20,25 +20,23 @@ const dirname = path.dirname(filename);
 
 const attestationRoot = `${dirname}/../../src/attestation/attestation.js`;
 
-test('attestation contract basic tests', async t => {
+const makeContext = async t => {
   const bundle = await bundleSource(attestationRoot);
 
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const installation = await E(zoe).install(bundle);
 
-  const bldIssuerKit = makeIssuerKit(
+  const stakeKit = makeIssuerKit(
     'BLD',
     AssetKind.NAT,
     harden({
       decimalPlaces: 6,
     }),
   );
-  const uBrand = bldIssuerKit.brand;
-  const uIssuer = bldIssuerKit.issuer;
+  const uBrand = stakeKit.brand;
+  const uIssuer = stakeKit.issuer;
 
-  const issuerKeywordRecord = harden({ Underlying: uIssuer });
-
-  let currentTime = 10n;
+  const currentTime = 10n;
 
   const mockAuthority = Far(
     'stakeReporter',
@@ -59,71 +57,93 @@ test('attestation contract basic tests', async t => {
     }),
   );
 
-  const customTerms = harden({
-    returnableAttName: 'BldAttLoc',
-  });
-
-  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
+  /** @type {ReturnType<typeof import('../../src/attestation/attestation.js').makeAttestationFacets>} */
+  const result = E(zoe).startInstance(
     installation,
-    issuerKeywordRecord,
-    customTerms,
+    harden({ Underlying: uIssuer }),
+    harden({
+      returnableAttName: 'BldAttLoc',
+    }),
   );
+  const { publicFacet, creatorFacet } = await result;
 
-  await E(creatorFacet).addAuthority(mockAuthority);
-  const brand = await E(publicFacet).getBrand();
-  /** @type { Issuer } */
-  const issuer = await E(publicFacet).getIssuer();
+  return {
+    zoe,
+    currentTime,
+    stakeKit,
+    lienBridge: mockAuthority,
+    publicFacet,
+    creatorFacet,
+  };
+};
 
-  const address1 = 'address1';
+test.before(async t => {
+  const properties = await makeContext(t);
+  Object.assign(t.context, properties);
+});
 
-  /** @type {AttMaker} */
+test('refuse to attest to more than liened amount', async t => {
+  const { stakeKit, currentTime, creatorFacet, lienBridge } =
+    await /** @type { ReturnType<typeof makeContext> } */ (t.context);
+
+  const uBrand = stakeKit.brand;
+  await E(creatorFacet).addAuthority(lienBridge);
+
+  const address1 = 'address01'; // note: keep addresses distinct among parallel tests
+
   const attMaker = await E(creatorFacet).getAttMaker(address1);
 
-  // Try to make a lien greater than the total
   const largeAmount = AmountMath.make(uBrand, 1000n);
   await t.throwsAsync(() => E(attMaker).makeAttestation(largeAmount), {
     message:
       'Only {"brand":"[Alleged: BLD brand]","value":"[500n]"} was unliened, but an attestation was attempted for {"brand":"[Alleged: BLD brand]","value":"[1000n]"}',
   });
 
-  const amount50 = AmountMath.make(uBrand, 50n);
-
   // check that no lien was successful so far
   const liened = await E(creatorFacet).getLiened(address1, currentTime, uBrand);
   t.deepEqual(liened, AmountMath.makeEmpty(uBrand));
+});
+
+test('attestations can be combined and split', async t => {
+  const { zoe, stakeKit, currentTime, publicFacet, creatorFacet, lienBridge } =
+    await /** @type { ReturnType<typeof makeContext> } */ (t.context);
+
+  await E(creatorFacet).addAuthority(lienBridge);
+
+  const issuer = await E(publicFacet).getIssuer();
+  const brand = await E(publicFacet).getBrand();
+
+  const address1 = 'address1';
+  const attMaker = await E(creatorFacet).getAttMaker(address1);
+
+  const uBrand = stakeKit.brand;
+  const stake50 = AmountMath.make(uBrand, 50n);
 
   // Make a normal lien
-  const returnable1 = await E(attMaker).makeAttestation(amount50);
+  const attest50pmt = await E(attMaker).makeAttestation(stake50);
+  const attest50amt = AmountMath.make(brand, makeCopyBag([[address1, 50n]]));
+  t.deepEqual(await E(issuer).getAmountOf(attest50pmt), attest50amt);
 
   t.deepEqual(
-    await E(issuer).getAmountOf(returnable1),
-    AmountMath.make(brand, makeCopyBag([['address1', 50n]])),
+    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
+    stake50,
   );
-
-  const liened2 = await E(creatorFacet).getLiened(
-    address1,
-    currentTime,
-    uBrand,
-  );
-  t.deepEqual(liened2, amount50);
 
   // Make another normal lien
-
-  const amount25 = AmountMath.make(uBrand, 25n);
-  const returnable2 = await E(attMaker).makeAttestation(amount25);
+  const stake25 = AmountMath.make(uBrand, 25n);
+  const attest25pmt = await E(attMaker).makeAttestation(stake25);
 
   t.deepEqual(
-    await E(issuer).getAmountOf(returnable2),
+    await E(issuer).getAmountOf(attest25pmt),
     AmountMath.make(brand, makeCopyBag([['address1', 25n]])),
   );
 
-  const liened3 = await E(creatorFacet).getLiened(
-    address1,
-    currentTime,
-    uBrand,
+  t.deepEqual(
+    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
+    AmountMath.add(stake50, stake25),
   );
-  t.deepEqual(liened3, AmountMath.add(amount50, amount25));
 
+  /** @param { Payment } att */
   const returnAttestation = async att => {
     const invitation = E(publicFacet).makeReturnAttInvitation();
     const attestationAmount = await E(issuer).getAmountOf(att);
@@ -138,58 +158,32 @@ test('attestation contract basic tests', async t => {
     return userSeat;
   };
 
-  const attBrand = await E(issuer).getBrand();
-  const [p1, p2] = await E(issuer).split(
-    returnable1,
-    AmountMath.make(attBrand, makeCopyBag([[address1, 20n]])),
+  // split the 1st attestation
+  const [attest20pmt, attestRestPmt] = await E(issuer).split(
+    attest50pmt,
+    AmountMath.make(brand, makeCopyBag([[address1, 20n]])),
   );
-  await returnAttestation(p1);
-  await returnAttestation(p2);
 
-  // Return returnable1 for 50 bld
-  // @@@ await returnAttestation(returnable1);
-
-  // Total liened amount is reduced
-  const liened4 = await E(creatorFacet).getLiened(
-    address1,
-    currentTime,
-    uBrand,
+  // return 1st part
+  await returnAttestation(attest20pmt);
+  t.deepEqual(
+    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
+    AmountMath.make(uBrand, 55n),
   );
-  t.deepEqual(liened4, amount25);
 
-  // Move the currentTime forward so the shortExpiration attestation
-  // expires (50 bld)
-  currentTime = 16n;
-  const liened5 = await E(creatorFacet).getLiened(
-    address1,
-    currentTime,
-    uBrand,
+  // return 2nd part
+  await returnAttestation(attestRestPmt);
+  t.deepEqual(
+    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
+    stake25,
   );
-  t.deepEqual(liened5, amount25); // the amount50 lien expired, leaving 25
 
-  // Move the currentTime forward so the longExpiration attestation
-  // expires. This should not change the total liened because there is
-  // an outstanding returnable attestation
-  currentTime = 101n;
-  const liened6 = await E(creatorFacet).getLiened(
-    address1,
-    currentTime,
-    uBrand,
-  );
-  t.deepEqual(liened6, amount25);
-
-  // Return the last returnable attestation for 25
-  await returnAttestation(returnable2);
+  // Return the original attestation for 25
+  await returnAttestation(attest25pmt);
 
   // Now the liened Amount should be empty
-  const liened7 = await E(creatorFacet).getLiened(
-    address1,
-    currentTime,
-    uBrand,
+  t.deepEqual(
+    await E(creatorFacet).getLiened(address1, currentTime, uBrand),
+    AmountMath.makeEmpty(uBrand),
   );
-  t.deepEqual(liened7, AmountMath.makeEmpty(uBrand));
 });
-
-// TODO: test with various unexpected or strange values from
-// E(stakeReporter).getAccountState(). Possibly better suited as a unit test
-// with `assertPrerequisites`
