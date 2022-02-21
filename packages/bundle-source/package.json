@@ -13,16 +13,16 @@
     "lint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@endo/lockdown": "^0.1.5",
-    "@endo/ses-ava": "^0.2.17",
+    "@endo/lockdown": "^0.1.7",
+    "@endo/ses-ava": "^0.2.19",
     "ava": "^3.12.1"
   },
   "dependencies": {
     "@babel/generator": "^7.14.2",
     "@babel/parser": "^7.14.2",
     "@babel/traverse": "^7.14.2",
-    "@endo/base64": "^0.2.17",
-    "@endo/compartment-mapper": "^0.6.5",
+    "@endo/base64": "^0.2.19",
+    "@endo/compartment-mapper": "^0.6.7",
     "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-node-resolve": "^13.0.0",
     "acorn": "^8.2.4",

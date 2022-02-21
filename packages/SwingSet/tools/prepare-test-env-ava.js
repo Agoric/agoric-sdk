@@ -8,6 +8,9 @@ import '@endo/init/pre-bundle-source.js';
 
 import './prepare-test-env.js';
 
+// eslint-disable-next-line import/no-extraneous-dependencies
+import '@endo/ses-ava/exported.js';
+
 // eslint thinks these are extraneous dependencies because this file
 // is in the tools/ directory rather than the test/ directory.
 // TODO How do we tell eslint that tools/ is dev-only? Either

@@ -1,5 +1,3 @@
-/* global HandledPromise */
-
 import {
   Remotable,
   passStyleOf,

@@ -98,8 +98,8 @@ test('test missing sourceMap', async function testImport(t) {
     new URL('bundle1.js', import.meta.url).pathname,
     'nestedEvaluate',
   );
-  delete b1.sourceMap;
-  const ns1 = await importBundle(b1, { endowments });
+  const { sourceMap: _, ...b1Lite } = b1;
+  const ns1 = await importBundle(b1Lite, { endowments });
   t.is(ns1.f1(1), 2, `missing sourceMap ns.f1 ok`);
 });
 
