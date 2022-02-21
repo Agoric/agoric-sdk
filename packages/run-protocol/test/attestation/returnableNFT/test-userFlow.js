@@ -7,7 +7,9 @@ import { E } from '@agoric/eventual-send';
 
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 
+import { makeCopyBag } from '@agoric/store';
 import { setupAttestation } from '../../../src/attestation/returnable/returnableNFT.js';
+import { makeMockLienBridge } from '../test-attestation.js';
 
 const makeDoReturnAttestation =
   (zoe, issuer, makeReturnAttInvitation) => async attestation => {
@@ -30,12 +32,10 @@ const makeTestAttestationAmount =
   (t, issuer, brand, address) => async (attestation, amountLiened) => {
     const attestationAmount = await E(issuer).getAmountOf(attestation);
 
-    t.deepEqual(attestationAmount.value, [
-      {
-        address,
-        amountLiened,
-      },
-    ]);
+    t.deepEqual(
+      attestationAmount.value,
+      makeCopyBag([[address, amountLiened.value]]),
+    );
     t.is(attestationAmount.brand, brand);
   };
 
@@ -58,7 +58,12 @@ test(`typical flow`, async t => {
     getLienAmount,
     getIssuer,
     getBrand,
-  } = await setupAttestation(attestationTokenName, empty, zcf);
+  } = await setupAttestation(
+    attestationTokenName,
+    empty,
+    zcf,
+    makeMockLienBridge(externalBrand, t),
+  );
 
   const attestationIssuer = getIssuer();
   const attestationBrand = getBrand();
