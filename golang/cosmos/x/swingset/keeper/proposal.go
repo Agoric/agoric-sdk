@@ -1,10 +1,7 @@
 package keeper
 
 import (
-	"encoding/json"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
@@ -25,15 +22,5 @@ func (k Keeper) CoreEvalProposal(ctx sdk.Context, p *types.CoreEvalProposal) err
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	bz, err := json.Marshal(action)
-	if err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
-
-	_, err = k.CallToController(ctx, string(bz))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return k.PushAction(ctx, action)
 }

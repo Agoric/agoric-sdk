@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/tendermint/tendermint/libs/log"
@@ -28,7 +29,7 @@ type Keeper struct {
 	feeCollectorName string
 
 	// CallToController dispatches a message to the controlling process
-	CallToController func(ctx sdk.Context, str string) (string, error)
+	callToController func(ctx sdk.Context, str string) (string, error)
 }
 
 var _ types.SwingSetKeeper = &Keeper{}
@@ -68,8 +69,47 @@ func NewKeeper(
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
 		feeCollectorName: feeCollectorName,
-		CallToController: callToController,
+		callToController: callToController,
 	}
+}
+
+// PushAction appends an action to the controller's action queue.  This queue is
+// kept in the kvstore so that changes to it are properly reverted if the
+// kvstore as rolled back.  By the time the block manager runs, it can commit
+// its SwingSet transactions without fear of side-effecting the world with
+// intermediate transaction state.
+func (k Keeper) PushAction(ctx sdk.Context, obj interface{}) error {
+	bz, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	tailStr := k.GetStorage(ctx, "actionQueue.tail")
+	var tail uint64
+	if len(tailStr) > 0 {
+		tail, err = strconv.ParseUint(tailStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	k.SetStorage(ctx, fmt.Sprintf("actionQueue.%d", tail), string(bz))
+	bz, err = json.Marshal(tail + 1)
+	if err != nil {
+		return err
+	}
+	k.SetStorage(ctx, "actionQueue.tail", string(bz))
+	return nil
+}
+
+// BlockingSend sends a message to the controller and blocks the Golang process
+// until the response.  It is orthogonal to PushAction, and should only be used
+// by SwingSet to perform block lifecycle events (BEGIN_BLOCK, END_BLOCK,
+// COMMIT_BLOCK).
+func (k Keeper) BlockingSend(ctx sdk.Context, obj interface{}) (string, error) {
+	bz, err := json.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
+	return k.callToController(ctx, string(bz))
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {

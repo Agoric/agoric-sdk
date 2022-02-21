@@ -27,8 +27,8 @@ type Keeper struct {
 	scopedKeeper  capabilitykeeper.ScopedKeeper
 	bankKeeper    bankkeeper.Keeper
 
-	// CallToController dispatches a message to the controlling process
-	CallToController func(ctx sdk.Context, str string) (string, error)
+	// PushAction enqueues an action for the controlling process
+	PushAction func(ctx sdk.Context, action interface{}) error
 }
 
 // NewKeeper creates a new dIBC Keeper instance
@@ -37,17 +37,17 @@ func NewKeeper(
 	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
 	bankKeeper bankkeeper.Keeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
-	callToController func(ctx sdk.Context, str string) (string, error),
+	pushAction func(ctx sdk.Context, action interface{}) error,
 ) Keeper {
 
 	return Keeper{
-		storeKey:         key,
-		cdc:              cdc,
-		bankKeeper:       bankKeeper,
-		channelKeeper:    channelKeeper,
-		portKeeper:       portKeeper,
-		scopedKeeper:     scopedKeeper,
-		CallToController: callToController,
+		storeKey:      key,
+		cdc:           cdc,
+		bankKeeper:    bankKeeper,
+		channelKeeper: channelKeeper,
+		portKeeper:    portKeeper,
+		scopedKeeper:  scopedKeeper,
+		PushAction:    pushAction,
 	}
 }
 

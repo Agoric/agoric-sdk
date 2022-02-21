@@ -19,8 +19,8 @@ type Keeper struct {
 
 	bankKeeper       types.BankKeeper
 	feeCollectorName string
-	// CallToController dispatches a message to the controlling process
-	CallToController func(ctx sdk.Context, str string) (string, error)
+	// PushAction enqueues a message for the controlling process
+	PushAction func(ctx sdk.Context, action interface{}) error
 }
 
 // NewKeeper creates a new vbank Keeper instance
@@ -28,7 +28,7 @@ func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
 	feeCollectorName string,
-	callToController func(ctx sdk.Context, str string) (string, error),
+	pushAction func(ctx sdk.Context, action interface{}) error,
 ) Keeper {
 
 	// set KeyTable if it has not already been set
@@ -42,7 +42,7 @@ func NewKeeper(
 		paramSpace:       paramSpace,
 		bankKeeper:       bankKeeper,
 		feeCollectorName: feeCollectorName,
-		CallToController: callToController,
+		PushAction:       pushAction,
 	}
 }
 

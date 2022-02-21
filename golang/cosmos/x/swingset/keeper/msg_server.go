@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -31,7 +30,6 @@ type deliverInboundAction struct {
 	StoragePort int             `json:"storagePort"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
-	Params      types.Params    `json:"params"`
 }
 
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
@@ -52,15 +50,9 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 		StoragePort: vm.GetPort("storage"),
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
-		Params:      keeper.GetParams(ctx),
-	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	err := keeper.PushAction(ctx, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
@@ -87,12 +79,8 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	err := keeper.PushAction(ctx, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
@@ -119,13 +107,7 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
-
-	_, err = keeper.CallToController(ctx, string(b))
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	err := keeper.PushAction(ctx, action)
 	if err != nil {
 		return nil, err
 	}
@@ -157,20 +139,15 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		BlockHeight:  ctx.BlockHeight(),
 		BlockTime:    ctx.BlockTime().Unix(),
 	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
 
 	// Create the account, if it doesn't already exist.
 	egress := types.NewEgress(msg.Nickname, msg.Address, msg.PowerFlags)
-	err = keeper.SetEgress(ctx, egress)
+	err := keeper.SetEgress(ctx, egress)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	err = keeper.PushAction(ctx, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err

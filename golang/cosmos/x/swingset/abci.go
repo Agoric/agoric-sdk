@@ -1,12 +1,10 @@
 package swingset
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -23,11 +21,10 @@ type beginBlockAction struct {
 }
 
 type endBlockAction struct {
-	Type        string       `json:"type"`
-	StoragePort int          `json:"storagePort"`
-	BlockHeight int64        `json:"blockHeight"`
-	BlockTime   int64        `json:"blockTime"`
-	Params      types.Params `json:"params"`
+	Type        string `json:"type"`
+	StoragePort int    `json:"storagePort"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
 }
 
 type commitBlockAction struct {
@@ -47,12 +44,10 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		ChainID:     ctx.ChainID(),
 		Params:      keeper.GetParams(ctx),
 	}
-	b, err := json.Marshal(action)
-	if err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+	_, err := keeper.BlockingSend(ctx, action)
+	if err == nil {
+		err = keeper.PushAction(ctx, action)
 	}
-
-	_, err = keeper.CallToController(ctx, string(b))
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	return err
@@ -68,14 +63,12 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 		StoragePort: vm.GetPort("storage"),
-		Params:      keeper.GetParams(ctx),
-	}
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	err := keeper.PushAction(ctx, action)
+	if err == nil {
+		_, err = keeper.BlockingSend(ctx, action)
+	}
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
@@ -99,14 +92,7 @@ func CommitBlock(keeper Keeper) error {
 		BlockHeight: endBlockHeight,
 		BlockTime:   endBlockTime,
 	}
-	vm.SetCommittedHeight(endBlockHeight)
-
-	b, err := json.Marshal(action)
-	if err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
-
-	_, err = keeper.CallToController(sdk.Context{}, string(b))
+	_, err := keeper.BlockingSend(sdk.Context{}, action)
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {

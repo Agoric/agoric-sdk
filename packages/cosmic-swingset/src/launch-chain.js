@@ -136,6 +136,7 @@ function neverStop() {
 }
 
 export async function launch({
+  actionQueue,
   kernelStateDBDir,
   mailboxStorage,
   setActivityhash,
@@ -257,10 +258,14 @@ export async function launch({
     await mailboxStorage.commit();
   }
 
-  async function saveOutsideState(savedHeight, savedActions, savedChainSends) {
+  async function saveOutsideState(
+    savedHeight,
+    savedBlockTime,
+    savedChainSends,
+  ) {
     kvStore.set(
       SWING_STORE_META_KEY,
-      JSON.stringify([savedHeight, savedActions, savedChainSends]),
+      JSON.stringify([savedHeight, savedBlockTime, savedChainSends]),
     );
     await commit();
   }
@@ -302,11 +307,12 @@ export async function launch({
     );
   }
 
-  const [savedHeight, savedActions, savedChainSends] = JSON.parse(
-    kvStore.get(SWING_STORE_META_KEY) || '[0, [], []]',
+  const [savedHeight, savedBlockTime, savedChainSends] = JSON.parse(
+    kvStore.get(SWING_STORE_META_KEY) || '[0, 0, []]',
   );
 
   return {
+    actionQueue,
     deliverInbound,
     doBridgeInbound,
     // bridgeOutbound,
@@ -316,7 +322,7 @@ export async function launch({
     saveChainState,
     saveOutsideState,
     savedHeight,
-    savedActions,
+    savedBlockTime,
     savedChainSends,
   };
 }

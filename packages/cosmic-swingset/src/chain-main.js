@@ -29,15 +29,18 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   let changedKeys = new Set();
   const storage = {
     has(key) {
-      // It's more efficient just to get the value.
-      const val = storage.get(key);
-      return !!val;
+      // It's more efficient just to get the value (null if not exists)
+      return !!storage.get(key);
     },
     set(key, obj) {
       if (cache.get(key) !== obj) {
         cache.set(key, obj);
         changedKeys.add(key);
       }
+    },
+    delete(key) {
+      cache.delete(key);
+      changedKeys.add(key);
     },
     get(key) {
       if (cache.has(key)) {
@@ -58,7 +61,7 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
     commit() {
       for (const key of changedKeys.keys()) {
         const obj = cache.get(key);
-        const value = stringify(exp(obj));
+        const value = obj === undefined ? '' : stringify(exp(obj));
         call(
           stringify({
             method: 'set',
@@ -77,6 +80,41 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
     },
   };
   return storage;
+};
+
+const makeChainQueue = (call, prefix = '') => {
+  const storage = makeChainStorage(call, prefix);
+  const queue = {
+    /** @type {Iterable<unknown>} */
+    consumeAll: () => ({
+      [Symbol.iterator]: () => {
+        let head = storage.get('head') || 0;
+        const tail = storage.get('tail') || 0;
+        return {
+          next: () => {
+            if (head < tail) {
+              const value = storage.get(head);
+              storage.delete(head);
+              head += 1;
+              return { value, done: false };
+            }
+            storage.delete('head');
+            storage.delete('tail');
+            storage.commit();
+            return { done: true };
+          },
+          return: () => {
+            storage.set('head', head);
+            storage.commit();
+          },
+          throw: () => {
+            storage.abort();
+          },
+        };
+      },
+    }),
+  };
+  return queue;
 };
 
 export default async function main(progname, args, { env, homedir, agcc }) {
@@ -210,6 +248,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       },
       exportMailbox,
     );
+    const actionQueue = makeChainQueue(
+      msg => chainSend(portNums.storage, msg),
+      'actionQueue.',
+    );
     function setActivityhash(activityhash) {
       const msg = stringify({
         method: 'set',
@@ -262,6 +304,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     // consensusMode.
     const consensusMode = true;
     const s = await launch({
+      actionQueue,
       kernelStateDBDir: stateDBDir,
       mailboxStorage,
       setActivityhash,
@@ -277,7 +320,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return s;
   }
 
-  let blockManager;
+  let blockingSend;
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
     if (action.vibcPort) {
@@ -298,11 +341,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.lien = action.lienPort;
     }
 
-    if (!blockManager) {
+    if (!blockingSend) {
       const { savedChainSends: scs, ...fns } =
         await launchAndInitializeSwingSet(action);
       savedChainSends = scs;
-      blockManager = makeBlockManager({
+      blockingSend = makeBlockManager({
         ...fns,
         flushChainSends,
         verboseBlocks: true,
@@ -314,6 +357,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       return true;
     }
 
-    return blockManager(action, savedChainSends);
+    return blockingSend(action, savedChainSends);
   }
 }

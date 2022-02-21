@@ -1,7 +1,6 @@
 package gaia
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	stdlog "log"
@@ -411,10 +410,6 @@ func NewAgoricApp(
 
 	// This function is tricky to get right, so we build it ourselves.
 	callToController := func(ctx sdk.Context, str string) (string, error) {
-		if vm.IsSimulation(ctx) {
-			// Just return empty, since the message is being simulated.
-			return "", nil
-		}
 		// We use SwingSet-level metering to charge the user for the call.
 		app.MustInitController(ctx)
 		defer vm.SetControllerContext(ctx)()
@@ -435,7 +430,7 @@ func NewAgoricApp(
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.BankKeeper,
 		scopedVibcKeeper,
-		callToController,
+		app.SwingSetKeeper.PushAction,
 	)
 
 	vibcModule := vibc.NewAppModule(app.VibcKeeper)
@@ -444,13 +439,17 @@ func NewAgoricApp(
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
 		app.BankKeeper, authtypes.FeeCollectorName,
-		callToController,
+		app.SwingSetKeeper.PushAction,
 	)
 	vbankModule := vbank.NewAppModule(app.VbankKeeper)
 	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
 
 	// Lien keeper, and circular reference back to wrappedAccountKeeper
-	app.LienKeeper = lien.NewKeeper(keys[lien.StoreKey], appCodec, wrappedAccountKeeper, app.BankKeeper, app.StakingKeeper, callToController)
+	app.LienKeeper = lien.NewKeeper(
+		appCodec, keys[lien.StoreKey],
+		wrappedAccountKeeper, app.BankKeeper, app.StakingKeeper,
+		app.SwingSetKeeper.PushAction,
+	)
 	wrappedAccountKeeper.SetWrapper(app.LienKeeper.GetAccountWrapper())
 	lienModule := lien.NewAppModule(app.LienKeeper)
 	app.lienPort = vm.RegisterPortHandler("lien", lien.NewPortHandler(app.LienKeeper))
@@ -705,10 +704,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		VbankPort:   app.vbankPort,
 		LienPort:    app.lienPort,
 	}
-	bz, err := json.Marshal(action)
-	if err == nil {
-		_, err = app.SwingSetKeeper.CallToController(ctx, string(bz))
-	}
+	_, err := app.SwingSetKeeper.BlockingSend(ctx, action)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
 		os.Exit(1)

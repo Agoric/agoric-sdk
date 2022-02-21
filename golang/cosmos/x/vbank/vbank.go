@@ -69,10 +69,10 @@ type vbankBalanceUpdate struct {
 	Updated vbankManyBalanceUpdates `json:"updated"`
 }
 
-func marshalBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) ([]byte, error) {
+func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) interface{} {
 	nentries := len(addressToBalance)
 	if nentries == 0 {
-		return nil, nil
+		return nil
 	}
 
 	nonce := keeper.GetNextSequence(ctx)
@@ -97,7 +97,14 @@ func marshalBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[s
 
 	// Ensure we have a deterministic order of updates.
 	sort.Sort(event.Updated)
-	return json.Marshal(&event)
+	return event
+}
+
+func marshal(event interface{}) ([]byte, error) {
+	if event == nil {
+		return nil, nil
+	}
+	return json.Marshal(event)
 }
 
 // rewardRate calculates the rate for dispensing the pool of coins over
@@ -160,7 +167,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Sender] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(ctx.Context, keeper, addressToBalances)
+		bz, err := marshal(getBalanceUpdate(ctx.Context, keeper, addressToBalances))
 		if err != nil {
 			return "", err
 		}
@@ -185,7 +192,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Recipient] = sdk.NewCoins(keeper.GetBalance(ctx.Context, addr, msg.Denom))
-		bz, err := marshalBalanceUpdate(ctx.Context, keeper, addressToBalances)
+		bz, err := marshal(getBalanceUpdate(ctx.Context, keeper, addressToBalances))
 		if err != nil {
 			return "", err
 		}
@@ -227,9 +234,6 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) CallToController(ctx sdk.Context, send string) (string, error) {
-	// fmt.Println("vbank.go upcall", send)
-	reply, err := am.keeper.CallToController(ctx, send)
-	// fmt.Println("vbank.go upcall reply", reply, err)
-	return reply, err
+func (am AppModule) PushAction(ctx sdk.Context, action interface{}) error {
+	return am.keeper.PushAction(ctx, action)
 }

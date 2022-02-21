@@ -155,7 +155,7 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			encoded, err := marshalBalanceUpdate(ctx, keeper, tt.addressToBalance)
+			encoded, err := marshal(getBalanceUpdate(ctx, keeper, tt.addressToBalance))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("marshalBalanceUpdate() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -229,8 +229,8 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaler
-	callToController := func(ctx sdk.Context, str string) (string, error) {
-		return "", nil
+	pushAction := func(ctx sdk.Context, action interface{}) error {
+		return nil
 	}
 
 	paramsTStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
@@ -238,7 +238,7 @@ func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
 	pk := paramskeeper.NewKeeper(cdc, encodingConfig.Amino, paramsStoreKey, paramsTStoreKey)
 
 	subspace := pk.Subspace(types.ModuleName)
-	keeper := NewKeeper(cdc, vbankStoreKey, subspace, bank, "feeCollectorName", callToController)
+	keeper := NewKeeper(cdc, vbankStoreKey, subspace, bank, "feeCollectorName", pushAction)
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
@@ -472,9 +472,13 @@ func Test_EndBlock_Events(t *testing.T) {
 	}}
 	keeper, ctx := makeTestKit(bank)
 	msgsSent := []string{}
-	keeper.CallToController = func(ctx sdk.Context, str string) (string, error) {
-		msgsSent = append(msgsSent, str)
-		return "", nil
+	keeper.PushAction = func(ctx sdk.Context, action interface{}) error {
+		bz, err := json.Marshal(action)
+		if err != nil {
+			return err
+		}
+		msgsSent = append(msgsSent, string(bz))
+		return nil
 	}
 	am := NewAppModule(keeper)
 
@@ -546,9 +550,13 @@ func Test_EndBlock_Rewards(t *testing.T) {
 	}
 	keeper, ctx := makeTestKit(bank)
 	msgsSent := []string{}
-	keeper.CallToController = func(ctx sdk.Context, str string) (string, error) {
-		msgsSent = append(msgsSent, str)
-		return "", nil
+	keeper.PushAction = func(ctx sdk.Context, action interface{}) error {
+		bz, err := json.Marshal(action)
+		if err != nil {
+			return err
+		}
+		msgsSent = append(msgsSent, string(bz))
+		return nil
 	}
 	am := NewAppModule(keeper)
 

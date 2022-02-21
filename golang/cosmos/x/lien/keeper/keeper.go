@@ -33,20 +33,20 @@ type keeperImpl struct {
 	bankKeeper    types.BankKeeper
 	stakingKeeper types.StakingKeeper
 
-	callToController func(ctx sdk.Context, str string) (string, error)
+	pushAction func(ctx sdk.Context, action interface{}) error
 }
 
 // NewKeeper returns a new Keeper.
 // The ak must be the same accout keeper that the bk and sk use.
-func NewKeeper(key sdk.StoreKey, cdc codec.Codec, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
-	callToController func(ctx sdk.Context, str string) (string, error)) Keeper {
+func NewKeeper(cdc codec.Codec, key sdk.StoreKey, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
+	pushAction func(ctx sdk.Context, action interface{}) error) Keeper {
 	return keeperImpl{
-		key:              key,
-		cdc:              cdc,
-		accountKeeper:    ak,
-		bankKeeper:       bk,
-		stakingKeeper:    sk,
-		callToController: callToController,
+		key:           key,
+		cdc:           cdc,
+		accountKeeper: ak,
+		bankKeeper:    bk,
+		stakingKeeper: sk,
+		pushAction:    pushAction,
 	}
 }
 
