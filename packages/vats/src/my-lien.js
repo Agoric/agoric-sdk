@@ -21,18 +21,6 @@ const XLien = {
  */
 
 /**
- * @typedef {Object} StakingAuthority
- * @property {(address: string, wantedBrand: Brand) => Promise<{
- *   bonded: Amount,
- *   liened: Amount,
- *   locked: Amount,
- *   total: Amount,
- *   unbonding: Amount,
- *   currentTime: bigint,
- * }>} getAccountState
- */
-
-/**
  * @param {ERef<import('./bridge').BridgeManager>} bridgeManager
  * @param {Brand} stake
  * @returns {StakingAuthority}
