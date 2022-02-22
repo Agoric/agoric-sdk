@@ -123,6 +123,9 @@ function computronCounter({
       totalBeans += failedComputrons * xsnapComputron;
       return totalBeans < blockComputeLimit;
     },
+    emptyCrank() {
+      return true;
+    },
   });
   return policy;
 }
@@ -132,6 +135,7 @@ function neverStop() {
     vatCreated: () => true,
     crankComplete: () => true,
     crankFailed: () => true,
+    emptyCrank: () => true,
   });
 }
 

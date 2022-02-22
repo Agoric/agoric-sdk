@@ -29,6 +29,9 @@ function countingPolicy() {
     crankFailed() {
       return true;
     },
+    emptyCrank() {
+      return true;
+    },
 
     counted() {
       return computrons;

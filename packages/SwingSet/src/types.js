@@ -297,6 +297,7 @@
  * @typedef { { vatCreated: (details: {}) => PolicyOutput,
  *              crankComplete: (details: { computrons?: bigint }) => PolicyOutput,
  *              crankFailed: (details: {}) => PolicyOutput,
+ *              emptyCrank: () => PolicyOutput,
  *             } } RunPolicy
  */
 

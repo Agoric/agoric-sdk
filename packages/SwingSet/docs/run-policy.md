@@ -33,12 +33,15 @@ The kernel will invoke the following methods on the policy object (so all must e
 * `policy.vatCreated()`
 * `policy.crankComplete({ computrons })`
 * `policy.crankFailed()`
+* `policy.emptyCrank()`
 
 All methods should return `true` if the kernel should keep running, or `false` if it should stop.
 
 The `computrons` argument may be `undefined` (e.g. if the crank was delivered to a non-`xs worker`-based vat, such as the comms vat). The policy should probably treat this as equivalent to some "typical" number of computrons.
 
 `crankFailed` indicates the vat suffered an error during crank delivery, such as a metering fault, memory allocation fault, or fatal syscall. We do not currently have a way to measure the computron usage of failed cranks (many of the error cases are signaled by the worker process exiting with a distinctive status code, which does not give it an opportunity to report back detailed metering data). The run policy should assume the worst.
+
+`emptyCrank` indicates the kernel processed a queued messages which didn't result in a delivery.
 
 More arguments may be added in the future, such as:
 * `vatCreated:` the size of the source bundle
@@ -52,7 +55,7 @@ The run policy should be provided as the first argument to `controller.run()`. I
 
 ## Typical Run Policies
 
-A basic policy might simply limit the block to 100 cranks and two vat creations:
+A basic policy might simply limit the block to 100 cranks with deliveries and two vat creations:
 
 ```js
 function make100CrankPolicy() {
@@ -70,6 +73,9 @@ function make100CrankPolicy() {
     crankFailed() {
       cranks += 1;
       return (cranks < 100);
+    },
+    emptyCrank() {
+      return true;
     },
   });
 }
@@ -109,6 +115,9 @@ function makeComputronCounterPolicy(limit) {
       total += 1000000; // who knows, 1M is as good as anything
       return (total < limit);
     },
+    emptyCrank() {
+      return true;
+    }
   });
 }
 ```
@@ -126,6 +135,7 @@ function makeWallclockPolicy(seconds) {
     vatCreated: () => Date.now() < timeout,
     crankComplete: () => Date.now() < timeout,
     crankFailed: () => Date.now() < timeout,
+    emptyCrank: () => Date.now() < timeout,
   });
 }
 ```

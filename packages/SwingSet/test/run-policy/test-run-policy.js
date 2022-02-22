@@ -67,15 +67,15 @@ async function testCranks(t, mode) {
   let more;
 
   if (mode === 'messages' || mode === 'resolutions') {
-    more = await c.run(crankCounter(7, 0));
+    more = await c.run(crankCounter(7, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
     t.is(elapsedCranks(), 7);
 
-    more = await c.run(crankCounter(1, 0));
+    more = await c.run(crankCounter(1, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
     t.is(elapsedCranks(), 1);
 
-    more = await c.run(crankCounter(8, 0));
+    more = await c.run(crankCounter(8, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
     t.is(elapsedCranks(), 8);
   } else if (mode === 'computrons') {

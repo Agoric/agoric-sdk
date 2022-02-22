@@ -1192,6 +1192,7 @@ export default function buildKernel(
           policyOutput = policy.crankFailed(policyInput[1]);
           break;
         case 'none':
+          policyOutput = policy.emptyCrank();
           break;
         default:
           assert.fail(`unknown policyInput type in ${policyInput}`);
