@@ -30,12 +30,29 @@ const trace = makeTracer('Vault');
 /**
  * Constants for vault phase.
  *
+ * ACTIVE       - vault is in use and can be changed
+ * LIQUIDATING  - vault is being liquidated by the vault manager, and cannot be changed by the user
+ * TRANSFER     - vault is released from the manager and able to be transferred
+ * CLOSED       - vault was closed by the user and all assets have been paid out
+ * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
+ *
+ * These are the valid state transitions:
+ * Active -> Liquidating
+ * Active -> Transferrable
+ * Active -> Closed
+ * Liquidating -> Liquidated
+ * Transferrable -> Active
+ * Transferrable -> Liquidating
+ *
+ * (Liquidated and Closed cannot be changed)
+ *
  * @typedef {VaultPhase[keyof typeof VaultPhase]} VAULT_PHASE
  */
 export const VaultPhase = /** @type {const} */ ({
   ACTIVE: 'active',
   LIQUIDATING: 'liquidating',
   CLOSED: 'closed',
+  LIQUIDATED: 'liquidated',
   TRANSFER: 'transfer',
 });
 
@@ -246,9 +263,8 @@ export const makeInnerVault = (
       debtSnapshot,
       locked: getCollateralAmount(),
       debt: getDebtAmount(),
-      // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
       // XXX uses closure value instead of argument
-      liquidated: phase === VaultPhase.CLOSED,
+      liquidated: phase === VaultPhase.LIQUIDATED,
       vaultState: newPhase,
     });
   };
@@ -268,7 +284,9 @@ export const makeInnerVault = (
         outerUpdater.updateState(uiState);
         break;
       case VaultPhase.CLOSED:
+      case VaultPhase.LIQUIDATED:
         outerUpdater.finish(uiState);
+        outerUpdater = null;
         break;
       default:
         throw Error(`unreachable vaultState: ${phase}`);
@@ -292,7 +310,7 @@ export const makeInnerVault = (
   const liquidated = newDebt => {
     updateDebtSnapshot(newDebt);
 
-    phase = VaultPhase.CLOSED;
+    phase = VaultPhase.LIQUIDATED;
     updateUiState();
   };
 
