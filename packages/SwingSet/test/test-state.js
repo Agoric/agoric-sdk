@@ -487,17 +487,17 @@ test('kernelKeeper promises', async t => {
   k.addSubscriberToPromise(p1, 'v3');
   t.deepEqual(k.getKernelPromise(p1).subscribers, ['v3', 'v5']);
 
-  const expectedRunqueue = [];
+  const expectedAcceptanceQueue = [];
   const m1 = { method: 'm1', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m1);
   t.deepEqual(k.getKernelPromise(p1).refCount, 1);
-  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m1 });
+  expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m1 });
 
   const m2 = { method: 'm2', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m2);
   t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
   t.deepEqual(k.getKernelPromise(p1).refCount, 2);
-  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m2 });
+  expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
   k.commitCrank();
   k2 = duplicateKeeper(getState);
@@ -528,8 +528,8 @@ test('kernelKeeper promises', async t => {
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
     ['gcActions', '[]'],
-    ['runQueue', JSON.stringify(expectedRunqueue)],
-    ['acceptanceQueue', '[]'],
+    ['runQueue', '[]'],
+    ['acceptanceQueue', JSON.stringify(expectedAcceptanceQueue)],
     ['reapQueue', '[]'],
     ['kd.nextID', '30'],
     ['ko.nextID', '21'],

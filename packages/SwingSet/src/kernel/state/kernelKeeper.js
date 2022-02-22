@@ -648,13 +648,13 @@ export default function makeKernelKeeper(
     // up the resolution *now* and set the correct target early. Doing that
     // might make it easier to remove the Promise Table entry earlier.
     const p = getKernelPromise(kernelSlot);
-    const runQueue = JSON.parse(getRequired('runQueue'));
+    const acceptanceQueue = JSON.parse(getRequired('acceptanceQueue'));
     for (const msg of p.queue) {
       const entry = harden({ type: 'send', target: kernelSlot, msg });
-      runQueue.push(entry);
+      acceptanceQueue.push(entry);
     }
-    kvStore.set('runQueue', JSON.stringify(runQueue));
-    incStat('runQueueLength', p.queue.length);
+    kvStore.set('acceptanceQueue', JSON.stringify(acceptanceQueue));
+    incStat('acceptanceQueueLength', p.queue.length);
 
     deleteKernelPromiseState(kernelSlot);
     decStat('kpUnresolved');

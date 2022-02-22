@@ -67,7 +67,8 @@ async function simpleCall(t) {
 
   // vat1:o+0 will map to ko21
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
-  t.deepEqual(controller.dump().runQueue, [
+  t.deepEqual(controller.dump().runQueue, []);
+  t.deepEqual(controller.dump().acceptanceQueue, [
     { type: 'startVat', vatID: 'v2' },
     { type: 'startVat', vatID: 'v4' },
     { type: 'startVat', vatID: 'v5' },
@@ -229,7 +230,8 @@ test.serial('bootstrap export', async t => {
   ];
   checkKT(t, c, kt);
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     { type: 'startVat', vatID: 'v1' },
     { type: 'startVat', vatID: 'v2' },
     { type: 'startVat', vatID: 'v3' },

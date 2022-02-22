@@ -150,6 +150,7 @@ export default function buildKernel(
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
+  // message flow: vat -> syscall -> acceptanceQueue -> runQueue -> delivery -> vat
   // runQueue and acceptanceQueue entries are {type, more..}. 'more' depends on type:
   // * send: target, msg
   // * notify: vatID, kpid
@@ -731,6 +732,13 @@ export default function buildKernel(
 
   const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
 
+  function processAcceptanceQueue() {
+    while (!kernelKeeper.isAcceptanceQueueEmpty()) {
+      const acceptanceMessage = kernelKeeper.getNextAcceptanceQueueMsg();
+      kernelKeeper.addToRunQueue(acceptanceMessage);
+    }
+  }
+
   let processQueueRunning;
   async function processQueueMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
@@ -775,6 +783,7 @@ export default function buildKernel(
       } else {
         assert.fail(X`unable to process message.type ${message.type}`);
       }
+      processAcceptanceQueue();
       let didAbort = false;
       if (terminationTrigger) {
         // the vat is doomed, either voluntarily or from meter/syscall fault
@@ -802,6 +811,7 @@ export default function buildKernel(
         // state changes reflecting the termination must also survive, so
         // these happen after a possible abortCrank()
         terminateVat(vatID, shouldReject, info);
+        processAcceptanceQueue();
         kernelSlog.terminateVat(vatID, shouldReject, info);
         kdebug(`vat terminated: ${JSON.stringify(info)}`);
       }
@@ -1017,7 +1027,7 @@ export default function buildKernel(
         const source = { bundle };
         const vatID = kernelKeeper.allocateUnusedVatID();
         const event = { type: 'create-vat', vatID, source, dynamicOptions };
-        kernelKeeper.addToRunQueue(harden(event));
+        kernelKeeper.addToAcceptanceQueue(harden(event));
         // the device gets the new vatID immediately, and will be notified
         // later when it is created and a root object is available
         return vatID;
@@ -1027,7 +1037,7 @@ export default function buildKernel(
         const source = { bundleID };
         const vatID = kernelKeeper.allocateUnusedVatID();
         const event = { type: 'create-vat', vatID, source, dynamicOptions };
-        kernelKeeper.addToRunQueue(harden(event));
+        kernelKeeper.addToAcceptanceQueue(harden(event));
         // the device gets the new vatID immediately, and will be notified
         // later when it is created and a root object is available
         return vatID;
@@ -1126,6 +1136,7 @@ export default function buildKernel(
     if (!started) {
       throw new Error('must do kernel.start() before step()');
     }
+    processAcceptanceQueue();
     // process a single message
     const message = getNextMessage();
     if (message) {
@@ -1156,6 +1167,7 @@ export default function buildKernel(
     if (!started) {
       throw new Error('must do kernel.start() before run()');
     }
+    processAcceptanceQueue();
     let count = 0;
     for (;;) {
       const message = getNextMessage();

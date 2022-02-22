@@ -78,7 +78,7 @@ test('simple call', async t => {
 
   const o1 = kernel.addExport(vat1, 'o+1');
   kernel.queueToKref(o1, 'foo', capdata('args'));
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: 'ko20',
@@ -182,7 +182,7 @@ test('map inbound', async t => {
   const koFor5 = kernel.addExport(vat1, 'o+5');
   const koFor6 = kernel.addExport(vat2, 'o+6');
   kernel.queueToKref(o1, 'foo', capdata('args', [koFor5, koFor6]));
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: o1,
@@ -291,7 +291,7 @@ test('outbound call', async t => {
   const o1 = kernel.addExport(vat1, 'o+1');
   kernel.queueToKref(o1, 'foo', capdata('args'));
   t.deepEqual(log, []);
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: t1,
@@ -621,7 +621,7 @@ test('transfer promise', async t => {
 
   // sending a promise should arrive as a promise
   syscallA.send(B, 'foo1', capdata('args', [pr1]));
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: bob,
@@ -769,7 +769,7 @@ test('promise resolveToData', async t => {
   syscallB.resolve([[pForB, false, capdata('"args"', [aliceForA])]]);
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'notify',
       vatID: vatA,
@@ -843,7 +843,7 @@ test('promise resolveToPresence', async t => {
 
   syscallB.resolve([[pForB, false, capargs(slot0arg, [bobForB])]]);
   t.deepEqual(log, []); // no other dispatch calls
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'notify',
       vatID: vatA,
@@ -861,6 +861,7 @@ test('promise resolveToPresence', async t => {
   ]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, []);
 });
 
 test('promise reject', async t => {
@@ -914,7 +915,7 @@ test('promise reject', async t => {
   syscallB.resolve([[pForB, true, capdata('"args"', [aliceForA])]]);
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'notify',
       vatID: vatA,
@@ -930,6 +931,7 @@ test('promise reject', async t => {
   ]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, []);
 });
 
 test('transcript', async t => {

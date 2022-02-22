@@ -20,7 +20,7 @@ export function makeKernelQueueHandler(tools) {
   function notify(vatID, kpid) {
     const m = harden({ type: 'notify', vatID, kpid });
     kernelKeeper.incrementRefCount(kpid, `enq|notify`);
-    kernelKeeper.addToRunQueue(m);
+    kernelKeeper.addToAcceptanceQueue(m);
   }
 
   function doSubscribe(vatID, kpid) {
@@ -78,7 +78,7 @@ export function makeKernelQueueHandler(tools) {
       kernelKeeper.incrementRefCount(argSlot, `enq|msg|s${idx}`);
       idx += 1;
     }
-    kernelKeeper.addToRunQueue(m);
+    kernelKeeper.addToAcceptanceQueue(m);
   }
 
   /**
