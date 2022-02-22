@@ -275,7 +275,7 @@ test.serial('bootstrap export', async t => {
   }
 
   t.deepEqual(c.dump().log, []);
-  for (let i = 0; i < 7; i += 1) {
+  for (let i = 0; i < 6; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await stepGC(); // vat starts
   }
@@ -309,6 +309,7 @@ test.serial('bootstrap export', async t => {
     },
   ]);
 
+  await stepGC(); // dropExports
   await stepGC(); // message foo
   const barP = 'kp42';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()', 'left.foo 1']);
