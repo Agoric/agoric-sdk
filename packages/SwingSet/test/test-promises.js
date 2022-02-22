@@ -18,8 +18,8 @@ test('flush', async t => {
     new URL('basedir-promises', import.meta.url).pathname,
   );
   const c = await buildVatController(config, ['flush'], t.context.data);
-  // all promises should settle before c.step() fires
-  await c.step();
+  // all promises should settle before c.run() fires
+  await c.run();
   t.deepEqual(c.dump().log, ['then1', 'then2']);
 });
 

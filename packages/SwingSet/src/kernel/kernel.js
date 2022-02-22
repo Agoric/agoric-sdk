@@ -237,30 +237,31 @@ export default function buildKernel(
    */
   function terminateVat(vatID, shouldReject, info) {
     insistCapData(info);
+    // guard against somebody telling vatAdmin to kill a vat twice
     if (kernelKeeper.vatIsAlive(vatID)) {
-      const isDynamic = kernelKeeper.getDynamicVats().includes(vatID);
       const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
       for (const kpid of promisesToReject) {
         resolveToError(kpid, VAT_TERMINATION_ERROR, vatID);
       }
-      if (isDynamic) {
-        assert(
-          vatAdminRootKref,
-          `initializeKernel did not set vatAdminRootKref`,
-        );
-        notifyTermination(
-          vatID,
-          vatAdminRootKref,
-          shouldReject,
-          info,
-          queueToKref,
-        );
-      }
-      // else... static... maybe panic???
+      // TODO: if a static vat terminates, panic the kernel?
 
       // ISSUE: terminate stuff in its own crank like creation?
       // eslint-disable-next-line no-use-before-define
       vatWarehouse.vatWasTerminated(vatID);
+    }
+    if (vatAdminRootKref) {
+      // static vat termination can happen before vat admin vat exists
+      notifyTermination(
+        vatID,
+        vatAdminRootKref,
+        shouldReject,
+        info,
+        queueToKref,
+      );
+    } else {
+      console.log(
+        `warning: vat ${vatID} terminated without a vatAdmin to report to`,
+      );
     }
   }
 
@@ -271,6 +272,7 @@ export default function buildKernel(
     terminationTrigger = undefined;
     postAbortActions = {
       meterDeductions: [], // list of { meterID, compute }
+      discardFailedDelivery: false,
     };
   }
   resetDeliveryTriggers();
@@ -594,12 +596,39 @@ export default function buildKernel(
     return harden(policyInput);
   }
 
+  // The 'startVat' event is queued by `initializeKernel` for all static vats,
+  // so that we execute their bundle imports and call their `buildRootObject`
+  // functions in a transcript context.  The consequence of this is that if
+  // there are N static vats, N 'startVat' events will be the first N events on
+  // the initial run queue.  For dynamic vats, the handler of the 'create-vat'
+  // event, `processCreateVat`, calls `processStartVat` directly, rather than
+  // enqueing 'startVat', so that vat startup happens promptly after creation
+  // and so that there are no intervening events in the run queue between vat
+  // creation and vat startup (it would probably not be a problem if there were,
+  // but doing it this way simply guarantees there won't be such a problem
+  // without requiring any further analysis to be sure).
+  async function processStartVat(message) {
+    postAbortActions.discardFailedDelivery = true;
+    const { type, vatID } = message;
+    // console.log(`-- processStartVat(${vatID})`);
+    insistVatID(vatID);
+    // eslint-disable-next-line no-use-before-define
+    assert(vatWarehouse.lookup(vatID));
+    const kd = harden([type]); // TODO(4381) add vatParameters here
+    // eslint-disable-next-line no-use-before-define
+    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    // TODO: can we provide a computron count to the run policy?
+    const policyInput = await deliverAndLogToVat(vatID, kd, vd, false);
+    return harden(policyInput);
+  }
+
   /**
    *
    * @param { * } message
    * @returns { Promise<PolicyInput> }
    */
   async function processCreateVat(message) {
+    postAbortActions.discardFailedDelivery = true;
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, dynamicOptions } = message;
     kernelKeeper.addDynamicVatID(vatID);
@@ -613,6 +642,7 @@ export default function buildKernel(
     }
     vatKeeper.setSourceAndOptions(source, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
+    const { enableSetup } = options;
 
     function makeSuccessResponse() {
       // build success message, giving admin vat access to the new vat's root
@@ -643,14 +673,34 @@ export default function buildKernel(
 
     /** @type { PolicyInput } */
     const policyInput = harden(['create-vat', {}]);
+    // TODO: combine this with the return value from processStartVat
 
-    // eslint-disable-next-line no-use-before-define
-    return vatWarehouse
-      .createDynamicVat(vatID)
-      .then(makeSuccessResponse, makeErrorResponse)
-      .then(sendResponse)
-      .catch(err => console.error(`error in vat creation`, err))
-      .then(() => policyInput);
+    return (
+      // eslint-disable-next-line no-use-before-define
+      vatWarehouse
+        .createDynamicVat(vatID)
+        // if createDynamicVat fails, go directly to makeErrorResponse
+        .then(_ =>
+          enableSetup ? null : processStartVat({ type: 'startVat', vatID }),
+        ) // TODO(4381) add vatParameters here
+        // Like any other run queue event handler, if processStartVat fails it
+        // returns a PolicyInput object indicating the problem rather than
+        // throwing directly.  Consequently, if it fails, either during module
+        // initialization or during the call to `buildRootObject`, the result
+        // promise we are waiting on here will resolve successfully and get
+        // handled by the makeSuccessResponse-generated resolve handler rather
+        // than by the makeErrorResponse-generated rejection handler -- that is,
+        // it's a "success", but the value of the success indicates an
+        // underlying problem.  However, `deliverAndLogToVat` will also have set
+        // the vat's termination trigger, resulting in (1) this crank being
+        // terminated in an error state, (2) the (incorrectly initialized) vat
+        // being terminated and expunged, and (3) the vatAdmin vat being
+        // notified of the termination.
+        .then(makeSuccessResponse, makeErrorResponse)
+        .then(sendResponse)
+        .catch(err => console.error(`error in vat creation`, err))
+        .then(() => policyInput)
+    );
   }
 
   function legibilizeMessage(message) {
@@ -661,11 +711,17 @@ export default function buildKernel(
       return `@${message.target} <- ${msg.method}(${argList}) : @${result}`;
     } else if (message.type === 'notify') {
       return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
+    } else if (message.type === 'create-vat') {
+      // prettier-ignore
+      return `create-vat ${message.vatID} opts: ${JSON.stringify(message.dynamicOptions)}`;
       // eslint-disable-next-line no-use-before-define
     } else if (gcMessages.includes(message.type)) {
       // prettier-ignore
       return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;
-    } else if (message.type === 'bringOutYourDead') {
+    } else if (
+      message.type === 'bringOutYourDead' ||
+      message.type === 'startVat'
+    ) {
       return `${message.type} ${message.vatID}`;
     } else {
       return `unknown message type ${message.type}`;
@@ -707,7 +763,10 @@ export default function buildKernel(
         kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
         policyInput = await processNotify(message);
       } else if (message.type === 'create-vat') {
+        // creating a new dynamic vat will immediately do start-vat
         policyInput = await processCreateVat(message);
+      } else if (message.type === 'startVat') {
+        policyInput = await processStartVat(message);
       } else if (message.type === 'bringOutYourDead') {
         policyInput = await processBringOutYourDead(message);
       } else if (gcMessages.includes(message.type)) {
@@ -724,10 +783,19 @@ export default function buildKernel(
           kernelKeeper.abortCrank();
           didAbort = true;
           // but metering deductions and underflow notifications must survive
-          const { meterDeductions } = postAbortActions;
+          const { meterDeductions, discardFailedDelivery } = postAbortActions;
           for (const { meterID, compute } of meterDeductions) {
             deductMeter(meterID, compute, false);
             // that will re-push any notifications
+          }
+          if (discardFailedDelivery) {
+            // kernelKeeper.abortCrank removed all evidence that the crank ever
+            // happened, including, notably, the removal of the delivery itself
+            // from the head of the run queue, which will result in it being
+            // delivered again on the next crank.  If we don't want that, then
+            // we need to remove it again.
+            // eslint-disable-next-line no-use-before-define
+            getNextMessage();
           }
         }
         // state changes reflecting the termination must also survive, so

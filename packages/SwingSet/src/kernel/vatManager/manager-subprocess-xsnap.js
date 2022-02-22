@@ -68,6 +68,8 @@ export function makeXsSubprocessFactory({
       !managerOptions.enableSetup,
       'xs-worker: enableSetup not supported at all',
     );
+    assert(useTranscript, 'xs-worker: useTranscript=false not supported');
+
     const mk = makeManagerKit(
       vatID,
       kernelSlog,

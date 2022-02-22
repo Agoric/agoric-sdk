@@ -119,6 +119,24 @@ fromParent.on('data', ([type, ...margs]) => {
       return makeLog;
     };
 
+    // Enable or disable the console accordingly.
+    const workerEndowments = {
+      console: makeVatConsole(makeLogMaker(`SwingSet:vat:${vatID}`)),
+      assert,
+    };
+
+    async function buildVatNamespace(
+      lsEndowments,
+      inescapableGlobalProperties,
+    ) {
+      const vatNS = await importBundle(bundle, {
+        endowments: { ...workerEndowments, ...lsEndowments },
+        inescapableGlobalProperties,
+      });
+      workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
+      return vatNS;
+    }
+
     const ls = makeLiveSlots(
       syscall,
       vatID,
@@ -129,27 +147,14 @@ fromParent.on('data', ([type, ...margs]) => {
       enableVatstore,
       gcTools,
       makeVatConsole(makeLogMaker(`SwingSet:ls:${vatID}`)),
+      buildVatNamespace,
     );
 
-    // Enable or disable the console accordingly.
-    const endowments = {
-      ...ls.vatGlobals,
-      console: makeVatConsole(makeLogMaker(`SwingSet:vat:${vatID}`)),
-      assert,
-    };
-
-    const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };
-
-    importBundle(bundle, { endowments, inescapableGlobalProperties }).then(
-      vatNS => {
-        workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
-        sendUplink(['gotBundle']);
-        ls.setBuildRootObject(vatNS.buildRootObject);
-        dispatch = makeSupervisorDispatch(ls.dispatch);
-        workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
-        sendUplink(['dispatchReady']);
-      },
-    );
+    sendUplink(['gotBundle']);
+    assert(ls.dispatch);
+    dispatch = makeSupervisorDispatch(ls.dispatch);
+    workerLog(`got dispatch:`, Object.keys(dispatch).join(','));
+    sendUplink(['dispatchReady']);
   } else if (type === 'deliver') {
     if (!dispatch) {
       workerLog(`error: deliver before dispatchReady`);

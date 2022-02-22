@@ -69,7 +69,7 @@ async function testForExpectedGlobals(t, workerType) {
   const c = await buildVatController(config, [], {
     hostStorage,
   });
-  await c.step();
+  await c.run();
   t.deepEqual(c.dump().log, [
     'control sample: undefined',
     'harden: function',
