@@ -117,23 +117,8 @@ export function makeLocalVatManagerFactory(tools) {
       return makeLog;
     };
 
-    // we might or might not use this, depending upon whether the vat exports
-    // 'buildRootObject' or a default 'setup' function
-    const ls = makeLiveSlots(
-      syscall,
-      vatID,
-      vatPowers,
-      vatParameters,
-      virtualObjectCacheSize,
-      enableDisavow,
-      enableVatstore,
-      gcTools,
-      makeVatConsole(makeLogMaker(liveSlotsConsole)),
-    );
-
-    const endowments = harden({
+    const workerEndowments = harden({
       ...vatEndowments,
-      ...ls.vatGlobals,
       console: makeVatConsole(makeLogMaker(vatConsole)),
       assert,
       TextEncoder,
@@ -141,31 +126,44 @@ export function makeLocalVatManagerFactory(tools) {
       Base64: globalThis.Base64, // Available only on XSnap
       URL: globalThis.URL, // Unavailable only on XSnap
     });
-    const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };
 
-    const vatNS = await importBundle(bundle, {
-      filePrefix: `vat-${vatID}/...`,
-      endowments,
+    async function buildVatNamespace(
+      lsEndowments,
       inescapableGlobalProperties,
-    });
+    ) {
+      const vatNS = await importBundle(bundle, {
+        filePrefix: `vat-${vatID}/...`,
+        endowments: { ...workerEndowments, ...lsEndowments },
+        inescapableGlobalProperties,
+      });
+      return vatNS;
+    }
 
-    let dispatch;
-    if (typeof vatNS.buildRootObject === 'function') {
-      const { buildRootObject } = vatNS;
-      ls.setBuildRootObject(buildRootObject);
-      dispatch = ls.dispatch;
-    } else if (enableSetup) {
+    if (enableSetup) {
+      const vatNS = await buildVatNamespace({}, {});
       const setup = vatNS.default;
       assert(setup, X`vat source bundle lacks (default) setup() function`);
       assert.typeof(setup, 'function');
       const helpers = harden({}); // DEPRECATED, todo remove from setup()
       const state = null; // TODO remove from setup()
-      dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
+      const dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
+      return finish(dispatch);
     } else {
-      assert.fail(X`vat source bundle lacks buildRootObject() function`);
+      const ls = makeLiveSlots(
+        syscall,
+        vatID,
+        vatPowers,
+        vatParameters,
+        virtualObjectCacheSize,
+        enableDisavow,
+        enableVatstore,
+        gcTools,
+        makeVatConsole(makeLogMaker(liveSlotsConsole)),
+        buildVatNamespace,
+      );
+      assert(ls.dispatch);
+      return finish(ls.dispatch);
     }
-
-    return finish(dispatch);
   }
 
   const localVatManagerFactory = harden({

@@ -65,6 +65,7 @@ export function insistVatDeliveryObject(vdo) {
       }
       break;
     }
+    case 'startVat':
     case 'bringOutYourDead': {
       assert(rest.length === 0);
       break;

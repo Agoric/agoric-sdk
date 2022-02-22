@@ -33,6 +33,7 @@ async function testCranks(t, mode) {
   const rightKref = c.pinVatRoot('right');
   const rightID = c.vatNameToID('right');
   t.teardown(c.shutdown);
+  await c.run();
 
   if (mode === 'messages' || mode === 'wallclock') {
     // The 'message' mode sends doMessage() to left, which makes left send

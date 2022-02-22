@@ -282,6 +282,28 @@ function makeWorker(port) {
       return makeLog;
     };
 
+    const workerEndowments = {
+      console: makeVatConsole(makeLogMaker('console')),
+      assert,
+      // bootstrap provides HandledPromise
+      HandledPromise: globalThis.HandledPromise,
+      TextEncoder,
+      TextDecoder,
+      Base64: globalThis.Base64, // Present only in XSnap
+    };
+
+    async function buildVatNamespace(
+      lsEndowments,
+      inescapableGlobalProperties,
+    ) {
+      const vatNS = await importBundle(bundle, {
+        endowments: { ...workerEndowments, ...lsEndowments },
+        inescapableGlobalProperties,
+      });
+      workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
+      return vatNS;
+    }
+
     const ls = makeLiveSlots(
       syscall,
       vatID,
@@ -292,27 +314,9 @@ function makeWorker(port) {
       enableVatstore,
       gcTools,
       makeVatConsole(makeLogMaker('liveSlotsConsole')),
+      buildVatNamespace,
     );
 
-    const endowments = {
-      ...ls.vatGlobals,
-      console: makeVatConsole(makeLogMaker('console')),
-      assert,
-      // bootstrap provides HandledPromise
-      HandledPromise: globalThis.HandledPromise,
-      TextEncoder,
-      TextDecoder,
-      Base64: globalThis.Base64, // Present only in XSnap
-    };
-
-    const inescapableGlobalProperties = { ...ls.inescapableGlobalProperties };
-
-    const vatNS = await importBundle(bundle, {
-      endowments,
-      inescapableGlobalProperties,
-    });
-    workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
-    ls.setBuildRootObject(vatNS.buildRootObject);
     assert(ls.dispatch);
     dispatch = makeSupervisorDispatch(ls.dispatch);
     workerLog(`got dispatch`);

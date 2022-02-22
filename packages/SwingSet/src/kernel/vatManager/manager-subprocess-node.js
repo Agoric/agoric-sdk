@@ -26,6 +26,7 @@ export function makeNodeSubprocessFactory(tools) {
       useTranscript,
     } = managerOptions;
     assert(!managerOptions.enableSetup, 'not supported at all');
+    assert(useTranscript, 'node-subprocess: useTranscript=false not supported');
 
     const mk = makeManagerKit(
       vatID,

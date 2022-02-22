@@ -9,6 +9,9 @@ import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug.js';
 /** @type { VatDeliveryBringOutYourDead } */
 const reapMessageVatDelivery = harden(['bringOutYourDead']);
 
+/** @type { VatDeliveryStartVat } */
+const startVatMessageVatDelivery = harden(['startVat']);
+
 export function assertValidVatstoreKey(key) {
   assert.typeof(key, 'string');
 }
@@ -144,6 +147,10 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     return vatDelivery;
   }
 
+  function translateStartVat() {
+    return startVatMessageVatDelivery;
+  }
+
   function translateBringOutYourDead() {
     return reapMessageVatDelivery;
   }
@@ -175,6 +182,10 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
         const [_, ...args] = kd;
         return translateRetireImports(...args);
       }
+      case 'startVat': {
+        const [_, ...args] = kd;
+        return translateStartVat(...args);
+      }
       case 'bringOutYourDead': {
         const [_, ...args] = kd;
         return translateBringOutYourDead(...args);
@@ -188,6 +199,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     //  ['dropExports', vrefs]
     //  ['retireExports', vrefs]
     //  ['retireImports', vrefs]
+    //  ['startVat']
     //  ['bringOutYourDead']
   }
 

@@ -42,7 +42,7 @@ test('calls', async t => {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -99,7 +99,7 @@ test('liveslots pipelines to syscall.send', async t => {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   t.deepEqual(log, []);
   const rootA = 'o+0';
   const x = 'o-5';
@@ -159,7 +159,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
 
   t.deepEqual(log, []);
 
@@ -236,7 +236,7 @@ async function doOutboundPromise(t, mode) {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
 
   t.deepEqual(log, []);
 
@@ -349,7 +349,7 @@ test('liveslots retains pending exported promise', async t => {
     return root;
   }
 
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   const rootA = 'o+0';
   const resultP = 'p-1';
   await dispatch(makeMessage(rootA, 'make', capargs([]), resultP));
@@ -392,7 +392,7 @@ async function doResultPromise(t, mode) {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
   const slot0arg = { '@qclass': 'slot', index: 0 };
@@ -501,7 +501,7 @@ test('liveslots vs symbols', async t => {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   t.deepEqual(log, []);
   const rootA = 'o+0';
   const target = 'o-1';
@@ -568,7 +568,7 @@ test('disable disavow', async t => {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', false);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', false);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -625,7 +625,7 @@ test('disavow', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
   const import1 = 'o-1';
@@ -683,7 +683,7 @@ test('liveslots retains device nodes', async t => {
     return root;
   }
 
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   const rootA = 'o+0';
   const device = 'd-1';
   await dispatch(makeMessage(rootA, 'first', capargsOneSlot(device)));
@@ -711,7 +711,7 @@ test('GC syscall.dropImports', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
   const arg = 'o-1';
@@ -772,7 +772,7 @@ test('GC dispatch.retireImports', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
   const arg = 'o-1';
@@ -801,7 +801,7 @@ test('GC dispatch.retireExports', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -952,9 +952,13 @@ test('dropImports', async t => {
     false,
     false,
     gcTools,
+    undefined,
+    () => {
+      return { buildRootObject: build };
+    },
   );
-  const { setBuildRootObject, dispatch, possiblyDeadSet } = ls;
-  setBuildRootObject(build);
+  const { dispatch, startVat, possiblyDeadSet } = ls;
+  await startVat();
   const allFRs = gcTools.getAllFRs();
   t.is(allFRs.length, 2);
   const FR = allFRs[0];
@@ -1070,6 +1074,33 @@ test('dropImports', async t => {
   t.is(FR.countCallbacks(), 0);
 });
 
+test('buildVatNamespace not called until after startVat', async t => {
+  const { syscall } = buildSyscall();
+  const gcTools = makeMockGC();
+  let buildCalled = false;
+
+  function buildRootObject(_vatPowers) {
+    buildCalled = true;
+    return Far('root', {});
+  }
+
+  const ls = makeLiveSlots(
+    syscall,
+    'vatA',
+    {},
+    {},
+    undefined,
+    false,
+    false,
+    gcTools,
+    undefined,
+    () => ({ buildRootObject }),
+  );
+  t.falsy(buildCalled);
+  await ls.startVat();
+  t.truthy(buildCalled);
+});
+
 test('GC dispatch.dropExports', async t => {
   const { log, syscall } = buildSyscall();
   let wr;
@@ -1085,7 +1116,7 @@ test('GC dispatch.dropExports', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -1147,7 +1178,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -1218,7 +1249,7 @@ test('simple promise resolution', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -1259,7 +1290,7 @@ test('promise cycle', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -1319,7 +1350,7 @@ test('unserializable promise resolution', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 
@@ -1379,7 +1410,7 @@ test('unserializable promise rejection', async t => {
     });
     return root;
   }
-  const dispatch = makeDispatch(syscall, build, 'vatA', true);
+  const dispatch = await makeDispatch(syscall, build, 'vatA', true);
   t.deepEqual(log, []);
   const rootA = 'o+0';
 

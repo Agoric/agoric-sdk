@@ -6,7 +6,7 @@ import { QCLASS } from '@endo/marshal';
 
 export function extractMessage(vatDeliverObject) {
   const [type, ...vdoargs] = vatDeliverObject;
-  assert.equal(type, 'message', `util.js .extractMessage`);
+  assert.equal(type, 'message', `util.js .extractMessage got type ${type}`);
   const [facetID, msg] = vdoargs;
   const { method, args, result } = msg;
   return { facetID, method, args, result };
