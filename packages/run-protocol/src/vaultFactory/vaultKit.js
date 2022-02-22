@@ -55,5 +55,5 @@ export const setupOuter = inner => {
 };
 
 /**
- * @typedef {ReturnType<typeof setupOuter>['transferInvitationHook']} TransferInvitationHook
+ * @typedef {(ReturnType<typeof setupOuter>)['transferInvitationHook']} TransferInvitationHook
  */
