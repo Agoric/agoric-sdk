@@ -342,8 +342,9 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
+  // FIXME define type
   /** @type {Parameters<typeof makeInnerVault>[1]} */
-  const managerFacet = harden({
+  const managerFacet = Far('vaultManager', {
     ...shared,
     applyDebtDelta,
     reallocateReward,

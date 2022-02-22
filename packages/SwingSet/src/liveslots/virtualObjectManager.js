@@ -454,6 +454,10 @@ export function makeVirtualObjectManager(
           cache.refresh(innerSelf);
         } else {
           innerSelf = cache.lookup(innerSelf.vobjID, true);
+          assert(
+            innerSelf.rawData,
+            `Missing rawData for innerSelf '${innerSelf.vobjID}'`,
+          );
         }
       }
 
