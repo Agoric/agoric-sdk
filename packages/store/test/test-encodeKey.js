@@ -2,6 +2,7 @@
 /* eslint-disable no-bitwise */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import fc from 'fast-check';
 import { isKey } from '../src/keys/checkKey.js';
 import { compareKeys, keyEQ } from '../src/keys/compareKeys.js';
 import { makeEncodeKey, makeDecodeKey } from '../src/patterns/encodeKey.js';
@@ -123,4 +124,21 @@ test('order invariants', t => {
   }
 });
 
-// TODO Add tests from https://jsfiddle.net/o6vw2nfd/
+test('BigInt values round-trip', async t => {
+  await fc.assert(
+    fc.property(fc.bigInt(), n => {
+      return t.is(decodeKey(encodeKey(n)), n);
+    }),
+  );
+});
+
+test('BigInt encoding comparison corresponds with numeric comparison', async t => {
+  await fc.assert(
+    fc.property(fc.bigInt(), fc.bigInt(), (a, b) => {
+      if (a === b) return t.pass();
+      if (a < b) return t.true(encodeKey(a) < encodeKey(b));
+      if (a > b) return t.true(encodeKey(a) > encodeKey(b));
+      return t.fail(`Unexpected incomparable bigints: ${a} ${b}`);
+    }),
+  );
+});
