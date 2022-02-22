@@ -21,8 +21,12 @@ import '../src/types.js';
  * @returns {boolean}
  */
 export const assertionPassed = (assertionResult, getFallbackResult) => {
-  if (assertionResult !== undefined) return assertionResult;
-  return getFallbackResult();
+  if (assertionResult === undefined) return getFallbackResult();
+  console.warn(
+    'Got non-undefined assertion result, has ava been upgraded to v4+? ' +
+      'Consider removing assertionPassed.',
+  );
+  return assertionResult;
 };
 
 function check(t, mode, objMaker) {
