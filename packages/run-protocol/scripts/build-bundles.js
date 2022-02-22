@@ -34,6 +34,7 @@ async function main() {
       `${srcDir}/vaultFactory/vaultFactory.js`,
       `${bundlesDir}/bundle-vaultFactory.js`,
     ],
+    [`${srcDir}/centralSupply.js`, `${bundlesDir}/bundle-centralSupply.js`],
     [
       `${srcDir}/vaultFactory/liquidateMinimum.js`,
       `${bundlesDir}/bundle-liquidateMinimum.js`,

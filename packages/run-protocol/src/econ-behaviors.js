@@ -7,11 +7,7 @@ import {
   CONTRACT_ELECTORATE,
   makeGovernedNat,
 } from '@agoric/governance';
-import {
-  CENTRAL_ISSUER_NAME,
-  collectNameAdmins,
-  shared,
-} from '@agoric/vats/src/core/utils.js';
+import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
@@ -22,9 +18,9 @@ import '../exported.js';
 
 import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
 
-import { Collect } from './collect.js';
+import * as Collect from './collect.js';
 
-const { entries, keys } = Object;
+const { entries } = Object;
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -33,14 +29,20 @@ const BASIS_POINTS = 10_000n;
 const DEFAULT_POOL_FEE = 24n;
 const DEFAULT_PROTOCOL_FEE = 6n;
 
+const CENTRAL_DENOM_NAME = 'urun';
+
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {{ committeeName: string, committeeSize: number }} electorateTerms
  */
 export const startEconomicCommittee = async (
   {
-    consume: { agoricNames, nameAdmins, zoe, governanceBundles },
+    consume: { zoe, governanceBundles },
     produce: { economicCommitteeCreatorFacet },
+    installation,
+    instance: {
+      produce: { economicCommittee },
+    },
   },
   electorateTerms = {
     committeeName: 'Initial Economic Committee',
@@ -48,16 +50,9 @@ export const startEconomicCommittee = async (
   },
 ) => {
   const bundles = await governanceBundles;
-  keys(bundles).forEach(key => assert(shared.contract[key]));
 
   const installations = await Collect.allValues(
     Collect.mapValues(bundles, bundle => E(zoe).install(bundle)),
-  );
-
-  const [installAdmin, instanceAdmin] = await collectNameAdmins(
-    ['installation', 'instance'],
-    agoricNames,
-    nameAdmins,
   );
 
   const { creatorFacet, instance } = await E(zoe).startInstance(
@@ -67,14 +62,10 @@ export const startEconomicCommittee = async (
   );
 
   economicCommitteeCreatorFacet.resolve(creatorFacet);
-  return Promise.all([
-    Promise.all(
-      entries(installations).map(([key, inst]) =>
-        E(installAdmin).update(key, inst),
-      ),
-    ),
-    E(instanceAdmin).update('economicCommittee', instance),
-  ]);
+  economicCommittee.resolve(instance);
+  entries(installations).forEach(([key, inst]) =>
+    installation.produce[key].resolve(inst),
+  );
 };
 harden(startEconomicCommittee);
 
@@ -82,24 +73,25 @@ harden(startEconomicCommittee);
 export const setupAmm = async ({
   consume: {
     chainTimerService,
-    agoricNames,
-    nameAdmins,
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
     ammBundle,
   },
   produce: { ammCreatorFacet, ammGovernorCreatorFacet },
+  issuer: {
+    consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
+  },
+  instance: {
+    consume: { economicCommittee: electorateInstance },
+    produce: { amm: ammInstanceProducer, ammGovernor },
+  },
+  installation: {
+    consume: { contractGovernor: governorInstallation },
+    produce: { amm: ammInstallationProducer },
+  },
 }) => {
-  const electorateInstance = E(agoricNames).lookup(
-    'instance',
-    'economicCommittee',
-  );
   const bundle = await ammBundle;
   const ammInstallation = E(zoe).install(bundle);
-  const governorInstallation = E(agoricNames).lookup(
-    'installation',
-    'contractGovernor',
-  );
   const poolFee = DEFAULT_POOL_FEE;
   const protocolFee = DEFAULT_PROTOCOL_FEE;
 
@@ -122,7 +114,6 @@ export const setupAmm = async ({
     },
   };
 
-  const centralIssuer = E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME);
   const ammGovernorTerms = {
     timer,
     electorateInstance,
@@ -155,17 +146,9 @@ export const setupAmm = async ({
     throw new Error(`ammPublicFacet broken  ${ammPublicFacet}`);
   }
 
-  const [installAdmin, instanceAdmin] = await collectNameAdmins(
-    ['installation', 'instance'],
-    agoricNames,
-    nameAdmins,
-  );
-
-  return Promise.all([
-    E(installAdmin).update('amm', ammInstallation),
-    E(instanceAdmin).update('amm', instance),
-    E(instanceAdmin).update('ammGovernor', g.instance),
-  ]);
+  ammInstanceProducer.resolve(instance);
+  ammGovernor.resolve(g.instance);
+  return ammInstallation.then(i => ammInstallationProducer.resolve(i));
 };
 
 /**
@@ -177,14 +160,16 @@ export const setupAmm = async ({
  */
 export const startPriceAuthority = async ({
   consume: { loadVat },
-  produce: { priceAuthority: priceAuthorityProduce, priceAuthorityAdmin },
+  produce,
 }) => {
+  const vats = { priceAuthority: E(loadVat)('priceAuthority') };
   const { priceAuthority, adminFacet } = await E(
-    E(loadVat)('priceAuthority'),
-  ).makePriceAuthority();
+    vats.priceAuthority,
+  ).makePriceAuthorityRegistry();
 
-  priceAuthorityProduce.resolve(priceAuthority);
-  priceAuthorityAdmin.resolve(adminFacet);
+  produce.priceAuthorityVat.resolve(vats.priceAuthority);
+  produce.priceAuthority.resolve(priceAuthority);
+  produce.priceAuthorityAdmin.resolve(adminFacet);
 };
 harden(startPriceAuthority);
 
@@ -196,16 +181,19 @@ harden(startPriceAuthority);
 export const startVaultFactory = async (
   {
     consume: {
-      agoricNames,
       vaultBundles,
       chainTimerService,
-      nameAdmins,
       priceAuthority,
       zoe,
       feeMintAccess: feeMintAccessP, // ISSUE: why doeszn't Zoe await this?
       economicCommitteeCreatorFacet: electorateCreatorFacet,
     },
     produce, // {  vaultFactoryCreator }
+    brand: {
+      consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
+    },
+    instance,
+    installation,
   },
   { loanParams } = {
     loanParams: {
@@ -214,13 +202,6 @@ export const startVaultFactory = async (
     },
   },
 ) => {
-  // Fetch the nameAdmins we need.
-  const [installAdmin, instanceAdmin] = await collectNameAdmins(
-    ['installation', 'instance'],
-    agoricNames,
-    nameAdmins,
-  );
-
   const bundles = await vaultBundles;
   const installations = await Collect.allValues({
     VaultFactory: E(zoe).install(bundles.VaultFactory),
@@ -233,10 +214,7 @@ export const startVaultFactory = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
-  const centralBrand = await E(agoricNames).lookup(
-    'brand',
-    CENTRAL_ISSUER_NAME,
-  );
+  const centralBrand = await centralBrandP;
 
   // declare governed params for the vaultFactory; addVaultType() sets actual rates
   const rates = {
@@ -247,10 +225,9 @@ export const startVaultFactory = async (
 
   const [ammInstance, electorateInstance, contractGovernorInstall] =
     await Promise.all([
-      // TODO: manifest constants for these strings
-      E(agoricNames).lookup('instance', 'amm'),
-      E(agoricNames).lookup('instance', 'economicCommittee'),
-      E(agoricNames).lookup('installation', 'contractGovernor'),
+      instance.consume.amm,
+      instance.consume.economicCommittee,
+      installation.consume.contractGovernor,
     ]);
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
   const feeMintAccess = await feeMintAccessP;
@@ -283,9 +260,8 @@ export const startVaultFactory = async (
       harden({ electorateCreatorFacet }),
     );
 
-  const vaultFactoryInstance = await E(governorCreatorFacet).getInstance();
-  const [vaultFactoryCreator] = await Promise.all([
-    E(zoe).getTerms(vaultFactoryInstance),
+  const [vaultFactoryInstance, vaultFactoryCreator] = await Promise.all([
+    E(governorCreatorFacet).getInstance(),
     E(governorCreatorFacet).getCreatorFacet(),
   ]);
 
@@ -297,41 +273,55 @@ export const startVaultFactory = async (
   produce.vaultFactoryGovernorCreator.resolve(governorCreatorFacet);
   produce.vaultFactoryVoteCreator.resolve(voteCreator);
 
-  // Advertise the installation in agoricNames.
-  await Promise.all([
-    E(instanceAdmin).update('VaultFactory', vaultFactoryInstance),
-    E(instanceAdmin).update('VaultFactoryGovernor', governorInstance),
-    ...entries(installations).map(([name, install]) =>
-      E(installAdmin).update(name, install),
-    ),
-  ]);
+  // Advertise the installations, instances in agoricNames.
+  instance.produce.VaultFactory.resolve(vaultFactoryInstance);
+  instance.produce.Treasury.resolve(vaultFactoryInstance);
+  instance.produce.VaultFactoryGovernor.resolve(governorInstance);
+  entries(installations).forEach(([name, install]) =>
+    installation.produce[name].resolve(install),
+  );
 };
 
 /** @param { BootstrapPowers } powers */
 export const configureVaultFactoryUI = async ({
-  consume: { agoricNames, nameAdmins, board, zoe },
+  consume: { board, zoe },
+  issuer: {
+    consume: { [CENTRAL_ISSUER_NAME]: centralIssuerP },
+  },
+  brand: {
+    consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
+  },
+  installation: {
+    consume: {
+      amm: ammInstallation,
+      VaultFactory: vaultInstallation,
+      contractGovernor,
+      noActionElectorate,
+      binaryVoteCounter,
+      liquidate,
+    },
+  },
+  instance: {
+    consume: { amm: ammInstance, VaultFactory: vaultInstance },
+  },
+  uiConfig,
 }) => {
   const installs = await Collect.allValues({
-    amm: E(agoricNames).lookup('installation', 'amm'),
-    vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
-    contractGovernor: E(agoricNames).lookup('installation', 'contractGovernor'),
-    noActionElectorate: E(agoricNames).lookup(
-      'installation',
-      'noActionElectorate',
-    ),
-    binaryVoteCounter: E(agoricNames).lookup(
-      'installation',
-      'binaryVoteCounter',
-    ),
+    vaultFactory: vaultInstallation,
+    amm: ammInstallation,
+    contractGovernor,
+    noActionElectorate,
+    binaryVoteCounter,
+    liquidate,
   });
   const instances = await Collect.allValues({
-    amm: E(agoricNames).lookup('instance', 'amm'),
-    vaultFactory: E(agoricNames).lookup('instance', 'VaultFactory'),
+    amm: ammInstance,
+    vaultFactory: vaultInstance,
   });
-  const central = await Collect.allValues({
-    brand: E(agoricNames).lookup('brand', CENTRAL_ISSUER_NAME),
-    issuer: E(agoricNames).lookup('issuer', CENTRAL_ISSUER_NAME),
-  });
+  const [centralIssuer, centralBrand] = await Promise.all([
+    centralIssuerP,
+    centralBrandP,
+  ]);
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
@@ -348,10 +338,10 @@ export const configureVaultFactoryUI = async ({
   const boardIdValue = [
     ['INSTANCE_BOARD_ID', instances.vaultFactory],
     ['INSTALLATION_BOARD_ID', installs.vaultFactory],
-    ['RUN_ISSUER_BOARD_ID', central.issuer],
-    ['RUN_BRAND_BOARD_ID', central.brand],
+    ['RUN_ISSUER_BOARD_ID', centralIssuer],
+    ['RUN_BRAND_BOARD_ID', centralBrand],
     ['AMM_INSTALLATION_BOARD_ID', installs.amm],
-    ['LIQ_INSTALLATION_BOARD_ID', installs.liquidation],
+    ['LIQ_INSTALLATION_BOARD_ID', installs.liquidate],
     ['BINARY_COUNTER_INSTALLATION_BOARD_ID', installs.binaryVoteCounter],
     ['NO_ACTION_INSTALLATION_BOARD_ID', installs.noActionElectorate],
     ['CONTRACT_GOVERNOR_INSTALLATION_BOARD_ID', installs.contractGovernor],
@@ -369,30 +359,74 @@ export const configureVaultFactoryUI = async ({
   // Stash the defaults where the UI can find them.
   harden(vaultFactoryUiDefaults);
 
-  const [instanceAdmin, uiConfigAdmin] = await collectNameAdmins(
-    ['instance', 'uiConfig'],
-    agoricNames,
-    nameAdmins,
-  );
-
   // Install the names in agoricNames.
-  const nameAdminUpdates = [
-    [
-      uiConfigAdmin,
-      vaultFactoryUiDefaults.CONTRACT_NAME,
-      vaultFactoryUiDefaults,
-    ],
-    [
-      instanceAdmin,
-      vaultFactoryUiDefaults.CONTRACT_NAME,
-      instances.vaultFactory,
-    ],
-    [instanceAdmin, vaultFactoryUiDefaults.AMM_NAME, instances.amm],
-  ];
-  await Promise.all(
-    nameAdminUpdates.map(([nameAdmin, name, value]) =>
-      E(nameAdmin).update(name, value),
-    ),
+  uiConfig.produce[vaultFactoryUiDefaults.CONTRACT_NAME].resolve(
+    vaultFactoryUiDefaults,
   );
+  uiConfig.produce.Treasury.resolve(vaultFactoryUiDefaults); // compatibility
 };
 harden(configureVaultFactoryUI);
+
+/**
+ * Start the reward distributor.
+ *
+ * @param {BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<DistributeFeesVat>>},
+ * }} powers
+ *
+ * @typedef {ERef<ReturnType<import('../../vats/src/vat-distributeFees.js').buildRootObject>>} DistributeFeesVat
+ */
+export const startRewardDistributor = async ({
+  consume: {
+    chainTimerService,
+    bankManager,
+    loadVat,
+    vaultFactoryCreator,
+    ammCreatorFacet,
+    zoe,
+  },
+  issuer: {
+    consume: { RUN: centralIssuerP },
+  },
+  brand: {
+    consume: { RUN: centralBrandP },
+  },
+}) => {
+  const epochTimerService = await chainTimerService;
+  const distributorParams = {
+    epochInterval: 60n * 60n, // 1 hour
+  };
+  const [centralIssuer, centralBrand] = await Promise.all([
+    centralIssuerP,
+    centralBrandP,
+  ]);
+  const feeCollectorDepositFacet = await E(bankManager)
+    .getFeeCollectorDepositFacet(CENTRAL_DENOM_NAME, {
+      issuer: centralIssuer,
+      brand: centralBrand,
+    })
+    .catch(e => {
+      console.log('Cannot create fee collector deposit facet', e);
+      return undefined;
+    });
+
+  // Only distribute fees if there is a collector.
+  if (!feeCollectorDepositFacet) {
+    return;
+  }
+
+  const vats = { distributeFees: E(loadVat)('distributeFees') };
+  const [vaultAdmin, ammAdmin] = await Promise.all([
+    vaultFactoryCreator,
+    ammCreatorFacet,
+  ]);
+  await E(vats.distributeFees).buildDistributor(
+    [vaultAdmin, ammAdmin].map(cf =>
+      E(vats.distributeFees).makeFeeCollector(zoe, cf),
+    ),
+    feeCollectorDepositFacet,
+    epochTimerService,
+    harden(distributorParams),
+  );
+};
+harden(startRewardDistributor);

@@ -28,7 +28,6 @@ import {
   getAmountIn,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
@@ -46,7 +45,6 @@ export const start = async (zcf, privateArgs) => {
     priceAuthority,
     timerService,
     liquidationInstall,
-    bootstrapPaymentValue = 0n,
     electionManager,
     main: { [CONTRACT_ELECTORATE]: electorateParam },
     loanTimingParams,
@@ -194,36 +192,6 @@ export const start = async (zcf, privateArgs) => {
   // bookkeeping. It's needed in tests.
   const getRewardAllocation = () => rewardPoolSeat.getCurrentAllocation();
 
-  // TODO(#4021) remove this method
-  const mintBootstrapPayment = () => {
-    const { zcfSeat: bootstrapZCFSeat, userSeat: bootstrapUserSeat } =
-      zcf.makeEmptySeatKit();
-    const bootstrapAmount = AmountMath.make(runBrand, bootstrapPaymentValue);
-    runMint.mintGains(
-      harden({
-        Bootstrap: bootstrapAmount,
-      }),
-      bootstrapZCFSeat,
-    );
-    bootstrapZCFSeat.exit();
-    const bootstrapPayment = E(bootstrapUserSeat).getPayout('Bootstrap');
-
-    /**
-     * @param {Amount=} expectedAmount - if provided, assert that the bootstrap
-     * payment is at least the expected amount
-     */
-    const getBootstrapPayment = expectedAmount => {
-      if (expectedAmount) {
-        assert(
-          AmountMath.isGTE(bootstrapAmount, expectedAmount),
-          X`${bootstrapAmount} is not at least ${expectedAmount}`,
-        );
-      }
-      return bootstrapPayment;
-    };
-    return getBootstrapPayment;
-  };
-
   const getRatioParamState = paramDesc => {
     return vaultParamManagers
       .get(paramDesc.collateralBrand)
@@ -275,7 +243,6 @@ export const start = async (zcf, privateArgs) => {
     addVaultType,
     getCollaterals,
     getRewardAllocation,
-    getBootstrapPayment: mintBootstrapPayment(),
     makeCollectFeesInvitation,
     getContractGovernor: () => electionManager,
   });

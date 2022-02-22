@@ -3,10 +3,15 @@
   "version": "0.5.1",
   "description": "Agoric's Vat library",
   "type": "module",
-  "main": "./src/bootstrap.js",
+  "main": "./src/core/boot.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
+    "build:docs": "yarn build:boot-viz && yarn build:boot-viz-gov && yarn build:boot-viz-sim && yarn build:boot-viz-sim-gov",
+    "build:boot-viz": "node src/authorityViz.js >docs/boot.dot && dot -Tsvg docs/boot.dot >docs/boot.dot.svg",
+    "build:boot-viz-gov": "node src/authorityViz.js --gov>docs/boot-gov.dot && dot -Tsvg docs/boot-gov.dot >docs/boot-gov.dot.svg",
+    "build:boot-viz-sim": "node src/authorityViz.js --sim-chain >docs/boot-sim.dot && dot -Tsvg docs/boot-sim.dot >docs/boot-sim.dot.svg",
+    "build:boot-viz-sim-gov": "node src/authorityViz.js --sim-chain --gov >docs/boot-sim-gov.dot && dot -Tsvg docs/boot-sim-gov.dot >docs/boot-sim-gov.dot.svg",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
@@ -36,7 +41,8 @@
     "@agoric/store": "^0.6.8",
     "@agoric/swingset-vat": "^0.24.1",
     "@agoric/wallet-backend": "^0.10.7",
-    "@agoric/zoe": "^0.21.1"
+    "@agoric/zoe": "^0.21.1",
+    "@endo/nat": "^4.1.4"
   },
   "devDependencies": {
     "@agoric/babel-parser": "^7.6.4",

@@ -19,8 +19,9 @@ import { startEconomicCommittee } from '../../../src/econ-behaviors.js';
 import { setupAmmServices, setupAMMBootstrap } from './setup.js';
 
 test('start Economic Committee', async t => {
-  const { produce, consume } = await setupAMMBootstrap();
-  startEconomicCommittee({ produce, consume });
+  const space = await setupAMMBootstrap();
+  const { consume } = space;
+  startEconomicCommittee(space);
   const agoricNames = await consume.agoricNames;
   const instance = await E(agoricNames).lookup('instance', 'economicCommittee');
   t.truthy(instance);

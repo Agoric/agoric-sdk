@@ -1497,7 +1497,7 @@
     "@endo/nat" "^4.1.6"
     "@endo/promise-kit" "^0.2.35"
 
-"@endo/nat@^4.1.6":
+"@endo/nat@^4.1.4", "@endo/nat@^4.1.6":
   version "4.1.6"
   resolved "https://registry.yarnpkg.com/@endo/nat/-/nat-4.1.6.tgz#91bd20376503c08f29e667f8ec5cf92511a06155"
   integrity sha512-JfMeocAr9GyhQ2pFFibweIbIpgF9qV6xm7luOQ/JtB6n9mzAG9NVK+y6wAdLaIy3Ma/LONSHvF0PLZGwz5HvZQ==

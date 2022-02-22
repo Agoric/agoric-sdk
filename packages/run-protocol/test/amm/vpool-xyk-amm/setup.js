@@ -10,11 +10,10 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
-  collectNameAdmins,
-  makeNameAdmins,
+  makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
-import { Collect } from '../../../src/collect.js';
+import * as Collect from '../../../src/collect.js';
 import {
   setupAmm,
   startEconomicCommittee,
@@ -70,10 +69,8 @@ export const setupAMMBootstrap = async (
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
 
-  const { agoricNames, agoricNamesAdmin, nameAdmins } = makeNameAdmins();
+  const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
-  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
-  produce.nameAdmins.resolve(nameAdmins);
 
   /** @type {Record<string, Promise<{moduleFormat: string}>>} */
   const governanceBundlePs = {
@@ -84,7 +81,7 @@ export const setupAMMBootstrap = async (
   const bundles = await Collect.allValues(governanceBundlePs);
   produce.governanceBundles.resolve(bundles);
 
-  return { produce, consume };
+  return { produce, consume, ...spaces };
 };
 
 /**
@@ -106,34 +103,27 @@ export const setupAmmServices = async (
   }
   // XS doesn't like top-level await, so do it here. this should be quick
   const ammBundle = await ammBundleP;
-  const { consume, produce } = await setupAMMBootstrap(timer, zoe);
+  const space = await setupAMMBootstrap(timer, zoe);
+  const { produce, consume, brand, issuer, installation, instance } = space;
 
   produce.ammBundle.resolve(ammBundle);
-  const [brandAdmin, issuerAdmin] = await collectNameAdmins(
-    ['brand', 'issuer'],
-    consume.agoricNames,
-    consume.nameAdmins,
-  );
+  brand.produce.RUN.resolve(centralR.brand);
+  issuer.produce.RUN.resolve(centralR.issuer);
+
   await Promise.all([
-    E(brandAdmin).update('RUN', centralR.brand),
-    E(issuerAdmin).update('RUN', centralR.issuer),
-    startEconomicCommittee({ produce, consume }, electorateTerms),
-    setupAmm({ consume, produce }),
+    startEconomicCommittee(space, electorateTerms),
+    setupAmm(space),
   ]);
 
-  const agoricNames = consume.agoricNames;
   const installs = await Collect.allValues({
-    amm: E(agoricNames).lookup('installation', 'amm'),
-    governor: E(agoricNames).lookup('installation', 'contractGovernor'),
-    electorate: E(agoricNames).lookup('installation', 'committee'),
-    counter: E(agoricNames).lookup('installation', 'binaryVoteCounter'),
+    amm: installation.consume.amm,
+    governor: installation.consume.contractGovernor,
+    electorate: installation.consume.committee,
+    counter: installation.consume.binaryVoteCounter,
   });
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
-  const governorInstance = await E(agoricNames).lookup(
-    'instance',
-    'ammGovernor',
-  );
+  const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
     governorInstance,
@@ -151,10 +141,7 @@ export const setupAmmServices = async (
   };
 
   const committeeCreator = await consume.economicCommitteeCreatorFacet;
-  const electorateInstance = await E(agoricNames).lookup(
-    'instance',
-    'economicCommittee',
-  );
+  const electorateInstance = await instance.consume.economicCommittee;
 
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const poserInvitationAmount = await E(
@@ -169,7 +156,7 @@ export const setupAmmServices = async (
     governor: g,
     amm,
     invitationAmount: poserInvitationAmount,
-    space: { consume, produce },
+    space,
   };
 };
 harden(setupAmmServices);

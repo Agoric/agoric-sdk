@@ -14,10 +14,10 @@ import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers.js';
 
 import { makeFixture, E } from './captp-fixture.js';
 
+const CENTRAL_ISSUER_NAME = 'RUN';
 const SOLO_PORT = 7999;
 
 // This runs before all the tests.
