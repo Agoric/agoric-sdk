@@ -10,7 +10,7 @@ import {
   floorMultiplyBy,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import { observeNotifier } from '@agoric/notifier';
 
 import {
   invertRatio,
@@ -19,6 +19,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
+import { setupOuter } from './vaultKit.js';
 
 const { details: X, quote: q } = assert;
 
@@ -60,34 +61,6 @@ const validTransitions = {
   [VaultPhase.TRANSFER]: [VaultPhase.ACTIVE, VaultPhase.LIQUIDATING],
   [VaultPhase.LIQUIDATED]: [],
   [VaultPhase.CLOSED]: [],
-};
-
-const makeOuterKit = inner => {
-  const { updater: uiUpdater, notifier } = makeNotifierKit();
-
-  const assertActive = v => {
-    // console.log('OUTER', v, 'INNER', inner);
-    assert(inner, X`Using ${v} after transfer`);
-    return inner;
-  };
-  /** @type {Vault} */
-  const vault = Far('vault', {
-    getNotifier: () => notifier,
-    makeAdjustBalancesInvitation: () =>
-      assertActive(vault).makeAdjustBalancesInvitation(),
-    makeCloseInvitation: () => assertActive(vault).makeCloseInvitation(),
-    makeTransferInvitation: () => {
-      const tmpInner = assertActive(vault);
-      inner = null;
-      return tmpInner.makeTransferInvitation();
-    },
-    // for status/debugging
-    getCollateralAmount: () => assertActive(vault).getCollateralAmount(),
-    getDebtAmount: () => assertActive(vault).getDebtAmount(),
-    getNormalizedDebt: () => assertActive(vault).getNormalizedDebt(),
-    getLiquidationSeat: () => assertActive(vault).getLiquidationSeat(),
-  });
-  return { vault, uiUpdater };
 };
 
 /**
@@ -645,22 +618,7 @@ export const makeInnerVault = (
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   };
 
-  const setupOuter = inner => {
-    const { vault, uiUpdater: updater } = makeOuterKit(inner);
-    outerUpdater = updater;
-    updateUiState();
-    return harden({
-      uiNotifier: vault.getNotifier(),
-      invitationMakers: Far('invitation makers', {
-        AdjustBalances: vault.makeAdjustBalancesInvitation,
-        CloseVault: vault.makeCloseInvitation,
-        TransferVault: vault.makeTransferInvitation,
-      }),
-      vault,
-    });
-  };
-
-  /** @type {OfferHandler} */
+  /** @type {((seat: ZCFSeat, innerVault: InnerVault) => Promise<import('./vaultKit.js').TransferInvitationHook>)} */
   const initVaultKit = async (seat, innerVault) => {
     assert(
       AmountMath.isEmpty(debtSnapshot.run),
@@ -701,14 +659,28 @@ export const makeInnerVault = (
     // @ts-expect-error proposals not generic (RUN implies NatValue)
     refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
 
-    return setupOuter(innerVault);
+    const { transferInvitationHook, updater } = setupOuter(innerVault);
+    outerUpdater = updater;
+    updateUiState();
+
+    return transferInvitationHook;
   };
 
+  /**
+   *
+   * @param {ZCFSeat} seat
+   * @returns {import('./vaultKit.js').TransferInvitationHook}
+   */
   const makeTransferInvitationHook = seat => {
     assertVaultIsOpen();
     seat.exit();
+
     // eslint-disable-next-line no-use-before-define
-    return setupOuter(innerVault);
+    const { transferInvitationHook, updater } = setupOuter(innerVault);
+    outerUpdater = updater;
+    updateUiState();
+
+    return transferInvitationHook;
   };
 
   const innerVault = Far('innerVault', {
