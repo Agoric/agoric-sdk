@@ -137,17 +137,12 @@ test('BigInt values round-trip', async t => {
 test('BigInt encoding comparison corresponds with numeric comparison', async t => {
   await fc.assert(
     fc.property(fc.bigInt(), fc.bigInt(), (a, b) => {
-      if (a === b) return assertionPassed(t.pass(), () => true);
       const ea = encodeKey(a);
       const eb = encodeKey(b);
-      if (a < b) {
-        return assertionPassed(t.true(ea < eb), () => ea < eb);
-      }
-      if (a > b) {
-        return assertionPassed(t.true(ea > eb), () => ea > eb);
-      }
-      t.fail(`Unexpected incomparable bigints: ${a} ${b}`);
-      return false;
+      return (
+        assertionPassed(t.is(a < b, ea < eb), () => a < b === ea < eb) &&
+        assertionPassed(t.is(a > b, ea > eb), () => a > b === ea > eb)
+      );
     }),
   );
 });
