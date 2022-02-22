@@ -14,7 +14,6 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 
 import {
   invertRatio,
-  makeRatio,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
@@ -240,25 +239,7 @@ export const makeInnerVault = (
       : getCollateralAllocated(vaultSeat);
   };
 
-  /**
-   * @returns {Promise<Ratio>} Collateral over actual debt
-   */
-  const getCollateralizationRatio = async () => {
-    const collateralAmount = getCollateralAmount();
-    const quoteAmount = await E(priceAuthority).quoteGiven(
-      collateralAmount,
-      runBrand,
-    );
-
-    // TODO: allow Ratios to represent X/0.
-    if (AmountMath.isEmpty(debtSnapshot.run)) {
-      return makeRatio(collateralAmount.value, runBrand, 1n);
-    }
-    const collateralValueInRun = getAmountOut(quoteAmount);
-    return makeRatioFromAmounts(collateralValueInRun, getDebtAmount());
-  };
-
-  const snapshotState = (vstate, collateralizationRatio) => {
+  const snapshotState = vstate => {
     /** @type {VaultUIState} */
     return harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
@@ -267,7 +248,6 @@ export const makeInnerVault = (
       debtSnapshot,
       locked: getCollateralAmount(),
       debt: getDebtAmount(),
-      collateralizationRatio,
       // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
       liquidated: vaultState === VaultState.CLOSED,
       vaultState: vstate,
@@ -275,17 +255,12 @@ export const makeInnerVault = (
   };
 
   // call this whenever anything changes!
-  const updateUiState = async () => {
+  const updateUiState = () => {
     if (!outerUpdater) {
       return;
     }
-    // TODO(123): track down all calls and ensure that they all update a
-    // lastKnownCollateralizationRatio (since they all know) so we don't have to
-    // await quoteGiven() here
-    // [https://github.com/Agoric/dapp-token-economy/issues/123]
-    const collateralizationRatio = await getCollateralizationRatio();
     /** @type {VaultUIState} */
-    const uiState = snapshotState(vaultState, collateralizationRatio);
+    const uiState = snapshotState(vaultState);
     trace('updateUiState', uiState);
 
     switch (vaultState) {
