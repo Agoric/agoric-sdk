@@ -14,7 +14,7 @@
  */
 
 /**
- * @typedef {Object} NameHub
+ * @typedef {Object} NameHub read-only access to a node in a name hierarchy
  *
  * NOTE: We need to return arrays, not iterables, because even if marshal could
  * allow passing a remote iterable, there would be an inordinate number of round
@@ -32,7 +32,8 @@
  */
 
 /**
- * @typedef {Object} NameAdmin
+ * @typedef {Object} NameAdmin write access to a node in a name hierarchy
+ *
  * @property {(key: string) => void} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted).
@@ -48,10 +49,9 @@
  */
 
 /**
- * @typedef {Object} NameHubKit A kit of a NameHub and its corresponding
- * NameAdmin.
- * @property {NameHub} nameHub
- * @property {NameAdmin} nameAdmin
+ * @typedef {Object} NameHubKit a node in a name hierarchy
+ * @property {NameHub} nameHub read access
+ * @property {NameAdmin} nameAdmin write access
  */
 
 /**

@@ -87,7 +87,7 @@
 
 /**
  * @typedef {Object} XYKAMMCreatorFacet
- * @property {() => ERef<Invitation>} makeCollectFeesInvitation
+ * @property {() => Promise<Invitation>} makeCollectFeesInvitation
  */
 /**
  * @typedef {Object} XYKAMMPublicFacet

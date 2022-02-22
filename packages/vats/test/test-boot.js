@@ -1,0 +1,120 @@
+// @ts-check
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { E, Far } from '@endo/far';
+
+import { buildRootObject } from '../src/core/boot.js';
+import { buildRootObject as bankRoot } from '../src/vat-bank.js';
+import { buildRootObject as boardRoot } from '../src/vat-board.js';
+import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
+import { buildRootObject as networkRoot } from '../src/vat-network.js';
+import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
+import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
+import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
+
+const vatRoots = {
+  bank: bankRoot,
+  board: boardRoot,
+  mints: mintsRoot,
+  network: networkRoot,
+  priceAuthority: priceAuthorityRoot,
+  provisioning: provisioningRoot,
+  zoe: zoeRoot,
+};
+
+const noop = () => {};
+
+const mock = {
+  devices: {
+    command: /** @type { any } */ ({ registerInboundHandler: noop }),
+    mailbox: /** @type { any } */ ({
+      registerInboundHandler: noop,
+    }),
+    vatAdmin: /** @type { any } */ ({}),
+    timer: /** @type { any } */ ({}),
+    plugin: /** @type { any } */ ({ registerReceiver: noop }),
+  },
+  vats: {
+    vattp: /** @type { any } */ (
+      Far('vattp', {
+        registerMailboxDevice: noop,
+        addRemote: () => ({}),
+      })
+    ),
+    comms: Far('comms', {
+      addRemote: noop,
+      addEgress: noop,
+      addIngress: async () => ({
+        getChainBundle: () => ({ _: 'chain bundle' }),
+      }),
+    }),
+    http: { setPresences: noop, setCommandDevice: noop },
+    spawner: {
+      buildSpawner: () => ({ _: 'spawner' }),
+    },
+    timer: { createTimerService: async () => buildManualTimer(console.log) },
+    uploads: { getUploads: () => ({ _: 'uploads' }) },
+
+    network: Far('network', {
+      registerProtocolHandler: noop,
+      bind: () => ({ addListener: noop }),
+    }),
+  },
+};
+
+const argvByRole = {
+  chain: {
+    ROLE: 'chain',
+  },
+  'sim-chain': {
+    ROLE: 'sim-chain',
+    FIXME_GCI: 'fake GCI',
+    hardcodedClientAddresses: ['a1'],
+  },
+  client: {
+    ROLE: 'client',
+    FIXME_GCI: 'fake GCI',
+    hardcodedClientAddresses: ['a1'],
+  },
+};
+const testRole = (ROLE, governanceActions) => {
+  test(`test manifest permits: ${ROLE} gov: ${governanceActions}`, async t => {
+    const root = buildRootObject(
+      // @ts-expect-error Device<T> is a little goofy
+      { D: d => d },
+      { argv: argvByRole[ROLE], governanceActions },
+      t.log,
+    );
+
+    const fakeVatAdmin = makeFakeVatAdmin(() => {}).admin;
+    const createVatByName = name => {
+      switch (name) {
+        case 'zcf':
+          return fakeVatAdmin.createVatByName(name);
+        default: {
+          const buildRoot = vatRoots[name];
+          if (!buildRoot) {
+            throw Error(`TODO: load vat ${name}`);
+          }
+          return { root: buildRoot({}, {}), admin: {} };
+        }
+      }
+    };
+    const vats = {
+      ...mock.vats,
+      vatAdmin: /** @type { any } */ ({
+        createVatAdminService: () => Far('vatAdminSvc', { createVatByName }),
+      }),
+    };
+    const actual = await E(root).bootstrap(vats, mock.devices);
+    t.deepEqual(actual, undefined);
+  });
+};
+
+testRole('client', false);
+testRole('chain', false);
+testRole('chain', true);
+testRole('sim-chain', false);
+testRole('sim-chain', true);
