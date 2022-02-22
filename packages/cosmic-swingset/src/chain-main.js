@@ -25,19 +25,27 @@ const toNumber = specimen => {
 };
 
 const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
+  assert(
+    prefix === '' || prefix.endsWith('.'),
+    X`prefix ${prefix} must end with a dot`,
+  );
+
   let cache = new Map();
   let changedKeys = new Set();
   const storage = {
     has(key) {
-      // It's more efficient just to get the value.
-      const val = storage.get(key);
-      return !!val;
+      // It's more efficient just to get the value (null if not exists)
+      return !!storage.get(key);
     },
     set(key, obj) {
       if (cache.get(key) !== obj) {
         cache.set(key, obj);
         changedKeys.add(key);
       }
+    },
+    delete(key) {
+      cache.delete(key);
+      changedKeys.add(key);
     },
     get(key) {
       if (cache.has(key)) {
@@ -58,7 +66,7 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
     commit() {
       for (const key of changedKeys.keys()) {
         const obj = cache.get(key);
-        const value = stringify(exp(obj));
+        const value = obj === undefined ? '' : stringify(exp(obj));
         call(
           stringify({
             method: 'set',
@@ -77,6 +85,71 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
     },
   };
   return storage;
+};
+
+/**
+ * Create a queue backed by chain storage.
+ *
+ * The queue uses the following storage layout, prefixed by `prefix`, such as
+ * `actionQueue.`:
+ * - `<prefix>head`: the index of the first entry of the queue.
+ * - `<prefix>tail`: the index *past* the last entry in the queue.
+ * - `<prefix><index>`: the contents of the queue at the given index.
+ *
+ * For the `actionQueue`, the Cosmos side of the queue will push into the queue,
+ * updating `<prefix>tail` and `<prefix><index>`.  The JS side will shift the
+ * queue, updating `<prefix>head` and reading and deleting `<prefix><index>`.
+ *
+ * Parallel access is not supported, only a single outstanding operation at a
+ * time.
+ *
+ * @param {(obj: any) => any} call send a message to the chain's storage API and
+ * receive a reply
+ * @param {string} [prefix] string to prepend to the queue's storage keys
+ */
+const makeChainQueue = (call, prefix = '') => {
+  const storage = makeChainStorage(call, prefix);
+  const queue = {
+    push: obj => {
+      const tail = storage.get('tail') || 0;
+      storage.set('tail', tail + 1);
+      storage.set(tail, obj);
+      storage.commit();
+    },
+    /** @type {Iterable<unknown>} */
+    consumeAll: () => ({
+      [Symbol.iterator]: () => {
+        let head = storage.get('head') || 0;
+        const tail = storage.get('tail') || 0;
+        return {
+          next: () => {
+            if (head < tail) {
+              // Still within the queue.
+              const value = storage.get(head);
+              storage.delete(head);
+              head += 1;
+              return { value, done: false };
+            }
+            // Reached the end, so clean up our indices.
+            storage.delete('head');
+            storage.delete('tail');
+            storage.commit();
+            return { done: true };
+          },
+          return: () => {
+            // We're done consuming, so save our state.
+            storage.set('head', head);
+            storage.commit();
+          },
+          throw: () => {
+            // Don't change our state.
+            storage.abort();
+          },
+        };
+      },
+    }),
+  };
+  return queue;
 };
 
 export default async function main(progname, args, { env, homedir, agcc }) {
@@ -210,6 +283,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       },
       exportMailbox,
     );
+    const actionQueue = makeChainQueue(
+      msg => chainSend(portNums.storage, msg),
+      'actionQueue.',
+    );
     function setActivityhash(activityhash) {
       const msg = stringify({
         method: 'set',
@@ -262,6 +339,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     // consensusMode.
     const consensusMode = true;
     const s = await launch({
+      actionQueue,
       kernelStateDBDir: stateDBDir,
       mailboxStorage,
       setActivityhash,
@@ -277,7 +355,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return s;
   }
 
-  let blockManager;
+  let blockingSend;
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
     if (action.vibcPort) {
@@ -298,11 +376,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.lien = action.lienPort;
     }
 
-    if (!blockManager) {
+    if (!blockingSend) {
       const { savedChainSends: scs, ...fns } =
         await launchAndInitializeSwingSet(action);
       savedChainSends = scs;
-      blockManager = makeBlockManager({
+      blockingSend = makeBlockManager({
         ...fns,
         flushChainSends,
         verboseBlocks: true,
@@ -314,6 +392,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       return true;
     }
 
-    return blockManager(action, savedChainSends);
+    return blockingSend(action, savedChainSends);
   }
 }

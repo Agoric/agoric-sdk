@@ -1,7 +1,6 @@
 package gaia
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	stdlog "log"
@@ -105,6 +104,8 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
+	swingsetclient "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/client"
+	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 
@@ -136,6 +137,7 @@ var (
 			upgradeclient.CancelProposalHandler,
 			ibcclientclient.UpdateClientProposalHandler,
 			ibcclientclient.UpgradeProposalHandler,
+			swingsetclient.CoreEvalProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -406,6 +408,52 @@ func NewAgoricApp(
 		scopedIBCKeeper,
 	)
 
+	// This function is tricky to get right, so we build it ourselves.
+	callToController := func(ctx sdk.Context, str string) (string, error) {
+		// We use SwingSet-level metering to charge the user for the call.
+		app.MustInitController(ctx)
+		defer vm.SetControllerContext(ctx)()
+		return sendToController(true, str)
+	}
+
+	// The SwingSetKeeper is the Keeper from the SwingSet module
+	app.SwingSetKeeper = swingset.NewKeeper(
+		appCodec, keys[swingset.StoreKey], app.GetSubspace(swingset.ModuleName),
+		app.AccountKeeper, app.BankKeeper,
+		authtypes.FeeCollectorName,
+		callToController,
+	)
+	vm.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
+
+	app.VibcKeeper = vibc.NewKeeper(
+		appCodec, keys[vibc.StoreKey],
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
+		app.BankKeeper,
+		scopedVibcKeeper,
+		app.SwingSetKeeper.PushAction,
+	)
+
+	vibcModule := vibc.NewAppModule(app.VibcKeeper)
+	app.vibcPort = vm.RegisterPortHandler("vibc", vibc.NewPortHandler(vibcModule, app.VibcKeeper))
+
+	app.VbankKeeper = vbank.NewKeeper(
+		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
+		app.BankKeeper, authtypes.FeeCollectorName,
+		app.SwingSetKeeper.PushAction,
+	)
+	vbankModule := vbank.NewAppModule(app.VbankKeeper)
+	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
+
+	// Lien keeper, and circular reference back to wrappedAccountKeeper
+	app.LienKeeper = lien.NewKeeper(
+		appCodec, keys[lien.StoreKey],
+		wrappedAccountKeeper, app.BankKeeper, app.StakingKeeper,
+		app.SwingSetKeeper.PushAction,
+	)
+	wrappedAccountKeeper.SetWrapper(app.LienKeeper.GetAccountWrapper())
+	lienModule := lien.NewAppModule(app.LienKeeper)
+	app.lienPort = vm.RegisterPortHandler("lien", lien.NewPortHandler(app.LienKeeper))
+
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
 	govRouter.
@@ -413,7 +461,8 @@ func NewAgoricApp(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
+		AddRoute(swingsettypes.RouterKey, swingset.NewSwingSetProposalHandler(app.SwingSetKeeper))
 
 	app.GovKeeper = govkeeper.NewKeeper(
 		appCodec,
@@ -439,38 +488,6 @@ func NewAgoricApp(
 
 	app.RouterKeeper = routerkeeper.NewKeeper(appCodec, keys[routertypes.StoreKey], app.GetSubspace(routertypes.ModuleName), app.TransferKeeper, app.DistrKeeper)
 
-	// This function is tricky to get right, so we build it ourselves.
-	callToController := func(ctx sdk.Context, str string) (string, error) {
-		if vm.IsSimulation(ctx) {
-			// Just return empty, since the message is being simulated.
-			return "", nil
-		}
-		// We use SwingSet-level metering to charge the user for the call.
-		app.MustInitController(ctx)
-		defer vm.SetControllerContext(ctx)()
-		return sendToController(true, str)
-	}
-
-	// The SwingSetKeeper is the Keeper from the SwingSet module
-	app.SwingSetKeeper = swingset.NewKeeper(
-		appCodec, keys[swingset.StoreKey], app.GetSubspace(swingset.ModuleName),
-		app.AccountKeeper, app.BankKeeper,
-		authtypes.FeeCollectorName,
-		callToController,
-	)
-	vm.RegisterPortHandler("storage", swingset.NewStorageHandler(app.SwingSetKeeper))
-
-	app.VibcKeeper = vibc.NewKeeper(
-		appCodec, keys[vibc.StoreKey],
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.BankKeeper,
-		scopedVibcKeeper,
-		callToController,
-	)
-
-	vibcModule := vibc.NewAppModule(app.VibcKeeper)
-	app.vibcPort = vm.RegisterPortHandler("vibc", vibc.NewPortHandler(vibcModule, app.VibcKeeper))
-
 	routerModule := router.NewAppModule(app.RouterKeeper, transferModule)
 	// create static IBC router, add transfer route, then set and seal it
 	// FIXME: Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
@@ -478,20 +495,6 @@ func NewAgoricApp(
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, routerModule)
 	ibcRouter.AddRoute(vibc.ModuleName, vibcModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
-
-	app.VbankKeeper = vbank.NewKeeper(
-		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
-		app.BankKeeper, authtypes.FeeCollectorName,
-		callToController,
-	)
-	vbankModule := vbank.NewAppModule(app.VbankKeeper)
-	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
-
-	// Lien keeper, and circular reference back to wrappedAccountKeeper
-	app.LienKeeper = lien.NewKeeper(keys[lien.StoreKey], appCodec, wrappedAccountKeeper, app.BankKeeper, app.StakingKeeper, callToController)
-	wrappedAccountKeeper.SetWrapper(app.LienKeeper.GetAccountWrapper())
-	lienModule := lien.NewAppModule(app.LienKeeper)
-	app.lienPort = vm.RegisterPortHandler("lien", lien.NewPortHandler(app.LienKeeper))
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -701,10 +704,7 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		VbankPort:   app.vbankPort,
 		LienPort:    app.lienPort,
 	}
-	bz, err := json.Marshal(action)
-	if err == nil {
-		_, err = app.SwingSetKeeper.CallToController(ctx, string(bz))
-	}
+	_, err := app.SwingSetKeeper.BlockingSend(ctx, action)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
 		os.Exit(1)

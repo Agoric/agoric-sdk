@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/tendermint/tendermint/libs/log"
@@ -12,9 +13,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
@@ -28,7 +30,7 @@ type Keeper struct {
 	feeCollectorName string
 
 	// CallToController dispatches a message to the controlling process
-	CallToController func(ctx sdk.Context, str string) (string, error)
+	callToController func(ctx sdk.Context, str string) (string, error)
 }
 
 var _ types.SwingSetKeeper = &Keeper{}
@@ -68,8 +70,53 @@ func NewKeeper(
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
 		feeCollectorName: feeCollectorName,
-		CallToController: callToController,
+		callToController: callToController,
 	}
+}
+
+// PushAction appends an action to the controller's action queue.  This queue is
+// kept in the kvstore so that changes to it are properly reverted if the
+// kvstore is rolled back.  By the time the block manager runs, it can commit
+// its SwingSet transactions without fear of side-effecting the world with
+// intermediate transaction state.
+//
+// The actionQueue's format is documented by `makeChainQueue` in
+// `packages/cosmic-swingset/src/chain-main.js`.
+func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+	bz, err := json.Marshal(action)
+	if err != nil {
+		return err
+	}
+
+	// Get the current queue tail, defaulting to zero if its storage doesn't exist.
+	tail := uint64(0)
+	tailStr := k.GetStorage(ctx, "actionQueue.tail")
+	if len(tailStr) > 0 {
+		// Found, so parse it.
+		tail, err = strconv.ParseUint(tailStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Set the storage corresponding to the queue entry for the current tail.
+	k.SetStorage(ctx, fmt.Sprintf("actionQueue.%d", tail), string(bz))
+
+	// Update the tail to point to the next available entry.
+	k.SetStorage(ctx, "actionQueue.tail", fmt.Sprintf("%d", tail+1))
+	return nil
+}
+
+// BlockingSend sends a message to the controller and blocks the Golang process
+// until the response.  It is orthogonal to PushAction, and should only be used
+// by SwingSet to perform block lifecycle events (BEGIN_BLOCK, END_BLOCK,
+// COMMIT_BLOCK).
+func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Jsonable) (string, error) {
+	bz, err := json.Marshal(action)
+	if err != nil {
+		return "", err
+	}
+	return k.callToController(ctx, string(bz))
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {

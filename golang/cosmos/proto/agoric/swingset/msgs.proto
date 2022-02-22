@@ -9,6 +9,10 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 service Msg {
   // Send inbound messages.
   rpc DeliverInbound(MsgDeliverInbound) returns (MsgDeliverInboundResponse);
+  // Perform a low-privilege wallet action.
+  rpc WalletAction(MsgWalletAction) returns (MsgWalletActionResponse);
+  // Perform a wallet action that spends assets.
+  rpc WalletSpendAction(MsgWalletSpendAction) returns (MsgWalletSpendActionResponse);
   // Provision a new endpoint.
   rpc Provision(MsgProvision) returns (MsgProvisionResponse);
 }
@@ -38,6 +42,44 @@ message MsgDeliverInbound {
 
 // MsgDeliverInboundResponse is an empty reply.
 message MsgDeliverInboundResponse {}
+
+// MsgWalletAction defines an SDK message for the on-chain wallet to perform an
+// action that *does not* spend any assets (other than gas fees/stamps).  This
+// message type is typically protected by feegrant budgets.
+message MsgWalletAction {
+    option (gogoproto.equal) = false;
+
+    bytes owner = 1 [
+        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+        (gogoproto.jsontag)    = "owner",
+        (gogoproto.moretags)   = "yaml:\"owner\""
+    ];
+
+    // The action to perform, as JSON-stringified marshalled data.
+    string action = 2;
+}
+
+// MsgWalletActionResponse is an empty reply.
+message MsgWalletActionResponse {}
+
+// MsgWalletSpendAction defines an SDK message for the on-chain wallet to
+// perform an action that *does spend the owner's assets.*  This message type is
+// typically protected by explicit confirmation by the user.
+message MsgWalletSpendAction {
+    option (gogoproto.equal) = false;
+
+    bytes owner = 1 [
+        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+        (gogoproto.jsontag)    = "owner",
+        (gogoproto.moretags)   = "yaml:\"owner\""
+    ];
+
+    // The action to perform, as JSON-stringified marshalled data.
+    string spend_action = 2;
+}
+
+// MsgWalletSpendActionResponse is an empty reply.
+message MsgWalletSpendActionResponse {}
 
 // MsgProvision defines an SDK message for provisioning a client to the chain
 message MsgProvision {

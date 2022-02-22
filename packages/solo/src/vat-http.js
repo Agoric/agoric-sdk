@@ -15,10 +15,17 @@ export function buildRootObject(vatPowers) {
   const { notifier: loadingNotifier, updater: loadingUpdater } =
     makeNotifierKit(LOADING);
 
+  const antifreeze = obj =>
+    new Proxy(obj, {
+      preventExtensions() {
+        return false;
+      },
+    });
+
   const replObjects = {
-    home: { LOADING },
-    agoric: {},
-    local: {},
+    home: antifreeze({ LOADING }),
+    agoric: antifreeze({}),
+    local: antifreeze({}),
   };
 
   function doneLoading(subsystems) {
