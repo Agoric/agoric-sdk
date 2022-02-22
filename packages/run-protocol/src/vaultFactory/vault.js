@@ -161,7 +161,7 @@ export const makeInnerVault = (
   /**
    * Snapshot of the debt and compounded interest when the principal was last changed
    *
-   * @type {{run: Amount, interest: Ratio}}
+   * @type {{run: Amount<NatValue>, interest: Ratio}}
    */
   let debtSnapshot = {
     run: AmountMath.makeEmpty(runBrand, 'nat'),
@@ -172,7 +172,7 @@ export const makeInnerVault = (
    * Called whenever the debt is paid or created through a transaction,
    * but not for interest accrual.
    *
-   * @param {Amount} newDebt - principal and all accrued interest
+   * @param {Amount<NatValue>} newDebt - principal and all accrued interest
    */
   const updateDebtSnapshot = newDebt => {
     // update local state
@@ -181,9 +181,9 @@ export const makeInnerVault = (
   };
 
   /**
-   * @param {Amount} oldDebt - prior principal and all accrued interest
-   * @param {Amount} oldCollateral - actual collateral
-   * @param {Amount} newDebt - actual principal and all accrued interest
+   * @param {Amount<NatValue>} oldDebt - prior principal and all accrued interest
+   * @param {Amount<NatValue>} oldCollateral - actual collateral
+   * @param {Amount<NatValue>} newDebt - actual principal and all accrued interest
    */
   const refreshLoanTracking = (oldDebt, oldCollateral, newDebt) => {
     updateDebtSnapshot(newDebt);
@@ -236,6 +236,11 @@ export const makeInnerVault = (
 
   const getCollateralAllocated = seat =>
     seat.getAmountAllocated('Collateral', collateralBrand);
+  /**
+   * @param {ZCFSeat} seat
+   * @returns {Amount<NatValue>}
+   */
+  // @ts-expect-error getAmountAllocated is not yet generic (RUN implies NatValue)
   const getRunAllocated = seat => seat.getAmountAllocated('RUN', runBrand);
 
   const assertVaultHoldsNoRun = () => {
@@ -334,7 +339,7 @@ export const makeInnerVault = (
   /**
    * Call must check for and remember shortfall
    *
-   * @param {Amount} newDebt
+   * @param {Amount<NatValue>} newDebt
    */
   const liquidated = newDebt => {
     updateDebtSnapshot(newDebt);
@@ -386,7 +391,7 @@ export const makeInnerVault = (
     seat.exit();
     burnSeat.exit();
     assignPhase(VaultPhase.CLOSED);
-    updateDebtSnapshot(AmountMath.makeEmpty(runBrand));
+    updateDebtSnapshot(AmountMath.makeEmpty(runBrand, 'nat'));
     updateUiState();
 
     assertVaultHoldsNoRun();
@@ -469,20 +474,23 @@ export const makeInnerVault = (
    * accept when the proposal says to give more RUN than are owed.
    *
    * @param {ZCFSeat} seat
-   * @returns {{vault: Amount, client: Amount}}
+   * @returns {{vault: Amount<NatValue>, client: Amount<NatValue>}}
    */
   const targetRunLevels = seat => {
     const clientAllocation = getRunAllocated(seat);
     const proposal = seat.getProposal();
     if (proposal.want.RUN) {
       return {
-        vault: AmountMath.makeEmpty(runBrand),
+        vault: AmountMath.makeEmpty(runBrand, 'nat'),
+        // @ts-expect-error proposals not generic (RUN implies NatValue)
         client: AmountMath.add(clientAllocation, proposal.want.RUN),
       };
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
       // TODO this is the same as in `transferRun`
       const currentDebt = getDebtAmount();
+      /** @type {Amount<NatValue>} */
+      // @ts-expect-error proposals not generic (RUN implies NatValue)
       const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
         ? currentDebt
         : proposal.give.RUN;
@@ -493,7 +501,7 @@ export const makeInnerVault = (
       };
     } else {
       return {
-        vault: AmountMath.makeEmpty(runBrand),
+        vault: AmountMath.makeEmpty(runBrand, 'nat'),
         client: clientAllocation,
       };
     }
@@ -520,15 +528,16 @@ export const makeInnerVault = (
    * Calculate the fee, the amount to mint and the resulting debt
    *
    * @param {ProposalRecord} proposal
-   * @param {{vault: Amount, client: Amount}} runAfter
+   * @param {{vault: Amount<NatValue>, client: Amount<NatValue>}} runAfter
    */
   const loanFee = (proposal, runAfter) => {
     let newDebt;
     const currentDebt = getDebtAmount();
-    let toMint = AmountMath.makeEmpty(runBrand);
-    let fee = AmountMath.makeEmpty(runBrand);
+    let toMint = AmountMath.makeEmpty(runBrand, 'nat');
+    let fee = AmountMath.makeEmpty(runBrand, 'nat');
     if (proposal.want.RUN) {
       fee = ceilMultiplyBy(proposal.want.RUN, manager.getLoanFee());
+      // @ts-expect-error proposals not generic (RUN implies NatValue)
       toMint = AmountMath.add(proposal.want.RUN, fee);
       newDebt = AmountMath.add(currentDebt, toMint);
     } else if (proposal.give.RUN) {
@@ -689,6 +698,7 @@ export const makeInnerVault = (
     );
     manager.reallocateReward(fee, vaultSeat, seat);
 
+    // @ts-expect-error proposals not generic (RUN implies NatValue)
     refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
 
     return setupOuter(innerVault);

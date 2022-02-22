@@ -50,6 +50,8 @@ const liquidate = async (zcf, vault, burnLosses, strategy, collateralBrand) => {
   await Promise.all([deposited, E(liqSeat).getOfferResult()]);
 
   // Now we need to know how much was sold so we can pay off the debt
+  /** @type {Amount<NatValue>} */
+  // @ts-expect-error liquidationSeat not generic (RUN implies NatValue)
   const runProceedsAmount = liquidationSeat.getAmountAllocated('RUN', runBrand);
 
   trace('RUN PROCEEDS', runProceedsAmount);
