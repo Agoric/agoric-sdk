@@ -1,11 +1,8 @@
 name: Test all Packages
 
-# run CI on pushes to default, and on all PRs (even the ones that target other
-# branches)
+# run on all PRs (even the ones that target other branches)
 
 on:
-  push:
-    branches: [master] # $default-branch
   pull_request:
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
@@ -19,33 +16,9 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-
-      - uses: actions/setup-node@v1
+      - uses: ./.github/actions/build-node
         with:
-          node-version: ${{ matrix.node-version }}
-      - name: cache node modules
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      # 'yarn install' must be done at the top level, to build all the
-      # cross-package symlinks
-      - name: yarn install
-        run: yarn install
-      - name: check if git is dirty
-        run: git diff --stat --exit-code
-      - name: check dependencies
-        run: yarn check-dependencies
-      # 'yarn build' loops over all workspaces
-      - name: yarn build
-        run: yarn build
-
-      - uses: ./.github/actions/save-node
-        with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node-version}}
 
   lint:
     needs: build
@@ -62,93 +35,6 @@ jobs:
 
       - name: lint check
         run: yarn lint
-
-  dev-canary:
-    if: ${{github.event_name == 'push'}}
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
-      - name: configure NPM token
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: check credentials
-        run: npm whoami
-      - name: publish to NPM dev tag
-        run: |
-          yarn lerna publish --conventional-prerelease --canary --exact \
-            --dist-tag=dev --preid=dev-$(git rev-parse --short=7 HEAD) \
-            --no-push --no-verify-access --yes
-
-  benchmark:
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
-    if: ${{github.event_name == 'push'}}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: benchmark changes
-        env:
-          AUTOBENCH_METRICS_URL: ${{ secrets.AUTOBENCH_METRICS_URL }}
-        run: cd packages/swingset-runner && yarn ci:autobench
-      - uses: actions/upload-artifact@v2
-        with:
-          name: benchmarkstats.json
-          path: packages/swingset-runner/benchstats*.json
-
-  coverage:
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
-    if: ${{github.event_name == 'push' }}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: generate coverage for all tests
-        run: 'yarn test:c8-all || :'
-      - name: generate coverage/html reports
-        run: mkdir -p coverage/tmp && yarn c8 report --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
-      - uses: actions/upload-artifact@v2
-        with:
-          name: coverage
-          path: coverage
-      - name: Find Netlify site ID
-        run: |
-          echo "NETLIFY_SITE_ID=$(cat COVERAGE_NETLIFY_SITE_ID)" >> $GITHUB_ENV
-
-      - uses: nwtgck/actions-netlify@v1.1
-        with:
-          # Production deployment if a push or merged PR.
-          production-deploy: ${{github.event_name == 'push'}}
-          publish-dir: coverage/html
-          # SECURITY: we don't want to hand out the Github token to this action.
-          # github-token: ${{ secrets.GITHUB_TOKEN }}
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
   ##################
   # Fast-running tests run as a group:
