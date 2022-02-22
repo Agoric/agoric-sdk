@@ -37,8 +37,8 @@ const withinEpsilon = (left, right) =>
   multiply(right, 105) >= multiply(left, 100) &&
   multiply(left, 105) >= multiply(right, 100);
 
-test('balancesToReachRatio calculations are to spec', t => {
-  fc.assert(
+test('balancesToReachRatio calculations are to spec', async t => {
+  await fc.assert(
     fc.property(
       fc.record({
         poolX: arbPoolX,

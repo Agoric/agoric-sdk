@@ -28,8 +28,8 @@ const arbAmount = arbBagContents.map(contents =>
 // Note: we write P => Q as !P || Q since JS has no logical => operator
 const implies = (p, q) => !p || q;
 
-test('isEqual is a (total) equivalence relation', t => {
-  fc.assert(
+test('isEqual is a (total) equivalence relation', async t => {
+  await fc.assert(
     fc.property(
       fc.record({ x: arbAmount, y: arbAmount, z: arbAmount }),
       ({ x, y, z }) => {
@@ -43,9 +43,9 @@ test('isEqual is a (total) equivalence relation', t => {
   );
 });
 
-test('isGTE is a partial order with empty as minimum', t => {
+test('isGTE is a partial order with empty as minimum', async t => {
   const empty = m.makeEmpty(mockBrand, AssetKind.COPY_BAG);
-  fc.assert(
+  await fc.assert(
     fc.property(fc.record({ x: arbAmount, y: arbAmount }), ({ x, y }) => {
       t.true(m.isGTE(x, empty));
       t.true([true, false].includes(m.isGTE(x, y))); // Total
@@ -56,9 +56,9 @@ test('isGTE is a partial order with empty as minimum', t => {
   );
 });
 
-test('add: closed, commutative, associative, monotonic, with empty identity', t => {
+test('add: closed, commutative, associative, monotonic, with empty identity', async t => {
   const empty = m.makeEmpty(mockBrand, AssetKind.COPY_BAG);
-  fc.assert(
+  await fc.assert(
     fc.property(
       fc.record({ x: arbAmount, y: arbAmount, z: arbAmount }),
       ({ x, y, z }) => {
@@ -76,8 +76,8 @@ test('add: closed, commutative, associative, monotonic, with empty identity', t 
   );
 });
 
-test('subtract: (x + y) - y = x; (y - x) + x = y if y >= x', t => {
-  fc.assert(
+test('subtract: (x + y) - y = x; (y - x) + x = y if y >= x', async t => {
+  await fc.assert(
     fc.property(fc.record({ x: arbAmount, y: arbAmount }), ({ x, y }) => {
       t.true(m.isEqual(m.subtract(m.add(x, y), y), x));
       t.true(m.isGTE(y, x) ? m.isEqual(m.add(m.subtract(y, x), x), y) : true);
