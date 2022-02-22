@@ -7,6 +7,7 @@ import { isKey } from '../src/keys/checkKey.js';
 import { compareKeys, keyEQ } from '../src/keys/compareKeys.js';
 import { makeEncodeKey, makeDecodeKey } from '../src/patterns/encodeKey.js';
 import { compareRank, makeComparatorKit } from '../src/patterns/rankOrder.js';
+import { assertionPassed } from './test-store.js';
 import { sample } from './test-rankOrder.js';
 
 const { details: X } = assert;
@@ -127,7 +128,8 @@ test('order invariants', t => {
 test('BigInt values round-trip', async t => {
   await fc.assert(
     fc.property(fc.bigInt(), n => {
-      return t.is(decodeKey(encodeKey(n)), n);
+      const rt = decodeKey(encodeKey(n));
+      return assertionPassed(t.is(rt, n), () => rt === n);
     }),
   );
 });
@@ -135,10 +137,17 @@ test('BigInt values round-trip', async t => {
 test('BigInt encoding comparison corresponds with numeric comparison', async t => {
   await fc.assert(
     fc.property(fc.bigInt(), fc.bigInt(), (a, b) => {
-      if (a === b) return t.pass();
-      if (a < b) return t.true(encodeKey(a) < encodeKey(b));
-      if (a > b) return t.true(encodeKey(a) > encodeKey(b));
-      return t.fail(`Unexpected incomparable bigints: ${a} ${b}`);
+      if (a === b) return assertionPassed(t.pass(), () => true);
+      const ea = encodeKey(a);
+      const eb = encodeKey(b);
+      if (a < b) {
+        return assertionPassed(t.true(ea < eb), () => ea < eb);
+      }
+      if (a > b) {
+        return assertionPassed(t.true(ea > eb), () => ea > eb);
+      }
+      t.fail(`Unexpected incomparable bigints: ${a} ${b}`);
+      return false;
     }),
   );
 });
