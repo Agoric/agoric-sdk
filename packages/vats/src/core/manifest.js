@@ -322,6 +322,12 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       },
     },
   },
+  grantVaultFactoryControl: {
+    vatParameters: {
+      argv: { vaultFactoryControllerAddress: true },
+    },
+    consume: { client: 'provisioning', vaultFactoryCreator: 'VaultFactory' },
+  },
   configureVaultFactoryUI: {
     consume: {
       board: true,
