@@ -3,12 +3,12 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { economyBundles } from '@agoric/run-protocol/src/importedBundles.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { observeIteration } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
 import { buildRootObject } from '../src/vat-bank.js';
 import {
   mintInitialSupply,

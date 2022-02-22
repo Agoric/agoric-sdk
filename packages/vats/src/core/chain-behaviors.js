@@ -1,5 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
   makeSubscriptionKit,
@@ -18,7 +19,6 @@ import {
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 
-import { makePromiseKit } from '@agoric/promise-kit';
 import * as Collect from '@agoric/run-protocol/src/collect.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 
