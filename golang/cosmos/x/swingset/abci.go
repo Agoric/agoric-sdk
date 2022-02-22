@@ -22,7 +22,6 @@ type beginBlockAction struct {
 
 type endBlockAction struct {
 	Type        string `json:"type"`
-	StoragePort int    `json:"storagePort"`
 	BlockHeight int64  `json:"blockHeight"`
 	BlockTime   int64  `json:"blockTime"`
 }
@@ -45,9 +44,6 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		Params:      keeper.GetParams(ctx),
 	}
 	_, err := keeper.BlockingSend(ctx, action)
-	if err == nil {
-		err = keeper.PushAction(ctx, action)
-	}
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	return err
@@ -58,17 +54,13 @@ var endBlockTime int64
 
 func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
+
 	action := &endBlockAction{
 		Type:        "END_BLOCK",
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
-		StoragePort: vm.GetPort("storage"),
 	}
-
-	err := keeper.PushAction(ctx, action)
-	if err == nil {
-		_, err = keeper.BlockingSend(ctx, action)
-	}
+	_, err := keeper.BlockingSend(ctx, action)
 
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {

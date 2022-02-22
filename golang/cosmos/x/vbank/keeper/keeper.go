@@ -6,6 +6,8 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
 const paramsKey string = "params"
@@ -19,8 +21,7 @@ type Keeper struct {
 
 	bankKeeper       types.BankKeeper
 	feeCollectorName string
-	// PushAction enqueues a message for the controlling process
-	PushAction func(ctx sdk.Context, action interface{}) error
+	PushAction       vm.ActionPusher
 }
 
 // NewKeeper creates a new vbank Keeper instance
@@ -28,7 +29,7 @@ func NewKeeper(
 	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
 	feeCollectorName string,
-	pushAction func(ctx sdk.Context, action interface{}) error,
+	pushAction vm.ActionPusher,
 ) Keeper {
 
 	// set KeyTable if it has not already been set

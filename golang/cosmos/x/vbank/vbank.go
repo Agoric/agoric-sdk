@@ -69,7 +69,7 @@ type vbankBalanceUpdate struct {
 	Updated vbankManyBalanceUpdates `json:"updated"`
 }
 
-func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) interface{} {
+func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[string]sdk.Coins) vm.Jsonable {
 	nentries := len(addressToBalance)
 	if nentries == 0 {
 		return nil
@@ -100,7 +100,7 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToBalance map[strin
 	return event
 }
 
-func marshal(event interface{}) ([]byte, error) {
+func marshal(event vm.Jsonable) ([]byte, error) {
 	if event == nil {
 		return nil, nil
 	}
@@ -234,6 +234,6 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) PushAction(ctx sdk.Context, action interface{}) error {
+func (am AppModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	return am.keeper.PushAction(ctx, action)
 }

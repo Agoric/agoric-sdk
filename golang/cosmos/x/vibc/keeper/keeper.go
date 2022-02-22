@@ -14,6 +14,7 @@ import (
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
+	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 )
 
@@ -27,8 +28,7 @@ type Keeper struct {
 	scopedKeeper  capabilitykeeper.ScopedKeeper
 	bankKeeper    bankkeeper.Keeper
 
-	// PushAction enqueues an action for the controlling process
-	PushAction func(ctx sdk.Context, action interface{}) error
+	PushAction vm.ActionPusher
 }
 
 // NewKeeper creates a new dIBC Keeper instance
@@ -37,7 +37,7 @@ func NewKeeper(
 	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
 	bankKeeper bankkeeper.Keeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
-	pushAction func(ctx sdk.Context, action interface{}) error,
+	pushAction vm.ActionPusher,
 ) Keeper {
 
 	return Keeper{

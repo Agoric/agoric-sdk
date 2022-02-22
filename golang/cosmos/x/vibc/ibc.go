@@ -149,7 +149,7 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) PushAction(ctx sdk.Context, action interface{}) error {
+func (am AppModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	// fmt.Println("ibc.go upcall", send)
 	return am.keeper.PushAction(ctx, action)
 	// fmt.Println("ibc.go upcall reply", reply, err)

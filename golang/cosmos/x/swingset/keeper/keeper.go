@@ -13,9 +13,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
@@ -75,28 +76,34 @@ func NewKeeper(
 
 // PushAction appends an action to the controller's action queue.  This queue is
 // kept in the kvstore so that changes to it are properly reverted if the
-// kvstore as rolled back.  By the time the block manager runs, it can commit
+// kvstore is rolled back.  By the time the block manager runs, it can commit
 // its SwingSet transactions without fear of side-effecting the world with
 // intermediate transaction state.
-func (k Keeper) PushAction(ctx sdk.Context, obj interface{}) error {
-	bz, err := json.Marshal(obj)
+//
+// The actionQueue's format is documented by `makeChainQueue` in
+// `packages/cosmic-swingset/src/chain-main.js`.
+func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+	bz, err := json.Marshal(action)
 	if err != nil {
 		return err
 	}
+
+	// Get the current queue tail, defaulting to zero if its storage doesn't exist.
+	tail := uint64(0)
 	tailStr := k.GetStorage(ctx, "actionQueue.tail")
-	var tail uint64
 	if len(tailStr) > 0 {
+		// Found, so parse it.
 		tail, err = strconv.ParseUint(tailStr, 10, 64)
 		if err != nil {
 			return err
 		}
 	}
+
+	// Set the storage corresponding to the queue entry for the current tail.
 	k.SetStorage(ctx, fmt.Sprintf("actionQueue.%d", tail), string(bz))
-	bz, err = json.Marshal(tail + 1)
-	if err != nil {
-		return err
-	}
-	k.SetStorage(ctx, "actionQueue.tail", string(bz))
+
+	// Update the tail to point to the next available entry.
+	k.SetStorage(ctx, "actionQueue.tail", fmt.Sprintf("%d", tail+1))
 	return nil
 }
 
@@ -104,8 +111,8 @@ func (k Keeper) PushAction(ctx sdk.Context, obj interface{}) error {
 // until the response.  It is orthogonal to PushAction, and should only be used
 // by SwingSet to perform block lifecycle events (BEGIN_BLOCK, END_BLOCK,
 // COMMIT_BLOCK).
-func (k Keeper) BlockingSend(ctx sdk.Context, obj interface{}) (string, error) {
-	bz, err := json.Marshal(obj)
+func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Jsonable) (string, error) {
+	bz, err := json.Marshal(action)
 	if err != nil {
 		return "", err
 	}

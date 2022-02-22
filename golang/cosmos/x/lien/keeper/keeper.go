@@ -9,6 +9,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
 type Keeper interface {
@@ -33,13 +35,13 @@ type keeperImpl struct {
 	bankKeeper    types.BankKeeper
 	stakingKeeper types.StakingKeeper
 
-	pushAction func(ctx sdk.Context, action interface{}) error
+	pushAction vm.ActionPusher
 }
 
 // NewKeeper returns a new Keeper.
 // The ak must be the same accout keeper that the bk and sk use.
 func NewKeeper(cdc codec.Codec, key sdk.StoreKey, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
-	pushAction func(ctx sdk.Context, action interface{}) error) Keeper {
+	pushAction vm.ActionPusher) Keeper {
 	return keeperImpl{
 		key:           key,
 		cdc:           cdc,

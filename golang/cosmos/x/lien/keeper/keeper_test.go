@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
 	"github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -91,7 +92,7 @@ func makeTestKit() (sdk.Context, authkeeper.AccountKeeper, bankkeeper.Keeper, st
 	sk := stakingkeeper.NewKeeper(cdc, stakingStoreKey, wak, bk, stakingSpace)
 
 	// lien keeper
-	pushAction := func(sdk.Context, interface{}) error {
+	pushAction := func(sdk.Context, vm.Jsonable) error {
 		return nil
 	}
 	keeper := NewKeeper(cdc, lienStoreKey, wak, bk, sk, pushAction)

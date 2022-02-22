@@ -10,8 +10,14 @@ import (
 
 const RouterKey = ModuleName // this was defined in your key.go file
 
-var _, _, _, _ sdk.Msg = &MsgDeliverInbound{}, &MsgProvision{}, &MsgWalletAction{}, &MsgWalletSpendAction{}
-var _ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
+var (
+	_ sdk.Msg = &MsgDeliverInbound{}
+	_ sdk.Msg = &MsgProvision{}
+	_ sdk.Msg = &MsgWalletAction{}
+	_ sdk.Msg = &MsgWalletSpendAction{}
+
+	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
+)
 
 func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverInbound {
 	return &MsgDeliverInbound{

@@ -229,7 +229,7 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaler
-	pushAction := func(ctx sdk.Context, action interface{}) error {
+	pushAction := func(ctx sdk.Context, action vm.Jsonable) error {
 		return nil
 	}
 
@@ -472,7 +472,7 @@ func Test_EndBlock_Events(t *testing.T) {
 	}}
 	keeper, ctx := makeTestKit(bank)
 	msgsSent := []string{}
-	keeper.PushAction = func(ctx sdk.Context, action interface{}) error {
+	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
 		bz, err := json.Marshal(action)
 		if err != nil {
 			return err
@@ -550,7 +550,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 	}
 	keeper, ctx := makeTestKit(bank)
 	msgsSent := []string{}
-	keeper.PushAction = func(ctx sdk.Context, action interface{}) error {
+	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
 		bz, err := json.Marshal(action)
 		if err != nil {
 			return err
