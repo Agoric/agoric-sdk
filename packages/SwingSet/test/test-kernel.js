@@ -309,7 +309,8 @@ test('outbound call', async t => {
   t.deepEqual(log.shift(), ['d1', 'o+1', 'foo', capdata('args')]);
   t.deepEqual(log, []);
 
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: vat2Obj5,
@@ -519,7 +520,8 @@ test('three-party', async t => {
   t.deepEqual(log.shift(), ['vatA', 'promiseID', 'p+5']);
   t.deepEqual(log, []);
 
-  t.deepEqual(kernel.dump().runQueue, [
+  t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
       target: bob,

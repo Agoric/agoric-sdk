@@ -783,7 +783,6 @@ export default function buildKernel(
       } else {
         assert.fail(X`unable to process message.type ${message.type}`);
       }
-      processAcceptanceQueue();
       let didAbort = false;
       if (terminationTrigger) {
         // the vat is doomed, either voluntarily or from meter/syscall fault
@@ -811,7 +810,6 @@ export default function buildKernel(
         // state changes reflecting the termination must also survive, so
         // these happen after a possible abortCrank()
         terminateVat(vatID, shouldReject, info);
-        processAcceptanceQueue();
         kernelSlog.terminateVat(vatID, shouldReject, info);
         kdebug(`vat terminated: ${JSON.stringify(info)}`);
       }
@@ -1167,9 +1165,9 @@ export default function buildKernel(
     if (!started) {
       throw new Error('must do kernel.start() before run()');
     }
-    processAcceptanceQueue();
     let count = 0;
     for (;;) {
+      processAcceptanceQueue();
       const message = getNextMessage();
       if (!message) {
         break;

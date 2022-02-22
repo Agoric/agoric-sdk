@@ -296,7 +296,8 @@ test.serial('bootstrap export', async t => {
   kt.push([adminDev, bootstrapVatID, 'd-70']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     {
       type: 'send',
       target: left0,
@@ -319,7 +320,8 @@ test.serial('bootstrap export', async t => {
   kt.push([barP, leftVatID, 'p+5']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     {
       type: 'send',
       target: right0,
@@ -347,6 +349,8 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().runQueue, [
     { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
+  ]);
+  t.deepEqual(c.dump().acceptanceQueue, [
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
@@ -371,6 +375,7 @@ test.serial('bootstrap export', async t => {
   t.deepEqual(c.dump().runQueue, [
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
+  t.deepEqual(c.dump().acceptanceQueue, []);
 
   await stepGC(); // notify
 
