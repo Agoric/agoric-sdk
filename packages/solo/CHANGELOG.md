@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.4...@agoric/solo@0.5.5) (2022-02-21)
+
+
+### Features
+
+* **solo:** create `ag-solo-mnemonic` in preparation for CosmJS ([1091a9b](https://github.com/Agoric/agoric-sdk/commit/1091a9be12dd29a3072a8f156eb86c2584b29bdd))
+* **solo:** run sim-chain in a separate process ([a9bc83d](https://github.com/Agoric/agoric-sdk/commit/a9bc83dc8f74a77a39feef4f1de45a0eee9439ae))
+* **solo:** skip `agoric deploy ...` if 0 wallet deploys ([d68b472](https://github.com/Agoric/agoric-sdk/commit/d68b472f9dd8ac5b05b91de24ba3a9f51bfd58de))
+* **swing-store:** enable `LMDB_MAP_SIZE` and `SOLO_LMDB_MAP_SIZE` ([77f67a8](https://github.com/Agoric/agoric-sdk/commit/77f67a8010d84b4f595e1fbd524b344050ae47d6))
+* **telemetry:** use `makeSlogSenderFromModule` ([2892da9](https://github.com/Agoric/agoric-sdk/commit/2892da96eff902c5f616424d6fb9946aaaef1b0f))
+
+
+### Bug Fixes
+
+* **solo:** kill off sim-chain child with `SIGTERM` ([e85dccd](https://github.com/Agoric/agoric-sdk/commit/e85dccdb445d213f3d85d2cd8a65bf65d61f84f0))
+* **solo:** minor pipe reordering and refactoring ([8fafe57](https://github.com/Agoric/agoric-sdk/commit/8fafe57af019aae8ee6d57531cbafd4426d72b86))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* **solo:** explicitly use `agoric/src/entrypoint.js` for deployment ([24f1f05](https://github.com/Agoric/agoric-sdk/commit/24f1f051dd9a77e268a2adad14d5f53c8cd2534c))
+* **solo:** Reject with error, not number ([e5f622f](https://github.com/Agoric/agoric-sdk/commit/e5f622fe3708994388b98a7d9d944b3c694d0ad5))
+* **solo:** remove a symlink dependency in exchange for web config ([42fc52b](https://github.com/Agoric/agoric-sdk/commit/42fc52b9d7bd8217038164f92f0448c4540c6e64))
+
+
+
 ### [0.5.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.3...@agoric/solo@0.5.4) (2021-12-22)
 
 

@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.18.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.1...@agoric/swingset-runner@0.18.2) (2022-02-21)
+
+
+### Features
+
+* add --wide option to kerneldump utility ([749c801](https://github.com/Agoric/agoric-sdk/commit/749c801e8d0bcb5f1d14741328a2d25a71cc33fa))
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+
+
+
 ### [0.18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.0...@agoric/swingset-runner@0.18.1) (2021-12-22)
 
 **Note:** Version bump only for package @agoric/swingset-runner

@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.34](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.33...@agoric/import-bundle@0.2.34) (2022-02-21)
+
+
+### Bug Fixes
+
+* **import-bundle:** Handle harden bundles in tests ([4bcbcb5](https://github.com/Agoric/agoric-sdk/commit/4bcbcb5f40755fda68851ddca2cacaec4eb07221))
+* **import-bundle:** Remove extra dependency on swingset-vat ([a02ad78](https://github.com/Agoric/agoric-sdk/commit/a02ad78ee617df648dba20343d95993334afdf8c))
+
+
+
 ### [0.2.33](https://github.com/Agoric/agoric-sdk/compare/@agoric/import-bundle@0.2.32...@agoric/import-bundle@0.2.33) (2021-12-22)
 
 **Note:** Version bump only for package @agoric/import-bundle
