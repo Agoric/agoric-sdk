@@ -28,18 +28,16 @@ const trace = makeTracer('Vault');
 // collateral, and lending RUN to the borrower
 
 /**
- * Constants for vault state.
+ * Constants for vault phase.
  *
- * @typedef {'active' | 'liquidating' | 'closed' | 'transfer'} VAULT_STATE
- *
- * @type {{ ACTIVE: 'active', LIQUIDATING: 'liquidating', CLOSED: 'closed', TRANSFER: 'transfer' }}
+ * @typedef {VaultPhase[keyof typeof VaultPhase]} VAULT_PHASE
  */
-export const VaultState = {
+export const VaultPhase = /** @type {const} */ ({
   ACTIVE: 'active',
   LIQUIDATING: 'liquidating',
   CLOSED: 'closed',
   TRANSFER: 'transfer',
-};
+});
 
 const makeOuterKit = inner => {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
@@ -102,11 +100,11 @@ export const makeInnerVault = (
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
     zcf.makeEmptySeatKit(undefined);
 
-  /** @type {VAULT_STATE} */
-  let vaultState = VaultState.ACTIVE;
+  /** @type {VAULT_PHASE} */
+  let phase = VaultPhase.ACTIVE;
 
   const assertVaultIsOpen = () => {
-    assert(vaultState === VaultState.ACTIVE, X`vault must still be active`);
+    assert(phase === VaultPhase.ACTIVE, X`vault must still be active`);
   };
 
   let outerUpdater;
@@ -239,7 +237,7 @@ export const makeInnerVault = (
       : getCollateralAllocated(vaultSeat);
   };
 
-  const snapshotState = vstate => {
+  const snapshotState = newPhase => {
     /** @type {VaultUIState} */
     return harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
@@ -249,8 +247,9 @@ export const makeInnerVault = (
       locked: getCollateralAmount(),
       debt: getDebtAmount(),
       // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
-      liquidated: vaultState === VaultState.CLOSED,
-      vaultState: vstate,
+      // XXX uses closure value instead of argument
+      liquidated: phase === VaultPhase.CLOSED,
+      vaultState: newPhase,
     });
   };
 
@@ -260,26 +259,26 @@ export const makeInnerVault = (
       return;
     }
     /** @type {VaultUIState} */
-    const uiState = snapshotState(vaultState);
+    const uiState = snapshotState(phase);
     trace('updateUiState', uiState);
 
-    switch (vaultState) {
-      case VaultState.ACTIVE:
-      case VaultState.LIQUIDATING:
+    switch (phase) {
+      case VaultPhase.ACTIVE:
+      case VaultPhase.LIQUIDATING:
         outerUpdater.updateState(uiState);
         break;
-      case VaultState.CLOSED:
+      case VaultPhase.CLOSED:
         outerUpdater.finish(uiState);
         break;
       default:
-        throw Error(`unreachable vaultState: ${vaultState}`);
+        throw Error(`unreachable vaultState: ${phase}`);
     }
   };
   // XXX Echo notifications from the manager through all vaults
   // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
   observeNotifier(managerNotifier, {
     updateState: () => {
-      if (vaultState !== VaultState.CLOSED) {
+      if (phase !== VaultPhase.CLOSED) {
         updateUiState();
       }
     },
@@ -293,15 +292,15 @@ export const makeInnerVault = (
   const liquidated = newDebt => {
     updateDebtSnapshot(newDebt);
 
-    vaultState = VaultState.CLOSED;
+    phase = VaultPhase.CLOSED;
     updateUiState();
   };
 
   const liquidating = () => {
-    if (vaultState === VaultState.LIQUIDATING) {
+    if (phase === VaultPhase.LIQUIDATING) {
       throw new Error('Vault already liquidating');
     }
-    vaultState = VaultState.LIQUIDATING;
+    phase = VaultPhase.LIQUIDATING;
     updateUiState();
   };
 
@@ -342,7 +341,7 @@ export const makeInnerVault = (
     runMint.burnLosses(harden({ RUN: currentDebt }), burnSeat);
     seat.exit();
     burnSeat.exit();
-    vaultState = VaultState.CLOSED;
+    phase = VaultPhase.CLOSED;
     updateDebtSnapshot(AmountMath.makeEmpty(runBrand));
     updateUiState();
 
@@ -670,7 +669,7 @@ export const makeInnerVault = (
     makeCloseInvitation,
     makeTransferInvitation: () => {
       if (outerUpdater) {
-        outerUpdater.finish(snapshotState(VaultState.TRANSFER));
+        outerUpdater.finish(snapshotState(VaultPhase.TRANSFER));
         outerUpdater = null;
       }
       return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');

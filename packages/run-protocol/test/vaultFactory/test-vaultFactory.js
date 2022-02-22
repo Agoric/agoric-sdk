@@ -25,7 +25,7 @@ import {
 
 import { makeTracer } from '../../src/makeTracer.js';
 import { SECONDS_PER_YEAR } from '../../src/vaultFactory/interest.js';
-import { VaultState } from '../../src/vaultFactory/vault.js';
+import { VaultPhase } from '../../src/vaultFactory/vault.js';
 import {
   CHARGING_PERIOD_KEY,
   RECORDING_PERIOD_KEY,
@@ -525,7 +525,7 @@ test('price drop', async t => {
   notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
   trace('price changed to liquidate', notification.value.vaultState);
   t.falsy(notification.value.liquidated);
-  t.is(notification.value.vaultState, VaultState.LIQUIDATING);
+  t.is(notification.value.vaultState, VaultPhase.LIQUIDATING);
 
   await manualTimer.tick();
   notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
@@ -1270,14 +1270,14 @@ test('transfer vault', async t => {
   const aliceFinish = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(
     aliceFinish.value.vaultState,
-    VaultState.TRANSFER,
+    VaultPhase.TRANSFER,
     'transfer closed old notifier',
   );
 
   const transferStatus = await E(transferNotifier).getUpdateSince();
   t.deepEqual(
     transferStatus.value.vaultState,
-    VaultState.ACTIVE,
+    VaultPhase.ACTIVE,
     'new notifier is active',
   );
 
@@ -1322,14 +1322,14 @@ test('transfer vault', async t => {
   const transferFinish = await E(transferNotifier).getUpdateSince();
   t.deepEqual(
     transferFinish.value.vaultState,
-    VaultState.TRANSFER,
+    VaultPhase.TRANSFER,
     't2 closed old notifier',
   );
 
   const t2Status = await E(t2Notifier).getUpdateSince();
   t.deepEqual(
     t2Status.value.vaultState,
-    VaultState.ACTIVE,
+    VaultPhase.ACTIVE,
     'new notifier is active',
   );
 });
