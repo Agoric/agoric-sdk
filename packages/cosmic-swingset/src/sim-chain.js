@@ -147,7 +147,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
         params,
       };
       await blockingSend(beginAction, savedChainSends);
-      aqContents.push(beginAction);
       for (let i = 0; i < thisBlock.length; i += 1) {
         const [newMessages, acknum] = thisBlock[i];
         aqContents.push({
@@ -160,7 +159,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
         });
       }
       const endAction = { type: 'END_BLOCK', blockHeight, blockTime };
-      aqContents.push(endAction);
       await blockingSend(endAction, savedChainSends);
 
       // Done processing, "commit the block".

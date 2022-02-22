@@ -31,6 +31,7 @@ export default function makeBlockManager({
   let runTime = 0;
   let chainTime;
   let latestParams;
+  let beginBlockAction;
 
   async function processAction(action) {
     const start = Date.now();
@@ -172,23 +173,26 @@ export default function makeBlockManager({
         verboseBlocks && console.info('block', action.blockHeight, 'begin');
 
         // Start a new block, or possibly replay the prior one.
-        const leftovers = new Map();
+        const leftoverTypes = new Set();
         for (const a of actionQueue.consumeAll()) {
           if (a.blockHeight !== action.blockHeight) {
-            leftovers.set(a.type, a);
+            leftoverTypes.add(a.type);
           }
         }
-        if (leftovers.size) {
+        if (leftoverTypes.size) {
           // Leftover actions happen if queries or simulation are incorrectly
           // resulting in accidental VM messages.
-          const leftoverTypes = [...leftovers.keys()].sort().join(', ');
+          const leftoverTypeString = [...leftoverTypes.keys()]
+            .sort()
+            .join(', ');
           decohered = Error(
-            `Block ${action.blockHeight} begun with leftover uncommitted actions: ${leftoverTypes}`,
+            `Block ${action.blockHeight} begun with leftover uncommitted actions: ${leftoverTypeString}`,
           );
           throw decohered;
         }
 
         runTime = 0;
+        beginBlockAction = action;
         break;
       }
 
@@ -230,11 +234,13 @@ export default function makeBlockManager({
           // And now we actually process the queued actions down here, during
           // END_BLOCK, but still reentrancy-protected
 
-          // Process our queued actions.
+          // Process our begin, queued actions, and end.
+          await processAction(beginBlockAction); // BEGIN_BLOCK
           for (const a of actionQueue.consumeAll()) {
             // eslint-disable-next-line no-await-in-loop
             await processAction(a);
           }
+          await processAction(action); // END_BLOCK
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
@@ -242,6 +248,7 @@ export default function makeBlockManager({
           chainTime = Date.now() - start;
 
           // Advance our saved state variables.
+          beginBlockAction = undefined;
           computedHeight = action.blockHeight;
         }
 

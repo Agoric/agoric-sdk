@@ -25,6 +25,11 @@ const toNumber = specimen => {
 };
 
 const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
+  assert(
+    prefix === '' || prefix.endsWith('.'),
+    X`prefix ${prefix} must end with a dot`,
+  );
+
   let cache = new Map();
   let changedKeys = new Set();
   const storage = {
@@ -82,9 +87,35 @@ const makeChainStorage = (call, prefix = '', imp = x => x, exp = x => x) => {
   return storage;
 };
 
+/**
+ * Create a queue backed by chain storage.
+ *
+ * The queue uses the following storage layout, prefixed by `prefix`, such as
+ * `actionQueue.`:
+ * - `<prefix>head`: the index of the first entry of the queue.
+ * - `<prefix>tail`: the index *past* the last entry in the queue.
+ * - `<prefix><index>`: the contents of the queue at the given index.
+ *
+ * For the `actionQueue`, the Cosmos side of the queue will push into the queue,
+ * updating `<prefix>tail` and `<prefix><index>`.  The JS side will shift the
+ * queue, updating `<prefix>head` and reading and deleting `<prefix><index>`.
+ *
+ * Parallel access is not supported, only a single outstanding operation at a
+ * time.
+ *
+ * @param {(obj: any) => any} call send a message to the chain's storage API and
+ * receive a reply
+ * @param {string} [prefix] string to prepend to the queue's storage keys
+ */
 const makeChainQueue = (call, prefix = '') => {
   const storage = makeChainStorage(call, prefix);
   const queue = {
+    push: obj => {
+      const tail = storage.get('tail') || 0;
+      storage.set('tail', tail + 1);
+      storage.set(tail, obj);
+      storage.commit();
+    },
     /** @type {Iterable<unknown>} */
     consumeAll: () => ({
       [Symbol.iterator]: () => {
@@ -93,21 +124,25 @@ const makeChainQueue = (call, prefix = '') => {
         return {
           next: () => {
             if (head < tail) {
+              // Still within the queue.
               const value = storage.get(head);
               storage.delete(head);
               head += 1;
               return { value, done: false };
             }
+            // Reached the end, so clean up our indices.
             storage.delete('head');
             storage.delete('tail');
             storage.commit();
             return { done: true };
           },
           return: () => {
+            // We're done consuming, so save our state.
             storage.set('head', head);
             storage.commit();
           },
           throw: () => {
+            // Don't change our state.
             storage.abort();
           },
         };
