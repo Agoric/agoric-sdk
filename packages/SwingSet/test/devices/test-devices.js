@@ -120,7 +120,8 @@ test.serial('d1', async t => {
   await c.run();
 
   c.queueToVatRoot('bootstrap', 'step1', capargs([]));
-  await c.step();
+  await c.step(); // acceptance
+  await c.step(); // deliver
   t.deepEqual(c.dump().log, [
     'callNow',
     'invoke 1 2',
@@ -153,10 +154,13 @@ async function test2(t, mode) {
   const c = await makeSwingsetController(hostStorage, {});
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
   }
   c.pinVatRoot('bootstrap');
-  await c.step();
+  await c.step(); // acceptance
+  await c.step(); // deliver
   if (mode === '1') {
     t.deepEqual(c.dump().log, ['calling d2.method1', 'method1 hello', 'done']);
   } else if (mode === '2') {
@@ -185,7 +189,8 @@ async function test2(t, mode) {
     ]);
   } else if (mode === '5') {
     t.deepEqual(c.dump().log, ['calling v2.method5', 'called']);
-    await c.step();
+    await c.step(); // acceptance
+    await c.step(); // deliver
     t.deepEqual(c.dump().log, [
       'calling v2.method5',
       'called',
@@ -193,7 +198,8 @@ async function test2(t, mode) {
       'method5 hello',
       'left5 did d2.method5, got ok',
     ]);
-    await c.step();
+    await c.step(); // acceptance
+    await c.step(); // deliver
     t.deepEqual(c.dump().log, [
       'calling v2.method5',
       'called',
@@ -344,11 +350,14 @@ test.serial('liveslots throws when D() gets promise', async t => {
 
   for (let i = 0; i < 4; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
     // eslint-disable-next-line no-await-in-loop
     await c.step(); // bring out your dead
   }
-  await c.step();
+  await c.step(); // acceptance
+  await c.step(); // deliver
   // When liveslots catches an attempt to send a promise into D(), it throws
   // a regular error, which the vat can catch.
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
@@ -386,11 +395,14 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
   const c = await makeSwingsetController(hostStorage, {});
   for (let i = 0; i < 3; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
     // eslint-disable-next-line no-await-in-loop
     await c.step(); // bring out your dead
   }
-  await c.step(); // bootstrap, which will fail
+  await c.step(); // acceptance
+  await c.step(); // deliver bootstrap, which will fail
   // if the kernel paniced, that c.step() will reject, and the await will throw
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
   // now check that the vat was terminated: this should throw an exception

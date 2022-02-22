@@ -732,15 +732,8 @@ export default function buildKernel(
 
   const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
 
-  function processAcceptanceQueue() {
-    while (!kernelKeeper.isAcceptanceQueueEmpty()) {
-      const acceptanceMessage = kernelKeeper.getNextAcceptanceQueueMsg();
-      kernelKeeper.addToRunQueue(acceptanceMessage);
-    }
-  }
-
   let processQueueRunning;
-  async function processQueueMessage(message) {
+  async function processDeliveryMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
     if (processQueueRunning) {
@@ -804,7 +797,7 @@ export default function buildKernel(
             // delivered again on the next crank.  If we don't want that, then
             // we need to remove it again.
             // eslint-disable-next-line no-use-before-define
-            getNextMessage();
+            getNextDeliveryMessage();
           }
         }
         // state changes reflecting the termination must also survive, so
@@ -817,6 +810,38 @@ export default function buildKernel(
         // eslint-disable-next-line no-use-before-define
         await vatWarehouse.maybeSaveSnapshot();
       }
+      kernelKeeper.processRefcounts();
+      kernelKeeper.saveStats();
+      const crankNum = kernelKeeper.getCrankNumber();
+      kernelKeeper.incrementCrankNumber();
+      const { crankhash, activityhash } = kernelKeeper.commitCrank();
+      kernelSlog.write({
+        type: 'crank-finish',
+        crankNum,
+        crankhash,
+        activityhash,
+      });
+    } finally {
+      processQueueRunning = undefined;
+    }
+    return harden(policyInput);
+  }
+
+  async function processAcceptanceMessage(message) {
+    kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
+    kdebug(legibilizeMessage(message));
+    if (processQueueRunning) {
+      console.error(`We're currently already running at`, processQueueRunning);
+      assert.fail(X`Kernel reentrancy is forbidden`);
+    }
+    kernelSlog.write({ type: 'crank-start', message });
+    /** @type { PolicyInput } */
+    const policyInput = ['none'];
+    try {
+      processQueueRunning = Error('here');
+
+      kernelKeeper.addToRunQueue(message);
+
       kernelKeeper.processRefcounts();
       kernelKeeper.saveStats();
       const crankNum = kernelKeeper.getCrankNumber();
@@ -1111,7 +1136,7 @@ export default function buildKernel(
     kernelKeeper.loadStats();
   }
 
-  function getNextMessage() {
+  function getNextDeliveryMessage() {
     const gcMessage = processNextGCAction(kernelKeeper);
     if (gcMessage) {
       return gcMessage;
@@ -1127,6 +1152,28 @@ export default function buildKernel(
     return undefined;
   }
 
+  function getNextAcceptanceMessage() {
+    if (!kernelKeeper.isAcceptanceQueueEmpty()) {
+      return kernelKeeper.getNextAcceptanceQueueMsg();
+    }
+    return undefined;
+  }
+
+  function startProcessingNextMessageIfAny() {
+    /** @type {Promise<PolicyInput> | undefined} */
+    let resultPromise;
+    let message = getNextAcceptanceMessage();
+    if (message) {
+      resultPromise = processAcceptanceMessage(message);
+    } else {
+      message = getNextDeliveryMessage();
+      if (message) {
+        resultPromise = processDeliveryMessage(message);
+      }
+    }
+    return { resultPromise };
+  }
+
   async function step() {
     if (kernelPanic) {
       throw kernelPanic;
@@ -1134,11 +1181,10 @@ export default function buildKernel(
     if (!started) {
       throw new Error('must do kernel.start() before step()');
     }
-    processAcceptanceQueue();
+    const { resultPromise } = startProcessingNextMessageIfAny();
     // process a single message
-    const message = getNextMessage();
-    if (message) {
-      await processQueueMessage(message);
+    if (resultPromise) {
+      await resultPromise;
       if (kernelPanic) {
         throw kernelPanic;
       }
@@ -1167,15 +1213,14 @@ export default function buildKernel(
     }
     let count = 0;
     for (;;) {
-      processAcceptanceQueue();
-      const message = getNextMessage();
-      if (!message) {
+      const { resultPromise } = startProcessingNextMessageIfAny();
+      if (!resultPromise) {
         break;
       }
       count += 1;
       /** @type { PolicyInput } */
       // eslint-disable-next-line no-await-in-loop
-      const policyInput = await processQueueMessage(message);
+      const policyInput = await resultPromise;
       if (kernelPanic) {
         throw kernelPanic;
       }

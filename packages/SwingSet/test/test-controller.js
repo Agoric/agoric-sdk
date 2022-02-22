@@ -119,7 +119,9 @@ test('bootstrap', async t => {
   const c = await buildVatController(config);
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
   }
   t.deepEqual(c.dump().log, ['bootstrap called']);
 });
@@ -133,7 +135,9 @@ test('XS bootstrap', async t => {
   const c = await buildVatController(config, [], { hostStorage });
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
   }
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.is(
@@ -170,7 +174,9 @@ test('static vats are unmetered on XS', async t => {
   );
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
   }
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.deepEqual(limited, [false, false, false, false]);
@@ -261,15 +267,19 @@ test.serial('bootstrap export', async t => {
     },
   ]);
 
-  // this test was designed before GC, and wants to single-step the kernel,
-  // but doesn't care about the GC action steps, so we use this helper
-  // function
+  // this test was designed before GC and acceptance queues, and wants to
+  // single-step the kernel, but doesn't care about the GC action steps,
+  // or the temporary acceptance queue, so we use this helper function
   async function stepGC() {
     while (c.dump().gcActions.length) {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
     while (c.dump().reapQueue.length) {
+      // eslint-disable-next-line no-await-in-loop
+      await c.step();
+    }
+    while (c.dump().acceptanceQueue.length) {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }

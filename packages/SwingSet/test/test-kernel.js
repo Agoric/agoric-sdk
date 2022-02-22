@@ -291,6 +291,7 @@ test('outbound call', async t => {
   const o1 = kernel.addExport(vat1, 'o+1');
   kernel.queueToKref(o1, 'foo', capdata('args'));
   t.deepEqual(log, []);
+  t.deepEqual(kernel.dump().runQueue, []);
   t.deepEqual(kernel.dump().acceptanceQueue, [
     {
       type: 'send',
@@ -303,6 +304,23 @@ test('outbound call', async t => {
     },
   ]);
 
+  // Move the send to the run-queue
+  await kernel.step();
+  t.deepEqual(log, []);
+  t.deepEqual(kernel.dump().runQueue, [
+    {
+      type: 'send',
+      target: t1,
+      msg: {
+        method: 'foo',
+        args: capdata('args'),
+        result: 'kp40',
+      },
+    },
+  ]);
+  t.deepEqual(kernel.dump().acceptanceQueue, []);
+
+  // Deliver the send
   await kernel.step();
   // that queues pid=o2!bar(o2, o7, p7)
 
@@ -357,6 +375,7 @@ test('outbound call', async t => {
   kt.push(['kp42', vat1, 'p+5']);
   checkKT(t, kernel, kt);
 
+  await kernel.step();
   await kernel.step();
   t.deepEqual(log, [
     // todo: check result
@@ -514,6 +533,9 @@ test('three-party', async t => {
 
   const o4 = kernel.addExport(vatA, 'o+4');
   kernel.queueToKref(o4, 'foo', capdata('args'));
+  // Move the send to the run-queue
+  await kernel.step();
+  // Deliver the send
   await kernel.step();
 
   t.deepEqual(log.shift(), ['vatA', 'o+4', 'foo', capdata('args')]);
@@ -565,6 +587,7 @@ test('three-party', async t => {
   kt.push(['kp42', vatA, 'p+5']);
   checkKT(t, kernel, kt);
 
+  await kernel.step();
   await kernel.step();
   t.deepEqual(log, [['vatB', 'o+5', 'intro', capdata('bargs', ['o-50'])]]);
   kt.push([carol, vatB, 'o-50']);
@@ -779,6 +802,9 @@ test('promise resolveToData', async t => {
     },
   ]);
 
+  // Move the notify to the run-queue
+  await kernel.step();
+  // Deliver the notify
   await kernel.step();
   // the kernelPromiseID gets mapped back to the vat PromiseID
   t.deepEqual(log.shift(), [
@@ -853,6 +879,9 @@ test('promise resolveToPresence', async t => {
     },
   ]);
 
+  // Move the notify to the run-queue
+  await kernel.step();
+  // Deliver the notify
   await kernel.step();
   t.deepEqual(log.shift(), [
     'notify',
@@ -925,6 +954,9 @@ test('promise reject', async t => {
     },
   ]);
 
+  // Move the notify to the run-queue
+  await kernel.step();
+  // Deliver the notify
   await kernel.step();
   // the kernelPromiseID gets mapped back to the vat PromiseID
   t.deepEqual(log.shift(), [
@@ -960,6 +992,9 @@ test('transcript', async t => {
   const bobForAlice = kernel.addImport(vatA, bob);
 
   kernel.queueToKref(alice, 'store', capdata('args string', [alice, bob]));
+  // Move the send to the run-queue
+  await kernel.step();
+  // Deliver the send
   await kernel.step();
 
   // the transcript records vat-specific import/export slots
