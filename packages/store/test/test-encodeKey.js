@@ -2,10 +2,12 @@
 /* eslint-disable no-bitwise */
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import fc from 'fast-check';
 import { isKey } from '../src/keys/checkKey.js';
 import { compareKeys, keyEQ } from '../src/keys/compareKeys.js';
 import { makeEncodeKey, makeDecodeKey } from '../src/patterns/encodeKey.js';
 import { compareRank, makeComparatorKit } from '../src/patterns/rankOrder.js';
+import { assertionPassed } from './test-store.js';
 import { sample } from './test-rankOrder.js';
 
 const { details: X } = assert;
@@ -54,8 +56,6 @@ const getNaN = (hexEncoding = '0008000000000000') => {
 const NegativeNaN = getNaN('ffffffffffffffff');
 
 const goldenPairs = harden([
-  [37n, 'p0000000002:37'],
-  [-1n, 'n9999999999:9'],
   [1, 'fbff0000000000000'],
   [-1, 'f400fffffffffffff'],
   [NaN, 'ffff8000000000000'],
@@ -63,6 +63,16 @@ const goldenPairs = harden([
   [0, 'f8000000000000000'],
   [Infinity, 'ffff0000000000000'],
   [-Infinity, 'f000fffffffffffff'],
+  [-1234567890n, 'n#90:8765432110'],
+  [-123456789n, 'n1:876543211'],
+  [-1000n, 'n6:9000'],
+  [-999n, 'n7:001'],
+  [-1n, 'n9:9'],
+  [-0n, 'p1:0'],
+  [37n, 'p2:37'],
+  [123456789n, 'p9:123456789'],
+  [1234567890n, 'p~10:1234567890'],
+  [934857932847598725662n, 'p~21:934857932847598725662'],
 ]);
 
 test('golden round trips', t => {
@@ -113,4 +123,26 @@ test('order invariants', t => {
       orderInvariants(t, sample[i], sample[j]);
     }
   }
+});
+
+test('BigInt values round-trip', async t => {
+  await fc.assert(
+    fc.property(fc.bigInt(), n => {
+      const rt = decodeKey(encodeKey(n));
+      return assertionPassed(t.is(rt, n), () => rt === n);
+    }),
+  );
+});
+
+test('BigInt encoding comparison corresponds with numeric comparison', async t => {
+  await fc.assert(
+    fc.property(fc.bigInt(), fc.bigInt(), (a, b) => {
+      const ea = encodeKey(a);
+      const eb = encodeKey(b);
+      return (
+        assertionPassed(t.is(a < b, ea < eb), () => a < b === ea < eb) &&
+        assertionPassed(t.is(a > b, ea > eb), () => a > b === ea > eb)
+      );
+    }),
+  );
 });
