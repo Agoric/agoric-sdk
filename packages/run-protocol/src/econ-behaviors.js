@@ -7,9 +7,7 @@ import {
   CONTRACT_ELECTORATE,
   makeGovernedNat,
 } from '@agoric/governance';
-import {
-  CENTRAL_ISSUER_NAME,
-} from '@agoric/vats/src/core/utils.js';
+import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
