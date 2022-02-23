@@ -33,18 +33,9 @@ const trace = makeTracer('Vault');
  * ACTIVE       - vault is in use and can be changed
  * LIQUIDATING  - vault is being liquidated by the vault manager, and cannot be changed by the user
  * TRANSFER     - vault is released from the manager and able to be transferred
+ * TRANSFER     - vault is able to be transferred (payments and debits frozen until it has a new owner)
  * CLOSED       - vault was closed by the user and all assets have been paid out
  * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
- *
- * These are the valid state transitions:
- * Active -> Liquidating
- * Active -> Transferrable
- * Active -> Closed
- * Liquidating -> Liquidated
- * Transferrable -> Active
- * Transferrable -> Liquidating
- *
- * (Liquidated and Closed cannot be changed)
  *
  * @typedef {VaultPhase[keyof typeof VaultPhase]} VAULT_PHASE
  */
@@ -55,6 +46,21 @@ export const VaultPhase = /** @type {const} */ ({
   LIQUIDATED: 'liquidated',
   TRANSFER: 'transfer',
 });
+
+/**
+ * @type {{[K in VAULT_PHASE]: Array<VAULT_PHASE>}}
+ */
+const validTransitions = {
+  [VaultPhase.ACTIVE]: [
+    VaultPhase.LIQUIDATING,
+    VaultPhase.TRANSFER,
+    VaultPhase.CLOSED,
+  ],
+  [VaultPhase.LIQUIDATING]: [VaultPhase.LIQUIDATED],
+  [VaultPhase.TRANSFER]: [VaultPhase.ACTIVE, VaultPhase.LIQUIDATING],
+  [VaultPhase.LIQUIDATED]: [],
+  [VaultPhase.CLOSED]: [],
+};
 
 const makeOuterKit = inner => {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
@@ -120,8 +126,22 @@ export const makeInnerVault = (
   /** @type {VAULT_PHASE} */
   let phase = VaultPhase.ACTIVE;
 
+  /**
+   * @param {VAULT_PHASE} newPhase
+   */
+  const assignPhase = newPhase => {
+    const validNewPhases = validTransitions[phase];
+    if (!validNewPhases.includes(newPhase))
+      throw new Error(`Vault cannot transition from ${phase} to ${newPhase}`);
+    phase = newPhase;
+  };
+
+  const assertPhase = allegedPhase => {
+    assert(phase === allegedPhase, X`vault must still be ${allegedPhase}`);
+  };
+
   const assertVaultIsOpen = () => {
-    assert(phase === VaultPhase.ACTIVE, X`vault must still be active`);
+    assertPhase(VaultPhase.ACTIVE);
   };
 
   let outerUpdater;
@@ -287,7 +307,7 @@ export const makeInnerVault = (
         outerUpdater = null;
         break;
       default:
-        throw Error(`unreachable vaultState: ${phase}`);
+        throw Error(`unreachable vault phase: ${phase}`);
     }
   };
   // XXX Echo notifications from the manager through all vaults
@@ -308,15 +328,12 @@ export const makeInnerVault = (
   const liquidated = newDebt => {
     updateDebtSnapshot(newDebt);
 
-    phase = VaultPhase.LIQUIDATED;
+    assignPhase(VaultPhase.LIQUIDATED);
     updateUiState();
   };
 
   const liquidating = () => {
-    if (phase === VaultPhase.LIQUIDATING) {
-      throw new Error('Vault already liquidating');
-    }
-    phase = VaultPhase.LIQUIDATING;
+    assignPhase(VaultPhase.LIQUIDATING);
     updateUiState();
   };
 
@@ -357,7 +374,7 @@ export const makeInnerVault = (
     runMint.burnLosses(harden({ RUN: currentDebt }), burnSeat);
     seat.exit();
     burnSeat.exit();
-    phase = VaultPhase.CLOSED;
+    assignPhase(VaultPhase.CLOSED);
     updateDebtSnapshot(AmountMath.makeEmpty(runBrand));
     updateUiState();
 
