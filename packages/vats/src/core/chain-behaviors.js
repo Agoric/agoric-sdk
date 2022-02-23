@@ -40,7 +40,7 @@ const NUM_IBC_PORTS = 3;
  *
  * @param {BootstrapPowers} allPowers
  */
-export const makeCoreEval = async allPowers => {
+export const bridgeCoreEval = async allPowers => {
   // We need all of the powers to be available to the evaluator, but we only
   // need the bridgeManager to install our handler.
   const {
@@ -57,16 +57,23 @@ export const makeCoreEval = async allPowers => {
     async fromBridge(_srcID, obj) {
       switch (obj.type) {
         case 'CORE_EVAL': {
+          /**
+           * Type defined by `agoric-sdk/golang/cosmos/proto/agoric/swingset/swingset.proto` CoreEval.
+           *
+           * @type {{ evals: { json_permits: string, js_code: string }[]}}
+           */
           const { evals } = obj;
           return Promise.all(
-            evals.map(({ json_permits: permit, js_code: code }) =>
+            evals.map(({ json_permits: jsonPermit, js_code: code }) =>
               // Run in a new turn to avoid crosstalk of the evaluations.
               Promise.resolve().then(() => {
+                const permit = JSON.parse(jsonPermit);
                 const powers = extractPowers(permit, allPowers);
 
                 // Inspired by ../repl.js:
                 const globals = harden({
                   ...farExports,
+                  assert,
                   console,
                   powers,
                 });
