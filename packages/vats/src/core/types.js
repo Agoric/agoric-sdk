@@ -23,8 +23,8 @@
  * @typedef { import('@agoric/swingset-vat/src/vats/plugin-manager.js').PluginDevice } PluginDevice
  * @typedef { Device<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/devices/timer-src.js').buildRootDeviceNode>> } TimerDevice
- * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdmin-src.js').buildRootDeviceNode>> } VatAdminDevice
+ * @typedef { Device<
+ *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdmin-src.js').VatAdminRootDeviceNode> } VatAdminDevice
  *
  * @typedef { ERef<ReturnType<typeof
  *   import('@agoric/swingset-vat/src/vats/vat-tp.js').buildRootObject>> } VattpVat
