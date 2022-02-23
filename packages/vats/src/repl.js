@@ -189,6 +189,7 @@ export function getReplHandler(replObjects, send) {
 
   const endowments = {
     ...farExports,
+    assert,
     console: replConsole,
     commands,
     history,
