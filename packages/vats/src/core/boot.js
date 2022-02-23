@@ -1,7 +1,11 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 
-import { extract, makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
+import {
+  extractPowers,
+  makeAgoricNamesAccess,
+  makePromiseSpace,
+} from './utils.js';
 import {
   CLIENT_BOOTSTRAP_MANIFEST,
   CHAIN_BOOTSTRAP_MANIFEST,
@@ -78,7 +82,7 @@ const buildRootObject = (vatPowers, vatParameters, log = console.info) => {
 
       /** @param { Record<string, Record<string, unknown>> } manifest */
       const runBehaviors = manifest => {
-        const powers = {
+        const allPowers = {
           vatPowers,
           vatParameters,
           vats,
@@ -91,19 +95,14 @@ const buildRootObject = (vatPowers, vatParameters, log = console.info) => {
         return Promise.all(
           entries(manifest).map(([name, permit]) =>
             Promise.resolve().then(() => {
-              const {
-                // TODO: use these for more than just visualization.
-                home: _h,
-                ...effectivePermit
-              } = permit;
-              const endowments = extract(effectivePermit, powers);
+              const powers = extractPowers(permit, allPowers);
               const config = vatParameters[name];
               log(`bootstrap: ${name}(${q(permit)})`);
               assert(
                 name in bootBehaviors,
                 `${name} not in ${Object.keys(bootBehaviors).join(',')}`,
               );
-              return bootBehaviors[name](endowments, config);
+              return bootBehaviors[name](powers, config);
             }),
           ),
         );

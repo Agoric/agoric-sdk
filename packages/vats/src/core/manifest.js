@@ -1,5 +1,6 @@
 // @ts-check
 const SHARED_BOOTSTRAP_MANIFEST = harden({
+  makeCoreEval: true,
   makeVatsFromBundles: {
     vats: {
       vatAdmin: 'vatAdmin',

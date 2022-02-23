@@ -171,26 +171,6 @@ export default function makeBlockManager({
 
       case ActionType.BEGIN_BLOCK: {
         verboseBlocks && console.info('block', action.blockHeight, 'begin');
-
-        // Start a new block, or possibly replay the prior one.
-        const leftoverTypes = new Set();
-        for (const a of actionQueue.consumeAll()) {
-          if (a.blockHeight !== action.blockHeight) {
-            leftoverTypes.add(a.type);
-          }
-        }
-        if (leftoverTypes.size) {
-          // Leftover actions happen if queries or simulation are incorrectly
-          // resulting in accidental VM messages.
-          const leftoverTypeString = [...leftoverTypes.keys()]
-            .sort()
-            .join(', ');
-          decohered = Error(
-            `Block ${action.blockHeight} begun with leftover uncommitted actions: ${leftoverTypeString}`,
-          );
-          throw decohered;
-        }
-
         runTime = 0;
         beginBlockAction = action;
         break;

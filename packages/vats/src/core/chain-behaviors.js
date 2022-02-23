@@ -1,5 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
+import * as farExports from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
@@ -22,7 +23,7 @@ import {
 import * as Collect from '@agoric/run-protocol/src/collect.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 
-import { callProperties } from './utils.js';
+import { callProperties, extractPowers } from './utils.js';
 import { makeNameHubKit } from '../nameHub.js';
 
 export { installOnChain as installPegasusOnChain } from '@agoric/pegasus/src/install-on-chain.js';
@@ -31,6 +32,58 @@ const { details: X } = assert;
 const { keys } = Object;
 
 const NUM_IBC_PORTS = 3;
+
+/**
+ * This is the code triggered by `agd tx gov submit-proposal swingset-core-eval
+ * permit.json code.js`.  It is the "big hammer" governance that allows code.js
+ * access to all powers permitted by permit.json.
+ *
+ * @param {BootstrapPowers} allPowers
+ */
+export const makeCoreEval = async allPowers => {
+  // We need all of the powers to be available to the evaluator, but we only
+  // need the bridgeManager to install our handler.
+  const {
+    consume: { bridgeManager: bridgeManagerP },
+  } = allPowers;
+  const bridgeManager = await bridgeManagerP;
+  if (!bridgeManager) {
+    // Not running with a bridge.
+    return;
+  }
+
+  // Register a coreEval handler over the bridge.
+  const handler = Far('coreHandler', {
+    async fromBridge(_srcID, obj) {
+      switch (obj.type) {
+        case 'CORE_EVAL': {
+          const { evals } = obj;
+          return Promise.all(
+            evals.map(({ json_permits: permit, js_code: code }) =>
+              // Run in a new turn to avoid crosstalk of the evaluations.
+              Promise.resolve().then(() => {
+                const powers = extractPowers(permit, allPowers);
+
+                // Inspired by ../repl.js:
+                const globals = harden({
+                  ...farExports,
+                  console,
+                  powers,
+                });
+
+                // Evaluate the code in the context of the globals.
+                return new Compartment(globals).evaluate(code);
+              }),
+            ),
+          );
+        }
+        default:
+          assert.fail(X`Unrecognized request ${obj.type}`);
+      }
+    },
+  });
+  await E(bridgeManager).register('core', handler);
+};
 
 /**
  * @param {BootstrapPowers & {
