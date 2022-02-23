@@ -508,7 +508,7 @@ test('price drop', async t => {
   let notification = await E(uiNotifier).getUpdateSince();
   trace('got notificaation', notification);
 
-  t.falsy(notification.value.liquidated);
+  t.is(notification.value.vaultState, 'active');
   t.deepEqual(await notification.value.debt, AmountMath.add(loanAmount, fee));
   const { RUN: lentAmount } = await E(loanSeat).getCurrentAllocation();
   t.truthy(AmountMath.isEqual(lentAmount, loanAmount), 'received 470 RUN');
@@ -519,22 +519,22 @@ test('price drop', async t => {
   );
   await manualTimer.tick();
   notification = await E(uiNotifier).getUpdateSince();
-  t.falsy(notification.value.liquidated);
+  t.is(notification.value.vaultState, 'active');
 
   await manualTimer.tick();
   notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
   trace('price changed to liquidate', notification.value.vaultState);
-  t.falsy(notification.value.liquidated);
+  t.is(notification.value.vaultState, 'liquidating');
   t.is(notification.value.vaultState, VaultPhase.LIQUIDATING);
 
   await manualTimer.tick();
   notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
   t.falsy(notification.updateCount);
-  t.truthy(notification.value.liquidated);
+  t.is(notification.value.vaultState, 'liquidated');
 
   const debtAmountAfter = await E(vault).getDebtAmount();
   const finalNotification = await E(uiNotifier).getUpdateSince();
-  t.truthy(finalNotification.value.liquidated);
+  t.is(finalNotification.value.vaultState, 'liquidated');
   t.truthy(AmountMath.isEmpty(debtAmountAfter));
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
@@ -1657,7 +1657,7 @@ test('mutable liquidity triggers and interest', async t => {
   await waitForPromisesToSettle();
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   bobUpdate = await E(bobNotifier).getUpdateSince();
-  t.truthy(aliceUpdate.value.liquidated);
+  t.is(aliceUpdate.value.vaultState, 'liquidated');
 
   for (let i = 0; i < 5; i += 1) {
     manualTimer.tick();
@@ -1665,7 +1665,7 @@ test('mutable liquidity triggers and interest', async t => {
   await waitForPromisesToSettle();
   bobUpdate = await E(bobNotifier).getUpdateSince();
 
-  t.truthy(bobUpdate.value.liquidated);
+  t.is(bobUpdate.value.vaultState, 'liquidated');
 });
 
 test('bad chargingPeriod', async t => {
@@ -2159,7 +2159,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   await waitForPromisesToSettle();
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   bobUpdate = await E(bobNotifier).getUpdateSince();
-  t.falsy(aliceUpdate.value.liquidated);
+  t.is(aliceUpdate.value.vaultState, 'active');
 
   for (let i = 0; i < 5; i += 1) {
     manualTimer.tick();
@@ -2167,5 +2167,5 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   await waitForPromisesToSettle();
   bobUpdate = await E(bobNotifier).getUpdateSince();
 
-  t.truthy(bobUpdate.value.liquidated);
+  t.is(bobUpdate.value.vaultState, 'liquidated');
 });
