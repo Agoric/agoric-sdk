@@ -126,3 +126,13 @@ E(adminNode).done()
 ```
 
 When the vat halted due to a metering fault, `error` will be a `RangeError` with a message of `Compute meter exceeded`, `Allocate meter exceeded`, or `Stack meter exceeded`.
+
+## Upgrade
+
+Dynamic vats can be upgraded to use a new source code bundle. Most vat state is discarded, however "durable" collections are retained for use by the replacement version. For full details, see docs/vat-upgrade.md .
+
+The upgrade process is triggered through the admin node, and requires a bundlecap for the new source. (Note that "upgrading" to the same source bundle as the original vat is valid, and can serve as a sort of "spring cleaning").
+
+```js
+const results = E(adminNode).upgrade(newBundlecap, newVatParameters, options);
+```
