@@ -263,8 +263,6 @@ export const makeInnerVault = (
       debtSnapshot,
       locked: getCollateralAmount(),
       debt: getDebtAmount(),
-      // XXX uses closure value instead of argument
-      liquidated: phase === VaultPhase.LIQUIDATED,
       vaultState: newPhase,
     });
   };
