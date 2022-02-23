@@ -9,8 +9,8 @@ INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
 VOTING_PERIOD = 2m
 
-EVAL_PERMIT = gov-permit.json
-EVAL_CODE = gov-code.js
+EVAL_PERMIT = test/gov-permit.json
+EVAL_CODE = test/gov-code.js
 EVAL_DEPOSIT = 1000000ubld
 VOTE_PROPOSAL = 1
 VOTE_OPTION = yes
@@ -193,10 +193,12 @@ scenario2-core-eval:
 	$(AGCH) --home=t1/bootstrap tx gov submit-proposal swingset-core-eval \
 		$(EVAL_PERMIT) $(EVAL_CODE) \
 		--title="Swingset core eval" --description="Evaluate $(EVAL_CODE)" --deposit=$(EVAL_DEPOSIT) \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) \
 		--yes --chain-id=$(CHAIN_ID) --keyring-backend=test --from=bootstrap -b block
 
 scenario2-vote:
 	$(AGCH) --home=t1/bootstrap tx gov vote $(VOTE_PROPOSAL) $(VOTE_OPTION) \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) \
 		--yes --chain-id=$(CHAIN_ID) --keyring-backend=test --from=bootstrap -b block
 
 # scenario3 is a single JS process without any Golang.  However,
