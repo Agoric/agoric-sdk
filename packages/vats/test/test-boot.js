@@ -47,7 +47,7 @@ const mock = {
       addRemote: noop,
       addEgress: noop,
       addIngress: async () => ({
-        getChainBundle: () => ({ _: 'chain bundle' }),
+        getConfiguration: () => ({ _: 'client configuration' }),
       }),
     }),
     http: { setPresences: noop, setCommandDevice: noop },
