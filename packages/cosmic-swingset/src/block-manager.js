@@ -4,6 +4,8 @@ import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
 
+import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
+
 import * as ActionType from './action-types.js';
 import { parseParams } from './params.js';
 
@@ -63,32 +65,32 @@ export default function makeBlockManager({
       }
 
       case ActionType.VBANK_BALANCE_UPDATE: {
-        p = doBridgeInbound('bank', action);
+        p = doBridgeInbound(BRIDGE_ID.BANK, action);
         break;
       }
 
       case ActionType.IBC_EVENT: {
-        p = doBridgeInbound('dibc', action);
+        p = doBridgeInbound(BRIDGE_ID.DIBC, action);
         break;
       }
 
       case ActionType.PLEASE_PROVISION: {
-        p = doBridgeInbound('provision', action);
+        p = doBridgeInbound(BRIDGE_ID.PROVISION, action);
         break;
       }
 
       case ActionType.CORE_EVAL: {
-        p = doBridgeInbound('core', action);
+        p = doBridgeInbound(BRIDGE_ID.CORE, action);
         break;
       }
 
       case ActionType.WALLET_ACTION: {
-        p = doBridgeInbound('wallet', action);
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
         break;
       }
 
       case ActionType.WALLET_SPEND_ACTION: {
-        p = doBridgeInbound('wallet', action);
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
         break;
       }
 
