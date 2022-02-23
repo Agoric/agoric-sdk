@@ -144,6 +144,7 @@ export const makeInnerVault = (
     assertPhase(VaultPhase.ACTIVE);
   };
 
+  /** @type {IterationObserver<unknown> | null} */
   let outerUpdater;
 
   // vaultSeat will hold the collateral until the loan is retired. The
@@ -303,6 +304,7 @@ export const makeInnerVault = (
         break;
       case VaultPhase.CLOSED:
       case VaultPhase.LIQUIDATED:
+      case VaultPhase.TRANSFER:
         outerUpdater.finish(uiState);
         outerUpdater = null;
         break;
@@ -684,7 +686,7 @@ export const makeInnerVault = (
   };
 
   const makeTransferInvitationHook = seat => {
-    assertVaultIsOpen();
+    assertPhase(VaultPhase.TRANSFER);
     seat.exit();
     // eslint-disable-next-line no-use-before-define
     return setupOuter(innerVault);
@@ -701,10 +703,8 @@ export const makeInnerVault = (
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
     makeTransferInvitation: () => {
-      if (outerUpdater) {
-        outerUpdater.finish(snapshotState(VaultPhase.TRANSFER));
-        outerUpdater = null;
-      }
+      assignPhase(VaultPhase.TRANSFER);
+      updateUiState();
       return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');
     },
 

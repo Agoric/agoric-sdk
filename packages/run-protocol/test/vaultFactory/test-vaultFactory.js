@@ -1277,8 +1277,8 @@ test('transfer vault', async t => {
   const transferStatus = await E(transferNotifier).getUpdateSince();
   t.deepEqual(
     transferStatus.value.vaultState,
-    VaultPhase.ACTIVE,
-    'new notifier is active',
+    VaultPhase.TRANSFER,
+    'vault now transferrable',
   );
 
   // Interleave with `adjustVault`
