@@ -24,7 +24,6 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@agoric/swing-store": "^0.6.4",
     "@endo/init": "^0.5.35",
     "ava": "^3.12.1",
     "c8": "^7.7.2"

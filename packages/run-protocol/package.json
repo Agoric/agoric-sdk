@@ -30,7 +30,6 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@agoric/deploy-script-support": "^0.6.2",
     "@agoric/ertp": "^0.13.2",
     "@agoric/eventual-send": "^0.14.1",
     "@agoric/governance": "^0.4.2",
