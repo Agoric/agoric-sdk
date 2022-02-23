@@ -563,7 +563,6 @@ func NewAgoricApp(
 	)
 	app.mm.SetOrderEndBlockers(
 		ibctransfertypes.ModuleName, vibc.ModuleName, vbank.ModuleName, lien.ModuleName,
-		swingset.ModuleName,
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -573,6 +572,8 @@ func NewAgoricApp(
 		feegrant.ModuleName,
 		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName,
 		ibchost.ModuleName, routertypes.ModuleName,
+		// SwingSet needs to be last, for it to capture all the pushed actions.
+		swingset.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
