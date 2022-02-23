@@ -11,7 +11,12 @@ import { buildTimer } from '../src/devices/timer.js';
 const TimerSrc = new URL('../src/devices/timer-src.js', import.meta.url)
   .pathname;
 
-test('restarting kernel does not change activityhash', async t => {
+// all tests that are sensitive to GC timing (which means anything that
+// exercises transcript replay or looks at activityHash) need to use
+// test.serial or config.defaultManagerType='xsnap', until we figure out why
+// gcAndFinalize sometimes doesn't work (details in #3240 and #4617)
+
+test.serial('restarting kernel does not change activityhash', async t => {
   const sourceSpec = new URL('vat-empty-setup.js', import.meta.url).pathname;
   const config = {
     bootstrap: 'bootstrap',
@@ -87,7 +92,7 @@ test('restarting kernel does not change activityhash', async t => {
   t.is(c1ah, c2ah);
 });
 
-test('comms initialize is deterministic', async t => {
+test.serial('comms initialize is deterministic', async t => {
   // bug #3726: comms was calling vatstoreGet('initialize') and
   // vatstoreSet('meta.o+0') during the first message after process restart,
   // which makes it a nondeterministic function of the input events.
