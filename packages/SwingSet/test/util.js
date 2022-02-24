@@ -1,8 +1,8 @@
+/* global WeakRef, FinalizationRegistry */
 import anylogger from 'anylogger';
 
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { provideHostStorage } from '../src/hostStorage.js';
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { createSHA256 } from '../src/hasher.js';
 import { extractMessage, capdata, capargs, ignore } from './vat-util.js';
 

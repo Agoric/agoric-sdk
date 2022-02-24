@@ -1,8 +1,8 @@
+/* global WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import anylogger from 'anylogger';
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { createSHA256 } from '../src/hasher.js';
 

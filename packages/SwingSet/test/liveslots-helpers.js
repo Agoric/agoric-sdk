@@ -1,6 +1,6 @@
+/* global WeakRef, FinalizationRegistry */
 import engineGC from '../src/engine-gc.js';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';

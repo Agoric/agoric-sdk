@@ -1,5 +1,5 @@
 // @ts-check
-/* global globalThis */
+/* global globalThis, WeakRef, FinalizationRegistry */
 
 import fs from 'fs';
 import process from 'process';
@@ -16,7 +16,6 @@ import { xsnap, recordXSnap } from '@agoric/xsnap';
 import { computeBundleID } from './validate-archive.js';
 import { createSHA256 } from './hasher.js';
 import engineGC from './engine-gc.js';
-import { WeakRef, FinalizationRegistry } from './weakref.js';
 import { startSubprocessWorker } from './spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';

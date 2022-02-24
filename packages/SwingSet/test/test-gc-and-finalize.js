@@ -38,16 +38,7 @@ async function provokeGC(myGC) {
   return { wrState, finalizerState };
 }
 
-let ltest = test;
-if (
-  typeof WeakRef !== 'function' ||
-  typeof FinalizationRegistry !== 'function'
-) {
-  // Node-12.x lacks both, but we can still test xsnap below
-  ltest = test.skip;
-}
-
-ltest(`can provoke gc on Node.js`, async t => {
+test(`can provoke gc on Node.js`, async t => {
   const { wrState, finalizerState } = await provokeGC(engineGC);
   t.is(wrState, 'weakref is dead');
   t.is(finalizerState, 'finalizer was called');
