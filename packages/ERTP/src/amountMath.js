@@ -370,7 +370,7 @@ const AmountMath = {
    * @param {Brand=} brand
    * @returns {Amount<V>}
    */
-  min: (x, y, b = undefined) => (AmountMath.isGTE(x, y, b) ? y : x),
+  min: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? y : x),
   /**
    * Returns the max value between x and y using isGTE
    *
