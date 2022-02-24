@@ -66,8 +66,6 @@ jobs:
         run: cd packages/agoric-cli && yarn test
       - name: yarn test (assert)
         run: cd packages/assert && yarn test
-      - name: yarn test (bundle-source)
-        run: cd packages/bundle-source && yarn test
       - name: yarn test (wallet/api)
         run: cd packages/wallet/api && yarn test
       - name: yarn test (deployment)
@@ -78,8 +76,6 @@ jobs:
         run: cd packages/eventual-send && yarn test
       - name: yarn test (governance)
         run: cd packages/governance && yarn test
-      - name: yarn test (import-bundle)
-        run: cd packages/import-bundle && yarn test
       - name: yarn test (import-manager)
         run: cd packages/import-manager && yarn test
       - name: yarn test (notifier)

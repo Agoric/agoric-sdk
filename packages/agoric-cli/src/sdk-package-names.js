@@ -4,7 +4,6 @@
 export default [
   "@agoric/access-token",
   "@agoric/assert",
-  "@agoric/bundle-source",
   "@agoric/cosmic-swingset",
   "@agoric/cosmos",
   "@agoric/deploy-script-support",
@@ -13,7 +12,6 @@ export default [
   "@agoric/eslint-config",
   "@agoric/eventual-send",
   "@agoric/governance",
-  "@agoric/import-bundle",
   "@agoric/import-manager",
   "@agoric/notifier",
   "@agoric/pegasus",
