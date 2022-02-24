@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-
 import { Far, makeTagged } from '@endo/marshal';
+import fc from 'fast-check';
 import {
   FullRankCover,
   compareRank,
@@ -11,6 +11,7 @@ import {
   getPassStyleCover,
   assertRankSorted,
 } from '../src/patterns/rankOrder.js';
+import { assertionPassed } from './test-store.js';
 
 const { quote: q } = assert;
 
@@ -21,6 +22,177 @@ const { quote: q } = assert;
 const alice = Far('alice', {});
 const bob = Far('bob', {});
 const carol = Far('carol', {});
+
+/**
+ * A factory for arbitrary passables
+ */
+const { passable } = fc.letrec(tie => {
+  return {
+    passable: tie('dag').map(x => harden(x)),
+    dag: fc.oneof(
+      { depthFactor: 0.5, withCrossShrink: true },
+      // a tagged value whose payload is an array of [key, leaf] pairs
+      // where each key is unique within the payload
+      // XXX can the payload be generalized further?
+      fc
+        .record({
+          type: fc.constantFrom('copyMap', 'copySet', 'nonsense'),
+          payload: fc.set(fc.fullUnicodeString(), { maxLength: 3 }).chain(k => {
+            return fc.tuple(fc.constant(k), tie('leaf'));
+          }),
+        })
+        .map(({ type, payload }) => makeTagged(type, payload)),
+      fc.array(tie('dag'), { maxLength: 3 }),
+      fc.dictionary(
+        fc.fullUnicodeString().filter(s => s !== 'then'),
+        tie('dag'),
+        { maxKeys: 3 },
+      ),
+      tie('dag').map(v => Promise.resolve(v)),
+      tie('leaf'),
+    ),
+    leaf: fc.oneof(
+      fc.record({}),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString().map(s => Symbol.for(s)),
+      fc.fullUnicodeString().map(s => new Error(s)),
+      // primordial symbols and registered lookalikes
+      fc.constantFrom(
+        ...Object.getOwnPropertyNames(Symbol).flatMap(k => {
+          const v = Symbol[k];
+          if (typeof v !== 'symbol') return [];
+          return [v, Symbol.for(k), Symbol.for(`@@${k}`)];
+        }),
+      ),
+      fc.bigInt(),
+      fc.integer(),
+      fc.constantFrom(-0, NaN, Infinity, -Infinity),
+      fc.constantFrom(null, undefined, false, true),
+      fc.constantFrom(alice, bob, carol),
+      // unresolved promise
+      fc.constant(new Promise(() => {})),
+    ),
+  };
+});
+
+test('compareRank is reflexive', async t => {
+  await fc.assert(
+    fc.property(passable, x => {
+      return assertionPassed(
+        t.is(compareRank(x, x), 0),
+        () => compareRank(x, x) === 0,
+      );
+    }),
+  );
+});
+
+test('compareRank totally orders ranks', async t => {
+  await fc.assert(
+    fc.property(passable, passable, (a, b) => {
+      const ab = compareRank(a, b);
+      const ba = compareRank(b, a);
+      if (ab === 0) {
+        return assertionPassed(t.is(ba, 0), () => ba === 0);
+      }
+      return assertionPassed(t.is(Math.sign(ba), -Math.sign(ab)), () => {
+        return Object.is(Math.sign(ba), -Math.sign(ab));
+      });
+    }),
+  );
+});
+
+test('compareRank is transitive', async t => {
+  const repr = v => {
+    if (typeof v === 'string') return JSON.stringify(v);
+    if (Array.isArray(v)) {
+      return `[(${v.length}) ${v.map(repr).join(' ')}]`;
+    }
+    if (typeof v === 'object' && v !== null) {
+      const members = Object.entries(v).map(
+        ([k, v2]) => `${repr(k)}: ${repr(v2)}`,
+      );
+      return `{ ${members.join(' ')} }`;
+    }
+    return String(v);
+  };
+  await fc.assert(
+    fc.property(
+      // operate on a set of three passables covering at least two ranks
+      fc
+        .set(passable, { minLength: 3, maxLength: 3 })
+        .filter(
+          ([a, b, c]) => compareRank(a, b) !== 0 || compareRank(a, c) !== 0,
+        ),
+      triple => {
+        const sorted = harden(triple.sort(compareRank));
+        assertRankSorted(sorted, compareRank);
+        const [a, b, c] = sorted;
+        const failures = [];
+        let result;
+        let resultOk;
+
+        result = compareRank(a, b);
+        resultOk = assertionPassed(t.true(result <= 0, 'a <= b'), () => {
+          return result <= 0;
+        });
+        if (!resultOk) {
+          failures.push(
+            `Expected <= 0: ${result} from ${repr(a)} vs. ${repr(b)}`,
+          );
+        }
+        result = compareRank(a, c);
+        resultOk = assertionPassed(t.true(result <= 0, 'a <= c'), () => {
+          return result <= 0;
+        });
+        if (!resultOk) {
+          failures.push(
+            `Expected <= 0: ${result} from ${repr(a)} vs. ${repr(c)}`,
+          );
+        }
+        result = compareRank(b, c);
+        resultOk = assertionPassed(t.true(result <= 0, 'b <= c'), () => {
+          return result <= 0;
+        });
+        if (!resultOk) {
+          failures.push(
+            `Expected <= 0: ${result} from ${repr(b)} vs. ${repr(c)}`,
+          );
+        }
+        result = compareRank(c, b);
+        resultOk = assertionPassed(t.true(result >= 0, 'c >= b'), () => {
+          return result >= 0;
+        });
+        if (!resultOk) {
+          failures.push(
+            `Expected >= 0: ${result} from ${repr(c)} vs. ${repr(b)}`,
+          );
+        }
+        result = compareRank(c, a);
+        resultOk = assertionPassed(t.true(result >= 0, 'c >= a'), () => {
+          return result >= 0;
+        });
+        if (!resultOk) {
+          failures.push(
+            `Expected >= 0: ${result} from ${repr(c)} vs. ${repr(a)}`,
+          );
+        }
+        result = compareRank(b, a);
+        resultOk = assertionPassed(t.true(result >= 0, 'b >= a'), () => {
+          return result >= 0;
+        });
+        if (!resultOk) {
+          failures.push(
+            `Expected >= 0: ${result} from ${repr(b)} vs. ${repr(a)}`,
+          );
+        }
+
+        return assertionPassed(t.deepEqual(failures, []), () => {
+          return failures.length === 0;
+        });
+      },
+    ),
+  );
+});
 
 /**
  * An unordered copyArray of some passables
