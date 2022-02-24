@@ -102,19 +102,6 @@ test('compareRank totally orders ranks', async t => {
 });
 
 test('compareRank is transitive', async t => {
-  const repr = v => {
-    if (typeof v === 'string') return JSON.stringify(v);
-    if (Array.isArray(v)) {
-      return `[(${v.length}) ${v.map(repr).join(' ')}]`;
-    }
-    if (typeof v === 'object' && v !== null) {
-      const members = Object.entries(v).map(
-        ([k, v2]) => `${repr(k)}: ${repr(v2)}`,
-      );
-      return `{ ${members.join(' ')} }`;
-    }
-    return String(v);
-  };
   await fc.assert(
     fc.property(
       // operate on a set of three passables covering at least two ranks
@@ -136,54 +123,42 @@ test('compareRank is transitive', async t => {
           return result <= 0;
         });
         if (!resultOk) {
-          failures.push(
-            `Expected <= 0: ${result} from ${repr(a)} vs. ${repr(b)}`,
-          );
+          failures.push(`Expected <= 0: ${result} from ${q(a)} vs. ${q(b)}`);
         }
         result = compareRank(a, c);
         resultOk = assertionPassed(t.true(result <= 0, 'a <= c'), () => {
           return result <= 0;
         });
         if (!resultOk) {
-          failures.push(
-            `Expected <= 0: ${result} from ${repr(a)} vs. ${repr(c)}`,
-          );
+          failures.push(`Expected <= 0: ${result} from ${q(a)} vs. ${q(c)}`);
         }
         result = compareRank(b, c);
         resultOk = assertionPassed(t.true(result <= 0, 'b <= c'), () => {
           return result <= 0;
         });
         if (!resultOk) {
-          failures.push(
-            `Expected <= 0: ${result} from ${repr(b)} vs. ${repr(c)}`,
-          );
+          failures.push(`Expected <= 0: ${result} from ${q(b)} vs. ${q(c)}`);
         }
         result = compareRank(c, b);
         resultOk = assertionPassed(t.true(result >= 0, 'c >= b'), () => {
           return result >= 0;
         });
         if (!resultOk) {
-          failures.push(
-            `Expected >= 0: ${result} from ${repr(c)} vs. ${repr(b)}`,
-          );
+          failures.push(`Expected >= 0: ${result} from ${q(c)} vs. ${q(b)}`);
         }
         result = compareRank(c, a);
         resultOk = assertionPassed(t.true(result >= 0, 'c >= a'), () => {
           return result >= 0;
         });
         if (!resultOk) {
-          failures.push(
-            `Expected >= 0: ${result} from ${repr(c)} vs. ${repr(a)}`,
-          );
+          failures.push(`Expected >= 0: ${result} from ${q(c)} vs. ${q(a)}`);
         }
         result = compareRank(b, a);
         resultOk = assertionPassed(t.true(result >= 0, 'b >= a'), () => {
           return result >= 0;
         });
         if (!resultOk) {
-          failures.push(
-            `Expected >= 0: ${result} from ${repr(b)} vs. ${repr(a)}`,
-          );
+          failures.push(`Expected >= 0: ${result} from ${q(b)} vs. ${q(a)}`);
         }
 
         return assertionPassed(t.deepEqual(failures, []), () => {
