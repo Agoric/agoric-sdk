@@ -141,3 +141,12 @@ test('subtract: (x + y) - y = x; (y - x) + x = y if y >= x', async t => {
     }),
   );
 });
+
+test('minmax', t => {
+  fc.assert(
+    fc.property(fc.record({ x: arbAmount, y: arbAmount }), ({ x, y }) => {
+      t.deepEqual(m.min(x, y), m.isGTE(x, y) ? y : x, 'SET: min');
+      t.deepEqual(m.max(x, y), m.isGTE(x, y) ? x : y, 'SET: max');
+    }),
+  );
+});
