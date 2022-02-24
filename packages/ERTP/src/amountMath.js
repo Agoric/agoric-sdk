@@ -380,7 +380,7 @@ const AmountMath = {
    * @param {Brand=} brand
    * @returns {Amount<V>}
    */
-  max: (x, y, b = undefined) => (AmountMath.isGTE(x, y, b) ? x : y),
+  max: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? x : y),
 };
 harden(AmountMath);
 
