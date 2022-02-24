@@ -6,6 +6,7 @@ import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
 import { makeVirtualPurse } from './virtual-purse.js';
+import * as BRIDGE_ID from './bridge-ids.js';
 
 import '@agoric/notifier/exported.js';
 
@@ -157,10 +158,10 @@ export function buildRootObject(_vatPowers) {
           },
         });
 
-        await E(bankBridgeMgr).register('bank', handler);
+        await E(bankBridgeMgr).register(BRIDGE_ID.BANK, handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
-        return obj => E(bankBridgeMgr).toBridge('bank', obj);
+        return obj => E(bankBridgeMgr).toBridge(BRIDGE_ID.BANK, obj);
       }
 
       const bankCall = await makeBankCaller(bankBridgeManager);

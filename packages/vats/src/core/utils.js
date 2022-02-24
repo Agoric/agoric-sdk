@@ -179,6 +179,23 @@ export const extract = (template, specimen) => {
 harden(extract);
 
 /**
+ * @param {unknown} permit the permit supplied by the manifest
+ * @param {unknown} allPowers the powers to attenuate
+ */
+export const extractPowers = (permit, allPowers) => {
+  if (typeof permit === 'object' && permit !== null) {
+    const {
+      // TODO: use these for more than just visualization.
+      home: _h,
+      ...effectivePermit
+    } = /** @type {Record<string, unknown>} */ (permit);
+    permit = effectivePermit;
+  }
+  return extract(permit, allPowers);
+};
+harden(extractPowers);
+
+/**
  * Make the well-known agoricNames namespace so that we can
  * E(home.agoricNames).lookup('issuer', 'RUN') and likewise
  * for brand, installation, instance, etc.

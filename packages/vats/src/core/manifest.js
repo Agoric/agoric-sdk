@@ -163,6 +163,7 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
 
 export const CHAIN_BOOTSTRAP_MANIFEST = harden({
   ...SHARED_BOOTSTRAP_MANIFEST,
+  bridgeCoreEval: true,
   connectChainFaucet: {
     consume: {
       client: true,

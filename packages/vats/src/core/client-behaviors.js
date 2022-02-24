@@ -2,6 +2,7 @@
 import { E, Far } from '@endo/far';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { deeplyFulfilled } from '@endo/marshal';
+import { observeNotifier } from '@agoric/notifier';
 import { registerNetworkProtocols } from './chain-behaviors.js';
 
 export { makeVatsFromBundles } from './basic-behaviors.js';
@@ -108,7 +109,6 @@ export const startClient = async ({
   // Tell the http server about our presences.  This can be called in
   // any order (whether localBundle and/or chainBundle are set or not).
   const updatePresences = () =>
-    // @ts-ignore setPresences type is inferred incorrectly
     E(vats.http).setPresences(localBundle, chainBundle, deprecated);
 
   const { D } = vatPowers;
@@ -147,8 +147,17 @@ export const startClient = async ({
       FIXME_GCI,
       PROVISIONER_INDEX,
     );
-    chainBundle = await E(chainProvider).getChainBundle();
-    await updatePresences();
+
+    // Observe any configuration changes and update the chain bundle
+    // accordingly.
+    const configNotifier = await E(chainProvider).getConfiguration();
+    await observeNotifier(configNotifier, {
+      updateState(state) {
+        const { clientHome } = state;
+        chainBundle = clientHome;
+        updatePresences();
+      },
+    });
   };
 
   // We race to add presences, regardless of order.  This allows a solo

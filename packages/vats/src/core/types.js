@@ -231,6 +231,7 @@
  *   vatPowers: { [prop: string]: any, D: DProxy },
  *   vatParameters: BootstrapVatParams,
  *   runBehaviors: (manifest: unknown) => Promise<unknown>,
+ *   modules: Record<string, Record<string, any>>,
  * }} BootstrapPowers
  * @typedef { WellKnownSpaces & {
  *   consume: EconomyBootstrapPowers['consume'] & {

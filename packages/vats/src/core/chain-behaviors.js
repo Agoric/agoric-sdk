@@ -1,5 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
+import * as farExports from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
@@ -21,8 +22,9 @@ import {
 
 import * as Collect from '@agoric/run-protocol/src/collect.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
+import * as BRIDGE_ID from '../bridge-ids.js';
 
-import { callProperties } from './utils.js';
+import { callProperties, extractPowers } from './utils.js';
 import { makeNameHubKit } from '../nameHub.js';
 
 export { installOnChain as installPegasusOnChain } from '@agoric/pegasus/src/install-on-chain.js';
@@ -30,7 +32,68 @@ export { installOnChain as installPegasusOnChain } from '@agoric/pegasus/src/ins
 const { details: X } = assert;
 const { keys } = Object;
 
-const NUM_IBC_PORTS = 3;
+const NUM_IBC_PORTS_PER_CLIENT = 3;
+
+/**
+ * This registers the code triggered by `agd tx gov submit-proposal
+ * swingset-core-eval permit.json code.js`.  It is the "big hammer" governance
+ * that allows code.js access to all powers permitted by permit.json.
+ *
+ * @param {BootstrapPowers} allPowers
+ */
+export const bridgeCoreEval = async allPowers => {
+  // We need all of the powers to be available to the evaluator, but we only
+  // need the bridgeManager to install our handler.
+  const {
+    consume: { bridgeManager: bridgeManagerP },
+  } = allPowers;
+  const bridgeManager = await bridgeManagerP;
+  if (!bridgeManager) {
+    // Not running with a bridge.
+    return;
+  }
+
+  // Register a coreEval handler over the bridge.
+  const handler = Far('coreHandler', {
+    async fromBridge(_srcID, obj) {
+      switch (obj.type) {
+        case 'CORE_EVAL': {
+          /**
+           * Type defined by `agoric-sdk/golang/cosmos/proto/agoric/swingset/swingset.proto` CoreEval.
+           *
+           * @type {{ evals: { json_permits: string, js_code: string }[]}}
+           */
+          const { evals } = obj;
+          return Promise.all(
+            evals.map(({ json_permits: jsonPermit, js_code: code }) =>
+              // Run in a new turn to avoid crosstalk of the evaluations.
+              Promise.resolve().then(() => {
+                const permit = JSON.parse(jsonPermit);
+                const powers = extractPowers(permit, allPowers);
+
+                // Inspired by ../repl.js:
+                const globals = harden({
+                  ...allPowers.modules,
+                  ...farExports,
+                  assert,
+                  console,
+                });
+
+                // Evaluate the code in the context of the globals.
+                const behavior = new Compartment(globals).evaluate(code);
+                return behavior(powers);
+              }),
+            ),
+          );
+        }
+        default:
+          assert.fail(X`Unrecognized request ${obj.type}`);
+      }
+    },
+  });
+  await E(bridgeManager).register(BRIDGE_ID.CORE, handler);
+};
+harden(bridgeCoreEval);
 
 /**
  * @param {BootstrapPowers & {
@@ -74,7 +137,7 @@ export const bridgeProvisioner = async ({
       }
     },
   });
-  await E(bridgeManager).register('provision', handler);
+  await E(bridgeManager).register(BRIDGE_ID.PROVISION, handler);
 };
 harden(bridgeProvisioner);
 
@@ -251,7 +314,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
     // We have access to the bridge, and therefore IBC.
     const callbacks = Far('callbacks', {
       downcall(method, obj) {
-        return dibcBridgeManager.toBridge('dibc', {
+        return dibcBridgeManager.toBridge(BRIDGE_ID.DIBC, {
           ...obj,
           type: 'IBC_METHOD',
           method,
@@ -363,7 +426,7 @@ export const setupNetworkProtocols = async ({
     // Bind to some fresh ports (unspecified name) on the IBC implementation
     // and provide them for the user to have.
     const ibcportP = [];
-    for (let i = 0; i < NUM_IBC_PORTS; i += 1) {
+    for (let i = 0; i < NUM_IBC_PORTS_PER_CLIENT; i += 1) {
       const port = E(vats.network).bind('/ibc-port/');
       ibcportP.push(port);
     }
