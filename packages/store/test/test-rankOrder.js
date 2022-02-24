@@ -94,9 +94,17 @@ test('compareRank totally orders ranks', async t => {
       if (ab === 0) {
         return assertionPassed(t.is(ba, 0), () => ba === 0);
       }
-      return assertionPassed(t.is(Math.sign(ba), -Math.sign(ab)), () => {
-        return Object.is(Math.sign(ba), -Math.sign(ab));
-      });
+      return (
+        assertionPassed(t.true(Math.abs(ab) > 0), () => {
+          return Math.abs(ab) > 0;
+        }) &&
+        assertionPassed(t.true(Math.abs(ba) > 0), () => {
+          return Math.abs(ba) > 0;
+        }) &&
+        assertionPassed(t.is(Math.sign(ba), -Math.sign(ab)), () => {
+          return Object.is(Math.sign(ba), -Math.sign(ab));
+        })
+      );
     }),
   );
 });
