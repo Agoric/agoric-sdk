@@ -17,6 +17,7 @@ import {
 import * as behaviors from './behaviors.js';
 import * as simBehaviors from './sim-behaviors.js';
 import * as clientBehaviors from './client-behaviors.js';
+import * as utils from './utils.js';
 
 const { entries } = Object;
 const { details: X, quote: q } = assert;
@@ -82,7 +83,8 @@ const buildRootObject = (vatPowers, vatParameters, log = console.info) => {
 
       /** @param { Record<string, Record<string, unknown>> } manifest */
       const runBehaviors = manifest => {
-        const allPowers = {
+        // TODO: Aspires to be BootstrapPowers, but it's too specific.
+        const allPowers = harden({
           vatPowers,
           vatParameters,
           vats,
@@ -91,7 +93,14 @@ const buildRootObject = (vatPowers, vatParameters, log = console.info) => {
           consume,
           ...spaces,
           runBehaviors,
-        };
+          // These module namespaces might be useful for core eval governance.
+          modules: {
+            clientBehaviors: { ...clientBehaviors },
+            simBehaviors: { ...simBehaviors },
+            behaviors: { ...behaviors },
+            utils: { ...utils },
+          },
+        });
         return Promise.all(
           entries(manifest).map(([name, permit]) =>
             Promise.resolve().then(() => {

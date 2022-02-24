@@ -73,6 +73,7 @@ export const bridgeCoreEval = async allPowers => {
 
                 // Inspired by ../repl.js:
                 const globals = harden({
+                  ...allPowers.modules,
                   ...farExports,
                   assert,
                   console,
