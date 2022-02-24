@@ -1,6 +1,6 @@
 interface VatData {
-  makeKind: function;
-  makeDurableKind: function;
+  defineKind: function;
+  defineDurableKind: function;
   makeScalarBigMapStore: function;
   makeScalarBigWeakMapStore: function;
   makeScalarBigSetStore: function;

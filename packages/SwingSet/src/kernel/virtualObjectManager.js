@@ -2,10 +2,8 @@
 /* eslint-disable no-use-before-define */
 
 import { assert, details as X } from '@agoric/assert';
-import { getInterfaceOf } from '@endo/marshal';
+import { Far } from '@endo/marshal';
 // import { kdebug } from './kdebug.js';
-
-const initializationsInProgress = new WeakSet();
 
 /**
  * Make a simple LRU cache of virtual object inner selves.
@@ -31,17 +29,6 @@ export function makeCache(size, fetch, store) {
   const cache = {
     makeRoom() {
       while (liveTable.size > size && lruTail) {
-        if (initializationsInProgress.has(lruTail.rawData)) {
-          let refreshCount = 1;
-          while (initializationsInProgress.has(lruTail.rawData)) {
-            assert(
-              refreshCount <= size,
-              X`cache overflowed with objects being initialized`,
-            );
-            cache.refresh(lruTail);
-            refreshCount += 1;
-          }
-        }
         // kdebug(`### vo LRU evict ${lruTail.vobjID} (dirty=${lruTail.dirty})`);
         liveTable.delete(lruTail.vobjID);
         if (lruTail.dirty) {
@@ -159,17 +146,28 @@ export function makeCache(size, fetch, store) {
  * not need to occupy memory when they are not in use.  It provides five
  * functions:
  *
- * - `makeKind` and `makeDurableKind` enable users to define new types of
+ * - `defineKind` and `defineDurableKind` enable users to define new types of
  *    virtual object by providing an implementation of the new kind of object's
  *    behavior.  The result is a maker function that will produce new
  *    virtualized instances of the defined object type on demand.
  *
- * - `flushCache` will empty the object manager's cache of in-memory object
- *    instances, writing any changed state to the persistent store.  This
- *    provided for testing; it otherwise has little use.
+ * - `VirtualObjectAwareWeakMap` and `VirtualObjectAwareWeakSet` are drop-in
+ *    replacements for JavaScript's builtin `WeakMap` and `WeakSet` classes
+ *    which understand the magic internal voodoo used to implement virtual
+ *    objects and will do the right thing when virtual objects are used as keys.
+ *    The intent is that the hosting environment will inject these as
+ *    substitutes for their regular JS analogs in way that should be transparent
+ *    to ordinary users of those classes.
  *
- * `makeKind` and `makeDurableKind` are made available to user vat code in the
- * `VatData` global.  The other two methods are for internal use by liveslots.
+ * - `flushCache` will empty the object manager's cache of in-memory object
+ *    instances, writing any changed state to the persistent store.  This is
+ *    provided for testing and to ensure that state that should be persisted
+ *    actually is prior to a controlled shutdown; normal code should not use
+ *    this.
+ *
+ * `defineKind` and `defineDurableKind` are made available to user vat code in
+ * the `VatData` global (along with various other storage functions defined
+ * elsewhere).
  */
 export function makeVirtualObjectManager(
   syscall,
@@ -357,21 +355,25 @@ export function makeVirtualObjectManager(
   /**
    * Define a new kind of virtual object.
    *
-   * @param {*} instanceKitMaker A function of the form
-   *    `instanceKitMaker(state)` that will return an "instance kit" describing
-   *    the parts of a new instance of the virtual object kind being defined.
-   *    The instance kit is an object with two properties: `init`, a function
-   *    that will initialize the state of the new instance, and `self`, an
-   *    object with methods implementing the new virtual object's behavior,
-   *    which will become the new virtual object instance's initial
-   *    representative.
-   * @param {boolean} durable Whether or not the new kind should be a durable
-   *    kind.
+   * @param {string} tag  A descriptive tag string as used in calls to `Far`
+   *
+   * @param {*} init  An initialization function that will return the initial
+   *    state of a new instance of the kind of virtual object being defined.
+   *
+   * @param {*} actualize  An actualization function that will provide the
+   *    in-memory representative object that wraps behavior around the
+   *    virtualized state of an instance of the object kind being defined.
+   *
+   * @param {*} finish  An optional finisher function that can perform
+   *    post-creation initialization operations, such as inserting the new
+   *    object in a cyclical object graph.
+   *
+   * @param {boolean} durable  A flag indicating whether or not the newly defined
+   *    kind should be a durable kind.
    *
    * @returns {*} a maker function that can be called to manufacture new
    *    instances of this kind of object.  The parameters of the maker function
-   *    are those of the `init` method provided by the `instanceKitMaker`
-   *    function.
+   *    are those of the `init` function.
    *
    * Notes on theory of operation:
    *
@@ -433,7 +435,7 @@ export function makeVirtualObjectManager(
    * reference to the state is nulled out and the object holding the state
    * becomes garbage collectable.
    */
-  function makeKindInternal(instanceKitMaker, durable) {
+  function defineKindInternal(tag, init, actualize, finish, durable) {
     const kindID = `${allocateExportID()}`;
     let nextInstanceID = 1;
     const propertyNames = new Set();
@@ -455,64 +457,50 @@ export function makeVirtualObjectManager(
         }
       }
 
-      function wrapData(target) {
-        assert(
-          !initializationsInProgress.has(target),
-          `object is still being initialized`,
-        );
-        for (const prop of propertyNames) {
-          Object.defineProperty(target, prop, {
-            get: () => {
-              ensureState();
-              return unserialize(innerSelf.rawData[prop]);
-            },
-            set: value => {
-              ensureState();
-              const before = innerSelf.rawData[prop];
-              const after = serialize(value);
-              if (durable) {
-                after.slots.map(vref =>
-                  assert(
-                    vrm.isDurable(vref),
-                    X`value for ${prop} is not durable`,
-                  ),
-                );
-              }
-              vrm.updateReferenceCounts(before.slots, after.slots);
-              innerSelf.rawData[prop] = after;
-              cache.markDirty(innerSelf);
-            },
-          });
-        }
-        innerSelf.wrapData = undefined;
-        harden(target);
+      const wrappedData = {};
+      for (const prop of propertyNames) {
+        Object.defineProperty(wrappedData, prop, {
+          get: () => {
+            ensureState();
+            return unserialize(innerSelf.rawData[prop]);
+          },
+          set: value => {
+            ensureState();
+            const before = innerSelf.rawData[prop];
+            const after = serialize(value);
+            if (durable) {
+              after.slots.map(vref =>
+                assert(
+                  vrm.isDurable(vref),
+                  X`value for ${prop} is not durable`,
+                ),
+              );
+            }
+            vrm.updateReferenceCounts(before.slots, after.slots);
+            innerSelf.rawData[prop] = after;
+            cache.markDirty(innerSelf);
+          },
+        });
       }
+      harden(wrappedData);
 
-      let instanceKit;
       if (initializing) {
-        innerSelf.wrapData = wrapData;
-        instanceKit = harden(instanceKitMaker(innerSelf.rawData));
         cache.remember(innerSelf);
-      } else {
-        const activeData = {};
-        wrapData(activeData);
-        instanceKit = harden(instanceKitMaker(activeData));
       }
-      return instanceKit;
+      const representative = Far(tag, actualize(wrappedData));
+      if (!proForma) {
+        innerSelf.representative = representative;
+      }
+      return [representative, wrappedData];
     }
 
     function reanimate(vobjID, proForma) {
       // kdebug(`vo reanimate ${vobjID}`);
       const innerSelf = cache.lookup(vobjID, false);
-      const representative = makeRepresentative(
-        innerSelf,
-        false,
-        proForma,
-      ).self;
+      const [representative] = makeRepresentative(innerSelf, false, proForma);
       if (proForma) {
         return null;
       } else {
-        innerSelf.representative = representative;
         return representative;
       }
     }
@@ -536,24 +524,9 @@ export function makeVirtualObjectManager(
     function makeNewInstance(...args) {
       const vobjID = `o+${kindID}/${nextInstanceID}`;
       nextInstanceID += 1;
-
-      const initialData = {};
-      initializationsInProgress.add(initialData);
-      const innerSelf = { vobjID, rawData: initialData, repCount: 0 };
       // kdebug(`vo make ${vobjID}`);
-      // prettier-ignore
-      const { self: initialRepresentative, init } =
-        makeRepresentative(innerSelf, true, false);
-      if (init) {
-        init(...args);
-      }
-      innerSelf.representative = initialRepresentative;
-      assert(
-        getInterfaceOf(initialRepresentative),
-        `self must be declared Far`,
-      );
-      registerEntry(vobjID, initialRepresentative);
-      initializationsInProgress.delete(initialData);
+
+      const initialData = init ? init(...args) : {};
       const rawData = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         const data = serialize(initialData[prop]);
@@ -564,12 +537,18 @@ export function makeVirtualObjectManager(
         }
         data.slots.map(vrm.addReachableVref);
         rawData[prop] = data;
-      }
-      innerSelf.rawData = rawData;
-      for (const prop of Object.getOwnPropertyNames(initialData)) {
         propertyNames.add(prop);
       }
-      innerSelf.wrapData(initialData);
+      const innerSelf = { vobjID, rawData, repCount: 0 };
+      const [initialRepresentative, wrappedData] = makeRepresentative(
+        innerSelf,
+        true,
+        false,
+      );
+      registerEntry(vobjID, initialRepresentative);
+      if (finish) {
+        finish(wrappedData, initialRepresentative);
+      }
       cache.markDirty(innerSelf);
       return initialRepresentative;
     }
@@ -577,12 +556,12 @@ export function makeVirtualObjectManager(
     return makeNewInstance;
   }
 
-  function makeKind(instanceKitMaker) {
-    return makeKindInternal(instanceKitMaker, false);
+  function defineKind(tag, init, actualize, finish) {
+    return defineKindInternal(tag, init, actualize, finish, false);
   }
 
-  function makeDurableKind(instanceKitMaker) {
-    return makeKindInternal(instanceKitMaker, true);
+  function defineDurableKind(tag, init, actualize, finish) {
+    return defineKindInternal(tag, init, actualize, finish, true);
   }
 
   function countWeakKeysForCollection(collection) {
@@ -602,8 +581,8 @@ export function makeVirtualObjectManager(
   };
 
   return harden({
-    makeKind,
-    makeDurableKind,
+    defineKind,
+    defineDurableKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     flushCache: cache.flush,

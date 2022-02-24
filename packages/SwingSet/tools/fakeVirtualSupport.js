@@ -173,15 +173,21 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   function convertSlotToVal(slot) {
     const { type, virtual } = parseVatSlot(slot);
     assert.equal(type, 'object');
+    let val = getValForSlot(slot);
+    if (val) {
+      if (virtual) {
+        vrm.reanimate(slot, true);
+      }
+      return val;
+    }
     if (virtual) {
       if (vrm) {
-        return vrm.reanimate(slot, false);
+        val = vrm.reanimate(slot, false);
       } else {
         assert.fail('fake liveSlots stuff configured without vrm');
       }
-    } else {
-      return getValForSlot(slot);
     }
+    return val;
   }
 
   const marshal = makeMarshal(convertValToSlot, convertSlotToVal);
