@@ -12,6 +12,10 @@ To generate a new final release, and CHANGELOG.md files
 ```sh
 # Create the final release CHANGELOGs.
 yarn lerna version --no-push --conventional-graduate
+prior=$(git tag -l | sed -ne 's!^@agoric/sdk@\([0-9]*\).*!\1!p' | sort -n | tail -1)
+SDKVER=$(( prior + 1 ))
+git tag @agoric/sdk@$SDKVER
+git commit -am "chore(release): @agoric/sdk@$SDKVER"
 # Push the branch.
 git push -u origin release-$now
 # Tell which packages have actual news.
