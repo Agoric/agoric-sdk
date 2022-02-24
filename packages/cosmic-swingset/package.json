@@ -56,7 +56,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "ava": {
     "files": [
