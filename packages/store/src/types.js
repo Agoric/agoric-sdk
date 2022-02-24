@@ -153,6 +153,7 @@
  * Remove the key. Throws if not found.
  * @property {(keys: Iterable<K>) => void} addAll
  * @property {(keyPatt?: Pattern) => Iterable<K>} keys
+ * @property {(keyPatt?: Pattern) => Iterable<K>} values
  * @property {(keyPatt?: Pattern) => CopySet<K>} snapshot
  * @property {(keyPatt?: Pattern) => number} getSize
  * @property {(keyPatt?: Pattern) => void} clear

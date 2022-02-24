@@ -4,6 +4,7 @@ import fc from 'fast-check';
 
 import { AmountMath as m, AssetKind } from '../../src/index.js';
 import { mockBrand } from './mathHelpers/mockBrand.js';
+import { assertionPassed } from '../../../store/test/test-store.js';
 
 // Perhaps makeCopyBag should coalesce duplicate labels, but for now, it does
 // not.
@@ -28,59 +29,115 @@ const arbAmount = arbBagContents.map(contents =>
 // Note: we write P => Q as !P || Q since JS has no logical => operator
 const implies = (p, q) => !p || q;
 
-test('isEqual is a (total) equivalence relation', t => {
-  fc.assert(
+test('isEqual is a (total) equivalence relation', async t => {
+  await fc.assert(
     fc.property(
       fc.record({ x: arbAmount, y: arbAmount, z: arbAmount }),
       ({ x, y, z }) => {
-        t.true([true, false].includes(m.isEqual(x, y))); // Total
-        t.true(m.isEqual(x, x)); // Reflexive
-        t.true(implies(m.isEqual(x, y), m.isEqual(y, x))); // Symmetric
-        // Transitive
-        t.true(implies(m.isEqual(x, y) && m.isEqual(y, z), m.isEqual(x, z)));
+        return (
+          // Total
+          assertionPassed(t.true([true, false].includes(m.isEqual(x, y))), () =>
+            [true, false].includes(m.isEqual(x, y)),
+          ) &&
+          // Reflexive
+          assertionPassed(t.true(m.isEqual(x, x)), () => m.isEqual(x, x)) &&
+          // Symmetric
+          assertionPassed(
+            t.true(implies(m.isEqual(x, y), m.isEqual(y, x))),
+            () => implies(m.isEqual(x, y), m.isEqual(y, x)),
+          ) &&
+          // Transitive
+          assertionPassed(
+            t.true(
+              implies(m.isEqual(x, y) && m.isEqual(y, z), m.isEqual(x, z)),
+            ),
+            () => implies(m.isEqual(x, y) && m.isEqual(y, z), m.isEqual(x, z)),
+          )
+        );
       },
     ),
   );
 });
 
-test('isGTE is a partial order with empty as minimum', t => {
+test('isGTE is a partial order with empty as minimum', async t => {
   const empty = m.makeEmpty(mockBrand, AssetKind.COPY_BAG);
-  fc.assert(
+  await fc.assert(
     fc.property(fc.record({ x: arbAmount, y: arbAmount }), ({ x, y }) => {
-      t.true(m.isGTE(x, empty));
-      t.true([true, false].includes(m.isGTE(x, y))); // Total
-      t.true(m.isGTE(x, x)); // Reflexive
-      // Antisymmetric
-      t.true(implies(m.isGTE(x, y) && m.isGTE(y, x), m.isEqual(x, y)));
+      return (
+        assertionPassed(t.true(m.isGTE(x, empty)), () => m.isGTE(x, empty)) &&
+        // Total
+        assertionPassed(t.true([true, false].includes(m.isGTE(x, y))), () =>
+          [true, false].includes(m.isGTE(x, y)),
+        ) &&
+        // Reflexive
+        assertionPassed(t.true(m.isGTE(x, x)), () => m.isGTE(x, x)) &&
+        // Antisymmetric
+        assertionPassed(
+          t.true(implies(m.isGTE(x, y) && m.isGTE(y, x), m.isEqual(x, y))),
+          () => implies(m.isGTE(x, y) && m.isGTE(y, x), m.isEqual(x, y)),
+        )
+      );
     }),
   );
 });
 
-test('add: closed, commutative, associative, monotonic, with empty identity', t => {
+test('add: closed, commutative, associative, monotonic, with empty identity', async t => {
   const empty = m.makeEmpty(mockBrand, AssetKind.COPY_BAG);
-  fc.assert(
+  await fc.assert(
     fc.property(
       fc.record({ x: arbAmount, y: arbAmount, z: arbAmount }),
       ({ x, y, z }) => {
-        // note: + for SET is not total.
-        t.truthy(m.coerce(mockBrand, m.add(x, y)));
-        t.true(m.isEqual(m.add(x, empty), x)); // Identity (right)
-        t.true(m.isEqual(m.add(empty, x), x)); // Identity (left)
-        t.true(m.isEqual(m.add(x, y), m.add(y, x))); // Commutative
-        // Associative
-        t.true(m.isEqual(m.add(m.add(x, y), z), m.add(x, m.add(y, z))));
-        t.true(m.isGTE(m.add(x, y), x)); // Monotonic (left)
-        t.true(m.isGTE(m.add(x, y), y)); // Monotonic (right)
+        return (
+          // note: + for SET is not total.
+          assertionPassed(t.truthy(m.coerce(mockBrand, m.add(x, y))), () =>
+            m.coerce(mockBrand, m.add(x, y)),
+          ) &&
+          // Identity (right)
+          assertionPassed(t.true(m.isEqual(m.add(x, empty), x)), () =>
+            m.isEqual(m.add(x, empty), x),
+          ) &&
+          // Identity (left)
+          assertionPassed(t.true(m.isEqual(m.add(empty, x), x)), () =>
+            m.isEqual(m.add(empty, x), x),
+          ) &&
+          // Commutative
+          assertionPassed(t.true(m.isEqual(m.add(x, y), m.add(y, x))), () =>
+            m.isEqual(m.add(x, y), m.add(y, x)),
+          ) &&
+          // Associative
+          assertionPassed(
+            t.true(m.isEqual(m.add(m.add(x, y), z), m.add(x, m.add(y, z)))),
+            () => m.isEqual(m.add(m.add(x, y), z), m.add(x, m.add(y, z))),
+          ) &&
+          // Monotonic (left)
+          assertionPassed(t.true(m.isGTE(m.add(x, y), x)), () =>
+            m.isGTE(m.add(x, y), x),
+          ) &&
+          // Monotonic (right)
+          assertionPassed(t.true(m.isGTE(m.add(x, y), y)), () =>
+            m.isGTE(m.add(x, y), y),
+          )
+        );
       },
     ),
   );
 });
 
-test('subtract: (x + y) - y = x; (y - x) + x = y if y >= x', t => {
-  fc.assert(
+test('subtract: (x + y) - y = x; (y - x) + x = y if y >= x', async t => {
+  await fc.assert(
     fc.property(fc.record({ x: arbAmount, y: arbAmount }), ({ x, y }) => {
-      t.true(m.isEqual(m.subtract(m.add(x, y), y), x));
-      t.true(m.isGTE(y, x) ? m.isEqual(m.add(m.subtract(y, x), x), y) : true);
+      return (
+        assertionPassed(t.true(m.isEqual(m.subtract(m.add(x, y), y), x)), () =>
+          m.isEqual(m.subtract(m.add(x, y), y), x),
+        ) &&
+        assertionPassed(
+          t.true(
+            m.isGTE(y, x) ? m.isEqual(m.add(m.subtract(y, x), x), y) : true,
+          ),
+          () =>
+            m.isGTE(y, x) ? m.isEqual(m.add(m.subtract(y, x), x), y) : true,
+        )
+      );
     }),
   );
 });

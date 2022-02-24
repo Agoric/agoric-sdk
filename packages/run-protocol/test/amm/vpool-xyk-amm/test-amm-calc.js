@@ -37,8 +37,8 @@ const withinEpsilon = (left, right) =>
   multiply(right, 105) >= multiply(left, 100) &&
   multiply(left, 105) >= multiply(right, 100);
 
-test('balancesToReachRatio calculations are to spec', t => {
-  fc.assert(
+test('balancesToReachRatio calculations are to spec', async t => {
+  await fc.assert(
     fc.property(
       fc.record({
         poolX: arbPoolX,
@@ -56,6 +56,8 @@ test('balancesToReachRatio calculations are to spec', t => {
             multiply(poolX.value, poolY.value),
           ),
         );
+        let ok = true;
+
         const { targetX, targetY } = balancesToReachRatio(
           poolX,
           poolY,
@@ -71,6 +73,7 @@ test('balancesToReachRatio calculations are to spec', t => {
           targetWithinRangeOfK,
           `with giveX=${giveX.value} giveY=${giveY.value}, targetX=${targetX.value} and targetY=${targetY.value} should have the same product as poolX=${poolX.value} * poolY=${poolY.value}.`,
         );
+        if (!targetWithinRangeOfK) ok = false;
 
         // target X / targetY approximately equals poolXAfter / poolYAfter
         const ratiosWithinRange = withinEpsilon(
@@ -79,11 +82,13 @@ test('balancesToReachRatio calculations are to spec', t => {
           // @ts-ignore targetY.value is a Nat
           targetY.value * add(poolX.value, giveX.value),
         );
-
         t.truthy(
           ratiosWithinRange,
           `targetX ${targetX.value} and targetY ${targetY.value} should be in the same ratio as poolX + giveX / poolY + giveY`,
         );
+        if (!ratiosWithinRange) ok = false;
+
+        return ok;
       },
     ),
   );
