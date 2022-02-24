@@ -28,17 +28,38 @@ const trace = makeTracer('Vault');
 // collateral, and lending RUN to the borrower
 
 /**
- * Constants for vault state.
+ * Constants for vault phase.
  *
- * @typedef {'active' | 'liquidating' | 'closed' | 'transfer'} VAULT_STATE
+ * ACTIVE       - vault is in use and can be changed
+ * LIQUIDATING  - vault is being liquidated by the vault manager, and cannot be changed by the user
+ * TRANSFER     - vault is released from the manager and able to be transferred
+ * TRANSFER     - vault is able to be transferred (payments and debits frozen until it has a new owner)
+ * CLOSED       - vault was closed by the user and all assets have been paid out
+ * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
  *
- * @type {{ ACTIVE: 'active', LIQUIDATING: 'liquidating', CLOSED: 'closed', TRANSFER: 'transfer' }}
+ * @typedef {VaultPhase[keyof typeof VaultPhase]} VAULT_PHASE
  */
-export const VaultState = {
+export const VaultPhase = /** @type {const} */ ({
   ACTIVE: 'active',
   LIQUIDATING: 'liquidating',
   CLOSED: 'closed',
+  LIQUIDATED: 'liquidated',
   TRANSFER: 'transfer',
+});
+
+/**
+ * @type {{[K in VAULT_PHASE]: Array<VAULT_PHASE>}}
+ */
+const validTransitions = {
+  [VaultPhase.ACTIVE]: [
+    VaultPhase.LIQUIDATING,
+    VaultPhase.TRANSFER,
+    VaultPhase.CLOSED,
+  ],
+  [VaultPhase.LIQUIDATING]: [VaultPhase.LIQUIDATED],
+  [VaultPhase.TRANSFER]: [VaultPhase.ACTIVE, VaultPhase.LIQUIDATING],
+  [VaultPhase.LIQUIDATED]: [],
+  [VaultPhase.CLOSED]: [],
 };
 
 const makeOuterKit = inner => {
@@ -102,12 +123,31 @@ export const makeInnerVault = (
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
     zcf.makeEmptySeatKit(undefined);
 
-  /** @type {VAULT_STATE} */
-  let vaultState = VaultState.ACTIVE;
+  // #region Phase state
+  /** @type {VAULT_PHASE} */
+  let phase = VaultPhase.ACTIVE;
+
+  /**
+   * @param {VAULT_PHASE} newPhase
+   */
+  const assignPhase = newPhase => {
+    const validNewPhases = validTransitions[phase];
+    if (!validNewPhases.includes(newPhase))
+      throw new Error(`Vault cannot transition from ${phase} to ${newPhase}`);
+    phase = newPhase;
+  };
+
+  const assertPhase = allegedPhase => {
+    assert(
+      phase === allegedPhase,
+      X`vault must be ${allegedPhase}, not ${phase}`,
+    );
+  };
 
   const assertVaultIsOpen = () => {
-    assert(vaultState === VaultState.ACTIVE, X`vault must still be active`);
+    assertPhase(VaultPhase.ACTIVE);
   };
+  // #endregion
 
   let outerUpdater;
 
@@ -239,7 +279,7 @@ export const makeInnerVault = (
       : getCollateralAllocated(vaultSeat);
   };
 
-  const snapshotState = vstate => {
+  const snapshotState = newPhase => {
     /** @type {VaultUIState} */
     return harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
@@ -248,38 +288,44 @@ export const makeInnerVault = (
       debtSnapshot,
       locked: getCollateralAmount(),
       debt: getDebtAmount(),
-      // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
-      liquidated: vaultState === VaultState.CLOSED,
-      vaultState: vstate,
+      // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
+      // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
+      vaultState: newPhase,
     });
   };
 
   // call this whenever anything changes!
   const updateUiState = () => {
     if (!outerUpdater) {
+      console.warn('updateUiState called after outerUpdater removed');
       return;
     }
     /** @type {VaultUIState} */
-    const uiState = snapshotState(vaultState);
+    const uiState = snapshotState(phase);
     trace('updateUiState', uiState);
 
-    switch (vaultState) {
-      case VaultState.ACTIVE:
-      case VaultState.LIQUIDATING:
+    switch (phase) {
+      case VaultPhase.ACTIVE:
+      case VaultPhase.LIQUIDATING:
         outerUpdater.updateState(uiState);
         break;
-      case VaultState.CLOSED:
+      case VaultPhase.CLOSED:
+      case VaultPhase.LIQUIDATED:
         outerUpdater.finish(uiState);
+        outerUpdater = null;
         break;
+      case VaultPhase.TRANSFER:
+        // Transfer handles finish()/null itself
+        throw Error('no UI updates from transfer state');
       default:
-        throw Error(`unreachable vaultState: ${vaultState}`);
+        throw Error(`unreachable vault phase: ${phase}`);
     }
   };
   // XXX Echo notifications from the manager through all vaults
   // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
   observeNotifier(managerNotifier, {
     updateState: () => {
-      if (vaultState !== VaultState.CLOSED) {
+      if (phase !== VaultPhase.CLOSED) {
         updateUiState();
       }
     },
@@ -293,15 +339,12 @@ export const makeInnerVault = (
   const liquidated = newDebt => {
     updateDebtSnapshot(newDebt);
 
-    vaultState = VaultState.CLOSED;
+    assignPhase(VaultPhase.LIQUIDATED);
     updateUiState();
   };
 
   const liquidating = () => {
-    if (vaultState === VaultState.LIQUIDATING) {
-      throw new Error('Vault already liquidating');
-    }
-    vaultState = VaultState.LIQUIDATING;
+    assignPhase(VaultPhase.LIQUIDATING);
     updateUiState();
   };
 
@@ -342,7 +385,7 @@ export const makeInnerVault = (
     runMint.burnLosses(harden({ RUN: currentDebt }), burnSeat);
     seat.exit();
     burnSeat.exit();
-    vaultState = VaultState.CLOSED;
+    assignPhase(VaultPhase.CLOSED);
     updateDebtSnapshot(AmountMath.makeEmpty(runBrand));
     updateUiState();
 
@@ -670,7 +713,7 @@ export const makeInnerVault = (
     makeCloseInvitation,
     makeTransferInvitation: () => {
       if (outerUpdater) {
-        outerUpdater.finish(snapshotState(VaultState.TRANSFER));
+        outerUpdater.finish(snapshotState(VaultPhase.TRANSFER));
         outerUpdater = null;
       }
       return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');
