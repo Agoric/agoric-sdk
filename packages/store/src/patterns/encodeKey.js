@@ -1,4 +1,3 @@
-/* global BigUint64Array */
 // @ts-check
 import { assert, details as X, q } from '@agoric/assert';
 import {
@@ -34,7 +33,7 @@ harden(zeroPad);
 const asNumber = new Float64Array(1);
 const asBits = new BigUint64Array(asNumber.buffer);
 
-// JavaScript numbers are encode as keys by outputting the base-16
+// JavaScript numbers are encoded as keys by outputting the base-16
 // representation of the binary value of the underlying IEEE floating point
 // representation.  For negative values, all bits of this representation are
 // complemented prior to the base-16 conversion, while for positive values, the
@@ -45,15 +44,14 @@ const asBits = new BigUint64Array(asNumber.buffer);
 // of the corresponding numbers.
 
 // TODO Choose the same canonical NaN encoding that cosmWasm and ewasm chose.
-const CanonicalNaN = 'ffff8000000000000';
+const CanonicalNaNBits = 'fff8000000000000';
 
-// Normalize -0 to 0
-
-const numberToDBEntryKey = n => {
+const encodeBinary64 = n => {
+  // Normalize -0 to 0 and NaN to a canonical encoding
   if (is(n, -0)) {
     n = 0;
   } else if (is(n, NaN)) {
-    return CanonicalNaN;
+    return `f${CanonicalNaNBits}`;
   }
   asNumber[0] = n;
   let bits = asBits[0];
@@ -68,9 +66,10 @@ const numberToDBEntryKey = n => {
   return `f${zeroPad(bits.toString(16), 16)}`;
 };
 
-const dbEntryKeyToNumber = k => {
-  let bits = BigInt(`0x${k.substring(1)}`);
-  if (k[1] < '8') {
+const decodeBinary64 = encodedKey => {
+  assert(encodedKey.startsWith('f'), X`Encoded number expected: ${encodedKey}`);
+  let bits = BigInt(`0x${encodedKey.substring(1)}`);
+  if (encodedKey[1] < '8') {
     // eslint-disable-next-line no-bitwise
     bits ^= 0xffffffffffffffffn;
   } else {
@@ -79,69 +78,98 @@ const dbEntryKeyToNumber = k => {
   }
   asBits[0] = bits;
   const result = asNumber[0];
-  if (is(result, -0)) {
-    return 0;
-  }
+  assert(!is(result, -0), X`Unexpected negative zero: ${encodedKey}`);
   return result;
 };
 
-// BigInts are encoded as keys as follows:
-//   `${prefix}${length}:${encodedNumber}`
-// Where:
-//
-//   ${prefix} is either 'n' or 'p' according to whether the BigInt is negative
-//      or positive ('n' is less than 'p', so negative BigInts will sort below
-//      positive ones)
-//
-//   ${encodedNumber} is the value of the BigInt itself, encoded as a decimal
-//      number.  Positive BigInts use their normal decimal representation (i.e.,
-//      what is returned when you call `toString()` on a BigInt).  Negative
-//      BigInts are encoded as the unpadded 10s complement of their value; in
-//      this encoding, all negative values that have same number of digits will
-//      sort lexically in the inverse order of their numeric value (which is to
-//      say, most negative to least negative).
-//
-//   ${length} is the decimal representation of the width (i.e., the count of
-//      digits) of the BigInt.  This length value is then zero padded to a fixed
-//      number (currently 10) of digits.  Note that the fixed width length field
-//      means that we cannot encode BigInts whose values have more than 10**10
-//      digits, but we are willing to live with this limitation since we could
-//      never store such large numbers anyway.  The length field is used in lieu
-//      of zero padding the BigInts themselves for sorting, which would be
-//      impractical for the same reason that storing large values directly would
-//      be.  The length is zero padded so that numbers are sorted within groups
-//      according to their decimal orders of magnitude in size and then these
-//      groups are sorted smallest to largest.
-//
-// This encoding allows all BigInts to be represented as ASCII strings that sort
-// lexicographically in the same order as the values of the BigInts themselves
-// would sort numerically.
-
-export const BIGINT_TAG_LEN = 10;
-const BIGINT_LEN_MODULUS = 10 ** BIGINT_TAG_LEN;
-
-const bigintToDBEntryKey = n => {
+// JavaScript bigints are encoded using a variant of Elias delta coding, with an
+// initial component for the length of the digit count as a unary string, a
+// second component for the decimal digit count, and a third component for the
+// decimal digits preceded by a gratuitous separating colon.
+// To ensure that the lexicographic sort order of encoded values matches the
+// numeric sort order of the corresponding numbers, the characters of the unary
+// prefix are different for negative values (type "n" followed by any number of
+// "#"s [which sort before decimal digits]) vs. positive and zero values (type
+// "p" followed by any number of "~"s [which sort after decimal digits]) and
+// each decimal digit of the encoding for a negative value is replaced with its
+// ten's complement (so that negative values of the same scale sort by
+// *descending* absolute value).
+const encodeBigInt = n => {
+  const abs = n < 0n ? -n : n;
+  const nDigits = abs.toString().length;
+  const lDigits = nDigits.toString().length;
   if (n < 0n) {
-    const raw = (-n).toString();
-    const modulus = 10n ** BigInt(raw.length);
-    const numstr = (modulus + n).toString(); // + because n is negative
-    const lenTag = zeroPad(BIGINT_LEN_MODULUS - raw.length, BIGINT_TAG_LEN);
-    return `n${lenTag}:${zeroPad(numstr, raw.length)}`;
+    return `n${
+      // A "#" for each digit beyond the first
+      // in the decimal *count* of decimal digits.
+      '#'.repeat(lDigits - 1)
+    }${
+      // The ten's complement of the count of digits.
+      (10 ** lDigits - nDigits).toString().padStart(lDigits, '0')
+    }:${
+      // The ten's complement of the digits.
+      (10n ** BigInt(nDigits) + n).toString().padStart(nDigits, '0')
+    }`;
   } else {
-    const numstr = n.toString();
-    return `p${zeroPad(numstr.length, BIGINT_TAG_LEN)}:${numstr}`;
+    return `p${
+      // A "~" for each digit beyond the first
+      // in the decimal *count* of decimal digits.
+      '~'.repeat(lDigits - 1)
+    }${
+      // The count of digits.
+      nDigits
+    }:${
+      // The digits.
+      n
+    }`;
   }
 };
 
-const dbEntryKeyToBigint = k => {
-  const numstr = k.substring(BIGINT_TAG_LEN + 2);
-  const n = BigInt(numstr);
-  if (k[0] === 'n') {
-    const modulus = 10n ** BigInt(numstr.length);
-    return -(modulus - n);
-  } else {
-    return n;
+const decodeBigInt = encodedKey => {
+  const typePrefix = encodedKey[0];
+  let rem = encodedKey.slice(1);
+  assert(
+    typePrefix === 'p' || typePrefix === 'n',
+    X`Encoded bigint expected: ${encodedKey}`,
+  );
+
+  const lDigits = rem.search(/[0-9]/) + 1;
+  assert(lDigits >= 1, X`Digit count expected: ${encodedKey}`);
+  rem = rem.slice(lDigits - 1);
+
+  assert(
+    rem.length >= lDigits,
+    X`Complete digit count expected: ${encodedKey}`,
+  );
+  const snDigits = rem.slice(0, lDigits);
+  rem = rem.slice(lDigits);
+
+  assert(
+    /^[0-9]+$/.test(snDigits),
+    X`Decimal digit count expected: ${encodedKey}`,
+  );
+  let nDigits = parseInt(snDigits, 10);
+  if (typePrefix === 'n') {
+    // TODO Assert to reject forbidden encodings
+    // like "n0:" and "n00:…" and "n91:…" through "n99:…"?
+    nDigits = 10 ** lDigits - nDigits;
   }
+
+  assert(rem.startsWith(':'), X`Separator expected: ${encodedKey}`);
+  rem = rem.slice(1);
+
+  assert(
+    rem.length === nDigits,
+    X`Fixed-length digit sequence expected: ${encodedKey}`,
+  );
+  let n = BigInt(rem);
+  if (typePrefix === 'n') {
+    // TODO Assert to reject forbidden encodings
+    // like "n9:0" and "n8:00" and "n8:91" through "n8:99"?
+    n = -(10n ** BigInt(nDigits) - n);
+  }
+
+  return n;
 };
 
 // `'\u0000'` is the terminator after elements.
@@ -249,7 +277,7 @@ export const makeEncodeKey = encodeRemotable => {
         return 'z';
       }
       case 'number': {
-        return numberToDBEntryKey(key);
+        return encodeBinary64(key);
       }
       case 'string': {
         return `s${key}`;
@@ -258,7 +286,7 @@ export const makeEncodeKey = encodeRemotable => {
         return `b${key}`;
       }
       case 'bigint': {
-        return bigintToDBEntryKey(key);
+        return encodeBigInt(key);
       }
       case 'remotable': {
         const result = encodeRemotable(key);
@@ -299,7 +327,7 @@ export const makeDecodeKey = decodeRemotable => {
         return undefined;
       }
       case 'f': {
-        return dbEntryKeyToNumber(encodedKey);
+        return decodeBinary64(encodedKey);
       }
       case 's': {
         return encodedKey.substring(1);
@@ -309,7 +337,7 @@ export const makeDecodeKey = decodeRemotable => {
       }
       case 'n':
       case 'p': {
-        return dbEntryKeyToBigint(encodedKey);
+        return decodeBigInt(encodedKey);
       }
       case 'r': {
         return decodeRemotable(encodedKey);

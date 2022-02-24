@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
@@ -169,7 +169,7 @@ async function doVatResolveCase1(t, mode) {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
   const rootA = 'o+0';
@@ -323,7 +323,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       },
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
   const rootA = 'o+0';
@@ -541,7 +541,7 @@ async function doVatResolveCase4(t, mode) {
       four() {},
     });
   }
-  const dispatch = makeDispatch(syscall, build);
+  const dispatch = await makeDispatch(syscall, build);
   t.deepEqual(log, []);
 
   const rootA = 'o+0';
@@ -669,8 +669,8 @@ test('inter-vat circular promise references', async t => {
       },
     });
   }
-  const dispatchA = makeDispatch(syscall, build, 'vatA');
-  // const dispatchB = makeDispatch(syscall, build, 'vatB');
+  const dispatchA = await makeDispatch(syscall, build, 'vatA');
+  // const dispatchB = await makeDispatch(syscall, build, 'vatB');
   t.deepEqual(log, []);
 
   const rootA = 'o+0';

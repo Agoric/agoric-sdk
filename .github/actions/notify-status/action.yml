@@ -1,0 +1,39 @@
+name: Notify Github Actions status via email
+description: 'Notify on actions status'
+
+inputs:
+  from:
+    description: 'The email address to send the notification from'
+    required: true
+  to:
+    description: 'Recipients'
+    required: true
+  password:
+    description: 'Sendgrid Password'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: send ${{ job.status }} email
+      uses: dawidd6/action-send-mail@v2
+      with:
+        # mail server settings
+        server_address: smtp.sendgrid.net
+        server_port: 465
+        # user credentials
+        username: apikey
+        password: ${{ inputs.password }}
+        # email subject
+        subject: 'CI ${{ job.status }} in ${{ github.repository }} (job: ${{ github.job }})'
+        # email body as text
+        body: |-
+          Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{ github.repository }} status ${{ job.status }}
+
+          Please take discussion to @agoric#eng_coordination
+
+          Details at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # comma-separated string, send email to
+        to: ${{ inputs.to }}
+        # from email name
+        from: ${{ inputs.from }}

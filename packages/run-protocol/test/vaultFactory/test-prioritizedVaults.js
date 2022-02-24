@@ -6,12 +6,15 @@ import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makeNotifierKit } from '@agoric/notifier';
-import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
-import { makePrioritizedVaults } from '../../src/vaultFactory/prioritizedVaults.js';
+import {
+  currentDebtToCollateral,
+  makePrioritizedVaults,
+} from '../../src/vaultFactory/prioritizedVaults.js';
+import { makeFakeInnerVault } from '../supports.js';
+
+/** @typedef {import('../../src/vaultFactory/vault.js').InnerVault} InnerVault */
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
@@ -23,15 +26,20 @@ async function waitForPromisesToSettle() {
 }
 
 function makeCollector() {
+  /** @type {Ratio[]} */
   const ratios = [];
 
-  function lookForRatio(vaultPair) {
-    ratios.push(vaultPair.debtToCollateral);
+  /**
+   *
+   * @param {[string, InnerVault]} record
+   */
+  function lookForRatio([_, vault]) {
+    ratios.push(currentDebtToCollateral(vault));
   }
 
   return {
     lookForRatio,
-    getRates: () => ratios,
+    getPercentages: () => ratios.map(r => Number(r.numerator.value)),
   };
 }
 
@@ -50,271 +58,195 @@ function makeRescheduler() {
   };
 }
 
-function makeFakeVaultKit(
-  initDebt,
-  initCollateral = AmountMath.make(initDebt.brand, 100n),
-) {
-  let debt = initDebt;
-  let collateral = initCollateral;
-  const vault = Far('Vault', {
-    getCollateralAmount: () => collateral,
-    getDebtAmount: () => debt,
-    setDebt: newDebt => (debt = newDebt),
-    setCollateral: newCollateral => (collateral = newCollateral),
-  });
-  return harden({
-    vault,
-    liquidate: () => {},
-  });
-}
+const { brand } = makeIssuerKit('ducats');
+const percent = n => makeRatio(BigInt(n), brand);
 
 test('add to vault', async t => {
-  const { brand } = makeIssuerKit('ducats');
-
   const rescheduler = makeRescheduler();
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
-  const fakeVaultKit = makeFakeVaultKit(AmountMath.make(brand, 130n));
-  const { notifier } = makeNotifierKit();
-  vaults.addVaultKit(fakeVaultKit, notifier);
+  vaults.addVault(
+    'id-fakeVaultKit',
+    makeFakeInnerVault('id-fakeVaultKit', AmountMath.make(brand, 130n)),
+  );
   const collector = makeCollector();
-  vaults.forEachRatioGTE(makeRatio(1n, brand, 10n), collector.lookForRatio);
+  // ??? why doesn't this work?
+  // mapIterable(
+  //   vaults.entriesPrioritizedGTE(makeRatio(1n, brand, 10n)),
+  //   collector.lookForRatio,
+  // );
+  Array.from(vaults.entriesPrioritizedGTE(makeRatio(1n, brand, 10n))).map(
+    collector.lookForRatio,
+  );
 
-  const rates = collector.getRates();
-  const ratio130 = makeRatio(130n, brand, 100n);
-  t.deepEqual(rates, [ratio130], 'expected vault');
+  t.deepEqual(collector.getPercentages(), [130], 'expected vault');
   t.truthy(rescheduler.called(), 'should call reschedule()');
-  t.deepEqual(vaults.highestRatio(), undefined);
 });
 
 test('updates', async t => {
-  const { brand } = makeIssuerKit('ducats');
-
   const rescheduler = makeRescheduler();
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
 
-  const fakeVault1 = makeFakeVaultKit(AmountMath.make(brand, 120n));
-  const { updater: updater1, notifier: notifier1 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault1, notifier1);
+  vaults.addVault(
+    'id-fakeVault1',
+    makeFakeInnerVault('id-fakeVault1', AmountMath.make(brand, 20n)),
+  );
 
-  const fakeVault2 = makeFakeVaultKit(AmountMath.make(brand, 180n));
-  const { updater: updater2, notifier: notifier2 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault2, notifier2);
+  vaults.addVault(
+    'id-fakeVault2',
+    makeFakeInnerVault('id-fakeVault2', AmountMath.make(brand, 80n)),
+  );
 
-  // prioritizedVaults doesn't care what the update contains
-  updater1.updateState({ locked: AmountMath.make(brand, 300n) });
-  updater2.updateState({ locked: AmountMath.make(brand, 300n) });
   await waitForPromisesToSettle();
 
   const collector = makeCollector();
   rescheduler.resetCalled();
-  vaults.forEachRatioGTE(makeRatio(1n, brand, 10n), collector.lookForRatio);
-  const rates = collector.getRates();
-  const ratio180 = makeRatio(180n, brand, 100n);
-  const ratio120 = makeRatio(120n, brand, 100n);
-  t.deepEqual(rates, [ratio180, ratio120]);
+  Array.from(vaults.entriesPrioritizedGTE(makeRatio(1n, brand, 10n))).map(
+    collector.lookForRatio,
+  );
+  t.deepEqual(collector.getPercentages(), [80, 20]);
   t.falsy(rescheduler.called(), 'second vault did not call reschedule()');
-  t.deepEqual(vaults.highestRatio(), undefined);
 });
 
 test('update changes ratio', async t => {
-  const { brand } = makeIssuerKit('ducats');
-
   const rescheduler = makeRescheduler();
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
 
-  const fakeVault1 = makeFakeVaultKit(AmountMath.make(brand, 120n));
-  const { updater: updater1, notifier: notifier1 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault1, notifier1);
+  const fakeVault1 = makeFakeInnerVault(
+    'id-fakeVault1',
+    AmountMath.make(brand, 20n),
+  );
+  vaults.addVault('id-fakeVault1', fakeVault1);
 
-  const fakeVault2 = makeFakeVaultKit(AmountMath.make(brand, 180n));
-  const { updater: updater2, notifier: notifier2 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault2, notifier2);
+  vaults.addVault(
+    'id-fakeVault2',
+    makeFakeInnerVault('id-fakeVault2', AmountMath.make(brand, 80n)),
+  );
 
-  // prioritizedVaults doesn't care what the update contains
-  updater1.updateState({ locked: AmountMath.make(brand, 300n) });
-  updater2.updateState({ locked: AmountMath.make(brand, 300n) });
   await waitForPromisesToSettle();
 
-  const ratio180 = makeRatio(180n, brand, 100n);
-  t.deepEqual(vaults.highestRatio(), ratio180);
+  t.deepEqual(Array.from(Array.from(vaults.entries()).map(([k, _v]) => k)), [
+    'fbff4000000000000:id-fakeVault2',
+    'fc014000000000000:id-fakeVault1',
+  ]);
 
-  fakeVault1.vault.setDebt(AmountMath.make(brand, 200n));
-  updater1.updateState({ locked: AmountMath.make(brand, 300n) });
+  t.deepEqual(vaults.highestRatio(), percent(80));
+
+  // update the fake debt of the vault and then refresh priority queue
+  fakeVault1.setDebt(AmountMath.make(brand, 95n));
+  vaults.refreshVaultPriority(
+    AmountMath.make(brand, 20n),
+    AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
+    'id-fakeVault1',
+  );
+
   await waitForPromisesToSettle();
-  t.deepEqual(vaults.highestRatio(), makeRatio(200n, brand, 100n));
+  t.deepEqual(vaults.highestRatio(), percent(95));
 
   const newCollector = makeCollector();
   rescheduler.resetCalled();
-  vaults.forEachRatioGTE(makeRatio(190n, brand), newCollector.lookForRatio);
-  const newRates = newCollector.getRates();
-  const ratio200 = makeRatio(200n, brand, 100n);
-  t.deepEqual(newRates, [ratio200], 'only one is higher than 190');
-  t.deepEqual(vaults.highestRatio(), makeRatio(180n, brand, 100n));
-  t.truthy(rescheduler.called(), 'called rescheduler when foreach found vault');
+  Array.from(vaults.entriesPrioritizedGTE(percent(90))).map(
+    newCollector.lookForRatio,
+  );
+  t.deepEqual(
+    newCollector.getPercentages(),
+    [95],
+    'only one is higher than 90%',
+  );
+  t.deepEqual(vaults.highestRatio(), percent(95));
+  t.falsy(rescheduler.called(), 'foreach does not trigger rescheduler'); // change from previous implementation
 });
 
 test('removals', async t => {
-  const { brand } = makeIssuerKit('ducats');
-
   const rescheduler = makeRescheduler();
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
 
-  const fakeVault1 = makeFakeVaultKit(AmountMath.make(brand, 150n));
-  const { notifier: notifier1 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault1, notifier1);
-  const ratio150 = makeRatio(150n, brand);
+  // Add fakes 1,2,3
+  vaults.addVault(
+    'id-fakeVault1',
+    makeFakeInnerVault('id-fakeVault1', AmountMath.make(brand, 150n)),
+  );
+  vaults.addVault(
+    'id-fakeVault2',
+    makeFakeInnerVault('id-fakeVault2', AmountMath.make(brand, 130n)),
+  );
+  vaults.addVault(
+    'id-fakeVault3',
+    makeFakeInnerVault('id-fakeVault3', AmountMath.make(brand, 140n)),
+  );
 
-  const fakeVault2 = makeFakeVaultKit(AmountMath.make(brand, 130n));
-  const { notifier: notifier2 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault2, notifier2);
-  const ratio130 = makeRatio(130n, brand);
-
-  const fakeVault3 = makeFakeVaultKit(AmountMath.make(brand, 140n));
-  const { notifier: notifier3 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault3, notifier3);
-
+  // remove fake 3
   rescheduler.resetCalled();
-  vaults.removeVault(fakeVault3);
+  vaults.removeVaultByAttributes(
+    AmountMath.make(brand, 140n),
+    AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
+    'id-fakeVault3',
+  );
   t.falsy(rescheduler.called());
-  t.deepEqual(vaults.highestRatio(), ratio150, 'should be 150');
+  t.deepEqual(vaults.highestRatio(), percent(150), 'should be 150');
 
+  // remove fake 1
   rescheduler.resetCalled();
-  vaults.removeVault(fakeVault1);
+  vaults.removeVaultByAttributes(
+    AmountMath.make(brand, 150n),
+    AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
+    'id-fakeVault1',
+  );
   t.falsy(rescheduler.called(), 'should not call reschedule on removal');
-  t.deepEqual(vaults.highestRatio(), ratio130, 'should be 130');
-});
+  t.deepEqual(vaults.highestRatio(), percent(130), 'should be 130');
 
-test('chargeInterest', async t => {
-  const { brand } = makeIssuerKit('ducats');
-  const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
-
-  const fakeVault1 = makeFakeVaultKit(AmountMath.make(brand, 130n));
-  const { notifier: notifier1 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault1, notifier1);
-
-  const fakeVault2 = makeFakeVaultKit(AmountMath.make(brand, 150n));
-  const { notifier: notifier2 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault2, notifier2);
-
-  const touchedVaults = [];
-  vaults.forEachRatioGTE(makeRatio(1n, brand, 10n), vaultPair =>
-    touchedVaults.push([
-      vaultPair.vaultKit,
-      makeRatioFromAmounts(
-        vaultPair.vaultKit.vault.getDebtAmount(),
-        vaultPair.vaultKit.vault.getCollateralAmount(),
-      ),
-    ]),
+  t.throws(() =>
+    vaults.removeVaultByAttributes(
+      AmountMath.make(brand, 150n),
+      AmountMath.make(brand, 100n),
+      'id-fakeVault1',
+    ),
   );
-  const cr1 = makeRatio(130n, brand);
-  const cr2 = makeRatio(150n, brand);
-  t.deepEqual(touchedVaults, [
-    [fakeVault2, cr2],
-    [fakeVault1, cr1],
-  ]);
 });
 
-test('liquidation', async t => {
-  const { brand } = makeIssuerKit('ducats');
+test('highestRatio', async t => {
   const reschedulePriceCheck = makeRescheduler();
   const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
 
-  const fakeVault1 = makeFakeVaultKit(AmountMath.make(brand, 130n));
-  const { notifier: notifier1 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault1, notifier1);
-
-  const fakeVault2 = makeFakeVaultKit(AmountMath.make(brand, 150n));
-  const { notifier: notifier2 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault2, notifier2);
-  const cr2 = makeRatio(150n, brand);
-
-  const fakeVault3 = makeFakeVaultKit(AmountMath.make(brand, 140n));
-  const { notifier: notifier3 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault3, notifier3);
-  const cr3 = makeRatio(140n, brand);
-
-  const touchedVaults = [];
-  vaults.forEachRatioGTE(makeRatio(135n, brand), vaultPair =>
-    touchedVaults.push(vaultPair),
+  vaults.addVault(
+    'id-fakeVault1',
+    makeFakeInnerVault('id-fakeVault1', AmountMath.make(brand, 30n)),
   );
-
-  t.deepEqual(touchedVaults, [
-    { vaultKit: fakeVault2, debtToCollateral: cr2 },
-    { vaultKit: fakeVault3, debtToCollateral: cr3 },
-  ]);
-});
-
-test('highestRatio ', async t => {
-  const { brand } = makeIssuerKit('ducats');
-  const reschedulePriceCheck = makeRescheduler();
-  const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
-
-  const fakeVault1 = makeFakeVaultKit(AmountMath.make(brand, 130n));
-  const { notifier: notifier2 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault1, notifier2);
-  const cr1 = makeRatio(130n, brand);
+  const cr1 = percent(30);
   t.deepEqual(vaults.highestRatio(), cr1);
 
-  const fakeVault6 = makeFakeVaultKit(AmountMath.make(brand, 150n));
-  const { notifier: notifier1 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault6, notifier1);
-  const cr6 = makeRatio(150n, brand);
+  const fakeVault6 = makeFakeInnerVault(
+    'id-fakeVault6',
+    AmountMath.make(brand, 50n),
+  );
+  vaults.addVault('id-fakeVault6', fakeVault6);
+  const cr6 = percent(50);
   t.deepEqual(vaults.highestRatio(), cr6);
 
-  const fakeVault3 = makeFakeVaultKit(AmountMath.make(brand, 140n));
-  const { notifier: notifier3 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault3, notifier3);
-  const cr3 = makeRatio(140n, brand);
-
-  const touchedVaults = [];
-  vaults.forEachRatioGTE(makeRatio(145n, brand), vaultPair =>
-    touchedVaults.push(vaultPair),
+  vaults.addVault(
+    'id-fakeVault3',
+    makeFakeInnerVault('id-fakeVault3', AmountMath.make(brand, 40n)),
   );
 
+  // sanity check ordering
   t.deepEqual(
-    touchedVaults,
-    [{ vaultKit: fakeVault6, debtToCollateral: cr6 }],
-    'expected 150 to be highest',
-  );
-  t.deepEqual(vaults.highestRatio(), cr3);
-});
-
-test('removal by notification', async t => {
-  const { brand } = makeIssuerKit('ducats');
-  const reschedulePriceCheck = makeRescheduler();
-  const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
-
-  const fakeVault1 = makeFakeVaultKit(AmountMath.make(brand, 150n));
-  const { updater: updater1, notifier: notifier1 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault1, notifier1);
-  const cr1 = makeRatio(150n, brand);
-  t.deepEqual(vaults.highestRatio(), cr1);
-
-  const fakeVault2 = makeFakeVaultKit(AmountMath.make(brand, 130n));
-  const { notifier: notifier2 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault2, notifier2);
-  t.deepEqual(vaults.highestRatio(), cr1, 'should be new highest');
-
-  const fakeVault3 = makeFakeVaultKit(AmountMath.make(brand, 140n));
-  const { notifier: notifier3 } = makeNotifierKit();
-  vaults.addVaultKit(fakeVault3, notifier3);
-  const cr3 = makeRatio(140n, brand);
-  t.deepEqual(vaults.highestRatio(), cr1, '130 expected');
-
-  updater1.finish('done');
-  await waitForPromisesToSettle();
-
-  t.deepEqual(vaults.highestRatio(), cr3, 'should have removed 150');
-
-  const touchedVaults = [];
-  vaults.forEachRatioGTE(makeRatio(135n, brand), vaultPair =>
-    touchedVaults.push(vaultPair),
+    Array.from(vaults.entries()).map(([k, _v]) => k),
+    [
+      'fc000000000000000:id-fakeVault6',
+      'fc004000000000000:id-fakeVault3',
+      'fc00aaaaaaaaaaaab:id-fakeVault1',
+    ],
   );
 
-  t.deepEqual(
-    touchedVaults,
-    [{ vaultKit: fakeVault3, debtToCollateral: cr3 }],
-    'should be only one',
+  const debtsOverThreshold = [];
+  Array.from(vaults.entriesPrioritizedGTE(percent(45))).map(([_key, vault]) =>
+    debtsOverThreshold.push([
+      vault.getDebtAmount(),
+      vault.getCollateralAmount(),
+    ]),
   );
+
+  t.deepEqual(debtsOverThreshold, [
+    [fakeVault6.getDebtAmount(), fakeVault6.getCollateralAmount()],
+  ]);
+  t.deepEqual(vaults.highestRatio(), percent(50), 'expected 50% to be highest');
 });

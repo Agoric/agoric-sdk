@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode.js';
 

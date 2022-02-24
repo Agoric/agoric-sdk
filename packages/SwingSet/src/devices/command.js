@@ -1,4 +1,4 @@
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@agoric/nat';
 
 import { assert, details as X } from '@agoric/assert';

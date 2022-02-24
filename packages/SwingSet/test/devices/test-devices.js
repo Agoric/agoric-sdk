@@ -64,7 +64,8 @@ test.serial('d0', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, {});
-  await c.step();
+  await c.run();
+
   // console.log(util.inspect(c.dump(), { depth: null }));
   t.deepEqual(JSON.parse(c.dump().log[0]), [
     {
@@ -118,7 +119,8 @@ test.serial('d1', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
-  await c.step();
+  await c.run();
+
   c.queueToVatRoot('bootstrap', 'step1', capargs([]));
   await c.step();
   t.deepEqual(c.dump().log, [
@@ -151,6 +153,10 @@ async function test2(t, mode) {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [mode], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, {});
+  for (let i = 0; i < 5; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start
+  }
   c.pinVatRoot('bootstrap');
   await c.step();
   if (mode === '1') {
@@ -325,7 +331,6 @@ test.serial('liveslots throws when D() gets promise', async t => {
     vats: {
       bootstrap: {
         bundle: t.context.data.bootstrap2,
-        creationOptions: { enableSetup: true },
       },
     },
     devices: {
@@ -338,6 +343,13 @@ test.serial('liveslots throws when D() gets promise', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, ['promise1'], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, {});
+
+  for (let i = 0; i < 4; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // bring out your dead
+  }
   await c.step();
   // When liveslots catches an attempt to send a promise into D(), it throws
   // a regular error, which the vat can catch.
@@ -374,7 +386,13 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, {});
-  await c.step();
+  for (let i = 0; i < 3; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // bring out your dead
+  }
+  await c.step(); // bootstrap, which will fail
   // if the kernel paniced, that c.step() will reject, and the await will throw
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
   // now check that the vat was terminated: this should throw an exception

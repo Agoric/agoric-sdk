@@ -8,7 +8,7 @@ test global is defined in avaAssertXS.js .
 HandledPromise is defined by eventual send shim.
 
 */
-/* global __dirname, __filename, HandledPromise, issueCommand, test */
+/* global __dirname, __filename, issueCommand, test */
 // @ts-check
 /// <reference types="ses" />
 /// <reference types="@agoric/eventual-send" />

@@ -40,8 +40,8 @@ export function buildRootObject(vatPowers) {
       return [hello];
     },
 
-    async vatFromNamedBundleCap(name, method) {
-      const bcap = D(devices.bundle).getNamedBundleCap(name);
+    async vatFromNamedBundlecap(name, method) {
+      const bcap = D(devices.bundle).getNamedBundlecap(name);
       const { root } = await E(vatAdmin).createVat(bcap);
       const hello = await E(root)[method]();
       return [hello];
@@ -55,25 +55,25 @@ export function buildRootObject(vatPowers) {
     },
 
     async vatFromID(id, method) {
-      const bcap = D(devices.bundle).getBundleCap(id);
+      const bcap = D(devices.bundle).getBundlecap(id);
       const { root } = await E(vatAdmin).createVat(bcap);
       const hello = await E(root)[method]();
       return [hello];
     },
 
-    getBundleCap(id) {
+    getBundlecap(id) {
       // bad bundleIDs should throw
-      return D(devices.bundle).getBundleCap(id);
+      return D(devices.bundle).getBundlecap(id);
     },
 
     getBundle(id) {
-      const bcap = D(devices.bundle).getBundleCap(id);
+      const bcap = D(devices.bundle).getBundlecap(id);
       return D(bcap).getBundle();
     },
 
     async checkImportByID(id) {
       function getCap() {
-        const bcap = D(devices.bundle).getBundleCap(id);
+        const bcap = D(devices.bundle).getBundlecap(id);
         assert.equal(D(bcap).getBundleID(), id);
         return bcap;
       }
@@ -82,7 +82,7 @@ export function buildRootObject(vatPowers) {
 
     async checkImportByName(name) {
       function getCap() {
-        return D(devices.bundle).getNamedBundleCap(name);
+        return D(devices.bundle).getNamedBundlecap(name);
       }
       return checkImport(getCap);
     },

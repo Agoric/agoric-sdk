@@ -1,36 +1,24 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeKind } from '@agoric/swingset-vat/src/storeModule.js';
+import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
 
 export function buildRootObject(_vatPowers) {
-  function makeThingInnards(state) {
-    return {
-      init(label) {
-        state.label = label;
-      },
-      self: Far('thing', {
-        getLabel() {
-          return state.label;
-        },
-      }),
-    };
-  }
+  const makeThing = defineKind(
+    'thing',
+    label => ({ label }),
+    state => ({
+      getLabel: () => state.label,
+    }),
+  );
 
-  function makeVirtualHolderInnards(state) {
-    return {
-      init(value) {
-        state.value = value;
-      },
-      self: Far('holder', {
-        getValue() {
-          return state.value;
-        },
-      }),
-    };
-  }
+  const makeVirtualHolder = defineKind(
+    'holder',
+    value => ({ value }),
+    state => ({
+      getValue: () => state.value,
+    }),
+  );
 
-  const makeThing = makeKind(makeThingInnards);
-  const makeVirtualHolder = makeKind(makeVirtualHolderInnards);
   const cacheDisplacer = makeThing('cacheDisplacer');
   let nextThingNumber = 0;
   let heldThing = null;

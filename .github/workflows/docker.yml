@@ -40,6 +40,13 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           snapshot: true
           tags: '${{ steps.docker-tags.outputs.tags }}'
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   docker-sdk:
     runs-on: ubuntu-latest
@@ -68,6 +75,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           tags: '${{ needs.docker-deployment.outputs.tags }}'
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   # This is currently needed for the relayer integration test framework.
   # It just runs agoric/agoric-sdk with a "single-node" argument.
@@ -89,6 +103,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           tags: ibc-alpha
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   docker-solo:
     needs: docker-sdk
@@ -104,6 +125,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           tags: ${{ needs.docker-sdk.outputs.tags }}
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   docker-setup:
     needs: docker-sdk
@@ -119,3 +147,10 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           tags: ${{ needs.docker-sdk.outputs.tags }}
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}

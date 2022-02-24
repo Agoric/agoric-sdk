@@ -103,7 +103,7 @@ export function buildSyscall() {
   return { log, syscall };
 }
 
-export function makeDispatch(
+export async function makeDispatch(
   syscall,
   build,
   vatID = 'vatA',
@@ -118,7 +118,7 @@ export function makeDispatch(
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl: makeDummyMeterControl(),
   });
-  const { setBuildRootObject, dispatch, testHooks } = makeLiveSlots(
+  const { dispatch, startVat, testHooks } = makeLiveSlots(
     syscall,
     vatID,
     {},
@@ -127,10 +127,14 @@ export function makeDispatch(
     enableDisavow,
     false,
     gcTools,
+    undefined,
+    () => {
+      return { buildRootObject: build };
+    },
   );
+  await startVat();
   if (returnTestHooks) {
     returnTestHooks[0] = testHooks;
   }
-  setBuildRootObject(build);
   return dispatch;
 }

@@ -1,4 +1,4 @@
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * Return a function that can wrap an async or sync method, but

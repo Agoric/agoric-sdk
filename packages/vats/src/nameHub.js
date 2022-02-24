@@ -2,13 +2,16 @@
 
 import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { mapIterable } from '@endo/marshal';
 import { makeLegacyMap } from '@agoric/store';
 
 import './types.js';
 
 /**
+ * Make two facets of a node in a name hierarchy: the nameHub
+ * is read access and the nameAdmin is write access.
+ *
  * @returns {NameHubKit}
  */
 export const makeNameHubKit = () => {
@@ -61,13 +64,7 @@ export const makeNameHubKit = () => {
   const nameAdmin = Far('nameAdmin', {
     reserve(key) {
       assert.typeof(key, 'string');
-      if (keyToRecord.has(key)) {
-        // If we already have a promise, don't use a new one.
-        if (keyToRecord.get(key).promise) {
-          return;
-        }
-        keyToRecord.set(key, makePromiseKit());
-      } else {
+      if (!keyToRecord.has(key)) {
         keyToRecord.init(key, makePromiseKit());
       }
     },

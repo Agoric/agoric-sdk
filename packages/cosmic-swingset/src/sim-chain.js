@@ -92,9 +92,20 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     stateDir: stateDBdir,
   });
 
+  let aqContents = [];
+  const actionQueue = {
+    /** @returns {Iterable<unknown>} */
+    consumeAll: () => {
+      const iterable = aqContents;
+      aqContents = [];
+      return iterable;
+    },
+  };
+
   // We don't want to force a sim chain to use consensus mode.
   const consensusMode = false;
   const s = await launch({
+    actionQueue,
     kernelStateDBDir: stateDBdir,
     mailboxStorage,
     vatconfig,
@@ -107,14 +118,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     mapSize,
   });
 
-  const { savedHeight, savedActions, savedChainSends } = s;
-  const blockManager = makeBlockManager({ ...s, flushChainSends });
+  const { savedHeight, savedBlockTime, savedChainSends } = s;
+  const blockingSend = makeBlockManager({ ...s, flushChainSends });
 
   let blockHeight = savedHeight;
-  let blockTime =
-    savedActions.length > 0
-      ? savedActions[0].blockTime
-      : scaleBlockTime(Date.now());
+  let blockTime = savedBlockTime || scaleBlockTime(Date.now());
   let intoChain = [];
   let thisBlock = [];
   let nextBlockTimeout = 0;
@@ -132,32 +140,29 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       blockHeight += 1;
 
       const params = DEFAULT_SIM_SWINGSET_PARAMS;
-      await blockManager(
-        { type: 'BEGIN_BLOCK', blockHeight, blockTime, params },
-        savedChainSends,
-      );
+      const beginAction = {
+        type: 'BEGIN_BLOCK',
+        blockHeight,
+        blockTime,
+        params,
+      };
+      await blockingSend(beginAction, savedChainSends);
       for (let i = 0; i < thisBlock.length; i += 1) {
         const [newMessages, acknum] = thisBlock[i];
-        await blockManager(
-          {
-            type: 'DELIVER_INBOUND',
-            peer: bootAddress,
-            messages: newMessages,
-            ack: acknum,
-            blockHeight,
-            blockTime,
-            params,
-          },
-          savedChainSends,
-        );
+        aqContents.push({
+          type: 'DELIVER_INBOUND',
+          peer: bootAddress,
+          messages: newMessages,
+          ack: acknum,
+          blockHeight,
+          blockTime,
+        });
       }
-      await blockManager(
-        { type: 'END_BLOCK', blockHeight, blockTime, params },
-        savedChainSends,
-      );
+      const endAction = { type: 'END_BLOCK', blockHeight, blockTime };
+      await blockingSend(endAction, savedChainSends);
 
       // Done processing, "commit the block".
-      await blockManager(
+      await blockingSend(
         { type: 'COMMIT_BLOCK', blockHeight, blockTime },
         savedChainSends,
       );
@@ -202,7 +207,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     // The before-first-block is special... do it now.
     // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
     // before continuing with the real initialHeight.
-    await blockManager({ type: 'BOOTSTRAP_BLOCK', blockTime }, savedChainSends);
+    await blockingSend({ type: 'BOOTSTRAP_BLOCK', blockTime }, savedChainSends);
     blockHeight = initialHeight;
   };
 

@@ -49,7 +49,6 @@ const installContracts = async (zoe, cb) => {
 
 const makeRates = runBrand => {
   return {
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     interestRate: makeRatio(250n, runBrand, BASIS_POINTS),
     loanFee: makeRatio(200n, runBrand, BASIS_POINTS),

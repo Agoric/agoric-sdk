@@ -15,11 +15,10 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
   const { cacheSize = 100 } = options;
 
   const {
-    makeKind,
-    makeDurableKind,
+    defineKind,
+    defineDurableKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
-    makeVirtualObjectRepresentative,
     flushCache,
   } = makeVirtualObjectManager(
     fakeStuff.syscall,
@@ -33,11 +32,10 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
   );
 
   const normalVOM = {
-    makeKind,
-    makeDurableKind,
+    defineKind,
+    defineDurableKind,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
-    makeVirtualObjectRepresentative,
   };
 
   const debugTools = {

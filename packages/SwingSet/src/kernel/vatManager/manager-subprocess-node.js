@@ -1,7 +1,7 @@
 // import { spawn } from 'child_process'; // not from Compartment
 
 import { assert, details as X } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';
 
 // start a "Worker" (Node's tool for starting new threads) and load a bundle
@@ -26,6 +26,7 @@ export function makeNodeSubprocessFactory(tools) {
       useTranscript,
     } = managerOptions;
     assert(!managerOptions.enableSetup, 'not supported at all');
+    assert(useTranscript, 'node-subprocess: useTranscript=false not supported');
 
     const mk = makeManagerKit(
       vatID,

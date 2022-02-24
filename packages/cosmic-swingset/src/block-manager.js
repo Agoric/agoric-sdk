@@ -3,7 +3,8 @@
 import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
-import { isObject } from '@endo/marshal';
+
+import * as BRIDGE_ID from '@agoric/vats/src/bridge-ids.js';
 
 import * as ActionType from './action-types.js';
 import { parseParams } from './params.js';
@@ -16,6 +17,7 @@ const END_BLOCK_SPIN_MS = process.env.END_BLOCK_SPIN_MS
   : 0;
 
 export default function makeBlockManager({
+  actionQueue,
   deliverInbound,
   doBridgeInbound,
   bootstrapBlock,
@@ -24,16 +26,16 @@ export default function makeBlockManager({
   flushChainSends,
   saveChainState,
   saveOutsideState,
-  savedActions,
   savedHeight,
   verboseBlocks = false,
 }) {
   let computedHeight = savedHeight;
   let runTime = 0;
   let chainTime;
+  let latestParams;
+  let beginBlockAction;
 
-  async function kernelPerformAction(action) {
-    // TODO warner we could change this to run the kernel only during END_BLOCK
+  async function processAction(action) {
     const start = Date.now();
     const finish = res => {
       // console.error('Action', action.type, action.blockHeight, 'is done!');
@@ -45,11 +47,8 @@ export default function makeBlockManager({
     let p;
     switch (action.type) {
       case ActionType.BEGIN_BLOCK: {
-        p = beginBlock(
-          action.blockHeight,
-          action.blockTime,
-          parseParams(action.params),
-        );
+        latestParams = parseParams(action.params);
+        p = beginBlock(action.blockHeight, action.blockTime, latestParams);
         break;
       }
 
@@ -60,32 +59,43 @@ export default function makeBlockManager({
           action.ack,
           action.blockHeight,
           action.blockTime,
-          parseParams(action.params),
+          latestParams,
         );
         break;
       }
 
       case ActionType.VBANK_BALANCE_UPDATE: {
-        p = doBridgeInbound('bank', action);
+        p = doBridgeInbound(BRIDGE_ID.BANK, action);
         break;
       }
 
       case ActionType.IBC_EVENT: {
-        p = doBridgeInbound('dibc', action);
+        p = doBridgeInbound(BRIDGE_ID.DIBC, action);
         break;
       }
 
       case ActionType.PLEASE_PROVISION: {
-        p = doBridgeInbound('provision', action);
+        p = doBridgeInbound(BRIDGE_ID.PROVISION, action);
+        break;
+      }
+
+      case ActionType.CORE_EVAL: {
+        p = doBridgeInbound(BRIDGE_ID.CORE, action);
+        break;
+      }
+
+      case ActionType.WALLET_ACTION: {
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
+        break;
+      }
+
+      case ActionType.WALLET_SPEND_ACTION: {
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
         break;
       }
 
       case ActionType.END_BLOCK: {
-        p = endBlock(
-          action.blockHeight,
-          action.blockTime,
-          parseParams(action.params),
-        );
+        p = endBlock(action.blockHeight, action.blockTime, latestParams);
         if (END_BLOCK_SPIN_MS) {
           // Introduce a busy-wait to artificially put load on the chain.
           p = p.then(res => {
@@ -114,10 +124,9 @@ export default function makeBlockManager({
     return p;
   }
 
-  let currentActions = [];
   let decohered;
 
-  async function blockManager(action, savedChainSends) {
+  async function blockingSend(action, savedChainSends) {
     if (decohered) {
       throw decohered;
     }
@@ -146,7 +155,11 @@ export default function makeBlockManager({
 
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
-        await saveOutsideState(computedHeight, savedActions, savedChainSends);
+        await saveOutsideState(
+          computedHeight,
+          action.blockTime,
+          savedChainSends,
+        );
 
         const saveTime = Date.now() - start2;
 
@@ -160,36 +173,16 @@ export default function makeBlockManager({
 
       case ActionType.BEGIN_BLOCK: {
         verboseBlocks && console.info('block', action.blockHeight, 'begin');
-
-        // Start a new block, or possibly replay the prior one.
-        const leftoverActions = currentActions.filter(
-          a => a.blockHeight !== action.blockHeight,
-        );
-        if (leftoverActions.length) {
-          // Leftover actions happen if queries or simulation are incorrectly
-          // resulting in accidental VM messages.
-          const leftoverTypes = leftoverActions.map(a => a.type).join(', ');
-          decohered = Error(
-            `Block ${action.blockHeight} begun with leftover uncommitted actions: ${leftoverTypes}`,
-          );
-          throw decohered;
-        }
-
-        currentActions = [];
         runTime = 0;
-        currentActions.push(action);
+        beginBlockAction = action;
         break;
       }
 
       case ActionType.END_BLOCK: {
-        currentActions.push(action);
-
         // eslint-disable-next-line no-use-before-define
-        if (computedHeight > 0 && !deepEquals(currentActions, savedActions)) {
-          // We only handle the trivial case.
+        if (computedHeight > 0 && computedHeight !== action.blockHeight) {
+          // We only tolerate the trivial case.
           const restoreHeight = action.blockHeight - 1;
-          // We can reset from -1 or 0 to anything, since that's what happens
-          // when genesis.initial_height !== "1".
           if (restoreHeight !== computedHeight) {
             // Keep throwing forever.
             decohered = Error(
@@ -208,6 +201,10 @@ export default function makeBlockManager({
           //
           // We assert that the return values are identical, which allows us not
           // to resave our state.
+          for (const _ of actionQueue.consumeAll()) {
+            // Just short-circuit the action queue to fully consume it.
+            break;
+          }
           try {
             flushChainSends(true);
           } catch (e) {
@@ -216,14 +213,16 @@ export default function makeBlockManager({
             throw e;
           }
         } else {
-          // And now we actually run the kernel down here, during END_BLOCK, but still
-          // reentrancy-protected
+          // And now we actually process the queued actions down here, during
+          // END_BLOCK, but still reentrancy-protected
 
-          // Perform our queued actions.
-          for (const a of currentActions) {
+          // Process our begin, queued actions, and end.
+          await processAction(beginBlockAction); // BEGIN_BLOCK
+          for (const a of actionQueue.consumeAll()) {
             // eslint-disable-next-line no-await-in-loop
-            await kernelPerformAction(a);
+            await processAction(a);
           }
+          await processAction(action); // END_BLOCK
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
@@ -231,61 +230,20 @@ export default function makeBlockManager({
           chainTime = Date.now() - start;
 
           // Advance our saved state variables.
-          savedActions = currentActions;
+          beginBlockAction = undefined;
           computedHeight = action.blockHeight;
         }
 
-        currentActions = [];
         break;
       }
 
       default: {
-        currentActions.push(action);
+        assert.fail(
+          X`Unrecognized action ${action}; are you sure you didn't mean to queue it?`,
+        );
       }
     }
   }
 
-  return blockManager;
-}
-
-// TODO: Put this somewhere else.
-function deepEquals(a, b, already = new WeakSet()) {
-  if (Object.is(a, b)) {
-    return true;
-  }
-
-  // Must both be objects.
-  if (!isObject(a) || !isObject(b)) {
-    return false;
-  }
-
-  // That we haven't seen before.
-  if (already.has(a) || already.has(b)) {
-    return false;
-  }
-  already.add(a);
-  already.add(b);
-
-  // With the same prototype.
-  if (Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) {
-    return false;
-  }
-
-  // And deepEquals entries.
-  const amap = new Map(Object.entries(a));
-  for (const [key, bval] of Object.entries(b)) {
-    if (!amap.has(key)) {
-      return false;
-    }
-    if (!deepEquals(amap.get(key), bval, already)) {
-      return false;
-    }
-    amap.delete(key);
-  }
-
-  // And no extra keys in b.
-  if (amap.size > 0) {
-    return false;
-  }
-  return true;
+  return blockingSend;
 }

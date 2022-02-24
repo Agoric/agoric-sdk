@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/eventual-send@0.14.0...@agoric/eventual-send@0.14.1) (2022-02-21)
+
+
+### Features
+
+* **eventual-send:** harden eventual-send arguments, like SwingSet ([dd0f48b](https://github.com/Agoric/agoric-sdk/commit/dd0f48b7b66847613bf17486cd865a9b5a17b2ef))
+
+
+### Bug Fixes
+
+* Remove extraneous eslint globals ([17087e4](https://github.com/Agoric/agoric-sdk/commit/17087e4605db7d3b30dfccf2434b2850b45e3408))
+
+
+
 ## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/eventual-send@0.13.30...@agoric/eventual-send@0.14.0) (2021-12-02)
 
 

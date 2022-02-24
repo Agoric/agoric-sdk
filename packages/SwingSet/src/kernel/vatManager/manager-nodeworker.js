@@ -1,7 +1,7 @@
 // @ts-check
 // import { Worker } from 'worker_threads'; // not from a Compartment
 import { assert, details as X } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';
 
 // start a "Worker" (Node's tool for starting new threads) and load a bundle
@@ -46,6 +46,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       useTranscript,
     } = managerOptions;
     assert(!managerOptions.enableSetup, 'not supported at all');
+    assert(useTranscript, 'node worker: useTranscript=false not supported');
 
     // We use workerCanBlock=false because we get syscalls via an async
     // postMessage from the worker thread, whose vat code has moved on (it

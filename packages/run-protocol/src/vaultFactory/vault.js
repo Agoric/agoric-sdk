@@ -10,15 +10,19 @@ import {
   floorMultiplyBy,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  invertRatio,
+  multiplyRatios,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
-import { makeInterestCalculator } from './interest.js';
+import { makeTracer } from '../makeTracer.js';
 
 const { details: X, quote: q } = assert;
+
+const trace = makeTracer('Vault');
 
 // a Vault is an individual loan, using some collateralType as the
 // collateral, and lending RUN to the borrower
@@ -26,35 +30,77 @@ const { details: X, quote: q } = assert;
 /**
  * Constants for vault state.
  *
- * @typedef {'active' | 'liquidating' | 'closed'} VAULT_STATE
+ * @typedef {'active' | 'liquidating' | 'closed' | 'transfer'} VAULT_STATE
  *
- * @type {{ ACTIVE: 'active', LIQUIDATING: 'liquidating', CLOSED: 'closed' }}
+ * @type {{ ACTIVE: 'active', LIQUIDATING: 'liquidating', CLOSED: 'closed', TRANSFER: 'transfer' }}
  */
 export const VaultState = {
   ACTIVE: 'active',
   LIQUIDATING: 'liquidating',
   CLOSED: 'closed',
+  TRANSFER: 'transfer',
+};
+
+const makeOuterKit = inner => {
+  const { updater: uiUpdater, notifier } = makeNotifierKit();
+
+  const assertActive = v => {
+    // console.log('OUTER', v, 'INNER', inner);
+    assert(inner, X`Using ${v} after transfer`);
+    return inner;
+  };
+  /** @type {Vault} */
+  const vault = Far('vault', {
+    getNotifier: () => notifier,
+    makeAdjustBalancesInvitation: () =>
+      assertActive(vault).makeAdjustBalancesInvitation(),
+    makeCloseInvitation: () => assertActive(vault).makeCloseInvitation(),
+    makeTransferInvitation: () => {
+      const tmpInner = assertActive(vault);
+      inner = null;
+      return tmpInner.makeTransferInvitation();
+    },
+    // for status/debugging
+    getCollateralAmount: () => assertActive(vault).getCollateralAmount(),
+    getDebtAmount: () => assertActive(vault).getDebtAmount(),
+    getNormalizedDebt: () => assertActive(vault).getNormalizedDebt(),
+    getLiquidationSeat: () => assertActive(vault).getLiquidationSeat(),
+  });
+  return { vault, uiUpdater };
 };
 
 /**
+ * @typedef {Object} InnerVaultManagerBase
+ * @property {(oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
+ * @property {() => Brand} getCollateralBrand
+ * @property {ReallocateReward} reallocateReward
+ * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
+ * @property {(oldDebt: Amount, oldCollateral: Amount, vaultId: VaultId) => void} updateVaultPriority
+ */
+
+/**
  * @param {ContractFacet} zcf
- * @param {InnerVaultManager} manager
+ * @param {InnerVaultManagerBase & GetVaultParams} manager
+ * @param {Notifier<unknown>} managerNotifier
+ * @param {VaultId} idInManager
  * @param {ZCFMint} runMint
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {Timestamp} startTimeStamp
- * @returns {VaultKit}
  */
-export const makeVaultKit = (
+export const makeInnerVault = (
   zcf,
   manager,
+  managerNotifier,
+  idInManager, // will go in state
   runMint,
   priceAuthority,
-  startTimeStamp,
 ) => {
-  const { updater: uiUpdater, notifier } = makeNotifierKit();
+  // CONSTANTS
+  const collateralBrand = manager.getCollateralBrand();
+  const { brand: runBrand } = runMint.getIssuerRecord();
+
+  // STATE
   const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
     zcf.makeEmptySeatKit(undefined);
-  const liquidationPromiseKit = makePromiseKit();
 
   /** @type {VAULT_STATE} */
   let vaultState = VaultState.ACTIVE;
@@ -63,9 +109,7 @@ export const makeVaultKit = (
     assert(vaultState === VaultState.ACTIVE, X`vault must still be active`);
   };
 
-  const collateralBrand = manager.getCollateralBrand();
-  // timestamp of most recent update to interest
-  let latestInterestUpdate = startTimeStamp;
+  let outerUpdater;
 
   // vaultSeat will hold the collateral until the loan is retired. The
   // payout from it will be handed to the user: if the vault dies early
@@ -74,8 +118,81 @@ export const makeVaultKit = (
   // so their loan will be worthless.
   const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
 
-  const { brand: runBrand } = runMint.getIssuerRecord();
-  let runDebt = AmountMath.makeEmpty(runBrand);
+  /**
+   * Snapshot of the debt and compounded interest when the principal was last changed
+   *
+   * @type {{run: Amount, interest: Ratio}}
+   */
+  let debtSnapshot = {
+    run: AmountMath.makeEmpty(runBrand, 'nat'),
+    interest: manager.getCompoundedInterest(),
+  };
+
+  /**
+   * Called whenever the debt is paid or created through a transaction,
+   * but not for interest accrual.
+   *
+   * @param {Amount} newDebt - principal and all accrued interest
+   */
+  const updateDebtSnapshot = newDebt => {
+    // update local state
+    debtSnapshot = { run: newDebt, interest: manager.getCompoundedInterest() };
+    trace(`${idInManager} updateDebtSnapshot`, newDebt.value, debtSnapshot);
+  };
+
+  /**
+   * @param {Amount} oldDebt - prior principal and all accrued interest
+   * @param {Amount} oldCollateral - actual collateral
+   * @param {Amount} newDebt - actual principal and all accrued interest
+   */
+  const refreshLoanTracking = (oldDebt, oldCollateral, newDebt) => {
+    updateDebtSnapshot(newDebt);
+    // update vault manager which tracks total debt
+    manager.applyDebtDelta(oldDebt, newDebt);
+    // update position of this vault in liquidation priority queue
+    manager.updateVaultPriority(oldDebt, oldCollateral, idInManager);
+  };
+
+  /**
+   * The actual current debt, including accrued interest.
+   *
+   * This looks like a simple getter but it does a lot of the heavy lifting for
+   * interest accrual. Rather than updating all records when interest accrues,
+   * the vault manager updates just its rolling compounded interest. Here we
+   * calculate what the current debt is given what's recorded in this vault and
+   * what interest has compounded since this vault record was written.
+   *
+   * @see getNormalizedDebt
+   * @returns {Amount<NatValue>}
+   */
+  // TODO rename to getActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
+  const getDebtAmount = () => {
+    // divide compounded interest by the snapshot
+    const interestSinceSnapshot = multiplyRatios(
+      manager.getCompoundedInterest(),
+      invertRatio(debtSnapshot.interest),
+    );
+
+    return floorMultiplyBy(debtSnapshot.run, interestSinceSnapshot);
+  };
+
+  /**
+   * The normalization puts all debts on a common time-independent scale since
+   * the launch of this vault manager. This allows the manager to order vaults
+   * by their debt-to-collateral ratios without having to mutate the debts as
+   * the interest accrues.
+   *
+   * @see getActualDebAmount
+   * @returns {Amount<NatValue>} as if the vault was open at the launch of this manager, before any interest accrued
+   */
+  // Not in use until https://github.com/Agoric/agoric-sdk/issues/4540
+  const getNormalizedDebt = () => {
+    assert(debtSnapshot);
+    return floorMultiplyBy(
+      debtSnapshot.run,
+      invertRatio(debtSnapshot.interest),
+    );
+  };
 
   const getCollateralAllocated = seat =>
     seat.getAmountAllocated('Collateral', collateralBrand);
@@ -93,7 +210,6 @@ export const makeVaultKit = (
       collateralAmount,
       runBrand,
     );
-
     // floorDivide because we want the debt ceiling lower
     return floorDivideBy(
       getAmountOut(quoteAmount),
@@ -101,14 +217,21 @@ export const makeVaultKit = (
     );
   };
 
-  const assertSufficientCollateral = async (collateralAmount, wantedRun) => {
+  const assertSufficientCollateral = async (
+    collateralAmount,
+    proposedRunDebt,
+  ) => {
     const maxRun = await maxDebtFor(collateralAmount);
     assert(
-      AmountMath.isGTE(maxRun, wantedRun, runBrand),
-      X`Requested ${q(wantedRun)} exceeds max ${q(maxRun)}`,
+      AmountMath.isGTE(maxRun, proposedRunDebt, runBrand),
+      X`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)}`,
     );
   };
 
+  /**
+   *
+   * @returns {Amount<NatValue>}
+   */
   const getCollateralAmount = () => {
     // getCollateralAllocated would return final allocations
     return vaultSeat.hasExited()
@@ -116,63 +239,68 @@ export const makeVaultKit = (
       : getCollateralAllocated(vaultSeat);
   };
 
-  const getCollateralizationRatio = async () => {
-    const collateralAmount = getCollateralAmount();
-
-    const quoteAmount = await E(priceAuthority).quoteGiven(
-      collateralAmount,
-      runBrand,
-    );
-
-    // TODO: allow Ratios to represent X/0.
-    if (AmountMath.isEmpty(runDebt)) {
-      return makeRatio(collateralAmount.value, runBrand, 1n);
-    }
-    const collateralValueInRun = getAmountOut(quoteAmount);
-    return makeRatioFromAmounts(collateralValueInRun, runDebt);
+  const snapshotState = vstate => {
+    /** @type {VaultUIState} */
+    return harden({
+      // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
+      interestRate: manager.getInterestRate(),
+      liquidationRatio: manager.getLiquidationMargin(),
+      debtSnapshot,
+      locked: getCollateralAmount(),
+      debt: getDebtAmount(),
+      // TODO state distinct from CLOSED https://github.com/Agoric/agoric-sdk/issues/4539
+      liquidated: vaultState === VaultState.CLOSED,
+      vaultState: vstate,
+    });
   };
 
   // call this whenever anything changes!
-  const updateUiState = async () => {
-    // TODO(123): track down all calls and ensure that they all update a
-    // lastKnownCollateralizationRatio (since they all know) so we don't have to
-    // await quoteGiven() here
-    // [https://github.com/Agoric/dapp-token-economy/issues/123]
-    const collateralizationRatio = await getCollateralizationRatio();
-    /** @type {UIState} */
-    const uiState = harden({
-      interestRate: manager.getInterestRate(),
-      liquidationRatio: manager.getLiquidationMargin(),
-      locked: getCollateralAmount(),
-      debt: runDebt,
-      collateralizationRatio,
-      liquidated: vaultState === VaultState.CLOSED,
-      vaultState,
-    });
+  const updateUiState = () => {
+    if (!outerUpdater) {
+      return;
+    }
+    /** @type {VaultUIState} */
+    const uiState = snapshotState(vaultState);
+    trace('updateUiState', uiState);
 
     switch (vaultState) {
       case VaultState.ACTIVE:
       case VaultState.LIQUIDATING:
-        uiUpdater.updateState(uiState);
+        outerUpdater.updateState(uiState);
         break;
       case VaultState.CLOSED:
-        uiUpdater.finish(uiState);
+        outerUpdater.finish(uiState);
         break;
       default:
         throw Error(`unreachable vaultState: ${vaultState}`);
     }
   };
+  // XXX Echo notifications from the manager through all vaults
+  // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
+  observeNotifier(managerNotifier, {
+    updateState: () => {
+      if (vaultState !== VaultState.CLOSED) {
+        updateUiState();
+      }
+    },
+  });
 
   /**
+   * Call must check for and remember shortfall
+   *
    * @param {Amount} newDebt
    */
   const liquidated = newDebt => {
-    runDebt = newDebt;
+    updateDebtSnapshot(newDebt);
+
     vaultState = VaultState.CLOSED;
     updateUiState();
   };
 
   const liquidating = () => {
+    if (vaultState === VaultState.LIQUIDATING) {
+      throw new Error('Vault already liquidating');
+    }
     vaultState = VaultState.LIQUIDATING;
     updateUiState();
   };
@@ -195,32 +323,32 @@ export const makeVaultKit = (
 
     // you must pay off the entire remainder but if you offer too much, we won't
     // take more than you owe
+    const currentDebt = getDebtAmount();
     assert(
-      AmountMath.isGTE(runReturned, runDebt),
-      X`You must pay off the entire debt ${runReturned} > ${runDebt}`,
+      AmountMath.isGTE(runReturned, currentDebt),
+      X`You must pay off the entire debt ${runReturned} > ${currentDebt}`,
     );
 
     // Return any overpayment
 
     const { zcfSeat: burnSeat } = zcf.makeEmptySeatKit();
-    burnSeat.incrementBy(seat.decrementBy(harden({ RUN: runDebt })));
+    burnSeat.incrementBy(seat.decrementBy(harden({ RUN: currentDebt })));
     seat.incrementBy(
       vaultSeat.decrementBy(
         harden({ Collateral: getCollateralAllocated(vaultSeat) }),
       ),
     );
     zcf.reallocate(seat, vaultSeat, burnSeat);
-    runMint.burnLosses(harden({ RUN: runDebt }), burnSeat);
+    runMint.burnLosses(harden({ RUN: currentDebt }), burnSeat);
     seat.exit();
     burnSeat.exit();
     vaultState = VaultState.CLOSED;
+    updateDebtSnapshot(AmountMath.makeEmpty(runBrand));
     updateUiState();
 
-    runDebt = AmountMath.makeEmpty(runBrand);
     assertVaultHoldsNoRun();
     vaultSeat.exit();
     liquidationZcfSeat.exit();
-    liquidationPromiseKit.resolve('Closed');
 
     return 'your loan is closed, thank you for your business';
   };
@@ -250,7 +378,7 @@ export const makeVaultKit = (
   // clientSeat implied by the proposal. If the proposal wants Collateral,
   // transfer that amount from vault to client. If the proposal gives
   // Collateral, transfer the opposite direction. Otherwise, return the current level.
-  const TargetCollateralLevels = seat => {
+  const targetCollateralLevels = seat => {
     const proposal = seat.getProposal();
     const startVaultAmount = getCollateralAllocated(vaultSeat);
     const startClientAmount = getCollateralAllocated(seat);
@@ -288,13 +416,18 @@ export const makeVaultKit = (
     }
   };
 
-  // Calculate the target RUN level for the vaultSeat and clientSeat implied
-  // by the proposal. If the proposal wants collateral, transfer that amount
-  // from vault to client. If the proposal gives collateral, transfer the
-  // opposite direction. Otherwise, return the current level.
-  //
-  // Since we don't allow the debt to go negative, we will reduce the amount we
-  // accept when the proposal says to give more RUN than are owed.
+  /**
+   * Calculate the target RUN level for the vaultSeat and clientSeat implied
+   * by the proposal. If the proposal wants collateral, transfer that amount
+   * from vault to client. If the proposal gives collateral, transfer the
+   * opposite direction. Otherwise, return the current level.
+   *
+   * Since we don't allow the debt to go negative, we will reduce the amount we
+   * accept when the proposal says to give more RUN than are owed.
+   *
+   * @param {ZCFSeat} seat
+   * @returns {{vault: Amount, client: Amount}}
+   */
   const targetRunLevels = seat => {
     const clientAllocation = getRunAllocated(seat);
     const proposal = seat.getProposal();
@@ -305,8 +438,10 @@ export const makeVaultKit = (
       };
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
-      const acceptedRun = AmountMath.isGTE(proposal.give.RUN, runDebt)
-        ? runDebt
+      // TODO this is the same as in `transferRun`
+      const currentDebt = getDebtAmount();
+      const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
+        ? currentDebt
         : proposal.give.RUN;
 
       return {
@@ -329,41 +464,58 @@ export const makeVaultKit = (
       );
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
-      const acceptedRun = AmountMath.isGTE(proposal.give.RUN, runDebt)
-        ? runDebt
+      const currentDebt = getDebtAmount();
+      const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
+        ? currentDebt
         : proposal.give.RUN;
 
       vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: acceptedRun })));
     }
   };
 
-  // Calculate the fee, the amount to mint and the resulting debt.
+  /**
+   * Calculate the fee, the amount to mint and the resulting debt
+   *
+   * @param {ProposalRecord} proposal
+   * @param {{vault: Amount, client: Amount}} runAfter
+   */
   const loanFee = (proposal, runAfter) => {
     let newDebt;
+    const currentDebt = getDebtAmount();
     let toMint = AmountMath.makeEmpty(runBrand);
     let fee = AmountMath.makeEmpty(runBrand);
     if (proposal.want.RUN) {
       fee = ceilMultiplyBy(proposal.want.RUN, manager.getLoanFee());
       toMint = AmountMath.add(proposal.want.RUN, fee);
-      newDebt = AmountMath.add(runDebt, toMint);
+      newDebt = AmountMath.add(currentDebt, toMint);
     } else if (proposal.give.RUN) {
-      newDebt = AmountMath.subtract(runDebt, runAfter.vault);
+      newDebt = AmountMath.subtract(currentDebt, runAfter.vault);
     } else {
-      newDebt = runDebt;
+      newDebt = currentDebt;
     }
     return { newDebt, toMint, fee };
   };
 
-  /** @param {ZCFSeat} clientSeat */
+  /**
+   * Adjust principal and collateral (atomically for offer safety)
+   *
+   * @param {ZCFSeat} clientSeat
+   */
   const adjustBalancesHook = async clientSeat => {
     assertVaultIsOpen();
+    // the updater will change if we start a transfer
+    const oldUpdater = outerUpdater;
     const proposal = clientSeat.getProposal();
+    const oldDebt = getDebtAmount();
+    const oldCollateral = getCollateralAmount();
 
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
-    const targetCollateralAmount = TargetCollateralLevels(clientSeat).vault;
+    const targetCollateralAmount = targetCollateralLevels(clientSeat).vault;
     // max debt supported by current Collateral as modified by proposal
     const maxDebtForOriginalTarget = await maxDebtFor(targetCollateralAmount);
+    assert(oldUpdater === outerUpdater, X`Transfer during vault adjustment`);
+    assertVaultIsOpen();
 
     const priceOfCollateralInRun = makeRatioFromAmounts(
       maxDebtForOriginalTarget,
@@ -371,7 +523,7 @@ export const makeVaultKit = (
     );
 
     // After the AWAIT, we retrieve the vault's allocations again.
-    const collateralAfter = TargetCollateralLevels(clientSeat);
+    const collateralAfter = targetCollateralLevels(clientSeat);
     const runAfter = targetRunLevels(clientSeat);
 
     // Calculate the fee, the amount to mint and the resulting debt. We'll
@@ -383,6 +535,14 @@ export const makeVaultKit = (
     // to the debt limit based on the new values.
     const vaultCollateral =
       collateralAfter.vault || AmountMath.makeEmpty(collateralBrand);
+
+    trace('adjustBalancesHook', {
+      targetCollateralAmount,
+      vaultCollateral,
+      fee,
+      toMint,
+      newDebt,
+    });
 
     // If the collateral decreased, we pro-rate maxDebt
     if (AmountMath.isGTE(targetCollateralAmount, vaultCollateral)) {
@@ -415,7 +575,9 @@ export const makeVaultKit = (
     transferRun(clientSeat);
     manager.reallocateReward(fee, vaultSeat, clientSeat);
 
-    runDebt = newDebt;
+    // parent needs to know about the change in debt
+    refreshLoanTracking(oldDebt, oldCollateral, newDebt);
+
     runMint.burnLosses(harden({ RUN: runAfter.vault }), vaultSeat);
 
     assertVaultHoldsNoRun();
@@ -431,9 +593,31 @@ export const makeVaultKit = (
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   };
 
+  const setupOuter = inner => {
+    const { vault, uiUpdater: updater } = makeOuterKit(inner);
+    outerUpdater = updater;
+    updateUiState();
+    return harden({
+      uiNotifier: vault.getNotifier(),
+      invitationMakers: Far('invitation makers', {
+        AdjustBalances: vault.makeAdjustBalancesInvitation,
+        CloseVault: vault.makeCloseInvitation,
+        TransferVault: vault.makeTransferInvitation,
+      }),
+      vault,
+    });
+  };
+
   /** @type {OfferHandler} */
-  const openLoan = async seat => {
-    assert(AmountMath.isEmpty(runDebt), X`vault must be empty initially`);
+  const initVaultKit = async (seat, innerVault) => {
+    assert(
+      AmountMath.isEmpty(debtSnapshot.run),
+      X`vault must be empty initially`,
+    );
+    const oldDebt = getDebtAmount();
+    const oldCollateral = getCollateralAmount();
+    trace('initVaultKit start: collateral', { oldDebt, oldCollateral });
+
     // get the payout to provide access to the collateral if the
     // contract abandons
     const {
@@ -449,11 +633,12 @@ export const makeVaultKit = (
         Error('loan requested is too small; cannot accrue interest'),
       );
     }
+    trace(idInManager, 'initVault', { wantedRun, fee }, getCollateralAmount());
 
-    runDebt = AmountMath.add(wantedRun, fee);
-    await assertSufficientCollateral(collateralAmount, runDebt);
+    const stagedDebt = AmountMath.add(wantedRun, fee);
+    await assertSufficientCollateral(collateralAmount, stagedDebt);
 
-    runMint.mintGains(harden({ RUN: runDebt }), vaultSeat);
+    runMint.mintGains(harden({ RUN: stagedDebt }), vaultSeat);
 
     seat.incrementBy(vaultSeat.decrementBy(harden({ RUN: wantedRun })));
     vaultSeat.incrementBy(
@@ -461,63 +646,46 @@ export const makeVaultKit = (
     );
     manager.reallocateReward(fee, vaultSeat, seat);
 
-    updateUiState();
+    refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
 
-    return { notifier };
+    return setupOuter(innerVault);
   };
 
-  /**
-   * @param {bigint} currentTime
-   * @returns {Amount} rate of interest used for accrual period
-   */
-  const accrueInterestAndAddToPool = currentTime => {
-    const interestCalculator = makeInterestCalculator(
-      runBrand,
-      manager.getInterestRate(),
-      manager.getChargingPeriod(),
-      manager.getRecordingPeriod(),
-    );
-
-    const debtStatus = interestCalculator.calculateReportingPeriod(
-      {
-        latestInterestUpdate,
-        newDebt: runDebt,
-        interest: AmountMath.makeEmpty(runBrand),
-      },
-      currentTime,
-    );
-
-    if (debtStatus.latestInterestUpdate === latestInterestUpdate) {
-      return AmountMath.makeEmpty(runBrand);
-    }
-
-    ({ latestInterestUpdate, newDebt: runDebt } = debtStatus);
-    updateUiState();
-    return debtStatus.interest;
+  const makeTransferInvitationHook = seat => {
+    assertVaultIsOpen();
+    seat.exit();
+    // eslint-disable-next-line no-use-before-define
+    return setupOuter(innerVault);
   };
 
-  const getDebtAmount = () => runDebt;
+  const innerVault = Far('innerVault', {
+    getInnerLiquidationSeat: () => liquidationZcfSeat,
+    getVaultSeat: () => vaultSeat,
 
-  /** @type {Vault} */
-  const vault = Far('vault', {
+    initVaultKit: seat => initVaultKit(seat, innerVault),
+    liquidating,
+    liquidated,
+
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
+    makeTransferInvitation: () => {
+      if (outerUpdater) {
+        outerUpdater.finish(snapshotState(VaultState.TRANSFER));
+        outerUpdater = null;
+      }
+      return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');
+    },
 
     // for status/debugging
     getCollateralAmount,
     getDebtAmount,
+    getNormalizedDebt,
     getLiquidationSeat: () => liquidationSeat,
-    getLiquidationPromise: () => liquidationPromiseKit.promise,
   });
 
-  return harden({
-    vault,
-    openLoan,
-    accrueInterestAndAddToPool,
-    vaultSeat,
-    liquidating,
-    liquidated,
-    liquidationPromiseKit,
-    liquidationZcfSeat,
-  });
+  return innerVault;
 };
+
+/**
+ * @typedef {ReturnType<typeof makeInnerVault>} InnerVault
+ */

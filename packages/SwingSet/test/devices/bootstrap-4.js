@@ -19,29 +19,31 @@ export default function setup(syscall, state, _helpers, vatPowers) {
   const { callNow } = syscall;
   const { testLog } = vatPowers;
   function dispatch(vatDeliverObject) {
-    const { method, args } = extractMessage(vatDeliverObject);
-    if (method === 'bootstrap') {
-      // find the device slot
-      const [_vats, devices] = JSON.parse(args.body);
-      const qnode = devices.d0;
-      assert.equal(qnode[QCLASS], 'slot');
-      const slot = args.slots[qnode.index];
-      insistVatType('device', slot);
+    if (vatDeliverObject[0] === 'message') {
+      const { method, args } = extractMessage(vatDeliverObject);
+      if (method === 'bootstrap') {
+        // find the device slot
+        const [_vats, devices] = JSON.parse(args.body);
+        const qnode = devices.d0;
+        assert.equal(qnode[QCLASS], 'slot');
+        const slot = args.slots[qnode.index];
+        insistVatType('device', slot);
 
-      const vpid = 'p+1'; // pretend we're exporting a promise
-      const pnode = { [QCLASS]: 'slot', index: 0 };
-      const callNowArgs = capargs([pnode], [vpid]);
+        const vpid = 'p+1'; // pretend we're exporting a promise
+        const pnode = { [QCLASS]: 'slot', index: 0 };
+        const callNowArgs = capargs([pnode], [vpid]);
 
-      testLog('sending Promise');
-      try {
-        // this will throw an exception, but is also (eventually) vat-fatal
-        callNow(slot, 'send', callNowArgs);
-        testLog('oops: survived sending Promise');
-      } catch (e) {
-        testLog('good: callNow failed');
+        testLog('sending Promise');
+        try {
+          // this will throw an exception, but is also (eventually) vat-fatal
+          callNow(slot, 'send', callNowArgs);
+          testLog('oops: survived sending Promise');
+        } catch (e) {
+          testLog('good: callNow failed');
+        }
+      } else if (method === 'ping') {
+        testLog('oops: still alive');
       }
-    } else if (method === 'ping') {
-      testLog('oops: still alive');
     }
   }
   return dispatch;

@@ -28,7 +28,7 @@ DOCKER_VOLUMES="$(cd "$thisdir/../../.." > /dev/null && pwd -P):/usr/src/agoric-
 AG_COSMOS_START_ARGS="--log_level=info --trace-store=.ag-chain-cosmos/data/kvstore.trace" \
   "$thisdir/setup.sh" bootstrap ${1+"$@"}
 
-if [ -d /usr/src/testnet-load-generator ]
+if false && [ -d /usr/src/testnet-load-generator ]
 then
   /usr/src/agoric-sdk/packages/deployment/scripts/setup.sh show-config > "$RESULTSDIR/network-config"
   cp ag-chain-cosmos/data/genesis.json "$RESULTSDIR/genesis.json"

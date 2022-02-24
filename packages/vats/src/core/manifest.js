@@ -1,28 +1,26 @@
 // @ts-check
-export const CHAIN_BOOTSTRAP_MANIFEST = harden({
+const SHARED_BOOTSTRAP_MANIFEST = harden({
   makeVatsFromBundles: {
     vats: {
-      vatAdmin: true,
+      vatAdmin: 'vatAdmin',
     },
     devices: {
       vatAdmin: true,
     },
     produce: {
-      vatAdminSvc: true,
+      vatAdminSvc: 'vatAdmin',
       loadVat: true,
     },
   },
   buildZoe: {
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
       vatAdminSvc: true,
       loadVat: true,
       client: true,
     },
     produce: {
-      zoe: true,
-      feeMintAccess: true,
+      zoe: 'zoe',
+      feeMintAccess: 'zoe',
     },
   },
   makeBoard: {
@@ -31,7 +29,7 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       client: true,
     },
     produce: {
-      board: true,
+      board: 'board',
     },
   },
   makeBridgeManager: {
@@ -41,12 +39,16 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
   makeAddressNameHubs: {
     consume: {
+      agoricNames: true,
       client: true,
     },
     produce: {
       agoricNames: true,
-      agoricNamesAdmin: true,
-      nameAdmins: true,
+      namesByAddress: true,
+      namesByAddressAdmin: true,
+    },
+    home: {
+      produce: { myAddressNameAdmin: true },
     },
   },
   startTimerService: {
@@ -54,28 +56,51 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       timer: true,
     },
     vats: {
-      timer: true,
+      timer: 'timer',
     },
+    consume: { client: true },
     produce: {
-      chainTimerService: true,
+      chainTimerService: 'timer',
     },
+    home: { produce: { chainTimerService: 'timer' } },
   },
   makeClientBanks: {
     consume: {
-      loadVat: true,
+      bankManager: 'bank',
       client: true,
-      bridgeManager: true,
+    },
+    home: { produce: { bank: 'bank' } },
+  },
+  shareBootContractBundles: {
+    produce: { centralSupplyBundle: true, pegasusBundle: true },
+  },
+  mintInitialSupply: {
+    vatParameters: {
+      argv: { bootMsg: true },
+    },
+    consume: {
+      centralSupplyBundle: true,
+      feeMintAccess: true,
+      zoe: true,
     },
     produce: {
-      bankManager: true,
+      initialSupply: true,
     },
   },
-  makeBLDKit: {
+  addBankAssets: {
     consume: {
-      agoricNames: true,
-      bankManager: true,
-      nameAdmins: true,
+      initialSupply: true,
+      bridgeManager: true,
+      // TODO: re-org loadVat to be subject to permits
+      loadVat: true,
+      zoe: true,
     },
+    produce: {
+      bankManager: 'bank',
+      bldIssuerKit: true,
+    },
+    issuer: { produce: { BLD: true, RUN: 'zoe' } },
+    brand: { produce: { BLD: true, RUN: 'zoe' } },
   },
   makeProvisioner: {
     consume: {
@@ -83,7 +108,7 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       clientCreator: true,
     },
     produce: {
-      provisioning: true,
+      provisioning: 'provisioning',
     },
     vats: {
       comms: true,
@@ -102,15 +127,85 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
       clientCreator: true,
     },
   },
+  installPegasusOnChain: {
+    consume: {
+      namesByAddress: true,
+      board: 'board',
+      pegasusBundle: true,
+      zoe: 'zoe',
+    },
+    installation: {
+      produce: {
+        Pegasus: 'zoe',
+      },
+    },
+    instance: {
+      produce: {
+        Pegasus: 'Pegasus',
+      },
+    },
+  },
+  setupNetworkProtocols: {
+    consume: {
+      client: true,
+      loadVat: true,
+      bridgeManager: true,
+      zoe: true,
+      provisioning: true,
+    },
+    produce: {
+      pegasusConnections: true,
+      pegasusConnectionsAdmin: true,
+    },
+    instance: { consume: { Pegasus: 'Pegasus' } },
+  },
+});
+
+export const CHAIN_BOOTSTRAP_MANIFEST = harden({
+  ...SHARED_BOOTSTRAP_MANIFEST,
+  bridgeCoreEval: true,
   connectChainFaucet: {
     consume: {
       client: true,
     },
+    home: { produce: { faucet: true } },
+  },
+});
+
+export const CLIENT_BOOTSTRAP_MANIFEST = harden({
+  makeVatsFromBundles: {
+    vats: {
+      vatAdmin: 'vatAdmin',
+    },
+    devices: {
+      vatAdmin: true,
+    },
+    produce: {
+      vatAdminSvc: 'vatAdmin',
+      loadVat: true,
+    },
+  },
+  startClient: {
+    vatParameters: {
+      argv: { FIXME_GCI: true },
+    },
+    devices: { command: true, plugin: true, timer: true },
+    vats: {
+      comms: true,
+      http: true,
+      network: true,
+      spawner: true,
+      timer: true,
+      uploads: true,
+      vattp: true,
+    },
+    vatPowers: true,
+    consume: { vatAdminSvc: true },
   },
 });
 
 export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
-  ...CHAIN_BOOTSTRAP_MANIFEST,
+  ...SHARED_BOOTSTRAP_MANIFEST,
   installSimEgress: {
     vatParameters: { argv: { hardcodedClientAddresses: true } },
     vats: {
@@ -120,65 +215,174 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
     consume: { clientCreator: true },
   },
   connectFaucet: {
-    consume: { zoe: true, client: true },
+    consume: {
+      bankManager: true,
+      bldIssuerKit: true,
+      centralSupplyBundle: true,
+      client: true,
+      feeMintAccess: true,
+      loadVat: true,
+      zoe: true,
+    },
+    produce: { mints: true },
+    home: { produce: { faucet: true } },
   },
   grantRunBehaviors: {
     runBehaviors: true,
     consume: { client: true },
+    home: { produce: { runBehaviors: true, governanceActions: true } },
   },
 });
 
-export const GOVERNANCE_ACTIONS_MANIFEST = harden({
+const SHARED_POST_BOOT_MANIFEST = harden({
   shareEconomyBundles: {
     produce: {
       ammBundle: true,
-      getRUNBundle: true,
       vaultBundles: true,
       governanceBundles: true,
     },
   },
   startEconomicCommittee: {
     consume: {
-      agoricNames: true,
-      nameAdmins: true,
       zoe: true,
       governanceBundles: true,
     },
-    produce: { economicCommitteeCreatorFacet: true },
+    produce: { economicCommitteeCreatorFacet: 'economicCommittee' },
+    installation: {
+      produce: {
+        committee: 'zoe',
+        noActionElectorate: 'zoe',
+        contractGovernor: 'zoe',
+        binaryVoteCounter: 'zoe',
+      },
+    },
+    instance: {
+      produce: { economicCommittee: 'economicCommittee' },
+    },
   },
   setupAmm: {
     consume: {
-      chainTimerService: true,
-      agoricNames: true,
-      nameAdmins: true,
-      zoe: true,
-      economicCommitteeCreatorFacet: true,
+      chainTimerService: 'timer',
+      zoe: 'zoe',
+      economicCommitteeCreatorFacet: 'economicCommittee',
       ammBundle: true,
     },
-    produce: { ammCreatorFacet: true, ammGovernorCreatorFacet: true },
+    produce: {
+      ammCreatorFacet: 'amm',
+      ammGovernorCreatorFacet: 'amm',
+    },
+    issuer: { consume: { RUN: 'zoe' } },
+    installation: {
+      consume: { contractGovernor: 'zoe' },
+      produce: { amm: 'zoe' },
+    },
+    instance: {
+      consume: { economicCommittee: 'economicCommittee' },
+      produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
+    },
   },
   startPriceAuthority: {
     consume: { loadVat: true },
-    produce: { priceAuthority: true, priceAuthorityAdmin: true },
+    produce: {
+      priceAuthorityVat: 'priceAuthority',
+      priceAuthority: 'priceAuthority',
+      priceAuthorityAdmin: 'priceAuthority',
+    },
   },
   startVaultFactory: {
     consume: {
-      feeMintAccess: true,
-      agoricNames: true,
+      feeMintAccess: 'zoe',
       vaultBundles: true,
-      nameAdmins: true,
-      chainTimerService: true,
-      zoe: true,
-      priceAuthority: true,
-      economicCommitteeCreatorFacet: true,
+      chainTimerService: 'timer',
+      zoe: 'zoe',
+      priceAuthority: 'priceAuthority',
+      economicCommitteeCreatorFacet: 'economicCommittee',
     },
     produce: {
-      vaultFactoryCreator: true,
-      vaultFactoryGovernorCreator: true,
-      vaultFactoryVoteCreator: true,
+      vaultFactoryCreator: 'VaultFactory',
+      vaultFactoryGovernorCreator: 'VaultFactory',
+      vaultFactoryVoteCreator: 'VaultFactory',
+    },
+    brand: { consume: { RUN: 'zoe' } },
+    installation: {
+      consume: { contractGovernor: 'zoe' },
+      produce: { VaultFactory: 'zoe', liquidate: 'zoe' },
+    },
+    instance: {
+      consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
+      produce: {
+        VaultFactory: 'VaultFactory',
+        Treasury: 'VaultFactory',
+        VaultFactoryGovernor: 'VaultFactoryGovernor',
+      },
     },
   },
   configureVaultFactoryUI: {
-    consume: { agoricNames: true, nameAdmins: true, board: true, zoe: true },
+    consume: {
+      board: true,
+      zoe: true,
+    },
+    issuer: { consume: { RUN: 'zoe' } },
+    brand: { consume: { RUN: 'zoe' } },
+    installation: {
+      consume: {
+        amm: 'zoe',
+        VaultFactory: 'zoe',
+        contractGovernor: 'zoe',
+        noActionElectorate: 'zoe',
+        binaryVoteCounter: 'zoe',
+        liquidate: 'zoe',
+      },
+    },
+    instance: {
+      consume: { amm: 'amm', VaultFactory: 'VaultFactory' },
+    },
+    uiConfig: { produce: { Treasury: true, VaultFactory: true } },
+  },
+});
+
+export const CHAIN_POST_BOOT_MANIFEST = harden({
+  ...SHARED_POST_BOOT_MANIFEST,
+  startRewardDistributor: {
+    consume: {
+      chainTimerService: true,
+      bankManager: true,
+      loadVat: true,
+      vaultFactoryCreator: true,
+      ammCreatorFacet: true,
+      zoe: true,
+    },
+    produce: {
+      distributor: 'distributeFees',
+    },
+    issuer: { consume: { RUN: 'zoe' } },
+    brand: { consume: { RUN: 'zoe' } },
+  },
+});
+
+export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
+  ...SHARED_POST_BOOT_MANIFEST,
+  fundAMM: {
+    consume: {
+      centralSupplyBundle: true,
+      chainTimerService: 'timer',
+      bldIssuerKit: true,
+      feeMintAccess: true,
+      loadVat: true,
+      mints: 'mints',
+      priceAuthorityVat: 'priceAuthority',
+      priceAuthorityAdmin: 'priceAuthority',
+      vaultFactoryCreator: 'vaultFactory',
+      zoe: true,
+    },
+    issuer: {
+      consume: { RUN: 'zoe' },
+    },
+    brand: {
+      consume: { RUN: 'zoe' },
+    },
+    instance: {
+      consume: { amm: 'amm' },
+    },
   },
 });

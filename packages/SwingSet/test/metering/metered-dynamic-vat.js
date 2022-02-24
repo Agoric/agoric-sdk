@@ -1,4 +1,4 @@
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { meterMe } from './metered-code.js';
 

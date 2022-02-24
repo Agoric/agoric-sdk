@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.8](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.10.7...@agoric/wallet-backend@0.10.8) (2022-02-21)
+
+
+### Bug Fixes
+
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* **wallet:** resolve home.wallet before exiting deploy.js ([f09eb66](https://github.com/Agoric/agoric/commit/f09eb665ee76a3f1f415ca3f094a064a4ea8241e))
+* **wallet-backend:** default new purses to autodeposit ([9a06a92](https://github.com/Agoric/agoric/commit/9a06a926ce1c19b3483b10b27a19f37bd493006e))
+* extract early changes from PR 4136 ([#4190](https://github.com/Agoric/agoric/issues/4190)) ([fea822e](https://github.com/Agoric/agoric/commit/fea822ec75c27c8758b872730424c0a3f1a1c623))
+
+
+
 ### [0.10.7](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.10.6...@agoric/wallet-backend@0.10.7) (2021-12-22)
 
 

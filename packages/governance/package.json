@@ -1,6 +1,6 @@
 {
   "name": "@agoric/governance",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Core governance support",
   "type": "module",
   "main": "src/index.js",
@@ -28,26 +28,26 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@endo/captp": "^1.10.12",
-    "@agoric/ertp": "^0.13.1",
-    "@agoric/eventual-send": "^0.14.0",
-    "@endo/marshal": "^0.5.4",
+    "@agoric/assert": "^0.3.16",
+    "@agoric/ertp": "^0.13.2",
+    "@agoric/eventual-send": "^0.14.1",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.33",
-    "@agoric/promise-kit": "^0.2.29",
-    "@agoric/store": "^0.6.8",
-    "@agoric/zoe": "^0.21.1"
+    "@agoric/notifier": "^0.3.34",
+    "@agoric/store": "^0.6.9",
+    "@agoric/zoe": "^0.21.2",
+    "@endo/captp": "^2.0.1",
+    "@endo/marshal": "^0.6.1",
+    "@endo/promise-kit": "^0.2.35"
   },
   "devDependencies": {
     "@agoric/babel-standalone": "^7.14.3",
-    "@endo/bundle-source": "^2.0.5",
-    "@endo/init": "^0.5.33",
-    "@agoric/swingset-vat": "^0.24.1",
+    "@agoric/swingset-vat": "^0.25.0",
+    "@endo/bundle-source": "^2.0.7",
+    "@endo/init": "^0.5.35",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1",
-    "ses": "^0.15.7"
+    "ses": "^0.15.9"
   },
   "files": [
     "README.md",

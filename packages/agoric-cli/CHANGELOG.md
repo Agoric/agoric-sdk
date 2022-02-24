@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.21...agoric@0.14.0) (2022-02-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **agoric-cli:** use `transfer` port for `ibc-go.transfer`
+* **agoric-cli:** start Docker for `--docker-tag`, not `--sdk`
+
+### Features
+
+* **agoric:** allow non-SDK agoric-cli to install packages in dapps ([5ca243c](https://github.com/Agoric/agoric-sdk/commit/5ca243cc666f577e7b3db90683db8908dec76403))
+* **agoric:** automatically build for `agoric cosmos ...` ([0e0e193](https://github.com/Agoric/agoric-sdk/commit/0e0e193e25d06bc1424a8a317ce49f99597b882f))
+* **agoric:** honour `agoric start local-solo --no-restart` ([53fd973](https://github.com/Agoric/agoric-sdk/commit/53fd9734575dd579fd22726af8fdbca3989a8b38))
+* **agoric:** implement `agoric run script -- script-args...` ([fd3938e](https://github.com/Agoric/agoric-sdk/commit/fd3938e1d918f921be2707259ee6ac56ad557a88))
+
+
+### Bug Fixes
+
+* **agoric-cli:** use `transfer` port for `ibc-go.transfer` ([dd727ef](https://github.com/Agoric/agoric-sdk/commit/dd727ef788a4ce7238916e0751e5b8060e3a445a))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* **agoric:** don't write command to stdout (it breaks pipelines) ([fa77c71](https://github.com/Agoric/agoric-sdk/commit/fa77c715f4fa9b5025ba4fc03e2cfc3bcce12d07))
+* **agoric-cli:** detect `agoric start` early exit ([b4f89ed](https://github.com/Agoric/agoric-sdk/commit/b4f89edc59659fcce6db88b58f7c8d4aa19e3e0f))
+* **agoric-cli:** find `agoric start` packages in to directory ([1818093](https://github.com/Agoric/agoric-sdk/commit/18180937f4791e5b72efd28dfaa7b3364e8c682f))
+* **agoric-cli:** implement `start --rebuild` and use it ([72f5452](https://github.com/Agoric/agoric-sdk/commit/72f54521f565b395926908811ae60e68f6448b92))
+* **agoric-cli:** start Docker for `--docker-tag`, not `--sdk` ([1abde9b](https://github.com/Agoric/agoric-sdk/commit/1abde9b5e32438bf88f29e1280411a5e19a43015))
+* **agoric-cli:** update `package.json` to publish correctly ([e670f1a](https://github.com/Agoric/agoric-sdk/commit/e670f1ac4463cf6b6332348e410c4658bfaacf53))
+* **agoric-cli:** use `https://github.com` instead of `git://...` ([44e90b0](https://github.com/Agoric/agoric-sdk/commit/44e90b0bac378c77f14c2a7a7f1e93816a4c66c9))
+* **anylogger:** coherent DEBUG levels, `$DEBUG` always says more ([5e482fe](https://github.com/Agoric/agoric-sdk/commit/5e482feb3912a0a3dd409d5f028ebe17e6b8ec0b))
+
+
+
 ### [0.13.21](https://github.com/Agoric/agoric-sdk/compare/agoric@0.13.20...agoric@0.13.21) (2021-12-22)
 
 

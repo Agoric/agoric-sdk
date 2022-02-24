@@ -138,40 +138,26 @@ let aWeakSet;
 function buildRootObject(vatPowers) {
   const { VatData, WeakMap, WeakSet } = vatPowers;
 
-  const { makeKind } = VatData;
+  const { defineKind } = VatData;
 
-  function makeThingInnards(state) {
-    return {
-      init(label) {
-        state.label = label;
-      },
-      self: Far('thing', {
-        getLabel() {
-          return state.label;
-        },
-      }),
-    };
-  }
-
-  function makeVirtualHolderInnards(state) {
-    return {
-      init(value = null) {
+  const makeThing = defineKind(
+    'thing',
+    label => ({ label }),
+    state => ({
+      getLabel: () => state.label,
+    }),
+  );
+  const cacheDisplacer = makeThing('cacheDisplacer');
+  const makeVirtualHolder = defineKind(
+    'holder',
+    (held = null) => ({ held }),
+    state => ({
+      setValue: value => {
         state.held = value;
       },
-      self: Far('holder', {
-        setValue(value) {
-          state.held = value;
-        },
-        getValue() {
-          return state.held;
-        },
-      }),
-    };
-  }
-
-  const makeThing = makeKind(makeThingInnards);
-  const cacheDisplacer = makeThing('cacheDisplacer');
-  const makeVirtualHolder = makeKind(makeVirtualHolderInnards);
+      getValue: () => state.held,
+    }),
+  );
   const virtualHolder = makeVirtualHolder();
   let nextThingNumber = 0;
   let heldThing = null;
@@ -356,11 +342,18 @@ const cacheObjValue = thingValue('cacheDisplacer');
 
 const NONE = undefined; // mostly just shorter, to maintain legibility while making prettier shut up
 
-function setupLifecycleTest(t) {
+async function setupLifecycleTest(t) {
   const { log, syscall } = buildSyscall();
   const nextRP = makeRPMaker();
   const th = [];
-  const dispatch = makeDispatch(syscall, buildRootObject, 'bob', false, 0, th);
+  const dispatch = await makeDispatch(
+    syscall,
+    buildRootObject,
+    'bob',
+    false,
+    0,
+    th,
+  );
   const [testHooks] = th;
 
   async function dispatchMessage(message, args = capargs([])) {
@@ -543,7 +536,7 @@ function validateRetireExport(v) {
 
 // test 1: lerv -> Lerv -> LerV -> Lerv -> lerv
 test.serial('VO lifecycle 1', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -566,7 +559,7 @@ test.serial('VO lifecycle 1', async t => {
 //   lERV -> LERV -> lERV -> leRV -> LeRV -> leRV -> LeRV -> LerV
 test.serial('VO lifecycle 2', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    setupLifecycleTest(t);
+    await setupLifecycleTest(t);
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -632,7 +625,7 @@ test.serial('VO lifecycle 2', async t => {
 // test 3: lerv -> Lerv -> LerV -> LERV -> LeRV -> leRV -> lerV -> lerv
 test.serial('VO lifecycle 3', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    setupLifecycleTest(t);
+    await setupLifecycleTest(t);
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -665,7 +658,9 @@ test.serial('VO lifecycle 3', async t => {
 
 // test 4: lerv -> Lerv -> LERv -> LeRv -> lerv
 test.serial('VO lifecycle 4', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+    t,
+  );
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -687,7 +682,7 @@ test.serial('VO lifecycle 4', async t => {
 // test 5: lerv -> Lerv -> LERv -> LeRv -> Lerv -> lerv
 test.serial('VO lifecycle 5', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    setupLifecycleTest(t);
+    await setupLifecycleTest(t);
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -712,7 +707,9 @@ test.serial('VO lifecycle 5', async t => {
 
 // test 6: lerv -> Lerv -> LERv -> LeRv -> LeRV -> LeRv -> LeRV -> leRV -> lerv
 test.serial('VO lifecycle 6', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+    t,
+  );
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -749,7 +746,9 @@ test.serial('VO lifecycle 6', async t => {
 
 // test 7: lerv -> Lerv -> LERv -> lERv -> LERv -> lERv -> lerv
 test.serial('VO lifecycle 7', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+    t,
+  );
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -778,7 +777,9 @@ test.serial('VO lifecycle 7', async t => {
 
 // test 8: lerv -> Lerv -> LERv -> LERV -> LERv -> LERV -> lERV -> lERv -> lerv
 test.serial('VO lifecycle 8', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+    t,
+  );
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -816,12 +817,12 @@ test.serial('VO lifecycle 8', async t => {
 function validatePrepareStore3(v, rp) {
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+1/2', '2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o+1/2')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
@@ -831,7 +832,7 @@ function validatePrepareStore3(v, rp) {
 }
 
 test.serial('VO refcount management 1', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
@@ -860,7 +861,7 @@ test.serial('VO refcount management 1', async t => {
 });
 
 test.serial('VO refcount management 2', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
@@ -894,7 +895,7 @@ test.serial('VO refcount management 2', async t => {
 });
 
 test.serial('VO refcount management 3', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
@@ -902,12 +903,12 @@ test.serial('VO refcount management 3', async t => {
   rp = await dispatchMessage('prepareStoreLinked');
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+2/2'));
   validate(v, matchVatstoreSet('vom.rc.o+2/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldHolderValue('o+2/2')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+2/3'));
   validate(v, matchVatstoreSet('vom.rc.o+2/3', '1'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldHolderValue('o+2/2')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldHolderValue('o+2/3')));
   validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
@@ -944,7 +945,7 @@ test.serial('VO refcount management 3', async t => {
 });
 
 test.serial('presence refcount management 1', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('importAndHold', thingArg('o-5'));
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
@@ -956,12 +957,12 @@ test.serial('presence refcount management 1', async t => {
   rp = await dispatchMessage('prepareStore3');
   validate(v, matchVatstoreGet('vom.rc.o-5'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
@@ -991,7 +992,7 @@ test.serial('presence refcount management 1', async t => {
 });
 
 test.serial('presence refcount management 2', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('importAndHold', thingArg('o-5'));
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
@@ -1003,12 +1004,12 @@ test.serial('presence refcount management 2', async t => {
   rp = await dispatchMessage('prepareStore3');
   validate(v, matchVatstoreGet('vom.rc.o-5'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o-5')));
   validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
@@ -1037,7 +1038,7 @@ test.serial('presence refcount management 2', async t => {
 });
 
 test.serial('remotable refcount management 1', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
@@ -1067,7 +1068,7 @@ test.serial('remotable refcount management 1', async t => {
 });
 
 test.serial('remotable refcount management 2', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
@@ -1096,7 +1097,7 @@ test.serial('remotable refcount management 2', async t => {
 });
 
 test.serial('verify VO weak key GC', async t => {
-  const { v, dispatchMessage, testHooks } = setupLifecycleTest(t);
+  const { v, dispatchMessage, testHooks } = await setupLifecycleTest(t);
 
   // Create VO and hold onto it weakly
   let rp = await dispatchMessage('makeAndHoldAndKey');
@@ -1115,7 +1116,7 @@ test.serial('verify VO weak key GC', async t => {
 
 test.serial('verify presence weak key GC', async t => {
   const { v, dispatchMessage, dispatchRetireImports, testHooks } =
-    setupLifecycleTest(t);
+    await setupLifecycleTest(t);
 
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
   validateDone(v);

@@ -8,7 +8,8 @@ import { insistVatID } from './id.js';
 import { makeVatSlot } from '../parseVatSlots.js';
 import { insistStorageAPI } from '../storageAPI.js';
 import makeKernelKeeper from './state/kernelKeeper.js';
-import { exportRootObject, doQueueToKref } from './kernel.js';
+import { exportRootObject } from './kernel.js';
+import { makeKernelQueueHandler } from './kernelQueue.js';
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
@@ -72,6 +73,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       creationOptions.vatParameters = vatParameters;
       creationOptions.description = `static name=${name}`;
       creationOptions.name = name;
+      if (creationOptions.useTranscript === undefined) {
+        creationOptions.useTranscript = true;
+      }
       if (!creationOptions.managerType) {
         creationOptions.managerType = kernelKeeper.getDefaultManagerType();
       }
@@ -84,6 +88,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundleID }, creationOptions);
       vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
+      if (!creationOptions.enableSetup) {
+        kernelKeeper.addToRunQueue(harden({ type: 'startVat', vatID }));
+      }
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
         // about creation/termination of dynamic vats.
@@ -182,6 +189,8 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       throw Error('bootstrap got unexpected pass-by-presence');
     }
 
+    const { queueToKref } = makeKernelQueueHandler({ kernelKeeper });
+
     const m = makeMarshal(convertValToSlot, undefined, {
       marshalName: 'kernel:bootstrap',
       // TODO Temporary hack.
@@ -191,8 +200,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     const args = harden([vatObj0s, deviceObj0s]);
     // doQueueToKref() takes kernel-refs (ko+NN, kd+NN) in s.slots
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
-    const resultKpid = doQueueToKref(
-      kernelKeeper,
+    const resultKpid = queueToKref(
       rootKref,
       'bootstrap',
       m.serialize(args),

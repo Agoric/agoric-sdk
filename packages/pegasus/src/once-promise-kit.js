@@ -1,6 +1,6 @@
 // @ts-check
 import { assert } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * Create a promise kit that will throw an exception if it is resolved or

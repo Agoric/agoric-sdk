@@ -149,11 +149,10 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 	return
 }
 
-func (am AppModule) CallToController(ctx sdk.Context, send string) (string, error) {
+func (am AppModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	// fmt.Println("ibc.go upcall", send)
-	reply, err := am.keeper.CallToController(ctx, send)
+	return am.keeper.PushAction(ctx, action)
 	// fmt.Println("ibc.go upcall reply", reply, err)
-	return reply, err
 }
 
 func (AppModule) NegotiateAppVersion(
@@ -225,12 +224,7 @@ func (am AppModule) OnChanOpenTry(
 		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return err
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
+	err := am.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}
@@ -277,13 +271,7 @@ func (am AppModule) OnChanOpenAck(
 		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return err
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
-	return err
+	return am.PushAction(ctx, event)
 }
 
 type channelOpenConfirmEvent struct {
@@ -309,13 +297,7 @@ func (am AppModule) OnChanOpenConfirm(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return err
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
-	return err
+	return am.PushAction(ctx, event)
 }
 
 type channelCloseInitEvent struct {
@@ -341,12 +323,7 @@ func (am AppModule) OnChanCloseInit(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return err
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
+	err := am.PushAction(ctx, event)
 	return err
 }
 
@@ -373,12 +350,7 @@ func (am AppModule) OnChanCloseConfirm(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return err
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
+	err := am.PushAction(ctx, event)
 	return err
 }
 
@@ -411,12 +383,7 @@ func (am AppModule) OnRecvPacket(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return channeltypes.NewErrorAcknowledgement(err.Error())
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
+	err := am.PushAction(ctx, event)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
@@ -448,12 +415,7 @@ func (am AppModule) OnAcknowledgementPacket(
 		BlockTime:       ctx.BlockTime().Unix(),
 	}
 
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return err
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
+	err := am.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}
@@ -482,12 +444,7 @@ func (am AppModule) OnTimeoutPacket(
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 
-	bytes, err := json.Marshal(&event)
-	if err != nil {
-		return err
-	}
-
-	_, err = am.CallToController(ctx, string(bytes))
+	err := am.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}

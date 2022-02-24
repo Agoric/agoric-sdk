@@ -1,5 +1,3 @@
-/* global HandledPromise */
-
 import {
   Remotable,
   passStyleOf,
@@ -7,7 +5,7 @@ import {
   makeMarshal,
 } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { isPromise } from '@agoric/promise-kit';
+import { isPromise } from '@endo/promise-kit';
 import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
 import { insistCapData } from '../capdata.js';
 import { insistMessage } from '../message.js';
@@ -36,13 +34,9 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
  * @param {Console} console
- * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
+ * @param {*} buildVatNamespace
  *
- * setBuildRootObject should be called, once, with a function that will
- * create a root object for the new vat The caller provided buildRootObject
- * function produces and returns the new vat's root object:
- *
- * buildRootObject(vatPowers, vatParameters)
+ * @returns {*} { dispatch }
  */
 function build(
   syscall,
@@ -54,6 +48,7 @@ function build(
   vatParameters,
   gcTools,
   console,
+  buildVatNamespace,
 ) {
   const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
@@ -63,7 +58,7 @@ function build(
     }
   }
 
-  let didRoot = false;
+  let didStartVat = false;
 
   const outstandingProxies = new WeakSet();
 
@@ -825,7 +820,7 @@ function build(
   }
 
   function deliver(target, method, argsdata, result) {
-    assert(didRoot);
+    assert(didStartVat);
     insistCapData(argsdata);
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
@@ -951,7 +946,7 @@ function build(
   }
 
   function notify(resolutions) {
-    assert(didRoot);
+    assert(didStartVat);
     beginCollectingPromiseImports();
     for (const resolution of resolutions) {
       const [vpid, rejected, data] = resolution;
@@ -1078,8 +1073,8 @@ function build(
 
   const vatGlobals = harden({
     VatData: {
-      makeKind: vom.makeKind,
-      makeDurableKind: vom.makeDurableKind,
+      defineKind: vom.defineKind,
+      defineDurableKind: vom.defineDurableKind,
       makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,
       makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
@@ -1103,9 +1098,19 @@ function build(
     assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
   }
 
-  function setBuildRootObject(buildRootObject) {
-    assert(!didRoot);
-    didRoot = true;
+  async function startVat() {
+    assert(!didStartVat);
+    didStartVat = true;
+    // Note that unlike dispatch.deliver or dispatch.notify we didn't
+    // deserialize any data in the course of getting here, so there's no
+    // opportunity for GC-based meter divergence.  However, we were invoked by
+    // `dispatchToUserspace` which in turn is wrapped by `unmeteredDispatch` so
+    // we need to consume that first (unmetered) turn it introduced to ensure
+    // that all vat module code runs with metering.  At some point we will add
+    // `vatParameters` to this event, which will reintroduce unserialization
+    // that will happen during the unmetered turn and the following line, which
+    // is a bit of an ungly hack, should be removed.
+    await Promise.resolve();
 
     // Build the `vatPowers` provided to `buildRootObject`. We include
     // vatGlobals and inescapableGlobalProperties to make it easier to write
@@ -1168,6 +1173,22 @@ function build(
       });
     }
 
+    // Below this point, user-provided code might crash or overrun a meter, so
+    // any prior-to-user-code setup that can be done without reference to the
+    // content of the user-provided code should be above this point.
+
+    // syscalls/VatData/makeKind must be enabled before invoking buildVatNamespace
+    const vatNS = await buildVatNamespace(
+      vatGlobals,
+      inescapableGlobalProperties,
+    );
+    const buildRootObject = vatNS.buildRootObject;
+    assert.typeof(
+      buildRootObject,
+      'function',
+      X`vat source bundle lacks buildRootObject() function`,
+    );
+
     // here we finally invoke the vat code, and get back the root object
     const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
     assert.equal(
@@ -1189,9 +1210,10 @@ function build(
 
   /**
    * @param { VatDeliveryObject } delivery
-   * @returns { void }
+   * @returns { void | Promise<void> }
    */
   function dispatchToUserspace(delivery) {
+    let result;
     const [type, ...args] = delivery;
     switch (type) {
       case 'message': {
@@ -1220,9 +1242,14 @@ function build(
         retireImports(vrefs);
         break;
       }
+      case 'startVat': {
+        result = startVat();
+        break;
+      }
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }
+    return result;
   }
 
   // the first turn of each dispatch is spent in liveslots, and is not
@@ -1299,10 +1326,10 @@ function build(
 
   // we return 'possiblyDeadSet' for unit tests
   return harden({
+    dispatch,
+    startVat,
     vatGlobals,
     inescapableGlobalProperties,
-    setBuildRootObject,
-    dispatch,
     m,
     possiblyDeadSet,
     testHooks,
@@ -1322,7 +1349,9 @@ function build(
  * @param {boolean} enableVatstore
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
- * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch, setBuildRootObject }
+ * @param {*} buildVatNamespace
+ *
+ * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -1356,6 +1385,7 @@ export function makeLiveSlots(
   enableVatstore = false,
   gcTools,
   liveSlotsConsole = console,
+  buildVatNamespace,
 ) {
   const allVatPowers = {
     ...vatPowers,
@@ -1371,20 +1401,12 @@ export function makeLiveSlots(
     vatParameters,
     gcTools,
     liveSlotsConsole,
+    buildVatNamespace,
   );
-  const {
-    vatGlobals,
-    inescapableGlobalProperties,
-    dispatch,
-    setBuildRootObject,
-    possiblyDeadSet,
-    testHooks,
-  } = r; // omit 'm'
+  const { dispatch, startVat, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({
-    vatGlobals,
-    inescapableGlobalProperties,
     dispatch,
-    setBuildRootObject,
+    startVat,
     possiblyDeadSet,
     testHooks,
   });

@@ -22,11 +22,20 @@ test.before(async t => {
   const vat44Bundle = await bundleSource(
     new URL('new-vat-44.js', import.meta.url).pathname,
   );
-  const brokenVatBundle = await bundleSource(
-    new URL('broken-vat.js', import.meta.url).pathname,
+  const brokenModuleVatBundle = await bundleSource(
+    new URL('broken-module-vat.js', import.meta.url).pathname,
+  );
+  const brokenRootVatBundle = await bundleSource(
+    new URL('broken-root-vat.js', import.meta.url).pathname,
   );
   const nonBundle = `${nonBundleFunction}`;
-  const bundles = { vat13Bundle, vat44Bundle, brokenVatBundle, nonBundle };
+  const bundles = {
+    vat13Bundle,
+    vat44Bundle,
+    brokenModuleVatBundle,
+    brokenRootVatBundle,
+    nonBundle,
+  };
   t.context.data = { kernelBundles, bundles };
 });
 
@@ -35,7 +44,8 @@ async function doTestSetup(t) {
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);
   config.bundles = {
     new13: { bundle: bundles.vat13Bundle },
-    broken: { bundle: bundles.brokenVatBundle },
+    brokenModule: { bundle: bundles.brokenModuleVatBundle },
+    brokenRoot: { bundle: bundles.brokenRootVatBundle },
   };
   const c = await buildVatController(config, [], { kernelBundles });
   const id44 = await c.validateAndInstallBundle(bundles.vat44Bundle);
@@ -66,7 +76,7 @@ test('createVat by named bundlecap', async t => {
   const { c } = await doTestSetup(t);
   const kpid = c.queueToVatRoot(
     'bootstrap',
-    'byNamedBundleCap',
+    'byNamedBundlecap',
     capargs(['new13']),
   );
   await c.run();
@@ -87,24 +97,33 @@ test('counter test', async t => {
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), [4, 9, 2]);
 });
 
-test('broken vat creation fails', async t => {
+async function brokenVatTest(t, bundleName) {
   const { c } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot('bootstrap', 'brokenVat', capargs(['broken']));
+  const kpid = c.queueToVatRoot(
+    'bootstrap',
+    'brokenVat',
+    capargs([bundleName]),
+  );
   await c.run();
   t.is(c.kpStatus(kpid), 'rejected');
   const res = parse(c.kpResolution(kpid).body);
   t.truthy(res instanceof Error);
-  // 'Vat Creation Error: ReferenceError: missing is not defined' on node
-  // 'Vat Creation Error: Error: setBundle failed: "ReferenceError":
-  // "buildRootObject: get missing: undefined variable"' on XS
+  // 'Vat Creation Error: Error: missing is not defined'
   t.regex(res.message, /Vat Creation Error/);
-  t.regex(res.message, /ReferenceError/);
   t.regex(res.message, /missing/);
+}
+
+test('broken vat creation fails (bad module)', async t => {
+  await brokenVatTest(t, 'brokenModule');
+});
+
+test('broken vat creation fails (bad buildRootObject)', async t => {
+  await brokenVatTest(t, 'brokenRoot');
 });
 
 test('error creating vat from non-bundle', async t => {
   const { c } = await doTestSetup(t);
-  const kpid = c.queueToVatRoot('bootstrap', 'nonBundleCap', capargs([]));
+  const kpid = c.queueToVatRoot('bootstrap', 'nonBundlecap', capargs([]));
   await c.run();
   t.is(c.kpStatus(kpid), 'rejected');
   t.deepEqual(

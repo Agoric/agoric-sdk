@@ -389,7 +389,7 @@ export async function makeSwingsetController(
     /**
      * @param {string} vatName
      * @param {string} method
-     * @param {CapData<unknown>} args
+     * @param {import('@endo/marshal').CapData<unknown>} args
      * @param {ResolutionPolicy} resultPolicy
      */
     queueToVatRoot(vatName, method, args, resultPolicy = 'ignore') {

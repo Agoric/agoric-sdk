@@ -1,6 +1,6 @@
 // @ts-check
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
   makeNotifierFromAsyncIterable,

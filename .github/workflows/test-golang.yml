@@ -1,11 +1,6 @@
 name: Test Golang
 
-# run CI on pushes to default, and on all PRs (even the ones that target other
-# branches)
-
 on:
-  push:
-    branches: [master] # $default-branch
   pull_request:
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)

@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.29](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.28...@agoric/ui-components@0.2.29) (2022-02-21)
+
+
+### Bug Fixes
+
+* **ui:** limit decimals displayed for nats ([fa73887](https://github.com/Agoric/agoric-sdk/commit/fa73887cea6a65635390e96ea0da8a0e9f200c0e))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+
+
+
 ### [0.2.28](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.27...@agoric/ui-components@0.2.28) (2021-12-22)
 
 **Note:** Version bump only for package @agoric/ui-components

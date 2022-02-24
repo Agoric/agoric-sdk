@@ -16,7 +16,7 @@ import { Far } from '@endo/marshal';
 import { makeSubscription } from '@agoric/notifier';
 
 import '@agoric/ertp/exported.js';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -92,7 +92,7 @@ async function testRemotePeg(t) {
   E(portP).addListener(
     Far('acceptor', {
       async onAccept(_p, _localAddr, _remoteAddr) {
-        return harden({
+        return Far('handler', {
           async onOpen(c) {
             gaiaConnection = c;
           },
@@ -102,13 +102,13 @@ async function testRemotePeg(t) {
               packet,
               {
                 amount: '100000000000000000001',
-                denom: 'uatom',
+                denom: 'portdef/chanabc/uatom',
                 receiver: 'markaccount',
                 sender: 'pegasus',
               },
               'expected transfer packet',
             );
-            return JSON.stringify({ success: true });
+            return JSON.stringify({ result: 'AQ==' });
           },
         });
       },
@@ -167,8 +167,8 @@ async function testRemotePeg(t) {
 
   const sendAckData = await sendAckDataP;
   const sendAck = JSON.parse(sendAckData);
-  t.deepEqual(sendAck, { success: true }, 'Gaia sent the atoms');
-  if (!sendAck.success) {
+  t.deepEqual(sendAck, { result: 'AQ==' }, 'Gaia sent the atoms');
+  if (!sendAck.result) {
     console.log(sendAckData, sendAck.error);
   }
 
@@ -190,8 +190,8 @@ async function testRemotePeg(t) {
     JSON.stringify(sendPacket2),
   );
   const sendAck2 = JSON.parse(sendAckData2);
-  t.deepEqual(sendAck2, { success: true }, 'Gaia sent more atoms');
-  if (!sendAck2.success) {
+  t.deepEqual(sendAck2, { result: 'AQ==' }, 'Gaia sent more atoms');
+  if (!sendAck2.result) {
     console.log(sendAckData2, sendAck2.error);
   }
 
@@ -212,13 +212,13 @@ async function testRemotePeg(t) {
 
   // Wait for the packet to go through.
   t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'umuon' });
-  E(pegConnActions).rejectStuckTransfers('umuon');
+  E(pegConnActions).rejectTransfersWaitingForPegRemote('umuon');
 
   const sendAckData3 = await sendAckData3P;
   const sendAck3 = JSON.parse(sendAckData3);
   t.deepEqual(
     sendAck3,
-    { success: false, error: 'Error: "umuon" is temporarily unavailable' },
+    { error: 'Error: "umuon" is temporarily unavailable' },
     'rejecting transfers works',
   );
 
@@ -232,10 +232,10 @@ async function testRemotePeg(t) {
   );
   const seat = await E(zoe).offer(
     transferInvitation,
-    harden({
+    {
       give: { Transfer: localAtomsAmount },
-    }),
-    harden({ Transfer: localAtoms }),
+    },
+    { Transfer: localAtoms },
   );
   const outcome = await seat.getOfferResult();
   t.is(outcome, undefined, 'transfer is successful');

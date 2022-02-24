@@ -8,7 +8,6 @@
 
 /**
  * @typedef {Object} Collateral
- * @property {Ratio} initialMargin
  * @property {Ratio} liquidationMargin
  * @property {Ratio} stabilityFee
  * @property {Ratio} marketPrice
@@ -18,8 +17,6 @@
 
 /**
  * @typedef {Object} Rates
- * @property {Ratio} initialMargin - minimum over-collateralization
- * required to open a loan
  * @property {Ratio} liquidationMargin - margin below which collateral will be
  * liquidated to satisfy the debt.
  * @property {Ratio} interestRate - annual interest rate charged on loans
@@ -38,6 +35,7 @@
 /**
  * @typedef  {Object} VaultFactoryPublicFacet - the public facet
  * @property {() => Promise<Invitation>} makeLoanInvitation
+ * @property {() => Promise<Invitation>} makeVaultInvitation
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Issuer} getRunIssuer
  * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
@@ -52,24 +50,23 @@
  * @property {AddVaultType} addVaultType
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation,
- * @property {() => Promise<Payment>} getBootstrapPayment
  * @property {() => Instance} getContractGovernor
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
  */
 
 /**
  * @typedef {Object} BaseUIState
- * @property {Amount} locked Amount of Collateral locked
- * @property {Amount} debt Amount of Loan (including accrued interest)
- * @property {Ratio} collateralizationRatio
+ * @property {Amount<NatValue>} locked Amount of Collateral locked
+ * @property {Amount<NatValue>} debt Amount of Loan (including accrued interest)
  */
 
 /**
- * @typedef {BaseUIState & LiquidationUIMixin} UIState
+ * @typedef {BaseUIState & LiquidationUIMixin} VaultUIState
  * @typedef {Object} LiquidationUIMixin
  * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
  * @property {boolean} liquidated boolean showing whether liquidation occurred
+ * @property {'active' | 'liquidating' | 'closed'} vaultState
  */
 
 /**
@@ -90,7 +87,6 @@
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getLoanFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getInitialMargin
  * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
  *   which interest is charged to the loan.
@@ -99,18 +95,12 @@
  */
 
 /**
- * @typedef {Object} InnerVaultManagerBase
- * @property {() => Brand} getCollateralBrand
- * @property {ReallocateReward} reallocateReward
- */
-
-/**
- * @typedef {InnerVaultManagerBase & GetVaultParams} InnerVaultManager
+ * @typedef {string} VaultId
  */
 
 /**
  * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<LoanKit>}  makeLoanKit
+ * @property {(seat: ZCFSeat) => Promise<VaultKit>}  makeVaultKit
  * @property {() => void} liquidateAll
  */
 
@@ -119,22 +109,18 @@
  */
 
 /**
- * @typedef {Object} OpenLoanKit
- * @property {Notifier<UIState>} notifier
- * @property {Promise<PaymentPKeywordRecord>} collateralPayoutP
- */
-
-/**
  * @typedef {Object} BaseVault
- * @property {() => Amount} getCollateralAmount
- * @property {() => Amount} getDebtAmount
+ * @property {() => Amount<NatValue>} getCollateralAmount
+ * @property {() => Amount<NatValue>} getDebtAmount
+ * @property {() => Amount<NatValue>} getNormalizedDebt
  *
  * @typedef {BaseVault & VaultMixin} Vault
  * @typedef {Object} VaultMixin
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
  * @property {() => Promise<Invitation>} makeCloseInvitation
+ * @property {() => Promise<Invitation>} makeTransferInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
- * @property {() => Promise<string>} getLiquidationPromise
+ * @property {() => Notifier<VaultUIState>} getNotifier
  */
 
 /**
@@ -148,21 +134,9 @@
  */
 
 /**
- * @typedef {Object} LoanKit
- * @property {Vault} vault
- * @property {Notifier<UIState>} uiNotifier
- */
-
-/**
  * @typedef {Object} VaultKit
  * @property {Vault} vault
- * @property {(seat: ZCFSeat) => Promise<OpenLoanKit>} openLoan
- * @property {(timestamp: Timestamp) => Amount} accrueInterestAndAddToPool
- * @property {ZCFSeat} vaultSeat
- * @property {PromiseRecord<string>} liquidationPromiseKit
- * @property {ZCFSeat} liquidationZcfSeat
- * @property {() => void} liquidating
- * @property {(newDebt: Amount) => void} liquidated
+ * @property {Notifier<VaultUIState>} uiNotifier
  */
 
 /**
@@ -198,8 +172,8 @@
 /**
  * @typedef {Object} DebtStatus
  * @property {Timestamp} latestInterestUpdate
- * @property {Amount} interest
- * @property {Amount} newDebt
+ * @property {NatValue} interest interest accrued since latestInterestUpdate
+ * @property {NatValue} newDebt total including principal and interest
  */
 
 /**
@@ -222,14 +196,12 @@
 /**
  * @typedef {Object} VaultParamManager
  * @property {() => Record<Keyword, ParamShortDescription> & {
- *  'InitialMargin': ParamRecord<'ratio'> & { value: Ratio },
- *  'InterestRate': ParamRecord<'ratio'> & { value: Ratio },
- *  'LiquidationMargin': ParamRecord<'ratio'> & { value: Ratio },
- *  'LoanFee': ParamRecord<'ratio'> & { value: Ratio },
+ *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
+ *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
+ *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
  * }} getParams
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
- * @property {(margin: Ratio) => void} updateInitialMargin
  * @property {(margin: Ratio) => void} updateLiquidationMargin
  * @property {(ratio: Ratio) => void} updateInterestRate
  * @property {(ratio: Ratio) => void} updateLoanFee
@@ -238,20 +210,10 @@
 /**
  * @callback GetGovernedVaultParams
  * @returns {{
- *  InitialMargin: ParamRecord<'ratio'> & { value: Ratio },
  *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
  *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
  *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
  * }}
  */
 
-/**
- * @callback VaultFactoryLiquidate
- * @param {ContractFacet} zcf
- * @param {VaultKit} vaultKit
- * @param {(losses: AmountKeywordRecord,
- *             zcfSeat: ZCFSeat
- *            ) => void} burnLosses
- * @param {LiquidationStrategy} strategy
- * @param {Brand} collateralBrand
- */
+/** @typedef {import('./vault').InnerVault} InnerVault */

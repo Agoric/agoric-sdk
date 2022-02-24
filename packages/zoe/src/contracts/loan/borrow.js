@@ -5,7 +5,7 @@ import '../../../exported.js';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 
 import {

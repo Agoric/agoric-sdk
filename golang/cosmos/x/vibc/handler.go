@@ -1,7 +1,6 @@
 package vibc
 
 import (
-	"encoding/json"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -48,12 +47,8 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg *MsgSendPacket) (*s
 		BlockTime:     ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	b, err := json.Marshal(action)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	err := keeper.PushAction(ctx, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err

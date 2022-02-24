@@ -1,22 +1,16 @@
 import { Far } from '@endo/marshal';
-import { makeKind } from '../../src/storeModule.js';
+import { defineKind } from '../../src/storeModule.js';
 
-function makeHolderInnards(state) {
-  function init(value) {
-    state.value = value;
-  }
-  const self = Far('holder-vo', {
-    getValue() {
-      return state.value;
-    },
-    setValue(newValue) {
+const makeHolder = defineKind(
+  'holder-vo',
+  value => ({ value }),
+  state => ({
+    getValue: () => state.value,
+    setValue: newValue => {
       state.value = newValue;
     },
-  });
-  return { init, self };
-}
-
-const makeHolder = makeKind(makeHolderInnards);
+  }),
+);
 
 export function buildRootObject() {
   const testWeakMap = new WeakMap();

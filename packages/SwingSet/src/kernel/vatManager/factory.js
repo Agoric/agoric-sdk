@@ -99,7 +99,7 @@ export function makeVatManagerFactory({
     if (setup && managerType !== 'local') {
       console.warn(`TODO: stop using setup() with ${managerType}`);
     }
-    if (managerType === 'local' || enableSetup) {
+    if (enableSetup) {
       if (setup) {
         return localFactory.createFromSetup(
           vatID,
@@ -107,7 +107,15 @@ export function makeVatManagerFactory({
           managerOptions,
           vatSyscallHandler,
         );
+      } else {
+        return localFactory.createFromBundle(
+          vatID,
+          bundle,
+          managerOptions,
+          vatSyscallHandler,
+        );
       }
+    } else if (managerType === 'local') {
       return localFactory.createFromBundle(
         vatID,
         bundle,

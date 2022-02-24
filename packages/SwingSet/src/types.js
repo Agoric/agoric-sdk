@@ -8,7 +8,7 @@
  */
 
 /**
- * @typedef {CapData<string>} SwingSetCapData
+ * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  */
 
 /**
@@ -87,7 +87,7 @@
  * result: string | undefined | null,
  * }} Message
  *
- * @typedef { 'sendOnly' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
+ * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} VatDeliveryMessage
  * @typedef { [vpid: string, isReject: boolean, data: SwingSetCapData ] } VatOneResolution
@@ -95,9 +95,11 @@
  * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
  * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
+ * @typedef { [tag: 'startVat' ]} VatDeliveryStartVat
  * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
- *            | VatDeliveryRetireExports | VatDeliveryRetireImports | VatDeliveryBringOutYourDead
+ *            | VatDeliveryRetireExports | VatDeliveryRetireImports
+ *            | VatDeliveryStartVat | VatDeliveryBringOutYourDead
  *          } VatDeliveryObject
  * @typedef { [tag: 'ok', message: null, usage: { compute: number } | null] |
  *            [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult
@@ -132,9 +134,11 @@
  * @typedef { [tag: 'dropExports', krefs: string[] ]} KernelDeliveryDropExports
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelDeliveryRetireExports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
+ * @typedef { [tag: 'startVat']} KernelDeliveryStartVat
  * @typedef { [tag: 'bringOutYourDead']} KernelDeliveryBringOutYourDead
  * @typedef { KernelDeliveryMessage | KernelDeliveryNotify | KernelDeliveryDropExports
- *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports | KernelDeliveryBringOutYourDead
+ *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports
+ *            | KernelDeliveryStartVat | KernelDeliveryBringOutYourDead
  *          } KernelDeliveryObject
  * @typedef { [tag: 'send', target: string, msg: Message] } KernelSyscallSend
  * @typedef { [tag: 'invoke', target: string, method: string, args: SwingSetCapData]} KernelSyscallInvoke
@@ -163,7 +167,7 @@
  * @property {string} 0 Kernel slot designating the device node that is the target of
  * the invocation
  * @property {string} 1 A string naming the method to be invoked
- * @property {CapData} 2 A capdata object containing the arguments to the invocation
+ * @property {import('@endo/marshal').CapData<unknown>} 2 A capdata object containing the arguments to the invocation
  * @typedef {[tag: 'ok', data: SwingSetCapData]} DeviceInvocationResultOk
  * @typedef {[tag: 'error', problem: string]} DeviceInvocationResultError
  * @typedef { DeviceInvocationResultOk | DeviceInvocationResultError } DeviceInvocationResult

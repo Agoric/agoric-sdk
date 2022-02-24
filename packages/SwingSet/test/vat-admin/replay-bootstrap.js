@@ -1,5 +1,5 @@
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers) {
@@ -15,7 +15,7 @@ export function buildRootObject(vatPowers) {
     },
 
     async createVat() {
-      const bcap = D(devices.bundle).getNamedBundleCap('dynamic');
+      const bcap = D(devices.bundle).getNamedBundlecap('dynamic');
       const vc = await E(vatAdminSvc).createVat(bcap);
       root = vc.root;
       const count = await E(root).first();

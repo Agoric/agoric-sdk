@@ -1,41 +1,30 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
-import { insistMessage } from '../message.js';
+import { insistKernelType } from './parseKernelSlots.js';
 import { insistCapData } from '../capdata.js';
 import { insistDeviceID, insistVatID } from './id.js';
 
 /** @type { KernelSyscallResult } */
 const OKNULL = harden(['ok', null]);
 
-export function doSend(kernelKeeper, target, msg) {
-  parseKernelSlot(target);
-  insistMessage(msg);
-  const m = harden({ type: 'send', target, msg });
-  kernelKeeper.incrementRefCount(target, `enq|msg|t`);
-  if (msg.result) {
-    kernelKeeper.incrementRefCount(msg.result, `enq|msg|r`);
-  }
-  kernelKeeper.incStat('syscalls');
-  kernelKeeper.incStat('syscallSend');
-  let idx = 0;
-  for (const argSlot of msg.args.slots) {
-    kernelKeeper.incrementRefCount(argSlot, `enq|msg|s${idx}`);
-    idx += 1;
-  }
-  kernelKeeper.addToRunQueue(m);
-  return OKNULL;
-}
-
 export function makeKernelSyscallHandler(tools) {
-  const { kernelKeeper, ephemeral, notify, doResolve, setTerminationTrigger } =
-    tools;
+  const {
+    kernelKeeper,
+    ephemeral,
+    doSend,
+    doSubscribe,
+    doResolve,
+    setTerminationTrigger,
+  } = tools;
 
   const { kvStore } = kernelKeeper;
 
   function send(target, msg) {
-    return doSend(kernelKeeper, target, msg);
+    kernelKeeper.incStat('syscalls');
+    kernelKeeper.incStat('syscallSend');
+    doSend(target, msg);
+    return OKNULL;
   }
 
   function exit(vatID, isFailure, info) {
@@ -268,16 +257,9 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   function subscribe(vatID, kpid) {
-    insistVatID(vatID);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallSubscribe');
-    const p = kernelKeeper.getKernelPromise(kpid);
-    if (p.state === 'unresolved') {
-      kernelKeeper.addSubscriberToPromise(kpid, vatID);
-    } else {
-      // otherwise it's already resolved, you probably want to know how
-      notify(vatID, kpid);
-    }
+    doSubscribe(vatID, kpid);
     return OKNULL;
   }
 
@@ -320,7 +302,7 @@ export function makeKernelSyscallHandler(tools) {
    * @param { KernelSyscallObject } ksc
    * @returns {  KernelSyscallResult }
    */
-  function doKernelSyscall(ksc) {
+  function kernelSyscallHandler(ksc) {
     // this repeated pattern is necessary to get the typechecker to refine 'ksc' and 'args' properly
     switch (ksc[0]) {
       case 'send': {
@@ -376,9 +358,5 @@ export function makeKernelSyscallHandler(tools) {
     }
   }
 
-  const kernelSyscallHandler = harden({
-    send, // TODO remove these individual ones
-    doKernelSyscall,
-  });
-  return kernelSyscallHandler;
+  return harden(kernelSyscallHandler);
 }

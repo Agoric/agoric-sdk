@@ -14,7 +14,7 @@ import {
   makeRatio,
   ceilMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeParamManagerBuilder } from '@agoric/governance';
@@ -32,7 +32,7 @@ import {
 } from '../../src/vaultFactory/params.js';
 import { startVaultFactory } from '../../src/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
-import { Collect } from '../../src/collect.js';
+import * as Collect from '../../src/collect.js';
 
 const contractRoots = {
   faucet: './faucet.js',
@@ -79,8 +79,6 @@ async function waitForPromisesToSettle() {
 
 function makeRates(runBrand) {
   return harden({
-    // margin required to open a loan
-    initialMargin: makeRatio(120n, runBrand),
     // margin required to maintain a loan
     liquidationMargin: makeRatio(105n, runBrand),
     // periodic interest rate (per charging period)
@@ -226,10 +224,7 @@ async function setupServices(
     payment: runPayment,
   };
 
-  const {
-    amm: ammFacets,
-    space: { produce, consume },
-  } = await setupAmmAndElectorate(
+  const { amm: ammFacets, space } = await setupAmmAndElectorate(
     timer,
     zoe,
     aethLiquidity,
@@ -238,6 +233,7 @@ async function setupServices(
     aethIssuer,
     electorateTerms,
   );
+  const { consume, produce } = space;
 
   const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
   const priceAuthority = makeScriptedPriceAuthority({
@@ -257,7 +253,7 @@ async function setupServices(
     liquidate: bundlePs.liquidate,
   });
   produce.vaultBundles.resolve(vaultBundles);
-  await startVaultFactory({ consume, produce }, { loanParams: loanTiming });
+  await startVaultFactory(space, { loanParams: loanTiming });
   const agoricNames = consume.agoricNames;
   const installs = await Collect.allValues({
     vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
@@ -429,7 +425,6 @@ test('first', async t => {
     'vault is cleared',
   );
 
-  t.is(await E(vault).getLiquidationPromise(), 'Liquidated');
   const liquidations = await E(
     E(vault).getLiquidationSeat(),
   ).getCurrentAllocation();
@@ -472,6 +467,7 @@ test('price drop', async t => {
     500n,
     aethIssuer,
   );
+  trace('setup');
 
   const {
     zoe,
@@ -496,22 +492,24 @@ test('price drop', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
+  trace('loan made', loanAmount);
 
   const { vault, uiNotifier } = await E(loanSeat).getOfferResult();
+  trace('offer result', vault);
   const debtAmount = await E(vault).getDebtAmount();
-  const fee = ceilMultiplyBy(AmountMath.make(runBrand, 270n), rates.loanFee);
+  const fee = ceilMultiplyBy(loanAmount, rates.loanFee);
   t.deepEqual(
     debtAmount,
     AmountMath.add(loanAmount, fee),
     'borrower RUN amount does not match',
   );
 
-  const notification1 = await E(uiNotifier).getUpdateSince();
-  t.falsy(notification1.value.liquidated);
-  t.deepEqual(
-    await notification1.value.collateralizationRatio,
-    makeRatio(444n, runBrand, 284n),
-  );
+  /** @type {UpdateRecord<VaultUIState>} */
+  let notification = await E(uiNotifier).getUpdateSince();
+  trace('got notificaation', notification);
+
+  t.falsy(notification.value.liquidated);
+  t.deepEqual(await notification.value.debt, AmountMath.add(loanAmount, fee));
   const { RUN: lentAmount } = await E(loanSeat).getCurrentAllocation();
   t.truthy(AmountMath.isEqual(lentAmount, loanAmount), 'received 470 RUN');
   t.deepEqual(
@@ -519,42 +517,30 @@ test('price drop', async t => {
     AmountMath.make(aethBrand, 400n),
     'vault holds 11 Collateral',
   );
+  await manualTimer.tick();
+  notification = await E(uiNotifier).getUpdateSince();
+  t.falsy(notification.value.liquidated);
 
   await manualTimer.tick();
-  const notification2 = await E(uiNotifier).getUpdateSince();
-  t.is(notification2.updateCount, 2);
-  t.falsy(notification2.value.liquidated);
+  notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
+  trace('price changed to liquidate', notification.value.vaultState);
+  t.falsy(notification.value.liquidated);
+  t.is(notification.value.vaultState, VaultState.LIQUIDATING);
 
   await manualTimer.tick();
-  const notification3 = await E(uiNotifier).getUpdateSince();
-  t.is(notification3.updateCount, 2);
-  t.falsy(notification3.value.liquidated);
-
-  await manualTimer.tick();
-  const notification4 = await E(uiNotifier).getUpdateSince(2);
-  t.falsy(notification4.value.liquidated);
-  t.is(notification4.value.vaultState, VaultState.LIQUIDATING);
-
-  await manualTimer.tick();
-  const notification5 = await E(uiNotifier).getUpdateSince(3);
-
-  t.falsy(notification5.updateCount);
-  t.truthy(notification5.value.liquidated);
+  notification = await E(uiNotifier).getUpdateSince(notification.updateCount);
+  t.falsy(notification.updateCount);
+  t.truthy(notification.value.liquidated);
 
   const debtAmountAfter = await E(vault).getDebtAmount();
   const finalNotification = await E(uiNotifier).getUpdateSince();
   t.truthy(finalNotification.value.liquidated);
-  t.deepEqual(
-    await finalNotification.value.collateralizationRatio,
-    makeRatio(0n, runBrand, 1n),
-  );
   t.truthy(AmountMath.isEmpty(debtAmountAfter));
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 14n),
   });
 
-  t.is(await E(vault).getLiquidationPromise(), 'Liquidated');
   const liquidations = await E(
     E(vault).getLiquidationSeat(),
   ).getCurrentAllocation();
@@ -621,6 +607,7 @@ test('price falls precipitously', async t => {
     }),
   );
 
+  /** @type {{vault: Vault}} */
   const { vault } = await E(loanSeat).getOfferResult();
   const debtAmount = await E(vault).getDebtAmount();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 370n), rates.loanFee);
@@ -655,20 +642,32 @@ test('price falls precipitously', async t => {
     }),
   );
 
-  await manualTimer.tick();
-  t.falsy(AmountMath.isEmpty(await E(vault).getDebtAmount()));
-  await manualTimer.tick();
-  t.falsy(AmountMath.isEmpty(await E(vault).getDebtAmount()));
-  await manualTimer.tick();
-  t.falsy(AmountMath.isEmpty(await E(vault).getDebtAmount()));
-  await manualTimer.tick();
+  async function assertDebtIs(value) {
+    const debt = await E(vault).getDebtAmount();
+    t.is(
+      debt.value,
+      BigInt(value),
+      `Expected debt ${debt.value} to be ${value}`,
+    );
+  }
 
-  t.is(await E(vault).getLiquidationPromise(), 'Liquidated');
+  await manualTimer.tick();
+  await assertDebtIs(debtAmount.value);
 
+  await manualTimer.tick();
+  await assertDebtIs(debtAmount.value);
+
+  await manualTimer.tick();
+  await assertDebtIs(debtAmount.value);
+
+  await manualTimer.tick();
+  await waitForPromisesToSettle();
   // An emergency liquidation got less than full value
   const newDebtAmount = await E(vault).getDebtAmount();
-
-  t.truthy(AmountMath.isGTE(AmountMath.make(runBrand, 70n), newDebtAmount));
+  t.truthy(
+    AmountMath.isGTE(AmountMath.make(runBrand, 70n), newDebtAmount),
+    `Expected ${newDebtAmount.value} to be less than 70`,
+  );
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 19n),
@@ -714,7 +713,6 @@ test('vaultFactory display collateral', async t => {
   const { vaultFactory } = services.vaultFactory;
 
   const rates = harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
     loanFee: makeRatio(530n, runBrand, BASIS_POINTS),
@@ -727,7 +725,6 @@ test('vaultFactory display collateral', async t => {
   t.deepEqual(collaterals[0], {
     brand: aethBrand,
     liquidationMargin: makeRatio(105n, runBrand),
-    initialMargin: makeRatio(120n, runBrand),
     stabilityFee: makeRatio(530n, runBrand, BASIS_POINTS),
     marketPrice: makeRatio(5n, runBrand, 1n, aethBrand),
     interestRate: makeRatio(100n, runBrand, 10000n, runBrand),
@@ -773,7 +770,6 @@ test('interest on multiple vaults', async t => {
 
   const interestRate = makeRatio(5n, runBrand);
   const rates = harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     interestRate,
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
@@ -855,6 +851,7 @@ test('interest on multiple vaults', async t => {
   );
 
   // { chargingPeriod: weekly, recordingPeriod: weekly }
+  // Advance 8 days, past one charging and recording period
   for (let i = 0; i < 8; i += 1) {
     manualTimer.tick();
   }
@@ -863,7 +860,7 @@ test('interest on multiple vaults', async t => {
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
   // 160 is initial fee. interest is 3n/week. compounding is in the noise.
-  const bobAddedDebt = 160n + 4n;
+  const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     bobUpdate.value.debt,
     AmountMath.make(runBrand, 3200n + bobAddedDebt),
@@ -873,36 +870,80 @@ test('interest on multiple vaults', async t => {
     bobUpdate.value.liquidationRatio,
     makeRatio(105n, runBrand, 100n),
   );
-  const bobCollateralization = bobUpdate.value.collateralizationRatio;
-  t.truthy(
-    bobCollateralization.numerator.value >
-      bobCollateralization.denominator.value,
-  );
 
-  // 236 is the initial fee. Interest is 4n/week
-  const aliceAddedDebt = 236n + 4n;
+  // 236 is the initial fee. Interest is ~3n/week
+  const aliceAddedDebt = 236n + 3n;
   t.deepEqual(
     aliceUpdate.value.debt,
     AmountMath.make(runBrand, 4700n + aliceAddedDebt),
     `should have collected ${aliceAddedDebt}`,
   );
+  // but no change to the snapshot
+  t.deepEqual(aliceUpdate.value.debtSnapshot, {
+    run: AmountMath.make(runBrand, 4935n),
+    interest: makeRatio(100n, runBrand, 100n),
+  });
   t.deepEqual(aliceUpdate.value.interestRate, interestRate);
   t.deepEqual(aliceUpdate.value.liquidationRatio, makeRatio(105n, runBrand));
-  const aliceCollateralization = aliceUpdate.value.collateralizationRatio;
-  t.truthy(
-    aliceCollateralization.numerator.value >
-      aliceCollateralization.denominator.value,
-  );
 
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
+  const rewardRunCount = aliceAddedDebt + bobAddedDebt + 1n; // +1 due to rounding
   t.truthy(
     AmountMath.isEqual(
       rewardAllocation.RUN,
-      AmountMath.make(runBrand, aliceAddedDebt + bobAddedDebt),
+      AmountMath.make(runBrand, rewardRunCount),
     ),
     // reward includes 5% fees on two loans plus 1% interest three times on each
-    `Should be ${aliceAddedDebt + bobAddedDebt}, was ${rewardAllocation.RUN}`,
+    `Should be ${rewardRunCount}, was ${rewardAllocation.RUN.value}`,
   );
+
+  // try opening a vault that can't cover fees
+  const caroleLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: AmountMath.make(aethBrand, 200n) },
+      want: { RUN: AmountMath.make(runBrand, 0n) }, // no debt
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 200n)),
+    }),
+  );
+  await t.throwsAsync(E(caroleLoanSeat).getOfferResult());
+
+  // Advance another 7 days, past one charging and recording period
+  for (let i = 0; i < 8; i += 1) {
+    manualTimer.tick();
+  }
+  await waitForPromisesToSettle();
+
+  // open a vault when manager's interest already compounded
+  const wantedRun = 1_000n;
+  const danLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: AmountMath.make(aethBrand, 2_000n) },
+      want: { RUN: AmountMath.make(runBrand, wantedRun) },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 2_000n)),
+    }),
+  );
+  /** @type {{vault: Vault, uiNotifier: Notifier<*>}} */
+  const { vault: danVault, uiNotifier: danNotifier } = await E(
+    danLoanSeat,
+  ).getOfferResult();
+  const danActualDebt = wantedRun + 50n; // includes fees
+  t.is((await E(danVault).getDebtAmount()).value, danActualDebt);
+  const normalizedDebt = (await E(danVault).getNormalizedDebt()).value;
+  t.true(
+    normalizedDebt < danActualDebt,
+    `Normalized debt ${normalizedDebt} must be less than actual ${danActualDebt} (after any time elapsed)`,
+  );
+  t.is((await E(danVault).getNormalizedDebt()).value, 1_047n);
+  const danUpdate = await E(danNotifier).getUpdateSince();
+  // snapshot should equal actual since no additional time has elapsed
+  const { debtSnapshot: danSnap } = danUpdate.value;
+  t.is(danSnap.run.value, danActualDebt);
 });
 
 test('adjust balances', async t => {
@@ -938,7 +979,6 @@ test('adjust balances', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const priceConversion = makeRatio(15n, runBrand, 1n, aethBrand);
   const rates = makeRates(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
@@ -981,9 +1021,10 @@ test('adjust balances', async t => {
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, runDebtLevel);
-  const aliceCollateralization1 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(aliceCollateralization1.numerator.value, 15000n);
-  t.deepEqual(aliceCollateralization1.denominator.value, runDebtLevel.value);
+  t.deepEqual(aliceUpdate.value.debtSnapshot, {
+    run: AmountMath.make(runBrand, 5250n),
+    interest: makeRatio(100n, runBrand),
+  });
 
   // increase collateral 1 ///////////////////////////////////// (give both)
 
@@ -1029,12 +1070,6 @@ test('adjust balances', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, runDebtLevel);
-  const aliceCollateralization2 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(
-    aliceCollateralization2.numerator,
-    ceilMultiplyBy(collateralLevel, priceConversion),
-  );
-  t.deepEqual(aliceCollateralization2.denominator, runDebtLevel);
 
   // increase collateral 2 ////////////////////////////////// (want:s, give:c)
 
@@ -1082,12 +1117,10 @@ test('adjust balances', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, runDebtLevel);
-  const aliceCollateralization3 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(
-    aliceCollateralization3.numerator,
-    ceilMultiplyBy(collateralLevel, priceConversion),
-  );
-  t.deepEqual(aliceCollateralization3.denominator, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot, {
+    run: AmountMath.make(runBrand, 5253n),
+    interest: makeRatio(100n, runBrand),
+  });
 
   // reduce collateral  ///////////////////////////////////// (want both)
 
@@ -1112,6 +1145,7 @@ test('adjust balances', async t => {
 
   debtAmount = await E(aliceVault).getDebtAmount();
   t.deepEqual(debtAmount, runDebtLevel);
+  t.deepEqual(collateralLevel, await E(aliceVault).getCollateralAmount());
 
   const { RUN: lentAmount4 } = await E(
     aliceReduceCollateralSeat,
@@ -1136,12 +1170,6 @@ test('adjust balances', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, runDebtLevel);
-  const aliceCollateralization4 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(
-    aliceCollateralization4.numerator,
-    ceilMultiplyBy(collateralLevel, priceConversion),
-  );
-  t.deepEqual(aliceCollateralization4.denominator, runDebtLevel);
 
   // NSF  ///////////////////////////////////// (want too much of both)
 
@@ -1153,7 +1181,6 @@ test('adjust balances', async t => {
     runDebtLevel,
     AmountMath.add(withdrawRunAmount, withdrawRun3WithFees),
   );
-  collateralLevel = AmountMath.subtract(collateralLevel, collateralDecr2);
   const aliceReduceCollateralSeat2 = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
@@ -1169,6 +1196,142 @@ test('adjust balances', async t => {
     message: / is more than the collateralization ratio allows:/,
     // message: /The requested debt {.*} is more than the collateralization ratio allows: {.*}/,
   });
+});
+
+test('transfer vault', async t => {
+  const loanTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 6n,
+  };
+
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
+  const aethLiquidity = {
+    proposal: aethInitialLiquidity,
+    payment: aethMint.mintPayment(aethInitialLiquidity),
+  };
+
+  const services = await setupServices(
+    loanTiming,
+    [15n],
+    AmountMath.make(aethBrand, 1n),
+    aethBrand,
+    { committeeName: 'TheCabal', committeeSize: 5 },
+    buildManualTimer(console.log),
+    undefined,
+    aethLiquidity,
+    500n,
+    aethIssuer,
+  );
+  const {
+    zoe,
+    runKit: { issuer: runIssuer, brand: runBrand },
+  } = services;
+  const { vaultFactory, lender } = services.vaultFactory;
+
+  const rates = makeRates(runBrand);
+  await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
+
+  // initial loan /////////////////////////////////////
+
+  // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  const collateralAmount = AmountMath.make(aethBrand, 1000n);
+  const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  const aliceLoanSeat = await E(zoe).offer(
+    E(lender).makeLoanInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: aliceLoanAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(collateralAmount),
+    }),
+  );
+  const { vault: aliceVault, uiNotifier: aliceNotifier } = await E(
+    aliceLoanSeat,
+  ).getOfferResult();
+
+  const debtAmount = await E(aliceVault).getDebtAmount();
+
+  // TODO this should not need `await`
+  const transferInvite = await E(aliceVault).makeTransferInvitation();
+  const transferSeat = await E(zoe).offer(transferInvite);
+  const { vault: transferVault, uiNotifier: transferNotifier } = await E(
+    transferSeat,
+  ).getOfferResult();
+  t.throwsAsync(() => E(aliceVault).getDebtAmount());
+  const debtAfter = await E(transferVault).getDebtAmount();
+  t.deepEqual(debtAmount, debtAfter, 'vault lent 5000 RUN + fees');
+  const collateralAfter = await E(transferVault).getCollateralAmount();
+  t.deepEqual(collateralAmount, collateralAfter, 'vault has 1000n aEth');
+
+  const aliceFinish = await E(aliceNotifier).getUpdateSince();
+  t.deepEqual(
+    aliceFinish.value.vaultState,
+    VaultState.TRANSFER,
+    'transfer closed old notifier',
+  );
+
+  const transferStatus = await E(transferNotifier).getUpdateSince();
+  t.deepEqual(
+    transferStatus.value.vaultState,
+    VaultState.ACTIVE,
+    'new notifier is active',
+  );
+
+  // Interleave with `adjustVault`
+  // make the invitation first so that we can arrange the interleaving
+  // of adjust and tranfer
+  // TODO this should not need `await`
+  const adjustInvitation = await E(
+    transferVault,
+  ).makeAdjustBalancesInvitation();
+  const { RUN: lentAmount } = await E(aliceLoanSeat).getCurrentAllocation();
+  const aliceProceeds = await E(aliceLoanSeat).getPayouts();
+  t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
+  const borrowedRun = await aliceProceeds.RUN;
+  const payoffRun2 = AmountMath.make(runBrand, 600n);
+  const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
+    borrowedRun,
+    payoffRun2,
+  );
+
+  // Adjust is multi-turn. Confirm that an interleaved transfer prevents it
+  const adjustPromise = E(zoe).offer(
+    adjustInvitation,
+    harden({
+      give: { RUN: payoffRun2 },
+    }),
+    harden({ RUN: paybackPayment }),
+  );
+  const t2Invite = await E(transferVault).makeTransferInvitation();
+  const t2Seat = await E(zoe).offer(t2Invite);
+  const { vault: t2Vault, uiNotifier: t2Notifier } = await E(
+    t2Seat,
+  ).getOfferResult();
+  t.throwsAsync(async () => E(adjustPromise).getOfferResult());
+  t.throwsAsync(() => E(transferVault).getDebtAmount());
+  const debtAfter2 = await E(t2Vault).getDebtAmount();
+  t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 RUN + fees');
+
+  const collateralAfter2 = await E(t2Vault).getCollateralAmount();
+  t.deepEqual(collateralAmount, collateralAfter2, 'vault has 1000n aEth');
+
+  const transferFinish = await E(transferNotifier).getUpdateSince();
+  t.deepEqual(
+    transferFinish.value.vaultState,
+    VaultState.TRANSFER,
+    't2 closed old notifier',
+  );
+
+  const t2Status = await E(t2Notifier).getUpdateSince();
+  t.deepEqual(
+    t2Status.value.vaultState,
+    VaultState.ACTIVE,
+    'new notifier is active',
+  );
 });
 
 // Alice will over repay her borrowed RUN. In order to make that possible,
@@ -1247,9 +1410,7 @@ test('overdeposit', async t => {
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, runDebt);
-  const aliceCollateralization1 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(aliceCollateralization1.numerator.value, 15000n);
-  t.deepEqual(aliceCollateralization1.denominator.value, runDebt.value);
+  t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
   // Bob's loan /////////////////////////////////////
 
@@ -1305,15 +1466,6 @@ test('overdeposit', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, AmountMath.makeEmpty(runBrand));
-  const aliceCollateralization5 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(
-    aliceCollateralization5.numerator,
-    AmountMath.make(runBrand, 1000n),
-  );
-  t.deepEqual(
-    aliceCollateralization5.denominator,
-    AmountMath.make(runBrand, 1n),
-  );
 
   const collectFeesSeat = await E(zoe).offer(
     E(vaultFactory).makeCollectFeesInvitation(),
@@ -1372,7 +1524,6 @@ test('mutable liquidity triggers and interest', async t => {
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     // charge 5% interest
     interestRate: makeRatio(5n, runBrand),
@@ -1403,7 +1554,6 @@ test('mutable liquidity triggers and interest', async t => {
   const aliceDebtAmount = await E(aliceVault).getDebtAmount();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
-  let aliceCollateralLevel = AmountMath.make(aethBrand, 1000n);
 
   t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
   const { RUN: aliceLentAmount } = await E(
@@ -1465,10 +1615,6 @@ test('mutable liquidity triggers and interest', async t => {
   // Alice reduce collateral by 300. That leaves her at 700 * 10 > 1.05 * 5000.
   // Prices will drop from 10 to 7, she'll be liquidated: 700 * 7 < 1.05 * 5000.
   const collateralDecrement = AmountMath.make(aethBrand, 300n);
-  aliceCollateralLevel = AmountMath.subtract(
-    aliceCollateralLevel,
-    collateralDecrement,
-  );
   const aliceReduceCollateralSeat = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
@@ -1494,15 +1640,6 @@ test('mutable liquidity triggers and interest', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, aliceRunDebtLevel);
-  const aliceCollateralization4 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(
-    aliceCollateralization4.numerator,
-    ceilMultiplyBy(
-      aliceCollateralLevel,
-      makeRatio(10n, runBrand, 1n, aethBrand),
-    ),
-  );
-  t.deepEqual(aliceCollateralization4.denominator, aliceRunDebtLevel);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.
@@ -1725,9 +1862,7 @@ test('close loan', async t => {
 
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, runDebtLevel);
-  const aliceCollateralization1 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(aliceCollateralization1.numerator.value, 15000n);
-  t.deepEqual(aliceCollateralization1.denominator.value, runDebtLevel.value);
+  t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
   // Create a loan for Bob for 1000 RUN with 200 aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 200n);
@@ -1784,7 +1919,6 @@ test('close loan', async t => {
     AmountMath.makeEmpty(aethBrand),
   );
 
-  t.is(await E(aliceVault).getLiquidationPromise(), 'Closed');
   t.deepEqual(
     await E(E(aliceVault).getLiquidationSeat()).getCurrentAllocation(),
     {},
@@ -1894,7 +2028,6 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
-    initialMargin: makeRatio(120n, runBrand),
     liquidationMargin: makeRatio(105n, runBrand),
     // charge 5% interest
     interestRate: makeRatio(5n, runBrand),
@@ -1925,7 +2058,6 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   const aliceDebtAmount = await E(aliceVault).getDebtAmount();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
   const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
-  let aliceCollateralLevel = AmountMath.make(aethBrand, 1000n);
 
   t.deepEqual(aliceDebtAmount, aliceRunDebtLevel, 'vault lent 5000 RUN + fees');
   const { RUN: aliceLentAmount } = await E(
@@ -1987,10 +2119,6 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   // Alice reduce collateral by 300. That leaves her at 700 * 10 > 1.05 * 5000.
   // Prices will drop from 10 to 7, she'll be liquidated: 700 * 7 < 1.05 * 5000.
   const collateralDecrement = AmountMath.make(aethBrand, 211n);
-  aliceCollateralLevel = AmountMath.subtract(
-    aliceCollateralLevel,
-    collateralDecrement,
-  );
   const aliceReduceCollateralSeat = await E(zoe).offer(
     E(aliceVault).makeAdjustBalancesInvitation(),
     harden({
@@ -2014,15 +2142,6 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debt, aliceRunDebtLevel);
-  const aliceCollateralization4 = aliceUpdate.value.collateralizationRatio;
-  t.deepEqual(
-    aliceCollateralization4.numerator,
-    ceilMultiplyBy(
-      aliceCollateralLevel,
-      makeRatio(10n, runBrand, 1n, aethBrand),
-    ),
-  );
-  t.deepEqual(aliceCollateralization4.denominator, aliceRunDebtLevel);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.

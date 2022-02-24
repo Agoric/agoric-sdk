@@ -4,7 +4,7 @@ import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeTimedIterable } from './timed-iteration.js';
 
 export function buildRootObject(vatPowers) {

@@ -19,10 +19,10 @@ class FakeFinalizationRegistry {
 }
 
 export function makeFakeLiveSlotsStuff(options = {}) {
-  let vom;
-  function setVom(vomToUse) {
-    assert(!vom, 'vom already configured');
-    vom = vomToUse;
+  let vrm;
+  function setVrm(vrmToUse) {
+    assert(!vrm, 'vrm already configured');
+    vrm = vrmToUse;
   }
 
   const {
@@ -173,15 +173,21 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   function convertSlotToVal(slot) {
     const { type, virtual } = parseVatSlot(slot);
     assert.equal(type, 'object');
-    if (virtual) {
-      if (vom) {
-        return vom.makeVirtualObjectRepresentative(slot);
-      } else {
-        assert.fail('fake liveSlots stuff configured without vom');
+    let val = getValForSlot(slot);
+    if (val) {
+      if (virtual) {
+        vrm.reanimate(slot, true);
       }
-    } else {
-      return getValForSlot(slot);
+      return val;
     }
+    if (virtual) {
+      if (vrm) {
+        val = vrm.reanimate(slot, false);
+      } else {
+        assert.fail('fake liveSlots stuff configured without vrm');
+      }
+    }
+    return val;
   }
 
   const marshal = makeMarshal(convertValToSlot, convertSlotToVal);
@@ -216,7 +222,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     addToPossiblyDeadSet,
     addToPossiblyRetiredSet,
     dumpStore,
-    setVom,
+    setVrm,
   };
 }
 
@@ -235,7 +241,7 @@ export function makeFakeVirtualStuff(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
-  fakeStuff.setVom(vom);
+  fakeStuff.setVrm(vrm);
   const cm = makeFakeCollectionManager(vrm, fakeStuff, options);
   return { fakeStuff, vrm, vom, cm };
 }
@@ -244,7 +250,7 @@ export function makeStandaloneFakeVirtualObjectManager(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
-  fakeStuff.setVom(vom);
+  fakeStuff.setVrm(vrm);
   return vom;
 }
 

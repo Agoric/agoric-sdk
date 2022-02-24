@@ -1,7 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
-import { isPromise } from '@agoric/promise-kit';
+import { isPromise } from '@endo/promise-kit';
 
 import '@agoric/ertp/exported.js';
 import '@agoric/notifier/exported.js';

@@ -9,7 +9,10 @@ import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeAddPool } from './pool.js';
-import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
+import {
+  makeMakeAddLiquidityInvitation,
+  makeMakeAddLiquidityAtRateInvitation,
+} from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 
 import '@agoric/zoe/exported.js';
@@ -189,7 +192,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {Brand} brandIn
    * @param {Brand} brandOut
-   * @returns {VPool}
+   * @returns {VPoolWrapper<unknown>}
    */
   const provideVPool = (brandIn, brandOut) => {
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
@@ -208,11 +211,11 @@ const start = async (zcf, privateArgs) => {
   };
 
   const getInputPrice = (amountIn, amountOut) => {
-    const pool = provideVPool(amountIn.brand, amountOut.brand);
+    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
     return pool.getInputPrice(amountIn, amountOut);
   };
   const getOutputPrice = (amountIn, amountOut) => {
-    const pool = provideVPool(amountIn.brand, amountOut.brand);
+    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
     return pool.getOutputPrice(amountIn, amountOut);
   };
 
@@ -221,6 +224,12 @@ const start = async (zcf, privateArgs) => {
   const makeAddLiquidityInvitation = makeMakeAddLiquidityInvitation(
     zcf,
     getPool,
+  );
+  const makeAddLiquidityAtRateInvitation = makeMakeAddLiquidityAtRateInvitation(
+    zcf,
+    getPool,
+    provideVPool,
+    protocolSeat,
   );
 
   const makeRemoveLiquidityInvitation = makeMakeRemoveLiquidityInvitation(
@@ -248,6 +257,7 @@ const start = async (zcf, privateArgs) => {
       makeSwapInInvitation,
       makeSwapOutInvitation,
       makeAddLiquidityInvitation,
+      makeAddLiquidityAtRateInvitation,
       makeRemoveLiquidityInvitation,
       getQuoteIssuer: () => quoteIssuerKit.issuer,
       getPriceAuthorities,

@@ -15,10 +15,17 @@ export function buildRootObject(vatPowers) {
   const { notifier: loadingNotifier, updater: loadingUpdater } =
     makeNotifierKit(LOADING);
 
+  const antifreeze = obj =>
+    new Proxy(obj, {
+      preventExtensions() {
+        return false;
+      },
+    });
+
   const replObjects = {
-    home: { LOADING },
-    agoric: {},
-    local: {},
+    home: antifreeze({ LOADING }),
+    agoric: antifreeze({}),
+    local: antifreeze({}),
   };
 
   function doneLoading(subsystems) {
@@ -104,6 +111,11 @@ export function buildRootObject(vatPowers) {
       replObjects.home.wallet = wallet;
     },
 
+    /**
+     * @param {Object} [privateObjects]
+     * @param {Object} [decentralObjects]
+     * @param {Object} [deprecatedObjects]
+     */
     setPresences(
       privateObjects = undefined,
       decentralObjects = undefined,
@@ -116,8 +128,17 @@ export function buildRootObject(vatPowers) {
       }
 
       if (decentralObjects) {
+        // Assign the complete decentralObjects to `agoric`.
         Object.assign(replObjects.agoric, decentralObjects);
         doneLoading(['agoric']);
+
+        // Prune out the demo governance stuff from `home`; they're noisy.
+        const {
+          behaviors: _,
+          governanceActions: _2,
+          ...rest
+        } = decentralObjects;
+        decentralObjects = rest;
       }
 
       // TODO: Maybe remove sometime; home object is deprecated.
