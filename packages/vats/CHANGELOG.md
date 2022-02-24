@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.6.0...@agoric/vats@0.7.0) (2022-02-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vats:** decentral-config.json config file is no longer
+available. Use decentral-core-config.js, which starts core
+services by not RUN protocol etc., or decentral-demo-config.js,
+which does start the RUN protocol and provides demo funds in
+wallets, AMM.
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+* **vats:** pass some module namespaces to core eval ([7b063db](https://github.com/Agoric/agoric-sdk/commit/7b063dbc5894657035cd654b7d0cca01475463d5))
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+* **vats:** core bootstrap behaviors: addBankAssets, ... ([613aff6](https://github.com/Agoric/agoric-sdk/commit/613aff68d1a40ef277871e29879db3b2c807358d))
+* **vats:** demo bootstrap behaviors: connectFaucet, fundAMM ([b6776ab](https://github.com/Agoric/agoric-sdk/commit/b6776abd9224bc006b93223b93314b0f7d4c0279))
+* **vats:** reserve depositFacet for each client ([806ed5a](https://github.com/Agoric/agoric-sdk/commit/806ed5a4dfc3160570250f4b1ef5ff5cc8d1bdcf))
+
+
+### Bug Fixes
+
+* **vats:** don't dup / clobber client/home properties ([9ddf290](https://github.com/Agoric/agoric-sdk/commit/9ddf290668c5ecfbdb8337834eaf6f48d30b638a))
+* **vats:** parse coreEval permits correctly ([eb04df5](https://github.com/Agoric/agoric-sdk/commit/eb04df554dc9f052724925b13690d7b508a05031))
+* **vats:** prune bootstrap config that mixed prod with test/demo ([d90251d](https://github.com/Agoric/agoric-sdk/commit/d90251d83f9324635f40a823a728e734ea0c4bbc)), closes [#4165](https://github.com/Agoric/agoric-sdk/issues/4165)
+* **vats:** reserve Treasury uiConfig for compatibility ([943fba5](https://github.com/Agoric/agoric-sdk/commit/943fba55794f54adb13296ef163e898d6942c4be))
+* **vats:** reserve: is noop if key already exists (NEEDSTEST) ([668ef1e](https://github.com/Agoric/agoric-sdk/commit/668ef1ef960ba68bd7e031d298d826d3856d1277))
+
+
+
 ## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.5.1...@agoric/vats@0.6.0) (2022-02-21)
 
 

@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.7.2...@agoric/run-protocol@0.8.0) (2022-02-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **run-protocol:** removes getBootstrapPayment from VaultFactory
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+* **run-protocol:** startRewardDistributor bootstrap behavior ([ad038ff](https://github.com/Agoric/agoric-sdk/commit/ad038ffa831f6be858cb2ebe8a429557e09186c2))
+
+
+### Bug Fixes
+
+* **run-protocol:** harden results from collection utilities ([5d8b4c1](https://github.com/Agoric/agoric-sdk/commit/5d8b4c14e798be5358530c5b0f7b5b59505431c9))
+* **run-protocol:** produce priceAuthorityVat for fake authorities ([ba1b367](https://github.com/Agoric/agoric-sdk/commit/ba1b36792d45e96a8746e9b62b488cb404a2c72b))
+
+
+### Miscellaneous Chores
+
+* **run-protocol:** centralSupply contract for bootstrapPayment ([e526a7d](https://github.com/Agoric/agoric-sdk/commit/e526a7d8f01811560804cb48f77fce1347d8836b)), closes [#4021](https://github.com/Agoric/agoric-sdk/issues/4021)
+
+
+
 ### 0.7.2 (2022-02-21)
 
 

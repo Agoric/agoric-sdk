@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.11.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.11.8...@agoric/wallet@0.11.9) (2022-02-24)
+
+
+### Bug Fixes
+
+* **wallet:** don't publish depositFacet until we're ready to receive ([f448176](https://github.com/Agoric/agoric-sdk/commit/f448176fd64ef47da5af00cab029104fb187afc7))
+
+
+
 ### [0.11.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.11.7...@agoric/wallet@0.11.8) (2022-02-21)
 
 

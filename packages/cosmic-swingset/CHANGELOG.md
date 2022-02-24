@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.34.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.5...@agoric/cosmic-swingset@0.34.6) (2022-02-24)
+
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+* **cosmos:** robustly handle kvstore rollback ([c58ddb4](https://github.com/Agoric/agoric-sdk/commit/c58ddb490229741e57ef2130493608cbe9b13d4c))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** handle begin/end block without explicit queue ([05352e9](https://github.com/Agoric/agoric-sdk/commit/05352e99d7b9488f756103979ec4632d53ff7d3d))
+
+
+
 ### [0.34.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.4...@agoric/cosmic-swingset@0.34.5) (2022-02-21)
 
 
