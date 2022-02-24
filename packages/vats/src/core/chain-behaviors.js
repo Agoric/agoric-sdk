@@ -76,11 +76,11 @@ export const bridgeCoreEval = async allPowers => {
                   ...farExports,
                   assert,
                   console,
-                  powers,
                 });
 
                 // Evaluate the code in the context of the globals.
-                return new Compartment(globals).evaluate(code);
+                const behavior = new Compartment(globals).evaluate(code);
+                return behavior(powers);
               }),
             ),
           );
