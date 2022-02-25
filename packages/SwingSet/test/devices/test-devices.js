@@ -76,9 +76,8 @@ test.serial('d0', async t => {
       vattp: { '@qclass': 'slot', iface: 'Alleged: vref', index: 4 },
     },
     {
-      bundle: { '@qclass': 'slot', iface: 'Alleged: device', index: 5 },
-      d0: { '@qclass': 'slot', iface: 'Alleged: device', index: 6 },
-      vatAdmin: { '@qclass': 'slot', iface: 'Alleged: device', index: 7 },
+      d0: { '@qclass': 'slot', iface: 'Alleged: device', index: 5 },
+      vatAdmin: { '@qclass': 'slot', iface: 'Alleged: device', index: 6 },
     },
   ]);
   t.deepEqual(JSON.parse(c.dump().log[1]), [
@@ -89,7 +88,6 @@ test.serial('d0', async t => {
     'o-53',
     'd-70',
     'd-71',
-    'd-72',
   ]);
 });
 

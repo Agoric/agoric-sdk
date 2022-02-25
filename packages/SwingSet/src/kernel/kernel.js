@@ -1009,6 +1009,9 @@ export default function buildKernel(
 
     // the admin device is endowed directly by the kernel
     deviceEndowments.vatAdmin = {
+      hasBundle: kernelKeeper.hasBundle,
+      getBundle: kernelKeeper.getBundle,
+      getNamedBundleID: kernelKeeper.getNamedBundleID,
       pushCreateVatBundleEvent(bundle, dynamicOptions) {
         const source = { bundle };
         const vatID = kernelKeeper.allocateUnusedVatID();
@@ -1028,10 +1031,6 @@ export default function buildKernel(
         // later when it is created and a root object is available
         return vatID;
       },
-      getBundleIDByName(bundleName) {
-        // this throws if the name is unknown
-        return kernelKeeper.getNamedBundleID(bundleName);
-      },
       terminate: (vatID, reason) => terminateVat(vatID, true, reason),
       meterCreate: (remaining, threshold) =>
         kernelKeeper.allocateMeter(remaining, threshold),
@@ -1040,13 +1039,6 @@ export default function buildKernel(
       meterSetThreshold: (meterID, threshold) =>
         kernelKeeper.setMeterThreshold(meterID, threshold),
       meterGet: meterID => kernelKeeper.getMeter(meterID),
-    };
-
-    // same for bundle device
-    deviceEndowments.bundle = {
-      hasBundle: kernelKeeper.hasBundle,
-      getBundle: kernelKeeper.getBundle,
-      getNamedBundleID: kernelKeeper.getNamedBundleID,
     };
 
     // instantiate all devices
@@ -1217,6 +1209,15 @@ export default function buildKernel(
     // bundleID is b1-HASH
     if (!kernelKeeper.hasBundle(bundleID)) {
       kernelKeeper.addBundle(bundleID, bundle);
+      const args = harden({ body: JSON.stringify([bundleID]), slots: [] });
+      if (vatAdminRootKref) {
+        // TODO: consider 'panic' instead of 'logFailure'
+        queueToKref(vatAdminRootKref, 'bundleInstalled', args, 'logFailure');
+      } else {
+        // this should only happen during unit tests that are too lazy to
+        // build a complete kernel: test/bundles/test-bundles-kernel.js
+        console.log(`installBundle cannot notify, missing vatAdminRootKref`);
+      }
       kernelKeeper.commitCrank();
     }
   }

@@ -4,15 +4,17 @@
 
 /**
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
- * @typedef { string } BundleID
  */
 
 /**
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  */
 
+/** @typedef { import('./types-exported.js').BundleID } BundleID */
+/** @typedef { import('./types-exported.js').BundleCap } BundleCap */
+/** @typedef { import('./types-exported.js').EndoZipBase64Bundle } EndoZipBase64Bundle */
+
 /**
- * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string } } EndoZipBase64Bundle
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap: string? } } GetExportBundle
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap: string? } } NestedEvaluateBundle
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle

@@ -1,15 +1,12 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(vatPowers) {
-  const { D } = vatPowers;
+export function buildRootObject() {
   let admin;
-  let bundleDevice;
 
   return Far('root', {
     async bootstrap(vats, devices) {
       admin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-      bundleDevice = devices.bundle;
     },
 
     async byBundle(bundle) {
@@ -24,15 +21,15 @@ export function buildRootObject(vatPowers) {
       return n;
     },
 
-    async byNamedBundlecap(name) {
-      const bcap = D(bundleDevice).getNamedBundlecap(name);
+    async byNamedBundleCap(name) {
+      const bcap = await E(admin).getNamedBundleCap(name);
       const { root } = await E(admin).createVat(bcap);
       const n = await E(root).getANumber();
       return n;
     },
 
     async byID(id) {
-      const bcap = D(bundleDevice).getBundlecap(id);
+      const bcap = await E(admin).getBundleCap(id);
       const { root } = await E(admin).createVat(bcap);
       const n = await E(root).getANumber();
       return n;
@@ -52,7 +49,7 @@ export function buildRootObject(vatPowers) {
       return E(admin).createVatByName(bundleName); // should reject
     },
 
-    async nonBundlecap() {
+    async nonBundleCap() {
       return E(admin).createVat(Far('non-bundlecap', {})); // should reject
     },
   });

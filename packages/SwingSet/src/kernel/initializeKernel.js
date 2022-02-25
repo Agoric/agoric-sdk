@@ -93,7 +93,8 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       }
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
-        // about creation/termination of dynamic vats.
+        // about creation/termination of dynamic vats, and the installation
+        // of bundles
         const kref = exportRootObject(kernelKeeper, vatID);
         // Pin, to prevent it being GC'd when only the kvStore points to it
         kernelKeeper.pinObject(kref);
