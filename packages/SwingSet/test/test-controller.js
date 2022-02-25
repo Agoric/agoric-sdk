@@ -113,17 +113,9 @@ test('bootstrap', async t => {
   const config = await loadBasedir(
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
-  // the controller automatically runs the bootstrap function.
-  // basedir-controller-2/bootstrap.js logs "bootstrap called" and queues a call to
-  // left[0].bootstrap
   const c = await buildVatController(config);
-  for (let i = 0; i < 5; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start acceptance
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start deliver
-  }
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
 });
 
 test('XS bootstrap', async t => {
@@ -133,13 +125,8 @@ test('XS bootstrap', async t => {
   config.defaultManagerType = 'xs-worker';
   const hostStorage = provideHostStorage();
   const c = await buildVatController(config, [], { hostStorage });
-  for (let i = 0; i < 5; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start acceptance
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start deliver
-  }
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.is(
     hostStorage.kvStore.get('kernel.defaultManagerType'),
     'xs-worker',
@@ -172,13 +159,8 @@ test('static vats are unmetered on XS', async t => {
       },
     },
   );
-  for (let i = 0; i < 5; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start acceptance
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat start deliver
-  }
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.deepEqual(limited, [false, false, false, false]);
 });
 
