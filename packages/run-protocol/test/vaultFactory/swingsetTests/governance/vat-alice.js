@@ -49,20 +49,20 @@ const build = async (log, zoe, brands, payments, timer) => {
         `at ${(await E(timer).getCurrentTimestamp()) / ONE_DAY} days: ${msg}`,
       );
 
-    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     // accrue one day of interest at initial rate
     await E(timer).tick();
-    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     // advance time enough that governance updates the interest rate
     await Promise.all(new Array(daysForVoting).fill(E(timer).tick()));
     timeLog('vote ready to close');
-    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     await E(timer).tick();
     timeLog('vote closed');
-    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     const uiDescription = async () => {
       const current = await E(uiNotifier).getUpdateSince();
@@ -72,7 +72,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     timeLog(`1 day after votes cast, ${await uiDescription()}`);
     await E(timer).tick();
     timeLog(`2 days after votes cast, ${await uiDescription()}`);
-    timeLog(`Alice owes ${q(await E(vault).getDebtAmount())}`);
+    timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
   };
 
   return Far('build', {

@@ -110,7 +110,7 @@
 /**
  * @typedef {Object} BaseVault
  * @property {() => Amount<NatValue>} getCollateralAmount
- * @property {() => Amount<NatValue>} getDebtAmount
+ * @property {() => Amount<NatValue>} getCurrentDebt
  * @property {() => Amount<NatValue>} getNormalizedDebt
  *
  * @typedef {BaseVault & VaultMixin} Vault

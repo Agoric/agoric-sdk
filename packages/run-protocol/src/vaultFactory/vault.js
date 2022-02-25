@@ -83,7 +83,7 @@ const makeOuterKit = inner => {
     },
     // for status/debugging
     getCollateralAmount: () => assertActive(vault).getCollateralAmount(),
-    getDebtAmount: () => assertActive(vault).getDebtAmount(),
+    getCurrentDebt: () => assertActive(vault).getCurrentDebt(),
     getNormalizedDebt: () => assertActive(vault).getNormalizedDebt(),
     getLiquidationSeat: () => assertActive(vault).getLiquidationSeat(),
   });
@@ -205,8 +205,7 @@ export const makeInnerVault = (
    * @see getNormalizedDebt
    * @returns {Amount<NatValue>}
    */
-  // TODO rename to getActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
-  const getDebtAmount = () => {
+  const getCurrentDebt = () => {
     // divide compounded interest by the snapshot
     const interestSinceSnapshot = multiplyRatios(
       manager.getCompoundedInterest(),
@@ -287,7 +286,7 @@ export const makeInnerVault = (
       liquidationRatio: manager.getLiquidationMargin(),
       debtSnapshot,
       locked: getCollateralAmount(),
-      debt: getDebtAmount(),
+      debt: getCurrentDebt(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
       // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
       vaultState: newPhase,
@@ -366,7 +365,7 @@ export const makeInnerVault = (
 
     // you must pay off the entire remainder but if you offer too much, we won't
     // take more than you owe
-    const currentDebt = getDebtAmount();
+    const currentDebt = getCurrentDebt();
     assert(
       AmountMath.isGTE(runReturned, currentDebt),
       X`You must pay off the entire debt ${runReturned} > ${currentDebt}`,
@@ -482,7 +481,7 @@ export const makeInnerVault = (
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
       // TODO this is the same as in `transferRun`
-      const currentDebt = getDebtAmount();
+      const currentDebt = getCurrentDebt();
       const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
         ? currentDebt
         : proposal.give.RUN;
@@ -507,7 +506,7 @@ export const makeInnerVault = (
       );
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
-      const currentDebt = getDebtAmount();
+      const currentDebt = getCurrentDebt();
       const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
         ? currentDebt
         : proposal.give.RUN;
@@ -524,7 +523,7 @@ export const makeInnerVault = (
    */
   const loanFee = (proposal, runAfter) => {
     let newDebt;
-    const currentDebt = getDebtAmount();
+    const currentDebt = getCurrentDebt();
     let toMint = AmountMath.makeEmpty(runBrand);
     let fee = AmountMath.makeEmpty(runBrand);
     if (proposal.want.RUN) {
@@ -549,7 +548,7 @@ export const makeInnerVault = (
     // the updater will change if we start a transfer
     const oldUpdater = outerUpdater;
     const proposal = clientSeat.getProposal();
-    const oldDebt = getDebtAmount();
+    const oldDebt = getCurrentDebt();
     const oldCollateral = getCollateralAmount();
 
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
@@ -657,7 +656,7 @@ export const makeInnerVault = (
       AmountMath.isEmpty(debtSnapshot.run),
       X`vault must be empty initially`,
     );
-    const oldDebt = getDebtAmount();
+    const oldDebt = getCurrentDebt();
     const oldCollateral = getCollateralAmount();
     trace('initVaultKit start: collateral', { oldDebt, oldCollateral });
 
@@ -721,7 +720,7 @@ export const makeInnerVault = (
 
     // for status/debugging
     getCollateralAmount,
-    getDebtAmount,
+    getCurrentDebt,
     getNormalizedDebt,
     getLiquidationSeat: () => liquidationSeat,
   });
