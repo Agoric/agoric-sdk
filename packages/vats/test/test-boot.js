@@ -1,7 +1,10 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import {
+  makeFakeVatAdmin,
+  zcfBundleCap,
+} from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E, Far } from '@endo/far';
 
@@ -89,23 +92,41 @@ const testRole = (ROLE, governanceActions) => {
     );
 
     const fakeVatAdmin = makeFakeVatAdmin(() => {}).admin;
-    const createVatByName = name => {
+    const fakeBundleCaps = new Map(); // {} -> name
+    const getNamedBundleCap = name => {
+      const bundleCap = harden({});
+      fakeBundleCaps.set(bundleCap, name);
+      return bundleCap;
+    };
+    const createVat = bundleCap => {
+      const name = fakeBundleCaps.get(bundleCap);
+      assert(name);
       switch (name) {
         case 'zcf':
-          return fakeVatAdmin.createVatByName(name);
+          return fakeVatAdmin.createVat(zcfBundleCap);
         default: {
           const buildRoot = vatRoots[name];
           if (!buildRoot) {
             throw Error(`TODO: load vat ${name}`);
           }
-          return { root: buildRoot({}, {}), admin: {} };
+          const vatParameters = {};
+          if (name === 'zoe') {
+            vatParameters.zcfBundleName = 'zcf';
+          }
+          return { root: buildRoot({}, vatParameters), admin: {} };
         }
       }
     };
+    const createVatByName = name => {
+      const bundleCap = getNamedBundleCap(name);
+      return createVat(bundleCap);
+    };
+
     const vats = {
       ...mock.vats,
       vatAdmin: /** @type { any } */ ({
-        createVatAdminService: () => Far('vatAdminSvc', { createVatByName }),
+        createVatAdminService: () =>
+          Far('vatAdminSvc', { getNamedBundleCap, createVat, createVatByName }),
       }),
     };
     const actual = await E(root).bootstrap(vats, mock.devices);

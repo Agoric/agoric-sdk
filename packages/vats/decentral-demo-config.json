@@ -43,10 +43,7 @@
       "sourceSpec": "./src/vat-walletManager.js"
     },
     "zoe": {
-      "sourceSpec": "./src/vat-zoe.js",
-      "parameters": {
-        "zcfBundleName": "zcf"
-      }
+      "sourceSpec": "./src/vat-zoe.js"
     }
   },
   "defaultManagerType": "xs-worker"

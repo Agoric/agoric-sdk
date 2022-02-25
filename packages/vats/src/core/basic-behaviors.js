@@ -84,9 +84,10 @@ export const buildZoe = async ({
   consume: { vatAdminSvc, loadVat, client },
   produce: { zoe, feeMintAccess },
 }) => {
+  const zcfBundleName = 'zcf'; // should match config.bundles.zcf=
   const { zoeService, feeMintAccess: fma } = await E(
     E(loadVat)('zoe'),
-  ).buildZoe(vatAdminSvc, feeIssuerConfig);
+  ).buildZoe(vatAdminSvc, feeIssuerConfig, zcfBundleName);
 
   zoe.resolve(zoeService);
 
