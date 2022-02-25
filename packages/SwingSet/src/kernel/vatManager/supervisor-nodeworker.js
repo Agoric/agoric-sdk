@@ -1,4 +1,5 @@
 // @ts-check
+/* global WeakRef, FinalizationRegistry */
 // this file is loaded at the start of a new Worker, which makes it a new JS
 // environment (with it's own Realm), so we must install-ses too.
 import '@endo/init';
@@ -10,7 +11,6 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import engineGC from '../../engine-gc.js';
-import { WeakRef, FinalizationRegistry } from '../../weakref.js';
 import { makeGcAndFinalize } from '../../gc-and-finalize.js';
 import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
 import { makeDummyMeterControl } from '../dummyMeterControl.js';
