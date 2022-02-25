@@ -46,6 +46,7 @@ export const DENOM_METADATA = [
 ];
 
 export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
+export const GOV_VOTING_PERIOD = '36h';
 export const DEFAULT_MINIMUM_GAS_PRICES = `0${CENTRAL_DENOM}`;
 
 // Can't beat the speed of light, we need 600ms round trip time for the other
@@ -202,6 +203,7 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   genesis.app_state.mint.params.mint_denom = MINT_DENOM;
   genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
   genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
+  genesis.app_state.gov.voting_params.voting_period = GOV_VOTING_PERIOD;
 
   // Reduce the cost of a transaction.
   genesis.app_state.auth.params.tx_size_cost_per_byte = '1';
