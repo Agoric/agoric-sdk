@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.1.0...@agoric/deployment@2.2.0) (2022-02-24)
+
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+
+
+
 ## [2.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.0.0...@agoric/deployment@2.1.0) (2022-02-21)
 
 

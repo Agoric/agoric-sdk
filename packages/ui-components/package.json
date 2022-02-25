@@ -1,15 +1,15 @@
 {
   "name": "@agoric/ui-components",
-  "version": "0.2.29",
+  "version": "0.2.30",
   "description": "Reusable UI Components for Agoric Dapps, built with React and MaterialUI",
   "type": "module",
   "main": "dist/index.js",
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@agoric/ertp": "^0.13.2",
+    "@agoric/ertp": "^0.13.3",
     "@agoric/eventual-send": "^0.14.1",
     "@agoric/nat": "^4.1.0",
-    "@agoric/zoe": "^0.21.2",
+    "@agoric/zoe": "^0.21.3",
     "@endo/init": "^0.5.35",
     "clsx": "^1.1.1"
   },
