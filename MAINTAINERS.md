@@ -56,8 +56,7 @@ To make validators' lives easier, create a Git tag for the chain-id:
 
 ```sh
 CHAIN_ID=agoricstage-8 # Change this as necessary
-SDK_VERSION=$(jq -r .version package.json)
-git tag -s -m "release $CHAIN_ID" $CHAIN_ID @agoric/sdk@$SDK_VERSION^{}
+git tag -s -m "release $CHAIN_ID" $CHAIN_ID @agoric/sdk@$SDKVER^{}
 git push origin $CHAIN_ID
 ```
 
