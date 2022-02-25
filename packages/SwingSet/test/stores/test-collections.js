@@ -326,8 +326,8 @@ test('constrain set key schema', t => {
   t.falsy(lt47.has(53));
   lt47.add(11);
   lt47.add(46);
-  t.deepEqual(Array.from(lt47.values()), [11, 29, 46]);
-  t.deepEqual(Array.from(lt47.values(M.gt(20))), [29, 46]);
+  t.deepEqual(Array.from(lt47.keys()), [11, 29, 46]);
+  t.deepEqual(Array.from(lt47.keys(M.gt(20))), [29, 46]);
 });
 
 test('bogus key schema', t => {
@@ -365,10 +365,10 @@ test('set clear', t => {
   testStore.add('a');
   testStore.add('b');
   testStore.add('c');
-  t.deepEqual(Array.from(testStore.values()), ['a', 'b', 'c']);
+  t.deepEqual(Array.from(testStore.keys()), ['a', 'b', 'c']);
   t.is(testStore.getSize(), 3);
   testStore.clear();
-  t.deepEqual(Array.from(testStore.values()), []);
+  t.deepEqual(Array.from(testStore.keys()), []);
   t.is(testStore.getSize(), 0);
 });
 
@@ -600,25 +600,25 @@ test('set queries', t => {
   const testStore = makeScalarBigSetStore('qset', { keySchema: M.any() });
   fillBasicSetStore(testStore);
 
-  t.deepEqual(Array.from(testStore.values(M.number())), [-29, 3, 47]);
-  t.deepEqual(Array.from(testStore.values(47)), [47]);
-  t.deepEqual(Array.from(testStore.values(M.bigint())), [-77n, 1000n]);
-  t.deepEqual(Array.from(testStore.values(M.string())), [
+  t.deepEqual(Array.from(testStore.keys(M.number())), [-29, 3, 47]);
+  t.deepEqual(Array.from(testStore.keys(47)), [47]);
+  t.deepEqual(Array.from(testStore.keys(M.bigint())), [-77n, 1000n]);
+  t.deepEqual(Array.from(testStore.keys(M.string())), [
     '@#$@#$@#$@',
     'hello',
   ]);
-  t.deepEqual(Array.from(testStore.values(M.null())), [null]);
-  t.deepEqual(Array.from(testStore.values(M.boolean())), [false, true]);
-  t.deepEqual(Array.from(testStore.values(M.undefined())), [undefined]);
-  t.deepEqual(Array.from(testStore.values(M.remotable())), [
+  t.deepEqual(Array.from(testStore.keys(M.null())), [null]);
+  t.deepEqual(Array.from(testStore.keys(M.boolean())), [false, true]);
+  t.deepEqual(Array.from(testStore.keys(M.undefined())), [undefined]);
+  t.deepEqual(Array.from(testStore.keys(M.remotable())), [
     something,
     somethingElse,
   ]);
-  t.deepEqual(Array.from(testStore.values(M.symbol())), [
+  t.deepEqual(Array.from(testStore.keys(M.symbol())), [
     symbolBozo,
     symbolKrusty,
   ]);
-  t.deepEqual(Array.from(testStore.values(M.any())), [
+  t.deepEqual(Array.from(testStore.keys(M.any())), [
     false,
     true,
     -29,
@@ -635,7 +635,7 @@ test('set queries', t => {
     symbolKrusty,
     undefined,
   ]);
-  t.deepEqual(Array.from(testStore.values(M.scalar())), [
+  t.deepEqual(Array.from(testStore.keys(M.scalar())), [
     false,
     true,
     -29,
@@ -651,12 +651,6 @@ test('set queries', t => {
     symbolBozo,
     symbolKrusty,
     undefined,
-  ]);
-
-  t.deepEqual(Array.from(testStore.entries(M.number())), [
-    [-29, -29],
-    [3, 3],
-    [47, 47],
   ]);
 });
 
@@ -861,50 +855,50 @@ test('complex set queries', t => {
   primes.forEach(v => primeStore.add(v));
 
   t.deepEqual(
-    Array.from(primeStore.values()),
+    Array.from(primeStore.keys()),
     [
       2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67,
       71, 73, 79, 83, 89, 97,
     ],
   );
   t.deepEqual(
-    Array.from(primeStore.values(M.gt(53))),
+    Array.from(primeStore.keys(M.gt(53))),
     [59, 61, 67, 71, 73, 79, 83, 89, 97],
   );
   t.deepEqual(
-    Array.from(primeStore.values(M.gte(53))),
+    Array.from(primeStore.keys(M.gte(53))),
     [53, 59, 61, 67, 71, 73, 79, 83, 89, 97],
   );
   t.deepEqual(
-    Array.from(primeStore.values(M.lt(53))),
+    Array.from(primeStore.keys(M.lt(53))),
     [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47],
   );
   t.deepEqual(
-    Array.from(primeStore.values(M.lte(53))),
+    Array.from(primeStore.keys(M.lte(53))),
     [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53],
   );
   t.deepEqual(
-    Array.from(primeStore.values(M.and(M.gt(25), M.lt(75)))),
+    Array.from(primeStore.keys(M.and(M.gt(25), M.lt(75)))),
     [29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73],
   );
   t.deepEqual(
-    Array.from(primeStore.values(M.or(M.lt(25), M.gt(75)))),
+    Array.from(primeStore.keys(M.or(M.lt(25), M.gt(75)))),
     [2, 3, 5, 7, 11, 13, 17, 19, 23, 79, 83, 89, 97],
   );
   t.deepEqual(
     Array.from(
-      primeStore.values(
+      primeStore.keys(
         M.or(M.and(M.gt(10), M.lt(30)), M.and(M.gt(50), M.lt(75))),
       ),
     ),
     [11, 13, 17, 19, 23, 29, 53, 59, 61, 67, 71, 73],
   );
   t.deepEqual(
-    Array.from(primeStore.values(M.and(M.gt(25), M.lt(75), M.not(M.eq(53))))),
+    Array.from(primeStore.keys(M.and(M.gt(25), M.lt(75), M.not(M.eq(53))))),
     [29, 31, 37, 41, 43, 47, 59, 61, 67, 71, 73],
   );
   t.deepEqual(
-    Array.from(primeStore.values(M.and(M.gt(25), M.lt(75), M.neq(53)))),
+    Array.from(primeStore.keys(M.and(M.gt(25), M.lt(75), M.neq(53)))),
     [29, 31, 37, 41, 43, 47, 59, 61, 67, 71, 73],
   );
 });

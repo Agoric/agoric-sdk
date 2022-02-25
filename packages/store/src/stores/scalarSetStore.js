@@ -52,8 +52,6 @@ export const makeSetStoreMethods = (
 
     keys,
 
-    values: keys,
-
     snapshot: (keyPatt = undefined) => makeCopySet(keys(keyPatt)),
 
     getSize: (keyPatt = undefined) =>

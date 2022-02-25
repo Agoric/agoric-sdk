@@ -217,13 +217,13 @@ test('iteration succeeds with concurrent deletion', t => {
   t.deepEqual(seenKeys, [0, 1, 2, 3, 5]);
 
   pos = 0;
-  const seenValues = [];
-  for (const v of s.values()) {
-    seenValues.push(v);
+  const seenElements = [];
+  for (const v of s.keys()) {
+    seenElements.push(v);
     pos += 1;
     if (pos === 2) {
       s.delete(4);
     }
   }
-  t.deepEqual(seenValues, [0, 1, 2, 3, 5]);
+  t.deepEqual(seenElements, [0, 1, 2, 3, 5]);
 });

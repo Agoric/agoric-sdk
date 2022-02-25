@@ -595,11 +595,6 @@ export function makeCollectionManager(
       snapshot,
       clear,
     } = collection;
-    function* entries(patt) {
-      for (const k of keys(patt)) {
-        yield [k, k];
-      }
-    }
     function addAll(elems) {
       for (const elem of elems) {
         init(elem, null);
@@ -612,8 +607,6 @@ export function makeCollectionManager(
       addAll,
       delete: del,
       keys: patt => keys(patt),
-      values: patt => keys(patt),
-      entries,
       sizeInternal,
       getSize: patt => getSize(patt),
       snapshot,
