@@ -8,11 +8,9 @@ export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
     buildZoe: vatAdminSvc => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      const { zoeService: zoe } = makeZoeKit(
-        vatAdminSvc,
-        shutdownZoeVat,
-        vatParameters.zcfBundleName,
-      );
+      const { zoeService: zoe } = makeZoeKit(vatAdminSvc, shutdownZoeVat, {
+        name: vatParameters.zcfBundleName,
+      });
       return zoe;
     },
   });
