@@ -25,6 +25,7 @@
  * a smart contract in particular ways.
  *
  * @property {Install} install
+ * @property {InstallBundleID} installBundleID
  * @property {StartInstance} startInstance
  * @property {Offer} offer
  * @property {GetPublicFacet} getPublicFacet
@@ -45,6 +46,7 @@
  * Deprecated. Does nothing useful but provided during transition so less old
  * code breaks.
  * @property {GetConfiguration} getConfiguration
+ * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
  */
 
 /**
@@ -113,13 +115,32 @@
  */
 
 /**
- * @callback Install
+ * @callback InstallBundle
  *
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.
  *
- * @param {SourceBundle} bundle
+ * @param {Bundle} bundle
  * @returns {Promise<Installation>}
+ */
+
+/**
+ * @callback InstallBundleID
+ *
+ * Create an installation from a Bundle ID. Returns an installation.
+ *
+ * @param {BundleID} bundleID
+ * @returns {Promise<Installation>}
+ */
+
+/**
+ * @callback GetBundleIDFromInstallation
+ *
+ * Verify that an alleged Invitation is real, and return the Bundle ID it
+ * will use for contract code.
+ *
+ * @param {ERef<Installation>}
+ * @returns {Promise<BundleID>}
  */
 
 /**
@@ -268,9 +289,9 @@
 
 /**
  * @typedef {Object} VatAdminSvc
- * @property {(BundleID: id) => BundleCap} getBundleCap
- * @property {(name: string) => BundleCap} getNamedBundleCap
- * @property {(bundleCap: BundleCap) => RootAndAdminNode} createVat
+ * @property {(BundleID: id) => Promise<BundleCap>} getBundleCap
+ * @property {(name: string) => Promise<BundleCap>} getNamedBundleCap
+ * @property {(bundleCap: BundleCap) => Promise<RootAndAdminNode>} createVat
  */
 
 /**
