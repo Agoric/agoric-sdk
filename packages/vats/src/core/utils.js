@@ -227,7 +227,8 @@ export const makeAgoricNamesAccess = (
   });
   const spaces = mapEntries(reserved, (key, detail) => {
     const { nameAdmin } = hubs[key];
-    const { produce, consume } = makePromiseSpace(log);
+    const logForSection = (...args) => log(key, ...args);
+    const { produce, consume } = makePromiseSpace(logForSection);
     keys(detail).forEach(k => {
       nameAdmin.reserve(k);
       consume[k].then(v => nameAdmin.update(k, v));
