@@ -603,10 +603,7 @@ test('set queries', t => {
   t.deepEqual(Array.from(testStore.keys(M.number())), [-29, 3, 47]);
   t.deepEqual(Array.from(testStore.keys(47)), [47]);
   t.deepEqual(Array.from(testStore.keys(M.bigint())), [-77n, 1000n]);
-  t.deepEqual(Array.from(testStore.keys(M.string())), [
-    '@#$@#$@#$@',
-    'hello',
-  ]);
+  t.deepEqual(Array.from(testStore.keys(M.string())), ['@#$@#$@#$@', 'hello']);
   t.deepEqual(Array.from(testStore.keys(M.null())), [null]);
   t.deepEqual(Array.from(testStore.keys(M.boolean())), [false, true]);
   t.deepEqual(Array.from(testStore.keys(M.undefined())), [undefined]);
