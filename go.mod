@@ -15,7 +15,6 @@ require (
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.3.0
-	github.com/strangelove-ventures/packet-forward-middleware v1.0.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/tendermint v0.34.14
 	github.com/tendermint/tm-db v0.6.4
@@ -24,7 +23,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require github.com/cosmos/ibc-go/v2 v2.0.3 // indirect
+require (
+	github.com/cosmos/ibc-go/v2 v2.0.3 // indirect
+	github.com/strangelove-ventures/packet-forward-middleware v1.0.1 // indirect
+)
 
 require (
 	filippo.io/edwards25519 v1.0.0-beta.2 // indirect
@@ -143,6 +145,8 @@ replace github.com/tendermint/tendermint => github.com/agoric-labs/tendermint v0
 replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.45.1-alpha.agoric.1
 
 replace github.com/cosmos/gaia/v6 => github.com/Agoric/ag0/v6 v6.0.3-alpha.agoric.1
+
+replace github.com/cosmos/ibc-go/v2 => github.com/cosmos/ibc-go/v3 v3.0.0-beta1
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../forks/cosmos-sdk

@@ -97,9 +97,9 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
-	"github.com/strangelove-ventures/packet-forward-middleware/router"
-	routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/router/keeper"
-	routertypes "github.com/strangelove-ventures/packet-forward-middleware/router/types"
+	//"github.com/strangelove-ventures/packet-forward-middleware/router"
+	//routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/router/keeper"
+	//routertypes "github.com/strangelove-ventures/packet-forward-middleware/router/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
@@ -163,7 +163,6 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		router.AppModuleBasic{},
 		swingset.AppModuleBasic{},
 		vibc.AppModuleBasic{},
 		vbank.AppModuleBasic{},
@@ -229,7 +228,6 @@ type GaiaApp struct { // nolint: golint
 	TransferKeeper   ibctransferkeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
 	AuthzKeeper      authzkeeper.Keeper
-	RouterKeeper     routerkeeper.Keeper
 
 	SwingSetKeeper swingset.Keeper
 	VibcKeeper     vibc.Keeper
@@ -307,7 +305,7 @@ func NewAgoricApp(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
-		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey,
+		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
 		swingset.StoreKey, vibc.StoreKey, vbank.StoreKey, lien.StoreKey,
 		icacontrollertypes.StoreKey, icahosttypes.StoreKey, intertxtypes.StoreKey,
 	)
@@ -612,7 +610,6 @@ func NewAgoricApp(
 		authz.ModuleName, feegrant.ModuleName,
 		paramstypes.ModuleName, vestingtypes.ModuleName,
 		ibchost.ModuleName,
-		routertypes.ModuleName,
 		swingset.ModuleName,
 		ibctransfertypes.ModuleName, vibc.ModuleName, vbank.ModuleName, lien.ModuleName,
 		icatypes.ModuleName,
@@ -628,7 +625,7 @@ func NewAgoricApp(
 		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName,
-		ibchost.ModuleName, routertypes.ModuleName,
+		ibchost.ModuleName,
 		// SwingSet needs to be last, for it to capture all the pushed actions.
 		swingset.ModuleName,
 		icatypes.ModuleName,
@@ -656,7 +653,6 @@ func NewAgoricApp(
 		authz.ModuleName,
 		feegrant.ModuleName,
 		ibctransfertypes.ModuleName,
-		routertypes.ModuleName,
 		vbank.ModuleName,
 		vibc.ModuleName,
 		swingset.ModuleName,
@@ -946,7 +942,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(routertypes.ModuleName).WithKeyTable(routertypes.ParamKeyTable())
 	paramsKeeper.Subspace(swingset.ModuleName)
 	paramsKeeper.Subspace(vbank.ModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
