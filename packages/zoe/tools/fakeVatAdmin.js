@@ -7,7 +7,13 @@ import { Far } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
+import { makeHandle } from '../src/makeHandle.js';
 import zcfContractBundle from '../bundles/bundle-contractFacet.js';
+
+// this simulates a bundlecap, which is normally a swingset "device node"
+/** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
+/** @type {BundleCap} */
+export const zcfBundleCap = makeHandle('BundleCap');
 
 /**
  * @param { (...args) => unknown } [testContextSetter]
@@ -36,7 +42,16 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // test-only state can be provided from contracts
   // to their tests.
   const admin = Far('vatAdmin', {
-    createVat: bundle => {
+    getBundleCap: _bundleID => {
+      assert.fail(`fakeVatAdmin.getBundleCap() not yet implemented`);
+    },
+    getNamedBundleCap: name => {
+      assert.equal(name, 'zcf', 'fakeVatAdmin only knows ZCF');
+      return zcfBundleCap;
+    },
+    createVat: bundleCap => {
+      assert.equal(bundleCap, zcfBundleCap, 'fakeVatAdmin only knows ZCF');
+      const bundle = zcfContractBundle;
       return harden({
         root: makeRemote(
           E(evalContractBundle(bundle)).buildRootObject(
@@ -54,10 +69,6 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
           terminateWithFailure: () => {},
         }),
       });
-    },
-    createVatByName: name => {
-      assert.equal(name, 'zcf', `only name='zcf' accepted, not ${name}`);
-      return admin.createVat(zcfContractBundle);
     },
   });
   const vatAdminState = {

@@ -268,8 +268,13 @@
 
 /**
  * @typedef {Object} VatAdminSvc
- * @property {(bundle: SourceBundle) => RootAndAdminNode} createVat
- * @property {(BundleName: string) => RootAndAdminNode} createVatByName
+ * @property {(BundleID: id) => BundleCap} getBundleCap
+ * @property {(name: string) => BundleCap} getNamedBundleCap
+ * @property {(bundleCap: BundleCap) => RootAndAdminNode} createVat
+ */
+
+/**
+ * @typedef {{bundleCap: BundleCap } | {name: string} | {id: BundleID}} ZCFSpec
  */
 
 /**
