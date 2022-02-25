@@ -95,6 +95,10 @@ export const bridgeCoreEval = async allPowers => {
 harden(bridgeCoreEval);
 
 /**
+ * makeProvisioner creates the provisioning vat, which
+ * is the where the client facet (aka the `agoric` part of `home`)
+ * is connected to the world outside the chain (via vattp / comms).
+ *
  * @param {BootstrapPowers & {
  *   consume: { loadVat: ERef<VatLoader<ProvisioningVat>> }
  * }} powers
@@ -110,7 +114,12 @@ export const makeProvisioner = async ({
 };
 harden(makeProvisioner);
 
-/** @param {BootstrapPowers} powers */
+/**
+ * bridgeProvisioner connects the provisioning vat
+ * to the bridge manager via a provisioningHandler.
+ *
+ * @param {BootstrapPowers} powers
+ */
 export const bridgeProvisioner = async ({
   consume: { provisioning, bridgeManager: bridgeManagerP },
 }) => {
@@ -148,6 +157,10 @@ const missingKeys = (pattern, specimen) =>
   keys(pattern).filter(k => !keys(specimen).includes(k));
 
 /**
+ * makeClientManager makes a client manager, which coordinates
+ * between behaviors that provide properties on agoric/home
+ * and the client's vattp bootstrap object.
+ *
  * @param {BootstrapSpace} powers
  * @param {{ template: Record<string, unknown> }} config
  */
