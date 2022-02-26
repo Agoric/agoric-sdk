@@ -233,7 +233,6 @@ export const makeInnerVault = (
    * @see getActualDebAmount
    * @returns {Amount<NatValue>} as if the vault was open at the launch of this manager, before any interest accrued
    */
-  // Not in use until https://github.com/Agoric/agoric-sdk/issues/4540
   const getNormalizedDebt = () => {
     assert(debtSnapshot);
     return reverseInterest(debtSnapshot.run, debtSnapshot.interest);
@@ -292,7 +291,6 @@ export const makeInnerVault = (
       liquidationRatio: manager.getLiquidationMargin(),
       debtSnapshot,
       locked: getCollateralAmount(),
-      debt: getCurrentDebt(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
       // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
       vaultState: newPhase,
