@@ -1,9 +1,9 @@
 /* global WeakRef */
 import { makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
-import { parseVatSlot } from '../src/parseVatSlots.js';
+import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 
-import { makeVirtualReferenceManager } from '../src/kernel/virtualReferences.js';
+import { makeVirtualReferenceManager } from '../src/liveslots/virtualReferences.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 import { makeFakeCollectionManager } from './fakeCollectionManager.js';
 

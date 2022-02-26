@@ -3,13 +3,13 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
-import { makeLiveSlots } from '../liveSlots.js';
+import { makeLiveSlots } from '../../liveslots/liveslots.js';
 import { makeManagerKit } from './manager-helper.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
-} from './supervisor-helper.js';
+} from '../../supervisors/supervisor-helper.js';
 
 export function makeLocalVatManagerFactory(tools) {
   const { allVatPowers, kernelKeeper, vatEndowments, gcTools, kernelSlog } =

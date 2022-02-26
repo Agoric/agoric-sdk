@@ -1,8 +1,8 @@
 // @ts-check
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
-import { insistCapData } from '../capdata.js';
-import { insistMessage } from '../message.js';
-import { insistVatID } from './id.js';
+import { insistCapData } from '../lib/capdata.js';
+import { insistMessage } from '../lib/message.js';
+import { insistVatID } from '../lib/id.js';
 
 /**
  * @param {Object} tools

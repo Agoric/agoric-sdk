@@ -7,11 +7,11 @@ import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
 
-import './types.js';
-import { insistStorageAPI } from './storageAPI.js';
-import { initializeKernel } from './kernel/initializeKernel.js';
-import { kdebugEnable } from './kernel/kdebug.js';
-import { computeBundleID } from './validate-archive.js';
+import '../types.js';
+import { insistStorageAPI } from '../lib/storageAPI.js';
+import { initializeKernel } from './initializeKernel.js';
+import { kdebugEnable } from '../lib/kdebug.js';
+import { computeBundleID } from '../lib-nodejs/validate-archive.js';
 
 /**
  * @param {X[]} xs
@@ -50,15 +50,19 @@ export async function buildKernelBundles(options = {}) {
     });
 
   const bundles = await allValues({
-    kernel: src('./kernel/kernel.js'),
-    adminDevice: src('./kernel/vatAdmin/vatAdmin-src'),
-    adminVat: src('./kernel/vatAdmin/vatAdminWrapper'),
-    comms: src('./vats/comms'),
-    vattp: src('./vats/vat-tp'),
-    timer: src('./vats/vat-timerWrapper'),
+    kernel: src('../kernel/kernel.js'),
+    adminDevice: src('../devices/vat-admin/device-vat-admin.js'),
+    adminVat: src('../vats/vat-admin/vat-vat-admin.js'),
+    comms: src('../vats/comms/index.js'),
+    vattp: src('../vats/vattp/vat-vattp.js'),
+    timer: src('../vats/timer/vat-timer.js'),
 
-    lockdown: srcGE('./kernel/vatManager/lockdown-subprocess-xsnap.js'),
-    supervisor: srcGE('./kernel/vatManager/supervisor-subprocess-xsnap.js'),
+    lockdown: srcGE(
+      '../supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
+    ),
+    supervisor: srcGE(
+      '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
+    ),
   });
 
   return harden(bundles);

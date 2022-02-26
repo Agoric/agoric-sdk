@@ -33,7 +33,7 @@ export function buildRootDeviceNode(tools) {
   // the host
   let { inboundHandler } = getDeviceState() || {};
 
-  // console.debug(`mailbox-src build: inboundHandler is`, inboundHandler);
+  // console.debug(`device-mailbox build: inboundHandler is`, inboundHandler);
   deliverInboundMessages = (peer, newMessages) => {
     assert(
       inboundHandler,

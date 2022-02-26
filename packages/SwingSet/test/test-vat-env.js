@@ -1,7 +1,7 @@
 /* global VatData */
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { buildVatController } from '../src/index.js';
 
 test('harden from SES is in the test environment', t => {

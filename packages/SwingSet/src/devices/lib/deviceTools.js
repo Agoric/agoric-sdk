@@ -1,6 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 import { makeMarshal, Far } from '@endo/marshal';
-import { parseVatSlot } from './parseVatSlots.js';
+import { parseVatSlot } from '../../lib/parseVatSlots.js';
 
 // raw devices can use this to build a set of convenience tools for
 // serialization/unserialization

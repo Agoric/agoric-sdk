@@ -156,7 +156,7 @@ export function buildMailboxStateMap(state = harden(new Map())) {
 }
 
 export function buildMailbox(state) {
-  const srcPath = new URL('mailbox-src', import.meta.url).pathname;
+  const srcPath = new URL('device-mailbox.js', import.meta.url).pathname;
 
   // endowments made available to the inner half
   let inboundCallback;

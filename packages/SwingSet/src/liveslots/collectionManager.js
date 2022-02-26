@@ -12,7 +12,7 @@ import {
   makeDecodeKey,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
-import { parseVatSlot } from '../parseVatSlots.js';
+import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 function pattEq(p1, p2) {
   return compareRank(p1, p2) === 0;

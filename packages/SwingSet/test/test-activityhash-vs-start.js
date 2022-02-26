@@ -3,13 +3,15 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { getAllState, setAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import { capargs } from './util.js';
-import { buildTimer } from '../src/devices/timer.js';
+import { buildTimer } from '../src/devices/timer/timer.js';
 
-const TimerSrc = new URL('../src/devices/timer-src.js', import.meta.url)
-  .pathname;
+const TimerSrc = new URL(
+  '../src/devices/timer/device-timer.js',
+  import.meta.url,
+).pathname;
 
 // all tests that are sensitive to GC timing (which means anything that
 // exercises transcript replay or looks at activityHash) need to use

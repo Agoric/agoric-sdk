@@ -6,10 +6,10 @@ import crypto from 'crypto';
 import bundleSource from '@endo/bundle-source';
 import { parseArchive } from '@endo/compartment-mapper';
 import { decodeBase64 } from '@endo/base64';
-import { computeBundleID } from '../../src/validate-archive.js';
+import { computeBundleID } from '../../src/lib-nodejs/validate-archive.js';
 import { makeKernelEndowments } from '../util.js';
 import buildKernel from '../../src/kernel/index.js';
-import { initializeKernel } from '../../src/kernel/initializeKernel.js';
+import { initializeKernel } from '../../src/controller/initializeKernel.js';
 
 test('install bundle', async t => {
   const endowments = makeKernelEndowments();

@@ -1,5 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
-import { assertKnownOptions } from '../../assertOptions.js';
+import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeLocalVatManagerFactory } from './manager-local.js';
 import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker.js';
 import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';

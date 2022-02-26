@@ -6,7 +6,7 @@ import { makeManagerKit } from './manager-helper.js';
 import {
   insistVatSyscallObject,
   insistVatDeliveryResult,
-} from '../../message.js';
+} from '../../lib/message.js';
 import '../../types.js';
 import './types.js';
 

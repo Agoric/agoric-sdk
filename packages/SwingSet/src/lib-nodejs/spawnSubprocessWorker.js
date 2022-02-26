@@ -2,7 +2,10 @@
 import { spawn } from 'child_process';
 import { makePromiseKit } from '@endo/promise-kit';
 import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
-import { netstringEncoderStream, netstringDecoderStream } from './netstring.js';
+import {
+  netstringEncoderStream,
+  netstringDecoderStream,
+} from '../lib/netstring.js';
 
 // Start a subprocess from a given executable, and arrange a bidirectional
 // message channel with a "supervisor" within that process. Return a {

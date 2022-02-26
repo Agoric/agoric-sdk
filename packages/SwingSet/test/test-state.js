@@ -4,7 +4,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { createHash } from 'crypto';
 import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
-import { createSHA256 } from '../src/hasher.js';
+import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import {
   buildCrankBuffer,

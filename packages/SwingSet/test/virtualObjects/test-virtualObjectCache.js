@@ -1,6 +1,6 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { makeCache } from '../../src/kernel/virtualObjectManager.js';
+import { makeCache } from '../../src/liveslots/virtualObjectManager.js';
 
 function makeFakeStore() {
   const backing = new Map();

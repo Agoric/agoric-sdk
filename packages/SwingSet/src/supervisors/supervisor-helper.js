@@ -3,8 +3,8 @@ import { assert } from '@agoric/assert';
 import {
   insistVatSyscallObject,
   insistVatSyscallResult,
-} from '../../message.js';
-import '../../types.js';
+} from '../lib/message.js';
+import '../types.js';
 
 /**
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync

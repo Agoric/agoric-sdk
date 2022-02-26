@@ -95,7 +95,7 @@ function sanitize(data) {
 }
 
 export function buildBridge(outboundCallback) {
-  const srcPath = new URL('bridge-src.js', import.meta.url).pathname;
+  const srcPath = new URL('device-bridge.js', import.meta.url).pathname;
   let inboundCallback;
 
   function registerInboundCallback(inbound) {
@@ -115,7 +115,7 @@ export function buildBridge(outboundCallback) {
   function callOutbound(...args) {
     // TODO: prevent cross-Realm contamination by serializing/deserializing
     // all the data that crosses this boundary. Inside the device
-    // (bridge-src.js), we know we're immediately serializaing this data, so
+    // (device-bridge.js), we know we're immediately serializaing this data, so
     // we don't need to sanitize it there. But here, we have no idea what
     // outboundCallback() might do, so we want to avoid confusion. When we
     // switch to new-SES, we can remove this protection.

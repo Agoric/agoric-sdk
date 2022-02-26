@@ -1,5 +1,5 @@
 export function buildPlugin(pluginDir, importPlugin, queueThunkForKernel) {
-  const srcPath = new URL('plugin-src', import.meta.url).pathname;
+  const srcPath = new URL('device-plugin.js', import.meta.url).pathname;
   let resetter;
 
   function reset() {

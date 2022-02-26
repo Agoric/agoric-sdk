@@ -6,7 +6,7 @@ import { assert, details as X } from '@agoric/assert';
 export default function buildCommand(broadcastCallback) {
   assert(broadcastCallback, X`broadcastCallback must be provided.`);
   let inboundCallback;
-  const srcPath = new URL('command-src.js', import.meta.url).pathname;
+  const srcPath = new URL('device-command.js', import.meta.url).pathname;
   let nextCount = 0n;
   const responses = new Map();
 

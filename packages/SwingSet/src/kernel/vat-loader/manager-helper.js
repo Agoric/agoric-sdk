@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from '@agoric/assert';
 import '../../types.js';
-import { insistVatDeliveryResult } from '../../message.js';
+import { insistVatDeliveryResult } from '../../lib/message.js';
 import { makeTranscriptManager } from './transcript.js';
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",

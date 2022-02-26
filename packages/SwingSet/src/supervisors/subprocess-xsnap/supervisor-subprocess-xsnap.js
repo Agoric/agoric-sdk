@@ -5,19 +5,19 @@ import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import '../../types.js';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
-import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '../../gc-and-finalize.js';
+import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '../../lib-nodejs/gc-and-finalize.js';
 import {
   insistVatDeliveryObject,
   insistVatSyscallResult,
-} from '../../message.js';
+} from '../../lib/message.js';
 
-import { makeLiveSlots } from '../liveSlots.js';
+import { makeLiveSlots } from '../../liveslots/liveslots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
-} from './supervisor-helper.js';
+} from '../supervisor-helper.js';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

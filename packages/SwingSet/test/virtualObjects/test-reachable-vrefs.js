@@ -3,7 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { Remotable } from '@endo/marshal';
 
-import { makeVatSlot } from '../../src/parseVatSlots.js';
+import { makeVatSlot } from '../../src/lib/parseVatSlots.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 test('VOM tracks reachable vrefs', async t => {

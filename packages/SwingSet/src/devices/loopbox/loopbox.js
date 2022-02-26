@@ -21,7 +21,7 @@ export function buildLoopbox(deliverMode) {
     deliverMode === 'immediate' || deliverMode === 'queued',
     X`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`,
   );
-  const loopboxSrcPath = new URL('loopbox-src', import.meta.url).pathname;
+  const loopboxSrcPath = new URL('device-loopbox.js', import.meta.url).pathname;
 
   let loopboxPassOneMessage;
   function registerPassOneMessage(lpom) {

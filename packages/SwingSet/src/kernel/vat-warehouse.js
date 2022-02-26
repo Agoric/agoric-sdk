@@ -1,7 +1,7 @@
 // @ts-check
 import { assert, details as X, quote as q } from '@agoric/assert';
-import { makeVatTranslators } from '../vatTranslator.js';
-import { insistVatDeliveryResult } from '../../message.js';
+import { makeVatTranslators } from './vatTranslator.js';
+import { insistVatDeliveryResult } from '../lib/message.js';
 
 /** @param { number } max */
 export const makeLRU = max => {
@@ -45,7 +45,7 @@ export const makeLRU = max => {
 
 /**
  * @param { KernelKeeper } kernelKeeper
- * @param { ReturnType<typeof import('../loadVat.js').makeVatLoader> } vatLoader
+ * @param { ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader> } vatLoader
  * @param {{
  *   maxVatsOnline?: number,
  *   snapshotInitial?: number,
@@ -77,7 +77,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    *   enablePipelining: boolean,
    *   options: { name?: string, description?: string, managerType?: ManagerType },
    * }} VatInfo
-   * @typedef { ReturnType<typeof import('../vatTranslator').makeVatTranslators> } VatTranslators
+   * @typedef { ReturnType<typeof import('./vatTranslator').makeVatTranslators> } VatTranslators
    */
   const ephemeral = {
     /** @type {Map<string, VatInfo> } key is vatID */

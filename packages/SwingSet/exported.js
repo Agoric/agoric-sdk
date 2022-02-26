@@ -1,1 +1,1 @@
-import './src/vats/types.js';
+import './src/vats/timer/types.js';

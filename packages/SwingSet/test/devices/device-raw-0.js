@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { buildSerializationTools } from '../../src/deviceTools.js';
+import { buildSerializationTools } from '../../src/devices/lib/deviceTools.js';
 
 export function buildDevice(tools, endowments) {
   const { syscall } = tools;

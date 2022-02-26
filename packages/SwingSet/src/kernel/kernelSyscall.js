@@ -2,8 +2,8 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { insistKernelType } from './parseKernelSlots.js';
-import { insistCapData } from '../capdata.js';
-import { insistDeviceID, insistVatID } from './id.js';
+import { insistCapData } from '../lib/capdata.js';
+import { insistDeviceID, insistVatID } from '../lib/id.js';
 
 /** @type { KernelSyscallResult } */
 const OKNULL = harden(['ok', null]);

@@ -1,8 +1,8 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { assertKnownOptions } from '../assertOptions.js';
-import { makeVatSlot } from '../parseVatSlots.js';
-import { makeVatTranslators } from './vatTranslator.js';
+import { assertKnownOptions } from '../../lib/assertOptions.js';
+import { makeVatSlot } from '../../lib/parseVatSlots.js';
+import { makeVatTranslators } from '../vatTranslator.js';
 
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0n);

@@ -13,7 +13,7 @@ import { assert, details as X } from '@agoric/assert';
  * controller.run() when it returns true.
  */
 export function buildTimer() {
-  const srcPath = new URL('timer-src', import.meta.url).pathname;
+  const srcPath = new URL('./device-timer.js', import.meta.url).pathname;
   let devicePollFunction;
 
   function registerDevicePollFunction(pollFn) {

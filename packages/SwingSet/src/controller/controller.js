@@ -13,14 +13,14 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
-import { computeBundleID } from './validate-archive.js';
-import { createSHA256 } from './hasher.js';
-import engineGC from './engine-gc.js';
-import { startSubprocessWorker } from './spawnSubprocessWorker.js';
-import { waitUntilQuiescent } from './waitUntilQuiescent.js';
-import { makeGcAndFinalize } from './gc-and-finalize.js';
-import { insistStorageAPI } from './storageAPI.js';
-import { insistCapData } from './capdata.js';
+import { computeBundleID } from '../lib-nodejs/validate-archive.js';
+import { createSHA256 } from '../lib-nodejs/hasher.js';
+import engineGC from '../lib-nodejs/engine-gc.js';
+import { startSubprocessWorker } from '../lib-nodejs/spawnSubprocessWorker.js';
+import { waitUntilQuiescent } from '../lib-nodejs/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '../lib-nodejs/gc-and-finalize.js';
+import { insistStorageAPI } from '../lib/storageAPI.js';
+import { insistCapData } from '../lib/capdata.js';
 import { provideHostStorage } from './hostStorage.js';
 import {
   swingsetIsInitialized,
@@ -233,7 +233,7 @@ export async function makeSwingsetController(
   // this launches a worker in a Node.js thread (aka "Worker")
   function makeNodeWorker() {
     const supercode = new URL(
-      'kernel/vatManager/supervisor-nodeworker.js',
+      '../supervisors/nodeworker/supervisor-nodeworker.js',
       import.meta.url,
     ).pathname;
     return new Worker(supercode);
@@ -242,7 +242,7 @@ export async function makeSwingsetController(
   // launch a worker in a subprocess (which runs Node.js)
   function startSubprocessWorkerNode() {
     const supercode = new URL(
-      'kernel/vatManager/supervisor-subprocess-node.js',
+      '../supervisors/subprocess-node/supervisor-subprocess-node.js',
       import.meta.url,
     ).pathname;
     const args = [supercode];
@@ -279,7 +279,7 @@ export async function makeSwingsetController(
   };
 
   const kernelOptions = { verbose, warehousePolicy, overrideVatManagerOptions };
-  /** @type { ReturnType<typeof import('./kernel').default> } */
+  /** @type { ReturnType<typeof import('../kernel').default> } */
   const kernel = buildKernel(kernelEndowments, deviceEndowments, kernelOptions);
 
   if (runtimeOptions.verbose) {

@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { buildSerializationTools } from '../deviceTools.js';
+import { buildSerializationTools } from '../lib/deviceTools.js';
 
 /*
 

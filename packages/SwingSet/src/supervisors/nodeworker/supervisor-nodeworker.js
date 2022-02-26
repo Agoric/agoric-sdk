@@ -10,16 +10,16 @@ import '../../types.js';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
-import engineGC from '../../engine-gc.js';
-import { makeGcAndFinalize } from '../../gc-and-finalize.js';
-import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
-import { makeDummyMeterControl } from '../dummyMeterControl.js';
-import { makeLiveSlots } from '../liveSlots.js';
+import engineGC from '../../lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '../../lib-nodejs/gc-and-finalize.js';
+import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
+import { makeDummyMeterControl } from '../../kernel/dummyMeterControl.js';
+import { makeLiveSlots } from '../../liveslots/liveslots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
-} from './supervisor-helper.js';
+} from '../supervisor-helper.js';
 
 assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
 

@@ -1,10 +1,14 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
-import { insistMessage } from '../message.js';
+import { insistMessage } from '../lib/message.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
-import { insistVatType, parseVatSlot } from '../parseVatSlots.js';
-import { insistCapData } from '../capdata.js';
-import { kdebug, legibilizeMessageArgs, legibilizeValue } from './kdebug.js';
+import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
+import { insistCapData } from '../lib/capdata.js';
+import {
+  kdebug,
+  legibilizeMessageArgs,
+  legibilizeValue,
+} from '../lib/kdebug.js';
 
 /** @type { VatDeliveryBringOutYourDead } */
 const reapMessageVatDelivery = harden(['bringOutYourDead']);

@@ -10,24 +10,24 @@ import fs from 'fs';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
-import engineGC from '../../engine-gc.js';
-import { makeGcAndFinalize } from '../../gc-and-finalize.js';
-import { makeDummyMeterControl } from '../dummyMeterControl.js';
+import engineGC from '../../lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '../../lib-nodejs/gc-and-finalize.js';
+import { makeDummyMeterControl } from '../../kernel/dummyMeterControl.js';
 import {
   arrayEncoderStream,
   arrayDecoderStream,
-} from '../../worker-protocol.js';
+} from '../../lib-nodejs/worker-protocol.js';
 import {
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../../netstring.js';
-import { waitUntilQuiescent } from '../../waitUntilQuiescent.js';
-import { makeLiveSlots } from '../liveSlots.js';
+} from '../../lib/netstring.js';
+import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
+import { makeLiveSlots } from '../../liveslots/liveslots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
-} from './supervisor-helper.js';
+} from '../supervisor-helper.js';
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {

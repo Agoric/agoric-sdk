@@ -1,4 +1,4 @@
-import djson from '../djson.js';
+import djson from '../../lib/djson.js';
 
 export function requireIdentical(vatID, originalSyscall, newSyscall) {
   if (djson.stringify(originalSyscall) !== djson.stringify(newSyscall)) {

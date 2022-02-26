@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
 import { buildVatController } from '../../src/index.js';
-import { computeBundleID } from '../../src/validate-archive.js';
+import { computeBundleID } from '../../src/lib-nodejs/validate-archive.js';
 
 test('install bundle', async t => {
   const config = {};

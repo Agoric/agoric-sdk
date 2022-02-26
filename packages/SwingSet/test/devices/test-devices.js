@@ -4,14 +4,14 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
 import { getAllState } from '@agoric/swing-store';
 import { parse } from '@endo/marshal';
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 
 import {
   initializeSwingset,
   makeSwingsetController,
   buildKernelBundles,
 } from '../../src/index.js';
-import buildCommand from '../../src/devices/command.js';
+import buildCommand from '../../src/devices/command/command.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });

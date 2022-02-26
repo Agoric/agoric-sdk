@@ -3,7 +3,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { parseVatSlot } from '../parseVatSlots.js';
+import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 /**
  * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.

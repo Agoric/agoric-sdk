@@ -4,8 +4,8 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert, details as X } from '@agoric/assert';
 import buildKernel from '../src/kernel/index.js';
-import { initializeKernel } from '../src/kernel/initializeKernel.js';
-import { makeVatSlot } from '../src/parseVatSlots.js';
+import { initializeKernel } from '../src/controller/initializeKernel.js';
+import { makeVatSlot } from '../src/lib/parseVatSlots.js';
 import { checkKT, extractMessage, makeKernelEndowments } from './util.js';
 
 function capdata(body, slots = []) {

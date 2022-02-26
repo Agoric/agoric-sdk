@@ -2,14 +2,14 @@
 
 import { makeMarshal, Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { createSHA256 } from '../hasher.js';
-import { assertKnownOptions } from '../assertOptions.js';
-import { insistVatID } from './id.js';
-import { makeVatSlot } from '../parseVatSlots.js';
-import { insistStorageAPI } from '../storageAPI.js';
-import makeKernelKeeper from './state/kernelKeeper.js';
-import { exportRootObject } from './kernel.js';
-import { makeKernelQueueHandler } from './kernelQueue.js';
+import { createSHA256 } from '../lib-nodejs/hasher.js';
+import { assertKnownOptions } from '../lib/assertOptions.js';
+import { insistVatID } from '../lib/id.js';
+import { makeVatSlot } from '../lib/parseVatSlots.js';
+import { insistStorageAPI } from '../lib/storageAPI.js';
+import makeKernelKeeper from '../kernel/state/kernelKeeper.js';
+import { exportRootObject } from '../kernel/kernel.js';
+import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
