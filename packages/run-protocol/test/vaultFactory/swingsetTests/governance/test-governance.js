@@ -86,8 +86,8 @@ const expectedVaultFactoryLog = [
   'after vote on (InterestRate), InterestRate numerator is 4321',
   'at 3 days: vote closed',
   'at 3 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510105n]"}',
-  'at 3 days: 1 day after votes cast, vaultNotifier update #5 has interestRate.numerator 250',
-  'at 4 days: 2 days after votes cast, vaultNotifier update #6 has interestRate.numerator 4321',
+  'at 3 days: 1 day after votes cast, assetNotifier update #5 has interestRate.numerator 250',
+  'at 4 days: 2 days after votes cast, assetNotifier update #6 has interestRate.numerator 4321',
   'at 4 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510608n]"}',
 ];
 

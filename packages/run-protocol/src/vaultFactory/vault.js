@@ -10,7 +10,7 @@ import {
   floorMultiplyBy,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
 
 import {
   invertRatio,
@@ -62,6 +62,19 @@ const validTransitions = {
   [VaultPhase.CLOSED]: [],
 };
 
+/**
+ * @typedef {Object} VaultUIState
+ * @property {Amount<NatValue>} locked Amount of Collateral locked
+ * @property {{run: Amount<NatValue>, interest: Ratio}} debtSnapshot Debt of 'run' at the point the compounded interest was 'interest'
+ * @property {Ratio} interestRate Annual interest rate charge
+ * @property {Ratio} liquidationRatio
+ * @property {VAULT_PHASE} vaultState
+ */
+
+/**
+ *
+ * @param {InnerVault | null} inner
+ */
 const makeOuterKit = inner => {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
 
@@ -102,7 +115,7 @@ const makeOuterKit = inner => {
 /**
  * @param {ContractFacet} zcf
  * @param {InnerVaultManagerBase & GetVaultParams} manager
- * @param {Notifier<unknown>} managerNotifier
+ * @param {Notifier<import('./vaultManager').AssetState>} assetNotifier
  * @param {VaultId} idInManager
  * @param {ZCFMint} runMint
  * @param {ERef<PriceAuthority>} priceAuthority
@@ -110,7 +123,7 @@ const makeOuterKit = inner => {
 export const makeInnerVault = (
   zcf,
   manager,
-  managerNotifier,
+  assetNotifier,
   idInManager, // will go in state
   runMint,
   priceAuthority,
@@ -177,7 +190,6 @@ export const makeInnerVault = (
   const updateDebtSnapshot = newDebt => {
     // update local state
     debtSnapshot = { run: newDebt, interest: manager.getCompoundedInterest() };
-    trace(`${idInManager} updateDebtSnapshot`, newDebt.value, debtSnapshot);
   };
 
   /**
@@ -320,15 +332,6 @@ export const makeInnerVault = (
         throw Error(`unreachable vault phase: ${phase}`);
     }
   };
-  // XXX Echo notifications from the manager through all vaults
-  // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
-  observeNotifier(managerNotifier, {
-    updateState: () => {
-      if (phase !== VaultPhase.CLOSED) {
-        updateUiState();
-      }
-    },
-  });
 
   /**
    * Call must check for and remember shortfall
@@ -640,6 +643,7 @@ export const makeInnerVault = (
     outerUpdater = updater;
     updateUiState();
     return harden({
+      assetNotifier,
       vaultNotifier: vault.getNotifier(),
       invitationMakers: Far('invitation makers', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
@@ -731,6 +735,5 @@ export const makeInnerVault = (
   return innerVault;
 };
 
-/**
- * @typedef {ReturnType<typeof makeInnerVault>} InnerVault
- */
+/** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
+/** @typedef {Unpromise<ReturnType<InnerVault['initVaultKit']>>} VaultKit */

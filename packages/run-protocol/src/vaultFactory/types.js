@@ -1,5 +1,8 @@
 // @ts-check
 
+/** @typedef {import('./vault').VaultUIState} VaultUIState */
+/** @typedef {import('./vault').VaultKit} VaultKit */
+
 /**
  * @typedef  {Object} AutoswapLocal
  * @property {(amount: Amount, brand: Brand) => Amount} getInputPrice
@@ -55,20 +58,6 @@
  */
 
 /**
- * @typedef {Object} BaseUIState
- * @property {Amount<NatValue>} locked Amount of Collateral locked
- * @property {Amount<NatValue>} debt Amount of Loan (including accrued interest)
- */
-
-/**
- * @typedef {BaseUIState & LiquidationUIMixin} VaultUIState
- * @typedef {Object} LiquidationUIMixin
- * @property {Ratio} interestRate Annual interest rate charge
- * @property {Ratio} liquidationRatio
- * @property {'active' | 'liquidating' | 'liquidated' | 'closed' | 'transfer'} vaultState
- */
-
-/**
  * @callback ReallocateReward
  *
  * Transfer the indicated amount to the vaultFactory's reward
@@ -120,22 +109,6 @@
  * @property {() => Promise<Invitation>} makeTransferInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
  * @property {() => Notifier<VaultUIState>} getNotifier
- */
-
-/**
- * @typedef {Object} LineOfCreditKit
- * @property {Notifier<BaseUIState>} uiNotifier
- * @property {BaseVault} vault
- * @property {{
- *    AdjustBalances: () => Promise<Invitation>,
- *    CloseVault: () => Promise<Invitation>,
- *  }} invitationMakers
- */
-
-/**
- * @typedef {Object} VaultKit
- * @property {Vault} vault
- * @property {Notifier<VaultUIState>} vaultNotifier
  */
 
 /**

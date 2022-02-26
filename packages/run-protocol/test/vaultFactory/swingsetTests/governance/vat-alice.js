@@ -41,8 +41,7 @@ const build = async (log, zoe, brands, payments, timer) => {
       }),
     );
 
-    /** @type {VaultKit} */
-    const { vault, vaultNotifier } = await E(loanSeat).getOfferResult();
+    const { assetNotifier, vault } = await E(loanSeat).getOfferResult();
 
     const timeLog = async msg =>
       log(
@@ -65,8 +64,8 @@ const build = async (log, zoe, brands, payments, timer) => {
     timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     const uiDescription = async () => {
-      const current = await E(vaultNotifier).getUpdateSince();
-      return `vaultNotifier update #${current.updateCount} has interestRate.numerator ${current.value.interestRate.numerator.value}`;
+      const current = await E(assetNotifier).getUpdateSince();
+      return `assetNotifier update #${current.updateCount} has interestRate.numerator ${current.value.interestRate.numerator.value}`;
     };
 
     timeLog(`1 day after votes cast, ${await uiDescription()}`);
