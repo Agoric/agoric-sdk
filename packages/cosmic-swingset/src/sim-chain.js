@@ -2,11 +2,10 @@
 /* eslint-disable no-await-in-loop */
 import path from 'path';
 import fs from 'fs';
-import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify.js';
 import {
   importMailbox,
   exportMailbox,
-} from '@agoric/swingset-vat/src/devices/mailbox.js';
+} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
 import anylogger from 'anylogger';
 
@@ -16,6 +15,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
+import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
