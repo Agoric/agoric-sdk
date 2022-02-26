@@ -87,6 +87,7 @@ const enableKernelGC = true;
 
 // crankNumber = $NN
 // runQueue = JSON(runQueue)
+// acceptanceQueue = JSON(acceptanceQueue)
 // gcActions = JSON(gcActions)
 // reapQueue = JSON([vatIDs...])
 // pinnedObjects = ko$NN[,ko$NN..]
@@ -292,6 +293,7 @@ export default function makeKernelKeeper(
     kvStore.set('gcActions', '[]');
     kvStore.set('reapQueue', '[]');
     kvStore.set('runQueue', JSON.stringify([]));
+    kvStore.set('acceptanceQueue', JSON.stringify([]));
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
     kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
@@ -646,13 +648,13 @@ export default function makeKernelKeeper(
     // up the resolution *now* and set the correct target early. Doing that
     // might make it easier to remove the Promise Table entry earlier.
     const p = getKernelPromise(kernelSlot);
-    const runQueue = JSON.parse(getRequired('runQueue'));
+    const acceptanceQueue = JSON.parse(getRequired('acceptanceQueue'));
     for (const msg of p.queue) {
       const entry = harden({ type: 'send', target: kernelSlot, msg });
-      runQueue.push(entry);
+      acceptanceQueue.push(entry);
     }
-    kvStore.set('runQueue', JSON.stringify(runQueue));
-    incStat('runQueueLength', p.queue.length);
+    kvStore.set('acceptanceQueue', JSON.stringify(acceptanceQueue));
+    incStat('acceptanceQueueLength', p.queue.length);
 
     deleteKernelPromiseState(kernelSlot);
     decStat('kpUnresolved');
@@ -838,7 +840,8 @@ export default function makeKernelKeeper(
   }
 
   function addToRunQueue(msg) {
-    // the runqueue is usually empty between blocks, so we can afford a
+    // TODO: May not be true
+    // the run-queue is usually empty between blocks, so we can afford a
     // non-delta-friendly format
     const queue = JSON.parse(getRequired('runQueue'));
     queue.push(msg);
@@ -856,11 +859,39 @@ export default function makeKernelKeeper(
     return queue.length;
   }
 
-  function getNextMsg() {
+  function getNextRunQueueMsg() {
     const queue = JSON.parse(getRequired('runQueue'));
     const msg = queue.shift();
     kvStore.set('runQueue', JSON.stringify(queue));
     decStat('runQueueLength');
+    return msg;
+  }
+
+  function addToAcceptanceQueue(msg) {
+    // TODO: May not be true
+    // the acceptance-queue is usually empty between blocks, so we can afford a
+    // non-delta-friendly format
+    const queue = JSON.parse(getRequired('acceptanceQueue'));
+    queue.push(msg);
+    kvStore.set('acceptanceQueue', JSON.stringify(queue));
+    incStat('acceptanceQueueLength');
+  }
+
+  function isAcceptanceQueueEmpty() {
+    const queue = JSON.parse(getRequired('acceptanceQueue'));
+    return queue.length <= 0;
+  }
+
+  function getAcceptanceQueueLength() {
+    const queue = JSON.parse(getRequired('acceptanceQueue'));
+    return queue.length;
+  }
+
+  function getNextAcceptanceQueueMsg() {
+    const queue = JSON.parse(getRequired('acceptanceQueue'));
+    const msg = queue.shift();
+    kvStore.set('acceptanceQueue', JSON.stringify(queue));
+    decStat('acceptanceQueueLength');
     return msg;
   }
 
@@ -1382,6 +1413,8 @@ export default function makeKernelKeeper(
 
     const runQueue = JSON.parse(getRequired('runQueue'));
 
+    const acceptanceQueue = JSON.parse(getRequired('acceptanceQueue'));
+
     return harden({
       vatTables,
       kernelTable,
@@ -1390,6 +1423,7 @@ export default function makeKernelKeeper(
       gcActions,
       reapQueue,
       runQueue,
+      acceptanceQueue,
     });
   }
 
@@ -1448,7 +1482,12 @@ export default function makeKernelKeeper(
     addToRunQueue,
     isRunQueueEmpty,
     getRunQueueLength,
-    getNextMsg,
+    getNextRunQueueMsg,
+
+    addToAcceptanceQueue,
+    isAcceptanceQueueEmpty,
+    getAcceptanceQueueLength,
+    getNextAcceptanceQueueMsg,
 
     allocateMeter,
     addMeterRemaining,

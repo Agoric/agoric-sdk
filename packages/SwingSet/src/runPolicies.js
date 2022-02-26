@@ -14,10 +14,17 @@ export function foreverPolicy() {
     crankFailed(_details) {
       return true;
     },
+    emptyCrank() {
+      return true;
+    },
   });
 }
 
-export function crankCounter(maxCranks, maxCreateVats) {
+export function crankCounter(
+  maxCranks,
+  maxCreateVats,
+  includeEmptyCranks = false,
+) {
   let cranks = 0;
   let vats = 0;
   /** @type { RunPolicy } */
@@ -32,6 +39,10 @@ export function crankCounter(maxCranks, maxCreateVats) {
     },
     crankFailed() {
       cranks += 1;
+      return cranks < maxCranks;
+    },
+    emptyCrank() {
+      cranks += includeEmptyCranks ? 1 : 0;
       return cranks < maxCranks;
     },
   });
@@ -59,6 +70,9 @@ export function computronCounter(limit) {
       total += 1000000n; // who knows, 1M is as good as anything
       return total < limit;
     },
+    emptyCrank() {
+      return true;
+    },
   });
   return policy;
 }
@@ -70,6 +84,7 @@ export function wallClockWaiter(seconds) {
     vatCreated: () => Date.now() < timeout,
     crankComplete: () => Date.now() < timeout,
     crankFailed: () => Date.now() < timeout,
+    emptyCrank: () => Date.now() < timeout,
   });
   return policy;
 }

@@ -45,6 +45,8 @@ async function main() {
       deepLog(d.promises);
       console.log('Run Queue:');
       deepLog(d.runQueue);
+      console.log('Acceptance Queue:');
+      deepLog(d.acceptanceQueue);
     };
     r.context.dump2 = () => controller.dump();
     r.context.run = () => {

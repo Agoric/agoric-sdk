@@ -52,9 +52,11 @@ async function dropPresence(t, dropExport) {
   c.queueToVatRoot('bootstrap', 'one', capargs([]));
   if (dropExport) {
     c.queueToVatRoot('bootstrap', 'drop', capargs([]));
+    await c.step(); // acceptance
     await c.step(); // message
     await c.step(); // reap
   }
+  await c.step(); // acceptance
   await c.step(); // message
   await c.step(); // reap
 

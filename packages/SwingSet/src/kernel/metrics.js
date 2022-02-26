@@ -109,6 +109,11 @@ export const KERNEL_STATS_UPDOWN_METRICS = [
     description: 'Length of the kernel run queue',
   },
   {
+    key: 'acceptanceQueueLength',
+    name: 'swingset_acceptance_queue_length',
+    description: 'Length of the kernel acceptance queue',
+  },
+  {
     key: 'clistEntries',
     name: 'swingset_clist_entries',
     description: 'Number of entries in the kernel c-list',

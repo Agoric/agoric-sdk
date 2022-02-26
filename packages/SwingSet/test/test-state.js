@@ -265,6 +265,7 @@ test('kernel state', async t => {
     ['initialized', 'true'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -296,6 +297,7 @@ test('kernelKeeper vat names', async t => {
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '3'],
     ['vat.names', JSON.stringify(['vatname5', 'Frank'])],
@@ -343,6 +345,7 @@ test('kernelKeeper device names', async t => {
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '1'],
     ['vat.names', '[]'],
@@ -394,19 +397,25 @@ test('kernelKeeper runQueue', async t => {
   k.commitCrank();
   const k2 = duplicateKeeper(getState);
 
-  t.deepEqual(k.getNextMsg(), { type: 'send', stuff: 'awesome' });
+  t.deepEqual(k.getNextRunQueueMsg(), { type: 'send', stuff: 'awesome' });
   t.falsy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 1);
 
-  t.deepEqual(k.getNextMsg(), { type: 'notify', stuff: 'notifawesome' });
+  t.deepEqual(k.getNextRunQueueMsg(), {
+    type: 'notify',
+    stuff: 'notifawesome',
+  });
   t.truthy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 0);
 
-  t.deepEqual(k2.getNextMsg(), { type: 'send', stuff: 'awesome' });
+  t.deepEqual(k2.getNextRunQueueMsg(), { type: 'send', stuff: 'awesome' });
   t.falsy(k2.isRunQueueEmpty());
   t.is(k2.getRunQueueLength(), 1);
 
-  t.deepEqual(k2.getNextMsg(), { type: 'notify', stuff: 'notifawesome' });
+  t.deepEqual(k2.getNextRunQueueMsg(), {
+    type: 'notify',
+    stuff: 'notifawesome',
+  });
   t.truthy(k2.isRunQueueEmpty());
   t.is(k2.getRunQueueLength(), 0);
 });
@@ -478,17 +487,17 @@ test('kernelKeeper promises', async t => {
   k.addSubscriberToPromise(p1, 'v3');
   t.deepEqual(k.getKernelPromise(p1).subscribers, ['v3', 'v5']);
 
-  const expectedRunqueue = [];
+  const expectedAcceptanceQueue = [];
   const m1 = { method: 'm1', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m1);
   t.deepEqual(k.getKernelPromise(p1).refCount, 1);
-  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m1 });
+  expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m1 });
 
   const m2 = { method: 'm2', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m2);
   t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
   t.deepEqual(k.getKernelPromise(p1).refCount, 2);
-  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m2 });
+  expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
   k.commitCrank();
   k2 = duplicateKeeper(getState);
@@ -519,7 +528,8 @@ test('kernelKeeper promises', async t => {
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
     ['gcActions', '[]'],
-    ['runQueue', JSON.stringify(expectedRunqueue)],
+    ['runQueue', '[]'],
+    ['acceptanceQueue', JSON.stringify(expectedAcceptanceQueue)],
     ['reapQueue', '[]'],
     ['kd.nextID', '30'],
     ['ko.nextID', '21'],
@@ -692,7 +702,7 @@ test('crankhash', t => {
   k.commitCrank();
   // the initial state additions happen to hash to this:
   const oldActivityhash =
-    '1bde96fbe196090dc773e8b9d07a22a0a83e2fb3b4295efb2d8f863c9c8831fb';
+    'f4aa6b9a21148ce1bbb233224f3812a52f88e72ea097fc48bed2a04d0e60925d';
   t.is(store.kvStore.get('activityhash'), oldActivityhash);
 
   k.kvStore.set('one', '1');
@@ -710,7 +720,7 @@ test('crankhash', t => {
   const expActivityhash = h.digest('hex');
   t.is(
     expActivityhash,
-    'c80eaa61ecad76d48f2a2ab7af42b400505e3ad5bebfb3643a8ff28cc3494e89',
+    '98ca436fbb912599ef9a6e26fc20a3c228dd2d2ccdcb2a622e8bf0071a139f10',
   );
 
   const { crankhash, activityhash } = k.commitCrank();

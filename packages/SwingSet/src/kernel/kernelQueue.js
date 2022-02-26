@@ -6,7 +6,7 @@ import { insistVatID } from './id.js';
 
 /**
  * @param {Object} tools
- * @param {*} tools.kernelKeeper  Kernel keeper managing persistent kernel state
+ * @param {KernelKeeper} tools.kernelKeeper  Kernel keeper managing persistent kernel state
  * @param {(problem: unknown, err?: Error) => void } [tools.panic]
  */
 export function makeKernelQueueHandler(tools) {
@@ -20,7 +20,7 @@ export function makeKernelQueueHandler(tools) {
   function notify(vatID, kpid) {
     const m = harden({ type: 'notify', vatID, kpid });
     kernelKeeper.incrementRefCount(kpid, `enq|notify`);
-    kernelKeeper.addToRunQueue(m);
+    kernelKeeper.addToAcceptanceQueue(m);
   }
 
   function doSubscribe(vatID, kpid) {
@@ -78,7 +78,7 @@ export function makeKernelQueueHandler(tools) {
       kernelKeeper.incrementRefCount(argSlot, `enq|msg|s${idx}`);
       idx += 1;
     }
-    kernelKeeper.addToRunQueue(m);
+    kernelKeeper.addToAcceptanceQueue(m);
   }
 
   /**
@@ -94,7 +94,7 @@ export function makeKernelQueueHandler(tools) {
    *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure'
    *    (log only rejections), or 'panic' (panic the kernel upon a
    *    rejection).
-   * @returns {string?} the kpid of the sent message's result promise, if any
+   * @returns {string | undefined} the kpid of the sent message's result promise, if any
    */
   function queueToKref(kref, method, args, policy = 'ignore') {
     // queue a message on the end of the queue, with 'absolute' krefs.

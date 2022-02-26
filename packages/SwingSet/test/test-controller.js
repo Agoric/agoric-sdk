@@ -67,7 +67,8 @@ async function simpleCall(t) {
 
   // vat1:o+0 will map to ko21
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
-  t.deepEqual(controller.dump().runQueue, [
+  t.deepEqual(controller.dump().runQueue, []);
+  t.deepEqual(controller.dump().acceptanceQueue, [
     { type: 'startVat', vatID: 'v2' },
     { type: 'startVat', vatID: 'v4' },
     { type: 'startVat', vatID: 'v5' },
@@ -118,7 +119,9 @@ test('bootstrap', async t => {
   const c = await buildVatController(config);
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
   }
   t.deepEqual(c.dump().log, ['bootstrap called']);
 });
@@ -132,7 +135,9 @@ test('XS bootstrap', async t => {
   const c = await buildVatController(config, [], { hostStorage });
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
   }
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.is(
@@ -169,7 +174,9 @@ test('static vats are unmetered on XS', async t => {
   );
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
+    await c.step(); // vat start acceptance
+    // eslint-disable-next-line no-await-in-loop
+    await c.step(); // vat start deliver
   }
   t.deepEqual(c.dump().log, ['bootstrap called']);
   t.deepEqual(limited, [false, false, false, false]);
@@ -229,7 +236,8 @@ test.serial('bootstrap export', async t => {
   ];
   checkKT(t, c, kt);
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     { type: 'startVat', vatID: 'v1' },
     { type: 'startVat', vatID: 'v2' },
     { type: 'startVat', vatID: 'v3' },
@@ -259,9 +267,9 @@ test.serial('bootstrap export', async t => {
     },
   ]);
 
-  // this test was designed before GC, and wants to single-step the kernel,
-  // but doesn't care about the GC action steps, so we use this helper
-  // function
+  // this test was designed before GC and acceptance queues, and wants to
+  // single-step the kernel, but doesn't care about the GC action steps,
+  // or the temporary acceptance queue, so we use this helper function
   async function stepGC() {
     while (c.dump().gcActions.length) {
       // eslint-disable-next-line no-await-in-loop
@@ -271,11 +279,15 @@ test.serial('bootstrap export', async t => {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
+    while (c.dump().acceptanceQueue.length) {
+      // eslint-disable-next-line no-await-in-loop
+      await c.step();
+    }
     await c.step(); // the non- GC action
   }
 
   t.deepEqual(c.dump().log, []);
-  for (let i = 0; i < 7; i += 1) {
+  for (let i = 0; i < 6; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await stepGC(); // vat starts
   }
@@ -294,7 +306,8 @@ test.serial('bootstrap export', async t => {
   kt.push([adminDev, bootstrapVatID, 'd-70']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     {
       type: 'send',
       target: left0,
@@ -309,6 +322,7 @@ test.serial('bootstrap export', async t => {
     },
   ]);
 
+  await stepGC(); // dropExports
   await stepGC(); // message foo
   const barP = 'kp42';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()', 'left.foo 1']);
@@ -316,7 +330,8 @@ test.serial('bootstrap export', async t => {
   kt.push([barP, leftVatID, 'p+5']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     {
       type: 'send',
       target: right0,
@@ -344,6 +359,8 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().runQueue, [
     { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
+  ]);
+  t.deepEqual(c.dump().acceptanceQueue, [
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
@@ -368,6 +385,7 @@ test.serial('bootstrap export', async t => {
   t.deepEqual(c.dump().runQueue, [
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
+  t.deepEqual(c.dump().acceptanceQueue, []);
 
   await stepGC(); // notify
 
