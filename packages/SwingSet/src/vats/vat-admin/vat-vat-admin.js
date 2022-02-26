@@ -24,6 +24,7 @@ export function buildRootObject(vatPowers) {
   const meterIDByMeter = new WeakMap(); // meter -> meterID
   let vatAdminNode;
   const pendingBundles = new Map(); // bundleID -> Promise<BundleCap>
+  const pendingUpgrades = new Map(); // upgradeID -> Promise<UpgradeResults>
 
   // this message is queued to us by kernel.installBundle()
   function bundleInstalled(bundleID) {
@@ -88,6 +89,19 @@ export function buildRootObject(vatPowers) {
       },
       done() {
         return doneP;
+      },
+      upgrade(bundlecap, vatParameters) {
+        let bundleID;
+        try {
+          bundleID = D(bundlecap).getBundleID();
+        } catch (e) {
+          // 'bundlecap' probably wasn't a bundlecap
+          throw Error('vat adminNode.upgrade() requires a bundlecap');
+        }
+        const upgradeID = D(vatAdminNode).upgradeVat(bundleID, vatParameters);
+        const [upgradeCompleteP, upgradeRR] = producePRR();
+        pendingUpgrades.set(upgradeID, upgradeRR);
+        return upgradeCompleteP;
       },
     });
     return promise.then(root => {
@@ -193,6 +207,17 @@ export function buildRootObject(vatPowers) {
     }
   }
 
+  // the kernel queues this to us when a vat upgrade completes or fails
+  function vatUpgradeCallback(upgradeID, success, error) {
+    const { resolve, reject } = pendingUpgrades.get(upgradeID);
+    pendingUpgrades.delete(upgradeID);
+    if (success) {
+      resolve('ok'); // TODO maybe provide the root object again?
+    } else {
+      reject(error);
+    }
+  }
+
   function meterCrossedThreshold(meterID, remaining) {
     const { updater } = meterByID.get(meterID);
     updater.updateState(remaining);
@@ -231,6 +256,7 @@ export function buildRootObject(vatPowers) {
     createVatAdminService,
     bundleInstalled,
     newVatCallback,
+    vatUpgradeCallback,
     vatTerminated,
     meterCrossedThreshold,
   });

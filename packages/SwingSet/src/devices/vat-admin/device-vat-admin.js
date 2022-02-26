@@ -75,6 +75,7 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
  *
  * @typedef { string } MeterID
  * @typedef { string } VatID
+ * @typedef { string } UpgradeID
  * @typedef {{
  *  createMeter: (remaining: bigint, threshold: bigint) => MeterID
  *  createUnlimitedMeter: () => MeterID
@@ -83,6 +84,7 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
  *  getMeter: (meterID: MeterID) => { remaining: bigint, threshold: bigint }
  *  createByBundle: (bundle: Bundle, options: {}) => VatID
  *  createByBundleID: (bundleID: BundleID, options: {}) => VatID
+ *  upgradeVat: (bundleID: BundleID, vatParameters: {}) => UpgradeID
  *  terminateWithFailure: (vatID: VatID, reason: {}) => void
  *  getBundleCap: (bundleID: BundleID) => BundleCap
  *  getNamedBundleCap: (name: string) => BundleCap
@@ -92,6 +94,7 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
 export function buildDevice(tools, endowments) {
   const { hasBundle, getBundle, getNamedBundleID } = endowments;
   const { pushCreateVatBundleEvent, pushCreateVatIDEvent } = endowments;
+  const { pushUpgradeVatEvent } = endowments;
   const { terminate } = endowments;
   const { meterCreate, meterAddRemaining, meterSetThreshold, meterGet } =
     endowments;
@@ -212,6 +215,22 @@ export function buildDevice(tools, endowments) {
           // vatParameters, follow the pattern in terminateWithFailure
           const vatID = pushCreateVatIDEvent(bundleID, options);
           return returnFromInvoke(vatID);
+        }
+
+        // D(devices.vatAdmin).upgradeVat(bundleID, vatParameters) > upgradeID
+        if (method === 'upgradeVat') {
+          // see #4381, we really need to accept slots in vatParameters
+          // so we can pass contract bundlecaps to upgraded ZCF
+          const { body, slots } = argsCapdata;
+          // this has all the same problems described in terminateWithFailure
+          assert.equal(slots.length, 0, 'upgradeVat() cannot handle refs yet');
+          const args = JSON.parse(body);
+          assert(Array.isArray(args), 'upgradeVat() args array');
+          const [bundleID, vatParameters] = args;
+          assert.typeof(bundleID, 'string', `upgradeVat() bundleID`);
+          const vpCapdata = { body: JSON.stringify(vatParameters), slots };
+          const upgradeID = pushUpgradeVatEvent(bundleID, vpCapdata);
+          return returnFromInvoke(upgradeID);
         }
 
         // D(devices.vatAdmin).terminateWithFailure(vatID, reason)
