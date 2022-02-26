@@ -135,7 +135,7 @@
 /**
  * @typedef {Object} VaultKit
  * @property {Vault} vault
- * @property {Notifier<VaultUIState>} uiNotifier
+ * @property {Notifier<VaultUIState>} vaultNotifier
  */
 
 /**

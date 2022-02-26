@@ -640,7 +640,7 @@ export const makeInnerVault = (
     outerUpdater = updater;
     updateUiState();
     return harden({
-      uiNotifier: vault.getNotifier(),
+      vaultNotifier: vault.getNotifier(),
       invitationMakers: Far('invitation makers', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
         CloseVault: vault.makeCloseInvitation,
@@ -650,7 +650,10 @@ export const makeInnerVault = (
     });
   };
 
-  /** @type {OfferHandler} */
+  /**
+   * @param {ZCFSeat} seat
+   * @param {InnerVault} innerVault
+   */
   const initVaultKit = async (seat, innerVault) => {
     assert(
       AmountMath.isEmpty(debtSnapshot.run),
