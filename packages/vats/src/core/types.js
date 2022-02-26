@@ -15,23 +15,23 @@
  * SwingSet types
  *
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/bridge-src.js').buildRootDeviceNode>> } BridgeDevice
+ *   import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').buildRootDeviceNode>> } BridgeDevice
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/command-src.js').buildRootDeviceNode>> } CommandDevice
+ *   import('@agoric/swingset-vat/src/devices/command/device-command.js').buildRootDeviceNode>> } CommandDevice
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/mailbox-src.js').buildRootDeviceNode>> } MailboxDevice
+ *   import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').buildRootDeviceNode>> } MailboxDevice
  * @typedef { import('@agoric/swingset-vat/src/vats/plugin-manager.js').PluginDevice } PluginDevice
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/timer-src.js').buildRootDeviceNode>> } TimerDevice
+ *   import('@agoric/swingset-vat/src/devices/timer/device-timer.js').buildRootDeviceNode>> } TimerDevice
  * @typedef { Device<
- *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdmin-src.js').VatAdminRootDeviceNode> } VatAdminDevice
+ *   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode> } VatAdminDevice
  *
  * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/vats/vat-tp.js').buildRootObject>> } VattpVat
+ *   import('@agoric/swingset-vat/src/vats/vattp/vat-vattp.js').buildRootObject>> } VattpVat
  * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdminWrapper.js').buildRootObject>> } VatAdminVat
+ *   import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js').buildRootObject>> } VatAdminVat
  * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/vats/vat-timerWrapper.js').buildRootObject>> } TimerVat
+ *   import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').buildRootObject>> } TimerVat
  *
  * See deliverToController in packages/SwingSet/src/vats/comms/controller.js
  * @typedef {ERef<{
