@@ -3,7 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
 
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import {
   initializeSwingset,
   makeSwingsetController,
@@ -12,7 +12,7 @@ import {
 import {
   buildMailboxStateMap,
   buildMailbox,
-} from '../../src/devices/mailbox.js';
+} from '../../src/devices/mailbox/mailbox.js';
 import { capargs } from '../util.js';
 
 test.before(async t => {

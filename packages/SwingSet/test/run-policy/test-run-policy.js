@@ -1,14 +1,14 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargsOneSlot, capSlot, capargs } from '../util.js';
 import {
   crankCounter,
   computronCounter,
   wallClockWaiter,
-} from '../../src/runPolicies.js';
+} from '../../src/lib/runPolicies.js';
 
 async function testCranks(t, mode) {
   const config = {

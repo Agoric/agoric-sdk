@@ -3,8 +3,8 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
-import { makeUndeliverableError } from '../../makeUndeliverableError.js';
-import { insistCapData } from '../../capdata.js';
+import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
+import { insistCapData } from '../../lib/capdata.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
 

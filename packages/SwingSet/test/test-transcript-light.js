@@ -3,7 +3,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { getAllState, setAllState } from '@agoric/swing-store';
 
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { buildVatController, loadBasedir } from '../src/index.js';
 
 test('transcript-light load', async t => {

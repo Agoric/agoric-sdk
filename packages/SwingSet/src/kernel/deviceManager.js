@@ -1,7 +1,7 @@
 // @ts-check
 import { assert } from '@agoric/assert';
 import { makeDeviceSlots } from './deviceSlots.js';
-import { insistCapData } from '../capdata.js';
+import { insistCapData } from '../lib/capdata.js';
 
 import '../types.js';
 

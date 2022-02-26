@@ -6,7 +6,7 @@ import {
   decode,
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../src/netstring.js';
+} from '../src/lib/netstring.js';
 
 const umlaut = 'ümlaut';
 const umlautBuffer = Buffer.from(umlaut, 'utf-8');

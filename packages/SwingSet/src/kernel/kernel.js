@@ -2,26 +2,25 @@
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { stringify } from '@endo/marshal';
-import { assertKnownOptions } from '../assertOptions.js';
-import { foreverPolicy } from '../runPolicies.js';
-import { makeVatManagerFactory } from './vatManager/factory.js';
-import { makeVatWarehouse } from './vatManager/vat-warehouse.js';
+import { assertKnownOptions } from '../lib/assertOptions.js';
+import { foreverPolicy } from '../lib/runPolicies.js';
+import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
+import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
 import makeKernelKeeper from './state/kernelKeeper.js';
-import { kdebug, kdebugEnable, legibilizeMessageArgs } from './kdebug.js';
+import { kdebug, kdebugEnable, legibilizeMessageArgs } from '../lib/kdebug.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
-import { parseVatSlot } from '../parseVatSlots.js';
-import { insistCapData } from '../capdata.js';
-import { insistMessage, insistVatDeliveryResult } from '../message.js';
-import { insistDeviceID, insistVatID } from './id.js';
+import { parseVatSlot } from '../lib/parseVatSlots.js';
+import { insistCapData } from '../lib/capdata.js';
+import { insistMessage, insistVatDeliveryResult } from '../lib/message.js';
+import { insistDeviceID, insistVatID } from '../lib/id.js';
 import { makeKernelQueueHandler } from './kernelQueue.js';
 import { makeKernelSyscallHandler } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
 import { makeDummyMeterControl } from './dummyMeterControl.js';
 import { getKpidsToRetire } from './cleanup.js';
 import { processNextGCAction } from './gc-actions.js';
-
-import { makeVatLoader } from './loadVat.js';
+import { makeVatLoader } from './vat-loader/vat-loader.js';
 import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 

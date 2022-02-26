@@ -5,8 +5,8 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import * as childProcess from 'child_process';
 import * as os from 'os';
 import { xsnap } from '@agoric/xsnap';
-import engineGC from '../src/engine-gc.js';
-import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
+import engineGC from '../src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 
 function makeVictim() {
   const victim = { doomed: 'oh no' };

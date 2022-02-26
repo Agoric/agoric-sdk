@@ -5,9 +5,9 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots.js';
-import { insistVatID } from '../id.js';
-import { kdebug } from '../kdebug.js';
+import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { insistVatID } from '../../lib/id.js';
+import { kdebug } from '../../lib/kdebug.js';
 import {
   parseReachableAndVatSlot,
   buildReachableAndVatSlot,

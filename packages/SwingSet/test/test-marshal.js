@@ -6,7 +6,7 @@ import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeMarshaller } from '../src/kernel/liveSlots.js';
+import { makeMarshaller } from '../src/liveslots/liveslots.js';
 
 const gcTools = harden({
   WeakRef,

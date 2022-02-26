@@ -6,9 +6,9 @@ import fs from 'fs';
 import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
 import { parse } from '@endo/marshal';
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { computeBundleID } from '../../src/validate-archive.js';
+import { computeBundleID } from '../../src/lib-nodejs/validate-archive.js';
 import { capargs } from '../util.js';
 
 function bfile(name) {

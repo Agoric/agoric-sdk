@@ -1,6 +1,6 @@
 import { assert } from '@agoric/assert';
 import { QCLASS } from '@endo/marshal';
-import { insistVatType } from '../../src/parseVatSlots.js';
+import { insistVatType } from '../../src/lib/parseVatSlots.js';
 import { extractMessage } from '../vat-util.js';
 
 // to exercise the error we get when syscall.callNow() is given a promise

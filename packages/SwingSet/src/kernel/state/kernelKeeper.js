@@ -8,16 +8,21 @@ import { parseReachableAndVatSlot } from './reachable.js';
 import {
   insistStorageAPI,
   insistEnhancedStorageAPI,
-} from '../../storageAPI.js';
+} from '../../lib/storageAPI.js';
 import {
   insistKernelType,
   makeKernelSlot,
   parseKernelSlot,
 } from '../parseKernelSlots.js';
-import { insistCapData } from '../../capdata.js';
-import { insistMessage } from '../../message.js';
-import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id.js';
-import { kdebug } from '../kdebug.js';
+import { insistCapData } from '../../lib/capdata.js';
+import { insistMessage } from '../../lib/message.js';
+import {
+  insistDeviceID,
+  insistVatID,
+  makeDeviceID,
+  makeVatID,
+} from '../../lib/id.js';
+import { kdebug } from '../../lib/kdebug.js';
 import {
   KERNEL_STATS_SUM_METRICS,
   KERNEL_STATS_UPDOWN_METRICS,
@@ -144,7 +149,7 @@ const FIRST_METER_ID = 1n;
 /**
  * @param {HostStore} hostStorage
  * @param {KernelSlog} kernelSlog
- * @param {import('../../hasher.js').CreateSHA256} createSHA256
+ * @param {import('../../lib-nodejs/hasher.js').CreateSHA256} createSHA256
  */
 export default function makeKernelKeeper(
   hostStorage,

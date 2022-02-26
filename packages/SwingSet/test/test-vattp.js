@@ -1,9 +1,12 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
-import { buildMailboxStateMap, buildMailbox } from '../src/devices/mailbox.js';
+import {
+  buildMailboxStateMap,
+  buildMailbox,
+} from '../src/devices/mailbox/mailbox.js';
 
 test.serial('vattp', async t => {
   const s = buildMailboxStateMap();

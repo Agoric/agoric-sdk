@@ -3,17 +3,17 @@
 import anylogger from 'anylogger';
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
-import { createSHA256 } from '../src/hasher.js';
+import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 
 import buildKernel from '../src/kernel/index.js';
-import { initializeKernel } from '../src/kernel/initializeKernel.js';
+import { initializeKernel } from '../src/controller/initializeKernel.js';
 import {
   buildVatController,
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import {
   makeMessage,
   makeResolutions,
