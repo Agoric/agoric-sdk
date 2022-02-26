@@ -4,18 +4,16 @@ import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
+  calculateCurrentDebt,
   getAmountOut,
   makeRatioFromAmounts,
+  reverseInterest,
   ceilMultiplyBy,
   floorMultiplyBy,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeNotifierKit } from '@agoric/notifier';
 
-import {
-  invertRatio,
-  multiplyRatios,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
@@ -174,7 +172,7 @@ export const makeInnerVault = (
   /**
    * Snapshot of the debt and compounded interest when the principal was last changed
    *
-   * @type {{run: Amount, interest: Ratio}}
+   * @type {{run: Amount<NatValue>, interest: Ratio}}
    */
   let debtSnapshot = {
     run: AmountMath.makeEmpty(runBrand, 'nat'),
@@ -189,6 +187,7 @@ export const makeInnerVault = (
    */
   const updateDebtSnapshot = newDebt => {
     // update local state
+    // @ts-expect-error newDebt is actually Amount<NatValue>
     debtSnapshot = { run: newDebt, interest: manager.getCompoundedInterest() };
   };
 
@@ -218,13 +217,11 @@ export const makeInnerVault = (
    * @returns {Amount<NatValue>}
    */
   const getCurrentDebt = () => {
-    // divide compounded interest by the snapshot
-    const interestSinceSnapshot = multiplyRatios(
+    return calculateCurrentDebt(
+      debtSnapshot.run,
+      debtSnapshot.interest,
       manager.getCompoundedInterest(),
-      invertRatio(debtSnapshot.interest),
     );
-
-    return floorMultiplyBy(debtSnapshot.run, interestSinceSnapshot);
   };
 
   /**
@@ -239,10 +236,7 @@ export const makeInnerVault = (
   // Not in use until https://github.com/Agoric/agoric-sdk/issues/4540
   const getNormalizedDebt = () => {
     assert(debtSnapshot);
-    return floorMultiplyBy(
-      debtSnapshot.run,
-      invertRatio(debtSnapshot.interest),
-    );
+    return reverseInterest(debtSnapshot.run, debtSnapshot.interest);
   };
 
   const getCollateralAllocated = seat =>
