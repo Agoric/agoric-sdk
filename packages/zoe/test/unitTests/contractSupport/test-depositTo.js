@@ -23,12 +23,15 @@ async function setupContract(moolaIssuer, bucksIssuer) {
   const setJig = jig => {
     testJig = jig;
   };
-  const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
+  const fakeVatAdmin = makeFakeVatAdmin(setJig);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin.admin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
+  fakeVatAdmin.vatAdminState.installBundle('b1-contract', bundle);
+
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  const installation = await E(zoe).installBundleID('b1-contract');
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({

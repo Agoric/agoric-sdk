@@ -27,12 +27,14 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   const setJig = jig => {
     instanceToZCF.set(jig.instance, jig.zcf);
   };
-  const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin(setJig).admin);
+  const fakeVatAdmin = makeFakeVatAdmin(setJig);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin.admin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
+  fakeVatAdmin.vatAdminState.installBundle('b1-contract', bundle);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  const installation = await E(zoe).installBundleID('b1-contract');
 
   // Create TWO instances of the zcfTesterContract which have
   // different keywords

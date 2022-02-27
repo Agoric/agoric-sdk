@@ -201,10 +201,11 @@ test(`E(zoe).offer - no invitation`, async t => {
 });
 
 test(`E(zoe).getPublicFacet`, async t => {
-  const { zoe } = setup();
+  const { zoe, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installation = await E(zoe).installBundleID('b1-refund');
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
   const offersCount = await E(publicFacet).getOffersCount();
   t.is(offersCount, 0n);
@@ -212,10 +213,11 @@ test(`E(zoe).getPublicFacet`, async t => {
 });
 
 test(`E(zoe).getPublicFacet promise for instance`, async t => {
-  const { zoe } = setup();
+  const { zoe, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installationP = E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installationP = E(zoe).installBundleID('b1-refund');
   // Note that E.get does not currently pipeline
   const { publicFacet: publicFacetP, instance: instanceP } = E.get(
     E(zoe).startInstance(installationP),
@@ -246,10 +248,11 @@ test(`E(zoe).getPublicFacet - no instance`, async t => {
 });
 
 test(`zoe.getIssuers`, async t => {
-  const { zoe, moolaKit } = setup();
+  const { zoe, moolaKit, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(installation, {
     Moola: moolaKit.issuer,
   });
@@ -257,10 +260,11 @@ test(`zoe.getIssuers`, async t => {
 });
 
 test(`zoe.getIssuers - none`, async t => {
-  const { zoe } = setup();
+  const { zoe, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(installation);
   t.deepEqual(await E(zoe).getIssuers(instance), {});
 });
@@ -280,10 +284,11 @@ test(`zoe.getIssuers - no instance`, async t => {
 });
 
 test(`zoe.getBrands`, async t => {
-  const { zoe, moolaKit } = setup();
+  const { zoe, moolaKit, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(installation, {
     Moola: moolaKit.issuer,
   });
@@ -291,10 +296,11 @@ test(`zoe.getBrands`, async t => {
 });
 
 test(`zoe.getBrands - none`, async t => {
-  const { zoe } = setup();
+  const { zoe, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(installation);
   t.deepEqual(await E(zoe).getBrands(instance), {});
 });
@@ -314,10 +320,11 @@ test(`zoe.getBrands - no instance`, async t => {
 });
 
 test(`zoe.getTerms - none`, async t => {
-  const { zoe } = setup();
+  const { zoe, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(installation);
   t.deepEqual(await E(zoe).getTerms(instance), {
     brands: {},
@@ -326,10 +333,11 @@ test(`zoe.getTerms - none`, async t => {
 });
 
 test(`zoe.getTerms`, async t => {
-  const { zoe, moolaKit } = setup();
+  const { zoe, moolaKit, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(
     installation,
     {
@@ -370,10 +378,11 @@ test(`zoe.getTerms - no instance`, async t => {
 });
 
 test(`zoe.getInstallationForInstance`, async t => {
-  const { zoe, moolaKit } = setup();
+  const { zoe, moolaKit, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-refund', bundle);
+  const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(
     installation,
     {

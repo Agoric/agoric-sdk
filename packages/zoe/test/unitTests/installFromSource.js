@@ -5,8 +5,13 @@ import { E } from '@agoric/eventual-send';
 
 /**
  * @param {ZoeService} zoe
+ * @param {*} vatAdminState
  * @param {string} path
  * @returns {Promise<Installation>}
  */
-export const installationPFromSource = (zoe, path) =>
-  bundleSource(path).then(b => E(zoe).install(b));
+export const installationPFromSource = async (zoe, vatAdminState, path) => {
+  const bundle = await bundleSource(path);
+  const id = `b1-${path}`;
+  vatAdminState.installBundle(id, bundle);
+  return E(zoe).installBundleID(id);
+};

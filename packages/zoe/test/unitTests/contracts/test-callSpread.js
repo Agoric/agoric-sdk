@@ -45,8 +45,13 @@ test('fundedCallSpread below Strike1', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -146,8 +151,13 @@ test('fundedCallSpread above Strike2', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -240,8 +250,13 @@ test('fundedCallSpread, mid-strike', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -333,8 +348,13 @@ test('fundedCallSpread, late exercise', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
 
   // Alice will create and fund a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will promptly schedule collection of funds.
@@ -426,8 +446,13 @@ test('fundedCallSpread, sell options', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, fundedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    fundedCallSpread,
+  );
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Alice will create and fund a call spread contract, and sell the invitations
@@ -488,6 +513,7 @@ test('fundedCallSpread, sell options', async t => {
 
   const exchangeInstallation = await installationPFromSource(
     zoe,
+    vatAdminState,
     simpleExchange,
   );
   const { publicFacet: exchangePublic } = await E(zoe).startInstance(
@@ -603,8 +629,13 @@ test('pricedCallSpread, mid-strike', async t => {
     bucks,
     zoe,
     brands,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, pricedCallSpread);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    pricedCallSpread,
+  );
 
   // Alice will create a call spread contract, and give the invitations
   // to Bob and Carol. Bob and Carol will fund and exercise, then promptly
