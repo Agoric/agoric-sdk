@@ -337,7 +337,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     // We want to make it hard for a validator to accidentally disable
     // consensusMode.
-    const consensusMode = true;
+    const consensusMode = false; // @@@
     const s = await launch({
       actionQueue,
       kernelStateDBDir: stateDBDir,
