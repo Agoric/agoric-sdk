@@ -1,0 +1,6 @@
+{
+    "consume": {
+        "economicCommitteeCreatorFacet": true,
+        "namesByAddress": true
+    }
+}
