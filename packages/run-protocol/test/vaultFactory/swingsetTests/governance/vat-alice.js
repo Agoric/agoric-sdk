@@ -22,7 +22,7 @@ const build = async (log, zoe, brands, payments, timer) => {
   const [moolaPayment] = payments;
 
   /**
-   * @param {VaultFactoryPublicFacet} vaultFactory
+   * @param {import('../../test-vaultFactory').VaultFactoryPublicFacet} vaultFactory
    */
   const oneLoanWithInterest = async vaultFactory => {
     log(`=> alice.oneLoanWithInterest called`);
@@ -30,6 +30,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     const runIssuer = await E(vaultFactory).getRunIssuer();
     const runBrand = await E(runIssuer).getBrand();
 
+    /** @type {UserSeat<VaultKit>} */
     const loanSeat = await E(zoe).offer(
       E(vaultFactory).makeLoanInvitation(),
       harden({
@@ -77,7 +78,7 @@ const build = async (log, zoe, brands, payments, timer) => {
   return Far('build', {
     /**
      * @param {string} testName
-     * @param {VaultFactoryPublicFacet} vaultFactory
+     * @param {import('../../test-vaultFactory').VaultFactoryPublicFacet} vaultFactory
      * @returns {Promise<void>}
      */
     startTest: async (testName, vaultFactory) => {

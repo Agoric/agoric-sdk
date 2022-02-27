@@ -41,6 +41,8 @@ const contractRoots = {
   VaultFactory: '../../src/vaultFactory/vaultFactory.js',
 };
 
+/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryPublicFacet} VaultFactoryPublicFacet */
+
 const trace = makeTracer('TestST');
 
 const BASIS_POINTS = 10000n;
@@ -836,8 +838,9 @@ test('interest on multiple vaults', async t => {
   // Create a loan for Bob for 3200 RUN with 800 aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 800n);
   const bobLoanAmount = AmountMath.make(runBrand, 3200n);
+  /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { RUN: bobLoanAmount },
@@ -877,8 +880,10 @@ test('interest on multiple vaults', async t => {
   }
   await waitForPromisesToSettle();
 
+  const assetUpdate = await E(assetNotifier).getUpdateSince();
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
+
   // 160 is initial fee. interest is 3n/week. compounding is in the noise.
   const bobAddedDebt = 160n + 3n;
   t.deepEqual(
@@ -926,8 +931,9 @@ test('interest on multiple vaults', async t => {
   );
 
   // try opening a vault that can't cover fees
+  /** @type {UserSeat<VaultKit>} */
   const caroleLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: AmountMath.make(aethBrand, 200n) },
       want: { RUN: AmountMath.make(runBrand, 0n) }, // no debt
@@ -946,8 +952,9 @@ test('interest on multiple vaults', async t => {
 
   // open a vault when manager's interest already compounded
   const wantedRun = 1_000n;
+  /** @type {UserSeat<VaultKit>} */
   const danLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: AmountMath.make(aethBrand, 2_000n) },
       want: { RUN: AmountMath.make(runBrand, wantedRun) },
@@ -956,7 +963,6 @@ test('interest on multiple vaults', async t => {
       Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 2_000n)),
     }),
   );
-  /** @type {{vault: Vault, vaultNotifier: Notifier<*>}} */
   const { vault: danVault, vaultNotifier: danNotifier } = await E(
     danLoanSeat,
   ).getOfferResult();
@@ -1015,8 +1021,9 @@ test('adjust balances', async t => {
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1000n);
   const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { RUN: aliceLoanAmount },
@@ -1267,8 +1274,9 @@ test('transfer vault', async t => {
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1000n);
   const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { RUN: aliceLoanAmount },
@@ -1285,6 +1293,7 @@ test('transfer vault', async t => {
 
   // TODO this should not need `await`
   const transferInvite = await E(aliceVault).makeTransferInvitation();
+  /** @type {UserSeat<VaultKit>} */
   const transferSeat = await E(zoe).offer(transferInvite);
   const { vault: transferVault, vaultNotifier: transferNotifier } = await E(
     transferSeat,
@@ -1335,6 +1344,7 @@ test('transfer vault', async t => {
     harden({ RUN: paybackPayment }),
   );
   const t2Invite = await E(transferVault).makeTransferInvitation();
+  /** @type {UserSeat<VaultKit>} */
   const t2Seat = await E(zoe).offer(t2Invite);
   const { vault: t2Vault, vaultNotifier: t2Notifier } = await E(
     t2Seat,
@@ -1405,8 +1415,9 @@ test('overdeposit', async t => {
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1000n);
   const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { RUN: aliceLoanAmount },
@@ -1445,8 +1456,9 @@ test('overdeposit', async t => {
   // Create a loan for Bob for 1000 RUN with 200 aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 200n);
   const bobLoanAmount = AmountMath.make(runBrand, 1000n);
+  /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { RUN: bobLoanAmount },
@@ -1568,8 +1580,9 @@ test('mutable liquidity triggers and interest', async t => {
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
   const aliceCollateralAmount = AmountMath.make(aethBrand, 1000n);
   const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { RUN: aliceLoanAmount },
@@ -1607,8 +1620,9 @@ test('mutable liquidity triggers and interest', async t => {
   // Create a loan for Bob for 740 RUN with 100 Aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
   const bobLoanAmount = AmountMath.make(runBrand, 740n);
+  /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { RUN: bobLoanAmount },
@@ -1761,8 +1775,9 @@ test('collect fees from loan and AMM', async t => {
   // Create a loan for 470 RUN with 1100 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1100n);
   const loanAmount = AmountMath.make(runBrand, 470n);
+  /** @type {UserSeat<VaultKit>} */
   const loanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { RUN: loanAmount },
@@ -1860,8 +1875,9 @@ test('close loan', async t => {
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1000n);
   const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { RUN: aliceLoanAmount },
@@ -1898,8 +1914,9 @@ test('close loan', async t => {
   // Create a loan for Bob for 1000 RUN with 200 aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 200n);
   const bobLoanAmount = AmountMath.make(runBrand, 1000n);
+  /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { RUN: bobLoanAmount },
@@ -1922,6 +1939,7 @@ test('close loan', async t => {
 
   const runRepayment = await E(runIssuer).combine(harden([bobRun, runLent]));
 
+  /** @type {UserSeat<string>} */
   const aliceCloseSeat = await E(zoe).offer(
     E(aliceVault).makeCloseInvitation(),
     harden({
@@ -1996,8 +2014,9 @@ test('excessive loan', async t => {
   // Try to Create a loan for Alice for 5000 RUN with 100 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 100n);
   const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { RUN: aliceLoanAmount },
@@ -2072,8 +2091,9 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
   const aliceCollateralAmount = AmountMath.make(aethBrand, 1000n);
   const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { RUN: aliceLoanAmount },
@@ -2111,8 +2131,9 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   // Create a loan for Bob for 740 RUN with 100 Aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
   const bobLoanAmount = AmountMath.make(runBrand, 740n);
+  /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeLoanInvitation(),
+    E(lender).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { RUN: bobLoanAmount },

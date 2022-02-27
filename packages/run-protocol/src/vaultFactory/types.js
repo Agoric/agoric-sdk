@@ -36,19 +36,6 @@
  */
 
 /**
- * @typedef  {Object} VaultFactoryPublicFacet - the public facet
- * @property {() => Promise<Invitation<VaultKit>>} makeLoanInvitation
- * @property {() => Promise<Invitation<VaultKit>>} makeVaultInvitation
- * @property {() => Promise<Array<Collateral>>} getCollaterals
- * @property {() => Issuer} getRunIssuer
- * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
- * @property {(paramDescription: ParamDescription) => Ratio} getRatioParamState
- * @property {() => Record<Keyword, ParamShortDescription>} getGovernedParams
- * @property {() => Promise<GovernorPublic>} getContractGovernor
- * @property {(name: string) => Amount} getInvitationAmount
- */
-
-/**
  * @typedef  {Object} VaultFactory - the creator facet
  * @property {AddVaultType} addVaultType
  * @property {() => Promise<Array<Collateral>>} getCollaterals
