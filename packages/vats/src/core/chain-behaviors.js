@@ -80,7 +80,15 @@ export const bridgeCoreEval = async allPowers => {
                 });
 
                 // Evaluate the code in the context of the globals.
-                const behavior = new Compartment(globals).evaluate(code);
+                const c = new Compartment(globals);
+                harden(c.globalThis);
+                let behavior;
+                try {
+                  behavior = c.evaluate(code);
+                } catch (oops) {
+                  console.error(oops);
+                  throw oops;
+                }
                 return behavior(powers);
               }),
             ),
