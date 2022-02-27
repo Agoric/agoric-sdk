@@ -3,9 +3,6 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-/* eslint-disable import/extensions, import/no-unresolved */
-import crashingAutoRefund from './bundle-crashingAutoRefund';
-/* eslint-enable import/extensions, import/no-unresolved */
 
 const setupBasicMints = () => {
   const all = [
@@ -40,14 +37,17 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 };
 
 export function buildRootObject(vatPowers, vatParameters) {
+  const { D } = vatPowers;
   return Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
       const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
+      const bcap = await E(vatAdminSvc).getNamedBundleCap('crashingAutoRefund');
+      const id = D(bcap).getBundleID();
       const installations = {
-        crashAutoRefund: await E(zoe).install(crashingAutoRefund.bundle),
+        crashAutoRefund: await E(zoe).installBundleID(id),
       };
 
       const [testName, startingValues] = vatParameters.argv;

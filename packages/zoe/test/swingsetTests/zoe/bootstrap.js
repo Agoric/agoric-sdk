@@ -81,24 +81,24 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 };
 
 export function buildRootObject(vatPowers, vatParameters) {
-  const { argv, contractBundles: cb } = vatParameters;
+  const { D } = vatPowers;
+  const { argv } = vatParameters;
   return Far('root', {
     async bootstrap(vats, devices) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
       const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
-      const installations = {
-        automaticRefund: await E(zoe).install(cb.automaticRefund),
-        coveredCall: await E(zoe).install(cb.coveredCall),
-        secondPriceAuction: await E(zoe).install(cb.secondPriceAuction),
-        atomicSwap: await E(zoe).install(cb.atomicSwap),
-        simpleExchange: await E(zoe).install(cb.simpleExchange),
-        autoswap: await E(zoe).install(cb.autoswap),
-        sellItems: await E(zoe).install(cb.sellItems),
-        mintAndSellNFT: await E(zoe).install(cb.mintAndSellNFT),
-        otcDesk: await E(zoe).install(cb.otcDesk),
-      };
+      const installations = {};
+      const installedPs = vatParameters.contractNames.map(name =>
+        E(vatAdminSvc)
+          .getNamedBundleCap(name)
+          .then(bcap => E(zoe).installBundleID(D(bcap).getBundleID()))
+          .then(installation => {
+            installations[name] = installation;
+          }),
+      );
+      await Promise.all(installedPs);
 
       const [testName, startingValues] = argv;
 
