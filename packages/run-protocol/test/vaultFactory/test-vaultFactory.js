@@ -2183,20 +2183,13 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
   // liquidated.
-
+  // Advance time to trigger interest collection.
   for (let i = 0; i < 8; i += 1) {
     manualTimer.tick();
   }
   await waitForPromisesToSettle();
-  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
+  aliceUpdate = await E(aliceNotifier).getUpdateSince();
   bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
-
-  for (let i = 0; i < 5; i += 1) {
-    manualTimer.tick();
-  }
-  await waitForPromisesToSettle();
-  bobUpdate = await E(bobNotifier).getUpdateSince();
-
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
 });
