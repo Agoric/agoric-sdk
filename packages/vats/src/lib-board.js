@@ -7,35 +7,40 @@ import { crc6 } from './crc.js';
 
 import './types.js';
 
-const CRC_NUM_DIGITS = 2;
-const DIGITS_REGEXP = new RegExp(`^[0-9]{${CRC_NUM_DIGITS + 1},}$`);
+export const DEFAULT_CRC_DIGITS = 2;
+export const DEFAULT_PREFIX = 'board0';
 
 /**
  * We calculate a CRC, ensuring it's of CRC_NUM_DIGITS length.
  *
  * @param {number | string} data
+ * @param {number} crcDigits
  * @returns {string}
  */
-const calcCrc = data => {
+const calcCrc = (data, crcDigits) => {
   // The explicit use of crcmodels is to avoid a typing error.
   // Add 1 to guarantee we don't get a 0.
   const crc = crc6.calculate(data) + 1;
-  const crcStr = crc.toString().padStart(CRC_NUM_DIGITS, '0');
-  assert(
-    crcStr.length <= CRC_NUM_DIGITS,
-    `CRC too big for its britches ${crcStr}`,
-  );
+  const crcStr = crc.toString().padStart(crcDigits, '0');
+  assert(crcStr.length <= crcDigits, `CRC too big for its britches ${crcStr}`);
   return crcStr;
 };
 
 /**
  * Create a board to post things on.
  *
- * @param {bigint} [lastSequence]
- * @param {string} [prefix]
+ * @param {bigint | number} [initSequence]
+ * @param {Object} [options]
+ * @param {string} [options.prefix]
+ * @param {number} [options.crcDigits]
  * @returns {Board}
  */
-function makeBoard(lastSequence = 0n, prefix = 'board0') {
+function makeBoard(
+  initSequence = 0,
+  { prefix = DEFAULT_PREFIX, crcDigits = DEFAULT_CRC_DIGITS } = {},
+) {
+  const DIGITS_REGEXP = new RegExp(`^[0-9]{${crcDigits + 1},}$`);
+  let lastSequence = BigInt(initSequence);
   const idToVal = makeStore('boardId');
   const valToId = makeStore('value');
 
@@ -50,7 +55,7 @@ function makeBoard(lastSequence = 0n, prefix = 'board0') {
         // Append the CRC, so that the last part of the board ID is
         // well-distributed.
         const crcInput = `${prefix}${seq}`;
-        const crc = calcCrc(crcInput);
+        const crc = calcCrc(crcInput, crcDigits);
 
         const id = `${prefix}${crc}${seq}`;
 
@@ -65,12 +70,12 @@ function makeBoard(lastSequence = 0n, prefix = 'board0') {
       const digits = id.slice(prefix.length);
       assert(
         digits.match(DIGITS_REGEXP),
-        X`id must end in at least ${q(CRC_NUM_DIGITS + 1)} digits: ${id}`,
+        X`id must end in at least ${q(crcDigits + 1)} digits: ${id}`,
       );
-      const seq = digits.slice(CRC_NUM_DIGITS);
-      const allegedCrc = digits.slice(0, CRC_NUM_DIGITS);
+      const seq = digits.slice(crcDigits);
+      const allegedCrc = digits.slice(0, crcDigits);
       const crcInput = `${prefix}${seq}`;
-      const crc = calcCrc(crcInput);
+      const crc = calcCrc(crcInput, crcDigits);
       assert.equal(
         allegedCrc,
         crc,

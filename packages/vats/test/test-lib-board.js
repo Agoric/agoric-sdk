@@ -1,3 +1,4 @@
+// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/far';
@@ -25,7 +26,7 @@ test('makeBoard', async t => {
   t.deepEqual(board.getId(obj1), idObj1, `value matches id obj1`);
   t.deepEqual(board.getId(obj2), idObj2, `value matches id obj2`);
 
-  const board2 = makeBoard(undefined, 'tooboard');
+  const board2 = makeBoard(undefined, { prefix: 'tooboard' });
   const idObj1b = board2.getId(obj1);
   t.is(idObj1b, 'tooboard311');
   const idObj2b = board2.getId(obj2);
