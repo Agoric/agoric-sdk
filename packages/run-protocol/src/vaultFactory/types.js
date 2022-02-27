@@ -37,8 +37,8 @@
 
 /**
  * @typedef  {Object} VaultFactoryPublicFacet - the public facet
- * @property {() => Promise<Invitation>} makeLoanInvitation
- * @property {() => Promise<Invitation>} makeVaultInvitation
+ * @property {() => Promise<Invitation<VaultKit>>} makeLoanInvitation
+ * @property {() => Promise<Invitation<VaultKit>>} makeVaultInvitation
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Issuer} getRunIssuer
  * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
@@ -105,7 +105,7 @@
  * @typedef {BaseVault & VaultMixin} Vault
  * @typedef {Object} VaultMixin
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
- * @property {() => Promise<Invitation>} makeCloseInvitation
+ * @property {() => Promise<Invitation<string>>} makeCloseInvitation
  * @property {() => Promise<Invitation>} makeTransferInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
  * @property {() => Notifier<VaultUIState>} getNotifier
