@@ -46,9 +46,8 @@ might be interrupted by an out-of-gas error (in which case it could be
 replayed or restarted after a Keeper supplies more funds). If the delivery is
 interrupted, or fails, the buffer is discarded. (Note that these per-crank DB
 transactions are independent of any blockchain transactions that might have
-initiated the delivery). Syscalls which return data will read it from the
-crank buffer (if recently modified, or fall through to the persistent store
-below.
+initiated the delivery). Syscalls read recently-modified data from the crank
+buffer, otherwise falling through to the persistent store.
 
 All `dispatch` functions can schedule near-term work by using
 `Promise.resolve()` to append something to the promise queue. This work will
