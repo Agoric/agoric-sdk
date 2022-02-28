@@ -216,6 +216,9 @@ export function buildRootObject(vatPowers) {
     } else {
       reject(error);
     }
+    // TODO: if we get `newVatCallback(error)` or `vatTerminated()`, should
+    // we reject all pendingUpgrades. That will require indexing
+    // pendingUpgrades by vatID.
   }
 
   function meterCrossedThreshold(meterID, remaining) {

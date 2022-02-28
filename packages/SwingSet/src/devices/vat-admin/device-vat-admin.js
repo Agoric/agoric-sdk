@@ -226,6 +226,7 @@ export function buildDevice(tools, endowments) {
           assert.equal(slots.length, 0, 'upgradeVat() cannot handle refs yet');
           const args = JSON.parse(body);
           assert(Array.isArray(args), 'upgradeVat() args array');
+          assert.equal(args.length, 2, `upgradeVat() args length`);
           const [bundleID, vatParameters] = args;
           assert.typeof(bundleID, 'string', `upgradeVat() bundleID`);
           const vpCapdata = { body: JSON.stringify(vatParameters), slots };
@@ -247,6 +248,7 @@ export function buildDevice(tools, endowments) {
           assert.equal(slots.length, 0, 'cannot handle refs in terminate');
           const args = JSON.parse(body);
           assert(Array.isArray(args), 'terminateWithFailure() args array');
+          assert.equal(args.length, 2, `terminateWithFailure() args length`);
           const [vatID, reason] = args;
           assert.typeof(vatID, 'string', `terminateWithFailure() vatID`);
           const reasonCapdata = { body: JSON.stringify(reason), slots };
