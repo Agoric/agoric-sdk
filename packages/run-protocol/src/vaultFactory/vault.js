@@ -11,16 +11,13 @@ import {
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { observeNotifier } from '@agoric/notifier';
-
-// XXX avoid deep imports https://github.com/Agoric/agoric-sdk/issues/4255#issuecomment-1032117527
-import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
-
 import {
   invertRatio,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import { defineKind } from './nonvirtualStore.js';
 import { makeTracer } from '../makeTracer.js';
 import { setupOuter } from './vaultKit.js';
 

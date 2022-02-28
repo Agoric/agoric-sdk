@@ -54,6 +54,4 @@ export const setupOuter = inner => {
   return harden({ transferInvitationHook, updater });
 };
 
-/**
- * @typedef {(ReturnType<typeof setupOuter>)['transferInvitationHook']} TransferInvitationHook
- */
+/** @typedef {(ReturnType<typeof setupOuter>)['transferInvitationHook']} TransferInvitationHook */
