@@ -3,12 +3,12 @@ A walkthrough of how messages are passed from one Vat to another.
 
 Each SwingSet machine contains one or more Vats, all talking to a shared
 Kernel (and *not* directly to each other). Most Vats are isolated and can
-*only* talk to the kernel. Vats correspond to userspace processes in a unix
-system, and the SwingSet kernel is very much like the unix kernel which
+*only* talk to the kernel. Vats correspond to userspace processes in a Unix
+system, and the SwingSet kernel is very much like the Unix kernel which
 supports those processes.
 
 Vats contain some application-specific code (named "Vat Code"), which
-corresponds to the unix program written in C or some other language. For
+corresponds to the Unix program written in C or some other language. For
 SwingSet, most Vat Code is in the SES subset of Javascript, using orthogonal
 persistence, native platform Promises, and making eventual-send calls to
 local or remote objects with either the `E()` wrapper `p=E(x).foo(args)` or
@@ -18,7 +18,7 @@ non-SES language (e.g. a WASM box).
 
 Below the Vat Code, but still inside the Vat, there is a support layer which
 translates eventual-sends into kernel syscalls, and manages persistence. This
-corresponds to the `libc` layer in a unix process: user code does not invoke
+corresponds to the `libc` layer in a Unix process: user code does not invoke
 syscalls directly, but instead it calls standard library functions like
 `write()` which wrap those syscalls.
 
