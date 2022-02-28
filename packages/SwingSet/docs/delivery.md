@@ -7,14 +7,14 @@ Kernel (and *not* directly to each other). Most Vats are isolated and can
 system, and the SwingSet kernel is very much like the Unix kernel which
 supports those processes.
 
-Vats contain some application-specific code (named "Vat Code"), which
-corresponds to the Unix program written in C or some other language. For
-SwingSet, most Vat Code is in the SES subset of Javascript, using orthogonal
-persistence, native platform Promises, and making eventual-send calls to
-local or remote objects with either the `E()` wrapper `p=E(x).foo(args)` or
-(eventually) the wavy dot syntax `p=x~.foo(args)`. Other forms of Vat Code
-could exist, such as non-orthogonal (database/ORM-based) persistence, or in a
-non-SES language (e.g. a WASM box).
+Each vat contains some application-specific code (named "Vat Code"). For
+SwingSet, most Vat Code uses orthogonal peristence and is written in the SES
+subset of Javascript, employing native platform Promises and making
+eventual-send calls to local or remote objects with either the `E()` wrapper
+(`resultPromise=E(x).foo(args)`) or (eventually) the wavy dot syntax
+(`resultPromise=x~.foo(args)`). Other forms of Vat Code could exist, e.g. using
+non-orthogonal persistence such as a database or a non-SES language such as
+WASM.
 
 Below the Vat Code, but still inside the Vat, there is a support layer which
 translates eventual-sends into kernel syscalls, and manages persistence. This
