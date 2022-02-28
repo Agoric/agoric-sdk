@@ -12,7 +12,7 @@ import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
   ChoiceMethod,
   ElectionType,

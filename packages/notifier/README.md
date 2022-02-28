@@ -235,7 +235,7 @@ a `SubscriptionIterator` directly. Where Bob uses `observeIteration` which takes
 uses the lower level `observeIterator` which takes an `AsyncIterator`.
 
 ```js
-import { makePromiseKit } from '@agoric/promiseKit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const subscriptionIterator = subscription[Symbol.asyncIterator]();
 const { promise: afterA, resolve: afterAResolve } = makePromiseKit();

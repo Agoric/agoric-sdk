@@ -8,7 +8,7 @@ import { economyBundles } from '@agoric/run-protocol/src/importedBundles.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { observeIteration } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { buildRootObject } from '../src/vat-bank.js';
 import {
   mintInitialSupply,

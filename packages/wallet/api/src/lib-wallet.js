@@ -1497,12 +1497,15 @@ export function makeWallet({
 
   const attMakerPK = makePromiseKit();
 
+  const getAccountState = async () => E(attMakerPK.promise).getAccountState();
+
   const wallet = Far('wallet', {
     resolveAttMaker: attMaker => attMakerPK.resolve(attMaker),
     getAttMaker: () => attMakerPK.promise,
     saveOfferResult,
     getOfferResult,
     waitForDappApproval,
+    getAccountState,
     getDappsNotifier() {
       return dappsNotifier;
     },
