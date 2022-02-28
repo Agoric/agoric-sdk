@@ -12,6 +12,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import { makeCopyBag } from '@agoric/store';
+import { makePromiseKit } from '@endo/promise-kit';
 import { bootstrapRunLoC } from '../src/econ-behaviors.js';
 import * as Collect from '../src/collect.js';
 import * as testCases from './runLoC-test-case-sheet.js';
@@ -59,38 +60,100 @@ const genesisBldBalances = {
   agoric10k: 10_000n,
 };
 
-/**
- * @param {Brand} stakingBrand
- * @returns {StakingAuthority}
- */
-const mockBridge = stakingBrand => {
-  /** @param { bigint } v */
-  const ubld = v => AmountMath.make(stakingBrand, v);
+/** @type {<K, V>(m: Map<K, V>, k: K, v: V) => V} */
+const setDefault = (m, k, v) => {
+  if (m.has(k)) {
+    const vv = m.get(k);
+    assert(vv !== undefined);
+    return vv;
+  } else {
+    m.set(k, v);
+    return v;
+  }
+};
+
+const mockChain = genesisData => {
   let currentTime = 50n;
-  return Far('stakeReporter', {
-    /**
-     * @param { string } address
-     * @param { Brand } brand
-     */
-    getAccountState: (address, brand) => {
-      assert(brand === stakingBrand, X`unexpected brand: ${brand}`);
-      assert(address in genesisBldBalances, X`no such account: ${address}`);
-      const balance = genesisBldBalances[address];
-      currentTime += 10n;
+
+  /** @type {Map<string, bigint>} */
+  const bankBalance = new Map();
+  /** @type {Map<string, bigint>} */
+  const liened = new Map();
+  /** @type {Map<string, bigint>} */
+  const bonded = new Map();
+  /** @type {(addr: string, map: Map<string, bigint>) => bigint} */
+  const qty = (addr, map) => map.get(addr) || 0n;
+
+  const it = Far('simulator', {
+    sendTo: (addr, ustake) => {
+      bankBalance.set(addr, (bankBalance.get(addr) || 0n) + ustake);
+    },
+    stake: (addr, ustake) => {
+      bonded.set(addr, (bonded.get(addr) || 0n) + ustake);
+    },
+    /** @param {Brand} stakingBrand */
+    makeLienBridge: stakingBrand => {
+      /** @param { bigint } v */
+      const ubld = v => AmountMath.make(stakingBrand, v);
+
+      /** @type {StakingAuthority} */
+      const authority = Far('stakeReporter', {
+        /**
+         * @param { string } address
+         * @param { Brand } brand
+         */
+        getAccountState: (address, brand) => {
+          assert(brand === stakingBrand, X`unexpected brand: ${brand}`);
+          assert(bankBalance.has(address), X`no such account: ${address}`);
+
+          currentTime += 10n;
+          return harden({
+            total: ubld(qty(address, bankBalance)),
+            bonded: ubld(qty(address, bonded)),
+            locked: ubld(0n),
+            liened: ubld(qty(address, liened)),
+            unbonding: ubld(0n),
+            currentTime: (currentTime += 3n),
+          });
+        },
+        /** @type {(addr: string, amt: Amount<bigint>) => Promise<void>} */
+        setLiened: async (address, amount) => {
+          const { value } = AmountMath.coerce(stakingBrand, amount);
+          liened.set(address, value);
+        },
+      });
+      return authority;
+    },
+    provisionAccount: (name, src) => {
       return harden({
-        total: ubld(balance + 5n),
-        bonded: ubld(balance),
-        locked: ubld(0n),
-        liened: ubld(0n),
-        unbonding: ubld(0n),
-        currentTime,
+        getName: () => name,
+        getAddress: () => src,
+        sendTo: (dest, n) => {
+          assert.typeof(dest, 'string');
+          assert.typeof(n, 'bigint');
+          const b = (bankBalance.get(src) || 0n) - n;
+          assert(b >= 0n);
+          bankBalance.set(src, b);
+          bankBalance.set(dest, (bankBalance.get(dest) || 0n) + n);
+        },
+        stake: n => {
+          assert.typeof(n, 'bigint');
+          const b = qty(src, bankBalance) - n;
+          assert(b >= 0n);
+          bonded.set(src, n);
+        },
       });
     },
-    setLiened: async (_address, _amount) => {
-      // t.log(amount);
-    },
   });
+
+  entries(genesisData).forEach(([addr, value]) => bankBalance.set(addr, value));
+  return it;
 };
+
+const micro = harden({
+  unit: 1_000_000n,
+  displayInfo: { decimalPlaces: 6 },
+});
 
 const bootstrapZoeAndRun = async () => {
   let testJig;
@@ -110,7 +173,10 @@ const bootstrapZoeAndRun = async () => {
     makeFar(nonFarFeeMintAccess),
   ]);
   const zoe = makeFar(zoeService);
-  return { zoe, feeMintAccess, runBrand, getJig: () => testJig };
+
+  const bld = makeIssuerKit('BLD', AssetKind.NAT, micro.displayInfo);
+
+  return { zoe, feeMintAccess, runBrand, getJig: () => testJig, bld };
 };
 
 test('RUN mint access', async t => {
@@ -120,6 +186,87 @@ test('RUN mint access', async t => {
   const { zoe, feeMintAccess } = await bootstrapZoeAndRun();
   t.truthy(zoe);
   t.truthy(feeMintAccess);
+});
+
+// TODO: re-use econ-behaviors
+const startGetRun = async (
+  bundles,
+  authority,
+  { zoe, bld, runBrand, feeMintAccess, timer },
+) => {
+  const installations = await Collect.allValues({
+    governor: E(zoe).install(bundles.governor),
+    electorate: E(zoe).install(bundles.electorate),
+    getRUN: E(zoe).install(bundles.getRUN),
+  });
+
+  const collateralPrice = makeRatio(65n, runBrand, 100n, bld.brand); // arbitrary price
+  const collateralizationRatio = makeRatio(5n, runBrand, 1n); // arbitrary raio
+
+  return bootstrapRunLoC(
+    zoe,
+    timer,
+    feeMintAccess,
+    installations,
+    { collateralPrice, collateralizationRatio },
+    bld.issuer,
+    authority,
+  );
+};
+
+const makeWalletMaker = creatorFacet => {
+  const makeWallet = src => {
+    const attMaker = E(creatorFacet).getAttMaker(src);
+    return harden({ attMaker });
+  };
+  return makeWallet;
+};
+
+test('getRUN roles', async t => {
+  const bundles = theBundles(t);
+  const timer = buildManualTimer(t.log, 0n, 1n);
+  const { zoe, feeMintAccess, runBrand, bld } = await bootstrapZoeAndRun();
+  const runIssuer = E(zoe).getFeeIssuer();
+
+  const chain = mockChain({ addr1a: 1_000_000_000n * micro.unit });
+
+  const alice = chain.provisionAccount('Alice', 'addr1a');
+  const bob = chain.provisionAccount('Bob', 'addr1b');
+  alice.sendTo('addr1b', 5_000n * micro.unit);
+  bob.stake(3_000n * micro.unit);
+
+  const lienBridge = chain.makeLienBridge(bld.brand);
+  const { publicFacet, creatorFacet } = await startGetRun(bundles, lienBridge, {
+    zoe,
+    bld,
+    runBrand,
+    feeMintAccess,
+    timer,
+  });
+  const walletMaker = makeWalletMaker(creatorFacet);
+
+  // Bob introduces himself to the Agoric JS VM.
+  const bobWallet = walletMaker(bob.getAddress());
+
+  // Bob gets a lien against 2k of his 3k staked BLD.
+  const bobToLien = AmountMath.make(bld.brand, 2_000n * micro.unit);
+  const attPmt = E(bobWallet.attMaker).makeAttestation(bobToLien);
+  const attIssuer = E(publicFacet).getIssuer();
+  const attAmt = await E(attIssuer).getAmountOf(attPmt);
+
+  // Bob borrows 200 RUN against the lien.
+  const proposal = harden({
+    give: { Attestation: attAmt },
+    want: { RUN: AmountMath.make(runBrand, 200n * micro.unit) },
+  });
+  const seat = E(zoe).offer(
+    E(publicFacet).makeLoanInvitation(),
+    proposal,
+    harden({ Attestation: attPmt }),
+  );
+  const runPmt = E(seat).getPayout('RUN');
+  const actual = await E(runIssuer).getAmountOf(runPmt);
+  t.deepEqual(actual, proposal.want.RUN);
 });
 
 // test.skip('attestation facets@@@', async t => {
@@ -227,7 +374,7 @@ const testLoC = (
       installations,
       { collateralPrice, collateralizationRatio },
       bld.issuer,
-      mockBridge(bld.brand),
+      mockChain(bld.brand).authority,
     );
     const attIssuer = await E(publicFacet).getIssuer();
     const attBrand = await E(attIssuer).getBrand();
