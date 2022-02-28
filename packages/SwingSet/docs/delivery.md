@@ -22,12 +22,13 @@ corresponds to the `libc` layer in a Unix process: user code does not invoke
 syscalls directly, but instead it calls standard library functions like
 `write()` which wrap those syscalls.
 
-When the vat needs to send a message of some sort, it invokes one of the
-kernel's `syscall` functions (the vat receives a `syscall` object with three
-methods). To ensure that Vats are isolated from the kernel, and to build a
-deterministic transcript, these syscalls are limited to taking pure data as
-arguments (i.e. everything could be JSON serialized into a single string,
-without loss of correctness). The primary syscall is named `syscall.send()`.
+When the vat needs to send a message of some sort, it invokes a method of the
+`syscall` object provided to it by the kernel (cf.
+[Vat-Outbound Slot Translation](#vat-outbound-slot-translation)). To ensure that
+Vats are isolated from the kernel, and to build a deterministic transcript,
+these syscalls are limited to taking pure data as arguments (i.e. everything
+could be JSON serialized into a single string, without loss of correctness). The
+primary syscall is named `syscall.send()`.
 
 Each Vat turn is initiated by the kernel invoking a `dispatch` function: the
 Vat is defined by a `dispatch` object with two or three methods, which all
@@ -511,7 +512,7 @@ Some invocation patterns are legal, but unlikely to be useful:
 In some places, `dispatch.deliver()` is named `message`: we're still in the
 process of refactoring and unifying the codebase.
 
-## Outbound (Vat->Kernel) translation
+## Vat-Outbound Slot Translation
 
 Inside the implementations of all syscall methods (`send` and `resolve`), the
 Vat-specific argument slots are first mapped into kernel-space identifiers by
@@ -771,9 +772,9 @@ must be rejected, just as if decider Vat had called
 `CannotSendToData` object (for `Data`), or a copy of the Promise's own
 rejection object (for `Rejected`).
 
-## Inbound (Kernel->Vat) translation
+## Vat-Inbound Slot Translation
 
-Any slots in the operation must then be translated into identifiers that are
+Any slots in messages from the kernel must be translated into identifiers
 specific to the target Vat, by looking them up in the target Vat's C-List. If
 they do not already exist in this C-List, a new (negative) index will be
 allocated and added to the C-List.
