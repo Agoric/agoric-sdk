@@ -1,5 +1,8 @@
 // @ts-check
 
+/** @typedef {import('./vault').VaultUIState} VaultUIState */
+/** @typedef {import('./vault').VaultKit} VaultKit */
+
 /**
  * @typedef  {Object} AutoswapLocal
  * @property {(amount: Amount, brand: Brand) => Amount} getInputPrice
@@ -33,39 +36,12 @@
  */
 
 /**
- * @typedef  {Object} VaultFactoryPublicFacet - the public facet
- * @property {() => Promise<Invitation>} makeLoanInvitation
- * @property {() => Promise<Invitation>} makeVaultInvitation
- * @property {() => Promise<Array<Collateral>>} getCollaterals
- * @property {() => Issuer} getRunIssuer
- * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
- * @property {(paramDescription: ParamDescription) => Ratio} getRatioParamState
- * @property {() => Record<Keyword, ParamShortDescription>} getGovernedParams
- * @property {() => Promise<GovernorPublic>} getContractGovernor
- * @property {(name: string) => Amount} getInvitationAmount
- */
-
-/**
  * @typedef  {Object} VaultFactory - the creator facet
  * @property {AddVaultType} addVaultType
  * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation,
  * @property {() => Instance} getContractGovernor
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
- */
-
-/**
- * @typedef {Object} BaseUIState
- * @property {Amount<NatValue>} locked Amount of Collateral locked
- * @property {Amount<NatValue>} debt Amount of Loan (including accrued interest)
- */
-
-/**
- * @typedef {BaseUIState & LiquidationUIMixin} VaultUIState
- * @typedef {Object} LiquidationUIMixin
- * @property {Ratio} interestRate Annual interest rate charge
- * @property {Ratio} liquidationRatio
- * @property {'active' | 'liquidating' | 'liquidated' | 'closed' | 'transfer'} vaultState
  */
 
 /**
@@ -110,32 +86,16 @@
 /**
  * @typedef {Object} BaseVault
  * @property {() => Amount<NatValue>} getCollateralAmount
- * @property {() => Amount<NatValue>} getDebtAmount
+ * @property {() => Amount<NatValue>} getCurrentDebt
  * @property {() => Amount<NatValue>} getNormalizedDebt
  *
  * @typedef {BaseVault & VaultMixin} Vault
  * @typedef {Object} VaultMixin
  * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
- * @property {() => Promise<Invitation>} makeCloseInvitation
+ * @property {() => Promise<Invitation<string>>} makeCloseInvitation
  * @property {() => Promise<Invitation>} makeTransferInvitation
  * @property {() => ERef<UserSeat>} getLiquidationSeat
  * @property {() => Notifier<VaultUIState>} getNotifier
- */
-
-/**
- * @typedef {Object} LineOfCreditKit
- * @property {Notifier<BaseUIState>} uiNotifier
- * @property {BaseVault} vault
- * @property {{
- *    AdjustBalances: () => Promise<Invitation>,
- *    CloseVault: () => Promise<Invitation>,
- *  }} invitationMakers
- */
-
-/**
- * @typedef {Object} VaultKit
- * @property {Vault} vault
- * @property {Notifier<VaultUIState>} uiNotifier
  */
 
 /**

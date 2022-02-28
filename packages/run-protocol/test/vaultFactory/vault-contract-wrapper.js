@@ -146,10 +146,10 @@ export async function start(zcf, privateArgs) {
       collateralKit,
       actions: Far('vault actions', {
         add() {
-          return vaultKit.makeAdjustBalancesInvitation();
+          return vaultKit.invitationMakers.AdjustBalances();
         },
       }),
-      notifier: vaultKit.uiNotifier,
+      notifier: vaultKit.vaultNotifier,
     };
   }
 

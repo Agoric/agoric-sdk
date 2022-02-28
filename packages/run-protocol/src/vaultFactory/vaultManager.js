@@ -37,6 +37,14 @@ const { details: X } = assert;
 const trace = makeTracer('VM');
 
 /**
+ * @typedef {{
+ *  compoundedInterest: Ratio,
+ *  interestRate: Ratio,
+ *  latestInterestUpdate: bigint,
+ *  totalDebt: Amount<NatValue>,
+ * }} AssetState */
+
+/**
  * Each VaultManager manages a single collateral type.
  *
  * It manages some number of outstanding loans, each called a Vault, for which
@@ -114,6 +122,7 @@ export const makeVaultManager = (
   const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
     harden({
       compoundedInterest,
+      interestRate: shared.getInterestRate(),
       latestInterestUpdate,
       totalDebt,
     }),
@@ -230,9 +239,10 @@ export const makeVaultManager = (
    * @param {ZCFSeat} poolIncrementSeat
    */
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
-    trace('chargeAllVault', { updateTime });
+    trace('chargeAllVaults', { updateTime });
+    const interestRate = shared.getInterestRate();
     const interestCalculator = makeInterestCalculator(
-      shared.getInterestRate(),
+      interestRate,
       shared.getChargingPeriod(),
       shared.getRecordingPeriod(),
     );
@@ -250,6 +260,7 @@ export const makeVaultManager = (
 
     // done if none
     if (interestAccrued === 0n) {
+      trace('chargeAllVaults skipped due to no interest accrued');
       return;
     }
 
@@ -277,8 +288,10 @@ export const makeVaultManager = (
     // update running tally of total debt against this collateral
     ({ latestInterestUpdate } = debtStatus);
 
+    /** @type {AssetState} */
     const payload = harden({
       compoundedInterest,
+      interestRate,
       latestInterestUpdate,
       totalDebt,
     });

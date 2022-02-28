@@ -38,7 +38,10 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 
 const { details: X } = assert;
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ContractFacet} zcf
+ * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
+ */
 export const start = async (zcf, privateArgs) => {
   const {
     ammPublicFacet,
@@ -208,9 +211,9 @@ export const start = async (zcf, privateArgs) => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
 
-  /** @type {VaultFactoryPublicFacet} */
   const publicFacet = Far('vaultFactory public facet', {
-    makeLoanInvitation: makeVaultInvitation, // deprecated
+    /** @deprecated use makeVaultInvitation instead */
+    makeLoanInvitation: makeVaultInvitation,
     makeVaultInvitation,
     getCollaterals,
     getRunIssuer: () => runIssuer,
@@ -258,3 +261,4 @@ export const start = async (zcf, privateArgs) => {
     publicFacet,
   });
 };
+/** @typedef {Unpromise<ReturnType<typeof start>>['publicFacet']} VaultFactoryPublicFacet */
