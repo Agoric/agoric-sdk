@@ -71,6 +71,10 @@ export {
   makeScalarMapStore as makeStore, // Deprecated legacy
 } from './stores/scalarMapStore.js';
 
+// /////////////////////// Experimental ////////////////////////////////////////
+
+export { defineHeapKind } from './defineHeapKind.js';
+
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 
 // export default as well as makeLegacy* only for compatibility

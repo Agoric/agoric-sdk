@@ -11,6 +11,7 @@ export const {
 
 export {
   M,
+  defineHeapKind,
   makeScalarMapStore,
   makeScalarWeakMapStore,
   makeScalarSetStore,

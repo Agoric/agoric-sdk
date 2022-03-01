@@ -1,14 +1,21 @@
 // @ts-check
 
-import { Far } from '@endo/marshal';
+// import { defineHeapKind } from '@agoric/store';
+import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
 
 /**
  * @param {string} allegedName
  * @param {Brand} brand
- * @returns {Payment}
+ * @returns {() => Payment}
  */
-export const makePayment = (allegedName, brand) => {
-  return Far(`${allegedName} payment`, {
-    getAllegedBrand: () => brand,
-  });
+export const makePaymentMaker = (allegedName, brand) => {
+  const makePayment = defineKind(
+    `${allegedName} payment`,
+    () => ({}),
+    () => ({
+      getAllegedBrand: () => brand,
+    }),
+  );
+  return makePayment;
 };
+harden(makePaymentMaker);
