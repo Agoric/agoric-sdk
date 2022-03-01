@@ -439,66 +439,6 @@ export default function buildKernel(
     return null;
   }
 
-  async function deliverToTarget(target, msg) {
-    insistMessage(msg);
-    /** @type { PolicyInput } */
-    let policyInput = ['none'];
-    const { type } = parseKernelSlot(target);
-    if (type === 'object') {
-      const vatID = kernelKeeper.ownerOfKernelObject(target);
-      if (vatID) {
-        policyInput = await deliverToVat(vatID, target, msg);
-      } else if (msg.result) {
-        resolveToError(msg.result, VAT_TERMINATION_ERROR);
-      }
-    } else if (type === 'promise') {
-      const kp = kernelKeeper.getKernelPromise(target);
-      if (kp.state === 'redirected') {
-        // await deliverToTarget(kp.redirectTarget, msg); // probably correct
-        // TODO unimplemented
-        throw new Error('not implemented yet');
-      } else if (kp.state === 'fulfilled') {
-        const presence = extractPresenceIfPresent(kp.data);
-        if (presence) {
-          policyInput = await deliverToTarget(presence, msg);
-        } else if (msg.result) {
-          const s = `data is not callable, has no method ${msg.method}`;
-          // TODO: maybe replicate whatever happens with {}.foo() or 3.foo()
-          // etc: "TypeError: {}.foo is not a function"
-          resolveToError(msg.result, makeError(s));
-        }
-        // else { todo: maybe log error? }
-      } else if (kp.state === 'rejected') {
-        // TODO would it be simpler to redirect msg.kpid to kp?
-        if (msg.result) {
-          resolveToError(msg.result, kp.data);
-        }
-      } else if (kp.state === 'unresolved') {
-        if (!kp.decider) {
-          kernelKeeper.addMessageToPromiseQueue(target, msg);
-        } else {
-          insistVatID(kp.decider);
-          // eslint-disable-next-line no-use-before-define
-          const deciderVat = vatWarehouse.lookup(kp.decider);
-          if (deciderVat) {
-            if (deciderVat.enablePipelining) {
-              policyInput = await deliverToVat(kp.decider, target, msg);
-            } else {
-              kernelKeeper.addMessageToPromiseQueue(target, msg);
-            }
-          } else if (msg.result) {
-            resolveToError(msg.result, VAT_TERMINATION_ERROR);
-          }
-        }
-      } else {
-        assert.fail(X`unknown kernelPromise state '${kp.state}'`);
-      }
-    } else {
-      assert.fail(X`unable to send() to slot.type ${type}`);
-    }
-    return harden(policyInput);
-  }
-
   /**
    *
    * @param { * } message
@@ -746,6 +686,88 @@ export default function buildKernel(
     }
   }
 
+  /*
+   * routeSend(message) figures out where a 'send' event should go. If the
+   * message needs to be queued (it is sent to an unresolved promise without
+   * a pipelining decider), this queues it, and returns null. If the message
+   * goes splat against a dead vat or a non-deliverable resolved promise,
+   * this rejects any result promise, and returns null. Otherwise it returns
+   * the vatID and actual target to which it should be delivered. If the
+   * original target was a promise that has been fulfilled to an object,
+   * this returns that settled object.
+   *
+   * This does not decrement any refcounts. The caller should do that.
+   */
+
+  function routeSendEvent(message) {
+    const { target, msg } = message;
+    const { type } = parseKernelSlot(target);
+    assert(
+      ['object', 'promise'].includes(type),
+      X`unable to send() to slot.type ${type}`,
+    );
+
+    function splat(error) {
+      if (msg.result) {
+        resolveToError(msg.result, error);
+      }
+      return null; // message isn't going to a vat
+    }
+
+    function send(targetObject) {
+      const vatID = kernelKeeper.ownerOfKernelObject(targetObject);
+      if (!vatID) {
+        return splat(VAT_TERMINATION_ERROR);
+      }
+      return { vatID, targetObject };
+    }
+
+    function enqueue() {
+      kernelKeeper.addMessageToPromiseQueue(target, msg);
+      return null; // message is queued, not sent to a vat right now
+    }
+
+    if (type === 'object') {
+      return send(target);
+    }
+    // else type === 'promise'
+    const kp = kernelKeeper.getKernelPromise(target);
+    switch (kp.state) {
+      case 'fulfilled': {
+        const presence = extractPresenceIfPresent(kp.data);
+        if (presence) {
+          return send(presence);
+        }
+        // TODO: maybe mimic (3).foo(): "TypeError: XX.foo is not a function"
+        const s = `data is not callable, has no method ${msg.method}`;
+        return splat(makeError(s));
+      }
+      case 'rejected': {
+        // TODO maybe simpler to redirect msg.result to kp, if we had redirect
+        return splat(kp.data);
+      }
+      case 'unresolved': {
+        if (!kp.decider) {
+          return enqueue();
+        } else {
+          insistVatID(kp.decider);
+          // eslint-disable-next-line no-use-before-define
+          const deciderVat = vatWarehouse.lookup(kp.decider);
+          if (!deciderVat) {
+            // decider is dead
+            return splat(VAT_TERMINATION_ERROR);
+          }
+          if (deciderVat.enablePipelining) {
+            return { vatID: kp.decider, targetObject: target };
+          }
+          return enqueue();
+        }
+      }
+      default:
+        assert.fail(`unknown promise resolution '${kp.state}'`);
+    }
+  }
+
   function decrementSendEventRefCount(message) {
     kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
     if (message.msg.result) {
@@ -774,8 +796,12 @@ export default function buildKernel(
     // re-increment everything there.
 
     if (message.type === 'send') {
+      const route = routeSendEvent(message);
       decrementSendEventRefCount(message);
-      policyInput = await deliverToTarget(message.target, message.msg);
+      if (route) {
+        const { vatID, targetObject } = route;
+        policyInput = await deliverToVat(vatID, targetObject, message.msg);
+      }
     } else if (message.type === 'notify') {
       decrementNotifyEventRefCount(message);
       policyInput = await processNotify(message);
