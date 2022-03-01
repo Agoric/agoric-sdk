@@ -13,7 +13,11 @@ import {
 
 import '@agoric/zoe/exported.js';
 import { makePriceAuthority } from './priceAuthority.js';
-import { makeSinglePool } from './singlePool.js';
+import { makeFeeRatio } from './constantProduct/calcFees.js';
+import {
+  pricesForStatedInput,
+  pricesForStatedOutput,
+} from './constantProduct/calcSwapPrices.js';
 
 const { details: X } = assert;
 
@@ -101,7 +105,7 @@ export const makeAddPool = (
     return 'Added liquidity.';
   };
 
-  const makePool = defineKind(
+  const makePoolKit = defineKind(
     'pool',
     (liquidityZcfMint, poolSeat, secondaryBrand) => {
       const { brand: liquidityBrand, issuer: liquidityIssuer } =
@@ -117,7 +121,6 @@ export const makeAddPool = (
         liquidityZcfMint,
         updater,
         notifier,
-        vPool: undefined,
         toCentralPriceAuthority: undefined,
         fromCentralPriceAuthority: undefined,
       };
@@ -241,40 +244,108 @@ export const makeAddPool = (
         getToCentralPriceAuthority: () => state.toCentralPriceAuthority,
         getFromCentralPriceAuthority: () => state.fromCentralPriceAuthority,
         // eslint-disable-next-line no-use-before-define
-        getVPool: () => {
-          return state.vPool;
-        },
+        getVPool: () => harden(vPool),
       };
-      return pool;
-    },
 
-    (state, pool) => {
-      const { secondaryBrand, notifier } = state;
+      const getPools = () => ({
+        Central: pool.getCentralAmount(),
+        Secondary: pool.getSecondaryAmount(),
+      });
+      const publicPrices = prices => ({
+        amountIn: prices.swapperGives,
+        amountOut: prices.swapperGets,
+      });
 
-      const vPool = makeSinglePool(
-        zcf,
-        pool,
-        getProtocolFeeBP,
-        getPoolFeeBP,
-        protocolSeat,
-        (...args) => addLiquidityActualToState(state, ...args),
-      );
-      state.vPool = vPool;
+      const allocateGainsAndLosses = (inBrand, prices, seat) => {
+        seat.decrementBy(harden({ In: prices.swapperGives }));
+        seat.incrementBy(harden({ Out: prices.swapperGets }));
+        protocolSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+
+        if (inBrand === secondaryBrand) {
+          poolSeat.incrementBy(harden({ Secondary: prices.xIncrement }));
+          poolSeat.decrementBy(harden({ Central: prices.yDecrement }));
+        } else {
+          poolSeat.incrementBy(harden({ Central: prices.xIncrement }));
+          poolSeat.decrementBy(harden({ Secondary: prices.yDecrement }));
+        }
+
+        zcf.reallocate(poolSeat, seat, protocolSeat);
+        seat.exit();
+        pool.updateState();
+        return `Swap successfully completed.`;
+      };
+
+      const getPriceForInput = (amountIn, amountOut) => {
+        return pricesForStatedInput(
+          amountIn,
+          getPools(),
+          amountOut,
+          makeFeeRatio(getProtocolFeeBP(), centralBrand),
+          makeFeeRatio(getPoolFeeBP(), amountOut.brand),
+        );
+      };
+
+      const swapIn = (seat, amountIn, amountOut) => {
+        const prices = getPriceForInput(amountIn, amountOut);
+        return allocateGainsAndLosses(amountIn.brand, prices, seat);
+      };
+
+      const getPriceForOutput = (amountIn, amountOut) => {
+        return pricesForStatedOutput(
+          amountIn,
+          getPools(),
+          amountOut,
+          makeFeeRatio(getProtocolFeeBP(), centralBrand),
+          makeFeeRatio(getPoolFeeBP(), amountIn.brand),
+        );
+      };
+      const swapOut = (seat, amountIn, amountOut) => {
+        const prices = getPriceForOutput(amountIn, amountOut);
+        return allocateGainsAndLosses(amountIn.brand, prices, seat);
+      };
+
+      /** @type {VPool} */
+      const externalFacet = {
+        getInputPrice: (amountIn, amountOut) =>
+          publicPrices(getPriceForInput(amountIn, amountOut)),
+        getOutputPrice: (amountIn, amountOut) =>
+          publicPrices(getPriceForOutput(amountIn, amountOut)),
+        swapIn,
+        swapOut,
+      };
+
+      const internalFacet = {
+        getPriceForInput,
+        getPriceForOutput,
+        addLiquidityActual: (...args) =>
+          addLiquidityActualToState(state, ...args),
+      };
+
+      const vPool = {
+        externalFacet,
+        internalFacet,
+      };
 
       const getInputPriceForPA = (amountIn, brandOut) =>
-        vPool.externalFacet.getInputPrice(
-          amountIn,
-          AmountMath.makeEmpty(brandOut),
-        );
+        externalFacet.getInputPrice(amountIn, AmountMath.makeEmpty(brandOut));
       const getOutputPriceForPA = (brandIn, amountout) =>
-        vPool.externalFacet.getInputPrice(
-          AmountMath.makeEmpty(brandIn),
-          amountout,
-        );
+        externalFacet.getInputPrice(AmountMath.makeEmpty(brandIn), amountout);
 
-      state.toCentralPriceAuthority = makePriceAuthority(
+      const forPA = {
         getInputPriceForPA,
         getOutputPriceForPA,
+      };
+
+      return { pool, externalFacet, internalFacet, forPA };
+    },
+
+    (state, facets) => {
+      const { secondaryBrand, notifier } = state;
+      const { forPA } = facets;
+
+      state.toCentralPriceAuthority = makePriceAuthority(
+        forPA.getInputPriceForPA,
+        forPA.getOutputPriceForPA,
         secondaryBrand,
         centralBrand,
         timer,
@@ -283,8 +354,8 @@ export const makeAddPool = (
         quoteIssuerKit,
       );
       state.fromCentralPriceAuthority = makePriceAuthority(
-        getInputPriceForPA,
-        getOutputPriceForPA,
+        forPA.getInputPriceForPA,
+        forPA.getOutputPriceForPA,
         centralBrand,
         secondaryBrand,
         timer,
@@ -332,7 +403,7 @@ export const makeAddPool = (
       harden({ decimalPlaces: 6 }),
     );
     const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-    const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
+    const { pool } = makePoolKit(liquidityZCFMint, poolSeat, secondaryBrand);
     initPool(secondaryBrand, pool);
     return liquidityZCFMint.getIssuerRecord().issuer;
   };
