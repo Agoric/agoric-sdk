@@ -143,35 +143,29 @@ export const makeVaultManager = (
     }
   };
 
-  /**
-   *
-   * @param {[key: string, vaultKit: InnerVault]} record
-   */
-  const liquidateAndRemove = async ([key, vault]) => {
-    trace('liquidating', vault.getVaultSeat().getProposal());
-
-    try {
-      // Start liquidation (vaultState: LIQUIDATING)
-      await liquidate(
-        zcf,
-        vault,
-        runMint.burnLosses,
-        liquidationStrategy,
-        collateralBrand,
-      );
-
-      vaultsToLiquidate.delete(key);
-    } catch (e) {
-      // XXX should notify interested parties
-      console.error('liquidateAndRemove failed with', e);
-    }
-  };
-
   const executeLiquidation = async () => {
     // Start all promises in parallel
     // XXX we should have a direct method to map over entries
     const liquidations = Array.from(vaultsToLiquidate.entries()).map(
-      liquidateAndRemove,
+      async ([key, vault]) => {
+        trace('liquidating', vault.getVaultSeat().getProposal());
+
+        try {
+          // Start liquidation (vaultState: LIQUIDATING)
+          await liquidate(
+            zcf,
+            vault,
+            runMint.burnLosses,
+            liquidationStrategy,
+            collateralBrand,
+          );
+
+          vaultsToLiquidate.delete(key);
+        } catch (e) {
+          // XXX should notify interested parties
+          console.error('liquidateAndRemove failed with', e);
+        }
+      },
     );
     return Promise.all(liquidations);
   };
