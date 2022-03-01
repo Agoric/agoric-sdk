@@ -40,7 +40,7 @@ export async function start(zcf, privateArgs) {
   let currentInterest = makeRatio(5n, runBrand); // 5%
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
-  function reallocateReward(amount, fromSeat, otherSeat) {
+  function reallocateWithFee(amount, fromSeat, otherSeat) {
     vaultFactorySeat.incrementBy(
       fromSeat.decrementBy(
         harden({
@@ -75,7 +75,7 @@ export async function start(zcf, privateArgs) {
     getRecordingPeriod() {
       return DAY;
     },
-    reallocateReward,
+    reallocateWithFee,
     applyDebtDelta() {},
     getCollateralQuote() {
       return Promise.resolve({

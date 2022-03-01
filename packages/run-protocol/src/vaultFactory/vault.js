@@ -105,7 +105,7 @@ const makeOuterKit = inner => {
  * @typedef {Object} InnerVaultManagerBase
  * @property {(oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
  * @property {() => Brand} getCollateralBrand
- * @property {ReallocateReward} reallocateReward
+ * @property {ReallocateWithFee} reallocateWithFee
  * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
  * @property {(oldDebt: Amount, oldCollateral: Amount, vaultId: VaultId) => void} updateVaultPriority
  */
@@ -606,11 +606,12 @@ export const makeInnerVault = (
     }
 
     // mint to vaultSeat, then reallocate to reward and client, then burn from
-    // vaultSeat. Would using a separate seat clarify the accounting?
+    // vaultSeat. Would using a separate seat clarify the accounting?\
+    // TODO what if there isn't anything to mint?
     runMint.mintGains(harden({ RUN: toMint }), vaultSeat);
     transferCollateral(clientSeat);
     transferRun(clientSeat);
-    manager.reallocateReward(fee, vaultSeat, clientSeat);
+    manager.reallocateWithFee(fee, vaultSeat, clientSeat);
 
     // parent needs to know about the change in debt
     refreshLoanTracking(oldDebt, oldCollateral, newDebt);
@@ -685,7 +686,7 @@ export const makeInnerVault = (
     vaultSeat.incrementBy(
       seat.decrementBy(harden({ Collateral: collateralAmount })),
     );
-    manager.reallocateReward(fee, vaultSeat, seat);
+    manager.reallocateWithFee(fee, vaultSeat, seat);
 
     refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
 
