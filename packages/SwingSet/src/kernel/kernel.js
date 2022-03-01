@@ -746,6 +746,22 @@ export default function buildKernel(
     }
   }
 
+  function decrementSendEventRefCount(message) {
+    kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
+    if (message.msg.result) {
+      kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
+    }
+    let idx = 0;
+    for (const argSlot of message.msg.args.slots) {
+      kernelKeeper.decrementRefCount(argSlot, `deq|msg|s${idx}`);
+      idx += 1;
+    }
+  }
+
+  function decrementNotifyEventRefCount(message) {
+    kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
+  }
+
   const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
 
   async function deliverRunQueueEvent(message) {
@@ -758,18 +774,10 @@ export default function buildKernel(
     // re-increment everything there.
 
     if (message.type === 'send') {
-      kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
-      if (message.msg.result) {
-        kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
-      }
-      let idx = 0;
-      for (const argSlot of message.msg.args.slots) {
-        kernelKeeper.decrementRefCount(argSlot, `deq|msg|s${idx}`);
-        idx += 1;
-      }
+      decrementSendEventRefCount(message);
       policyInput = await deliverToTarget(message.target, message.msg);
     } else if (message.type === 'notify') {
-      kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
+      decrementNotifyEventRefCount(message);
       policyInput = await processNotify(message);
     } else if (message.type === 'create-vat') {
       // creating a new dynamic vat will immediately do start-vat
