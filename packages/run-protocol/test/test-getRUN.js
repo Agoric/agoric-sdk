@@ -287,6 +287,9 @@ const td1 = [
   [`checkRUNDebt`, 100n],
   [`checkBLDLiened`, 6000n],
   [`checkRUNBalance`, 100n],
+  [`borrowMoreRUN`, 100n],
+  [`checkRUNDebt`, 200n],
+  [`checkRUNBalance`, 200n],
 ];
 
 test('data driven', async t => {
@@ -355,8 +358,20 @@ test('data driven', async t => {
       E(runPurse).deposit(runPmt);
       offerResult = await E(seat).getOfferResult();
     },
+    borrowMoreRUN: async n => {
+      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      const runAmt = AmountMath.make(runBrand, n * micro.unit);
+      const proposal = harden({
+        want: { RUN: runAmt },
+      });
+      const seat = E(zoe).offer(
+        E(offerResult.invitationMakers).AdjustBalances(),
+        proposal,
+      );
+      const runPmt = await E(seat).getPayout('RUN');
+      E(runPurse).deposit(runPmt);
+    },
     checkRUNBalance: async target => {
-      // TODO: move to checkRUN thingy
       const actual = await E(runPurse).getCurrentAmount();
       t.deepEqual(actual, AmountMath.make(runBrand, target * micro.unit));
     },
