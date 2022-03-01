@@ -10,7 +10,6 @@ import {
 } from '@agoric/governance';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
-import { makeStakeReporter } from '@agoric/vats/src/my-lien.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
@@ -38,10 +37,7 @@ const DEFAULT_PROTOCOL_FEE = 6n;
 const CENTRAL_DENOM_NAME = 'urun';
 
 /**
- * @param {WellKnownSpaces & EconomyBootstrapPowers & {
- *   vatParameters: {
- *     argv: { economicCommitteeAddresses?: string[] },
- *   }}} powers
+ * @param {WellKnownSpaces & EconomyBootstrapPowers } powers
  * @param {{ committeeName: string, committeeSize: number }} electorateTerms
  */
 export const startEconomicCommittee = async (
@@ -546,35 +542,44 @@ export const bootstrapRunLoC = async (
 };
 harden(bootstrapRunLoC);
 
-/** @param {BootstrapPowers} powers */
-export const startGetRun = async ({
-  consume: {
-    zoe,
-    // ISSUE: is there some reason Zoe shouldn't await this???
-    feeMintAccess: feeMintAccessP,
-    getRUNBundle,
-    bridgeManager: bridgeP,
-    client,
-    chainTimerService,
+/**
+ * @param {BootstrapPowers} powers
+ * @param {Object} config
+ * @param {Rational} config.ratio ratio of collateral value to available value
+ * @param {Rational} config.price stake (BLD) price in RUN
+ * @typedef {[bigint, bigint]} Rational
+ */
+export const startGetRun = async (
+  {
+    consume: {
+      zoe,
+      // ISSUE: is there some reason Zoe shouldn't await this???
+      feeMintAccess: feeMintAccessP,
+      getRUNBundle,
+      lienBridge,
+      client,
+      chainTimerService,
+    },
+    // @ts-ignore TODO: add to BootstrapPowers
+    produce: { getRUNCreatorFacet },
+    installation: {
+      consume: { contractGovernor, committee },
+      produce: { getRUN: getRUNinstallR },
+    },
+    instance: {
+      produce: { getRUN: getRUNinstanceR },
+    },
+    brand: {
+      consume: { BLD: bldBrandP, RUN: runBrandP },
+      produce: { Attestation: attestationBrandR },
+    },
+    issuer: {
+      consume: { BLD: bldIssuer },
+      produce: { Attestation: attestationIssuerR },
+    },
   },
-  installation: {
-    consume: { contractGovernor, committee },
-    produce: { getRUN: getRUNinstallR },
-  },
-  instance: {
-    produce: { getRUN: getRUNinstanceR },
-  },
-  brand: {
-    consume: { BLD: bldBrandP, RUN: runBrandP },
-    produce: { Attestation: attestationBrandR },
-  },
-  issuer: {
-    consume: { BLD: bldIssuer },
-    produce: { Attestation: attestationIssuerR },
-  },
-}) => {
-  const bridgeManager = await bridgeP;
-
+  config = { ratio: [5n, 1n], price: [120n, 100n] },
+) => {
   const bundle = await getRUNBundle;
   const [
     feeMintAccess,
@@ -591,20 +596,17 @@ export const startGetRun = async ({
     committee,
     E(zoe).install(bundle),
   ]);
-  const collateralPrice = makeRatio(65n, runBrand, 100n, bldBrand); // arbitrary price
-  const collateralizationRatio = makeRatio(5n, runBrand, 1n); // arbitrary raio
+  /** @type {(r: Rational, b?: Brand) => Ratio} */
+  const pairToRatio = ([n, d], brand2 = undefined) =>
+    makeRatio(n, runBrand, d, brand2);
+  const collateralPrice = pairToRatio(config.price, bldBrand);
+  const collateralizationRatio = pairToRatio(config.ratio);
 
   const installations = {
     governor,
     electorate,
     getRUN: installation,
   };
-
-  /** @type { ERef<StakingAuthority> } */
-  const waitForever = new Promise(() => {});
-  const lienBridge = bridgeManager
-    ? makeStakeReporter(bridgeManager, bldBrand)
-    : waitForever;
 
   // TODO: finish renaming bootstrapRunLoC etc.
   // TODO: produce getRUNGovernorCreatorFacet, getRUNCreatorFacet, ...
@@ -620,6 +622,7 @@ export const startGetRun = async ({
   const attIssuer = E(publicFacet).getIssuer();
   const attBrand = await E(attIssuer).getBrand();
 
+  getRUNCreatorFacet.resolve(creatorFacet);
   getRUNinstallR.resolve(installation);
   getRUNinstanceR.resolve(instance);
   attestationBrandR.resolve(attBrand);

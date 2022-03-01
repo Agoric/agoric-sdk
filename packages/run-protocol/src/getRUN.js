@@ -15,6 +15,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { fit, getCopyBagEntries, M } from '@agoric/store';
 import { makeAttestationFacets } from './attestation/attestation.js';
+import { collectBrandInfo, makeFormatter } from './amountFormat.js';
 
 const { details: X } = assert;
 
@@ -170,8 +171,10 @@ export const makeLineOfCreditKit = (
 /**
  * @param {{ RUN: Brand, Attestation: Brand, Stake: Brand }} brands
  * @param {(name: string) => Ratio} getRatio
+ * @param {import('./amountFormat.js').BrandInfo} brandInfo
  */
-const makeCreditPolicy = (brands, getRatio) => {
+const makeCreditPolicy = (brands, getRatio, brandInfo) => {
+  const fmt = makeFormatter(brandInfo);
   /**
    * @param {Amount} attestationGiven
    * @param {Amount} runWanted
@@ -196,7 +199,11 @@ const makeCreditPolicy = (brands, getRatio) => {
     const collateralizedRun = ceilMultiplyBy(runWanted, collateralizationRatio);
     assert(
       AmountMath.isGTE(maxAvailable, collateralizedRun),
-      X`${amountLiened} at price ${collateralPrice} not enough to borrow ${runWanted} with ${collateralizationRatio}`,
+      X`${fmt.amount(amountLiened)} at price ${fmt.ratio(
+        collateralPrice,
+      )} not enough to borrow ${fmt.amount(runWanted)} with ${fmt.ratio(
+        collateralizationRatio,
+      )}`,
     );
 
     return { runWanted, attestationGiven, amountLiened };
@@ -268,9 +275,11 @@ const start = async (
 
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
   const { brand: runBrand, issuer: runIssuer } = runMint.getIssuerRecord();
+  const brandInfo = await collectBrandInfo([runBrand, stakeBrand, attestBrand]);
   const creditPolicy = makeCreditPolicy(
     { Attestation: attestBrand, RUN: runBrand, Stake: stakeBrand },
     getRatio,
+    brandInfo,
   );
 
   const revealRunBrandToTest = () => {

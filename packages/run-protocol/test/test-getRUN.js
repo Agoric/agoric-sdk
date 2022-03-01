@@ -12,10 +12,14 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import { makeCopyBag } from '@agoric/store';
-import { makePromiseKit } from '@endo/promise-kit';
-import { bootstrapRunLoC } from '../src/econ-behaviors.js';
+import {
+  bootstrapRunLoC,
+  startEconomicCommittee,
+  startGetRun,
+} from '../src/econ-behaviors.js';
 import * as Collect from '../src/collect.js';
 import * as testCases from './runLoC-test-case-sheet.js';
+import { setupAMMBootstrap } from './amm/vpool-xyk-amm/setup.js';
 
 const contractRoots = {
   getRUN: '../src/getRUN.js',
@@ -58,18 +62,6 @@ const genesisBldBalances = {
   agoric5k: 5_000n,
   agoric9k: 9_000n,
   agoric10k: 10_000n,
-};
-
-/** @type {<K, V>(m: Map<K, V>, k: K, v: V) => V} */
-const setDefault = (m, k, v) => {
-  if (m.has(k)) {
-    const vv = m.get(k);
-    assert(vv !== undefined);
-    return vv;
-  } else {
-    m.set(k, v);
-    return v;
-  }
 };
 
 const mockChain = genesisData => {
@@ -181,32 +173,45 @@ test('RUN mint access', async t => {
   t.truthy(feeMintAccess);
 });
 
-// TODO: re-use econ-behaviors
-const startGetRun = async (
-  bundles,
-  authority,
-  { rateP, priceP },
-  { zoe, bld, runBrand, feeMintAccess, timer },
-) => {
-  const installations = await Collect.allValues({
-    governor: E(zoe).install(bundles.governor),
-    electorate: E(zoe).install(bundles.electorate),
-    getRUN: E(zoe).install(bundles.getRUN),
+/**
+ * Note: caller must produce client.
+ *
+ * @param {*} t
+ */
+const bootstrapGetRun = async t => {
+  const bundles = theBundles(t);
+  const timer = buildManualTimer(t.log, 0n, 1n);
+  const { zoe, feeMintAccess, runBrand, bld } = await bootstrapZoeAndRun();
+  const runIssuer = E(zoe).getFeeIssuer();
+
+  const chain = mockChain({ addr1a: 1_000_000_000n * micro.unit });
+  const lienBridge = chain.makeLienBridge(bld.brand);
+
+  const space = await setupAMMBootstrap(timer, zoe);
+  const { produce, brand, issuer } = space;
+  produce.zoe.resolve(zoe);
+  produce.feeMintAccess.resolve(feeMintAccess);
+  produce.getRUNBundle.resolve(bundles.getRUN);
+  produce.lienBridge.resolve(lienBridge);
+  produce.chainTimerService.resolve(timer);
+  brand.produce.BLD.resolve(bld.brand);
+  brand.produce.RUN.resolve(runBrand);
+  issuer.produce.BLD.resolve(bld.issuer);
+  issuer.produce.RUN.resolve(runIssuer);
+
+  const mockClient = harden({
+    assignBundle: fns => {
+      t.log('assignBundle:', fns);
+    },
   });
+  produce.client.resolve(mockClient);
 
-  const [rate, price] = await Promise.all([rateP, priceP]);
-  const collateralPrice = makeRatio(price[0], runBrand, price[1], bld.brand);
-  const collateralizationRatio = makeRatio(rate[0], runBrand, rate[1]);
-
-  return bootstrapRunLoC(
-    zoe,
-    timer,
-    feeMintAccess,
-    installations,
-    { collateralPrice, collateralizationRatio },
-    bld.issuer,
-    authority,
-  );
+  await Promise.all([
+    // @ts-ignore TODO: resolve this type
+    startEconomicCommittee(space),
+    startGetRun(space),
+  ]);
+  return { chain, space };
 };
 
 const makeWalletMaker = creatorFacet => {
@@ -217,39 +222,27 @@ const makeWalletMaker = creatorFacet => {
   return makeWallet;
 };
 
-test('getRUN roles', async t => {
-  const bundles = theBundles(t);
-  const timer = buildManualTimer(t.log, 0n, 1n);
-  const { zoe, feeMintAccess, runBrand, bld } = await bootstrapZoeAndRun();
-  const runIssuer = E(zoe).getFeeIssuer();
+test('getRUN API usage', async t => {
+  const { chain, space } = await bootstrapGetRun(t);
+  const { consume } = space;
+  const { zoe, getRUNCreatorFacet: creatorFacet } = consume;
+  const runBrand = await space.brand.consume.RUN;
+  const bldBrand = await space.brand.consume.BLD;
+  const runIssuer = await space.issuer.consume.RUN;
+  const publicFacet = E(zoe).getPublicFacet(space.instance.consume.getRUN);
 
-  const chain = mockChain({ addr1a: 1_000_000_000n * micro.unit });
-
-  const alice = chain.provisionAccount('Alice', 'addr1a');
+  const founder = chain.provisionAccount('Alice', 'addr1a');
   const bob = chain.provisionAccount('Bob', 'addr1b');
-  alice.sendTo('addr1b', 5_000n * micro.unit);
+  founder.sendTo('addr1b', 5_000n * micro.unit);
   bob.stake(3_000n * micro.unit);
 
-  const lienBridge = chain.makeLienBridge(bld.brand);
-  const { publicFacet, creatorFacet } = await startGetRun(
-    bundles,
-    lienBridge,
-    { rateP: [500n, 100n], priceP: [65n, 100n] },
-    {
-      zoe,
-      bld,
-      runBrand,
-      feeMintAccess,
-      timer,
-    },
-  );
   const walletMaker = makeWalletMaker(creatorFacet);
 
   // Bob introduces himself to the Agoric JS VM.
   const bobWallet = walletMaker(bob.getAddress());
 
   // Bob gets a lien against 2k of his 3k staked BLD.
-  const bobToLien = AmountMath.make(bld.brand, 2_000n * micro.unit);
+  const bobToLien = AmountMath.make(bldBrand, 2_000n * micro.unit);
   const attPmt = E(bobWallet.attMaker).makeAttestation(bobToLien);
   const attIssuer = E(publicFacet).getIssuer();
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
@@ -272,8 +265,6 @@ test('getRUN roles', async t => {
 /** @type {[string, unknown][]} */
 const td1 = [
   // 1	Starting LoC
-  [`setRate`, [500n, 100n]],
-  [`setPrice`, [120n, 100n]],
   [`buyBLD`, 10_000n],
   [`stakeBLD`, 3_000n],
   [`lienBLD`, 2_000n],
@@ -291,38 +282,34 @@ const td1 = [
   [`stakeBLD`, 5_000n],
   [`checkBLDStaked`, 8_000n],
   [`lienBLD`, 8_000n],
+  [`checkBLDLiened`, 8_000n],
   [`borrowMoreRUN`, 1_400n],
   [`checkRUNDebt`, 1_600n],
 ];
 
 test('data driven', async t => {
-  const bundles = theBundles(t);
-  const timer = buildManualTimer(t.log, 0n, 1n);
-  const { zoe, feeMintAccess, runBrand, bld } = await bootstrapZoeAndRun();
-  const runIssuer = E(zoe).getFeeIssuer();
+  const { chain, space } = await bootstrapGetRun(t);
+  const { consume } = space;
 
-  const chain = mockChain({ addr1a: 1_000_000_000n * micro.unit });
+  // @ts-ignore TODO: getRUNCreatorFacet type in vats
+  const { zoe, getRUNCreatorFacet, lienBridge } = consume;
+  const { RUN: runIssuer } = space.issuer.consume;
+  const [bldBrand, runBrand] = await Promise.all([
+    space.brand.consume.BLD,
+    space.brand.consume.RUN,
+  ]);
+  const { getRUN: getRUNinstance } = space.instance.consume;
+  const getRUN = {
+    instance: getRUNinstance,
+    publicFacet: E(zoe).getPublicFacet(getRUNinstance),
+    creatorFacet: getRUNCreatorFacet,
+  };
 
-  const genesisBLD = chain.provisionAccount('genesis BLD', 'addr1a');
+  const founder = chain.provisionAccount('founder', 'addr1a');
   const bob = chain.provisionAccount('Bob', 'addr1b');
-  const lienBridge = chain.makeLienBridge(bld.brand);
-  const [pricePK, ratePK] = [makePromiseKit(), makePromiseKit()];
-  const getRun = startGetRun(
-    bundles,
-    lienBridge,
-    { rateP: ratePK.promise, priceP: pricePK.promise },
-    {
-      zoe,
-      bld,
-      runBrand,
-      feeMintAccess,
-      timer,
-    },
-  );
-  const publicFacet = E.get(getRun).publicFacet;
-  const creatorFacet = E.get(getRun).creatorFacet;
-  const attIssuer = E(publicFacet).getIssuer();
-  const walletMaker = makeWalletMaker(creatorFacet);
+
+  const attIssuer = E(getRUN.publicFacet).getIssuer();
+  const walletMaker = makeWalletMaker(getRUN.creatorFacet);
 
   // Bob introduces himself to the Agoric JS VM.
   const bobWallet = walletMaker(bob.getAddress());
@@ -331,17 +318,17 @@ test('data driven', async t => {
   const runPurse = E(runIssuer).makeEmptyPurse();
   let offerResult;
   const driver = harden({
-    setRate: ratePK.resolve,
-    setPrice: pricePK.resolve,
-    buyBLD: n => genesisBLD.sendTo(bob.getAddress(), n * micro.unit),
+    // setRate: ratePK.resolve,
+    // setPrice: pricePK.resolve,
+    buyBLD: n => founder.sendTo(bob.getAddress(), n * micro.unit),
     stakeBLD: n => bob.stake(n * micro.unit),
     lienBLD: async target => {
       const current = await E(lienBridge).getAccountState(
         bob.getAddress(),
-        bld.brand,
+        bldBrand,
       );
       const delta = AmountMath.subtract(
-        AmountMath.make(bld.brand, target * micro.unit),
+        AmountMath.make(bldBrand, target * micro.unit),
         current.liened,
       );
       const attPmt = await E(bobWallet.attMaker).makeAttestation(delta);
@@ -350,21 +337,21 @@ test('data driven', async t => {
     checkBLDStaked: async expected => {
       const actual = await E(lienBridge).getAccountState(
         bob.getAddress(),
-        bld.brand,
+        bldBrand,
       );
       t.deepEqual(
         actual.bonded,
-        AmountMath.make(bld.brand, expected * micro.unit),
+        AmountMath.make(bldBrand, expected * micro.unit),
       );
     },
     checkBLDLiened: async expected => {
       const actual = await E(lienBridge).getAccountState(
         bob.getAddress(),
-        bld.brand,
+        bldBrand,
       );
       t.deepEqual(
         actual.liened,
-        AmountMath.make(bld.brand, expected * micro.unit),
+        AmountMath.make(bldBrand, expected * micro.unit),
       );
     },
     borrowRUN: async n => {
@@ -375,7 +362,7 @@ test('data driven', async t => {
         want: { RUN: AmountMath.make(runBrand, n * micro.unit) },
       });
       const seat = E(zoe).offer(
-        E(publicFacet).makeLoanInvitation(),
+        E(getRUN.publicFacet).makeLoanInvitation(),
         proposal,
         harden({ Attestation: attPmt }),
       );
