@@ -262,7 +262,7 @@
  *     namesByAddressAdmin: Producer<NameAdmin>,
  *   },
  * }} BootstrapSpace
- * @typedef {ReturnType<Unpromise<BankVat>['makeBankManager']>} BankManager
+ * @typedef {ReturnType<Awaited<BankVat>['makeBankManager']>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
  * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>} MintsVat
@@ -286,4 +286,3 @@
  */
 
 /** @template T @typedef  {{vatPowers: { D: DProxy }, devices: T}} BootDevices<T>  */
-/** @template T @typedef {import('@agoric/eventual-send').Unpromise<T>} Unpromise<T> */
