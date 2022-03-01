@@ -175,6 +175,13 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     home: { produce: { faucet: true } },
   },
+  makeStakeReporter: {
+    consume: { bridgeManager: true },
+    produce: { lienBridge: true },
+    brand: {
+      consume: { BLD: true },
+    },
+  },
 });
 
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({
@@ -277,10 +284,11 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       zoe: 'zoe',
       feeMintAccess: 'zoe',
       getRUNBundle: true,
-      bridgeManager: true,
+      lienBridge: true,
       client: true,
       chainTimerService: true,
     },
+    produce: { getRUNCreatorFacet: 'getRUN' },
     installation: {
       consume: { contractGovernor: 'zoe', committee: 'zoe' },
       produce: { getRUN: 'zoe' },
