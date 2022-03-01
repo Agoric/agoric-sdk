@@ -6,20 +6,21 @@ defenders, as "attacker's mindset" is a good way to focus attention for the defe
 list should correspond pretty closely to the set of assurances that the Vault Factory aims
 to support.
 
-The VaultFactory's purpose is to make it possible for users to deposit hard currencies and
+The VaultFactory's purpose is to make it possible for users to deposit valuable tokens and
 borrow RUN in exchange. They will pay interest on the total outstanding balance, and have
 to pay off the debt or deposit additional collateral to ensure that the ratio of debt to
-collateral stays above a threshold. If the ratio falls below the limit, their collateral
-will be sold.
+collateral stays above a threshold. When the VaultManager detects that the ratio has
+fallen below the limit, their collateral will be sold.
 
 Part of the purpose of the Vault mechanism is to link the price of RUN to
-dollar-equivalents. We're currently getting prices from the PriceAuthority in RUN, but
-this should (?) be changed to USDC or equivalent. Tying the price at which Vaults lend RUN
-to the USDC price of the collateral is intended to set a ceiling on what one might pay for
-RUN. The fact that vaults get liquidated to the AMM if the USDC-value of the collateral
-falls below the required ratio should restore the value of RUN when collateral values
-fall. In DAI, the same linkage is enforced by auctioning off the collateral. Does selling
-into the AMM achieve the same end?
+dollar-equivalents. We're currently getting prices from a configured PriceAuthority in
+RUN, but this should (https://github.com/Agoric/agoric-sdk/issues/4714) be changed to be
+priced in US Dollars. Tying the price at which Vaults lend RUN to the dollar price of the
+collateral is intended to set a ceiling on what one might pay for RUN. The fact that
+vaults get liquidated to the AMM if the dollar-value of the collateral falls below the
+required ratio should restore the value of RUN when collateral values fall. In DAI, the
+same linkage is enforced by auctioning off the collateral. Does selling into the AMM
+achieve the same end?
 
 ## VaultManager
 
@@ -29,7 +30,7 @@ unintended interactions between the vaults held by a single VaultManager on beha
 different users.
 
 The VaultManagers calculate interest once daily, and record the change centrally without
-updating individual vaults. Vault owners shouldn't be able to adjust balances or close
+updating individual vaults. Vault owners must not be able to adjust balances or close
 their vault without being impacted by their up-to-date debt.
 
 ## Fees
@@ -50,12 +51,12 @@ When the user repays their debt, they can withdraw collateral. Actually, they ca
 collateral to the extent that it isn't required by the current loan. Can they ever
 withdraw more than that, and leave their loan under-collateralized?
 
-If prices are fallling and the trader can see that more clearly than the Vaults do, could
+If prices are falling and the trader can see that more clearly than the Vaults do, could
 they withdraw liquidity before the Vaults realize that the price has changed? We
 understand this is a distributed, asynchronous system, so to some extent, this is
 inevitable. Are the Vaults more susceptible to this than is justifiable?
 
-Vaults are stored ni an orderedStore so that they can be efficiently liquidated in the
+Vaults are stored in an orderedStore so that they can be efficiently liquidated in the
 order from least to most collateralized. Are there any edge cases that would cause Vaults
 to not be processed in the right order? Could a Vault escape the queue and evade
 liquidation?
