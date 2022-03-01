@@ -75,7 +75,7 @@ message, giving these promise-queue actions a chance to complete.
 +-syscall | -+    +-syscall--+      +-syscall--+
 +-|-dispatch-+----+-dispatch-+------+-dispatch-+---------+
 | v       |  |    |          |      |          |         |
-|  clists    |    |  clists  |      |  clists  |         |
+|  c-lists   |    | c-lists  |      | c-lists  |         |
 |            |    |          |      |          |         |
 |                                                        |
 |                                                   >-v  |
@@ -107,11 +107,11 @@ resolved.
 Both identifiers use integer index values to distinguish between different
 instances. When the Vat allocates the identifier, it uses a positive integer.
 When the kernel does the allocation, the vat gets a negative integer. This
-index always points into a Capability List (the "c-list", described below).
+index always points into a Capability List (the "C-List", described below).
 
-In some cases, the kernel (or the vat) will allocate an entry in the c-list
+In some cases, the kernel (or the vat) will allocate an entry in the C-List
 when it receives an index that it has not seen before. In other cases, the
-index must already be present in the c-list, otherwise it is an error.
+index must already be present in the C-List, otherwise it is an error.
 
 Each Object lives in a specific Vat. The types are named from the perspective
 of the Vat: when a Vat references one of its own objects in a syscall, this
@@ -171,7 +171,7 @@ For each Vat type, there is a matching kernel type. These are distinct
 values, with conversion from one to the other happening at the
 syscall/dispatch boundary. Some values are identical (the `body` string is
 left untouched), but the object/promise identifiers must be mapped through
-the clist tables. The kernel's `ObjectID(5)` may refer to a completely
+the C-List tables. The kernel's `ObjectID(5)` may refer to a completely
 different object than Vat A's `ObjectID(5)`. Keeping them in different types
 helps avoid mistakes. (And note that Vat A's `ObjectID(5)` is probably
 unrelated to Vat B's `ObjectID(5)`).
@@ -205,7 +205,7 @@ in other tables). Each contains some additional state-specific data:
 The kernel also maintains a "run-queue", which is populated with pending
 deliveries, each of which references a variety of kernel-side objects.
 
-Finally, the kernel maintains c-list (Capability List) tables for each Vat,
+Finally, the kernel maintains C-List (Capability List) tables for each Vat,
 which map vat-side references into kernel Object/Promise references. For each
 vat, there are two bidirectional tables: Objects (Imports and Exports) map to
 the kernel Object table, and Promise IDs map to the kernel Promise table.
@@ -308,10 +308,10 @@ possibilities, and `syscall.send` will reject the message (terminating the
 Vat) unless the `result` ID falls into one of these categories:
 
 * A brand new Promise was created just for the result slot. The ID will be a
-  positive integer that is not already in the c-list.
+  positive integer that is not already in the C-List.
 * The Promise was created by this Vat earlier, and it has never been used as
   a result or a resolution. The ID will be a positive integer that is already
-  present in the c-list, and the Decider will point at this Vat.
+  present in the C-List, and the Decider will point at this Vat.
 * The Promise was received from the kernel earlier as the result slot of an
   incoming message. The ID will be a negative integer, and the Decider will
   point at this Vat.
@@ -437,7 +437,7 @@ facing the kernel (mapping `lo/lp` to `o/p`), and another one for each remote
 machine (mapping `lo/lp` to `ro/rp`).
 
 The Javascript SwingSet implementation uses these actual strings as keys in
-the arguments and the C-list tables. In other languages, they could be
+the arguments and the C-List tables. In other languages, they could be
 represented by a tagged union whose only real member is an integer.
 
 Each Vat's numberspace is independent (so "1" could nominally be allocated in
@@ -448,19 +448,19 @@ numberspace with a different offset (todo: 1000 times the vat number).
 ## Kernel-Side C-Lists
 
 For each Vat, the Kernel maintains a set of Capability-List structures
-(c-lists), which translate between vat-side identifiers and kernel-side
+(C-Lists), which translate between vat-side identifiers and kernel-side
 identifiers. Depending upon the operation, this translation might insist that
 the value is already present in the table, or it might allocate a new slot
 when necessary.
 
-C-lists map Vat object/promises to kernel object/promises. After Vat 2 sends
+C-Lists map Vat object/promises to kernel object/promises. After Vat 2 sends
 this message into the kernel:
 
 ```
 v2.send(target=o-4, msg={name: foo, slots:[o+3], result=p+5})
 ```
 
-.. the Vat-2 clist might contain:
+.. the Vat-2 C-List might contain:
 
 | Vat 2 object | Kernel object | Allocator | Decider |
 | ---          | ---           | ---       | ---     |
@@ -518,7 +518,7 @@ process of refactoring and unifying the codebase.
 
 Inside the implementations of all syscall methods (`send` and `resolve`), the
 Vat-specific argument slots are first mapped into kernel-space identifiers by
-passing them through the Vat's c-list tables. If the Vat identifier is
+passing them through the Vat's C-List tables. If the Vat identifier is
 already present in the table, the corresponding kernel identifier is used. If
 it is not already present, the behavior depends upon which method and
 argument it appeared in, as well as the category of identifier.
@@ -532,7 +532,7 @@ recovery from mapping errors.
 
 The target of a `syscall.send()` specifies where the message should be sent.
 `Object` always maps to a `KernelObject`, and `Promise` always maps to a
-`KernelPromise`. If the Vat object is not already in the c-list, the
+`KernelPromise`. If the Vat object is not already in the C-List, the
 following table describes what the mapping function does:
 
 | Vat Object         | description    | action if missing                 |
@@ -592,7 +592,7 @@ resolves, or both. To reduce the noise of unwanted notifications, Vats will
 not receive a `dispatch.notify()` for a Promise unless they first use
 `syscall.subscribe()` to express their interest.
 
-The `PromiseID` argument to `subscribe()` is translated through the c-list
+The `PromiseID` argument to `subscribe()` is translated through the C-List
 just like a `CapSlot` in `syscall.send()`. It is not common for this to cause
 the allocation of a `KernelPromise`, because Vats don't usually subscribe to
 hear about their own Promises, but it is legal.
@@ -671,7 +671,7 @@ includes it in an argument, the lower-level translation layer can create a
 new promptly-resolved Promise for it.
 
 (TODO: `resolve()` is a good opportunity to remove the promise from the
-resolving vat's c-list, however if we have queued messages, it must live long
+resolving vat's C-List, however if we have queued messages, it must live long
 enough to forward those messages to the new resolution. It would be nice to
 keep the CannotSendToData logic in the kernel, and have the resolving Vat
 just re-`send` everything in the queue in all resolution cases. If it
@@ -820,7 +820,7 @@ The `Resolution` value of `dispatch.notify()` may contain slots, which are
 translated just like `Message.args`.
 
 TODO: After a Vat receives notice of a Promise being resolved, we might
-choose to remove that promise from the vat's c-list, and forbid the Vat from
+choose to remove that promise from the vat's C-List, and forbid the Vat from
 ever mentioning that promise again.
 
 A Vat might be informed that one Promise has been resolved to another Promise
@@ -868,7 +868,7 @@ identifier for the result Promise. We assume that Vat-1 uses `p1` later (i.e.
 +----|-------+   +---|------+      +-syscall--+
 +----|-------+---+---|------+------+-dispatch-+-------+
 |    v       |   |   |      |      |          |       |
-|  clists    |   |  clists  |      |  clists  |       |
+| c-lists    |   | c-lists  |      | c-lists  |       |
 |    |       |   |   ^      |      |          |       |
 |    |               |                                |
 |    |               |                            >-v |
@@ -905,7 +905,7 @@ kernel promise table, yielding `kp24`. Vat-1 is then added to the
 
 The run-queue is cycled, and this Send comes to the top. This looks up
 `target` in the kernel object table to find the owner (`vat-2`), which
-indicates the c-list to use for translating the message.
+indicates the C-List to use for translating the message.
 
 The target `ko1` is looked up in the Vat-2 C-List, and maps to `v2.o+2001`.
 As a target, it must already be present in that C-List (the kernel will never
@@ -1442,7 +1442,7 @@ lack of a single central kernel:
 +----|-------+   +---|------+      +---|------+    +---|------+
 +----|-------+---+---|------+-+  +-+---|------+----+---|------+-+
 |    v       |   |   |      | |  | |   v      |    |   |      | |
-|  clists    |   |  clists  | |  | |  clists  |    |  clists  | |
+| c-lists    |   | c-lists  | |  | | c-lists  |    | c-lists  | |
 |    |       |   |   ^      | |  | |   |      |    |   |      | |
 |    |               |        |  |     |               |        |
 |    |               |        |  |     |               |        |
@@ -1493,10 +1493,10 @@ tables just before `dispatch.deliver()` is called will look like:
 
 left-comms gets `deliver(target=o+2001)` and looks up the target in the
 routing table to see that the destination machine is `right`. It maps
-`o+2001` through the `right` c-list table to get `ro-3001`, which it uses in
+`o+2001` through the `right` C-List table to get `ro-3001`, which it uses in
 the wire message. It sees the result promise (`p-2015`) has no mapping in the
 routing table, so it adds it (with `Decider: right`), then sees that `p-2015`
-is not in the c-list, and adds it too, allocating a new ID (`rp+3202`).
+is not in the C-List, and adds it too, allocating a new ID (`rp+3202`).
 Left-comms uses these identifiers to generate the cross-machine message,
 expressed in receiver-centric terms (so the signs are flipped):
 
@@ -1515,9 +1515,9 @@ An external delivery process copies the cross-machine message from the left
 Outbox into the right machine, causing a pending delivery that gets the
 message into the right-comms vat, along with the name of the machine that
 sent it (`left`). Right-comms looks up the target (`ro+3001`) in the `left`
-c-list to find `o-4001`. It sees that the result promise `rp-3202` is not
-present in the c-list, so it allocates a new local ID (`p+4002`) and adds it
-to the c-list. It does *not* add `p+4002` to the routing table, because the
+C-List to find `o-4001`. It sees that the result promise `rp-3202` is not
+present in the C-List, so it allocates a new local ID (`p+4002`) and adds it
+to the C-List. It does *not* add `p+4002` to the routing table, because the
 kernel will hold the resolution authority for this result.
 
 * right-comms cross-machine C-Lists
@@ -1566,12 +1566,12 @@ Now suppose right-vat resolves the result promise to a new local object
 * right-comms allocates `ro+3002` for the object `o-4003`
 * outbox message is `notify(target=rp+3202, Fulfill(ro-3002))`
 * left-comms gets message from `right`, maps target to `p-2015`
-* left-comms maps resolution through right-machine c-list, allocates `o+2002`
+* left-comms maps resolution through right-machine C-List, allocates `o+2002`
 * left-comms submits `syscall.resolve(target=p-2015, Fulfill(o+2002))`
-* left kernel maps through left-comms c-list, allocates `ko15` for `v2.o+2002`
+* left kernel maps through left-comms C-List, allocates `ko15` for `v2.o+2002`
 * left run-queue `Notify(target=kp24, Fulfill(ko15))`
 * subscribers each get `dispatch.notify`
-* `v1.o-1002` allocated for `ko15` in left-vat c-list
+* `v1.o-1002` allocated for `ko15` in left-vat C-List
 * left-vat gets `dispatch.notify(target=p+104, Fulfill(o-1002))`
 
 
@@ -1665,9 +1665,9 @@ which messages must be delivered.
   immediately), but that probably has ordering consequences.
 * Dean pointed out an important performance improvement, Promises which are
   resolved/rejected to data (or forwarded?) should be removed from the
-  resolving vat's c-list right away. We'd need an extra message in the future
+  resolving vat's C-List right away. We'd need an extra message in the future
   if that vat ever sends that promise again, but apparenly the vast majority
-  of the time it never will, so pruning the c-list immediately is a big win.
+  of the time it never will, so pruning the C-List immediately is a big win.
   This might interfere with having the kernel handle dumped queued messages.
   Why do this for data+forward but not for fulfill?
 * Forwarded promises must not create cycles. Vats should not be able to trick
