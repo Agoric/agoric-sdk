@@ -100,5 +100,5 @@ export const makeSinglePool = (
     addLiquidityActual,
   });
 
-  return { externalFacet, internalFacet };
+  return harden({ externalFacet, internalFacet });
 };
