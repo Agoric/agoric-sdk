@@ -30,7 +30,7 @@
  * @param {ProposalRecord} proposal
  * @param {WithdrawPayments} withdrawPayments
  * @param {ERef<ExitObj>} exitObj
- * @param {ERef<OfferResult>=} offerResult
+ * @param {ERef<unknown>} [offerResult]
  * @returns {ZoeSeatAdminKit}
  */
 

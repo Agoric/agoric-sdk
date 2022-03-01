@@ -84,7 +84,7 @@ function build(
    * and use a FinalizationRegistry to learn when the vat has dropped it, so
    * we can notify the kernel. We retain strong references to unresolved
    * Promises. When an import is added, the finalizer is added to
-   * `droppedImportRegistry`.
+   * `vreffedObjectRegistry`.
    *
    * slotToVal is a Map whose keys are slots (strings) and the values are
    * WeakRefs. If the entry is present but wr.deref()===undefined (the
@@ -174,7 +174,7 @@ function build(
 
   */
 
-  function finalizeDroppedImport(vref) {
+  function finalizeDroppedObject(vref) {
     // TODO: Ideally this function should assert that it is not metered.  This
     // appears to be fine in practice, but it breaks a number of unit tests in
     // ways that are not obvious how to fix.
@@ -196,7 +196,7 @@ function build(
       slotToVal.delete(vref);
     }
   }
-  const droppedImportRegistry = new FinalizationRegistry(finalizeDroppedImport);
+  const vreffedObjectRegistry = new FinalizationRegistry(finalizeDroppedObject);
 
   async function scanForDeadObjects() {
     // `possiblyDeadSet` accumulates vrefs which have lost a supporting
@@ -584,7 +584,7 @@ function build(
         // doesn't matter anyway because deadSet.add only happens when
         // finializers run, and we wrote xsnap.c to ensure they only run
         // deterministically (during gcAndFinalize)
-        droppedImportRegistry.register(val, slot, val);
+        vreffedObjectRegistry.register(val, slot, val);
       }
     }
     return valToSlot.get(val);
@@ -606,7 +606,7 @@ function build(
     valToSlot.set(val, slot);
     // we don't dropImports on promises, to avoid interaction with retire
     if (type === 'object') {
-      droppedImportRegistry.register(val, slot, val);
+      vreffedObjectRegistry.register(val, slot, val);
     }
   }
 
@@ -773,7 +773,7 @@ function build(
     valToSlot.set(returnedP, resultVPID);
     slotToVal.set(resultVPID, new WeakRef(returnedP));
     pendingPromises.add(returnedP);
-    // we do not use droppedImportRegistry for promises, even result promises
+    // we do not use vreffedObjectRegistry for promises, even result promises
 
     return p;
   }
@@ -998,34 +998,7 @@ function build(
       vrm.setExportStatus(vref, 'none');
     } else {
       // Remotable
-      // console.log(`-- liveslots acting on retireExports ${vref}`);
-      meterControl.assertNotMetered();
-      const wr = slotToVal.get(vref);
-      if (wr) {
-        const val = wr.deref();
-        if (val) {
-          // it's fine to still have a value, that just means the kernel
-          // (and other vats) have completely forgotten about this, but we
-          // still know about it
-
-          if (exportedRemotables.has(val)) {
-            // however this is weird: we still think the Remotable is
-            // reachable, otherwise we would have removed it from
-            // exportedRemotables. The kernel was supposed to send
-            // dispatch.dropExports first.
-            console.log(`err: kernel retired undropped ${vref}`);
-            // TODO: find a way to make this more severe, it's cause for
-            // panicing the kernel, except that vats don't have that
-            // authority. It's *not* cause for terminating the vat, since
-            // it wasn't necessarily our fault.
-            return;
-          }
-          valToSlot.delete(val);
-          droppedImportRegistry.unregister(val);
-        }
-        kernelRecognizableRemotables.delete(vref);
-        slotToVal.delete(vref);
-      }
+      kernelRecognizableRemotables.delete(vref);
     }
   }
 
@@ -1209,7 +1182,7 @@ function build(
     valToSlot.set(rootObject, rootSlot);
     slotToVal.set(rootSlot, new WeakRef(rootObject));
     retainExportedVref(rootSlot);
-    // we do not use droppedImportRegistry for exports
+    // we do not use vreffedObjectRegistry for root objects
   }
 
   /**

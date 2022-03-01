@@ -30,7 +30,10 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
  * @returns {Ratio}
  */
 export const currentDebtToCollateral = vault =>
-  calculateDebtToCollateral(vault.getDebtAmount(), vault.getCollateralAmount());
+  calculateDebtToCollateral(
+    vault.getCurrentDebt(),
+    vault.getCollateralAmount(),
+  );
 
 /** @typedef {{debtToCollateral: Ratio, vault: InnerVault}} VaultRecord */
 
@@ -84,7 +87,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
       // Would be an infinite ratio
       return undefined;
     }
-    const actualDebtAmount = vault.getDebtAmount();
+    const actualDebtAmount = vault.getCurrentDebt();
     return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
   };
 

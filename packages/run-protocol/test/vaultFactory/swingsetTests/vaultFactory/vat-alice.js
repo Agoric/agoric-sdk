@@ -36,9 +36,9 @@ const build = async (log, zoe, brands, payments, timer) => {
     );
 
     const { vault } = await E(loanSeat).getOfferResult();
-    log(`Alice owes ${q(await E(vault).getDebtAmount())} after borrowing`);
+    log(`Alice owes ${q(await E(vault).getCurrentDebt())} after borrowing`);
     await E(timer).tick();
-    log(`Alice owes ${q(await E(vault).getDebtAmount())} after interest`);
+    log(`Alice owes ${q(await E(vault).getCurrentDebt())} after interest`);
   };
 
   return Far('build', {

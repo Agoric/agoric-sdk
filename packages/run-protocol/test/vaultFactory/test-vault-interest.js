@@ -98,7 +98,7 @@ test('charges', async t => {
 
   const startingDebt = 74n;
   t.deepEqual(
-    vault.getDebtAmount(),
+    vault.getCurrentDebt(),
     AmountMath.make(runBrand, startingDebt),
     'borrower owes 74 RUN',
   );
@@ -114,7 +114,7 @@ test('charges', async t => {
     testJig.advanceRecordingPeriod();
     interest += charge;
     t.is(
-      vault.getDebtAmount().value,
+      vault.getCurrentDebt().value,
       startingDebt + interest,
       `interest charge ${i} should have been ${charge}`,
     );
@@ -136,7 +136,7 @@ test('charges', async t => {
   );
   await E(paybackSeat).getOfferResult();
   t.deepEqual(
-    vault.getDebtAmount(),
+    vault.getCurrentDebt(),
     AmountMath.make(runBrand, startingDebt + interest - paybackValue),
   );
   const normalizedPaybackValue = paybackValue + 1n;
@@ -151,7 +151,7 @@ test('charges', async t => {
     testJig.advanceRecordingPeriod();
     interest += charge;
     t.is(
-      vault.getDebtAmount().value,
+      vault.getCurrentDebt().value,
       startingDebt + interest - paybackValue,
       `interest charge ${i} should have been ${charge}`,
     );
