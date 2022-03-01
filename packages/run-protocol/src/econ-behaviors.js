@@ -46,10 +46,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  */
 export const startEconomicCommittee = async (
   {
-    vatParameters: {
-      argv: { economicCommitteeAddresses },
-    },
-    consume: { namesByAddress, namesByAddressAdmin, zoe, governanceBundles },
+    consume: { zoe, governanceBundles },
     produce: { economicCommitteeCreatorFacet },
     installation,
     instance: {
@@ -67,27 +64,6 @@ export const startEconomicCommittee = async (
     Collect.mapValues(bundles, bundle => E(zoe).install(bundle)),
   );
 
-  if (economicCommitteeAddresses) {
-    assert(
-      Array.isArray(economicCommitteeAddresses) &&
-        economicCommitteeAddresses.length > 0,
-    );
-    electorateTerms = {
-      ...electorateTerms,
-      committeeSize: economicCommitteeAddresses.length,
-      addresses: economicCommitteeAddresses, // TODO: keep addresses for visibility?
-      namesByAddress,
-    };
-  }
-  // Use reserve so that sending invitations will
-  // wait until these addresses are provisioned.
-  await (economicCommitteeAddresses &&
-    Promise.all(
-      economicCommitteeAddresses.map(key =>
-        E(namesByAddressAdmin).reserve(key),
-      ),
-    ));
-
   const { creatorFacet, instance } = await E(zoe).startInstance(
     installations.committee,
     {},
@@ -99,13 +75,6 @@ export const startEconomicCommittee = async (
   entries(installations).forEach(([key, inst]) =>
     installation.produce[key].resolve(inst),
   );
-
-  const DEPOSIT_FACET = 'depositFacet';
-  const depositFor = addr => E(namesByAddress).lookup(addr, DEPOSIT_FACET);
-  await (economicCommitteeAddresses &&
-    E(creatorFacet)
-      .getPoserInvitation()
-      .then(inv => E(depositFor(economicCommitteeAddresses[0])).receive(inv)));
 };
 harden(startEconomicCommittee);
 
