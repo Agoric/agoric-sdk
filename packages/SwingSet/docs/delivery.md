@@ -30,12 +30,14 @@ these syscalls are limited to taking pure data as arguments (i.e. everything
 could be JSON serialized into a single string, without loss of correctness). The
 primary syscall is named `syscall.send()`.
 
-Each Vat turn is initiated by the kernel invoking a `dispatch` function: the
-Vat is defined by a `dispatch` object with two or three methods, which all
-close over the vat's internal state. The primary one is `dispatch.deliver()`,
-which delivers the messages produced by some other vat when it does
-`syscall.send()`. The arguments to `deliver` are also pure data, and are
-recorded in a transcript to enable replay-based orthogonal persistence.
+Each vat is represented in the kernel as a `dispatch` object with methods that
+close over its internal state (cf.
+[Vat-Inbound Slot Translation](#vat-inbound-slot-translation)). A vat's code
+executes when the kernel initiates a **turn** by invoking one of these methods,
+primarily `dispatch.deliver()` (which delivers messages such as those produced
+by `syscall.send()` from some other vat). The arguments to `deliver` are also
+pure data, and are recorded in a transcript to enable replay-based orthogonal
+persistence.
 
 To enable transactional commitments, all state changes that might be made by
 syscalls are held in a transaction buffer (the "crank buffer") until the
