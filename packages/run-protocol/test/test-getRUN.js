@@ -85,8 +85,13 @@ const mockChain = genesisData => {
   const qty = (addr, map) => map.get(addr) || 0n;
 
   const it = Far('simulator', {
-    sendTo: (addr, ustake) => {
-      bankBalance.set(addr, (bankBalance.get(addr) || 0n) + ustake);
+    send: (src, dest, n) => {
+      assert.typeof(dest, 'string');
+      assert.typeof(n, 'bigint');
+      const b = (bankBalance.get(src) || 0n) - n;
+      assert(b >= 0n);
+      bankBalance.set(src, b);
+      bankBalance.set(dest, (bankBalance.get(dest) || 0n) + n);
     },
     stake: (addr, ustake) => {
       bonded.set(addr, (bonded.get(addr) || 0n) + ustake);
@@ -128,20 +133,8 @@ const mockChain = genesisData => {
       return harden({
         getName: () => name,
         getAddress: () => src,
-        sendTo: (dest, n) => {
-          assert.typeof(dest, 'string');
-          assert.typeof(n, 'bigint');
-          const b = (bankBalance.get(src) || 0n) - n;
-          assert(b >= 0n);
-          bankBalance.set(src, b);
-          bankBalance.set(dest, (bankBalance.get(dest) || 0n) + n);
-        },
-        stake: n => {
-          assert.typeof(n, 'bigint');
-          const b = qty(src, bankBalance) - n;
-          assert(b >= 0n);
-          bonded.set(src, n);
-        },
+        sendTo: (dest, n) => it.send(src, dest, n),
+        stake: n => it.stake(src, n),
       });
     },
   });
@@ -278,18 +271,28 @@ test('getRUN roles', async t => {
 
 /** @type {[string, unknown][]} */
 const td1 = [
+  // 1	Starting LoC
   [`setRate`, [500n, 100n]],
-  [`setPrice`, [65n, 100n]],
+  [`setPrice`, [120n, 100n]],
   [`buyBLD`, 10_000n],
-  [`stakeBLD`, 9_000n],
-  [`lienBLD`, 6_000n],
+  [`stakeBLD`, 3_000n],
+  [`lienBLD`, 2_000n],
   [`borrowRUN`, 100n],
   [`checkRUNDebt`, 100n],
-  [`checkBLDLiened`, 6000n],
+  [`checkBLDLiened`, 2_000n],
+
+  // 2	Extending LoC
   [`checkRUNBalance`, 100n],
   [`borrowMoreRUN`, 100n],
   [`checkRUNDebt`, 200n],
   [`checkRUNBalance`, 200n],
+
+  // 3	Extending LoC - more BLD required
+  [`stakeBLD`, 5_000n],
+  [`checkBLDStaked`, 8_000n],
+  [`lienBLD`, 8_000n],
+  [`borrowMoreRUN`, 1_400n],
+  [`checkRUNDebt`, 1_600n],
 ];
 
 test('data driven', async t => {
@@ -324,7 +327,7 @@ test('data driven', async t => {
   // Bob introduces himself to the Agoric JS VM.
   const bobWallet = walletMaker(bob.getAddress());
 
-  let attPmt;
+  const attPurse = E(attIssuer).makeEmptyPurse();
   const runPurse = E(runIssuer).makeEmptyPurse();
   let offerResult;
   const driver = harden({
@@ -332,19 +335,41 @@ test('data driven', async t => {
     setPrice: pricePK.resolve,
     buyBLD: n => genesisBLD.sendTo(bob.getAddress(), n * micro.unit),
     stakeBLD: n => bob.stake(n * micro.unit),
-    lienBLD: async n => {
-      const bobToLien = AmountMath.make(bld.brand, n * micro.unit);
-      attPmt = E(bobWallet.attMaker).makeAttestation(bobToLien);
+    lienBLD: async target => {
+      const current = await E(lienBridge).getAccountState(
+        bob.getAddress(),
+        bld.brand,
+      );
+      const delta = AmountMath.subtract(
+        AmountMath.make(bld.brand, target * micro.unit),
+        current.liened,
+      );
+      const attPmt = await E(bobWallet.attMaker).makeAttestation(delta);
+      await E(attPurse).deposit(attPmt);
     },
-    checkBLDLiened: async n => {
+    checkBLDStaked: async expected => {
       const actual = await E(lienBridge).getAccountState(
         bob.getAddress(),
         bld.brand,
       );
-      t.deepEqual(actual.liened, AmountMath.make(bld.brand, n * micro.unit));
+      t.deepEqual(
+        actual.bonded,
+        AmountMath.make(bld.brand, expected * micro.unit),
+      );
+    },
+    checkBLDLiened: async expected => {
+      const actual = await E(lienBridge).getAccountState(
+        bob.getAddress(),
+        bld.brand,
+      );
+      t.deepEqual(
+        actual.liened,
+        AmountMath.make(bld.brand, expected * micro.unit),
+      );
     },
     borrowRUN: async n => {
-      const attAmt = await E(attIssuer).getAmountOf(attPmt);
+      const attAmt = await E(attPurse).getCurrentAmount();
+      const attPmt = await E(attPurse).withdraw(attAmt);
       const proposal = harden({
         give: { Attestation: attAmt },
         want: { RUN: AmountMath.make(runBrand, n * micro.unit) },
@@ -361,13 +386,18 @@ test('data driven', async t => {
     borrowMoreRUN: async n => {
       assert(offerResult, X`no offerResult; borrowRUN first?`);
       const runAmt = AmountMath.make(runBrand, n * micro.unit);
+      const attAmt = await E(attPurse).getCurrentAmount();
+      const attPmt = await E(attPurse).withdraw(attAmt);
       const proposal = harden({
+        give: { Attestation: attAmt },
         want: { RUN: runAmt },
       });
       const seat = E(zoe).offer(
         E(offerResult.invitationMakers).AdjustBalances(),
         proposal,
+        harden({ Attestation: attPmt }),
       );
+      await E(seat).getOfferResult(); // check for errors
       const runPmt = await E(seat).getPayout('RUN');
       E(runPurse).deposit(runPmt);
     },

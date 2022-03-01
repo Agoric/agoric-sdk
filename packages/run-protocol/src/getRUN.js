@@ -92,20 +92,29 @@ export const makeLineOfCreditKit = (
    */
   const adjustBalances = seat => {
     assert(!closed, X`line of credit must still be active`);
-
     const proposal = seat.getProposal();
+
     if (proposal.want.RUN) {
+      const currentAttestation = vaultSeat.getAmountAllocated('Attestation');
+      const totalAttestation = proposal.give.Attestation
+        ? AmountMath.add(currentAttestation, proposal.give.Attestation)
+        : currentAttestation;
       debtAmount = creditPolicy.checkBorrow(
-        vaultSeat.getAmountAllocated('Attestation'),
+        totalAttestation,
         AmountMath.add(debtAmount, proposal.want.RUN),
       ).runWanted;
+      // COMMIT
       runMint.mintGains(proposal.want, seat);
+      vaultSeat.incrementBy(
+        seat.decrementBy({ Attestation: proposal.give.Attestation }),
+      );
+      zcf.reallocate(vaultSeat, seat);
     } else if (proposal.give.RUN) {
       const toPay = minAmt(proposal.give.RUN, debtAmount);
       runMint.burnLosses(harden({ RUN: toPay }), seat);
       debtAmount = AmountMath.subtract(debtAmount, toPay);
     } else {
-      throw seat.fail(Error('only RUN balance can be adjusted'));
+      throw seat.fail(Error('TODO: adjust attestation withou changing RUN'));
     }
 
     seat.exit();
