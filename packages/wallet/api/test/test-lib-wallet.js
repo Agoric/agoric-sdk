@@ -203,8 +203,8 @@ test('lib-wallet issuer and purse methods', async t => {
     [
       {
         brand: purseLog[0].brand,
-        brandBoardId: '1667979430',
-        depositBoardId: '604346717',
+        brandBoardId: 'board0223',
+        depositBoardId: 'board0371',
         displayInfo: {
           assetKind: 'set',
         },
@@ -225,9 +225,9 @@ test('lib-wallet issuer and purse methods', async t => {
       },
       {
         brand: purseLog[1].brand,
-        brandBoardId: '727995140',
+        brandBoardId: 'board0566',
         brandPetname: 'moola',
-        depositBoardId: '604346717',
+        depositBoardId: 'board0371',
         displayInfo: {
           assetKind: 'nat',
         },
@@ -342,8 +342,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     zoeInvitePurseState[0],
     {
       brand: zoeInvitePurseState[0].brand,
-      brandBoardId: '1667979430',
-      depositBoardId: '604346717',
+      brandBoardId: 'board0223',
+      depositBoardId: 'board0371',
       displayInfo: {
         assetKind: 'set',
       },
@@ -427,8 +427,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     zoeInvitePurseState2,
     {
       brand: zoeInvitePurseState2.brand,
-      brandBoardId: '1667979430',
-      depositBoardId: '604346717',
+      brandBoardId: 'board0223',
+      depositBoardId: 'board0371',
       displayInfo: {
         assetKind: 'set',
       },
@@ -495,7 +495,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           petname: 'automaticRefund',
         },
       },
-      inviteHandleBoardId: '727995140',
+      inviteHandleBoardId: 'board0566',
       meta: {
         id: 6,
       },
@@ -556,8 +556,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     zoeInvitePurseState3,
     {
       brand: zoeInvitePurseState3.brand,
-      brandBoardId: '1667979430',
-      depositBoardId: '604346717',
+      brandBoardId: 'board0223',
+      depositBoardId: 'board0371',
       displayInfo: {
         assetKind: 'set',
       },
@@ -628,7 +628,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           petname: 'automaticRefund',
         },
       },
-      inviteHandleBoardId: '727995140',
+      inviteHandleBoardId: 'board0566',
       meta: {
         id: 6,
       },
@@ -711,7 +711,7 @@ test('lib-wallet offer methods', async t => {
           installation,
           instance,
         },
-        inviteHandleBoardId: '727995140',
+        inviteHandleBoardId: 'board0566',
         instance,
         installation,
         meta: {
@@ -765,8 +765,8 @@ test('lib-wallet offer methods', async t => {
     zoeInvitePurseState,
     {
       brand: zoeInvitePurseState.brand,
-      brandBoardId: '1667979430',
-      depositBoardId: '604346717',
+      brandBoardId: 'board0223',
+      depositBoardId: 'board0371',
       brandPetname: 'zoe invite',
       displayInfo: {
         assetKind: 'set',
@@ -791,13 +791,13 @@ test('lib-wallet offer methods', async t => {
     moolaPurseState,
     {
       brand: moolaPurseState.brand,
-      brandBoardId: '1532665031',
+      brandBoardId: 'board0425',
       brandPetname: 'moola',
       displayInfo: {
         assetKind: 'nat',
       },
       pursePetname: 'Fun budget',
-      depositBoardId: '604346717',
+      depositBoardId: 'board0371',
       value: 100,
       currentAmountSlots: {
         body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"100"}}',
@@ -835,7 +835,7 @@ test('lib-wallet offer methods', async t => {
             petname: 'unnamed-3',
           },
         },
-        inviteHandleBoardId: '727995140',
+        inviteHandleBoardId: 'board0566',
         meta: {
           id: 6,
         },
@@ -885,7 +885,7 @@ test('lib-wallet offer methods', async t => {
             petname: 'unnamed-3',
           },
         },
-        inviteHandleBoardId: '371571443',
+        inviteHandleBoardId: 'board0257',
         meta: {
           id: 9,
         },

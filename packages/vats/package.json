@@ -32,7 +32,6 @@
     "@agoric/pegasus": "^0.6.1",
     "@agoric/run-protocol": "^0.8.0",
     "@agoric/sharing-service": "^0.1.35",
-    "@agoric/sparse-ints": "^0.1.25",
     "@agoric/store": "^0.6.10",
     "@agoric/swingset-vat": "^0.25.1",
     "@agoric/wallet-backend": "^0.10.9",

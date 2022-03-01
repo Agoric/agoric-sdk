@@ -21,6 +21,7 @@ import {
   insistVatID,
   makeDeviceID,
   makeVatID,
+  makeUpgradeID,
 } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
 import {
@@ -46,6 +47,7 @@ const enableKernelGC = true;
 // vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
 // vat.nextID = $NN
+// vat.nextUpgradeID = $NN
 // device.names = JSON([names..])
 // device.name.$NAME = $deviceID = d$NN
 // device.nextID = $NN
@@ -289,6 +291,7 @@ export default function makeKernelKeeper(
     kvStore.set('vat.names', '[]');
     kvStore.set('vat.dynamicIDs', '[]');
     kvStore.set('vat.nextID', `${FIRST_VAT_ID}`);
+    kvStore.set('vat.nextUpgradeID', `1`);
     kvStore.set('device.names', '[]');
     kvStore.set('device.nextID', `${FIRST_DEVICE_ID}`);
     kvStore.set('ko.nextID', `${FIRST_OBJECT_ID}`);
@@ -1038,6 +1041,12 @@ export default function makeKernelKeeper(
     return JSON.parse(getRequired('vat.dynamicIDs'));
   }
 
+  function allocateUpgradeID() {
+    const nextID = Nat(BigInt(getRequired(`vat.nextUpgradeID`)));
+    kvStore.set(`vat.nextUpgradeID`, `${nextID + 1n}`);
+    return makeUpgradeID(nextID);
+  }
+
   // As refcounts are decremented, we accumulate a set of krefs for which
   // action might need to be taken:
   //   * promises which are now resolved and unreferenced can be deleted
@@ -1514,6 +1523,8 @@ export default function makeKernelKeeper(
     getDynamicVats,
     getStaticVats,
     getDevices,
+
+    allocateUpgradeID,
 
     getDeviceIDForName,
     allocateDeviceIDForNameIfNeeded,
