@@ -106,3 +106,7 @@ export function parseVatOrDeviceID(s) {
   }
   return harden({ type, id: Nat(BigInt(idSuffix)) });
 }
+
+export function makeUpgradeID(index) {
+  return `up${Nat(index)}`;
+}

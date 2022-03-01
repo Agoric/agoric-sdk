@@ -704,6 +704,23 @@ export default function buildKernel(
     );
   }
 
+  async function processUpgradeVat(message) {
+    assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
+    // const { upgradeID, bundleID, vatParameters } = message;
+    const { upgradeID } = message;
+    // for now, all attempts to upgrade will fail
+
+    // TODO: decref the bundleID and vatParameters.slots
+    const args = {
+      body: JSON.stringify([upgradeID, false, { error: `not implemented` }]),
+      slots: [],
+    };
+    queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
+    /** @type { PolicyInput } */
+    const policyInput = ['none'];
+    return policyInput;
+  }
+
   function legibilizeMessage(message) {
     if (message.type === 'send') {
       const msg = message.msg;
@@ -768,6 +785,8 @@ export default function buildKernel(
         policyInput = await processCreateVat(message);
       } else if (message.type === 'startVat') {
         policyInput = await processStartVat(message);
+      } else if (message.type === 'upgrade-vat') {
+        policyInput = await processUpgradeVat(message);
       } else if (message.type === 'bringOutYourDead') {
         policyInput = await processBringOutYourDead(message);
       } else if (gcMessages.includes(message.type)) {
@@ -1046,6 +1065,7 @@ export default function buildKernel(
       getBundle: kernelKeeper.getBundle,
       getNamedBundleID: kernelKeeper.getNamedBundleID,
       pushCreateVatBundleEvent(bundle, dynamicOptions) {
+        // TODO: translate dynamicOptions.vatParameters.slots from dref to kref
         const source = { bundle };
         const vatID = kernelKeeper.allocateUnusedVatID();
         const event = { type: 'create-vat', vatID, source, dynamicOptions };
@@ -1056,6 +1076,7 @@ export default function buildKernel(
       },
       pushCreateVatIDEvent(bundleID, dynamicOptions) {
         assert(kernelKeeper.hasBundle(bundleID), bundleID);
+        // TODO: translate dynamicOptions.vatParameters.slots from dref to kref
         const source = { bundleID };
         const vatID = kernelKeeper.allocateUnusedVatID();
         const event = { type: 'create-vat', vatID, source, dynamicOptions };
@@ -1063,6 +1084,14 @@ export default function buildKernel(
         // the device gets the new vatID immediately, and will be notified
         // later when it is created and a root object is available
         return vatID;
+      },
+      pushUpgradeVatEvent(bundleID, vatParameters) {
+        const upgradeID = kernelKeeper.allocateUpgradeID();
+        // TODO: translate vatParameters.slots from dref to kref
+        // TODO: incref both bundleID and slots in vatParameters
+        const ev = { type: 'upgrade-vat', upgradeID, bundleID, vatParameters };
+        kernelKeeper.addToAcceptanceQueue(harden(ev));
+        return upgradeID;
       },
       terminate: (vatID, reason) => terminateVat(vatID, true, reason),
       meterCreate: (remaining, threshold) =>
