@@ -15,7 +15,7 @@ import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 import {
   governanceBundles,
   economyBundles,
-} from '../../../../src/importedBundles.js';
+} from '../../../src/importedBundles.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);

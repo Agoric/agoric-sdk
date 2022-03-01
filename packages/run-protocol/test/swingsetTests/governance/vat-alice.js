@@ -8,6 +8,8 @@ import { ONE_DAY } from '../setup';
 
 const { details: X, quote: q } = assert;
 
+/** @typedef {import('../../../src/vaultFactory/vaultFactory').VaultFactoryPublicFacet} VaultFactoryPublicFacet */
+
 /**
  *
  * @param {(msg: any)=> void} log
@@ -22,7 +24,7 @@ const build = async (log, zoe, brands, payments, timer) => {
   const [moolaPayment] = payments;
 
   /**
-   * @param {import('../../test-vaultFactory').VaultFactoryPublicFacet} vaultFactory
+   * @param {VaultFactoryPublicFacet} vaultFactory
    */
   const oneLoanWithInterest = async vaultFactory => {
     log(`=> alice.oneLoanWithInterest called`);
@@ -90,7 +92,7 @@ const build = async (log, zoe, brands, payments, timer) => {
   return Far('build', {
     /**
      * @param {string} testName
-     * @param {import('../../test-vaultFactory').VaultFactoryPublicFacet} vaultFactory
+     * @param {VaultFactoryPublicFacet} vaultFactory
      * @returns {Promise<void>}
      */
     startTest: async (testName, vaultFactory) => {
