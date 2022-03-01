@@ -111,16 +111,10 @@ export function loadBasedir(basedir, options = {}) {
   const subs = fs.readdirSync(basedir, { withFileTypes: true });
   subs.sort(byName);
   subs.forEach(dirent => {
-    if (dirent.name.endsWith('~')) {
-      // Special case crap filter to ignore emacs backup files and the like.
-      // Note that the regular filename parsing below will ignore such files
-      // anyway, but this skips logging them so as to reduce log spam.
-      return;
-    }
     if (
       dirent.name.startsWith('vat-') &&
-      dirent.isFile() &&
-      dirent.name.endsWith('.js')
+      dirent.name.endsWith('.js') &&
+      dirent.isFile()
     ) {
       const name = dirent.name.slice('vat-'.length, -'.js'.length);
       const vatSourcePath = path.resolve(basedir, dirent.name);
