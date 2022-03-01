@@ -85,10 +85,9 @@ message, giving these promise-queue actions a chance to complete.
 +-------------------- Kernel ----------------------------+
 ```
 
-## Vat Object Types
+## Vat Data Types
 
-The `syscall`/`dispatch` API references two kinds of identifiers: `Object`
-and `Promise`:
+The `syscall`/`dispatch` API references two kinds of identifiers:
 
 * `Object`: a callable object (the usual notion of "object" in the ocap
   discipline), with methods of various names and private state. These may be
@@ -107,7 +106,8 @@ resolved.
 Both identifiers use integer index values to distinguish between different
 instances. When the Vat allocates the identifier, it uses a positive integer.
 When the kernel does the allocation, the vat gets a negative integer. This
-index always points into a Capability List (the "C-List", described below).
+index always points into a Capability List (the "C-List", described
+[below](#kernel-side-c-lists)).
 
 In some cases, the kernel (or the vat) will allocate an entry in the C-List
 when it receives an index that it has not seen before. In other cases, the
@@ -165,16 +165,16 @@ enum Resolution {
 }
 ```
 
-## Kernel Object Types
+## Kernel Data Types
 
-For each Vat type, there is a matching kernel type. These are distinct
+For each Vat data type, there is a matching kernel data type. These are distinct
 values, with conversion from one to the other happening at the
 syscall/dispatch boundary. Some values are identical (the `body` string is
 left untouched), but the object/promise identifiers must be mapped through
-the C-List tables. The kernel's `ObjectID(5)` may refer to a completely
-different object than Vat A's `ObjectID(5)`. Keeping them in different types
-helps avoid mistakes. (And note that Vat A's `ObjectID(5)` is probably
-unrelated to Vat B's `ObjectID(5)`).
+the [C-List tables](#kernel-side-c-lists). The kernel's `ObjectID(5)` may refer
+to a completely different object than Vat A's `ObjectID(5)`. Keeping them in
+different types helps avoid mistakes. (And note that Vat A's `ObjectID(5)` is
+probably unrelated to Vat B's `ObjectID(5)`).
 
 The kernel maintains two tables to handle the identifiers which appear in Vat
 syscalls: one for Objects (Presences), and a second for Promises. Each table
@@ -184,11 +184,11 @@ and `KernelPromiseID`. These keys are positive integers: all Objects come
 from some Vat, and all Promises are managed by the kernel, so from within the
 kernel, there is no notion of import-vs-export.
 
-Each row of the kernel Object table remembers the VatID of the owner of that
-object: the one which first exported it into the kernel in the argument of a
-`syscall.send` or `syscall.resolve`. Messages sent to this object from other
-Vats (via `syscall.send`) must be routed to the owning Vat and delivered with
-a `dispatch.deliver`.
+Each row of the kernel Object table remembers the object's "owner" (the VatID
+that first exported it into the kernel in the argument of a `syscall.send` or
+`syscall.resolve`). Messages sent to the object from other Vats (via
+`syscall.send`) must be routed to the owning Vat and delivered with a
+`dispatch.deliver`.
 
 Each row of the kernel Promise table remembers the current promise state and
 any related data. There is one unresolved state, and four resolved states
@@ -197,9 +197,10 @@ in other tables). Each contains some additional state-specific data:
 
 * `Unresolved`: includes an optional Decider VatID, list of subscribers
   (VatIDs), and queue of pending messages
-* `Fulfilled`: includes an ObjectID (an Export) to which it was resolved
-* `Data`: includes resolution data (body+slots)
-* `Rejected`: includes the rejection data (body+slots, maybe an Error object)
+* `Fulfilled`: includes the ObjectID with which it was fulfilled
+* `Data`: includes CapData (body+slots) with which it was fulfilled
+* `Rejected`: includes the CapData (body+slots, maybe an Error object) with
+  which it was rejected
 * `Forwarded`: includes the `KernelPromiseID` to which it was forwarded
 
 The kernel also maintains a "run-queue", which is populated with pending
@@ -208,7 +209,7 @@ deliveries, each of which references a variety of kernel-side objects.
 Finally, the kernel maintains C-List (Capability List) tables for each Vat,
 which map vat-side references into kernel Object/Promise references. For each
 vat, there are two bidirectional tables: Objects (Imports and Exports) map to
-the kernel Object table, and Promise IDs map to the kernel Promise table.
+the kernel Object table, and Promises map to the kernel Promise table.
 
 ```
 struct VatID(u32);
@@ -219,13 +220,14 @@ struct KernelPromiseID(u32);
 struct KernelObject {
     owner: VatID,
 }
+
 struct KernelObjectTable {
     objects: HashMap<KernelObjectID, KernelObject>,
     next_id: u32,
 }
 
-// the kernel has types like Message, CapData, and CapSlot, which
-// correspond to Vat types with the same names
+// the kernel has data types like Message, CapData, and CapSlot, which
+// correspond to Vat data types with the same names
 
 enum KernelPromise {
     Unresolved {
