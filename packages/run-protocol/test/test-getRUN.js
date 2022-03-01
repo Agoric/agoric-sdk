@@ -192,6 +192,7 @@ test('RUN mint access', async t => {
 const startGetRun = async (
   bundles,
   authority,
+  { rateP, priceP },
   { zoe, bld, runBrand, feeMintAccess, timer },
 ) => {
   const installations = await Collect.allValues({
@@ -200,8 +201,9 @@ const startGetRun = async (
     getRUN: E(zoe).install(bundles.getRUN),
   });
 
-  const collateralPrice = makeRatio(65n, runBrand, 100n, bld.brand); // arbitrary price
-  const collateralizationRatio = makeRatio(5n, runBrand, 1n); // arbitrary raio
+  const [rate, price] = await Promise.all([rateP, priceP]);
+  const collateralPrice = makeRatio(price[0], runBrand, price[1], bld.brand);
+  const collateralizationRatio = makeRatio(rate[0], runBrand, rate[1]);
 
   return bootstrapRunLoC(
     zoe,
@@ -236,13 +238,18 @@ test('getRUN roles', async t => {
   bob.stake(3_000n * micro.unit);
 
   const lienBridge = chain.makeLienBridge(bld.brand);
-  const { publicFacet, creatorFacet } = await startGetRun(bundles, lienBridge, {
-    zoe,
-    bld,
-    runBrand,
-    feeMintAccess,
-    timer,
-  });
+  const { publicFacet, creatorFacet } = await startGetRun(
+    bundles,
+    lienBridge,
+    { rateP: [500n, 100n], priceP: [65n, 100n] },
+    {
+      zoe,
+      bld,
+      runBrand,
+      feeMintAccess,
+      timer,
+    },
+  );
   const walletMaker = makeWalletMaker(creatorFacet);
 
   // Bob introduces himself to the Agoric JS VM.
@@ -267,6 +274,109 @@ test('getRUN roles', async t => {
   const runPmt = E(seat).getPayout('RUN');
   const actual = await E(runIssuer).getAmountOf(runPmt);
   t.deepEqual(actual, proposal.want.RUN);
+});
+
+/** @type {[string, unknown][]} */
+const td1 = [
+  [`setRate`, [500n, 100n]],
+  [`setPrice`, [65n, 100n]],
+  [`buyBLD`, 10_000n],
+  [`stakeBLD`, 9_000n],
+  [`lienBLD`, 6_000n],
+  [`borrowRUN`, 100n],
+  [`checkRUNDebt`, 100n],
+  [`checkBLDLiened`, 6000n],
+  [`checkRUNBalance`, 100n],
+];
+
+test('data driven', async t => {
+  const bundles = theBundles(t);
+  const timer = buildManualTimer(t.log, 0n, 1n);
+  const { zoe, feeMintAccess, runBrand, bld } = await bootstrapZoeAndRun();
+  const runIssuer = E(zoe).getFeeIssuer();
+
+  const chain = mockChain({ addr1a: 1_000_000_000n * micro.unit });
+
+  const genesisBLD = chain.provisionAccount('genesis BLD', 'addr1a');
+  const bob = chain.provisionAccount('Bob', 'addr1b');
+  const lienBridge = chain.makeLienBridge(bld.brand);
+  const [pricePK, ratePK] = [makePromiseKit(), makePromiseKit()];
+  const getRun = startGetRun(
+    bundles,
+    lienBridge,
+    { rateP: ratePK.promise, priceP: pricePK.promise },
+    {
+      zoe,
+      bld,
+      runBrand,
+      feeMintAccess,
+      timer,
+    },
+  );
+  const publicFacet = E.get(getRun).publicFacet;
+  const creatorFacet = E.get(getRun).creatorFacet;
+  const attIssuer = E(publicFacet).getIssuer();
+  const walletMaker = makeWalletMaker(creatorFacet);
+
+  // Bob introduces himself to the Agoric JS VM.
+  const bobWallet = walletMaker(bob.getAddress());
+
+  let attPmt;
+  const runPurse = E(runIssuer).makeEmptyPurse();
+  let offerResult;
+  const driver = harden({
+    setRate: ratePK.resolve,
+    setPrice: pricePK.resolve,
+    buyBLD: n => genesisBLD.sendTo(bob.getAddress(), n * micro.unit),
+    stakeBLD: n => bob.stake(n * micro.unit),
+    lienBLD: async n => {
+      const bobToLien = AmountMath.make(bld.brand, n * micro.unit);
+      attPmt = E(bobWallet.attMaker).makeAttestation(bobToLien);
+    },
+    checkBLDLiened: async n => {
+      const actual = await E(lienBridge).getAccountState(
+        bob.getAddress(),
+        bld.brand,
+      );
+      t.deepEqual(actual.liened, AmountMath.make(bld.brand, n * micro.unit));
+    },
+    borrowRUN: async n => {
+      const attAmt = await E(attIssuer).getAmountOf(attPmt);
+      const proposal = harden({
+        give: { Attestation: attAmt },
+        want: { RUN: AmountMath.make(runBrand, n * micro.unit) },
+      });
+      const seat = E(zoe).offer(
+        E(publicFacet).makeLoanInvitation(),
+        proposal,
+        harden({ Attestation: attPmt }),
+      );
+      const runPmt = await E(seat).getPayout('RUN');
+      E(runPurse).deposit(runPmt);
+      offerResult = await E(seat).getOfferResult();
+    },
+    checkRUNBalance: async target => {
+      // TODO: move to checkRUN thingy
+      const actual = await E(runPurse).getCurrentAmount();
+      t.deepEqual(actual, AmountMath.make(runBrand, target * micro.unit));
+    },
+    checkRUNDebt: async value => {
+      const { uiNotifier } = offerResult;
+      const state = await uiNotifier.getUpdateSince();
+      t.deepEqual(
+        state.value.debt,
+        AmountMath.make(runBrand, value * micro.unit),
+      );
+    },
+  });
+  for await (const [tag, value] of td1) {
+    t.log([tag, value]);
+    const fn = driver[tag];
+    if (!fn) {
+      throw Error(`bad tag: ${tag}`);
+    }
+    await fn(value);
+  }
 });
 
 // test.skip('attestation facets@@@', async t => {
