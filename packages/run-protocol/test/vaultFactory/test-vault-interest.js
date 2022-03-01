@@ -25,7 +25,7 @@ const trace = makeTracer('TestVault');
  * @property {ContractFacet} zcf
  * @property {ZCFMint} runMint
  * @property {IssuerKit} collateralKit
- * @property {import('../../src/vaultFactory/vault.js').Vault} vault
+ * @property {Vault} vault
  * @property {Function} advanceRecordingPeriod
  * @property {Function} setInterestRate
  */

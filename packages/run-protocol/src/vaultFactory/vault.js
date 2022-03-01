@@ -10,20 +10,24 @@ import {
   floorMultiplyBy,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit } from '@agoric/notifier';
 
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
+import { makeVaultKit } from './vaultKit.js';
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('Vault');
+const trace = makeTracer('IV');
 
-// a Vault is an individual loan, using some collateralType as the
-// collateral, and lending RUN to the borrower
+/**
+ * @file This has most of the logic for a Vault, to borrow RUN against collateral.
+ *
+ * The logic here is for InnerVault which is the majority of logic of vaults but
+ * the user view is the `vault` value contained in VaultKit.
+ */
 
 /**
  * Constants for vault phase.
@@ -65,38 +69,6 @@ const validTransitions = {
  */
 
 /**
- *
- * @param {InnerVault | null} inner
- */
-const makeOuterKit = inner => {
-  /** @type {NotifierRecord<VaultUIState>} */
-  const { updater: uiUpdater, notifier } = makeNotifierKit();
-
-  /** @returns true iff this outer vault is backed by an inner vault */
-  const assertOwned = v => {
-    // console.log('OUTER', v, 'INNER', inner);
-    assert(inner, X`Using ${v} after transfer`);
-    return inner;
-  };
-  const vault = Far('vault', {
-    getNotifier: () => notifier,
-    makeAdjustBalancesInvitation: () =>
-      assertOwned(vault).makeAdjustBalancesInvitation(),
-    makeCloseInvitation: () => assertOwned(vault).makeCloseInvitation(),
-    makeTransferInvitation: () => {
-      const tmpInner = assertOwned(vault);
-      inner = null;
-      return tmpInner.makeTransferInvitation();
-    },
-    // for status/debugging
-    getCollateralAmount: () => assertOwned(vault).getCollateralAmount(),
-    getCurrentDebt: () => assertOwned(vault).getCurrentDebt(),
-    getNormalizedDebt: () => assertOwned(vault).getNormalizedDebt(),
-  });
-  return { vault, uiUpdater };
-};
-
-/**
  * @typedef {Object} InnerVaultManagerBase
  * @property {(oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
  * @property {() => Brand} getCollateralBrand
@@ -136,8 +108,10 @@ export const makeInnerVault = (
    */
   const assignPhase = newPhase => {
     const validNewPhases = validTransitions[phase];
-    if (!validNewPhases.includes(newPhase))
-      throw new Error(`Vault cannot transition from ${phase} to ${newPhase}`);
+    assert(
+      validNewPhases.includes(newPhase),
+      `Vault cannot transition from ${phase} to ${newPhase}`,
+    );
     phase = newPhase;
   };
 
@@ -629,22 +603,6 @@ export const makeInnerVault = (
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   };
 
-  const setupOuter = inner => {
-    const { vault, uiUpdater: updater } = makeOuterKit(inner);
-    outerUpdater = updater;
-    updateUiState();
-    return harden({
-      assetNotifier,
-      vaultNotifier: vault.getNotifier(),
-      invitationMakers: Far('invitation makers', {
-        AdjustBalances: vault.makeAdjustBalancesInvitation,
-        CloseVault: vault.makeCloseInvitation,
-        TransferVault: vault.makeTransferInvitation,
-      }),
-      vault,
-    });
-  };
-
   /**
    * @param {ZCFSeat} seat
    * @param {InnerVault} innerVault
@@ -688,14 +646,27 @@ export const makeInnerVault = (
 
     refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
 
-    return setupOuter(innerVault);
+    const vaultKit = makeVaultKit(innerVault, assetNotifier);
+    outerUpdater = vaultKit.vaultUpdater;
+    updateUiState();
+
+    return vaultKit;
   };
 
+  /**
+   *
+   * @param {ZCFSeat} seat
+   * @returns {VaultKit}
+   */
   const makeTransferInvitationHook = seat => {
     assertCloseable();
     seat.exit();
     // eslint-disable-next-line no-use-before-define
-    return setupOuter(innerVault);
+    const vaultKit = makeVaultKit(innerVault, assetNotifier);
+    outerUpdater = vaultKit.vaultUpdater;
+    updateUiState();
+
+    return vaultKit;
   };
 
   const innerVault = Far('innerVault', {
@@ -725,5 +696,3 @@ export const makeInnerVault = (
 };
 
 /** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
-/** @typedef {Awaited<ReturnType<InnerVault['initVaultKit']>>} VaultKit */
-/** @typedef {VaultKit['vault']} Vault */
