@@ -107,7 +107,7 @@ export const makeVaultManager = (
   // definition of reschedulePriceCheck, which refers to sortedVaultKits
   // XXX misleading mutability and confusing flow control; could be refactored with a listener
   /** @type {ReturnType<typeof makePrioritizedVaults>=} */
-  let prioritizedVaults;
+  let illiquidVaults;
   /** @type {MutableQuote=} */
   let outstandingQuote;
   /** @type {Amount<NatValue>} */
@@ -133,7 +133,7 @@ export const makeVaultManager = (
    * @param {[key: string, vaultKit: InnerVault]} record
    */
   const liquidateAndRemove = async ([key, vault]) => {
-    assert(prioritizedVaults);
+    assert(illiquidVaults);
     trace('liquidating', vault.getVaultSeat().getProposal());
 
     try {
@@ -146,7 +146,7 @@ export const makeVaultManager = (
         collateralBrand,
       );
 
-      await prioritizedVaults.removeVault(key);
+      await illiquidVaults.removeVault(key);
     } catch (e) {
       // XXX should notify interested parties
       console.error('liquidateAndRemove failed with', e);
@@ -162,8 +162,8 @@ export const makeVaultManager = (
   // when a priceQuote is received, we'll only reschedule if the high-water
   // level when the request was made matches the current high-water level.
   const reschedulePriceCheck = async () => {
-    assert(prioritizedVaults);
-    const highestDebtRatio = prioritizedVaults.highestRatio();
+    assert(illiquidVaults);
+    const highestDebtRatio = illiquidVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
       return;
@@ -213,7 +213,7 @@ export const makeVaultManager = (
 
     /** @type {Array<Promise<void>>} */
     const toLiquidate = Array.from(
-      prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin),
+      illiquidVaults.entriesPrioritizedGTE(quoteRatioPlusMargin),
     ).map(liquidateAndRemove);
 
     outstandingQuote = undefined;
@@ -222,12 +222,12 @@ export const makeVaultManager = (
 
     reschedulePriceCheck();
   };
-  prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
+  illiquidVaults = makePrioritizedVaults(reschedulePriceCheck);
 
   // In extreme situations, system health may require liquidating all vaults.
   const liquidateAll = async () => {
-    assert(prioritizedVaults);
-    const toLiquidate = Array.from(prioritizedVaults.entries()).map(
+    assert(illiquidVaults);
+    const toLiquidate = Array.from(illiquidVaults.entries()).map(
       liquidateAndRemove,
     );
     await Promise.all(toLiquidate);
@@ -327,8 +327,8 @@ export const makeVaultManager = (
    * @param {VaultId} vaultId
    */
   const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {
-    assert(prioritizedVaults);
-    prioritizedVaults.refreshVaultPriority(oldDebt, oldCollateral, vaultId);
+    assert(illiquidVaults);
+    illiquidVaults.refreshVaultPriority(oldDebt, oldCollateral, vaultId);
     trace('updateVaultPriority complete', { totalDebt });
   };
 
@@ -385,8 +385,8 @@ export const makeVaultManager = (
     );
 
     // TODO Don't record the vault until it gets opened
-    assert(prioritizedVaults);
-    const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
+    assert(illiquidVaults);
+    const addedVaultKey = illiquidVaults.addVault(vaultId, innerVault);
 
     try {
       const vaultKit = await innerVault.initVaultKit(seat);
@@ -395,7 +395,7 @@ export const makeVaultManager = (
     } catch (err) {
       // remove it from prioritizedVaults
       // XXX openLoan shouldn't assume it's already in the prioritizedVaults
-      prioritizedVaults.removeVault(addedVaultKey);
+      illiquidVaults.removeVault(addedVaultKey);
       throw err;
     }
   };
