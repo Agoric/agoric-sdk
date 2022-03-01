@@ -378,7 +378,7 @@ prefer to avoid deserializing the messages until their resolution is known,
 to avoid a wasteful reserialization cycle.
 
 If the deciding Vat has *not* opted into pipelining, the messages are queued
-in the kernel's Promise Table entry instead. They remain there until the
+in the kernel's Promise table entry instead. They remain there until the
 deciding vat uses `syscall.resolve()` to resolve that Promise. At that point,
 the behavior depends upon the type of resolution; see the discussion of
 `syscall.resolve()` below for details.
@@ -836,9 +836,9 @@ Vat-2.
 The initial conditions are that Vat-1 somehow has a reference to an export of
 Vat-2 that we'll name `bob`.
 
-* Kernel Object Table:
+* Kernel Object table:
   * `ko1` (bob): owner= vat-2
-* Kernel Promise Table: empty
+* Kernel Promise table: empty
 * Kernel run-queue: empty
 * Vat-1 C-List:
   * `v1.o-1001 <-> ko1` (import of bob)
@@ -888,7 +888,7 @@ Decider is set to None since it is being allocated in the context of a
 
 The `Pending Send` is appended to the run-queue.
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: None, subscribers: [])`
 * Kernel run-queue:
   * `Send(target: ko1, message: {.. result=kp24})`
@@ -900,7 +900,7 @@ The `syscall.subscribe(p+104)` causes the PromiseID to be looked up in the
 kernel promise table, yielding `kp24`. Vat-1 is then added to the
 `subscribers` list.
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
 
 The run-queue is cycled, and this Send comes to the top. This looks up
@@ -915,7 +915,7 @@ owner (Vat-1) is different than the target (Vat-2), so a new entry is
 allocated, and the vat gets `v2.p-2105`. The Decider for `kp24` is set to
 `vat-2` because we're about to deliver the message to Vat-2.
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
 * Vat-2 C-List:
   * `v2.o+2001 <-> ko1` (export of bob)
@@ -974,9 +974,9 @@ The two `send` calls will look like:
 
 And after those sends, the kernel state will look like this:
 
-* Kernel Object Table:
+* Kernel Object table:
   * `ko1` (bob): owner= vat-2
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: None, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
@@ -993,7 +993,7 @@ Vat-2 will get the same `dispatch.deliver(target=o+2001, msg={method: "foo",
 args: "[]", slots=[], result=p-2015})` as before, and we'll get these changes
 to the kernel state:
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
@@ -1008,7 +1008,7 @@ that its target (`kp24`) is in the Unresolved state, and looks up the Decider
 the message to Vat-2, which receives it as `dispatch.deliver(target=p-2015,
 msg={method: "bar" .. result=p-2016)`. The kernel state during this call is:
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
 * Vat-2 C-List:
@@ -1027,10 +1027,10 @@ Imagine the previous scenario (`bob!foo()!bar()`), but now `bob` resolves the
 `foo()` result promise to point at a third object `carol` in Vat-3. The
 relevant kernel state looks like:
 
-* Kernel Object Table:
+* Kernel Object table:
   * `ko1` (bob): owner= vat-2
   * `ko2` (carol): owner= vat-3
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
 * Vat-1 C-List:
@@ -1051,7 +1051,7 @@ Unresolved, and that the Decider matches. The resolution is mapped to `ko2`,
 and the promise table is updated. The kernel queues notifications to the only
 subscriber (Vat-1):
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Resolved(fulfill(ko2))`
 * Kernel run-queue:
   * `Notify(subscriber: vat-1, subject: kp24)`
@@ -1062,7 +1062,7 @@ structure that came out of `dispatch.notify` is sent unmodified back into
 `syscall.send`, but the target is now the resolution of the promise:
 `send(target=ko2, msg={method: "bar", .. result=p-2016})`.
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Resolved(fulfill(ko2))`
 * Kernel run-queue:
   * `Notify(subscriber: vat-1, subject: kp24)`
@@ -1105,9 +1105,9 @@ Again, the two `send` calls will look like:
 
 And after those sends, the kernel state will look like this:
 
-* Kernel Object Table:
+* Kernel Object table:
   * `ko1` (bob): owner= vat-2
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: None, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
@@ -1124,7 +1124,7 @@ Vat-2 will get the same `dispatch.deliver(target=o+2001, msg={method: "foo",
 args: "[]", slots=[], result=p-2015})` as before, and we'll get these changes
 to the kernel state:
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
@@ -1138,7 +1138,7 @@ that its target (`kp24`) is in the Unresolved state, the kernel sees that
 `vat-2` does not accept pipelined messages. So instead of a
 `dispatch.deliver`, it queues the message within the Promise:
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1], queue: [{method="bar", ..}])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Vat-2 C-List:
@@ -1151,14 +1151,14 @@ object "quux", the lower-level code will call
 will update the Promise table and re-queue the old messages, as well as
 scheduling notification for the subscribers:
 
-* Kernel Object Table:
+* Kernel Object table:
   * `ko1` (bob): owner= vat-2
   * `ko3` (quux): owner= vat-2
 * Vat-2 C-List:
   * `v2.o+2001 <-> ko1` (export of bob)
   * `v2.p-2015 <-> kp24` (import of foo() result)
   * `v2.o+2022 <-> ko3` (export of quux)
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Resolved(target(ko3))`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
@@ -1177,11 +1177,11 @@ import from Vat-2 named `bob` as before, an import from Vat-3 named `carol`,
 and a Promise received from Vat-2 named `p2`. We're going to send all of
 these, plus a local Promise, to `carol`.
 
-* Kernel Object Table:
+* Kernel Object table:
   * `ko1` (bob): owner= vat-2
   * `ko2` (carol): owner= vat-3
   * `ko3` (alice): owner= vat-1
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp22: state: Unresolved(decider: vat-2, subscribers: [vat-1])` (p2)
 * Kernel run-queue: empty
 * Vat-1 C-List:
@@ -1204,11 +1204,11 @@ the translation layer in Vat-1 allocates a new local PromiseID for it (say
 `send(target=o-1002, msg={method: "foo", args: "..", slots=[o+1044, o-1001,
 o-1002, p-1052, p+103], result=p+104})`. The kernel state now looks like:
 
-* Kernel Object Table:
+* Kernel Object table:
   * `ko1` (bob): owner= vat-2
   * `ko2` (carol): owner= vat-3
   * `ko3` (alice): owner= vat-1
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp22: state: Unresolved(decider: vat-2, subscribers: [vat-1])` (p2)
   * `kp23: state: Unresolved(decider: vat-2, subscribers: [])` (p3)
   * `kp24: state: Unresolved(decider: None, subscribers: [vat-1])` (p4)
@@ -1238,7 +1238,7 @@ mapping to `v3.p-3042`. Finally the result `kp24` is mapped to `v3.p-3043`
 and its Decider is pointed at vat-3. The resulting state, just before
 dispatch, is:
 
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp22: state: Unresolved(decider: vat-2, subscribers: [vat-1])` (p2)
   * `kp23: state: Unresolved(decider: vat-2, subscribers: [])` (p3)
   * `kp24: state: Unresolved(decider: vat-3, subscribers: [vat-1])` (p4)
@@ -1454,9 +1454,9 @@ lack of a single central kernel:
 
 Initial conditions:
 
-* Left Kernel Object Table:
+* Left Kernel Object table:
   * `ko1` (bob): owner= left-comms
-* Kernel Promise Table: empty
+* Kernel Promise table: empty
 * Kernel run-queue: empty
 * left-vat (id=1) kernel C-List:
   * `v1.o-1001 <-> ko1` (import of bob)
@@ -1480,9 +1480,9 @@ the run-queue gets `Send(target=ko1, msg={name: foo, result=kp24})`, which
 eventually comes to the front and is delivered to left-comms. The left-kernel
 tables just before `dispatch.deliver()` is called will look like:
 
-* Left Kernel Object Table:
+* Left Kernel Object table:
   * `ko1` (bob): owner= left-comms
-* Kernel Promise Table:
+* Kernel Promise table:
   * `kp24: state: Unresolved(decider: v2, subscribers: [v1])`
 * left-vat (id=1) kernel C-List:
   * `v1.o-1001 <-> ko1` (import of bob)
