@@ -487,7 +487,7 @@ harden(startRewardDistributor);
  *
  * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartGetRun
  */
-export const bootstrapRunLoC = async (
+const bootstrapRunLoC = async (
   zoe,
   timer,
   feeMintAccess,
@@ -495,11 +495,73 @@ export const bootstrapRunLoC = async (
   { collateralPrice, collateralizationRatio },
   stakeIssuer,
   lienBridge,
+) => {};
+harden(bootstrapRunLoC);
+
+/**
+ * @param {BootstrapPowers} powers
+ * @param {Object} config
+ * @param {Rational} config.ratio ratio of collateral value to available value
+ * @param {Rational} config.price stake (BLD) price in RUN
+ * @typedef {[bigint, bigint]} Rational
+ */
+export const startGetRun = async (
+  {
+    consume: {
+      zoe,
+      // ISSUE: is there some reason Zoe shouldn't await this???
+      feeMintAccess: feeMintAccessP,
+      getRUNBundle,
+      lienBridge,
+      client,
+      chainTimerService,
+      economicCommitteeCreatorFacet,
+    },
+    // @ts-ignore TODO: add to BootstrapPowers
+    produce: { getRUNCreatorFacet, getRUNGovernorCreatorFacet },
+    installation: {
+      consume: { contractGovernor },
+      produce: { getRUN: getRUNinstallR },
+    },
+    instance: {
+      consume: { economicCommittee },
+      produce: { getRUN: getRUNinstanceR },
+    },
+    brand: {
+      consume: { BLD: bldBrandP, RUN: runBrandP },
+      produce: { Attestation: attestationBrandR },
+    },
+    issuer: {
+      consume: { BLD: bldIssuer },
+      produce: { Attestation: attestationIssuerR },
+    },
+  },
+  config = { ratio: [5n, 1n], price: [120n, 100n] },
 ) => {
-  // TODO: refactor to use consume.economicCommittee
-  const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
-    await E(zoe).startInstance(installations.electorate);
-  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
+  const bundle = await getRUNBundle;
+  const [feeMintAccess, bldBrand, runBrand, governor, installation, timer] =
+    await Promise.all([
+      feeMintAccessP,
+      bldBrandP,
+      runBrandP,
+      contractGovernor,
+      E(zoe).install(bundle),
+      chainTimerService,
+    ]);
+  /** @type {(r: Rational, b?: Brand) => Ratio} */
+  const pairToRatio = ([n, d], brand2 = undefined) =>
+    makeRatio(n, runBrand, d, brand2);
+  const collateralPrice = pairToRatio(config.price, bldBrand);
+  const collateralizationRatio = pairToRatio(config.ratio);
+
+  const installations = {
+    governor,
+    getRUN: installation,
+  };
+
+  const poserInvitationP = E(
+    economicCommitteeCreatorFacet,
+  ).getPoserInvitation();
   const [initialPoserInvitation, electorateInvitationAmount] =
     await Promise.all([
       poserInvitationP,
@@ -522,15 +584,15 @@ export const bootstrapRunLoC = async (
     {},
     {
       timer,
-      electorateInstance,
+      economicCommittee,
       governedContractInstallation: installations.getRUN,
       governed: harden({
         terms: { main },
-        issuerKeywordRecord: { Stake: stakeIssuer },
+        issuerKeywordRecord: { Stake: bldIssuer },
         privateArgs: { feeMintAccess, initialPoserInvitation, lienBridge },
       }),
     },
-    harden({ electorateCreatorFacet }),
+    harden({ economicCommitteeCreatorFacet }),
   );
 
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();
@@ -538,93 +600,13 @@ export const bootstrapRunLoC = async (
   const publicFacet = E(zoe).getPublicFacet(governedInstance);
   const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
 
-  return { instance: governedInstance, publicFacet, creatorFacet };
-};
-harden(bootstrapRunLoC);
-
-/**
- * @param {BootstrapPowers} powers
- * @param {Object} config
- * @param {Rational} config.ratio ratio of collateral value to available value
- * @param {Rational} config.price stake (BLD) price in RUN
- * @typedef {[bigint, bigint]} Rational
- */
-export const startGetRun = async (
-  {
-    consume: {
-      zoe,
-      // ISSUE: is there some reason Zoe shouldn't await this???
-      feeMintAccess: feeMintAccessP,
-      getRUNBundle,
-      lienBridge,
-      client,
-      chainTimerService,
-    },
-    // @ts-ignore TODO: add to BootstrapPowers
-    produce: { getRUNCreatorFacet },
-    installation: {
-      consume: { contractGovernor, committee },
-      produce: { getRUN: getRUNinstallR },
-    },
-    instance: {
-      produce: { getRUN: getRUNinstanceR },
-    },
-    brand: {
-      consume: { BLD: bldBrandP, RUN: runBrandP },
-      produce: { Attestation: attestationBrandR },
-    },
-    issuer: {
-      consume: { BLD: bldIssuer },
-      produce: { Attestation: attestationIssuerR },
-    },
-  },
-  config = { ratio: [5n, 1n], price: [120n, 100n] },
-) => {
-  const bundle = await getRUNBundle;
-  const [
-    feeMintAccess,
-    bldBrand,
-    runBrand,
-    governor,
-    electorate,
-    installation,
-  ] = await Promise.all([
-    feeMintAccessP,
-    bldBrandP,
-    runBrandP,
-    contractGovernor,
-    committee,
-    E(zoe).install(bundle),
-  ]);
-  /** @type {(r: Rational, b?: Brand) => Ratio} */
-  const pairToRatio = ([n, d], brand2 = undefined) =>
-    makeRatio(n, runBrand, d, brand2);
-  const collateralPrice = pairToRatio(config.price, bldBrand);
-  const collateralizationRatio = pairToRatio(config.ratio);
-
-  const installations = {
-    governor,
-    electorate,
-    getRUN: installation,
-  };
-
-  // TODO: finish renaming bootstrapRunLoC etc.
-  // TODO: produce getRUNGovernorCreatorFacet, getRUNCreatorFacet, ...
-  const { instance, publicFacet, creatorFacet } = await bootstrapRunLoC(
-    zoe,
-    chainTimerService,
-    feeMintAccess,
-    installations,
-    { collateralPrice, collateralizationRatio },
-    bldIssuer,
-    lienBridge,
-  );
   const attIssuer = E(publicFacet).getIssuer();
   const attBrand = await E(attIssuer).getBrand();
 
   getRUNCreatorFacet.resolve(creatorFacet);
+  getRUNGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
   getRUNinstallR.resolve(installation);
-  getRUNinstanceR.resolve(instance);
+  getRUNinstanceR.resolve(governedInstance);
   attestationBrandR.resolve(attBrand);
   attestationIssuerR.resolve(attIssuer);
   return Promise.all([

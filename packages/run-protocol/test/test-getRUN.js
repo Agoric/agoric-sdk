@@ -13,19 +13,18 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import { makeCopyBag } from '@agoric/store';
 import {
-  bootstrapRunLoC,
-  startEconomicCommittee,
-  startGetRun,
-} from '../src/econ-behaviors.js';
+  makeAgoricNamesAccess,
+  makePromiseSpace,
+} from '@agoric/vats/src/core/utils.js';
+import { makeParamChangePositions } from '@agoric/governance';
+import { startEconomicCommittee, startGetRun } from '../src/econ-behaviors.js';
+import { governanceBundles } from '../src/importedBundles.js';
 import * as Collect from '../src/collect.js';
 import * as testCases from './runLoC-test-case-sheet.js';
-import { setupAMMBootstrap } from './amm/vpool-xyk-amm/setup.js';
+import { CreditTerms } from '../src/getRUN.js';
 
 const contractRoots = {
   getRUN: '../src/getRUN.js',
-  electorate: '@agoric/governance/src/noActionElectorate.js',
-  governor: '@agoric/governance/src/contractGovernor.js',
-  faker: './attestationFaker.js',
 };
 
 const { assign, entries, fromEntries, keys } = Object;
@@ -46,6 +45,45 @@ test.before(async t => {
   );
   assign(t.context, { bundles });
 });
+
+export const setUpZoeForTest = async () => {
+  const { makeFar } = makeLoopback('zoeTest');
+
+  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+    makeFakeVatAdmin(() => {}).admin,
+  );
+  /** @type {ERef<ZoeService>} */
+  const zoe = makeFar(zoeService);
+  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
+  return {
+    zoe,
+    feeMintAccess,
+  };
+};
+harden(setUpZoeForTest);
+
+export const setupBootstrap = async (
+  bundles,
+  timer = buildManualTimer(console.log),
+  zoe,
+) => {
+  if (!zoe) {
+    ({ zoe } = await setUpZoeForTest());
+  }
+
+  const space = /** @type {any} */ (makePromiseSpace());
+  const { produce, consume } = /** @type { EconomyBootstrapPowers } */ (space);
+
+  produce.chainTimerService.resolve(timer);
+  produce.zoe.resolve(zoe);
+
+  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  produce.agoricNames.resolve(agoricNames);
+
+  produce.governanceBundles.resolve(governanceBundles);
+
+  return { produce, consume, ...spaces };
+};
 
 /**
  * @param {{ context: unknown }} t
@@ -173,21 +211,14 @@ test('RUN mint access', async t => {
   t.truthy(feeMintAccess);
 });
 
-/**
- * Note: caller must produce client.
- *
- * @param {*} t
- */
-const bootstrapGetRun = async t => {
-  const bundles = theBundles(t);
-  const timer = buildManualTimer(t.log, 0n, 1n);
+const bootstrapGetRun = async (bundles, timer) => {
   const { zoe, feeMintAccess, runBrand, bld } = await bootstrapZoeAndRun();
   const runIssuer = E(zoe).getFeeIssuer();
 
   const chain = mockChain({ addr1a: 1_000_000_000n * micro.unit });
   const lienBridge = chain.makeLienBridge(bld.brand);
 
-  const space = await setupAMMBootstrap(timer, zoe);
+  const space = await setupBootstrap(bundles, timer, zoe);
   const { produce, brand, issuer } = space;
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
@@ -200,8 +231,8 @@ const bootstrapGetRun = async t => {
   issuer.produce.RUN.resolve(runIssuer);
 
   const mockClient = harden({
-    assignBundle: fns => {
-      t.log('assignBundle:', fns);
+    assignBundle: _fns => {
+      // t.log('assignBundle:', fns);
     },
   });
   produce.client.resolve(mockClient);
@@ -223,7 +254,10 @@ const makeWalletMaker = creatorFacet => {
 };
 
 test('getRUN API usage', async t => {
-  const { chain, space } = await bootstrapGetRun(t);
+  const bundles = theBundles(t);
+  const timer = buildManualTimer(t.log, 0n, 1n);
+
+  const { chain, space } = await bootstrapGetRun(bundles, timer);
   const { consume } = space;
   const { zoe, getRUNCreatorFacet: creatorFacet } = consume;
   const runBrand = await space.brand.consume.RUN;
@@ -262,33 +296,96 @@ test('getRUN API usage', async t => {
   t.deepEqual(actual, proposal.want.RUN);
 });
 
-/** @type {[string, unknown][]} */
-const td1 = [
-  // 1	Starting LoC
-  [`buyBLD`, 10_000n],
-  [`stakeBLD`, 3_000n],
-  [`lienBLD`, 2_000n],
-  [`borrowRUN`, 100n],
-  [`checkRUNDebt`, 100n],
-  [`checkBLDLiened`, 2_000n],
+/**
+ * @typedef {[string, unknown] | [string, unknown, false]} Step
+ * @typedef {[string, Step[]]} TestCase
+ * @type {TestCase[]}
+ */
+const TestData = [
+  [
+    '1, 2, 3',
+    [
+      // 1	Starting LoC
+      [`buyBLD`, 10_000n],
+      [`stakeBLD`, 3_000n],
+      [`lienBLD`, 2_000n],
+      [`borrowRUN`, 100n],
+      [`checkRUNDebt`, 100n],
+      [`checkBLDLiened`, 2_000n],
 
-  // 2	Extending LoC
-  [`checkRUNBalance`, 100n],
-  [`borrowMoreRUN`, 100n],
-  [`checkRUNDebt`, 200n],
-  [`checkRUNBalance`, 200n],
+      // 2	Extending LoC
+      [`checkRUNBalance`, 100n],
+      [`borrowMoreRUN`, 100n],
+      [`checkRUNDebt`, 200n],
+      [`checkRUNBalance`, 200n],
+      // 3	Extending LoC - more BLD required`
 
-  // 3	Extending LoC - more BLD required
-  [`stakeBLD`, 5_000n],
-  [`checkBLDStaked`, 8_000n],
-  [`lienBLD`, 8_000n],
-  [`checkBLDLiened`, 8_000n],
-  [`borrowMoreRUN`, 1_400n],
-  [`checkRUNDebt`, 1_600n],
+      [`stakeBLD`, 5_000n],
+      [`checkBLDStaked`, 8_000n],
+      [`lienBLD`, 8_000n],
+      [`checkBLDLiened`, 8_000n],
+      [`borrowMoreRUN`, 1_400n],
+      [`checkRUNDebt`, 1_600n],
+    ],
+  ],
+  [
+    `4	Extending LoC - CR increases (FAIL)`,
+    [
+      [`buyBLD`, 80_000n],
+      [`stakeBLD`, 80_000n],
+      [`lienBLD`, 8_000n],
+      [`borrowRUN`, 1_000n],
+      [`setCollateralizationRatio`, [750n, 100n]],
+      [`borrowMoreRUN`, 500n, false],
+      [`checkRUNBalance`, 1_000n],
+      [`checkBLDLiened`, 8_000n],
+    ],
+  ],
 ];
 
-test('data driven', async t => {
-  const { chain, space } = await bootstrapGetRun(t);
+/**
+ * Committee of one.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<CommitteeElectorateCreatorFacet>} electorateCreator
+ * @param {ERef<GovernedContractFacetAccess>} getRUNGovernorCreatorFacet
+ * @param {Brand} runBrand
+ * @param {Installation} counter
+ */
+const makeC1 = async (
+  zoe,
+  electorateCreator,
+  getRUNGovernorCreatorFacet,
+  runBrand,
+  counter,
+) => {
+  const [invitation] = await E(electorateCreator).getVoterInvitations();
+  const seat = E(zoe).offer(invitation);
+  const voteFacet = E(seat).getOfferResult();
+  return harden({
+    setCollateralizationRatio: async newValue => {
+      const deadline = 3n; // @@?@??@
+      const paramSpec = {
+        key: 'main',
+        parameterName: CreditTerms.CollateralizationRatio,
+      };
+
+      /** @type { ParamChangeVoteResult } */
+      const { details, outcomeOfUpdate } = await E(
+        getRUNGovernorCreatorFacet,
+      ).voteOnParamChange(paramSpec, newValue, counter, deadline);
+      const { questionHandle } = await details;
+      const { positive } = makeParamChangePositions(paramSpec, newValue);
+      await E(voteFacet).castBallotFor(questionHandle, [positive]);
+      return outcomeOfUpdate;
+    },
+  });
+};
+
+const makeWorld = async t0 => {
+  const bundles = theBundles(t0);
+  const timer = buildManualTimer(t0.log, 0n, 1n);
+  const { chain, space } = await bootstrapGetRun(bundles, timer);
   const { consume } = space;
 
   // @ts-ignore TODO: getRUNCreatorFacet type in vats
@@ -304,6 +401,15 @@ test('data driven', async t => {
     publicFacet: E(zoe).getPublicFacet(getRUNinstance),
     creatorFacet: getRUNCreatorFacet,
   };
+
+  const counter = await space.installation.consume.binaryVoteCounter;
+  const committee = makeC1(
+    zoe,
+    space.consume.economicCommitteeCreatorFacet,
+    space.consume.getRUNGovernorCreatorFacet,
+    runBrand,
+    counter,
+  );
 
   const founder = chain.provisionAccount('founder', 'addr1a');
   const bob = chain.provisionAccount('Bob', 'addr1b');
@@ -334,7 +440,7 @@ test('data driven', async t => {
       const attPmt = await E(bobWallet.attMaker).makeAttestation(delta);
       await E(attPurse).deposit(attPmt);
     },
-    checkBLDStaked: async expected => {
+    checkBLDStaked: async (expected, t) => {
       const actual = await E(lienBridge).getAccountState(
         bob.getAddress(),
         bldBrand,
@@ -344,7 +450,7 @@ test('data driven', async t => {
         AmountMath.make(bldBrand, expected * micro.unit),
       );
     },
-    checkBLDLiened: async expected => {
+    checkBLDLiened: async (expected, t) => {
       const actual = await E(lienBridge).getAccountState(
         bob.getAddress(),
         bldBrand,
@@ -388,28 +494,47 @@ test('data driven', async t => {
       const runPmt = await E(seat).getPayout('RUN');
       E(runPurse).deposit(runPmt);
     },
-    checkRUNBalance: async target => {
+    checkRUNBalance: async (target, t) => {
       const actual = await E(runPurse).getCurrentAmount();
       t.deepEqual(actual, AmountMath.make(runBrand, target * micro.unit));
     },
-    checkRUNDebt: async value => {
+    checkRUNDebt: async (expected, t) => {
       const { uiNotifier } = offerResult;
       const state = await uiNotifier.getUpdateSince();
       t.deepEqual(
         state.value.debt,
-        AmountMath.make(runBrand, value * micro.unit),
+        AmountMath.make(runBrand, expected * micro.unit),
       );
     },
+    setCollateralizationRatio: async newBldToRun => {
+      /** @type {(r: Rational, b?: Brand) => Ratio} */
+      const pairToRatio = ([n, d], brand2 = undefined) =>
+        makeRatio(n, runBrand, d, brand2);
+      const newValue = pairToRatio(newBldToRun);
+
+      await E(committee).setCollateralizationRatio(newValue);
+    },
   });
-  for await (const [tag, value] of td1) {
-    t.log([tag, value]);
-    const fn = driver[tag];
-    if (!fn) {
-      throw Error(`bad tag: ${tag}`);
-    }
-    await fn(value);
+
+  return driver;
+};
+
+const makeTests = async () => {
+  for await (const [name, steps] of TestData) {
+    test(`Test Data ${name}`, async t => {
+      const driver = await makeWorld(t);
+      for await (const [tag, value] of steps) {
+        const fn = driver[tag];
+        if (!fn) {
+          throw Error(`bad tag: ${tag}`);
+        }
+        await fn(value, t);
+      }
+    });
   }
-});
+};
+
+makeTests();
 
 // test.skip('attestation facets@@@', async t => {
 //   const { zoe } = await bootstrapZoeAndRun();
