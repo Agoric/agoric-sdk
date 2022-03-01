@@ -62,8 +62,7 @@ export const ContactsWithoutContext = ({
         <div className="ContactContent">
           <div className="text-gray">{contact.text}</div>
           <div style={{ marginTop: '4px' }}>
-            Board ID: (
-            <span className="Board">board:{contact.depositBoardId}</span>)
+            Board ID: (<span className="Board">{contact.depositBoardId}</span>)
           </div>
         </div>
       </Card>

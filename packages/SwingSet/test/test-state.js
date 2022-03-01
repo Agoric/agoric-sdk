@@ -268,6 +268,7 @@ test('kernel state', async t => {
     ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '1'],
+    ['vat.nextUpgradeID', '1'],
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
@@ -300,6 +301,7 @@ test('kernelKeeper vat names', async t => {
     ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '3'],
+    ['vat.nextUpgradeID', '1'],
     ['vat.names', JSON.stringify(['vatname5', 'Frank'])],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
@@ -348,6 +350,7 @@ test('kernelKeeper device names', async t => {
     ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '1'],
+    ['vat.nextUpgradeID', '1'],
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.nextID', '9'],
@@ -524,6 +527,7 @@ test('kernelKeeper promises', async t => {
     ['crankNumber', '0'],
     ['device.nextID', '7'],
     ['vat.nextID', '1'],
+    ['vat.nextUpgradeID', '1'],
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
@@ -695,16 +699,17 @@ test('meters', async t => {
   t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
 });
 
-test('crankhash', t => {
+test('crankhash - initial state and additions', t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null, createSHA256);
   k.createStartingKernelState('local');
   k.commitCrank();
   // the initial state additions happen to hash to this:
-  const oldActivityhash =
-    'f4aa6b9a21148ce1bbb233224f3812a52f88e72ea097fc48bed2a04d0e60925d';
-  t.is(store.kvStore.get('activityhash'), oldActivityhash);
+  const initialActivityHash = store.kvStore.get('activityhash');
+  t.snapshot(initialActivityHash, 'initial state');
 
+  // a crank which sets a single key produces a stable crankhash, which does
+  // not depend upon the earlier activityhash of kernel state
   k.kvStore.set('one', '1');
   let h = createHash('sha256');
   h.update('add\n' + 'one\n' + '1\n');
@@ -716,17 +721,21 @@ test('crankhash', t => {
 
   h = createHash('sha256');
   h.update('activityhash\n');
-  h.update(`${oldActivityhash}\n${expCrankhash}\n`);
-  const expActivityhash = h.digest('hex');
-  t.is(
-    expActivityhash,
-    '98ca436fbb912599ef9a6e26fc20a3c228dd2d2ccdcb2a622e8bf0071a139f10',
-  );
+  h.update(`${initialActivityHash}\n${expCrankhash}\n`);
+  const expectedActivityHash = h.digest('hex');
+  t.snapshot(expectedActivityHash, 'expected activityhash');
 
   const { crankhash, activityhash } = k.commitCrank();
   t.is(crankhash, expCrankhash);
-  t.is(activityhash, expActivityhash);
-  t.is(store.kvStore.get('activityhash'), expActivityhash);
+  t.is(activityhash, expectedActivityHash);
+  t.is(store.kvStore.get('activityhash'), expectedActivityHash);
+
+  t.log(`\
+This test fails under maintenance of initial kernel state.
+If these changes are expected, run:
+  yarn test --update-snapshots test/test-state.js
+Then commit the changes in .../snapshots/ path.
+`);
 });
 
 test('crankhash - skip keys', t => {
