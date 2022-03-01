@@ -261,4 +261,4 @@ export const start = async (zcf, privateArgs) => {
     publicFacet,
   });
 };
-/** @typedef {Unpromise<ReturnType<typeof start>>['publicFacet']} VaultFactoryPublicFacet */
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} VaultFactoryPublicFacet */

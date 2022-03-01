@@ -16,11 +16,6 @@ export type EOnly<T> = T extends (...args: infer P) => infer R
     }>
   : ERef<T>;
 
-type Unpromise<T> = T extends ERef<infer U> ? U : T;
-
-type Parameters<T> = T extends (...args: infer T) => any ? T : any;
-type ReturnType<T> = T extends (...args: any[]) => infer T ? T : any;
-
 type FilteredKeys<T, U> = {
   [P in keyof T]: T[P] extends U ? P : never;
 }[keyof T];

@@ -728,4 +728,4 @@ export const makeInnerVault = (
 };
 
 /** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
-/** @typedef {Unpromise<ReturnType<InnerVault['initVaultKit']>>} VaultKit */
+/** @typedef {Awaited<ReturnType<InnerVault['initVaultKit']>>} VaultKit */
