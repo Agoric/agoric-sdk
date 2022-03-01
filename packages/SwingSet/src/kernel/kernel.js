@@ -748,6 +748,46 @@ export default function buildKernel(
 
   const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
 
+  async function deliverRunQueueEvent(message) {
+    /** @type { PolicyInput } */
+    let policyInput = ['none'];
+
+    // Decref everything in the message, under the assumption that most of
+    // the time we're delivering to a vat or answering the result promise
+    // with an error. If we wind up queueing it on a promise, we'll
+    // re-increment everything there.
+
+    if (message.type === 'send') {
+      kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
+      if (message.msg.result) {
+        kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
+      }
+      let idx = 0;
+      for (const argSlot of message.msg.args.slots) {
+        kernelKeeper.decrementRefCount(argSlot, `deq|msg|s${idx}`);
+        idx += 1;
+      }
+      policyInput = await deliverToTarget(message.target, message.msg);
+    } else if (message.type === 'notify') {
+      kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
+      policyInput = await processNotify(message);
+    } else if (message.type === 'create-vat') {
+      // creating a new dynamic vat will immediately do start-vat
+      policyInput = await processCreateVat(message);
+    } else if (message.type === 'startVat') {
+      policyInput = await processStartVat(message);
+    } else if (message.type === 'upgrade-vat') {
+      policyInput = await processUpgradeVat(message);
+    } else if (message.type === 'bringOutYourDead') {
+      policyInput = await processBringOutYourDead(message);
+    } else if (gcMessages.includes(message.type)) {
+      policyInput = await processGCMessage(message);
+    } else {
+      assert.fail(X`unable to process message.type ${message.type}`);
+    }
+    return policyInput;
+  }
+
   let processQueueRunning;
   async function processDeliveryMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
@@ -762,38 +802,9 @@ export default function buildKernel(
     try {
       processQueueRunning = Error('here');
       resetDeliveryTriggers();
-      // Decref everything in the message, under the assumption that most of
-      // the time we're delivering to a vat or answering the result promise
-      // with an error. If we wind up queueing it on a promise, we'll
-      // re-increment everything there.
-      if (message.type === 'send') {
-        kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
-        if (message.msg.result) {
-          kernelKeeper.decrementRefCount(message.msg.result, `deq|msg|r`);
-        }
-        let idx = 0;
-        for (const argSlot of message.msg.args.slots) {
-          kernelKeeper.decrementRefCount(argSlot, `deq|msg|s${idx}`);
-          idx += 1;
-        }
-        policyInput = await deliverToTarget(message.target, message.msg);
-      } else if (message.type === 'notify') {
-        kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
-        policyInput = await processNotify(message);
-      } else if (message.type === 'create-vat') {
-        // creating a new dynamic vat will immediately do start-vat
-        policyInput = await processCreateVat(message);
-      } else if (message.type === 'startVat') {
-        policyInput = await processStartVat(message);
-      } else if (message.type === 'upgrade-vat') {
-        policyInput = await processUpgradeVat(message);
-      } else if (message.type === 'bringOutYourDead') {
-        policyInput = await processBringOutYourDead(message);
-      } else if (gcMessages.includes(message.type)) {
-        policyInput = await processGCMessage(message);
-      } else {
-        assert.fail(X`unable to process message.type ${message.type}`);
-      }
+
+      policyInput = await deliverRunQueueEvent(message);
+
       let didAbort = false;
       if (terminationTrigger) {
         // the vat is doomed, either voluntarily or from meter/syscall fault
