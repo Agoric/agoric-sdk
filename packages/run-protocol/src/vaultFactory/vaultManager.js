@@ -60,7 +60,7 @@ const trace = makeTracer('VM');
  *  RecordingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
  * }} timingParams
  * @param {GetGovernedVaultParams} getLoanParams
- * @param {ReallocateReward} reallocateReward
+ * @param {ReallocateWithFee} reallocateWithFee
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {Timestamp} startTimeStamp
@@ -73,7 +73,7 @@ export const makeVaultManager = (
   priceAuthority,
   timingParams,
   getLoanParams,
-  reallocateReward,
+  reallocateWithFee,
   timerService,
   liquidationStrategy,
   startTimeStamp,
@@ -304,7 +304,7 @@ export const makeVaultManager = (
     // mint that much RUN for the reward pool
     const rewarded = AmountMath.make(runBrand, interestAccrued);
     runMint.mintGains(harden({ RUN: rewarded }), poolIncrementSeat);
-    reallocateReward(rewarded, poolIncrementSeat);
+    reallocateWithFee(rewarded, poolIncrementSeat);
 
     // update running tally of total debt against this collateral
     ({ latestInterestUpdate } = debtStatus);
@@ -380,7 +380,7 @@ export const makeVaultManager = (
   const managerFacet = harden({
     ...shared,
     applyDebtDelta,
-    reallocateReward,
+    reallocateWithFee,
     getCollateralBrand: () => collateralBrand,
     getCompoundedInterest: () => compoundedInterest,
     updateVaultPriority,
