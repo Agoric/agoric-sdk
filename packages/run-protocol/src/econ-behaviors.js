@@ -440,32 +440,6 @@ harden(startRewardDistributor);
  * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
  * @template T
  */
-/**
- * TODO: refactor test to use startGetRUN so we can un-export this,
- *       since it's not a bootstrap behavior.
- *
- * @param {ERef<ZoeService>} zoe
- * @param {ERef<TimerService>} timer
- * @param { FeeMintAccess } feeMintAccess
- * @param {Record<string, Installation>} installations
- * @param {Object} terms
- * @param {Ratio} terms.collateralPrice
- * @param {Ratio} terms.collateralizationRatio
- * @param {ERef<Issuer>} stakeIssuer
- * @param {ERef<StakingAuthority>} lienBridge
- *
- * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartGetRun
- */
-const bootstrapRunLoC = async (
-  zoe,
-  timer,
-  feeMintAccess,
-  installations,
-  { collateralPrice, collateralizationRatio },
-  stakeIssuer,
-  lienBridge,
-) => {};
-harden(bootstrapRunLoC);
 
 /**
  * @param {BootstrapPowers} powers
@@ -473,6 +447,7 @@ harden(bootstrapRunLoC);
  * @param {Rational} config.ratio ratio of collateral value to available value
  * @param {Rational} config.price stake (BLD) price in RUN
  * @typedef {[bigint, bigint]} Rational
+ * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartGetRun
  */
 export const startGetRun = async (
   {
