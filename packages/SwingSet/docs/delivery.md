@@ -34,11 +34,13 @@ primary syscall is named `syscall.send()`.
 Each vat is represented in the kernel as a `dispatch` object with methods that
 close over its internal state (cf.
 [Vat-Inbound Slot Translation](#vat-inbound-slot-translation)). A vat's code
-executes when the kernel initiates a **turn** by invoking one of these methods,
-primarily `dispatch.deliver()` (which delivers messages such as those produced
-by `syscall.send()` from some other vat). The arguments to `deliver` are also
-pure data, and are recorded in a transcript to enable replay-based orthogonal
-persistence.
+executes a **crank** (a sequence of **turns** ending when its microtask queue is
+empty—i.e. when the execution context has run to completion and there are no
+promise callbacks that should be invoked) when the kernel initiates a
+**delivery** by invoking one of these methods, primarily `dispatch.deliver()`
+(which delivers messages such as those produced by `syscall.send()` from some
+other vat). The arguments to `deliver` are also pure data, and are recorded in a
+transcript to enable replay-based orthogonal persistence.
 
 To enable transactional commitments, all state changes that might be made by
 syscalls are held in a transaction buffer (the "crank buffer") until the
@@ -54,7 +56,7 @@ buffer, otherwise falling through to the persistent store.
 
 All `dispatch` functions can schedule near-term work by using
 `Promise.resolve()` to append something to the promise queue. This work will
-be completed after the current stack unwinds, but before the turn completes
+be completed after the current stack unwinds, but before the crank completes
 and the `dispatch` is retired. This allows Vats to use eventual-send
 internally, to protect against plan-interference hazards. For Javascript vats,
 the kernel implements this draining of the promise-queue by waiting for a
@@ -708,7 +710,7 @@ millions, but only a few are active during any single delivery. Both keys and
 values are limited to strings at this time.
 
 Changes to this table are held in the crank buffer, just like any other state
-changes, and are not flushed until the turn completes successfully.
+changes, and are not flushed until the crank completes successfully.
 
 ### syscall.dropImports
 
@@ -798,7 +800,7 @@ The `Message.result`, if present, is always translated into a `PromiseID`,
 and the Vat is given resolution authority over that promise. In the kernel
 promise table, the "Decider" field is set to point at the Vat just before
 `dispatch.deliver()` is called, enabling the Vat to call
-`syscall.resolve(result)` during the turn.
+`syscall.resolve(result)` during the crank.
 
 ### no dispatch.subscribe()
 
@@ -950,7 +952,7 @@ run-queue:
 * Kernel run-queue:
   * `Notify(subscriber: vat-1, subject: kp24)`
 
-The `dispatch.resolve()` returns, and Vat-2 finishes its turn.
+The `dispatch.resolve()` returns, and Vat-2 finishes its crank.
 
 The run-queue is then cycled again, and the Notify is at the top. The kernel
 uses the `subscriber` to pick the Vat-1 C-List for inbound translation, and
