@@ -160,11 +160,15 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
+  const {
+    SOLO_OTEL_EXPORTER_PROMETHEUS_PORT,
+    SOLO_OTEL_RESOURCE_ATTRIBUTES,
+    ...restEnv
+  } = process.env;
   const env = {
-    ...process.env,
-    OTEL_EXPORTER_PROMETHEUS_PORT:
-      process.env.SOLO_OTEL_EXPORTER_PROMETHEUS_PORT,
-    OTEL_RESOURCE_ATTRIBUTES: process.env.SOLO_OTEL_RESOURCE_ATTRIBUTES,
+    ...restEnv,
+    OTEL_EXPORTER_PROMETHEUS_PORT: SOLO_OTEL_EXPORTER_PROMETHEUS_PORT,
+    OTEL_RESOURCE_ATTRIBUTES: SOLO_OTEL_RESOURCE_ATTRIBUTES,
   };
   const { metricsProvider = DEFAULT_METER_PROVIDER } = getTelemetryProviders({
     console,
