@@ -305,6 +305,13 @@ export async function makeSwingsetController(
   async function validateAndInstallBundle(bundle, allegedBundleID) {
     // TODO: validation: unpack, parse sources, check hashes
 
+    // during the transition to endo's new format, preemptively ignore the
+    // hash it provides
+    bundle = {
+      moduleFormat: bundle.moduleFormat,
+      endoZipBase64: bundle.endoZipBase64,
+    };
+
     // this only computes the hash of the compartment map, it does not check
     // that the rest of the bundle matches
     const bundleID = await computeBundleID(bundle);
