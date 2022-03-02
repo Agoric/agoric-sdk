@@ -185,10 +185,10 @@ from some Vat, and all Promises are managed by the kernel, so from within the
 kernel, there is no notion of import-vs-export.
 
 Each row of the kernel Object table remembers the object's "owner" (the VatID
-that first exported it into the kernel in the argument of a `syscall.send` or
-`syscall.resolve`). Messages sent to the object from other Vats (via
-`syscall.send`) must be routed to the owning Vat and delivered with a
-`dispatch.deliver`.
+that first exported it into the kernel in the argument of a `syscall.send()` or
+`syscall.resolve()`). Messages sent to the object from other Vats (via
+`syscall.send()`) must be routed to the owning Vat and delivered with a
+`dispatch.deliver()`.
 
 Each row of the kernel Promise table remembers the current promise state and
 any related data. There is one unresolved state, and four resolved states
@@ -290,9 +290,9 @@ thus consists of the JSON-encoded string (named `body`) and the list of slots
 off to some other vat, the `body` remains untouched, but the `slots` are
 remapped at each vat/kernel boundary.
 
-A `Message` is the method invocation first given to `syscall.send` for
+A `Message` is the method invocation first given to `syscall.send()` for
 transmission to some other Vat, then stored in the kernel run-queue, then
-finally arriving at the target vat inside a `dispatch.deliver` call. The
+finally arriving at the target vat inside a `dispatch.deliver()` call. The
 Message includes the method name which should be invoked, the `CapData`
 arguments to be included, and an optional result identifier (a Promise). The
 SwingSet calling model has only positional (not keyword) arguments, hence
@@ -308,7 +308,7 @@ even as it gets queued and forwarded from one place to another.
 
 The Vat Message `result` identifier, if present, must refer to a Promise for
 which the sending Vat has resolution authority. There are three
-possibilities, and `syscall.send` will reject the message (terminating the
+possibilities, and `syscall.send()` will reject the message (terminating the
 Vat) unless the `result` ID falls into one of these categories:
 
 * A brand new Promise was created just for the result slot. The ID will be a
@@ -417,13 +417,13 @@ the kernel, the decider vat would not get access to those Meters.
 When a pipelining-aware Vat resolves a Promise, and then forwards the
 previously queued messages which it received before that resolution, it can
 return the Message objects unchanged back into the kernel (with
-`syscall.send`), keeping the `result` identifiers exactly the same.
+`syscall.send()`), keeping the `result` identifiers exactly the same.
 
 ## Descriptive Conventions
 
 The Objects and Promises are represented in debug logs with a single-letter
 prefix (`o` or `p`), a sign, and a number. They also include a Vat ID prefix
-(`vNN.`). So when Vat 2 does a `syscall.send` that targets an import (a
+(`vNN.`). So when Vat 2 does a `syscall.send()` that targets an import (a
 kernel-allocated Object identifier, hence negative), and includes an argument
 which is a local object (an export, hence positive), and specifies a result
 that is a new local Promise, the logs might say `v2.send(target=o-4,
@@ -501,7 +501,7 @@ There are a few restrictions on the API:
   `dispatch.deliver()` will always be owned by the receiving Vat (either an
   ObjectID allocated by this Vat, or a PromiseID for which this Vat is the
   Decider).
-* The `Message.result` in a `syscall.send` must either be a new vat-allocated
+* The `Message.result` in a `syscall.send()` must either be a new vat-allocated
   (positive) PromiseID, or a previously-allocated PromiseID for which the
   calling Vat is the Decider, or a PromiseID that was previously received as
   the result of an inbound message.
@@ -603,12 +603,12 @@ hear about their own Promises, but it is legal.
 
 ### syscall.resolve()
 
-`syscall.resolve` is used to resolve one or more Promises (usually just one,
+`syscall.resolve()` is used to resolve one or more Promises (usually just one,
 but occasionally a batch of mutually-referencing Promises must be resolved in
 a single syscall because their identifiers are aggressively retired
 immediately after translation).
 
-The subject of a `syscall.resolve` must either be a new Promise ID, or a
+The subject of a `syscall.resolve()` must either be a new Promise ID, or a
 pre-existing one for which the calling Vat is the Decider. The
 `KernelPromise` must be in the `Unresolved` state. If any of these conditions
 are not met, the Vat calling `resolve` will be terminated. It doesn't matter
@@ -637,7 +637,7 @@ The `resolution` has several forms, and we assign a different name to each.
 
 As the `syscall.resolve()` is processed by the kernel, all slots in the
 `resolution` should be mapped just like the `Message` slots in
-`syscall.send`. If the resolution is `Forward`, the new promise must be
+`syscall.send()`. If the resolution is `Forward`, the new promise must be
 different than the one being resolved, and must not result in a cycle. (TODO
 could one Vat force a second one into unknowingly creating a cycle?).
 
@@ -721,7 +721,7 @@ https://github.com/Agoric/agoric-sdk/issues/2724 for details.
 
 The Kernel's run-queue holds two kinds of pending operations: `Send`
 (enqueued when a Vat does `syscall.send()`), and `Notify` (enqueued when one
-does `syscall.resolve`).
+does `syscall.resolve()`).
 
 ```
 enum KernelSlot {
@@ -1062,8 +1062,8 @@ subscriber (Vat-1):
 
 Control returns to Vat-2, which now must send all the messages that were
 previously queued for the Promise it just resolved. The same Message
-structure that came out of `dispatch.notify` is sent unmodified back into
-`syscall.send`, but the target is now the resolution of the promise:
+structure that came out of `dispatch.notify()` is sent unmodified back into
+`syscall.send()`, but the target is now the resolution of the promise:
 `send(target=ko2, msg={method: "bar", .. result=p-2016})`.
 
 * Kernel Promise table:
@@ -1140,7 +1140,7 @@ to the kernel state:
 Now, when the `bar` message reaches the front of the queue the kernel finds
 that its target (`kp24`) is in the Unresolved state, the kernel sees that
 `vat-2` does not accept pipelined messages. So instead of a
-`dispatch.deliver`, it queues the message within the Promise:
+`dispatch.deliver()`, it queues the message within the Promise:
 
 * Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1], queue: [{method="bar", ..}])`
@@ -1202,7 +1202,7 @@ Vat-1 now does `p3 = make_promise(); p4 = carol!foo(alice, bob, carol, p2, p3)`.
 
 The `make_promise()` creates a regular Vat-Code promise (a native Javascript
 Promise). Nothing special happens until the `foo()` is processed into a
-`syscall.send`. During that processing, as the `p3` argument is serialized,
+`syscall.send()`. During that processing, as the `p3` argument is serialized,
 the translation layer in Vat-1 allocates a new local PromiseID for it (say
 `p+103`). It allocates `p+104` for the result (p4). The resulting syscall is
 `send(target=o-1002, msg={method: "foo", args: "..", slots=[o+1044, o-1001,
@@ -1328,10 +1328,10 @@ exporter would *send* that object as `ro-2` to please the importer).
 
 The message names are also different. In the local-machine Vat-Kernel-Vat
 flow, the first Vat's outbound message has a different name than the inbound
-message (`syscall.send` becomes `dispatch.deliver`, `syscall.resolve` becomes
-`dispatch.notify`). In the remote-machine CommsVat-CommsVat flow, there is no
-kernel in the middle, so whatever the first Comms Vat sends is exactly what
-the second Comms Vat receives. In keeping with the receiver-centric
+message (`syscall.send()` becomes `dispatch.deliver()`, `syscall.resolve()`
+becomes `dispatch.notify()`). In the remote-machine CommsVat-CommsVat flow,
+there is no kernel in the middle, so whatever the first Comms Vat sends is
+exactly what the second Comms Vat receives. In keeping with the receiver-centric
 convention, We use `deliver` for message delivery, and `notify` for promise
 resolution.
 
@@ -1557,14 +1557,14 @@ be added for the result promise (`v4.p-5002`), and invokes
 #### response
 
 Now suppose right-vat resolves the result promise to a new local object
-(`v4.o+5003`). We trace the `syscall.resolve` back to the left-vat:
+(`v4.o+5003`). We trace the `syscall.resolve()` back to the left-vat:
 
 * right-vat: `syscall.resolve(subject=p-5002, Fulfill(o+5003))`
 * right kernel right-vat C-List: `v4.o+5003 <-> ko3`
 * right run-queue `Notify(target=kp6001, Fulfill(ko3))`
 * notification gets to front, right kernel promise table updated
   * `kp6001: state = FulfillToTarget(ko3)`
-  * subscribers each get a `dispatch.notify`
+  * subscribers each get a `dispatch.notify()`
 * right-comms: `dispatch.notify(target=p+4002, Fulfill(o-4003))`
 * right-comms promise routing table lookup (`p+4002`) says destination machine is `left`
 * right-comms allocates `ro+3002` for the object `o-4003`
@@ -1574,7 +1574,7 @@ Now suppose right-vat resolves the result promise to a new local object
 * left-comms submits `syscall.resolve(target=p-2015, Fulfill(o+2002))`
 * left kernel maps through left-comms C-List, allocates `ko15` for `v2.o+2002`
 * left run-queue `Notify(target=kp24, Fulfill(ko15))`
-* subscribers each get `dispatch.notify`
+* subscribers each get `dispatch.notify()`
 * `v1.o-1002` allocated for `ko15` in left-vat C-List
 * left-vat gets `dispatch.notify(target=p+104, Fulfill(o-1002))`
 
