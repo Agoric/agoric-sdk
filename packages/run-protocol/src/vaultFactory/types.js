@@ -45,7 +45,7 @@
  */
 
 /**
- * @callback ReallocateReward
+ * @callback ReallocateWithFee
  *
  * Transfer the indicated amount to the vaultFactory's reward
  * pool, taken from the `fromSeat`. Then reallocate over all the seat
