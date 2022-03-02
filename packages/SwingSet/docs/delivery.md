@@ -430,8 +430,8 @@ that is a new local Promise, the logs might say `v2.send(target=o-4,
 msg={name: foo, slots:[o+3], result=p+5})`. The Promise that results from
 this `send` is also labelled `p+5`.
 
-The kernel types use `ko` and `kp`. The run-queue for that message would be
-printed as `target=ko6, msg={name: foo, slots:[ko2], result=kp8}`.
+The kernel types use `ko` and `kp`. The run-queue entry for that message would
+be printed as `target=ko6, msg={name: foo, slots:[ko2], result=kp8}`.
 
 The Comms Vat creates inter-machine messages that refer to Objects and
 Promises in per-remote-machine C-List tables that live inside each Comms Vat.
