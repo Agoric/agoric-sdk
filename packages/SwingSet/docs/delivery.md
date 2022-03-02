@@ -56,9 +56,9 @@ All `dispatch` functions can schedule near-term work by using
 `Promise.resolve()` to append something to the promise queue. This work will
 be completed after the current stack unwinds, but before the turn completes
 and the `dispatch` is retired. This allows Vats to use eventual-send
-internally, to protect against plan-interference hazards. The kernel waits
-for a `setImmediate` on the timer/IO queue before proceeding to the next
-message, giving these promise-queue actions a chance to complete.
+internally, to protect against plan-interference hazards. For Javascript vats,
+the kernel implements this draining of the promise-queue by waiting for a
+`setImmediate` on the timer/IO queue before proceeding to the next message.
 
 ```
 +-- Vat A ---+    +- Vat B --+      +- Vat C --+
