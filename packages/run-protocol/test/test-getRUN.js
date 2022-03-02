@@ -328,7 +328,7 @@ const TestData = [
     ],
   ],
   [
-    `4	Extending LoC - CR increases (FAIL)`,
+    `4, 5	Extending LoC - CR increases (FAIL)`,
     [
       [`buyBLD`, 80_000n],
       [`stakeBLD`, 80_000n],
@@ -338,6 +338,13 @@ const TestData = [
       [`borrowMoreRUN`, 500n, false],
       [`checkRUNBalance`, 1_000n],
       [`checkBLDLiened`, 8_000n],
+      // 5	Full repayment
+      [`checkRUNBalance`, 1_000n],
+      [`checkBLDLiened`, 8_000n],
+      [`payoffRUN`, 1_000n],
+      [`checkRUNDebt`, 0n],
+      [`checkBLDLiened`, 0n],
+      [`checkRUNBalance`, 0n],
     ],
   ],
 ];
@@ -407,10 +414,22 @@ const makeWorld = async t0 => {
     counter,
   );
 
+  const attIssuer = E(getRUN.publicFacet).getIssuer();
+  const attBrand = await E(attIssuer).getBrand();
+
+  /** @param { Payment } att */
+  const returnAttestation = async att => {
+    const invitation = E(getRUN.publicFacet).makeReturnAttInvitation();
+    const attestationAmount = await E(attIssuer).getAmountOf(att);
+    const proposal = harden({ give: { Attestation: attestationAmount } });
+    const payments = harden({ Attestation: att });
+    const userSeat = E(zoe).offer(invitation, proposal, payments);
+    return E(userSeat).getOfferResult();
+  };
+
   const founder = chain.provisionAccount('founder', 'addr1a');
   const bob = chain.provisionAccount('Bob', 'addr1b');
 
-  const attIssuer = E(getRUN.publicFacet).getIssuer();
   const walletMaker = makeWalletMaker(getRUN.creatorFacet);
 
   // Bob introduces himself to the Agoric JS VM.
@@ -489,6 +508,26 @@ const makeWorld = async t0 => {
       await E(seat).getOfferResult(); // check for errors
       const runPmt = await E(seat).getPayout('RUN');
       await E(runPurse).deposit(runPmt);
+    },
+    payoffRUN: async value => {
+      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      const proposal = harden({
+        give: { RUN: AmountMath.make(runBrand, value * micro.unit) },
+        want: {
+          // TODO: want amount should match amount liened
+          Attestation: AmountMath.makeEmpty(attBrand, AssetKind.COPY_BAG),
+        },
+      });
+      const runPayment = await E(runPurse).withdraw(proposal.give.RUN);
+      const seat = await E(zoe).offer(
+        E(offerResult.invitationMakers).CloseVault(),
+        proposal,
+        harden({ RUN: runPayment }),
+      );
+      await E(seat).getOfferResult(); // 'RUN line of credit closed'
+      const attBack = await E(seat).getPayout('Attestation');
+
+      await returnAttestation(attBack);
     },
     checkRUNBalance: async (target, t) => {
       const actual = await E(runPurse).getCurrentAmount();
