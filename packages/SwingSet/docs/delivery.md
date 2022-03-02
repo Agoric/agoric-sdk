@@ -346,23 +346,24 @@ machine.
 ```js
 const recordPromise = E(table).getRecord(identifier);
 const balancePromise = E(recordPromise).getBalance();
-balancePromise.then(balance => console.log(`balance: ${balance}`);
+balancePromise.then(balance => console.log(`balance: ${balance}`));
 ```
 
 In SwingSet, pipelining is most (only?) useful on the Comms Vat. The local
 kernel shares a host with the local vats, so the latency is minimal. However
 two messages aimed at the same remote machine, through the Comms Vat, would
-suffer unnecessary roundtrips unless the second can be delivered earlier. So
-each Vat, when it is added, can include an option flag that says "I want to
-received pipelined messages early". The default, used by everything except
-the Comms Vat, means "I want the kernel to queue those messages, not me".
+suffer unnecessary roundtrips unless the second can be delivered before receipt
+of a response to the first. So each Vat, when it is added, can set an
+`enablePipelining` flag that opts it in to receiving pipelined messages early.
+The default, used by everything except the Comms Vat, is unset and requests that
+the kernel queue such messages.
 
 ```js
 const config = await loadBasedir(basedir);
-config.vats.set('comms',
-                { sourcepath: getCommsSourcePath(),
-                  options: { enablePipelining: true },
-                });
+config.vats.set('comms', {
+  sourcepath: getCommsSourcePath(),
+  options: { enablePipelining: true },
+});
 ```
 
 (open question: another option would be for `dispatch.deliver()` to return a
@@ -385,16 +386,15 @@ If the deciding Vat has *not* opted into pipelining, the messages are queued
 in the kernel's Promise table entry instead. They remain there until the
 deciding vat uses `syscall.resolve()` to resolve that Promise. At that point,
 the behavior depends upon the type of resolution; see the discussion of
-`syscall.resolve()` below for details.
+`syscall.resolve()` [below](#syscallresolve) for details.
 
-When the initial pair of messages are submitted with `syscall.send()`, the
-run-queue will have two pending deliveries: the first is targeting an object
-in some Vat, and the second targets a Promise (the `result` promise-ID of the
-first message). Until the first message is delivered, the result Promise has
-no Decider, so the second message cannot be delivered. But that's ok, because
-by the time the second message gets to the front of the run queue, the first
-will have been delivered, setting the Decider of the result Promise to some
-vat, providing a place to deliver the second one (or the knowledge that the
+When a `syscall.send()` is submitted, the run-queue will have two pending
+deliveries: the first is targeting an object in some Vat, and the second targets
+the `result` PromiseID. Until the first message is delivered, the result Promise
+has no Decider, so the second message cannot be delivered. But that's ok,
+because by the time the second message gets to the front of the run queue, the
+first will have been delivered, setting the Decider of the result Promise to
+some vat, providing a place to deliver the second one (or the knowledge that the
 vat wants the kernel to queue it instead).
 
 When we implement Flows or escalators or some other priority mechanism, we
