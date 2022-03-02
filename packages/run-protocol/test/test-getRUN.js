@@ -311,13 +311,13 @@ const TestData = [
       [`borrowRUN`, 100n],
       [`checkRUNDebt`, 100n],
       [`checkBLDLiened`, 2_000n],
+      [`checkRUNBalance`, 100n],
 
       // 2	Extending LoC
-      [`checkRUNBalance`, 100n],
       [`borrowMoreRUN`, 100n],
       [`checkRUNDebt`, 200n],
       [`checkRUNBalance`, 200n],
-      // 3	Extending LoC - more BLD required`
+      // 3	Extending LoC - more BLD required
 
       [`stakeBLD`, 5_000n],
       [`checkBLDStaked`, 8_000n],
@@ -357,6 +357,19 @@ const TestData = [
       [`payDownRUN`, 50n],
       [`checkRUNBalance`, 950n],
       [`checkRUNDebt`, 950n],
+    ],
+  ],
+  [
+    `7	Partial repayment - CR increases*`,
+    [
+      [`buyBLD`, 12_000n],
+      [`stakeBLD`, 10_000n],
+      [`lienBLD`, 500n],
+      [`borrowRUN`, 100n],
+      [`setCollateralizationRatio`, [750n, 100n]],
+      [`payDownRUN`, 5n],
+      [`checkRUNBalance`, 95n],
+      [`checkRUNDebt`, 95n],
     ],
   ],
 ];
@@ -451,8 +464,6 @@ const makeWorld = async t0 => {
   const runPurse = E(runIssuer).makeEmptyPurse();
   let offerResult;
   const driver = harden({
-    // setRate: ratePK.resolve,
-    // setPrice: pricePK.resolve,
     buyBLD: n => founder.sendTo(bob.getAddress(), n * micro.unit),
     stakeBLD: n => bob.stake(n * micro.unit),
     lienBLD: async target => {
