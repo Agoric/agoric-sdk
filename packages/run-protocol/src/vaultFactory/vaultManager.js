@@ -102,13 +102,18 @@ export const makeVaultManager = (
 
   let vaultCounter = 0;
 
-  // A store for vaultKits prioritized by their collaterization ratio.
-  //
-  // It should be set only once but it's a `let` because it can't be set until after the
-  // definition of reschedulePriceCheck, which refers to sortedVaultKits
+  /**
+   * A store for vaultKits prioritized by their collaterization ratio.
+   *
+   * It should be set only once but it's a `let` because it can't be set until after the
+   * definition of reschedulePriceCheck, which refers to sortedVaultKits
+   *
+   * @type {ReturnType<typeof makePrioritizedVaults>=}
+   */
   // XXX misleading mutability and confusing flow control; could be refactored with a listener
-  /** @type {ReturnType<typeof makePrioritizedVaults>=} */
   let prioritizedVaults;
+
+  // Progress towards durability https://github.com/Agoric/agoric-sdk/issues/4568#issuecomment-1042346271
   /** @type {MapStore<string, InnerVault>} */
   const vaultsToLiquidate = makeScalarBigMapStore('vaultsToLiquidate');
 
@@ -119,8 +124,10 @@ export const makeVaultManager = (
   /** @type {Ratio}} */
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
-  // timestamp of most recent update to interest
-  /** @type {bigint} */
+  /**
+   * timestamp of most recent update to interest
+   * @type {bigint}
+   */
   let latestInterestUpdate = startTimeStamp;
 
   const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
@@ -133,11 +140,11 @@ export const makeVaultManager = (
   );
 
   /**
-   * @param {Iterable<[key: string, vaultKit: InnerVault]>} recordEntries
+   * @param {Iterable<[key: string, vaultKit: InnerVault]>} vaultEntries
    */
-  const enqueueToLiquidate = recordEntries => {
+  const enqueueToLiquidate = vaultEntries => {
     assert(prioritizedVaults);
-    for (const [k, v] of recordEntries) {
+    for (const [k, v] of vaultEntries) {
       vaultsToLiquidate.init(k, v);
       prioritizedVaults.removeVault(k);
     }
