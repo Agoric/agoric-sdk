@@ -508,11 +508,11 @@ There are a few restrictions on the API:
 
 Some invocation patterns are legal, but unlikely to be useful:
 
-* `syscall.send(target=)` can be any `CapSlot`, however it is a bit silly to
-  reference an Object that lives on the local Vat, or a Promise for which the
-  local Vat is the Decider. In both cases, the Vat could have delivered the
-  message directly, instead of taking the time and effort of going through
-  the kernel's run-queue. On the other hand, this may achieve certain
+* The `target` of a `syscall.send()` can be any `CapSlot`, however it is a bit
+  silly to reference an Object that lives on the local Vat, or a Promise for
+  which the local Vat is the Decider. In both cases, the Vat could have
+  delivered the message directly, instead of taking the time and effort of going
+  through the kernel's run-queue. On the other hand, this may achieve certain
   ordering properties better.
 
 In some places, `dispatch.deliver()` is named `message`: we're still in the
