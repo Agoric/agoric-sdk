@@ -9,7 +9,7 @@
     "packages/wallet/ui"
   ],
   "devDependencies": {
-    "@endo/eslint-config": "^0.4.4",
+    "@endo/eslint-config": "^0.4.5",
     "@jessie.js/eslint-plugin": "^0.1.3",
     "@types/node": "^16.7.10",
     "@typescript-eslint/parser": "^5.10.2",
