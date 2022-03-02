@@ -66,7 +66,7 @@ export async function makeHTTPListener(
   port,
   host,
   rawInboundCommand,
-  walletHtmlDir = undefined,
+  walletHtmlDir = '',
 ) {
   // Enrich the inbound command with some metadata.
   const inboundCommand = (

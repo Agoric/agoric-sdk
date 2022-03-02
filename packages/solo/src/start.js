@@ -1,3 +1,4 @@
+// @ts-check
 /* global process setTimeout */
 import fs from 'fs';
 import path from 'path';
@@ -48,7 +49,7 @@ import { connectToChain } from './chain-cosmos-sdk.js';
 const log = anylogger('start');
 
 // FIXME: Needed for legacy plugins.
-const esmRequire = createRequire({});
+const esmRequire = createRequire(/** @type {any} */ ({}));
 
 let swingSetRunning = false;
 
@@ -91,6 +92,7 @@ const atomicReplaceFile = async (filename, contents) => {
 
 const neverStop = () => {
   return harden({
+    emptyCrank: () => true,
     vatCreated: () => true,
     crankComplete: () => true,
     crankFailed: () => true,
@@ -104,7 +106,9 @@ const buildSwingset = async (
   broadcast,
   defaultManagerType,
 ) => {
-  const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
+  const initialMailboxState = JSON.parse(
+    fs.readFileSync(mailboxStateFile, 'utf8'),
+  );
 
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(initialMailboxState);
@@ -139,6 +143,7 @@ const buildSwingset = async (
   const config = await loadSwingsetConfigFile(
     new URL('../solo-config.json', import.meta.url).pathname,
   );
+  assert(config);
   config.devices = {
     mailbox: {
       sourceSpec: mb.srcPath,
@@ -248,7 +253,7 @@ const buildSwingset = async (
     async function deliverInboundToMbx(sender, messages, ack) {
       assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
       // console.debug(`deliverInboundToMbx`, messages, ack);
-      if (mb.deliverInbound(sender, messages, ack, true)) {
+      if (mb.deliverInbound(sender, messages, ack)) {
         await processKernel();
       }
     },
@@ -364,7 +369,6 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
 
   // We turn off NODE_OPTIONS in case the user is debugging.
   const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
-  let unregisterShutdown = () => {};
   const cp = fork(
     agoricCli,
     [
@@ -375,15 +379,10 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
       ...resolvedDeploys,
     ],
     { stdio: 'inherit', env: noOptionsEnv },
-    err => {
-      if (err) {
-        console.error(err);
-      }
-      unregisterShutdown();
-    },
   );
   const { registerShutdown } = makeShutdown();
-  unregisterShutdown = registerShutdown(() => cp.kill('SIGTERM'));
+  const unregisterShutdown = registerShutdown(() => cp.kill('SIGTERM'));
+  cp.on('close', () => unregisterShutdown());
 };
 
 const start = async (basedir, argv) => {
@@ -392,7 +391,7 @@ const start = async (basedir, argv) => {
     'swingset-kernel-mailbox.json',
   );
   const connections = JSON.parse(
-    fs.readFileSync(path.join(basedir, 'connections.json')),
+    fs.readFileSync(path.join(basedir, 'connections.json'), 'utf8'),
   );
 
   let broadcastJSON;

@@ -63,10 +63,10 @@ const recordToKey = record =>
 /**
  * @param {{
  *   metricMeter: import('@opentelemetry/sdk-metrics-base').Meter,
- *   attributes: import('@opentelemetry/api-metrics').Attributes,
+ *   attributes?: import('@opentelemetry/api-metrics').Attributes,
  * }} param0
  */
-export function makeSlogCallbacks({ metricMeter, attributes }) {
+export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
   // Legacy because Histogram thing Does not seem to be a passable
   const nameToMetricOpts = makeLegacyMap('baseMetricName');
   nameToMetricOpts.init('swingset_vat_startup', {
@@ -203,7 +203,7 @@ export function makeSlogCallbacks({ metricMeter, attributes }) {
  * @param {any} param0.controller
  * @param {import('@opentelemetry/sdk-metrics-base').Meter} param0.metricMeter
  * @param {Console} param0.log
- * @param {Attributes} param0.attributes
+ * @param {Attributes} [param0.attributes]
  */
 export function exportKernelStats({
   controller,
@@ -293,6 +293,10 @@ export function exportKernelStats({
     },
   );
 
+  /**
+   * @param {any} policy
+   * @param {() => number} clock
+   */
   async function crankScheduler(policy, clock = () => Date.now()) {
     let now = clock();
     let crankStart = now;
