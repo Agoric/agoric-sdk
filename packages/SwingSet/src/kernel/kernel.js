@@ -266,18 +266,6 @@ export default function buildKernel(
     }
   }
 
-  let terminationTrigger;
-  let postAbortActions;
-
-  function resetDeliveryTriggers() {
-    terminationTrigger = undefined;
-    postAbortActions = {
-      meterDeductions: [], // list of { meterID, compute }
-      discardFailedDelivery: false,
-    };
-  }
-  resetDeliveryTriggers();
-
   function notifyMeterThreshold(meterID) {
     // tell vatAdmin that a meter has dropped below its notifyThreshold
     const { remaining } = kernelKeeper.getMeter(meterID);
@@ -286,35 +274,35 @@ export default function buildKernel(
     queueToKref(vatAdminRootKref, 'meterCrossedThreshold', args, 'logFailure');
   }
 
-  function deductMeter(meterID, compute, firstTime) {
-    assert.typeof(compute, 'bigint');
-    const res = kernelKeeper.deductMeter(meterID, compute);
+  // TODO: instead of using a kernel-wide flag here, consider making each
+  // VatManager responsible for remembering if/when a KernelSyscallResult
+  // reports a non-'ok' status and therefore the vat is toast. Then the
+  // delivery handler could ask the manager (or vat-warehouse) afterwards for
+  // the sticky-fatal state. If we did that, we wouldn't need
+  // `vatFatalSyscall`. We'd still need a way for `requestTermination` to
+  // work, though.
 
-    // We record the deductMeter() in postAbortActions.meterDeductions. If
-    // the delivery is rewound for any reason (syscall error, res.underflow),
-    // then deliverAndLogToVat will repeat the deductMeter (which will repeat
-    // the notifyMeterThreshold), so their side-effects will survive the
-    // abortCrank(). But we don't record it (again) during the repeat, to
-    // make sure exactly one copy of the changes will be committed.
+  let terminationTrigger;
 
-    if (firstTime) {
-      postAbortActions.meterDeductions.push({ meterID, compute });
+  // this is called for syscall.exit, which allows the crank to complete
+  // before terminating the vat
+  function requestTermination(vatID, reject, info) {
+    insistCapData(info);
+    // if vatFatalSyscall was here already, don't override: bad syscalls win
+    if (!terminationTrigger) {
+      terminationTrigger = { vatID, abortCrank: false, reject, info };
     }
-    if (res.notify) {
-      notifyMeterThreshold(meterID);
-    }
-    return res.underflow;
   }
 
-  // this is called for syscall.exit (shouldAbortCrank=false), and for any
-  // vat-fatal errors (shouldAbortCrank=true)
-  function setTerminationTrigger(vatID, shouldAbortCrank, shouldReject, info) {
-    if (shouldAbortCrank) {
-      assert(shouldReject);
-    }
-    if (!terminationTrigger || shouldAbortCrank) {
-      terminationTrigger = { vatID, shouldAbortCrank, shouldReject, info };
-    }
+  // this is called for vat-fatal syscall errors, which aborts the crank and
+  // then terminates the vat
+  function vatFatalSyscall(vatID, problem) {
+    terminationTrigger = {
+      vatID,
+      abortCrank: true,
+      reject: true,
+      info: makeError(problem),
+    };
   }
 
   const kernelSyscallHandler = makeKernelSyscallHandler({
@@ -323,101 +311,87 @@ export default function buildKernel(
     doSend,
     doSubscribe,
     doResolve,
-    setTerminationTrigger,
+    requestTermination,
   });
+
+  /**
+   *
+   * @typedef { { compute: number } } MeterConsumption
+   *
+   *  Any delivery crank (send, notify, start-vat.. anything which is allowed
+   *  to make vat delivery) emits one of these status events if a delivery
+   *  actually happened.
+   *
+   * @typedef { {
+   *    vatID?: VatID, // vat to which the delivery was made
+   *    metering?: MeterConsumption | null, // delivery metering results
+   *    useMeter?: boolean, // this delivery should count against the vat's meter
+   *    decrementReapCount?: boolean, // the reap counter should decrement
+   *    discardFailedDelivery?: boolean, // crank abort should not repeat the delivery
+   *    terminate?: string | null, // vat should be terminated
+   *  } } DeliveryStatus
+   *
+   */
 
   /**
    * Perform one delivery to a vat.
    *
-   * @param {string} vatID
-   * @param {*} kd
+   * @param {VatID} vatID
+   * @param {KernelDeliveryObject} kd
    * @param {VatDeliveryObject} vd
-   * @param {boolean} useMeter
-   * @returns {Promise<PolicyInput>}
+   * @returns {Promise<DeliveryStatus>}
    */
-  async function deliverAndLogToVat(vatID, kd, vd, useMeter) {
-    /** @type {PolicyInputCrankComplete} */
-    let policyInput = ['crank', {}];
+  async function deliverAndLogToVat(vatID, kd, vd) {
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const { meterID } = vatKeeper.getOptions();
     // Ensure that the vatSlogger is available before clist translation.
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     try {
+      /** @type { VatDeliveryResult } */
       // eslint-disable-next-line no-use-before-define
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
-      insistVatDeliveryResult(deliveryResult);
-      if (vd[0] !== 'bringOutYourDead') {
-        if (vatKeeper.countdownToReap()) {
-          kernelKeeper.scheduleReap(vatID);
-        }
-      }
-      const [status, problem] = deliveryResult;
-      if (status !== 'ok') {
-        // probably a metering fault, or a bug in the vat's dispatch()
-        console.log(`delivery problem, terminating vat ${vatID}`, problem);
-        setTerminationTrigger(vatID, true, true, makeError(problem));
-        return harden(['crank-failed', {}]);
-      }
 
+      insistVatDeliveryResult(deliveryResult);
+      // const [ ok, problem, usage ] = deliveryResult;
       if (deliveryResult[0] === 'ok') {
-        let used;
-        const metering = deliveryResult[2];
-        if (metering) {
-          // if the result has metering, we report it to the runPolicy
-          const consumed = metering.compute;
-          assert.typeof(consumed, 'number');
-          used = BigInt(consumed);
-          policyInput = ['crank', { computrons: used }];
-          if (useMeter && meterID) {
-            // If we have a Meter and we want to use it, do so.
-            const underflow = deductMeter(meterID, used, true);
-            if (underflow) {
-              console.log(
-                `meter ${meterID} underflow, terminating vat ${vatID}`,
-              );
-              const err = makeError('meter underflow, vat terminated');
-              setTerminationTrigger(vatID, true, true, err);
-              return harden(['crank-failed', {}]);
-            }
-          }
-        }
+        return { metering: deliveryResult[2] };
+      } else {
+        // probably a hard metering fault, or a bug in the vat's dispatch()
+        return { terminate: deliveryResult[1] }; // might be dead
       }
     } catch (e) {
       // log so we get a stack trace
       console.error(`error in kernel.deliver:`, e);
       throw e;
     }
-    return harden(policyInput);
   }
 
   /**
    * Deliver one message to a vat.
    *
-   * @param { string } vatID
+   * @param { VatID } vatID
    * @param { string } target
-   * @param { * } msg
-   * @returns { Promise<PolicyInput> }
+   * @param { Message } msg
+   * @returns { Promise<DeliveryStatus | null> }
    */
-  async function deliverToVat(vatID, target, msg) {
+  async function processSend(vatID, target, msg) {
     insistMessage(msg);
-    /** @type { PolicyInput } */
-    let policyInput = ['none'];
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
     // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
+      // splat
       if (msg.result) {
         resolveToError(msg.result, VAT_TERMINATION_ERROR);
       }
-    } else {
-      const kd = harden(['message', target, msg]);
-      // eslint-disable-next-line no-use-before-define
-      const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
-      policyInput = await deliverAndLogToVat(vatID, kd, vd, true);
+      return null;
     }
-    return harden(policyInput);
+
+    /** @type { KernelDeliveryMessage } */
+    const kd = harden(['message', target, msg]);
+    // eslint-disable-next-line no-use-before-define
+    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    return deliverAndLogToVat(vatID, kd, vd);
   }
 
   function extractPresenceIfPresent(data) {
@@ -441,65 +415,66 @@ export default function buildKernel(
 
   /**
    *
-   * @param { * } message
-   * @returns { Promise<PolicyInput> }
+   * @param { RunQueueEventNotify } message
+   * @returns { Promise<DeliveryStatus | null> }
    */
   async function processNotify(message) {
     const { vatID, kpid } = message;
-    /** @type { PolicyInput } */
-    let policyInput = ['none'];
     insistVatID(vatID);
     insistKernelType('promise', kpid);
     kernelKeeper.incStat('dispatches');
     // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
       kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
-    } else {
-      const p = kernelKeeper.getKernelPromise(kpid);
-      kernelKeeper.incStat('dispatchNotify');
-      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-
-      assert(p.state !== 'unresolved', X`spurious notification ${kpid}`);
-      const resolutions = [];
-      if (!vatKeeper.hasCListEntry(kpid)) {
-        kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
-        kdebug(`skipping notify of ${kpid} because it's already been done`);
-        return harden(policyInput);
-      }
-      const targets = getKpidsToRetire(kernelKeeper, kpid, p.data);
-      if (targets.length === 0) {
-        kdebug(`no kpids to retire`);
-        kdebug(`skipping notify of ${kpid} because it's already been done`);
-        return harden(policyInput);
-      }
-      for (const toResolve of targets) {
-        resolutions.push([toResolve, kernelKeeper.getKernelPromise(toResolve)]);
-      }
-      const kd = harden(['notify', resolutions]);
-      // eslint-disable-next-line no-use-before-define
-      const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
-      vatKeeper.deleteCListEntriesForKernelSlots(targets);
-      policyInput = await deliverAndLogToVat(vatID, kd, vd, true);
+      return null;
     }
-    return harden(policyInput);
+
+    const p = kernelKeeper.getKernelPromise(kpid);
+    kernelKeeper.incStat('dispatchNotify');
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+
+    assert(p.state !== 'unresolved', X`spurious notification ${kpid}`);
+    /** @type { KernelDeliveryOneNotify[] } */
+    const resolutions = [];
+    if (!vatKeeper.hasCListEntry(kpid)) {
+      kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
+      kdebug(`skipping notify of ${kpid} because it's already been done`);
+      return null;
+    }
+    const targets = getKpidsToRetire(kernelKeeper, kpid, p.data);
+    if (targets.length === 0) {
+      kdebug(`no kpids to retire`);
+      kdebug(`skipping notify of ${kpid} because it's already been done`);
+      return null;
+    }
+    for (const toResolve of targets) {
+      const { state, data } = kernelKeeper.getKernelPromise(toResolve);
+      resolutions.push([toResolve, { state, data }]);
+    }
+    /** @type { KernelDeliveryNotify } */
+    const kd = harden(['notify', resolutions]);
+    // eslint-disable-next-line no-use-before-define
+    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    vatKeeper.deleteCListEntriesForKernelSlots(targets);
+
+    return deliverAndLogToVat(vatID, kd, vd);
   }
 
   /**
    *
-   * @param { * } message
-   * @returns { Promise<PolicyInput> }
+   * @param { RunQueueEventDropExports | RunQueueEventRetireImports | RunQueueEventRetireExports } message
+   * @returns { Promise<DeliveryStatus | null> }
    */
   async function processGCMessage(message) {
     // used for dropExports, retireExports, and retireImports
-    /** @type { PolicyInput } */
-    let policyInput = ['none'];
     const { type, vatID, krefs } = message;
     // console.log(`-- processGCMessage(${vatID} ${type} ${krefs.join(',')})`);
     insistVatID(vatID);
     // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
-      return harden(policyInput); // can't collect from the dead
+      return null; // can't collect from the dead
     }
+    /** @type { KernelDeliveryDropExports | KernelDeliveryRetireExports | KernelDeliveryRetireImports } */
     const kd = harden([type, krefs]);
     if (type === 'retireExports') {
       for (const kref of krefs) {
@@ -511,65 +486,66 @@ export default function buildKernel(
     }
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
-    policyInput = await deliverAndLogToVat(vatID, kd, vd, false);
-    return harden(policyInput);
+    return deliverAndLogToVat(vatID, kd, vd);
   }
 
   /**
    *
-   * @param { * } message
-   * @returns { Promise<PolicyInput> }
+   * @param { RunQueueEventBringOutYourDead } message
+   * @returns { Promise<DeliveryStatus | null> }
    */
   async function processBringOutYourDead(message) {
-    /** @type { PolicyInput } */
-    let policyInput = ['none'];
     const { type, vatID } = message;
     // console.log(`-- processBringOutYourDead(${vatID})`);
     insistVatID(vatID);
     // eslint-disable-next-line no-use-before-define
     if (!vatWarehouse.lookup(vatID)) {
-      return harden(policyInput); // can't collect from the dead
+      return null; // can't collect from the dead
     }
+    /** @type { KernelDeliveryBringOutYourDead } */
     const kd = harden([type]);
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
-    policyInput = await deliverAndLogToVat(vatID, kd, vd, false);
-    return harden(policyInput);
+    return deliverAndLogToVat(vatID, kd, vd);
   }
 
-  // The 'startVat' event is queued by `initializeKernel` for all static vats,
-  // so that we execute their bundle imports and call their `buildRootObject`
-  // functions in a transcript context.  The consequence of this is that if
-  // there are N static vats, N 'startVat' events will be the first N events on
-  // the initial run queue.  For dynamic vats, the handler of the 'create-vat'
-  // event, `processCreateVat`, calls `processStartVat` directly, rather than
-  // enqueing 'startVat', so that vat startup happens promptly after creation
-  // and so that there are no intervening events in the run queue between vat
-  // creation and vat startup (it would probably not be a problem if there were,
-  // but doing it this way simply guarantees there won't be such a problem
-  // without requiring any further analysis to be sure).
+  /**
+   * The 'startVat' event is queued by `initializeKernel` for all static vats,
+   * so that we execute their bundle imports and call their `buildRootObject`
+   * functions in a transcript context.  The consequence of this is that if
+   * there are N static vats, N 'startVat' events will be the first N events on
+   * the initial run queue.  For dynamic vats, the handler of the 'create-vat'
+   * event, `processCreateVat`, calls `processStartVat` directly, rather than
+   * enqueing 'startVat', so that vat startup happens promptly after creation
+   * and so that there are no intervening events in the run queue between vat
+   * creation and vat startup (it would probably not be a problem if there were,
+   * but doing it this way simply guarantees there won't be such a problem
+   * without requiring any further analysis to be sure).
+   *
+   * @param { RunQueueEventStartVat } message
+   * @returns { Promise<DeliveryStatus> }
+   */
   async function processStartVat(message) {
-    postAbortActions.discardFailedDelivery = true;
     const { type, vatID } = message;
     // console.log(`-- processStartVat(${vatID})`);
     insistVatID(vatID);
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
+    /** @type { KernelDeliveryStartVat } */
     const kd = harden([type]); // TODO(4381) add vatParameters here
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     // TODO: can we provide a computron count to the run policy?
-    const policyInput = await deliverAndLogToVat(vatID, kd, vd, false);
-    return harden(policyInput);
+    const status = await deliverAndLogToVat(vatID, kd, vd);
+    return { ...status, discardFailedDelivery: true };
   }
 
   /**
    *
-   * @param { * } message
-   * @returns { Promise<PolicyInput> }
+   * @param { RunQueueEventCreateVat } message
+   * @returns { Promise<DeliveryStatus | null> }
    */
   async function processCreateVat(message) {
-    postAbortActions.discardFailedDelivery = true;
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, dynamicOptions } = message;
     kernelKeeper.addDynamicVatID(vatID);
@@ -585,65 +561,65 @@ export default function buildKernel(
     vatKeeper.initializeReapCountdown(options.reapInterval);
     const { enableSetup } = options;
 
-    function makeSuccessResponse() {
+    function sendNewVatCallback(args) {
+      // @ts-ignore see assert(...) above
+      queueToKref(vatAdminRootKref, 'newVatCallback', args, 'logFailure');
+    }
+
+    function makeSuccessResponse(status) {
       // build success message, giving admin vat access to the new vat's root
       // object
       const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
-      return {
+      const args = {
         body: JSON.stringify([
           vatID,
           { rootObject: { '@qclass': 'slot', index: 0 } },
         ]),
         slots: [kernelRootObjSlot],
       };
+      sendNewVatCallback(args);
+      return { ...status, discardFailedDelivery: true };
     }
 
     function makeErrorResponse(error) {
       // delete partial vat state
       kernelKeeper.cleanupAfterTerminatedVat(vatID);
-      return {
+      const args = {
         body: JSON.stringify([vatID, { error: `${error}` }]),
         slots: [],
       };
+      sendNewVatCallback(args);
+      // ?? will this cause double-termination? or just get unwound?
+      return { terminate: error, discardFailedDelivery: true };
     }
 
-    function sendResponse(args) {
-      // @ts-ignore see assert(...) above
-      queueToKref(vatAdminRootKref, 'newVatCallback', args, 'logFailure');
-    }
-
-    /** @type { PolicyInput } */
-    const policyInput = harden(['create-vat', {}]);
-    // TODO: combine this with the return value from processStartVat
+    // TODO warner think through failure paths
 
     return (
       // eslint-disable-next-line no-use-before-define
       vatWarehouse
         .createDynamicVat(vatID)
         // if createDynamicVat fails, go directly to makeErrorResponse
-        .then(_ =>
+        .then(_vatinfo =>
           enableSetup ? null : processStartVat({ type: 'startVat', vatID }),
         ) // TODO(4381) add vatParameters here
-        // Like any other run queue event handler, if processStartVat fails it
-        // returns a PolicyInput object indicating the problem rather than
-        // throwing directly.  Consequently, if it fails, either during module
-        // initialization or during the call to `buildRootObject`, the result
-        // promise we are waiting on here will resolve successfully and get
-        // handled by the makeSuccessResponse-generated resolve handler rather
-        // than by the makeErrorResponse-generated rejection handler -- that is,
-        // it's a "success", but the value of the success indicates an
-        // underlying problem.  However, `deliverAndLogToVat` will also have set
-        // the vat's termination trigger, resulting in (1) this crank being
-        // terminated in an error state, (2) the (incorrectly initialized) vat
-        // being terminated and expunged, and (3) the vatAdmin vat being
-        // notified of the termination.
+        // If processStartVat/deliverAndLogToVat observes a worker error, it
+        // will return status={ terminate: problem } rather than throw an
+        // error, so makeSuccessResponse will sendNewVatCallback. But the
+        // status is passed through, so processDeliveryMessage() will
+        // terminate the half-started vat and abort the crank, undoing
+        // sendNewVatCallback. processDeliveryMessage() is responsible for
+        // notifying vat-admin of the termination after doing abortCrank().
         .then(makeSuccessResponse, makeErrorResponse)
-        .then(sendResponse)
         .catch(err => console.error(`error in vat creation`, err))
-        .then(() => policyInput)
     );
   }
 
+  /**
+   *
+   * @param { RunQueueEventUpgradeVat } message
+   * @returns { Promise<DeliveryStatus | null> }
+   */
   async function processUpgradeVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     // const { upgradeID, bundleID, vatParameters } = message;
@@ -656,9 +632,7 @@ export default function buildKernel(
       slots: [],
     };
     queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
-    /** @type { PolicyInput } */
-    const policyInput = ['none'];
-    return policyInput;
+    return null; // no delivery made (yet)
   }
 
   function legibilizeMessage(message) {
@@ -686,7 +660,7 @@ export default function buildKernel(
     }
   }
 
-  /*
+  /**
    * routeSend(message) figures out where a 'send' event should go. If the
    * message needs to be queued (it is sent to an unresolved promise without
    * a pipelining decider), this queues it, and returns null. If the message
@@ -697,8 +671,10 @@ export default function buildKernel(
    * this returns that settled object.
    *
    * This does not decrement any refcounts. The caller should do that.
+   *
+   * @param { RunQueueEventSend } message
+   * @returns { { vatID: VatID, targetObject: string } | null }
    */
-
   function routeSendEvent(message) {
     const { target, msg } = message;
     const { type } = parseKernelSlot(target);
@@ -786,108 +762,259 @@ export default function buildKernel(
 
   const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
 
-  async function deliverRunQueueEvent(message) {
-    /** @type { PolicyInput } */
-    let policyInput = ['none'];
+  /**
+   * @typedef { import('../types-internal.js').VatID } VatID
+   * @typedef { import('../types-internal.js').InternalDynamicVatOptions } InternalDynamicVatOptions
+   *
+   * @typedef { { type: 'notify', vatID: VatID, kpid: string } } RunQueueEventNotify
+   * @typedef { { type: 'send', target: string, msg: Message }} RunQueueEventSend
+   * @typedef { { type: 'create-vat', vatID: VatID,
+   *              source: { bundle: Bundle } | { bundleID: BundleID },
+   *              dynamicOptions: InternalDynamicVatOptions }
+   *          } RunQueueEventCreateVat
+   * @typedef { { type: 'upgrade-vat', vatID: VatID, upgradeID: string,
+   *              bundleID: BundleID, vatParameters: SwingSetCapData } } RunQueueEventUpgradeVat
+   * @typedef { { type: 'startVat', vatID: VatID } } RunQueueEventStartVat
+   * @typedef { { type: 'dropExports', vatID: VatID, krefs: string[] } } RunQueueEventDropExports
+   * @typedef { { type: 'retireExports', vatID: VatID, krefs: string[] } } RunQueueEventRetireExports
+   * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
+   * @typedef { { type: 'bringOutYourDead', vatID: VatID } } RunQueueEventBringOutYourDead
+   * @typedef { RunQueueEventNotify | RunQueueEventSend | RunQueueEventCreateVat |
+   *            RunQueueEventUpgradeVat | RunQueueEventStartVat |
+   *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |
+   *            RunQueueEventBringOutYourDead
+   *          } RunQueueEvent
+   */
 
+  /**
+   *
+   * Dispatch one delivery event. Eventually, this will be called in a
+   * "delivery crank" for a DeliveryEvent, after the scheduler chooses a
+   * vat with a non-empty vat-input-queue, and we'll know the target vat
+   * ahead of time. For now, this is called for each run-queue event, so
+   * 'send' does not yet know which vat will be involved (if any).
+   *
+   * @param { RunQueueEvent } message
+   * @returns { Promise<DeliveryStatus | null> }
+   */
+  async function deliverRunQueueEvent(message) {
     // Decref everything in the message, under the assumption that most of
     // the time we're delivering to a vat or answering the result promise
     // with an error. If we wind up queueing it on a promise, we'll
     // re-increment everything there.
 
+    // .vatID is present on all RunQueueEvents except 'send', which gets it
+    // from routeSendEvent. Eventually, every DeliveryEvent will have a
+    // specific vatID and this will be provided as an argument
+    let vatID;
+    if (message.type !== 'send') {
+      vatID = message.vatID;
+    }
+    let useMeter = false;
+    let deliverP = null;
+
     if (message.type === 'send') {
+      useMeter = true;
       const route = routeSendEvent(message);
       decrementSendEventRefCount(message);
       if (route) {
-        const { vatID, targetObject } = route;
-        policyInput = await deliverToVat(vatID, targetObject, message.msg);
+        vatID = route.vatID;
+        deliverP = processSend(vatID, route.targetObject, message.msg);
       }
     } else if (message.type === 'notify') {
+      useMeter = true;
       decrementNotifyEventRefCount(message);
-      policyInput = await processNotify(message);
+      deliverP = processNotify(message);
     } else if (message.type === 'create-vat') {
       // creating a new dynamic vat will immediately do start-vat
-      policyInput = await processCreateVat(message);
+      deliverP = processCreateVat(message);
     } else if (message.type === 'startVat') {
-      policyInput = await processStartVat(message);
+      deliverP = processStartVat(message);
     } else if (message.type === 'upgrade-vat') {
-      policyInput = await processUpgradeVat(message);
+      deliverP = processUpgradeVat(message);
     } else if (message.type === 'bringOutYourDead') {
-      policyInput = await processBringOutYourDead(message);
+      deliverP = processBringOutYourDead(message);
     } else if (gcMessages.includes(message.type)) {
-      policyInput = await processGCMessage(message);
+      deliverP = processGCMessage(message);
     } else {
       assert.fail(X`unable to process message.type ${message.type}`);
     }
-    return policyInput;
+
+    let status = await deliverP;
+
+    // status will be set if we made a delivery, else undefined
+    if (status) {
+      const decrementReapCount = message.type !== 'bringOutYourDead';
+      // the caller needs to be told the vatID that received the delivery,
+      // but eventually they'll tell us, and 'vatID' should be removed from
+      // DeliveryStatus
+      assert(vatID, 'DeliveryStatus.vatID missing');
+      status = { vatID, useMeter, decrementReapCount, ...status };
+    }
+    return status;
   }
 
-  let processQueueRunning;
   async function processDeliveryMessage(message) {
     kdebug(`processQ ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
+    kernelSlog.write({ type: 'crank-start', message });
+    /** @type { PolicyInput } */
+    let policyInput = ['none'];
+    if (message.type === 'create-vat') {
+      policyInput = ['create-vat', {}];
+    }
+
+    // terminationTrigger can be set by syscall.exit or a vat-fatal syscall
+    terminationTrigger = null; // reset terminationTrigger before delivery
+
+    // 'deduction' remembers any meter deduction we performed, in case we
+    // unwind state and have to apply it again
+    let deduction;
+    let vatID;
+    let discardFailedDelivery;
+
+    // The DeliveryStatus tells us what happened to the delivery (success or
+    // worker error). It will be null if the delivery got cancelled, like a
+    // 'notify' or 'retireExports' that was superceded somehow.
+
+    const status = await deliverRunQueueEvent(message);
+
+    if (status) {
+      policyInput = ['crank', {}];
+      vatID = status.vatID;
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+
+      // deliveries cause garbage, garbage needs collection
+      const { decrementReapCount } = status;
+      if (decrementReapCount && vatKeeper.countdownToReap()) {
+        kernelKeeper.scheduleReap(vatID);
+      }
+
+      // deliveries cause metering, metering needs deducting
+      const meterID = vatKeeper.getOptions().meterID;
+      const { metering, useMeter } = status;
+      if (metering) {
+        // if the result has metering, we report it to the runPolicy
+        const consumed = metering.compute;
+        assert.typeof(consumed, 'number');
+        const computrons = BigInt(consumed);
+        policyInput = ['crank', { computrons }];
+
+        // and if both vat and delivery are metered, deduct from the Meter
+        if (useMeter && meterID) {
+          deduction = { meterID, computrons }; // in case we must rededuct
+          const { notify, underflow } = kernelKeeper.deductMeter(
+            meterID,
+            computrons,
+          );
+          if (notify) {
+            notifyMeterThreshold(meterID);
+          }
+
+          // deducting too much causes termination
+          if (underflow) {
+            console.log(`meter ${meterID} underflow, terminating vat ${vatID}`);
+            policyInput = ['crank-failed', {}];
+            const err = makeError('meter underflow, vat terminated');
+            terminationTrigger = {
+              vatID,
+              abortCrank: true,
+              reject: true,
+              info: err,
+            };
+          }
+        }
+      }
+
+      // Deliveries cause syscalls, syscalls might cause errors, errors cause
+      // termination. Those are reported by the syscall handlers setting
+      // terminationTrigger.
+
+      // worker errors also terminate the vat
+      const { terminate } = status;
+      if (terminate) {
+        console.log(`delivery problem, terminating vat ${vatID}`, terminate);
+        policyInput = ['crank-failed', {}];
+        const info = makeError(terminate);
+        terminationTrigger = { vatID, abortCrank: true, reject: true, info };
+      }
+
+      // some deliveries should be consumed when they fail
+      discardFailedDelivery = status.discardFailedDelivery;
+    } else {
+      // no status: the delivery got dropped, so no metering or termination
+      assert(!terminationTrigger, 'hey, no delivery means no termination');
+    }
+
+    // terminate upon fatal syscalls, sys.exit requests, and worker problems
+    let didAbort = false;
+    if (terminationTrigger) {
+      assert(vatID, `terminationTrigger but not vatID`);
+      const ttvid = terminationTrigger.vatID;
+      assert.equal(ttvid, vatID, `wrong vat got terminated`);
+      const { abortCrank, reject, info } = terminationTrigger;
+      if (abortCrank) {
+        // errors unwind any changes the vat made
+        kernelKeeper.abortCrank();
+        didAbort = true;
+        // but metering deductions and underflow notifications must survive
+        if (deduction) {
+          const { meterID, computrons } = deduction; // re-deduct metering
+          const { notify } = kernelKeeper.deductMeter(meterID, computrons);
+          if (notify) {
+            notifyMeterThreshold(meterID); // re-queue notification
+          }
+        }
+        // some deliveries should be consumed when they fail
+        if (discardFailedDelivery) {
+          // kernelKeeper.abortCrank removed all evidence that the crank ever
+          // happened, including, notably, the removal of the delivery itself
+          // from the head of the run queue, which will result in it being
+          // delivered again on the next crank. If we don't want that, then
+          // we need to remove it again.
+
+          // eslint-disable-next-line no-use-before-define
+          getNextDeliveryMessage();
+        }
+        // other deliveries should be re-attempted on the next crank, so they
+        // get the right error: we leave those on the queue
+      }
+
+      // state changes reflecting the termination must also survive, so these
+      // happen after a possible abortCrank()
+      terminateVat(vatID, reject, info);
+      kernelSlog.terminateVat(vatID, reject, info);
+      kdebug(`vat terminated: ${JSON.stringify(info)}`);
+    }
+
+    if (!didAbort) {
+      // eslint-disable-next-line no-use-before-define
+      await vatWarehouse.maybeSaveSnapshot();
+    }
+    kernelKeeper.processRefcounts();
+    kernelKeeper.saveStats();
+    const crankNum = kernelKeeper.getCrankNumber();
+    kernelKeeper.incrementCrankNumber();
+    const { crankhash, activityhash } = kernelKeeper.commitCrank();
+    kernelSlog.write({
+      type: 'crank-finish',
+      crankNum,
+      crankhash,
+      activityhash,
+    });
+    return harden(policyInput);
+  }
+
+  let processQueueRunning;
+  async function tryProcessDeliveryMessage(message) {
     if (processQueueRunning) {
       console.error(`We're currently already running at`, processQueueRunning);
       assert.fail(X`Kernel reentrancy is forbidden`);
     }
-    kernelSlog.write({ type: 'crank-start', message });
-    /** @type { PolicyInput } */
-    let policyInput = ['none'];
-    try {
-      processQueueRunning = Error('here');
-      resetDeliveryTriggers();
-
-      policyInput = await deliverRunQueueEvent(message);
-
-      let didAbort = false;
-      if (terminationTrigger) {
-        // the vat is doomed, either voluntarily or from meter/syscall fault
-        const { vatID, shouldReject, info } = terminationTrigger;
-        if (terminationTrigger.shouldAbortCrank) {
-          // errors unwind any changes the vat made
-          kernelKeeper.abortCrank();
-          didAbort = true;
-          // but metering deductions and underflow notifications must survive
-          const { meterDeductions, discardFailedDelivery } = postAbortActions;
-          for (const { meterID, compute } of meterDeductions) {
-            deductMeter(meterID, compute, false);
-            // that will re-push any notifications
-          }
-          if (discardFailedDelivery) {
-            // kernelKeeper.abortCrank removed all evidence that the crank ever
-            // happened, including, notably, the removal of the delivery itself
-            // from the head of the run queue, which will result in it being
-            // delivered again on the next crank.  If we don't want that, then
-            // we need to remove it again.
-            // eslint-disable-next-line no-use-before-define
-            getNextDeliveryMessage();
-          }
-        }
-        // state changes reflecting the termination must also survive, so
-        // these happen after a possible abortCrank()
-        terminateVat(vatID, shouldReject, info);
-        kernelSlog.terminateVat(vatID, shouldReject, info);
-        kdebug(`vat terminated: ${JSON.stringify(info)}`);
-      }
-      if (!didAbort) {
-        // eslint-disable-next-line no-use-before-define
-        await vatWarehouse.maybeSaveSnapshot();
-      }
-      kernelKeeper.processRefcounts();
-      kernelKeeper.saveStats();
-      const crankNum = kernelKeeper.getCrankNumber();
-      kernelKeeper.incrementCrankNumber();
-      const { crankhash, activityhash } = kernelKeeper.commitCrank();
-      kernelSlog.write({
-        type: 'crank-finish',
-        crankNum,
-        crankhash,
-        activityhash,
-      });
-    } finally {
+    processQueueRunning = Error('here');
+    return processDeliveryMessage(message).finally(() => {
       processQueueRunning = undefined;
-    }
-    return harden(policyInput);
+    });
   }
 
   async function processAcceptanceMessage(message) {
@@ -961,7 +1088,7 @@ export default function buildKernel(
         // vatManager is somehow confused.
         console.error(`vatSyscallHandler invoked on dead vat ${vatID}`);
         const problem = 'vat is dead';
-        setTerminationTrigger(vatID, true, true, makeError(problem));
+        vatFatalSyscall(vatID, problem);
         return harden(['error', problem]);
       }
       /** @type { KernelSyscallObject | undefined } */
@@ -981,7 +1108,7 @@ export default function buildKernel(
         kdebug(`vat ${vatID} terminated: error during translation: ${vaterr} ${JSON.stringify(vatSyscallObject)}`);
         console.log(`error during syscall translation:`, vaterr);
         const problem = 'syscall translation error: prepare to die';
-        setTerminationTrigger(vatID, true, true, makeError(problem));
+        vatFatalSyscall(vatID, problem);
         kres = harden(['error', problem]);
         vres = harden(['error', problem]);
         // we leave this catch() with ksc=undefined, so no doKernelSyscall()
@@ -1016,7 +1143,7 @@ export default function buildKernel(
           // the kernel is now in a shutdown state, but it may take a while to
           // grind to a halt
           const problem = 'you killed my kernel. prepare to die';
-          setTerminationTrigger(vatID, true, true, makeError(problem));
+          vatFatalSyscall(vatID, problem);
           vres = harden(['error', problem]);
         }
       }
@@ -1241,7 +1368,7 @@ export default function buildKernel(
     } else {
       message = getNextDeliveryMessage();
       if (message) {
-        resultPromise = processDeliveryMessage(message);
+        resultPromise = tryProcessDeliveryMessage(message);
       }
     }
     return { resultPromise };

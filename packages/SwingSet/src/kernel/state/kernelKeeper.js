@@ -307,12 +307,39 @@ export default function makeKernelKeeper(
     kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
   }
 
-  function getDefaultManagerType() {
-    return getRequired('kernel.defaultManagerType');
+  /**
+   *
+   * @param {string} mt
+   * @returns { asserts mt is ManagerType }
+   */
+  function insistManagerType(mt) {
+    assert(
+      [
+        'local',
+        'nodeWorker',
+        'node-subprocess',
+        'xs-worker',
+        'xs-worker-no-gc',
+      ].includes(mt),
+    );
+    return undefined; // hush JSDoc
   }
 
+  function getDefaultManagerType() {
+    const mt = getRequired('kernel.defaultManagerType');
+    insistManagerType(mt);
+    return mt;
+  }
+
+  /**
+   *
+   * @returns { number | 'never' }
+   */
   function getDefaultReapInterval() {
-    return getRequired('kernel.defaultReapInterval');
+    const r = getRequired('kernel.defaultReapInterval');
+    const ri = r === 'never' ? r : Number.parseInt(r, 10);
+    assert(ri === 'never' || typeof ri === 'number', `k.dri is '${ri}'`);
+    return ri;
   }
 
   const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
@@ -552,7 +579,7 @@ export default function makeKernelKeeper(
 
   function getKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
-    const p = { state: kvStore.get(`${kernelSlot}.state`) };
+    const p = { state: getRequired(`${kernelSlot}.state`) };
     switch (p.state) {
       case undefined:
         assert.fail(X`unknown kernelPromise '${kernelSlot}'`);
