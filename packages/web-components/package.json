@@ -21,15 +21,15 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@endo/captp": "^2.0.1",
-    "@endo/marshal": "^0.6.1",
-    "@endo/promise-kit": "^0.2.35",
+    "@endo/captp": "^2.0.2",
+    "@endo/marshal": "^0.6.2",
+    "@endo/promise-kit": "^0.2.36",
     "robot3": "^0.2.19"
   },
   "devDependencies": {
     "@agoric/eventual-send": "^0.14.1",
     "@custom-elements-manifest/analyzer": "^0.4.17",
-    "@endo/init": "^0.5.35",
+    "@endo/init": "^0.5.36",
     "@lit-labs/react": "^1.0.1",
     "@open-wc/eslint-config": "^4.3.0",
     "@open-wc/testing": "next",
