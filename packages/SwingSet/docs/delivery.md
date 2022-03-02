@@ -506,7 +506,7 @@ There are a few restrictions on the API:
   calling Vat is the Decider, or a PromiseID that was previously received as
   the result of an inbound message.
 
-Some invocation patterns are legal, but unlikely to be useful:
+Some invocation patterns are valid, but unlikely to be useful:
 
 * The `target` of a `syscall.send()` can be any `CapSlot`, however it is a bit
   silly to reference an Object that lives on the local Vat, or a Promise for
@@ -599,7 +599,7 @@ not receive a `dispatch.notify()` for a Promise unless they first use
 The `PromiseID` argument to `subscribe()` is translated through the C-List
 just like a `CapSlot` in `syscall.send()`. It is not common for this to cause
 the allocation of a `KernelPromise`, because Vats don't usually subscribe to
-hear about their own Promises, but it is legal.
+hear about their own Promises, but it is valid.
 
 ### syscall.resolve()
 
@@ -1275,7 +1275,7 @@ function foo(arg) {
 when it returns a previously-exported promise (aka `p+1`), the support layer
 should do `syscall.resolve(p-4, p+1)`.
 
-These situations are legal/sensible and should be documented (and tested!),
+These situations are valid/sensible and should be documented (and tested!),
 but it may require some creativity to come up with Vat Code that could
 produce them:
 
