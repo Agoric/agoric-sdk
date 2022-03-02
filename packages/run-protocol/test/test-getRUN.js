@@ -16,7 +16,6 @@ import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
-import { makeParamChangePositions } from '@agoric/governance';
 import { startEconomicCommittee, startGetRun } from '../src/econ-behaviors.js';
 import { governanceBundles } from '../src/importedBundles.js';
 import * as Collect from '../src/collect.js';
@@ -344,40 +343,38 @@ const TestData = [
 ];
 
 /**
- * Committee of one.
+ * Economic Committee of one.
  *
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<CommitteeElectorateCreatorFacet>} electorateCreator
  * @param {ERef<GovernedContractFacetAccess>} getRUNGovernorCreatorFacet
- * @param {Brand} runBrand
  * @param {Installation} counter
  */
 const makeC1 = async (
   zoe,
   electorateCreator,
   getRUNGovernorCreatorFacet,
-  runBrand,
   counter,
 ) => {
   const [invitation] = await E(electorateCreator).getVoterInvitations();
   const seat = E(zoe).offer(invitation);
   const voteFacet = E(seat).getOfferResult();
   return harden({
-    setCollateralizationRatio: async newValue => {
-      const deadline = 3n; // @@?@??@
+    setCollateralizationRatio: async (newValue, deadline) => {
       const paramSpec = {
         key: 'main',
         parameterName: CreditTerms.CollateralizationRatio,
       };
 
       /** @type { ParamChangeVoteResult } */
-      const { details, outcomeOfUpdate } = await E(
+      const { details, instance } = await E(
         getRUNGovernorCreatorFacet,
       ).voteOnParamChange(paramSpec, newValue, counter, deadline);
-      const { questionHandle } = await details;
-      const { positive } = makeParamChangePositions(paramSpec, newValue);
-      await E(voteFacet).castBallotFor(questionHandle, [positive]);
-      return outcomeOfUpdate;
+      const { questionHandle, positions } = await details;
+      const cast = E(voteFacet).castBallotFor(questionHandle, [positions[0]]);
+      const count = E(zoe).getPublicFacet(instance);
+      const outcome = E(count).getOutcome();
+      return { cast, outcome };
     },
   });
 };
@@ -407,7 +404,6 @@ const makeWorld = async t0 => {
     zoe,
     space.consume.economicCommitteeCreatorFacet,
     space.consume.getRUNGovernorCreatorFacet,
-    runBrand,
     counter,
   );
 
@@ -492,7 +488,7 @@ const makeWorld = async t0 => {
       );
       await E(seat).getOfferResult(); // check for errors
       const runPmt = await E(seat).getPayout('RUN');
-      E(runPurse).deposit(runPmt);
+      await E(runPurse).deposit(runPmt);
     },
     checkRUNBalance: async (target, t) => {
       const actual = await E(runPurse).getCurrentAmount();
@@ -512,7 +508,16 @@ const makeWorld = async t0 => {
         makeRatio(n, runBrand, d, brand2);
       const newValue = pairToRatio(newBldToRun);
 
-      await E(committee).setCollateralizationRatio(newValue);
+      const deadline = 3n;
+      const { cast, outcome } = await E(committee).setCollateralizationRatio(
+        newValue,
+        deadline,
+      );
+      await cast;
+      await E(timer).tick();
+      await E(timer).tick();
+      await E(timer).tick();
+      await outcome;
     },
   });
 
@@ -523,12 +528,17 @@ const makeTests = async () => {
   for await (const [name, steps] of TestData) {
     test(`Test Data ${name}`, async t => {
       const driver = await makeWorld(t);
-      for await (const [tag, value] of steps) {
+      for await (const [tag, value, pass] of steps) {
+        t.log({ tag, value });
         const fn = driver[tag];
         if (!fn) {
           throw Error(`bad tag: ${tag}`);
         }
-        await fn(value, t);
+        if (pass === false) {
+          await t.throwsAsync(async () => fn(value, t));
+        } else {
+          await fn(value, t);
+        }
       }
     });
   }
@@ -619,8 +629,11 @@ const testLoC = (
 
     // Genesis: start Zoe etc.
     const { zoe, feeMintAccess, runBrand, getJig } = await bootstrapZoeAndRun();
-    const micro = harden({ decimalPlaces: 6 });
-    const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
+    const { mint: _, ...bld } = makeIssuerKit(
+      'BLD',
+      AssetKind.NAT,
+      micro.displayInfo,
+    );
 
     // start RUN LoC
     const collateralPrice = makeRatio(price[0], runBrand, price[1], bld.brand);
