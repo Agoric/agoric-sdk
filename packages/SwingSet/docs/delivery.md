@@ -833,7 +833,8 @@ A Vat might be informed that one Promise has been resolved to another Promise
 ## Sample Message Delivery
 
 This section follows a variety of messages are they are sent from Vat-1 to
-Vat-2.
+Vat-2. Syntax like `foo!bar(baz)` is used to indicate a message to Object or
+Promise `foo` with method "bar" and args `[ baz ]`.
 
 ### no arguments, resolve to data
 
@@ -895,7 +896,7 @@ The `Pending Send` is appended to the run-queue.
 * Kernel Promise table:
   * `kp24: state: Unresolved(decider: None, subscribers: [])`
 * Kernel run-queue:
-  * `Send(target: ko1, message: {…, result=kp24})`
+  * `Send(target: ko1, message: {method: "foo", args: "[]", slots=[], result=kp24})`
 * Vat-1 C-List:
   * `v1.o-1001 <-> ko1` (import of bob)
   * `v1.p+104 <-> kp24` (export of result promise)
@@ -1179,7 +1180,7 @@ Now let's examine how various arguments are managed. Our initial conditions
 give Vat-1 access to a previously-exported object `alice` (in Vat-1), an
 import from Vat-2 named `bob` as before, an import from Vat-3 named `carol`,
 and a Promise received from Vat-2 named `p2`. We're going to send all of
-these, plus a local Promise, to `carol`.
+these, plus a local Promise `p4`, to `carol`.
 
 * Kernel Object table:
   * `ko1` (bob): owner= vat-2
