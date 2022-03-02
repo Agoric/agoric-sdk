@@ -606,7 +606,8 @@ hear about their own Promises, but it is valid.
 `syscall.resolve()` is used to resolve one or more Promises (usually just one,
 but occasionally a batch of mutually-referencing Promises must be resolved in
 a single syscall because their identifiers are aggressively retired
-immediately after translation).
+immediately after translation). \[TODO: resolve inconsistency between this claim
+and [Syscall/Dispatch API](#syscalldispatch-api)]
 
 The subject of a `syscall.resolve()` must either be a new Promise ID, or a
 pre-existing one for which the calling Vat is the Decider. The
@@ -622,18 +623,16 @@ whether the Promise was allocated by this Vat or a different one.
 The `resolution` has several forms, and we assign a different name to each.
 
 * `Fulfill(ObjectID)`: the Promise is "fulfilled" to a callable Object
-* `Forward(PromiseID)`: the Promise is now "forwarded": it has not settled to
-  a specific object, but the original Promise is effectively replaced with
-  some other Promise
-* `Data(CapData)`: the Promise is "fulfilled" to data, rather than a callable
+* `Data(CapData)`: the Promise is "fulfilled" to data, rather than to a callable
   object. It is an error to send messages to data.
 * `Reject(CapData)`: the Promise is "rejected" to data which we call the
   "error object". Sending a message to a Rejected Promise causes the result
   of that message to be Rejected too, known as "rejection contagion".
-
-. Any `result`
-  promises in the queued messages should be rejected with the same `CapData`
-  provided as `resolution`.
+* `Forward(PromiseID)`: the Promise is now "forwarded": it has not settled to
+  a specific object, but the original Promise is effectively replaced with
+  some other Promise.
+  Any `result` promises in the queued messages should be rejected with the same
+  `CapData` provided as `resolution`.
 
 As the `syscall.resolve()` is processed by the kernel, all slots in the
 `resolution` should be mapped just like the `Message` slots in
@@ -686,9 +685,9 @@ Note: we no longer have distinct syscalls or states for the different flavors
 of resolved promises. Instead, each resolved promise is recorded with a
 boolean `isRejected` flag, and a `CapData` to hold the resolution data. The
 `Fulfill` and `Data` flavors both set `isRejected = false`, and only differ
-by the contents of the resolution data. If `!isRejected` and the data holds a
-single Object, then messages can be sent to the promise, and they will be
-passed along to the Object. Otherwise messages sent to the promise will
+by the contents of the resolution data. If `isRejected` is false and the data
+holds a single Object, then messages can be sent to the promise, and they will
+be passed along to the Object. Otherwise messages sent to the promise will
 result in a rejection of some form.
 
 ### syscall.exit(isFailure, info)
@@ -816,9 +815,10 @@ The `subject` argument of `dispatch.notify()` specifies which Promise is
 being resolved. It is always translated into a `PromiseID`.
 
 `dispatch.notify()` will be sent to all Vats which had subscribed to hear
-about the resolution of that Promise. The Decider vat for a Promise will not
-generally subscribe themselves, since they are the ones causing the Promise
-to become resolved, so they have no need to hear about it from the kernel.
+about the resolution of that Promise [TODO: document ordering
+relevance/constraints]. The Decider vat for a Promise will not generally
+subscribe themselves, since they are the ones causing the Promise to become
+resolved, so they have no need to hear about it from the kernel.
 
 The `Resolution` value of `dispatch.notify()` may contain slots, which are
 translated just like `Message.args`.
