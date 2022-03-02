@@ -606,7 +606,7 @@ export const makeInnerVault = (
     }
 
     // mint to vaultSeat, then reallocate to reward and client, then burn from
-    // vaultSeat. Would using a separate seat clarify the accounting?\
+    // vaultSeat. Would using a separate seat clarify the accounting?
     // TODO what if there isn't anything to mint?
     runMint.mintGains(harden({ RUN: toMint }), vaultSeat);
     transferCollateral(clientSeat);
