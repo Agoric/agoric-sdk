@@ -347,6 +347,18 @@ const TestData = [
       [`checkRUNBalance`, 0n],
     ],
   ],
+  [
+    `6	Partial repayment - CR remains the same`,
+    [
+      [`buyBLD`, 20_000n],
+      [`stakeBLD`, 10_000n],
+      [`lienBLD`, 10_000n],
+      [`borrowRUN`, 1_000n],
+      [`payDownRUN`, 50n],
+      [`checkRUNBalance`, 950n],
+      [`checkRUNDebt`, 950n],
+    ],
+  ],
 ];
 
 /**
@@ -508,6 +520,20 @@ const makeWorld = async t0 => {
       await E(seat).getOfferResult(); // check for errors
       const runPmt = await E(seat).getPayout('RUN');
       await E(runPurse).deposit(runPmt);
+    },
+    payDownRUN: async value => {
+      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      const runAmt = AmountMath.make(runBrand, value * micro.unit);
+      const runPmt = await E(runPurse).withdraw(runAmt);
+      const proposal = harden({
+        give: { RUN: runAmt },
+      });
+      const seat = E(zoe).offer(
+        E(offerResult.invitationMakers).AdjustBalances(),
+        proposal,
+        harden({ RUN: runPmt }),
+      );
+      await E(seat).getOfferResult(); // check for errors
     },
     payoffRUN: async value => {
       assert(offerResult, X`no offerResult; borrowRUN first?`);
