@@ -1297,20 +1297,20 @@ The kernel routes messages between multiple vats. The Comms Vat routes
 messages between the local kernel and (potentially) multiple external
 machines. In this way, the Comms Vat is like the kernel: it must maintain
 Object and Promise tables, and a C-List for each remote machine. To some
-excent, the kernel is treated like just another remote machine: there is also
+extent, the kernel is treated like just another remote machine: there is also
 a kernel-facing C-List (however kernel "messages", really syscalls, are
 delivered immediately, whereas messages to remote machines are asynchronous).
 The Comms Vat does not need to manage a run-queue (`dispatch()` causes an
 immediate external message), nor does each unresolved promise have a queue of
 messages (these are pipelined immediately).
 
-The one wrinkle is that Vat-Vat connections are symmetric, which impacts the
+The one wrinkle is that Vat→Vat connections are symmetric, which impacts the
 way these types are represented. The Vat-Kernel interface is conveniently
 asymmetric, so we can declare that positive index values are allocated by the
 Vat, while negative values are allocated by the kernel, and it doesn't matter
 which direction the messages are going. The naming scheme is "vat-centric".
 
-When the messages travel from one Vat to the other, must instead speak in
+When the messages travel from one Vat to the other, we must instead speak in
 terms of the sender and the receiver of any particular message. We declare
 that messages arriving at a Vat will use positive index values for objects
 that are allocated by the receiver, and negative for the ones allocated by
@@ -1319,18 +1319,18 @@ externally-facing side of their per-machine C-Lists. As a result, the IDs
 inside inbound messages can be looked up in the C-List directly, but when
 sending outbound messages, all the IDs must have their signs flipped.
 
-(The mnemonic philosophy is: vats are ego-centric, vat exports are the most
-important thing in their self-centered world, so vat exports get the positive
-number (`o+1`). Comms vats, being more worldly, are obsequiously polite, so
-they always deliver a remote message in the form that will most please the
-recipient, so when a machine's export is sent back to them, the
+The mnemonic philosophy is that vats are ego-centric and vat exports are the
+most important thing in their self-centered world, so vat exports get the
+positive number (`o+1`). Comms vats, being more worldly, are obsequiously
+polite, so they always deliver a remote message in the form that will most
+please the recipient, so when a machine's export is sent back to them, the
 exporter+recipient will receive a positive number (`ro+2`), even though the
-exporter would *send* that object as `ro-2` to please the importer).
+exporter would *send* that object as `ro-2` to please the importer.
 
-The message names are also different. In the local-machine Vat-Kernel-Vat
+The message names are also different. In the local-machine Vat→Kernel→Vat
 flow, the first Vat's outbound message has a different name than the inbound
 message (`syscall.send()` becomes `dispatch.deliver()`, `syscall.resolve()`
-becomes `dispatch.notify()`). In the remote-machine CommsVat-CommsVat flow,
+becomes `dispatch.notify()`). In the remote-machine CommsVat→CommsVat flow,
 there is no kernel in the middle, so whatever the first Comms Vat sends is
 exactly what the second Comms Vat receives. In keeping with the receiver-centric
 convention, We use `deliver` for message delivery, and `notify` for promise
@@ -1387,7 +1387,7 @@ struct RemoteCList {
     next_promise_id: u32,
 }
 
-# the Comms Vat has exactly one CommsTables instance
+// the Comms Vat has exactly one CommsTables instance
 struct CommsTables {
     remotes: HashMap<RemoteID, RemoteCList>,
     next_object_id: u32,
@@ -1480,7 +1480,7 @@ Initial conditions:
 * right-vat (id=4) kernel C-List
   * `v4.o+5001 <-> ko2` (export of real bob)
 
-left-vat does `p1 = bob ! foo()`. Left kernel accepts `syscall.send()` and
+left-vat does `p1 = bob!foo()`. Left kernel accepts `syscall.send()` and
 the run-queue gets `Send(target=ko1, msg={name: foo, result=kp24})`, which
 eventually comes to the front and is delivered to left-comms. The left-kernel
 tables just before `dispatch.deliver()` is called will look like:
