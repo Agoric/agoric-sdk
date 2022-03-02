@@ -149,7 +149,7 @@ enum CapSlot {
     Object(ObjectID),
 }
 struct CapData {
-    body: Vec<u8>,
+    body: String,
     slots: Vec<CapSlot>,
 }
 struct Message {
@@ -275,25 +275,27 @@ be recycled, but it seems less confusing to simply retire the number.
 
 ## Vat Message Types
 
-We use the term `CapData` to mean a piece of data that can include capability
-references. Each reference is known as a `CapSlot`. The data is serialized
-into our [augmented form of JSON](https://github.com/agoric/marshal), which
-uses special `@qclass` keys to represent things not normally expressible by
-JSON (such as `NaN`, `-0`, `Infinity`, `undefined`, BigInts, and `CapSlot`
-references). Each appearance of a `CapSlot` causes a Vat reference (`Object`
-or `Promise`) to be added to a list named `slots`, and a reference to the new
-slot index gets inserted into the JSONified data structure . The serialized
-`CapData` thus consists of the JSON-encoded string (named `body`) and the
-list of slots (named `slots`). As this `CapData` travels from one Vat, into
-the kernel, and off to some other vat, the `body` remains untouched, but the
-`slots` are remapped at each vat/kernel boundary.
+We use the term `CapData` to describe a piece of data that can include
+capability references. Each reference is known as a `CapSlot`. The data is
+serialized into into our
+[augmented form of JSON](https://github.com/endojs/endo/tree/master/packages/marshal),
+which uses special `@qclass` keys to represent things not normally expressible
+by JSON (such as `NaN`, `Infinity`, `undefined`, BigInts, and `CapSlot`
+references) or not preserved by normal serialization/deserialization (such as
+`-0`). Each appearance of a `CapSlot` causes a Vat reference (`Object` or
+`Promise`) to be added to a list named `slots`, and a reference to the new slot
+index gets inserted into the JSONified data structure . The serialized `CapData`
+thus consists of the JSON-encoded string (named `body`) and the list of slots
+(named `slots`). As this `CapData` travels from one Vat, into the kernel, and
+off to some other vat, the `body` remains untouched, but the `slots` are
+remapped at each vat/kernel boundary.
 
 A `Message` is the method invocation first given to `syscall.send` for
 transmission to some other Vat, then stored in the kernel run-queue, then
 finally arriving at the target vat inside a `dispatch.deliver` call. The
 Message includes the method name which should be invoked, the `CapData`
 arguments to be included, and an optional result identifier (a Promise). The
-SwingSet calling model has only positional (not keyword) arguments, hence the
+SwingSet calling model has only positional (not keyword) arguments, hence
 `CapData.body` always deserializes to an array.
 
 The Message does not include the target, since that changes over time (it
