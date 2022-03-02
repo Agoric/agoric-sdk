@@ -20,6 +20,7 @@ import { startEconomicCommittee, startGetRun } from '../src/econ-behaviors.js';
 import { governanceBundles } from '../src/importedBundles.js';
 import * as Collect from '../src/collect.js';
 import * as testCases from './runLoC-test-case-sheet.js';
+import { CASES as TestData } from './getRUN-test-steps.js';
 import { CreditTerms } from '../src/getRUN.js';
 
 const contractRoots = {
@@ -300,79 +301,79 @@ test('getRUN API usage', async t => {
  * @typedef {[string, Step[]]} TestCase
  * @type {TestCase[]}
  */
-const TestData = [
-  [
-    '1, 2, 3',
-    [
-      // 1	Starting LoC
-      [`buyBLD`, 10_000n],
-      [`stakeBLD`, 3_000n],
-      [`lienBLD`, 2_000n],
-      [`borrowRUN`, 100n],
-      [`checkRUNDebt`, 100n],
-      [`checkBLDLiened`, 2_000n],
-      [`checkRUNBalance`, 100n],
+// const TestData = [
+//   [
+//     '1, 2, 3',
+//     [
+//       // 1	Starting LoC
+//       [`buyBLD`, 10_000n],
+//       [`stakeBLD`, 3_000n],
+//       [`lienBLD`, 2_000n],
+//       [`borrowRUN`, 100n],
+//       [`checkRUNDebt`, 100n],
+//       [`checkBLDLiened`, 2_000n],
+//       [`checkRUNBalance`, 100n],
 
-      // 2	Extending LoC
-      [`borrowMoreRUN`, 100n],
-      [`checkRUNDebt`, 200n],
-      [`checkRUNBalance`, 200n],
-      // 3	Extending LoC - more BLD required
+//       // 2	Extending LoC
+//       [`borrowMoreRUN`, 100n],
+//       [`checkRUNDebt`, 200n],
+//       [`checkRUNBalance`, 200n],
+//       // 3	Extending LoC - more BLD required
 
-      [`stakeBLD`, 5_000n],
-      [`checkBLDStaked`, 8_000n],
-      [`lienBLD`, 8_000n],
-      [`checkBLDLiened`, 8_000n],
-      [`borrowMoreRUN`, 1_400n],
-      [`checkRUNDebt`, 1_600n],
-    ],
-  ],
-  [
-    `4, 5	Extending LoC - CR increases (FAIL)`,
-    [
-      [`buyBLD`, 80_000n],
-      [`stakeBLD`, 80_000n],
-      [`lienBLD`, 8_000n],
-      [`borrowRUN`, 1_000n],
-      [`setCollateralizationRatio`, [750n, 100n]],
-      [`borrowMoreRUN`, 500n, false],
-      [`checkRUNBalance`, 1_000n],
-      [`checkBLDLiened`, 8_000n],
-      // 5	Full repayment
-      [`checkRUNBalance`, 1_000n],
-      [`checkBLDLiened`, 8_000n],
-      [`payoffRUN`, 1_000n],
-      [`checkRUNDebt`, 0n],
-      [`checkBLDLiened`, 0n],
-      [`checkRUNBalance`, 0n],
-    ],
-  ],
-  [
-    `6	Partial repayment - CR remains the same`,
-    [
-      [`buyBLD`, 20_000n],
-      [`stakeBLD`, 10_000n],
-      [`lienBLD`, 10_000n],
-      [`borrowRUN`, 1_000n],
-      [`payDownRUN`, 50n],
-      [`checkRUNBalance`, 950n],
-      [`checkRUNDebt`, 950n],
-    ],
-  ],
-  [
-    `7	Partial repayment - CR increases*`,
-    [
-      [`buyBLD`, 12_000n],
-      [`stakeBLD`, 10_000n],
-      [`lienBLD`, 500n],
-      [`borrowRUN`, 100n],
-      [`setCollateralizationRatio`, [750n, 100n]],
-      [`payDownRUN`, 5n],
-      [`checkRUNBalance`, 95n],
-      [`checkRUNDebt`, 95n],
-    ],
-  ],
-];
+//       [`stakeBLD`, 5_000n],
+//       [`checkBLDStaked`, 8_000n],
+//       [`lienBLD`, 8_000n],
+//       [`checkBLDLiened`, 8_000n],
+//       [`borrowMoreRUN`, 1_400n],
+//       [`checkRUNDebt`, 1_600n],
+//     ],
+//   ],
+//   [
+//     `4, 5	Extending LoC - CR increases (FAIL)`,
+//     [
+//       [`buyBLD`, 80_000n],
+//       [`stakeBLD`, 80_000n],
+//       [`lienBLD`, 8_000n],
+//       [`borrowRUN`, 1_000n],
+//       [`setCollateralizationRatio`, [750n, 100n]],
+//       [`borrowMoreRUN`, 500n, false],
+//       [`checkRUNBalance`, 1_000n],
+//       [`checkBLDLiened`, 8_000n],
+//       // 5	Full repayment
+//       [`checkRUNBalance`, 1_000n],
+//       [`checkBLDLiened`, 8_000n],
+//       [`payoffRUN`, 1_000n],
+//       [`checkRUNDebt`, 0n],
+//       [`checkBLDLiened`, 0n],
+//       [`checkRUNBalance`, 0n],
+//     ],
+//   ],
+//   [
+//     `6	Partial repayment - CR remains the same`,
+//     [
+//       [`buyBLD`, 20_000n],
+//       [`stakeBLD`, 10_000n],
+//       [`lienBLD`, 10_000n],
+//       [`borrowRUN`, 1_000n],
+//       [`payDownRUN`, 50n],
+//       [`checkRUNBalance`, 950n],
+//       [`checkRUNDebt`, 950n],
+//     ],
+//   ],
+//   [
+//     `7	Partial repayment - CR increases*`,
+//     [
+//       [`buyBLD`, 12_000n],
+//       [`stakeBLD`, 10_000n],
+//       [`lienBLD`, 500n],
+//       [`borrowRUN`, 100n],
+//       [`setCollateralizationRatio`, [750n, 100n]],
+//       [`payDownRUN`, 5n],
+//       [`checkRUNBalance`, 95n],
+//       [`checkRUNDebt`, 95n],
+//     ],
+//   ],
+// ];
 
 /**
  * Economic Committee of one.
@@ -601,8 +602,8 @@ const makeWorld = async t0 => {
 };
 
 const makeTests = async () => {
-  for await (const [name, steps] of TestData) {
-    test(`Test Data ${name}`, async t => {
+  for await (const [num, name, steps] of TestData) {
+    test(`Test Data ${num} ${name}`, async t => {
       const driver = await makeWorld(t);
       for await (const [tag, value, pass] of steps) {
         t.log({ tag, value });
@@ -684,6 +685,7 @@ const testLoC = (
   },
   mockAttestation = undefined,
 ) => {
+  return;
   const todo = fromEntries(
     entries({
       adjustLien:
@@ -966,7 +968,7 @@ const makeTestCases = () => {
     },
   );
 };
-makeTestCases();
+// @@@makeTestCases();
 
 testLoC([125n, 100n], {
   testNum: 0.1,
