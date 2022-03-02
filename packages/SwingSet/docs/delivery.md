@@ -464,7 +464,7 @@ this message into the kernel:
 v2.send(target=o-4, msg={name: foo, slots:[o+3], result=p+5})
 ```
 
-.. the Vat-2 C-List might contain:
+…the Vat-2 C-List might contain:
 
 | Vat 2 object | Kernel object | Allocator | Decider |
 | ---          | ---           | ---       | ---     |
@@ -854,7 +854,7 @@ allocate a new local promise/resolver ID (for the result `p1`), say it
 chooses `104`, and then invokes `syscall.send(target=o-1001, msg={method:
 "foo", args: "[]", slots=[], result=p+104})`. Vat-1 remembers `p+104` as the
 identifier for the result Promise. We assume that Vat-1 uses `p1` later (i.e.
-`p1.then(stuff..)`), so it also does a `syscall.subscribe(p+104)`.
+`p1.then(…)`), so it also does a `syscall.subscribe(p+104)`.
 
 
 ```
@@ -895,7 +895,7 @@ The `Pending Send` is appended to the run-queue.
 * Kernel Promise table:
   * `kp24: state: Unresolved(decider: None, subscribers: [])`
 * Kernel run-queue:
-  * `Send(target: ko1, message: {.. result=kp24})`
+  * `Send(target: ko1, message: {…, result=kp24})`
 * Vat-1 C-List:
   * `v1.o-1001 <-> ko1` (import of bob)
   * `v1.p+104 <-> kp24` (export of result promise)
@@ -973,8 +973,8 @@ receiving pipelined messages.
 
 The two `send` calls will look like:
 
-* `syscall.send(target=o-1001, msg={method: "foo", .. result=p+104})`
-* `syscall.send(target=p+104, msg={method: "bar", .. result=p+105})`
+* `syscall.send(target=o-1001, msg={method: "foo", …, result=p+104})`
+* `syscall.send(target=p+104, msg={method: "bar", …, result=p+105})`
 
 And after those sends, the kernel state will look like this:
 
@@ -984,8 +984,8 @@ And after those sends, the kernel state will look like this:
   * `kp24: state: Unresolved(decider: None, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
-  * `Send(target: ko1, message: {method="foo", .. result=kp24})`
-  * `Send(target: kp24, message: {method="bar", .. result=kp25})`
+  * `Send(target: ko1, message: {method="foo", …, result=kp24})`
+  * `Send(target: kp24, message: {method="bar", …, result=kp25})`
 * Vat-1 C-List:
   * `v1.o-1001 <-> ko1` (import of bob)
   * `v1.p+104 <-> kp24` (export of foo() result promise)
@@ -1001,7 +1001,7 @@ to the kernel state:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
-  * `Send(target: kp24, message: {method="bar", .. result=kp25})`
+  * `Send(target: kp24, message: {method="bar", …, result=kp25})`
 * Vat-2 C-List:
   * `v2.o+2001 <-> ko1` (export of bob)
   * `v2.p-2015 <-> kp24` (import of foo() result)
@@ -1010,7 +1010,7 @@ Then the `bar` message reaches the front of the queue, and the kernel finds
 that its target (`kp24`) is in the Unresolved state, and looks up the Decider
 (`vat-2`). It sees that `vat-2` accepts pipelined messages, so it delivers
 the message to Vat-2, which receives it as `dispatch.deliver(target=p-2015,
-msg={method: "bar" .. result=p-2016)`. The kernel state during this call is:
+msg={method: "bar", …, result=p-2016)`. The kernel state during this call is:
 
 * Kernel Promise table:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
@@ -1064,13 +1064,13 @@ Control returns to Vat-2, which now must send all the messages that were
 previously queued for the Promise it just resolved. The same Message
 structure that came out of `dispatch.notify()` is sent unmodified back into
 `syscall.send()`, but the target is now the resolution of the promise:
-`send(target=ko2, msg={method: "bar", .. result=p-2016})`.
+`send(target=ko2, msg={method: "bar", …, result=p-2016})`.
 
 * Kernel Promise table:
   * `kp24: state: Resolved(fulfill(ko2))`
 * Kernel run-queue:
   * `Notify(subscriber: vat-1, subject: kp24)`
-  * `Send(target: ko2, message: {method="bar", .. result=kp25})`
+  * `Send(target: ko2, message: {method="bar", …, result=kp25})`
 
 (TODO: is it necessary/ok/bad that vat-1 sees the Notify before it sees the
 queued messages arrive? We could have Vat-2 invoke the syscalls in either
@@ -1093,8 +1093,8 @@ the result promise into Vat-3's C-List:
   * `v3.o+3001 <-> ko2` (export of carol)
   * `v3.p-3031 <-> kp25` (bar() result promise)
 
-and Vat-3 gets `dispatch.deliver(target=o+3001, message: {method="bar", ..
-result=p-3031})`.
+and Vat-3 gets
+`dispatch.deliver(target=o+3001, message: {method="bar", …, result=p-3031})`.
 
 ### Pipelined send to a non-Comms vat
 
@@ -1104,8 +1104,8 @@ be queued inside the kernel Promise, rather than being delivered to Vat-2.
 
 Again, the two `send` calls will look like:
 
-* `syscall.send(target=o-1001, msg={method: "foo", .. result=p+104})`
-* `syscall.send(target=p+104, msg={method: "bar", .. result=p+105})`
+* `syscall.send(target=o-1001, msg={method: "foo", …, result=p+104})`
+* `syscall.send(target=p+104, msg={method: "bar", …, result=p+105})`
 
 And after those sends, the kernel state will look like this:
 
@@ -1115,8 +1115,8 @@ And after those sends, the kernel state will look like this:
   * `kp24: state: Unresolved(decider: None, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
-  * `Send(target: ko1, message: {method="foo", .. result=kp24})`
-  * `Send(target: kp24, message: {method="bar", .. result=kp25})`
+  * `Send(target: ko1, message: {method="foo", …, result=kp24})`
+  * `Send(target: kp24, message: {method="bar", …, result=kp25})`
 * Vat-1 C-List:
   * `v1.o-1001 <-> ko1` (import of bob)
   * `v1.p+104 <-> kp24` (export of foo() result promise)
@@ -1132,7 +1132,7 @@ to the kernel state:
   * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
-  * `Send(target: kp24, message: {method="bar", .. result=kp25})`
+  * `Send(target: kp24, message: {method="bar", …, result=kp25})`
 * Vat-2 C-List:
   * `v2.o+2001 <-> ko1` (export of bob)
   * `v2.p-2015 <-> kp24` (import of foo() result)
@@ -1143,7 +1143,7 @@ that its target (`kp24`) is in the Unresolved state, the kernel sees that
 `dispatch.deliver()`, it queues the message within the Promise:
 
 * Kernel Promise table:
-  * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1], queue: [{method="bar", ..}])`
+  * `kp24: state: Unresolved(decider: vat-2, subscribers: [vat-1], queue: [{method="bar", …}])`
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Vat-2 C-List:
   * `v2.o+2001 <-> ko1` (export of bob)
@@ -1167,7 +1167,7 @@ scheduling notification for the subscribers:
   * `kp25: state: Unresolved(decider: None, subscribers: [vat-1])`
 * Kernel run-queue:
   * `Notify(subscriber: vat-1, subject: kp24)`
-  * `Send(target: ko3, message: {method="bar", .. result=kp25})`
+  * `Send(target: ko3, message: {method="bar", …, result=kp25})`
 
 When the Send gets to the front of the queue, it will deliver `bar()` into
 vat-2, which marks `kp25` as being decided by vat-2.
@@ -1205,7 +1205,7 @@ Promise). Nothing special happens until the `foo()` is processed into a
 `syscall.send()`. During that processing, as the `p3` argument is serialized,
 the translation layer in Vat-1 allocates a new local PromiseID for it (say
 `p+103`). It allocates `p+104` for the result (p4). The resulting syscall is
-`send(target=o-1002, msg={method: "foo", args: "..", slots=[o+1044, o-1001,
+`send(target=o-1002, msg={method: "foo", args: "…", slots=[o+1044, o-1001,
 o-1002, p-1052, p+103], result=p+104})`. The kernel state now looks like:
 
 * Kernel Object table:
@@ -1217,7 +1217,7 @@ o-1002, p-1052, p+103], result=p+104})`. The kernel state now looks like:
   * `kp23: state: Unresolved(decider: vat-2, subscribers: [])` (p3)
   * `kp24: state: Unresolved(decider: None, subscribers: [vat-1])` (p4)
 * Kernel run-queue:
-  * `Send(target=ko2, msg={method: "foo", args: "..", slots=[ko3, ko1, ko2, kp22, kp23], result=kp24})`
+  * `Send(target=ko2, msg={method: "foo", args: "…", slots=[ko3, ko1, ko2, kp22, kp23], result=kp24})`
 * Vat-1 C-List:
   * `v1.o-1001 <-> ko1` (import of bob)
   * `v1.o-1002 <-> ko2` (import of carol)
@@ -1255,7 +1255,7 @@ dispatch, is:
   * `v3.p-3043 <-> kp24` (result p4)
 
 Vat-2 then gets a `dispatch.deliver(target=o+3001, msg={method: "foo", args:
-"..", slots=[o-3031, o-3032, o+3001, p-3041, p-3042], result=p-3043})`.
+"…", slots=[o-3031, o-3032, o+3001, p-3041, p-3042], result=p-3043})`.
 
 ### TODO: more examples
 
@@ -1271,7 +1271,7 @@ function foo(arg) {
 }
 ```
 
-`foo()` is invoked through an inbound `dispatch.deliver(.., result=p-4)`, and
+`foo()` is invoked through an inbound `dispatch.deliver(…, result=p-4)`, and
 when it returns a previously-exported promise (aka `p+1`), the support layer
 should do `syscall.resolve(p-4, p+1)`.
 
@@ -1658,7 +1658,7 @@ which messages must be delivered.
   whether we're consuming them or forwarding them elsewhere, but Dean
   recommended unmarshalling them immediately (to avoid confusion over tables
   they might reference which could change between now and delivery), then
-  remarshalling them later.. it depends on what vat-side tables are involved
+  remarshalling them later… it depends on what vat-side tables are involved
   and how they might change.
 * The message flow would be simpler if these queued messages could be dumped
   back into the kernel after a promise is resolved, and let the kernel deal
