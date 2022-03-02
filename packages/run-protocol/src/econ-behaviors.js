@@ -505,7 +505,7 @@ export const startGetRun = async (
       produce: { Attestation: attestationIssuerR },
     },
   },
-  config = { ratio: [5n, 1n], price: [120n, 100n] },
+  config = { ratio: [5n, 1n], price: [125n, 100n] },
 ) => {
   const bundle = await getRUNBundle;
   const [feeMintAccess, bldBrand, runBrand, governor, installation, timer] =
