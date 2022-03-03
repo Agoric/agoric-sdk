@@ -23,5 +23,19 @@ export const CASES =
       [ 'borrowMoreRUN', 1400n ],
       [ 'checkRUNDebt', 1600n ]
     ]
+  ],
+  [
+    '4',
+    'Extending LoC - CR increases (FAIL)',
+    [
+      [ 'buyBLD', 80000n ],
+      [ 'stakeBLD', 80000n ],
+      [ 'lienBLD', 8000n ],
+      [ 'borrowRUN', 1000n ],
+      [ 'setCollateralizationRatio', [ 750n, 100n ] ],
+      [ 'borrowMoreRUN', 500n, false ],
+      [ 'checkRUNBalance', 1000n ],
+      [ 'checkBLDLiened', 8000n ]
+    ]
   ]
 ]

@@ -27,14 +27,30 @@ export const TEXT = `
 		check BLD liened	8,000
 		borrow more RUN	1,400
 		check RUN debt	1,600
+4	Extending LoC - CR increases (FAIL)			
+		buy BLD	80,000	
+		stake BLD	80,000	
+		lien BLD	8,000	
+		borrow RUN	1,000	
+		set Collateralization Ratio	750%	
+		borrow more RUN	500	fail
+		check RUN balance	1,000	
+		check BLD liened	8,000	
 `;
 
 export const ROWS = CSV.parse(
   TEXT.replace(/,/g, '').replace(/\t/g, ',').trim(),
 );
 
-const decode = txt =>
-  (txt || '').match(/^[-0-9,]+$/) ? BigInt(txt.replace(',', '')) : txt;
+const decode = txt => {
+  if ((txt || '').match(/^[0-9]+%$/)) {
+    return [BigInt(txt.replace('%', '')), 100n];
+  }
+  if ((txt || '').match(/^[-0-9,]+$/)) {
+    return BigInt(txt.replace(',', ''));
+  }
+  return txt;
+};
 
 const camelCase = txt =>
   (words => [
@@ -60,9 +76,13 @@ function* eachCase(rows) {
         steps = [];
       }
     } else {
-      const [_A, _B, tag, expr] = row;
+      const [_A, _B, tag, expr, outcome] = row;
       if (tag) {
-        steps.push([camelCase(tag), decode(expr)]);
+        if (outcome === 'fail') {
+          steps.push([camelCase(tag), decode(expr), false]);
+        } else {
+          steps.push([camelCase(tag), decode(expr)]);
+        }
       }
     }
   }
