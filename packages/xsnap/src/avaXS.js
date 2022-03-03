@@ -16,7 +16,7 @@ import { xsnap } from './xsnap.js';
 // scripts for use in xsnap subprocesses
 const SESboot = `../dist/bundle-ses-boot-debug.umd.js`;
 const avaAssert = `./avaAssertXS.js`;
-const avaHandler = `./avaHandler.js`;
+const avaHandler = `./avaHandler.cjs`;
 
 /** @type { (ref: string, readFile: typeof import('fs').promises.readFile ) => Promise<string> } */
 const asset = (ref, readFile) =>
@@ -24,7 +24,7 @@ const asset = (ref, readFile) =>
 
 /**
  * When we bundle test scripts, we leave these externals
- * as `require(...)` style graph exits and (in avaHandler.js)
+ * as `require(...)` style graph exits and (in avaHandler.cjs)
  * supply them via a `require` endowment
  * on the Compartment used to run the script.
  */
@@ -116,7 +116,7 @@ async function runTestScript(
    */
   async function handleCommand(message) {
     /**
-     * See also send() in avaHandler.js
+     * See also send() in avaHandler.cjs
      *
      * @type { TapMessage | { testNames: string[] } | { bundleSource: [string, ...unknown[]] } | Summary }
      */
