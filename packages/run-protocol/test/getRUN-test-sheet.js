@@ -6,7 +6,7 @@ import * as CSV from './csvParse.js';
 
 // copy/paste from spreadsheet seems to give tab-separated data
 export const TEXT = `
-1	Starting LoC		
+1	Starting LoC
 		buy BLD	9,000
 		stake BLD	9,000
 		check BLD liened	0
@@ -27,15 +27,15 @@ export const TEXT = `
 		check BLD liened	8,000
 		borrow more RUN	1,400
 		check RUN debt	1,600
-4	Extending LoC - CR increases (FAIL)			
-		buy BLD	80,000	
-		stake BLD	80,000	
-		lien BLD	8,000	
-		borrow RUN	1,000	
-		set Collateralization Ratio	750%	
+4	Extending LoC - CR increases (FAIL)
+		buy BLD	80,000
+		stake BLD	80,000
+		lien BLD	8,000
+		borrow RUN	1,000
+		set Collateralization Ratio	750%
 		borrow more RUN	500	fail
-		check RUN balance	1,000	
-		check BLD liened	8,000	
+		check RUN balance	1,000
+		check BLD liened	8,000
 5	Full repayment		cont
 		check BLD liened	8,000
 		check RUN balance	1,000
@@ -43,7 +43,7 @@ export const TEXT = `
 		check RUN debt	0
 		check BLD liened	0
 		check RUN balance	0
-6	Partial repayment - CR remains the same		
+6	Partial repayment - CR remains the same
 		buy BLD	10,000
 		stake BLD	10,000
 		lien BLD	10,000
@@ -51,7 +51,7 @@ export const TEXT = `
 		pay down RUN	50
 		check RUN balance	950
 		check RUN debt	950
-7	Partial repayment - CR increases*		
+7	Partial repayment - CR increases*
 		buy BLD	10,000
 		stake BLD	10,000
 		lien BLD	400
@@ -60,68 +60,68 @@ export const TEXT = `
 		pay down RUN	5
 		check RUN balance	95
 		check BLD liened	400
-9	Extending LoC - unbonded (FAIL)			
-		buy BLD	1,000	
-		stake BLD	800	
-		lien BLD	800	
-		borrow RUN	100	
-		slash	300	
-		check BLD staked	500	
+9	Extending LoC - unbonded (FAIL)
+		buy BLD	1,000
+		stake BLD	800
+		lien BLD	800
+		borrow RUN	100
+		slash	300
+		check BLD staked	500
 		borrow more RUN	50	fail
-		check RUN balance	100	
-		check BLD liened	800	
-11	Partial repay - unbonded ok			
-		buy BLD	1,000	
-		stake BLD	800	
-		lien BLD	800	
-		borrow RUN	100	
-		slash	700	
-		check BLD liened	800	
-		check RUN balance	100	
-		pay down RUN	50	
-		check RUN balance	50	
-		check BLD liened	800	
-		check BLD staked	100	
-14	Add collateral - more BLD required (FAIL)			
-		buy BLD	1,000	
-		stake BLD	1,000	
-		lien BLD	800	
-		borrow RUN	100	
+		check RUN balance	100
+		check BLD liened	800
+11	Partial repay - unbonded ok
+		buy BLD	1,000
+		stake BLD	800
+		lien BLD	800
+		borrow RUN	100
+		slash	700
+		check BLD liened	800
+		check RUN balance	100
+		pay down RUN	50
+		check RUN balance	50
+		check BLD liened	800
+		check BLD staked	100
+14	Add collateral - more BLD required (FAIL)
+		buy BLD	1,000
+		stake BLD	1,000
+		lien BLD	800
+		borrow RUN	100
 		borrow more RUN	200	fail
-		check RUN balance	100	
-		check BLD liened	800	
-15	Lower collateral			
-		buy BLD	1,000	
-		stake BLD	1,000	
-		lien BLD	800	
-		borrow RUN	100	
-		unlien BLD	400	
-		check RUN balance	100	
+		check RUN balance	100
+		check BLD liened	800
+15	Lower collateral
+		buy BLD	1,000
+		stake BLD	1,000
+		lien BLD	800
+		borrow RUN	100
+		unlien BLD	400
+		check RUN balance	100
 		check BLD liened	400
-16	Lower collateral - CR increase (FAIL)			
-		buy BLD	1,000	
-		stake BLD	1,000	
-		lien BLD	800	
-		borrow RUN	100	
-		set Collateralization Ratio	750%	
+16	Lower collateral - CR increase (FAIL)
+		buy BLD	1,000
+		stake BLD	1,000
+		lien BLD	800
+		borrow RUN	100
+		set Collateralization Ratio	750%
 		unlien BLD	400	fail
-		check BLD liened	800	
-17	Lower collateral - unbonded ok			
-		buy BLD	1,000	
-		stake BLD	1,000	
-		lien BLD	800	
-		borrow RUN	100	
-		slash	770	
-		check BLD liened	800	
-		unlien BLD	400	
-		check RUN balance	100	
-		check BLD liened	400	
-18	Full repayment - CR and unbonded		cont	
-		set Collateralization Ratio	750%	
-		payoff RUN	100	
-		check RUN balance	0	
-		check BLD liened	0	
-    `;
+		check BLD liened	800
+17	Lower collateral - unbonded ok
+		buy BLD	1,000
+		stake BLD	1,000
+		lien BLD	800
+		borrow RUN	100
+		slash	770
+		check BLD liened	800
+		unlien BLD	400
+		check RUN balance	100
+		check BLD liened	400
+18	Full repayment - CR and unbonded		cont
+		set Collateralization Ratio	750%
+		payoff RUN	100
+		check RUN balance	0
+		check BLD liened	0
+`;
 
 export const ROWS = CSV.parse(
   TEXT.replace(/,/g, '').replace(/\t/g, ',').trim(),
