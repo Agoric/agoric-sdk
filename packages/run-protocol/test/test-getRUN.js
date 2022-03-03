@@ -304,6 +304,62 @@ test('getRUN API usage', async t => {
 });
 
 /**
+ * @param { StartFaker['publicFacet'] } faker
+ * @param { Brand } bldBrand
+ * @returns { Promise<[Amount, Payment]> }
+ *
+ * @param { (faker: ERef<StartFaker['publicFacet']>, bldBrand: Brand)
+ *            => Promise<[Amount, Payment]> } [mockAttestation]
+ *
+ * @typedef {ReturnType<typeof import('./attestationFaker.js').start>} StartFaker
+ * @typedef { [bigint, bigint] } Rational
+ */
+test('forged Attestation fails', async t => {
+  const bundles = theBundles(t);
+  const timer = buildManualTimer(t.log, 0n, 1n);
+
+  const { chain, space } = await bootstrapGetRun(bundles, timer);
+  const { consume } = space;
+  const { zoe, getRUNCreatorFacet: creatorFacet } = consume;
+  const runBrand = await space.brand.consume.RUN;
+  const bldBrand = await space.brand.consume.BLD;
+  const runIssuer = await space.issuer.consume.RUN;
+  const publicFacet = E(zoe).getPublicFacet(space.instance.consume.getRUN);
+
+  const fakerInstallation = E(zoe).install(bundles.faker);
+  const faker = E.get(E(zoe).startInstance(fakerInstallation)).publicFacet;
+
+  const founder = chain.provisionAccount('Alice', 'addr1a');
+  const bob = chain.provisionAccount('Bob', 'addr1b');
+  founder.sendTo('addr1b', 5_000n * micro.unit);
+  bob.stake(3_000n * micro.unit);
+
+  const walletMaker = makeWalletMaker(creatorFacet);
+
+  // Bob introduces himself to the Agoric JS VM.
+  const bobWallet = walletMaker(bob.getAddress());
+
+  // Bob gets a lien against 2k of his 3k staked BLD.
+  const bobToLien = AmountMath.make(bldBrand, 2_000n * micro.unit);
+  const attPmt = E(faker).fakeAttestation('addr1b', bobToLien);
+
+  const attIssuer = E(faker).getIssuer();
+  const attAmt = await E(attIssuer).getAmountOf(attPmt);
+
+  // Bob borrows 200 RUN against the lien.
+  const proposal = harden({
+    give: { Attestation: attAmt },
+    want: { RUN: AmountMath.make(runBrand, 200n * micro.unit) },
+  });
+  const seat = E(zoe).offer(
+    E(publicFacet).makeLoanInvitation(),
+    proposal,
+    harden({ Attestation: attPmt }),
+  );
+  await t.throwsAsync(E(seat).getOfferResult());
+});
+
+/**
  * @typedef {[string, unknown] | [string, unknown, false]} Step
  * @typedef {[string, Step[]]} TestCase
  * @type {TestCase[]}
