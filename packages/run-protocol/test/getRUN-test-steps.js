@@ -128,5 +128,37 @@ export const CASES =
       [ 'checkRUNBalance', 100n ],
       [ 'checkBLDLiened', 400n ]
     ]
+  ],
+  [
+    '16',
+    'Lower collateral - CR increase (FAIL)',
+    [
+      [ 'buyBLD', 1000n ],
+      [ 'stakeBLD', 1000n ],
+      [ 'lienBLD', 800n ],
+      [ 'borrowRUN', 100n ],
+      [ 'setCollateralizationRatio', [ 750n, 100n ] ],
+      [ 'unlienBLD', 400n, false ],
+      [ 'checkBLDLiened', 800n ]
+    ]
+  ],
+  [
+    '17',
+    'Lower collateral - unbonded ok',
+    [
+      [ 'buyBLD', 1000n ],
+      [ 'stakeBLD', 1000n ],
+      [ 'lienBLD', 800n ],
+      [ 'borrowRUN', 100n ],
+      [ 'slash', 770n ],
+      [ 'checkBLDLiened', 800n ],
+      [ 'unlienBLD', 400n ],
+      [ 'checkRUNBalance', 100n ],
+      [ 'checkBLDLiened', 400n ],
+      [ 'setCollateralizationRatio', [ 750n, 100n ] ],
+      [ 'payoffRUN', 100n ],
+      [ 'checkRUNBalance', 0n ],
+      [ 'checkBLDLiened', 0n ]
+    ]
   ]
 ]
