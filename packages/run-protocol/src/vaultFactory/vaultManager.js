@@ -28,7 +28,7 @@ import {
   INTEREST_RATE_KEY,
   CHARGING_PERIOD_KEY,
 } from './params.js';
-import { chargeInterest } from './interest.js';
+import { chargeInterest } from '../interest.js';
 
 const { details: X } = assert;
 

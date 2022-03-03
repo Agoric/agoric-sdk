@@ -26,7 +26,7 @@ import {
 } from '../amm/vpool-xyk-amm/setup.js';
 
 import { makeTracer } from '../../src/makeTracer.js';
-import { SECONDS_PER_YEAR } from '../../src/vaultFactory/interest.js';
+import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import {
   CHARGING_PERIOD_KEY,
   RECORDING_PERIOD_KEY,
