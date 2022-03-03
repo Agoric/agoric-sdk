@@ -52,14 +52,5 @@
   ],
   "publishConfig": {
     "access": "public"
-  },
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
-    ],
-    "timeout": "2m"
   }
 }
