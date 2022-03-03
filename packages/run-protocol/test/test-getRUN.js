@@ -310,6 +310,13 @@ test('getRUN API usage', async t => {
 // ...@@@@@@
 // ];
 
+// 8	Partial repayment from reward stream - TODO
+
+// skipping:
+// 10	Partial repay - insufficient funds (FAIL) - Zoe prevents this
+// 12	Add collateral - lots of test harness for little gain
+// 13	Add collateral - CR increase ok
+
 /**
  * Economic Committee of one.
  *
@@ -468,6 +475,23 @@ const makeWorld = async t0 => {
       await E(seat).getOfferResult(); // check for errors
       const runPmt = await E(seat).getPayout('RUN');
       await E(runPurse).deposit(runPmt);
+    },
+    unlienBLD: async n => {
+      assert(offerResult, X`no offerResult; borrowRUN first?`);
+      const attAmt = AmountMath.make(
+        attBrand,
+        makeCopyBag([[bob.getAddress(), n * micro.unit]]),
+      );
+      const proposal = harden({
+        want: { Attestation: attAmt },
+      });
+      const seat = E(zoe).offer(
+        E(offerResult.invitationMakers).AdjustBalances(),
+        proposal,
+      );
+      await E(seat).getOfferResult(); // check for errors
+      const attBack = await E(seat).getPayout('Attestation');
+      await returnAttestation(attBack);
     },
     payDownRUN: async value => {
       assert(offerResult, X`no offerResult; borrowRUN first?`);

@@ -85,5 +85,48 @@ export const CASES =
       [ 'checkRUNBalance', 100n ],
       [ 'checkBLDLiened', 800n ]
     ]
+  ],
+  [
+    '11',
+    'Partial repay - unbonded ok',
+    [
+      [ 'buyBLD', 1000n ],
+      [ 'stakeBLD', 800n ],
+      [ 'lienBLD', 800n ],
+      [ 'borrowRUN', 100n ],
+      [ 'slash', 700n ],
+      [ 'checkBLDLiened', 800n ],
+      [ 'checkRUNBalance', 100n ],
+      [ 'payDownRUN', 50n ],
+      [ 'checkRUNBalance', 50n ],
+      [ 'checkBLDLiened', 800n ],
+      [ 'checkBLDStaked', 100n ]
+    ]
+  ],
+  [
+    '14',
+    'Add collateral - more BLD required (FAIL)',
+    [
+      [ 'buyBLD', 1000n ],
+      [ 'stakeBLD', 1000n ],
+      [ 'lienBLD', 800n ],
+      [ 'borrowRUN', 100n ],
+      [ 'borrowMoreRUN', 200n, false ],
+      [ 'checkRUNBalance', 100n ],
+      [ 'checkBLDLiened', 800n ]
+    ]
+  ],
+  [
+    '15',
+    'Lower collateral',
+    [
+      [ 'buyBLD', 1000n ],
+      [ 'stakeBLD', 1000n ],
+      [ 'lienBLD', 800n ],
+      [ 'borrowRUN', 100n ],
+      [ 'unlienBLD', 400n ],
+      [ 'checkRUNBalance', 100n ],
+      [ 'checkBLDLiened', 400n ]
+    ]
   ]
 ]
