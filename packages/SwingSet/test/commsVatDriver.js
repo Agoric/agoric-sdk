@@ -350,6 +350,7 @@ export function commsVatDriver(t, verbose = false) {
   const log = [];
   const syscall = loggingSyscall(log);
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  dispatch(['startVat']);
   const { state } = debugState.get(dispatch);
 
   const remotes = new Map();
