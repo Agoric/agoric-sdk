@@ -1,6 +1,10 @@
 // @ts-check
 
-// import '@endo/marshal/src/types.js';
+export {};
+
+/* This file defines types that part of the external API of swingset. That
+ * includes standard services which user-provided vat code might interact
+ * with, like VatAdminService. */
 
 /**
  * @typedef {'getExport' | 'nestedEvaluate' | 'endoZipBase64'} BundleFormat
@@ -9,10 +13,6 @@
 /**
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  */
-
-/** @typedef { import('./types-exported.js').BundleID } BundleID */
-/** @typedef { import('./types-exported.js').BundleCap } BundleCap */
-/** @typedef { import('./types-exported.js').EndoZipBase64Bundle } EndoZipBase64Bundle */
 
 /**
  * @typedef { { moduleFormat: 'getExport', source: string, sourceMap: string? } } GetExportBundle
@@ -316,4 +316,34 @@
  * @property {*} runWithoutMeteringAsync Run an async callback outside metering
  * @property {*} unmetered Wrap a callback with runWithoutMetering
  *
+ */
+
+/**
+ *
+ * @typedef { string } BundleID
+ * @typedef {*} BundleCap
+ * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string } } EndoZipBase64Bundle
+ *
+ * @typedef { unknown } Meter
+ *
+ * E(vatAdminService).createVat(bundle, options: DynamicVatOptions)
+ *
+ * @typedef { { description?: string,
+ *              meter?: Meter,
+ *              managerType?: ManagerType,
+ *              vatParameters?: *,
+ *              enableSetup?: boolean,
+ *              enablePipelining?: boolean
+ *              enableVatstore?: boolean,
+ *              virtualObjectCacheSize?: number,
+ *              useTranscript?: boolean,
+ *              reapInterval? : number | 'never',
+ *            }} DynamicVatOptionsWithoutMeter
+ * @typedef { { meter?: Meter } } HasMeter
+ * @typedef { DynamicVatOptionsWithoutMeter & HasMeter } DynamicVatOptions
+ *
+ * config.vats[name].creationOptions: StaticVatOptions
+ *
+ * @typedef { { enableDisavow?: boolean } } HasEnableDisavow
+ * @typedef { DynamicVatOptions & HasEnableDisavow } StaticVatOptions
  */

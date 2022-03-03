@@ -3,7 +3,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
-import '../../types.js';
+import '../../types-ambient.js';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../../lib-nodejs/gc-and-finalize.js';

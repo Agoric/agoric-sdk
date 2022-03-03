@@ -7,7 +7,7 @@ import {
   insistVatSyscallObject,
   insistVatDeliveryResult,
 } from '../../lib/message.js';
-import '../../types.js';
+import '../../types-ambient.js';
 import './types.js';
 
 // eslint-disable-next-line no-unused-vars

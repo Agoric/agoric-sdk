@@ -4,7 +4,7 @@ import {
   insistVatSyscallObject,
   insistVatSyscallResult,
 } from '../lib/message.js';
-import '../types.js';
+import '../types-ambient.js';
 
 /**
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
