@@ -1,15 +1,12 @@
 // @ts-check
 
 import { AmountMath } from '@agoric/ertp';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/callSpread/types.js';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   makeRatio,
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import './types.js';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
