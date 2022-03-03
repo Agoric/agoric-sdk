@@ -1,5 +1,6 @@
 // @ts-check
 
+import { AmountMath } from '@agoric/ertp';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/callSpread/types.js';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
@@ -110,4 +111,73 @@ export const calculateCompoundedInterest = (
     makeRatio(newDebt, brand, priorDebt, brand),
   );
   return quantize(compounded, COMPOUNDED_INTEREST_DENOMINATOR);
+};
+
+/**
+ *
+ * @param {{mint: ZCFMint, reallocateWithFee: ReallocateWithFee, poolIncrementSeat: ZCFSeat }} powers
+ * @param {{interestRate: Ratio, chargingPeriod: bigint, recordingPeriod: bigint}} params
+ * @param {{interestUpdate: bigint, compoundedInterest: Ratio, totalDebt: Amount<NatValue>}} prior
+ * @param {bigint} accruedUntil
+ * @returns {{ compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }}
+ */
+export const chargeInterest = (powers, params, prior, accruedUntil) => {
+  const brand = prior.totalDebt.brand;
+
+  const interestCalculator = makeInterestCalculator(
+    params.interestRate,
+    params.chargingPeriod,
+    params.recordingPeriod,
+  );
+
+  // calculate delta of accrued debt
+  const debtStatus = interestCalculator.calculateReportingPeriod(
+    {
+      latestInterestUpdate: prior.interestUpdate,
+      newDebt: prior.totalDebt.value,
+      interest: 0n, // XXX this is always zero, doesn't need to be an option
+    },
+    accruedUntil,
+  );
+  const interestAccrued = debtStatus.interest;
+
+  // done if none
+  if (interestAccrued === 0n) {
+    return {
+      compoundedInterest: prior.compoundedInterest,
+      latestInterestUpdate: debtStatus.latestInterestUpdate,
+      totalDebt: prior.totalDebt,
+    };
+  }
+
+  // NB: This method of inferring the compounded rate from the ratio of debts
+  // acrrued suffers slightly from the integer nature of debts. However in
+  // testing with small numbers there's 5 digits of precision, and with large
+  // numbers the ratios tend towards ample precision.
+  // TODO adopt banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
+  const compoundedInterest = calculateCompoundedInterest(
+    prior.compoundedInterest,
+    prior.totalDebt.value,
+    debtStatus.newDebt,
+  );
+
+  // totalDebt += interestAccrued
+  const totalDebt = AmountMath.add(
+    prior.totalDebt,
+    AmountMath.make(brand, interestAccrued),
+  );
+
+  // mint that much of brand for the reward pool
+  const rewarded = AmountMath.make(brand, interestAccrued);
+  powers.mint.mintGains(
+    harden({ [brand.getAllegedName()]: rewarded }),
+    powers.poolIncrementSeat,
+  );
+  powers.reallocateWithFee(rewarded, powers.poolIncrementSeat);
+
+  return {
+    compoundedInterest,
+    latestInterestUpdate: debtStatus.latestInterestUpdate,
+    totalDebt,
+  };
 };

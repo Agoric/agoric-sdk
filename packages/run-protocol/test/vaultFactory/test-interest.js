@@ -10,6 +10,7 @@ import {
 import { Far } from '@endo/marshal';
 import {
   calculateCompoundedInterest,
+  chargeInterest,
   makeInterestCalculator,
   SECONDS_PER_YEAR,
 } from '../../src/vaultFactory/interest.js';
@@ -482,4 +483,27 @@ test('calculateCompoundedInterest', t => {
       `For ${startingDebt} at (${rateNum}/${rateDen})^${charges}, expected ${expected}`,
     );
   }
+});
+
+test('chargeInterest when no time elapsed', t => {
+  const { brand } = makeIssuerKit('ducats');
+  const interestRate = makeRatio(250n, brand, BASIS_POINTS);
+
+  const now = BigInt(Date.now().toFixed());
+  const powers = {}; // won't be used
+  const params = {
+    interestRate,
+    chargingPeriod: ONE_DAY,
+    recordingPeriod: ONE_DAY,
+  };
+  const prior = {
+    interestUpdate: now,
+    compoundedInterest: makeRatio(100n, brand),
+    totalDebt: AmountMath.make(brand, 10_000n),
+  };
+  // @ts-ignore mocks
+  const results = chargeInterest(powers, params, prior, now);
+  t.deepEqual(results.compoundedInterest, prior.compoundedInterest);
+  t.is(results.latestInterestUpdate, now);
+  t.deepEqual(results.totalDebt, prior.totalDebt);
 });
