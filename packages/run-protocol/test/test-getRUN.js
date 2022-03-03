@@ -411,7 +411,7 @@ const makeWorld = async t0 => {
     stakeBLD: n => bob.stake(n * micro.unit),
     slash: n => chain.slash(bob.getAddress(), n * micro.unit),
     lienBLD: async target => {
-      const current = await E(lienBridge).getAccountState(
+      const current = await E(bobWallet.attMaker).getAccountState(
         bob.getAddress(),
         bldBrand,
       );
