@@ -61,8 +61,8 @@ const validTransitions = {
  * @typedef {VaultPhase[keyof typeof VaultPhase]} OuterPhase
  *
  * @typedef {Object} VaultUIState
- * @property {Amount<NatValue>} locked Amount of Collateral locked
- * @property {{run: Amount<NatValue>, interest: Ratio}} debtSnapshot Debt of 'run' at the point the compounded interest was 'interest'
+ * @property {Amount<'nat'>} locked Amount of Collateral locked
+ * @property {{run: Amount<'nat'>, interest: Ratio}} debtSnapshot Debt of 'run' at the point the compounded interest was 'interest'
  * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
  * @property {OuterPhase} vaultState
@@ -95,7 +95,7 @@ const validTransitions = {
  * interestSnapshot: Ratio,
  * outerUpdater: IterationObserver<VaultUIState> | null,
  * phase: InnerPhase,
- * runSnapshot: Amount<NatValue>,
+ * runSnapshot: Amount<'nat'>,
  * }} MutableState
  */
 
@@ -117,6 +117,7 @@ export const makeInnerVault = (
 ) => {
   // CONSTANTS
   const collateralBrand = manager.getCollateralBrand();
+  /** @type {{brand: Brand<'nat'>}} */
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   /**
@@ -142,7 +143,6 @@ export const makeInnerVault = (
 
     // Two values from the same moment
     interestSnapshot: manager.getCompoundedInterest(),
-    // @ts-expect-error until https://github.com/Agoric/agoric-sdk/pull/4736
     runSnapshot: AmountMath.makeEmpty(runBrand),
   };
 
@@ -182,7 +182,6 @@ export const makeInnerVault = (
    */
   const updateDebtSnapshot = newDebt => {
     // update local state
-    // @ts-expect-error newDebt is actually Amount<NatValue>
     state.runSnapshot = newDebt;
     state.interestSnapshot = manager.getCompoundedInterest();
   };
@@ -210,7 +209,7 @@ export const makeInnerVault = (
    * what interest has compounded since this vault record was written.
    *
    * @see getNormalizedDebt
-   * @returns {Amount<NatValue>}
+   * @returns {Amount<'nat'>}
    */
   const getCurrentDebt = () => {
     return calculateCurrentDebt(
@@ -227,7 +226,7 @@ export const makeInnerVault = (
    * the interest accrues.
    *
    * @see getActualDebAmount
-   * @returns {Amount<NatValue>} as if the vault was open at the launch of this manager, before any interest accrued
+   * @returns {Amount<'nat'>} as if the vault was open at the launch of this manager, before any interest accrued
    */
   const getNormalizedDebt = () => {
     return reverseInterest(state.runSnapshot, state.interestSnapshot);
@@ -270,7 +269,7 @@ export const makeInnerVault = (
 
   /**
    *
-   * @returns {Amount<NatValue>}
+   * @returns {Amount<'nat'>}
    */
   const getCollateralAmount = () => {
     const { vaultSeat } = state;

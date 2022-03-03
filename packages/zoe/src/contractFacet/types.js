@@ -102,14 +102,6 @@
  */
 
 /**
- * @callback MakeZCFMint
- * @param {Keyword} keyword
- * @param {AssetKind=} assetKind
- * @param {AdditionalDisplayInfo=} displayInfo
- * @returns {Promise<ZCFMint>}
- */
-
-/**
  * @callback ZCFRegisterFeeMint
  * @param {Keyword} keyword
  * @param {FeeMintAccess} allegedFeeMintAccess - an object that
@@ -144,8 +136,9 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} ZCFMint
- * @property {() => IssuerRecord} getIssuerRecord
+ * @property {() => IssuerRecord<K>} getIssuerRecord
  * @property {ZCFMintMintGains} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.

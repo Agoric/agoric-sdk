@@ -27,10 +27,10 @@ const calculateRelativeCompounding = (
 
 /**
  *
- * @param {Amount<NatValue>} debtSnapshot
+ * @param {Amount<'nat'>} debtSnapshot
  * @param {Ratio} interestSnapshot as coefficient
  * @param {Ratio} currentCompoundedInterest as coefficient
- * @returns {Amount<NatValue>}
+ * @returns {Amount<'nat'>}
  */
 export const calculateCurrentDebt = (
   debtSnapshot,
@@ -51,9 +51,9 @@ export const calculateCurrentDebt = (
 
 /**
  *
- * @param {Amount<NatValue>} debt
+ * @param {Amount<'nat'>} debt
  * @param {Ratio} interestApplied
- * @returns {Amount<NatValue>}
+ * @returns {Amount<'nat'>}
  */
 export const reverseInterest = (debt, interestApplied) => {
   return floorDivideBy(debt, interestApplied);
