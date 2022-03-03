@@ -564,6 +564,7 @@ const makeWorld = async t0 => {
 const makeTests = async () => {
   for await (const [num, name, steps] of TestData) {
     test(`Test Data ${num} ${name}`, async t => {
+      // TODO: use different accounts / addresses in the same world.
       const driver = await makeWorld(t);
       for await (const [tag, value, pass] of steps) {
         t.log({ tag, value });

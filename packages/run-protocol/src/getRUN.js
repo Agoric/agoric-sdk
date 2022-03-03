@@ -148,6 +148,7 @@ export const makeLineOfCreditKit = (
     });
 
     vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: debtAmount })));
+    // BUG!!! TODO: track attestation balance as it gets adjusted.
     seat.incrementBy(
       vaultSeat.decrementBy(harden({ Attestation: attestationGiven })),
     );

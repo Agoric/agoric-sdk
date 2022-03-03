@@ -98,7 +98,30 @@ export const TEXT = `
 		unlien BLD	400	
 		check RUN balance	100	
 		check BLD liened	400
-`;
+16	Lower collateral - CR increase (FAIL)			
+		buy BLD	1,000	
+		stake BLD	1,000	
+		lien BLD	800	
+		borrow RUN	100	
+		set Collateralization Ratio	750%	
+		unlien BLD	400	fail
+		check BLD liened	800	
+17	Lower collateral - unbonded ok			
+		buy BLD	1,000	
+		stake BLD	1,000	
+		lien BLD	800	
+		borrow RUN	100	
+		slash	770	
+		check BLD liened	800	
+		unlien BLD	400	
+		check RUN balance	100	
+		check BLD liened	400	
+18	Full repayment - CR and unbonded		cont	
+		set Collateralization Ratio	750%	
+		payoff RUN	100	
+		check RUN balance	0	
+		check BLD liened	0	
+    `;
 
 export const ROWS = CSV.parse(
   TEXT.replace(/,/g, '').replace(/\t/g, ',').trim(),
