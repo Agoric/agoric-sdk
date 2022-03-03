@@ -11,11 +11,10 @@ Each vat contains some application-specific code (named "Vat Code"). For
 SwingSet, most Vat Code uses orthogonal peristence (i.e., invisible to the vat
 code, which effectively perceives its memory data as eternal) and is written in
 the SES subset of Javascript, employing native platform Promises and making
-eventual-send calls to local or remote objects with either the `E()` wrapper
-(`resultPromise=E(x).foo(args)`) or (eventually) the wavy dot syntax
-(`resultPromise=x~.foo(args)`). Other forms of Vat Code could exist, e.g. using
-non-orthogonal persistence such as a database or a non-SES language such as
-WASM.
+eventual-send calls to local or remote objects with the `E()` wrapper
+(`resultPromise=E(x).foo(a, b, c)`). Other forms of Vat Code could exist, e.g.
+using non-orthogonal persistence such as a database or a non-SES language such
+as WASM.
 
 Below the Vat Code, but still inside the Vat, there is a support layer which
 translates eventual-sends into kernel syscalls, and manages persistence. This
