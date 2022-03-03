@@ -65,8 +65,6 @@ export const makeLineOfCreditKit = (
     closed: false,
     /** NOTE: debtAmount corresponds exactly to minted RUN. */
     debtAmount: runWanted,
-    attestation: attestationGiven,
-    liened: amountLiened,
   };
 
   zcf.reallocate(startSeat, vaultSeat);
@@ -81,8 +79,6 @@ export const makeLineOfCreditKit = (
 
     const uiState = harden({
       // TODO: interestRate: manager.getInterestRate(),
-      // TODO: "locked" terminology vs. "liened"?
-      locked: state.liened,
       debt: state.debtAmount,
       collateralizationRatio,
     });
