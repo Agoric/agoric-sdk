@@ -35,7 +35,55 @@ export const CASES =
       [ 'setCollateralizationRatio', [ 750n, 100n ] ],
       [ 'borrowMoreRUN', 500n, false ],
       [ 'checkRUNBalance', 1000n ],
-      [ 'checkBLDLiened', 8000n ]
+      [ 'checkBLDLiened', 8000n ],
+      [ 'checkBLDLiened', 8000n ],
+      [ 'checkRUNBalance', 1000n ],
+      [ 'payoffRUN', 1000n ],
+      [ 'checkRUNDebt', 0n ],
+      [ 'checkBLDLiened', 0n ],
+      [ 'checkRUNBalance', 0n ]
+    ]
+  ],
+  [
+    '6',
+    'Partial repayment - CR remains the same',
+    [
+      [ 'buyBLD', 10000n ],
+      [ 'stakeBLD', 10000n ],
+      [ 'lienBLD', 10000n ],
+      [ 'borrowRUN', 1000n ],
+      [ 'payDownRUN', 50n ],
+      [ 'checkRUNBalance', 950n ],
+      [ 'checkRUNDebt', 950n ]
+    ]
+  ],
+  [
+    '7',
+    'Partial repayment - CR increases*',
+    [
+      [ 'buyBLD', 10000n ],
+      [ 'stakeBLD', 10000n ],
+      [ 'lienBLD', 400n ],
+      [ 'borrowRUN', 100n ],
+      [ 'setCollateralizationRatio', [ 750n, 100n ] ],
+      [ 'payDownRUN', 5n ],
+      [ 'checkRUNBalance', 95n ],
+      [ 'checkBLDLiened', 400n ]
+    ]
+  ],
+  [
+    '9',
+    'Extending LoC - unbonded (FAIL)',
+    [
+      [ 'buyBLD', 1000n ],
+      [ 'stakeBLD', 800n ],
+      [ 'lienBLD', 800n ],
+      [ 'borrowRUN', 100n ],
+      [ 'slash', 300n ],
+      [ 'checkBLDStaked', 500n ],
+      [ 'borrowMoreRUN', 50n, false ],
+      [ 'checkRUNBalance', 100n ],
+      [ 'checkBLDLiened', 800n ]
     ]
   ]
 ]
