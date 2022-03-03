@@ -211,6 +211,7 @@ const makeCreditPolicy = (brands, getRatio, brandInfo) => {
     );
     // TODO: what to do if more than 1 address is given???
     fit(attestationGiven.value, M.bagOf([M.string(), M.bigint()]));
+    // @ts-expect-error TODO: track type of attestation brand value throughout
     const [[_addr, valueLiened]] = getCopyBagEntries(attestationGiven.value);
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
     const maxAvailable = floorMultiplyBy(amountLiened, collateralPrice);
