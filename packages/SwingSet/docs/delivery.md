@@ -162,7 +162,7 @@ struct Message {
 enum ResolutionData {
     Fulfill(CapData),
     Reject(CapData),
-    Forward(PromiseID),
+    // TODO: Forward(PromiseID),
 }
 struct Resolution {
     subject: PromiseID,
@@ -206,7 +206,8 @@ Each contains some additional state-specific data:
   that this can be a single ObjectID, which will often be the case)
 * `Rejected`: includes the CapData (body+slots, maybe an Error object) with
   which it was rejected
-* `Forwarded`: includes the `KernelPromiseID` to which it was forwarded
+* `Forwarded` (**NOT YET IMPLEMENTED**): includes the `KernelPromiseID` to which
+  it was forwarded
 
 The kernel also maintains a "run-queue", which is populated with pending
 deliveries, each of which references a variety of kernel-side objects.
@@ -633,11 +634,11 @@ The `resolution` has several forms, and we assign a different name to each.
 * `Reject(CapData)`: the Promise is "rejected" to data which we call the
   "error object". Sending a message to a Rejected Promise causes the result
   of that message to be Rejected too, known as "rejection contagion".
-* `Forward(PromiseID)`: the Promise is now "forwarded": it has not settled to
-  a specific object, but the original Promise is effectively replaced with
-  some other Promise.
-  Any `result` promises in the queued messages should be rejected with the same
-  `CapData` provided as `resolution`.
+* `Forward(PromiseID)` (**NOT YET IMPLEMENTED**): the Promise is now
+  "forwarded": it has not settled to a specific object, but the original Promise
+  is effectively replaced with some other Promise.  Any `result` promises in the
+  queued messages should be rejected with the same `CapData` provided as
+  `resolution`.
 
 As the `syscall.resolve()` is processed by the kernel, all slots in the
 `resolution` should be mapped just like the `Message` slots in
