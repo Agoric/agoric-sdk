@@ -152,9 +152,10 @@ export const makeLineOfCreditKit = (
     });
 
     vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: state.debtAmount })));
-    // BUG!!! TODO: track attestation balance as it gets adjusted.
     seat.incrementBy(
-      vaultSeat.decrementBy(harden({ Attestation: attestationGiven })),
+      vaultSeat.decrementBy(
+        harden({ Attestation: vaultSeat.getAmountAllocated('Attestation') }),
+      ),
     );
 
     zcf.reallocate(seat, vaultSeat);
