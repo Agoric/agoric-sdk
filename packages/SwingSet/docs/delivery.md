@@ -679,14 +679,6 @@ the higher-layer vat code still retains the original native Promise and
 includes it in an argument, the lower-level translation layer can create a
 new promptly-resolved Promise for it.
 
-(TODO: `resolve()` is a good opportunity to remove the promise from the
-resolving vat's C-List, however if we have queued messages, it must live long
-enough to forward those messages to the new resolution. It would be nice to
-keep the CannotSendToData logic in the kernel, and have the resolving Vat
-just re-`send` everything in the queue in all resolution cases. If it
-fulfills to an Export, would the extra queue delay violate our ordering
-goals?)
-
 Note: we no longer have distinct syscalls or states for the different flavors
 of resolved promises. Instead, each resolved promise is recorded with a
 boolean `isRejected` flag, and a `CapData` to hold the resolution data. If
