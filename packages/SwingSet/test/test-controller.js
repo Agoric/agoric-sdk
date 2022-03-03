@@ -69,7 +69,9 @@ async function simpleCall(t) {
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, []);
   t.deepEqual(controller.dump().acceptanceQueue, [
+    { type: 'startVat', vatID: 'v1' },
     { type: 'startVat', vatID: 'v2' },
+    { type: 'startVat', vatID: 'v3' },
     { type: 'startVat', vatID: 'v4' },
     { type: 'startVat', vatID: 'v5' },
     {
@@ -224,6 +226,7 @@ test.serial('bootstrap export', async t => {
     { type: 'startVat', vatID: 'v2' },
     { type: 'startVat', vatID: 'v3' },
     { type: 'startVat', vatID: 'v4' },
+    { type: 'startVat', vatID: 'v5' },
     { type: 'startVat', vatID: 'v6' },
     { type: 'startVat', vatID: 'v7' },
     {
@@ -269,7 +272,7 @@ test.serial('bootstrap export', async t => {
   }
 
   t.deepEqual(c.dump().log, []);
-  for (let i = 0; i < 6; i += 1) {
+  for (let i = 0; i < 7; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await stepGC(); // vat starts
   }

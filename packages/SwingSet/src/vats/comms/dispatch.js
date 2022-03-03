@@ -155,6 +155,9 @@ export function buildCommsDispatch(
   function doDispatch(vatDeliveryObject) {
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
+      case 'startVat': {
+        break;
+      }
       case 'message': {
         const [targetSlot, msg] = args;
         insistMessage(msg);

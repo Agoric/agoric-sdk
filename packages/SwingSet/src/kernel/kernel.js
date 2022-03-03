@@ -559,7 +559,6 @@ export default function buildKernel(
     }
     vatKeeper.setSourceAndOptions(source, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
-    const { enableSetup } = options;
 
     function sendNewVatCallback(args) {
       // @ts-ignore see assert(...) above
@@ -600,9 +599,8 @@ export default function buildKernel(
       vatWarehouse
         .createDynamicVat(vatID)
         // if createDynamicVat fails, go directly to makeErrorResponse
-        .then(_vatinfo =>
-          enableSetup ? null : processStartVat({ type: 'startVat', vatID }),
-        ) // TODO(4381) add vatParameters here
+        .then(_vatinfo => processStartVat({ type: 'startVat', vatID }))
+        // TODO(4381) add vatParameters here
         // If processStartVat/deliverAndLogToVat observes a worker error, it
         // will return status={ terminate: problem } rather than throw an
         // error, so makeSuccessResponse will sendNewVatCallback. But the
