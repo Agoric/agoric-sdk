@@ -1,3 +1,8 @@
+/**
+ * @typedef {[string, unknown] | [string, unknown, false]} Step
+ * @typedef {[string, string, Step[]]} TestCase
+ * @type {TestCase[]}
+ */
 export const CASES = [
   [
     '1',

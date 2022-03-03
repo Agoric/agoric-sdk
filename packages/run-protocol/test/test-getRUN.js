@@ -19,17 +19,23 @@ import {
 import { startEconomicCommittee, startGetRun } from '../src/econ-behaviors.js';
 import { governanceBundles } from '../src/importedBundles.js';
 import * as Collect from '../src/collect.js';
-import * as testCases from './runLoC-test-case-sheet.js';
-
-// TODO: #4728 case 9: Extending LoC - unbonded (FAIL)
-import { CASES as TestData } from './getRUN-test-steps.js';
 import { CreditTerms } from '../src/getRUN.js';
+
+// 8	Partial repayment from reward stream - TODO
+// TODO: #4728 case 9: Extending LoC - unbonded (FAIL)
+
+// skipping:
+// 10	Partial repay - insufficient funds (FAIL) - Zoe prevents this
+// 12	Add collateral - lots of test harness for little gain
+// 13	Add collateral - CR increase ok
+import { CASES as TestData } from './getRUN-test-steps.js';
 
 const contractRoots = {
   getRUN: '../src/getRUN.js',
+  faker: './attestationFaker.js',
 };
 
-const { assign, entries, fromEntries, keys } = Object;
+const { assign, entries } = Object;
 const { details: X } = assert;
 
 test.before(async t => {
@@ -48,6 +54,12 @@ test.before(async t => {
   assign(t.context, { bundles });
 });
 
+/**
+ * @param {{ context: unknown }} t
+ * @returns { Record<string, Bundle> }
+ */
+const theBundles = t => /** @type { any } */ (t.context).bundles;
+
 export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
 
@@ -64,6 +76,17 @@ export const setUpZoeForTest = async () => {
 };
 harden(setUpZoeForTest);
 
+/**
+ * @typedef {EconomyBootstrapPowers & WellKnownSpaces & {
+ *   consume: {
+ *     client: ERef<ClientManager> // to add home.attMaker
+ *   },
+ *   produce: {
+ *     client: Producer<ClientManager>
+ *   }
+ * }} GetRunPowers
+ */
+
 export const setupBootstrap = async (
   bundles,
   timer = buildManualTimer(console.log),
@@ -74,7 +97,7 @@ export const setupBootstrap = async (
   }
 
   const space = /** @type {any} */ (makePromiseSpace());
-  const { produce, consume } = /** @type { EconomyBootstrapPowers } */ (space);
+  const { produce, consume } = /** @type { GetRunPowers } */ (space);
 
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
@@ -85,23 +108,6 @@ export const setupBootstrap = async (
   produce.governanceBundles.resolve(governanceBundles);
 
   return { produce, consume, ...spaces };
-};
-
-/**
- * @param {{ context: unknown }} t
- * @returns { Record<string, Bundle> }
- */
-const theBundles = t => /** @type { any } */ (t.context).bundles;
-
-const genesisBldBalances = {
-  agoric30: 30n,
-  agoric100: 100n,
-  agoric500: 500n,
-  agoric1k: 1_000n,
-  agoric3k: 3_000n,
-  agoric5k: 5_000n,
-  agoric9k: 9_000n,
-  agoric10k: 10_000n,
 };
 
 const mockChain = genesisData => {
@@ -209,15 +215,6 @@ const bootstrapZoeAndRun = async () => {
   return { zoe, feeMintAccess, runBrand, getJig: () => testJig, bld };
 };
 
-test('RUN mint access', async t => {
-  assert.typeof(t.context, 'object');
-  assert(t.context);
-
-  const { zoe, feeMintAccess } = await bootstrapZoeAndRun();
-  t.truthy(zoe);
-  t.truthy(feeMintAccess);
-});
-
 const bootstrapGetRun = async (bundles, timer) => {
   const { zoe, feeMintAccess, runBrand, bld } = await bootstrapZoeAndRun();
   const runIssuer = E(zoe).getFeeIssuer();
@@ -244,11 +241,7 @@ const bootstrapGetRun = async (bundles, timer) => {
   });
   produce.client.resolve(mockClient);
 
-  await Promise.all([
-    // @ts-ignore TODO: resolve this type
-    startEconomicCommittee(space),
-    startGetRun(space),
-  ]);
+  await Promise.all([startEconomicCommittee(space), startGetRun(space)]);
   return { chain, space };
 };
 
@@ -266,6 +259,7 @@ test('getRUN API usage', async t => {
 
   const { chain, space } = await bootstrapGetRun(bundles, timer);
   const { consume } = space;
+  // @ts-expect-error TODO: add getRUNCreatorFacet to EconomyBootstrapPowers
   const { zoe, getRUNCreatorFacet: creatorFacet } = consume;
   const runBrand = await space.brand.consume.RUN;
   const bldBrand = await space.brand.consume.BLD;
@@ -320,33 +314,27 @@ test('forged Attestation fails', async t => {
 
   const { chain, space } = await bootstrapGetRun(bundles, timer);
   const { consume } = space;
-  const { zoe, getRUNCreatorFacet: creatorFacet } = consume;
+  const { zoe } = consume;
   const runBrand = await space.brand.consume.RUN;
   const bldBrand = await space.brand.consume.BLD;
-  const runIssuer = await space.issuer.consume.RUN;
   const publicFacet = E(zoe).getPublicFacet(space.instance.consume.getRUN);
 
   const fakerInstallation = E(zoe).install(bundles.faker);
   const faker = E.get(E(zoe).startInstance(fakerInstallation)).publicFacet;
 
   const founder = chain.provisionAccount('Alice', 'addr1a');
-  const bob = chain.provisionAccount('Bob', 'addr1b');
-  founder.sendTo('addr1b', 5_000n * micro.unit);
-  bob.stake(3_000n * micro.unit);
+  const mallory = chain.provisionAccount('Mallory', 'addr1m');
+  founder.sendTo('addr1m', 5_000n * micro.unit);
+  mallory.stake(3_000n * micro.unit);
 
-  const walletMaker = makeWalletMaker(creatorFacet);
-
-  // Bob introduces himself to the Agoric JS VM.
-  const bobWallet = walletMaker(bob.getAddress());
-
-  // Bob gets a lien against 2k of his 3k staked BLD.
-  const bobToLien = AmountMath.make(bldBrand, 2_000n * micro.unit);
-  const attPmt = E(faker).fakeAttestation('addr1b', bobToLien);
+  // Mallory forges a lien against 2k of his 3k staked BLD.
+  const malloryToLien = AmountMath.make(bldBrand, 2_000n * micro.unit);
+  const attPmt = E(faker).fakeAttestation('addr1m', malloryToLien);
 
   const attIssuer = E(faker).getIssuer();
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
-  // Bob borrows 200 RUN against the lien.
+  // Mallory tries to borrow 200 RUN against the forged lien.
   const proposal = harden({
     give: { Attestation: attAmt },
     want: { RUN: AmountMath.make(runBrand, 200n * micro.unit) },
@@ -358,22 +346,6 @@ test('forged Attestation fails', async t => {
   );
   await t.throwsAsync(E(seat).getOfferResult());
 });
-
-/**
- * @typedef {[string, unknown] | [string, unknown, false]} Step
- * @typedef {[string, Step[]]} TestCase
- * @type {TestCase[]}
- */
-// const TestData = [
-// ...@@@@@@
-// ];
-
-// 8	Partial repayment from reward stream - TODO
-
-// skipping:
-// 10	Partial repay - insufficient funds (FAIL) - Zoe prevents this
-// 12	Add collateral - lots of test harness for little gain
-// 13	Add collateral - CR increase ok
 
 /**
  * Economic Committee of one.
@@ -436,6 +408,7 @@ const makeWorld = async t0 => {
   const committee = makeC1(
     zoe,
     space.consume.economicCommitteeCreatorFacet,
+    // @ts-expect-error TODO: add getRUNGovernorCreatorFacet to vats/src/types.js
     space.consume.getRUNGovernorCreatorFacet,
     counter,
   );
@@ -641,414 +614,3 @@ const makeTests = async () => {
 };
 
 makeTests();
-
-// test.skip('attestation facets@@@', async t => {
-//   const { zoe } = await bootstrapZoeAndRun();
-//   const micro = harden({ decimalPlaces: 6 });
-//   const { mint: _, ...bld } = makeIssuerKit('BLD', AssetKind.NAT, micro);
-
-//   const { attestation: bundle } = theBundles(t);
-//   const { issuer, brand, creatorFacet } = await bootstrapAttestation(
-//     bundle,
-//     zoe,
-//     bld.issuer,
-//     mockBridge(bld.brand),
-//     { expiringAttName: 'BldAttGov', returnableAttName: 'BldAttLoC' },
-//   );
-
-//   const attMaker = E(creatorFacet).getAttMaker('agoric3k');
-//   const expiration = 120n;
-//   const amountLiened = AmountMath.make(bld.brand, 5n);
-//   const pmt = E.get(E(attMaker).makeAttestations(amountLiened, expiration))
-//     .returnable;
-//   const amt = await E(issuer).getAmountOf(pmt);
-//   t.deepEqual(amt, {
-//     brand,
-//     value: [{ address: 'agoric3k', amountLiened }],
-//   });
-// });
-
-/**
- * @typedef { import('@agoric/eventual-send').Unpromise<T> } Unpromise<T>
- * @template T
- */
-
-/**
- * @param { Rational } price
- * @param { Object } detail
- * @param { number } detail.testNum
- * @param { string } detail.description
- * @param {{ before: Rational, after?: Rational}} detail.collateralizationRatio
- * @param {{ before: bigint, delta: bigint, after: bigint}} detail.borrowed
- * @param { bigint } detail.staked
- * @param {{ before: bigint, delta: bigint, after: bigint}} detail.liened
- * @param { boolean } [detail.failAttestation]
- * @param { boolean } [detail.failOffer]
- * @param { (faker: ERef<StartFaker['publicFacet']>, bldBrand: Brand)
- *            => Promise<[Amount, Payment]> } [mockAttestation]
- *
- * @typedef {ReturnType<typeof import('./attestationFaker.js').start>} StartFaker
- * @typedef { [bigint, bigint] } Rational
- */
-const testLoC = (
-  price,
-  {
-    testNum,
-    description,
-    collateralizationRatio: cr,
-    borrowed,
-    staked,
-    liened,
-    failAttestation,
-    failOffer,
-  },
-  mockAttestation = undefined,
-) => {
-  return;
-  const todo = fromEntries(
-    entries({
-      adjustLien:
-        liened.before !== 0n && liened.delta !== 0n && borrowed.after !== 0n,
-      collateralizationRatioChange: !!cr.after,
-      failing: !!description.match(/FAIL/),
-      unbonded: !!description.match(/unbonded/),
-    }).filter(([_why, cond]) => cond),
-  );
-
-  if (keys(todo).length > 0) {
-    const reasons = keys(todo).join(',');
-    test.skip(`${testNum} ${description} @@TODO ${reasons}`, _ => {});
-    return;
-  }
-
-  test(`${testNum} ${description}`, async t => {
-    const bundles = theBundles(t);
-
-    // Genesis: start Zoe etc.
-    const { zoe, feeMintAccess, runBrand, getJig } = await bootstrapZoeAndRun();
-    const { mint: _, ...bld } = makeIssuerKit(
-      'BLD',
-      AssetKind.NAT,
-      micro.displayInfo,
-    );
-
-    // start RUN LoC
-    const collateralPrice = makeRatio(price[0], runBrand, price[1], bld.brand);
-    const rate = cr.before;
-    const collateralizationRatio = makeRatio(rate[0], runBrand, rate[1]);
-    const timer = buildManualTimer(t.log, 0n, 1n);
-
-    const installations = await Collect.allValues({
-      governor: E(zoe).install(bundles.governor),
-      electorate: E(zoe).install(bundles.electorate),
-      getRUN: E(zoe).install(bundles.getRUN),
-    });
-
-    const { publicFacet, creatorFacet } = await bootstrapRunLoC(
-      zoe,
-      timer,
-      feeMintAccess,
-      installations,
-      { collateralPrice, collateralizationRatio },
-      bld.issuer,
-      mockChain(bld.brand).authority,
-    );
-    const attIssuer = await E(publicFacet).getIssuer();
-    const attBrand = await E(attIssuer).getBrand();
-
-    /** @type {{ runBrand: Brand, runIssuer: Issuer }} */
-    const { runIssuer } = getJig();
-    /** @param { bigint } value */
-    const run = value => AmountMath.make(runBrand, value);
-    /** @param { bigint } value */
-    const ubld = value => AmountMath.make(bld.brand, value);
-
-    // Get an attestation (amount, payment)
-    const [addrFromStake, _b] =
-      entries(genesisBldBalances).find(([_addr, bal]) => bal === staked) ||
-      assert.fail(X`no matching account: ${staked}`);
-    // @ts-ignore threading types thru governance is tricky.
-    const attMaker = E(creatorFacet).getAttMaker(addrFromStake);
-
-    // @ts-ignore governance wrapper obscures publicFace type :-/
-    const lineOfCreditInvitation = await E(publicFacet).makeLoanInvitation();
-
-    /**
-     * @param {bigint} bldValue
-     * @param {bigint} runValue
-     */
-    const testOpen = async (bldValue, runValue) => {
-      const tryAttestation = E(attMaker).makeAttestation(ubld(bldValue));
-      if (failAttestation) {
-        await t.throwsAsync(tryAttestation);
-        return undefined;
-      }
-      /** @returns { Promise<[Amount, Payment]> } */
-      const getReturnableAttestation = () =>
-        tryAttestation.then(pmt =>
-          E(attIssuer)
-            .getAmountOf(pmt)
-            .then(amt => [amt, pmt]),
-        );
-      const fakerInstallation = E(zoe).install(bundles.faker);
-      const [attAmt, attPmt] = await (mockAttestation
-        ? mockAttestation(
-            E.get(E(zoe).startInstance(fakerInstallation)).publicFacet,
-            bld.brand,
-          )
-        : getReturnableAttestation());
-      // t.log({ attPmt });
-
-      // t.log({
-      //   give: { Attestation: attAmt },
-      //   want: { RUN: run(runValue) },
-      //   collateralPrice,
-      //   collateralizationRatio,
-      // });
-
-      // Offer the attestation in exchange for RUN
-      const seat = await E(zoe).offer(
-        lineOfCreditInvitation,
-        harden({
-          give: { Attestation: attAmt },
-          want: { RUN: run(runValue) },
-        }),
-        harden({ Attestation: attPmt }),
-      );
-      const result = E(seat).getOfferResult();
-      if (failOffer) {
-        await t.throwsAsync(result);
-        return undefined;
-      }
-      /** @type {LineOfCreditKit} */
-      const resultValue = await result;
-      t.deepEqual(keys(resultValue), [
-        'invitationMakers',
-        'uiNotifier',
-        'vault',
-      ]);
-      const state = await resultValue.uiNotifier.getUpdateSince();
-      t.deepEqual(state.value.debt, run(runValue));
-
-      const p = await Collect.allValues(await E(seat).getPayouts());
-      t.deepEqual(Object.keys(p), ['Attestation', 'RUN']);
-      t.deepEqual(await E(runIssuer).getAmountOf(p.RUN), run(runValue));
-
-      return { resultValue, payouts: p };
-    };
-
-    /** @param { Unpromise<ReturnType<typeof testOpen>> } step1 */
-    const testClose = async step1 => {
-      assert(step1);
-      const {
-        resultValue: { invitationMakers },
-        payouts,
-      } = step1;
-      const closeInvitation = await invitationMakers.CloseVault();
-      const seat = await E(zoe).offer(
-        closeInvitation,
-        harden({
-          give: { RUN: run(-borrowed.delta) },
-          want: {
-            Attestation: AmountMath.makeEmpty(attBrand, AssetKind.COPY_BAG),
-          },
-        }),
-        harden({ RUN: payouts.RUN }),
-      );
-      t.deepEqual(await E(seat).getOfferResult(), 'RUN line of credit closed');
-      const attBack = await E(seat).getPayout('Attestation');
-      const amt = await E(attIssuer).getAmountOf(attBack);
-      t.deepEqual(amt, {
-        brand: attBrand,
-        value: makeCopyBag([[addrFromStake, liened.before]]),
-      });
-    };
-
-    /** @param { Unpromise<ReturnType<typeof testOpen>> } step1 */
-    const testAdjust = async step1 => {
-      assert(step1);
-      const {
-        resultValue: { invitationMakers, uiNotifier },
-      } = step1;
-
-      const adjustInvitation = invitationMakers.AdjustBalances();
-
-      if (borrowed.delta > 0n) {
-        const seat = await E(zoe).offer(
-          adjustInvitation,
-          harden({ want: { RUN: run(borrowed.delta) } }),
-        );
-        const payout = await E(seat).getPayout('RUN');
-        const amt = await E(runIssuer).getAmountOf(payout);
-        t.deepEqual(amt, run(borrowed.delta));
-      } else {
-        const [runPayment, _rest] = await E(runIssuer).split(
-          step1.payouts.RUN,
-          run(-borrowed.delta),
-        );
-        const seat = await E(zoe).offer(
-          adjustInvitation,
-          harden({
-            give: { RUN: run(-borrowed.delta) },
-            want: {
-              Attestation: AmountMath.makeEmpty(attBrand, AssetKind.COPY_BAG),
-            },
-          }),
-          harden({ RUN: runPayment }),
-        );
-        const actual = await E(attIssuer).getAmountOf(
-          E(seat).getPayout('Attestation'),
-        );
-        t.is(actual.brand, attBrand);
-      }
-
-      const state = await uiNotifier.getUpdateSince();
-      // t.log({ state });
-      t.deepEqual(state.value, {
-        collateralizationRatio,
-        debt: run(borrowed.after),
-        locked: AmountMath.make(bld.brand, liened.after),
-      });
-    };
-
-    if (borrowed.before === 0n) {
-      t.is(liened.before, 0n, 'no previous line of credit');
-      await testOpen(liened.delta, borrowed.delta);
-    } else {
-      const step1 = await testOpen(liened.before, borrowed.before);
-
-      if (borrowed.after === 0n) {
-        await testClose(step1);
-      } else {
-        await testAdjust(step1);
-      }
-    }
-  });
-};
-
-test('parse test data from spreadsheet', async t => {
-  const rows = testCases.ROWS;
-  t.deepEqual(rows[0].slice(0, 4), ['', '', '', '']);
-  t.deepEqual(rows[1].slice(0, 2), ['Collateralization Ratio', '500%']);
-  t.deepEqual(rows[7].slice(0, 4), ['', '', '1', 'Starting LoC']);
-});
-
-const makeTestCases = () => {
-  const rows = testCases.ROWS;
-
-  /** @type {(s: string) => Rational} */
-  const pct = s => [BigInt(s.replace(/[%$.]/g, '')), 100n];
-  /** @param { string } label */
-  const lookup = label =>
-    (rows.find(row => row[0] === label) ||
-      assert.fail(X`${label} not found`))[1];
-  const price = pct(lookup('BLD Price'));
-
-  rows.forEach(
-    ([
-      _a,
-      _b,
-      testNum,
-      description,
-      _action,
-      _runPerBld,
-      rateBefore,
-      rateAfter,
-      runBefore,
-      runDelta,
-      runAfter,
-      staked,
-      lienedBefore,
-      lienedDelta,
-      lienedAfter,
-    ]) => {
-      if (!staked || !staked.match(/^[0-9]+$/)) return;
-
-      testLoC(price, {
-        testNum: Number.parseFloat(testNum),
-        description,
-        collateralizationRatio: {
-          before: pct(rateBefore),
-          after: rateAfter.length > 0 ? pct(rateAfter) : undefined,
-        },
-        borrowed: {
-          before: BigInt(runBefore),
-          delta: BigInt(runDelta),
-          after: BigInt(runAfter),
-        },
-        staked: BigInt(staked),
-        liened: {
-          before: BigInt(lienedBefore),
-          delta: BigInt(lienedDelta),
-          after: BigInt(lienedAfter),
-        },
-        failOffer: !!description.match(/FAIL/),
-      });
-    },
-  );
-};
-// @@@makeTestCases();
-
-testLoC([125n, 100n], {
-  testNum: 0.1,
-  description: 'borrow 100 RUN against 6000 BLD at 1.25, 5x',
-  borrowed: { before: 0n, delta: 100n, after: 100n },
-  staked: 10_000n,
-  liened: { before: 0n, delta: 6000n, after: 6000n },
-  collateralizationRatio: { before: [5n, 1n] },
-});
-
-testLoC([125n, 100n], {
-  testNum: 0.2,
-  description: 'borrow 151 RUN against 600 BLD at 1.25, 5x',
-  borrowed: { before: 0n, delta: 151n, after: 151n },
-  liened: { before: 0n, delta: 600n, after: 600n },
-  staked: 9_000n,
-  collateralizationRatio: { before: [5n, 1n] },
-  failOffer: true,
-});
-
-testLoC([15n, 100n], {
-  testNum: 0.3,
-  description: 'borrow 100 RUN against 600 BLD at 0.15, 5x',
-  borrowed: { before: 0n, delta: 100n, after: 0n },
-  liened: { before: 0n, delta: 600n, after: 600n },
-  staked: 9_000n,
-  collateralizationRatio: { before: [5n, 1n] },
-  failOffer: true,
-});
-
-testLoC([125n, 100n], {
-  testNum: 0.4,
-  description: 'borrow against 6000 BLD without enough staked',
-  borrowed: { before: 0n, delta: 100n, after: 0n },
-  liened: { before: 0n, delta: 6000n, after: 0n },
-  staked: 5_000n,
-  collateralizationRatio: { before: [5n, 1n] },
-  failAttestation: true,
-});
-
-/**
- * @param { StartFaker['publicFacet'] } faker
- * @param { Brand } bldBrand
- * @returns { Promise<[Amount, Payment]> }
- */
-const forgeAttestation = async (faker, bldBrand) => {
-  const address = 'address1';
-  const amountLiened = AmountMath.make(bldBrand, 60_000n);
-  return E(faker).fakeAttestation(address, amountLiened);
-};
-
-testLoC(
-  [125n, 100n],
-  {
-    testNum: 0.5,
-    description: 'forged attestation does not work',
-    borrowed: { before: 0n, delta: 100n, after: 0n },
-    liened: { before: 0n, delta: 6000n, after: 0n },
-    staked: 5_000n,
-    collateralizationRatio: { before: [5n, 1n] },
-    failOffer: true,
-  },
-  forgeAttestation,
-);
