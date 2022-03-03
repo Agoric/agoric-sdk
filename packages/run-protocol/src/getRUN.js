@@ -114,8 +114,20 @@ export const makeLineOfCreditKit = (
       const toPay = minAmt(proposal.give.RUN, debtAmount);
       runMint.burnLosses(harden({ RUN: toPay }), seat);
       debtAmount = AmountMath.subtract(debtAmount, toPay);
+    } else if (proposal.want.Attestation) {
+      const currentAttestation = vaultSeat.getAmountAllocated('Attestation');
+      const remainingAttestation = AmountMath.subtract(
+        currentAttestation,
+        proposal.want.Attestation,
+      );
+      creditPolicy.checkBorrow(remainingAttestation, debtAmount);
+      // COMMIT
+      seat.incrementBy(
+        vaultSeat.decrementBy({ Attestation: proposal.want.Attestation }),
+      );
+      zcf.reallocate(vaultSeat, seat);
     } else {
-      throw seat.fail(Error('TODO: adjust attestation withou changing RUN'));
+      assert.fail(X`proposal not understood`);
     }
 
     seat.exit();

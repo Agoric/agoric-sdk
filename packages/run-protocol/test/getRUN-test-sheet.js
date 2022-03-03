@@ -70,6 +70,34 @@ export const TEXT = `
 		borrow more RUN	50	fail
 		check RUN balance	100	
 		check BLD liened	800	
+11	Partial repay - unbonded ok			
+		buy BLD	1,000	
+		stake BLD	800	
+		lien BLD	800	
+		borrow RUN	100	
+		slash	700	
+		check BLD liened	800	
+		check RUN balance	100	
+		pay down RUN	50	
+		check RUN balance	50	
+		check BLD liened	800	
+		check BLD staked	100	
+14	Add collateral - more BLD required (FAIL)			
+		buy BLD	1,000	
+		stake BLD	1,000	
+		lien BLD	800	
+		borrow RUN	100	
+		borrow more RUN	200	fail
+		check RUN balance	100	
+		check BLD liened	800	
+15	Lower collateral			
+		buy BLD	1,000	
+		stake BLD	1,000	
+		lien BLD	800	
+		borrow RUN	100	
+		unlien BLD	400	
+		check RUN balance	100	
+		check BLD liened	400
 `;
 
 export const ROWS = CSV.parse(
