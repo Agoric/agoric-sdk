@@ -9,7 +9,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import '@agoric/cosmic-swingset/src/anylogger-agoric.js';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
-import { makeShutdown } from '@agoric/cosmic-swingset/src/shutdown.js';
+import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
 
 const { registerShutdown } = makeShutdown(false);
 registerShutdown(() => process.exit());

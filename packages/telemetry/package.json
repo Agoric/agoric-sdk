@@ -12,7 +12,7 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
   "bin": {
@@ -22,10 +22,19 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/store": "^0.6.10",
     "@endo/init": "^0.5.36",
-    "@opentelemetry/exporter-prometheus": "^0.16.0",
-    "@opentelemetry/metrics": "^0.16.0",
-    "bufferfromfile": "agoric-labs/BufferFromFile#Agoric-built"
+    "@opentelemetry/api": "^1.0.0",
+    "@opentelemetry/exporter-prometheus": "^0.27.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.27.0",
+    "@opentelemetry/resources": "^1.0.1",
+    "@opentelemetry/sdk-metrics-base": "^0.27.0",
+    "@opentelemetry/sdk-trace-base": "^1.0.1",
+    "@opentelemetry/semantic-conventions": "^1.0.1",
+    "anylogger": "^0.21.0",
+    "better-sqlite3": "^7.4.1",
+    "bufferfromfile": "agoric-labs/BufferFromFile#Agoric-built",
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@endo/lockdown": "^0.1.8",

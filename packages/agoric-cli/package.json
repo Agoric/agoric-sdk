@@ -24,7 +24,7 @@
     "@agoric/swingset-vat": "^0.25.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
-    "tmp": "^0.1.0"
+    "tmp": "^0.2.1"
   },
   "dependencies": {
     "@agoric/access-token": "^0.4.17",
