@@ -5,8 +5,7 @@
   "parsers": {
     "js": "mjs"
   },
-  "main": "src/index.js",
-  "module": "src/index.js",
+  "main": "src/index.cjs",
   "engines": {
     "node": ">=14.15.0"
   },

@@ -7,12 +7,10 @@ import { TextField } from '@material-ui/core';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import * as enzyme from 'enzyme';
+import { shallow, render } from 'enzyme';
 
 // @ts-ignore path is correct for compiled output
 import { makeNatAmountInput } from '../../../dist/index.js'; // eslint-disable-line import/no-unresolved
-
-const { shallow, render } = enzyme.default || enzyme;
 
 const NatAmountInput = makeNatAmountInput({ React, TextField });
 
