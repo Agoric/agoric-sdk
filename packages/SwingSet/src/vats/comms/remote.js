@@ -34,7 +34,6 @@ export function initializeRemoteState(
 
 export function makeRemote(state, store, remoteID) {
   insistRemoteID(remoteID);
-  assert(store.get(`${remoteID}.initialized`), X`missing ${remoteID}`);
 
   function name() {
     return store.get(`${remoteID}.name`);

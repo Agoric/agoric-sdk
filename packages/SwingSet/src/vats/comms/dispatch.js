@@ -51,12 +51,11 @@ export function buildCommsDispatch(
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
-  function maybeInitializeState() {
+  function doStartVat() {
     state.maybeInitialize(controller);
   }
 
   function doDeliver(target, method, args, result) {
-    maybeInitializeState();
     // console.debug(`comms.deliver ${target} r=${result}`);
     insistCapData(args);
 
@@ -156,6 +155,7 @@ export function buildCommsDispatch(
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
       case 'startVat': {
+        doStartVat();
         break;
       }
       case 'message': {
