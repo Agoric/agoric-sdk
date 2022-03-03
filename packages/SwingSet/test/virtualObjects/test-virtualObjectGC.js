@@ -1145,3 +1145,57 @@ test.serial('verify presence weak key GC', async t => {
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
 });
+
+// To test handling of a local, non-virtual remotable *from* a virtual object,
+// we have essentially the same model as used above.  However, the model
+// presented is concerned with references *to* virtual objects, whose
+// reachability the VOM has to manage essentially on its own, and it is the
+// correctness of that management machinery that these tests have been
+// constructed to validate.  However, if a non-virtual object never interacts
+// with any virtual object, the VOM is not involved; what we need to be
+// concerned about is the subset of states in which a virtual object refers to a
+// non-virtual object (or acquires or loses such a reference), which none of the
+// above tests exercise.  In the following, the letters in the LERV notation
+// designate references to a non-VO.
+
+test.serial('VO holding non-VO', async t => {
+  const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
+    await setupLifecycleTest(t);
+  validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
+  validateDone(v);
+
+  // lerv -> Lerv  Create non-VO
+  let rp = await dispatchMessage('makeAndHoldRemotable');
+  validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
+  validateReturned(v, rp);
+  validateDone(v);
+
+  // Lerv -> LERv  Export non-VO
+  rp = await dispatchMessage('exportHeld');
+  validate(v, matchResolveOne(rp, thingRef('o+3')));
+  validateDone(v);
+
+  // LERv -> LERV  Store non-VO reference virtually
+  rp = await dispatchMessage('storeHeld');
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue(null)));
+  validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue('o+3')));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
+  validateReturned(v, rp);
+  validateDone(v);
+
+  // LERV -> LeRV  Drop the export
+  await dispatchDropExports('o+3');
+  validateDone(v);
+
+  // LeRV -> LerV  Retire the export
+  await dispatchRetireExports('o+3');
+  validateDone(v);
+
+  // LerV -> LerV  Read non-VO reference from VO and expect it to deserialize successfully
+  rp = await dispatchMessage('fetchAndHold');
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue('o+3')));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
+  validateReturned(v, rp);
+  validateDone(v);
+});

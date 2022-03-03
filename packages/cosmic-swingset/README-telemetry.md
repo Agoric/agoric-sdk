@@ -30,9 +30,6 @@ node.  To listen on http://0.0.0.0:9464/metrics use:
 OTEL_EXPORTER_PROMETHEUS_PORT=9464 ag-chain-cosmos start ...
 ```
 
-You can choose a different host than `0.0.0.0` by setting the
-`$OTEL_EXPORTER_PROMETHEUS_HOST` environment variable.
-
 ## Cosmos SDK metrics
 
 The [Cosmos SDK](https://docs.cosmos.network/) layer of the system is

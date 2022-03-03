@@ -168,11 +168,8 @@ export async function launch({
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
-  const METRIC_LABELS = { app: 'ag-chain-cosmos' };
-
   const slogCallbacks = makeSlogCallbacks({
     metricMeter,
-    labels: METRIC_LABELS,
   });
 
   console.debug(`buildSwingset`);
@@ -191,34 +188,11 @@ export async function launch({
     },
   );
 
-  const { schedulerCrankTimeHistogram, schedulerBlockTimeHistogram } =
-    exportKernelStats({
-      controller,
-      metricMeter,
-      log: console,
-      labels: METRIC_LABELS,
-    });
-
-  async function crankScheduler(policy, clock = () => Date.now()) {
-    let now = clock();
-    let crankStart = now;
-    const blockStart = now;
-
-    const instrumentedPolicy = harden({
-      ...policy,
-      crankComplete(details) {
-        const go = policy.crankComplete(details);
-        schedulerCrankTimeHistogram.record(now - crankStart);
-        crankStart = now;
-        now = clock();
-        return go;
-      },
-    });
-    await controller.run(instrumentedPolicy);
-
-    now = Date.now();
-    schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
-  }
+  const { crankScheduler } = exportKernelStats({
+    controller,
+    metricMeter,
+    log: console,
+  });
 
   async function bootstrapBlock(blockTime) {
     controller.writeSlogObject({
