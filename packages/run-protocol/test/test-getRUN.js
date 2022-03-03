@@ -20,6 +20,8 @@ import { startEconomicCommittee, startGetRun } from '../src/econ-behaviors.js';
 import { governanceBundles } from '../src/importedBundles.js';
 import * as Collect from '../src/collect.js';
 import * as testCases from './runLoC-test-case-sheet.js';
+
+// TODO: #4728 case 9: Extending LoC - unbonded (FAIL)
 import { CASES as TestData } from './getRUN-test-steps.js';
 import { CreditTerms } from '../src/getRUN.js';
 

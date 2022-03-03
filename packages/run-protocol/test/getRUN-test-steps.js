@@ -72,21 +72,6 @@ export const CASES =
       ]
     ],
     [
-      '9',
-      'Extending LoC - unbonded (FAIL)',
-      [
-        ['buyBLD', 1000n],
-        ['stakeBLD', 800n],
-        ['lienBLD', 800n],
-        ['borrowRUN', 100n],
-        ['slash', 300n],
-        ['checkBLDStaked', 500n],
-        ['borrowMoreRUN', 50n, false],
-        ['checkRUNBalance', 100n],
-        ['checkBLDLiened', 800n]
-      ]
-    ],
-    [
       '11',
       'Partial repay - unbonded ok',
       [
