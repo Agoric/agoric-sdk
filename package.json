@@ -8,6 +8,7 @@
     "packages/wallet/api",
     "packages/wallet/ui"
   ],
+  "type": "module",
   "devDependencies": {
     "@endo/eslint-config": "^0.4.6",
     "@jessie.js/eslint-plugin": "^0.1.3",
@@ -57,9 +58,6 @@
   "ava": {
     "files": [
       "packages/*/test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
     ],
     "timeout": "30m"
   },
