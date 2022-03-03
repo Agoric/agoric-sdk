@@ -160,10 +160,9 @@ struct Message {
     result: Option<PromiseID>,
 }
 enum Resolution {
-    Fulfill(ObjectID),
-    Forward(PromiseID),
-    Data(CapData),
+    Fulfill(CapData),
     Reject(CapData),
+    Forward(PromiseID),
 }
 ```
 
@@ -193,14 +192,14 @@ that first exported it into the kernel in the argument of a `syscall.send()` or
 `dispatch.deliver()`.
 
 Each row of the kernel Promise table remembers the current promise state and
-any related data. There is one unresolved state, and four resolved states
-(however we may be able to optimize away some of them, e.g. by rewriting data
-in other tables). Each contains some additional state-specific data:
+any related data. There is one unresolved state and multiple resolved states
+(some of which might be optimized away, e.g. by rewriting data in other tables).
+Each contains some additional state-specific data:
 
 * `Unresolved`: includes an optional Decider VatID, list of subscribers
   (VatIDs), and queue of pending messages
-* `Fulfilled`: includes the ObjectID with which it was fulfilled
-* `Data`: includes CapData (body+slots) with which it was fulfilled
+* `Fulfilled`: includes CapData (body+slots) with which it was fulfilled (note
+  that this can be a single ObjectID, which will often be the case)
 * `Rejected`: includes the CapData (body+slots, maybe an Error object) with
   which it was rejected
 * `Forwarded`: includes the `KernelPromiseID` to which it was forwarded
@@ -237,8 +236,7 @@ enum KernelPromise {
         decider: Option<VatID>,
         queued_messages: Vec<Message>,
     }
-    FulfilledToTarget(KernelObjectID),
-    FulfilledToData(CapData),
+    Fulfilled(CapData),
     Rejected(CapData),
 }
 
@@ -572,14 +570,14 @@ Later, when this operation comes to the front, the kernel figures out how it
 should be dispatched based upon the target (object or promise) and its
 current state:
 
-| Target  | State      | action                                          |
-| ---     | ---        | ---                                             |
-| Object  | n/a        | deliver to owning Vat                           |
-| Promise | Unresolved | deliver to Decider Vat, or queue inside promise |
-| Promise | Fulfilled  | look up fulfilled object, recurse               |
-| Promise | Forward    | look up forwarded promise, recurse              |
-| Promise | Data       | queue `CannotSendToData` rejection to result    |
-| Promise | Rejected   | queue rejection data to result                  |
+| Target  | State                   | action                                          |
+| ---     | ---                     | ---                                             |
+| Object  | n/a                     | deliver to owning Vat                           |
+| Promise | Unresolved              | deliver to Decider Vat, or queue inside promise |
+| Promise | Fulfilled, to an Object | look up fulfilled object, recurse               |
+| Promise | Fulfilled, to data      | queue `CannotSendToData` rejection to result    |
+| Promise | Rejected                | queue rejection data to result                  |
+| Promise | Forward                 | look up forwarded promise, recurse              |
 
 The state of a Promise might change (from Unresolved to some flavor of
 Resolved) between the message being placed on the queue and it finally being
@@ -624,9 +622,8 @@ whether the Promise was allocated by this Vat or a different one.
 
 The `resolution` has several forms, and we assign a different name to each.
 
-* `Fulfill(ObjectID)`: the Promise is "fulfilled" to a callable Object
-* `Data(CapData)`: the Promise is "fulfilled" to data, rather than to a callable
-  object. It is an error to send messages to data.
+* `Fulfill(CapData)`: the Promise is "fulfilled" to a callable Object or other
+  data. It is an error to send messages to data.
 * `Reject(CapData)`: the Promise is "rejected" to data which we call the
   "error object". Sending a message to a Rejected Promise causes the result
   of that message to be Rejected too, known as "rejection contagion".
@@ -653,16 +650,16 @@ When the `notify` reaches the front of the queue, the vat invoked with a
 After queueing any `notify`s, if the Promise table holds any queued messages,
 these must be dispatched according to the resolution type:
 
-* `Fulfill`: Re-queue all Messages to the new target object. The new
-  `PendingDelivery`s are appended to the back of the run-queue.
+* `Fulfill`, to an Object: Re-queue all Messages to the new target object. The
+  new `PendingDelivery`s are appended to the back of the run-queue.
+* `Fulfill`, to data: the queued Messages are discarded, however if they have a
+  `result` promise, a `CannotSendToData` error object is created, and the
+  results are Rejected with that error object
+* `Reject`: the queued Messages are discarded, but a copy of the rejection
+  data is used to Reject any `result` promises they included
 * `Forward`: All messages are re-queued to the new target promise. When they
   get to the front, they may be delivered to the deciding vat (if it has
   opted-in to pipelining) or queued in the new Promise's table entry.
-* `Data`: the queued Messages are discarded, however if they have a `result`
-  promise, a `CannotSendToData` error object is created, and the results are
-  Rejected with that error object
-* `Reject`: the queued Messages are discarded, but a copy of the rejection
-  data is used to Reject any `result` promises they included
 
 Finally, the kernel returns control to the Vat.
 
@@ -685,12 +682,10 @@ goals?)
 
 Note: we no longer have distinct syscalls or states for the different flavors
 of resolved promises. Instead, each resolved promise is recorded with a
-boolean `isRejected` flag, and a `CapData` to hold the resolution data. The
-`Fulfill` and `Data` flavors both set `isRejected = false`, and only differ
-by the contents of the resolution data. If `isRejected` is false and the data
-holds a single Object, then messages can be sent to the promise, and they will
-be passed along to the Object. Otherwise messages sent to the promise will
-result in a rejection of some form.
+boolean `isRejected` flag, and a `CapData` to hold the resolution data. If
+`isRejected` is false and the data holds a single Object, then messages can be
+sent to the promise, and they will be passed along to the Object. Otherwise
+messages sent to the promise will result in a rejection of some form.
 
 ### syscall.exit(isFailure, info)
 
@@ -753,20 +748,20 @@ subscriber.
 If the `Send` is to a Promise, the action depends upon the state of the
 promise:
 
-| State      | Action                                            |
-| ---        | ---                                               |
-| Unresolved | queue inside Promise, or deliver() to decider vat |
-| Forwarded  | process according to target Promise               |
-| Fulfilled  | deliver() to owner of fulfillment object          |
-| Data       | resolve (reject) result to CannotSendToData error |
-| Rejected   | resolve (reject) result to rejection object       |
+| State                   | Action                                            |
+| ---                     | ---                                               |
+| Unresolved              | queue inside Promise, or deliver() to decider vat |
+| Fulfilled, to an Object | deliver() to owner of fulfillment object          |
+| Fulfilled, to data      | resolve (reject) result to CannotSendToData error |
+| Rejected                | resolve (reject) result to rejection object       |
+| Forwarded               | process according to target Promise               |
 
 If the Promise is `Unresolved`, the kernel looks at its `Decider` field, and
 sees if the named Vat has opted in to pipelining or not. If so, it does a
 `dispatch.deliver()` to the named Vat. If not, the message is queued inside
 the kernel Promise object.
 
-If it is `Fulfilled` (to an object), the kernel acts as if the `Send` was to
+If it is `Fulfilled` to an Object, the kernel acts as if the `Send` was to
 the object itself. As a performance optimization, when a Promise is fulfilled
 this way, the kernel could rewrite the run-queue to replace the `target`
 fields with the object, and this case would never be encountered.
@@ -776,8 +771,8 @@ explicitly rejected, the original message is discarded, as there is nobody to
 accept it. However if the message requested a `result`, that result Promise
 must be rejected, just as if decider Vat had called
 `syscall.resolve(Reject(error))`. The rejection error is either a
-`CannotSendToData` object (for `Data`), or a copy of the Promise's own
-rejection object (for `Rejected`).
+`CannotSendToData` object (for `Fulfill` to non-Object data) or a copy of the
+Promise's own rejection object (for `Rejected`).
 
 ## Vat-Inbound Slot Translation
 
@@ -933,7 +928,7 @@ args: "[]", slots=[], result=p-2015})`.
 
 In the vat code on Vat-2, the `foo()` method returns some basic data "42".
 This causes Vat-2 to resolve the promise to data, by calling
-`dispatch.resolve(subject=p-2015, resolution=Data(body="42", slots=[]))`.
+`dispatch.resolve(subject=p-2015, resolution=Fulfill(body="42", slots=[]))`.
 
 The kernel translates the subject (`p-2015`, in its resolution capacity)
 through the calling vat's C-List into `kp24`. It confirms in the kernel
@@ -957,10 +952,10 @@ The `dispatch.resolve()` returns, and Vat-2 finishes its crank.
 The run-queue is then cycled again, and the Notify is at the top. The kernel
 uses the `subscriber` to pick the Vat-1 C-List for inbound translation, and
 the subject (`kp24`) is translated into `p+104`. The promise table is
-consulted for `kp24` to determine the resolution, in this case `Data`. The
+consulted for `kp24` to determine the resolution, in this case `Fulfill`. The
 resolved data (`42`) has no slots, so translation is trivial. The Vat-1
 dispatch function is then invoked as `dispatch.notify(subject: p+104, to:
-Data(body="42", slots=[]))`.
+Fulfill(body="42", slots=[]))`.
 
 Vat-1 looks up `p+104` in its internal tables to find the resolver function
 for the native Promise that it created at the beginning, and invokes it with
@@ -1263,7 +1258,7 @@ Vat-2 then gets a `dispatch.deliver(target=o+3001, msg={method: "foo", args:
 ### TODO: more examples
 
 * `syscall.resolve(to=Forward(p))`
-* `syscall.resolve(to=Data())`, showing how queued messages are then rejected
+* `syscall.resolve(to=Fulfill())`, showing how queued messages are then rejected
 * `syscall.resolve(to=Rejection())`, ditto
 
 ```
