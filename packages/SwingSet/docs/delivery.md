@@ -159,10 +159,14 @@ struct Message {
     args: CapData,
     result: Option<PromiseID>,
 }
-enum Resolution {
+enum ResolutionData {
     Fulfill(CapData),
     Reject(CapData),
     Forward(PromiseID),
+}
+struct Resolution {
+    subject: PromiseID,
+    resolution: ResolutionData,
 }
 ```
 
@@ -267,8 +271,8 @@ struct KernelCLists {
 ```
 
 `KernelObject` and `KernelPromise` rows are retained as long as they are
-referenced by any Vat C-Lists, any `CapData` structures or `Resolution`
-targets in the Promise table, or any target/data/result in the run-queue.
+referenced by any Vat C-Lists, any `CapData` or `ResolutionData` structures
+in the Promise table, or any target/data/result in the run-queue.
 When the last reference is removed, the row can be deleted. The ID could also
 be recycled, but it seems less confusing to simply retire the number.
 
@@ -483,7 +487,7 @@ trait Syscall {
     fn send(target: CapSlot, msg: Message);
     fn callNow(target: CapSlot, msg: Message) -> CapData;
     fn subscribe(id: PromiseID);
-    fn resolve(subject: PromiseID, to: Resolution);
+    fn resolve(resolutions: Vec<Resolution>);
     fn exit(isFailure: bool, info: CapData);
     fn vatstoreGet(key: String) -> String;
     fn vatstoreSet(key: String, value: String);
@@ -493,7 +497,7 @@ trait Syscall {
  
 trait Dispatch {
     fn deliver(target: CapSlot, msg: Message);
-    fn notify(subject: PromiseID, to: Resolution);
+    fn notify(resolutions: Vec<Resolution>);
     fn dropExports(refs: &CapSlot[]);
 }
 ```
@@ -609,8 +613,7 @@ hear about their own Promises, but it is valid.
 `syscall.resolve()` is used to resolve one or more Promises (usually just one,
 but occasionally a batch of mutually-referencing Promises must be resolved in
 a single syscall because their identifiers are aggressively retired
-immediately after translation). \[TODO: resolve inconsistency between this claim
-and [Syscall/Dispatch API](#syscalldispatch-api)]
+immediately after translation).
 
 The subject of a `syscall.resolve()` must either be a new Promise ID, or a
 pre-existing one for which the calling Vat is the Decider. The
@@ -820,7 +823,7 @@ relevance/constraints]. The Decider vat for a Promise will not generally
 subscribe themselves, since they are the ones causing the Promise to become
 resolved, so they have no need to hear about it from the kernel.
 
-The `Resolution` value of `dispatch.notify()` may contain slots, which are
+The `Resolution` values of `dispatch.notify()` may contain slots, which are
 translated just like `Message.args`.
 
 TODO: After a Vat receives notice of a Promise being resolved, we might
@@ -828,7 +831,7 @@ choose to remove that promise from the vat's C-List, and forbid the Vat from
 ever mentioning that promise again.
 
 A Vat might be informed that one Promise has been resolved to another Promise
-(`Resolution::Forward`). This new Promise might be local, or imported.
+(`ResolutionData::Forward`). This new Promise might be local, or imported.
 
 ## Sample Message Delivery
 
