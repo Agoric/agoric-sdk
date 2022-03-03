@@ -6,7 +6,7 @@ import '@endo/init';
 import { parentPort } from 'worker_threads';
 import anylogger from 'anylogger';
 
-import '../../types.js';
+import '../../types-ambient.js';
 import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';

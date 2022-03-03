@@ -20,4 +20,4 @@ export { default as buildCommand } from './devices/command/command.js';
 export { buildPlugin } from './devices/plugin/plugin.js';
 
 // eslint-disable-next-line import/export
-export * from './types-exported.js';
+export * from './types-external.js';
