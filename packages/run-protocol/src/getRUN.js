@@ -53,15 +53,22 @@ export const makeLineOfCreditKit = (
 ) => {
   const { runWanted, attestationGiven, amountLiened } =
     creditPolicy.checkOpenProposal(startSeat);
-  let closed = false;
 
   const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
   vaultSeat.incrementBy(
     startSeat.decrementBy(harden({ Attestation: attestationGiven })),
   );
-  /** NOTE: debtAmount corresponds exactly to minted RUN. */
   runMint.mintGains(harden({ RUN: runWanted }), startSeat);
-  let debtAmount = runWanted;
+  // NOTE: this record is mutable by design, anticipating
+  // the durable objects API.
+  const state = {
+    closed: false,
+    /** NOTE: debtAmount corresponds exactly to minted RUN. */
+    debtAmount: runWanted,
+    attestation: attestationGiven,
+    liened: amountLiened,
+  };
+
   zcf.reallocate(startSeat, vaultSeat);
   startSeat.exit();
 
@@ -74,12 +81,13 @@ export const makeLineOfCreditKit = (
 
     const uiState = harden({
       // TODO: interestRate: manager.getInterestRate(),
-      locked: amountLiened,
-      debt: debtAmount,
+      // TODO: "locked" terminology vs. "liened"?
+      locked: state.liened,
+      debt: state.debtAmount,
       collateralizationRatio,
     });
 
-    if (closed) {
+    if (state.closed) {
       uiUpdater.finish(uiState);
     } else {
       uiUpdater.updateState(uiState);
@@ -92,7 +100,7 @@ export const makeLineOfCreditKit = (
    * @type {OfferHandler}
    */
   const adjustBalances = seat => {
-    assert(!closed, X`line of credit must still be active`);
+    assert(!state.closed, X`line of credit must still be active`);
     const proposal = seat.getProposal();
 
     if (proposal.want.RUN) {
@@ -100,9 +108,9 @@ export const makeLineOfCreditKit = (
       const totalAttestation = proposal.give.Attestation
         ? AmountMath.add(currentAttestation, proposal.give.Attestation)
         : currentAttestation;
-      debtAmount = creditPolicy.checkBorrow(
+      state.debtAmount = creditPolicy.checkBorrow(
         totalAttestation,
-        AmountMath.add(debtAmount, proposal.want.RUN),
+        AmountMath.add(state.debtAmount, proposal.want.RUN),
       ).runWanted;
       // COMMIT
       runMint.mintGains(proposal.want, seat);
@@ -111,16 +119,16 @@ export const makeLineOfCreditKit = (
       );
       zcf.reallocate(vaultSeat, seat);
     } else if (proposal.give.RUN) {
-      const toPay = minAmt(proposal.give.RUN, debtAmount);
+      const toPay = minAmt(proposal.give.RUN, state.debtAmount);
       runMint.burnLosses(harden({ RUN: toPay }), seat);
-      debtAmount = AmountMath.subtract(debtAmount, toPay);
+      state.debtAmount = AmountMath.subtract(state.debtAmount, toPay);
     } else if (proposal.want.Attestation) {
       const currentAttestation = vaultSeat.getAmountAllocated('Attestation');
       const remainingAttestation = AmountMath.subtract(
         currentAttestation,
         proposal.want.Attestation,
       );
-      creditPolicy.checkBorrow(remainingAttestation, debtAmount);
+      creditPolicy.checkBorrow(remainingAttestation, state.debtAmount);
       // COMMIT
       seat.incrementBy(
         vaultSeat.decrementBy({ Attestation: proposal.want.Attestation }),
@@ -141,13 +149,13 @@ export const makeLineOfCreditKit = (
    * @type {OfferHandler}
    */
   const close = seat => {
-    assert(!closed, X`line of credit must still be active`);
+    assert(!state.closed, X`line of credit must still be active`);
     assertProposalShape(seat, {
       give: { RUN: null },
       want: { Attestation: null },
     });
 
-    vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: debtAmount })));
+    vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: state.debtAmount })));
     // BUG!!! TODO: track attestation balance as it gets adjusted.
     seat.incrementBy(
       vaultSeat.decrementBy(harden({ Attestation: attestationGiven })),
@@ -155,10 +163,10 @@ export const makeLineOfCreditKit = (
 
     zcf.reallocate(seat, vaultSeat);
 
-    runMint.burnLosses(harden({ RUN: debtAmount }), vaultSeat);
+    runMint.burnLosses(harden({ RUN: state.debtAmount }), vaultSeat);
     seat.exit();
-    debtAmount = AmountMath.makeEmpty(runBrand);
-    closed = true;
+    state.debtAmount = AmountMath.makeEmpty(runBrand);
+    state.closed = true;
     updateUiState();
 
     return 'RUN line of credit closed';
@@ -166,7 +174,7 @@ export const makeLineOfCreditKit = (
 
   const vault = Far('line of credit', {
     getCollateralAmount: () => amountLiened,
-    getDebtAmount: () => debtAmount,
+    getDebtAmount: () => state.debtAmount,
   });
 
   updateUiState();
@@ -306,7 +314,7 @@ const start = async (
   };
 
   const publicFacet = wrapPublicFacet(
-    Far('Line of Credit Public API', {
+    Far('getRUN Public API', {
       getIssuer: att.publicFacet.getIssuer,
       getBrand: () => att.publicFacet.getBrand,
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
