@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.26.0",
-    "ava": "^3.12.1",
+    "ava": "^4.2.0",
     "tsd": "^0.20.0"
   },
   "eslintConfig": {

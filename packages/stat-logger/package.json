@@ -20,7 +20,7 @@
     "vega-canvas": "^1.2.1"
   },
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^4.2.0"
   },
   "publishConfig": {
     "access": "public"

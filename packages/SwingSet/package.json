@@ -24,7 +24,7 @@
     "@agoric/vat-data": "^0.2.0",
     "@endo/ses-ava": "^0.2.25",
     "@types/tmp": "^0.2.0",
-    "ava": "^3.12.1",
+    "ava": "^4.2.0",
     "tmp": "^0.2.1"
   },
   "dependencies": {

@@ -34,7 +34,7 @@
     "@endo/marshal": "^0.6.7"
   },
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^4.2.0"
   },
   "files": [
     "*.js",

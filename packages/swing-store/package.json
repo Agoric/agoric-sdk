@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@endo/init": "^0.5.41",
-    "ava": "^3.12.1",
+    "ava": "^4.2.0",
     "c8": "^7.7.2"
   },
   "publishConfig": {
