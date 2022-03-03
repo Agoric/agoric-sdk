@@ -57,7 +57,7 @@
   "devDependencies": {
     "@agoric/ertp": "^0.13.3",
     "@endo/bundle-source": "^2.1.0",
-    "ava": "^3.12.1",
+    "ava": "^4.0.1",
     "c8": "^7.7.2"
   },
   "eslintConfig": {

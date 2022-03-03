@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^4.0.1"
   },
   "files": [
     "src/",

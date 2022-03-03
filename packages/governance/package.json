@@ -44,7 +44,7 @@
     "@agoric/swingset-vat": "^0.25.1",
     "@endo/bundle-source": "^2.1.0",
     "@endo/init": "^0.5.36",
-    "ava": "^3.12.1",
+    "ava": "^4.0.1",
     "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1",
     "ses": "^0.15.10"

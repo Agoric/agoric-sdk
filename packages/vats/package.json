@@ -45,7 +45,7 @@
   },
   "devDependencies": {
     "@agoric/babel-parser": "^7.6.4",
-    "ava": "^3.12.1",
+    "ava": "^4.0.1",
     "c8": "^7.7.2"
   },
   "eslintConfig": {

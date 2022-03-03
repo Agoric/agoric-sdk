@@ -17,7 +17,7 @@
     "@agoric/vats": "^0.7.0",
     "@endo/bundle-source": "^2.1.0",
     "@endo/init": "^0.5.36",
-    "ava": "^3.12.1"
+    "ava": "^4.0.1"
   },
   "dependencies": {
     "@agoric/assert": "^0.3.16",

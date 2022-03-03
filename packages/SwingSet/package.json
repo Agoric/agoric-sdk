@@ -24,7 +24,7 @@
     "@endo/compartment-mapper": "^0.7.0",
     "@endo/ses-ava": "^0.2.20",
     "@types/tmp": "^0.2.0",
-    "ava": "^3.12.1",
+    "ava": "^4.0.1",
     "tmp": "^0.2.1"
   },
   "dependencies": {
