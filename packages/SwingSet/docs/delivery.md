@@ -343,12 +343,6 @@ the Promise that came back from the transmission of an earlier message. It is
 a vital latency-reduction tool for sending multiple messages to a distant
 machine.
 
-```js
-const recordPromise = E(table).getRecord(identifier);
-const balancePromise = E(recordPromise).getBalance();
-balancePromise.then(balance => console.log(`balance: ${balance}`));
-```
-
 In SwingSet, pipelining is most (only?) useful on the Comms Vat. The local
 kernel shares a host with the local vats, so the latency is minimal. However
 two messages aimed at the same remote machine, through the Comms Vat, would
@@ -382,20 +376,11 @@ deciding Vat must re-submit all those messages back into the kernel. Vats may
 prefer to avoid deserializing the messages until their resolution is known,
 to avoid a wasteful reserialization cycle.
 
-If the deciding Vat has *not* opted into pipelining, the messages are queued
-in the kernel's Promise table entry instead. They remain there until the
+If the deciding Vat has *not* opted into pipelining, the messages are instead
+queued in the kernel's Promise table entry. They remain there until the
 deciding vat uses `syscall.resolve()` to resolve that Promise. At that point,
 the behavior depends upon the type of resolution; see the discussion of
 `syscall.resolve()` [below](#syscallresolve) for details.
-
-When a `syscall.send()` is submitted, the run-queue will have two pending
-deliveries: the first is targeting an object in some Vat, and the second targets
-the `result` PromiseID. Until the first message is delivered, the result Promise
-has no Decider, so the second message cannot be delivered. But that's ok,
-because by the time the second message gets to the front of the run queue, the
-first will have been delivered, setting the Decider of the result Promise to
-some vat, providing a place to deliver the second one (or the knowledge that the
-vat wants the kernel to queue it instead).
 
 When we implement Flows or escalators or some other priority mechanism, we
 must ensure that we don't try to deliver any message until all its
@@ -403,6 +388,24 @@ dependencies (including the target) have been resolved to some particular
 vat. A pipelining vat would learn (and probably be able to use) the Meter
 attached to the pipelined messages, whereas if these messages are queued in
 the kernel, the decider vat would not get access to those Meters.
+
+### Pipelining example
+
+```js
+const recordPromise = E(table).getRecord(identifier);
+const balancePromise = E(recordPromise).getBalance();
+balancePromise.then(balance => console.log(`balance: ${balance}`));
+```
+
+After the `syscall.send()` for `getBalance` is submitted, the run-queue will have
+two pending deliveries: the first (from `getRecord`) targets a `table` object in
+some Vat, and the second (from `getBalance`) targets the `result` PromiseID of
+the first. Until the first message is delivered, the result Promise has no
+Decider, so the second message cannot be delivered.  But that's ok, because by
+the time the second message gets to the front of the run queue, the first will
+have been delivered, setting the Decider of the result Promise to some vat,
+providing a place to deliver the second one (or the knowledge that the vat wants
+the kernel to queue it instead).
 
 ### Result Promise Summary
 
