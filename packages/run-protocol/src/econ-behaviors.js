@@ -442,7 +442,9 @@ harden(startRewardDistributor);
  */
 
 /**
- * @param {BootstrapPowers} powers
+ * @param {EconomyBootstrapPowers & WellKnownSpaces & { consume: {
+ *   client: ERef<ClientManager> // to add home.attMaker
+ * }}} powers
  * @param {Object} config
  * @param {Rational} config.ratio ratio of collateral value to available value
  * @param {Rational} config.price stake (BLD) price in RUN
