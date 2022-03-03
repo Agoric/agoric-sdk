@@ -114,6 +114,8 @@ const mockChain = genesisData => {
   /** @type {(addr: string, map: Map<string, bigint>) => bigint} */
   const qty = (addr, map) => map.get(addr) || 0n;
 
+  const max = (x, y) => (x > y ? x : y);
+
   const it = Far('simulator', {
     send: (src, dest, n) => {
       assert.typeof(dest, 'string');
@@ -125,6 +127,9 @@ const mockChain = genesisData => {
     },
     stake: (addr, ustake) => {
       bonded.set(addr, (bonded.get(addr) || 0n) + ustake);
+    },
+    slash: (addr, ustake) => {
+      bonded.set(addr, max(0n, (bonded.get(addr) || 0n) - ustake));
     },
     /** @param {Brand} stakingBrand */
     makeLienBridge: stakingBrand => {
@@ -302,77 +307,7 @@ test('getRUN API usage', async t => {
  * @type {TestCase[]}
  */
 // const TestData = [
-//   [
-//     '1, 2, 3',
-//     [
-//       // 1	Starting LoC
-//       [`buyBLD`, 10_000n],
-//       [`stakeBLD`, 3_000n],
-//       [`lienBLD`, 2_000n],
-//       [`borrowRUN`, 100n],
-//       [`checkRUNDebt`, 100n],
-//       [`checkBLDLiened`, 2_000n],
-//       [`checkRUNBalance`, 100n],
-
-//       // 2	Extending LoC
-//       [`borrowMoreRUN`, 100n],
-//       [`checkRUNDebt`, 200n],
-//       [`checkRUNBalance`, 200n],
-//       // 3	Extending LoC - more BLD required
-
-//       [`stakeBLD`, 5_000n],
-//       [`checkBLDStaked`, 8_000n],
-//       [`lienBLD`, 8_000n],
-//       [`checkBLDLiened`, 8_000n],
-//       [`borrowMoreRUN`, 1_400n],
-//       [`checkRUNDebt`, 1_600n],
-//     ],
-//   ],
-//   [
-//     `4, 5	Extending LoC - CR increases (FAIL)`,
-//     [
-//       [`buyBLD`, 80_000n],
-//       [`stakeBLD`, 80_000n],
-//       [`lienBLD`, 8_000n],
-//       [`borrowRUN`, 1_000n],
-//       [`setCollateralizationRatio`, [750n, 100n]],
-//       [`borrowMoreRUN`, 500n, false],
-//       [`checkRUNBalance`, 1_000n],
-//       [`checkBLDLiened`, 8_000n],
-//       // 5	Full repayment
-//       [`checkRUNBalance`, 1_000n],
-//       [`checkBLDLiened`, 8_000n],
-//       [`payoffRUN`, 1_000n],
-//       [`checkRUNDebt`, 0n],
-//       [`checkBLDLiened`, 0n],
-//       [`checkRUNBalance`, 0n],
-//     ],
-//   ],
-//   [
-//     `6	Partial repayment - CR remains the same`,
-//     [
-//       [`buyBLD`, 20_000n],
-//       [`stakeBLD`, 10_000n],
-//       [`lienBLD`, 10_000n],
-//       [`borrowRUN`, 1_000n],
-//       [`payDownRUN`, 50n],
-//       [`checkRUNBalance`, 950n],
-//       [`checkRUNDebt`, 950n],
-//     ],
-//   ],
-//   [
-//     `7	Partial repayment - CR increases*`,
-//     [
-//       [`buyBLD`, 12_000n],
-//       [`stakeBLD`, 10_000n],
-//       [`lienBLD`, 500n],
-//       [`borrowRUN`, 100n],
-//       [`setCollateralizationRatio`, [750n, 100n]],
-//       [`payDownRUN`, 5n],
-//       [`checkRUNBalance`, 95n],
-//       [`checkRUNDebt`, 95n],
-//     ],
-//   ],
+// ...@@@@@@
 // ];
 
 /**
@@ -467,6 +402,7 @@ const makeWorld = async t0 => {
   const driver = harden({
     buyBLD: n => founder.sendTo(bob.getAddress(), n * micro.unit),
     stakeBLD: n => bob.stake(n * micro.unit),
+    slash: n => chain.slash(bob.getAddress(), n * micro.unit),
     lienBLD: async target => {
       const current = await E(lienBridge).getAccountState(
         bob.getAddress(),
