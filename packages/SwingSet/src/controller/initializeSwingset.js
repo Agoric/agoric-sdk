@@ -7,7 +7,7 @@ import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
 
-import '../types.js';
+import '../types-ambient.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
 import { kdebugEnable } from '../lib/kdebug.js';

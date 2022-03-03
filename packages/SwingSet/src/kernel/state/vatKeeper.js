@@ -13,6 +13,8 @@ import {
   buildReachableAndVatSlot,
 } from './reachable.js';
 
+/** @typedef {import('../../types-internal.js').RecordedVatOptions} RecordedVatOptions */
+
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
 // TODO: tests rely on these numbers and haven't been updated to use names.
@@ -93,7 +95,7 @@ export function makeVatKeeper(
 
   /**
    * @param {SourceOfBundle} source
-   * @param {ManagerOptions} options
+   * @param {RecordedVatOptions} options
    */
   function setSourceAndOptions(source, options) {
     // take care with API change
