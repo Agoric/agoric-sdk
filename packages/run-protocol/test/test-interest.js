@@ -502,7 +502,7 @@ test('chargeInterest when no time elapsed', t => {
     totalDebt: AmountMath.make(brand, 10_000n),
   };
   // @ts-ignore mocks
-  const results = chargeInterest(powers, params, prior, now);
+  const results = await chargeInterest(powers, params, prior, now);
   t.deepEqual(results.compoundedInterest, prior.compoundedInterest);
   t.is(results.latestInterestUpdate, now);
   t.deepEqual(results.totalDebt, prior.totalDebt);
