@@ -152,29 +152,10 @@ Now go to http://localhost:8000/ to interact with your new solo node.
 
 Learn more about ERTP [here](https://agoric.com/documentation/ertp/guide/). 
 
-To see the contracts you've uploaded, try:
-
-```js
-E(home.uploads).list()
-```
-
-And to interact with them:
-```js
-E(
-  E(
-    E(home.uploads).get('encouragementBot')
-  ).spawn()
-).encourageMe('Person')
-```
-
 ### Initial Endowments
 
 When a client is started up, it has a few items in a record named `home`.
 * sharingService: a service that makes it possible to pass capabilities between vats
-* canvasStatePublisher: a service with the message subscribe(callback)
-* uploads: a private directory
- of contracts you've uploaded
-* registry: a public directory for published objects
 * localTimerService and chainTimerService: tools for scheduling
 * [zoe](https://agoric.com/documentation/zoe/guide/): support for contracts with Offer-Safety Enforcement
 * [contractHost](https://github.com/Agoric/Documentation): secure smart contracts
