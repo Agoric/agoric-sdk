@@ -249,6 +249,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       governanceBundles: true,
     },
   },
+
   startEconomicCommittee: {
     consume: {
       zoe: true,
