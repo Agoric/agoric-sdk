@@ -66,16 +66,14 @@ make scenario3-setup
 make scenario3-run-client
 ```
 
-[`lib/ag-solo/vats/vat-demo.js`](lib/ag-solo/vats/vat-demo.js) contains the code running a vat with the Pixel Gallery Demo.
+Objects added to `home` are created by the [vats](vats) package.
 
-Also, as part of `make scenario3-setup`, `bin/ag-solo init <directory>` get called and all the content of the [`vats`](lib/ag-solo/vats) directory gets copied to the `<directory>`
+The REPL handler is in [`repl.js`](vats/src/repl.js).
 
-The objects added to `home` are created in [`lib/ag-solo/vats/vat-demo.js`](lib/ag-solo/vats/vat-demo.js).
-
-The REPL handler is in [`lib/ag-solo/vats/vat-http.js`](lib/ag-solo/vats/vat-http.js).
-
-The HTML frontend code is pure JS/DOM (no additional libraries yet), in
-`lib/ag-solo/html/index.html` and `lib/ag-solo/html/main.js`.
+The HTML frontend code is pure JS/DOM (no additional libraries yet) in the
+[solo](solo) package, at
+[`solo/public/index.html`](solo/public/index.html) and
+[`solo/public/main.js`](solo/public/main.js).
 
 
 #### Scenario 2: a single local testnet node (develop on-chain demo)
@@ -148,25 +146,33 @@ $ make scenario0-setup
 $ make scenario0-run-client
 ```
 
-Alternatively, running the solo node from a Docker image and no local source code is described in the [top section](#agorics-cosmic-swingset).  
+Alternatively, running the solo node from a Docker image and no local source code is described in the [Testnet Tutorial](#testnet-tutorial).
 
 Now go to http://localhost:8000/ to interact with your new solo node.
 
 Learn more about ERTP [here](https://agoric.com/documentation/ertp/guide/). 
 
-To see the contracts you've uploaded [as per the README](lib/ag-solo/contracts/README-contract.md), try:
+To see the contracts you've uploaded, try:
 
 ```js
-home.uploads~.list()
-home.uploads~.get('encouragementBot')~.spawn()~.encourageMe('Person')
+E(home.uploads).list()
+```
+
+And to interact with them:
+```js
+E(
+  E(
+    E(home.uploads).get('encouragementBot')
+  ).spawn()
+).encourageMe('Person')
 ```
 
 ### Initial Endowments
 
-When a client is started up, it has a few items in a record named home.
+When a client is started up, it has a few items in a record named `home`.
 * sharingService: a service that makes it possible to pass capabilities between vats
 * canvasStatePublisher: a service with the message subscribe(callback)
-* [uploads](./lib/ag-solo/contracts/README-contract.md): a private directory
+* uploads: a private directory
  of contracts you've uploaded
 * registry: a public directory for published objects
 * localTimerService and chainTimerService: tools for scheduling
@@ -265,7 +271,7 @@ where `han` is the name of your solo vat machine that follows the blockchain.
 
 This command will prompt you for the testnet provisioning code.
 
-Then connect to http://localhost:8000 and go to the [Gallery Demo](#gallery-pixel-demo) section.
+Then connect to http://localhost:8000.
 
 If you don't have a provisioning code, or otherwise want to run the demo from the code in this directory,
 read [about the scenarios](#choose-a-scenario).
