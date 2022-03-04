@@ -14,6 +14,7 @@ import {
   makeInterestCalculator,
   SECONDS_PER_YEAR,
 } from '../src/interest.js';
+import { makeIssuerRecord } from '@agoric/zoe/src/issuerRecord';
 
 const ONE_DAY = 60n * 60n * 24n;
 const ONE_MONTH = ONE_DAY * 30n;
@@ -485,23 +486,26 @@ test('calculateCompoundedInterest', t => {
   }
 });
 
-test('chargeInterest when no time elapsed', t => {
-  const { brand } = makeIssuerKit('ducats');
+test('chargeInterest when no time elapsed', async t => {
+  const { brand, issuer } = makeIssuerKit('ducats');
   const interestRate = makeRatio(250n, brand, BASIS_POINTS);
 
   const now = BigInt(Date.now().toFixed());
-  const powers = {}; // won't be used
+  /** @type {*} */
+  const powers = {
+    mint: { getIssuerRecord: () => makeIssuerRecord(brand, issuer) },
+  };
   const params = {
     interestRate,
     chargingPeriod: ONE_DAY,
     recordingPeriod: ONE_DAY,
   };
   const prior = {
-    interestUpdate: now,
+    latestInterestUpdate: now,
     compoundedInterest: makeRatio(100n, brand),
+    /** @type {Amount<NatValue>} */
     totalDebt: AmountMath.make(brand, 10_000n),
   };
-  // @ts-ignore mocks
   const results = await chargeInterest(powers, params, prior, now);
   t.deepEqual(results.compoundedInterest, prior.compoundedInterest);
   t.is(results.latestInterestUpdate, now);

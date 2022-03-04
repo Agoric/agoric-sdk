@@ -131,11 +131,21 @@ const validatedBrand = async (mint, debt) => {
 /**
  * Charge interest accrued between `latestInterestUpdate` and `accruedUntil`.
  *
- * @param {{mint: ZCFMint, reallocateWithFee: ReallocateWithFee, poolIncrementSeat: ZCFSeat }} powers
- * @param {{interestRate: Ratio, chargingPeriod: bigint, recordingPeriod: bigint}} params
- * @param {{latestInterestUpdate: bigint, compoundedInterest: Ratio, totalDebt: Amount<NatValue>}} prior
+ * @param {{
+ *  mint: ZCFMint,
+ *  reallocateWithFee: ReallocateWithFee,
+ *  poolIncrementSeat: ZCFSeat,
+ *  seatAllocationKeyword: Keyword }} powers
+ * @param {{
+ *  interestRate: Ratio,
+ *  chargingPeriod: bigint,
+ *  recordingPeriod: bigint}} params
+ * @param {{
+ *  latestInterestUpdate: bigint,
+ *  compoundedInterest: Ratio,
+ *  totalDebt: Amount<NatValue>}} prior
  * @param {bigint} accruedUntil
- * @returns {Promise<{ compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }>}
+ * @returns {Promise<{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }>}
  */
 export const chargeInterest = async (powers, params, prior, accruedUntil) => {
   const brand = await validatedBrand(powers.mint, prior.totalDebt);
@@ -185,9 +195,8 @@ export const chargeInterest = async (powers, params, prior, accruedUntil) => {
 
   // mint that much of brand for the reward pool
   const rewarded = AmountMath.make(brand, interestAccrued);
-  const amountKeyword = await E(brand).getAllegedName();
   powers.mint.mintGains(
-    harden({ [amountKeyword]: rewarded }),
+    harden({ [powers.seatAllocationKeyword]: rewarded }),
     powers.poolIncrementSeat,
   );
   powers.reallocateWithFee(rewarded, powers.poolIncrementSeat);

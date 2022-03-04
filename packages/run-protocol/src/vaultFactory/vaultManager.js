@@ -264,7 +264,12 @@ export const makeVaultManager = (
     // Update local state with the results of charging interest
     ({ compoundedInterest, latestInterestUpdate, totalDebt } =
       await chargeInterest(
-        { mint: runMint, reallocateWithFee, poolIncrementSeat },
+        {
+          mint: runMint,
+          reallocateWithFee,
+          poolIncrementSeat,
+          seatAllocationKeyword: 'RUN',
+        },
         {
           interestRate,
           chargingPeriod: shared.getChargingPeriod(),
@@ -326,7 +331,10 @@ export const makeVaultManager = (
 
   const timeObserver = {
     updateState: updateTime =>
-      chargeAllVaults(updateTime, poolIncrementSeat).catch(console.error),
+      // XXX notify interested parties
+      chargeAllVaults(updateTime, poolIncrementSeat).catch(e =>
+        console.error('🚨 vaultManager failed to charge interest', e),
+      ),
     fail: reason => {
       zcf.shutdownWithFailure(
         assert.error(X`Unable to continue without a timer: ${reason}`),
