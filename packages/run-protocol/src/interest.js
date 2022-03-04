@@ -7,6 +7,8 @@ import {
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { E } from '@endo/far';
+import { assert, details as X } from '@agoric/assert';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
@@ -114,12 +116,20 @@ export const calculateCompoundedInterest = (
  *
  * @param {{mint: ZCFMint, reallocateWithFee: ReallocateWithFee, poolIncrementSeat: ZCFSeat }} powers
  * @param {{interestRate: Ratio, chargingPeriod: bigint, recordingPeriod: bigint}} params
- * @param {{interestUpdate: bigint, compoundedInterest: Ratio, totalDebt: Amount<NatValue>}} prior
+ * @param {{latestInterestUpdate: bigint, compoundedInterest: Ratio, totalDebt: Amount<NatValue>}} prior
  * @param {bigint} accruedUntil
- * @returns {{ compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }}
+ * @returns {Promise<{ compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }>}
  */
-export const chargeInterest = (powers, params, prior, accruedUntil) => {
-  const brand = prior.totalDebt.brand;
+export const chargeInterest = async (powers, params, prior, accruedUntil) => {
+  // Validate the brands
+  const { brand: debtBrand } = prior.totalDebt;
+  const { brand: issuerBrand } = await E(powers.mint).getIssuerRecord();
+  assert(
+    debtBrand === issuerBrand,
+    X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
+  );
+  const brand = debtBrand;
+  const brandName = await E(brand).getAllegedName();
 
   const interestCalculator = makeInterestCalculator(
     params.interestRate,
@@ -130,7 +140,7 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   // calculate delta of accrued debt
   const debtStatus = interestCalculator.calculateReportingPeriod(
     {
-      latestInterestUpdate: prior.interestUpdate,
+      latestInterestUpdate: prior.latestInterestUpdate,
       newDebt: prior.totalDebt.value,
       interest: 0n, // XXX this is always zero, doesn't need to be an option
     },
@@ -167,7 +177,7 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   // mint that much of brand for the reward pool
   const rewarded = AmountMath.make(brand, interestAccrued);
   powers.mint.mintGains(
-    harden({ [brand.getAllegedName()]: rewarded }),
+    harden({ [brandName]: rewarded }),
     powers.poolIncrementSeat,
   );
   powers.reallocateWithFee(rewarded, powers.poolIncrementSeat);

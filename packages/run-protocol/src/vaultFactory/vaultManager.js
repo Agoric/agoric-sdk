@@ -262,16 +262,17 @@ export const makeVaultManager = (
     const interestRate = shared.getInterestRate();
 
     // Update local state with the results of charging interest
-    ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
-      { mint: runMint, reallocateWithFee, poolIncrementSeat },
-      {
-        interestRate,
-        chargingPeriod: shared.getChargingPeriod(),
-        recordingPeriod: shared.getRecordingPeriod(),
-      },
-      { interestUpdate: latestInterestUpdate, compoundedInterest, totalDebt },
-      updateTime,
-    ));
+    ({ compoundedInterest, latestInterestUpdate, totalDebt } =
+      await chargeInterest(
+        { mint: runMint, reallocateWithFee, poolIncrementSeat },
+        {
+          interestRate,
+          chargingPeriod: shared.getChargingPeriod(),
+          recordingPeriod: shared.getRecordingPeriod(),
+        },
+        { latestInterestUpdate, compoundedInterest, totalDebt },
+        updateTime,
+      ));
 
     /** @type {AssetState} */
     const payload = harden({
