@@ -84,7 +84,7 @@ export const ImportIssuerWithoutContext = ({
             variant="standard"
             InputProps={{
               startAdornment: (
-                <InputAdornment position="start">board:</InputAdornment>
+                <InputAdornment position="start">board0</InputAdornment>
               ),
             }}
           />

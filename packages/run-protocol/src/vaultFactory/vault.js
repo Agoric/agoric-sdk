@@ -4,18 +4,16 @@ import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
+  calculateCurrentDebt,
   getAmountOut,
   makeRatioFromAmounts,
+  reverseInterest,
   ceilMultiplyBy,
   floorMultiplyBy,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import { makeNotifierKit } from '@agoric/notifier';
 
-import {
-  invertRatio,
-  multiplyRatios,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
@@ -62,6 +60,19 @@ const validTransitions = {
   [VaultPhase.CLOSED]: [],
 };
 
+/**
+ * @typedef {Object} VaultUIState
+ * @property {Amount<NatValue>} locked Amount of Collateral locked
+ * @property {{run: Amount<NatValue>, interest: Ratio}} debtSnapshot Debt of 'run' at the point the compounded interest was 'interest'
+ * @property {Ratio} interestRate Annual interest rate charge
+ * @property {Ratio} liquidationRatio
+ * @property {VAULT_PHASE} vaultState
+ */
+
+/**
+ *
+ * @param {InnerVault | null} inner
+ */
 const makeOuterKit = inner => {
   const { updater: uiUpdater, notifier } = makeNotifierKit();
 
@@ -83,7 +94,7 @@ const makeOuterKit = inner => {
     },
     // for status/debugging
     getCollateralAmount: () => assertActive(vault).getCollateralAmount(),
-    getDebtAmount: () => assertActive(vault).getDebtAmount(),
+    getCurrentDebt: () => assertActive(vault).getCurrentDebt(),
     getNormalizedDebt: () => assertActive(vault).getNormalizedDebt(),
     getLiquidationSeat: () => assertActive(vault).getLiquidationSeat(),
   });
@@ -94,7 +105,7 @@ const makeOuterKit = inner => {
  * @typedef {Object} InnerVaultManagerBase
  * @property {(oldDebt: Amount, newDebt: Amount) => void} applyDebtDelta
  * @property {() => Brand} getCollateralBrand
- * @property {ReallocateReward} reallocateReward
+ * @property {ReallocateWithFee} reallocateWithFee
  * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
  * @property {(oldDebt: Amount, oldCollateral: Amount, vaultId: VaultId) => void} updateVaultPriority
  */
@@ -102,7 +113,7 @@ const makeOuterKit = inner => {
 /**
  * @param {ContractFacet} zcf
  * @param {InnerVaultManagerBase & GetVaultParams} manager
- * @param {Notifier<unknown>} managerNotifier
+ * @param {Notifier<import('./vaultManager').AssetState>} assetNotifier
  * @param {VaultId} idInManager
  * @param {ZCFMint} runMint
  * @param {ERef<PriceAuthority>} priceAuthority
@@ -110,7 +121,7 @@ const makeOuterKit = inner => {
 export const makeInnerVault = (
   zcf,
   manager,
-  managerNotifier,
+  assetNotifier,
   idInManager, // will go in state
   runMint,
   priceAuthority,
@@ -161,7 +172,7 @@ export const makeInnerVault = (
   /**
    * Snapshot of the debt and compounded interest when the principal was last changed
    *
-   * @type {{run: Amount, interest: Ratio}}
+   * @type {{run: Amount<NatValue>, interest: Ratio}}
    */
   let debtSnapshot = {
     run: AmountMath.makeEmpty(runBrand, 'nat'),
@@ -176,8 +187,8 @@ export const makeInnerVault = (
    */
   const updateDebtSnapshot = newDebt => {
     // update local state
+    // @ts-expect-error newDebt is actually Amount<NatValue>
     debtSnapshot = { run: newDebt, interest: manager.getCompoundedInterest() };
-    trace(`${idInManager} updateDebtSnapshot`, newDebt.value, debtSnapshot);
   };
 
   /**
@@ -205,15 +216,12 @@ export const makeInnerVault = (
    * @see getNormalizedDebt
    * @returns {Amount<NatValue>}
    */
-  // TODO rename to getActualDebtAmount throughout codebase https://github.com/Agoric/agoric-sdk/issues/4540
-  const getDebtAmount = () => {
-    // divide compounded interest by the snapshot
-    const interestSinceSnapshot = multiplyRatios(
+  const getCurrentDebt = () => {
+    return calculateCurrentDebt(
+      debtSnapshot.run,
+      debtSnapshot.interest,
       manager.getCompoundedInterest(),
-      invertRatio(debtSnapshot.interest),
     );
-
-    return floorMultiplyBy(debtSnapshot.run, interestSinceSnapshot);
   };
 
   /**
@@ -225,13 +233,9 @@ export const makeInnerVault = (
    * @see getActualDebAmount
    * @returns {Amount<NatValue>} as if the vault was open at the launch of this manager, before any interest accrued
    */
-  // Not in use until https://github.com/Agoric/agoric-sdk/issues/4540
   const getNormalizedDebt = () => {
     assert(debtSnapshot);
-    return floorMultiplyBy(
-      debtSnapshot.run,
-      invertRatio(debtSnapshot.interest),
-    );
+    return reverseInterest(debtSnapshot.run, debtSnapshot.interest);
   };
 
   const getCollateralAllocated = seat =>
@@ -287,7 +291,6 @@ export const makeInnerVault = (
       liquidationRatio: manager.getLiquidationMargin(),
       debtSnapshot,
       locked: getCollateralAmount(),
-      debt: getDebtAmount(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
       // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
       vaultState: newPhase,
@@ -321,15 +324,6 @@ export const makeInnerVault = (
         throw Error(`unreachable vault phase: ${phase}`);
     }
   };
-  // XXX Echo notifications from the manager through all vaults
-  // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
-  observeNotifier(managerNotifier, {
-    updateState: () => {
-      if (phase !== VaultPhase.CLOSED) {
-        updateUiState();
-      }
-    },
-  });
 
   /**
    * Call must check for and remember shortfall
@@ -366,7 +360,7 @@ export const makeInnerVault = (
 
     // you must pay off the entire remainder but if you offer too much, we won't
     // take more than you owe
-    const currentDebt = getDebtAmount();
+    const currentDebt = getCurrentDebt();
     assert(
       AmountMath.isGTE(runReturned, currentDebt),
       X`You must pay off the entire debt ${runReturned} > ${currentDebt}`,
@@ -482,7 +476,7 @@ export const makeInnerVault = (
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
       // TODO this is the same as in `transferRun`
-      const currentDebt = getDebtAmount();
+      const currentDebt = getCurrentDebt();
       const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
         ? currentDebt
         : proposal.give.RUN;
@@ -507,7 +501,7 @@ export const makeInnerVault = (
       );
     } else if (proposal.give.RUN) {
       // We don't allow runDebt to be negative, so we'll refund overpayments
-      const currentDebt = getDebtAmount();
+      const currentDebt = getCurrentDebt();
       const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
         ? currentDebt
         : proposal.give.RUN;
@@ -524,7 +518,7 @@ export const makeInnerVault = (
    */
   const loanFee = (proposal, runAfter) => {
     let newDebt;
-    const currentDebt = getDebtAmount();
+    const currentDebt = getCurrentDebt();
     let toMint = AmountMath.makeEmpty(runBrand);
     let fee = AmountMath.makeEmpty(runBrand);
     if (proposal.want.RUN) {
@@ -549,7 +543,7 @@ export const makeInnerVault = (
     // the updater will change if we start a transfer
     const oldUpdater = outerUpdater;
     const proposal = clientSeat.getProposal();
-    const oldDebt = getDebtAmount();
+    const oldDebt = getCurrentDebt();
     const oldCollateral = getCollateralAmount();
 
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
@@ -613,10 +607,11 @@ export const makeInnerVault = (
 
     // mint to vaultSeat, then reallocate to reward and client, then burn from
     // vaultSeat. Would using a separate seat clarify the accounting?
+    // TODO what if there isn't anything to mint?
     runMint.mintGains(harden({ RUN: toMint }), vaultSeat);
     transferCollateral(clientSeat);
     transferRun(clientSeat);
-    manager.reallocateReward(fee, vaultSeat, clientSeat);
+    manager.reallocateWithFee(fee, vaultSeat, clientSeat);
 
     // parent needs to know about the change in debt
     refreshLoanTracking(oldDebt, oldCollateral, newDebt);
@@ -641,7 +636,8 @@ export const makeInnerVault = (
     outerUpdater = updater;
     updateUiState();
     return harden({
-      uiNotifier: vault.getNotifier(),
+      assetNotifier,
+      vaultNotifier: vault.getNotifier(),
       invitationMakers: Far('invitation makers', {
         AdjustBalances: vault.makeAdjustBalancesInvitation,
         CloseVault: vault.makeCloseInvitation,
@@ -651,13 +647,16 @@ export const makeInnerVault = (
     });
   };
 
-  /** @type {OfferHandler} */
+  /**
+   * @param {ZCFSeat} seat
+   * @param {InnerVault} innerVault
+   */
   const initVaultKit = async (seat, innerVault) => {
     assert(
       AmountMath.isEmpty(debtSnapshot.run),
       X`vault must be empty initially`,
     );
-    const oldDebt = getDebtAmount();
+    const oldDebt = getCurrentDebt();
     const oldCollateral = getCollateralAmount();
     trace('initVaultKit start: collateral', { oldDebt, oldCollateral });
 
@@ -687,7 +686,7 @@ export const makeInnerVault = (
     vaultSeat.incrementBy(
       seat.decrementBy(harden({ Collateral: collateralAmount })),
     );
-    manager.reallocateReward(fee, vaultSeat, seat);
+    manager.reallocateWithFee(fee, vaultSeat, seat);
 
     refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
 
@@ -721,7 +720,7 @@ export const makeInnerVault = (
 
     // for status/debugging
     getCollateralAmount,
-    getDebtAmount,
+    getCurrentDebt,
     getNormalizedDebt,
     getLiquidationSeat: () => liquidationSeat,
   });
@@ -729,6 +728,5 @@ export const makeInnerVault = (
   return innerVault;
 };
 
-/**
- * @typedef {ReturnType<typeof makeInnerVault>} InnerVault
- */
+/** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
+/** @typedef {Awaited<ReturnType<InnerVault['initVaultKit']>>} VaultKit */

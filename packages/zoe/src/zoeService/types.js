@@ -172,6 +172,7 @@
  */
 
 /**
+ * @template {object} [OR=any]
  * @callback Offer
  *
  * To redeem an invitation, the user normally provides a proposal (their
@@ -188,28 +189,25 @@
  * values are the actual payments to be escrowed. A payment is
  * expected for every rule under `give`.
  *
- * @param {ERef<Invitation>} invitation
+ * @param {ERef<Invitation<OR>>} invitation
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} paymentKeywordRecord
  * @param {Object=} offerArgs
- * @returns {Promise<UserSeat>} seat
+ * @returns {Promise<UserSeat<OR>>} seat
  */
 
 /**
+ * @template {Object} [OR=any]
  * @typedef {Object} UserSeat
  * @property {() => Promise<Allocation>} getCurrentAllocation
  * TODO remove getCurrentAllocation query
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
- * @property {() => Promise<OfferResult>} getOfferResult
+ * @property {() => Promise<OR>} getOfferResult
  * @property {() => void=} tryExit
  * @property {() => Promise<boolean>} hasExited
  * @property {() => Promise<Notifier<Allocation>>} getNotifier
- */
-
-/**
- * @typedef {any} OfferResult
  */
 
 /**

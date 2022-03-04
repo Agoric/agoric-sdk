@@ -26,7 +26,7 @@ const trace = makeTracer('LIQ');
  */
 const liquidate = async (zcf, vault, burnLosses, strategy, collateralBrand) => {
   vault.liquidating();
-  const runDebt = vault.getDebtAmount();
+  const runDebt = vault.getCurrentDebt();
   const { brand: runBrand } = runDebt;
   const liquidationSeat = vault.getInnerLiquidationSeat();
   const vaultSeat = vault.getVaultSeat();

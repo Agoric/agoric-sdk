@@ -21,6 +21,7 @@ import {
   insistVatID,
   makeDeviceID,
   makeVatID,
+  makeUpgradeID,
 } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
 import {
@@ -46,6 +47,7 @@ const enableKernelGC = true;
 // vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
 // vat.nextID = $NN
+// vat.nextUpgradeID = $NN
 // device.names = JSON([names..])
 // device.name.$NAME = $deviceID = d$NN
 // device.nextID = $NN
@@ -289,6 +291,7 @@ export default function makeKernelKeeper(
     kvStore.set('vat.names', '[]');
     kvStore.set('vat.dynamicIDs', '[]');
     kvStore.set('vat.nextID', `${FIRST_VAT_ID}`);
+    kvStore.set('vat.nextUpgradeID', `1`);
     kvStore.set('device.names', '[]');
     kvStore.set('device.nextID', `${FIRST_DEVICE_ID}`);
     kvStore.set('ko.nextID', `${FIRST_OBJECT_ID}`);
@@ -304,12 +307,39 @@ export default function makeKernelKeeper(
     kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
   }
 
-  function getDefaultManagerType() {
-    return getRequired('kernel.defaultManagerType');
+  /**
+   *
+   * @param {string} mt
+   * @returns { asserts mt is ManagerType }
+   */
+  function insistManagerType(mt) {
+    assert(
+      [
+        'local',
+        'nodeWorker',
+        'node-subprocess',
+        'xs-worker',
+        'xs-worker-no-gc',
+      ].includes(mt),
+    );
+    return undefined; // hush JSDoc
   }
 
+  function getDefaultManagerType() {
+    const mt = getRequired('kernel.defaultManagerType');
+    insistManagerType(mt);
+    return mt;
+  }
+
+  /**
+   *
+   * @returns { number | 'never' }
+   */
   function getDefaultReapInterval() {
-    return getRequired('kernel.defaultReapInterval');
+    const r = getRequired('kernel.defaultReapInterval');
+    const ri = r === 'never' ? r : Number.parseInt(r, 10);
+    assert(ri === 'never' || typeof ri === 'number', `k.dri is '${ri}'`);
+    return ri;
   }
 
   const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
@@ -549,7 +579,7 @@ export default function makeKernelKeeper(
 
   function getKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
-    const p = { state: kvStore.get(`${kernelSlot}.state`) };
+    const p = { state: getRequired(`${kernelSlot}.state`) };
     switch (p.state) {
       case undefined:
         assert.fail(X`unknown kernelPromise '${kernelSlot}'`);
@@ -1038,6 +1068,12 @@ export default function makeKernelKeeper(
     return JSON.parse(getRequired('vat.dynamicIDs'));
   }
 
+  function allocateUpgradeID() {
+    const nextID = Nat(BigInt(getRequired(`vat.nextUpgradeID`)));
+    kvStore.set(`vat.nextUpgradeID`, `${nextID + 1n}`);
+    return makeUpgradeID(nextID);
+  }
+
   // As refcounts are decremented, we accumulate a set of krefs for which
   // action might need to be taken:
   //   * promises which are now resolved and unreferenced can be deleted
@@ -1514,6 +1550,8 @@ export default function makeKernelKeeper(
     getDynamicVats,
     getStaticVats,
     getDevices,
+
+    allocateUpgradeID,
 
     getDeviceIDForName,
     allocateDeviceIDForNameIfNeeded,

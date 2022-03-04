@@ -38,7 +38,10 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 
 const { details: X } = assert;
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ContractFacet} zcf
+ * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
+ */
 export const start = async (zcf, privateArgs) => {
   const {
     ammPublicFacet,
@@ -79,13 +82,13 @@ export const start = async (zcf, privateArgs) => {
    * We provide an easy way for the vaultManager to add rewards to
    * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
    *
-   * @type {ReallocateReward}
+   * @type {ReallocateWithFee}
    */
-  const reallocateReward = (amount, fromSeat, otherSeat = undefined) => {
+  const reallocateWithFee = (fee, fromSeat, otherSeat = undefined) => {
     rewardPoolSeat.incrementBy(
       fromSeat.decrementBy(
         harden({
-          RUN: amount,
+          RUN: fee,
         }),
       ),
     );
@@ -134,7 +137,7 @@ export const start = async (zcf, privateArgs) => {
       priceAuthority,
       loanTimingParams,
       vaultParamManager.getParams,
-      reallocateReward,
+      reallocateWithFee,
       timerService,
       liquidationStrategy,
       startTimeStamp,
@@ -208,9 +211,9 @@ export const start = async (zcf, privateArgs) => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
 
-  /** @type {VaultFactoryPublicFacet} */
   const publicFacet = Far('vaultFactory public facet', {
-    makeLoanInvitation: makeVaultInvitation, // deprecated
+    /** @deprecated use makeVaultInvitation instead */
+    makeLoanInvitation: makeVaultInvitation,
     makeVaultInvitation,
     getCollaterals,
     getRunIssuer: () => runIssuer,
@@ -258,3 +261,4 @@ export const start = async (zcf, privateArgs) => {
     publicFacet,
   });
 };
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} VaultFactoryPublicFacet */

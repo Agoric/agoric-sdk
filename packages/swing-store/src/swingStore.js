@@ -55,6 +55,8 @@ export function makeSnapStoreIO() {
  *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
  * }} SwingStore
+ *
+ * @typedef {SwingStore & { snapStore: ReturnType<typeof makeSnapStore> }} SwingAndSnapStore
  */
 
 /**
@@ -105,7 +107,7 @@ export function makeSnapStoreIO() {
  * @param {boolean} forceReset  If true, initialize the database to an empty state
  * @param {Object} options  Configuration options
  *
- * @returns {SwingStore}
+ * @returns {SwingAndSnapStore}
  */
 function makeSwingStore(dirPath, forceReset, options) {
   let txn = null;
@@ -340,7 +342,7 @@ export function initSwingStore(dirPath, options = {}) {
  *   swing store instance.
  * @param {Object?} options  Optional configuration options
  *
- * @returns {SwingStore}
+ * @returns {SwingAndSnapStore}
  */
 export function openSwingStore(dirPath, options = {}) {
   assert.typeof(dirPath, 'string');

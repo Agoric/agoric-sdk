@@ -100,7 +100,7 @@ test('first', async t => {
   const { issuer: cIssuer, mint: cMint, brand: cBrand } = collateralKit;
 
   t.deepEqual(
-    vault.getDebtAmount(),
+    vault.getCurrentDebt(),
     AmountMath.make(runBrand, 74n),
     'borrower owes 74 RUN',
   );
@@ -153,7 +153,7 @@ test('first', async t => {
   trace('returnedCollateral', returnedCollateral, cIssuer);
   const returnedAmount = await cIssuer.getAmountOf(returnedCollateral);
   t.deepEqual(
-    vault.getDebtAmount(),
+    vault.getCurrentDebt(),
     AmountMath.make(runBrand, 71n),
     'debt reduced to 71 RUN',
   );
@@ -188,7 +188,7 @@ test('bad collateral', async t => {
     'vault should hold 50 Collateral',
   );
   t.deepEqual(
-    vault.getDebtAmount(),
+    vault.getCurrentDebt(),
     AmountMath.make(runBrand, 74n),
     'borrower owes 74 RUN',
   );

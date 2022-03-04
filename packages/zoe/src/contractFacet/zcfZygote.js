@@ -22,7 +22,7 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import '../../exported.js';
 import '../internal-types.js';
 
-import '@agoric/swingset-vat/src/types.js';
+import '@agoric/swingset-vat/src/types-ambient.js';
 
 /** @type {MakeZCFZygote} */
 export const makeZCFZygote = (

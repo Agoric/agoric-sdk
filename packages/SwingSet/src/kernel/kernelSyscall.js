@@ -15,7 +15,7 @@ export function makeKernelSyscallHandler(tools) {
     doSend,
     doSubscribe,
     doResolve,
-    setTerminationTrigger,
+    requestTermination,
   } = tools;
 
   const { kvStore } = kernelKeeper;
@@ -30,7 +30,7 @@ export function makeKernelSyscallHandler(tools) {
   function exit(vatID, isFailure, info) {
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallExit');
-    setTerminationTrigger(vatID, false, !!isFailure, info);
+    requestTermination(vatID, !!isFailure, info);
     return OKNULL;
   }
 

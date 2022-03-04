@@ -19,7 +19,13 @@ test('install bundle', async t => {
 
   const bundleFile = new URL('./bootstrap-bundles.js', import.meta.url)
     .pathname;
-  const bundle = await bundleSource(bundleFile);
+  // during the transition to endo's new format, preemptively ignore the
+  // hash it provides
+  let bundle = await bundleSource(bundleFile);
+  bundle = harden({
+    moduleFormat: bundle.moduleFormat,
+    endoZipBase64: bundle.endoZipBase64,
+  });
 
   // my code to compute the bundleID
   const bundleID = await computeBundleID(bundle);

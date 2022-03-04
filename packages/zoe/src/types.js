@@ -42,5 +42,8 @@
  */
 
 /**
+ * XXX offer() return value at runtime is implied by the invitation but it's not typed
+ *
+ * @template {object} [OR=unknown]
  * @typedef {Payment} Invitation
  */

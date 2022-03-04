@@ -28,7 +28,8 @@ FAKE_CHAIN_DELAY = 0
 NUM_SOLOS?=1
 BASE_PORT?=8000
 
-OTEL_EXPORTER_PROMETHEUS_PORT = 9461
+OTEL_EXPORTER_PROMETHEUS_PORT = 9464
+SOLO_OTEL_EXPORTER_PROMETHEUS_PORT = 9465
 GAS_ADJUSTMENT = 1.2
 
 AGC_START_ARGS =
@@ -187,7 +188,9 @@ t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/co
 		$(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
 		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		bootstrap $$addr 1urun
-	cd t1/$(BASE_PORT) && $(AG_SOLO) start
+	cd t1/$(BASE_PORT) && \
+		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT) \
+		$(AG_SOLO) start
 
 scenario2-core-eval:
 	$(AGCH) --home=t1/bootstrap tx gov submit-proposal swingset-core-eval \
@@ -222,6 +225,7 @@ scenario3-run:
 	cd t3 && \
 		NODE_OPTIONS= $(AG_SOLO) set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI
 	cd t3 && \
+		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT) \
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AG_SOLO) start
 

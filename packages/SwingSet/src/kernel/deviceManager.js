@@ -3,7 +3,7 @@ import { assert } from '@agoric/assert';
 import { makeDeviceSlots } from './deviceSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 
-import '../types.js';
+import '../types-ambient.js';
 
 /* The DeviceManager is much simpler than the VatManager, because the feature
  * set is smaller:
