@@ -308,6 +308,35 @@ with vats to expose the functionality for user vats.
 * `vats.vatAdmin` works with `devices.vatAdmin` to allow the creation of new
   "dynamic vats" at runtime.
 
+### Device Access to Kernel Hooks
+
+Internal devices like vat-admin need to invoke kernel-provided endowments in
+a way that translates device-side objects into the correct kernel references
+(krefs). To facilitate this, the kernel can configure internal devices with a
+named list of "kernel hooks". Each one is a kernel function which the device
+can invoke by calling `syscall.callKernelHook(hookname, argsCapData)`. The
+hook name must be a string that matches a configured hook. The second
+argument must be a dref-space CapData structure, which will be translated to
+kref-space and provide to the hook function. The hook can return capdata: it
+will be translated back into device-space and returned to the device.
+`callKernelHook` is invoked synchronously.
+
+To configure these, the kernel should put the functions on
+`deviceHooks.get(deviceName)[hookName]` during or after `start()`. For unit
+tests, they can be added later, by calling
+`controller.debug.addDeviceHook(deviceName, hookName, hook)`.
+
+The kernel-hosted hooks receive kref-based arguments, and the translation
+process will add new device exports to the c-list, but remember that the
+refcounts are not incremented. If the kernel hook needs to hold onto an
+object it gets from the device, it should establish its own refcount.
+
+References returned from the kernel hook will also add device imports to the
+c-list, and the refcounts on them will be handled by the device in the usual
+fashion. Currently, that means the device increments the refcount and never
+drops it again: devices hold on to everything forever (until we implement
+some form of GC within devices).
+
 ## Devices in the Swingset Source Tree
 
 The Swingset source tree includes source code for several useful devices.

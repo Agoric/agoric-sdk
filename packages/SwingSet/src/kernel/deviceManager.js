@@ -52,6 +52,12 @@ export default function makeDeviceManager(
       const dso = harden(['vatstoreDelete', key]);
       deviceSyscallHandler(dso);
     },
+    callKernelHook: (name, args) => {
+      const dso = harden(['callKernelHook', name, args]);
+      const result = deviceSyscallHandler(dso);
+      insistCapData(result);
+      return result;
+    },
   });
 
   let dispatch;

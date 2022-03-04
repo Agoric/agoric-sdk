@@ -16,6 +16,7 @@ export function makeKernelSyscallHandler(tools) {
     doSubscribe,
     doResolve,
     requestTermination,
+    deviceHooks,
   } = tools;
 
   const { kvStore } = kernelKeeper;
@@ -298,6 +299,21 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
+  // callKernelHook is only available to devices
+
+  function callKernelHook(deviceID, hookName, args) {
+    const hooks = deviceHooks.get(deviceID);
+    const hook = hooks[hookName];
+    assert(hook, `device ${deviceID} has no hook named ${hookName}`);
+    insistCapData(args);
+    /** @type { SwingSetCapData } */
+    const hres = hook(args);
+    insistCapData(hres);
+    /** @type { KernelSyscallResult } */
+    const ksr = harden(['ok', hres]);
+    return ksr;
+  }
+
   /**
    * @param { KernelSyscallObject } ksc
    * @returns {  KernelSyscallResult }
@@ -352,6 +368,10 @@ export function makeKernelSyscallHandler(tools) {
       case 'retireExports': {
         const [_, ...args] = ksc;
         return retireExports(...args);
+      }
+      case 'callKernelHook': {
+        const [_, ...args] = ksc;
+        return callKernelHook(...args);
       }
       default:
         assert.fail(X`unknown vatSyscall type ${ksc[0]}`);
