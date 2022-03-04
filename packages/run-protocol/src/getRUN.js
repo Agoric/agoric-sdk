@@ -33,6 +33,7 @@ export const CreditTerms = {
 const minAmt = (x, y) => (AmountMath.isGTE(x, y) ? y : x);
 
 /**
+ *
  * @typedef {Object} LineOfCreditKit
  * @property {Notifier<GetRunUIState>} uiNotifier
  * @property {{

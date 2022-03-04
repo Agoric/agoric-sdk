@@ -110,10 +110,7 @@ export const setupAmmServices = async (
   brand.produce.RUN.resolve(centralR.brand);
   issuer.produce.RUN.resolve(centralR.issuer);
 
-  await Promise.all([
-    startEconomicCommittee(space, electorateTerms),
-    setupAmm(space),
-  ]);
+  await Promise.all([startEconomicCommittee(space), setupAmm(space)]);
 
   const installs = await Collect.allValues({
     amm: installation.consume.amm,

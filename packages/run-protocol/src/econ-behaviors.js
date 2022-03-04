@@ -437,6 +437,7 @@ export const startRewardDistributor = async ({
 harden(startRewardDistributor);
 
 /**
+ *
  * @typedef { import('@endo/eventual-send/').Unpromise<T> } Unpromise<T>
  * @template T
  */
