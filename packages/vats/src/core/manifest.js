@@ -170,6 +170,13 @@ export const CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
     home: { produce: { faucet: true } },
   },
+  makeStakeReporter: {
+    consume: { bridgeManager: true },
+    produce: { lienBridge: true },
+    brand: {
+      consume: { BLD: true },
+    },
+  },
 });
 
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({

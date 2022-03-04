@@ -21,6 +21,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 
 import * as Collect from '@agoric/run-protocol/src/collect.js';
+import { AmountMath } from '@agoric/ertp';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as BRIDGE_ID from '../bridge-ids.js';
 
@@ -450,4 +451,79 @@ export const setupNetworkProtocols = async ({
     addPegasusTransferPort(vats, pegasus, nameAdmin),
     E(client).assignBundle([_a => ({ ibcport: makePorts() })]),
   ]);
+};
+
+/**
+ * per golang/cosmos/x/lien/lien.go
+ *
+ * @typedef { 'bonded' | 'liened' | 'locked' | 'total' | 'unbonding' } AccountProperty
+ */
+const XLien = {
+  name: 'lien',
+  LIEN_GET_ACCOUNT_STATE: 'LIEN_GET_ACCOUNT_STATE',
+  denom: 'ubld', // @@err...
+};
+
+/**
+ * @typedef { Record<AccountProperty, T> & { currentTime: bigint } } AccountState<T>
+ * @template T
+ */
+
+/**
+ * @param {BootstrapSpace} powers
+ */
+export const makeStakeReporter = async ({
+  consume: { bridgeManager: bridgeP },
+  produce: { lienBridge },
+  brand: {
+    consume: { BLD: bldBrandP },
+  },
+}) => {
+  const [stake, bridgeManager] = await Promise.all([bldBrandP, bridgeP]);
+  if (!bridgeManager) {
+    return;
+  }
+  /** @param {string} numeral */
+  const toStake = numeral => AmountMath.make(stake, BigInt(numeral));
+
+  /** @type {StakingAuthority} */
+  const it = Far('stakeReporter', {
+    setLiened: async (address, amount) => {
+      assert(
+        amount.brand === stake,
+        X`Cannot setLiened for ${amount.brand}. Expected ${stake}.`,
+      );
+      await E(bridgeManager).toBridge(XLien.name, {
+        type: 'LIEN_SET_LIENED',
+        address,
+        denom: XLien.denom,
+        amount: `${amount.value}`,
+      });
+    },
+    getAccountState: async (address, wantedBrand) => {
+      assert(
+        wantedBrand === stake,
+        X`Cannot getAccountState for ${wantedBrand}. Expected ${stake}.`,
+      );
+      /** @type { AccountState<string> } */
+      const { currentTime, bonded, liened, locked, total, unbonding } = await E(
+        bridgeManager,
+      ).toBridge(XLien.name, {
+        type: XLien.LIEN_GET_ACCOUNT_STATE,
+        address,
+        denom: XLien.denom,
+        amount: '0',
+      });
+      return harden({
+        bonded: toStake(bonded),
+        liened: toStake(liened),
+        locked: toStake(locked),
+        total: toStake(total),
+        unbonding: toStake(unbonding),
+        currentTime: BigInt(currentTime),
+      });
+    },
+  });
+
+  lienBridge.resolve(it);
 };
