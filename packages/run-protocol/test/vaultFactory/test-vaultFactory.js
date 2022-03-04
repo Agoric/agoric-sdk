@@ -11,7 +11,6 @@ import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
-  calculateCurrentDebt,
   makeRatio,
   ceilMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -34,6 +33,7 @@ import {
 import { startVaultFactory } from '../../src/econ-behaviors.js';
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
+import { calculateCurrentDebt } from '../../src/interest-math.js';
 
 // #region Support
 

@@ -4,10 +4,8 @@ import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
-  calculateCurrentDebt,
   getAmountOut,
   makeRatioFromAmounts,
-  reverseInterest,
   ceilMultiplyBy,
   floorMultiplyBy,
   floorDivideBy,
@@ -18,6 +16,7 @@ import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
+import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 
 const { details: X, quote: q } = assert;
 

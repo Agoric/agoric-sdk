@@ -21,7 +21,6 @@ export { natSafeMath } from './safeMath.js';
 
 export { makeStateMachine } from './stateMachine.js';
 
-export * from './interest.js';
 export * from './statistics.js';
 
 export {
