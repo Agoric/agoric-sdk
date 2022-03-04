@@ -215,7 +215,7 @@ harden(extractPowers);
  *
  */
 export const makeAgoricNamesAccess = (
-  log = console.debug,
+  log = () => {}, // console.debug
   reserved = agoricNamesReserved,
 ) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
