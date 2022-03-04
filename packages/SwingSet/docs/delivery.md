@@ -525,7 +525,10 @@ Some invocation patterns are valid, but unlikely to be useful:
 In some places, `dispatch.deliver()` is named `message`: we're still in the
 process of refactoring and unifying the codebase.
 
-## Vat-Outbound Slot Translation
+
+<a id="vat-outbound-slot-translation"></a>
+
+## Vat-Outbound (Vat-to-Kernel) Slot Translation
 
 Inside the implementations of all syscall methods (`send` and `resolve`), the
 Vat-specific argument slots are first mapped into kernel-space identifiers by
@@ -772,7 +775,10 @@ must be rejected, just as if decider Vat had called
 `CannotSendToData` object (for `Fulfill` to non-Object data) or a copy of the
 Promise's own rejection object (for `Rejected`).
 
-## Vat-Inbound Slot Translation
+
+<a id="vat-inbound-slot-translation"></a>
+
+## Vat-Inbound (Kernel-to-Vat) Slot Translation
 
 Any slots in messages from the kernel must be translated into identifiers
 specific to the target Vat, by looking them up in the target Vat's C-List. If
