@@ -65,11 +65,11 @@ async function launch(zoeP, sourceRoot) {
   );
   const {
     runMint,
-    collateralKit: { mint: collateralMint, brand: collaterlBrand },
+    collateralKit: { mint: collateralMint, brand: collateralBrand },
   } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const collateral50 = AmountMath.make(collaterlBrand, 50n);
+  const collateral50 = AmountMath.make(collateralBrand, 50n);
   const proposal = harden({
     give: { Collateral: collateral50 },
     want: { RUN: AmountMath.make(runBrand, 70n) },

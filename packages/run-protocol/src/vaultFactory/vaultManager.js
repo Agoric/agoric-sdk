@@ -28,10 +28,7 @@ import {
   INTEREST_RATE_KEY,
   CHARGING_PERIOD_KEY,
 } from './params.js';
-import {
-  calculateCompoundedInterest,
-  makeInterestCalculator,
-} from './interest.js';
+import { chargeInterest } from '../interest.js';
 
 const { details: X } = assert;
 
@@ -126,6 +123,7 @@ export const makeVaultManager = (
 
   /**
    * timestamp of most recent update to interest
+   *
    * @type {bigint}
    */
   let latestInterestUpdate = startTimeStamp;
@@ -262,52 +260,24 @@ export const makeVaultManager = (
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
     trace('chargeAllVaults', { updateTime });
     const interestRate = shared.getInterestRate();
-    const interestCalculator = makeInterestCalculator(
-      interestRate,
-      shared.getChargingPeriod(),
-      shared.getRecordingPeriod(),
-    );
 
-    // calculate delta of accrued debt
-    const debtStatus = interestCalculator.calculateReportingPeriod(
-      {
-        latestInterestUpdate,
-        newDebt: totalDebt.value,
-        interest: 0n, // XXX this is always zero, doesn't need to be an option
-      },
-      updateTime,
-    );
-    const interestAccrued = debtStatus.interest;
-
-    // done if none
-    if (interestAccrued === 0n) {
-      trace('chargeAllVaults skipped due to no interest accrued');
-      return;
-    }
-
-    // NB: This method of inferring the compounded rate from the ratio of debts
-    // acrrued suffers slightly from the integer nature of debts. However in
-    // testing with small numbers there's 5 digits of precision, and with large
-    // numbers the ratios tend towards ample precision. Because this calculation
-    // is over all debts of the vault the numbers will be reliably large.
-    compoundedInterest = calculateCompoundedInterest(
-      compoundedInterest,
-      totalDebt.value,
-      debtStatus.newDebt,
-    );
-    // totalDebt += interestAccrued
-    totalDebt = AmountMath.add(
-      totalDebt,
-      AmountMath.make(runBrand, interestAccrued),
-    );
-
-    // mint that much RUN for the reward pool
-    const rewarded = AmountMath.make(runBrand, interestAccrued);
-    runMint.mintGains(harden({ RUN: rewarded }), poolIncrementSeat);
-    reallocateWithFee(rewarded, poolIncrementSeat);
-
-    // update running tally of total debt against this collateral
-    ({ latestInterestUpdate } = debtStatus);
+    // Update local state with the results of charging interest
+    ({ compoundedInterest, latestInterestUpdate, totalDebt } =
+      await chargeInterest(
+        {
+          mint: runMint,
+          reallocateWithFee,
+          poolIncrementSeat,
+          seatAllocationKeyword: 'RUN',
+        },
+        {
+          interestRate,
+          chargingPeriod: shared.getChargingPeriod(),
+          recordingPeriod: shared.getRecordingPeriod(),
+        },
+        { latestInterestUpdate, compoundedInterest, totalDebt },
+        updateTime,
+      ));
 
     /** @type {AssetState} */
     const payload = harden({
@@ -361,7 +331,10 @@ export const makeVaultManager = (
 
   const timeObserver = {
     updateState: updateTime =>
-      chargeAllVaults(updateTime, poolIncrementSeat).catch(console.error),
+      // XXX notify interested parties
+      chargeAllVaults(updateTime, poolIncrementSeat).catch(e =>
+        console.error('🚨 vaultManager failed to charge interest', e),
+      ),
     fail: reason => {
       zcf.shutdownWithFailure(
         assert.error(X`Unable to continue without a timer: ${reason}`),

@@ -24,6 +24,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     const runIssuer = await E(vaultFactory).getRunIssuer();
     const runBrand = await E(runIssuer).getBrand();
 
+    /** @type {UserSeat<VaultKit>} */
     const loanSeat = await E(zoe).offer(
       E(vaultFactory).makeLoanInvitation(),
       harden({
@@ -35,9 +36,11 @@ const build = async (log, zoe, brands, payments, timer) => {
       }),
     );
 
-    const { vault } = await E(loanSeat).getOfferResult();
+    const { assetNotifier, vault } = await E(loanSeat).getOfferResult();
+    const firstNotif = await E(assetNotifier).getUpdateSince();
     log(`Alice owes ${q(await E(vault).getCurrentDebt())} after borrowing`);
     await E(timer).tick();
+    await E(assetNotifier).getUpdateSince(firstNotif.updateCount);
     log(`Alice owes ${q(await E(vault).getCurrentDebt())} after interest`);
   };
 

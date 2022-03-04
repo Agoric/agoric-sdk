@@ -2,17 +2,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
+import { makeIssuerRecord } from '@agoric/zoe/src/issuerRecord.js';
 import {
   calculateCompoundedInterest,
+  chargeInterest,
   makeInterestCalculator,
   SECONDS_PER_YEAR,
-} from '../../src/vaultFactory/interest.js';
+} from '../src/interest.js';
 
 const ONE_DAY = 60n * 60n * 24n;
 const ONE_MONTH = ONE_DAY * 30n;
@@ -482,4 +484,33 @@ test('calculateCompoundedInterest', t => {
       `For ${startingDebt} at (${rateNum}/${rateDen})^${charges}, expected ${expected}`,
     );
   }
+});
+
+test('chargeInterest when no time elapsed', async t => {
+  const { brand, issuer } = makeIssuerKit('ducats');
+  const interestRate = makeRatio(250n, brand, BASIS_POINTS);
+
+  const now = BigInt(Date.now().toFixed());
+  /** @type {*} */
+  const powers = {
+    mint: {
+      getIssuerRecord: () =>
+        makeIssuerRecord(brand, issuer, { assetKind: AssetKind.NAT }),
+    },
+  };
+  const params = {
+    interestRate,
+    chargingPeriod: ONE_DAY,
+    recordingPeriod: ONE_DAY,
+  };
+  const prior = {
+    latestInterestUpdate: now,
+    compoundedInterest: makeRatio(100n, brand),
+    /** @type {Amount<NatValue>} */
+    totalDebt: AmountMath.make(brand, 10_000n),
+  };
+  const results = await chargeInterest(powers, params, prior, now);
+  t.deepEqual(results.compoundedInterest, prior.compoundedInterest);
+  t.is(results.latestInterestUpdate, now);
+  t.deepEqual(results.totalDebt, prior.totalDebt);
 });

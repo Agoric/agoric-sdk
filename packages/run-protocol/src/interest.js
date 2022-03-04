@@ -1,14 +1,14 @@
 // @ts-check
 
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/callSpread/types.js';
+import { AmountMath } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   makeRatio,
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import './types.js';
+import { E } from '@endo/far';
+import { assert, details as X } from '@agoric/assert';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
@@ -110,4 +110,100 @@ export const calculateCompoundedInterest = (
     makeRatio(newDebt, brand, priorDebt, brand),
   );
   return quantize(compounded, COMPOUNDED_INTEREST_DENOMINATOR);
+};
+
+/**
+ *
+ *
+ * @param {ZCFMint} mint
+ * @param {Amount} debt
+ */
+const validatedBrand = async (mint, debt) => {
+  const { brand: debtBrand } = debt;
+  const { brand: issuerBrand } = await E(mint).getIssuerRecord();
+  assert(
+    debtBrand === issuerBrand,
+    X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
+  );
+  return issuerBrand;
+};
+
+/**
+ * Charge interest accrued between `latestInterestUpdate` and `accruedUntil`.
+ *
+ * @param {{
+ *  mint: ZCFMint,
+ *  reallocateWithFee: ReallocateWithFee,
+ *  poolIncrementSeat: ZCFSeat,
+ *  seatAllocationKeyword: Keyword }} powers
+ * @param {{
+ *  interestRate: Ratio,
+ *  chargingPeriod: bigint,
+ *  recordingPeriod: bigint}} params
+ * @param {{
+ *  latestInterestUpdate: bigint,
+ *  compoundedInterest: Ratio,
+ *  totalDebt: Amount<NatValue>}} prior
+ * @param {bigint} accruedUntil
+ * @returns {Promise<{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }>}
+ */
+export const chargeInterest = async (powers, params, prior, accruedUntil) => {
+  const brand = await validatedBrand(powers.mint, prior.totalDebt);
+
+  const interestCalculator = makeInterestCalculator(
+    params.interestRate,
+    params.chargingPeriod,
+    params.recordingPeriod,
+  );
+
+  // calculate delta of accrued debt
+  const debtStatus = interestCalculator.calculateReportingPeriod(
+    {
+      latestInterestUpdate: prior.latestInterestUpdate,
+      newDebt: prior.totalDebt.value,
+      interest: 0n, // XXX this is always zero, doesn't need to be an option
+    },
+    accruedUntil,
+  );
+  const interestAccrued = debtStatus.interest;
+
+  // done if none
+  if (interestAccrued === 0n) {
+    return {
+      compoundedInterest: prior.compoundedInterest,
+      latestInterestUpdate: debtStatus.latestInterestUpdate,
+      totalDebt: prior.totalDebt,
+    };
+  }
+
+  // NB: This method of inferring the compounded rate from the ratio of debts
+  // acrrued suffers slightly from the integer nature of debts. However in
+  // testing with small numbers there's 5 digits of precision, and with large
+  // numbers the ratios tend towards ample precision.
+  // TODO adopt banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
+  const compoundedInterest = calculateCompoundedInterest(
+    prior.compoundedInterest,
+    prior.totalDebt.value,
+    debtStatus.newDebt,
+  );
+
+  // totalDebt += interestAccrued
+  const totalDebt = AmountMath.add(
+    prior.totalDebt,
+    AmountMath.make(brand, interestAccrued),
+  );
+
+  // mint that much of brand for the reward pool
+  const rewarded = AmountMath.make(brand, interestAccrued);
+  powers.mint.mintGains(
+    harden({ [powers.seatAllocationKeyword]: rewarded }),
+    powers.poolIncrementSeat,
+  );
+  powers.reallocateWithFee(rewarded, powers.poolIncrementSeat);
+
+  return {
+    compoundedInterest,
+    latestInterestUpdate: debtStatus.latestInterestUpdate,
+    totalDebt,
+  };
 };
