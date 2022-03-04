@@ -3,19 +3,28 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
-import { subtractOrMakeEmpty } from './helpers.js';
-
 const { details: X } = assert;
 
 // TODO: Make the attestation contract more generic by allowing this
 // to be parameterized
 
+// If x is greater than or equal to y, subtract. If not, return empty.
+const subtractOrMakeEmpty = (x, y) => {
+  if (AmountMath.isGTE(x, y)) {
+    return AmountMath.subtract(x, y);
+  } else {
+    return AmountMath.makeEmptyFromAmount(x);
+  }
+};
+harden(subtractOrMakeEmpty);
+
 /**
  * Assert the cosmos-specific prerequisites
  *
- * @param {ERef<{getAccountState: (address: Address, brand: Brand) => {total: Amount, bonded: Amount, locked: Amount,
- * currentTime: Timestamp}}>} stakeReporter
- * @param {StoredTime} storedTime
+ * TODO: consider optimizing this by relying on the
+ * Cosmos SDK golang layer to enforce these constraints.
+ *
+ * @param {ERef<StakingAuthority>} stakeReporter
  * @param {GetLiened} getLiened
  * @param {Brand} underlyingBrand
  * @param {Address} address
@@ -23,7 +32,6 @@ const { details: X } = assert;
  */
 const assertPrerequisites = async (
   stakeReporter,
-  storedTime,
   getLiened,
   underlyingBrand,
   address,
@@ -36,9 +44,6 @@ const assertPrerequisites = async (
   // AWAIT ///
 
   let { total, bonded, locked } = accountState;
-  const { currentTime } = accountState;
-  assert.typeof(currentTime, 'bigint');
-  storedTime.updateTime(currentTime);
 
   total = AmountMath.coerce(underlyingBrand, total);
   bonded = AmountMath.coerce(underlyingBrand, bonded);
@@ -50,7 +55,7 @@ const assertPrerequisites = async (
   // NOTE: the total (and other values in the accountState) may
   // be less than the amount liened, due to slashing affecting the
   // cosmos balances but not affecting the amount liened.
-  const liened = getLiened(address, currentTime, underlyingBrand);
+  const liened = getLiened(address, underlyingBrand);
 
   const unliened = subtractOrMakeEmpty(total, liened);
   const bondedAndUnliened = subtractOrMakeEmpty(bonded, liened);
@@ -74,8 +79,6 @@ const assertPrerequisites = async (
     AmountMath.isGTE(unlockedAndUnliened, amountToLien),
     X`Only ${unlockedAndUnliened} was unlocked and unliened, but an attestation was attempted for ${amountToLien}`,
   );
-
-  return currentTime;
 };
 harden(assertPrerequisites);
 export { assertPrerequisites };

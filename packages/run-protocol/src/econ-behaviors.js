@@ -6,19 +6,24 @@ import {
   makeGovernedInvitation,
   CONTRACT_ELECTORATE,
   makeGovernedNat,
+  makeGovernedRatio,
 } from '@agoric/governance';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
-import { makeGovernedTerms } from './vaultFactory/params.js';
+import {
+  makeElectorateParams,
+  makeGovernedTerms,
+} from './vaultFactory/params.js';
 
 import '../exported.js';
 
 import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
 
 import * as Collect from './collect.js';
+import { CreditTerms } from './getRUN.js';
 
 const { entries } = Object;
 
@@ -32,7 +37,7 @@ const DEFAULT_PROTOCOL_FEE = 6n;
 const CENTRAL_DENOM_NAME = 'urun';
 
 /**
- * @param {EconomyBootstrapPowers} powers
+ * @param {WellKnownSpaces & EconomyBootstrapPowers } powers
  * @param {{ committeeName: string, committeeSize: number }} electorateTerms
  */
 export const startEconomicCommittee = async (
@@ -69,7 +74,7 @@ export const startEconomicCommittee = async (
 };
 harden(startEconomicCommittee);
 
-/** @param { EconomyBootstrapPowers } powers */
+/** @param { WellKnownSpaces & EconomyBootstrapPowers } powers */
 export const setupAmm = async ({
   consume: {
     chainTimerService,
@@ -174,7 +179,7 @@ export const startPriceAuthority = async ({
 harden(startPriceAuthority);
 
 /**
- * @param { EconomyBootstrapPowers } powers
+ * @param { WellKnownSpaces & EconomyBootstrapPowers } powers
  * @param { Object } config
  * @param { LoanTiming } config.loanParams
  */
@@ -430,3 +435,150 @@ export const startRewardDistributor = async ({
   );
 };
 harden(startRewardDistributor);
+
+/**
+ * @typedef { import('@endo/eventual-send/').Unpromise<T> } Unpromise<T>
+ * @template T
+ */
+
+/**
+ * TODO: refactor vats/core/types.js like this
+ *
+ * @template T
+ * @typedef {{
+ *   consume: { [P in keyof T]: ERef<T[P]> },
+ *   produce: { [P in keyof T]: Producer<T[P]> },
+ * }} PromiseMarket
+ */
+
+/**
+ * @typedef {EconomyBootstrapPowers & WellKnownSpaces & PromiseMarket<{
+ *   getRUNBundle: SourceBundle,
+ *   client: ClientManager,
+ *   lienBridge: StakingAuthority,
+ * }>} GetRunBootstrapPowers
+ */
+
+/**
+ * @param {GetRunBootstrapPowers } powers
+ * @param {Object} config
+ * @param {Rational} config.ratio ratio of collateral value to available value
+ * @param {Rational} config.price stake (BLD) price in RUN
+ * @typedef {[bigint, bigint]} Rational
+ * @typedef {Unpromise<ReturnType<typeof import('./getRUN.js').start>>} StartGetRun
+ */
+export const startGetRun = async (
+  {
+    consume: {
+      zoe,
+      // ISSUE: is there some reason Zoe shouldn't await this???
+      feeMintAccess: feeMintAccessP,
+      getRUNBundle,
+      lienBridge,
+      client,
+      chainTimerService,
+      economicCommitteeCreatorFacet,
+    },
+    // @ts-ignore TODO: add to BootstrapPowers
+    produce: { getRUNCreatorFacet, getRUNGovernorCreatorFacet },
+    installation: {
+      consume: { contractGovernor },
+      produce: { getRUN: getRUNinstallR },
+    },
+    instance: {
+      consume: { economicCommittee },
+      produce: { getRUN: getRUNinstanceR },
+    },
+    brand: {
+      consume: { BLD: bldBrandP, RUN: runBrandP },
+      produce: { Attestation: attestationBrandR },
+    },
+    issuer: {
+      consume: { BLD: bldIssuer },
+      produce: { Attestation: attestationIssuerR },
+    },
+  },
+  config = { ratio: [5n, 1n], price: [125n, 100n] },
+) => {
+  const bundle = await getRUNBundle;
+  const [feeMintAccess, bldBrand, runBrand, governor, installation, timer] =
+    await Promise.all([
+      feeMintAccessP,
+      bldBrandP,
+      runBrandP,
+      contractGovernor,
+      E(zoe).install(bundle),
+      chainTimerService,
+    ]);
+  /** @type {(r: Rational, b?: Brand) => Ratio} */
+  const pairToRatio = ([n, d], brand2 = undefined) =>
+    makeRatio(n, runBrand, d, brand2);
+  const collateralPrice = pairToRatio(config.price, bldBrand);
+  const collateralizationRatio = pairToRatio(config.ratio);
+
+  const installations = {
+    governor,
+    getRUN: installation,
+  };
+
+  const poserInvitationP = E(
+    economicCommitteeCreatorFacet,
+  ).getPoserInvitation();
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
+
+  // t.log({ electorateCreatorFacet, electorateInstance });
+  // TODO: use config arg
+  const main = harden({
+    [CreditTerms.CollateralPrice]: makeGovernedRatio(collateralPrice),
+    [CreditTerms.CollateralizationRatio]: makeGovernedRatio(
+      collateralizationRatio,
+    ),
+    ...makeElectorateParams(electorateInvitationAmount),
+  });
+
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess}} */
+  const governorFacets = await E(zoe).startInstance(
+    installations.governor,
+    {},
+    {
+      timer,
+      economicCommittee,
+      governedContractInstallation: installations.getRUN,
+      governed: harden({
+        terms: { main },
+        issuerKeywordRecord: { Stake: bldIssuer },
+        privateArgs: { feeMintAccess, initialPoserInvitation, lienBridge },
+      }),
+    },
+    harden({ economicCommitteeCreatorFacet }),
+  );
+
+  const governedInstance = await E(governorFacets.creatorFacet).getInstance();
+  /** @type {ERef<StartGetRun['publicFacet']>} */
+  const publicFacet = E(zoe).getPublicFacet(governedInstance);
+  const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
+
+  // @ts-expect-error TODO: fix governance type wrappers
+  const attIssuer = E(publicFacet).getIssuer();
+  const attBrand = await E(attIssuer).getBrand();
+
+  getRUNCreatorFacet.resolve(creatorFacet);
+  getRUNGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
+  getRUNinstallR.resolve(installation);
+  getRUNinstanceR.resolve(governedInstance);
+  attestationBrandR.resolve(attBrand);
+  attestationIssuerR.resolve(attIssuer);
+  return Promise.all([
+    E(client).assignBundle([
+      address => ({
+        // @ts-expect-error threading types thru governance is WIP
+        attMaker: E(creatorFacet).getAttMaker(address),
+      }),
+    ]),
+  ]);
+};
+harden(startGetRun);
