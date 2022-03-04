@@ -2,19 +2,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
+import { makeIssuerRecord } from '@agoric/zoe/src/issuerRecord.js';
 import {
   calculateCompoundedInterest,
   chargeInterest,
   makeInterestCalculator,
   SECONDS_PER_YEAR,
 } from '../src/interest.js';
-import { makeIssuerRecord } from '@agoric/zoe/src/issuerRecord';
 
 const ONE_DAY = 60n * 60n * 24n;
 const ONE_MONTH = ONE_DAY * 30n;
@@ -493,7 +493,10 @@ test('chargeInterest when no time elapsed', async t => {
   const now = BigInt(Date.now().toFixed());
   /** @type {*} */
   const powers = {
-    mint: { getIssuerRecord: () => makeIssuerRecord(brand, issuer) },
+    mint: {
+      getIssuerRecord: () =>
+        makeIssuerRecord(brand, issuer, { assetKind: AssetKind.NAT }),
+    },
   };
   const params = {
     interestRate,
