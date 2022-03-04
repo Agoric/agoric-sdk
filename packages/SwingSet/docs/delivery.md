@@ -831,7 +831,7 @@ A Vat might be informed that one Promise has been resolved to another Promise
 ## Sample Message Delivery
 
 This section follows a variety of messages are they are sent from Vat-1 to
-Vat-2. Syntax like `foo!bar(baz)` is used to indicate a message to Object or
+Vat-2. Syntax like `foo~.bar(baz)` is used to indicate a message to Object or
 Promise `foo` with method "bar" and args `[ baz ]`.
 
 ### no arguments, resolve to data
@@ -848,7 +848,7 @@ Vat-2 that we'll name `bob`.
 * Vat-2 C-List:
   * `v2.o+2001 <-> ko1` (export of bob)
 
-Vat-1 does `p1 = bob!foo()`. This causes the lower layers of Bob's vat to
+Vat-1 does `p1 = bob~.foo()`. This causes the lower layers of Bob's vat to
 allocate a new local promise/resolver ID (for the result `p1`), say it
 chooses `104`, and then invokes `syscall.send(target=o-1001, msg={method:
 "foo", args: "[]", slots=[], result=p+104})`. Vat-1 remembers `p+104` as the
@@ -857,28 +857,28 @@ identifier for the result Promise. We assume that Vat-1 uses `p1` later (i.e.
 
 
 ```
-+-- Vat 1 ---+   +- Vat 2 --+      +- Vat 3 --+
-|            |   |          |      |          |
-|p1=bob!foo()|   |   vat    |      |   vat    |
-|            |   |   code   |      |   code   |
-|            |   |          |      |          |
-|            |   |          |      |          |
-| ---------- |   | -------- |      | -------- |
-|            |   |          |      |          |
-|  send()    |   | deliver  |      | support  |
-|    |       |   |   ^      |      |  layer   |
-|    |       |   |   |      |      |          |
-+----|-------+   +---|------+      +-syscall--+
-+----|-------+---+---|------+------+-dispatch-+-------+
-|    v       |   |   |      |      |          |       |
-| c-lists    |   | c-lists  |      | c-lists  |       |
-|    |       |   |   ^      |      |          |       |
-|    |               |                                |
-|    |               |                            >-v |
-|    \-> run-queue --/  object-table   event-loop | | |
-|                       promise-table             ^-< |
-|                                                     |
-+------------------- Kernel --------------------------+
++--- Vat 1 ---+   +- Vat 2 --+      +- Vat 3 --+
+|             |   |          |      |          |
+|p1=bob~.foo()|   |   vat    |      |   vat    |
+|             |   |   code   |      |   code   |
+|             |   |          |      |          |
+|             |   |          |      |          |
+| ----------- |   | -------- |      | -------- |
+|             |   |          |      |          |
+|   send()    |   | deliver  |      | support  |
+|     |       |   |   ^      |      |  layer   |
+|     |       |   |   |      |      |          |
++-----|-------+   +---|------+      +-syscall--+
++-----|-------+---+---|------+------+-dispatch-+-------+
+|     v       |   |   |      |      |          |       |
+|  c-lists    |   | c-lists  |      | c-lists  |       |
+|     |       |   |   ^      |      |          |       |
+|     |               |                                |
+|     |               |                            >-v |
+|     \-> run-queue --/  object-table   event-loop | | |
+|                        promise-table             ^-< |
+|                                                      |
++-------------------- Kernel --------------------------+
 ```
 
 The `syscall.send()` is mapped into the kernel through the Vat-1 C-List. The
@@ -964,9 +964,9 @@ for the native Promise that it created at the beginning, and invokes it with
 
 ### Pipelined Send
 
-Suppose Vat-1 did `bob!foo()!bar()`, which sends `bar` to the Promise
-returned by the initial `bob!foo()`. This is Promise Pipelining, and `bar` is
-supposed to be sent into the Vat which owns the result of `bob!foo()` (which
+Suppose Vat-1 did `bob~.foo()~.bar()`, which sends `bar` to the Promise
+returned by the initial `bob~.foo()`. This is Promise Pipelining, and `bar` is
+supposed to be sent into the Vat which owns the result of `bob~.foo()` (which
 will be the same Vat that owns `bob`, namely Vat-2). Vat-2 has opted into
 receiving pipelined messages.
 
@@ -1026,7 +1026,7 @@ resolve.
 
 ### Forwarding Queued Messages
 
-Imagine the previous scenario (`bob!foo()!bar()`), but now `bob` resolves the
+Imagine the previous scenario (`bob~.foo()~.bar()`), but now `bob` resolves the
 `foo()` result promise to point at a third object `carol` in Vat-3. The
 relevant kernel state looks like:
 
@@ -1098,7 +1098,7 @@ and Vat-3 gets
 ### Pipelined send to a non-Comms vat
 
 Now let us suppose Vat-2 has *not* elected to accept pipelined messages (i.e.
-it is not the Comms Vat). When Vat-1 does `bob!foo()!bar()`, the `bar` should
+it is not the Comms Vat). When Vat-1 does `bob~.foo()~.bar()`, the `bar` should
 be queued inside the kernel Promise, rather than being delivered to Vat-2.
 
 Again, the two `send` calls will look like:
@@ -1197,7 +1197,7 @@ these, plus a local Promise `p4`, to `carol`.
 * Vat-3 C-List:
   * `v3.o+3001 <-> ko2` (export of carol)
 
-Vat-1 now does `p3 = make_promise(); p4 = carol!foo(alice, bob, carol, p2, p3)`.
+Vat-1 now does `p3 = make_promise(); p4 = carol~.foo(alice, bob, carol, p2, p3)`.
 
 The `make_promise()` creates a regular Vat-Code promise (a native Javascript
 Promise). Nothing special happens until the `foo()` is processed into a
@@ -1264,7 +1264,7 @@ Vat-2 then gets a `dispatch.deliver(target=o+3001, msg={method: "foo", args:
 
 ```
 p1 = make_promise();
-x!foo(p1);
+x~.foo(p1);
 function foo(arg) {
   return p1;
 }
@@ -1431,28 +1431,28 @@ lack of a single central kernel:
 ### Comms Example
 
 ```
-+- Left Vat -+   +- Left  --+      +- Right --+    +-Right Vat+
-|            |   |  Comms   |      |  Comms   |    |          |
-|p1=bob!foo()|   |          |      |          |    |          |
-|            |   |  comms ----------> comms   |    |          |
-|            |   |  code    |      |  code    |    | bob.foo()|
-|            |   |          |      |          |    |          |
-| ---------- |   | -------- |      | -------- |    | -------- |
-|            |   |          |      |          |    |          |
-|  send()    |   | deliver  |      |  send()  |    | deliver  |
-|    |       |   |   ^      |      |   |      |    |   ^      |
-|    |       |   |   |      |      |   |      |    |   |      |
-+----|-------+   +---|------+      +---|------+    +---|------+
-+----|-------+---+---|------+-+  +-+---|------+----+---|------+-+
-|    v       |   |   |      | |  | |   v      |    |   |      | |
-| c-lists    |   | c-lists  | |  | | c-lists  |    | c-lists  | |
-|    |       |   |   ^      | |  | |   |      |    |   |      | |
-|    |               |        |  |     |               |        |
-|    |               |        |  |     |               |        |
-|    \-> run-queue --/        |  |     \-> run-queue --/        |
-|                             |  |                              |
-|                             |  |                              |
-+--------- Left Kernel -------+  +----- Right Kernel -----------+
++- Left Vat --+   +- Left  --+      +- Right --+    +-Right Vat+
+|             |   |  Comms   |      |  Comms   |    |          |
+|p1=bob~.foo()|   |          |      |          |    |          |
+|             |   |  comms ----------> comms   |    |          |
+|             |   |  code    |      |  code    |    | bob.foo()|
+|             |   |          |      |          |    |          |
+| ----------- |   | -------- |      | -------- |    | -------- |
+|             |   |          |      |          |    |          |
+|   send()    |   | deliver  |      |  send()  |    | deliver  |
+|     |       |   |   ^      |      |   |      |    |   ^      |
+|     |       |   |   |      |      |   |      |    |   |      |
++-----|-------+   +---|------+      +---|------+    +---|------+
++-----|-------+---+---|------+-+  +-+---|------+----+---|------+-+
+|     v       |   |   |      | |  | |   v      |    |   |      | |
+|  c-lists    |   | c-lists  | |  | | c-lists  |    | c-lists  | |
+|     |       |   |   ^      | |  | |   |      |    |   |      | |
+|     |               |        |  |     |               |        |
+|     |               |        |  |     |               |        |
+|     \-> run-queue --/        |  |     \-> run-queue --/        |
+|                              |  |                              |
+|                              |  |                              |
++--------- Left Kernel --------+  +----- Right Kernel -----------+
 ```
 
 Initial conditions:
@@ -1478,7 +1478,7 @@ Initial conditions:
 * right-vat (id=4) kernel C-List
   * `v4.o+5001 <-> ko2` (export of real bob)
 
-left-vat does `p1 = bob!foo()`. Left kernel accepts `syscall.send()` and
+left-vat does `p1 = bob~.foo()`. Left kernel accepts `syscall.send()` and
 the run-queue gets `Send(target=ko1, msg={name: foo, result=kp24})`, which
 eventually comes to the front and is delivered to left-comms. The left-kernel
 tables just before `dispatch.deliver()` is called will look like:
