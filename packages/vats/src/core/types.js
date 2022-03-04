@@ -123,15 +123,15 @@
 /**
  * @typedef {{
  *   issuer: |
- *     'RUN' | 'BLD',
+ *     'RUN' | 'BLD' | 'Attestation',
  *   installation: |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
- *     'amm' | 'VaultFactory' | 'liquidate' | 'getRUN' |
+ *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
  *     'Pegasus' | 'reserve',
  *   instance: |
  *     'economicCommittee' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' | 'liquidate' |
- *     'getRUN' | 'getRUNGovernor' |
+ *     'runStake' | 'runStakeGovernor' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
  *     'USD',
@@ -202,7 +202,7 @@
  *     ammGovernorCreatorFacet: Producer<unknown>,
  *     chainTimerService: Producer<ERef<TimerService>>,
  *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
- *     getRUNBundle: Producer<{ moduleFormat: string }>,
+ *     runStakeBundle: Producer<{ moduleFormat: string }>,
  *     ammBundle: Producer<SourceBundle>,
  *     reserveBundle: Producer<SourceBundle>,
  *     reservePublicFacet: Producer<unknown>,
