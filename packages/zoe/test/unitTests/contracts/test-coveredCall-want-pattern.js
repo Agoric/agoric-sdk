@@ -26,14 +26,27 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.plan(24);
   // Setup the environment
   const timer = buildManualTimer(console.log);
-  const { moolaR, simoleanR, bucksR, moola, simoleans, bucks, zoe } = setup();
+  const {
+    moolaR,
+    simoleanR,
+    bucksR,
+    moola,
+    simoleans,
+    bucks,
+    zoe,
+    vatAdminState,
+  } = setup();
   // Pack the contract.
   const coveredCallBundle = await bundleSource(coveredCallRoot);
 
-  const coveredCallInstallation = await E(zoe).install(coveredCallBundle);
+  vatAdminState.installBundle('b1-coveredcall', coveredCallBundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
   const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
-  const swapInstallationId = await E(zoe).install(atomicSwapBundle);
+  vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
+  const swapInstallationId = await E(zoe).installBundleID('b1-atomicswap');
 
   // Setup Alice
   // Alice starts with 3 moola

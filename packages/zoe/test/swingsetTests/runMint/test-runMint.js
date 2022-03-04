@@ -24,6 +24,7 @@ test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   const step2 = Date.now();
   const contractBundles = {};
+  const contractNames = [];
   await Promise.all(
     CONTRACT_FILES.map(async settings => {
       let bundleName;
@@ -36,7 +37,8 @@ test.before(async t => {
       }
       const source = `${dirname}/../../${contractPath}`;
       const bundle = await bundleSource(source);
-      contractBundles[bundleName] = bundle;
+      contractBundles[bundleName] = { bundle };
+      contractNames.push(bundleName);
     }),
   );
   const step3 = Date.now();
@@ -52,10 +54,10 @@ test.before(async t => {
   const bootstrapSource = `${dirname}/bootstrap.js`;
   vats.bootstrap = {
     bundle: await bundleSource(bootstrapSource),
-    parameters: { contractBundles }, // argv will be added to this
+    parameters: { contractNames }, // argv will be added to this
   };
   const config = { bootstrap: 'bootstrap', vats };
-  config.bundles = { zcf: { bundle: zcfBundle } };
+  config.bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
   config.defaultManagerType = 'xs-worker';
 
   const step4 = Date.now();
