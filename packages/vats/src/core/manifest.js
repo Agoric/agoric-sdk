@@ -268,6 +268,34 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       produce: { economicCommittee: 'economicCommittee' },
     },
   },
+
+  startGetRun: {
+    consume: {
+      zoe: 'zoe',
+      feeMintAccess: 'zoe',
+      getRUNBundle: true,
+      lienBridge: true,
+      client: true,
+      chainTimerService: true,
+    },
+    produce: { getRUNCreatorFacet: 'getRUN' },
+    installation: {
+      consume: { contractGovernor: 'zoe', committee: 'zoe' },
+      produce: { getRUN: 'zoe' },
+    },
+    instance: {
+      produce: { getRUN: 'getRUN' },
+    },
+    brand: {
+      consume: { BLD: true, RUN: 'zoe' },
+      produce: { Attestation: true },
+    },
+    issuer: {
+      consume: { BLD: true },
+      produce: { Attestation: true },
+    },
+  },
+
   setupAmm: {
     consume: {
       chainTimerService: 'timer',
