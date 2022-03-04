@@ -815,18 +815,15 @@ resolution authority.
 The `subject` argument of `dispatch.notify()` specifies which Promise is
 being resolved. It is always translated into a `PromiseID`.
 
-`dispatch.notify()` will be sent to all Vats which had subscribed to hear
-about the resolution of that Promise [TODO: document ordering
-relevance/constraints]. The Decider vat for a Promise will not generally
-subscribe themselves, since they are the ones causing the Promise to become
-resolved, so they have no need to hear about it from the kernel.
-
 The `Resolution` values of `dispatch.notify()` may contain slots, which are
 translated just like `Message.args`.
 
-TODO: After a Vat receives notice of a Promise being resolved, we might
-choose to remove that promise from the vat's C-List, and forbid the Vat from
-ever mentioning that promise again.
+`dispatch.notify()` will be sent to all Vats which had subscribed to hear
+about the resolution of that Promise. The Decider vat for a Promise will not
+generally subscribe themselves, since they are the ones causing the Promise to
+become resolved, so they have no need to hear about it from the kernel.
+
+C-List Promise entries are retired upon resolution.
 
 A Vat might be informed that one Promise has been resolved to another Promise
 (`ResolutionData::Forward`). This new Promise might be local, or imported.
