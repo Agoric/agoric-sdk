@@ -240,11 +240,17 @@ export function swingsetIsInitialized(hostStorage) {
   return !!hostStorage.kvStore.get('initialized');
 }
 
+/** @typedef {{ kernelBundles?: Record<string, string>, verbose?: boolean,
+ *              addVatAdmin?: boolean, addComms?: boolean, addVattp?: boolean,
+ *              addTimer?: boolean,
+ *            }} InitializationOptions
+ */
+
 /**
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {HostStore} hostStorage
- * @param {{ kernelBundles?: Record<string, string>, verbose?: boolean }} initializationOptions
+ * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
 export async function initializeSwingset(
@@ -300,6 +306,10 @@ export async function initializeSwingset(
       bundleFormat: config.bundleFormat,
     }),
     verbose,
+    addVatAdmin = true,
+    addComms = true,
+    addVattp = true,
+    addTimer = true,
   } = initializationOptions;
 
   kvStore.set('kernelBundle', JSON.stringify(kernelBundles.kernel));
@@ -316,42 +326,50 @@ export async function initializeSwingset(
     }
   }
 
-  // vatAdmin and bundle devices are given endowments by the kernel itself
-  config.vats.vatAdmin = {
-    bundle: kernelBundles.adminVat,
-  };
-  config.devices.vatAdmin = {
-    bundle: kernelBundles.adminDevice,
-  };
+  if (addVatAdmin) {
+    // vatAdmin and bundle devices are given endowments by the kernel itself
+    config.vats.vatAdmin = {
+      bundle: kernelBundles.adminVat,
+    };
+    config.devices.vatAdmin = {
+      bundle: kernelBundles.adminDevice,
+    };
+  }
 
-  // comms vat is added automatically, but TODO: bootstraps must still
-  // connect it to vat-tp. TODO: test-message-patterns builds two comms and
-  // two vattps, must handle somehow.
-  config.vats.comms = {
-    bundle: kernelBundles.comms,
-    creationOptions: {
-      enablePipelining: true,
-      // The use of setup rather than buildRootObject requires
-      // a local worker. We have no plans to support setup on
-      // non-local workers any time soon.
-      enableSetup: true,
-      managerType: 'local',
-      useTranscript: false,
-      reapInterval: 'never',
-    },
-  };
+  if (addComms) {
+    // comms vat is added automatically, but TODO: bootstraps must still
+    // connect it to vat-tp. TODO: test-message-patterns builds two comms and
+    // two vattps, must handle somehow.
+    config.vats.comms = {
+      bundle: kernelBundles.comms,
+      creationOptions: {
+        enablePipelining: true,
+        // The use of setup rather than buildRootObject requires
+        // a local worker. We have no plans to support setup on
+        // non-local workers any time soon.
+        enableSetup: true,
+        managerType: 'local',
+        useTranscript: false,
+        reapInterval: 'never',
+      },
+    };
+  }
 
-  // vat-tp is added automatically, but TODO: bootstraps must still connect
-  // it to comms
-  config.vats.vattp = {
-    bundle: kernelBundles.vattp,
-  };
+  if (addVattp) {
+    // vat-tp is added automatically, but TODO: bootstraps must still connect
+    // it to comms
+    config.vats.vattp = {
+      bundle: kernelBundles.vattp,
+    };
+  }
 
-  // timer wrapper vat is added automatically, but TODO: bootstraps must
-  // still provide a timer device, and connect it to the wrapper vat
-  config.vats.timer = {
-    bundle: kernelBundles.timer,
-  };
+  if (addTimer) {
+    // timer wrapper vat is added automatically, but TODO: bootstraps must
+    // still provide a timer device, and connect it to the wrapper vat
+    config.vats.timer = {
+      bundle: kernelBundles.timer,
+    };
+  }
 
   // The host application gives us
   // config.[vats|devices].NAME.[bundle|bundleSpec|sourceSpec|bundleName] .
