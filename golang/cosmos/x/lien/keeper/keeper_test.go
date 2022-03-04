@@ -148,7 +148,7 @@ func (tk testKit) initAccount(t *testing.T, funder, addr sdk.AccAddress, state t
 		if err := tk.bankKeeper.SendCoinsFromModuleToAccount(tk.ctx, authtypes.Minter, funder, state.Locked); err != nil {
 			t.Fatalf("cannot send coins: %v", err)
 		}
-		vestingMsgServer := vesting.NewMsgServerImpl(tk.accountKeeper, tk.bankKeeper)
+		vestingMsgServer := vesting.NewMsgServerImpl(tk.accountKeeper, tk.bankKeeper, tk.stakingKeeper)
 		_, err := vestingMsgServer.CreateVestingAccount(sdk.WrapSDKContext(tk.ctx), &vestingtypes.MsgCreateVestingAccount{
 			FromAddress: funder.String(),
 			ToAddress:   addr.String(),
@@ -220,7 +220,7 @@ func TestGetSetLien(t *testing.T) {
 	lien := types.Lien{Coins: amt}
 	keeper.SetLien(ctx, addr1, lien)
 	l2 := keeper.GetLien(ctx, addr1)
-	if !coinsEq(l2.Coins, amt) {
+	if !l2.Coins.IsEqual(amt) {
 		t.Errorf("initial lien has %v, want %s", l2, amt)
 	}
 
@@ -363,7 +363,7 @@ func TestAccountState(t *testing.T) {
 }
 
 func TestVesting(t *testing.T) {
-	ctx, ak, bk, sk, keeper := makeTestKit()
+	ctx, ak, bk, sk, keeper := makeTestKit().expand()
 
 	amt := ubld(1000)
 	err := bk.MintCoins(ctx, authtypes.Minter, amt)

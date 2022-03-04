@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 
-	agsdk "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -13,11 +12,6 @@ import (
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-)
-
-var (
-	coinsEq  = agsdk.CoinsEq
-	coinsLTE = agsdk.CoinsLTE
 )
 
 type Keeper interface {
@@ -110,15 +104,15 @@ func (lk keeperImpl) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, 
 
 func (lk keeperImpl) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien types.Lien) error {
 	oldLien := lk.GetLien(ctx, addr)
-	if coinsEq(newLien.Coins, oldLien.Coins) {
+	if newLien.Coins.IsEqual(oldLien.Coins) {
 		// no-op, no need to do anything
 		return nil
 	}
-	if !coinsLTE(newLien.Coins, oldLien.Coins) {
+	if !newLien.Coins.IsAllLTE(oldLien.Coins) {
 		// see if it's okay to increase the lien
 		state := lk.GetAccountState(ctx, addr)
-		if !coinsLTE(newLien.Coins, state.Bonded) {
-			diff := newLien.Coins.Sub(agsdk.CoinsMin(newLien.Coins, oldLien.Coins))
+		if !newLien.Coins.IsAllLTE(state.Bonded) {
+			diff := newLien.Coins.Sub(newLien.Coins.Min(oldLien.Coins))
 			return fmt.Errorf("new lien higher than bonded amount by %s", diff)
 		}
 	}

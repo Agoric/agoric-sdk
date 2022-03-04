@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	agsdk "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
@@ -274,7 +273,7 @@ func TestSetLiened(t *testing.T) {
 		t.Errorf("lien update with address %s, want %s", keeper.update.Address, addr1)
 	}
 	wantLien := sdk.NewCoins(c("ubld", 123))
-	if !agsdk.CoinsEq(keeper.update.Lien, wantLien) {
+	if !keeper.update.Lien.IsEqual(wantLien) {
 		t.Errorf("lien update got %s, want %s", keeper.update.Lien, wantLien)
 	}
 }

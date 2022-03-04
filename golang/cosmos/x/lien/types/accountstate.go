@@ -1,7 +1,6 @@
 package types
 
 import (
-	agsdk "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -18,9 +17,9 @@ type AccountState struct {
 // IsEqual returns whether two AccountStates are equal.
 // (Coins don't play nicely with equality (==) or reflect.DeepEqual().)
 func (s AccountState) IsEqual(other AccountState) bool {
-	return agsdk.CoinsEq(s.Total, other.Total) &&
-		agsdk.CoinsEq(s.Bonded, other.Bonded) &&
-		agsdk.CoinsEq(s.Unbonding, other.Unbonding) &&
-		agsdk.CoinsEq(s.Locked, other.Locked) &&
-		agsdk.CoinsEq(s.Liened, other.Liened)
+	return s.Total.IsEqual(other.Total) &&
+		s.Bonded.IsEqual(other.Bonded) &&
+		s.Unbonding.IsEqual(other.Unbonding) &&
+		s.Locked.IsEqual(other.Locked) &&
+		s.Liened.IsEqual(other.Liened)
 }
