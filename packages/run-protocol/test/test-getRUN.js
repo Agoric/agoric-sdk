@@ -38,6 +38,11 @@ const contractRoots = {
 const { assign, entries } = Object;
 const { details: X } = assert;
 
+/** @type {(x: bigint, y: bigint) => bigint} */
+const max = (x, y) => (x > y ? x : y);
+/** @type {(x: bigint, y: bigint) => bigint} */
+const min = (x, y) => (x > y ? y : x);
+
 test.before(async t => {
   /** @param { string } ref */
   const asset = async ref =>
@@ -121,8 +126,6 @@ const mockChain = genesisData => {
   const bonded = new Map();
   /** @type {(addr: string, map: Map<string, bigint>) => bigint} */
   const qty = (addr, map) => map.get(addr) || 0n;
-
-  const max = (x, y) => (x > y ? x : y);
 
   const it = Far('simulator', {
     send: (src, dest, n) => {
