@@ -126,6 +126,7 @@ export const makeVaultManager = (
 
   /**
    * timestamp of most recent update to interest
+   *
    * @type {bigint}
    */
   let latestInterestUpdate = startTimeStamp;
