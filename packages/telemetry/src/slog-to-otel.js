@@ -11,7 +11,6 @@ import { makeKVStringStore } from './kv-string-store.js';
 /** @typedef {import('@opentelemetry/api').Span} Span */
 /** @typedef {import('@opentelemetry/api').SpanContext} SpanContext */
 /** @typedef {import('@opentelemetry/api').SpanOptions} SpanOptions */
-/** @template T @typedef {import('@agoric/promise-kit').PromiseKit<T>} PromiseKit */
 
 const cleanValue = (value, _key) => {
   let subst = value;
@@ -140,6 +139,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     // Legacy because spans are not passable
     const keyToSpan = makeLegacyMap('spanKey');
 
+    let lastNamedPopTime;
+
     /** @type {{ span: Span, name: string }[]} */
     const spanStack = [];
 
@@ -267,8 +268,9 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         const popped = spanStack.pop();
         if (assertName !== undefined) {
           assert.equal(popped?.name, assertName);
+          lastNamedPopTime = now;
         }
-        popped?.span.end(now);
+        popped?.span.end(lastNamedPopTime);
       },
 
       top: () => spanStack[spanStack.length - 1]?.span,
