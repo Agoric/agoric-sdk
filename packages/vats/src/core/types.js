@@ -164,7 +164,7 @@
  */
 
 /**
- * @typedef { WellKnownSpaces & {
+ * @typedef {{
  *   consume: {
  *     agoricNames: Promise<NameHub>,
  *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
