@@ -114,6 +114,23 @@ export const calculateCompoundedInterest = (
 
 /**
  *
+ *
+ * @param {ZCFMint} mint
+ * @param {Amount} debt
+ */
+const validatedBrand = async (mint, debt) => {
+  const { brand: debtBrand } = debt;
+  const { brand: issuerBrand } = await E(mint).getIssuerRecord();
+  assert(
+    debtBrand === issuerBrand,
+    X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
+  );
+  return issuerBrand;
+};
+
+/**
+ * Charge interest accrued between `latestInterestUpdate` and `accruedUntil`.
+ *
  * @param {{mint: ZCFMint, reallocateWithFee: ReallocateWithFee, poolIncrementSeat: ZCFSeat }} powers
  * @param {{interestRate: Ratio, chargingPeriod: bigint, recordingPeriod: bigint}} params
  * @param {{latestInterestUpdate: bigint, compoundedInterest: Ratio, totalDebt: Amount<NatValue>}} prior
@@ -121,15 +138,7 @@ export const calculateCompoundedInterest = (
  * @returns {Promise<{ compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }>}
  */
 export const chargeInterest = async (powers, params, prior, accruedUntil) => {
-  // Validate the brands
-  const { brand: debtBrand } = prior.totalDebt;
-  const { brand: issuerBrand } = await E(powers.mint).getIssuerRecord();
-  assert(
-    debtBrand === issuerBrand,
-    X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
-  );
-  const brand = debtBrand;
-  const brandName = await E(brand).getAllegedName();
+  const brand = await validatedBrand(powers.mint, prior.totalDebt);
 
   const interestCalculator = makeInterestCalculator(
     params.interestRate,
@@ -176,8 +185,9 @@ export const chargeInterest = async (powers, params, prior, accruedUntil) => {
 
   // mint that much of brand for the reward pool
   const rewarded = AmountMath.make(brand, interestAccrued);
+  const amountKeyword = await E(brand).getAllegedName();
   powers.mint.mintGains(
-    harden({ [brandName]: rewarded }),
+    harden({ [amountKeyword]: rewarded }),
     powers.poolIncrementSeat,
   );
   powers.reallocateWithFee(rewarded, powers.poolIncrementSeat);
