@@ -234,7 +234,7 @@ test.serial('bootstrap export', async t => {
         result: 'kp40',
         method: 'bootstrap',
         args: {
-          body: '[{"bootstrap":{"@qclass":"slot","iface":"Alleged: vref","index":0},"comms":{"@qclass":"slot","iface":"Alleged: vref","index":1},"left":{"@qclass":"slot","iface":"Alleged: vref","index":2},"right":{"@qclass":"slot","iface":"Alleged: vref","index":3},"timer":{"@qclass":"slot","iface":"Alleged: vref","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: vref","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: vref","index":6}},{"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":7}}]',
+          body: '[{"bootstrap":{"@qclass":"slot","iface":"Alleged: root","index":0},"comms":{"@qclass":"slot","iface":"Alleged: root","index":1},"left":{"@qclass":"slot","iface":"Alleged: root","index":2},"right":{"@qclass":"slot","iface":"Alleged: root","index":3},"timer":{"@qclass":"slot","iface":"Alleged: root","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: root","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: root","index":6}},{"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":7}}]',
           slots: [
             boot0,
             comms0,
@@ -299,7 +299,7 @@ test.serial('bootstrap export', async t => {
       msg: {
         method: 'foo',
         args: {
-          body: '[1,{"@qclass":"slot","iface":"Alleged: vref","index":0}]',
+          body: '[1,{"@qclass":"slot","iface":"Alleged: root","index":0}]',
           slots: [right0],
         },
         result: fooP,
@@ -323,7 +323,7 @@ test.serial('bootstrap export', async t => {
       msg: {
         method: 'bar',
         args: {
-          body: '[2,{"@qclass":"slot","iface":"Alleged: vref","index":0}]',
+          body: '[2,{"@qclass":"slot","iface":"Alleged: root","index":0}]',
           slots: [right0],
         },
         result: barP,

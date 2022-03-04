@@ -157,7 +157,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       // non-empty object as vatObj0s, since an empty object would be
       // serialized as pass-by-presence. It wouldn't make much sense for the
       // bootstrap object to call itself, though.
-      const vref = Far('vref', {});
+      const vref = Far('root', {});
       vatObj0s[name] = vref;
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       const kernelSlot = vatKeeper.mapVatSlotToKernelSlot(vatSlot);
