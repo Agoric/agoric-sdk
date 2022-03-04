@@ -1,12 +1,13 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
+console.log('=> loading bootstrap.js');
+
 const log = console.log;
-
-log(`=> loading bootstrap.js`);
-
 export function buildRootObject(_vatPowers) {
-  log(`=> setup called`);
+  // TODO: add a controller command to get the test log
+  // const log = vatPowers.testLog;
+  log('=> buildRootObject called');
   return Far('root', {
     bootstrap(vats) {
       log('=> bootstrap() called');

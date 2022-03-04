@@ -7,7 +7,7 @@ export function buildRootObject(vatPowers) {
   const { D, testLog: log } = vatPowers;
   return Far('root', {
     async bootstrap(vats, devices) {
-      console.log('=> bootstrap() called');
+      log('=> bootstrap() called');
 
       const BOT = 'bot';
       const USER = 'user';

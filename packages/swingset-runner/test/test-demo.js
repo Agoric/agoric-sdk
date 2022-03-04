@@ -23,6 +23,16 @@ function rimraf(dirPath) {
   }
 }
 
+const encouragementBotGolden = [
+  '=> loading bootstrap.js',
+  '=> buildRootObject called',
+  '=> bootstrap() called',
+  '=> user.talkToBot is called with encouragementBot',
+  '=> encouragementBot.encourageMe got the name: user',
+  "=> the promise given by the call to user.talkToBot resolved to 'Thanks for the setup. I sure hope I get some encouragement...'",
+  '=> user receives the encouragement: user, you are awesome, keep it up!',
+];
+
 async function innerTest(t, extraFlags, dbdir) {
   await new Promise(resolve => {
     const appDir = 'demo/encouragementBot';
@@ -41,10 +51,24 @@ async function innerTest(t, extraFlags, dbdir) {
     });
     proc.addListener('exit', code => {
       t.is(code, 0, 'exits successfully');
-      const uMsg = 'user vat is happy';
-      t.not(output.indexOf(`\n${uMsg}\n`), -1, uMsg);
-      const bMsg = 'bot vat is happy';
-      t.not(output.indexOf(`\n${bMsg}\n`), -1, bMsg);
+      const outputLines = output.trim().split('\n');
+      t.deepEqual(
+        outputLines.slice(0, encouragementBotGolden.length),
+        encouragementBotGolden,
+      );
+      t.is(
+        outputLines.length - encouragementBotGolden.length,
+        2,
+        'runner outputs two final lines',
+      );
+      t.regex(
+        outputLines[outputLines.length - 2],
+        /^bootstrap result fulfilled:/,
+      );
+      t.regex(
+        outputLines[outputLines.length - 1],
+        /^runner finished [0-9]+ cranks/,
+      );
       resolve();
       if (dbdir) {
         rimraf(dbdir);

@@ -44,6 +44,9 @@ async function main(basedir, argv) {
 }
 
 const encouragementBotCommsGolden = [
+  // XXX console.log output is not captured
+  // '=> loading bootstrap.js',
+  '=> bootstrap() called',
   '=> user.talkToBot is called with bot',
   "=> the promise given by the call to user.talkToBot resolved to 'Thanks for the setup. I sure hope I get some encouragement...'",
   '=> encouragementBot.encourageMe got the name: user',

@@ -1,13 +1,14 @@
 import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
-console.log(`=> loading bootstrap.js`);
+console.log('=> loading bootstrap.js');
 
 export function buildRootObject(vatPowers) {
   const log = vatPowers.testLog;
+  log('=> buildRootObject called');
   return Far('root', {
     bootstrap(vats) {
-      console.log('=> bootstrap() called');
+      log('=> bootstrap() called');
       E(vats.user)
         .talkToBot(vats.bot, 'encouragementBot')
         .then(
