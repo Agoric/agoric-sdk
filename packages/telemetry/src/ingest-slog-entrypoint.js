@@ -1,4 +1,5 @@
 #! /usr/bin/env node
+/* global setTimeout */
 import '@endo/init';
 
 import fs from 'fs';
@@ -10,6 +11,8 @@ import { makeSlogSenderFromModule } from './make-slog-sender.js';
 
 const LINE_COUNT_TO_FLUSH = 10000;
 const ELAPSED_MS_TO_FLUSH = 3000;
+const MAX_LINE_COUNT_PER_PERIOD = 1000;
+const PROCESSING_PERIOD = 1000;
 
 async function run() {
   const args = process.argv.slice(2);
@@ -58,6 +61,9 @@ async function run() {
   }
   const progress = JSON.parse(fs.readFileSync(progressFileName));
 
+  let linesProcessedThisPeriod = 0;
+  let startOfLastPeriod = 0;
+
   let lastTime = Date.now();
   let lineCount = 0;
 
@@ -80,7 +86,7 @@ async function run() {
       progress.lastSlogTime = obj.time;
     }
 
-    const now = Date.now();
+    let now = Date.now();
     if (
       now - lastTime > ELAPSED_MS_TO_FLUSH ||
       lineCount % LINE_COUNT_TO_FLUSH === 0
@@ -93,6 +99,21 @@ async function run() {
       // eslint-disable-next-line no-continue
       continue;
     }
+
+    // Maybe wait for the next period to process a bunch of lines.
+    let maybeWait;
+    if (linesProcessedThisPeriod >= MAX_LINE_COUNT_PER_PERIOD) {
+      const delayMS = PROCESSING_PERIOD - (now - startOfLastPeriod);
+      maybeWait = new Promise(resolve => setTimeout(resolve, delayMS));
+    }
+    await maybeWait;
+    now = Date.now();
+
+    if (now - startOfLastPeriod >= PROCESSING_PERIOD) {
+      startOfLastPeriod = now;
+      linesProcessedThisPeriod = 0;
+    }
+    linesProcessedThisPeriod += 1;
 
     if (progress.virtualTimeOffset) {
       const virtualTime = obj.time + progress.virtualTimeOffset;

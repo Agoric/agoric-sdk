@@ -1,5 +1,5 @@
 #! /bin/bash
-set -ueo
+set -ue
 thisdir=$(dirname -- "${BASH_SOURCE[0]}")
 
 INGEST_START=${INGEST_START-""}
