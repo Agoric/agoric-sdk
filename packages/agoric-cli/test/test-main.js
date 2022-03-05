@@ -1,7 +1,4 @@
 /* global globalThis */
-// TODO Remove esm preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@endo/init/pre-bundle-source.js';
 import 'esm';
 import '@endo/init';
 import test from 'ava';

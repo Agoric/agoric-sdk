@@ -8,9 +8,6 @@ Usage:
 
 // @ts-check
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
 /* eslint-disable no-await-in-loop */
 import '@endo/init';
 import { assert, details as X, q } from '@agoric/assert';
