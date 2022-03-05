@@ -78,7 +78,7 @@
  */
 
 /**
- * @typedef {{ resolve: (v: T) => void }} Producer<T>
+ * @typedef {{ resolve: (v: ERef<T>) => void }} Producer<T>
  * @template T
  */
 /**
@@ -237,7 +237,7 @@
  *   consume: EconomyBootstrapPowers['consume'] & {
  *     bankManager: BankManager,
  *     board: ERef<Board>,
- *     bldIssuerKit: ERef<IssuerKit>,
+ *     bldIssuerKit: ERef<RemoteIssuerKit>,
  *     bridgeManager: ERef<OptionalBridgeManager>,
  *     client: ERef<ClientManager>,
  *     clientCreator: ERef<ClientCreator>,
@@ -249,7 +249,7 @@
  *   },
  *   produce: EconomyBootstrapPowers['produce'] & {
  *     bankManager: Producer<BankManager>,
- *     bldIssuerKit: Producer<IssuerKit>,
+ *     bldIssuerKit: Producer<RemoteIssuerKit>,
  *     board: Producer<ERef<Board>>,
  *     bridgeManager: Producer<OptionalBridgeManager>,
  *     client: Producer<ClientManager>,
@@ -262,6 +262,7 @@
  *     namesByAddressAdmin: Producer<NameAdmin>,
  *   },
  * }} BootstrapSpace
+ * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
  * @typedef {ReturnType<Awaited<BankVat>['makeBankManager']>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
