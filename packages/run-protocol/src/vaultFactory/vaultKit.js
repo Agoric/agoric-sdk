@@ -6,19 +6,26 @@ import { Far } from '@endo/marshal';
 const { details: X } = assert;
 
 /**
+ * @typedef {{
+ * inner: InnerVault | null,
+ * }} State
+ */
+/**
  *
  * @param {InnerVault} innerVault
  */
 const wrapVault = innerVault => {
+  /** @type {NotifierRecord<VaultUIState>} */
   const { updater, notifier } = makeNotifierKit();
 
-  /** @type {InnerVault | null} */
-  let inner = innerVault;
+  /** @type {State} */
+  const state = {
+    inner: innerVault,
+  };
 
-  /**
-   * Throws if this wrapper no longer owns the inner vault
-   */
+  // Throw if this wrapper no longer owns the inner vault
   const owned = v => {
+    const { inner } = state;
     // console.log('OUTER', v, 'INNER', inner);
     assert(inner, X`Using ${v} after transfer`);
     return inner;
@@ -35,7 +42,7 @@ const wrapVault = innerVault => {
      */
     makeTransferInvitation: () => {
       const tmpInner = owned(vault);
-      inner = null;
+      state.inner = null;
       return tmpInner.makeTransferInvitation();
     },
     // for status/debugging
