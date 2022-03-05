@@ -206,6 +206,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.agoricNames.resolve(agoricNames);
 
   produce.centralSupplyBundle.resolve(economyBundles.centralSupply);
+  produce.mintHolderBundle.resolve(economyBundles.mintHolder);
 
   const { zoeService, feeMintAccess } = makeZoeKit(
     makeFakeVatAdmin(() => {}).admin,
