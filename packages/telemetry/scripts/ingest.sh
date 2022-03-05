@@ -1,12 +1,19 @@
 #! /bin/bash
+# Send a `.slog` or `.slog.gz` to the OpenTelemetry Collector.
+# Run with INGEST_START='' to start ingesting using slogfile timestamps.
+
 set -ue
 thisdir=$(dirname -- "${BASH_SOURCE[0]}")
 
-INGEST_START=${INGEST_START-""}
+# These three lines enable Agoric SDK's OpenTelemetry tracing.
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export SLOGSENDER=@agoric/telemetry/src/otel-trace.js
+export OTEL_RESOURCE_ATTRIBUTES=ingest.file="$1"
+
 PROGRESS="$1.ingest-progress"
 
 if [[ ! -s "$PROGRESS" ]]; then
-  if [[ -z "$INGEST_START" ]]; then
+  if [[ "${INGEST_START+set}" != set ]]; then
     read -e -r -p 'Target start time [default=actual from slog] (%Y-%m-%dT%H:%M:%SZ): ' INGEST_START
   fi
   if [[ -n "$INGEST_START" ]]; then
@@ -20,7 +27,4 @@ if [[ ! -s "$PROGRESS" ]]; then
   fi
 fi
 
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
-export SLOGSENDER=@agoric/telemetry/src/otel-trace.js
-export OTEL_RESOURCE_ATTRIBUTES=ingest.file="$1"
-time exec "$thisdir/bin/ingest-slog" "$1"
+time exec "$thisdir/../bin/ingest-slog" "$1"
