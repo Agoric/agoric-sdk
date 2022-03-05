@@ -13,12 +13,12 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 
-import liquidateMinimumBundle from '../../../../bundles/bundle-liquidateMinimum.js';
-import ammBundle from '../../../../bundles/bundle-amm.js';
-import vaultFactoryBundle from '../../../../bundles/bundle-vaultFactory.js';
-import committeeBundle from '../../../../bundles/bundle-committee.js';
-import contractGovernorBundle from '../../../../bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '../../../../bundles/bundle-binaryVoteCounter.js';
+import liquidateMinimumBundle from '../../../bundles/bundle-liquidateMinimum.js';
+import ammBundle from '../../../bundles/bundle-amm.js';
+import vaultFactoryBundle from '../../../bundles/bundle-vaultFactory.js';
+import committeeBundle from '../../../bundles/bundle-committee.js';
+import contractGovernorBundle from '../../../bundles/bundle-contractGovernor.js';
+import binaryVoteCounterBundle from '../../../bundles/bundle-binaryVoteCounter.js';
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
 const test = rawTest;

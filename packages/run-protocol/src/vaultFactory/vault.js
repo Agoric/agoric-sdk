@@ -4,19 +4,19 @@ import '@agoric/zoe/exported.js';
 import { E } from '@agoric/eventual-send';
 import {
   assertProposalShape,
-  calculateCurrentDebt,
   getAmountOut,
   makeRatioFromAmounts,
-  reverseInterest,
   ceilMultiplyBy,
   floorMultiplyBy,
   floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeNotifierKit } from '@agoric/notifier';
 
+import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
+import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 
 const { details: X, quote: q } = assert;
 
@@ -30,12 +30,9 @@ const trace = makeTracer('Vault');
  *
  * ACTIVE       - vault is in use and can be changed
  * LIQUIDATING  - vault is being liquidated by the vault manager, and cannot be changed by the user
- * TRANSFER     - vault is released from the manager and able to be transferred
  * TRANSFER     - vault is able to be transferred (payments and debits frozen until it has a new owner)
  * CLOSED       - vault was closed by the user and all assets have been paid out
  * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
- *
- * @typedef {VaultPhase[keyof typeof VaultPhase]} VAULT_PHASE
  */
 export const VaultPhase = /** @type {const} */ ({
   ACTIVE: 'active',
@@ -46,27 +43,25 @@ export const VaultPhase = /** @type {const} */ ({
 });
 
 /**
- * @type {{[K in VAULT_PHASE]: Array<VAULT_PHASE>}}
+ * @typedef {VaultPhase[keyof Omit<typeof VaultPhase, 'TRANSFER'>]} InnerPhase
+ * @type {{[K in InnerPhase]: Array<InnerPhase>}}
  */
 const validTransitions = {
-  [VaultPhase.ACTIVE]: [
-    VaultPhase.LIQUIDATING,
-    VaultPhase.TRANSFER,
-    VaultPhase.CLOSED,
-  ],
+  [VaultPhase.ACTIVE]: [VaultPhase.LIQUIDATING, VaultPhase.CLOSED],
   [VaultPhase.LIQUIDATING]: [VaultPhase.LIQUIDATED],
-  [VaultPhase.TRANSFER]: [VaultPhase.ACTIVE, VaultPhase.LIQUIDATING],
-  [VaultPhase.LIQUIDATED]: [],
+  [VaultPhase.LIQUIDATED]: [VaultPhase.CLOSED],
   [VaultPhase.CLOSED]: [],
 };
 
 /**
+ * @typedef {VaultPhase[keyof typeof VaultPhase]} OuterPhase
+ *
  * @typedef {Object} VaultUIState
  * @property {Amount<NatValue>} locked Amount of Collateral locked
  * @property {{run: Amount<NatValue>, interest: Ratio}} debtSnapshot Debt of 'run' at the point the compounded interest was 'interest'
  * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
- * @property {VAULT_PHASE} vaultState
+ * @property {OuterPhase} vaultState
  */
 
 /**
@@ -74,29 +69,29 @@ const validTransitions = {
  * @param {InnerVault | null} inner
  */
 const makeOuterKit = inner => {
+  /** @type {NotifierRecord<VaultUIState>} */
   const { updater: uiUpdater, notifier } = makeNotifierKit();
 
-  const assertActive = v => {
+  /** @returns true iff this outer vault is backed by an inner vault */
+  const assertOwned = v => {
     // console.log('OUTER', v, 'INNER', inner);
     assert(inner, X`Using ${v} after transfer`);
     return inner;
   };
-  /** @type {Vault} */
   const vault = Far('vault', {
     getNotifier: () => notifier,
     makeAdjustBalancesInvitation: () =>
-      assertActive(vault).makeAdjustBalancesInvitation(),
-    makeCloseInvitation: () => assertActive(vault).makeCloseInvitation(),
+      assertOwned(vault).makeAdjustBalancesInvitation(),
+    makeCloseInvitation: () => assertOwned(vault).makeCloseInvitation(),
     makeTransferInvitation: () => {
-      const tmpInner = assertActive(vault);
+      const tmpInner = assertOwned(vault);
       inner = null;
       return tmpInner.makeTransferInvitation();
     },
     // for status/debugging
-    getCollateralAmount: () => assertActive(vault).getCollateralAmount(),
-    getCurrentDebt: () => assertActive(vault).getCurrentDebt(),
-    getNormalizedDebt: () => assertActive(vault).getNormalizedDebt(),
-    getLiquidationSeat: () => assertActive(vault).getLiquidationSeat(),
+    getCollateralAmount: () => assertOwned(vault).getCollateralAmount(),
+    getCurrentDebt: () => assertOwned(vault).getCurrentDebt(),
+    getNormalizedDebt: () => assertOwned(vault).getNormalizedDebt(),
   });
   return { vault, uiUpdater };
 };
@@ -131,15 +126,13 @@ export const makeInnerVault = (
   const { brand: runBrand } = runMint.getIssuerRecord();
 
   // STATE
-  const { zcfSeat: liquidationZcfSeat, userSeat: liquidationSeat } =
-    zcf.makeEmptySeatKit(undefined);
 
   // #region Phase state
-  /** @type {VAULT_PHASE} */
+  /** @type {InnerPhase} */
   let phase = VaultPhase.ACTIVE;
 
   /**
-   * @param {VAULT_PHASE} newPhase
+   * @param {InnerPhase} newPhase
    */
   const assignPhase = newPhase => {
     const validNewPhases = validTransitions[phase];
@@ -148,15 +141,15 @@ export const makeInnerVault = (
     phase = newPhase;
   };
 
-  const assertPhase = allegedPhase => {
-    assert(
-      phase === allegedPhase,
-      X`vault must be ${allegedPhase}, not ${phase}`,
-    );
+  const assertActive = () => {
+    assert(phase === VaultPhase.ACTIVE);
   };
 
-  const assertVaultIsOpen = () => {
-    assertPhase(VaultPhase.ACTIVE);
+  const assertCloseable = () => {
+    assert(
+      phase === VaultPhase.ACTIVE || phase === VaultPhase.LIQUIDATED,
+      X`to be closed a vault must be active or liquidated, not ${phase}`,
+    );
   };
   // #endregion
 
@@ -283,6 +276,10 @@ export const makeInnerVault = (
       : getCollateralAllocated(vaultSeat);
   };
 
+  /**
+   *
+   * @param {OuterPhase} newPhase
+   */
   const snapshotState = newPhase => {
     /** @type {VaultUIState} */
     return harden({
@@ -317,9 +314,6 @@ export const makeInnerVault = (
         outerUpdater.finish(uiState);
         outerUpdater = null;
         break;
-      case VaultPhase.TRANSFER:
-        // Transfer handles finish()/null itself
-        throw Error('no UI updates from transfer state');
       default:
         throw Error(`unreachable vault phase: ${phase}`);
     }
@@ -344,54 +338,59 @@ export const makeInnerVault = (
 
   /** @type {OfferHandler} */
   const closeHook = async seat => {
-    assertVaultIsOpen();
-    assertProposalShape(seat, {
-      give: { RUN: null },
-      want: { Collateral: null },
-    });
-    const {
-      give: { RUN: runReturned },
-      want: { Collateral: _collateralWanted },
-    } = seat.getProposal();
+    assertCloseable();
 
-    // you're paying off the debt, you get everything back. If you were
-    // underwater, we should have liquidated some collateral earlier: we
-    // missed our chance.
+    if (phase === VaultPhase.ACTIVE) {
+      assertProposalShape(seat, {
+        give: { RUN: null },
+        want: { Collateral: null },
+      });
 
-    // you must pay off the entire remainder but if you offer too much, we won't
-    // take more than you owe
-    const currentDebt = getCurrentDebt();
-    assert(
-      AmountMath.isGTE(runReturned, currentDebt),
-      X`You must pay off the entire debt ${runReturned} > ${currentDebt}`,
-    );
+      // you're paying off the debt, you get everything back. If you were
+      // underwater, we should have liquidated some collateral earlier: we
+      // missed our chance.
+      const currentDebt = getCurrentDebt();
+      const {
+        give: { RUN: runOffered },
+      } = seat.getProposal();
 
-    // Return any overpayment
+      // you must pay off the entire remainder but if you offer too much, we won't
+      // take more than you owe
+      assert(
+        AmountMath.isGTE(runOffered, currentDebt),
+        X`Offer ${runOffered} is not sufficient to pay off debt ${currentDebt}`,
+      );
 
-    const { zcfSeat: burnSeat } = zcf.makeEmptySeatKit();
-    burnSeat.incrementBy(seat.decrementBy(harden({ RUN: currentDebt })));
-    seat.incrementBy(
-      vaultSeat.decrementBy(
-        harden({ Collateral: getCollateralAllocated(vaultSeat) }),
-      ),
-    );
-    zcf.reallocate(seat, vaultSeat, burnSeat);
-    runMint.burnLosses(harden({ RUN: currentDebt }), burnSeat);
+      // Return any overpayment
+      seat.incrementBy(
+        vaultSeat.decrementBy(
+          harden({ Collateral: getCollateralAllocated(vaultSeat) }),
+        ),
+      );
+      zcf.reallocate(seat, vaultSeat);
+      runMint.burnLosses(harden({ RUN: currentDebt }), seat);
+    } else if (phase === VaultPhase.LIQUIDATED) {
+      // Simply reallocate vault assets to the offer seat.
+      // Don't take anything from the offer, even if vault is underwater.
+      seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
+      zcf.reallocate(seat, vaultSeat);
+    } else {
+      throw new Error('only active and liquidated vaults can be closed');
+    }
+
     seat.exit();
-    burnSeat.exit();
     assignPhase(VaultPhase.CLOSED);
     updateDebtSnapshot(AmountMath.makeEmpty(runBrand));
     updateUiState();
 
     assertVaultHoldsNoRun();
     vaultSeat.exit();
-    liquidationZcfSeat.exit();
 
     return 'your loan is closed, thank you for your business';
   };
 
   const makeCloseInvitation = () => {
-    assertVaultIsOpen();
+    assertCloseable();
     return zcf.makeInvitation(closeHook, 'CloseVault');
   };
 
@@ -539,7 +538,6 @@ export const makeInnerVault = (
    * @param {ZCFSeat} clientSeat
    */
   const adjustBalancesHook = async clientSeat => {
-    assertVaultIsOpen();
     // the updater will change if we start a transfer
     const oldUpdater = outerUpdater;
     const proposal = clientSeat.getProposal();
@@ -552,7 +550,7 @@ export const makeInnerVault = (
     // max debt supported by current Collateral as modified by proposal
     const maxDebtForOriginalTarget = await maxDebtFor(targetCollateralAmount);
     assert(oldUpdater === outerUpdater, X`Transfer during vault adjustment`);
-    assertVaultIsOpen();
+    assertActive();
 
     const priceOfCollateralInRun = makeRatioFromAmounts(
       maxDebtForOriginalTarget,
@@ -627,7 +625,7 @@ export const makeInnerVault = (
   };
 
   const makeAdjustBalancesInvitation = () => {
-    assertVaultIsOpen();
+    assertActive();
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   };
 
@@ -694,14 +692,13 @@ export const makeInnerVault = (
   };
 
   const makeTransferInvitationHook = seat => {
-    assertVaultIsOpen();
+    assertCloseable();
     seat.exit();
     // eslint-disable-next-line no-use-before-define
     return setupOuter(innerVault);
   };
 
   const innerVault = Far('innerVault', {
-    getInnerLiquidationSeat: () => liquidationZcfSeat,
     getVaultSeat: () => vaultSeat,
 
     initVaultKit: seat => initVaultKit(seat, innerVault),
@@ -722,7 +719,6 @@ export const makeInnerVault = (
     getCollateralAmount,
     getCurrentDebt,
     getNormalizedDebt,
-    getLiquidationSeat: () => liquidationSeat,
   });
 
   return innerVault;
@@ -730,3 +726,4 @@ export const makeInnerVault = (
 
 /** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
 /** @typedef {Awaited<ReturnType<InnerVault['initVaultKit']>>} VaultKit */
+/** @typedef {VaultKit['vault']} Vault */
