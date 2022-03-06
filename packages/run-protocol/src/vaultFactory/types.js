@@ -1,7 +1,8 @@
 // @ts-check
 
 /** @typedef {import('./vault').VaultUIState} VaultUIState */
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vaultKit').VaultKit} VaultKit */
+/** @typedef {VaultKit['vault']} Vault */
 
 /**
  * @typedef  {Object} AutoswapLocal
