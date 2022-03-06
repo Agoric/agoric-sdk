@@ -20,6 +20,8 @@ export const makeFreshShutdown = (verbose = true) => {
     shuttingDown = true;
     // Allow an explicit exit to terminate the process.
     process.off('beforeExit', shutdown);
+    process.off('SIGINT', shutdown);
+    process.off('SIGTERM', shutdown);
     verbose && console.error(`Shutting down cleanly...`);
     const shutdowners = [...shutdownThunks.keys()];
     shutdownThunks.clear();
