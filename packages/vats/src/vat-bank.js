@@ -76,8 +76,8 @@ const makePurseController = (
 
 /**
  * @typedef {Object} AssetIssuerKit
- * @property {Mint} [mint]
- * @property {Issuer} issuer
+ * @property {ERef<Mint>} [mint]
+ * @property {ERef<Issuer>} issuer
  * @property {Brand} brand
  */
 
@@ -88,7 +88,7 @@ const makePurseController = (
 /**
  * @typedef {Object} AssetDescriptor
  * @property {Brand} brand
- * @property {Issuer} issuer
+ * @property {ERef<Issuer>} issuer
  * @property {string} issuerName
  * @property {string} denom
  * @property {string} proposedName

@@ -275,11 +275,17 @@ export const connectChainFaucet = async ({ consume: { client } }) => {
 };
 harden(connectChainFaucet);
 
+// XXX: move shareBootContractBundles belongs in basic-behaviors.js
 /** @param {BootstrapPowers} powers */
 export const shareBootContractBundles = async ({
-  produce: { centralSupplyBundle: centralP, pegasusBundle: pegasusP },
+  produce: {
+    centralSupplyBundle: centralP,
+    pegasusBundle: pegasusP,
+    mintHolderBundle,
+  },
 }) => {
   centralP.resolve(economyBundles.centralSupply);
+  mintHolderBundle.resolve(economyBundles.mintHolder);
   pegasusP.resolve(pegasusBundle);
 };
 
