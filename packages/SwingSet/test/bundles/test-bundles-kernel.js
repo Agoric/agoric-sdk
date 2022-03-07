@@ -6,10 +6,10 @@ import crypto from 'crypto';
 import bundleSource from '@endo/bundle-source';
 import { parseArchive } from '@endo/compartment-mapper';
 import { decodeBase64 } from '@endo/base64';
-import { computeBundleID } from '../../src/validate-archive.js';
+import { computeBundleID } from '../../src/lib-nodejs/validate-archive.js';
 import { makeKernelEndowments } from '../util.js';
 import buildKernel from '../../src/kernel/index.js';
-import { initializeKernel } from '../../src/kernel/initializeKernel.js';
+import { initializeKernel } from '../../src/controller/initializeKernel.js';
 
 test('install bundle', async t => {
   const endowments = makeKernelEndowments();
@@ -19,7 +19,13 @@ test('install bundle', async t => {
 
   const bundleFile = new URL('./bootstrap-bundles.js', import.meta.url)
     .pathname;
-  const bundle = await bundleSource(bundleFile);
+  // during the transition to endo's new format, preemptively ignore the
+  // hash it provides
+  let bundle = await bundleSource(bundleFile);
+  bundle = harden({
+    moduleFormat: bundle.moduleFormat,
+    endoZipBase64: bundle.endoZipBase64,
+  });
 
   // my code to compute the bundleID
   const bundleID = await computeBundleID(bundle);

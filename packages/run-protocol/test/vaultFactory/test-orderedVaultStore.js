@@ -14,7 +14,7 @@ const mockVault = (runCount, collateralCount) => {
   const collateralAmount = AmountMath.make(brand, collateralCount);
 
   return Far('vault', {
-    getDebtAmount: () => debtAmount,
+    getCurrentDebt: () => debtAmount,
     getCollateralAmount: () => collateralAmount,
   });
 };

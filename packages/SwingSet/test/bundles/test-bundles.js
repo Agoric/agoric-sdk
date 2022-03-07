@@ -6,8 +6,9 @@ import fs from 'fs';
 import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
 import { parse } from '@endo/marshal';
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { computeBundleID } from '../../src/lib-nodejs/validate-archive.js';
 import { capargs } from '../util.js';
 
 function bfile(name) {
@@ -41,7 +42,7 @@ test('bundles', async t => {
 
   // This one (with 'hi()') provides a named vat bundle, for a static vat,
   // exercising config.vats.NAME.bundleName . We also build dynamic vats to
-  // test D(devices.bundle).getNamedBundlecap and E(vatAdmin).createVatByName
+  // test D(devices.bundle).getNamedBundleCap and E(vatAdmin).createVatByName
   const namedBundleFilename = bfile('vat-named.js');
 
   // We save this vat bundle (with 'disk()') to disk, to exercise
@@ -113,28 +114,67 @@ test('bundles', async t => {
   await check('checkConfiguredVats', [undefined], ['hello']);
 
   // create dynamic vats from a named bundle created at config file
-  await check('vatFromNamedBundlecap', ['named', 'hi'], ['hello']);
+  await check('vatFromNamedBundleCap', ['named', 'hi'], ['hello']);
 
   // pre-made bundles can be loaded from disk, via a named bundle
-  await check('vatFromNamedBundlecap', ['disk', 'disk'], ['otech']);
+  await check('vatFromNamedBundleCap', ['disk', 'disk'], ['otech']);
 
   // vatAdminService~.createVatByName() still works, TODO until we remove it
   await check('vatByName', ['named', 'hi'], ['hello']);
 
-  // D(devices.bundle).getBundlecap(invalidBundleID) should throw
+  // vatAdminService~.getBundleCap(invalidBundleID) should reject
   await checkRejects(
-    'getBundlecap',
+    'getBundleCap',
     [invalidBundleID],
     Error('syscall.callNow failed: device.invoke failed, see logs for details'),
   );
   // the logs would show "not a bundleID"
 
-  // D(devices.bundle).getBundlecap(missingBundleID) should return undefined
-  await check('getBundlecap', [missingBundleID], undefined);
+  // vatAdminService~.getBundleCap(missingBundleID) should reject
+  await checkRejects(
+    'getBundleCap',
+    [missingBundleID],
+    Error(`bundleID not yet installed: ${missingBundleID}`),
+  );
 
-  // install a vat bundle at runtime, make sure we can load it by ID
-  const bid1 = await c.validateAndInstallBundle(installableVatBundle);
+  const bid1 = await computeBundleID(installableVatBundle);
+
+  // vatAdminService~.getBundleCap(bid1) should reject: not installed yet
+  await checkRejects(
+    'getBundleCap',
+    [bid1],
+    Error(`bundleID not yet installed: ${bid1}`),
+  );
+
+  // vatAdminService~.waitForBundleCap(bid1) should hang until installed
+  const waitKPID = c.queueToVatRoot(
+    'bootstrap',
+    'waitForBundleCap',
+    capargs([bid1]),
+  );
+  await c.run();
+  t.is(c.kpStatus(waitKPID), 'unresolved');
+
+  // install a vat bundle at runtime
+  const bid1a = await c.validateAndInstallBundle(installableVatBundle);
+  t.is(bid1a, bid1);
   t.regex(bid1, bundleIDRE);
+  await c.run();
+
+  // so now the waitForBundleCap should be done
+  t.is(c.kpStatus(waitKPID), 'fulfilled');
+
+  // check the shape of the waitForBundleCap bundlecap
+  const d1 = c.kpResolution(waitKPID);
+  const res1 = JSON.parse(d1.body);
+  const dev1 = { '@qclass': 'slot', iface: 'Alleged: device node', index: 0 };
+  t.deepEqual(res1, dev1);
+  const slots1 = d1.slots;
+  const dev1slot = slots1[0];
+  t.regex(dev1slot, /^kd\d+$/);
+  t.is(slots1[0], dev1slot);
+
+  // and make sure we can load it by ID
   await check('vatFromID', [bid1, 'runtime'], ['installed']);
 
   // test importing a non-vat bundle, by ID
@@ -144,24 +184,24 @@ test('bundles', async t => {
   // test importing a named non-vat bundle
   await check('checkImportByName', ['importableNonVat'], ['importable', true]);
 
-  // check the shape of a bundlecap
-  const [s1, d1] = await run('getBundlecap', [bid2]);
-  t.is(s1, 'fulfilled');
-  const res1 = JSON.parse(d1.body);
-  const dev1 = { '@qclass': 'slot', iface: 'Alleged: device node', index: 0 };
-  t.deepEqual(res1, dev1);
-  const slots1 = d1.slots;
-  const dev1slot = slots1[0];
-  t.regex(dev1slot, /^kd\d+$/);
-  t.is(slots1[0], dev1slot);
+  // check the shape of the getBundleCap bundlecap
+  const [s2, d2] = await run('getBundleCap', [bid2]);
+  t.is(s2, 'fulfilled');
+  const res2 = JSON.parse(d2.body);
+  const dev2 = { '@qclass': 'slot', iface: 'Alleged: device node', index: 0 };
+  t.deepEqual(res2, dev2);
+  const slots2 = d2.slots;
+  const dev2slot = slots2[0];
+  t.regex(dev2slot, /^kd\d+$/);
+  t.is(slots2[0], dev2slot);
 
   // and the shape of the bundle
-  const [s2, d2] = await run('getBundle', [bid2]);
+  const [s3, d3] = await run('getBundle', [bid2]);
   // TODO: I want to treat the bundle as a string (really bytes, eventually),
   // but importBundle() requires an object, with moduleFormat: and
   // endoZipBase64:
-  t.is(s2, 'fulfilled');
-  const res2 = parse(d2.body);
-  t.is(res2.moduleFormat, 'endoZipBase64');
-  t.is(typeof res2.endoZipBase64, 'string');
+  t.is(s3, 'fulfilled');
+  const res3 = parse(d3.body);
+  t.is(res3.moduleFormat, 'endoZipBase64');
+  t.is(typeof res3.endoZipBase64, 'string');
 });

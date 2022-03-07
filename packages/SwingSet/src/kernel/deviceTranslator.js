@@ -1,9 +1,9 @@
 import { assert, details as X } from '@agoric/assert';
-import { insistMessage } from '../message.js';
+import { insistMessage } from '../lib/message.js';
 import { insistKernelType } from './parseKernelSlots.js';
-import { insistVatType, parseVatSlot } from '../parseVatSlots.js';
-import { insistCapData } from '../capdata.js';
-import { kdebug } from './kdebug.js';
+import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
+import { insistCapData } from '../lib/capdata.js';
+import { kdebug } from '../lib/kdebug.js';
 import { assertValidVatstoreKey } from './vatTranslator.js';
 
 /*

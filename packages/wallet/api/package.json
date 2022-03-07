@@ -1,6 +1,6 @@
 {
   "name": "@agoric/wallet-backend",
-  "version": "0.10.8",
+  "version": "0.10.9",
   "description": "Wallet backend",
   "type": "module",
   "scripts": {
@@ -14,21 +14,21 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@agoric/vats": "^0.6.0",
-    "@endo/bundle-source": "^2.0.7",
-    "@endo/init": "^0.5.35",
+    "@agoric/vats": "^0.7.0",
+    "@endo/bundle-source": "^2.1.0",
+    "@endo/init": "^0.5.36",
     "ava": "^3.12.1"
   },
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@agoric/ertp": "^0.13.2",
+    "@agoric/ertp": "^0.13.3",
     "@agoric/eventual-send": "^0.14.1",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.34",
-    "@agoric/store": "^0.6.9",
-    "@agoric/zoe": "^0.21.2",
-    "@endo/marshal": "^0.6.1",
-    "@endo/promise-kit": "^0.2.35",
+    "@agoric/notifier": "^0.3.35",
+    "@agoric/store": "^0.6.10",
+    "@agoric/zoe": "^0.21.3",
+    "@endo/marshal": "^0.6.2",
+    "@endo/promise-kit": "^0.2.36",
     "import-meta-resolve": "^1.1.1"
   },
   "eslintConfig": {

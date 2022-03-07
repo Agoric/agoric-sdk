@@ -1,5 +1,9 @@
 // @ts-check
 
+/** @typedef {import('./vault').VaultUIState} VaultUIState */
+/** @typedef {import('./vaultKit').VaultKit} VaultKit */
+/** @typedef {VaultKit['vault']} Vault */
+
 /**
  * @typedef  {Object} AutoswapLocal
  * @property {(amount: Amount, brand: Brand) => Amount} getInputPrice
@@ -33,19 +37,6 @@
  */
 
 /**
- * @typedef  {Object} VaultFactoryPublicFacet - the public facet
- * @property {() => Promise<Invitation>} makeLoanInvitation
- * @property {() => Promise<Invitation>} makeVaultInvitation
- * @property {() => Promise<Array<Collateral>>} getCollaterals
- * @property {() => Issuer} getRunIssuer
- * @property {(paramDescription: ParamDescription) => bigint} getNatParamState
- * @property {(paramDescription: ParamDescription) => Ratio} getRatioParamState
- * @property {() => Record<Keyword, ParamShortDescription>} getGovernedParams
- * @property {() => Promise<GovernorPublic>} getContractGovernor
- * @property {(name: string) => Amount} getInvitationAmount
- */
-
-/**
  * @typedef  {Object} VaultFactory - the creator facet
  * @property {AddVaultType} addVaultType
  * @property {() => Promise<Array<Collateral>>} getCollaterals
@@ -55,22 +46,7 @@
  */
 
 /**
- * @typedef {Object} BaseUIState
- * @property {Amount<NatValue>} locked Amount of Collateral locked
- * @property {Amount<NatValue>} debt Amount of Loan (including accrued interest)
- */
-
-/**
- * @typedef {BaseUIState & LiquidationUIMixin} VaultUIState
- * @typedef {Object} LiquidationUIMixin
- * @property {Ratio} interestRate Annual interest rate charge
- * @property {Ratio} liquidationRatio
- * @property {boolean} liquidated boolean showing whether liquidation occurred
- * @property {'active' | 'liquidating' | 'closed'} vaultState
- */
-
-/**
- * @callback ReallocateReward
+ * @callback ReallocateWithFee
  *
  * Transfer the indicated amount to the vaultFactory's reward
  * pool, taken from the `fromSeat`. Then reallocate over all the seat
@@ -106,37 +82,6 @@
 
 /**
  * @typedef {VaultManagerBase & GetVaultParams} VaultManager
- */
-
-/**
- * @typedef {Object} BaseVault
- * @property {() => Amount<NatValue>} getCollateralAmount
- * @property {() => Amount<NatValue>} getDebtAmount
- * @property {() => Amount<NatValue>} getNormalizedDebt
- *
- * @typedef {BaseVault & VaultMixin} Vault
- * @typedef {Object} VaultMixin
- * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
- * @property {() => Promise<Invitation>} makeCloseInvitation
- * @property {() => Promise<Invitation>} makeTransferInvitation
- * @property {() => ERef<UserSeat>} getLiquidationSeat
- * @property {() => Notifier<VaultUIState>} getNotifier
- */
-
-/**
- * @typedef {Object} LineOfCreditKit
- * @property {Notifier<BaseUIState>} uiNotifier
- * @property {BaseVault} vault
- * @property {{
- *    AdjustBalances: () => Promise<Invitation>,
- *    CloseVault: () => Promise<Invitation>,
- *  }} invitationMakers
- */
-
-/**
- * @typedef {Object} VaultKit
- * @property {Vault} vault
- * @property {Notifier<VaultUIState>} uiNotifier
  */
 
 /**

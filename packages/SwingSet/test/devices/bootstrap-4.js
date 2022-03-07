@@ -1,6 +1,6 @@
 import { assert } from '@agoric/assert';
 import { QCLASS } from '@endo/marshal';
-import { insistVatType } from '../../src/parseVatSlots.js';
+import { insistVatType } from '../../src/lib/parseVatSlots.js';
 import { extractMessage } from '../vat-util.js';
 
 // to exercise the error we get when syscall.callNow() is given a promise
@@ -18,17 +18,21 @@ function capargs(args, slots = []) {
 export default function setup(syscall, state, _helpers, vatPowers) {
   const { callNow } = syscall;
   const { testLog } = vatPowers;
+  let slot;
   function dispatch(vatDeliverObject) {
     if (vatDeliverObject[0] === 'message') {
-      const { method, args } = extractMessage(vatDeliverObject);
+      const { method, args, result } = extractMessage(vatDeliverObject);
       if (method === 'bootstrap') {
-        // find the device slot
+        // find and stash the device slot
         const [_vats, devices] = JSON.parse(args.body);
         const qnode = devices.d0;
         assert.equal(qnode[QCLASS], 'slot');
-        const slot = args.slots[qnode.index];
+        slot = args.slots[qnode.index];
         insistVatType('device', slot);
-
+        // resolve the bootstrap() promise now, so it won't be rejected later
+        // when we're terminated
+        syscall.resolve([[result, false, capargs(0, [])]]);
+      } else if (method === 'doBadCallNow') {
         const vpid = 'p+1'; // pretend we're exporting a promise
         const pnode = { [QCLASS]: 'slot', index: 0 };
         const callNowArgs = capargs([pnode], [vpid]);

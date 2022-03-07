@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.11.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.11.1...@agoric/xsnap@0.11.2) (2022-02-24)
+
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+
+
+
 ### [0.11.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.11.0...@agoric/xsnap@0.11.1) (2022-02-21)
 
 

@@ -15,23 +15,23 @@
  * SwingSet types
  *
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/bridge-src.js').buildRootDeviceNode>> } BridgeDevice
+ *   import('@agoric/swingset-vat/src/devices/bridge/device-bridge.js').buildRootDeviceNode>> } BridgeDevice
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/command-src.js').buildRootDeviceNode>> } CommandDevice
+ *   import('@agoric/swingset-vat/src/devices/command/device-command.js').buildRootDeviceNode>> } CommandDevice
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/mailbox-src.js').buildRootDeviceNode>> } MailboxDevice
+ *   import('@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js').buildRootDeviceNode>> } MailboxDevice
  * @typedef { import('@agoric/swingset-vat/src/vats/plugin-manager.js').PluginDevice } PluginDevice
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/timer-src.js').buildRootDeviceNode>> } TimerDevice
- * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdmin-src.js').buildRootDeviceNode>> } VatAdminDevice
+ *   import('@agoric/swingset-vat/src/devices/timer/device-timer.js').buildRootDeviceNode>> } TimerDevice
+ * @typedef { Device<
+ *   import('@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js').VatAdminRootDeviceNode> } VatAdminDevice
  *
  * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/vats/vat-tp.js').buildRootObject>> } VattpVat
+ *   import('@agoric/swingset-vat/src/vats/vattp/vat-vattp.js').buildRootObject>> } VattpVat
  * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/kernel/vatAdmin/vatAdminWrapper.js').buildRootObject>> } VatAdminVat
+ *   import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js').buildRootObject>> } VatAdminVat
  * @typedef { ERef<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/vats/vat-timerWrapper.js').buildRootObject>> } TimerVat
+ *   import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').buildRootObject>> } TimerVat
  *
  * See deliverToController in packages/SwingSet/src/vats/comms/controller.js
  * @typedef {ERef<{
@@ -78,7 +78,7 @@
  */
 
 /**
- * @typedef {{ resolve: (v: T) => void }} Producer<T>
+ * @typedef {{ resolve: (v: ERef<T>) => void }} Producer<T>
  * @template T
  */
 /**
@@ -174,6 +174,7 @@
  *     ammBundle: ERef<SourceBundle>,
  *     vaultBundles: ERef<Record<string, SourceBundle>>,
  *     centralSupplyBundle: ERef<SourceBundle>,
+ *     mintHolderBundle: ERef<SourceBundle>,
  *     feeMintAccess: ERef<FeeMintAccess>,
  *     governanceBundles: ERef<Record<string, SourceBundle>>,
  *     initialSupply: ERef<Payment>,
@@ -199,6 +200,7 @@
  *     governanceBundles: Producer<Record<string, SourceBundle>>,
  *     initialSupply: Producer<Payment>,
  *     centralSupplyBundle: Producer<SourceBundle>,
+ *     mintHolderBundle: Producer<SourceBundle>,
  *     feeMintAccess: Producer<FeeMintAccess>,
  *     priceAuthorityVat: Producer<PriceAuthorityVat>,
  *     priceAuthority: Producer<PriceAuthority>,
@@ -237,7 +239,7 @@
  *   consume: EconomyBootstrapPowers['consume'] & {
  *     bankManager: BankManager,
  *     board: ERef<Board>,
- *     bldIssuerKit: ERef<IssuerKit>,
+ *     bldIssuerKit: ERef<RemoteIssuerKit>,
  *     bridgeManager: ERef<OptionalBridgeManager>,
  *     client: ERef<ClientManager>,
  *     clientCreator: ERef<ClientCreator>,
@@ -249,7 +251,7 @@
  *   },
  *   produce: EconomyBootstrapPowers['produce'] & {
  *     bankManager: Producer<BankManager>,
- *     bldIssuerKit: Producer<IssuerKit>,
+ *     bldIssuerKit: Producer<RemoteIssuerKit>,
  *     board: Producer<ERef<Board>>,
  *     bridgeManager: Producer<OptionalBridgeManager>,
  *     client: Producer<ClientManager>,
@@ -262,7 +264,8 @@
  *     namesByAddressAdmin: Producer<NameAdmin>,
  *   },
  * }} BootstrapSpace
- * @typedef {ReturnType<Unpromise<BankVat>['makeBankManager']>} BankManager
+ * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
+ * @typedef {ReturnType<Awaited<BankVat>['makeBankManager']>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
  * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>} MintsVat
@@ -286,4 +289,3 @@
  */
 
 /** @template T @typedef  {{vatPowers: { D: DProxy }, devices: T}} BootDevices<T>  */
-/** @template T @typedef {import('@agoric/eventual-send').Unpromise<T>} Unpromise<T> */

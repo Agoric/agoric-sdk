@@ -3,7 +3,7 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeStore } from '@agoric/store';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 const setup = () => {
   const moolaBundle = makeIssuerKit('moola');
@@ -21,6 +21,7 @@ const setup = () => {
     brands.init(k, allBundles[k].brand);
   }
 
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   /** @type {(brand: Brand) => (value: AmountValue) => Amount} */
@@ -45,6 +46,7 @@ const setup = () => {
    * @property {(value: AmountValue) => Amount} simoleans
    * @property {(value: AmountValue) => Amount} bucks
    * @property {ERef<ZoeService>} zoe
+   * @property {*} vatAdminState
    */
 
   /** @type {BasicMints} */
@@ -66,6 +68,7 @@ const setup = () => {
     simoleans: makeSimpleMake(simoleanBundle.brand),
     bucks: makeSimpleMake(bucksBundle.brand),
     zoe,
+    vatAdminState,
   };
   harden(result);
   return result;

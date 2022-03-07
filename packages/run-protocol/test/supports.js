@@ -18,7 +18,7 @@ export function makeFakeInnerVault(
   const vault = Far('Vault', {
     getCollateralAmount: () => collateral,
     getNormalizedDebt: () => debt,
-    getDebtAmount: () => debt,
+    getCurrentDebt: () => debt,
     setDebt: newDebt => (debt = newDebt),
     setCollateral: newCollateral => (collateral = newCollateral),
     getIdInManager: () => vaultId,

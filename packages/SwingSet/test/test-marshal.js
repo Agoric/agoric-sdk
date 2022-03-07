@@ -1,13 +1,12 @@
-/* global setImmediate */
+/* global setImmediate, WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeMarshaller } from '../src/kernel/liveSlots.js';
+import { makeMarshaller } from '../src/liveslots/liveslots.js';
 
 const gcTools = harden({
   WeakRef,

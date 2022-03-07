@@ -11,29 +11,25 @@ import path from 'path';
 
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
-import fs from 'fs';
 import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 const CONTRACT_FILES = ['crashingAutoRefund'];
+const contractBundles = {};
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
     const bundle = await bundleSource(`${dirname}/${contract}`);
-    const obj = { bundle, contract };
-    fs.writeFileSync(
-      `${dirname}/bundle-${contract}.js`,
-      `export default ${JSON.stringify(obj)};`,
-    );
+    contractBundles[contract] = { bundle };
   }),
 );
 
 async function main(argv) {
   const config = await loadBasedir(dirname);
   config.defaultManagerType = 'xs-worker';
-  config.bundles = { zcf: { bundle: zcfBundle } };
   await generateBundlesP;
+  config.bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
   const controller = await buildVatController(config, argv);
   await controller.run();
   return controller.dump();

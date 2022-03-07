@@ -8,16 +8,22 @@ import { parseReachableAndVatSlot } from './reachable.js';
 import {
   insistStorageAPI,
   insistEnhancedStorageAPI,
-} from '../../storageAPI.js';
+} from '../../lib/storageAPI.js';
 import {
   insistKernelType,
   makeKernelSlot,
   parseKernelSlot,
 } from '../parseKernelSlots.js';
-import { insistCapData } from '../../capdata.js';
-import { insistMessage } from '../../message.js';
-import { insistDeviceID, insistVatID, makeDeviceID, makeVatID } from '../id.js';
-import { kdebug } from '../kdebug.js';
+import { insistCapData } from '../../lib/capdata.js';
+import { insistMessage } from '../../lib/message.js';
+import {
+  insistDeviceID,
+  insistVatID,
+  makeDeviceID,
+  makeVatID,
+  makeUpgradeID,
+} from '../../lib/id.js';
+import { kdebug } from '../../lib/kdebug.js';
 import {
   KERNEL_STATS_SUM_METRICS,
   KERNEL_STATS_UPDOWN_METRICS,
@@ -41,6 +47,7 @@ const enableKernelGC = true;
 // vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
 // vat.nextID = $NN
+// vat.nextUpgradeID = $NN
 // device.names = JSON([names..])
 // device.name.$NAME = $deviceID = d$NN
 // device.nextID = $NN
@@ -87,6 +94,7 @@ const enableKernelGC = true;
 
 // crankNumber = $NN
 // runQueue = JSON(runQueue)
+// acceptanceQueue = JSON(acceptanceQueue)
 // gcActions = JSON(gcActions)
 // reapQueue = JSON([vatIDs...])
 // pinnedObjects = ko$NN[,ko$NN..]
@@ -143,7 +151,7 @@ const FIRST_METER_ID = 1n;
 /**
  * @param {HostStore} hostStorage
  * @param {KernelSlog} kernelSlog
- * @param {import('../../hasher.js').CreateSHA256} createSHA256
+ * @param {import('../../lib-nodejs/hasher.js').CreateSHA256} createSHA256
  */
 export default function makeKernelKeeper(
   hostStorage,
@@ -283,6 +291,7 @@ export default function makeKernelKeeper(
     kvStore.set('vat.names', '[]');
     kvStore.set('vat.dynamicIDs', '[]');
     kvStore.set('vat.nextID', `${FIRST_VAT_ID}`);
+    kvStore.set('vat.nextUpgradeID', `1`);
     kvStore.set('device.names', '[]');
     kvStore.set('device.nextID', `${FIRST_DEVICE_ID}`);
     kvStore.set('ko.nextID', `${FIRST_OBJECT_ID}`);
@@ -292,17 +301,45 @@ export default function makeKernelKeeper(
     kvStore.set('gcActions', '[]');
     kvStore.set('reapQueue', '[]');
     kvStore.set('runQueue', JSON.stringify([]));
+    kvStore.set('acceptanceQueue', JSON.stringify([]));
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
     kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
   }
 
-  function getDefaultManagerType() {
-    return getRequired('kernel.defaultManagerType');
+  /**
+   *
+   * @param {string} mt
+   * @returns { asserts mt is ManagerType }
+   */
+  function insistManagerType(mt) {
+    assert(
+      [
+        'local',
+        'nodeWorker',
+        'node-subprocess',
+        'xs-worker',
+        'xs-worker-no-gc',
+      ].includes(mt),
+    );
+    return undefined; // hush JSDoc
   }
 
+  function getDefaultManagerType() {
+    const mt = getRequired('kernel.defaultManagerType');
+    insistManagerType(mt);
+    return mt;
+  }
+
+  /**
+   *
+   * @returns { number | 'never' }
+   */
   function getDefaultReapInterval() {
-    return getRequired('kernel.defaultReapInterval');
+    const r = getRequired('kernel.defaultReapInterval');
+    const ri = r === 'never' ? r : Number.parseInt(r, 10);
+    assert(ri === 'never' || typeof ri === 'number', `k.dri is '${ri}'`);
+    return ri;
   }
 
   const bundleIDRE = new RegExp('^b1-[0-9a-f]{128}$');
@@ -542,7 +579,7 @@ export default function makeKernelKeeper(
 
   function getKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
-    const p = { state: kvStore.get(`${kernelSlot}.state`) };
+    const p = { state: getRequired(`${kernelSlot}.state`) };
     switch (p.state) {
       case undefined:
         assert.fail(X`unknown kernelPromise '${kernelSlot}'`);
@@ -646,13 +683,13 @@ export default function makeKernelKeeper(
     // up the resolution *now* and set the correct target early. Doing that
     // might make it easier to remove the Promise Table entry earlier.
     const p = getKernelPromise(kernelSlot);
-    const runQueue = JSON.parse(getRequired('runQueue'));
+    const acceptanceQueue = JSON.parse(getRequired('acceptanceQueue'));
     for (const msg of p.queue) {
       const entry = harden({ type: 'send', target: kernelSlot, msg });
-      runQueue.push(entry);
+      acceptanceQueue.push(entry);
     }
-    kvStore.set('runQueue', JSON.stringify(runQueue));
-    incStat('runQueueLength', p.queue.length);
+    kvStore.set('acceptanceQueue', JSON.stringify(acceptanceQueue));
+    incStat('acceptanceQueueLength', p.queue.length);
 
     deleteKernelPromiseState(kernelSlot);
     decStat('kpUnresolved');
@@ -838,7 +875,8 @@ export default function makeKernelKeeper(
   }
 
   function addToRunQueue(msg) {
-    // the runqueue is usually empty between blocks, so we can afford a
+    // TODO: May not be true
+    // the run-queue is usually empty between blocks, so we can afford a
     // non-delta-friendly format
     const queue = JSON.parse(getRequired('runQueue'));
     queue.push(msg);
@@ -856,11 +894,39 @@ export default function makeKernelKeeper(
     return queue.length;
   }
 
-  function getNextMsg() {
+  function getNextRunQueueMsg() {
     const queue = JSON.parse(getRequired('runQueue'));
     const msg = queue.shift();
     kvStore.set('runQueue', JSON.stringify(queue));
     decStat('runQueueLength');
+    return msg;
+  }
+
+  function addToAcceptanceQueue(msg) {
+    // TODO: May not be true
+    // the acceptance-queue is usually empty between blocks, so we can afford a
+    // non-delta-friendly format
+    const queue = JSON.parse(getRequired('acceptanceQueue'));
+    queue.push(msg);
+    kvStore.set('acceptanceQueue', JSON.stringify(queue));
+    incStat('acceptanceQueueLength');
+  }
+
+  function isAcceptanceQueueEmpty() {
+    const queue = JSON.parse(getRequired('acceptanceQueue'));
+    return queue.length <= 0;
+  }
+
+  function getAcceptanceQueueLength() {
+    const queue = JSON.parse(getRequired('acceptanceQueue'));
+    return queue.length;
+  }
+
+  function getNextAcceptanceQueueMsg() {
+    const queue = JSON.parse(getRequired('acceptanceQueue'));
+    const msg = queue.shift();
+    kvStore.set('acceptanceQueue', JSON.stringify(queue));
+    decStat('acceptanceQueueLength');
     return msg;
   }
 
@@ -1000,6 +1066,12 @@ export default function makeKernelKeeper(
 
   function getDynamicVats() {
     return JSON.parse(getRequired('vat.dynamicIDs'));
+  }
+
+  function allocateUpgradeID() {
+    const nextID = Nat(BigInt(getRequired(`vat.nextUpgradeID`)));
+    kvStore.set(`vat.nextUpgradeID`, `${nextID + 1n}`);
+    return makeUpgradeID(nextID);
   }
 
   // As refcounts are decremented, we accumulate a set of krefs for which
@@ -1382,6 +1454,8 @@ export default function makeKernelKeeper(
 
     const runQueue = JSON.parse(getRequired('runQueue'));
 
+    const acceptanceQueue = JSON.parse(getRequired('acceptanceQueue'));
+
     return harden({
       vatTables,
       kernelTable,
@@ -1390,6 +1464,7 @@ export default function makeKernelKeeper(
       gcActions,
       reapQueue,
       runQueue,
+      acceptanceQueue,
     });
   }
 
@@ -1448,7 +1523,12 @@ export default function makeKernelKeeper(
     addToRunQueue,
     isRunQueueEmpty,
     getRunQueueLength,
-    getNextMsg,
+    getNextRunQueueMsg,
+
+    addToAcceptanceQueue,
+    isAcceptanceQueueEmpty,
+    getAcceptanceQueueLength,
+    getNextAcceptanceQueueMsg,
 
     allocateMeter,
     addMeterRemaining,
@@ -1470,6 +1550,8 @@ export default function makeKernelKeeper(
     getDynamicVats,
     getStaticVats,
     getDevices,
+
+    allocateUpgradeID,
 
     getDeviceIDForName,
     allocateDeviceIDForNameIfNeeded,

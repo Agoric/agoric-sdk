@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.5...@agoric/solo@0.5.6) (2022-02-24)
+
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+
+
+### Bug Fixes
+
+* **solo:** prevent Object.freeze from borking the REPL ([9e50a54](https://github.com/Agoric/agoric-sdk/commit/9e50a54a598247de5fcf1f2317c3d8b2203b2b66))
+
+
+
 ### [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.4...@agoric/solo@0.5.5) (2022-02-21)
 
 

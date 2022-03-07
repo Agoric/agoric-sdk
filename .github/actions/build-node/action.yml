@@ -25,8 +25,11 @@ runs:
     - name: yarn install
       run: yarn install
       shell: bash
-    - name: check if git is dirty
-      run: git diff --stat --exit-code
+    # We do a diff instead of using --frozen-lockfile because
+    # - it doesn't detect deletions from yarn.lock (see https://github.com/Agoric/agoric-sdk/pull/4646#discussion_r814034842)
+    # - the diff provides diagnostic info of what changed
+    - name: fail if git checkout differs
+      run: git diff --exit-code
       shell: bash
     - name: check dependencies
       run: yarn check-dependencies

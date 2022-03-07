@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { parseVatSlot } from '../../parseVatSlots.js';
+import { parseVatSlot } from '../../lib/parseVatSlots.js';
 import { parseRemoteSlot } from './parseRemoteSlot.js';
 
 // A note on verb polarity:

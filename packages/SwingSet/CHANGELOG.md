@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.25.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.25.0...@agoric/swingset-vat@0.25.1) (2022-02-24)
+
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+* run vat creation and initialization in a crank to access to syscall and transcript logging ([2218e07](https://github.com/Agoric/agoric-sdk/commit/2218e07437a168226666fbb67b2158937cc30372)), closes [#2910](https://github.com/Agoric/agoric-sdk/issues/2910)
+
+
+
 ## [0.25.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.24.1...@agoric/swingset-vat@0.25.0) (2022-02-21)
 
 

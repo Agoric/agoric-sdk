@@ -111,7 +111,6 @@ written with the new mapSize.
 
 Lifetime: until we no longer use LMDB in swing-store
 
-## OTEL_EXPORTER_PROMETHEUS_HOST
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
 Affects: cosmic-swingset
@@ -128,6 +127,14 @@ Lifetime: until we decide not to support Prometheus for metrics export
 Affects: solo
 
 Same as `LMDB_MAP_SIZE`, but for solo instead of chain.
+
+## SOLO_OTEL_EXPORTER_PROMETHEUS_PORT
+
+Affects: solo
+
+Same as `OTEL_EXPORTER_PROMETHEUS_PORT`, but for solo instead of chain.
+
+Lifetime: ?
 
 ## SOLO_SLOGFILE
 

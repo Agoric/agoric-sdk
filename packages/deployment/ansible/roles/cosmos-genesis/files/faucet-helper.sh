@@ -3,6 +3,7 @@ set -e
 
 thisdir=$(dirname -- "$0")
 FAUCET_HOME=$thisdir/../faucet
+DELEGATES="$thisdir/cosmos-delegates.txt"
 
 MAX_LINES=-1
 STAKE=75000000ubld
@@ -87,12 +88,12 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
       NAME=$1
       ADDR=$2
 
-      if [[ $UNIQUE != no && $MAX_LINES -ge 0 && $(wc -l "$thisdir"/cosmos-delegates.txt | sed -e 's/ .*//') -ge $MAX_LINES ]]; then
+      if [[ $UNIQUE != no && $MAX_LINES -ge 0 && $(wc -l "$DELEGATES" | sed -e 's/ .*//') -ge $MAX_LINES ]]; then
         echo "Sorry, we've capped the number of validators at $MAX_LINES"
         exit 1
       fi
       if [[ $UNIQUE != no ]]; then
-        line=$(grep -e ":$NAME$" "$thisdir"/cosmos-delegates.txt || true)
+        line=$(grep -e ":$NAME$" "$DELEGATES" || true)
         if [[ -n $line ]]; then
           echo "$NAME has already tapped the faucet:" 1>&2
           echo "$line" 1>&2
@@ -100,7 +101,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         fi
       fi
       if [[ $UNIQUE != no ]]; then
-        line=$(grep -e "^$ADDR:" "$thisdir"/cosmos-delegates.txt || true)
+        line=$(grep -e "^$ADDR:" "$DELEGATES" || true)
         if [[ -n $line ]]; then
           echo "$ADDR already received a tap:" 1>&2
           echo "$line" 1>&2
@@ -113,9 +114,9 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         --broadcast-mode=block \
         -- faucet "$ADDR" "$STAKE"; then
         # Record the information before exiting, if the file exists.
-        test -f "$thisdir"/cosmos-delegates || exit 0
-        sed -i -e "/:$NAME$/d" "$thisdir"/cosmos-delegates.txt
-        echo "$ADDR:$STAKE:$NAME" >> "$thisdir"/cosmos-delegates.txt
+        test -f "$DELEGATES" || exit 0
+        sed -i -e "/:$NAME$/d" "$DELEGATES"
+        echo "$ADDR:$STAKE:$NAME" >> "$DELEGATES"
         exit 0
       fi
       ;;

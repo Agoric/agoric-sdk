@@ -4,7 +4,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { createHash } from 'crypto';
 import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
-import { createSHA256 } from '../src/hasher.js';
+import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import {
   buildCrankBuffer,
@@ -265,8 +265,10 @@ test('kernel state', async t => {
     ['initialized', 'true'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '1'],
+    ['vat.nextUpgradeID', '1'],
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
@@ -296,8 +298,10 @@ test('kernelKeeper vat names', async t => {
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '3'],
+    ['vat.nextUpgradeID', '1'],
     ['vat.names', JSON.stringify(['vatname5', 'Frank'])],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
@@ -343,8 +347,10 @@ test('kernelKeeper device names', async t => {
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[]'],
+    ['acceptanceQueue', '[]'],
     ['reapQueue', '[]'],
     ['vat.nextID', '1'],
+    ['vat.nextUpgradeID', '1'],
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.nextID', '9'],
@@ -394,19 +400,25 @@ test('kernelKeeper runQueue', async t => {
   k.commitCrank();
   const k2 = duplicateKeeper(getState);
 
-  t.deepEqual(k.getNextMsg(), { type: 'send', stuff: 'awesome' });
+  t.deepEqual(k.getNextRunQueueMsg(), { type: 'send', stuff: 'awesome' });
   t.falsy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 1);
 
-  t.deepEqual(k.getNextMsg(), { type: 'notify', stuff: 'notifawesome' });
+  t.deepEqual(k.getNextRunQueueMsg(), {
+    type: 'notify',
+    stuff: 'notifawesome',
+  });
   t.truthy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 0);
 
-  t.deepEqual(k2.getNextMsg(), { type: 'send', stuff: 'awesome' });
+  t.deepEqual(k2.getNextRunQueueMsg(), { type: 'send', stuff: 'awesome' });
   t.falsy(k2.isRunQueueEmpty());
   t.is(k2.getRunQueueLength(), 1);
 
-  t.deepEqual(k2.getNextMsg(), { type: 'notify', stuff: 'notifawesome' });
+  t.deepEqual(k2.getNextRunQueueMsg(), {
+    type: 'notify',
+    stuff: 'notifawesome',
+  });
   t.truthy(k2.isRunQueueEmpty());
   t.is(k2.getRunQueueLength(), 0);
 });
@@ -478,17 +490,17 @@ test('kernelKeeper promises', async t => {
   k.addSubscriberToPromise(p1, 'v3');
   t.deepEqual(k.getKernelPromise(p1).subscribers, ['v3', 'v5']);
 
-  const expectedRunqueue = [];
+  const expectedAcceptanceQueue = [];
   const m1 = { method: 'm1', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m1);
   t.deepEqual(k.getKernelPromise(p1).refCount, 1);
-  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m1 });
+  expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m1 });
 
   const m2 = { method: 'm2', args: { body: '', slots: [] } };
   k.addMessageToPromiseQueue(p1, m2);
   t.deepEqual(k.getKernelPromise(p1).queue, [m1, m2]);
   t.deepEqual(k.getKernelPromise(p1).refCount, 2);
-  expectedRunqueue.push({ type: 'send', target: 'kp40', msg: m2 });
+  expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
   k.commitCrank();
   k2 = duplicateKeeper(getState);
@@ -515,11 +527,13 @@ test('kernelKeeper promises', async t => {
     ['crankNumber', '0'],
     ['device.nextID', '7'],
     ['vat.nextID', '1'],
+    ['vat.nextUpgradeID', '1'],
     ['vat.names', '[]'],
     ['vat.dynamicIDs', '[]'],
     ['device.names', '[]'],
     ['gcActions', '[]'],
-    ['runQueue', JSON.stringify(expectedRunqueue)],
+    ['runQueue', '[]'],
+    ['acceptanceQueue', JSON.stringify(expectedAcceptanceQueue)],
     ['reapQueue', '[]'],
     ['kd.nextID', '30'],
     ['ko.nextID', '21'],
@@ -685,16 +699,17 @@ test('meters', async t => {
   t.deepEqual(k.getMeter(m3), { remaining: 'unlimited', threshold: 5n });
 });
 
-test('crankhash', t => {
+test('crankhash - initial state and additions', t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null, createSHA256);
   k.createStartingKernelState('local');
   k.commitCrank();
   // the initial state additions happen to hash to this:
-  const oldActivityhash =
-    '1bde96fbe196090dc773e8b9d07a22a0a83e2fb3b4295efb2d8f863c9c8831fb';
-  t.is(store.kvStore.get('activityhash'), oldActivityhash);
+  const initialActivityHash = store.kvStore.get('activityhash');
+  t.snapshot(initialActivityHash, 'initial state');
 
+  // a crank which sets a single key produces a stable crankhash, which does
+  // not depend upon the earlier activityhash of kernel state
   k.kvStore.set('one', '1');
   let h = createHash('sha256');
   h.update('add\n' + 'one\n' + '1\n');
@@ -706,17 +721,21 @@ test('crankhash', t => {
 
   h = createHash('sha256');
   h.update('activityhash\n');
-  h.update(`${oldActivityhash}\n${expCrankhash}\n`);
-  const expActivityhash = h.digest('hex');
-  t.is(
-    expActivityhash,
-    'c80eaa61ecad76d48f2a2ab7af42b400505e3ad5bebfb3643a8ff28cc3494e89',
-  );
+  h.update(`${initialActivityHash}\n${expCrankhash}\n`);
+  const expectedActivityHash = h.digest('hex');
+  t.snapshot(expectedActivityHash, 'expected activityhash');
 
   const { crankhash, activityhash } = k.commitCrank();
   t.is(crankhash, expCrankhash);
-  t.is(activityhash, expActivityhash);
-  t.is(store.kvStore.get('activityhash'), expActivityhash);
+  t.is(activityhash, expectedActivityHash);
+  t.is(store.kvStore.get('activityhash'), expectedActivityHash);
+
+  t.log(`\
+This test fails under maintenance of initial kernel state.
+If these changes are expected, run:
+  yarn test --update-snapshots test/test-state.js
+Then commit the changes in .../snapshots/ path.
+`);
 });
 
 test('crankhash - skip keys', t => {

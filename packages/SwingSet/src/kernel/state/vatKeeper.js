@@ -5,13 +5,15 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots.js';
-import { insistVatID } from '../id.js';
-import { kdebug } from '../kdebug.js';
+import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { insistVatID } from '../../lib/id.js';
+import { kdebug } from '../../lib/kdebug.js';
 import {
   parseReachableAndVatSlot,
   buildReachableAndVatSlot,
 } from './reachable.js';
+
+/** @typedef {import('../../types-internal.js').RecordedVatOptions} RecordedVatOptions */
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
@@ -93,7 +95,7 @@ export function makeVatKeeper(
 
   /**
    * @param {SourceOfBundle} source
-   * @param {ManagerOptions} options
+   * @param {RecordedVatOptions} options
    */
   function setSourceAndOptions(source, options) {
     // take care with API change

@@ -12,7 +12,7 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
 
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '../../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -20,10 +20,12 @@ const dirname = path.dirname(filename);
 const attestationRoot = `${dirname}/../../../../src/contracts/attestation/attestation.js`;
 
 test('attestation contract basic tests', async t => {
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const bundle = await bundleSource(attestationRoot);
+  vatAdminState.installBundle('b1-contract', bundle);
 
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
-  const installation = await E(zoe).install(bundle);
+  const installation = await E(zoe).installBundleID('b1-contract');
 
   const bldIssuerKit = makeIssuerKit(
     'BLD',

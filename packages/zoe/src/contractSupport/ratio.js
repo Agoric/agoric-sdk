@@ -269,6 +269,20 @@ export const ratioGTE = (left, right) => {
 };
 
 /**
+ * True iff the ratios are the same values (equal or equivalant may return false)
+ *
+ * @param {Ratio} left
+ * @param {Ratio} right
+ * @returns {boolean}
+ */
+export const ratiosSame = (left, right) => {
+  return (
+    AmountMath.isEqual(left.numerator, right.numerator) &&
+    AmountMath.isEqual(left.denominator, right.denominator)
+  );
+};
+
+/**
  * Make an equivalant ratio with a new denominator
  *
  * @param {Ratio} ratio

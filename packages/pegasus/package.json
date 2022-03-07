@@ -1,11 +1,11 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Peg-as-us contract",
   "type": "module",
   "main": "./src/pegasus.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "yarn build:bundles",
@@ -30,19 +30,19 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@agoric/ertp": "^0.13.2",
+    "@agoric/ertp": "^0.13.3",
     "@agoric/eventual-send": "^0.14.1",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.34",
-    "@agoric/store": "^0.6.9",
-    "@agoric/swingset-vat": "^0.25.0",
-    "@agoric/vats": "^0.6.0",
-    "@agoric/zoe": "^0.21.2",
-    "@endo/bundle-source": "^2.0.7",
-    "@endo/captp": "^2.0.1",
-    "@endo/init": "^0.5.35",
-    "@endo/marshal": "^0.6.1",
-    "@endo/promise-kit": "^0.2.35"
+    "@agoric/notifier": "^0.3.35",
+    "@agoric/store": "^0.6.10",
+    "@agoric/swingset-vat": "^0.25.1",
+    "@agoric/vats": "^0.7.0",
+    "@agoric/zoe": "^0.21.3",
+    "@endo/bundle-source": "^2.1.0",
+    "@endo/captp": "^2.0.2",
+    "@endo/init": "^0.5.36",
+    "@endo/marshal": "^0.6.2",
+    "@endo/promise-kit": "^0.2.36"
   },
   "devDependencies": {
     "ava": "^3.12.1",

@@ -3,7 +3,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { spawn } from 'child_process';
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import {
   buildVatController,
   loadBasedir,
@@ -67,8 +67,11 @@ async function simpleCall(t) {
 
   // vat1:o+0 will map to ko21
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
-  t.deepEqual(controller.dump().runQueue, [
+  t.deepEqual(controller.dump().runQueue, []);
+  t.deepEqual(controller.dump().acceptanceQueue, [
+    { type: 'startVat', vatID: 'v1' },
     { type: 'startVat', vatID: 'v2' },
+    { type: 'startVat', vatID: 'v3' },
     { type: 'startVat', vatID: 'v4' },
     { type: 'startVat', vatID: 'v5' },
     {
@@ -112,15 +115,9 @@ test('bootstrap', async t => {
   const config = await loadBasedir(
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
-  // the controller automatically runs the bootstrap function.
-  // basedir-controller-2/bootstrap.js logs "bootstrap called" and queues a call to
-  // left[0].bootstrap
   const c = await buildVatController(config);
-  for (let i = 0; i < 5; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
-  }
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
 });
 
 test('XS bootstrap', async t => {
@@ -130,11 +127,8 @@ test('XS bootstrap', async t => {
   config.defaultManagerType = 'xs-worker';
   const hostStorage = provideHostStorage();
   const c = await buildVatController(config, [], { hostStorage });
-  for (let i = 0; i < 5; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
-  }
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.is(
     hostStorage.kvStore.get('kernel.defaultManagerType'),
     'xs-worker',
@@ -167,11 +161,8 @@ test('static vats are unmetered on XS', async t => {
       },
     },
   );
-  for (let i = 0; i < 5; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    await c.step(); // vat starts
-  }
-  t.deepEqual(c.dump().log, ['bootstrap called']);
+  await c.run();
+  t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.deepEqual(limited, [false, false, false, false]);
 });
 
@@ -194,7 +185,6 @@ test.serial('bootstrap export', async t => {
   c.pinVatRoot('bootstrap');
   const vatAdminVatID = c.vatNameToID('vatAdmin');
   const vatAdminDevID = c.deviceNameToID('vatAdmin');
-  const bundleDevID = c.deviceNameToID('bundle');
   const commsVatID = c.vatNameToID('comms');
   const vatTPVatID = c.vatNameToID('vattp');
   const timerVatID = c.vatNameToID('timer');
@@ -217,10 +207,8 @@ test.serial('bootstrap export', async t => {
   const right0 = 'ko24';
   const timer0 = 'ko25';
   const vattp0 = 'ko26';
-  const bundleDev = 'kd30';
-  const adminDev = 'kd31';
+  const adminDev = 'kd30';
   const kt = [
-    [bundleDev, bundleDevID, 'd+0'],
     [adminDev, vatAdminDevID, 'd+0'],
     [boot0, bootstrapVatID, 'o+0'],
     [left0, leftVatID, 'o+0'],
@@ -232,11 +220,13 @@ test.serial('bootstrap export', async t => {
   ];
   checkKT(t, c, kt);
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     { type: 'startVat', vatID: 'v1' },
     { type: 'startVat', vatID: 'v2' },
     { type: 'startVat', vatID: 'v3' },
     { type: 'startVat', vatID: 'v4' },
+    { type: 'startVat', vatID: 'v5' },
     { type: 'startVat', vatID: 'v6' },
     { type: 'startVat', vatID: 'v7' },
     {
@@ -244,7 +234,7 @@ test.serial('bootstrap export', async t => {
         result: 'kp40',
         method: 'bootstrap',
         args: {
-          body: '[{"bootstrap":{"@qclass":"slot","iface":"Alleged: vref","index":0},"comms":{"@qclass":"slot","iface":"Alleged: vref","index":1},"left":{"@qclass":"slot","iface":"Alleged: vref","index":2},"right":{"@qclass":"slot","iface":"Alleged: vref","index":3},"timer":{"@qclass":"slot","iface":"Alleged: vref","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: vref","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: vref","index":6}},{"bundle":{"@qclass":"slot","iface":"Alleged: device","index":7},"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":8}}]',
+          body: '[{"bootstrap":{"@qclass":"slot","iface":"Alleged: vref","index":0},"comms":{"@qclass":"slot","iface":"Alleged: vref","index":1},"left":{"@qclass":"slot","iface":"Alleged: vref","index":2},"right":{"@qclass":"slot","iface":"Alleged: vref","index":3},"timer":{"@qclass":"slot","iface":"Alleged: vref","index":4},"vatAdmin":{"@qclass":"slot","iface":"Alleged: vref","index":5},"vattp":{"@qclass":"slot","iface":"Alleged: vref","index":6}},{"vatAdmin":{"@qclass":"slot","iface":"Alleged: device","index":7}}]',
           slots: [
             boot0,
             comms0,
@@ -253,7 +243,6 @@ test.serial('bootstrap export', async t => {
             timer0,
             vatAdminSvc,
             vattp0,
-            bundleDev,
             adminDev,
           ],
         },
@@ -263,15 +252,19 @@ test.serial('bootstrap export', async t => {
     },
   ]);
 
-  // this test was designed before GC, and wants to single-step the kernel,
-  // but doesn't care about the GC action steps, so we use this helper
-  // function
+  // this test was designed before GC and acceptance queues, and wants to
+  // single-step the kernel, but doesn't care about the GC action steps,
+  // or the temporary acceptance queue, so we use this helper function
   async function stepGC() {
     while (c.dump().gcActions.length) {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
     while (c.dump().reapQueue.length) {
+      // eslint-disable-next-line no-await-in-loop
+      await c.step();
+    }
+    while (c.dump().acceptanceQueue.length) {
       // eslint-disable-next-line no-await-in-loop
       await c.step();
     }
@@ -295,11 +288,11 @@ test.serial('bootstrap export', async t => {
   kt.push([vatAdminSvc, bootstrapVatID, 'o-54']);
   kt.push([vattp0, bootstrapVatID, 'o-55']);
   kt.push([fooP, bootstrapVatID, 'p+5']);
-  kt.push([bundleDev, bootstrapVatID, 'd-70']);
-  kt.push([adminDev, bootstrapVatID, 'd-71']);
+  kt.push([adminDev, bootstrapVatID, 'd-70']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     {
       type: 'send',
       target: left0,
@@ -314,6 +307,7 @@ test.serial('bootstrap export', async t => {
     },
   ]);
 
+  await stepGC(); // dropExports
   await stepGC(); // message foo
   const barP = 'kp42';
   t.deepEqual(c.dump().log, ['bootstrap.obj0.bootstrap()', 'left.foo 1']);
@@ -321,7 +315,8 @@ test.serial('bootstrap export', async t => {
   kt.push([barP, leftVatID, 'p+5']);
   // checkKT(t, c, kt); // disabled due to cross-engine GC variation
 
-  t.deepEqual(c.dump().runQueue, [
+  t.deepEqual(c.dump().runQueue, []);
+  t.deepEqual(c.dump().acceptanceQueue, [
     {
       type: 'send',
       target: right0,
@@ -349,6 +344,8 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().runQueue, [
     { type: 'notify', vatID: bootstrapVatID, kpid: fooP },
+  ]);
+  t.deepEqual(c.dump().acceptanceQueue, [
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
 
@@ -373,6 +370,7 @@ test.serial('bootstrap export', async t => {
   t.deepEqual(c.dump().runQueue, [
     { type: 'notify', vatID: leftVatID, kpid: barP },
   ]);
+  t.deepEqual(c.dump().acceptanceQueue, []);
 
   await stepGC(); // notify
 

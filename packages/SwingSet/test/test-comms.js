@@ -127,8 +127,8 @@ test('transmit', t => {
   // remote 'bob' on machine B
   const { syscall, sends } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  dispatch(['startVat']);
   const { state, clistKit } = debugState.get(dispatch);
-  state.maybeInitialize();
   const {
     provideKernelForLocal,
     provideLocalForKernel,
@@ -202,8 +202,8 @@ test('receive', t => {
   // vat's object 'bob'
   const { syscall, sends, gcs } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  dispatch(['startVat']);
   const { state, clistKit } = debugState.get(dispatch);
-  state.maybeInitialize();
   const {
     provideLocalForKernel,
     getKernelForLocal,
@@ -348,8 +348,8 @@ test('receive', t => {
 test('addEgress', t => {
   const { syscall } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  dispatch(['startVat']);
   const { state, clistKit } = debugState.get(dispatch);
-  state.maybeInitialize();
   const { getLocalForKernel, getRemoteForLocal } = clistKit;
   const transmitterID = 'o-1';
   const remoteName = 'remote1';
@@ -381,8 +381,8 @@ test('addEgress', t => {
 test('addIngress', t => {
   const { syscall, resolves } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  dispatch(['startVat']);
   const { state, clistKit } = debugState.get(dispatch);
-  state.maybeInitialize();
   const { getLocalForKernel, getRemoteForLocal } = clistKit;
   const transmitterID = 'o-1';
   const remoteName = 'remote1';
@@ -415,8 +415,8 @@ test('comms gc', t => {
   // about various objects that are dropped and retired
   const { syscall, sends, gcs } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
+  dispatch(['startVat']);
   const { state, clistKit: ck } = debugState.get(dispatch);
-  state.maybeInitialize();
   const transmitterID = 'o-1'; // vat-tp target for B
   const { remoteID, receiverID } = state.addRemote('B', transmitterID);
   function didTx(exp) {

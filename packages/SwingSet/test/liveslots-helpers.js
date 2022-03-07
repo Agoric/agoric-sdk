@@ -1,10 +1,10 @@
-import engineGC from '../src/engine-gc.js';
+/* global WeakRef, FinalizationRegistry */
+import engineGC from '../src/lib-nodejs/engine-gc.js';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
+import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeLiveSlots } from '../src/kernel/liveSlots.js';
+import { makeLiveSlots } from '../src/liveslots/liveslots.js';
 
 export function buildSyscall() {
   const log = [];

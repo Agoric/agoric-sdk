@@ -5,8 +5,8 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots.js';
-import { insistDeviceID } from '../id.js';
+import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { insistDeviceID } from '../../lib/id.js';
 
 const FIRST_DEVICE_IMPORTED_OBJECT_ID = 10n;
 const FIRST_DEVICE_IMPORTED_DEVICE_ID = 20n;

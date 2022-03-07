@@ -1,15 +1,15 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 
 import {
   swingsetIsInitialized,
   initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
-import { buildBridge } from '../../src/devices/bridge.js';
-import { buildPlugin } from '../../src/devices/plugin.js';
+import { buildBridge } from '../../src/devices/bridge/bridge.js';
+import { buildPlugin } from '../../src/devices/plugin/plugin.js';
 
 test.before('initialize storage', t => {
   t.context.hostStorage = provideHostStorage();

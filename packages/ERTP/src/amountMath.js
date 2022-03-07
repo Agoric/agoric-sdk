@@ -363,6 +363,26 @@ const AmountMath = {
     const value = h.doSubtract(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
   },
+  /**
+   * Returns the min value between x and y using isGTE
+   *
+   * @template {AmountValue} [V=AmountValue]
+   * @param {Amount<V>} x
+   * @param {Amount<V>} y
+   * @param {Brand=} brand
+   * @returns {Amount<V>}
+   */
+  min: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? y : x),
+  /**
+   * Returns the max value between x and y using isGTE
+   *
+   * @template {AmountValue} [V=AmountValue]
+   * @param {Amount<V>} x
+   * @param {Amount<V>} y
+   * @param {Brand=} brand
+   * @returns {Amount<V>}
+   */
+  max: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? x : y),
 };
 harden(AmountMath);
 

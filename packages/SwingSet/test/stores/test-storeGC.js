@@ -12,7 +12,7 @@ import {
   makeRetireExports,
   makeBringOutYourDead,
 } from '../util.js';
-import engineGC from '../../src/engine-gc.js';
+import engineGC from '../../src/lib-nodejs/engine-gc.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js

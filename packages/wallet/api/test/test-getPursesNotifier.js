@@ -60,7 +60,7 @@ test('getPursesNotifier', async t => {
   const moolaPurseInfo = update.value[1];
   t.truthy(moolaPurseInfo.actions);
   t.is(moolaPurseInfo.brand, moolaKit.brand);
-  t.is(moolaPurseInfo.brandBoardId, '1532665031');
+  t.is(moolaPurseInfo.brandBoardId, 'board0425');
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
     brand: { kind: 'brand', petname: 'moola' }, // not a real amount
@@ -95,7 +95,7 @@ test('getAttenuatedPursesNotifier', async t => {
   const moolaPurseInfo = update.value[1];
   t.false('actions' in moolaPurseInfo);
   t.is(moolaPurseInfo.brand, moolaKit.brand);
-  t.is(moolaPurseInfo.brandBoardId, '1532665031');
+  t.is(moolaPurseInfo.brandBoardId, 'board0425');
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
     brand: { kind: 'brand', petname: 'moola' }, // not a real amount

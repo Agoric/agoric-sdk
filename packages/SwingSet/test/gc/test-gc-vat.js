@@ -1,7 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargs } from '../util.js';
 
@@ -52,9 +52,11 @@ async function dropPresence(t, dropExport) {
   c.queueToVatRoot('bootstrap', 'one', capargs([]));
   if (dropExport) {
     c.queueToVatRoot('bootstrap', 'drop', capargs([]));
+    await c.step(); // acceptance
     await c.step(); // message
     await c.step(); // reap
   }
+  await c.step(); // acceptance
   await c.step(); // message
   await c.step(); // reap
 

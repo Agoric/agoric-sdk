@@ -1,7 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import {
   buildVatController,
   initializeSwingset,
@@ -40,10 +40,14 @@ test.serial('exercise cache', async t => {
 
   const log = [];
 
+  const expectedVatID = 'v1';
   const hostStorage = provideHostStorage();
   const kvStore = hostStorage.kvStore;
   function vsKey(key) {
-    return key.match(/^\w+\.vs\./);
+    // ignore everything except vatStores on the one vat under test
+    // (especially ignore comms, which performs vatstore operations during
+    // startup)
+    return key.startsWith(`${expectedVatID}.`) && key.match(/^\w+\.vs\./);
   }
   const loggingKVStore = {
     has: key => kvStore.has(key),
@@ -160,6 +164,10 @@ test.serial('exercise cache', async t => {
   const T6 = 'ko30';
   const T7 = 'ko31';
   const T8 = 'ko32';
+
+  // these tests are hard-coded to expect our vat-under-test to be 'v1', so
+  // double-check here
+  t.is(c.vatNameToID('bootstrap'), expectedVatID);
 
   await c.run();
   t.deepEqual(c.kpResolution(bootstrapResult), capargs('bootstrap done'));

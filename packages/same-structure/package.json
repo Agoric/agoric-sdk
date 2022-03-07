@@ -1,11 +1,11 @@
 {
   "name": "@agoric/same-structure",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "description": "Deep equals",
   "type": "module",
   "main": "index.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
@@ -30,8 +30,8 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@agoric/store": "^0.6.9",
-    "@endo/marshal": "^0.6.1"
+    "@agoric/store": "^0.6.10",
+    "@endo/marshal": "^0.6.2"
   },
   "devDependencies": {
     "ava": "^3.12.1"

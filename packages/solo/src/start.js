@@ -1,3 +1,4 @@
+// @ts-check
 /* global process setTimeout */
 import fs from 'fs';
 import path from 'path';
@@ -15,7 +16,10 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, details as X } from '@agoric/assert';
-import { makeSlogSenderFromModule } from '@agoric/telemetry';
+import {
+  makeSlogSenderFromModule,
+  getTelemetryProviders,
+} from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -29,7 +33,12 @@ import {
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
-import { makeShutdown } from '@agoric/cosmic-swingset/src/shutdown.js';
+import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
+import {
+  DEFAULT_METER_PROVIDER,
+  makeSlogCallbacks,
+  exportKernelStats,
+} from '@agoric/cosmic-swingset/src/kernel-stats.js';
 
 import { deliver, addDeliveryTarget } from './outbound.js';
 import { connectToPipe } from './pipe.js';
@@ -40,7 +49,7 @@ import { connectToChain } from './chain-cosmos-sdk.js';
 const log = anylogger('start');
 
 // FIXME: Needed for legacy plugins.
-const esmRequire = createRequire({});
+const esmRequire = createRequire(/** @type {any} */ ({}));
 
 let swingSetRunning = false;
 
@@ -81,6 +90,16 @@ const atomicReplaceFile = async (filename, contents) => {
   }
 };
 
+const neverStop = () => {
+  return harden({
+    emptyCrank: () => true,
+    vatCreated: () => true,
+    crankComplete: () => true,
+    crankFailed: () => true,
+  });
+};
+
+const TELEMETRY_SERVICE_NAME = 'solo';
 const buildSwingset = async (
   kernelStateDBDir,
   mailboxStateFile,
@@ -88,7 +107,9 @@ const buildSwingset = async (
   broadcast,
   defaultManagerType,
 ) => {
-  const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
+  const initialMailboxState = JSON.parse(
+    fs.readFileSync(mailboxStateFile, 'utf8'),
+  );
 
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(initialMailboxState);
@@ -123,6 +144,7 @@ const buildSwingset = async (
   const config = await loadSwingsetConfigFile(
     new URL('../solo-config.json', import.meta.url).pathname,
   );
+  assert(config);
   config.devices = {
     mailbox: {
       sourceSpec: mb.srcPath,
@@ -144,13 +166,23 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
-  const {
-    SOLO_SLOGFILE: slogFile,
-    SOLO_SLOGSENDER,
-    SOLO_LMDB_MAP_SIZE,
-  } = process.env;
-  const mapSize =
-    (SOLO_LMDB_MAP_SIZE && parseInt(SOLO_LMDB_MAP_SIZE, 10)) || undefined;
+  const soloEnv = Object.fromEntries(
+    Object.entries(process.env)
+      .filter(([k]) => k.match(/^SOLO_/)) // narrow to SOLO_ prefixes.
+      .map(([k, v]) => [k.replace(/^SOLO_/, ''), v]), // Replace SOLO_ controls with chain version.
+  );
+  const env = {
+    ...process.env,
+    ...soloEnv,
+  };
+  const { metricsProvider = DEFAULT_METER_PROVIDER } = getTelemetryProviders({
+    console,
+    env,
+    serviceName: 'solo',
+  });
+
+  const { SLOGFILE: slogFile, SLOGSENDER, LMDB_MAP_SIZE } = env;
+  const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
     { mapSize },
@@ -161,20 +193,34 @@ const buildSwingset = async (
     snapStore,
   };
 
+  // Not to be confused with the gas model, this meter is for OpenTelemetry.
+  const metricMeter = metricsProvider.getMeter('ag-solo');
+  const slogCallbacks = makeSlogCallbacks({
+    metricMeter,
+  });
+
   if (!swingsetIsInitialized(hostStorage)) {
     if (defaultManagerType && !config.defaultManagerType) {
       config.defaultManagerType = defaultManagerType;
     }
     await initializeSwingset(config, argv, hostStorage);
   }
-  const slogSender = await makeSlogSenderFromModule(SOLO_SLOGSENDER, {
+  const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
     stateDir: kernelStateDBDir,
+    serviceName: TELEMETRY_SERVICE_NAME,
+    env,
   });
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogFile, slogSender },
+    { slogCallbacks, slogFile, slogSender },
   );
+
+  const { crankScheduler } = exportKernelStats({
+    controller,
+    metricMeter,
+    log: console,
+  });
 
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
@@ -186,8 +232,10 @@ const buildSwingset = async (
     deliver(mbs);
   }
 
+  const policy = neverStop();
+
   async function processKernel() {
-    await controller.run();
+    await crankScheduler(policy);
     if (swingSetRunning) {
       await saveState();
       deliverOutbound();
@@ -200,7 +248,7 @@ const buildSwingset = async (
     async function deliverInboundToMbx(sender, messages, ack) {
       assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
       // console.debug(`deliverInboundToMbx`, messages, ack);
-      if (mb.deliverInbound(sender, messages, ack, true)) {
+      if (mb.deliverInbound(sender, messages, ack)) {
         await processKernel();
       }
     },
@@ -316,7 +364,6 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
 
   // We turn off NODE_OPTIONS in case the user is debugging.
   const { NODE_OPTIONS: _ignore, ...noOptionsEnv } = process.env;
-  let unregisterShutdown = () => {};
   const cp = fork(
     agoricCli,
     [
@@ -327,15 +374,10 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
       ...resolvedDeploys,
     ],
     { stdio: 'inherit', env: noOptionsEnv },
-    err => {
-      if (err) {
-        console.error(err);
-      }
-      unregisterShutdown();
-    },
   );
   const { registerShutdown } = makeShutdown();
-  unregisterShutdown = registerShutdown(() => cp.kill('SIGTERM'));
+  const unregisterShutdown = registerShutdown(() => cp.kill('SIGTERM'));
+  cp.on('close', () => unregisterShutdown());
 };
 
 const start = async (basedir, argv) => {
@@ -344,7 +386,7 @@ const start = async (basedir, argv) => {
     'swingset-kernel-mailbox.json',
   );
   const connections = JSON.parse(
-    fs.readFileSync(path.join(basedir, 'connections.json')),
+    fs.readFileSync(path.join(basedir, 'connections.json'), 'utf8'),
   );
 
   let broadcastJSON;

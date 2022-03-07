@@ -78,8 +78,7 @@ export const IssuersWithoutContext = ({
           <div>
             <Petname name={issuer.issuerPetname} />
             <div>
-              Board ID: (
-              <span className="Board">board:{issuer.issuerBoardId}</span>)
+              Board ID: (<span className="Board">{issuer.issuerBoardId}</span>)
             </div>
           </div>
         </div>

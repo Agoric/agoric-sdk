@@ -4,8 +4,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { Far } from '@endo/marshal';
 
-import engineGC from '../../src/engine-gc.js';
-import { makeGcAndFinalize } from '../../src/gc-and-finalize.js';
+import engineGC from '../../src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '../../src/lib-nodejs/gc-and-finalize.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 function makeHeld() {

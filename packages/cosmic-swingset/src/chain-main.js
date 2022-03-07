@@ -1,19 +1,21 @@
 /* global setInterval */
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify.js';
 import {
   importMailbox,
   exportMailbox,
-} from '@agoric/swingset-vat/src/devices/mailbox.js';
+} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { makeSlogSenderFromModule } from '@agoric/telemetry';
 
+import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
+
+const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
 
 const toNumber = specimen => {
   const number = parseInt(specimen, 10);
@@ -326,11 +328,18 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         import.meta.url,
       ),
     ).pathname;
-    const { metricsProvider } = getTelemetryProviders({ console, env });
+
+    const { metricsProvider } = getTelemetryProviders({
+      console,
+      env,
+      serviceName: TELEMETRY_SERVICE_NAME,
+    });
 
     const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE } = env;
     const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
       stateDir: stateDBDir,
+      env,
+      serviceName: TELEMETRY_SERVICE_NAME,
     });
 
     const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;

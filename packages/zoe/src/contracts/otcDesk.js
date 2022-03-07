@@ -89,7 +89,6 @@ const start = zcf => {
       undefined,
       proposal,
       marketMakerSeat,
-      marketMakerSeat,
     );
 
     const option = E(coveredCallUserSeat).getOfferResult();

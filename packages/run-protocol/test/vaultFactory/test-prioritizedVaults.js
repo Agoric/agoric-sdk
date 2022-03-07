@@ -240,13 +240,13 @@ test('highestRatio', async t => {
   const debtsOverThreshold = [];
   Array.from(vaults.entriesPrioritizedGTE(percent(45))).map(([_key, vault]) =>
     debtsOverThreshold.push([
-      vault.getDebtAmount(),
+      vault.getCurrentDebt(),
       vault.getCollateralAmount(),
     ]),
   );
 
   t.deepEqual(debtsOverThreshold, [
-    [fakeVault6.getDebtAmount(), fakeVault6.getCollateralAmount()],
+    [fakeVault6.getCurrentDebt(), fakeVault6.getCollateralAmount()],
   ]);
   t.deepEqual(vaults.highestRatio(), percent(50), 'expected 50% to be highest');
 });

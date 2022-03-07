@@ -2,11 +2,10 @@
 /* eslint-disable no-await-in-loop */
 import path from 'path';
 import fs from 'fs';
-import stringify from '@agoric/swingset-vat/src/kernel/json-stable-stringify.js';
 import {
   importMailbox,
   exportMailbox,
-} from '@agoric/swingset-vat/src/devices/mailbox.js';
+} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
 import anylogger from 'anylogger';
 
@@ -16,12 +15,15 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { assert, details as X } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
+import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS } from './sim-params.js';
 
 const console = anylogger('fake-chain');
+
+const TELEMETRY_SERVICE_NAME = 'sim-cosmos';
 
 const PRETEND_BLOCK_DELAY = 5;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
@@ -81,15 +83,19 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     assert(!replay, X`Replay not implemented`);
   }
 
+  const env = process.env;
   const { metricsProvider } = getTelemetryProviders({
     console,
-    env: process.env,
+    env,
+    serviceName: TELEMETRY_SERVICE_NAME,
   });
 
   const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE } = process.env;
   const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
   const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
     stateDir: stateDBdir,
+    serviceName: TELEMETRY_SERVICE_NAME,
+    env,
   });
 
   let aqContents = [];

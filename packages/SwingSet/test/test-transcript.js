@@ -4,7 +4,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { getAllState, setAllState } from '@agoric/swing-store';
 
 // import fs from 'fs';
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { buildVatController, loadBasedir } from '../src/index.js';
 
 async function buildTrace(c, storage) {
