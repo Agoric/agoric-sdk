@@ -52,7 +52,7 @@ export function decode(data, optMaxChunkSize) {
     const size = parseInt(sizeString, 10);
     if (!(size > -1)) {
       // reject NaN, all negative numbers
-      assert.fail(X`unparseable size ${sizeString}, should be integer`);
+      assert.fail(X`unparsable size ${sizeString}, should be integer`);
     }
     if (optMaxChunkSize) {
       assert(
