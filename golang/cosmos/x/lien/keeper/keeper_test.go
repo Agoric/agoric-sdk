@@ -523,11 +523,60 @@ func TestUpdateLien(t *testing.T) {
 			err := lk.UpdateLien(ctx, addr2, newLien)
 			if err != nil {
 				if !tt.wantFail {
-					t.Errorf("Update lien failed: %w", err)
+					t.Errorf("Update lien failed: %v", err)
 				}
 			} else if tt.wantFail {
 				t.Errorf("Update lien succeeded, but wanted failure")
 			}
 		})
+	}
+}
+
+func TestWrap(t *testing.T) {
+	tk := makeTestKit()
+	ctx, wak, _, _, keeper := tk.expand()
+	outerAk := wak.(*types.WrappedAccountKeeper)
+	innerAk := outerAk.AccountKeeper
+
+	tk.initAccount(t, addr1, addr2, types.AccountState{Total: ubld(33)})
+	acc := innerAk.GetAccount(ctx, addr2)
+	acc.SetAccountNumber(8)
+	wrapper := NewAccountWrapper(keeper)
+	wrapped := wrapper.Wrap(ctx, acc)
+	if wrapped != acc {
+		t.Fatalf("wrapper changed lien-less account from %v to %v", acc, wrapped)
+	}
+
+	tk.initAccount(t, addr1, addr3, types.AccountState{Total: ubld(10), Liened: ubld(8)})
+	acc = innerAk.GetAccount(ctx, addr3)
+	acc.SetAccountNumber(17)
+	wrapped = wrapper.Wrap(ctx, acc)
+	lienAcc, ok := wrapped.(*LienAccount)
+	if !ok {
+		t.Fatalf("wrapper did not create a lien account: %+v", wrapped)
+	}
+
+	if lienAcc.lienKeeper.(keeperImpl).accountKeeper != wak {
+		t.Errorf("wrong lien keeper %+v, want %+v", lienAcc.lienKeeper, keeper)
+	}
+	unwrapped := wrapper.Unwrap(ctx, lienAcc)
+	baseAccount, ok := unwrapped.(*authtypes.BaseAccount)
+	if !ok {
+		t.Fatalf("unwrapper did not produce a base account: %+v", unwrapped)
+	}
+	if baseAccount.AccountNumber != 17 {
+		t.Errorf("wrong account number %d, want 17", baseAccount.AccountNumber)
+	}
+	unwrap2 := wrapper.Unwrap(ctx, baseAccount)
+	_, ok = unwrap2.(*authtypes.BaseAccount)
+	if !ok {
+		t.Errorf("unwrapping unwrapped account gives %+v, want base account", unwrap2)
+	}
+	if unwrap2.GetAccountNumber() != 17 {
+		t.Errorf("doubly unwrapped account has wrong account number %d, want 17", unwrap2.GetAccountNumber())
+	}
+	wrapped2 := wrapper.Wrap(ctx, nil)
+	if wrapped2 != nil {
+		t.Errorf("wrapped nil is %v, want nil", wrapped2)
 	}
 }
