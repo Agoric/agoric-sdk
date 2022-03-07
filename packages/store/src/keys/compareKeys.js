@@ -140,12 +140,11 @@ export const compareKeys = (left, right) => {
           // by rank, minimizing the number of misses when range searching.
           //
           // Among copyMaps with the same keys (according to keyEQ), they
-          // compare by a parent comparison of their values. Thus, as with
-          // records, for two copyMaps X and Y, if `compareKeys(X,Y) < 0`
-          // then, because these values obey the above invariants,
-          // none of the values in X have a later rank than the corresponding
-          // value of Y. Thus, `compareRank(X,Y) <= 0`.
-          // TODO implement
+          // compare by a corresponding comparison of their values. Thus, as
+          // with records, for two copyMaps X and Y, if `compareKeys(X,Y) <
+          // 0` then, because these values obey the above invariants, none of
+          // the values in X have a later rank than the corresponding value
+          // of Y. Thus, `compareRank(X,Y) <= 0`. TODO implement
           assert.fail(
             X`Map comparison not yet implemented: ${left} vs ${right}`,
           );
