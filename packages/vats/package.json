@@ -36,12 +36,12 @@
     "@agoric/swingset-vat": "^0.25.1",
     "@agoric/wallet-backend": "^0.10.9",
     "@agoric/zoe": "^0.21.3",
-    "@endo/far": "^0.1.8",
-    "@endo/import-bundle": "^0.2.40",
-    "@endo/init": "^0.5.36",
-    "@endo/marshal": "^0.6.2",
-    "@endo/nat": "^4.1.7",
-    "@endo/promise-kit": "^0.2.36"
+    "@endo/far": "^0.1.9",
+    "@endo/import-bundle": "^0.2.41",
+    "@endo/init": "^0.5.37",
+    "@endo/marshal": "^0.6.3",
+    "@endo/nat": "^4.1.8",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
     "@agoric/babel-parser": "^7.6.4",
