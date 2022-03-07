@@ -43,9 +43,9 @@
     "@agoric/store": "^0.6.10",
     "@agoric/vats": "^0.7.0",
     "@agoric/zoe": "^0.21.3",
-    "@endo/bundle-source": "^2.1.0",
-    "@endo/marshal": "^0.6.2",
-    "@endo/promise-kit": "^0.2.36"
+    "@endo/bundle-source": "^2.1.1",
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.25.1",
