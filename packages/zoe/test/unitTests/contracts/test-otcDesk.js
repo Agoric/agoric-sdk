@@ -18,9 +18,12 @@ const dirname = path.dirname(filename);
 
 const root = `${dirname}/../../../src/contracts/otcDesk.js`;
 
+let vatAdminState;
+
 const installCode = async zoe => {
   const bundle = await bundleSource(root);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-otcdesk', bundle);
+  const installation = await E(zoe).installBundleID('b1-otcdesk');
   return installation;
 };
 
@@ -28,7 +31,8 @@ const installCoveredCall = async zoe => {
   const bundle = await bundleSource(
     `${dirname}/../../../src/contracts/coveredCall`,
   );
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const installation = await E(zoe).installBundleID('b1-coveredcall');
   return installation;
 };
 
@@ -357,6 +361,8 @@ const makeBob = (
   });
 };
 
+// eslint complains about these shadowing local variables if this is defined
+// too early, but vatAdminState needs to be visible earlier
 const {
   moolaKit,
   simoleanKit,
@@ -368,7 +374,9 @@ const {
   bucksIssuer,
   bucks,
   zoe,
+  vatAdminState: vas0,
 } = setup();
+vatAdminState = vas0;
 
 const issuers = {
   moolaIssuer,

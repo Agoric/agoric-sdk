@@ -50,6 +50,8 @@ export const createSeatManager = (
    * @returns {Allocation}
    */
   const getCurrentAllocation = zcfSeat => {
+    // TODO update docs that getCurrentAllocation() fails after exit
+    // https://github.com/Agoric/documentation/issues/630
     assertActive(zcfSeat);
     return activeZCFSeats.get(zcfSeat);
   };

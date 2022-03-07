@@ -111,7 +111,7 @@ test('communication', async t => {
     message: /"brand" not found/,
   });
 
-  /** @type {undefined | IteratorResult<{brand: Brand, issuer: Issuer, proposedName: string}>} */
+  /** @type {undefined | IteratorResult<{brand: Brand, issuer: ERef<Issuer>, proposedName: string}>} */
   let itResult;
   const p = it.next().then(r => (itResult = r));
   t.is(itResult, undefined);
@@ -206,6 +206,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.agoricNames.resolve(agoricNames);
 
   produce.centralSupplyBundle.resolve(economyBundles.centralSupply);
+  produce.mintHolderBundle.resolve(economyBundles.mintHolder);
 
   const { zoeService, feeMintAccess } = makeZoeKit(
     makeFakeVatAdmin(() => {}).admin,

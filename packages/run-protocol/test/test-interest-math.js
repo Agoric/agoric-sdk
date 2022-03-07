@@ -3,11 +3,8 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import {
-  calculateCurrentDebt,
-  reverseInterest,
-} from '../../../src/contractSupport/interest.js';
-import { makeRatio } from '../../../src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { calculateCurrentDebt, reverseInterest } from '../src/interest-math.js';
 
 const runBrand = makeIssuerKit('run').brand;
 

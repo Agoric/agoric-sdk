@@ -6,7 +6,7 @@ import {
   invertRatio,
   multiplyRatios,
   ratiosSame,
-} from './ratio.js';
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 
 /**
  *

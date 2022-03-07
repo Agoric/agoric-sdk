@@ -8,6 +8,8 @@ import { ONE_DAY } from '../setup';
 
 const { details: X, quote: q } = assert;
 
+/** @typedef {import('../../../src/vaultFactory/vaultFactory').VaultFactoryPublicFacet} VaultFactoryPublicFacet */
+
 /**
  *
  * @param {(msg: any)=> void} log
@@ -22,7 +24,7 @@ const build = async (log, zoe, brands, payments, timer) => {
   const [moolaPayment] = payments;
 
   /**
-   * @param {import('../../test-vaultFactory').VaultFactoryPublicFacet} vaultFactory
+   * @param {VaultFactoryPublicFacet} vaultFactory
    */
   const oneLoanWithInterest = async vaultFactory => {
     log(`=> alice.oneLoanWithInterest called`);
@@ -49,36 +51,48 @@ const build = async (log, zoe, brands, payments, timer) => {
         `at ${(await E(timer).getCurrentTimestamp()) / ONE_DAY} days: ${msg}`,
       );
 
+    let lastAssetN = await E(assetNotifier).getUpdateSince();
+    const assetUpdate = async () => {
+      lastAssetN = await E(assetNotifier).getUpdateSince(
+        lastAssetN.updateCount,
+      );
+      return `assetNotifier update #${lastAssetN.updateCount} has interestRate.numerator ${lastAssetN.value.interestRate.numerator.value}`;
+    };
+
     timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     // accrue one day of interest at initial rate
     await E(timer).tick();
+    await assetUpdate();
     timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     // advance time enough that governance updates the interest rate
     await Promise.all(new Array(daysForVoting).fill(E(timer).tick()));
     timeLog('vote ready to close');
+    await assetUpdate();
     timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
     await E(timer).tick();
     timeLog('vote closed');
+    await assetUpdate();
     timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
 
-    const uiDescription = async () => {
-      const current = await E(assetNotifier).getUpdateSince();
-      return `assetNotifier update #${current.updateCount} has interestRate.numerator ${current.value.interestRate.numerator.value}`;
+    const uiDescription = () => {
+      return `assetNotifier update #${lastAssetN.updateCount} has interestRate.numerator ${lastAssetN.value.interestRate.numerator.value}`;
     };
 
-    timeLog(`1 day after votes cast, ${await uiDescription()}`);
+    timeLog(`1 day after votes cast, ${uiDescription()}`);
     await E(timer).tick();
-    timeLog(`2 days after votes cast, ${await uiDescription()}`);
+    await assetUpdate();
+    timeLog(`2 days after votes cast, ${uiDescription()}`);
+    await assetUpdate();
     timeLog(`Alice owes ${q(await E(vault).getCurrentDebt())}`);
   };
 
   return Far('build', {
     /**
      * @param {string} testName
-     * @param {import('../../test-vaultFactory').VaultFactoryPublicFacet} vaultFactory
+     * @param {VaultFactoryPublicFacet} vaultFactory
      * @returns {Promise<void>}
      */
     startTest: async (testName, vaultFactory) => {

@@ -1,7 +1,8 @@
 // @ts-check
 
 /** @typedef {import('./vault').VaultUIState} VaultUIState */
-/** @typedef {import('./vault').VaultKit} VaultKit */
+/** @typedef {import('./vaultKit').VaultKit} VaultKit */
+/** @typedef {VaultKit['vault']} Vault */
 
 /**
  * @typedef  {Object} AutoswapLocal
@@ -81,21 +82,6 @@
 
 /**
  * @typedef {VaultManagerBase & GetVaultParams} VaultManager
- */
-
-/**
- * @typedef {Object} BaseVault
- * @property {() => Amount<NatValue>} getCollateralAmount
- * @property {() => Amount<NatValue>} getCurrentDebt
- * @property {() => Amount<NatValue>} getNormalizedDebt
- *
- * @typedef {BaseVault & VaultMixin} Vault
- * @typedef {Object} VaultMixin
- * @property {() => Promise<Invitation>} makeAdjustBalancesInvitation
- * @property {() => Promise<Invitation<string>>} makeCloseInvitation
- * @property {() => Promise<Invitation>} makeTransferInvitation
- * @property {() => ERef<UserSeat>} getLiquidationSeat
- * @property {() => Notifier<VaultUIState>} getNotifier
  */
 
 /**

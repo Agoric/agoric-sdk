@@ -99,6 +99,7 @@ const neverStop = () => {
   });
 };
 
+const TELEMETRY_SERVICE_NAME = 'solo';
 const buildSwingset = async (
   kernelStateDBDir,
   mailboxStateFile,
@@ -165,15 +166,14 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
-  const {
-    SOLO_OTEL_EXPORTER_PROMETHEUS_PORT,
-    SOLO_OTEL_RESOURCE_ATTRIBUTES,
-    ...restEnv
-  } = process.env;
+  const soloEnv = Object.fromEntries(
+    Object.entries(process.env)
+      .filter(([k]) => k.match(/^SOLO_/)) // narrow to SOLO_ prefixes.
+      .map(([k, v]) => [k.replace(/^SOLO_/, ''), v]), // Replace SOLO_ controls with chain version.
+  );
   const env = {
-    ...restEnv,
-    OTEL_EXPORTER_PROMETHEUS_PORT: SOLO_OTEL_EXPORTER_PROMETHEUS_PORT,
-    OTEL_RESOURCE_ATTRIBUTES: SOLO_OTEL_RESOURCE_ATTRIBUTES,
+    ...process.env,
+    ...soloEnv,
   };
   const { metricsProvider = DEFAULT_METER_PROVIDER } = getTelemetryProviders({
     console,
@@ -181,13 +181,8 @@ const buildSwingset = async (
     serviceName: 'solo',
   });
 
-  const {
-    SOLO_SLOGFILE: slogFile,
-    SOLO_SLOGSENDER,
-    SOLO_LMDB_MAP_SIZE,
-  } = process.env;
-  const mapSize =
-    (SOLO_LMDB_MAP_SIZE && parseInt(SOLO_LMDB_MAP_SIZE, 10)) || undefined;
+  const { SLOGFILE: slogFile, SLOGSENDER, LMDB_MAP_SIZE } = env;
+  const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
     { mapSize },
@@ -210,9 +205,9 @@ const buildSwingset = async (
     }
     await initializeSwingset(config, argv, hostStorage);
   }
-  const slogSender = await makeSlogSenderFromModule(SOLO_SLOGSENDER, {
+  const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
     stateDir: kernelStateDBDir,
-    serviceName: 'solo',
+    serviceName: TELEMETRY_SERVICE_NAME,
     env,
   });
   const controller = await makeSwingsetController(

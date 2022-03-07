@@ -4,7 +4,7 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { INTEREST_RATE_KEY } from '../../../../src/vaultFactory/params';
+import { INTEREST_RATE_KEY } from '../../../src/vaultFactory/params';
 import { ONE_DAY, createCommittee, installContracts, makeVats } from '../setup';
 
 const BASIS_POINTS = 10000n;

@@ -1,6 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AssetKind } from '@agoric/ertp';
 
 import { Nat } from '@agoric/nat';
 import { makeNameHubKit } from '../nameHub.js';
@@ -219,7 +219,7 @@ harden(mintInitialSupply);
  * }} powers
  */
 export const addBankAssets = async ({
-  consume: { initialSupply, bridgeManager, loadVat, zoe },
+  consume: { initialSupply, bridgeManager, loadVat, zoe, mintHolderBundle },
   produce: { bankManager, bldIssuerKit },
   issuer: { produce: produceIssuer },
   brand: { produce: produceBrand },
@@ -231,11 +231,22 @@ export const addBankAssets = async ({
   ]);
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
 
-  const bldKit = makeIssuerKit(
-    Tokens.BLD.name,
-    AssetKind.NAT,
-    Tokens.BLD.displayInfo,
-  ); // TODO(#4578): move BLD issuerKit to its own vat
+  const bundle = await mintHolderBundle;
+
+  /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
+  const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
+    E(zoe).startInstance(
+      E(zoe).install(bundle),
+      harden({}),
+      harden({
+        keyword: Tokens.BLD.name,
+        assetKind: AssetKind.NAT,
+        displayInfo: Tokens.BLD.displayInfo,
+      }),
+    ),
+  );
+  const bldBrand = await E(bldIssuer).getBrand();
+  const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
   bldIssuerKit.resolve(bldKit);
 
   const bankMgr = E(E(loadVat)('bank')).makeBankManager(bridgeManager);

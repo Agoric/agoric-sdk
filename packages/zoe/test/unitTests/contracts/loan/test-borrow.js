@@ -36,7 +36,7 @@ const setupBorrow = async (
   timer = buildManualTimer(console.log),
 ) => {
   const setup = await setupLoanUnitTest();
-  const { zcf, loanKit, collateralKit, zoe } = setup;
+  const { zcf, loanKit, collateralKit, zoe, vatAdminState } = setup;
   // Set up the lender seat
   const maxLoan = AmountMath.make(loanKit.brand, maxLoanValue);
   const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
@@ -66,6 +66,7 @@ const setupBorrow = async (
     collateralKit,
     loanKit,
     initialLiquidityKeywordRecord,
+    vatAdminState,
   );
 
   // In the config that the borrow code sees, the periodNotifier has

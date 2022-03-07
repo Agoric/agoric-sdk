@@ -29,9 +29,14 @@ test('simpleExchange with valid offers', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, simpleExchange);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    simpleExchange,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
@@ -211,9 +216,14 @@ test('simpleExchange with multiple sell offers', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, simpleExchange);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    simpleExchange,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(30n));
@@ -314,9 +324,14 @@ test('simpleExchange with non-fungible assets', async t => {
     createRpgItem,
     zoe,
     brands,
+    vatAdminState,
   } = setupNonFungible();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, simpleExchange);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    simpleExchange,
+  );
 
   // Setup Alice
   const spell = createRpgItem('Spell of Binding', 'binding');
