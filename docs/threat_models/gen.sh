@@ -9,7 +9,7 @@ fi
 
 $CMD "./**/*.puml"
 
-page="index.md"
+page="README.md"
 echo "# Threat Model Diagrams" > "$page"
 for diag in $(find . -name "*.png" | sort); do
     echo "## $diag\n" >> "$page"
