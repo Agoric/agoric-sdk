@@ -72,7 +72,11 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
     home: { produce: { bank: 'bank' } },
   },
   shareBootContractBundles: {
-    produce: { centralSupplyBundle: true, pegasusBundle: true },
+    produce: {
+      centralSupplyBundle: true,
+      mintHolderBundle: true,
+      pegasusBundle: true,
+    },
   },
   mintInitialSupply: {
     vatParameters: {
@@ -94,13 +98,14 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       // TODO: re-org loadVat to be subject to permits
       loadVat: true,
       zoe: true,
+      mintHolderBundle: true,
     },
     produce: {
       bankManager: 'bank',
       bldIssuerKit: true,
     },
-    issuer: { produce: { BLD: true, RUN: 'zoe' } },
-    brand: { produce: { BLD: true, RUN: 'zoe' } },
+    issuer: { produce: { BLD: 'BLD', RUN: 'zoe' } },
+    brand: { produce: { BLD: 'BLD', RUN: 'zoe' } },
   },
   makeProvisioner: {
     consume: {
@@ -365,6 +370,7 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
   fundAMM: {
     consume: {
       centralSupplyBundle: true,
+      mintHolderBundle: true,
       chainTimerService: 'timer',
       bldIssuerKit: true,
       feeMintAccess: true,

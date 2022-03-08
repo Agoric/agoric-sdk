@@ -93,7 +93,9 @@ const start = async zcf => {
   return harden({ creatorFacet });
 };
 
-/** @type {MakeLiquidationStrategy} */
+/**
+ * @param {LiquidationCreatorFacet} creatorFacet
+ */
 const makeLiquidationStrategy = creatorFacet => {
   const makeInvitation = async runDebt =>
     E(creatorFacet).makeDebtorInvitation(runDebt);

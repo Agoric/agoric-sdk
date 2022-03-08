@@ -80,7 +80,9 @@ export const bridgeCoreEval = async allPowers => {
                 });
 
                 // Evaluate the code in the context of the globals.
-                const behavior = new Compartment(globals).evaluate(code);
+                const compartment = new Compartment(globals);
+                harden(compartment.globalThis);
+                const behavior = compartment.evaluate(code);
                 return behavior(powers);
               }),
             ),
@@ -275,11 +277,17 @@ export const connectChainFaucet = async ({ consume: { client } }) => {
 };
 harden(connectChainFaucet);
 
+// XXX: move shareBootContractBundles belongs in basic-behaviors.js
 /** @param {BootstrapPowers} powers */
 export const shareBootContractBundles = async ({
-  produce: { centralSupplyBundle: centralP, pegasusBundle: pegasusP },
+  produce: {
+    centralSupplyBundle: centralP,
+    pegasusBundle: pegasusP,
+    mintHolderBundle,
+  },
 }) => {
   centralP.resolve(economyBundles.centralSupply);
+  mintHolderBundle.resolve(economyBundles.mintHolder);
   pegasusP.resolve(pegasusBundle);
 };
 

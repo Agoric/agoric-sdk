@@ -6,7 +6,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
-import { makeGovernedTerms } from '../../../src/vaultFactory/params';
+import { makeGovernedTerms } from '../../src/vaultFactory/params';
 import { ammMock } from './mockAmm';
 
 const ONE_DAY = 24n * 60n * 60n;

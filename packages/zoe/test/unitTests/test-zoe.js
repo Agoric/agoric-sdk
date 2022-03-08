@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { AmountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { passStyleOf, Far } from '@endo/marshal';
@@ -197,6 +197,21 @@ test(`E(zoe).offer - no invitation`, async t => {
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(), {
     message: /A Zoe invitation is required, not "\[undefined\]"/,
+  });
+});
+
+test(`E(zoe).offer - payment instead of paymentKeywordRecord`, async t => {
+  const { zoe, zcf } = await setupZCFTest();
+  const { mint, brand, issuer } = makeIssuerKit('Token');
+  await zcf.saveIssuer(issuer, 'Keyword');
+  const amount = AmountMath.make(brand, 10n);
+  const proposal = harden({ give: { Keyword: amount } });
+  const payment = mint.mintPayment(amount);
+  const invitation = zcf.makeInvitation(() => {}, 'noop');
+  // @ts-ignore deliberate invalid arguments for testing
+  await t.throwsAsync(() => E(zoe).offer(invitation, proposal, payment), {
+    message:
+      '"keywordRecord" "[Alleged: Token payment]" must be a pass-by-copy record, not "remotable"',
   });
 });
 

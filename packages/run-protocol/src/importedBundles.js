@@ -7,8 +7,8 @@ import liquidateBundle from '../bundles/bundle-liquidateMinimum.js';
 import ammBundle from '../bundles/bundle-amm.js';
 import vaultFactoryBundle from '../bundles/bundle-vaultFactory.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
+import mintHolderBundle from '../bundles/bundle-mintHolder.js';
 
-/** @type { Record<string, { moduleFormat: string }>} */
 export const governanceBundles = {
   contractGovernor: contractGovernorBundle,
   committee: committeeBundle,
@@ -17,12 +17,12 @@ export const governanceBundles = {
 };
 harden(governanceBundles);
 
-/** @type { Record<string, { moduleFormat: string }>} */
 export const economyBundles = {
   liquidate: liquidateBundle,
   amm: ammBundle,
   VaultFactory: vaultFactoryBundle,
   centralSupply: centralSupplyBundle,
+  mintHolder: mintHolderBundle,
 };
 harden(economyBundles);
 

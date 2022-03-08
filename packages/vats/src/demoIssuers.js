@@ -233,7 +233,7 @@ const provideCoin = async (name, mints) => {
  *
  * TODO: sync this type with end-user docs?
  * @typedef {{
- *   issuer: Issuer,
+ *   issuer: ERef<Issuer>,
  *   issuerPetname: string,
  *   payment: Payment,
  *   brand: Brand,
@@ -395,7 +395,7 @@ export const ammPoolRunDeposits = issuers => {
 /**
  * @param {Payment} bootstrapPayment
  * @param {Record<string, bigint>} balances
- * @param {{ issuer: Issuer, brand: Brand }} central
+ * @param {{ issuer: ERef<Issuer>, brand: Brand }} central
  */
 export const splitAllCentralPayments = async (
   bootstrapPayment,
@@ -427,8 +427,8 @@ export const splitAllCentralPayments = async (
 /**
  * @param {string} issuerName
  * @param {typeof AMMDemoState['ATOM']} record
- * @param {Record<string, { issuer: Issuer, brand: Brand }>} kits
- * @param {{ issuer: Issuer, brand: Brand }} central
+ * @param {Record<string, { issuer: ERef<Issuer>, brand: Brand }>} kits
+ * @param {{ issuer: ERef<Issuer>, brand: Brand }} central
  */
 export const poolRates = (issuerName, record, kits, central) => {
   /** @param { bigint } n */
@@ -557,6 +557,7 @@ export const fundAMM = async ({
 
         assert(kit.issuer, `No issuer for ${issuerName}`);
         const liquidityIssuer = E(ammPublicFacet).addPool(
+          // @ts-expect-error TODO: addPool should take ERef<Issuer>
           kit.issuer,
           issuerName,
         );
@@ -581,8 +582,9 @@ export const fundAMM = async ({
           }),
         );
 
+        const issuerPresence = await kit.issuer;
         return E(vaultFactoryCreator).addVaultType(
-          kit.issuer,
+          issuerPresence,
           issuerName,
           rates,
         );
