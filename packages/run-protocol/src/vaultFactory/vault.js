@@ -1,4 +1,5 @@
 // @ts-check
+
 import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
@@ -14,10 +15,10 @@ import {
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import { assertKeywordName } from '@agoric/zoe/src/cleanProposal';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
-import { assertKeywordName } from '@agoric/zoe/src/cleanProposal';
 
 const { details: X, quote: q } = assert;
 
