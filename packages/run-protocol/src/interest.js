@@ -118,9 +118,9 @@ export const calculateCompoundedInterest = (
  * @param {ZCFMint} mint
  * @param {Amount} debt
  */
-const validatedBrand = async (mint, debt) => {
+const validatedBrand = (mint, debt) => {
   const { brand: debtBrand } = debt;
-  const { brand: issuerBrand } = await E(mint).getIssuerRecord();
+  const { brand: issuerBrand } = mint.getIssuerRecord();
   assert(
     debtBrand === issuerBrand,
     X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
@@ -145,10 +145,10 @@ const validatedBrand = async (mint, debt) => {
  *  compoundedInterest: Ratio,
  *  totalDebt: Amount<NatValue>}} prior
  * @param {bigint} accruedUntil
- * @returns {Promise<{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }>}
+ * @returns {{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }}
  */
-export const chargeInterest = async (powers, params, prior, accruedUntil) => {
-  const brand = await validatedBrand(powers.mint, prior.totalDebt);
+export const chargeInterest = (powers, params, prior, accruedUntil) => {
+  const brand = validatedBrand(powers.mint, prior.totalDebt);
 
   const interestCalculator = makeInterestCalculator(
     params.interestRate,

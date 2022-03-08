@@ -509,7 +509,7 @@ test('chargeInterest when no time elapsed', async t => {
     /** @type {Amount<NatValue>} */
     totalDebt: AmountMath.make(brand, 10_000n),
   };
-  const results = await chargeInterest(powers, params, prior, now);
+  const results = chargeInterest(powers, params, prior, now);
   t.deepEqual(results.compoundedInterest, prior.compoundedInterest);
   t.is(results.latestInterestUpdate, now);
   t.deepEqual(results.totalDebt, prior.totalDebt);

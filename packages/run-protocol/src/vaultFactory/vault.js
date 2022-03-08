@@ -17,6 +17,7 @@ import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
+import { assertKeywordName } from '@agoric/zoe/src/cleanProposal';
 
 const { details: X, quote: q } = assert;
 
@@ -39,11 +40,11 @@ const trace = makeTracer('IV');
  * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
  */
 export const VaultPhase = /** @type {const} */ ({
-  ACTIVE: 'active',
-  LIQUIDATING: 'liquidating',
-  CLOSED: 'closed',
-  LIQUIDATED: 'liquidated',
-  TRANSFER: 'transfer',
+  ACTIVE: 'Active',
+  LIQUIDATING: 'Liquidating',
+  CLOSED: 'Closed',
+  LIQUIDATED: 'Liquidated',
+  TRANSFER: 'Transfer',
 });
 
 /**
@@ -146,13 +147,21 @@ export const makeInnerVault = (
     runSnapshot: AmountMath.makeEmpty(runBrand),
   };
 
+  // TODO rename and add comment
+  const getProp = (obj, prop) => {
+    assertKeywordName(prop);
+    // It's now known to be a keyword
+    // eslint-disable-next-line no-restricted-syntax
+    return obj[prop];
+  };
+
   // #region Phase logic
   /**
    * @param {InnerPhase} newPhase
    */
   const assignPhase = newPhase => {
     const { phase } = state;
-    const validNewPhases = validTransitions[phase];
+    const validNewPhases = getProp(validTransitions, phase);
     assert(
       validNewPhases.includes(newPhase),
       `Vault cannot transition from ${phase} to ${newPhase}`,
@@ -381,7 +390,7 @@ export const makeInnerVault = (
       seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
       zcf.reallocate(seat, vaultSeat);
     } else {
-      throw new Error('only active and liquidated vaults can be closed');
+      throw Error('only active and liquidated vaults can be closed');
     }
 
     seat.exit();

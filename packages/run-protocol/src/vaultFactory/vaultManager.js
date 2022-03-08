@@ -1,4 +1,5 @@
 // @ts-check
+
 import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
@@ -116,6 +117,7 @@ export const makeVaultManager = (
 
   /** @type {MutableQuote=} */
   let outstandingQuote;
+  // TODO improve the Amount type to be shorter for fungible assets
   /** @type {Amount<NatValue>} */
   let totalDebt = AmountMath.makeEmpty(runBrand, 'nat');
   /** @type {Ratio}} */
@@ -148,13 +150,16 @@ export const makeVaultManager = (
     }
   };
 
+  // Use batched iterator instead Array.from below
+  // fucntion* batches(iterator) {...} 
+
   const executeLiquidation = async () => {
     // Start all promises in parallel
     // XXX we should have a direct method to map over entries
+    // TODO make a helper for iterations that break across cranks
     const liquidations = Array.from(vaultsToLiquidate.entries()).map(
       async ([key, vault]) => {
         trace('liquidating', vault.getVaultSeat().getProposal());
-
         try {
           // Start liquidation (vaultState: LIQUIDATING)
           await liquidate(
@@ -164,7 +169,6 @@ export const makeVaultManager = (
             liquidationStrategy,
             collateralBrand,
           );
-
           vaultsToLiquidate.delete(key);
         } catch (e) {
           // XXX should notify interested parties
@@ -262,22 +266,21 @@ export const makeVaultManager = (
     const interestRate = shared.getInterestRate();
 
     // Update local state with the results of charging interest
-    ({ compoundedInterest, latestInterestUpdate, totalDebt } =
-      await chargeInterest(
-        {
-          mint: runMint,
-          reallocateWithFee,
-          poolIncrementSeat,
-          seatAllocationKeyword: 'RUN',
-        },
-        {
-          interestRate,
-          chargingPeriod: shared.getChargingPeriod(),
-          recordingPeriod: shared.getRecordingPeriod(),
-        },
-        { latestInterestUpdate, compoundedInterest, totalDebt },
-        updateTime,
-      ));
+    ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
+      {
+        mint: runMint,
+        reallocateWithFee,
+        poolIncrementSeat,
+        seatAllocationKeyword: 'RUN',
+      },
+      {
+        interestRate,
+        chargingPeriod: shared.getChargingPeriod(),
+        recordingPeriod: shared.getRecordingPeriod(),
+      },
+      { latestInterestUpdate, compoundedInterest, totalDebt },
+      updateTime,
+    ));
 
     /** @type {AssetState} */
     const payload = harden({
@@ -301,6 +304,7 @@ export const makeVaultManager = (
    */
   // TODO https://github.com/Agoric/agoric-sdk/issues/4599
   const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
+    // This does not use AmountMath because it could be validly negative
     const delta = newDebtOnVault.value - oldDebtOnVault.value;
     trace(`updating total debt ${totalDebt} by ${delta}`);
     if (delta === 0n) {
@@ -331,7 +335,6 @@ export const makeVaultManager = (
 
   const timeObserver = {
     updateState: updateTime =>
-      // XXX notify interested parties
       chargeAllVaults(updateTime, poolIncrementSeat).catch(e =>
         console.error('🚨 vaultManager failed to charge interest', e),
       ),
@@ -383,6 +386,8 @@ export const makeVaultManager = (
     const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
 
     try {
+      // TODO `await` is allowed until the above ordering is fixed
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await innerVault.initVaultKit(seat);
       seat.exit();
       return vaultKit;

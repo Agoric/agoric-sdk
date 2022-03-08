@@ -1,4 +1,5 @@
 // @ts-check
+
 import { makeNotifierKit } from '@agoric/notifier';
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
@@ -31,6 +32,9 @@ const wrapVault = innerVault => {
     return inner;
   };
 
+  /**
+   * TODO COMMENT!!!
+   */
   const vault = Far('vault', {
     getNotifier: () => notifier,
     makeAdjustBalancesInvitation: () =>

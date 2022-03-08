@@ -51,11 +51,11 @@ const BASIS_POINTS = 10000n;
 
 // Define locally to test that vaultFactory uses these values
 export const Phase = /** @type {const} */ ({
-  ACTIVE: 'active',
-  LIQUIDATING: 'liquidating',
-  CLOSED: 'closed',
-  LIQUIDATED: 'liquidated',
-  TRANSFER: 'transfer',
+  ACTIVE: 'Active',
+  LIQUIDATING: 'Liquidating',
+  CLOSED: 'Closed',
+  LIQUIDATED: 'Liquidated',
+  TRANSFER: 'Transfer',
 });
 
 async function makeBundle(sourceRoot) {
