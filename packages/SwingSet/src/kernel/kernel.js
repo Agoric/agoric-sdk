@@ -1217,6 +1217,13 @@ export default function buildKernel(
     vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
 
     await vatWarehouse.loadTestVat(vatID, setup, creationOptions);
+
+    /** @type { RunQueueEventStartVat } */
+    const startVatMessage = { type: 'startVat', vatID };
+    // eslint-disable-next-line no-unused-vars
+    const ds = await processStartVat(startVatMessage);
+    // TODO: do something with DeliveryStatus, maybe just assert it's ok
+
     return vatID;
   }
 
