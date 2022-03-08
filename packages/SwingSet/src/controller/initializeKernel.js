@@ -70,7 +70,6 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         'useTranscript',
         'reapInterval',
       ]);
-      creationOptions.vatParameters = vatParameters;
       creationOptions.description = `static name=${name}`;
       creationOptions.name = name;
       if (creationOptions.useTranscript === undefined) {
@@ -88,7 +87,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundleID }, creationOptions);
       vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
-      kernelKeeper.addToAcceptanceQueue(harden({ type: 'startVat', vatID }));
+      kernelKeeper.addToAcceptanceQueue(
+        harden({ type: 'startVat', vatID, vatParameters }),
+      );
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
         // about creation/termination of dynamic vats, and the installation

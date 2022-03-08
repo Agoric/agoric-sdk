@@ -62,7 +62,6 @@ export function makeVatManagerFactory({
       'virtualObjectCacheSize',
       'useTranscript',
       'reapInterval',
-      'vatParameters',
       'vatConsole',
       'name',
       'compareSyscalls',

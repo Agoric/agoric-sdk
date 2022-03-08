@@ -69,11 +69,11 @@ async function simpleCall(t) {
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, []);
   t.deepEqual(controller.dump().acceptanceQueue, [
-    { type: 'startVat', vatID: 'v1' },
-    { type: 'startVat', vatID: 'v2' },
-    { type: 'startVat', vatID: 'v3' },
-    { type: 'startVat', vatID: 'v4' },
-    { type: 'startVat', vatID: 'v5' },
+    { type: 'startVat', vatID: 'v1', vatParameters: {} },
+    { type: 'startVat', vatID: 'v2', vatParameters: {} },
+    { type: 'startVat', vatID: 'v3', vatParameters: {} },
+    { type: 'startVat', vatID: 'v4', vatParameters: {} },
+    { type: 'startVat', vatID: 'v5', vatParameters: {} },
     {
       msg: {
         method: 'foo',
@@ -222,13 +222,13 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().runQueue, []);
   t.deepEqual(c.dump().acceptanceQueue, [
-    { type: 'startVat', vatID: 'v1' },
-    { type: 'startVat', vatID: 'v2' },
-    { type: 'startVat', vatID: 'v3' },
-    { type: 'startVat', vatID: 'v4' },
-    { type: 'startVat', vatID: 'v5' },
-    { type: 'startVat', vatID: 'v6' },
-    { type: 'startVat', vatID: 'v7' },
+    { type: 'startVat', vatID: 'v1', vatParameters: {} },
+    { type: 'startVat', vatID: 'v2', vatParameters: {} },
+    { type: 'startVat', vatID: 'v3', vatParameters: { argv: [] } },
+    { type: 'startVat', vatID: 'v4', vatParameters: {} },
+    { type: 'startVat', vatID: 'v5', vatParameters: {} },
+    { type: 'startVat', vatID: 'v6', vatParameters: {} },
+    { type: 'startVat', vatID: 'v7', vatParameters: {} },
     {
       msg: {
         result: 'kp40',

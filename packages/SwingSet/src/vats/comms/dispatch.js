@@ -11,21 +11,15 @@ import { makeGCKit } from './gc-comms.js';
 
 export const debugState = new WeakMap();
 
-export function buildCommsDispatch(
-  syscall,
-  _state,
-  _helpers,
-  _vatPowers,
-  vatParameters = {},
-) {
-  const { identifierBase = 0, sendExplicitSeqNums = true } = vatParameters;
-  const state = makeState(syscall, identifierBase);
+export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
+  const state = makeState(syscall);
   const clistKit = makeCListKit(state, syscall);
 
   function transmit(remoteID, msg) {
     const remote = state.getRemote(remoteID);
     // the vat-tp "integrity layer" is a regular vat, so it expects an argument
     // encoded as JSON
+    const sendExplicitSeqNums = state.getSendExplicitSeqNums();
     const seqNum = sendExplicitSeqNums ? remote.nextSendSeqNum() : '';
     remote.advanceSendSeqNum();
     const ackSeqNum = remote.lastReceivedSeqNum();
@@ -51,8 +45,12 @@ export function buildCommsDispatch(
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
-  function doStartVat() {
-    state.maybeInitialize(controller);
+  function doStartVat(vatParameters = {}) {
+    const { identifierBase = 0, sendExplicitSeqNums } = vatParameters;
+    state.initialize(controller, identifierBase);
+    if (sendExplicitSeqNums !== undefined) {
+      state.setSendExplicitSeqNums(sendExplicitSeqNums);
+    }
   }
 
   function doDeliver(target, method, args, result) {
@@ -155,7 +153,8 @@ export function buildCommsDispatch(
     const [type, ...args] = vatDeliveryObject;
     switch (type) {
       case 'startVat': {
-        doStartVat();
+        const [vatParameters] = args;
+        doStartVat(vatParameters);
         break;
       }
       case 'message': {

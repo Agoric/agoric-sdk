@@ -52,7 +52,6 @@ export function makeXsSubprocessFactory({
     parentLog(vatID, 'createFromBundle', { vatID });
     const {
       consensusMode,
-      vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
@@ -147,7 +146,6 @@ export function makeXsSubprocessFactory({
         'setBundle',
         vatID,
         bundle,
-        vatParameters,
         virtualObjectCacheSize,
         enableDisavow,
         enableVatstore,

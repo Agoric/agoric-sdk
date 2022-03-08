@@ -15,8 +15,8 @@ import {
 import { commsVatDriver } from './commsVatDriver.js';
 
 test('translation', t => {
-  const s = makeState(null, 0);
-  s.maybeInitialize();
+  const s = makeState(null);
+  s.initialize(null, 0);
   const fakeSyscall = {};
   const clistKit = makeCListKit(s, fakeSyscall);
   const { provideRemoteForLocal, provideLocalForRemote } = clistKit;

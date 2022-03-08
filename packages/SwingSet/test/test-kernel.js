@@ -47,7 +47,7 @@ function makeKernel() {
   return buildKernel(endowments, {}, {});
 }
 
-const tsv = [{ d: ['startVat'], syscalls: [] }];
+const tsv = [{ d: ['startVat', {}], syscalls: [] }];
 
 test('build kernel', async t => {
   const kernel = makeKernel();

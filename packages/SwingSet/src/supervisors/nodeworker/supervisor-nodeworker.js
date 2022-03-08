@@ -47,7 +47,6 @@ parentPort.on('message', ([type, ...margs]) => {
   } else if (type === 'setBundle') {
     const [
       bundle,
-      vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
@@ -121,7 +120,6 @@ parentPort.on('message', ([type, ...margs]) => {
       syscall,
       vatID,
       vatPowers,
-      vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,

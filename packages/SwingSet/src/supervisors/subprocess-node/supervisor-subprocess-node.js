@@ -67,7 +67,6 @@ fromParent.on('data', ([type, ...margs]) => {
   } else if (type === 'setBundle') {
     const [
       bundle,
-      vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
@@ -141,7 +140,6 @@ fromParent.on('data', ([type, ...margs]) => {
       syscall,
       vatID,
       vatPowers,
-      vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
