@@ -30,22 +30,20 @@ const vatRoots = {
 const noop = () => {};
 
 const mock = {
-  devices: {
-    command: /** @type { any } */ ({ registerInboundHandler: noop }),
-    mailbox: /** @type { any } */ ({
-      registerInboundHandler: noop,
+  // never mind static typing for the purpose of mock test objects.
+  devices: /** @type { any } */ ({
+    command: { registerInboundHandler: noop },
+    mailbox: { registerInboundHandler: noop },
+    vatAdmin: {},
+    timer: {},
+    plugin: { registerReceiver: noop },
+  }),
+  // never mind static typing for the purpose of mock test objects.
+  vats: /** @type { any } */ ({
+    vattp: Far('vattp', {
+      registerMailboxDevice: noop,
+      addRemote: () => ({}),
     }),
-    vatAdmin: /** @type { any } */ ({}),
-    timer: /** @type { any } */ ({}),
-    plugin: /** @type { any } */ ({ registerReceiver: noop }),
-  },
-  vats: {
-    vattp: /** @type { any } */ (
-      Far('vattp', {
-        registerMailboxDevice: noop,
-        addRemote: () => ({}),
-      })
-    ),
     comms: Far('comms', {
       addRemote: noop,
       addEgress: noop,
@@ -53,18 +51,20 @@ const mock = {
         getConfiguration: () => ({ _: 'client configuration' }),
       }),
     }),
-    http: { setPresences: noop, setCommandDevice: noop },
-    spawner: {
+    http: Far('h', { setPresences: noop, setCommandDevice: noop }),
+    spawner: Far('s', {
       buildSpawner: () => ({ _: 'spawner' }),
-    },
-    timer: { createTimerService: async () => buildManualTimer(console.log) },
-    uploads: { getUploads: () => ({ _: 'uploads' }) },
+    }),
+    timer: Far('t', {
+      createTimerService: async () => buildManualTimer(console.log),
+    }),
+    uploads: Far('u', { getUploads: () => ({ _: 'uploads' }) }),
 
     network: Far('network', {
       registerProtocolHandler: noop,
       bind: () => ({ addListener: noop }),
     }),
-  },
+  }),
 };
 
 const argvByRole = {
