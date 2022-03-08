@@ -41,13 +41,21 @@ var (
 )
 
 var (
-	priv1    = secp256k1.GenPrivKey()
-	priv2    = secp256k1.GenPrivKey()
-	priv3    = secp256k1.GenPrivKey()
-	addr1    = sdk.AccAddress(priv1.PubKey().Address())
-	addr2    = sdk.AccAddress(priv2.PubKey().Address())
-	addr3    = sdk.AccAddress(priv3.PubKey().Address())
-	valPriv1 = ed25519.GenPrivKey()
+	priv1      = secp256k1.GenPrivKey()
+	priv2      = secp256k1.GenPrivKey()
+	priv3      = secp256k1.GenPrivKey()
+	addr1      = sdk.AccAddress(priv1.PubKey().Address())
+	addr2      = sdk.AccAddress(priv2.PubKey().Address())
+	addr3      = sdk.AccAddress(priv3.PubKey().Address())
+	valPriv1   = ed25519.GenPrivKey()
+	zeroCoins  = sdk.NewCoins()
+	emptyState = types.AccountState{
+		Total:     zeroCoins,
+		Bonded:    zeroCoins,
+		Unbonding: zeroCoins,
+		Locked:    zeroCoins,
+		Liened:    zeroCoins,
+	}
 )
 
 var (
@@ -58,7 +66,19 @@ func ubld(n int64) sdk.Coins {
 	return sdk.NewCoins(sdk.NewInt64Coin("ubld", n))
 }
 
-func makeTestKit() (sdk.Context, authkeeper.AccountKeeper, bankkeeper.Keeper, stakingkeeper.Keeper, Keeper) {
+type testKit struct {
+	ctx           sdk.Context
+	accountKeeper authkeeper.AccountKeeper
+	bankKeeper    bankkeeper.Keeper
+	stakingKeeper stakingkeeper.Keeper
+	lienKeeper    Keeper
+}
+
+func (tk testKit) expand() (sdk.Context, authkeeper.AccountKeeper, bankkeeper.Keeper, stakingkeeper.Keeper, Keeper) {
+	return tk.ctx, tk.accountKeeper, tk.bankKeeper, tk.stakingKeeper, tk.lienKeeper
+}
+
+func makeTestKit() testKit {
 	encodingConfig := params.MakeEncodingConfig()
 	codec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	authtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
@@ -116,11 +136,78 @@ func makeTestKit() (sdk.Context, authkeeper.AccountKeeper, bankkeeper.Keeper, st
 	sk.SetParams(ctx, stakingParams)
 	wak.SetModuleAccount(ctx, minterAcc)
 
-	return ctx, wak, bk, sk, keeper
+	return testKit{ctx, wak, bk, sk, keeper}
+}
+
+func (tk testKit) initAccount(t *testing.T, funder, addr sdk.AccAddress, state types.AccountState) {
+	// Locked
+	if !state.Locked.IsZero() {
+		if err := tk.bankKeeper.MintCoins(tk.ctx, authtypes.Minter, state.Locked); err != nil {
+			t.Fatalf("cannot mint coins: %v", err)
+		}
+		if err := tk.bankKeeper.SendCoinsFromModuleToAccount(tk.ctx, authtypes.Minter, funder, state.Locked); err != nil {
+			t.Fatalf("cannot send coins: %v", err)
+		}
+		vestingMsgServer := vesting.NewMsgServerImpl(tk.accountKeeper, tk.bankKeeper, tk.stakingKeeper)
+		_, err := vestingMsgServer.CreateVestingAccount(sdk.WrapSDKContext(tk.ctx), &vestingtypes.MsgCreateVestingAccount{
+			FromAddress: funder.String(),
+			ToAddress:   addr.String(),
+			Amount:      state.Locked,
+			EndTime:     math.MaxInt64,
+			Delayed:     true,
+		})
+		if err != nil {
+			t.Fatalf("cannot create vesting account: %v", err)
+		}
+	}
+
+	// Total
+	toMint := state.Total.Sub(state.Locked)
+	if !toMint.IsZero() {
+		err := tk.bankKeeper.MintCoins(tk.ctx, authtypes.Minter, toMint)
+		if err != nil {
+			t.Fatalf("cannot mint coins: %v", err)
+		}
+		err = tk.bankKeeper.SendCoinsFromModuleToAccount(tk.ctx, authtypes.Minter, addr, toMint)
+		if err != nil {
+			t.Fatalf("cannot send coins: %v", err)
+		}
+	}
+
+	// Bonded
+	bondDenom := tk.stakingKeeper.BondDenom(tk.ctx)
+	initialStaking := state.Bonded.Add(state.Unbonding...).AmountOf(bondDenom)
+	if !initialStaking.IsZero() {
+		pubKey := valPriv1.PubKey()
+		vaddr := sdk.ValAddress(pubKey.Address().Bytes())
+		validator, err := stakingtypes.NewValidator(vaddr, pubKey, stakingtypes.Description{})
+		if err != nil {
+			t.Fatalf("cannot create validator: %v", err)
+		}
+		validator, _ = validator.AddTokensFromDel(sdk.NewInt(100))
+		validator = stakingkeeper.TestingUpdateValidator(tk.stakingKeeper, tk.ctx, validator, true)
+
+		shares, err := tk.stakingKeeper.Delegate(tk.ctx, addr, initialStaking, stakingtypes.Unbonded, validator, true)
+		if err != nil {
+			t.Fatalf("cannot delegate: %v", err)
+		}
+
+		// Unbonding
+		unbondShares := shares.MulInt(state.Unbonding.AmountOf(bondDenom)).QuoInt(initialStaking)
+		if !unbondShares.IsZero() {
+			_, err = tk.stakingKeeper.Undelegate(tk.ctx, addr, vaddr, unbondShares)
+			if err != nil {
+				t.Fatalf("cannot undelegate: %v", err)
+			}
+		}
+	}
+
+	// Liened
+	tk.lienKeeper.SetLien(tk.ctx, addr, types.Lien{Coins: state.Liened})
 }
 
 func TestGetSetLien(t *testing.T) {
-	ctx, _, _, _, keeper := makeTestKit()
+	ctx, _, _, _, keeper := makeTestKit().expand()
 
 	// Empty
 	l1 := keeper.GetLien(ctx, addr1)
@@ -146,7 +233,7 @@ func TestGetSetLien(t *testing.T) {
 }
 
 func TestIterateLiens(t *testing.T) {
-	ctx, _, _, _, keeper := makeTestKit()
+	ctx, _, _, _, keeper := makeTestKit().expand()
 
 	var liens map[string]types.Lien
 	cb := func(a sdk.AccAddress, l types.Lien) bool {
@@ -200,11 +287,11 @@ func TestIterateLiens(t *testing.T) {
 }
 
 func TestAccountState(t *testing.T) {
-	ctx, _, bk, sk, keeper := makeTestKit()
+	ctx, _, bk, sk, keeper := makeTestKit().expand()
 
 	// empty
 	state := keeper.GetAccountState(ctx, addr1)
-	wantState := AccountState{}
+	wantState := types.AccountState{}
 	if !state.IsEqual(wantState) {
 		t.Errorf("GetAccountState() of empty got %v, want %v", state, wantState)
 	}
@@ -213,7 +300,7 @@ func TestAccountState(t *testing.T) {
 	amt1 := ubld(123)
 	keeper.SetLien(ctx, addr1, types.Lien{Coins: amt1})
 	state = keeper.GetAccountState(ctx, addr1)
-	wantState = AccountState{Liened: amt1}
+	wantState = types.AccountState{Liened: amt1}
 	if !state.IsEqual(wantState) {
 		t.Errorf("GetAccountState() of lien only got %v, want %v", state, wantState)
 	}
@@ -229,7 +316,7 @@ func TestAccountState(t *testing.T) {
 		t.Fatalf("cannot send coins: %v", err)
 	}
 	state = keeper.GetAccountState(ctx, addr1)
-	wantState = AccountState{
+	wantState = types.AccountState{
 		Total:  amt2,
 		Liened: amt1,
 	}
@@ -253,7 +340,7 @@ func TestAccountState(t *testing.T) {
 	}
 
 	state = keeper.GetAccountState(ctx, addr1)
-	wantState = AccountState{
+	wantState = types.AccountState{
 		Total:  amt2,
 		Bonded: ubld(10),
 		Liened: amt1,
@@ -267,7 +354,7 @@ func TestAccountState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot undelegate: %v", err)
 	}
-	wantState = AccountState{
+	wantState = types.AccountState{
 		Total:     amt2,
 		Bonded:    ubld(9),
 		Unbonding: ubld(1),
@@ -276,7 +363,7 @@ func TestAccountState(t *testing.T) {
 }
 
 func TestVesting(t *testing.T) {
-	ctx, ak, bk, sk, keeper := makeTestKit()
+	ctx, ak, bk, sk, keeper := makeTestKit().expand()
 
 	amt := ubld(1000)
 	err := bk.MintCoins(ctx, authtypes.Minter, amt)
@@ -301,7 +388,7 @@ func TestVesting(t *testing.T) {
 	}
 
 	state := keeper.GetAccountState(ctx, addr2)
-	wantState := AccountState{
+	wantState := types.AccountState{
 		Total:  amt,
 		Locked: amt,
 	}
@@ -324,7 +411,7 @@ func TestVesting(t *testing.T) {
 		t.Fatalf("cannot transfer to vesting account: %v", err)
 	}
 	state = keeper.GetAccountState(ctx, addr2)
-	wantState = AccountState{
+	wantState = types.AccountState{
 		Total:  ubld(1300),
 		Locked: ubld(1000),
 	}
@@ -344,5 +431,152 @@ func TestVesting(t *testing.T) {
 	err = bk.SendCoins(ctx, addr2, addr1, ubld(7))
 	if err == nil {
 		t.Errorf("transferred liened coins!")
+	}
+}
+
+func TestUpdateLien(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		state    types.AccountState
+		newLien  int64
+		wantFail bool
+	}{
+		{
+			name:    "empty zero",
+			state:   emptyState,
+			newLien: 0,
+		},
+		{
+			name:     "empty some",
+			state:    emptyState,
+			newLien:  123,
+			wantFail: true,
+		},
+		{
+			name: "same",
+			state: types.AccountState{
+				Total:     ubld(15),
+				Bonded:    ubld(1),
+				Unbonding: ubld(2),
+				Locked:    ubld(4),
+				Liened:    ubld(8),
+			},
+			newLien: 8,
+		},
+		{
+			name: "reduce",
+			state: types.AccountState{
+				Total:     ubld(15),
+				Bonded:    ubld(1),
+				Unbonding: ubld(2),
+				Locked:    ubld(4),
+				Liened:    ubld(8),
+			},
+			newLien: 7,
+		},
+		{
+			name: "insufficient bonded",
+			state: types.AccountState{
+				Total:     ubld(15),
+				Bonded:    ubld(1),
+				Unbonding: ubld(2),
+				Locked:    ubld(4),
+				Liened:    ubld(8),
+			},
+			newLien:  9,
+			wantFail: true,
+		},
+		{
+			name: "unbonding not good enough",
+			state: types.AccountState{
+				Total:     ubld(15),
+				Bonded:    ubld(0),
+				Unbonding: ubld(15),
+				Locked:    ubld(0),
+				Liened:    ubld(8),
+			},
+			newLien:  9,
+			wantFail: true,
+		},
+		{
+			name: "locked ok",
+			state: types.AccountState{
+				Total:     ubld(15),
+				Bonded:    ubld(15),
+				Unbonding: ubld(0),
+				Locked:    ubld(15),
+				Liened:    ubld(0),
+			},
+			newLien: 1,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tk := makeTestKit()
+			ctx, _, _, sk, lk := tk.expand()
+			tk.initAccount(t, addr1, addr2, tt.state)
+			gotState := lk.GetAccountState(ctx, addr2)
+			if !gotState.IsEqual(tt.state) {
+				t.Fatalf("account state want %+v, got %+v", tt.state, gotState)
+			}
+			bondDenom := sk.BondDenom(ctx)
+			newLien := sdk.NewInt64Coin(bondDenom, tt.newLien)
+			err := lk.UpdateLien(ctx, addr2, newLien)
+			if err != nil {
+				if !tt.wantFail {
+					t.Errorf("Update lien failed: %v", err)
+				}
+			} else if tt.wantFail {
+				t.Errorf("Update lien succeeded, but wanted failure")
+			}
+		})
+	}
+}
+
+func TestWrap(t *testing.T) {
+	tk := makeTestKit()
+	ctx, wak, _, _, keeper := tk.expand()
+	outerAk := wak.(*types.WrappedAccountKeeper)
+	innerAk := outerAk.AccountKeeper
+
+	tk.initAccount(t, addr1, addr2, types.AccountState{Total: ubld(33)})
+	acc := innerAk.GetAccount(ctx, addr2)
+	acc.SetAccountNumber(8)
+	wrapper := NewAccountWrapper(keeper)
+	wrapped := wrapper.Wrap(ctx, acc)
+	if wrapped != acc {
+		t.Fatalf("wrapper changed lien-less account from %v to %v", acc, wrapped)
+	}
+
+	tk.initAccount(t, addr1, addr3, types.AccountState{Total: ubld(10), Liened: ubld(8)})
+	acc = innerAk.GetAccount(ctx, addr3)
+	acc.SetAccountNumber(17)
+	wrapped = wrapper.Wrap(ctx, acc)
+	lienAcc, ok := wrapped.(*LienAccount)
+	if !ok {
+		t.Fatalf("wrapper did not create a lien account: %+v", wrapped)
+	}
+
+	if lienAcc.lienKeeper.(keeperImpl).accountKeeper != wak {
+		t.Errorf("wrong lien keeper %+v, want %+v", lienAcc.lienKeeper, keeper)
+	}
+	unwrapped := wrapper.Unwrap(ctx, lienAcc)
+	baseAccount, ok := unwrapped.(*authtypes.BaseAccount)
+	if !ok {
+		t.Fatalf("unwrapper did not produce a base account: %+v", unwrapped)
+	}
+	if baseAccount.AccountNumber != 17 {
+		t.Errorf("wrong account number %d, want 17", baseAccount.AccountNumber)
+	}
+	unwrap2 := wrapper.Unwrap(ctx, baseAccount)
+	_, ok = unwrap2.(*authtypes.BaseAccount)
+	if !ok {
+		t.Errorf("unwrapping unwrapped account gives %+v, want base account", unwrap2)
+	}
+	if unwrap2.GetAccountNumber() != 17 {
+		t.Errorf("doubly unwrapped account has wrong account number %d, want 17", unwrap2.GetAccountNumber())
+	}
+	wrapped2 := wrapper.Wrap(ctx, nil)
+	if wrapped2 != nil {
+		t.Errorf("wrapped nil is %v, want nil", wrapped2)
 	}
 }

@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"strings"
 	"time"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
@@ -12,44 +11,6 @@ import (
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	"github.com/gogo/protobuf/proto"
 )
-
-// maxCoins returns coins with the maximum amount of each denomination
-// from its arguments.
-func maxCoins(a, b sdk.Coins) sdk.Coins {
-	max := make([]sdk.Coin, 0)
-	indexA, indexB := 0, 0
-	for indexA < len(a) && indexB < len(b) {
-		coinA, coinB := a[indexA], b[indexB]
-		switch cmp := strings.Compare(coinA.Denom, coinB.Denom); {
-		case cmp < 0: // A < B
-			max = append(max, coinA)
-			indexA++
-		case cmp == 0: // A == B
-			maxCoin := coinA
-			if coinB.IsGTE(maxCoin) {
-				maxCoin = coinB
-			}
-			if !maxCoin.IsZero() {
-				max = append(max, maxCoin)
-			}
-			indexA++
-			indexB++
-		case cmp > 0: // A > B
-			max = append(max, coinB)
-			indexB++
-		}
-	}
-	// Any leftovers are by definition the maximum
-	for ; indexA < len(a); indexA++ {
-		max = append(max, a[indexA])
-	}
-	for ; indexB < len(b); indexB++ {
-		max = append(max, b[indexB])
-	}
-	// At most one of the previous two loops has run,
-	// so output should remain sorted.
-	return sdk.NewCoins(max...)
-}
 
 // omniAccount is the full expected interface of non-module accounts.
 // In addition to the methods declared in authtypes.AccountI, additional
@@ -97,7 +58,7 @@ type omniVestingAccount interface {
 type LienAccount struct {
 	omniVestingAccount
 	lienKeeper Keeper
-	//	messageName string
+	lien       types.Lien
 }
 
 var _ vestexported.VestingAccount = &LienAccount{}
@@ -109,24 +70,17 @@ var _ authtypes.GenesisAccount = &LienAccount{}
 func (la *LienAccount) LockedCoins(ctx sdk.Context) sdk.Coins {
 	wrappedLocked := la.omniVestingAccount.LockedCoins(ctx)
 	lienedLocked := la.LienedLockedCoins(ctx)
-	return maxCoins(wrappedLocked, lienedLocked)
+	return wrappedLocked.Max(lienedLocked)
 }
 
 // Returns the coins which are locked for lien encumbrance.
 func (la *LienAccount) LienedLockedCoins(ctx sdk.Context) sdk.Coins {
-	state := la.lienKeeper.GetAccountState(ctx, la.GetAddress())
-	return computeLienLocked(state.Liened, state.Bonded, state.Unbonding)
-}
-
-// Returns the coins which are locked for lien encumbrance.
-// The lien applies to bonded and unbonding coins before unbonded coins,
-// so we return max(0, liened - (bonded + unbonding)).
-func computeLienLocked(liened, bonded, unbonding sdk.Coins) sdk.Coins {
-	// Since coins can't go negative, even transiently, we add then
-	// subtract the subtrahend:
-	//    max(0, A - B) = max(B, A) - B
-	subtrahend := bonded.Add(unbonding...)
-	return maxCoins(subtrahend, liened).Sub(subtrahend)
+	delegated := la.GetDelegatedFree().Add(la.GetDelegatedVesting()...)
+	liened := la.lien.Coins
+	// Since coins can't go negative, even transiently, use the
+	// identity A + B = max(A, B) + min(A, B)
+	//    max(0, A - B) = max(B, A) - B = A - min(A, B)
+	return liened.Sub(liened.Min(delegated))
 }
 
 // XXX_MessageName provides the message name for JSON serialization.
@@ -141,20 +95,33 @@ func (la *LienAccount) XXX_MessageName() string {
 // any layers that the Wrap added.
 func NewAccountWrapper(lk Keeper) types.AccountWrapper {
 	return types.AccountWrapper{
-		Wrap: func(acc authtypes.AccountI) authtypes.AccountI {
+		Wrap: func(ctx sdk.Context, acc authtypes.AccountI) authtypes.AccountI {
 			if acc == nil {
 				return nil
 			}
-			if omni, ok := acc.(omniAccount); ok {
-				return &LienAccount{
-					omniVestingAccount: makeVesting(omni),
-					lienKeeper:         lk,
-				}
+			omni, ok := acc.(omniAccount)
+			if !ok {
+				// don't wrap non-omni accounts, e.g. module accounts
+				return acc
 			}
-			// don't wrap non-omni accounts, e.g. module accounts
-			return acc
+			addr := acc.GetAddress()
+			lien := lk.GetLien(ctx, addr)
+			if lien.Coins.IsZero() {
+				// don't wrap unless there is a lien
+				return acc
+			}
+			lienAcc := LienAccount{
+				lienKeeper: lk,
+				lien:       lien,
+			}
+			vestingAcc, ok := omni.(omniVestingAccount)
+			if !ok {
+				vestingAcc = unlockedVestingAccount{omniAccount: omni, lien: &lienAcc.lien}
+			}
+			lienAcc.omniVestingAccount = vestingAcc
+			return &lienAcc
 		},
-		Unwrap: func(acc authtypes.AccountI) authtypes.AccountI {
+		Unwrap: func(ctx sdk.Context, acc authtypes.AccountI) authtypes.AccountI {
 			if la, ok := acc.(*LienAccount); ok {
 				acc = la.omniVestingAccount
 			}
@@ -166,20 +133,12 @@ func NewAccountWrapper(lk Keeper) types.AccountWrapper {
 	}
 }
 
-// makeVesting returns a VestingAccount, wrapping a non-vesting argument
-// in a trivial implementation if necessary.
-func makeVesting(acc omniAccount) omniVestingAccount {
-	if v, ok := acc.(omniVestingAccount); ok {
-		return v
-	}
-	return unlockedVestingAccount{omniAccount: acc}
-}
-
 // unlockedVestingAccount extends an omniAccount to be a vesting account
 // by simulating an original vesting amount of zero. It inherets the marshal
 // behavior of the wrapped account.
 type unlockedVestingAccount struct {
 	omniAccount
+	lien *types.Lien
 }
 
 var _ vestexported.VestingAccount = unlockedVestingAccount{}
@@ -190,9 +149,15 @@ func (uva unlockedVestingAccount) LockedCoins(ctx sdk.Context) sdk.Coins {
 }
 
 func (uva unlockedVestingAccount) TrackDelegation(blockTime time.Time, balance, amount sdk.Coins) {
+	if !amount.IsAllLTE(balance) {
+		panic("insufficient funds")
+	}
+	uva.lien.Delegated = uva.lien.Delegated.Add(amount...)
 }
 
 func (uva unlockedVestingAccount) TrackUndelegation(amount sdk.Coins) {
+	// max(delegated - amount, 0) == delegated - min(delegated, amount)
+	uva.lien.Delegated = uva.lien.Delegated.Sub(uva.lien.Delegated.Min(amount))
 }
 
 func (uva unlockedVestingAccount) GetVestedCoins(blockTime time.Time) sdk.Coins {
@@ -216,7 +181,7 @@ func (uva unlockedVestingAccount) GetOriginalVesting() sdk.Coins {
 }
 
 func (uva unlockedVestingAccount) GetDelegatedFree() sdk.Coins {
-	return sdk.NewCoins()
+	return uva.lien.Delegated
 }
 
 func (uva unlockedVestingAccount) GetDelegatedVesting() sdk.Coins {

@@ -37,6 +37,7 @@ type msgAccountState struct {
 	Unbonding   sdk.Int `json:"unbonding"`
 	Locked      sdk.Int `json:"locked"`
 	Liened      sdk.Int `json:"liened"`
+	// TODO: send unvested amount
 }
 
 type delegatorState struct {
@@ -189,27 +190,10 @@ func (ch portHandler) handleSetLiened(ctx sdk.Context, msg portMessage) (string,
 	if err = sdk.ValidateDenom(denom); err != nil {
 		return "", fmt.Errorf("invalid denom %s: %w", denom, err)
 	}
-	lien := ch.keeper.GetLien(ctx, addr)
-	oldAmount := lien.GetCoins().AmountOf(denom)
-	if msg.Amount.Equal(oldAmount) {
-		// no-op, no need to do anything
-		return "true", nil
-	} else if msg.Amount.LT(oldAmount) {
-		// always okay to reduce liened amount
-		diff := sdk.NewCoin(denom, oldAmount.Sub(msg.Amount))
-		lien.Coins = lien.GetCoins().Sub(sdk.NewCoins(diff))
-		ch.keeper.SetLien(ctx, addr, lien)
-		return "true", nil
-	} else {
-		// check if it's okay to increase lein
-		state := ch.keeper.GetAccountState(ctx, addr)
-		bonded := state.Bonded.AmountOf(denom)
-		if msg.Amount.GT(bonded) {
-			return "false", nil
-		}
-		diff := sdk.NewCoin(denom, msg.Amount.Sub(oldAmount))
-		lien.Coins = lien.GetCoins().Add(diff)
-		ch.keeper.SetLien(ctx, addr, lien)
-		return "true", nil
+	newCoin := sdk.NewCoin(denom, msg.Amount)
+
+	if err := ch.keeper.UpdateLien(ctx, addr, newCoin); err != nil {
+		return "false", nil
 	}
+	return "true", nil
 }
