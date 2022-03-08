@@ -548,6 +548,8 @@ export function makeWallet({
       });
   }
 
+  const attMakerPK = makePromiseKit();
+
   async function executeOffer(compiledOfferP) {
     // =====================
     // === AWAITING TURN ===
@@ -559,17 +561,39 @@ export function makeWallet({
     /** @type {Map<Payment, Purse>} */
     const paymentToPurse = new Map();
 
+    const keywordToAttestation = new Map();
+
     // We now have everything we need to provide Zoe, so do the actual withdrawals.
     // Payments are made for the keywords in proposal.give.
     const keywordPaymentPs = Object.entries(proposal.give || harden({})).map(
-      async ([keyword, amount]) => {
+      async ([keyword, { amount, type }]) => {
         const purse = purseKeywordRecord[keyword];
         assert(
           purse !== undefined,
           X`purse was not found for keyword ${q(keyword)}`,
         );
-        const payment = await E(purse).withdraw(amount);
-        paymentToPurse.set(payment, purse);
+        let payment;
+        if (type === 'Attestation') {
+          console.log('MAKE ATTESTATION!!!');
+          // TODO: Find a more efficient way to get the BLD brand?
+          const bldBrand = await E(agoricNames)?.lookup('brand', 'BLD');
+          payment = await E(await attMakerPK.promise).makeAttestation(
+            AmountMath.make(bldBrand, amount.value),
+          );
+          // TODO: Ditto above.
+          const attestationIssuer = await E(agoricNames)?.lookup(
+            'issuer',
+            'Attestation',
+          );
+          keywordToAttestation.set(
+            keyword,
+            await E(attestationIssuer).getAmountOf(payment),
+          );
+          console.log('GOT ATTESTATION!!!', keywordToAttestation);
+        } else {
+          payment = await E(purse).withdraw(amount);
+          paymentToPurse.set(payment, purse);
+        }
         return [keyword, payment];
       },
     );
@@ -584,6 +608,20 @@ export function makeWallet({
           // Wait for the withdrawal to complete.  This protects against a race
           // when updating paymentToPurse.
           const [_keyword, payment] = await keywordPaymentP;
+
+          const attestationIssuer = E(agoricNames)?.lookup(
+            'issuer',
+            'Attestation',
+          );
+
+          // TODO: Return attestation to getRUN contract.
+          if (
+            (await E(payment).getAllegedBrand()) ===
+            (await E(attestationIssuer).getBrand())
+          ) {
+            console.log('SHOULD RETURN ATTESTATION TO GETRUN CONTRACT!');
+            return undefined;
+          }
 
           // Find out where it came from.
           const purse = paymentToPurse.get(payment);
@@ -612,11 +650,30 @@ export function makeWallet({
     // === AWAITING TURN ===
     // =====================
 
-    // this await is purely to prevent "embarrassment" of
-    // revealing to zoe that we had insufficient funds/assets
-    // for the offer.
     const paymentKeywords = await withdrawAllPayments;
     const paymentKeywordRecord = harden(Object.fromEntries(paymentKeywords));
+
+    // Flatten {amount, type} into amount for real proposal, change brand from
+    // BLD to BldLienAtt for liens.
+    if (proposal.give) {
+      proposal.give = Object.fromEntries(
+        Object.entries(proposal.give).map(([keyword, { amount, type }]) => {
+          if (type === 'Attestation') {
+            amount = keywordToAttestation.get(keyword);
+          }
+
+          return [keyword, amount];
+        }),
+      );
+    }
+
+    if (proposal.want) {
+      proposal.want = Object.fromEntries(
+        Object.entries(proposal.want).map(([keyword, { amount }]) => {
+          return [keyword, amount];
+        }),
+      );
+    }
 
     const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
     // By the time Zoe settles the seat promise, the escrow should be complete.
@@ -628,8 +685,15 @@ export function makeWallet({
     const depositedP = E(seat)
       .getPayouts()
       .then(payoutObj => {
+        console.log('GOT PAYOUTS!!!', payoutObj);
         return Promise.all(
           Object.entries(payoutObj).map(([keyword, payoutP]) => {
+            console.log('PAYOUT!!!', keyword);
+            // TODO: Return attestation to getRUN contract
+            if (keywordToAttestation.has(keyword)) {
+              return true;
+            }
+
             // We try to find a purse for this keyword, but even if we don't,
             // we still make it a normal incoming payment.
             const purseOrUndefined = purseKeywordRecord[keyword];
@@ -639,11 +703,10 @@ export function makeWallet({
           }),
         );
       });
-
     // Regardless of the status of the offer, we try to clean up any of our
     // unclaimed payments.  Defensively, we want to do this as soon as possible
     // even if the seat doesn't settle.
-    depositedP.finally(tryReclaimingWithdrawnPayments);
+    // depositedP.finally(tryReclaimingWithdrawnPayments);
 
     // Return a promise that will resolve after successful deposit, as well as
     // the promise for the seat.
@@ -844,24 +907,22 @@ export function makeWallet({
     const purseKeywordRecord = {};
 
     const compile = amountKeywordRecord => {
-      return harden(
-        Object.fromEntries(
-          Object.entries(amountKeywordRecord).map(
-            ([keyword, { pursePetname, value }]) => {
-              // Automatically convert numbers to Nats.
-              if (typeof value === 'number') {
-                value = Nat(value);
-              }
-              const purse = getPurse(pursePetname);
-              purseKeywordRecord[keyword] = purse;
-              const brand = purseToBrand.get(purse);
-              const amount = {
-                brand,
-                value,
-              };
-              return [keyword, amount];
-            },
-          ),
+      return Object.fromEntries(
+        Object.entries(amountKeywordRecord).map(
+          ([keyword, { pursePetname, value, type }]) => {
+            // Automatically convert numbers to Nats.
+            if (typeof value === 'number') {
+              value = Nat(value);
+            }
+            const purse = getPurse(pursePetname);
+            purseKeywordRecord[keyword] = purse;
+            const brand = purseToBrand.get(purse);
+            const amount = {
+              brand,
+              value,
+            };
+            return [keyword, { amount, type }];
+          },
         ),
       );
     };
@@ -882,6 +943,7 @@ export function makeWallet({
 
     // eslint-disable-next-line no-use-before-define
     const zoeIssuer = issuerManager.get(ZOE_INVITE_BRAND_PETNAME);
+
     const { brand: invitationBrand } = brandTable.getByIssuer(zoeIssuer);
     const invitationP = findOrMakeInvitation(
       idToOfferResultPromiseKit,
@@ -1159,6 +1221,7 @@ export function makeWallet({
       // Update status, drop the proposal
       depositedP
         .then(_ => {
+          console.log('DEPOSITEDP FINISHED!!!');
           // We got something back, so no longer pending or rejected.
           if (!alreadyResolved) {
             alreadyResolved = true;
@@ -1494,8 +1557,6 @@ export function makeWallet({
     assert(offerResult.uiNotifier, X`offerResult does not have a uiNotifier`);
     return offerResult.uiNotifier;
   }
-
-  const attMakerPK = makePromiseKit();
 
   const getAccountState = async () => E(attMakerPK.promise).getAccountState();
 
