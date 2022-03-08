@@ -45,15 +45,12 @@ var (
 	}
 )
 
-func ubld(amt int64) sdk.Coins {
-	return sdk.NewCoins(c("ubld", amt))
-}
-
 type mockLienKeeper struct {
 	states      map[string]types.AccountState
 	validators  map[string]stakingTypes.Validator
 	delegations map[string][]stakingTypes.Delegation
-	update      *types.AccountLien
+	updateAddr  sdk.AccAddress
+	updateCoin  sdk.Coin
 }
 
 var _ Keeper = &mockLienKeeper{}
@@ -76,8 +73,9 @@ func (m *mockLienKeeper) SetLien(ctx sdk.Context, addr sdk.AccAddress, lien type
 func (m *mockLienKeeper) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool) {
 }
 
-func (m *mockLienKeeper) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien types.Lien) error {
-	m.update = &types.AccountLien{Address: addr.String(), Lien: newLien.Coins}
+func (m *mockLienKeeper) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien sdk.Coin) error {
+	m.updateAddr = addr
+	m.updateCoin = newLien
 	return nil
 }
 
@@ -269,12 +267,12 @@ func TestSetLiened(t *testing.T) {
 	if reply != "true" {
 		t.Fatalf("Receive returned %s, want true", reply)
 	}
-	if keeper.update.Address != addr1 {
-		t.Errorf("lien update with address %s, want %s", keeper.update.Address, addr1)
+	if keeper.updateAddr.String() != addr1 {
+		t.Errorf("lien update with address %s, want %s", keeper.updateAddr, addr1)
 	}
-	wantLien := sdk.NewCoins(c("ubld", 123))
-	if !keeper.update.Lien.IsEqual(wantLien) {
-		t.Errorf("lien update got %s, want %s", keeper.update.Lien, wantLien)
+	wantCoin := c("ubld", 123)
+	if !keeper.updateCoin.IsEqual(wantCoin) {
+		t.Errorf("lien update got %s, want %s", keeper.updateCoin, wantCoin)
 	}
 }
 

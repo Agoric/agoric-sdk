@@ -7,7 +7,7 @@ import (
 
 type BankKeeper interface {
 	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
-	//GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coins
+	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
 }
 
 type StakingKeeper interface {

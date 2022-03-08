@@ -19,7 +19,7 @@ type Keeper interface {
 	GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien
 	SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien)
 	IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool)
-	UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien types.Lien) error
+	UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newCoin sdk.Coin) error
 	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState
 	BondDenom(ctx sdk.Context) string
 	GetDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingTypes.Delegation
@@ -102,19 +102,49 @@ func (lk keeperImpl) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, 
 	}
 }
 
-func (lk keeperImpl) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newLien types.Lien) error {
+// UpdateLien changes the liened amount of a single denomination in the given account.
+// Either the old or new amount of the denomination can be zero.
+// Liens can always be decreased, but to increase a lien, the new total amount must
+// be vested and either bonded (for the staking token) or in the bank (for other tokens).
+// The total lien can have several different denominations. Each is adjusted
+// independently.
+func (lk keeperImpl) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newCoin sdk.Coin) error {
 	oldLien := lk.GetLien(ctx, addr)
-	if newLien.Coins.IsEqual(oldLien.Coins) {
+	oldCoins := oldLien.Coins
+	denom := newCoin.Denom
+	newAmount := newCoin.Amount
+	oldAmount := oldCoins.AmountOf(denom)
+	if newAmount.Equal(oldAmount) {
 		// no-op, no need to do anything
 		return nil
 	}
-	if !newLien.Coins.IsAllLTE(oldLien.Coins) {
-		// see if it's okay to increase the lien
-		state := lk.GetAccountState(ctx, addr)
-		if !newLien.Coins.IsAllLTE(state.Bonded) {
-			diff := newLien.Coins.Sub(newLien.Coins.Min(oldLien.Coins))
-			return fmt.Errorf("new lien higher than bonded amount by %s", diff)
+
+	newCoins := oldCoins.Sub(sdk.NewCoins(sdk.NewCoin(denom, oldAmount))).Add(newCoin)
+	newLien := types.Lien{
+		Coins:     newCoins,
+		Delegated: oldLien.Delegated,
+	}
+
+	if newAmount.GT(oldAmount) {
+		// See if it's okay to increase the lien.
+		// Lien can be increased if the new amount is vested,
+		// not already liened, and if it's the bond denom,
+		// must be staked.
+		if denom == lk.BondDenom(ctx) {
+			state := lk.GetAccountState(ctx, addr)
+			bonded := state.Bonded.AmountOf(denom)
+			if !newAmount.LTE(bonded) {
+				return fmt.Errorf("want to lien %s but only %s bonded", newCoin, bonded)
+			}
+			newDelegated := bonded.Add(state.Unbonding.AmountOf(denom))
+			newLien.Delegated = sdk.NewCoins(sdk.NewCoin(denom, newDelegated))
+		} else {
+			inBank := lk.bankKeeper.GetBalance(ctx, addr, denom)
+			if !newAmount.LTE(inBank.Amount) {
+				return fmt.Errorf("want to lien %s but only %s available", newCoin, inBank)
+			}
 		}
+		// XXX check vested
 	}
 	lk.SetLien(ctx, addr, newLien)
 	return nil

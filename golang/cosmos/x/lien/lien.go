@@ -10,7 +10,6 @@ import (
 	"math"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -190,9 +189,9 @@ func (ch portHandler) handleSetLiened(ctx sdk.Context, msg portMessage) (string,
 	if err = sdk.ValidateDenom(denom); err != nil {
 		return "", fmt.Errorf("invalid denom %s: %w", denom, err)
 	}
-	newLien := types.Lien{Coins: sdk.NewCoins(sdk.NewCoin(denom, msg.Amount))}
+	newCoin := sdk.NewCoin(denom, msg.Amount)
 
-	if err := ch.keeper.UpdateLien(ctx, addr, newLien); err != nil {
+	if err := ch.keeper.UpdateLien(ctx, addr, newCoin); err != nil {
 		return "false", nil
 	}
 	return "true", nil

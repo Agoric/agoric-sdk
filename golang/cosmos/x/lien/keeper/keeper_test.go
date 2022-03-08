@@ -519,7 +519,7 @@ func TestUpdateLien(t *testing.T) {
 				t.Fatalf("account state want %+v, got %+v", tt.state, gotState)
 			}
 			bondDenom := sk.BondDenom(ctx)
-			newLien := types.Lien{Coins: sdk.NewCoins(sdk.NewInt64Coin(bondDenom, tt.newLien))}
+			newLien := sdk.NewInt64Coin(bondDenom, tt.newLien)
 			err := lk.UpdateLien(ctx, addr2, newLien)
 			if err != nil {
 				if !tt.wantFail {
