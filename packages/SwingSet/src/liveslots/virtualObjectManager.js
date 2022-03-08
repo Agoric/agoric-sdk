@@ -3,6 +3,8 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@endo/marshal';
+import { parseVatSlot } from '../lib/parseVatSlots.js';
+
 // import { kdebug } from './kdebug.js';
 
 /**
@@ -412,6 +414,8 @@ export function makeVirtualObjectManager(
   /**
    * Define a new kind of virtual object.
    *
+   * @param {string} kindID  The kind ID to associate with the new kind.
+   *
    * @param {string} tag  A descriptive tag string as used in calls to `Far`
    *
    * @param {*} init  An initialization function that will return the initial
@@ -492,8 +496,7 @@ export function makeVirtualObjectManager(
    * reference to the state is nulled out and the object holding the state
    * becomes garbage collectable.
    */
-  function defineKindInternal(tag, init, actualize, finish, durable) {
-    const kindID = `${allocateExportID()}`;
+  function defineKindInternal(kindID, tag, init, actualize, finish, durable) {
     let nextInstanceID = 1;
     const propertyNames = new Set();
 
@@ -648,11 +651,47 @@ export function makeVirtualObjectManager(
   }
 
   function defineKind(tag, init, actualize, finish) {
-    return defineKindInternal(tag, init, actualize, finish, false);
+    const kindID = `${allocateExportID()}`;
+    return defineKindInternal(kindID, tag, init, actualize, finish, false);
   }
 
-  function defineDurableKind(tag, init, actualize, finish) {
-    return defineKindInternal(tag, init, actualize, finish, true);
+  let kindIDID;
+  const kindDescriptors = new WeakMap();
+
+  function reanimateDurableKindID(vobjID, _proforma) {
+    const { subid: kindID } = parseVatSlot(vobjID);
+    const raw = syscall.vatstoreGet(`vom.kind.${kindID}`);
+    assert(raw, X`unknown kind ID ${kindID}`);
+    const durableKindDescriptor = harden(JSON.parse(raw));
+    const kindHandle = Far('kind', {});
+    kindDescriptors.set(kindHandle, durableKindDescriptor);
+    return kindHandle;
+  }
+
+  const makeKindHandle = tag => {
+    if (!kindIDID) {
+      kindIDID = `${allocateExportID()}`;
+      syscall.vatstoreSet('kindIDID', kindIDID);
+      vrm.registerKind(kindIDID, reanimateDurableKindID, () => null, true);
+    }
+    const kindID = `${allocateExportID()}`;
+    const kindIDvref = `o+${kindIDID}/${kindID}`;
+    const durableKindDescriptor = harden({ kindID, tag });
+    const kindHandle = Far('kind', {});
+    kindDescriptors.set(kindHandle, durableKindDescriptor);
+    registerValue(kindIDvref, kindHandle, false);
+    syscall.vatstoreSet(
+      `vom.kind.${kindID}`,
+      JSON.stringify(durableKindDescriptor),
+    );
+    return kindHandle;
+  };
+
+  function defineDurableKind(kindHandle, init, actualize, finish) {
+    const durableKindDescriptor = kindDescriptors.get(kindHandle);
+    assert(durableKindDescriptor);
+    const { kindID, tag } = durableKindDescriptor;
+    return defineKindInternal(kindID, tag, init, actualize, finish, true);
   }
 
   function countWeakKeysForCollection(collection) {
@@ -674,6 +713,7 @@ export function makeVirtualObjectManager(
   return harden({
     defineKind,
     defineDurableKind,
+    makeKindHandle,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     flushCache: cache.flush,

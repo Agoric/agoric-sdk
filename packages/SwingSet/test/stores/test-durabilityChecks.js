@@ -8,7 +8,9 @@ const { vom, cm } = makeFakeVirtualStuff({ cacheSize: 3 });
 
 const { makeScalarBigMapStore, makeScalarBigSetStore } = cm;
 
-const { defineKind, defineDurableKind } = vom;
+const { defineKind, defineDurableKind, makeKindHandle } = vom;
+
+const durableHolderKind = makeKindHandle('holder');
 
 const initHolder = (held = null) => ({ held });
 const actualizeHolder = state => ({
@@ -19,7 +21,7 @@ const actualizeHolder = state => ({
 
 const makeVirtualHolder = defineKind('holder', initHolder, actualizeHolder);
 const makeDurableHolder = defineDurableKind(
-  'holder',
+  durableHolderKind,
   initHolder,
   actualizeHolder,
 );
@@ -42,11 +44,13 @@ const anObjectFullOfVirtualStuff = harden({
   aRemotableObject,
   aVirtualStore,
   aDurableStore,
+  durableHolderKind,
 });
 const anObjectFullOfDurableStuff = harden({
   aString,
   aDurableObject,
   aDurableStore,
+  durableHolderKind,
 });
 const anArrayFullOfVirtualStuff = harden([
   aString,
@@ -55,11 +59,13 @@ const anArrayFullOfVirtualStuff = harden([
   aRemotableObject,
   aVirtualStore,
   aDurableStore,
+  durableHolderKind,
 ]);
 const anArrayFullOfDurableStuff = harden([
   aString,
   aDurableObject,
   aDurableStore,
+  durableHolderKind,
 ]);
 
 function m(s) {
@@ -90,6 +96,8 @@ test('durability checks', t => {
   passKey(() => virtualMap.set(aVirtualStore, 'revise virtual store key'));
   passKey(() => virtualMap.init(aDurableStore, 'durable store as key'));
   passKey(() => virtualMap.set(aDurableStore, 'revise durable store key'));
+  passKey(() => virtualMap.init(durableHolderKind, 'durable kind as key'));
+  passKey(() => virtualMap.set(durableHolderKind, 'revise durable kind key'));
 
   passKey(() => virtualMap.init('simple string value', aString));
   passKey(() => virtualMap.init('virtual object value', aVirtualObject));
@@ -101,6 +109,7 @@ test('durability checks', t => {
   passKey(() => virtualMap.init('array full of virtual stuff', anArrayFullOfVirtualStuff));
   passKey(() => virtualMap.init('object full of durable stuff', anObjectFullOfDurableStuff));
   passKey(() => virtualMap.init('array full of durable stuff', anArrayFullOfDurableStuff));
+  passKey(() => virtualMap.init('durable kind', durableHolderKind));
 
   passKey(() => virtualMap.init('changeme', 47));
   passKey(() => virtualMap.set('changeme', aString));
@@ -113,6 +122,7 @@ test('durability checks', t => {
   passKey(() => virtualMap.set('changeme', anArrayFullOfVirtualStuff));
   passKey(() => virtualMap.set('changeme', anObjectFullOfDurableStuff));
   passKey(() => virtualMap.set('changeme', anArrayFullOfDurableStuff));
+  passKey(() => virtualMap.set('changeme', durableHolderKind));
 
   passKey(() => durableMap.init(aString, 'simple string key'));
   passKey(() => durableMap.set(aString, 'revise string key'));
@@ -123,6 +133,8 @@ test('durability checks', t => {
   failKey(() => durableMap.init(aVirtualStore, 'virtual store as key'));
   passKey(() => durableMap.init(aDurableStore, 'durable store as key'));
   passKey(() => durableMap.set(aDurableStore, 'revise durable store key'));
+  passKey(() => durableMap.init(durableHolderKind, 'durable kind as key'));
+  passKey(() => durableMap.set(durableHolderKind, 'revise durable kind key'));
 
   passVal(() => durableMap.init('simple string value', aString));
   failVal(() => durableMap.init('virtual object value', aVirtualObject));
@@ -134,6 +146,7 @@ test('durability checks', t => {
   failVal(() => durableMap.init('array full of virtual stuff', anArrayFullOfVirtualStuff));
   passVal(() => durableMap.init('object full of durable stuff', anObjectFullOfDurableStuff));
   passVal(() => durableMap.init('array full of durable stuff', anArrayFullOfDurableStuff));
+  passVal(() => durableMap.init('durable kind', durableHolderKind));
 
   passVal(() => durableMap.init('changeme', 47));
   passVal(() => durableMap.set('changeme', aString));
@@ -146,6 +159,7 @@ test('durability checks', t => {
   failVal(() => durableMap.set('changeme', anArrayFullOfVirtualStuff));
   passVal(() => durableMap.set('changeme', anObjectFullOfDurableStuff));
   passVal(() => durableMap.set('changeme', anArrayFullOfDurableStuff));
+  passVal(() => durableMap.set('changeme', durableHolderKind));
 
   const virtualSet = makeScalarBigSetStore('vset');
   const durableSet = makeScalarBigSetStore('dset', { durable: true });
@@ -156,6 +170,7 @@ test('durability checks', t => {
   passKey(() => virtualSet.add(aRemotableObject));
   passKey(() => virtualSet.add(aVirtualStore));
   passKey(() => virtualSet.add(aDurableStore));
+  passKey(() => virtualSet.add(durableHolderKind));
 
   passKey(() => durableSet.add(aString));
   failKey(() => durableSet.add(aVirtualObject));
@@ -163,6 +178,7 @@ test('durability checks', t => {
   failKey(() => durableSet.add(aRemotableObject));
   failKey(() => durableSet.add(aVirtualStore));
   passKey(() => durableSet.add(aDurableStore));
+  passKey(() => durableSet.add(durableHolderKind));
 
   const virtualHolder = makeVirtualHolder();
 
@@ -176,6 +192,7 @@ test('durability checks', t => {
   passHold(() => makeVirtualHolder(anArrayFullOfVirtualStuff));
   passHold(() => makeVirtualHolder(anObjectFullOfDurableStuff));
   passHold(() => makeVirtualHolder(anArrayFullOfDurableStuff));
+  passHold(() => makeVirtualHolder(durableHolderKind));
 
   passHold(() => virtualHolder.hold(aString));
   passHold(() => virtualHolder.hold(aVirtualObject));
@@ -187,6 +204,7 @@ test('durability checks', t => {
   passHold(() => virtualHolder.hold(anArrayFullOfVirtualStuff));
   passHold(() => virtualHolder.hold(anObjectFullOfDurableStuff));
   passHold(() => virtualHolder.hold(anArrayFullOfDurableStuff));
+  passHold(() => virtualHolder.hold(durableHolderKind));
 
   const durableHolder = makeDurableHolder();
 
@@ -200,6 +218,7 @@ test('durability checks', t => {
   failHold(() => makeDurableHolder(anArrayFullOfVirtualStuff));
   passHold(() => makeDurableHolder(anObjectFullOfDurableStuff));
   passHold(() => makeDurableHolder(anArrayFullOfDurableStuff));
+  passHold(() => makeDurableHolder(durableHolderKind));
 
   passHold(() => durableHolder.hold(aString));
   failHold(() => durableHolder.hold(aVirtualObject));
@@ -211,4 +230,5 @@ test('durability checks', t => {
   failHold(() => durableHolder.hold(anArrayFullOfVirtualStuff));
   passHold(() => durableHolder.hold(anObjectFullOfDurableStuff));
   passHold(() => durableHolder.hold(anArrayFullOfDurableStuff));
+  passHold(() => durableHolder.hold(durableHolderKind));
 });

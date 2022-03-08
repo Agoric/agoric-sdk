@@ -1073,6 +1073,7 @@ function build(
     VatData: {
       defineKind: vom.defineKind,
       defineDurableKind: vom.defineDurableKind,
+      makeKindHandle: vom.makeKindHandle,
       makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,
       makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,

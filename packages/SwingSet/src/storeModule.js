@@ -3,6 +3,7 @@
 export const {
   defineKind,
   defineDurableKind,
+  makeKindHandle,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
   makeScalarBigSetStore,

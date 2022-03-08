@@ -390,6 +390,69 @@ test('virtual object cycles using the finish function', t => {
   t.is(thing.getOtherThing().getFirstThing(), thing);
 });
 
+test('durable kind IDs can be reanimated', t => {
+  const log = [];
+  const { vom, vrm, cm, fakeStuff } = makeFakeVirtualStuff({
+    cacheSize: 0,
+    log,
+  });
+  const { makeKindHandle, defineDurableKind, flushCache } = vom;
+  const { possibleVirtualObjectDeath } = vrm;
+  const { makeScalarBigMapStore } = cm;
+  const { deleteEntry } = fakeStuff;
+
+  // Make a persistent place to put the durable kind ID
+  const placeToPutIt = makeScalarBigMapStore();
+  // Not verifying here that makeScalarBigMapStore worked -- it's tested elsewhere
+  log.length = 0;
+
+  // Create a durable kind ID, but don't use it yet
+  let kindHandle = makeKindHandle('testkind');
+  t.is(log.shift(), 'set kindIDID 9');
+  t.is(log.shift(), 'set vom.kind.10 {"kindID":"10","tag":"testkind"}');
+  t.deepEqual(log, []);
+
+  // Store it in the store without having used it
+  placeToPutIt.init('savedKindID', kindHandle);
+  t.is(log.shift(), 'get vc.1.ssavedKindID => undefined');
+  t.is(log.shift(), 'get vom.rc.o+9/10 => undefined');
+  t.is(log.shift(), 'set vom.rc.o+9/10 1');
+  const kindBody =
+    '"{\\"@qclass\\":\\"slot\\",\\"iface\\":\\"Alleged: kind\\",\\"index\\":0}"';
+  const kindSer = `{"body":${kindBody},"slots":["o+9/10"]}`;
+  t.is(log.shift(), `set vc.1.ssavedKindID ${kindSer}`);
+  t.is(log.shift(), 'get vc.1.|entryCount => 0');
+  t.is(log.shift(), 'set vc.1.|entryCount 1');
+  t.deepEqual(log, []);
+
+  // Forget its existence
+  kindHandle = null;
+  deleteEntry('o+9/10');
+  possibleVirtualObjectDeath('o+9/10');
+  t.is(log.shift(), 'get vom.rc.o+9/10 => 1');
+  t.is(log.shift(), 'get vom.es.o+9/10 => undefined');
+  t.deepEqual(log, []);
+
+  // Fetch it from the store, which should reanimate it
+  const fetchedKindID = placeToPutIt.get('savedKindID');
+  t.is(log.shift(), `get vc.1.ssavedKindID => ${kindSer}`);
+  t.is(log.shift(), 'get vom.kind.10 => {"kindID":"10","tag":"testkind"}');
+  t.deepEqual(log, []);
+
+  // Use it now, to define a durable kind
+  const makeThing = defineDurableKind(fetchedKindID, initThing, actualizeThing);
+  t.deepEqual(log, []);
+
+  // Make an instance of the new kind, just to be sure it's there
+  makeThing('laterThing');
+  flushCache();
+  t.is(
+    log.shift(),
+    'set vom.o+10/1 {"counter":{"body":"0","slots":[]},"label":{"body":"\\"laterThing\\"","slots":[]},"resetCounter":{"body":"0","slots":[]}}',
+  );
+  t.deepEqual(log, []);
+});
+
 test('virtual object gc', t => {
   const log = [];
   const { vom, vrm, fakeStuff } = makeFakeVirtualStuff({ cacheSize: 3, log });
