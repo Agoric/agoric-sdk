@@ -46,7 +46,6 @@
     "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
-    "@agoric/babel-standalone": "^7.14.3",
     "@endo/init": "^0.5.37",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
