@@ -49,7 +49,7 @@ const trace = makeTracer('VM');
  * the collateral is provided in exchange for borrowed RUN.
  *
  * @param {ContractFacet} zcf
- * @param {ZCFMint} runMint
+ * @param {ZCFMint} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {{
@@ -65,7 +65,7 @@ const trace = makeTracer('VM');
  */
 export const makeVaultManager = (
   zcf,
-  runMint,
+  debtMint,
   collateralBrand,
   priceAuthority,
   timingParams,
@@ -75,7 +75,7 @@ export const makeVaultManager = (
   liquidationStrategy,
   startTimeStamp,
 ) => {
-  const { brand: runBrand } = runMint.getIssuerRecord();
+  const { brand: debtBrand } = debtMint.getIssuerRecord();
 
   /** @type {GetVaultParams} */
   const shared = {
@@ -92,7 +92,7 @@ export const makeVaultManager = (
       const decimalPlaces = displayInfo?.decimalPlaces || 0n;
       return E(priceAuthority).quoteGiven(
         AmountMath.make(collateralBrand, 10n ** Nat(decimalPlaces)),
-        runBrand,
+        debtBrand,
       );
     },
   };
@@ -117,9 +117,9 @@ export const makeVaultManager = (
   /** @type {MutableQuote=} */
   let outstandingQuote;
   /** @type {Amount<NatValue>} */
-  let totalDebt = AmountMath.makeEmpty(runBrand, 'nat');
+  let totalDebt = AmountMath.makeEmpty(debtBrand, 'nat');
   /** @type {Ratio}} */
-  let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
+  let compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
 
   /**
    * timestamp of most recent update to interest
@@ -160,7 +160,7 @@ export const makeVaultManager = (
           await liquidate(
             zcf,
             vault,
-            runMint.burnLosses,
+            debtMint.burnLosses,
             liquidationStrategy,
             collateralBrand,
           );
@@ -265,7 +265,7 @@ export const makeVaultManager = (
     ({ compoundedInterest, latestInterestUpdate, totalDebt } =
       await chargeInterest(
         {
-          mint: runMint,
+          mint: debtMint,
           reallocateWithFee,
           poolIncrementSeat,
           seatAllocationKeyword: 'RUN',
@@ -309,7 +309,7 @@ export const makeVaultManager = (
     }
 
     // totalDebt += delta (Amount type ensures natural value)
-    totalDebt = AmountMath.make(runBrand, totalDebt.value + delta);
+    totalDebt = AmountMath.make(debtBrand, totalDebt.value + delta);
   };
 
   /**
@@ -374,7 +374,7 @@ export const makeVaultManager = (
       managerFacet,
       assetNotifer,
       vaultId,
-      runMint,
+      debtMint,
       priceAuthority,
     );
 
