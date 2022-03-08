@@ -40,7 +40,6 @@
     "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
-    "@agoric/babel-standalone": "^7.14.3",
     "@agoric/swingset-vat": "^0.25.1",
     "@endo/bundle-source": "^2.1.1",
     "@endo/init": "^0.5.37",

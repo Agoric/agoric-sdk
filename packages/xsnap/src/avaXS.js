@@ -32,9 +32,6 @@ const externals = [
   'ava',
   'ses',
   '@endo/ses-ava',
-  // TODO Remove babel-standalone preinitialization
-  // https://github.com/endojs/endo/issues/768
-  '@agoric/babel-standalone',
   '@endo/bundle-source',
   '@endo/init',
   '@agoric/install-metering-and-ses',

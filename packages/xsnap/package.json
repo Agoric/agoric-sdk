@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@agoric/babel-standalone": "^7.14.3",
     "@agoric/eventual-send": "^0.14.1",
     "@endo/bundle-source": "^2.1.1",
     "@endo/init": "^0.5.37",
