@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="719px" preserveAspectRatio="none" style="width:1521px;height:719px;background:#FFFFFF;" version="1.1" viewBox="0 0 1521 719" width="1521px" zoomAndPan="magnify"><defs/><g><rect height="26.4883" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="364" x="574.75" y="22.7773"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="354" x="579.75" y="41.3125">Multipool Auto Swap Sequence Diagram Creation</text><rect fill="#DDDDDD" height="642.3242" style="stroke:#181818;stroke-width:0.5;" width="309.5" x="763" y="56.2656"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="24" x="905.75" y="68.834">Zoe</text><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="55" x2="55" y1="131.7539" y2="619.1016"/><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="163" x2="163" y1="131.7539" y2="619.1016"/><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="256" x2="256" y1="131.7539" y2="619.1016"/><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="703" x2="703" y1="131.7539" y2="619.1016"/><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="783" x2="783" y1="131.7539" y2="619.1016"/><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="1035.5" x2="1035.5" y1="131.7539" y2="619.1016"/><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="1132.5" x2="1132.5" y1="131.7539" y2="619.1016"/><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="1293.5" x2="1293.5" y1="131.7539" y2="619.1016"/><line style="stroke:#181818;stroke-width:0.5;fill:none;stroke-dasharray:5.0,5.0;" x1="1433.5" x2="1433.5" y1="131.7539" y2="619.1016"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="94" x="5" y="128.8008">MPAS Creator</text><ellipse cx="55" cy="63.7656" fill="#00FF00" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M55,71.7656 L55,98.7656 M42,79.7656 L68,79.7656 M55,98.7656 L42,113.7656 M55,98.7656 L68,113.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="94" x="5" y="631.6367">MPAS Creator</text><ellipse cx="55" cy="643.0898" fill="#00FF00" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M55,651.0898 L55,678.0898 M42,659.0898 L68,659.0898 M55,678.0898 L42,693.0898 M55,678.0898 L68,693.0898 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="90" x="115" y="128.8008">Pool Adder N</text><ellipse cx="163" cy="63.7656" fill="#FFFF00" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M163,71.7656 L163,98.7656 M150,79.7656 L176,79.7656 M163,98.7656 L150,113.7656 M163,98.7656 L176,113.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="90" x="115" y="631.6367">Pool Adder N</text><ellipse cx="163" cy="643.0898" fill="#FFFF00" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M163,651.0898 L163,678.0898 M150,659.0898 L176,659.0898 M163,678.0898 L150,693.0898 M163,678.0898 L176,693.0898 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="65" x="221" y="128.8008">Pool User</text><ellipse cx="256.5" cy="63.7656" fill="#E2E2F0" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M256.5,71.7656 L256.5,98.7656 M243.5,79.7656 L269.5,79.7656 M256.5,98.7656 L243.5,113.7656 M256.5,98.7656 L269.5,113.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="65" x="221" y="631.6367">Pool User</text><ellipse cx="256.5" cy="643.0898" fill="#E2E2F0" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M256.5,651.0898 L256.5,678.0898 M243.5,659.0898 L269.5,659.0898 M256.5,678.0898 L243.5,693.0898 M256.5,678.0898 L269.5,693.0898 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="101" x="650" y="128.8008">MPAS Contract</text><path d="M685.5,79.2656 C685.5,69.2656 703.5,69.2656 703.5,69.2656 C703.5,69.2656 721.5,69.2656 721.5,79.2656 L721.5,105.2656 C721.5,115.2656 703.5,115.2656 703.5,115.2656 C703.5,115.2656 685.5,115.2656 685.5,105.2656 L685.5,79.2656 " fill="#E2E2F0" style="stroke:#181818;stroke-width:1.5;"/><path d="M685.5,79.2656 C685.5,89.2656 703.5,89.2656 703.5,89.2656 C703.5,89.2656 721.5,89.2656 721.5,79.2656 " fill="none" style="stroke:#181818;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="101" x="650" y="631.6367">MPAS Contract</text><path d="M685.5,644.5898 C685.5,634.5898 703.5,634.5898 703.5,634.5898 C703.5,634.5898 721.5,634.5898 721.5,644.5898 L721.5,670.5898 C721.5,680.5898 703.5,680.5898 703.5,680.5898 C703.5,680.5898 685.5,680.5898 685.5,670.5898 L685.5,644.5898 " fill="#E2E2F0" style="stroke:#181818;stroke-width:1.5;"/><path d="M685.5,644.5898 C685.5,654.5898 703.5,654.5898 703.5,654.5898 C703.5,654.5898 721.5,654.5898 721.5,644.5898 " fill="none" style="stroke:#181818;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="25" x="767.5" y="128.8008">Zoe</text><ellipse cx="783" cy="99.2656" fill="#E2E2F0" rx="12" ry="12" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="771" x2="795" y1="113.2656" y2="113.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="25" x="767.5" y="631.6367">Zoe</text><ellipse cx="783" cy="650.5898" fill="#E2E2F0" rx="12" ry="12" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="771" x2="795" y1="664.5898" y2="664.5898"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="59" x="1003.5" y="128.8008">userSeat</text><ellipse cx="1036" cy="99.2656" fill="#E2E2F0" rx="12" ry="12" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="1024" x2="1048" y1="113.2656" y2="113.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="59" x="1003.5" y="631.6367">userSeat</text><ellipse cx="1036" cy="650.5898" fill="#E2E2F0" rx="12" ry="12" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="1024" x2="1048" y1="664.5898" y2="664.5898"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="102" x="1078.5" y="128.8008">Pool SML:BUCK</text><path d="M1114.5,79.2656 C1114.5,69.2656 1132.5,69.2656 1132.5,69.2656 C1132.5,69.2656 1150.5,69.2656 1150.5,79.2656 L1150.5,105.2656 C1150.5,115.2656 1132.5,115.2656 1132.5,115.2656 C1132.5,115.2656 1114.5,115.2656 1114.5,105.2656 L1114.5,79.2656 " fill="#E2E2F0" style="stroke:#181818;stroke-width:1.5;"/><path d="M1114.5,79.2656 C1114.5,89.2656 1132.5,89.2656 1132.5,89.2656 C1132.5,89.2656 1150.5,89.2656 1150.5,79.2656 " fill="none" style="stroke:#181818;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="102" x="1078.5" y="631.6367">Pool SML:BUCK</text><path d="M1114.5,644.5898 C1114.5,634.5898 1132.5,634.5898 1132.5,634.5898 C1132.5,634.5898 1150.5,634.5898 1150.5,644.5898 L1150.5,670.5898 C1150.5,680.5898 1132.5,680.5898 1132.5,680.5898 C1132.5,680.5898 1114.5,680.5898 1114.5,670.5898 L1114.5,644.5898 " fill="#E2E2F0" style="stroke:#181818;stroke-width:1.5;"/><path d="M1114.5,644.5898 C1114.5,654.5898 1132.5,654.5898 1132.5,654.5898 C1132.5,654.5898 1150.5,654.5898 1150.5,644.5898 " fill="none" style="stroke:#181818;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="132" x="1224.5" y="128.8008">poolSeat SML:BUCK</text><ellipse cx="1293.5" cy="99.2656" fill="#E2E2F0" rx="12" ry="12" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="1281.5" x2="1305.5" y1="113.2656" y2="113.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="132" x="1224.5" y="631.6367">poolSeat SML:BUCK</text><ellipse cx="1293.5" cy="650.5898" fill="#E2E2F0" rx="12" ry="12" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="1281.5" x2="1305.5" y1="664.5898" y2="664.5898"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="116" x="1372.5" y="128.8008">Pool MOOL:BUCK</text><path d="M1415.5,79.2656 C1415.5,69.2656 1433.5,69.2656 1433.5,69.2656 C1433.5,69.2656 1451.5,69.2656 1451.5,79.2656 L1451.5,105.2656 C1451.5,115.2656 1433.5,115.2656 1433.5,115.2656 C1433.5,115.2656 1415.5,115.2656 1415.5,105.2656 L1415.5,79.2656 " fill="#E2E2F0" style="stroke:#181818;stroke-width:1.5;"/><path d="M1415.5,79.2656 C1415.5,89.2656 1433.5,89.2656 1433.5,89.2656 C1433.5,89.2656 1451.5,89.2656 1451.5,79.2656 " fill="none" style="stroke:#181818;stroke-width:1.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="116" x="1372.5" y="631.6367">Pool MOOL:BUCK</text><path d="M1415.5,644.5898 C1415.5,634.5898 1433.5,634.5898 1433.5,634.5898 C1433.5,634.5898 1451.5,634.5898 1451.5,644.5898 L1451.5,670.5898 C1451.5,680.5898 1433.5,680.5898 1433.5,680.5898 C1433.5,680.5898 1415.5,680.5898 1415.5,670.5898 L1415.5,644.5898 " fill="#E2E2F0" style="stroke:#181818;stroke-width:1.5;"/><path d="M1415.5,644.5898 C1415.5,654.5898 1433.5,654.5898 1433.5,654.5898 C1433.5,654.5898 1451.5,654.5898 1451.5,644.5898 " fill="none" style="stroke:#181818;stroke-width:1.5;"/><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="1514.5" x="0" y="162.4092"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1514.5" y1="162.4092" y2="162.4092"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1514.5" y1="165.4092" y2="165.4092"/><rect fill="#EEEEEE" height="23.3105" style="stroke:#000000;stroke-width:2.0;" width="116" x="699.25" y="151.7539"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="98" x="705.25" y="168.3223">MPAS Creation</text><polygon fill="#181818" points="691.5,202.375,701.5,206.375,691.5,210.375,695.5,206.375" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="55" x2="697.5" y1="206.375" y2="206.375"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="9" x="62" y="201.6328">1</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="97" x="75" y="201.6328">Create instance</text><polygon fill="#181818" points="66,231.6855,56,235.6855,66,239.6855,62,235.6855" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="60" x2="702.5" y1="235.6855" y2="235.6855"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="9" x="72" y="230.9434">2</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="96" x="85" y="230.5308">creatorFacet</text><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="1514.5" x="0" y="264.3408"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1514.5" y1="264.3408" y2="264.3408"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1514.5" y1="267.3408" y2="267.3408"/><rect fill="#EEEEEE" height="23.3105" style="stroke:#000000;stroke-width:2.0;" width="164" x="675.25" y="253.6855"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="150" x="681.25" y="270.2539">Pool Addition SML:BCK</text><polygon fill="#181818" points="691.5,304.3066,701.5,308.3066,691.5,312.3066,695.5,308.3066" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="163" x2="697.5" y1="308.3066" y2="308.3066"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="18" x="170" y="303.5645">10</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="72" x="192" y="303.1519">addPool()</text><polygon fill="#181818" points="1120.5,333.6172,1130.5,337.6172,1120.5,341.6172,1124.5,337.6172" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="703.5" x2="1126.5" y1="337.6172" y2="337.6172"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="18" x="710.5" y="332.875">11</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="182" x="732.5" y="332.875">Create pool for SML -&gt; BUCK</text><polygon fill="#181818" points="174,362.9277,164,366.9277,174,370.9277,170,366.9277" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="168" x2="702.5" y1="366.9277" y2="366.9277"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="18" x="180" y="362.1855">12</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="48" x="202" y="361.7729">Issuer</text><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="1514.5" x="0" y="395.583"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1514.5" y1="395.583" y2="395.583"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1514.5" y1="398.583" y2="398.583"/><rect fill="#EEEEEE" height="23.3105" style="stroke:#000000;stroke-width:2.0;" width="179" x="667.75" y="384.9277"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="165" x="673.75" y="401.4961">Pool Addition MOOL:BCK</text><polygon fill="#181818" points="691.5,435.5488,701.5,439.5488,691.5,443.5488,695.5,439.5488" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="163" x2="697.5" y1="439.5488" y2="439.5488"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="18" x="170" y="434.8066">10</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="72" x="192" y="434.394">addPool()</text><polygon fill="#181818" points="1421.5,464.8594,1431.5,468.8594,1421.5,472.8594,1425.5,468.8594" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="703.5" x2="1427.5" y1="468.8594" y2="468.8594"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="18" x="710.5" y="464.1172">11</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="195" x="732.5" y="464.1172">Create pool for MOOL -&gt; BUCK</text><polygon fill="#181818" points="174,494.1699,164,498.1699,174,502.1699,170,498.1699" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="168" x2="702.5" y1="498.1699" y2="498.1699"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="18" x="180" y="493.4277">12</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="48" x="202" y="493.0151">Issuer</text><rect fill="#EEEEEE" height="3" style="stroke:#EEEEEE;stroke-width:1.0;" width="1514.5" x="0" y="526.8252"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1514.5" y1="526.8252" y2="526.8252"/><line style="stroke:#000000;stroke-width:1.0;" x1="0" x2="1514.5" y1="529.8252" y2="529.8252"/><rect fill="#EEEEEE" height="23.3105" style="stroke:#000000;stroke-width:2.0;" width="247" x="633.75" y="516.1699"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="233" x="639.75" y="532.7383">Duplicate Pool Addition MOOL:BCK</text><polygon fill="#181818" points="691.5,566.791,701.5,570.791,691.5,574.791,695.5,570.791" style="stroke:#181818;stroke-width:1.0;"/><line style="stroke:#181818;stroke-width:1.0;" x1="163" x2="697.5" y1="570.791" y2="570.791"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="18" x="170" y="566.0488">30</text><text fill="#000000" font-family="monospace" font-size="13" lengthAdjust="spacing" textLength="72" x="192" y="565.6362">addPool()</text><line style="stroke:#181818;stroke-width:2.0;" x1="169" x2="179" y1="595.1016" y2="605.1016"/><line style="stroke:#181818;stroke-width:2.0;" x1="169" x2="179" y1="605.1016" y2="595.1016"/><line style="stroke:#181818;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="175" x2="702.5" y1="600.1016" y2="600.1016"/><text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacing" textLength="18" x="180" y="595.3594">31</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="211" x="202" y="595.3594">pool for MOOL:BCK already exists</text><line style="stroke:#000000;stroke-width:1.0;stroke-dasharray:2.0,2.0;" x1="0" x2="1514.5" y1="608.1016" y2="608.1016"/><rect height="11.7773" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="176" x="1337.5" y="5"/><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="176" x="1337.5" y="14.668">Agoric Systems Operating Company.</text><rect height="11.7773" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="55" x="729.25" y="699.5898"/><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="55" x="729.25" y="709.2578">Page 1 of 4</text><!--MD5=[2d5f5151fc66bc58df860485dc589436]
+@startuml
+'https://plantuml.com/sequence-diagram
+header Agoric Systems Operating Company.
+footer Page %page% of %lastpage%
+title Multipool Auto Swap Sequence Diagram Creation
+
+autonumber
+actor "MPAS Creator" as masc #lime
+actor "Pool Adder N" as pa #yellow
+actor "Pool User" as pu
+database "MPAS Contract" as mpas
+box "Zoe"
+entity "Zoe" as zoe
+entity "userSeat" as usA
+end box
+
+== MPAS Creation ==
+masc -> mpas: Create instance
+return ""creatorFacet""
+== Pool Addition SML:BCK==
+autonumber 10
+pa -> mpas: ""addPool()""
+database "Pool SML:BUCK" as pool
+entity "poolSeat SML:BUCK" as psA
+
+mpas -> pool: Create pool for SML -> BUCK
+mpas - -> pa: ""Issuer""
+== Pool Addition MOOL:BCK==
+autonumber 10
+pa -> mpas: ""addPool()""
+database "Pool MOOL:BUCK" as pool2
+mpas -> pool2: Create pool for MOOL -> BUCK
+mpas - -> pa: ""Issuer""
+
+
+== Duplicate Pool Addition MOOL:BCK==
+autonumber 30
+pa -> mpas: ""addPool()""
+mpas - ->x pa: pool for MOOL:BCK already exists
+newpage Multipool Auto Swap Sequence Diagram Swap Request
+
+autonumber 50
+== Swap Request ==
+group asking for the current price UNK:BUCK
+pu -> mpas: ""getOutputPrice(UNK:BUCK)""
+mpas - ->x pu: ""brands were not recognized""
+end
+group asking for the current price MOOL:BUCK
+
+
+pu -> mpas: ""getOutputPrice(MOOL:BUCK)""
+mpas -> pool2: ""getPriceGivenRequiredOutput(MOOL:BUCK)""
+pool2 - -> mpas: ""quote""
+mpas - -> pu: ""quote""
+end
+
+group making a proposal
+pu -> pu: create proposal for SML:BUCK as ""proposal""
+
+end
+
+group requesting an invitation for a SwapOut
+pu -> mpas: ""makeSwapOutInvitation()""
+return ""invitation""
+
+end
+
+group making an offer
+pu -> pu: withdraw funds from purse of SML into ""payment""
+pu -> zoe: ""offer(invitation, proposal, payment))""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+mpas -> psA: stage assets
+mpas -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+newpage Multipool Auto Swap Sequence Diagram Adding Liquidity
+
+autonumber 100
+== Adding Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> mpas: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to add 1 BUCK, and 1 SML\nat ratio of ""poolAllocation"" for X ""liquidity""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""BUCK"" into ""payments"" record
+pu -> pu: withdraw funds for ""SML"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+mpas -> psA: stage assets
+mpas -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (give)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+pu -> usA: ""getPayout("Liquidity")"" (want)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+end
+
+
+newpage Multipool Auto Swap Sequence Diagram Removing Liquidity
+
+autonumber 200
+== Removing Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> mpas: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to remove 1 ""liquidity"" for 1 BUCK and 1 SML\nat ratio of ""poolAllocation""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""liquidity"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+mpas -> psA: stage assets
+mpas -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Liquidity")"" (give)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+pu -> usA: ""getPayout("Central")"" (want)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+@enduml
+
+@startuml
+header Agoric Systems Operating Company.
+footer Page %page% of %lastpage%
+title Multipool Auto Swap Sequence Diagram Creation
+
+autonumber
+actor "MPAS Creator" as masc #lime
+actor "Pool Adder N" as pa #yellow
+actor "Pool User" as pu
+database "MPAS Contract" as mpas
+box "Zoe"
+entity "Zoe" as zoe
+entity "userSeat" as usA
+end box
+
+== MPAS Creation ==
+masc -> mpas: Create instance
+return ""creatorFacet""
+== Pool Addition SML:BCK==
+autonumber 10
+pa -> mpas: ""addPool()""
+database "Pool SML:BUCK" as pool
+entity "poolSeat SML:BUCK" as psA
+
+mpas -> pool: Create pool for SML -> BUCK
+mpas - -> pa: ""Issuer""
+== Pool Addition MOOL:BCK==
+autonumber 10
+pa -> mpas: ""addPool()""
+database "Pool MOOL:BUCK" as pool2
+mpas -> pool2: Create pool for MOOL -> BUCK
+mpas - -> pa: ""Issuer""
+
+
+== Duplicate Pool Addition MOOL:BCK==
+autonumber 30
+pa -> mpas: ""addPool()""
+mpas - ->x pa: pool for MOOL:BCK already exists
+newpage Multipool Auto Swap Sequence Diagram Swap Request
+
+autonumber 50
+== Swap Request ==
+group asking for the current price UNK:BUCK
+pu -> mpas: ""getOutputPrice(UNK:BUCK)""
+mpas - ->x pu: ""brands were not recognized""
+end
+group asking for the current price MOOL:BUCK
+
+
+pu -> mpas: ""getOutputPrice(MOOL:BUCK)""
+mpas -> pool2: ""getPriceGivenRequiredOutput(MOOL:BUCK)""
+pool2 - -> mpas: ""quote""
+mpas - -> pu: ""quote""
+end
+
+group making a proposal
+pu -> pu: create proposal for SML:BUCK as ""proposal""
+
+end
+
+group requesting an invitation for a SwapOut
+pu -> mpas: ""makeSwapOutInvitation()""
+return ""invitation""
+
+end
+
+group making an offer
+pu -> pu: withdraw funds from purse of SML into ""payment""
+pu -> zoe: ""offer(invitation, proposal, payment))""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+mpas -> psA: stage assets
+mpas -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+newpage Multipool Auto Swap Sequence Diagram Adding Liquidity
+
+autonumber 100
+== Adding Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> mpas: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to add 1 BUCK, and 1 SML\nat ratio of ""poolAllocation"" for X ""liquidity""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""BUCK"" into ""payments"" record
+pu -> pu: withdraw funds for ""SML"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+mpas -> psA: stage assets
+mpas -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Central")"" (give)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (give)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+pu -> usA: ""getPayout("Liquidity")"" (want)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+end
+
+
+newpage Multipool Auto Swap Sequence Diagram Removing Liquidity
+
+autonumber 200
+== Removing Liquidity ==
+group discover existing proportion of balances
+pu -> pool: ""getPoolAllocation(SML)""
+return ""poolAllocation""
+end
+group create invite
+pu -> mpas: ""makeAddLiquidityInvitation""
+return ""invitation""
+end
+
+
+group create proposal
+pu -> pu: Create ""proposal"" to remove 1 ""liquidity"" for 1 BUCK and 1 SML\nat ratio of ""poolAllocation""
+end
+group withdraw funds
+pu -> pu: withdraw funds for ""liquidity"" into ""payments"" record
+pu -> zoe: ""offer(invitation, proposal, payments)""
+zoe -> zoe: validate offer
+
+zoe -> usA: create ""userSeat""
+usA - -> zoe: ""userSeat""
+zoe -> pool: ""getPoolSeat()""
+pool -> psA: create ""poolSeat""
+psA - -> zoe: ""poolSeat""
+
+zoe -> psA: ""addLiquidity""
+mpas -> psA: stage assets
+mpas -> usA: stage assets
+zoe -> zoe: ""reallocate(seat, poolSeat)""
+
+usA - -> pu: ""userSeat""
+pu -> zoe: ""getOfferResult()""
+return result of failure or success
+end
+group recovering funds
+pu -> usA: ""getPayout("Liquidity")"" (give)
+return ""payoutLiquidity""
+pu -> pu: deposit ""payoutLiquidity"" into purse
+pu -> usA: ""getPayout("Central")"" (want)
+return ""payoutCentral""
+pu -> pu: deposit ""payoutCentral"" into purse
+pu -> usA: ""getPayout("Secondary")"" (want)
+return ""payoutSecondary""
+pu -> pu: deposit ""payoutSecondary"" into purse
+end
+
+@enduml
+
+PlantUML version 1.2022.2(Sat Mar 05 08:30:19 PST 2022)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

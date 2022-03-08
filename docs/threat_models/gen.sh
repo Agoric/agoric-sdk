@@ -7,11 +7,11 @@ if command -v plantuml; then
     CMD=plantuml
 fi
 
-$CMD "./**/*.puml"
+$CMD  -tsvg "./**/*.puml"
 
 page="README.md"
 echo "# Threat Model Diagrams" > "$page"
-for diag in $(find . -name "*.png" | sort); do
+for diag in $(find . -name "*.svg" | sort); do
     echo "## $diag\n" >> "$page"
     echo "[![$diag]($diag)]($diag)\n" >> "$page"
 done

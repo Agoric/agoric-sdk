@@ -1,33 +1,33 @@
 # Threat Model Diagrams
-## ./pegasus/pegasus_component.png
+## ./pegasus/pegasus_component.svg
 
-[![./pegasus/pegasus_component.png](./pegasus/pegasus_component.png)](./pegasus/pegasus_component.png)
+[![./pegasus/pegasus_component.svg](./pegasus/pegasus_component.svg)](./pegasus/pegasus_component.svg)
 
-## ./pegasus/pegasus_sequence.png
+## ./pegasus/pegasus_sequence.svg
 
-[![./pegasus/pegasus_sequence.png](./pegasus/pegasus_sequence.png)](./pegasus/pegasus_sequence.png)
+[![./pegasus/pegasus_sequence.svg](./pegasus/pegasus_sequence.svg)](./pegasus/pegasus_sequence.svg)
 
-## ./smart_contracts/multipool_autoswap/mpas_component.png
+## ./smart_contracts/multipool_autoswap/mpas_component.svg
 
-[![./smart_contracts/multipool_autoswap/mpas_component.png](./smart_contracts/multipool_autoswap/mpas_component.png)](./smart_contracts/multipool_autoswap/mpas_component.png)
+[![./smart_contracts/multipool_autoswap/mpas_component.svg](./smart_contracts/multipool_autoswap/mpas_component.svg)](./smart_contracts/multipool_autoswap/mpas_component.svg)
 
-## ./smart_contracts/multipool_autoswap/mpas_sequence.png
+## ./smart_contracts/multipool_autoswap/mpas_sequence.svg
 
-[![./smart_contracts/multipool_autoswap/mpas_sequence.png](./smart_contracts/multipool_autoswap/mpas_sequence.png)](./smart_contracts/multipool_autoswap/mpas_sequence.png)
+[![./smart_contracts/multipool_autoswap/mpas_sequence.svg](./smart_contracts/multipool_autoswap/mpas_sequence.svg)](./smart_contracts/multipool_autoswap/mpas_sequence.svg)
 
-## ./smart_contracts/multipool_autoswap/mpas_sequence_001.png
+## ./smart_contracts/multipool_autoswap/mpas_sequence_001.svg
 
-[![./smart_contracts/multipool_autoswap/mpas_sequence_001.png](./smart_contracts/multipool_autoswap/mpas_sequence_001.png)](./smart_contracts/multipool_autoswap/mpas_sequence_001.png)
+[![./smart_contracts/multipool_autoswap/mpas_sequence_001.svg](./smart_contracts/multipool_autoswap/mpas_sequence_001.svg)](./smart_contracts/multipool_autoswap/mpas_sequence_001.svg)
 
-## ./smart_contracts/multipool_autoswap/mpas_sequence_002.png
+## ./smart_contracts/multipool_autoswap/mpas_sequence_002.svg
 
-[![./smart_contracts/multipool_autoswap/mpas_sequence_002.png](./smart_contracts/multipool_autoswap/mpas_sequence_002.png)](./smart_contracts/multipool_autoswap/mpas_sequence_002.png)
+[![./smart_contracts/multipool_autoswap/mpas_sequence_002.svg](./smart_contracts/multipool_autoswap/mpas_sequence_002.svg)](./smart_contracts/multipool_autoswap/mpas_sequence_002.svg)
 
-## ./smart_contracts/multipool_autoswap/mpas_sequence_003.png
+## ./smart_contracts/multipool_autoswap/mpas_sequence_003.svg
 
-[![./smart_contracts/multipool_autoswap/mpas_sequence_003.png](./smart_contracts/multipool_autoswap/mpas_sequence_003.png)](./smart_contracts/multipool_autoswap/mpas_sequence_003.png)
+[![./smart_contracts/multipool_autoswap/mpas_sequence_003.svg](./smart_contracts/multipool_autoswap/mpas_sequence_003.svg)](./smart_contracts/multipool_autoswap/mpas_sequence_003.svg)
 
-## ./vaultFactory/vaultFactory.png
+## ./vaultFactory/VaultFactory.svg
 
-[![./vaultFactory/vaultFactory.png](./vaultFactory/vaultFactory.png)](./vaultFactory/vaultFactory.png)
+[![./vaultFactory/VaultFactory.svg](./vaultFactory/VaultFactory.svg)](./vaultFactory/VaultFactory.svg)
 

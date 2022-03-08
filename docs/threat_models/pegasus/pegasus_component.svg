@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="733px" preserveAspectRatio="none" style="width:439px;height:733px;background:#FFFFFF;" version="1.1" viewBox="0 0 439 733" width="439px" zoomAndPan="magnify"><defs/><g><rect height="11.7773" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="176" x="249" y="0"/><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="176" x="249" y="9.668">Agoric Systems Operating Company.</text><rect height="26.4883" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="223" x="101" y="17.7773"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="213" x="106" y="36.3125">Pegasus Component Diagram</text><!--MD5=[69c0fa388eca8efd5d4b12b213ecba7b]
+cluster Agoric Chain--><g id="cluster_Agoric Chain"><path d="M6,66.2656 C6,56.2656 143.5,56.2656 143.5,56.2656 C143.5,56.2656 281,56.2656 281,66.2656 L281,400.2656 C281,410.2656 143.5,410.2656 143.5,410.2656 C143.5,410.2656 6,410.2656 6,400.2656 L6,66.2656 " style="stroke:#181818;stroke-width:1.0;fill:none;"/><path d="M6,66.2656 C6,76.2656 143.5,76.2656 143.5,76.2656 C143.5,76.2656 281,76.2656 281,66.2656 " fill="none" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="92" x="97.5" y="91.8008">Agoric Chain</text></g><!--MD5=[848fe5f6fbd91a4c9b16b03a02a0ed93]
+cluster Cosmos Chain--><g id="cluster_Cosmos Chain"><path d="M268,444.2656 C268,434.2656 345,434.2656 345,434.2656 C345,434.2656 422,434.2656 422,444.2656 L422,687.2656 C422,697.2656 345,697.2656 345,697.2656 C345,697.2656 268,697.2656 268,687.2656 L268,444.2656 " style="stroke:#181818;stroke-width:1.0;fill:none;"/><path d="M268,444.2656 C268,454.2656 345,454.2656 345,454.2656 C345,454.2656 422,454.2656 422,444.2656 " fill="none" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="104" x="293" y="469.8008">Cosmos Chain</text></g><g id="cluster_##12"><path d="M171.9037,461.6546 C174.9718,456.3791 178.7511,456.4523 181.8364,461.6383 C184.3504,455.9068 189.5411,454.1027 194.078,459.3911 C197.4688,453.7943 202.3977,454.1289 204.9865,460.1445 C207.8021,455.2157 210.7913,455.7308 214.2921,459.4031 C218.9307,454.4983 223.3526,454.6065 226.4353,461.0657 C229.9779,454.8098 235.1584,456.525 238.1961,461.5901 C244.4105,465.4353 243.4782,471.1154 238.0385,474.8218 C244.2552,477.6328 244.1118,482.0462 239.3708,486.1463 C245.5726,487.8247 247.0841,492.2049 242.4338,496.9579 C248.077,499.9565 248.3459,503.154 243.7327,507.4254 C247.9675,511.1728 247.1739,516.652 241.8784,518.8531 C247.7795,523.9642 245.8122,528.3214 239.4618,530.9939 C245.2064,534.8626 245.0678,539.1542 238.8252,542.351 C244.2454,546.348 243.6017,551.5476 237.9536,554.7677 C234.5101,560.7939 230.3462,561.2443 225.9168,555.8025 C224.579,562.4127 221.2516,563.8176 215.5286,560.3007 C213.0216,566.537 209.4665,565.873 205.1119,562.2535 C199.992,567.3567 195.8246,567.0306 192.6327,560.2319 C187.5467,563.7317 183.9015,562.6477 181.8955,556.723 C177.5281,561.8989 173.671,560.9483 170.8799,555.1418 C164.5946,551.5007 165.5318,547.9732 170.2449,543.7206 C163.6675,541.1355 163.7944,536.583 168.3179,532.1494 C162.6543,529.5877 162.3449,524.7124 166.8755,520.8494 C161.7034,517.5348 160.4974,512.5245 166.3605,508.7406 C162.0258,504.8959 163.2178,499.5256 168.6224,497.6711 C163.0763,493.8252 162.3797,488.6602 168.1071,484.3773 C164.4179,481.2934 164.4767,476.3637 169.386,474.3798 C164.8109,469.4038 165.7466,464.5072 171.9037,461.6546 " style="stroke:#181818;stroke-width:1.0;fill:none;"/></g><!--MD5=[f152b445e5bcee5e5394952cb1476aeb]
+entity alice--><g id="elem_alice"><ellipse cx="217" cy="114.7656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M217,122.7656 L217,149.7656 M204,130.7656 L230,130.7656 M217,149.7656 L204,164.7656 M217,149.7656 L230,164.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="33" x="200.5" y="179.8008">Alice</text></g><!--MD5=[3235cd65714494329a4245cfcda5edcc]
+entity gov--><g id="elem_gov"><path d="M32.4617,251.3859 C36.1914,244.9252 40.0998,245.5099 44.3696,250.8403 C47.6039,245.8851 52.1039,245.3064 55.6801,250.4576 C59.2421,245.2289 63.1081,243.4092 67.6999,249.3493 C71.675,243.4351 75.3681,242.9498 80.0217,248.6281 C84.3572,243.6791 88.6548,243.3822 91.678,249.9555 C95.8246,245.2802 99.3147,245.1041 103.2542,250.2008 C106.7577,244.7041 111.0107,244.055 114.5214,250.1938 C118.8315,245.1449 124.8111,244.6244 127.6172,251.8045 C136.5571,253.7579 137.3451,261.1238 131.1146,266.651 C137.538,272.8862 135.6164,279.9232 127.3008,282.6435 C124.3721,289.1587 119.3511,289.3203 115.2192,283.8571 C112.6067,288.9358 107.6697,289.9376 103.718,285.4707 C100.4539,292.2923 96.1286,294.4001 89.9877,288.6001 C86.9021,294.9869 83.4,294.4923 79.0457,289.8598 C74.4707,294.9281 70.5941,295.5761 66.8665,288.9753 C62.0695,292.8151 58.6578,292.3856 55.6526,286.8355 C50.6539,293.3232 45.7739,292.5853 42.7778,285.0031 C37.891,290.1577 33.0682,287.0901 31.4878,281.5219 C22.9156,278.3554 21.6954,272.8927 27.6888,266.131 C22.2357,259.8125 23.4285,253.0152 32.4617,251.3859 " fill="#F1F1F1" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="81" x="37.5" y="270.8008">Governance</text></g><!--MD5=[aa37ca53a3c44654e931b1b3ddbb8177]
+entity dIBC--><g id="elem_dIBC"><polygon fill="#F1F1F1" points="141,358.2656,151,348.2656,265,348.2656,265,384.7539,255,394.7539,141,394.7539,141,358.2656" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="255" x2="265" y1="358.2656" y2="348.2656"/><line style="stroke:#181818;stroke-width:0.5;" x1="141" x2="255" y1="358.2656" y2="358.2656"/><line style="stroke:#181818;stroke-width:0.5;" x1="255" x2="255" y1="358.2656" y2="394.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="84" x="156" y="381.8008">Dynamic IBC</text></g><!--MD5=[d68d0fac89d60c88841cf419a8314745]
+entity pegasus--><g id="elem_pegasus"><polygon fill="#F1F1F1" points="169,252.2656,179,242.2656,265,242.2656,265,278.7539,255,288.7539,169,288.7539,169,252.2656" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="255" x2="265" y1="252.2656" y2="242.2656"/><line style="stroke:#181818;stroke-width:0.5;" x1="169" x2="255" y1="252.2656" y2="252.2656"/><line style="stroke:#181818;stroke-width:0.5;" x1="255" x2="255" y1="252.2656" y2="288.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="56" x="184" y="275.8008">Pegasus</text></g><!--MD5=[8b891d8b4d3fdd5357dfe39859cbec59]
+entity cIBC--><g id="elem_cIBC"><polygon fill="#F1F1F1" points="284.5,494.2656,294.5,484.2656,405.5,484.2656,405.5,520.7539,395.5,530.7539,284.5,530.7539,284.5,494.2656" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="395.5" x2="405.5" y1="494.2656" y2="484.2656"/><line style="stroke:#181818;stroke-width:0.5;" x1="284.5" x2="395.5" y1="494.2656" y2="494.2656"/><line style="stroke:#181818;stroke-width:0.5;" x1="395.5" x2="395.5" y1="494.2656" y2="530.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="81" x="299.5" y="517.8008">Cosmos IBC</text></g><!--MD5=[8e36e8bcb951c7385246966ef326582c]
+entity bob--><g id="elem_bob"><ellipse cx="345" cy="613.7656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M345,621.7656 L345,648.7656 M332,629.7656 L358,629.7656 M345,648.7656 L332,663.7656 M345,648.7656 L358,663.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="26" x="332" y="678.8008">Bob</text></g><!--MD5=[c6acd2f839322c9af5656b63d7f2008c]
+entity relayer--><g id="elem_relayer"><ellipse cx="203" cy="477.7656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M203,485.7656 L203,512.7656 M190,493.7656 L216,493.7656 M203,512.7656 L190,527.7656 M203,512.7656 L216,527.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="50" x="178" y="542.8008">Relayer</text></g><!--MD5=[3736b50a4809b86e9d945eb8c8dc3d9e]
+link pegasus to dIBC--><g id="link_pegasus_dIBC"><path d="M213.34,293.4556 C211.28,308.7956 208.7,327.8856 206.64,343.2056 " fill="none" id="pegasus-dIBC" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="205.96,348.2456,211.108,339.8493,206.6171,343.289,203.1774,338.798,205.96,348.2456" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="214.03,288.3256,208.882,296.7219,213.3729,293.2823,216.8126,297.7732,214.03,288.3256" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[830b7ec3de3d3e1ae923b4ac5483e974]
+link dIBC to relayer--><g id="link_dIBC_relayer"><path d="M203,399.5856 C203,418.0756 203,442.8656 203,463.8956 " fill="none" id="dIBC-relayer" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="203,469.1556,207,460.1556,203,464.1556,199,460.1556,203,469.1556" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="203,394.3956,199,403.3956,203,399.3956,207,403.3956,203,394.3956" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[7d1744d0465a0db81d1e3079e70f2e07]
+link relayer to cIBC--><g id="link_relayer_cIBC"><path d="M233.5,507.2656 C248.72,507.2656 263.95,507.2656 279.18,507.2656 " fill="none" id="relayer-cIBC" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="284.34,507.2656,275.34,503.2656,279.34,507.2656,275.34,511.2656,284.34,507.2656" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="228.24,507.2656,237.24,511.2656,233.24,507.2656,237.24,503.2656,228.24,507.2656" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[e00b95a3201aa283571e68777c9f0db2]
+link alice to pegasus--><g id="link_alice_pegasus"><path d="M217,182.2656 C217,199.9156 217,220.6756 217,236.8856 " fill="none" id="alice-to-pegasus" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="217,242.1956,221,233.1956,217,237.1956,213,233.1956,217,242.1956" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[bd82bcd0707918e226cae5555b21ac1d]
+link cIBC to bob--><g id="link_cIBC_bob"><path d="M345,530.3956 C345,549.2556 345,576.9156 345,600.0056 " fill="none" id="cIBC-to-bob" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="345,605.1556,349,596.1556,345,600.1556,341,596.1556,345,605.1556" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[b82d80e55fe9ba4b1a93f1eba50de98b]
+link gov to pegasus--><g id="link_gov_pegasus"><path d="M138.87,265.2656 C147.14,265.2656 155.4,265.2656 163.67,265.2656 " fill="none" id="gov-pegasus" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="168.82,265.2656,159.82,261.2656,163.82,265.2656,159.82,269.2656,168.82,265.2656" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="133.65,265.2656,142.65,269.2656,138.65,265.2656,142.65,261.2656,133.65,265.2656" style="stroke:#181818;stroke-width:1.0;"/></g><rect height="11.7773" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="29" x="198" y="713.2656"/><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="29" x="198" y="722.9336">v0.0.1</text><!--MD5=[e55ee9c1f77d0d924bfc77b2192a75fd]
+@startuml
+'https://plantuml.com/component-diagram
+header Agoric Systems Operating Company.
+footer v0.0.1
+title Pegasus Component Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+database "Agoric Chain" {
+    actor "Alice" as alice
+    cloud "Governance" as gov
+
+    node "Dynamic IBC" as dIBC
+    node "Pegasus" as pegasus
+    pegasus <- -> dIBC
+}
+
+database "Cosmos Chain" {
+    node "Cosmos IBC" as cIBC
+    actor "Bob" as bob
+}
+cloud {
+    actor "Relayer" as relayer
+
+    relayer <-u-> dIBC
+    relayer <-r-> cIBC
+}
+alice -d-> pegasus
+cIBC -d-> bob
+
+gov <-> pegasus
+@enduml
+
+@startuml
+header Agoric Systems Operating Company.
+footer v0.0.1
+title Pegasus Component Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+database "Agoric Chain" {
+    actor "Alice" as alice
+    cloud "Governance" as gov
+
+    node "Dynamic IBC" as dIBC
+    node "Pegasus" as pegasus
+    pegasus <- -> dIBC
+}
+
+database "Cosmos Chain" {
+    node "Cosmos IBC" as cIBC
+    actor "Bob" as bob
+}
+cloud {
+    actor "Relayer" as relayer
+
+    relayer <-u-> dIBC
+    relayer <-r-> cIBC
+}
+alice -d-> pegasus
+cIBC -d-> bob
+
+gov <-> pegasus
+@enduml
+
+PlantUML version 1.2022.2(Sat Mar 05 08:30:19 PST 2022)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>
