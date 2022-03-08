@@ -11,7 +11,7 @@ order: 1
   withdrawal. "Vesting" is a time-delayed process where tokens change
   ownership, and is subject to "clawback" which stops the process. The
   cosmos-sdk implements several kinds of "vesting account" which implement
-  unlocking, not vesting.
+  unlocking, and only one - clawback accounts - which implement vesting.
 
 ## Account Balances
 
@@ -43,6 +43,19 @@ partitioned into two categories:
 The sum of these two categories must be equal to the sum of the three
 categories in the bonding dimension.
 
+### The Vesting (Clawback) Dimension
+
+The vesting dimension is similar to the locking dimension in that
+unvested tokens are encumbered and many not be transferred out of the
+account, but further, unvested tokens are subject to clawback.
+Be careful to distinguish the legacy use of "vesting" to mean locking
+and the clawback-aware notion of vesting.
+
+* "Unvested" (aka "vesting): tokens which may not yet be transferred
+  out of the account, and are subject to clawback.
+* "Vested":  tokens which may be freely transferred and are not
+  subject to clawback.
+
 ### No Cartesian Product
 
 Surprisingly, tokens are *not* tracked by the cartesian product of the
@@ -60,15 +73,17 @@ and then from the unlocked category.
 
 Liens are an encumbrance on tokens that prevent them from being transferred
 out of the account, much like locking (and liens are implemented by reusing
-the locking mechanisms).  Liens create a two-category partition of the
-account balance, much like locking:
+the locking/vesting mechanisms).  Liens live in the vesting dimension,
+as tokens may be orthogonally locked, but must be vested in order to
+be liened. The categories in the vesting dimension are now:
 
-* "Liened": tokens encumbered by a lien which may not be transferred.
-* "Unliened": the remainder of tokens in an account which are not so
-  encumbered.
+* "Unvested": tokens which may not be transferred and are subject to clawback.
+* "Liened": vested tokens encumbered by a lien which may not be transferred.
+* "Free": the remainder of tokens in an account which are neither
+  encumbered nor subject to clawback.
 
 Liens are imposed and lifted by the higher Agoric swingset layer.
-We intend liens to be placed on bonded, unlocked tokens only. However,
+We intend liens to be placed on bonded, vested tokens only. However,
 we cannot force tokens to remain bonded, as they may be involuntarily
 unbonded when a validator retires. The best we can do is that when
 the higher layers wish to increase the total liened amount, the new
@@ -92,6 +107,7 @@ Putting all three dimensions together, the account state is:
     * Locked
     * Unlocked
 * Lien Dimension:
+    * Unvested
     * Liened
     * Unliened (may be negative)
 
@@ -104,12 +120,13 @@ primary quantities:
 * Unbonding
 * Locked
 * Liened
+* Unvested
 
 which gives rise to the derived quantities:
 
 * Unbonded = Total - (Bonded + Unbonding)
 * Unlocked = Total - Locked
-* Unliened = Total - Liened (may be negative)
+* Free = Total - Unvested - Liened (may be negative)
 
 ## Implementing Lien Encumbrance
 
