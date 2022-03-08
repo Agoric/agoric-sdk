@@ -181,13 +181,14 @@ that the calculation starts from &Delta;X of
 `sGive - ProtocolFee (i.e. 30,000 - 15 = 29,985)`
 
 ```
-40,029,985 * 2,997,7752 > 40,000,000 * 3,000,000 > 40,029,985 * 2,997,753
+40,029,985 * 2,997,753 > 40,000,000 * 3,000,000 > 40,029,985 * 2,997,752
 ```
 
-and re-checking how much is required to produce 2,997,753, we get
+and knowing that 2,997,753 BLD must remain in the pool, we refine the required
+amount of RUN:
 
 ```
-40_029_982 * 2,997,753 > 40,000,000 * 3,000,000 > 40,029,983 * 2,997,753
+40,029,983 * 2,997,753 > 40,000,000 * 3,000,000 > 40,029,982 * 2,997,753
 ```
 
 **&Delta;X is 29,983, and &Delta;Y is 2247**.
