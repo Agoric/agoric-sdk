@@ -143,9 +143,9 @@ const validatedBrand = async (mint, debt) => {
  * @param {{
  *  latestInterestUpdate: bigint,
  *  compoundedInterest: Ratio,
- *  totalDebt: Amount<NatValue>}} prior
+ *  totalDebt: Amount<'nat'>}} prior
  * @param {bigint} accruedUntil
- * @returns {Promise<{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<NatValue> }>}
+ * @returns {Promise<{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<'nat'> }>}
  */
 export const chargeInterest = async (powers, params, prior, accruedUntil) => {
   const brand = await validatedBrand(powers.mint, prior.totalDebt);

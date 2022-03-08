@@ -81,6 +81,7 @@ const validTransitions = {
  * @typedef {Readonly<{
  * assetNotifier: Notifier<import('./vaultManager').AssetState>,
  * idInManager: VaultId,
+ * manager: InnerVaultManagerBase & GetVaultParams,
  * priceAuthority: ERef<PriceAuthority>,
  * runMint: ZCFMint,
  * vaultSeat: ZCFSeat,
@@ -133,6 +134,7 @@ export const makeInnerVault = (
     phase: VaultPhase.ACTIVE,
     priceAuthority,
     runMint,
+    zcf,
 
     // vaultSeat will hold the collateral until the loan is retired. The
     // payout from it will be handed to the user: if the vault dies early

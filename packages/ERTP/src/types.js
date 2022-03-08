@@ -59,7 +59,13 @@
 
 /**
  * @template {AssetKind} K
- * @typedef {K extends 'nat' ? NatValue: K extends 'set' ? SetValue: K extends 'copySet' ? CopySetValue: K extends 'copyBag' ? CopyBagValue : never} AssetValueForKind
+ * @typedef {
+ * K extends 'nat' ? NatValue :
+ * K extends 'set' ? SetValue :
+ * K extends 'copySet' ? CopySetValue:
+ * K extends 'copyBag' ? CopyBagValue :
+ * never
+ * } AssetValueForKind
  */
 
 /**

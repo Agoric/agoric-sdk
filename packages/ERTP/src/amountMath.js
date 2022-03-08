@@ -146,7 +146,7 @@ const optionalBrandCheck = (allegedBrand, brand) => {
  * @template {AssetKind} [K=AssetKind]
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
- * @param {Brand | undefined} brand
+ * @param {Brand<K> | undefined} brand
  * @returns {MathHelpers<*>}
  */
 const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
@@ -300,7 +300,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand=} brand
+   * @param {Brand<K>=} brand
    * @returns {boolean}
    */
   isGTE: (leftAmount, rightAmount, brand = undefined) => {
@@ -314,7 +314,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand=} brand
+   * @param {Brand<K>=} brand
    * @returns {boolean}
    */
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
@@ -331,7 +331,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand=} brand
+   * @param {Brand<K>=} brand
    * @returns {Amount<K>}
    */
   add: (leftAmount, rightAmount, brand = undefined) => {
@@ -350,7 +350,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand=} brand
+   * @param {Brand<K>=} brand
    * @returns {Amount<K>}
    */
   subtract: (leftAmount, rightAmount, brand = undefined) => {
@@ -364,7 +364,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} x
    * @param {Amount<K>} y
-   * @param {Brand=} brand
+   * @param {Brand<K>=} brand
    * @returns {Amount<K>}
    */
   min: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? y : x),
@@ -374,7 +374,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} x
    * @param {Amount<K>} y
-   * @param {Brand=} brand
+   * @param {Brand<K>=} brand
    * @returns {Amount<K>}
    */
   max: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? x : y),

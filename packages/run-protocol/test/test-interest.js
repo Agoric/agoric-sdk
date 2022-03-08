@@ -506,7 +506,7 @@ test('chargeInterest when no time elapsed', async t => {
   const prior = {
     latestInterestUpdate: now,
     compoundedInterest: makeRatio(100n, brand),
-    /** @type {Amount<NatValue>} */
+    /** @type {Amount<'nat'>} */
     totalDebt: AmountMath.make(brand, 10_000n),
   };
   const results = await chargeInterest(powers, params, prior, now);
