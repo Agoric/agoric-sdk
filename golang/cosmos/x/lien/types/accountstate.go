@@ -12,6 +12,7 @@ type AccountState struct {
 	Unbonding sdk.Coins `json:"unbonding"`
 	Locked    sdk.Coins `json:"locked"`
 	Liened    sdk.Coins `json:"liened"`
+	Unvested  sdk.Coins `json:"unvested"`
 }
 
 // IsEqual returns whether two AccountStates are equal.
@@ -21,5 +22,6 @@ func (s AccountState) IsEqual(other AccountState) bool {
 		s.Bonded.IsEqual(other.Bonded) &&
 		s.Unbonding.IsEqual(other.Unbonding) &&
 		s.Locked.IsEqual(other.Locked) &&
-		s.Liened.IsEqual(other.Liened)
+		s.Liened.IsEqual(other.Liened) &&
+		s.Unvested.IsEqual(other.Unvested)
 }

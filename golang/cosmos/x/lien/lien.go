@@ -37,6 +37,7 @@ type msgAccountState struct {
 	Unbonding   sdk.Int `json:"unbonding"`
 	Locked      sdk.Int `json:"locked"`
 	Liened      sdk.Int `json:"liened"`
+	// TODO: send unvested amount
 }
 
 type delegatorState struct {
