@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import inspect from '../lib/object-inspect.js';
+import inspect from '../src/object-inspect.js';
 
 test('inspect', t => {
   t.is(inspect(1), '1');
@@ -15,7 +15,7 @@ test('inspect', t => {
   t.is(inspect(['foo', 'bar']), `[ 'foo', 'bar' ]`);
   t.is(inspect({ foo: 'bar' }), `{ foo: 'bar' }`);
   t.is(inspect(/foo/), '/foo/');
-  // t.is(inspect(new Date(133)), '1970-01-01T00:00:00.133Z');
+  t.is(inspect(new Date(133)), '1970-01-01T00:00:00.133Z');
   t.is(inspect(new RegExp('foo')), '/foo/');
   t.is(inspect(new Map([['foo', 'bar']])), `Map (1) {'foo' => 'bar'}`);
   t.is(inspect(new Set(['foo'])), `Set (1) {'foo'}`);
@@ -25,6 +25,7 @@ test('inspect', t => {
   circ.ref = circ;
   t.is(inspect(circ), '{ ref: [Circular] }');
   t.is(inspect(new Error('foo')), '[Error: foo]');
+  t.is(inspect(new TypeError('foo2')), '[TypeError: foo2]');
   // eslint-disable-next-line no-new-func
   t.is(inspect(new Function('bar', 1)), '[Function: anonymous]');
   t.is(

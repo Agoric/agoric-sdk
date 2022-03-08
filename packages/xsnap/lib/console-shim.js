@@ -1,6 +1,6 @@
 /* global globalThis, print */
 
-import inspect from './object-inspect.js';
+import inspect from '../src/object-inspect.js';
 
 const printAll = (...args) => {
   // Though xsnap doesn't have a whole console, it does have print().
