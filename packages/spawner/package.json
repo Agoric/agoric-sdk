@@ -32,13 +32,13 @@
   "dependencies": {
     "@agoric/assert": "^0.3.16",
     "@agoric/eventual-send": "^0.14.1",
-    "@endo/import-bundle": "^0.2.40",
-    "@endo/marshal": "^0.6.2"
+    "@endo/import-bundle": "^0.2.41",
+    "@endo/marshal": "^0.6.3"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.25.1",
-    "@endo/bundle-source": "^2.1.0",
-    "@endo/init": "^0.5.36",
+    "@endo/bundle-source": "^2.1.1",
+    "@endo/init": "^0.5.37",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },
