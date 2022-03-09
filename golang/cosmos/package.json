@@ -15,8 +15,8 @@
     "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
     "test:xs": "exit 0",
     "build": "exit 0",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "eslint --fix '**/*.{cjs,js}'",
+    "lint": "eslint '**/*.{cjs,js}'"
   },
   "dependencies": {
     "bindings": "^1.2.1"
