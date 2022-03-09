@@ -38,11 +38,11 @@
     "@agoric/swingset-vat": "^0.25.1",
     "@agoric/vats": "^0.7.0",
     "@agoric/zoe": "^0.21.3",
-    "@endo/bundle-source": "^2.1.0",
-    "@endo/captp": "^2.0.2",
-    "@endo/init": "^0.5.36",
-    "@endo/marshal": "^0.6.2",
-    "@endo/promise-kit": "^0.2.36"
+    "@endo/bundle-source": "^2.1.1",
+    "@endo/captp": "^2.0.3",
+    "@endo/init": "^0.5.37",
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
     "ava": "^3.12.1",

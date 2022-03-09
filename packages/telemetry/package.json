@@ -23,7 +23,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/store": "^0.6.10",
-    "@endo/init": "^0.5.36",
+    "@endo/init": "^0.5.37",
     "@opentelemetry/api": "^1.0.0",
     "@opentelemetry/exporter-prometheus": "^0.27.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.27.0",
@@ -37,8 +37,8 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@endo/lockdown": "^0.1.8",
-    "@endo/ses-ava": "^0.2.20",
+    "@endo/lockdown": "^0.1.9",
+    "@endo/ses-ava": "^0.2.21",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "tmp": "^0.2.1"

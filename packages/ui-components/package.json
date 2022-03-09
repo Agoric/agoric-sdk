@@ -10,7 +10,7 @@
     "@agoric/eventual-send": "^0.14.1",
     "@agoric/nat": "^4.1.0",
     "@agoric/zoe": "^0.21.3",
-    "@endo/init": "^0.5.36",
+    "@endo/init": "^0.5.37",
     "clsx": "^1.1.1"
   },
   "peerDependencies": {
@@ -51,7 +51,7 @@
     "@babel/core": "^7.12.13",
     "@babel/plugin-syntax-jsx": "^7.12.1",
     "@material-ui/core": "4.11.3",
-    "@typescript-eslint/eslint-plugin": "^5.10.2",
+    "@typescript-eslint/eslint-plugin": "^5.14.0",
     "ava": "^3.15.0",
     "babel-eslint": "^10.1.0",
     "babel-plugin-named-asset-import": "^0.3.7",
