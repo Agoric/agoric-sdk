@@ -14,7 +14,7 @@ const runBrand = makeIssuerKit('run').brand;
  * @param {bigint} result
  */
 function checkDebt(t, input, result) {
-  /** @type {Amount<NatValue>} */
+  /** @type {Amount<'nat'>} */
   const debtSnapshot = AmountMath.make(runBrand, input[0]);
   const interestSnapshot = makeRatio(100n + input[1], runBrand);
   const currentCompoundedInterest = makeRatio(100n + input[2], runBrand);
@@ -51,7 +51,7 @@ for (const [input, result] of /** @type {const} */ ([
 }
 
 function checkReverse(t, input, result) {
-  /** @type {Amount<NatValue>} */
+  /** @type {Amount<'nat'>} */
   const debt = AmountMath.make(runBrand, input[0]);
   const interestApplied = makeRatio(100n + input[1], runBrand);
   t.deepEqual(reverseInterest(debt, interestApplied).value, result);

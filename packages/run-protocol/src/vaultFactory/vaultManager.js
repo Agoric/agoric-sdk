@@ -39,7 +39,7 @@ const trace = makeTracer('VM');
  *  compoundedInterest: Ratio,
  *  interestRate: Ratio,
  *  latestInterestUpdate: bigint,
- *  totalDebt: Amount<NatValue>,
+ *  totalDebt: Amount<'nat'>,
  * }} AssetState */
 
 /**
@@ -49,7 +49,7 @@ const trace = makeTracer('VM');
  * the collateral is provided in exchange for borrowed RUN.
  *
  * @param {ContractFacet} zcf
- * @param {ZCFMint} debtMint
+ * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {{
@@ -75,6 +75,7 @@ export const makeVaultManager = (
   liquidationStrategy,
   startTimeStamp,
 ) => {
+  /** @type {{brand: Brand<'nat'>}} */
   const { brand: debtBrand } = debtMint.getIssuerRecord();
 
   /** @type {GetVaultParams} */
@@ -116,7 +117,7 @@ export const makeVaultManager = (
 
   /** @type {MutableQuote=} */
   let outstandingQuote;
-  /** @type {Amount<NatValue>} */
+  /** @type {Amount<'nat'>} */
   let totalDebt = AmountMath.makeEmpty(debtBrand, 'nat');
   /** @type {Ratio}} */
   let compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
@@ -296,8 +297,8 @@ export const makeVaultManager = (
   /**
    * Update total debt of this manager given the change in debt on a vault
    *
-   * @param {Amount<NatValue>} oldDebtOnVault
-   * @param {Amount<NatValue>} newDebtOnVault
+   * @param {Amount<'nat'>} oldDebtOnVault
+   * @param {Amount<'nat'>} newDebtOnVault
    */
   // TODO https://github.com/Agoric/agoric-sdk/issues/4599
   const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
@@ -313,8 +314,8 @@ export const makeVaultManager = (
   };
 
   /**
-   * @param {Amount<NatValue>} oldDebt
-   * @param {Amount<NatValue>} oldCollateral
+   * @param {Amount<'nat'>} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    */
   const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {

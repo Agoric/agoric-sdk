@@ -6,7 +6,7 @@
  */
 
 /**
- * @template {AmountValue} [V=AmountValue]
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
@@ -17,8 +17,8 @@
  * relies heavily on polymorphic MathHelpers, which manipulate the unbranded
  * portion.
  *
- * @property {Brand} brand
- * @property {V} value
+ * @property {Brand<K>} brand
+ * @property {AssetValueForKind<K>} value
  */
 
 /**
@@ -58,6 +58,26 @@
  */
 
 /**
+ * @template {AssetKind} K
+ * @typedef {K extends 'nat' ? NatValue :
+ * K extends 'set' ? SetValue :
+ * K extends 'copySet' ? CopySetValue:
+ * K extends 'copyBag' ? CopyBagValue :
+ * never
+ * } AssetValueForKind
+ */
+
+/**
+ * @template {AmountValue} V
+ * @typedef {V extends NatValue ? 'nat' :
+ *  V extends SetValue ? 'set' :
+ *  V extends CopySetValue ? 'copySet' :
+ *  V extends CopyBagValue ? 'copyBag' :
+ *  never} AssetKindForValue
+ */
+
+/**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} DisplayInfo
  * @property {number=} decimalPlaces Tells the display software how
  *   many decimal places to move the decimal over to the left, or in
@@ -69,12 +89,13 @@
  *   assets, should not be specified. The decimalPlaces property
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
- * @property {AssetKind} assetKind - the kind of asset, either
+ * @property {K} assetKind - the kind of asset, either
  *   AssetKind.NAT (fungible) or
  *   AssetKind.SET or AssertKind.COPY_SET (non-fungible)
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} Brand
  * The brand identifies the kind of issuer, and has a function to get the
  * alleged name for the kind of asset described. The alleged name (such
@@ -197,6 +218,7 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} Issuer
  *
  * The issuer cannot mint a new amount, but it can create empty purses
@@ -206,7 +228,7 @@
  * source and then relied upon as the decider of whether an untrusted
  * payment is valid.
  *
- * @property {() => Brand} getBrand Get the Brand for this Issuer. The
+ * @property {() => Brand<K>} getBrand Get the Brand for this Issuer. The
  * Brand indicates the type of digital asset and is shared by the
  * mint, the issuer, and any purses and payments of this particular
  * kind. The brand is not closely held, so this function should not be
@@ -260,55 +282,17 @@
  */
 
 /**
- * @callback MakeIssuerKit
- * @param {string} allegedName
- * @param {AssetKind} [assetKind=AssetKind.NAT]
- * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
- * in the middle of an atomic action (which btw should never happen), it
- * potentially leaves its ledger in a corrupted state. If this function was
- * provided, then it the failed atomic action will call it, so that some
- * larger unit of computation, like the enclosing vat, can be shutdown
- * before anything else is corrupted by that corrupted state.
- * See https://github.com/Agoric/agoric-sdk/issues/3434
- * @returns {IssuerKit}
- *
- * The allegedName becomes part of the brand in asset descriptions. The
- * allegedName doesn't have to be a string, but it will only be used for
- * its value. The allegedName is useful for debugging and double-checking
- * assumptions, but should not be trusted.
- *
- * The assetKind will be used to import a specific mathHelpers
- * from the mathHelpers library. For example, natMathHelpers, the
- * default, is used for basic fungible tokens.
- *
- *  `displayInfo` gives information to UI on how to display the amount.
- *
- * @typedef {Object} IssuerKit
- * The return value of makeIssuerKit
- *
- * @property {Mint} mint
- * @property {Issuer} issuer
- * @property {Brand} brand
- * @property {DisplayInfo} displayInfo
+ * @typedef {import('./issuerKit').IssuerKit} IssuerKit
  */
 
 /**
- * @callback MintPayment
- *
- * Creates a new Payment containing newly minted amount.
- *
- * @param {Amount} newAmount
- * @returns {Payment}
- */
-
-/**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} Mint
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  *
- * @property {() => Issuer} getIssuer Gets the Issuer for this mint.
- * @property {MintPayment} mintPayment
+ * @property {() => Issuer<K>} getIssuer Gets the Issuer for this mint.
+ * @property {MintPayment<K>} mintPayment
  */
 
 /**
@@ -393,8 +377,8 @@
  */
 
 /**
- * @template {AmountValue} V
- * @typedef {Object} MathHelpers<V>
+ * @template {AssetKind} K
+ * @typedef {Object} MathHelpers<K>
  * All of the difference in how digital asset amount are manipulated can be
  * reduced to the behavior of the math on values. We extract this
  * custom logic into mathHelpers. MathHelpers are about value

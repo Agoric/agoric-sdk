@@ -16,12 +16,13 @@ import '@agoric/store/exported.js';
  * Make the paymentLedger, the source of truth for the balances of
  * payments. All minting and transfer authority originates here.
  *
+ * @template {AssetKind} [K=AssetKind]
  * @param {string} allegedName
  * @param {Brand} brand
  * @param {AssetKind} assetKind
  * @param {DisplayInfo} displayInfo
  * @param {ShutdownWithFailure=} optShutdownWithFailure
- * @returns {{ issuer: Issuer, mint: Mint }}
+ * @returns {{ issuer: Issuer<K>, mint: Mint<K> }}
  */
 export const makePaymentLedger = (
   allegedName,
@@ -248,7 +249,12 @@ export const makePaymentLedger = (
     });
   };
 
-  /** @type {MintPayment} */
+  /**
+   * Creates a new Payment containing newly minted amount.
+   *
+   * @param {Amount<K>} newAmount
+   * @returns {Payment}
+   */
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
     const payment = makePayment(allegedName, brand);
@@ -331,7 +337,7 @@ export const makePaymentLedger = (
     withdraw,
   };
 
-  /** @type {Issuer} */
+  /** @type {Issuer<K>} */
   const issuer = Far(`${allegedName} issuer`, {
     isLive,
     getAmountOf,
@@ -348,7 +354,7 @@ export const makePaymentLedger = (
       makePurse(allegedName, assetKind, brand, purseMethods),
   });
 
-  /** @type {Mint} */
+  /** @type {Mint<K>} */
   const mint = Far(`${allegedName} mint`, {
     getIssuer: () => issuer,
     mintPayment,

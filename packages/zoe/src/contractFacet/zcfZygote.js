@@ -206,9 +206,16 @@ export const makeZCFZygote = (
     return zcfMint;
   };
 
-  /** @type {MakeZCFMint} */
+  /**
+   * @template {AssetKind} [K='nat']
+   * @param {Keyword} keyword
+   * @param {K} [assetKind]
+   * @param {AdditionalDisplayInfo=} displayInfo
+   * @returns {Promise<ZCFMint>}
+   */
   const makeZCFMint = async (
     keyword,
+    // @ts-expect-error possible different subtype
     assetKind = AssetKind.NAT,
     displayInfo,
   ) => {
