@@ -311,6 +311,19 @@ export async function makeSwingsetController(
    * @returns { Promise<BundleID> }
    */
   async function validateAndInstallBundle(bundle, allegedBundleID) {
+    // TODO The following assertion may be removed when checkBundle subsumes
+    // the responsibility to verify the permanence of a bundle's properties.
+    // https://github.com/endojs/endo/issues/1106
+    assert(
+      Object.values(Object.getOwnPropertyDescriptors(bundle)).every(
+        descriptor =>
+          descriptor.get === undefined &&
+          descriptor.writable === false &&
+          descriptor.configurable === false &&
+          typeof descriptor.value === 'string',
+      ),
+      `Bundle with alleged ID ${allegedBundleID} must be a frozen object with only string value properties, no accessors`,
+    );
     await checkBundle(bundle, computeSha512);
     const { endoZipBase64Sha512 } = bundle;
     assert.typeof(endoZipBase64Sha512, 'string');
