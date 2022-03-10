@@ -13,6 +13,8 @@ import { sqlStreamStore } from './sqlStreamStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { initEphemeralSwingStore } from './ephemeralSwingStore.js';
 
+export const DEFAULT_LMDB_MAP_SIZE = 2 * 1024 * 1024 * 1024;
+
 export { makeSnapStore };
 
 export function makeSnapStoreIO() {
@@ -53,6 +55,8 @@ export function makeSnapStoreIO() {
  *   close: () => void,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
  * }} SwingStore
+ *
+ * @typedef {SwingStore & { snapStore: ReturnType<typeof makeSnapStore> }} SwingAndSnapStore
  */
 
 /**
@@ -103,7 +107,7 @@ export function makeSnapStoreIO() {
  * @param {boolean} forceReset  If true, initialize the database to an empty state
  * @param {Object} options  Configuration options
  *
- * @returns {SwingStore}
+ * @returns {SwingAndSnapStore}
  */
 function makeSwingStore(dirPath, forceReset, options) {
   let txn = null;
@@ -126,12 +130,18 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const { mapSize = 2 * 1024 * 1024 * 1024 } = options;
+  const { mapSize = DEFAULT_LMDB_MAP_SIZE } = options;
   let lmdbEnv = new lmdb.Env();
+
+  // Use the new mapSize, persisting if it's bigger than before and there's a
+  // write txn commit.
+  // http://www.lmdb.tech/doc/group__mdb.html#gaa2506ec8dab3d969b0e609cd82e619e5
+  lmdbEnv.resize(mapSize);
+
   lmdbEnv.open({
     path: dirPath,
     mapSize,
-    // Turn off useWritemap on the Mac.  The userWritemap option is currently
+    // Turn off useWritemap on the Mac.  The useWritemap option is currently
     // required for LMDB to function correctly on Linux running under WSL, but
     // we don't yet have a convenient recipe to probe our environment at
     // runtime to distinguish that species of Linux from the others.  For now
@@ -332,7 +342,7 @@ export function initSwingStore(dirPath, options = {}) {
  *   swing store instance.
  * @param {Object?} options  Optional configuration options
  *
- * @returns {SwingStore}
+ * @returns {SwingAndSnapStore}
  */
 export function openSwingStore(dirPath, options = {}) {
   assert.typeof(dirPath, 'string');

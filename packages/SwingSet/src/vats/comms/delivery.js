@@ -3,8 +3,8 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
-import { makeUndeliverableError } from '../../makeUndeliverableError.js';
-import { insistCapData } from '../../capdata.js';
+import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
+import { insistCapData } from '../../lib/capdata.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
 
@@ -182,10 +182,7 @@ export function makeDeliveryKit(
     // deliver:$target:$method:[$result][:$slots..];body
     const sci = message.indexOf(';');
     assert(sci !== -1, X`missing semicolon in deliver ${message}`);
-    const fields = message
-      .slice(0, sci)
-      .split(':')
-      .slice(1);
+    const fields = message.slice(0, sci).split(':').slice(1);
     // fields: [$target, $method, $result, $slots..]
     const remoteTarget = fields[0];
     const target = getLocalForRemote(remoteID, remoteTarget);
@@ -437,9 +434,8 @@ export function makeDeliveryKit(
     // unresolved promises, because we haven't marked them as resolved quite
     // yet.
     const [[primaryLpid]] = resolutions;
-    const { subscribers, kernelIsSubscribed } = state.getPromiseSubscribers(
-      primaryLpid,
-    );
+    const { subscribers, kernelIsSubscribed } =
+      state.getPromiseSubscribers(primaryLpid);
 
     // Run the collector *before* we change the state of our promise table.
     const collector = resolutionCollector();

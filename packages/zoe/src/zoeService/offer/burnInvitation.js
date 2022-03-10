@@ -29,9 +29,8 @@ export const burnInvitation = (invitationIssuer, invitation) => {
       invitationValue.length === 1,
       'Only one invitation can be redeemed at a time',
     );
-    const [
-      { instance: instanceHandle, handle: invitationHandle },
-    ] = invitationValue;
+    const [{ instance: instanceHandle, handle: invitationHandle }] =
+      invitationValue;
     return {
       instanceHandle,
       invitationHandle,

@@ -1,13 +1,12 @@
-/* global setImmediate */
+/* global setImmediate, WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeMarshaller } from '../src/kernel/liveSlots.js';
+import { makeMarshaller } from '../src/liveslots/liveslots.js';
 
 const gcTools = harden({
   WeakRef,
@@ -36,13 +35,11 @@ test('serialize exports', t => {
   });
   // m now remembers that o1 is exported as 1
   t.deepEqual(ser(harden([o1, o1])), {
-    body:
-      '[{"@qclass":"slot","iface":"Alleged: o1","index":0},{"@qclass":"slot","index":0}]',
+    body: '[{"@qclass":"slot","iface":"Alleged: o1","index":0},{"@qclass":"slot","index":0}]',
     slots: ['o+1'],
   });
   t.deepEqual(ser(harden([o2, o1])), {
-    body:
-      '[{"@qclass":"slot","iface":"Alleged: o2","index":0},{"@qclass":"slot","iface":"Alleged: o1","index":1}]',
+    body: '[{"@qclass":"slot","iface":"Alleged: o2","index":0},{"@qclass":"slot","iface":"Alleged: o1","index":1}]',
     slots: ['o+2', 'o+1'],
   });
 });

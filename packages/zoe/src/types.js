@@ -25,16 +25,17 @@
  *
  * @typedef {StandardTerms & Record<string, any>} Terms
  *
- * @typedef {object} InstanceRecord
+ * @typedef {Object} InstanceRecord
  * @property {Installation} installation
  * @property {Instance} instance
  * @property {Terms} terms - contract parameters
  
  *
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} IssuerRecord
- * @property {Brand} brand
- * @property {Issuer} issuer
- * @property {AssetKind} assetKind
+ * @property {Brand<K>} brand
+ * @property {Issuer<K>} issuer
+ * @property {K} assetKind
  * @property {any} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation
@@ -42,5 +43,8 @@
  */
 
 /**
+ * XXX offer() return value at runtime is implied by the invitation but it's not typed
+ *
+ * @template {object} [OR=unknown]
  * @typedef {Payment} Invitation
  */

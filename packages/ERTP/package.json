@@ -1,11 +1,11 @@
 {
   "name": "@agoric/ertp",
-  "version": "0.13.1",
+  "version": "0.13.3",
   "description": "Electronic Rights Transfer Protocol (ERTP). A smart contract framework for exchanging electronic rights",
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
@@ -13,11 +13,10 @@
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
     "test:xs-unit": "ava-xs",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -37,18 +36,19 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/eventual-send": "^0.14.0",
-    "@agoric/marshal": "^0.5.0",
+    "@agoric/assert": "^0.3.16",
+    "@agoric/eventual-send": "^0.14.1",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.33",
-    "@agoric/promise-kit": "^0.2.29",
-    "@agoric/store": "^0.6.8"
+    "@agoric/notifier": "^0.3.35",
+    "@agoric/store": "^0.6.10",
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.1",
-    "@agoric/swingset-vat": "^0.24.1",
-    "ava": "^3.12.1"
+    "@agoric/swingset-vat": "^0.25.1",
+    "@endo/bundle-source": "^2.1.1",
+    "ava": "^3.12.1",
+    "fast-check": "^2.21.0"
   },
   "files": [
     "src",

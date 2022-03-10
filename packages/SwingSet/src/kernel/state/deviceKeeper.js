@@ -5,10 +5,12 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots.js';
-import { insistDeviceID } from '../id.js';
+import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { insistDeviceID } from '../../lib/id.js';
 
-const FIRST_DEVICE_STATE_ID = 10n;
+const FIRST_DEVICE_IMPORTED_OBJECT_ID = 10n;
+const FIRST_DEVICE_IMPORTED_DEVICE_ID = 20n;
+const FIRST_DEVICE_IMPORTED_PROMISE_ID = 30n;
 
 /**
  * Establish a device's state.
@@ -19,7 +21,9 @@ const FIRST_DEVICE_STATE_ID = 10n;
  * TODO move into makeDeviceKeeper?
  */
 export function initializeDeviceState(kvStore, deviceID) {
-  kvStore.set(`${deviceID}.o.nextID`, `${FIRST_DEVICE_STATE_ID}`);
+  kvStore.set(`${deviceID}.o.nextID`, `${FIRST_DEVICE_IMPORTED_OBJECT_ID}`);
+  kvStore.set(`${deviceID}.d.nextID`, `${FIRST_DEVICE_IMPORTED_DEVICE_ID}`);
+  kvStore.set(`${deviceID}.p.nextID`, `${FIRST_DEVICE_IMPORTED_PROMISE_ID}`);
 }
 
 /**
@@ -44,7 +48,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
 
   function setSourceAndOptions(source, options) {
     assert.typeof(source, 'object');
-    assert(source.bundle || source.bundleName);
+    assert(source && source.bundleID);
     assert.typeof(options, 'object');
     kvStore.set(`${deviceID}.source`, JSON.stringify(source));
     kvStore.set(`${deviceID}.options`, JSON.stringify(options));
@@ -121,9 +125,11 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
         id = Nat(BigInt(kvStore.get(`${deviceID}.o.nextID`)));
         kvStore.set(`${deviceID}.o.nextID`, `${id + 1n}`);
       } else if (type === 'device') {
-        throw new Error('devices cannot import other device nodes');
+        id = Nat(BigInt(kvStore.get(`${deviceID}.d.nextID`)));
+        kvStore.set(`${deviceID}.d.nextID`, `${id + 1n}`);
       } else if (type === 'promise') {
-        throw new Error('devices cannot import Promises');
+        id = Nat(BigInt(kvStore.get(`${deviceID}.p.nextID`)));
+        kvStore.set(`${deviceID}.p.nextID`, `${id + 1n}`);
       } else {
         assert.fail(X`unknown type ${type}`);
       }

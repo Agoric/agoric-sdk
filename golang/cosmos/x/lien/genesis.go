@@ -30,10 +30,8 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, genesisState types.GenesisState
 		if err != nil {
 			panic(err) // not possible if genesis state was validated
 		}
-		lien := types.Lien{
-			Coins: accLien.GetLien(),
-		}
-		keeper.SetLien(ctx, addr, lien)
+		lien := accLien.GetLien()
+		keeper.SetLien(ctx, addr, *lien)
 	}
 }
 
@@ -43,7 +41,7 @@ func ExportGenesis(ctx sdk.Context, keeper Keeper) types.GenesisState {
 	keeper.IterateLiens(ctx, func(addr sdk.AccAddress, lien types.Lien) bool {
 		accLien := types.AccountLien{
 			Address: addr.String(),
-			Lien:    lien.GetCoins(),
+			Lien:    &lien,
 		}
 		genesisState.Liens = append(genesisState.Liens, accLien)
 		return false

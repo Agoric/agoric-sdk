@@ -1,8 +1,8 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeSubscriptionKit } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * This Electorate visibly has no members, takes no votes, and approves no

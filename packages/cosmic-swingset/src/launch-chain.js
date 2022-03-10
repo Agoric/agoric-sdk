@@ -12,7 +12,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
-import { openSwingStore } from '@agoric/swing-store';
+import { openSwingStore, DEFAULT_LMDB_MAP_SIZE } from '@agoric/swing-store';
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -35,7 +35,7 @@ async function buildSwingset(
   hostStorage,
   vatconfig,
   argv,
-  { consensusMode, debugName = undefined, slogCallbacks, slogFile },
+  { consensusMode, debugName = undefined, slogCallbacks, slogFile, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = await loadSwingsetConfigFile(vatconfig);
@@ -78,7 +78,12 @@ async function buildSwingset(
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { overrideVatManagerOptions: { consensusMode }, slogCallbacks, slogFile },
+    {
+      overrideVatManagerOptions: { consensusMode },
+      slogCallbacks,
+      slogFile,
+      slogSender,
+    },
   );
 
   // We DON'T want to run the kernel yet, only when the application decides
@@ -118,6 +123,9 @@ function computronCounter({
       totalBeans += failedComputrons * xsnapComputron;
       return totalBeans < blockComputeLimit;
     },
+    emptyCrank() {
+      return true;
+    },
   });
   return policy;
 }
@@ -127,10 +135,12 @@ function neverStop() {
     vatCreated: () => true,
     crankComplete: () => true,
     crankFailed: () => true,
+    emptyCrank: () => true,
   });
 }
 
-export async function launch(
+export async function launch({
+  actionQueue,
   kernelStateDBDir,
   mailboxStorage,
   setActivityhash,
@@ -138,14 +148,17 @@ export async function launch(
   vatconfig,
   argv,
   debugName = undefined,
-  meterProvider = DEFAULT_METER_PROVIDER,
+  metricsProvider = DEFAULT_METER_PROVIDER,
   slogFile = undefined,
-  consensusMode = false,
-) {
+  slogSender,
+  consensusMode = true,
+  mapSize = DEFAULT_LMDB_MAP_SIZE,
+}) {
   console.info('Launching SwingSet kernel');
 
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
+    { mapSize },
   );
   const hostStorage = {
     kvStore,
@@ -154,12 +167,9 @@ export async function launch(
   };
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
-  const metricMeter = meterProvider.getMeter('ag-chain-cosmos');
-  const METRIC_LABELS = { app: 'ag-chain-cosmos' };
-
+  const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
   const slogCallbacks = makeSlogCallbacks({
     metricMeter,
-    labels: METRIC_LABELS,
   });
 
   console.debug(`buildSwingset`);
@@ -173,40 +183,16 @@ export async function launch(
       debugName,
       slogCallbacks,
       slogFile,
+      slogSender,
       consensusMode,
     },
   );
 
-  const {
-    schedulerCrankTimeHistogram,
-    schedulerBlockTimeHistogram,
-  } = exportKernelStats({
+  const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
     log: console,
-    labels: METRIC_LABELS,
   });
-
-  async function crankScheduler(policy, clock = () => Date.now()) {
-    let now = clock();
-    let crankStart = now;
-    const blockStart = now;
-
-    const instrumentedPolicy = harden({
-      ...policy,
-      crankComplete(details) {
-        const go = policy.crankComplete(details);
-        schedulerCrankTimeHistogram.record(now - crankStart);
-        crankStart = now;
-        now = clock();
-        return go;
-      },
-    });
-    await controller.run(instrumentedPolicy);
-
-    now = Date.now();
-    schedulerBlockTimeHistogram.record((now - blockStart) / 1000);
-  }
 
   async function bootstrapBlock(blockTime) {
     controller.writeSlogObject({
@@ -250,10 +236,14 @@ export async function launch(
     await mailboxStorage.commit();
   }
 
-  async function saveOutsideState(savedHeight, savedActions, savedChainSends) {
+  async function saveOutsideState(
+    savedHeight,
+    savedBlockTime,
+    savedChainSends,
+  ) {
     kvStore.set(
       SWING_STORE_META_KEY,
-      JSON.stringify([savedHeight, savedActions, savedChainSends]),
+      JSON.stringify([savedHeight, savedBlockTime, savedChainSends]),
     );
     await commit();
   }
@@ -295,11 +285,12 @@ export async function launch(
     );
   }
 
-  const [savedHeight, savedActions, savedChainSends] = JSON.parse(
-    kvStore.get(SWING_STORE_META_KEY) || '[0, [], []]',
+  const [savedHeight, savedBlockTime, savedChainSends] = JSON.parse(
+    kvStore.get(SWING_STORE_META_KEY) || '[0, 0, []]',
   );
 
   return {
+    actionQueue,
     deliverInbound,
     doBridgeInbound,
     // bridgeOutbound,
@@ -309,7 +300,7 @@ export async function launch(
     saveChainState,
     saveOutsideState,
     savedHeight,
-    savedActions,
+    savedBlockTime,
     savedChainSends,
   };
 }

@@ -1,22 +1,21 @@
 {
   "name": "@agoric/notifier",
-  "version": "0.3.33",
+  "version": "0.3.35",
   "description": "Notifier allows services to update clients about state changes using a stream of promises",
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -32,15 +31,14 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/eventual-send": "^0.14.0",
-    "@agoric/marshal": "^0.5.0",
-    "@agoric/promise-kit": "^0.2.29"
+    "@agoric/assert": "^0.3.16",
+    "@agoric/eventual-send": "^0.14.1",
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.29",
-    "@agoric/swingset-vat": "^0.24.1",
-    "@endo/ses-ava": "^0.2.14",
+    "@endo/init": "^0.5.37",
+    "@endo/ses-ava": "^0.2.21",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

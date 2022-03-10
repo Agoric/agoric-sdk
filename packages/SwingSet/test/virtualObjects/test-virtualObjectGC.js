@@ -1,7 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { buildSyscall, makeDispatch } from '../liveslots-helpers.js';
 import {
   capargs,
@@ -136,40 +136,29 @@ let aWeakMap;
 let aWeakSet;
 
 function buildRootObject(vatPowers) {
-  const { makeKind, WeakMap, WeakSet } = vatPowers;
-  function makeThingInstance(state) {
-    return {
-      init(label) {
-        state.label = label;
-      },
-      self: Far('thing', {
-        getLabel() {
-          return state.label;
-        },
-      }),
-    };
-  }
+  const { VatData, WeakMap, WeakSet } = vatPowers;
 
-  function makeVirtualHolderInstance(state) {
-    return {
-      init(value = null) {
+  const { defineKind } = VatData;
+
+  const makeThing = defineKind(
+    'thing',
+    label => ({ label }),
+    state => ({
+      getLabel: () => state.label,
+    }),
+  );
+  const cacheDisplacer = makeThing('cacheDisplacer');
+  const makeVirtualHolder = defineKind(
+    'holder',
+    (held = null) => ({ held }),
+    state => ({
+      setValue: value => {
         state.held = value;
       },
-      self: Far('holder', {
-        setValue(value) {
-          state.held = value;
-        },
-        getValue() {
-          return state.held;
-        },
-      }),
-    };
-  }
-
-  const thingMaker = makeKind(makeThingInstance);
-  const cacheDisplacer = thingMaker('cacheDisplacer');
-  const virtualHolderMaker = makeKind(makeVirtualHolderInstance);
-  const virtualHolder = virtualHolderMaker();
+      getValue: () => state.held,
+    }),
+  );
+  const virtualHolder = makeVirtualHolder();
   let nextThingNumber = 0;
   let heldThing = null;
   aWeakMap = new WeakMap();
@@ -182,7 +171,7 @@ function buildRootObject(vatPowers) {
   }
 
   function makeNextThing() {
-    const thing = thingMaker(`thing #${nextThingNumber}`);
+    const thing = makeThing(`thing #${nextThingNumber}`);
     nextThingNumber += 1;
     return thing;
   }
@@ -233,9 +222,9 @@ function buildRootObject(vatPowers) {
     },
 
     prepareStore3() {
-      holders.push(virtualHolderMaker(heldThing));
-      holders.push(virtualHolderMaker(heldThing));
-      holders.push(virtualHolderMaker(heldThing));
+      holders.push(makeVirtualHolder(heldThing));
+      holders.push(makeVirtualHolder(heldThing));
+      holders.push(makeVirtualHolder(heldThing));
       heldThing = null;
       displaceCache();
     },
@@ -252,9 +241,9 @@ function buildRootObject(vatPowers) {
       displaceCache();
     },
     prepareStoreLinked() {
-      let holder = virtualHolderMaker(heldThing);
-      holder = virtualHolderMaker(holder);
-      holder = virtualHolderMaker(holder);
+      let holder = makeVirtualHolder(heldThing);
+      holder = makeVirtualHolder(holder);
+      holder = makeVirtualHolder(holder);
       holders.push(holder);
       heldThing = null;
       displaceCache();
@@ -322,8 +311,8 @@ function matchResolveOne(vref, value) {
   return { type: 'resolve', resolutions: [[vref, false, value]] };
 }
 
-function matchVatstoreGet(key) {
-  return { type: 'vatstoreGet', key };
+function matchVatstoreGet(key, result) {
+  return { type: 'vatstoreGet', key, result };
 }
 
 function matchVatstoreDelete(key) {
@@ -351,11 +340,20 @@ const root = 'o+0';
 const testObjValue = thingValue('thing #0');
 const cacheObjValue = thingValue('cacheDisplacer');
 
-function setupLifecycleTest(t) {
+const NONE = undefined; // mostly just shorter, to maintain legibility while making prettier shut up
+
+async function setupLifecycleTest(t) {
   const { log, syscall } = buildSyscall();
   const nextRP = makeRPMaker();
   const th = [];
-  const dispatch = makeDispatch(syscall, buildRootObject, 'bob', false, 0, th);
+  const dispatch = await makeDispatch(
+    syscall,
+    buildRootObject,
+    'bob',
+    false,
+    0,
+    th,
+  );
   const [testHooks] = th;
 
   async function dispatchMessage(message, args = capargs([])) {
@@ -407,65 +405,65 @@ function validateDelete(v, vobjID) {
   validate(v, matchVatstoreDelete(`vom.es.${vobjID}`));
 }
 
-function validateStatusCheck(v, vobjID) {
-  validate(v, matchVatstoreGet(`vom.rc.${vobjID}`));
-  validate(v, matchVatstoreGet(`vom.es.${vobjID}`));
-  validate(v, matchVatstoreGet(`vom.${vobjID}`));
+function validateStatusCheck(v, vobjID, rc, es, value) {
+  validate(v, matchVatstoreGet(`vom.rc.${vobjID}`, rc));
+  validate(v, matchVatstoreGet(`vom.es.${vobjID}`, es));
+  validate(v, matchVatstoreGet(`vom.${vobjID}`, value));
 }
 
 function validateCreate(v, rp) {
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
   validate(v, matchVatstoreSet('vom.o+1/2', testObjValue));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
 
-function validateStore(v, rp) {
-  validate(v, matchVatstoreGet('vom.o+2/1'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+function validateStore(v, rp, rcBefore) {
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue(null)));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', rcBefore));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue('o+1/2')));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
 
 function validateDropStore(v, rp, postCheck) {
-  validate(v, matchVatstoreGet('vom.o+2/1'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   if (postCheck) {
-    validate(v, matchVatstoreGet('vom.rc.o+1/2'));
-    validate(v, matchVatstoreGet('vom.es.o+1/2'));
+    validate(v, matchVatstoreGet('vom.rc.o+1/2', '0'));
+    validate(v, matchVatstoreGet('vom.es.o+1/2', '1'));
   }
   validateDone(v);
 }
 
 function validateDropStoreAndRetire(v, rp) {
-  validate(v, matchVatstoreGet('vom.o+2/1'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
-  validateStatusCheck(v, 'o+1/2');
+  validateStatusCheck(v, 'o+1/2', '0', NONE, testObjValue);
   validateDelete(v, 'o+1/2');
   validateDone(v);
 }
 
 function validateDropStoreWithGCAndRetire(v, rp) {
-  validate(v, matchVatstoreGet('vom.o+2/1'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
-  validateStatusCheck(v, 'o+1/2');
+  validateStatusCheck(v, 'o+1/2', '0', '0', testObjValue);
   validateDelete(v, 'o+1/2');
   validate(v, matchRetireExports('o+1/2'));
   validateDone(v);
@@ -478,50 +476,50 @@ function validateExport(v, rp) {
 }
 
 function validateImport(v, rp) {
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
 
 function validateLoad(v, rp) {
-  validate(v, matchVatstoreGet('vom.o+2/1'));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
 
-function validateDropHeld(v, rp) {
+function validateDropHeld(v, rp, rc, es) {
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
-  validate(v, matchVatstoreGet('vom.es.o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', rc));
+  validate(v, matchVatstoreGet('vom.es.o+1/2', es));
   validateDone(v);
 }
 
-function validateDropHeldWithGC(v, rp) {
+function validateDropHeldWithGC(v, rp, rc) {
   validateReturned(v, rp);
-  validateStatusCheck(v, 'o+1/2');
+  validateStatusCheck(v, 'o+1/2', rc, NONE, testObjValue);
   validateDelete(v, 'o+1/2');
   validateDone(v);
 }
 
 function validateDropHeldWithGCAndRetire(v, rp) {
   validateReturned(v, rp);
-  validateStatusCheck(v, 'o+1/2');
+  validateStatusCheck(v, 'o+1/2', NONE, '0', testObjValue);
   validateDelete(v, 'o+1/2');
   validate(v, matchRetireExports('o+1/2'));
   validateDone(v);
 }
 
-function validateDropExport(v) {
+function validateDropExport(v, rc) {
   validate(v, matchVatstoreSet('vom.es.o+1/2', '0'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', rc));
   validateDone(v);
 }
 
-function validateDropExportWithGCAndRetire(v) {
+function validateDropExportWithGCAndRetire(v, rc) {
   validate(v, matchVatstoreSet('vom.es.o+1/2', '0'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
-  validateStatusCheck(v, 'o+1/2');
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', rc));
+  validateStatusCheck(v, 'o+1/2', rc, '0', testObjValue);
   validateDelete(v, 'o+1/2');
   validate(v, matchRetireExports('o+1/2'));
   validateDone(v);
@@ -538,7 +536,7 @@ function validateRetireExport(v) {
 
 // test 1: lerv -> Lerv -> LerV -> Lerv -> lerv
 test.serial('VO lifecycle 1', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -554,18 +552,14 @@ test.serial('VO lifecycle 1', async t => {
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp);
+  validateDropHeldWithGC(v, rp, '0');
 });
 
 // test 2: lerv -> Lerv -> LerV -> lerV -> LerV -> LERV -> lERV -> LERV ->
 //   lERV -> LERV -> lERV -> leRV -> LeRV -> leRV -> LeRV -> LerV
 test.serial('VO lifecycle 2', async t => {
-  const {
-    v,
-    dispatchMessage,
-    dispatchDropExports,
-    dispatchRetireExports,
-  } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
+    await setupLifecycleTest(t);
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -577,7 +571,7 @@ test.serial('VO lifecycle 2', async t => {
 
   // LerV -> lerV  Drop in-memory reference, no GC because virtual reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, '1', NONE);
 
   // lerV -> LerV  Read virtual reference, now there's an in-memory reference again too
   rp = await dispatchMessage('fetchAndHold');
@@ -589,7 +583,7 @@ test.serial('VO lifecycle 2', async t => {
 
   // LERV -> lERV  Drop the in-memory reference again, but it's still exported and virtual referenced
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, '1', '1');
 
   // lERV -> LERV  Reread from storage, all three legs again
   rp = await dispatchMessage('fetchAndHold');
@@ -597,7 +591,7 @@ test.serial('VO lifecycle 2', async t => {
 
   // LERV -> lERV  Drop in-memory reference (stepping stone to other states)
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, '1', '1');
 
   // lERV -> LERV  Reintroduce the in-memory reference via message
   rp = await dispatchMessage('importAndHold', thingArg('o+1/2'));
@@ -605,11 +599,11 @@ test.serial('VO lifecycle 2', async t => {
 
   // LERV -> lERV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, '1', '1');
 
   // lERV -> leRV  Drop the export
   await dispatchDropExports('o+1/2');
-  validateDropExport(v);
+  validateDropExport(v, '1');
 
   // leRV -> LeRV  Fetch from storage
   rp = await dispatchMessage('fetchAndHold');
@@ -617,7 +611,7 @@ test.serial('VO lifecycle 2', async t => {
 
   // LeRV -> leRV  Forget about it *again*
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, '1', '0');
 
   // leRV -> LeRV  Fetch from storage *again*
   rp = await dispatchMessage('fetchAndHold');
@@ -630,12 +624,8 @@ test.serial('VO lifecycle 2', async t => {
 
 // test 3: lerv -> Lerv -> LerV -> LERV -> LeRV -> leRV -> lerV -> lerv
 test.serial('VO lifecycle 3', async t => {
-  const {
-    v,
-    dispatchMessage,
-    dispatchDropExports,
-    dispatchRetireExports,
-  } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
+    await setupLifecycleTest(t);
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -651,11 +641,11 @@ test.serial('VO lifecycle 3', async t => {
 
   // LERV -> LeRV  Drop the export
   await dispatchDropExports('o+1/2');
-  validateDropExport(v);
+  validateDropExport(v, '1');
 
   // LeRV -> leRV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, '1', '0');
 
   // leRV -> lerV  Retire the export
   await dispatchRetireExports('o+1/2');
@@ -668,7 +658,9 @@ test.serial('VO lifecycle 3', async t => {
 
 // test 4: lerv -> Lerv -> LERv -> LeRv -> lerv
 test.serial('VO lifecycle 4', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+    t,
+  );
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -680,7 +672,7 @@ test.serial('VO lifecycle 4', async t => {
 
   // LERv -> LeRv  Drop the export
   await dispatchDropExports('o+1/2');
-  validateDropExport(v);
+  validateDropExport(v, NONE);
 
   // LeRv -> lerv  Drop in-memory reference (gc and retire)
   rp = await dispatchMessage('dropHeld');
@@ -689,12 +681,8 @@ test.serial('VO lifecycle 4', async t => {
 
 // test 5: lerv -> Lerv -> LERv -> LeRv -> Lerv -> lerv
 test.serial('VO lifecycle 5', async t => {
-  const {
-    v,
-    dispatchMessage,
-    dispatchDropExports,
-    dispatchRetireExports,
-  } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
+    await setupLifecycleTest(t);
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -706,7 +694,7 @@ test.serial('VO lifecycle 5', async t => {
 
   // LERv -> LeRv  Drop the export
   await dispatchDropExports('o+1/2');
-  validateDropExport(v);
+  validateDropExport(v, NONE);
 
   // LeRv -> Lerv  Retire the export
   await dispatchRetireExports('o+1/2');
@@ -714,12 +702,14 @@ test.serial('VO lifecycle 5', async t => {
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp);
+  validateDropHeldWithGC(v, rp, NONE);
 });
 
 // test 6: lerv -> Lerv -> LERv -> LeRv -> LeRV -> LeRv -> LeRV -> leRV -> lerv
 test.serial('VO lifecycle 6', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+    t,
+  );
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -731,7 +721,7 @@ test.serial('VO lifecycle 6', async t => {
 
   // LERv -> LeRv  Drop the export
   await dispatchDropExports('o+1/2');
-  validateDropExport(v);
+  validateDropExport(v, NONE);
 
   // LeRv -> LeRV  Store VO reference virtually
   rp = await dispatchMessage('storeHeld');
@@ -743,11 +733,11 @@ test.serial('VO lifecycle 6', async t => {
 
   // LeRv -> LeRV  Store VO reference virtually again
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp);
+  validateStore(v, rp, '0');
 
   // LeRV -> leRV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, '1', '0');
 
   // leRV -> lerv  Drop stored reference (gc and retire)
   rp = await dispatchMessage('dropStored');
@@ -756,7 +746,9 @@ test.serial('VO lifecycle 6', async t => {
 
 // test 7: lerv -> Lerv -> LERv -> lERv -> LERv -> lERv -> lerv
 test.serial('VO lifecycle 7', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+    t,
+  );
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -768,7 +760,7 @@ test.serial('VO lifecycle 7', async t => {
 
   // LERv -> lERv  Drop in-memory reference, no GC because exported
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, NONE, '1');
 
   // lERv -> LERv  Reintroduce the in-memory reference via message
   rp = await dispatchMessage('importAndHold', thingArg('o+1/2'));
@@ -776,16 +768,18 @@ test.serial('VO lifecycle 7', async t => {
 
   // LERv -> lERv  Drop in-memory reference again, still no GC because exported
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, NONE, '1');
 
   // lERv -> lerv  Drop the export (gc and retire)
   await dispatchDropExports('o+1/2');
-  validateDropExportWithGCAndRetire(v);
+  validateDropExportWithGCAndRetire(v, NONE);
 });
 
 // test 8: lerv -> Lerv -> LERv -> LERV -> LERv -> LERV -> lERV -> lERv -> lerv
 test.serial('VO lifecycle 8', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+    t,
+  );
 
   // lerv -> Lerv  Create VO
   let rp = await dispatchMessage('makeAndHold');
@@ -797,7 +791,7 @@ test.serial('VO lifecycle 8', async t => {
 
   // LERv -> LERV  Store VO reference virtually
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp);
+  validateStore(v, rp, NONE);
 
   // LERV -> LERv  Overwrite virtual reference
   rp = await dispatchMessage('dropStored');
@@ -805,11 +799,11 @@ test.serial('VO lifecycle 8', async t => {
 
   // LERv -> LERV  Store VO reference virtually
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp);
+  validateStore(v, rp, '0');
 
   // LERV -> lERV  Drop the in-memory reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp);
+  validateDropHeld(v, rp, '1', '1');
 
   // lERV -> lERv  Overwrite virtual reference
   rp = await dispatchMessage('dropStored');
@@ -817,28 +811,28 @@ test.serial('VO lifecycle 8', async t => {
 
   // lERv -> lerv  Drop the export (gc and retire)
   await dispatchDropExports('o+1/2');
-  validateDropExportWithGCAndRetire(v);
+  validateDropExportWithGCAndRetire(v, '0');
 });
 
 function validatePrepareStore3(v, rp) {
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o+1/2')));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o+1/2')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o+1/2')));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '3'));
   validate(v, matchVatstoreGet('vom.es.o+1/2'));
   validateDone(v);
 }
 
 test.serial('VO refcount management 1', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
@@ -847,27 +841,27 @@ test.serial('VO refcount management 1', async t => {
   validatePrepareStore3(v, rp);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet('vom.o+2/2'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.o+2/2', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '3'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '2'));
   validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+2/3'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.o+2/3', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+2/4'));
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.o+2/4', heldThingValue('o+1/2')));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
-  validateStatusCheck(v, 'o+1/2');
+  validateStatusCheck(v, 'o+1/2', '0', NONE, testObjValue);
   validateDelete(v, 'o+1/2');
   validateDone(v);
 });
 
 test.serial('VO refcount management 2', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
@@ -878,30 +872,30 @@ test.serial('VO refcount management 2', async t => {
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
 
-  validateStatusCheck(v, 'o+2/2');
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validateStatusCheck(v, 'o+2/2', NONE, NONE, heldThingValue('o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '3'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '2'));
   validateDelete(v, 'o+2/2');
 
-  validateStatusCheck(v, 'o+2/3');
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validateStatusCheck(v, 'o+2/3', NONE, NONE, heldThingValue('o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
   validateDelete(v, 'o+2/3');
 
-  validateStatusCheck(v, 'o+2/4');
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validateStatusCheck(v, 'o+2/4', NONE, NONE, heldThingValue('o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
 
   validateDelete(v, 'o+2/4');
 
-  validateStatusCheck(v, 'o+1/2');
+  validateStatusCheck(v, 'o+1/2', '0', NONE, testObjValue);
   validateDelete(v, 'o+1/2');
 
   validateDone(v);
 });
 
 test.serial('VO refcount management 3', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHold');
   validateCreate(v, rp);
@@ -909,87 +903,87 @@ test.serial('VO refcount management 3', async t => {
   rp = await dispatchMessage('prepareStoreLinked');
   validate(v, matchVatstoreGet('vom.rc.o+1/2'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+2/2'));
   validate(v, matchVatstoreSet('vom.rc.o+2/2', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldHolderValue('o+2/2')));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+1/2')));
   validate(v, matchVatstoreGet('vom.rc.o+2/3'));
   validate(v, matchVatstoreSet('vom.rc.o+2/3', '1'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldHolderValue('o+2/2')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldHolderValue('o+2/3')));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreGet('vom.es.o+1/2'));
-  validate(v, matchVatstoreGet('vom.rc.o+2/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+2/2', '1'));
   validate(v, matchVatstoreGet('vom.es.o+2/2'));
-  validate(v, matchVatstoreGet('vom.rc.o+2/3'));
+  validate(v, matchVatstoreGet('vom.rc.o+2/3', '1'));
   validate(v, matchVatstoreGet('vom.es.o+2/3'));
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateStatusCheck(v, 'o+2/4');
-  validate(v, matchVatstoreGet('vom.rc.o+2/3'));
+  validateStatusCheck(v, 'o+2/4', NONE, NONE, heldHolderValue('o+2/3'));
+  validate(v, matchVatstoreGet('vom.rc.o+2/3', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+2/3', '0'));
 
   validateDelete(v, 'o+2/4');
 
-  validateStatusCheck(v, 'o+2/3');
-  validate(v, matchVatstoreGet('vom.rc.o+2/2'));
+  validateStatusCheck(v, 'o+2/3', '0', NONE, heldHolderValue('o+2/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+2/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+2/2', '0'));
   validateDelete(v, 'o+2/3');
 
-  validateStatusCheck(v, 'o+2/2');
-  validate(v, matchVatstoreGet('vom.rc.o+1/2'));
+  validateStatusCheck(v, 'o+2/2', '0', NONE, heldThingValue('o+1/2'));
+  validate(v, matchVatstoreGet('vom.rc.o+1/2', '1'));
   validate(v, matchVatstoreSet('vom.rc.o+1/2', '0'));
   validateDelete(v, 'o+2/2');
 
-  validateStatusCheck(v, 'o+1/2');
+  validateStatusCheck(v, 'o+1/2', '0', NONE, testObjValue);
   validateDelete(v, 'o+1/2');
 
   validateDone(v);
 });
 
 test.serial('presence refcount management 1', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('importAndHold', thingArg('o-5'));
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
   validate(v, matchVatstoreGet('vom.rc.o-5'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o-5')));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '3'));
   validateDone(v);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet('vom.o+2/2'));
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreGet('vom.o+2/2', heldThingValue('o-5')));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '3'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+2/3'));
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreGet('vom.o+2/3', heldThingValue('o-5')));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+2/4'));
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreGet('vom.o+2/4', heldThingValue('o-5')));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '0'));
   validate(v, matchVatstoreDelete('vom.rc.o-5'));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validate(v, matchVatstoreGet('vom.rc.o-5'));
   validate(v, matchDropImports('o-5'));
@@ -998,42 +992,42 @@ test.serial('presence refcount management 1', async t => {
 });
 
 test.serial('presence refcount management 2', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('importAndHold', thingArg('o-5'));
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
   validate(v, matchVatstoreGet('vom.rc.o-5'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '1'));
-  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '2'));
-  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o-5')));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '3'));
+  validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o-5')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o-5')));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '3'));
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateStatusCheck(v, 'o+2/2');
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validateStatusCheck(v, 'o+2/2', NONE, NONE, heldThingValue('o-5'));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '3'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '2'));
   validateDelete(v, 'o+2/2');
-  validateStatusCheck(v, 'o+2/3');
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validateStatusCheck(v, 'o+2/3', NONE, NONE, heldThingValue('o-5'));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '2'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '1'));
   validateDelete(v, 'o+2/3');
-  validateStatusCheck(v, 'o+2/4');
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
+  validateStatusCheck(v, 'o+2/4', NONE, NONE, heldThingValue('o-5'));
+  validate(v, matchVatstoreGet('vom.rc.o-5', '1'));
   validate(v, matchVatstoreSet('vom.rc.o-5', '0'));
   validate(v, matchVatstoreDelete('vom.rc.o-5'));
   validateDelete(v, 'o+2/4');
@@ -1044,12 +1038,12 @@ test.serial('presence refcount management 2', async t => {
 });
 
 test.serial('remotable refcount management 1', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 
@@ -1057,29 +1051,29 @@ test.serial('remotable refcount management 1', async t => {
   validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+3')));
   validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o+3')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o+3')));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet('vom.o+2/2'));
+  validate(v, matchVatstoreGet('vom.o+2/2', heldThingValue('o+3')));
   validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+2/3'));
+  validate(v, matchVatstoreGet('vom.o+2/3', heldThingValue('o+3')));
   validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+2/4'));
+  validate(v, matchVatstoreGet('vom.o+2/4', heldThingValue('o+3')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 });
 
 test.serial('remotable refcount management 2', async t => {
-  const { v, dispatchMessage } = setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupLifecycleTest(t);
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 
@@ -1087,23 +1081,23 @@ test.serial('remotable refcount management 2', async t => {
   validate(v, matchVatstoreSet('vom.o+2/2', heldThingValue('o+3')));
   validate(v, matchVatstoreSet('vom.o+2/3', heldThingValue('o+3')));
   validate(v, matchVatstoreSet('vom.o+2/4', heldThingValue('o+3')));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateStatusCheck(v, 'o+2/2');
+  validateStatusCheck(v, 'o+2/2', NONE, NONE, heldThingValue('o+3'));
   validateDelete(v, 'o+2/2');
-  validateStatusCheck(v, 'o+2/3');
+  validateStatusCheck(v, 'o+2/3', NONE, NONE, heldThingValue('o+3'));
   validateDelete(v, 'o+2/3');
-  validateStatusCheck(v, 'o+2/4');
+  validateStatusCheck(v, 'o+2/4', NONE, NONE, heldThingValue('o+3'));
   validateDelete(v, 'o+2/4');
   validateDone(v);
 });
 
 test.serial('verify VO weak key GC', async t => {
-  const { v, dispatchMessage, testHooks } = setupLifecycleTest(t);
+  const { v, dispatchMessage, testHooks } = await setupLifecycleTest(t);
 
   // Create VO and hold onto it weakly
   let rp = await dispatchMessage('makeAndHoldAndKey');
@@ -1114,26 +1108,22 @@ test.serial('verify VO weak key GC', async t => {
 
   // Drop in-memory reference, GC should cause weak entries to disappear
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp);
+  validateDropHeldWithGC(v, rp, NONE);
   t.is(testHooks.countCollectionsForWeakKey('o+1/2'), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
 });
 
 test.serial('verify presence weak key GC', async t => {
-  const {
-    v,
-    dispatchMessage,
-    dispatchRetireImports,
-    testHooks,
-  } = setupLifecycleTest(t);
+  const { v, dispatchMessage, dispatchRetireImports, testHooks } =
+    await setupLifecycleTest(t);
 
   validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
   validateDone(v);
 
   let rp = await dispatchMessage('importAndHoldAndKey', thingArg('o-5'));
   validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
-  validate(v, matchVatstoreGet('vom.o+1/1'));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
   t.is(testHooks.countCollectionsForWeakKey('o-5'), 2);
@@ -1154,4 +1144,58 @@ test.serial('verify presence weak key GC', async t => {
   t.is(testHooks.countCollectionsForWeakKey('o-5'), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
+});
+
+// To test handling of a local, non-virtual remotable *from* a virtual object,
+// we have essentially the same model as used above.  However, the model
+// presented is concerned with references *to* virtual objects, whose
+// reachability the VOM has to manage essentially on its own, and it is the
+// correctness of that management machinery that these tests have been
+// constructed to validate.  However, if a non-virtual object never interacts
+// with any virtual object, the VOM is not involved; what we need to be
+// concerned about is the subset of states in which a virtual object refers to a
+// non-virtual object (or acquires or loses such a reference), which none of the
+// above tests exercise.  In the following, the letters in the LERV notation
+// designate references to a non-VO.
+
+test.serial('VO holding non-VO', async t => {
+  const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
+    await setupLifecycleTest(t);
+  validate(v, matchVatstoreSet('vom.o+1/1', cacheObjValue));
+  validateDone(v);
+
+  // lerv -> Lerv  Create non-VO
+  let rp = await dispatchMessage('makeAndHoldRemotable');
+  validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue(null)));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
+  validateReturned(v, rp);
+  validateDone(v);
+
+  // Lerv -> LERv  Export non-VO
+  rp = await dispatchMessage('exportHeld');
+  validate(v, matchResolveOne(rp, thingRef('o+3')));
+  validateDone(v);
+
+  // LERv -> LERV  Store non-VO reference virtually
+  rp = await dispatchMessage('storeHeld');
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue(null)));
+  validate(v, matchVatstoreSet('vom.o+2/1', heldThingValue('o+3')));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
+  validateReturned(v, rp);
+  validateDone(v);
+
+  // LERV -> LeRV  Drop the export
+  await dispatchDropExports('o+3');
+  validateDone(v);
+
+  // LeRV -> LerV  Retire the export
+  await dispatchRetireExports('o+3');
+  validateDone(v);
+
+  // LerV -> LerV  Read non-VO reference from VO and expect it to deserialize successfully
+  rp = await dispatchMessage('fetchAndHold');
+  validate(v, matchVatstoreGet('vom.o+2/1', heldThingValue('o+3')));
+  validate(v, matchVatstoreGet('vom.o+1/1', cacheObjValue));
+  validateReturned(v, rp);
+  validateDone(v);
 });

@@ -1,14 +1,14 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargsOneSlot, capSlot, capargs } from '../util.js';
 import {
   crankCounter,
   computronCounter,
   wallClockWaiter,
-} from '../../src/runPolicies.js';
+} from '../../src/lib/runPolicies.js';
 
 async function testCranks(t, mode) {
   const config = {
@@ -33,6 +33,7 @@ async function testCranks(t, mode) {
   const rightKref = c.pinVatRoot('right');
   const rightID = c.vatNameToID('right');
   t.teardown(c.shutdown);
+  await c.run();
 
   if (mode === 'messages' || mode === 'wallclock') {
     // The 'message' mode sends doMessage() to left, which makes left send
@@ -66,17 +67,17 @@ async function testCranks(t, mode) {
   let more;
 
   if (mode === 'messages' || mode === 'resolutions') {
-    more = await c.run(crankCounter(7, 0));
+    more = await c.run(crankCounter(15, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
-    t.is(elapsedCranks(), 7);
+    t.is(elapsedCranks(), 15);
 
-    more = await c.run(crankCounter(1, 0));
+    more = await c.run(crankCounter(2, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
-    t.is(elapsedCranks(), 1);
+    t.is(elapsedCranks(), 2);
 
-    more = await c.run(crankCounter(8, 0));
+    more = await c.run(crankCounter(16, 0, true));
     t.truthy(more, 'vat was supposed to run forever');
-    t.is(elapsedCranks(), 8);
+    t.is(elapsedCranks(), 16);
   } else if (mode === 'computrons') {
     // the doMessage cycle has four steps:
     // 1: normal delivery (122k-134k computrons)
@@ -90,7 +91,7 @@ async function testCranks(t, mode) {
     // setting a threshold of 4M, we should finish c.run() just after that
     // extra-compute step.
     await c.run(computronCounter(4_000_000n));
-    t.is(elapsedCranks(), 17);
+    t.is(elapsedCranks(), 35);
     const ckey = `${rightID}.vs.vvs.seqnum`;
     const seqnum = parseInt(hostStorage.kvStore.get(ckey), 10);
     t.is(seqnum, 5);

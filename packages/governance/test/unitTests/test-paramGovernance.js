@@ -4,11 +4,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { makeZoeKit } from '@agoric/zoe';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { E } from '@agoric/eventual-send';
-import { makeLoopback } from '@agoric/captp';
+import { makeLoopback } from '@endo/captp';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
@@ -83,10 +83,8 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
   ]);
   const installs = { governor, electorate, counter, governed };
 
-  const {
-    creatorFacet: committeeCreator,
-    instance: electorateInstance,
-  } = await E(zoe).startInstance(electorate, harden({}), electorateTerms);
+  const { creatorFacet: committeeCreator, instance: electorateInstance } =
+    await E(zoe).startInstance(electorate, harden({}), electorateTerms);
 
   // TODO (cth)   three awaits?
 
@@ -124,15 +122,12 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
 test('governParam no votes', async t => {
   const { zoe } = await setUpZoeForTest(() => {});
   const timer = buildManualTimer(console.log);
-  const {
-    governorFacets,
-    installs,
-    invitationAmount,
-  } = await setUpGovernedContract(
-    zoe,
-    { committeeName: 'Demos', committeeSize: 1 },
-    timer,
-  );
+  const { governorFacets, installs, invitationAmount } =
+    await setUpGovernedContract(
+      zoe,
+      { committeeName: 'Demos', committeeSize: 1 },
+      timer,
+    );
 
   const paramSpec = { key: 'contractParams', parameterName: MALLEABLE_NUMBER };
 

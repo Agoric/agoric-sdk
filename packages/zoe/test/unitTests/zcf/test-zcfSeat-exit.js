@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
@@ -33,7 +33,8 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-zcftester', bundle);
+  const installation = await E(zoe).installBundleID('b1-zcftester');
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({

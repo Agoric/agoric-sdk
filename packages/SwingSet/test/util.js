@@ -1,5 +1,12 @@
-import { assert } from '@agoric/assert';
-import { QCLASS } from '@agoric/marshal';
+/* global WeakRef, FinalizationRegistry */
+import anylogger from 'anylogger';
+
+import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { createSHA256 } from '../src/lib-nodejs/hasher.js';
+import { extractMessage, capdata, capargs, ignore } from './vat-util.js';
+
+export { extractMessage, capdata, capargs, ignore };
 
 function compareArraysOfStrings(a, b) {
   a = a.join(' ');
@@ -27,9 +34,9 @@ export function checkKT(t, kernel, expected) {
 }
 
 export function dumpKT(kernel) {
-  const got = Array.from(
-    kernel.dump().kernelTable,
-  ).map(([kid, vatdev, vid]) => [vatdev, vid, kid]);
+  const got = Array.from(kernel.dump().kernelTable).map(
+    ([kid, vatdev, vid]) => [vatdev, vid, kid],
+  );
   got.sort(compareArraysOfStrings);
   for (const [vatdev, vid, kid] of got) {
     console.log(`${vatdev}:${vid} <-> ${kid}`);
@@ -68,36 +75,6 @@ export function buildDispatch(onDispatchCallback = undefined) {
   }
 
   return { log, dispatch };
-}
-
-export function ignore(p) {
-  p.then(
-    () => 0,
-    () => 0,
-  );
-}
-
-export function extractMessage(vatDeliverObject) {
-  const [type, ...vdoargs] = vatDeliverObject;
-  assert.equal(type, 'message', `util.js .extractMessage`);
-  const [facetID, msg] = vdoargs;
-  const { method, args, result } = msg;
-  return { facetID, method, args, result };
-}
-
-export function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
-
-function marshalBigIntReplacer(_, arg) {
-  if (typeof arg === 'bigint') {
-    return { [QCLASS]: 'bigint', digits: String(arg) };
-  }
-  return arg;
-}
-
-export function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args, marshalBigIntReplacer), slots);
 }
 
 export function capSlot(index) {
@@ -156,4 +133,25 @@ export function makeRetireExports(...vrefs) {
 export function makeRetireImports(...vrefs) {
   const vatDeliverObject = harden(['retireImports', vrefs]);
   return vatDeliverObject;
+}
+
+function makeConsole(tag) {
+  const log = anylogger(tag);
+  const cons = {};
+  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
+    cons[level] = log[level];
+  }
+  return harden(cons);
+}
+
+export function makeKernelEndowments() {
+  return {
+    waitUntilQuiescent,
+    hostStorage: provideHostStorage(),
+    runEndOfCrank: () => {},
+    makeConsole,
+    WeakRef,
+    FinalizationRegistry,
+    createSHA256,
+  };
 }

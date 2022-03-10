@@ -203,9 +203,7 @@ describe('AgoricWalletConnection', () => {
 
   it(`can't override the state`, async () => {
     const el = await fixture(
-      html`
-        <agoric-wallet-connection></agoric-wallet-connection>
-      `,
+      html` <agoric-wallet-connection></agoric-wallet-connection> `,
     );
     expect(el.state).to.equal('idle');
     expect(() => (el.state = 'notset')).to.throw(/Cannot set/);
@@ -213,9 +211,7 @@ describe('AgoricWalletConnection', () => {
 
   it('passes the a11y audit', async () => {
     const el = await fixture(
-      html`
-        <agoric-wallet-connection></agoric-wallet-connection>
-      `,
+      html` <agoric-wallet-connection></agoric-wallet-connection> `,
     );
 
     await expect(el).shadowDom.to.be.accessible();

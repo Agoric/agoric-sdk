@@ -4,10 +4,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
@@ -46,7 +46,8 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin().admin);
+    const { admin, vatAdminState } = makeFakeVatAdmin();
+    const { zoeService: zoe } = makeZoeKit(admin);
 
     // Pack the contracts.
     const oracleBundle = await bundleSource(oraclePath);
@@ -57,8 +58,12 @@ test.before(
     // of tests, we can also send the installation to someone
     // else, and they can use it to create a new contract instance
     // using the same code.
-    const oracleInstallation = await E(zoe).install(oracleBundle);
-    const aggregatorInstallation = await E(zoe).install(aggregatorBundle);
+    vatAdminState.installBundle('b1-oracle', oracleBundle);
+    const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
+    vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
+    const aggregatorInstallation = await E(zoe).installBundleID(
+      'b1-aggregator',
+    );
 
     const link = makeIssuerKit('$LINK', AssetKind.NAT);
     const usd = makeIssuerKit('$USD', AssetKind.NAT);

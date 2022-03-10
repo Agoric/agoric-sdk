@@ -82,6 +82,7 @@
  */
 
 /**
+ * @template {object} [OR=any] OR is OfferResult
  * @callback MakeInvitation
  *
  * Make a credible Zoe invitation for a particular smart contract
@@ -93,19 +94,11 @@
  * getting in the `customProperties`. `customProperties` will be
  * placed in the details of the invitation.
  *
- * @param {OfferHandler=} offerHandler - a contract specific function
+ * @param {OfferHandler<OR>} offerHandler - a contract specific function
  * that handles the offer, such as saving it or performing a trade
  * @param {string} description
  * @param {Object=} customProperties
- * @returns {Promise<Invitation>}
- */
-
-/**
- * @callback MakeZCFMint
- * @param {Keyword} keyword
- * @param {AssetKind=} assetKind
- * @param {AdditionalDisplayInfo=} displayInfo
- * @returns {Promise<ZCFMint>}
+ * @returns {Promise<Invitation<OR>>}
  */
 
 /**
@@ -143,8 +136,9 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} ZCFMint
- * @property {() => IssuerRecord} getIssuerRecord
+ * @property {() => IssuerRecord<K>} getIssuerRecord
  * @property {ZCFMintMintGains} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.
@@ -209,10 +203,11 @@
  */
 
 /**
+ * @template {Object} [OR=any]
  * @callback OfferHandler
  * @param {ZCFSeat} seat
  * @param {Object=} offerArgs
- * @returns {any}
+ * @returns {OR}
  */
 
 /**

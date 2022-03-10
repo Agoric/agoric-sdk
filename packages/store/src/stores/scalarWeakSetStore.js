@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, passStyleOf } from '@agoric/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
 const { details: X, quote: q } = assert;
@@ -65,16 +65,16 @@ export const makeWeakSetStoreMethods = (
  *
  * @template K
  * @param {string} [keyName='key'] - the column name for the key
- * @param {Partial<StoreOptions>=} options
+ * @param {StoreOptions=} options
  * @returns {WeakSetStore<K>}
  */
 export const makeScalarWeakSetStore = (
   keyName = 'key',
-  { longLived = true, keyPattern = undefined } = {},
+  { longLived = true, keySchema = undefined } = {},
 ) => {
   const jsset = new (longLived ? WeakSet : Set)();
-  if (keyPattern !== undefined) {
-    assertPattern(keyPattern);
+  if (keySchema !== undefined) {
+    assertPattern(keySchema);
   }
 
   const assertKeyOkToAdd = key => {
@@ -86,8 +86,8 @@ export const makeScalarWeakSetStore = (
       passStyleOf(key) === 'remotable',
       X`Only remotables can be keys of scalar WeakStores: ${key}`,
     );
-    if (keyPattern !== undefined) {
-      fit(key, keyPattern);
+    if (keySchema !== undefined) {
+      fit(key, keySchema);
     }
   };
 

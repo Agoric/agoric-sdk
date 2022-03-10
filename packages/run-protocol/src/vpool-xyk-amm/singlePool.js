@@ -1,7 +1,7 @@
 // @ts-check
 
-import { Far } from '@agoric/marshal';
-import { makeFeeRatio } from './constantProduct/calcFees';
+import { Far } from '@endo/marshal';
+import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
   pricesForStatedInput,
   pricesForStatedOutput,
@@ -13,7 +13,8 @@ import {
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
- * @returns {VPool}
+ * @param {AddLiquidityActual} addLiquidityActual
+ * @returns {VPoolWrapper<SinglePoolInternalFacet>}
  */
 export const makeSinglePool = (
   zcf,
@@ -21,6 +22,7 @@ export const makeSinglePool = (
   getProtocolFeeBP,
   getPoolFeeBP,
   feeSeat,
+  addLiquidityActual,
 ) => {
   const secondaryBrand = pool.getSecondaryAmount().brand;
   const centralBrand = pool.getCentralAmount().brand;
@@ -83,7 +85,7 @@ export const makeSinglePool = (
   };
 
   /** @type {VPool} */
-  return Far('single pool', {
+  const externalFacet = Far('single pool', {
     getInputPrice: (amountIn, amountOut) =>
       publicPrices(getPriceForInput(amountIn, amountOut)),
     getOutputPrice: (amountIn, amountOut) =>
@@ -91,4 +93,12 @@ export const makeSinglePool = (
     swapIn,
     swapOut,
   });
+
+  const internalFacet = Far('single pool', {
+    getPriceForInput,
+    getPriceForOutput,
+    addLiquidityActual,
+  });
+
+  return { externalFacet, internalFacet };
 };

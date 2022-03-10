@@ -4,5 +4,13 @@ namespace global {
   declare var issueCommand: (msg: ArrayBuffer) => ArrayBuffer;
 }
 
-declare let makeKind: function;
-declare let makeVirtualScalarWeakMap: function;
+interface VatData {
+  defineKind: function;
+  defineDurableKind: function;
+  makeScalarBigMapStore: function;
+  makeScalarBigWeakMapStore: function;
+  makeScalarBigSetStore: function;
+  makeScalarBigWeakSetStore: function;
+}
+
+declare let VatData: VatData;

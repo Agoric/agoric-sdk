@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 import { details as X } from '@agoric/assert';
@@ -392,7 +392,8 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-ignore deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
-    message: /The assetKind "whatever" must be one of \["copySet","nat","set"\]/,
+    message:
+      /The assetKind "whatever" must be one of \["copyBag","copySet","nat","set"\]/,
   });
 });
 
@@ -635,10 +636,8 @@ test(`zcf.makeEmptySeatKit`, async t => {
   const result = zcf.makeEmptySeatKit();
   t.deepEqual(Object.keys(result), ['zcfSeat', 'userSeat']);
   const { zcfSeat: zcfSeatActual, userSeat: userSeatActualP } = result;
-  const {
-    zcfSeat: zcfSeatExpected,
-    userSeat: userSeatExpected,
-  } = await makeOffer(zoe, zcf);
+  const { zcfSeat: zcfSeatExpected, userSeat: userSeatExpected } =
+    await makeOffer(zoe, zcf);
   await similarToNormalZCFSeat(t, zcfSeatActual, zcfSeatExpected);
   const userSeatActual = await userSeatActualP;
   await similarToNormalUserSeat(t, userSeatActual, userSeatExpected);

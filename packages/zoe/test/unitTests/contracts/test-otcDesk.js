@@ -5,9 +5,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -18,9 +18,12 @@ const dirname = path.dirname(filename);
 
 const root = `${dirname}/../../../src/contracts/otcDesk.js`;
 
+let vatAdminState;
+
 const installCode = async zoe => {
   const bundle = await bundleSource(root);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-otcdesk', bundle);
+  const installation = await E(zoe).installBundleID('b1-otcdesk');
   return installation;
 };
 
@@ -28,7 +31,8 @@ const installCoveredCall = async zoe => {
   const bundle = await bundleSource(
     `${dirname}/../../../src/contracts/coveredCall`,
   );
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const installation = await E(zoe).installBundleID('b1-coveredcall');
   return installation;
 };
 
@@ -41,14 +45,8 @@ const makeAlice = async (
   coveredCallInstallation,
 ) => {
   let creatorFacet;
-  const {
-    moolaIssuer,
-    simoleanIssuer,
-    bucksIssuer,
-    moola,
-    simoleans,
-    bucks,
-  } = issuers;
+  const { moolaIssuer, simoleanIssuer, bucksIssuer, moola, simoleans, bucks } =
+    issuers;
   const { moolaPayment, simoleanPayment, bucksPayment } = origPayments;
 
   const simoleanPurse = await E(simoleanIssuer).makeEmptyPurse();
@@ -114,14 +112,8 @@ const makeBob = (
   origPayments,
   coveredCallInstallation,
 ) => {
-  const {
-    moolaIssuer,
-    simoleanIssuer,
-    bucksIssuer,
-    moola,
-    simoleans,
-    bucks,
-  } = issuers;
+  const { moolaIssuer, simoleanIssuer, bucksIssuer, moola, simoleans, bucks } =
+    issuers;
   const { moolaPayment, simoleanPayment, bucksPayment } = origPayments;
   const moolaPurse = moolaIssuer.makeEmptyPurse();
   const simoleanPurse = simoleanIssuer.makeEmptyPurse();
@@ -273,7 +265,7 @@ const makeBob = (
 
       await t.throwsAsync(() => E(seat).getOfferResult(), {
         message:
-          'rights were not conserved for brand "[Alleged: simoleans brand]"',
+          'rights were not conserved for brand "[Alleged: simoleans brand]" "[15n]" != "[16n]"',
       });
 
       await assertPayoutAmount(
@@ -369,6 +361,8 @@ const makeBob = (
   });
 };
 
+// eslint complains about these shadowing local variables if this is defined
+// too early, but vatAdminState needs to be visible earlier
 const {
   moolaKit,
   simoleanKit,
@@ -380,7 +374,9 @@ const {
   bucksIssuer,
   bucks,
   zoe,
+  vatAdminState: vas0,
 } = setup();
+vatAdminState = vas0;
 
 const issuers = {
   moolaIssuer,

@@ -7,7 +7,7 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import '../../exported.js';
 import '../internal-types.js';
@@ -29,7 +29,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
 
   /** @type {ExecuteContract} */
   const executeContract = (
-    bundle,
+    bundleOrBundleCap,
     zoeService,
     invitationIssuer,
     zoeInstanceAdmin,
@@ -44,7 +44,7 @@ export function buildRootObject(powers, _params, testJigSetter = undefined) {
       invitationIssuer,
       testJigSetter,
     );
-    zcfZygote.evaluateContract(bundle);
+    zcfZygote.evaluateContract(bundleOrBundleCap);
     return zcfZygote.startContract(
       zoeInstanceAdmin,
       instanceRecordFromZoe,

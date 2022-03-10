@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import './types.js';
 import './internal-types.js';
@@ -26,6 +26,7 @@ import { makeInstallationStorage } from './installationStorage.js';
  *
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
+ * @param {GetBundleCapForID} getBundleCapForID
  * @param {GetFeeIssuerKit} getFeeIssuerKit
  * @param {ShutdownWithFailure} shutdownZoeVat
  * @param {Issuer} feeIssuer
@@ -34,6 +35,7 @@ import { makeInstallationStorage } from './installationStorage.js';
  */
 export const makeZoeStorageManager = (
   createZCFVat,
+  getBundleCapForID,
   getFeeIssuerKit,
   shutdownZoeVat,
   feeIssuer,
@@ -61,9 +63,8 @@ export const makeZoeStorageManager = (
   // In order to participate in a contract, users must have
   // invitations, which are ERTP payments made by Zoe. This code
   // contains the mint capability for invitations.
-  const { setupMakeInvitation, invitationIssuer } = createInvitationKit(
-    shutdownZoeVat,
-  );
+  const { setupMakeInvitation, invitationIssuer } =
+    createInvitationKit(shutdownZoeVat);
 
   // Every new instance of a contract creates a corresponding
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
@@ -83,7 +84,12 @@ export const makeZoeStorageManager = (
   // Zoe stores "installations" - identifiable bundles of contract
   // code that can be reused again and again to create new contract
   // instances
-  const { install, unwrapInstallation } = makeInstallationStorage();
+  const {
+    installBundle,
+    installBundleID,
+    unwrapInstallation,
+    getBundleIDFromInstallation,
+  } = makeInstallationStorage(getBundleCapForID);
 
   /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
@@ -238,7 +244,9 @@ export const makeZoeStorageManager = (
     getAssetKindByBrand: issuerStorage.getAssetKindByBrand,
     depositPayments: escrowStorage.depositPayments,
     invitationIssuer,
-    install,
+    installBundle,
+    installBundleID,
+    getBundleIDFromInstallation,
     getPublicFacet,
     getBrands,
     getIssuers,

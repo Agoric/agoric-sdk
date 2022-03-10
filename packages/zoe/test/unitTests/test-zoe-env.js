@@ -1,5 +1,5 @@
 // @ts-check
-/* global makeKind, makeVirtualScalarWeakMap */
+/* global VatData */
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -9,14 +9,18 @@ test('harden from SES is in the zoe contract environment', t => {
   t.pass();
 });
 
-test('(mock) makeKind from SwingSet is in the zoe contract environment', t => {
+test('(mock) kind makers from SwingSet are in the zoe contract environment', t => {
   // @ts-ignore testing existence of function only
-  makeKind();
+  VatData.defineKind();
+  VatData.defineDurableKind();
   t.pass();
 });
 
-test('(mock) makeVirtualScalarWeakMap from SwingSet is in the zoe contract environment', t => {
+test('(mock) store makers from SwingSet are in the zoe contract environment', t => {
   // @ts-ignore testing existence of function only
-  makeVirtualScalarWeakMap();
+  VatData.makeScalarBigMapStore();
+  VatData.makeScalarBigWeakMapStore();
+  VatData.makeScalarBigSetStore();
+  VatData.makeScalarBigWeakSetStore();
   t.pass();
 });

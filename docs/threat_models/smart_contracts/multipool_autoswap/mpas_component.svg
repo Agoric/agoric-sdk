@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="743px" preserveAspectRatio="none" style="width:3153px;height:743px;background:#FFFFFF;" version="1.1" viewBox="0 0 3153 743" width="3153px" zoomAndPan="magnify"><defs/><g><rect height="11.7773" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="176" x="2963.5" y="0"/><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="176" x="2963.5" y="9.668">Agoric Systems Operating Company.</text><rect height="26.4883" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="315" x="1412.25" y="17.7773"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="305" x="1417.25" y="36.3125">Multiswap Auto Pool Component Diagram</text><!--MD5=[9898011d1cd872448a075fc203f54463]
+cluster zoe--><g id="cluster_zoe"><path d="M572,56.2656 L598,56.2656 A3.75,3.75 0 0 1 600.5,58.7656 L607.5,78.7539 L736,78.7539 A2.5,2.5 0 0 1 738.5,81.2539 L738.5,131.7656 A2.5,2.5 0 0 1 736,134.2656 L572,134.2656 A2.5,2.5 0 0 1 569.5,131.7656 L569.5,58.7656 A2.5,2.5 0 0 1 572,56.2656 " style="stroke:#000000;stroke-width:1.5;fill:none;"/><line style="stroke:#000000;stroke-width:1.5;fill:none;" x1="569.5" x2="607.5" y1="78.7539" y2="78.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="25" x="573.5" y="71.8008">zoe</text></g><!--MD5=[499538f9db805554d0dbf8589bc1a651]
+cluster Multipool Autoswap--><g id="cluster_Multipool Autoswap"><path d="M510,304.2656 L657,304.2656 A3.75,3.75 0 0 1 659.5,306.7656 L666.5,326.7539 L3144,326.7539 A2.5,2.5 0 0 1 3146.5,329.2539 L3146.5,714.7656 A2.5,2.5 0 0 1 3144,717.2656 L510,717.2656 A2.5,2.5 0 0 1 507.5,714.7656 L507.5,306.7656 A2.5,2.5 0 0 1 510,304.2656 " style="stroke:#000000;stroke-width:1.5;fill:none;"/><line style="stroke:#000000;stroke-width:1.5;fill:none;" x1="507.5" x2="666.5" y1="326.7539" y2="326.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="146" x="511.5" y="319.8008">Multipool Autoswap</text></g><!--MD5=[a358a8aacb5e442ee9cf51f99b08f862]
+cluster conf1--><g id="cluster_conf1"><polygon points="1152.5,379.9056,1162.5,369.9056,2323.5,369.9056,2323.5,675.2656,2313.5,685.2656,1152.5,685.2656,1152.5,379.9056" style="stroke:#181818;stroke-width:1.0;fill:none;"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="2313.5" x2="2323.5" y1="379.9056" y2="369.9056"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="1152.5" x2="2313.5" y1="379.9056" y2="379.9056"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="2313.5" x2="2313.5" y1="379.9056" y2="685.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" font-style="italic" lengthAdjust="spacing" textLength="34" x="1717" y="396.4408">«zcf»</text><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="95" x="1686.5" y="412.9291">contractFacet</text></g><!--MD5=[335653576a12eceeb63a53f97f2b7b78]
+cluster pa1--><g id="cluster_pa1"><path d="M1288,520.2656 L1361,520.2656 A3.75,3.75 0 0 1 1363.5,522.7656 L1370.5,542.7539 L1589,542.7539 A2.5,2.5 0 0 1 1591.5,545.2539 L1591.5,642.7656 A2.5,2.5 0 0 1 1589,645.2656 L1288,645.2656 A2.5,2.5 0 0 1 1285.5,642.7656 L1285.5,522.7656 A2.5,2.5 0 0 1 1288,520.2656 " style="stroke:#000000;stroke-width:1.5;fill:none;"/><line style="stroke:#000000;stroke-width:1.5;fill:none;" x1="1285.5" x2="1370.5" y1="542.7539" y2="542.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="72" x="1289.5" y="535.8008">poolSeatA</text></g><!--MD5=[6739ef1a906c726ecfbef483422561d5]
+cluster pa2--><g id="cluster_pa2"><path d="M1980,520.2656 L2052,520.2656 A3.75,3.75 0 0 1 2054.5,522.7656 L2061.5,542.7539 L2281,542.7539 A2.5,2.5 0 0 1 2283.5,545.2539 L2283.5,642.7656 A2.5,2.5 0 0 1 2281,645.2656 L1980,645.2656 A2.5,2.5 0 0 1 1977.5,642.7656 L1977.5,522.7656 A2.5,2.5 0 0 1 1980,520.2656 " style="stroke:#000000;stroke-width:1.5;fill:none;"/><line style="stroke:#000000;stroke-width:1.5;fill:none;" x1="1977.5" x2="2061.5" y1="542.7539" y2="542.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="71" x="1981.5" y="535.8008">poolSeatB</text></g><!--MD5=[07c4e9609fcaf1e20a8956899ee967d9]
+cluster use--><g id="cluster_use"><path d="M1634,520.2656 L1697,520.2656 A3.75,3.75 0 0 1 1699.5,522.7656 L1706.5,542.7539 L1935,542.7539 A2.5,2.5 0 0 1 1937.5,545.2539 L1937.5,642.7656 A2.5,2.5 0 0 1 1935,645.2656 L1634,645.2656 A2.5,2.5 0 0 1 1631.5,642.7656 L1631.5,522.7656 A2.5,2.5 0 0 1 1634,520.2656 " style="stroke:#000000;stroke-width:1.5;fill:none;"/><line style="stroke:#000000;stroke-width:1.5;fill:none;" x1="1631.5" x2="1706.5" y1="542.7539" y2="542.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="62" x="1635.5" y="535.8008">UserSeat</text></g><!--MD5=[e34d71d1b310e943b012f384851e0863]
+cluster pf0--><g id="cluster_pf0"><path d="M2852,354.2656 L2934,354.2656 A3.75,3.75 0 0 1 2936.5,356.7656 L2943.5,376.7539 L3120,376.7539 A2.5,2.5 0 0 1 3122.5,379.2539 L3122.5,460.7656 A2.5,2.5 0 0 1 3120,463.2656 L2852,463.2656 A2.5,2.5 0 0 1 2849.5,460.7656 L2849.5,356.7656 A2.5,2.5 0 0 1 2852,354.2656 " style="stroke:#000000;stroke-width:1.5;fill:none;"/><line style="stroke:#000000;stroke-width:1.5;fill:none;" x1="2849.5" x2="2943.5" y1="376.7539" y2="376.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="81" x="2853.5" y="369.8008">publicFacet</text></g><!--MD5=[d89c61f5d71f273c9c9e0a5a19b3ce5c]
+cluster poolb--><g id="cluster_poolb"><polygon points="2355.5,357.2656,2365.5,347.2656,2825.5,347.2656,2825.5,616.2656,2815.5,626.2656,2355.5,626.2656,2355.5,357.2656" style="stroke:#181818;stroke-width:1.0;fill:none;"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="2815.5" x2="2825.5" y1="357.2656" y2="347.2656"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="2355.5" x2="2815.5" y1="357.2656" y2="357.2656"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="2815.5" x2="2815.5" y1="357.2656" y2="626.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="46" x="2563.5" y="373.8008">Pool B</text></g><!--MD5=[5b988ed5f2a6567987c1af890eab6cc4]
+cluster poola--><g id="cluster_poola"><polygon points="648.5,357.2656,658.5,347.2656,1120.5,347.2656,1120.5,616.2656,1110.5,626.2656,648.5,626.2656,648.5,357.2656" style="stroke:#181818;stroke-width:1.0;fill:none;"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="1110.5" x2="1120.5" y1="357.2656" y2="347.2656"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="648.5" x2="1110.5" y1="357.2656" y2="357.2656"/><line style="stroke:#181818;stroke-width:1.0;fill:none;" x1="1110.5" x2="1110.5" y1="357.2656" y2="626.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="47" x="857" y="373.8008">Pool A</text></g><!--MD5=[f45bfa67968ff2bcf19dd39961c1cc49]
+entity offer--><g id="elem_offer"><ellipse cx="594.5" cy="104.7656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="43" x="573" y="135.3008">offer()</text></g><!--MD5=[4dfe97dfd18bbb0ef0775c5ea71c9573]
+entity cf0--><g id="elem_cf0"><rect fill="#F1F1F1" height="36.4883" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="105" x="524" y="400.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="85" x="534" y="423.8008">creatorFacet</text></g><!--MD5=[22a36f415ead5179a2863590e6732793]
+entity reall--><g id="elem_reall"><ellipse cx="1217.5" cy="592.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="67" x="1184" y="622.8008">reallocate</text></g><!--MD5=[cb4ea4f66e3e48efd61ea5fddda5dfd5]
+entity pa1i1--><g id="elem_pa1i1"><ellipse cx="1378.5" cy="592.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="84" x="1336.5" y="622.8008">incrementBy</text></g><!--MD5=[6d1deaa32911a4a5b0e481db583af5b7]
+entity pa1i2--><g id="elem_pa1i2"><ellipse cx="1515.5" cy="592.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="88" x="1471.5" y="622.8008">decrementBy</text></g><!--MD5=[19fee7aa327e90d42154066e7007c4a9]
+entity pa2i1--><g id="elem_pa2i1"><ellipse cx="2051.5" cy="592.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="84" x="2009.5" y="622.8008">incrementBy</text></g><!--MD5=[3bd8b5016dbc33d6d65f1be7382c6a01]
+entity pa2i2--><g id="elem_pa2i2"><ellipse cx="2188.5" cy="592.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="88" x="2144.5" y="622.8008">decrementBy</text></g><!--MD5=[56fdaf41f780e29fd71c8aad2fd8607b]
+entity usi1--><g id="elem_usi1"><ellipse cx="1724.5" cy="592.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="84" x="1682.5" y="622.8008">incrementBy</text></g><!--MD5=[225f1b3f5b63b065afbb215469ce8420]
+entity usi2--><g id="elem_usi2"><ellipse cx="1861.5" cy="592.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="88" x="1817.5" y="622.8008">decrementBy</text></g><!--MD5=[0fba388da8b3b698c72ab7ee9bfda447]
+entity ap--><g id="elem_ap"><ellipse cx="3065.5" cy="418.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="66" x="3032.5" y="448.8008">addPool()</text></g><!--MD5=[898052cb4877f4fb8f5f9211a5cc3276]
+entity om--><g id="elem_om"><ellipse cx="2927.5" cy="418.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="108" x="2873.5" y="448.8008">otherMethods...</text></g><!--MD5=[e65c2caa925045fabdae269daebb40ac]
+entity ct2--><g id="elem_ct2"><rect fill="#F1F1F1" height="36.4883" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="117" x="2529" y="574.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="97" x="2539" y="597.8008">Central Token</text></g><!--MD5=[2b160bd0cbe1fe971b8bd963df77a9ac]
+entity pr2--><g id="elem_pr2"><path d="M2697.5,397.2656 C2697.5,387.2656 2753.5,387.2656 2753.5,387.2656 C2753.5,387.2656 2809.5,387.2656 2809.5,397.2656 L2809.5,439.2422 C2809.5,449.2422 2753.5,449.2422 2753.5,449.2422 C2753.5,449.2422 2697.5,449.2422 2697.5,439.2422 L2697.5,397.2656 " fill="#F1F1F1" style="stroke:#181818;stroke-width:0.5;"/><path d="M2697.5,397.2656 C2697.5,407.2656 2753.5,407.2656 2753.5,407.2656 C2753.5,407.2656 2809.5,407.2656 2809.5,397.2656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" font-style="italic" lengthAdjust="spacing" textLength="79" x="2714" y="424.8008">«Central/B»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="92" x="2707.5" y="441.2891">Price Registry</text></g><!--MD5=[8cb1e1fa0a39d86e3c170d3aa2a438a2]
+entity Secondary Token B--><g id="elem_Secondary Token B"><rect fill="#F1F1F1" height="36.4883" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="150" x="2512.5" y="400.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="130" x="2522.5" y="423.8008">Secondary Token B</text></g><!--MD5=[40abb704505e2dceb08ab462acbe607d]
+entity gps2--><g id="elem_gps2"><ellipse cx="2424.5" cy="418.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="91" x="2379" y="448.8008">getPoolSeat()</text></g><!--MD5=[8ffb251ad0b5992005961de005027372]
+entity ct1--><g id="elem_ct1"><rect fill="#F1F1F1" height="36.4883" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="117" x="682" y="574.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="97" x="692" y="597.8008">Central Token</text></g><!--MD5=[12de761c7a3b477cca51aa90e65c0e41]
+entity pr1--><g id="elem_pr1"><path d="M992.5,397.2656 C992.5,387.2656 1048.5,387.2656 1048.5,387.2656 C1048.5,387.2656 1104.5,387.2656 1104.5,397.2656 L1104.5,439.2422 C1104.5,449.2422 1048.5,449.2422 1048.5,449.2422 C1048.5,449.2422 992.5,449.2422 992.5,439.2422 L992.5,397.2656 " fill="#F1F1F1" style="stroke:#181818;stroke-width:0.5;"/><path d="M992.5,397.2656 C992.5,407.2656 1048.5,407.2656 1048.5,407.2656 C1048.5,407.2656 1104.5,407.2656 1104.5,397.2656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" font-style="italic" lengthAdjust="spacing" textLength="81" x="1008" y="424.8008">«Central/A»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="92" x="1002.5" y="441.2891">Price Registry</text></g><!--MD5=[e1d0622513db83344c2e7a1bbb4e9fd5]
+entity Secondary Token A--><g id="elem_Secondary Token A"><rect fill="#F1F1F1" height="36.4883" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="152" x="664.5" y="400.2656"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="132" x="674.5" y="423.8008">Secondary Token A</text></g><!--MD5=[b1075d91f2a4a5a304020d40bf485a8f]
+entity gps1--><g id="elem_gps1"><ellipse cx="904.5" cy="418.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="91" x="859" y="448.8008">getPoolSeat()</text></g><!--MD5=[98189cdfca5c64f4947a0a11c65ea74d]
+entity pooln--><g id="elem_pooln"><polygon fill="#F1F1F1" points="3023.5,579.2656,3033.5,569.2656,3107.5,569.2656,3107.5,605.7539,3097.5,615.7539,3023.5,615.7539,3023.5,579.2656" style="stroke:#181818;stroke-width:0.5;"/><line style="stroke:#181818;stroke-width:0.5;" x1="3097.5" x2="3107.5" y1="579.2656" y2="569.2656"/><line style="stroke:#181818;stroke-width:0.5;" x1="3023.5" x2="3097.5" y1="579.2656" y2="579.2656"/><line style="stroke:#181818;stroke-width:0.5;" x1="3097.5" x2="3097.5" y1="579.2656" y2="615.7539"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="44" x="3038.5" y="602.8008">pool n</text></g><!--MD5=[8d6ce0426d7f0e60b34790387a0bd7e9]
+entity cc1--><g id="elem_cc1"><ellipse cx="132.5" cy="189.7656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M132.5,197.7656 L132.5,224.7656 M119.5,205.7656 L145.5,205.7656 M132.5,224.7656 L119.5,239.7656 M132.5,224.7656 L145.5,239.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="253" x="6" y="254.8008">Multipool Autoswap Contract creator</text></g><!--MD5=[2109b2f49e8c6bb2adf04127e7f1d714]
+entity cc2--><g id="elem_cc2"><ellipse cx="3065.5" cy="189.7656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M3065.5,197.7656 L3065.5,224.7656 M3052.5,205.7656 L3078.5,205.7656 M3065.5,224.7656 L3052.5,239.7656 M3065.5,224.7656 L3078.5,239.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="147" x="2992" y="254.8008">Random Pool Creator</text></g><!--MD5=[6abfe64932000445d5e6738348fb960b]
+entity cc3--><g id="elem_cc3"><ellipse cx="594.5" cy="189.7656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><path d="M594.5,197.7656 L594.5,224.7656 M581.5,205.7656 L607.5,205.7656 M594.5,224.7656 L581.5,239.7656 M594.5,224.7656 L607.5,239.7656 " fill="none" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="163" x="513" y="254.8008">Person wanting to swap</text></g><!--MD5=[60acb97dac62e416d1a821de3595f469]
+entity si0--><g id="elem_si0"><ellipse cx="191.5" cy="418.2656" fill="#F1F1F1" rx="8" ry="8" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="98" x="142.5" y="448.8008">startInstance()</text></g><!--MD5=[f3c9ef06265f1ae315f994f8f8d9ba3b]
+link si0 to cf0--><g id="link_si0_cf0"><path d="M199.07,409.2256 C222.09,382.5156 294.65,304.1456 375,276.7656 C418.75,261.8556 436.79,257.9356 479,276.7656 C528.6,298.8956 556.96,361.1056 569.21,395.2056 " fill="none" id="si0-to-cf0" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="570.9,400.0256,571.689,390.2084,569.2419,395.3086,564.1417,392.8614,570.9,400.0256" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[60a80b59e7da245faca1159b5d4a3ced]
+link Secondary Token B to ct2--><g id="link_Secondary Token B_ct2"><path d="M2587.5,436.3856 C2587.5,467.6856 2587.5,534.0956 2587.5,568.9056 " fill="none" id="Secondary Token B-to-ct2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="2587.5,574.2156,2591.5,565.2156,2587.5,569.2156,2583.5,565.2156,2587.5,574.2156" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[abd0c215cd9a3eb9c4602ae087b0cdc4]
+link Secondary Token A to ct1--><g id="link_Secondary Token A_ct1"><path d="M740.5,436.3856 C740.5,467.6856 740.5,534.0956 740.5,568.9056 " fill="none" id="Secondary Token A-to-ct1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="740.5,574.2156,744.5,565.2156,740.5,569.2156,736.5,565.2156,740.5,574.2156" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[60565a19036b2412eed7876d26062555]
+link ap to pooln--><g id="link_ap_pooln"><path d="M3065.5,427.5656 C3065.5,451.9056 3065.5,523.9156 3065.5,563.8356 " fill="none" id="ap-to-pooln" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="3065.5,569.0156,3069.5,560.0156,3065.5,564.0156,3061.5,560.0156,3065.5,569.0156" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[d2511f462569482cdbb14413173605f6]
+link offer to conf1--><g id="link_offer_conf1"><path d="M603.76,108.6456 C653.775,124.2256 897.995,200.3006 1131.4238,273.0144 C1189.7809,291.1928 1247.4637,309.1612 1301.2689,325.9217 C1328.1715,334.302 1354.1047,342.3803 1378.6682,350.0319 C1390.9499,353.8577 1402.8892,357.5769 1414.436,361.1737 C1420.2094,362.9722 1425.8847,364.7401 1431.4556,366.4754 C1434.241,367.3431 1437.0004,368.2027 1439.7329,369.0538 " fill="none" id="offer-to-conf1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1439.7329,369.0538,1432.3298,362.5582,1434.9591,367.5668,1429.9505,370.1962,1439.7329,369.0538" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="101" x="1078.5" y="224.334">execute method</text></g><!--MD5=[f761c7afd1c534e65f8434cc781cadc8]
+link gps1 to pa1--><g id="link_gps1_pa1"><path d="M912.3,427.4456 C924.48,439.5756 949.31,461.9156 975.5,471.2656 C976.01,471.4456 1289.12,487.8756 1289.5,488.2656 C1297.41,496.2981 1301.6688,506.615 1303.5944,517.6055 C1303.7147,518.2924 1303.826,518.9819 1303.9284,519.6737 C1303.954,519.8466 1303.9791,520.0197 1304.0036,520.1929 " fill="none" id="gps1-to-pa1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1304.0036,520.1929,1306.7028,510.7212,1303.3029,515.2423,1298.7818,511.8423,1304.0036,520.1929" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[180db045123fb1774b804e5c9dc41619]
+link gps2 to pa2--><g id="link_gps2_pa2"><path d="M2415.65,427.4356 C2402.17,440.0256 2375.9,465.1456 2355.5,488.2656 C2336.625,509.6606 2316.95,534.9456 2301.835,555.1094 C2298.0563,560.1503 2294.5625,564.8712 2291.4375,569.1312 C2289.875,571.2611 2288.4047,573.2759 2287.037,575.1579 C2286.3532,576.0988 2285.695,577.0066 2285.0638,577.879 C2284.7483,578.3152 2284.4394,578.7425 2284.1375,579.1607 C2283.9865,579.3698 2283.8372,579.5766 2283.6897,579.7811 " fill="none" id="gps2-to-pa2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="2283.6897,579.7811,2292.1987,574.8215,2286.6146,575.7259,2285.7103,570.1418,2283.6897,579.7811" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[ad56041d6d22bb2169c582c3ac91ee26]
+link conf1 to pa1i1--><g id="link_conf1_pa1i1"><path d="M1594.43,419.2856 C1591.6,419.9456 1500.6,441.6056 1446.5,488.2656 C1416.16,514.4356 1393.86,557.3356 1384.04,578.5556 " fill="none" id="conf1-to-pa1i1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1381.93,583.2256,1389.2957,576.6875,1383.999,578.6738,1382.0128,573.3771,1381.93,583.2256" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[f2762d1f81dd85ee507310255d9674cd]
+link conf1 to pa1i2--><g id="link_conf1_pa1i2"><path d="M1594.44,419.3856 C1592.46,423.7156 1539.39,539.2456 1521.4,578.4156 " fill="none" id="conf1-to-pa1i2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1519.2,583.2156,1526.5826,576.6967,1521.2808,578.6692,1519.3083,573.3674,1519.2,583.2156" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[3b0e2b13cbc48b7e9256eedd53d44ce8]
+link conf1 to pa2i1--><g id="link_conf1_pa2i1"><path d="M1594.64,419.2656 C1600.68,419.3656 1794.9,422.8856 1929.5,488.2656 C1977.15,511.4056 2021.65,557.3956 2041.14,579.2256 " fill="none" id="conf1-to-pa2i1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="2044.49,583.0056,2041.5359,573.6102,2041.1824,579.256,2035.5366,578.9024,2044.49,583.0056" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[8ab80a3a5fa16cc66d2e3732b67af846]
+link conf1 to pa2i2--><g id="link_conf1_pa2i2"><path d="M1594.58,419.2656 C1601.12,419.3756 2020.31,426.6856 2119.5,488.2656 C2154.03,509.7056 2175.17,555.5656 2183.88,578.1556 " fill="none" id="conf1-to-pa2i2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="2185.73,583.1056,2186.3415,573.2758,2183.9869,578.4193,2178.8434,576.0647,2185.73,583.1056" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[9e1f8b96eab8ddf629b814161445e165]
+link conf1 to usi1--><g id="link_conf1_usi1"><path d="M1594.64,419.3656 C1597.49,421.3256 1643.46,453.3056 1670.5,488.2656 C1693.27,517.7156 1711.25,558.1756 1719.53,578.5056 " fill="none" id="conf1-to-usi1" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1721.42,583.2256,1721.7653,573.3828,1719.5508,578.5882,1714.3454,576.3736,1721.42,583.2256" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[e4ffcacb96923716d8eba0efd8b2ee32]
+link conf1 to usi2--><g id="link_conf1_usi2"><path d="M1594.59,419.2756 C1598.37,419.6556 1719.91,432.1756 1792.5,488.2656 C1824.35,512.8756 1846.49,556.4956 1856.11,578.2156 " fill="none" id="conf1-to-usi2" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1858.18,582.9956,1858.2855,573.1473,1856.1984,578.4051,1850.9406,576.3179,1858.18,582.9956" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[c207d7f38c338c6bc27e405ddb558d11]
+link conf1 to reall--><g id="link_conf1_reall"><path d="M1594.45,419.2656 C1590.47,419.6856 1335.35,446.1956 1277.5,488.2656 C1246.05,511.1456 1228.44,555.9356 1221.3,578.1456 " fill="none" id="conf1-to-reall" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1219.78,583.0256,1226.2685,575.6163,1221.2624,578.2504,1218.6283,573.2443,1219.78,583.0256" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[16797fb32bef458e3c52c1904ae9ec91]
+link cc1 to si0--><g id="link_cc1_si0"><path d="M143.6,257.3156 C156.98,302.0156 178.79,374.8256 187.61,404.2856 " fill="none" id="cc1-to-si0" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="189.1,409.2656,190.3318,399.4941,187.6567,404.4785,182.6723,401.8034,189.1,409.2656" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[6315ff84cae6688fca75439ed5a0e9f6]
+link cc2 to ap--><g id="link_cc2_ap"><path d="M3065.5,257.3156 C3065.5,301.8356 3065.5,374.2256 3065.5,403.9156 " fill="none" id="cc2-to-ap" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="3065.5,409.2656,3069.5,400.2656,3065.5,404.2656,3061.5,400.2656,3065.5,409.2656" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[7eaa8934746ba6fe0578a6d7623cdbd6]
+reverse link offer to cc3--><g id="link_offer_cc3"><path d="M594.5,118.9456 C594.5,134.0956 594.5,159.6456 594.5,181.0256 " fill="none" id="offer-backto-cc3" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="594.5,113.8556,590.5,122.8556,594.5,118.8556,598.5,122.8556,594.5,113.8556" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[43915512b4987b75ed70e74b728a294f]
+link offer to offer--><g id="link_offer_offer"><path d="M603.57,99.6756 C618.76,93.6356 638.5,95.3356 638.5,104.7656 C638.5,113.2456 622.57,115.4656 608.32,111.4556 " fill="none" id="offer-to-offer" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="603.57,109.8556,610.8131,116.5293,608.3062,111.4582,613.3773,108.9513,603.57,109.8556" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="89" x="644.5" y="109.834">validate terms</text></g><!--MD5=[51108ea85042475a353597a1d2c17d37]
+link offer to use--><g id="link_offer_use"><path d="M585.27,109.9456 C549.3,126.8456 418.34,194.1256 374.5,296.2656 C343.82,367.7356 321.5,414.3456 374.5,471.2656 C397.39,495.8456 1554.69,470.9956 1583.5,488.2656 C1605.495,501.4556 1619.405,526.6131 1627.86,548.7619 C1628.9169,551.5305 1629.8885,554.2521 1630.7801,556.8974 C1631.0029,557.5587 1631.2208,558.2153 1631.4338,558.8666 " fill="none" id="offer-to-use" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1631.4338,558.8666,1632.4389,549.0692,1629.88,554.1142,1624.835,551.5552,1631.4338,558.8666" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[5bc067a33b998b1b5328251641b548d3]
+link cc3 to use--><g id="link_cc3_use"><path d="M512.73,235.0456 C477.83,245.8456 440.39,264.4156 419.5,296.2656 C376.84,361.3056 364.91,415.8656 419.5,471.2656 C442.2,494.2956 1555.83,471.5356 1583.5,488.2656 C1605.45,501.5306 1619.36,526.6906 1627.8263,548.8219 C1628.8845,551.5883 1629.8578,554.3074 1630.751,556.95 C1630.9743,557.6106 1631.1926,558.2665 1631.406,558.9171 " fill="none" id="cc3-to-use" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="1631.406,558.9171,1632.4021,549.1188,1629.8478,554.1661,1624.8005,551.6119,1631.406,558.9171" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="86" x="420.5" y="423.334">reclaim funds</text></g><!--MD5=[cae296afe02ecf16721147b9e841ea33]
+link cc3 to om--><g id="link_cc3_om"><path d="M676.16,226.9956 C782.19,235.4556 973.03,249.8056 1136.5,257.2656 C1230.26,261.5456 2740.85,255.7156 2825.5,296.2656 C2874.05,319.5256 2908.03,378.0656 2921.31,404.2456 " fill="none" id="cc3-to-om" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="2923.68,409.0356,2923.2579,399.1958,2921.4553,404.5578,2916.0934,402.7553,2923.68,409.0356" style="stroke:#181818;stroke-width:1.0;"/></g><rect height="11.7773" style="stroke:#00000000;stroke-width:1.0;fill:none;" width="29" x="1555.25" y="723.2656"/><text fill="#888888" font-family="sans-serif" font-size="10" lengthAdjust="spacing" textLength="29" x="1555.25" y="732.9336">v0.0.1</text><!--MD5=[5104a52b81b0ca4c25ed7f5255d09fcb]
+@startuml
+'https://plantuml.com/component-diagram
+header Agoric Systems Operating Company.
+footer v0.0.1
+title Multiswap Auto Pool Component Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+actor "Multipool Autoswap Contract creator" as cc1
+actor "Random Pool Creator" as cc2
+actor "Person wanting to swap" as cc3
+interface "startInstance()" as si0
+package "zoe" as zoe {
+    interface "offer()" as offer
+}
+
+package "Multipool Autoswap" {
+    [creatorFacet] as cf0
+    node contractFacet <<zcf>> as conf1 {
+        package "poolSeatA" as pa1 {
+           interface "incrementBy" as pa1i1
+           interface "decrementBy" as pa1i2
+        }
+
+        package "poolSeatB" as pa2 {
+            interface "incrementBy" as pa2i1
+            interface "decrementBy" as pa2i2
+        }
+        package "UserSeat" as use {
+            interface "incrementBy" as usi1
+            interface "decrementBy" as usi2
+        }
+
+        interface "reallocate" as reall
+
+    }
+    package "publicFacet" as pf0 {
+        interface "addPool()" as ap
+        interface "otherMethods..." as om
+    }
+
+    si0 -> cf0
+
+
+    node "Pool B" as poolb {
+        [Central Token] as ct2
+        database "Price Registry" <<Central/B>> as pr2
+        [Secondary Token B]
+        [Secondary Token B] - -> ct2
+        interface "getPoolSeat()" as gps2
+    }
+
+    node "Pool A" as poola {
+        [Central Token] as ct1
+        database "Price Registry" <<Central/A>> as pr1
+        [Secondary Token A]
+        [Secondary Token A] - -> ct1
+        interface "getPoolSeat()" as gps1
+    }
+
+    node "pool n" as pooln {
+    }
+
+    ap -d-> pooln
+
+    offer - -> conf1: execute method
+
+    gps1 -d-> pa1
+    gps2 -d-> pa2
+    conf1 - -> pa1i1
+    conf1 - -> pa1i2
+    conf1 - -> pa2i1
+    conf1 - -> pa2i2
+    conf1 - -> usi1
+    conf1 - -> usi2
+    conf1 - -> reall
+}
+
+cc1 - -> si0
+cc2 - -> ap
+cc3 -u-> offer
+offer -> offer: validate terms
+
+offer -> use
+cc3 - -r-> use: reclaim funds
+cc3 - -> om
+@enduml
+
+@startuml
+header Agoric Systems Operating Company.
+footer v0.0.1
+title Multiswap Auto Pool Component Diagram
+
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+actor "Multipool Autoswap Contract creator" as cc1
+actor "Random Pool Creator" as cc2
+actor "Person wanting to swap" as cc3
+interface "startInstance()" as si0
+package "zoe" as zoe {
+    interface "offer()" as offer
+}
+
+package "Multipool Autoswap" {
+    [creatorFacet] as cf0
+    node contractFacet <<zcf>> as conf1 {
+        package "poolSeatA" as pa1 {
+           interface "incrementBy" as pa1i1
+           interface "decrementBy" as pa1i2
+        }
+
+        package "poolSeatB" as pa2 {
+            interface "incrementBy" as pa2i1
+            interface "decrementBy" as pa2i2
+        }
+        package "UserSeat" as use {
+            interface "incrementBy" as usi1
+            interface "decrementBy" as usi2
+        }
+
+        interface "reallocate" as reall
+
+    }
+    package "publicFacet" as pf0 {
+        interface "addPool()" as ap
+        interface "otherMethods..." as om
+    }
+
+    si0 -> cf0
+
+
+    node "Pool B" as poolb {
+        [Central Token] as ct2
+        database "Price Registry" <<Central/B>> as pr2
+        [Secondary Token B]
+        [Secondary Token B] - -> ct2
+        interface "getPoolSeat()" as gps2
+    }
+
+    node "Pool A" as poola {
+        [Central Token] as ct1
+        database "Price Registry" <<Central/A>> as pr1
+        [Secondary Token A]
+        [Secondary Token A] - -> ct1
+        interface "getPoolSeat()" as gps1
+    }
+
+    node "pool n" as pooln {
+    }
+
+    ap -d-> pooln
+
+    offer - -> conf1: execute method
+
+    gps1 -d-> pa1
+    gps2 -d-> pa2
+    conf1 - -> pa1i1
+    conf1 - -> pa1i2
+    conf1 - -> pa2i1
+    conf1 - -> pa2i2
+    conf1 - -> usi1
+    conf1 - -> usi2
+    conf1 - -> reall
+}
+
+cc1 - -> si0
+cc2 - -> ap
+cc3 -u-> offer
+offer -> offer: validate terms
+
+offer -> use
+cc3 - -r-> use: reclaim funds
+cc3 - -> om
+@enduml
+
+PlantUML version 1.2022.2(Sat Mar 05 08:30:19 PST 2022)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

@@ -2,8 +2,8 @@
 
 import { makeScalarMap, makeLegacyMap } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { toBytes } from './bytes.js';
 
@@ -25,7 +25,7 @@ export const rethrowUnlessMissing = err => {
   ) {
     throw err;
   }
-  return false;
+  return undefined;
 };
 
 /**
@@ -72,7 +72,7 @@ export const makeConnection = (
         .onClose(connection, undefined, handler)
         .catch(rethrowUnlessMissing);
     },
-    async send(data) {
+    async send(data, opts) {
       // console.log('send', data, local === srcHandler);
       if (closed) {
         throw closed;
@@ -81,7 +81,7 @@ export const makeConnection = (
       const ackDeferred = makePromiseKit();
       pendingAcks.add(ackDeferred);
       E(handler)
-        .onReceive(connection, bytes, handler)
+        .onReceive(connection, bytes, handler, opts)
         .catch(err => {
           rethrowUnlessMissing(err);
           return '';
@@ -149,12 +149,10 @@ export function crossoverConnection(
         if (closed) {
           throw closed;
         }
-        const ack =
-          /** @type {Bytes} */
-          (await E(handlers[r])
-            .onReceive(conns[r], toBytes(packetBytes), handlers[r])
-            .catch(rethrowUnlessMissing));
-        return toBytes(ack);
+        const ack = await E(handlers[r])
+          .onReceive(conns[r], toBytes(packetBytes), handlers[r])
+          .catch(rethrowUnlessMissing);
+        return toBytes(ack || '');
       },
       async close() {
         if (closed) {
@@ -287,9 +285,7 @@ export function makeNetworkProtocol(protocolHandler) {
             return;
           }
           listening.set(localAddr, [port, listenHandler]);
-          E(lhandler)
-            .onRemove(lport, lhandler)
-            .catch(rethrowUnlessMissing);
+          E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
         } else {
           listening.init(localAddr, [port, listenHandler]);
         }
@@ -419,7 +415,11 @@ export function makeNetworkProtocol(protocolHandler) {
               .onReject(port, localAddr, remoteAddr, listener)
               .catch(rethrowUnlessMissing);
           },
-          async accept(rchandler) {
+          async accept({
+            localAddress = localAddr,
+            remoteAddress = remoteAddr,
+            handler: rchandler,
+          }) {
             if (consummated) {
               throw consummated;
             }
@@ -435,9 +435,9 @@ export function makeNetworkProtocol(protocolHandler) {
 
             return crossoverConnection(
               lchandler,
-              localAddr,
+              localAddress,
               rchandler,
-              remoteAddr,
+              remoteAddress,
               current,
             )[1];
           },
@@ -453,29 +453,40 @@ export function makeNetworkProtocol(protocolHandler) {
         (await E(port).getLocalAddress());
 
       // Allocate a local address.
-      const localInstance = await E(protocolHandler)
+      const initialLocalInstance = await E(protocolHandler)
         .onInstantiate(port, localAddr, remoteAddr, protocolHandler)
         .catch(rethrowUnlessMissing);
-      const la = localInstance ? `${localAddr}/${localInstance}` : localAddr;
+      const initialLocalAddr = initialLocalInstance
+        ? `${localAddr}/${initialLocalInstance}`
+        : localAddr;
 
       let lastFailure;
       try {
         // Attempt the loopback connection.
-        const attempt = await protocolImpl.inbound(remoteAddr, la);
-        return attempt.accept(lchandler);
+        const attempt = await protocolImpl.inbound(
+          remoteAddr,
+          initialLocalAddr,
+        );
+        return attempt.accept({ handler: lchandler });
       } catch (e) {
         lastFailure = e;
       }
 
-      const [connectedAddress, rchandler] =
-        /** @type {[Endpoint, ConnectionHandler]} */
-        (await E(protocolHandler).onConnect(
-          port,
-          la,
-          remoteAddr,
-          lchandler,
-          protocolHandler,
-        ));
+      const {
+        remoteAddress = remoteAddr,
+        handler: rchandler,
+        localAddress = localAddr,
+      } =
+        /** @type {Partial<AttemptDescription>} */
+        (
+          await E(protocolHandler).onConnect(
+            port,
+            initialLocalAddr,
+            remoteAddr,
+            lchandler,
+            protocolHandler,
+          )
+        );
 
       if (!rchandler) {
         throw lastFailure;
@@ -484,9 +495,9 @@ export function makeNetworkProtocol(protocolHandler) {
       const current = currentConnections.get(port);
       return crossoverConnection(
         lchandler,
-        la,
+        localAddress,
         rchandler,
-        connectedAddress,
+        remoteAddress,
         current,
       )[0];
     },
@@ -569,10 +580,10 @@ export function makeLoopbackProtocolHandler(
       const remoteInstance = await E(protocolHandler)
         .onInstantiate(lport, remoteAddr, localAddr, protocolHandler)
         .catch(rethrowUnlessMissing);
-      const ra = remoteInstance
-        ? `${remoteAddr}/${remoteInstance}`
-        : remoteAddr;
-      return [ra, rchandler];
+      return {
+        remoteInstance,
+        handler: rchandler,
+      };
     },
     onInstantiate,
     async onListen(port, localAddr, listenHandler, _protocolHandler) {

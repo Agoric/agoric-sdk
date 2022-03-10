@@ -23,7 +23,7 @@ import {
   isKey,
   assertKey,
   fulfillToKey,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 
 ## Release 0.0.1 (3-Feb-2020)
 

@@ -1,10 +1,11 @@
 // @ts-check
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { observeIteration, observeIterator } from '../src/index.js';
 
-import '@agoric/marshal/exported.js';
 import '../src/types.js';
+
+/** @typedef {import('@endo/marshal').Passable} Passable */
 
 /** @typedef {import('ava').Assertions} Assertions */
 

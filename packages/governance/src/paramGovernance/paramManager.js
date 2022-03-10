@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, mapIterable } from '@agoric/marshal';
+import { Far, mapIterable } from '@endo/marshal';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
@@ -198,10 +198,10 @@ const makeParamManagerBuilder = zoe => {
     await setInvitation(invitation);
 
     const makeDescription = () => {
-      return ({ name, type: ParamType.INVITATION, value: currentAmount });
+      return { name, type: ParamType.INVITATION, value: currentAmount };
     };
     const makeShortDescription = () => {
-      return ({ type: ParamType.INVITATION, value: currentAmount });
+      return { type: ParamType.INVITATION, value: currentAmount };
     };
 
     const getVisibleValue = async allegedInvitation =>
@@ -271,6 +271,8 @@ const makeParamManagerBuilder = zoe => {
     return harden(descriptions);
   };
 
+  // XXX some type safety but you don't know what keys are valid
+  // TODO replace with explicit keys that map to value types
   const makeParamManager = updateFunctions => {
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by

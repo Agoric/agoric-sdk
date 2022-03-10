@@ -8,7 +8,7 @@ import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeWallet } from '../src/lib-wallet.js';
 
 import '../src/types.js';
@@ -50,12 +50,8 @@ const setup = async () => {
 };
 
 test('getPursesNotifier', async t => {
-  const {
-    wallet,
-    moolaKit,
-    MOOLA_ISSUER_PETNAME,
-    MOOLA_PURSE_PETNAME,
-  } = await setup();
+  const { wallet, moolaKit, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME } =
+    await setup();
   const pursesNotifier = wallet.getPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
   t.is(update.updateCount, 6);
@@ -64,15 +60,14 @@ test('getPursesNotifier', async t => {
   const moolaPurseInfo = update.value[1];
   t.truthy(moolaPurseInfo.actions);
   t.is(moolaPurseInfo.brand, moolaKit.brand);
-  t.is(moolaPurseInfo.brandBoardId, '1532665031');
+  t.is(moolaPurseInfo.brandBoardId, 'board0425');
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
     brand: { kind: 'brand', petname: 'moola' }, // not a real amount
     value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
-    body:
-      '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
+    body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
     slots: [
       {
         kind: 'brand',
@@ -90,12 +85,8 @@ test('getPursesNotifier', async t => {
 });
 
 test('getAttenuatedPursesNotifier', async t => {
-  const {
-    wallet,
-    MOOLA_ISSUER_PETNAME,
-    MOOLA_PURSE_PETNAME,
-    moolaKit,
-  } = await setup();
+  const { wallet, MOOLA_ISSUER_PETNAME, MOOLA_PURSE_PETNAME, moolaKit } =
+    await setup();
   const pursesNotifier = wallet.getAttenuatedPursesNotifier();
   const update = await pursesNotifier.getUpdateSince();
   t.is(update.updateCount, 6);
@@ -104,15 +95,14 @@ test('getAttenuatedPursesNotifier', async t => {
   const moolaPurseInfo = update.value[1];
   t.false('actions' in moolaPurseInfo);
   t.is(moolaPurseInfo.brand, moolaKit.brand);
-  t.is(moolaPurseInfo.brandBoardId, '1532665031');
+  t.is(moolaPurseInfo.brandBoardId, 'board0425');
   t.is(moolaPurseInfo.brandPetname, MOOLA_ISSUER_PETNAME);
   t.deepEqual(moolaPurseInfo.currentAmount, {
     brand: { kind: 'brand', petname: 'moola' }, // not a real amount
     value: 0n,
   });
   t.deepEqual(moolaPurseInfo.currentAmountSlots, {
-    body:
-      '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
+    body: '{"brand":{"@qclass":"slot","iface":"Alleged: moola brand","index":0},"value":{"@qclass":"bigint","digits":"0"}}',
     slots: [
       {
         kind: 'brand',

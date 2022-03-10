@@ -1,8 +1,8 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 import { keyEQ } from '@agoric/store';
 
 import {
@@ -144,7 +144,7 @@ const setupGovernance = async (
       .then(outcome => {
         if (keyEQ(positive, outcome)) {
           E(paramMgr)
-            [`update${(paramSpec.parameterName)}`](proposedValue)
+            [`update${paramSpec.parameterName}`](proposedValue)
             .then(newValue => outcomeOfUpdateP.resolve(newValue))
             .catch(e => {
               outcomeOfUpdateP.reject(e);

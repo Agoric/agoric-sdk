@@ -1,58 +1,63 @@
-/* global makeKind makeVirtualScalarWeakMap */
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
+import {
+  defineKind,
+  makeScalarBigWeakMapStore,
+} from '@agoric/swingset-vat/src/storeModule.js';
 
 const p = console.log;
 
 function build(name) {
-  function makeThingInstance(state) {
-    return {
-      init(label, companion, companionName) {
-        p(`${name}'s thing ${label}: initialize ${companionName}`);
-        state.label = label;
-        state.companion = companion;
-        state.companionName = companionName;
-        state.count = 0;
+  const makeThing = defineKind(
+    'thing',
+    (label, companion, companionName) => {
+      p(`${name}'s thing ${label}: initialize ${companionName}`);
+      return { label, companion, companionName, count: 0 };
+    },
+    state => ({
+      echo(message) {
+        state.count += 1;
+        E(state.companion).say(message);
       },
-      self: Far('thing', {
-        echo(message) {
-          state.count += 1;
-          E(state.companion).say(message);
-        },
-        async changePartner(newCompanion) {
-          state.count += 1;
-          state.companion = newCompanion;
-          const companionName = await E(newCompanion).getName();
-          state.companionName = companionName;
-          p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
-        },
-        getLabel() {
-          const label = state.label;
-          p(`${name}'s thing ${label}: getLabel`);
-          state.count += 1;
-          return label;
-        },
-        report() {
-          p(`${name}'s thing ${state.label} invoked ${state.count} times`);
-        },
-      }),
-    };
-  }
-
-  const thingMaker = makeKind(makeThingInstance);
+      async changePartner(newCompanion) {
+        state.count += 1;
+        state.companion = newCompanion;
+        const companionName = await E(newCompanion).getName();
+        state.companionName = companionName;
+        p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
+      },
+      getLabel() {
+        const label = state.label;
+        p(`${name}'s thing ${label}: getLabel`);
+        state.count += 1;
+        return label;
+      },
+      report() {
+        p(`${name}'s thing ${state.label} invoked ${state.count} times`);
+      },
+    }),
+  );
   let nextThingNumber = 0;
 
-  const myThings = makeVirtualScalarWeakMap('thing'); // thing -> inquiry count
+  let myThings;
+
+  function ensureCollection() {
+    if (!myThings) {
+      myThings = makeScalarBigWeakMapStore('things');
+    }
+  }
 
   return Far('root', {
     async introduce(other) {
       const otherName = await E(other).getName();
-      const thing = thingMaker(`thing-${nextThingNumber}`, other, otherName);
+      const thing = makeThing(`thing-${nextThingNumber}`, other, otherName);
       nextThingNumber += 1;
+      ensureCollection();
       myThings.init(thing, 0);
       return thing;
     },
     doYouHave(thing) {
+      ensureCollection();
       if (myThings.has(thing)) {
         const queryCount = myThings.get(thing) + 1;
         myThings.set(thing, queryCount);

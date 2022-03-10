@@ -1,7 +1,12 @@
-import { Remotable, passStyleOf, makeMarshal } from '@agoric/marshal';
+// @ts-check
+import { Remotable, passStyleOf, makeMarshal } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { insistVatType, makeVatSlot, parseVatSlot } from '../parseVatSlots.js';
-import { insistCapData } from '../capdata.js';
+import {
+  insistVatType,
+  makeVatSlot,
+  parseVatSlot,
+} from '../lib/parseVatSlots.js';
+import { insistCapData } from '../lib/capdata.js';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
@@ -181,6 +186,13 @@ export function makeDeviceSlots(
 
   // this function throws an exception if anything goes wrong, or if the
   // device node itself throws an exception during invocation
+  /**
+   *
+   * @param { string } deviceID
+   * @param { string } method
+   * @param { SwingSetCapData } args
+   * @returns { DeviceInvocationResult }
+   */
   function invoke(deviceID, method, args) {
     insistVatType('device', deviceID);
     insistCapData(args);
@@ -206,9 +218,11 @@ export function makeDeviceSlots(
       );
     }
     const res = fn.apply(t, m.unserialize(args));
-    const vres = harden(['ok', m.serialize(res)]);
+    const vres = m.serialize(res);
+    /** @type { DeviceInvocationResultOk } */
+    const ires = harden(['ok', vres]);
     lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
-    return vres;
+    return ires;
   }
 
   return harden({ invoke });

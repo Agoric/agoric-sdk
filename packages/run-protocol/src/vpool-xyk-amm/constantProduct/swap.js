@@ -189,10 +189,10 @@ export const swap = (
   );
   assertGreaterThanZero(poolAllocation.Central, 'poolAllocation.Central');
   assertGreaterThanZero(poolAllocation.Secondary, 'poolAllocation.Secondary');
-  assert(
-    isGreaterThanZero(amountGiven) || isGreaterThanZero(amountWanted),
-    X`amountGiven or amountWanted must be greater than 0: ${amountWanted} ${amountGiven}`,
-  );
+
+  if (!isGreaterThanZero(amountGiven) && !isGreaterThanZero(amountWanted)) {
+    return noTransaction;
+  }
 
   if (!isWantedAvailable(poolAllocation, amountWanted)) {
     return noTransaction;

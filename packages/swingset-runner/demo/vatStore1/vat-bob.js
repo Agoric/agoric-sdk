@@ -1,73 +1,62 @@
-/* global makeKind */
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
+import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
 
 const p = console.log;
 
-function makeThingInstance(state) {
-  return {
-    init(label = 'thing', counter = 0) {
-      p(`@@@ thing.initialize(${label}, ${counter})`);
-      state.counter = counter;
-      state.label = label;
-      state.resetCounter = 0;
+const makeThing = defineKind(
+  'thing',
+  (label = 'thing', counter = 0) => {
+    p(`@@@ thing.initialize(${label}, ${counter})`);
+    return { counter, label, resetCounter: 0 };
+  },
+  state => ({
+    inc() {
+      state.counter += 1;
+      p(`#thing# ${state.label} inc() counter now ${state.counter}`);
     },
-    self: Far('thing', {
-      inc() {
-        state.counter += 1;
-        p(`#thing# ${state.label} inc() counter now ${state.counter}`);
-      },
-      reset(newStart) {
-        p(`#thing# ${state.label} reset(${newStart})`);
-        state.counter = newStart;
-        state.resetCounter += 1;
-      },
-      relabel(newLabel) {
-        p(`#thing# ${state.label} relabel(${newLabel})`);
-        state.label = newLabel;
-      },
-      get() {
-        p(`#thing# ${state.label} get()=>${state.counter}`);
-        return state.counter;
-      },
-      describe() {
-        p(`#thing# ${state.label} describe()`);
-        return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
-      },
-    }),
-  };
-}
-
-const thingMaker = makeKind(makeThingInstance);
-
-function makeZotInstance(state) {
-  return {
-    init(arbitrary = 47, name = 'Bob', tag = 'say what?') {
-      p(`@@@ zot.initialize(${arbitrary}, ${name}, ${tag})`);
-      state.arbitrary = arbitrary;
-      state.name = name;
-      state.tag = tag;
-      state.count = 0;
+    reset(newStart) {
+      p(`#thing# ${state.label} reset(${newStart})`);
+      state.counter = newStart;
+      state.resetCounter += 1;
     },
-    self: Far('zot', {
-      sayHello(msg) {
-        p(`#zot# ${msg} ${state.name}`);
-        state.count += 1;
-      },
-      rename(newName) {
-        p(`#zot# ${state.name} rename(${newName})`);
-        state.name = newName;
-        state.count += 1;
-      },
-      printInfo() {
-        // prettier-ignore
-        p(`#zot# ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`);
-        state.count += 1;
-      },
-    }),
-  };
-}
+    relabel(newLabel) {
+      p(`#thing# ${state.label} relabel(${newLabel})`);
+      state.label = newLabel;
+    },
+    get() {
+      p(`#thing# ${state.label} get()=>${state.counter}`);
+      return state.counter;
+    },
+    describe() {
+      p(`#thing# ${state.label} describe()`);
+      return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
+    },
+  }),
+);
 
-const zotMaker = makeKind(makeZotInstance);
+const makeZot = defineKind(
+  'zot',
+  (arbitrary = 47, name = 'Bob', tag = 'say what?') => {
+    p(`@@@ zot.initialize(${arbitrary}, ${name}, ${tag})`);
+    return { arbitrary, name, tag, count: 0 };
+  },
+  state => ({
+    sayHello(msg) {
+      p(`#zot# ${msg} ${state.name}`);
+      state.count += 1;
+    },
+    rename(newName) {
+      p(`#zot# ${state.name} rename(${newName})`);
+      state.name = newName;
+      state.count += 1;
+    },
+    printInfo() {
+      // prettier-ignore
+      p(`#zot# ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`);
+      state.count += 1;
+    },
+  }),
+);
 
 export function buildRootObject(_vatPowers) {
   let thing1;
@@ -89,15 +78,15 @@ export function buildRootObject(_vatPowers) {
           break;
         case 1:
           p('phase 1: object creations');
-          thing1 = thingMaker('thing-1');
-          thing2 = thingMaker('thing-2', 100);
-          thing3 = thingMaker('thing-3', 200);
-          thing4 = thingMaker('thing-4', 300);
+          thing1 = makeThing('thing-1');
+          thing2 = makeThing('thing-2', 100);
+          thing3 = makeThing('thing-3', 200);
+          thing4 = makeThing('thing-4', 300);
 
-          zot1 = zotMaker(23, 'Alice', 'is this on?');
-          zot2 = zotMaker(29, 'Bob', 'what are you saying?');
-          zot3 = zotMaker(47, 'Carol', 'as if...');
-          zot4 = zotMaker(66, 'Dave', 'you and what army?');
+          zot1 = makeZot(23, 'Alice', 'is this on?');
+          zot2 = makeZot(29, 'Bob', 'what are you saying?');
+          zot3 = makeZot(47, 'Carol', 'as if...');
+          zot4 = makeZot(66, 'Dave', 'you and what army?');
           break;
         case 2:
           p('phase 2: first batch-o-stuff');

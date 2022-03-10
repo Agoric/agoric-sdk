@@ -64,8 +64,7 @@ async function testFailure(t) {
   t.truthy(failureHappened);
   t.is(controller.kpStatus(controller.bootstrapResult), 'rejected');
   t.deepEqual(controller.kpResolution(controller.bootstrapResult), {
-    body:
-      '{"@qclass":"error","errorId":"error:liveSlots:v1#70001","message":"gratuitous error","name":"Error"}',
+    body: '{"@qclass":"error","errorId":"error:liveSlots:v1#70001","message":"gratuitous error","name":"Error"}',
     slots: [],
   });
 }

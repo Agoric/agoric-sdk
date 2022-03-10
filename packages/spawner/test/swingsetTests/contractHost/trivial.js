@@ -1,4 +1,4 @@
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export default function start(terms) {
   assert.equal(1, 1, `why is assert not in the globals`);

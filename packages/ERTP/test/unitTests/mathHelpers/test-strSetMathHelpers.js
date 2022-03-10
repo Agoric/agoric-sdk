@@ -23,7 +23,7 @@ test('set with strings make', t => {
     () => m.make(mockBrand, 'abc'),
     {
       message:
-        'value "abc" must be a bigint, copySet, or an array, not "string"',
+        'value "abc" must be a bigint, copySet, copyBag, or an array, not "string"',
     },
     `'abc' is not a valid string array`,
   );
@@ -48,7 +48,8 @@ test('set with strings coerce', t => {
     // @ts-ignore deliberate invalid arguments for testing
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: '6' })),
     {
-      message: 'value "6" must be a bigint, copySet, or an array, not "string"',
+      message:
+        'value "6" must be a bigint, copySet, copyBag, or an array, not "string"',
     },
     `'6' is not a valid array`,
   );

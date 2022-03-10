@@ -4,9 +4,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
@@ -19,7 +19,8 @@ const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;
 
 test('zoe - atomicSwap', async t => {
   t.plan(8);
-  const { moolaKit, simoleanKit, moola, simoleans, zoe } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
 
   const makeAlice = async moolaPayment => {
     const moolaPurse = await E(moolaKit.issuer).makeEmptyPurse();
@@ -29,7 +30,8 @@ test('zoe - atomicSwap', async t => {
         // pack the contract
         const bundle = await bundleSource(atomicSwapRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-atomicswap', bundle);
+        const installationP = E(zoe).installBundleID('b1-atomicswap');
         return installationP;
       },
       startInstance: async installation => {
@@ -181,6 +183,7 @@ test('zoe - non-fungible atomicSwap', async t => {
     rpgItems,
     createRpgItem,
     zoe,
+    vatAdminState,
   } = setupNonFungible();
 
   const makeAlice = async aliceCcPayment => {
@@ -191,7 +194,8 @@ test('zoe - non-fungible atomicSwap', async t => {
         // pack the contract
         const bundle = await bundleSource(atomicSwapRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-atomicswap', bundle);
+        const installationP = E(zoe).installBundleID('b1-atomicswap');
         return installationP;
       },
       startInstance: async installation => {
@@ -339,13 +343,14 @@ test('zoe - non-fungible atomicSwap', async t => {
 // Checking handling of duplicate issuers. I'd have preferred a raffle contract
 test('zoe - atomicSwap like-for-like', async t => {
   t.plan(13);
-  const { moolaIssuer, moolaMint, moola, zoe } = setup();
+  const { moolaIssuer, moolaMint, moola, zoe, vatAdminState } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // pack the contract
   const bundle = await bundleSource(atomicSwapRoot);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-atomicswap', bundle);
+  const installation = await E(zoe).installBundleID('b1-atomicswap');
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));

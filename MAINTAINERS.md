@@ -12,6 +12,9 @@ To generate a new final release, and CHANGELOG.md files
 ```sh
 # Create the final release CHANGELOGs.
 yarn lerna version --no-push --conventional-graduate
+prior=$(git tag -l | sed -ne 's!^@agoric/sdk@\([0-9]*\).*!\1!p' | sort -n | tail -1)
+SDKVER=$(( prior + 1 ))
+git tag @agoric/sdk@$SDKVER
 # Push the branch.
 git push -u origin release-$now
 # Tell which packages have actual news.
@@ -53,8 +56,7 @@ To make validators' lives easier, create a Git tag for the chain-id:
 
 ```sh
 CHAIN_ID=agoricstage-8 # Change this as necessary
-SDK_VERSION=$(jq -r .version package.json)
-git tag -s -m "release $CHAIN_ID" $CHAIN_ID @agoric/sdk@$SDK_VERSION^{}
+git tag -s -m "release $CHAIN_ID" $CHAIN_ID @agoric/sdk@$SDKVER^{}
 git push origin $CHAIN_ID
 ```
 

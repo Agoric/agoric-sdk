@@ -1,121 +1,43 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { E, Far } from '@endo/far';
+
 import {
+  extractPowers,
+  makeAgoricNamesAccess,
+  makePromiseSpace,
+} from './utils.js';
+import {
+  CLIENT_BOOTSTRAP_MANIFEST,
   CHAIN_BOOTSTRAP_MANIFEST,
   SIM_CHAIN_BOOTSTRAP_MANIFEST,
-  GOVERNANCE_ACTIONS_MANIFEST,
+  CHAIN_POST_BOOT_MANIFEST,
+  SIM_CHAIN_POST_BOOT_MANIFEST,
 } from './manifest.js';
 
 import * as behaviors from './behaviors.js';
 import * as simBehaviors from './sim-behaviors.js';
+import * as clientBehaviors from './client-behaviors.js';
+import * as utils from './utils.js';
 
-const { entries, fromEntries, keys } = Object;
+const { entries } = Object;
 const { details: X, quote: q } = assert;
 
 // Choose a manifest based on runtime configured argv.ROLE.
 const roleToManifest = harden({
   chain: CHAIN_BOOTSTRAP_MANIFEST,
   'sim-chain': SIM_CHAIN_BOOTSTRAP_MANIFEST,
+  client: CLIENT_BOOTSTRAP_MANIFEST,
 });
 const roleToBehaviors = harden({
   'sim-chain': { ...behaviors, ...simBehaviors },
+  // copy to avoid trying to harden a module namespace
+  client: { ...clientBehaviors },
 });
-
-/**
- * Make { produce, consume } where for each name, `consume[name]` is a promise
- * and `produce[name].resolve` resolves it.
- *
- * @returns {PromiseSpace}
- */
-const makePromiseSpace = () => {
-  /** @type {Map<string, PromiseRecord<unknown>>} */
-  const state = new Map();
-  const remaining = new Set();
-
-  const findOrCreateKit = name => {
-    let kit = state.get(name);
-    if (!kit) {
-      console.info(`${name}: new Promise`);
-      kit = makePromiseKit();
-      state.set(name, kit);
-      remaining.add(name);
-    }
-    return kit;
-  };
-
-  const consume = new Proxy(
-    {},
-    {
-      get: (_target, name) => {
-        assert.typeof(name, 'string');
-        const kit = findOrCreateKit(name);
-        return kit.promise;
-      },
-    },
-  );
-
-  const produce = new Proxy(
-    {},
-    {
-      get: (_target, name) => {
-        assert.typeof(name, 'string');
-        const { resolve, promise } = findOrCreateKit(name);
-        // promise.then(
-        // () => console.info(name, ': resolve'),
-        // e => console.info(name, ': reject', e),
-        // );
-        promise.finally(() => {
-          remaining.delete(name);
-          console.info(
-            name,
-            'settled; remaining:',
-            [...remaining.keys()].sort(),
-          );
-        });
-        // Note: repeated resolves() are noops.
-        return harden({ resolve });
-      },
-    },
-  );
-
-  return harden({ produce, consume });
-};
-
-/**
- * @param {unknown} template
- * @param {unknown} specimen
- */
-const extract = (template, specimen) => {
-  if (template === true) {
-    return specimen;
-  } else if (typeof template === 'object' && template !== null) {
-    if (typeof specimen !== 'object' || specimen === null) {
-      assert.fail(X`object template requires object specimen, not ${specimen}`);
-    }
-    const target = harden(
-      fromEntries(
-        entries(template).map(([propName, subTemplate]) => [
-          propName,
-          extract(subTemplate, specimen[propName]),
-        ]),
-      ),
-    );
-    return new Proxy(target, {
-      get: (t, propName) => {
-        if (typeof propName !== 'symbol') {
-          assert(
-            propName in t,
-            X`${propName} not permitted, only ${keys(template)}`,
-          );
-        }
-        return t[propName];
-      },
-    });
-  } else {
-    assert.fail(X`unexpected template: ${q(template)}`);
-  }
-};
+const roleToGovernanceActions = harden({
+  chain: CHAIN_POST_BOOT_MANIFEST,
+  'sim-chain': SIM_CHAIN_POST_BOOT_MANIFEST,
+  client: {},
+});
 
 /**
  * Build root object of the bootstrap vat.
@@ -128,9 +50,12 @@ const extract = (template, specimen) => {
  *   bootstrapManifest?: Record<string, Record<string, unknown>>,
  *   governanceActions?: boolean,
  * }} vatParameters
+ * @param {typeof console.log} [log]
  */
-const buildRootObject = (vatPowers, vatParameters) => {
-  const { produce, consume } = makePromiseSpace();
+const buildRootObject = (vatPowers, vatParameters, log = console.info) => {
+  const { produce, consume } = makePromiseSpace(log);
+  const { agoricNames, spaces } = makeAgoricNamesAccess(log);
+  produce.agoricNames.resolve(agoricNames);
 
   const {
     argv: { ROLE },
@@ -148,7 +73,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
      * Bootstrap vats and devices.
      *
      * @param {SwingsetVats} vats
-     * @param {SwingsetDevices} devices
+     * @param {SoloDevices | ChainDevices} devices
      */
     bootstrap: async (vats, devices) => {
       // Complete SwingSet wiring.
@@ -158,21 +83,35 @@ const buildRootObject = (vatPowers, vatParameters) => {
 
       /** @param { Record<string, Record<string, unknown>> } manifest */
       const runBehaviors = manifest => {
-        const powers = {
+        // TODO: Aspires to be BootstrapPowers, but it's too specific.
+        const allPowers = harden({
           vatPowers,
           vatParameters,
           vats,
           devices,
           produce,
           consume,
+          ...spaces,
           runBehaviors,
-        };
+          // These module namespaces might be useful for core eval governance.
+          modules: {
+            clientBehaviors: { ...clientBehaviors },
+            simBehaviors: { ...simBehaviors },
+            behaviors: { ...behaviors },
+            utils: { ...utils },
+          },
+        });
         return Promise.all(
           entries(manifest).map(([name, permit]) =>
             Promise.resolve().then(() => {
-              const endowments = extract(permit, powers);
-              console.info(`bootstrap: ${name}(${q(permit)})`);
-              return bootBehaviors[name](endowments);
+              const powers = extractPowers(permit, allPowers);
+              const config = vatParameters[name];
+              log(`bootstrap: ${name}(${q(permit)})`);
+              assert(
+                name in bootBehaviors,
+                `${name} not in ${Object.keys(bootBehaviors).join(',')}`,
+              );
+              return bootBehaviors[name](powers, config);
             }),
           ),
         );
@@ -180,11 +119,12 @@ const buildRootObject = (vatPowers, vatParameters) => {
 
       await runBehaviors(bootManifest);
       if (vatParameters.governanceActions) {
-        await runBehaviors(GOVERNANCE_ACTIONS_MANIFEST);
+        const actions = roleToGovernanceActions[ROLE];
+        await runBehaviors(actions);
       }
     },
   });
 };
 
-harden({ buildRootObject, extract });
-export { buildRootObject, extract };
+harden({ buildRootObject });
+export { buildRootObject };

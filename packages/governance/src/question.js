@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, passStyleOf } from '@agoric/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Nat } from '@agoric/nat';

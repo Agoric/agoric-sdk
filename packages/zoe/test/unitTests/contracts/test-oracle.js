@@ -4,10 +4,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 
@@ -37,10 +37,12 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin().admin);
+    const { admin, vatAdminState } = makeFakeVatAdmin();
+    const { zoeService: zoe } = makeZoeKit(admin);
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);
+    vatAdminState.installBundle('b1-oracle', contractBundle);
 
     const link = makeIssuerKit('$LINK', AssetKind.NAT);
 
@@ -49,7 +51,7 @@ test.before(
     // of tests, we can also send the installation to someone
     // else, and they can use it to create a new contract instance
     // using the same code.
-    const installation = await E(zoe).install(contractBundle);
+    const installation = await E(zoe).installBundleID('b1-oracle');
 
     const feeAmount = AmountMath.make(link.brand, 1000n);
     /**

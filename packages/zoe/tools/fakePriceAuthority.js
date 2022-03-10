@@ -1,13 +1,13 @@
 // @ts-check
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
   makeNotifierFromAsyncIterable,
 } from '@agoric/notifier';
 import { E } from '@agoric/eventual-send';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
 

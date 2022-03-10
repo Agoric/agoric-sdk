@@ -1,33 +1,19 @@
 // @ts-check
 
-import { observeNotifier } from '@agoric/notifier';
-import {
-  natSafeMath,
-  makeRatioFromAmounts,
-} from '@agoric/zoe/src/contractSupport/index.js';
-import { assert } from '@agoric/assert';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
+import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeOrderedVaultStore } from './orderedVaultStore.js';
+import { toVaultKey } from './storeUtils.js';
 
-const { multiply, isGTE } = natSafeMath;
+/** @typedef {import('./vault').InnerVault} InnerVault */
 
-// Stores a collection of Vaults, pretending to be indexed by ratio of
-// debt to collateral. Once performance is an issue, this should use Virtual
-// Objects. For now, it uses a Map (Vault->debtToCollateral).
-// debtToCollateral (which is not the collateralizationRatio) is updated using
-// an observer on the UIState.
-
-const ratioGTE = (left, right) => {
-  assert(
-    left.numerator.brand === right.numerator.brand &&
-      left.denominator.brand === right.denominator.brand,
-    `brands must match`,
-  );
-  return isGTE(
-    multiply(left.numerator.value, right.denominator.value),
-    multiply(right.numerator.value, left.denominator.value),
-  );
-};
-
+/**
+ *
+ * @param {Amount<'nat'>} debtAmount
+ * @param {Amount<'nat'>} collateralAmount
+ * @returns {Ratio}
+ */
 const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
   if (AmountMath.isEmpty(collateralAmount)) {
     return makeRatioFromAmounts(
@@ -38,150 +24,157 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
   return makeRatioFromAmounts(debtAmount, collateralAmount);
 };
 
-const currentDebtToCollateral = vaultKit =>
+/**
+ *
+ * @param {InnerVault} vault
+ * @returns {Ratio}
+ */
+export const currentDebtToCollateral = vault =>
   calculateDebtToCollateral(
-    vaultKit.vault.getDebtAmount(),
-    vaultKit.vault.getCollateralAmount(),
+    vault.getCurrentDebt(),
+    vault.getCollateralAmount(),
   );
 
-const compareVaultKits = (leftVaultPair, rightVaultPair) => {
-  const leftVaultRatio = leftVaultPair.debtToCollateral;
-  const rightVaultRatio = rightVaultPair.debtToCollateral;
-  const leftGTERight = ratioGTE(leftVaultRatio, rightVaultRatio);
-  const rightGTEleft = ratioGTE(rightVaultRatio, leftVaultRatio);
-  if (leftGTERight && rightGTEleft) {
-    return 0;
-  } else if (leftGTERight) {
-    return -1;
-  } else if (rightGTEleft) {
-    return 1;
-  }
-  throw Error("The vault's collateral ratios are not comparable");
-};
+/** @typedef {{debtToCollateral: Ratio, vault: InnerVault}} VaultRecord */
 
-// makePrioritizedVaults() takes a function parameter, which will be called when
-// there is a new least-collateralized vault.
-
+/**
+ * InnerVaults, ordered by their liquidation ratio so that all the
+ * vaults below a threshold can be quickly found and liquidated.
+ *
+ * @param {() => void} reschedulePriceCheck called when there is a new
+ * least-collateralized vault
+ */
 export const makePrioritizedVaults = reschedulePriceCheck => {
-  // Each entry is [Vault, debtToCollateralRatio]. The array must be resorted on
-  // every insert, and whenever any vault's ratio changes. We can remove an
-  // arbitrary number of vaults from the front of the list without resorting. We
-  // delete single entries using filter(), which leaves the array sorted.
-  let vaultsWithDebtRatio = [];
+  const vaults = makeOrderedVaultStore();
 
   // To deal with fluctuating prices and varying collateralization, we schedule a
   // new request to the priceAuthority when some vault's debtToCollateral ratio
   // surpasses the current high-water mark. When the request that is at the
-  // current high-water mark fires, we reschedule at the new highest ratio
-  // (which should be lower, as we will have liquidated any that were at least
-  // as high.)
-  let highestDebtToCollateral;
+  // current high-water mark fires, we reschedule at the new (presumably
+  // lower) rate.
+  // Without this we'd be calling reschedulePriceCheck() unnecessarily
+  /** @type {Ratio=} */
+  let oracleQueryThreshold;
 
   // Check if this ratio of debt to collateral would be the highest known. If
   // so, reset our highest and invoke the callback. This can be called on new
   // vaults and when we get a state update for a vault changing balances.
+  /** @param {Ratio} collateralToDebt */
+
+  // Caches and reschedules
   const rescheduleIfHighest = collateralToDebt => {
     if (
-      !highestDebtToCollateral ||
-      !ratioGTE(highestDebtToCollateral, collateralToDebt)
+      !oracleQueryThreshold ||
+      !ratioGTE(oracleQueryThreshold, collateralToDebt)
     ) {
-      highestDebtToCollateral = collateralToDebt;
+      oracleQueryThreshold = collateralToDebt;
       reschedulePriceCheck();
     }
   };
 
-  const highestRatio = () => {
-    const mostIndebted = vaultsWithDebtRatio[0];
-    return mostIndebted ? mostIndebted.debtToCollateral : undefined;
+  /**
+   *
+   * @returns {Ratio=} actual debt over collateral
+   */
+  const firstDebtRatio = () => {
+    if (vaults.getSize() === 0) {
+      return undefined;
+    }
+
+    const [vault] = vaults.values();
+    const collateralAmount = vault.getCollateralAmount();
+    if (AmountMath.isEmpty(collateralAmount)) {
+      // Would be an infinite ratio
+      return undefined;
+    }
+    const actualDebtAmount = vault.getCurrentDebt();
+    return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
   };
 
-  const removeVault = vaultKit => {
-    vaultsWithDebtRatio = vaultsWithDebtRatio.filter(
-      v => v.vaultKit !== vaultKit,
-    );
-    // don't call reschedulePriceCheck, but do reset the highest.
-    highestDebtToCollateral = highestRatio();
+  /**
+   * @param {string} key
+   * @returns {InnerVault}
+   */
+  const removeVault = key => {
+    const vault = vaults.removeByKey(key);
+    const debtToCollateral = currentDebtToCollateral(vault);
+    if (
+      !oracleQueryThreshold ||
+      ratioGTE(debtToCollateral, oracleQueryThreshold)
+    ) {
+      // don't call reschedulePriceCheck, but do reset the highest.
+      // This could be expensive if we delete individual entries in order. Will know once we have perf data.
+      oracleQueryThreshold = firstDebtRatio();
+    }
+    return vault;
   };
 
-  const updateDebtRatio = (vaultKit, debtRatio) => {
-    vaultsWithDebtRatio.forEach((vaultPair, index) => {
-      if (vaultPair.vaultKit === vaultKit) {
-        vaultsWithDebtRatio[index].debtToCollateral = debtRatio;
-      }
-    });
+  /**
+   *
+   * @param {Amount<'nat'>} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
+   * @param {string} vaultId
+   */
+  const removeVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
+    const key = toVaultKey(oldDebt, oldCollateral, vaultId);
+    return removeVault(key);
   };
 
-  // called after charging interest, which changes debts without affecting sort
-  const updateAllDebts = () => {
-    vaultsWithDebtRatio.forEach((vaultPair, index) => {
-      const debtToCollateral = currentDebtToCollateral(vaultPair.vaultKit);
-      vaultsWithDebtRatio[index].debtToCollateral = debtToCollateral;
-    });
-    highestDebtToCollateral = highestRatio();
-  };
+  /**
+   *
+   * @param {VaultId} vaultId
+   * @param {InnerVault} vault
+   */
+  const addVault = (vaultId, vault) => {
+    const key = vaults.addVault(vaultId, vault);
 
-  const makeObserver = vaultKit => ({
-    updateState: state => {
-      if (AmountMath.isEmpty(state.locked)) {
-        return;
-      }
-      const debtToCollateral = currentDebtToCollateral(vaultKit);
-      updateDebtRatio(vaultKit, debtToCollateral);
-      vaultsWithDebtRatio.sort(compareVaultKits);
-      rescheduleIfHighest(debtToCollateral);
-    },
-    finish: _ => {
-      removeVault(vaultKit);
-    },
-    fail: _ => {
-      removeVault(vaultKit);
-    },
-  });
-
-  const addVaultKit = (vaultKit, notifier) => {
-    const debtToCollateral = currentDebtToCollateral(vaultKit);
-    vaultsWithDebtRatio.push({ vaultKit, debtToCollateral });
-    vaultsWithDebtRatio.sort(compareVaultKits);
-    observeNotifier(notifier, makeObserver(vaultKit));
+    const debtToCollateral = currentDebtToCollateral(vault);
     rescheduleIfHighest(debtToCollateral);
+    return key;
   };
 
-  // Invoke a function for vaults with debt to collateral at or above the ratio
-  const forEachRatioGTE = (ratio, func) => {
-    // vaults are sorted with highest ratios first
-    let index;
-    for (index = 0; index < vaultsWithDebtRatio.length; index += 1) {
-      const vaultPair = vaultsWithDebtRatio[index];
-      if (ratioGTE(vaultPair.debtToCollateral, ratio)) {
-        func(vaultPair);
+  /**
+   * Invoke a function for vaults with debt to collateral at or above the ratio.
+   *
+   * Results are returned in order of priority, with highest debt to collateral first.
+   *
+   * Redundant tags until https://github.com/Microsoft/TypeScript/issues/23857
+   *
+   * @param {Ratio} ratio
+   * @yields {[string, InnerVault]>}
+   * @returns {IterableIterator<[string, InnerVault]>}
+   */
+  // eslint-disable-next-line func-names
+  function* entriesPrioritizedGTE(ratio) {
+    // TODO use a Pattern to limit the query https://github.com/Agoric/agoric-sdk/issues/4550
+    for (const [key, vault] of vaults.entries()) {
+      const debtToCollateral = currentDebtToCollateral(vault);
+      if (ratioGTE(debtToCollateral, ratio)) {
+        yield [key, vault];
       } else {
         // stop once we are below the target ratio
         break;
       }
     }
+  }
 
-    if (index > 0) {
-      vaultsWithDebtRatio = vaultsWithDebtRatio.slice(index);
-      const highest = highestRatio();
-      if (highest) {
-        reschedulePriceCheck();
-      }
-    }
-    highestDebtToCollateral = highestRatio();
+  /**
+   * @param {Amount<'nat'>} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
+   * @param {string} vaultId
+   */
+  const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {
+    const vault = removeVaultByAttributes(oldDebt, oldCollateral, vaultId);
+    addVault(vaultId, vault);
   };
 
-  const map = func => vaultsWithDebtRatio.map(func);
-
-  const reduce = (func, init = undefined) =>
-    vaultsWithDebtRatio.reduce(func, init);
-
   return harden({
-    addVaultKit,
+    addVault,
+    entries: vaults.entries,
+    entriesPrioritizedGTE,
+    highestRatio: () => oracleQueryThreshold,
+    refreshVaultPriority,
     removeVault,
-    map,
-    reduce,
-    forEachRatioGTE,
-    highestRatio: () => highestDebtToCollateral,
-    updateAllDebts,
+    removeVaultByAttributes,
   });
 };

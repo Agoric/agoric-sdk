@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.6.9...@agoric/store@0.6.10) (2022-02-24)
+
+**Note:** Version bump only for package @agoric/store
+
+
+
+
+
+### [0.6.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.6.8...@agoric/store@0.6.9) (2022-02-21)
+
+
+### Features
+
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+* support element deletion during iteration over a store ([8bb9770](https://github.com/Agoric/agoric-sdk/commit/8bb97702fd478b0b47e2d5454373e80765042106)), closes [#4503](https://github.com/Agoric/agoric-sdk/issues/4503)
+
+
+### Bug Fixes
+
+* Remove extraneous eslint globals ([17087e4](https://github.com/Agoric/agoric-sdk/commit/17087e4605db7d3b30dfccf2434b2850b45e3408))
+* **store:** use explicit `import('@endo/marshal')` JSDoc ([4795147](https://github.com/Agoric/agoric-sdk/commit/47951473d4679c7e95104f5ae32fe63c8547598e))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* extract early changes from PR 4136 ([#4190](https://github.com/Agoric/agoric-sdk/issues/4190)) ([fea822e](https://github.com/Agoric/agoric-sdk/commit/fea822ec75c27c8758b872730424c0a3f1a1c623))
+* fullOrder leak. Semi-fungibles via CopyBags ([#4305](https://github.com/Agoric/agoric-sdk/issues/4305)) ([79c4276](https://github.com/Agoric/agoric-sdk/commit/79c4276da8c856674bd425c54715adec92648c48))
+* keys but no patterns yet ([b1fe93b](https://github.com/Agoric/agoric-sdk/commit/b1fe93b0a6b6b04586e48439c596d2436af2f8f4))
+* minor adjustments from purple day1 ([#4271](https://github.com/Agoric/agoric-sdk/issues/4271)) ([72cc8d6](https://github.com/Agoric/agoric-sdk/commit/72cc8d6bcf428596653593708959446fb0a29596))
+* minor, from purple ([#4304](https://github.com/Agoric/agoric-sdk/issues/4304)) ([2984a74](https://github.com/Agoric/agoric-sdk/commit/2984a7487bcc6064c6cb899b7540e11159eedefd))
+* missing Far on some iterables ([#4250](https://github.com/Agoric/agoric-sdk/issues/4250)) ([fe997f2](https://github.com/Agoric/agoric-sdk/commit/fe997f28467eb7f61b711e63a581f396f8390e91))
+* ordered set operations ([#4196](https://github.com/Agoric/agoric-sdk/issues/4196)) ([bda9206](https://github.com/Agoric/agoric-sdk/commit/bda920694c7ab573822415653335e258b9c21281))
+* Patterns and Keys ([#4210](https://github.com/Agoric/agoric-sdk/issues/4210)) ([cc99f7e](https://github.com/Agoric/agoric-sdk/commit/cc99f7ed7f6de1b6ee86b1b813649820e741e1dc))
+* quick "fix" of a red squiggle problem ([#4447](https://github.com/Agoric/agoric-sdk/issues/4447)) ([ee39651](https://github.com/Agoric/agoric-sdk/commit/ee396514c14213a7c9dfa4f73919a9cfe77dd2e6))
+* remove pureCopy deleted from endo 1061 ([#4458](https://github.com/Agoric/agoric-sdk/issues/4458)) ([50e8523](https://github.com/Agoric/agoric-sdk/commit/50e852346d0b4005c613e30d10b469d89a4e5564))
+* sort preserving order for composite keys ([#4468](https://github.com/Agoric/agoric-sdk/issues/4468)) ([ba1b2ef](https://github.com/Agoric/agoric-sdk/commit/ba1b2efb4bc0f2ca8833ad821a72f400ecb12952))
+* towards patterns and stores ([c241e39](https://github.com/Agoric/agoric-sdk/commit/c241e3978a36778197b1bf3874b07f1ed4df9ceb))
+* update sort order so undefined comes last ([2d5ab57](https://github.com/Agoric/agoric-sdk/commit/2d5ab5780e83063e387955f8a8e940119c0a1a5c))
+
+
+
 ### [0.6.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.6.7...@agoric/store@0.6.8) (2021-12-22)
 
 **Note:** Version bump only for package @agoric/store

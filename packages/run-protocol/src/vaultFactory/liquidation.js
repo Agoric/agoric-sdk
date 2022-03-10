@@ -15,54 +15,56 @@ const trace = makeTracer('LIQ');
  * Once collateral has been sold using the contract, we burn the amount
  * necessary to cover the debt and return the remainder.
  *
- * @type {VaultFactoryLiquidate}
+ * @param {ContractFacet} zcf
+ * @param {InnerVault} innerVault
+ * @param {(losses: AmountKeywordRecord,
+ *             zcfSeat: ZCFSeat
+ *            ) => void} burnLosses
+ * @param {LiquidationStrategy} strategy
+ * @param {Brand} collateralBrand
+ * @returns {Promise<InnerVault>}
  */
 const liquidate = async (
   zcf,
-  vaultKit,
+  innerVault,
   burnLosses,
   strategy,
   collateralBrand,
 ) => {
-  vaultKit.liquidating();
-  const runDebt = vaultKit.vault.getDebtAmount();
-  const { brand: runBrand } = runDebt;
-  const { vaultSeat, liquidationZcfSeat: liquidationSeat } = vaultKit;
+  innerVault.liquidating();
+  const debt = innerVault.getCurrentDebt();
+  const { brand: runBrand } = debt;
+  const vaultZcfSeat = innerVault.getVaultSeat();
 
-  const collateralToSell = vaultSeat.getAmountAllocated(
+  const collateralToSell = vaultZcfSeat.getAmountAllocated(
     'Collateral',
     collateralBrand,
   );
+
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
-    strategy.makeInvitation(runDebt),
+    strategy.makeInvitation(debt),
     strategy.keywordMapping(),
-    strategy.makeProposal(collateralToSell, runDebt),
-    vaultSeat,
-    liquidationSeat,
+    strategy.makeProposal(collateralToSell, debt),
+    vaultZcfSeat,
   );
-  trace(` offeredTo`, collateralToSell, runDebt);
+  trace(` offeredTo`, collateralToSell, debt);
 
   // await deposited, but we don't need the value.
   await Promise.all([deposited, E(liqSeat).getOfferResult()]);
 
-  // Now we need to know how much was sold so we can pay off the debt
-  const runProceedsAmount = liquidationSeat.getAmountAllocated('RUN', runBrand);
+  // Now we need to know how much was sold so we can pay off the debt.
+  // We can use this because only liquidation adds RUN to the vaultSeat.
+  const proceeds = vaultZcfSeat.getAmountAllocated('RUN', runBrand);
 
-  trace('RUN PROCEEDS', runProceedsAmount);
+  const isUnderwater = !AmountMath.isGTE(proceeds, debt);
+  const runToBurn = isUnderwater ? proceeds : debt;
+  trace({ debt, isUnderwater, runToBurn });
+  burnLosses(harden({ RUN: runToBurn }), vaultZcfSeat);
+  innerVault.liquidated(AmountMath.subtract(debt, runToBurn));
 
-  const otherRunProceedsAmount = await E(liqSeat).getCurrentAllocation();
-  trace('other proceeds', otherRunProceedsAmount);
-
-  const isUnderwater = !AmountMath.isGTE(runProceedsAmount, runDebt);
-  const runToBurn = isUnderwater ? runProceedsAmount : runDebt;
-  burnLosses(harden({ RUN: runToBurn }), liquidationSeat);
-  vaultKit.liquidated(AmountMath.subtract(runDebt, runToBurn));
-
-  // any remaining RUN plus anything else leftover from the sale are refunded
-  vaultSeat.exit();
-  liquidationSeat.exit();
-  vaultKit.liquidationPromiseKit.resolve('Liquidated');
+  // remaining funds are left on the vault for the user to close and claim
+  return innerVault;
 };
 
 /**

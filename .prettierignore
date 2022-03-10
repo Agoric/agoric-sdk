@@ -1,9 +1,19 @@
+## Uses .gitignore syntax and should mostly match that file
+## so that we don't format what never ends up in SCM.
+
 # artifacts
 build
 bundles
+bundle-*.js
 compiled
 dist
+lcov-report
 public
+
+# Opt out of these file types for now
+*.html
+*.json
+*.md
 
 # subrepos
 /packages/xsnap/moddable
@@ -12,5 +22,3 @@ public
 # copied from upstream
 /packages/xsnap/lib/object-inspect.js
 
-# XXX unsupported syntax; will be addressed in https://github.com/Agoric/agoric-sdk/issues/4329
-/packages/captp/src/ts-types.d.ts

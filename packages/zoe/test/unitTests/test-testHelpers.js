@@ -116,8 +116,5 @@ test('assertAmountsEqual - both mismatch', t => {
 
   const fakeT = makeFakeT();
   assertAmountsEqual(fakeT, moola(0n), cryptoCats(harden(['Garfield'])));
-  t.is(
-    fakeT.getError(),
-    'Neither brand nor value matched: {"brand":"[Alleged: moola brand]","value":"[0n]"}, {"brand":"[Alleged: CryptoCats brand]","value":["Garfield"]}',
-  );
+  t.is(fakeT.getError(), 'Must be the same asset kind: 0 vs Garfield');
 });

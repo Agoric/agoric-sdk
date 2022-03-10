@@ -1,16 +1,17 @@
 // @ts-check
+
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeLoopback } from '@agoric/captp';
+import { makeLoopback } from '@endo/captp';
 import { makeZoeKit } from '@agoric/zoe';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { AmountMath } from '@agoric/ertp';
+
 import { assert } from '@agoric/assert';
 import { makeTracer } from '../../src/makeTracer.js';
 
@@ -25,13 +26,9 @@ const trace = makeTracer('TestVault');
  * @property {ZCFMint} runMint
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault
- * @property {TimerService} timer
+ * @property {Function} advanceRecordingPeriod
+ * @property {Function} setInterestRate
  */
-
-// There's one copy of Vault shared across each test file, so this test runs in
-// a separate context from test-vault.js
-
-/* @type {TestContext} */
 let testJig;
 const setJig = jig => {
   testJig = jig;
@@ -71,10 +68,10 @@ async function launch(zoeP, sourceRoot) {
   } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const collateral50 = AmountMath.make(collaterlBrand, 50000n);
+  const collateral50 = AmountMath.make(collaterlBrand, 50n);
   const proposal = harden({
     give: { Collateral: collateral50 },
-    want: { RUN: AmountMath.make(runBrand, 70000n) },
+    want: { RUN: AmountMath.make(runBrand, 70n) },
   });
   const payments = harden({
     Collateral: collateralMint.mintPayment(collateral50),
@@ -87,62 +84,80 @@ async function launch(zoeP, sourceRoot) {
   };
 }
 
-const helperContract = launch(zoe, vaultRoot);
-
-test('interest', async t => {
-  const { creatorSeat } = await helperContract;
+test('charges', async t => {
+  const { creatorSeat, creatorFacet } = await launch(zoe, vaultRoot);
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
   // RUN (charging 3 RUN fee), which uses an automatic market maker that
   // presents a fixed price of 4 RUN per Collateral.
-  const { notifier, actions } = await E(creatorSeat).getOfferResult();
-  const {
-    runMint,
-    collateralKit: { brand: collateralBrand },
-    vault,
-    timer,
-  } = testJig;
+  await E(creatorSeat).getOfferResult();
+  const { runMint, collateralKit, vault } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const { value: v1, updateCount: c1 } = await E(notifier).getUpdateSince();
-  t.deepEqual(v1.debt, AmountMath.make(runBrand, 73500n));
-  t.deepEqual(v1.locked, AmountMath.make(collateralBrand, 50000n));
-  t.is(c1, 2);
+  const { brand: cBrand } = collateralKit;
 
+  const startingDebt = 74n;
   t.deepEqual(
-    vault.getDebtAmount(),
-    AmountMath.make(runBrand, 73_500n),
-    'borrower owes 73,500 RUN',
+    vault.getCurrentDebt(),
+    AmountMath.make(runBrand, startingDebt),
+    'borrower owes 74 RUN',
   );
   t.deepEqual(
     vault.getCollateralAmount(),
-    AmountMath.make(collateralBrand, 50_000n),
-    'vault holds 50,000 Collateral',
+    AmountMath.make(cBrand, 50n),
+    'vault holds 50 Collateral',
   );
+  t.deepEqual(vault.getNormalizedDebt().value, startingDebt);
 
-  timer.tick();
-  const noInterest = actions.accrueInterestAndAddToPool(1n);
-  t.truthy(AmountMath.isEqual(noInterest, AmountMath.makeEmpty(runBrand)));
-
-  // { chargingPeriod: 3, recordingPeriod: 9 }  charge 2% 3 times
-  for (let i = 0; i < 12; i += 1) {
-    timer.tick();
+  let interest = 0n;
+  for (const [i, charge] of [3n, 4n, 4n, 4n].entries()) {
+    testJig.advanceRecordingPeriod();
+    interest += charge;
+    t.is(
+      vault.getCurrentDebt().value,
+      startingDebt + interest,
+      `interest charge ${i} should have been ${charge}`,
+    );
+    t.is(vault.getNormalizedDebt().value, startingDebt);
   }
 
-  const nextInterest = actions.accrueInterestAndAddToPool(
-    timer.getCurrentTimestamp(),
+  // partially payback
+  const paybackValue = 3n;
+  const collateralWanted = AmountMath.make(cBrand, 1n);
+  const paybackAmount = AmountMath.make(runBrand, paybackValue);
+  const payback = await E(creatorFacet).mintRun(paybackAmount);
+  const paybackSeat = E(zoe).offer(
+    vault.makeAdjustBalancesInvitation(),
+    harden({
+      give: { RUN: paybackAmount },
+      want: { Collateral: collateralWanted },
+    }),
+    harden({ RUN: payback }),
   );
-  t.truthy(
-    AmountMath.isEqual(nextInterest, AmountMath.make(runBrand, 70n)),
-    `interest should be 70, was ${nextInterest.value}`,
+  await E(paybackSeat).getOfferResult();
+  t.deepEqual(
+    vault.getCurrentDebt(),
+    AmountMath.make(runBrand, startingDebt + interest - paybackValue),
   );
-  const { value: v2, updateCount: c2 } = await E(notifier).getUpdateSince(c1);
-  t.deepEqual(v2.debt, AmountMath.make(runBrand, 73500n + 70n));
-  t.deepEqual(v2.interestRate, makeRatio(5n, runBrand, 100n));
-  t.deepEqual(v2.liquidationRatio, makeRatio(105n, runBrand));
-  const collateralization = v2.collateralizationRatio;
-  t.truthy(
-    collateralization.numerator.value > collateralization.denominator.value,
+  const normalizedPaybackValue = paybackValue + 1n;
+  t.deepEqual(
+    vault.getNormalizedDebt(),
+    AmountMath.make(runBrand, startingDebt - normalizedPaybackValue),
   );
-  t.is(c2, 3);
+
+  testJig.setInterestRate(25n);
+
+  for (const [i, charge] of [21n, 27n, 33n].entries()) {
+    testJig.advanceRecordingPeriod();
+    interest += charge;
+    t.is(
+      vault.getCurrentDebt().value,
+      startingDebt + interest - paybackValue,
+      `interest charge ${i} should have been ${charge}`,
+    );
+    t.is(
+      vault.getNormalizedDebt().value,
+      startingDebt - normalizedPaybackValue,
+    );
+  }
 });

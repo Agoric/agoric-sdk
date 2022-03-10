@@ -14,11 +14,8 @@ export const makeInvitationQueryFns = invitationIssuer => {
       throw err;
     };
     return E.get(
-      E.get(
-        E(invitationIssuer)
-          .getAmountOf(invitationP)
-          .catch(onRejected),
-      ).value,
+      E.get(E(invitationIssuer).getAmountOf(invitationP).catch(onRejected))
+        .value,
     )[0];
   };
 

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 
@@ -46,10 +46,8 @@ export const makeAddPool = (
   const makePool = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     let liqTokenSupply = 0n;
 
-    const {
-      brand: liquidityBrand,
-      issuer: liquidityIssuer,
-    } = liquidityZcfMint.getIssuerRecord();
+    const { brand: liquidityBrand, issuer: liquidityIssuer } =
+      liquidityZcfMint.getIssuerRecord();
     const { notifier, updater } = makeNotifierKit();
 
     const updateState = pool =>
@@ -59,14 +57,20 @@ export const makeAddPool = (
         secondary: pool.getSecondaryAmount(),
       });
 
-    const addLiquidityActual = (pool, zcfSeat, secondaryAmount) => {
+    const addLiquidityActual = (
+      pool,
+      zcfSeat,
+      secondaryAmount,
+      poolCentralAmount,
+      feeSeat,
+    ) => {
       // addLiquidity can't be called until the pool has been created. We verify
       // that the asset is NAT before creating a pool.
 
       const liquidityValueOut = calcLiqValueToMint(
         liqTokenSupply,
-        zcfSeat.getAmountAllocated('Central').value,
-        pool.getCentralAmount().value,
+        zcfSeat.getStagedAllocation().Central.value,
+        poolCentralAmount.value,
       );
 
       const liquidityAmountOut = AmountMath.make(
@@ -82,7 +86,7 @@ export const makeAddPool = (
       poolSeat.incrementBy(
         zcfSeat.decrementBy(
           harden({
-            Central: zcfSeat.getCurrentAllocation().Central,
+            Central: zcfSeat.getStagedAllocation().Central,
             Secondary: secondaryAmount,
           }),
         ),
@@ -91,7 +95,11 @@ export const makeAddPool = (
       zcfSeat.incrementBy(
         poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
       );
-      zcf.reallocate(poolSeat, zcfSeat);
+      if (feeSeat) {
+        zcf.reallocate(poolSeat, zcfSeat, feeSeat);
+      } else {
+        zcf.reallocate(poolSeat, zcfSeat);
+      }
       zcfSeat.exit();
       updateState(pool);
       return 'Added liquidity.';
@@ -108,39 +116,39 @@ export const makeAddPool = (
         poolSeat.getAmountAllocated('Secondary', secondaryBrand),
 
       addLiquidity: zcfSeat => {
+        const centralIn = zcfSeat.getStagedAllocation().Central;
+        assert(isNatValue(centralIn.value), 'User Central');
+        const secondaryIn = zcfSeat.getStagedAllocation().Secondary;
+        assert(isNatValue(secondaryIn.value), 'User Secondary');
+
         if (liqTokenSupply === 0n) {
-          const userAllocation = zcfSeat.getCurrentAllocation();
-          return addLiquidityActual(pool, zcfSeat, userAllocation.Secondary);
+          return addLiquidityActual(pool, zcfSeat, secondaryIn, centralIn);
         }
 
-        const userAllocation = zcfSeat.getCurrentAllocation();
-        const secondaryIn = userAllocation.Secondary;
-        const centralAmount = pool.getCentralAmount();
-        const secondaryAmount = pool.getSecondaryAmount();
-        assert(isNatValue(userAllocation.Central.value), 'User Central');
-        assert(isNatValue(centralAmount.value), 'Pool Central');
-        assert(isNatValue(secondaryAmount.value), 'Pool Secondary');
-        assert(isNatValue(secondaryIn.value), 'User Secondary');
+        const centralPoolAmount = pool.getCentralAmount();
+        const secondaryPoolAmount = pool.getSecondaryAmount();
+        assert(isNatValue(centralPoolAmount.value), 'Pool Central');
+        assert(isNatValue(secondaryPoolAmount.value), 'Pool Secondary');
 
         // To calculate liquidity, we'll need to calculate alpha from the primary
         // token's value before, and the value that will be added to the pool
-        const secondaryOut = AmountMath.make(
+        const secondaryRequired = AmountMath.make(
           secondaryBrand,
           calcSecondaryRequired(
-            userAllocation.Central.value,
-            centralAmount.value,
-            secondaryAmount.value,
+            centralIn.value,
+            centralPoolAmount.value,
+            secondaryPoolAmount.value,
             secondaryIn.value,
           ),
         );
 
         // Central was specified precisely so offer must provide enough secondary.
         assert(
-          AmountMath.isGTE(secondaryIn, secondaryOut),
+          AmountMath.isGTE(secondaryIn, secondaryRequired),
           'insufficient Secondary deposited',
         );
 
-        return addLiquidityActual(pool, zcfSeat, secondaryOut);
+        return addLiquidityActual(pool, zcfSeat, secondaryRequired, centralIn);
       },
       removeLiquidity: userSeat => {
         const liquidityIn = userSeat.getAmountAllocated(
@@ -202,12 +210,19 @@ export const makeAddPool = (
       getProtocolFeeBP,
       getPoolFeeBP,
       protocolSeat,
+      addLiquidityActual,
     );
 
     const getInputPriceForPA = (amountIn, brandOut) =>
-      vPool.getInputPrice(amountIn, AmountMath.makeEmpty(brandOut));
+      vPool.externalFacet.getInputPrice(
+        amountIn,
+        AmountMath.makeEmpty(brandOut),
+      );
     const getOutputPriceForPA = (brandIn, amountout) =>
-      vPool.getInputPrice(AmountMath.makeEmpty(brandIn), amountout);
+      vPool.externalFacet.getInputPrice(
+        AmountMath.makeEmpty(brandIn),
+        amountout,
+      );
 
     const toCentralPriceAuthority = makePriceAuthority(
       getInputPriceForPA,

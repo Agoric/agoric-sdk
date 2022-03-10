@@ -4,8 +4,8 @@ import '../../../exported.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 
 import {
@@ -112,11 +112,8 @@ export const makeBorrowInvitation = (zcf, config) => {
         liquidationPromiseKit,
       },
     };
-    const {
-      getDebt,
-      getDebtNotifier,
-      getLastCalculationTimestamp,
-    } = makeDebtCalculator(harden(debtCalculatorConfig));
+    const { getDebt, getDebtNotifier, getLastCalculationTimestamp } =
+      makeDebtCalculator(harden(debtCalculatorConfig));
 
     /** @type {LoanConfigWithBorrower} */
     const configWithBorrower = {

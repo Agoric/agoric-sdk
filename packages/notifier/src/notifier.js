@@ -2,9 +2,9 @@
 /// <reference types="ses"/>
 
 import { assert } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
 
 import './types.js';
@@ -85,7 +85,7 @@ export const makeNotifierKit = (...args) => {
     ...baseNotifier,
   });
 
-  const updater = harden({
+  const updater = Far('updater', {
     updateState(state) {
       if (final()) {
         throw new Error('Cannot update state after termination.');
@@ -155,7 +155,6 @@ export const makeNotifierKit = (...args) => {
  * @returns {Notifier<T>}
  */
 export const makeNotifierFromAsyncIterable = asyncIterableP => {
-  /** @type {ERef<AsyncIterator<T>>} */
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
 
   /** @type {Promise<UpdateRecord<T>>|undefined} */

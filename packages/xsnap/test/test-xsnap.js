@@ -1,7 +1,7 @@
 /* global setTimeout, WeakRef, setImmediate, process */
 // @ts-check
 
-import '@agoric/install-ses';
+import '@endo/init';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
@@ -302,7 +302,7 @@ test('fail to send command to terminated xsnap worker', async t => {
   const vat = xsnap({ ...options(io), meteringLimit: 0 });
   const hang = t.throwsAsync(vat.evaluate(`for (;;) {}`), {
     instanceOf: Error,
-    message: /^(Cannot write messages to xsnap test worker: write EPIPE|xsnap test worker exited due to signal SIGTERM)$/,
+    message: /^(write EPIPE|xsnap test worker exited due to signal SIGTERM)$/,
   });
 
   await vat.terminate();

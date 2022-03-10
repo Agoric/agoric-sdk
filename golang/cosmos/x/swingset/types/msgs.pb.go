@@ -135,6 +135,192 @@ func (m *MsgDeliverInboundResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgDeliverInboundResponse proto.InternalMessageInfo
 
+// MsgWalletAction defines an SDK message for the on-chain wallet to perform an
+// action that *does not* spend any assets (other than gas fees/stamps).  This
+// message type is typically protected by feegrant budgets.
+type MsgWalletAction struct {
+	Owner github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,1,opt,name=owner,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"owner" yaml:"owner"`
+	// The action to perform, as JSON-stringified marshalled data.
+	Action string `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+}
+
+func (m *MsgWalletAction) Reset()         { *m = MsgWalletAction{} }
+func (m *MsgWalletAction) String() string { return proto.CompactTextString(m) }
+func (*MsgWalletAction) ProtoMessage()    {}
+func (*MsgWalletAction) Descriptor() ([]byte, []int) {
+	return fileDescriptor_788baa062b181a57, []int{2}
+}
+func (m *MsgWalletAction) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgWalletAction) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgWalletAction.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgWalletAction) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgWalletAction.Merge(m, src)
+}
+func (m *MsgWalletAction) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgWalletAction) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgWalletAction.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgWalletAction proto.InternalMessageInfo
+
+func (m *MsgWalletAction) GetOwner() github_com_cosmos_cosmos_sdk_types.AccAddress {
+	if m != nil {
+		return m.Owner
+	}
+	return nil
+}
+
+func (m *MsgWalletAction) GetAction() string {
+	if m != nil {
+		return m.Action
+	}
+	return ""
+}
+
+// MsgWalletActionResponse is an empty reply.
+type MsgWalletActionResponse struct {
+}
+
+func (m *MsgWalletActionResponse) Reset()         { *m = MsgWalletActionResponse{} }
+func (m *MsgWalletActionResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgWalletActionResponse) ProtoMessage()    {}
+func (*MsgWalletActionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_788baa062b181a57, []int{3}
+}
+func (m *MsgWalletActionResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgWalletActionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgWalletActionResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgWalletActionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgWalletActionResponse.Merge(m, src)
+}
+func (m *MsgWalletActionResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgWalletActionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgWalletActionResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgWalletActionResponse proto.InternalMessageInfo
+
+// MsgWalletSpendAction defines an SDK message for the on-chain wallet to
+// perform an action that *does spend the owner's assets.*  This message type is
+// typically protected by explicit confirmation by the user.
+type MsgWalletSpendAction struct {
+	Owner github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,1,opt,name=owner,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"owner" yaml:"owner"`
+	// The action to perform, as JSON-stringified marshalled data.
+	SpendAction string `protobuf:"bytes,2,opt,name=spend_action,json=spendAction,proto3" json:"spend_action,omitempty"`
+}
+
+func (m *MsgWalletSpendAction) Reset()         { *m = MsgWalletSpendAction{} }
+func (m *MsgWalletSpendAction) String() string { return proto.CompactTextString(m) }
+func (*MsgWalletSpendAction) ProtoMessage()    {}
+func (*MsgWalletSpendAction) Descriptor() ([]byte, []int) {
+	return fileDescriptor_788baa062b181a57, []int{4}
+}
+func (m *MsgWalletSpendAction) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgWalletSpendAction) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgWalletSpendAction.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgWalletSpendAction) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgWalletSpendAction.Merge(m, src)
+}
+func (m *MsgWalletSpendAction) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgWalletSpendAction) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgWalletSpendAction.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgWalletSpendAction proto.InternalMessageInfo
+
+func (m *MsgWalletSpendAction) GetOwner() github_com_cosmos_cosmos_sdk_types.AccAddress {
+	if m != nil {
+		return m.Owner
+	}
+	return nil
+}
+
+func (m *MsgWalletSpendAction) GetSpendAction() string {
+	if m != nil {
+		return m.SpendAction
+	}
+	return ""
+}
+
+// MsgWalletSpendActionResponse is an empty reply.
+type MsgWalletSpendActionResponse struct {
+}
+
+func (m *MsgWalletSpendActionResponse) Reset()         { *m = MsgWalletSpendActionResponse{} }
+func (m *MsgWalletSpendActionResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgWalletSpendActionResponse) ProtoMessage()    {}
+func (*MsgWalletSpendActionResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_788baa062b181a57, []int{5}
+}
+func (m *MsgWalletSpendActionResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgWalletSpendActionResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgWalletSpendActionResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgWalletSpendActionResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgWalletSpendActionResponse.Merge(m, src)
+}
+func (m *MsgWalletSpendActionResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgWalletSpendActionResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgWalletSpendActionResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgWalletSpendActionResponse proto.InternalMessageInfo
+
 // MsgProvision defines an SDK message for provisioning a client to the chain
 type MsgProvision struct {
 	Nickname   string                                        `protobuf:"bytes,1,opt,name=nickname,proto3" json:"nickname" yaml:"nickname"`
@@ -147,7 +333,7 @@ func (m *MsgProvision) Reset()         { *m = MsgProvision{} }
 func (m *MsgProvision) String() string { return proto.CompactTextString(m) }
 func (*MsgProvision) ProtoMessage()    {}
 func (*MsgProvision) Descriptor() ([]byte, []int) {
-	return fileDescriptor_788baa062b181a57, []int{2}
+	return fileDescriptor_788baa062b181a57, []int{6}
 }
 func (m *MsgProvision) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -212,7 +398,7 @@ func (m *MsgProvisionResponse) Reset()         { *m = MsgProvisionResponse{} }
 func (m *MsgProvisionResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgProvisionResponse) ProtoMessage()    {}
 func (*MsgProvisionResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_788baa062b181a57, []int{3}
+	return fileDescriptor_788baa062b181a57, []int{7}
 }
 func (m *MsgProvisionResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -244,6 +430,10 @@ var xxx_messageInfo_MsgProvisionResponse proto.InternalMessageInfo
 func init() {
 	proto.RegisterType((*MsgDeliverInbound)(nil), "agoric.swingset.MsgDeliverInbound")
 	proto.RegisterType((*MsgDeliverInboundResponse)(nil), "agoric.swingset.MsgDeliverInboundResponse")
+	proto.RegisterType((*MsgWalletAction)(nil), "agoric.swingset.MsgWalletAction")
+	proto.RegisterType((*MsgWalletActionResponse)(nil), "agoric.swingset.MsgWalletActionResponse")
+	proto.RegisterType((*MsgWalletSpendAction)(nil), "agoric.swingset.MsgWalletSpendAction")
+	proto.RegisterType((*MsgWalletSpendActionResponse)(nil), "agoric.swingset.MsgWalletSpendActionResponse")
 	proto.RegisterType((*MsgProvision)(nil), "agoric.swingset.MsgProvision")
 	proto.RegisterType((*MsgProvisionResponse)(nil), "agoric.swingset.MsgProvisionResponse")
 }
@@ -251,40 +441,49 @@ func init() {
 func init() { proto.RegisterFile("agoric/swingset/msgs.proto", fileDescriptor_788baa062b181a57) }
 
 var fileDescriptor_788baa062b181a57 = []byte{
-	// 522 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x94, 0x31, 0x6f, 0xd3, 0x40,
-	0x14, 0xc7, 0xe3, 0x38, 0x02, 0x72, 0xad, 0x5a, 0x6a, 0x15, 0x30, 0x41, 0xf8, 0xac, 0x93, 0x10,
-	0x11, 0xa8, 0xb6, 0x80, 0xad, 0x9d, 0x62, 0x21, 0x24, 0x86, 0xa0, 0x62, 0x89, 0x85, 0x05, 0x1c,
-	0xe7, 0xb8, 0x5a, 0x89, 0x7d, 0x96, 0x9f, 0xd3, 0xd2, 0x91, 0x6f, 0xc0, 0x27, 0x40, 0x7c, 0x0e,
-	0x3e, 0x01, 0x63, 0x47, 0xa6, 0x13, 0x4a, 0x16, 0xe4, 0xd1, 0x23, 0x13, 0xb2, 0xaf, 0x67, 0x47,
-	0x2d, 0x02, 0x89, 0x85, 0xc9, 0x7e, 0xbf, 0xff, 0xbb, 0x77, 0xbe, 0xff, 0xbb, 0x67, 0x34, 0x08,
-	0x18, 0xcf, 0xa2, 0xd0, 0x85, 0x93, 0x28, 0x61, 0x40, 0x73, 0x37, 0x06, 0x06, 0x4e, 0x9a, 0xf1,
-	0x9c, 0x1b, 0xdb, 0x52, 0x73, 0x94, 0x36, 0xd8, 0x65, 0x9c, 0xf1, 0x5a, 0x73, 0xab, 0x37, 0x99,
-	0x46, 0x3e, 0x75, 0xd1, 0xce, 0x18, 0xd8, 0x53, 0x3a, 0x8f, 0x8e, 0x69, 0xf6, 0x3c, 0x99, 0xf0,
-	0x45, 0x32, 0x35, 0x0e, 0xd0, 0xb5, 0x98, 0x02, 0x04, 0x8c, 0x82, 0xa9, 0xd9, 0xfa, 0xb0, 0xef,
-	0xe1, 0x42, 0xe0, 0x86, 0x95, 0x02, 0x6f, 0x9f, 0x06, 0xf1, 0x7c, 0x9f, 0x28, 0x42, 0xfc, 0x46,
-	0x34, 0x1e, 0xa2, 0x5e, 0xb2, 0x88, 0xc1, 0xec, 0xda, 0xfa, 0xb0, 0xe7, 0xdd, 0x2a, 0x04, 0xae,
-	0xe3, 0x52, 0xe0, 0x0d, 0xb9, 0xa8, 0x8a, 0x88, 0x5f, 0x43, 0xe3, 0x3e, 0xd2, 0x83, 0x70, 0x66,
-	0xea, 0xb6, 0x36, 0xec, 0x79, 0x37, 0x0a, 0x81, 0xab, 0xb0, 0x14, 0x18, 0xc9, 0xd4, 0x20, 0x9c,
-	0x11, 0xbf, 0x42, 0x46, 0x8a, 0xfa, 0xb0, 0x98, 0xc4, 0x51, 0x9e, 0xd3, 0xcc, 0xec, 0xd9, 0xda,
-	0x70, 0xd3, 0xf3, 0x0b, 0x81, 0x5b, 0x58, 0x0a, 0x7c, 0x5d, 0x2e, 0x6a, 0x10, 0xf9, 0x29, 0xf0,
-	0x1e, 0x8b, 0xf2, 0xa3, 0xc5, 0xc4, 0x09, 0x79, 0xec, 0x86, 0x1c, 0x62, 0x0e, 0xe7, 0x8f, 0x3d,
-	0x98, 0xce, 0xdc, 0xfc, 0x34, 0xa5, 0xe0, 0x8c, 0xc2, 0x70, 0x34, 0x9d, 0x66, 0x14, 0xc0, 0x6f,
-	0xeb, 0xed, 0xf7, 0x7e, 0x7c, 0xc6, 0x1d, 0x72, 0x07, 0xdd, 0xbe, 0xe4, 0x8f, 0x4f, 0x21, 0xe5,
-	0x09, 0x50, 0xf2, 0x41, 0x47, 0x9b, 0x63, 0x60, 0x87, 0x19, 0x3f, 0x8e, 0x20, 0xe2, 0x49, 0x65,
-	0x5c, 0x12, 0x85, 0xb3, 0x24, 0x88, 0xa9, 0xa9, 0xd9, 0x9a, 0x32, 0x4e, 0xb1, 0xd6, 0x38, 0x45,
-	0x88, 0xdf, 0x88, 0xc6, 0x11, 0xba, 0x1a, 0xc8, 0xcf, 0x30, 0xbb, 0xf5, 0x01, 0x5f, 0x14, 0x02,
-	0x2b, 0x54, 0x0a, 0xbc, 0x75, 0xee, 0x89, 0x04, 0xff, 0x70, 0x38, 0x55, 0xcb, 0xf0, 0xd1, 0x46,
-	0xca, 0x4f, 0x68, 0xf6, 0xe6, 0xdd, 0x3c, 0x60, 0x60, 0xea, 0x75, 0x8b, 0x1f, 0x2d, 0x05, 0x46,
-	0x87, 0x15, 0x7e, 0x56, 0xd1, 0x42, 0x60, 0x94, 0x36, 0x51, 0x29, 0xf0, 0x8e, 0xdc, 0xbe, 0x65,
-	0xc4, 0x5f, 0x4b, 0xf8, 0x6f, 0x0d, 0xba, 0x89, 0x76, 0xd7, 0x5b, 0xa0, 0x7a, 0xf3, 0xf8, 0x8b,
-	0x86, 0xf4, 0x31, 0x30, 0xe3, 0x2d, 0xda, 0xba, 0x70, 0xbb, 0x89, 0x73, 0x61, 0x36, 0x9c, 0x4b,
-	0x1d, 0x1e, 0x3c, 0xf8, 0x7b, 0x8e, 0xda, 0xc9, 0x78, 0x89, 0xfa, 0xed, 0x0d, 0xb8, 0xfb, 0xbb,
-	0x85, 0x8d, 0x3c, 0xb8, 0xf7, 0x47, 0x59, 0x95, 0xf4, 0x5e, 0x7d, 0x5d, 0x5a, 0xda, 0xd9, 0xd2,
-	0xd2, 0xbe, 0x2f, 0x2d, 0xed, 0xe3, 0xca, 0xea, 0x9c, 0xad, 0xac, 0xce, 0xb7, 0x95, 0xd5, 0x79,
-	0x7d, 0xb0, 0x66, 0xd7, 0x48, 0x8e, 0xbf, 0xac, 0x58, 0xdb, 0xc5, 0xf8, 0x3c, 0x48, 0x98, 0xf2,
-	0xf1, 0x7d, 0xfb, 0x67, 0xa8, 0x7d, 0x9c, 0x5c, 0xa9, 0x87, 0xfe, 0xc9, 0xaf, 0x00, 0x00, 0x00,
-	0xff, 0xff, 0xaf, 0x8a, 0xd8, 0x23, 0x39, 0x04, 0x00, 0x00,
+	// 657 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x55, 0x4f, 0x6f, 0xd3, 0x4e,
+	0x10, 0x8d, 0xeb, 0xfc, 0xfa, 0x6b, 0xa6, 0x51, 0x4b, 0xad, 0xd2, 0xba, 0x01, 0xbc, 0xc1, 0x52,
+	0x45, 0x04, 0x6a, 0x22, 0xe0, 0xd6, 0x9e, 0x12, 0x21, 0x24, 0x90, 0x82, 0x8a, 0x11, 0x42, 0xea,
+	0xa5, 0x75, 0x9c, 0x65, 0x6b, 0x25, 0xf6, 0x5a, 0x5e, 0xa7, 0xa5, 0xc7, 0x7e, 0x03, 0xf8, 0x02,
+	0x08, 0xbe, 0x0d, 0xc7, 0x1e, 0x39, 0xad, 0x50, 0x7a, 0x41, 0x3e, 0xfa, 0xc8, 0x09, 0x79, 0x37,
+	0xb6, 0xd3, 0x3f, 0x50, 0xd4, 0x03, 0x9c, 0x92, 0x79, 0xef, 0xcd, 0xcc, 0xb3, 0x77, 0xc6, 0x0b,
+	0x35, 0x9b, 0xd0, 0xd0, 0x75, 0x5a, 0xec, 0xd0, 0xf5, 0x09, 0xc3, 0x51, 0xcb, 0x63, 0x84, 0x35,
+	0x83, 0x90, 0x46, 0x54, 0x5b, 0x94, 0x5c, 0x33, 0xe3, 0x6a, 0xcb, 0x84, 0x12, 0x2a, 0xb8, 0x56,
+	0xfa, 0x4f, 0xca, 0xcc, 0x8f, 0x33, 0xb0, 0xd4, 0x65, 0xe4, 0x09, 0x1e, 0xba, 0x07, 0x38, 0x7c,
+	0xe6, 0xf7, 0xe8, 0xc8, 0xef, 0x6b, 0x5b, 0x30, 0xe7, 0x61, 0xc6, 0x6c, 0x82, 0x99, 0xae, 0xd4,
+	0xd5, 0x46, 0xa5, 0x83, 0x62, 0x8e, 0x72, 0x2c, 0xe1, 0x68, 0xf1, 0xc8, 0xf6, 0x86, 0x9b, 0x66,
+	0x86, 0x98, 0x56, 0x4e, 0x6a, 0x0f, 0xa0, 0xec, 0x8f, 0x3c, 0xa6, 0xcf, 0xd4, 0xd5, 0x46, 0xb9,
+	0xb3, 0x1a, 0x73, 0x24, 0xe2, 0x84, 0xa3, 0x79, 0x99, 0x94, 0x46, 0xa6, 0x25, 0x40, 0xed, 0x1e,
+	0xa8, 0xb6, 0x33, 0xd0, 0xd5, 0xba, 0xd2, 0x28, 0x77, 0x6e, 0xc6, 0x1c, 0xa5, 0x61, 0xc2, 0x11,
+	0x48, 0xa9, 0xed, 0x0c, 0x4c, 0x2b, 0x85, 0xb4, 0x00, 0x2a, 0x6c, 0xd4, 0xf3, 0xdc, 0x28, 0xc2,
+	0xa1, 0x5e, 0xae, 0x2b, 0x8d, 0x6a, 0xc7, 0x8a, 0x39, 0x2a, 0xc0, 0x84, 0xa3, 0x1b, 0x32, 0x29,
+	0x87, 0xcc, 0x1f, 0x1c, 0x6d, 0x10, 0x37, 0xda, 0x1f, 0xf5, 0x9a, 0x0e, 0xf5, 0x5a, 0x0e, 0x65,
+	0x1e, 0x65, 0x93, 0x9f, 0x0d, 0xd6, 0x1f, 0xb4, 0xa2, 0xa3, 0x00, 0xb3, 0x66, 0xdb, 0x71, 0xda,
+	0xfd, 0x7e, 0x88, 0x19, 0xb3, 0x8a, 0x7a, 0x9b, 0xe5, 0xef, 0x9f, 0x50, 0xc9, 0xbc, 0x05, 0x6b,
+	0x17, 0xde, 0x8f, 0x85, 0x59, 0x40, 0x7d, 0x86, 0xcd, 0x0f, 0x0a, 0x2c, 0x76, 0x19, 0x79, 0x63,
+	0x0f, 0x87, 0x38, 0x6a, 0x3b, 0x91, 0x4b, 0x7d, 0x6d, 0x0f, 0xfe, 0xa3, 0x87, 0x3e, 0x0e, 0x75,
+	0x45, 0x98, 0x7c, 0x1e, 0x73, 0x24, 0x81, 0x84, 0xa3, 0xaa, 0x34, 0x28, 0xc2, 0x6b, 0x98, 0x93,
+	0x75, 0xb4, 0x15, 0x98, 0xb5, 0x45, 0x2f, 0x7d, 0xa6, 0xae, 0x34, 0x2a, 0xd6, 0x24, 0x9a, 0x18,
+	0x5e, 0x83, 0xd5, 0x73, 0x96, 0x72, 0xbb, 0x9f, 0x15, 0x58, 0xce, 0xb9, 0x57, 0x01, 0xf6, 0xfb,
+	0x7f, 0xcd, 0xf3, 0x5d, 0xa8, 0xb2, 0xb4, 0xe1, 0xee, 0x19, 0xe7, 0xf3, 0xac, 0x30, 0x31, 0xb1,
+	0x6f, 0xc0, 0xed, 0xcb, 0x2c, 0xe6, 0xcf, 0x70, 0xac, 0x42, 0xb5, 0xcb, 0xc8, 0x76, 0x48, 0x0f,
+	0x5c, 0x96, 0x7a, 0xdf, 0x82, 0x39, 0xdf, 0x75, 0x06, 0xbe, 0xed, 0x61, 0x61, 0x7f, 0x32, 0xab,
+	0x19, 0x56, 0xcc, 0x6a, 0x86, 0x98, 0x56, 0x4e, 0x6a, 0xfb, 0xf0, 0xbf, 0x2d, 0x8d, 0x0a, 0x47,
+	0xd5, 0xce, 0x8b, 0x98, 0xa3, 0x0c, 0x4a, 0x38, 0x5a, 0x98, 0x8c, 0xa1, 0x04, 0xae, 0xf1, 0xf8,
+	0x59, 0x2d, 0xcd, 0x82, 0xf9, 0x80, 0x1e, 0xe2, 0x70, 0xf7, 0xed, 0xd0, 0x26, 0x4c, 0x57, 0xc5,
+	0x56, 0x3d, 0x1c, 0x73, 0x04, 0xdb, 0x29, 0xfc, 0x34, 0x45, 0x63, 0x8e, 0x20, 0xc8, 0xa3, 0x84,
+	0xa3, 0x25, 0xd9, 0xbe, 0xc0, 0x4c, 0x6b, 0x4a, 0xf0, 0xcf, 0x76, 0x62, 0x45, 0x8c, 0x51, 0x7e,
+	0x04, 0xd9, 0xd9, 0x3c, 0x3a, 0x56, 0x41, 0xed, 0x32, 0xa2, 0xed, 0xc1, 0xc2, 0xb9, 0x0f, 0x8a,
+	0xd9, 0x3c, 0xf7, 0x39, 0x6a, 0x5e, 0x58, 0xaa, 0xda, 0xfd, 0xab, 0x35, 0x59, 0x27, 0x6d, 0x07,
+	0xaa, 0x67, 0x96, 0xae, 0x7e, 0x59, 0xee, 0xb4, 0xa2, 0xd6, 0xb8, 0x4a, 0x91, 0xd7, 0x76, 0x61,
+	0xe9, 0xe2, 0x86, 0xac, 0xff, 0x3a, 0x7d, 0x4a, 0x56, 0xdb, 0xf8, 0x23, 0x59, 0xde, 0xea, 0x25,
+	0x54, 0x8a, 0x41, 0xbe, 0x73, 0x59, 0x6e, 0x4e, 0xd7, 0xd6, 0x7f, 0x4b, 0x67, 0x25, 0x3b, 0xaf,
+	0xbf, 0x8c, 0x0d, 0xe5, 0x64, 0x6c, 0x28, 0xdf, 0xc6, 0x86, 0xf2, 0xfe, 0xd4, 0x28, 0x9d, 0x9c,
+	0x1a, 0xa5, 0xaf, 0xa7, 0x46, 0x69, 0x67, 0x6b, 0xea, 0xd4, 0xdb, 0xf2, 0xe2, 0x90, 0x15, 0xc5,
+	0xa9, 0x13, 0x3a, 0xb4, 0x7d, 0x92, 0x8d, 0xc3, 0xbb, 0xe2, 0x4e, 0x11, 0xe3, 0xd0, 0x9b, 0x15,
+	0xd7, 0xc5, 0xe3, 0x9f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x1b, 0x48, 0xde, 0xe5, 0x73, 0x06, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -301,6 +500,10 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// Send inbound messages.
 	DeliverInbound(ctx context.Context, in *MsgDeliverInbound, opts ...grpc.CallOption) (*MsgDeliverInboundResponse, error)
+	// Perform a low-privilege wallet action.
+	WalletAction(ctx context.Context, in *MsgWalletAction, opts ...grpc.CallOption) (*MsgWalletActionResponse, error)
+	// Perform a wallet action that spends assets.
+	WalletSpendAction(ctx context.Context, in *MsgWalletSpendAction, opts ...grpc.CallOption) (*MsgWalletSpendActionResponse, error)
 	// Provision a new endpoint.
 	Provision(ctx context.Context, in *MsgProvision, opts ...grpc.CallOption) (*MsgProvisionResponse, error)
 }
@@ -322,6 +525,24 @@ func (c *msgClient) DeliverInbound(ctx context.Context, in *MsgDeliverInbound, o
 	return out, nil
 }
 
+func (c *msgClient) WalletAction(ctx context.Context, in *MsgWalletAction, opts ...grpc.CallOption) (*MsgWalletActionResponse, error) {
+	out := new(MsgWalletActionResponse)
+	err := c.cc.Invoke(ctx, "/agoric.swingset.Msg/WalletAction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) WalletSpendAction(ctx context.Context, in *MsgWalletSpendAction, opts ...grpc.CallOption) (*MsgWalletSpendActionResponse, error) {
+	out := new(MsgWalletSpendActionResponse)
+	err := c.cc.Invoke(ctx, "/agoric.swingset.Msg/WalletSpendAction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *msgClient) Provision(ctx context.Context, in *MsgProvision, opts ...grpc.CallOption) (*MsgProvisionResponse, error) {
 	out := new(MsgProvisionResponse)
 	err := c.cc.Invoke(ctx, "/agoric.swingset.Msg/Provision", in, out, opts...)
@@ -335,6 +556,10 @@ func (c *msgClient) Provision(ctx context.Context, in *MsgProvision, opts ...grp
 type MsgServer interface {
 	// Send inbound messages.
 	DeliverInbound(context.Context, *MsgDeliverInbound) (*MsgDeliverInboundResponse, error)
+	// Perform a low-privilege wallet action.
+	WalletAction(context.Context, *MsgWalletAction) (*MsgWalletActionResponse, error)
+	// Perform a wallet action that spends assets.
+	WalletSpendAction(context.Context, *MsgWalletSpendAction) (*MsgWalletSpendActionResponse, error)
 	// Provision a new endpoint.
 	Provision(context.Context, *MsgProvision) (*MsgProvisionResponse, error)
 }
@@ -345,6 +570,12 @@ type UnimplementedMsgServer struct {
 
 func (*UnimplementedMsgServer) DeliverInbound(ctx context.Context, req *MsgDeliverInbound) (*MsgDeliverInboundResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeliverInbound not implemented")
+}
+func (*UnimplementedMsgServer) WalletAction(ctx context.Context, req *MsgWalletAction) (*MsgWalletActionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WalletAction not implemented")
+}
+func (*UnimplementedMsgServer) WalletSpendAction(ctx context.Context, req *MsgWalletSpendAction) (*MsgWalletSpendActionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WalletSpendAction not implemented")
 }
 func (*UnimplementedMsgServer) Provision(ctx context.Context, req *MsgProvision) (*MsgProvisionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Provision not implemented")
@@ -368,6 +599,42 @@ func _Msg_DeliverInbound_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MsgServer).DeliverInbound(ctx, req.(*MsgDeliverInbound))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_WalletAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgWalletAction)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).WalletAction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/agoric.swingset.Msg/WalletAction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).WalletAction(ctx, req.(*MsgWalletAction))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_WalletSpendAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgWalletSpendAction)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).WalletSpendAction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/agoric.swingset.Msg/WalletSpendAction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).WalletSpendAction(ctx, req.(*MsgWalletSpendAction))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -397,6 +664,14 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeliverInbound",
 			Handler:    _Msg_DeliverInbound_Handler,
+		},
+		{
+			MethodName: "WalletAction",
+			Handler:    _Msg_WalletAction_Handler,
+		},
+		{
+			MethodName: "WalletSpendAction",
+			Handler:    _Msg_WalletSpendAction_Handler,
 		},
 		{
 			MethodName: "Provision",
@@ -485,6 +760,126 @@ func (m *MsgDeliverInboundResponse) MarshalTo(dAtA []byte) (int, error) {
 }
 
 func (m *MsgDeliverInboundResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgWalletAction) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgWalletAction) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgWalletAction) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Action) > 0 {
+		i -= len(m.Action)
+		copy(dAtA[i:], m.Action)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.Action)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Owner) > 0 {
+		i -= len(m.Owner)
+		copy(dAtA[i:], m.Owner)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.Owner)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgWalletActionResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgWalletActionResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgWalletActionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgWalletSpendAction) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgWalletSpendAction) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgWalletSpendAction) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.SpendAction) > 0 {
+		i -= len(m.SpendAction)
+		copy(dAtA[i:], m.SpendAction)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.SpendAction)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Owner) > 0 {
+		i -= len(m.Owner)
+		copy(dAtA[i:], m.Owner)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.Owner)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgWalletSpendActionResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgWalletSpendActionResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgWalletSpendActionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -609,6 +1004,58 @@ func (m *MsgDeliverInbound) Size() (n int) {
 }
 
 func (m *MsgDeliverInboundResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgWalletAction) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Owner)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	l = len(m.Action)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgWalletActionResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgWalletSpendAction) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Owner)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	l = len(m.SpendAction)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgWalletSpendActionResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -897,6 +1344,338 @@ func (m *MsgDeliverInboundResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgDeliverInboundResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgWalletAction) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgWalletAction: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgWalletAction: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Owner", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Owner = append(m.Owner[:0], dAtA[iNdEx:postIndex]...)
+			if m.Owner == nil {
+				m.Owner = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Action", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Action = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgWalletActionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgWalletActionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgWalletActionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgWalletSpendAction) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgWalletSpendAction: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgWalletSpendAction: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Owner", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Owner = append(m.Owner[:0], dAtA[iNdEx:postIndex]...)
+			if m.Owner == nil {
+				m.Owner = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SpendAction", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SpendAction = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgWalletSpendActionResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgWalletSpendActionResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgWalletSpendActionResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

@@ -1,15 +1,12 @@
 // @ts-check
-
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
+import '@endo/init';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
+import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -34,6 +31,7 @@ test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   const step2 = Date.now();
   const contractBundles = {};
+  const contractNames = [];
   await Promise.all(
     CONTRACT_FILES.map(async settings => {
       let bundleName;
@@ -46,9 +44,11 @@ test.before(async t => {
       }
       const source = `${dirname}/../../../src/contracts/${contractPath}.js`;
       const bundle = await bundleSource(source);
-      contractBundles[bundleName] = bundle;
+      contractBundles[bundleName] = { bundle };
+      contractNames.push(bundleName);
     }),
   );
+  const bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
   const step3 = Date.now();
 
   const vats = {};
@@ -62,9 +62,9 @@ test.before(async t => {
   const bootstrapSource = `${dirname}/bootstrap.js`;
   vats.bootstrap = {
     bundle: await bundleSource(bootstrapSource),
-    parameters: { contractBundles }, // argv will be added to this
+    parameters: { contractNames }, // argv will be added to this
   };
-  const config = { bootstrap: 'bootstrap', vats };
+  const config = { bootstrap: 'bootstrap', vats, bundles };
   config.defaultManagerType = 'xs-worker';
 
   const step4 = Date.now();

@@ -279,9 +279,8 @@ export const makeHandledPromise = () => {
       // This is insufficient for actual remote handled Promises
       // (too many round-trips), but is an easy way to create a
       // local handled Promise.
-      [pendingHandler, continueForwarding] = makePostponedHandler(
-        HandledPromise,
-      );
+      [pendingHandler, continueForwarding] =
+        makePostponedHandler(HandledPromise);
     }
 
     const validateHandler = h => {
@@ -426,7 +425,7 @@ export const makeHandledPromise = () => {
     },
     resolve(value) {
       // Resolving a Presence returns the pre-registered handled promise.
-      let resolvedPromise = presenceToPromise.get(value);
+      let resolvedPromise = presenceToPromise.get(/** @type {any} */ (value));
       if (!resolvedPromise) {
         resolvedPromise = Promise.resolve(value);
       }
@@ -562,7 +561,9 @@ export const makeHandledPromise = () => {
   // once we use Promise.delegated and don't have any [[Constructor]] behaviours.
   /** @type {unknown} */
   const unknownBaseHandledPromise = baseHandledPromise;
-  HandledPromise = /** @type {typeof HandledPromise} */ (unknownBaseHandledPromise);
+  HandledPromise = /** @type {typeof HandledPromise} */ (
+    unknownBaseHandledPromise
+  );
 
   // We cannot harden(HandledPromise) because we're a vetted shim which
   // runs before lockdown() allows harden to function.  In that case,

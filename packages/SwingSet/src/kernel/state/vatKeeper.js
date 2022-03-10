@@ -5,13 +5,15 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X, q } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
-import { makeVatSlot, parseVatSlot } from '../../parseVatSlots.js';
-import { insistVatID } from '../id.js';
-import { kdebug } from '../kdebug.js';
+import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { insistVatID } from '../../lib/id.js';
+import { kdebug } from '../../lib/kdebug.js';
 import {
   parseReachableAndVatSlot,
   buildReachableAndVatSlot,
 } from './reachable.js';
+
+/** @typedef {import('../../types-internal.js').RecordedVatOptions} RecordedVatOptions */
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
 
@@ -93,13 +95,15 @@ export function makeVatKeeper(
 
   /**
    * @param {SourceOfBundle} source
-   * @param {ManagerOptions} options
+   * @param {RecordedVatOptions} options
    */
   function setSourceAndOptions(source, options) {
     // take care with API change
     assert(options.managerType, X`vat options missing managerType`);
     assert(source);
-    assert('bundle' in source || 'bundleName' in source);
+    assert(
+      'bundle' in source || 'bundleName' in source || 'bundleID' in source,
+    );
     assert.typeof(options, 'object');
     kvStore.set(`${vatID}.source`, JSON.stringify(source));
     kvStore.set(`${vatID}.options`, JSON.stringify(options));
@@ -143,7 +147,7 @@ export function makeVatKeeper(
   }
 
   function nextDeliveryNum() {
-    const num = Nat(BigInt(kvStore.get(`${vatID}.nextDeliveryNum`)));
+    const num = Nat(BigInt(getRequired(`${vatID}.nextDeliveryNum`)));
     kvStore.set(`${vatID}.nextDeliveryNum`, `${num + 1n}`);
     return num;
   }
@@ -312,13 +316,13 @@ export function makeVatKeeper(
 
       let id;
       if (type === 'object') {
-        id = Nat(BigInt(kvStore.get(`${vatID}.o.nextID`)));
+        id = Nat(BigInt(getRequired(`${vatID}.o.nextID`)));
         kvStore.set(`${vatID}.o.nextID`, `${id + 1n}`);
       } else if (type === 'device') {
-        id = Nat(BigInt(kvStore.get(`${vatID}.d.nextID`)));
+        id = Nat(BigInt(getRequired(`${vatID}.d.nextID`)));
         kvStore.set(`${vatID}.d.nextID`, `${id + 1n}`);
       } else if (type === 'promise') {
-        id = Nat(BigInt(kvStore.get(`${vatID}.p.nextID`)));
+        id = Nat(BigInt(getRequired(`${vatID}.p.nextID`)));
         kvStore.set(`${vatID}.p.nextID`, `${id + 1n}`);
       } else {
         assert.fail(X`unknown type ${type}`);
@@ -559,15 +563,16 @@ export function makeVatKeeper(
 
   function vatStats() {
     function getCount(key, first) {
-      const id = Nat(BigInt(kvStore.get(key)));
+      const id = Nat(BigInt(getRequired(key)));
       return id - Nat(first);
     }
 
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
     const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
-    const transcriptCount = JSON.parse(getRequired(`${vatID}.t.endPosition`))
-      .itemCount;
+    const transcriptCount = JSON.parse(
+      getRequired(`${vatID}.t.endPosition`),
+    ).itemCount;
 
     // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts
     return harden({

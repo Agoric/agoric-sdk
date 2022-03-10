@@ -25,6 +25,7 @@
  * a smart contract in particular ways.
  *
  * @property {Install} install
+ * @property {InstallBundleID} installBundleID
  * @property {StartInstance} startInstance
  * @property {Offer} offer
  * @property {GetPublicFacet} getPublicFacet
@@ -45,6 +46,7 @@
  * Deprecated. Does nothing useful but provided during transition so less old
  * code breaks.
  * @property {GetConfiguration} getConfiguration
+ * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
  */
 
 /**
@@ -113,13 +115,32 @@
  */
 
 /**
- * @callback Install
+ * @callback InstallBundle
  *
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.
  *
- * @param {SourceBundle} bundle
+ * @param {Bundle} bundle
  * @returns {Promise<Installation>}
+ */
+
+/**
+ * @callback InstallBundleID
+ *
+ * Create an installation from a Bundle ID. Returns an installation.
+ *
+ * @param {BundleID} bundleID
+ * @returns {Promise<Installation>}
+ */
+
+/**
+ * @callback GetBundleIDFromInstallation
+ *
+ * Verify that an alleged Invitation is real, and return the Bundle ID it
+ * will use for contract code.
+ *
+ * @param {ERef<Installation>}
+ * @returns {Promise<BundleID>}
  */
 
 /**
@@ -151,6 +172,7 @@
  */
 
 /**
+ * @template {object} [OR=any]
  * @callback Offer
  *
  * To redeem an invitation, the user normally provides a proposal (their
@@ -167,28 +189,25 @@
  * values are the actual payments to be escrowed. A payment is
  * expected for every rule under `give`.
  *
- * @param {ERef<Invitation>} invitation
+ * @param {ERef<Invitation<OR>>} invitation
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} paymentKeywordRecord
  * @param {Object=} offerArgs
- * @returns {Promise<UserSeat>} seat
+ * @returns {Promise<UserSeat<OR>>} seat
  */
 
 /**
+ * @template {Object} [OR=any]
  * @typedef {Object} UserSeat
  * @property {() => Promise<Allocation>} getCurrentAllocation
  * TODO remove getCurrentAllocation query
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
- * @property {() => Promise<OfferResult>} getOfferResult
+ * @property {() => Promise<OR>} getOfferResult
  * @property {() => void=} tryExit
  * @property {() => Promise<boolean>} hasExited
  * @property {() => Promise<Notifier<Allocation>>} getNotifier
- */
-
-/**
- * @typedef {any} OfferResult
  */
 
 /**
@@ -268,8 +287,13 @@
 
 /**
  * @typedef {Object} VatAdminSvc
- * @property {(bundle: SourceBundle) => RootAndAdminNode} createVat
- * @property {(BundleName: string) => RootAndAdminNode} createVatByName
+ * @property {(BundleID: id) => Promise<BundleCap>} getBundleCap
+ * @property {(name: string) => Promise<BundleCap>} getNamedBundleCap
+ * @property {(bundleCap: BundleCap) => Promise<RootAndAdminNode>} createVat
+ */
+
+/**
+ * @typedef {{bundleCap: BundleCap } | {name: string} | {id: BundleID}} ZCFSpec
  */
 
 /**

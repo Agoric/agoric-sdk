@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { makeDefaultLiquidationStrategy } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -63,16 +63,14 @@ const start = async zcf => {
 
         trace('liquidating all collateral because swapIn did not succeed');
         const strategy = makeDefaultLiquidationStrategy(amm);
-        const {
-          deposited: sellAllDeposited,
-          userSeatPromise: sellAllSeat,
-        } = await offerTo(
-          zcf,
-          strategy.makeInvitation(runDebt),
-          undefined, // The keywords were mapped already
-          strategy.makeProposal(amountIn, AmountMath.makeEmpty(runBrand)),
-          debtorSeat,
-        );
+        const { deposited: sellAllDeposited, userSeatPromise: sellAllSeat } =
+          await offerTo(
+            zcf,
+            strategy.makeInvitation(runDebt),
+            undefined, // The keywords were mapped already
+            strategy.makeProposal(amountIn, AmountMath.makeEmpty(runBrand)),
+            debtorSeat,
+          );
         // await sellAllDeposited, but don't need the value
         await Promise.all([
           E(sellAllSeat).getOfferResult(),
@@ -95,7 +93,9 @@ const start = async zcf => {
   return harden({ creatorFacet });
 };
 
-/** @type {MakeLiquidationStrategy} */
+/**
+ * @param {LiquidationCreatorFacet} creatorFacet
+ */
 const makeLiquidationStrategy = creatorFacet => {
   const makeInvitation = async runDebt =>
     E(creatorFacet).makeDebtorInvitation(runDebt);

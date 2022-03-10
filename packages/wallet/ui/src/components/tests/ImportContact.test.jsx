@@ -27,13 +27,15 @@ const appTheme = createTheme({
   },
 });
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <ThemeProvider theme={appTheme}>
-      <Component contacts={contacts} {...props} />
-    </ThemeProvider>
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <ThemeProvider theme={appTheme}>
+        <Component contacts={contacts} {...props} />
+      </ThemeProvider>
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };
@@ -47,13 +49,7 @@ test('shows and hides the dialog correctly', () => {
   const handleClose = jest.fn();
   component = mount(<ImportContact isOpen={true} handleClose={handleClose} />);
   expect(component.find(Dialog).props().open).toBe(true);
-  act(() =>
-    component
-      .find(Button)
-      .at(0)
-      .props()
-      .onClick(),
-  );
+  act(() => component.find(Button).at(0).props().onClick());
 
   expect(handleClose).toHaveBeenCalled();
 });

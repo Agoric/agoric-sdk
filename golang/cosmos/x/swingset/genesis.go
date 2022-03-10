@@ -2,7 +2,7 @@ package swingset
 
 import (
 	// "fmt"
-	"encoding/json"
+
 	"fmt"
 	stdlog "log"
 
@@ -56,12 +56,8 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abc
 		BlockTime:   ctx.BlockTime().Unix(),
 		StoragePort: vm.GetPort("storage"),
 	}
-	b, err := json.Marshal(action)
-	if err != nil {
-		panic(err)
-	}
 
-	_, err = keeper.CallToController(ctx, string(b))
+	_, err := keeper.BlockingSend(ctx, action)
 
 	if err != nil {
 		// NOTE: A failed BOOTSTRAP_BLOCK means that the SwingSet state is inconsistent.

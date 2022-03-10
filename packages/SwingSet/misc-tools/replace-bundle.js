@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import '@agoric/install-ses';
+import '@endo/init';
 import process from 'process';
 import { openSwingStore } from '@agoric/swing-store';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 const log = console.log;
 

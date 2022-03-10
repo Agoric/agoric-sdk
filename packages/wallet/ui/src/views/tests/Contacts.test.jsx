@@ -11,12 +11,12 @@ const contacts = [
   {
     id: 0,
     text: 'Self',
-    depositBoardId: '123',
+    depositBoardId: 'board0231',
   },
   {
     id: 1,
     text: 'Friend',
-    depositBoardId: '456',
+    depositBoardId: 'board0564',
   },
 ];
 
@@ -40,18 +40,20 @@ const appTheme = createTheme({
   },
 });
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <ThemeProvider theme={appTheme}>
-      <Component
-        contacts={contacts}
-        services={services}
-        schemaActions={schemaActions}
-        {...props}
-      />
-    </ThemeProvider>
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <ThemeProvider theme={appTheme}>
+        <Component
+          contacts={contacts}
+          services={services}
+          schemaActions={schemaActions}
+          {...props}
+        />
+      </ThemeProvider>
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };
@@ -86,7 +88,7 @@ test('cards display the correct data', () => {
 
   const self = component.find('.Contact').at(0);
   expect(self.text()).toContain('Self');
-  expect(self.text()).toContain('Board ID: (board:123)');
+  expect(self.text()).toContain('Board ID: (board0231)');
 });
 
 test('opens the import contact dialog when the button is clicked', async () => {
@@ -117,7 +119,7 @@ test('shows the snackbar after successfully importing a contact', async () => {
   expect(component.find(Snackbar).props().open).toBe(false);
 
   act(() => {
-    importContact.props().handleImport('foo', '123');
+    importContact.props().handleImport('foo', 'board0231');
   });
   component.update();
 
@@ -127,8 +129,8 @@ test('shows the snackbar after successfully importing a contact', async () => {
   component.update();
 
   const snackbar = component.find(Snackbar);
-  expect(board.getValue).toHaveBeenCalledWith('123');
-  expect(schemaActions.createContact).toHaveBeenCalledWith('123', 'foo');
+  expect(board.getValue).toHaveBeenCalledWith('board0231');
+  expect(schemaActions.createContact).toHaveBeenCalledWith('board0231', 'foo');
   expect(snackbar.props().open).toBe(true);
   expect(snackbar.props().message).toBe('Successfully imported contact.');
   expect(component.find(CircularProgress).length).toBe(0);
@@ -139,7 +141,7 @@ test('shows the snackbar when failing to import a contact', async () => {
   const importContact = component.find(ImportContact);
   board.getValue.mockRejectedValue(new Error('Cannot find id'));
 
-  await act(async () => importContact.props().handleImport('foo', '123'));
+  await act(async () => importContact.props().handleImport('foo', 'board0231'));
   component.update();
 
   const snackbar = component.find(Snackbar);

@@ -1,11 +1,8 @@
 name: Test all Packages
 
-# run CI on pushes to default, and on all PRs (even the ones that target other
-# branches)
+# run on all PRs (even the ones that target other branches)
 
 on:
-  push:
-    branches: [ master ] # $default-branch
   pull_request:
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
@@ -16,36 +13,12 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-
-    - uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: cache node modules
-      uses: actions/cache@v1
-      with:
-        path: ~/.cache/yarn
-        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-
-    
-    # 'yarn install' must be done at the top level, to build all the
-    # cross-package symlinks
-    - name: yarn install
-      run: yarn install
-    - name: check if git is dirty
-      run: git diff --stat --exit-code
-    - name: check dependencies
-      run: yarn check-dependencies
-    # 'yarn build' loops over all workspaces
-    - name: yarn build
-      run: yarn build
-
-    - uses: ./.github/actions/save-node
-      with:
-        node-version: ${{ matrix.node-version }}
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - uses: ./.github/actions/build-node
+        with:
+          node-version: ${{ matrix.node-version}}
 
   lint:
     needs: build
@@ -55,105 +28,16 @@ jobs:
         # note: only use one node-version
         node-version: ['14.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
 
-    - name: lint check
-      run: yarn lint-check
-    - name: format check
-      run: yarn format-check
+      - name: lint check
+        run: yarn lint
 
-  dev-canary:
-    if: ${{github.event_name == 'push'}}
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
-    steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
-    - name: configure NPM token
-      run: |
-        echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-      env:
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-    - name: check credentials
-      run: npm whoami
-    - name: publish to NPM dev tag
-      run: |
-        yarn lerna publish --conventional-prerelease --canary --exact \
-          --dist-tag=dev --preid=dev-$(git rev-parse --short=7 HEAD) \
-          --no-push --no-verify-access --yes
-
-  benchmark:
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
-    if: ${{github.event_name == 'push'}}
-    steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    - name: benchmark changes
-      env:
-        AUTOBENCH_METRICS_URL: ${{ secrets.AUTOBENCH_METRICS_URL }}
-      run: cd packages/swingset-runner && yarn ci:autobench
-    - uses: actions/upload-artifact@v2
-      with:
-        name: benchmarkstats.json
-        path: packages/swingset-runner/benchstats*.json
-
-  coverage:
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
-    if: ${{github.event_name == 'push' }}
-    steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-
-    - name: generate coverage for all tests
-      run: 'yarn test:c8-all || :'
-    - name: generate coverage/html reports
-      run: mkdir -p coverage/tmp && yarn c8 report --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
-    - uses: actions/upload-artifact@v2
-      with:
-        name: coverage
-        path: coverage
-    - name: Find Netlify site ID
-      run: |
-        echo "NETLIFY_SITE_ID=$(cat COVERAGE_NETLIFY_SITE_ID)" >> $GITHUB_ENV
-
-    - uses: nwtgck/actions-netlify@v1.1
-      with:
-        # Production deployment if a push or merged PR.
-        production-deploy: ${{github.event_name == 'push'}}
-        publish-dir: coverage/html
-        # SECURITY: we don't want to hand out the Github token to this action.
-        # github-token: ${{ secrets.GITHUB_TOKEN }}
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-
-##################
-# Fast-running tests run as a group:
+  ##################
+  # Fast-running tests run as a group:
   test-quick:
     # BEGIN-TEST-BOILERPLATE
     needs: build
@@ -162,72 +46,58 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
 
-    # We run separate steps for each package, to make it easier to drill down
-    # into errors. If we wanted to just run everything, run 'yarn test' from
-    # the top level.
-    #
-    # This list should include all packages, except ones that are in another
-    #  category here, or that don't have a package.json.
-    #- name: yarn test (everything)
-    #  run: yarn test
-    - name: yarn test (access-token)
-      run: cd packages/access-token && yarn test
-    - name: yarn test (agoric-cli)
-      run: cd packages/agoric-cli && yarn test
-    - name: yarn test (assert)
-      run: cd packages/assert && yarn test
-    - name: yarn test (bundle-source)
-      run: cd packages/bundle-source && yarn test
-    - name: yarn test (captp)
-      run: cd packages/captp && yarn test
-    - name: yarn test (wallet/api)
-      run: cd packages/wallet/api && yarn test
-    - name: yarn test (deployment)
-      run: cd packages/deployment && yarn test
-    - name: yarn test (ERTP)
-      run: cd packages/ERTP && yarn test
-    - name: yarn test (eventual-send)
-      run: cd packages/eventual-send && yarn test
-    - name: yarn test (far)
-      run: cd packages/far && yarn test
-    - name: yarn test (governance)
-      run: cd packages/governance && yarn test
-    - name: yarn test (import-bundle)
-      run: cd packages/import-bundle && yarn test
-    - name: yarn test (import-manager)
-      run: cd packages/import-manager && yarn test
-    - name: yarn test (install-ses)
-      run: cd packages/install-ses && yarn test
-    - name: yarn test (marshal)
-      run: cd packages/marshal && yarn test
-    - name: yarn test (notifier)
-      run: cd packages/notifier && yarn test
-    - name: yarn test (promise-kit)
-      run: cd packages/promise-kit && yarn test
-    - name: yarn test (same-structure)
-      run: cd packages/same-structure && yarn test
-    - name: yarn test (sharing-service)
-      run: cd packages/sharing-service && yarn test
-    - name: yarn test (sparse-ints)
-      run: cd packages/sparse-ints && yarn test
-    - name: yarn test (spawner)
-      run: cd packages/spawner && yarn test
-    - name: yarn test (stat-logger)
-      run: cd packages/stat-logger && yarn test
-    - name: yarn test (store)
-      run: cd packages/store && yarn test
-    - name: yarn test (swing-store)
-      run: cd packages/swing-store && yarn test
-    - name: yarn test (web-components)
-      run: cd packages/web-components && yarn test
-    - name: yarn test (wallet-connection)
-      run: cd packages/wallet-connection && yarn test
+      # We run separate steps for each package, to make it easier to drill down
+      # into errors. If we wanted to just run everything, run 'yarn test' from
+      # the top level.
+      #
+      # This list should include all packages, except ones that are in another
+      #  category here, or that don't have a package.json.
+      #- name: yarn test (everything)
+      #  run: yarn test
+      - name: yarn test (access-token)
+        run: cd packages/access-token && yarn test
+      - name: yarn test (agoric-cli)
+        run: cd packages/agoric-cli && yarn test
+      - name: yarn test (assert)
+        run: cd packages/assert && yarn test
+      - name: yarn test (wallet/api)
+        run: cd packages/wallet/api && yarn test
+      - name: yarn test (deployment)
+        run: cd packages/deployment && yarn test
+      - name: yarn test (ERTP)
+        run: cd packages/ERTP && yarn test
+      - name: yarn test (eventual-send)
+        run: cd packages/eventual-send && yarn test
+      - name: yarn test (governance)
+        run: cd packages/governance && yarn test
+      - name: yarn test (import-manager)
+        run: cd packages/import-manager && yarn test
+      - name: yarn test (notifier)
+        run: cd packages/notifier && yarn test
+      - name: yarn test (same-structure)
+        run: cd packages/same-structure && yarn test
+      - name: yarn test (sharing-service)
+        run: cd packages/sharing-service && yarn test
+      - name: yarn test (sparse-ints)
+        run: cd packages/sparse-ints && yarn test
+      - name: yarn test (spawner)
+        run: cd packages/spawner && yarn test
+      - name: yarn test (stat-logger)
+        run: cd packages/stat-logger && yarn test
+      - name: yarn test (store)
+        run: cd packages/store && yarn test
+      - name: yarn test (swing-store)
+        run: cd packages/swing-store && yarn test
+      - name: yarn test (web-components)
+        run: cd packages/web-components && yarn test
+      - name: yarn test (wallet-connection)
+        run: cd packages/wallet-connection && yarn test
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
@@ -237,40 +107,40 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (cosmos)
-      run: cd golang/cosmos && yarn test
-    - name: yarn test (run-protocol)
-      run: cd packages/run-protocol && yarn test
-    - name: yarn test (pegasus)
-      run: cd packages/pegasus && yarn test
-    - name: yarn test (vats)
-      run: cd packages/vats && yarn test
-    - name: yarn test (swingset-runner)
-      run: cd packages/swingset-runner && yarn test
-    - name: yarn test (telemetry)
-      run: cd packages/telemetry && yarn test
-    - name: yarn test (deploy-script-support)
-      run: cd packages/deploy-script-support && yarn test
-    - name: yarn test (ui-components)
-      run: cd packages/ui-components && yarn test
-    - name: yarn test (wallet/ui)
-      run: cd packages/wallet/ui && yarn test
-    - name: yarn test (wallet)
-      run: cd packages/wallet && yarn test
-    - name: yarn test (eslint-config)
-      run: cd packages/eslint-config && yarn test
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (cosmos)
+        run: cd golang/cosmos && yarn test
+      - name: yarn test (run-protocol)
+        run: cd packages/run-protocol && yarn test
+      - name: yarn test (pegasus)
+        run: cd packages/pegasus && yarn test
+      - name: yarn test (vats)
+        run: cd packages/vats && yarn test
+      - name: yarn test (swingset-runner)
+        run: cd packages/swingset-runner && yarn test
+      - name: yarn test (telemetry)
+        run: cd packages/telemetry && yarn test
+      - name: yarn test (deploy-script-support)
+        run: cd packages/deploy-script-support && yarn test
+      - name: yarn test (ui-components)
+        run: cd packages/ui-components && yarn test
+      - name: yarn test (wallet/ui)
+        run: cd packages/wallet/ui && yarn test
+      - name: yarn test (wallet)
+        run: cd packages/wallet && yarn test
+      - name: yarn test (eslint-config)
+        run: cd packages/eslint-config && yarn test
 
-      # The meta-test!
-    - name: Check for untested packages
-      run: node ./scripts/check-untested-packages.mjs
+        # The meta-test!
+      - name: Check for untested packages
+        run: node ./scripts/check-untested-packages.mjs
 
-##############
-# Long-running tests are executed individually.
+  ##############
+  # Long-running tests are executed individually.
   test-solo:
     # BEGIN-TEST-BOILERPLATE
     needs: build
@@ -279,14 +149,14 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (solo)
-      timeout-minutes: 20
-      run: cd packages/solo && yarn test
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (solo)
+        timeout-minutes: 20
+        run: cd packages/solo && yarn test
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -296,24 +166,24 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: Set up Go 1.17
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.17
-    - name: cache Go modules
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - name: yarn test (cosmic-swingset)
-      run: cd packages/cosmic-swingset && yarn test
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17
+      - name: cache Go modules
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: yarn test (cosmic-swingset)
+        run: cd packages/cosmic-swingset && yarn test
 
   # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
@@ -324,13 +194,13 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test 'test/**/test-[A-Da-d]*.js'
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (SwingSet)
+        run: cd packages/SwingSet && yarn test 'test/**/test-[A-Da-d]*.js'
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -340,18 +210,18 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test 'test/**/test-[E-Ie-i]*.js'
-    - name: yarn test (xsnap)
-      run: cd packages/xsnap && yarn test
-    # explicitly test the XS worker, for visibility
-    - name: yarn test (SwingSet XS Worker)
-      run: cd packages/SwingSet && yarn test:xs-worker
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (SwingSet)
+        run: cd packages/SwingSet && yarn test 'test/**/test-[E-Ie-i]*.js'
+      - name: yarn test (xsnap)
+        run: cd packages/xsnap && yarn test
+      # explicitly test the XS worker, for visibility
+      - name: yarn test (SwingSet XS Worker)
+        run: cd packages/SwingSet && yarn test:xs-worker
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
@@ -361,13 +231,13 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test 'test/**/test-[J-Rj-r]*.js'
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (SwingSet)
+        run: cd packages/SwingSet && yarn test 'test/**/test-[J-Rj-r]*.js'
 
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
@@ -377,14 +247,14 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
 
-    - name: yarn test (SwingSet)
-      run: cd packages/SwingSet && yarn test 'test/**/test-[S-Zs-z0-9]*.js'
+      - name: yarn test (SwingSet)
+        run: cd packages/SwingSet && yarn test 'test/**/test-[S-Zs-z0-9]*.js'
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -394,14 +264,14 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (zoe)
-      timeout-minutes: 30
-      run: cd packages/zoe && yarn test:unit
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (zoe)
+        timeout-minutes: 30
+        run: cd packages/zoe && yarn test:unit
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -411,14 +281,14 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (zoe)
-      timeout-minutes: 30
-      run: cd packages/zoe && yarn test:swingset
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (zoe)
+        timeout-minutes: 30
+        run: cd packages/zoe && yarn test:swingset
 
   # The test-xs* tests are split by alphabetical test name.
   test-xs:
@@ -430,14 +300,14 @@ jobs:
         # note: only use one node-version, maybe
         node-version: ['14.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (xs)
-      timeout-minutes: 30
-      run: yarn test:xs 'test/**/test-[A-Da-d]*.js'
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (xs)
+        timeout-minutes: 30
+        run: yarn test:xs 'test/**/test-[A-Da-d]*.js'
 
   test-xs2:
     # BEGIN-TEST-BOILERPLATE
@@ -448,14 +318,14 @@ jobs:
         # note: only use one node-version, maybe
         node-version: ['14.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (xs)
-      timeout-minutes: 30
-      run: yarn test:xs 'test/**/test-[E-Ie-i]*.js'
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (xs)
+        timeout-minutes: 30
+        run: yarn test:xs 'test/**/test-[E-Ie-i]*.js'
 
   test-xs3:
     # BEGIN-TEST-BOILERPLATE
@@ -466,14 +336,14 @@ jobs:
         # note: only use one node-version, maybe
         node-version: ['14.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (xs)
-      timeout-minutes: 30
-      run: yarn test:xs 'test/**/test-[J-Rj-r]*.js'
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (xs)
+        timeout-minutes: 30
+        run: yarn test:xs 'test/**/test-[J-Rj-r]*.js'
 
   test-xs4:
     # BEGIN-TEST-BOILERPLATE
@@ -484,11 +354,11 @@ jobs:
         # note: only use one node-version, maybe
         node-version: ['14.x']
     steps:
-    - uses: actions/checkout@v2
-    - uses: ./.github/actions/restore-node
-      with:
-        node-version: ${{ matrix.node-version }}
-    # END-TEST-BOILERPLATE
-    - name: yarn test (xs)
-      timeout-minutes: 30
-      run: yarn test:xs 'test/**/test-[S-Zs-z0-9]*.js'
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (xs)
+        timeout-minutes: 30
+        run: yarn test:xs 'test/**/test-[S-Zs-z0-9]*.js'

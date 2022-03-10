@@ -20,7 +20,6 @@ const { details: X } = assert;
  * @param {Brand} underlyingBrand
  * @param {Address} address
  * @param {Amount} amountToLien
- * @param {Timestamp} expiration
  */
 const assertPrerequisites = async (
   stakeReporter,
@@ -29,7 +28,6 @@ const assertPrerequisites = async (
   underlyingBrand,
   address,
   amountToLien,
-  expiration,
 ) => {
   const accountState = await E(stakeReporter).getAccountState(
     address,
@@ -41,10 +39,6 @@ const assertPrerequisites = async (
   const { currentTime } = accountState;
   assert.typeof(currentTime, 'bigint');
   storedTime.updateTime(currentTime);
-  assert(
-    expiration > currentTime,
-    X`Expiration ${expiration} must be after the current time ${currentTime}`,
-  );
 
   total = AmountMath.coerce(underlyingBrand, total);
   bonded = AmountMath.coerce(underlyingBrand, bonded);

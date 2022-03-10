@@ -22,25 +22,13 @@ Lifetime:
 
 -->
 
-## ALLOW_IMPLICIT_REMOTABLES
-
-Affects: marshal
-
-Purpose: to control whether the marshal system demands `Far`
-
-Description: set to `true` if you need to debug problems with missing `Far`
-declarations.
-
-Lifetime: until all sources (including dapps) conform to using `Far`
-declarations for all remote objects
-
 ## CHAIN_BOOTSTRAP_VAT_CONFIG
 
 Affects: `ag-chain-cosmos`, `ag-solo`
 
 Purpose: to set the specifier for the chain/sim-chain's `vatconfig.json`
 
-Description: defaults to `@agoric/vats/decentral-config.json`
+Description: defaults to `@agoric/vats/decentral-core-config.json`
 
 Lifetime: until we don't want to allow user control of the chain's vat config
 
@@ -109,7 +97,20 @@ Description: When nonempty, create pretend prepopulated tokens like "moola" and
 
 Lifetime: until chain is mature enough not to need any pretend tokens
 
-## OTEL_EXPORTER_PROMETHEUS_HOST
+## LMDB_MAP_SIZE
+
+Affects: cosmic-swingset
+
+Purpose: set the minimum size limit for swing-store's LMDB key-value store
+
+Description: default is `2147483648` (2GB), and you need to set higher if you
+receive `Error: MDB_MAP_FULL: Environment mapsize limit reached`
+
+Can always be increased, and does not decrease once a transaction has been
+written with the new mapSize.
+
+Lifetime: until we no longer use LMDB in swing-store
+
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
 Affects: cosmic-swingset
@@ -121,9 +122,29 @@ for the Prometheus scrape endpoint to export telemetry.
 
 Lifetime: until we decide not to support Prometheus for metrics export
 
+## SOLO_LMDB_MAP_SIZE
+
+Affects: solo
+
+Same as `LMDB_MAP_SIZE`, but for solo instead of chain.
+
+## SOLO_OTEL_EXPORTER_PROMETHEUS_PORT
+
+Affects: solo
+
+Same as `OTEL_EXPORTER_PROMETHEUS_PORT`, but for solo instead of chain.
+
+Lifetime: ?
+
 ## SOLO_SLOGFILE
 
-Same as SLOGFILE, but for solo instead of chain.
+Same as `SLOGFILE`, but for solo instead of chain.
+
+Lifetime: ?
+
+## SOLO_SLOGSENDER
+
+Same as `SLOGSENDER`, but for solo instead of chain.
 
 Lifetime: ?
 
@@ -148,6 +169,21 @@ Description: when nonempty, use the value as an absolute path to which SwingSet
 debug logs should be written.
 
 Lifetime: ?
+
+## SLOGSENDER
+
+Affects: cosmic-swingset
+
+Purpose: intercept the SwingSet LOG file in realtime
+
+Description: when nonempty, use the value as a module specifier.  The module
+will be loaded by `@agoric/telemetry/src/make-slog-sender.js`, via
+`import(moduleSpec)`, and then the exported `makeSlogSender` function creates a
+`slogSender`.  Then, every time a SLOG object is written by SwingSet,
+`slogSender(slogObject)` will be called.
+
+The default is `'@agoric/telemetry/src/flight-recorder.js'`, which writes to an
+mmap'ed circular buffer.
 
 ## SWINGSET_WORKER_TYPE
 

@@ -40,10 +40,10 @@ export const IssuersWithoutContext = ({
     setIsSnackbarOpen(true);
   };
 
-  const [
-    importingIssuers,
-    dispatchImportingIssuers,
-  ] = useReducer(importingIssuersReducer, { count: 0 });
+  const [importingIssuers, dispatchImportingIssuers] = useReducer(
+    importingIssuersReducer,
+    { count: 0 },
+  );
   const incrementImportingIssuers = () =>
     dispatchImportingIssuers({ difference: 1 });
   const decrementImportingIssuers = () =>
@@ -78,8 +78,7 @@ export const IssuersWithoutContext = ({
           <div>
             <Petname name={issuer.issuerPetname} />
             <div>
-              Board ID: (
-              <span className="Board">board:{issuer.issuerBoardId}</span>)
+              Board ID: (<span className="Board">{issuer.issuerBoardId}</span>)
             </div>
           </div>
         </div>

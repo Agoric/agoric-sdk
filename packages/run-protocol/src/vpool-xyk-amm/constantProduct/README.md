@@ -172,8 +172,9 @@ But we get an even tighter bound by reducing the amount Alice has to spend
 
 The initial price estimate is that 29,996 RUN would get 2248 BLD in a no-fee
 pool. We base fees on this estimate, so the **protocol Fee will be 15 RUN**
-(always in RUN) and the **pool fee will be 6 BLD**.  The pool fee is calculated
-on the output for `swapIn` and the input for `swapOut`.
+(always in RUN, &lceil;29,996 * 0.0005&rceil;) and the **pool fee will be 6 BLD**
+(in the computed side, &lceil;2248 * 0.0025&rceil;).  The "computed side" for
+`swapIn` is output and for `swapOut` is input.
 
 Now we calculate the actual &Delta;X and &Delta;Y, since the fees affect the
 size of the changes to the pool. From the first row of the third table we see
@@ -181,13 +182,14 @@ that the calculation starts from &Delta;X of
 `sGive - ProtocolFee (i.e. 30,000 - 15 = 29,985)`
 
 ```
-40,029,985 * 2,997,7752 > 40,000,000 * 3,000,000 > 40,029,985 * 2,997,753
+40,029,985 * 2,997,753 > 40,000,000 * 3,000,000 > 40,029,985 * 2,997,752
 ```
 
-and re-checking how much is required to produce 2,997,753, we get
+and knowing that 2,997,753 BLD must remain in the pool, we refine the required
+amount of RUN:
 
 ```
-40_029_982 * 2,997,753 > 40,000,000 * 3,000,000 > 40,029,983 * 2,997,753
+40,029,983 * 2,997,753 > 40,000,000 * 3,000,000 > 40,029,982 * 2,997,753
 ```
 
 **&Delta;X is 29,983, and &Delta;Y is 2247**.

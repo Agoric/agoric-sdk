@@ -43,11 +43,8 @@ const start = async (zcf, privateArgs) => {
     initialPoserInvitation,
   );
 
-  const {
-    wrapPublicFacet,
-    wrapCreatorFacet,
-    getInvitationAmount,
-  } = handleParamGovernance(zcf, paramManager);
+  const { wrapPublicFacet, wrapCreatorFacet, getInvitationAmount } =
+    handleParamGovernance(zcf, paramManager);
 
   const invitationAmount = getInvitationAmount(CONTRACT_ELECTORATE);
   assert(

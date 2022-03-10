@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
@@ -8,7 +9,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
 type Keeper interface {
@@ -16,7 +20,8 @@ type Keeper interface {
 	GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien
 	SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien)
 	IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool)
-	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState
+	UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newCoin sdk.Coin) error
+	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState
 	BondDenom(ctx sdk.Context) string
 	GetDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingTypes.Delegation
 	GetValidator(ctx sdk.Context, valAddr sdk.ValAddress) (stakingTypes.Validator, bool)
@@ -33,20 +38,20 @@ type keeperImpl struct {
 	bankKeeper    types.BankKeeper
 	stakingKeeper types.StakingKeeper
 
-	callToController func(ctx sdk.Context, str string) (string, error)
+	pushAction vm.ActionPusher
 }
 
 // NewKeeper returns a new Keeper.
 // The ak must be the same accout keeper that the bk and sk use.
-func NewKeeper(key sdk.StoreKey, cdc codec.Codec, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
-	callToController func(ctx sdk.Context, str string) (string, error)) Keeper {
+func NewKeeper(cdc codec.Codec, key sdk.StoreKey, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
+	pushAction vm.ActionPusher) Keeper {
 	return keeperImpl{
-		key:              key,
-		cdc:              cdc,
-		accountKeeper:    ak,
-		bankKeeper:       bk,
-		stakingKeeper:    sk,
-		callToController: callToController,
+		key:           key,
+		cdc:           cdc,
+		accountKeeper: ak,
+		bankKeeper:    bk,
+		stakingKeeper: sk,
+		pushAction:    pushAction,
 	}
 }
 
@@ -98,39 +103,69 @@ func (lk keeperImpl) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, 
 	}
 }
 
-// AccountState represents the abstract state of an account.
-// See ../spec/01_concepts.md for details.
-type AccountState struct {
-	Total     sdk.Coins `json:"total"`
-	Bonded    sdk.Coins `json:"bonded"`
-	Unbonding sdk.Coins `json:"unbonding"`
-	Locked    sdk.Coins `json:"locked"`
-	Liened    sdk.Coins `json:"liened"`
-}
+// UpdateLien changes the liened amount of a single denomination in the given account.
+// Either the old or new amount of the denomination can be zero.
+// Liens can always be decreased, but to increase a lien, the new total amount must
+// be vested and either bonded (for the staking token) or in the bank (for other tokens).
+// The total lien can have several different denominations. Each is adjusted
+// independently.
+func (lk keeperImpl) UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newCoin sdk.Coin) error {
+	oldLien := lk.GetLien(ctx, addr)
+	oldCoins := oldLien.Coins
+	denom := newCoin.Denom
+	newAmount := newCoin.Amount
+	oldAmount := oldCoins.AmountOf(denom)
+	if newAmount.Equal(oldAmount) {
+		// no-op, no need to do anything
+		return nil
+	}
 
-// IsEqual returns whether two AccountStates are equal.
-// (Coins don't play nicely with equality (==) or reflect.DeepEqual().)
-func (s AccountState) IsEqual(other AccountState) bool {
-	return s.Total.IsEqual(other.Total) &&
-		s.Bonded.IsEqual(other.Bonded) &&
-		s.Unbonding.IsEqual(other.Unbonding) &&
-		s.Locked.IsEqual(other.Locked) &&
-		s.Liened.IsEqual(other.Liened)
+	newCoins := oldCoins.Sub(sdk.NewCoins(sdk.NewCoin(denom, oldAmount))).Add(newCoin)
+	newLien := types.Lien{
+		Coins:     newCoins,
+		Delegated: oldLien.Delegated,
+	}
+
+	if newAmount.GT(oldAmount) {
+		// See if it's okay to increase the lien.
+		// Lien can be increased if the new amount is vested,
+		// not already liened, and if it's the bond denom,
+		// must be staked.
+		state := lk.GetAccountState(ctx, addr)
+		if denom == lk.BondDenom(ctx) {
+			bonded := state.Bonded.AmountOf(denom)
+			unvested := state.Unvested.AmountOf(denom)
+			if !newAmount.Add(unvested).LTE(bonded) {
+				return fmt.Errorf("want to lien %s but only %s vested and bonded", newCoin, bonded.Sub(unvested))
+			}
+			newDelegated := bonded.Add(state.Unbonding.AmountOf(denom))
+			newLien.Delegated = sdk.NewCoins(sdk.NewCoin(denom, newDelegated))
+		} else {
+			inBank := lk.bankKeeper.GetBalance(ctx, addr, denom)
+			if !newAmount.LTE(inBank.Amount) {
+				return fmt.Errorf("want to lien %s but only %s available", newCoin, inBank)
+			}
+		}
+		// XXX check vested
+	}
+	lk.SetLien(ctx, addr, newLien)
+	return nil
 }
 
 // GetAccountState retrieves the AccountState for addr.
-func (lk keeperImpl) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) AccountState {
+func (lk keeperImpl) GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState {
 	bonded := lk.getBonded(ctx, addr)
 	unbonding := lk.getUnbonding(ctx, addr)
-	locked := lk.getLocked(ctx, addr)
+	locked, unvested := lk.getLockedUnvested(ctx, addr)
 	liened := lk.GetLien(ctx, addr).Coins
 	total := lk.bankKeeper.GetAllBalances(ctx, addr).Add(bonded...).Add(unbonding...)
-	return AccountState{
+	return types.AccountState{
 		Total:     total,
 		Bonded:    bonded,
 		Unbonding: unbonding,
 		Locked:    locked,
 		Liened:    liened,
+		Unvested:  unvested,
 	}
 }
 
@@ -171,18 +206,26 @@ func (lk keeperImpl) getUnbonding(ctx sdk.Context, addr sdk.AccAddress) sdk.Coin
 // getLocked returns the number of locked tokens in account addr.
 // This reflects the VestingCoins in the underlying VestingAccount,
 // if any, not the LienAccount wrapping it.
-func (lk keeperImpl) getLocked(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (lk keeperImpl) getLockedUnvested(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coins, sdk.Coins) {
 	account := lk.accountKeeper.GetAccount(ctx, addr)
 	if account == nil {
-		return sdk.NewCoins()
+		// account doesn't exist
+		return sdk.NewCoins(), sdk.NewCoins()
 	}
 	if lienAccount, ok := account.(LienAccount); ok {
-		return lienAccount.omniVestingAccount.GetVestingCoins(ctx.BlockTime())
+		// unwrap the lien wrapper
+		account = lienAccount.omniVestingAccount
+	}
+	if clawbackAccount, ok := account.(*vestingtypes.ClawbackVestingAccount); ok {
+		original := clawbackAccount.GetOriginalVesting()
+		unlocked := clawbackAccount.GetUnlockedOnly(ctx.BlockTime())
+		vested := clawbackAccount.GetVestedOnly(ctx.BlockTime())
+		return original.Sub(unlocked), original.Sub(vested)
 	}
 	if vestingAccount, ok := account.(vestexported.VestingAccount); ok {
-		return vestingAccount.GetVestingCoins(ctx.BlockTime())
+		return vestingAccount.GetVestingCoins(ctx.BlockTime()), sdk.NewCoins()
 	}
-	return sdk.NewCoins()
+	return sdk.NewCoins(), sdk.NewCoins()
 }
 
 // The following methods simply proxy the eponymous staking keeper queries.

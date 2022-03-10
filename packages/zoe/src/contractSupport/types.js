@@ -51,51 +51,9 @@
  */
 
 /**
- * @typedef {Object} OfferToReturns
- *
- * The return value of offerTo is a promise for the userSeat for the
- * offer to the other contract, and a promise (`deposited`) which
- * resolves when the payout for the offer has been deposited to the `toSeat`
- * @property {Promise<UserSeat>} userSeatPromise
- * @property {Promise<AmountKeywordRecord>} deposited
- */
-
-/**
  * @typedef {Record<Keyword,Keyword>} KeywordKeywordRecord
  *
  * A mapping of keywords to keywords.
- */
-
-/**
- * @callback OfferTo
- *
- * Make an offer to another contract instance (labeled contractB below),
- * withdrawing the payments for the offer from a seat in the current
- * contract instance (contractA) and depositing the payouts in another
- * seat in the current contract instance (contractA).
- *
- * @param {ContractFacet} zcf
- *   Zoe Contract Facet for contractA
- *
- * @param {ERef<Invitation>} invitation
- *   Invitation to contractB
- *
- * @param {KeywordKeywordRecord=} keywordMapping
- *   Mapping of keywords used in contractA to keywords to be used in
- *   contractB. Note that the pathway to deposit the payout back to
- *   contractA reverses this mapping.
- *
- * @param {Proposal | undefined} proposal
- *   The proposal for the offer to be made to contractB
- *
- * @param {ZCFSeat} fromSeat
- *   The seat in contractA to take the offer payments from.
- *
- * @param {ZCFSeat=} toSeat
- *   The seat in contractA to deposit the payout of the offer to.
- *   If `toSeat` is not provided, this defaults to the `fromSeat`.
- *
- * @returns {OfferToReturns}
  */
 
 /**
@@ -123,69 +81,13 @@
 
 /**
  * @typedef {Object} Ratio
- * @property {Amount} numerator
- * @property {Amount} denominator
+ * @property {Amount<'nat'>} numerator
+ * @property {Amount<'nat'>} denominator
  */
 
 /**
- * @callback MakeRatio
- * @param {bigint} numerator
- * @param {Brand} numeratorBrand
- * @param {bigint=} denominator The default denominator is 100
- * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
- * @returns {Ratio}
- */
-
-/**
- * @callback MakeRatioFromAmounts
- * @param {Amount} numerator
- * @param {Amount} denominator
- * @returns {Ratio}
- */
-
-/**
- * @callback MultiplyBy
+ * @callback ScaleAmount
  * @param {Amount} amount
  * @param {Ratio} ratio
- * @returns {Amount}
- */
-
-/**
- * @callback DivideBy
- * @param {Amount} amount
- * @param {Ratio} ratio
- * @returns {Amount}
- */
-
-/**
- * @typedef {MultiplyBy} CeilMultiplyBy
- * @typedef {MultiplyBy} FloorMultiplyBy
- * @typedef {DivideBy} FloorDivideBy
- * @typedef {DivideBy} CeilDivideBy
- */
-
-/**
- * @callback InvertRatio
- * @param {Ratio} ratio
- * @returns {Ratio}
- */
-
-/**
- * @callback OneMinus
- * @param {Ratio} ratio
- * @returns {Ratio}
- */
-
-/**
- * @callback AddRatios
- * @param {Ratio} left
- * @param {Ratio} right
- * @returns {Ratio}
- */
-
-/**
- * @callback MultiplyRatios
- * @param {Ratio} left
- * @param {Ratio} right
- * @returns {Ratio}
+ * @returns {Amount<'nat'>}
  */

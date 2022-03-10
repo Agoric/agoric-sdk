@@ -1,15 +1,15 @@
+/* global WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import anylogger from 'anylogger';
 import { assert, details as X } from '@agoric/assert';
-import { WeakRef, FinalizationRegistry } from '../src/weakref.js';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
-import { createSHA256 } from '../src/hasher.js';
-import { provideHostStorage } from '../src/hostStorage.js';
+import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { createSHA256 } from '../src/lib-nodejs/hasher.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 
 import buildKernel from '../src/kernel/index.js';
-import { initializeKernel } from '../src/kernel/initializeKernel.js';
+import { initializeKernel } from '../src/controller/initializeKernel.js';
 
 import { buildDispatch } from './util.js';
 

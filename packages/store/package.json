@@ -1,20 +1,19 @@
 {
   "name": "@agoric/store",
-  "version": "0.6.8",
+  "version": "0.6.10",
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
-    "lint:types": "tsc -p jsconfig.json",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
   "repository": {
@@ -31,14 +30,15 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/marshal": "^0.5.0",
-    "@agoric/eventual-send": "^0.14.0",
-    "@agoric/promise-kit": "^0.2.29"
+    "@agoric/assert": "^0.3.16",
+    "@agoric/eventual-send": "^0.14.1",
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.24.1",
-    "ava": "^3.12.1"
+    "@agoric/swingset-vat": "^0.25.1",
+    "ava": "^3.12.1",
+    "fast-check": "^2.21.0"
   },
   "files": [
     "src/",

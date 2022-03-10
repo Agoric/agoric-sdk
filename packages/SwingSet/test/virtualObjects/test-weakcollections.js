@@ -1,10 +1,10 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import engineGC from '../../src/engine-gc.js';
-import { provideHostStorage } from '../../src/hostStorage.js';
+import engineGC from '../../src/lib-nodejs/engine-gc.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualObjectManager.js';
+import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 import makeNextLog from '../make-nextlog.js';
 
 function capdata(body, slots = []) {

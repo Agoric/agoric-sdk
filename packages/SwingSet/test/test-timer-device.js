@@ -1,8 +1,11 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { Far } from '@agoric/marshal';
-import { makeTimerMap, curryPollFn } from '../src/devices/timer-src.js';
+import { Far } from '@endo/marshal';
+import {
+  makeTimerMap,
+  curryPollFn,
+} from '../src/devices/timer/device-timer.js';
 
 test('multiMap multi store', t => {
   const mm = makeTimerMap();

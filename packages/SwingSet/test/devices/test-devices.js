@@ -1,16 +1,17 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { getAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { parse } from '@endo/marshal';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 
 import {
   initializeSwingset,
   makeSwingsetController,
   buildKernelBundles,
 } from '../../src/index.js';
-import buildCommand from '../../src/devices/command.js';
+import buildCommand from '../../src/devices/command/command.js';
 
 function capdata(body, slots = []) {
   return harden({ body, slots });
@@ -31,6 +32,8 @@ test.before(async t => {
   const bootstrap2 = await bundleSource(dfile('bootstrap-2'));
   const bootstrap3 = await bundleSource(dfile('bootstrap-3'));
   const bootstrap4 = await bundleSource(dfile('bootstrap-4'));
+  const bootstrap5 = await bundleSource(dfile('bootstrap-5'));
+  const bootstrap6 = await bundleSource(dfile('bootstrap-6'));
   t.context.data = {
     kernelBundles,
     bootstrap0,
@@ -38,6 +41,8 @@ test.before(async t => {
     bootstrap2,
     bootstrap3,
     bootstrap4,
+    bootstrap5,
+    bootstrap6,
   };
 });
 
@@ -59,7 +64,8 @@ test.serial('d0', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage);
   const c = await makeSwingsetController(hostStorage, {});
-  await c.step();
+  await c.run();
+
   // console.log(util.inspect(c.dump(), { depth: null }));
   t.deepEqual(JSON.parse(c.dump().log[0]), [
     {
@@ -111,9 +117,11 @@ test.serial('d1', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
-  await c.step();
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
   c.queueToVatRoot('bootstrap', 'step1', capargs([]));
-  await c.step();
+  await c.run();
   t.deepEqual(c.dump().log, [
     'callNow',
     'invoke 1 2',
@@ -142,13 +150,22 @@ async function test2(t, mode) {
     },
   };
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [mode], hostStorage, t.context.data);
+  await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, {});
   c.pinVatRoot('bootstrap');
-  await c.step();
+  await c.run(); // startup
+
+  function qv(method) {
+    c.queueToVatRoot('bootstrap', method, capargs([]), 'panic');
+  }
+
   if (mode === '1') {
+    qv('do1');
+    await c.run();
     t.deepEqual(c.dump().log, ['calling d2.method1', 'method1 hello', 'done']);
   } else if (mode === '2') {
+    qv('do2');
+    await c.run();
     t.deepEqual(c.dump().log, [
       'calling d2.method2',
       'method2',
@@ -156,13 +173,11 @@ async function test2(t, mode) {
       'value',
     ]);
   } else if (mode === '3') {
+    qv('do3');
+    await c.run();
     t.deepEqual(c.dump().log, ['calling d2.method3', 'method3', 'ret true']);
   } else if (mode === '4') {
-    t.deepEqual(c.dump().log, [
-      'calling d2.method4',
-      'method4',
-      'ret method4 done',
-    ]);
+    qv('do4');
     await c.run();
     t.deepEqual(c.dump().log, [
       'calling d2.method4',
@@ -173,16 +188,8 @@ async function test2(t, mode) {
       'd2.m4 did bar',
     ]);
   } else if (mode === '5') {
-    t.deepEqual(c.dump().log, ['calling v2.method5', 'called']);
-    await c.step();
-    t.deepEqual(c.dump().log, [
-      'calling v2.method5',
-      'called',
-      'left5',
-      'method5 hello',
-      'left5 did d2.method5, got ok',
-    ]);
-    await c.step();
+    qv('do5');
+    await c.run();
     t.deepEqual(c.dump().log, [
       'calling v2.method5',
       'called',
@@ -264,8 +271,10 @@ test.serial('command broadcast', async t => {
   };
 
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, ['command1'], hostStorage, t.context.data);
+  await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  c.pinVatRoot('bootstrap');
+  c.queueToVatRoot('bootstrap', 'doCommand1', capargs([]), 'panic');
   await c.run();
   t.deepEqual(broadcasts, [{ hello: 'everybody' }]);
 });
@@ -290,8 +299,10 @@ test.serial('command deliver', async t => {
   };
 
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, ['command2'], hostStorage, t.context.data);
+  await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  c.pinVatRoot('bootstrap');
+  c.queueToVatRoot('bootstrap', 'doCommand2', capargs([]), 'panic');
   await c.run();
 
   t.deepEqual(c.dump().log.length, 0);
@@ -312,13 +323,13 @@ test.serial('command deliver', async t => {
   t.deepEqual(rejection, { response: 'body' });
 });
 
+// warner HERE
 test.serial('liveslots throws when D() gets promise', async t => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
         bundle: t.context.data.bootstrap2,
-        creationOptions: { enableSetup: true },
       },
     },
     devices: {
@@ -329,11 +340,14 @@ test.serial('liveslots throws when D() gets promise', async t => {
     },
   };
   const hostStorage = provideHostStorage();
-  await initializeSwingset(config, ['promise1'], hostStorage, t.context.data);
+  await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, {});
-  await c.step();
+  c.pinVatRoot('bootstrap');
+
   // When liveslots catches an attempt to send a promise into D(), it throws
   // a regular error, which the vat can catch.
+  c.queueToVatRoot('bootstrap', 'doPromise1', capargs([]), 'panic');
+  await c.run();
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
 
   // If that isn't working as expected, and the promise makes it to
@@ -344,8 +358,7 @@ test.serial('liveslots throws when D() gets promise', async t => {
   await c.run();
 
   // If the translator doesn't catch the promise and it makes it to the device,
-  // the kernel will panic, and the c.step() above will reject, so the
-  // 'await c.step()' will throw.
+  // the kernel will panic, and the c.run()s would throw
 });
 
 test.serial('syscall.callNow(promise) is vat-fatal', async t => {
@@ -367,12 +380,90 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, t.context.data);
   const c = await makeSwingsetController(hostStorage, {});
-  await c.step();
-  // if the kernel paniced, that c.step() will reject, and the await will throw
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  // deliver doBadCallNow, which will fail, which kills vat-bootstrap, which
+  // emits "DANGER: static vat v1 terminated", but does not panic the kernel
+  c.queueToVatRoot('bootstrap', 'doBadCallNow', capargs([]), 'ignore');
+  await c.run();
   t.deepEqual(c.dump().log, ['sending Promise', 'good: callNow failed']);
+
   // now check that the vat was terminated: this should throw an exception
   // because the entire bootstrap vat was deleted
   t.throws(() => c.queueToVatRoot('bootstrap', 'ping', capargs([])), {
     message: /vat name .* must exist, but doesn't/,
   });
+});
+
+test.serial('device errors cause vat-catchable D error', async t => {
+  const hostStorage = provideHostStorage();
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        bundle: t.context.data.bootstrap5,
+      },
+    },
+    devices: {
+      d5: {
+        sourceSpec: dfile('device-5'),
+        creationOptions: { unendowed: true },
+      },
+    },
+  };
+
+  const bootstrapResult = await initializeSwingset(
+    config,
+    [],
+    hostStorage,
+    t.context.data,
+  );
+  const c = await makeSwingsetController(hostStorage, {});
+  await c.run();
+
+  t.is(c.kpStatus(bootstrapResult), 'fulfilled'); // not 'rejected'
+  const r = c.kpResolution(bootstrapResult);
+  const expected = Error(
+    'syscall.callNow failed: device.invoke failed, see logs for details',
+  );
+  t.deepEqual(parse(r.body), ['got', expected]);
+});
+
+test.serial('foreign device nodes cause a catchable error', async t => {
+  const hostStorage = provideHostStorage();
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bootstrap: {
+        bundle: t.context.data.bootstrap6,
+      },
+    },
+    devices: {
+      d6first: {
+        sourceSpec: dfile('device-6'),
+        creationOptions: { unendowed: true },
+      },
+      d6second: {
+        sourceSpec: dfile('device-6'),
+        creationOptions: { unendowed: true },
+      },
+    },
+  };
+
+  const bootstrapResult = await initializeSwingset(
+    config,
+    [],
+    hostStorage,
+    t.context.data,
+  );
+  const c = await makeSwingsetController(hostStorage, {});
+  await c.run();
+
+  t.is(c.kpStatus(bootstrapResult), 'fulfilled'); // not 'rejected'
+  const r = c.kpResolution(bootstrapResult);
+  const expected = Error(
+    'syscall.callNow failed: device.invoke failed, see logs for details',
+  );
+  t.deepEqual(parse(r.body), ['got', expected]);
 });

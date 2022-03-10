@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { observeIteration } from '@agoric/notifier';
 import { keyEQ } from '@agoric/store';
 
@@ -22,9 +22,9 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
   log(`Verify: q: ${q(iss)}, max: ${maxChoices}, committee: ${c}`);
   const electorateInstance = await E(electoratePublicFacet).getInstance();
   log(
-    `Verify instances: electorate: ${electorateInstance ===
-      instances.electorateInstance}, counter: ${details.counterInstance ===
-      instances.counterInstance}`,
+    `Verify instances: electorate: ${
+      electorateInstance === instances.electorateInstance
+    }, counter: ${details.counterInstance === instances.counterInstance}`,
   );
 };
 

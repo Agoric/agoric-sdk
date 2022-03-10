@@ -5,10 +5,9 @@ import {
   assertPassable,
   filterIterable,
   mapIterable,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
-import { assertScalarKey } from '../keys/checkKey.js';
-import { makeCopyMap } from '../keys/copyMap.js';
+import { assertScalarKey, makeCopyMap } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
@@ -31,17 +30,15 @@ export const makeMapStoreMethods = (
   assertKeyOkToDelete = undefined,
   keyName = 'key',
 ) => {
-  const {
-    assertUpdateOnAdd,
-    assertUpdateOnDelete,
-    iterableKeys,
-  } = makeCurrentKeysKit(
-    () => jsmap.keys(),
-    compareRank,
-    assertKVOkToAdd,
-    assertKeyOkToDelete,
-    keyName,
-  );
+  const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
+    makeCurrentKeysKit(
+      () => jsmap.keys(),
+      k => jsmap.has(k),
+      compareRank,
+      assertKVOkToAdd,
+      assertKeyOkToDelete,
+      keyName,
+    );
 
   /**
    * @param {Pattern=} keyPatt
@@ -128,19 +125,19 @@ export const makeMapStoreMethods = (
  *
  * @template K,V
  * @param {string} [keyName='key'] - the column name for the key
- * @param {Partial<StoreOptions>=} options
+ * @param {StoreOptions=} options
  * @returns {MapStore<K,V>}
  */
 export const makeScalarMapStore = (
   keyName = 'key',
-  { keyPattern = undefined, valuePattern = undefined } = {},
+  { keySchema = undefined, valueSchema = undefined } = {},
 ) => {
   const jsmap = new Map();
-  if (keyPattern !== undefined) {
-    assertPattern(keyPattern);
+  if (keySchema !== undefined) {
+    assertPattern(keySchema);
   }
-  if (valuePattern !== undefined) {
-    assertPattern(valuePattern);
+  if (valueSchema !== undefined) {
+    assertPattern(valueSchema);
   }
 
   const assertKVOkToSet = (_key, value) => {
@@ -149,8 +146,8 @@ export const makeScalarMapStore = (
     harden(value);
 
     assertPassable(value);
-    if (valuePattern !== undefined) {
-      fit(value, valuePattern);
+    if (valueSchema !== undefined) {
+      fit(value, valueSchema);
     }
   };
 
@@ -160,8 +157,8 @@ export const makeScalarMapStore = (
     harden(key);
 
     assertScalarKey(key);
-    if (keyPattern !== undefined) {
-      fit(key, keyPattern);
+    if (keySchema !== undefined) {
+      fit(key, keySchema);
     }
     assertKVOkToSet(key, value);
   };

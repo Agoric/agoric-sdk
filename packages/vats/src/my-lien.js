@@ -1,6 +1,6 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 
 const { details: X } = assert;
 

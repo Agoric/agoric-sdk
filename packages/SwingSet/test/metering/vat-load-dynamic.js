@@ -1,8 +1,8 @@
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers) {
-  const log = vatPowers.testLog;
+  const { testLog: log } = vatPowers;
   let service;
   let control;
 
@@ -37,8 +37,9 @@ export function buildRootObject(vatPowers) {
       return E(notifier).getUpdateSince(initial);
     },
 
-    async createVat(bundle, dynamicOptions) {
-      control = await E(service).createVat(bundle, dynamicOptions);
+    async createVat(name, dynamicOptions) {
+      const bundlecap = await E(service).getNamedBundleCap(name);
+      control = await E(service).createVat(bundlecap, dynamicOptions);
       const done = E(control.adminNode).done();
       // the caller checks this later, but doesn't wait for it
       return ['created', done];

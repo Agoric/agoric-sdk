@@ -53,12 +53,6 @@ const checkOfferShape = (seat, attestationBrand) => {
 };
 harden(checkOfferShape);
 
-/** @type {Max} */
-const max = (x, y) => {
-  return AmountMath.isGTE(x, y) ? x : y;
-};
-harden(max);
-
 // If x is greater than or equal to y, subtract. If not, return empty.
 const subtractOrMakeEmpty = (x, y) => {
   if (AmountMath.isGTE(x, y)) {
@@ -73,6 +67,5 @@ export {
   validateInputs,
   mintZCFMintPayment,
   checkOfferShape,
-  max,
   subtractOrMakeEmpty,
 };

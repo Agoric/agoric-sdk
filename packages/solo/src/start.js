@@ -1,3 +1,4 @@
+// @ts-check
 /* global process setTimeout */
 import fs from 'fs';
 import path from 'path';
@@ -16,6 +17,10 @@ import anylogger from 'anylogger';
 
 import { assert, details as X } from '@agoric/assert';
 import {
+  makeSlogSenderFromModule,
+  getTelemetryProviders,
+} from '@agoric/telemetry';
+import {
   loadSwingsetConfigFile,
   buildCommand,
   swingsetIsInitialized,
@@ -27,10 +32,16 @@ import {
   buildTimer,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
-import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
+import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
+import {
+  DEFAULT_METER_PROVIDER,
+  makeSlogCallbacks,
+  exportKernelStats,
+} from '@agoric/cosmic-swingset/src/kernel-stats.js';
 
 import { deliver, addDeliveryTarget } from './outbound.js';
+import { connectToPipe } from './pipe.js';
 import { makeHTTPListener } from './web.js';
 
 import { connectToChain } from './chain-cosmos-sdk.js';
@@ -38,7 +49,7 @@ import { connectToChain } from './chain-cosmos-sdk.js';
 const log = anylogger('start');
 
 // FIXME: Needed for legacy plugins.
-const esmRequire = createRequire({});
+const esmRequire = createRequire(/** @type {any} */ ({}));
 
 let swingSetRunning = false;
 
@@ -79,6 +90,16 @@ const atomicReplaceFile = async (filename, contents) => {
   }
 };
 
+const neverStop = () => {
+  return harden({
+    emptyCrank: () => true,
+    vatCreated: () => true,
+    crankComplete: () => true,
+    crankFailed: () => true,
+  });
+};
+
+const TELEMETRY_SERVICE_NAME = 'solo';
 const buildSwingset = async (
   kernelStateDBDir,
   mailboxStateFile,
@@ -86,7 +107,9 @@ const buildSwingset = async (
   broadcast,
   defaultManagerType,
 ) => {
-  const initialMailboxState = JSON.parse(fs.readFileSync(mailboxStateFile));
+  const initialMailboxState = JSON.parse(
+    fs.readFileSync(mailboxStateFile, 'utf8'),
+  );
 
   const mbs = buildMailboxStateMap();
   mbs.populateFromData(initialMailboxState);
@@ -121,6 +144,7 @@ const buildSwingset = async (
   const config = await loadSwingsetConfigFile(
     new URL('../solo-config.json', import.meta.url).pathname,
   );
+  assert(config);
   config.devices = {
     mailbox: {
       sourceSpec: mb.srcPath,
@@ -142,8 +166,26 @@ const buildSwingset = async (
     plugin: { ...plugin.endowments },
   };
 
+  const soloEnv = Object.fromEntries(
+    Object.entries(process.env)
+      .filter(([k]) => k.match(/^SOLO_/)) // narrow to SOLO_ prefixes.
+      .map(([k, v]) => [k.replace(/^SOLO_/, ''), v]), // Replace SOLO_ controls with chain version.
+  );
+  const env = {
+    ...process.env,
+    ...soloEnv,
+  };
+  const { metricsProvider = DEFAULT_METER_PROVIDER } = getTelemetryProviders({
+    console,
+    env,
+    serviceName: 'solo',
+  });
+
+  const { SLOGFILE: slogFile, SLOGSENDER, LMDB_MAP_SIZE } = env;
+  const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
+    { mapSize },
   );
   const hostStorage = {
     kvStore,
@@ -151,18 +193,34 @@ const buildSwingset = async (
     snapStore,
   };
 
+  // Not to be confused with the gas model, this meter is for OpenTelemetry.
+  const metricMeter = metricsProvider.getMeter('ag-solo');
+  const slogCallbacks = makeSlogCallbacks({
+    metricMeter,
+  });
+
   if (!swingsetIsInitialized(hostStorage)) {
     if (defaultManagerType && !config.defaultManagerType) {
       config.defaultManagerType = defaultManagerType;
     }
     await initializeSwingset(config, argv, hostStorage);
   }
-  const slogFile = process.env.SOLO_SLOGFILE;
+  const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
+    stateDir: kernelStateDBDir,
+    serviceName: TELEMETRY_SERVICE_NAME,
+    env,
+  });
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogFile },
+    { slogCallbacks, slogFile, slogSender },
   );
+
+  const { crankScheduler } = exportKernelStats({
+    controller,
+    metricMeter,
+    log: console,
+  });
 
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
@@ -174,8 +232,10 @@ const buildSwingset = async (
     deliver(mbs);
   }
 
+  const policy = neverStop();
+
   async function processKernel() {
-    await controller.run();
+    await crankScheduler(policy);
     if (swingSetRunning) {
       await saveState();
       deliverOutbound();
@@ -188,7 +248,7 @@ const buildSwingset = async (
     async function deliverInboundToMbx(sender, messages, ack) {
       assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
       // console.debug(`deliverInboundToMbx`, messages, ack);
-      if (mb.deliverInbound(sender, messages, ack, true)) {
+      if (mb.deliverInbound(sender, messages, ack)) {
         await processKernel();
       }
     },
@@ -314,16 +374,10 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
       ...resolvedDeploys,
     ],
     { stdio: 'inherit', env: noOptionsEnv },
-    err => {
-      if (err) {
-        console.error(err);
-      }
-      // eslint-disable-next-line no-use-before-define
-      process.off('exit', killDeployment);
-    },
   );
-  const killDeployment = () => cp.kill('SIGINT');
-  process.on('exit', killDeployment);
+  const { registerShutdown } = makeShutdown();
+  const unregisterShutdown = registerShutdown(() => cp.kill('SIGTERM'));
+  cp.on('close', () => unregisterShutdown());
 };
 
 const start = async (basedir, argv) => {
@@ -332,7 +386,7 @@ const start = async (basedir, argv) => {
     'swingset-kernel-mailbox.json',
   );
   const connections = JSON.parse(
-    fs.readFileSync(path.join(basedir, 'connections.json')),
+    fs.readFileSync(path.join(basedir, 'connections.json'), 'utf8'),
   );
 
   let broadcastJSON;
@@ -390,9 +444,8 @@ const start = async (basedir, argv) => {
   const pjs = new URL(
     await importMetaResolve(`${wallet}/package.json`, import.meta.url),
   ).pathname;
-  const {
-    'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {},
-  } = JSON.parse(fs.readFileSync(pjs, 'utf-8'));
+  const { 'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {} } =
+    JSON.parse(fs.readFileSync(pjs, 'utf-8'));
 
   const agWallet = path.dirname(pjs);
   const agWalletHtml = path.resolve(agWallet, htmlBasedir);
@@ -419,12 +472,11 @@ const start = async (basedir, argv) => {
           break;
         case 'fake-chain': {
           log(`adding follower/sender for fake chain ${c.GCI}`);
-          const deliverator = await connectToFakeChain(
-            basedir,
-            c.GCI,
-            c.fakeDelay,
+          const deliverator = await connectToPipe({
+            method: 'connectToFakeChain',
+            args: [basedir, c.GCI, c.fakeDelay],
             deliverInboundToMbx,
-          );
+          });
           addDeliveryTarget(c.GCI, deliverator);
           break;
         }

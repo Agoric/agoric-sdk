@@ -1,11 +1,12 @@
 // @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore, makeWeakStore } from '@agoric/store';
 
 import { makeVirtualPurse } from './virtual-purse.js';
+import * as BRIDGE_ID from './bridge-ids.js';
 
 import '@agoric/notifier/exported.js';
 
@@ -75,13 +76,22 @@ const makePurseController = (
 
 /**
  * @typedef {Object} AssetIssuerKit
- * @property {Mint} [mint]
- * @property {Issuer} issuer
+ * @property {ERef<Mint>} [mint]
+ * @property {ERef<Issuer>} issuer
  * @property {Brand} brand
  */
 
 /**
  * @typedef {AssetIssuerKit & { denom: string, escrowPurse?: ERef<Purse> }} AssetRecord
+ */
+
+/**
+ * @typedef {Object} AssetDescriptor
+ * @property {Brand} brand
+ * @property {ERef<Issuer>} issuer
+ * @property {string} issuerName
+ * @property {string} denom
+ * @property {string} proposedName
  */
 
 /**
@@ -95,11 +105,12 @@ const makePurseController = (
 export function buildRootObject(_vatPowers) {
   return Far('bankMaker', {
     /**
-     * @param {import('./bridge').BridgeManager} [bankBridgeManager] a bridge
+     * @param {ERef<import('./bridge').BridgeManager | undefined>} [bankBridgeManagerP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
      */
-    async makeBankManager(bankBridgeManager = undefined) {
+    async makeBankManager(bankBridgeManagerP = undefined) {
+      const bankBridgeManager = await bankBridgeManagerP;
       /** @type {WeakStore<Brand, AssetRecord>} */
       const brandToAssetRecord = makeWeakStore('brand');
 
@@ -129,9 +140,15 @@ export function buildRootObject(_vatPowers) {
       };
 
       /**
-       * @param {import('./bridge').BridgeManager} bankBridgeMgr
+       * @param {ERef<import('./bridge').BridgeManager>} [bankBridgeMgr]
        */
       async function makeBankCaller(bankBridgeMgr) {
+        // We do the logic here if the bridge manager is available.  Otherwise,
+        // the bank is not "remote" (such as on sim-chain), so we just use
+        // immediate purses instead of virtual ones.
+        if (!bankBridgeMgr) {
+          return undefined;
+        }
         // We need to synchronise with the remote bank.
         const handler = Far('bankHandler', {
           async fromBridge(_srcID, obj) {
@@ -141,32 +158,17 @@ export function buildRootObject(_vatPowers) {
           },
         });
 
-        await E(bankBridgeMgr).register('bank', handler);
+        await E(bankBridgeMgr).register(BRIDGE_ID.BANK, handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
-        return obj => E(bankBridgeMgr).toBridge('bank', obj);
+        return obj => E(bankBridgeMgr).toBridge(BRIDGE_ID.BANK, obj);
       }
 
-      // We do the logic here if the bridge manager is available.  Otherwise,
-      // the bank is not "remote" (such as on sim-chain), so we just use
-      // immediate purses instead of virtual ones.
-      const bankCall = await (bankBridgeManager
-        ? makeBankCaller(bankBridgeManager)
-        : undefined);
+      const bankCall = await makeBankCaller(bankBridgeManager);
 
-      /**
-       * @typedef {Object} AssetDescriptor
-       * @property {Brand} brand
-       * @property {Issuer} issuer
-       * @property {string} issuerName
-       * @property {string} denom
-       * @property {string} proposedName
-       */
       /** @type {SubscriptionRecord<AssetDescriptor>} */
-      const {
-        subscription: assetSubscription,
-        publication: assetPublication,
-      } = makeSubscriptionKit();
+      const { subscription: assetSubscription, publication: assetPublication } =
+        makeSubscriptionKit();
 
       /** @type {Store<string, Bank>} */
       const addressToBank = makeStore('address');
@@ -268,7 +270,7 @@ export function buildRootObject(_vatPowers) {
         /**
          * @param {string} denom
          * @param {AssetIssuerKit} feeKit
-         * @returns {import('@agoric/far').EOnly<DepositFacet>}
+         * @returns {import('@endo/far').EOnly<DepositFacet>}
          */
         getFeeCollectorDepositFacet(denom, feeKit) {
           if (!bankCall) {

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swing-store",
-  "version": "0.6.3",
+  "version": "0.6.5",
   "description": "Persistent storage for SwingSet, based on an LMDB key-value database",
   "type": "module",
   "main": "src/swingStore.js",
@@ -12,21 +12,19 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc -p jsconfig.json",
     "lint:eslint": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
+    "@agoric/assert": "^0.3.16",
     "better-sqlite3": "^7.4.1",
     "node-lmdb": "^0.9.5",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@agoric/install-ses": "^0.5.29",
-    "@agoric/swing-store": "^0.6.3",
+    "@endo/init": "^0.5.37",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

@@ -1,11 +1,11 @@
 {
   "name": "@agoric/spawner",
-  "version": "0.4.33",
+  "version": "0.4.35",
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "./src/contractHost.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "yarn build-bundle-spawn",
@@ -13,7 +13,6 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
@@ -31,15 +30,15 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/eventual-send": "^0.14.0",
-    "@agoric/import-bundle": "^0.2.33",
-    "@agoric/marshal": "^0.5.0"
+    "@agoric/assert": "^0.3.16",
+    "@agoric/eventual-send": "^0.14.1",
+    "@endo/import-bundle": "^0.2.41",
+    "@endo/marshal": "^0.6.3"
   },
   "devDependencies": {
-    "@agoric/bundle-source": "^2.0.1",
-    "@agoric/install-ses": "^0.5.29",
-    "@agoric/swingset-vat": "^0.24.1",
+    "@agoric/swingset-vat": "^0.25.1",
+    "@endo/bundle-source": "^2.1.1",
+    "@endo/init": "^0.5.37",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

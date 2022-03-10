@@ -1,12 +1,12 @@
 // @ts-check
 
-import { insistCapData } from '../capdata.js';
+import { insistCapData } from '../lib/capdata.js';
 
 /**
  * @param {string} vatID
  * @param {string} vatAdminRootKref
  * @param {boolean} shouldReject
- * @param {CapData<unknown>} info
+ * @param {import('@endo/marshal').CapData<unknown>} info
  * @param {(kref: string, method: string, args: unknown, policy?: string) => void} queueToKref
  */
 export function notifyTermination(

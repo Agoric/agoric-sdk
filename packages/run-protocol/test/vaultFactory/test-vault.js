@@ -5,14 +5,15 @@ import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeLoopback } from '@agoric/captp';
+import { makeLoopback } from '@endo/captp';
 import { makeZoeKit } from '@agoric/zoe';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
+import { makeFakeLiveSlotsStuff } from '@agoric/swingset-vat/tools/fakeVirtualSupport.js';
 import { makeTracer } from '../../src/makeTracer.js';
 
 const vaultRoot = './vault-contract-wrapper.js';
@@ -26,10 +27,9 @@ const trace = makeTracer('TestVault');
  * @property {ZCFMint} runMint
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault
- * @property {TimerService} timer
+ * @property {Function} advanceRecordingPeriod
+ * @property {Function} setInterestRate
  */
-
-/** @type {TestContext} */
 let testJig;
 const setJig = jig => {
   testJig = jig;
@@ -65,11 +65,11 @@ async function launch(zoeP, sourceRoot) {
   );
   const {
     runMint,
-    collateralKit: { mint: collateralMint, brand: collaterlBrand },
+    collateralKit: { mint: collateralMint, brand: collateralBrand },
   } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
 
-  const collateral50 = AmountMath.make(collaterlBrand, 50n);
+  const collateral50 = AmountMath.make(collateralBrand, 50n);
   const proposal = harden({
     give: { Collateral: collateral50 },
     want: { RUN: AmountMath.make(runBrand, 70n) },
@@ -100,7 +100,7 @@ test('first', async t => {
   const { issuer: cIssuer, mint: cMint, brand: cBrand } = collateralKit;
 
   t.deepEqual(
-    vault.getDebtAmount(),
+    vault.getCurrentDebt(),
     AmountMath.make(runBrand, 74n),
     'borrower owes 74 RUN',
   );
@@ -153,7 +153,7 @@ test('first', async t => {
   trace('returnedCollateral', returnedCollateral, cIssuer);
   const returnedAmount = await cIssuer.getAmountOf(returnedCollateral);
   t.deepEqual(
-    vault.getDebtAmount(),
+    vault.getCurrentDebt(),
     AmountMath.make(runBrand, 71n),
     'debt reduced to 71 RUN',
   );
@@ -188,7 +188,7 @@ test('bad collateral', async t => {
     'vault should hold 50 Collateral',
   );
   t.deepEqual(
-    vault.getDebtAmount(),
+    vault.getCurrentDebt(),
     AmountMath.make(runBrand, 74n),
     'borrower owes 74 RUN',
   );
@@ -218,4 +218,13 @@ test('bad collateral', async t => {
   //       rej => console.log('reg', rej));
   // t.rejects(p, / /, 'addCollateral requires the right kind', {});
   // t.throws(async () => { await p; }, /was not a live payment/);
+});
+
+test('serializable with collectionManager', async t => {
+  // Necessary to initialize the testjig
+  await helperContract;
+
+  const { vault } = testJig;
+  const stuff = makeFakeLiveSlotsStuff();
+  t.notThrows(() => stuff.marshal.serialize(vault));
 });

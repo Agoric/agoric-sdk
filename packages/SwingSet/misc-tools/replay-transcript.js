@@ -1,31 +1,31 @@
 /* global WeakRef FinalizationRegistry */
 import fs from 'fs';
-// import '@agoric/install-ses';
+// import '@endo/init';
 import '../tools/install-ses-debug.js';
 import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
 import { spawn } from 'child_process';
-import bundleSource from '@agoric/bundle-source';
-import { waitUntilQuiescent } from '../src/waitUntilQuiescent.js';
-import { makeStartXSnap } from '../src/controller.js';
-import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-xsnap.js';
-import { makeLocalVatManagerFactory } from '../src/kernel/vatManager/manager-local.js';
-import { makeNodeSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-node.js';
-import { startSubprocessWorker } from '../src/spawnSubprocessWorker.js';
-import { requireIdentical } from '../src/kernel/vatManager/transcript.js';
+import bundleSource from '@endo/bundle-source';
+import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
+import { makeStartXSnap } from '../src/controller/controller.js';
+import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
+import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
+import { makeNodeSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-node.js';
+import { startSubprocessWorker } from '../src/lib-nodejs/spawnSubprocessWorker.js';
+import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeGcAndFinalize } from '../src/gc-and-finalize.js';
-import engineGC from '../src/engine-gc.js';
+import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
+import engineGC from '../src/lib-nodejs/engine-gc.js';
 
 async function makeBundles() {
   const srcGE = rel =>
     bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
   const lockdown = await srcGE(
-    '../src/kernel/vatManager/lockdown-subprocess-xsnap.js',
+    '../src/supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
   );
   const supervisor = await srcGE(
-    '../src/kernel/vatManager/supervisor-subprocess-xsnap.js',
+    '../src/supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
   );
   fs.writeFileSync('lockdown-bundle', JSON.stringify(lockdown));
   fs.writeFileSync('supervisor-bundle', JSON.stringify(supervisor));
@@ -105,7 +105,7 @@ async function replay(transcriptFile) {
     // kind of useless for vats that use virtual objects
     function startSubprocessWorkerNode() {
       const supercode = new URL(
-        '../src/kernel/vatManager/supervisor-subprocess-node.js',
+        '../src/supervisors/subprocess-node/supervisor-subprocess-node.js',
         import.meta.url,
       ).pathname;
       return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);

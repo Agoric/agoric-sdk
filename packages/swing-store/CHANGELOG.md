@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.4...@agoric/swing-store@0.6.5) (2022-02-24)
+
+**Note:** Version bump only for package @agoric/swing-store
+
+
+
+
+
+### [0.6.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.3...@agoric/swing-store@0.6.4) (2022-02-21)
+
+
+### Features
+
+* **swing-store:** enable `LMDB_MAP_SIZE` and `SOLO_LMDB_MAP_SIZE` ([77f67a8](https://github.com/Agoric/agoric-sdk/commit/77f67a8010d84b4f595e1fbd524b344050ae47d6))
+
+
+
 ### [0.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.2...@agoric/swing-store@0.6.3) (2021-12-02)
 
 **Note:** Version bump only for package @agoric/swing-store

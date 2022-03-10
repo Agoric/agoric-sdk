@@ -26,9 +26,14 @@ test('barter with valid offers', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, barter);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    barter,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));
@@ -93,17 +98,13 @@ test('barter with valid offers', async t => {
     bobPayments,
   );
 
-  const {
-    In: bobSimoleanPayout,
-    Out: bobMoolaPayout,
-  } = await bobSeat.getPayouts();
+  const { In: bobSimoleanPayout, Out: bobMoolaPayout } =
+    await bobSeat.getPayouts();
 
   assertOfferResult(t, bobSeat, 'Trade completed.');
 
-  const {
-    In: aliceMoolaPayout,
-    Out: aliceSimoleanPayout,
-  } = await aliceSeat.getPayouts();
+  const { In: aliceMoolaPayout, Out: aliceSimoleanPayout } =
+    await aliceSeat.getPayouts();
 
   // Alice gets paid at least what she wanted
   t.truthy(

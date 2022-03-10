@@ -1,13 +1,15 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/hostStorage.js';
+import { provideHostStorage } from '../../src/controller/hostStorage.js';
 
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { buildTimer } from '../../src/devices/timer.js';
+import { buildTimer } from '../../src/devices/timer/timer.js';
 
-const TimerSrc = new URL('../../src/devices/timer-src.js', import.meta.url)
-  .pathname;
+const TimerSrc = new URL(
+  '../../src/devices/timer/device-timer.js',
+  import.meta.url,
+).pathname;
 
 const timerConfig = {
   bootstrap: 'bootstrap',

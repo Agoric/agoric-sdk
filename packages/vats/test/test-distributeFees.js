@@ -6,9 +6,9 @@ import { AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { E } from '@agoric/far';
+import { E } from '@endo/far';
 import { buildDistributor } from '../src/distributeFees.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.

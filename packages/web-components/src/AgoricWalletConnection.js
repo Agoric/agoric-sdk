@@ -3,9 +3,9 @@
 import { html, css, LitElement } from 'lit';
 
 import { assert, details as X } from '@agoric/assert';
-import { makeCapTP as defaultMakeCapTP } from '@agoric/captp';
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makeCapTP as defaultMakeCapTP } from '@endo/captp';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import 'robot3/debug';
 import { interpret } from 'robot3';
@@ -222,9 +222,8 @@ export const makeAgoricWalletConnection = (makeCapTP = defaultMakeCapTP) =>
         case 'bridged':
         case 'connecting': {
           if (!this._connector) {
-            this._connector = this.service.context.connectionParams.makeConnector(
-              this,
-            );
+            this._connector =
+              this.service.context.connectionParams.makeConnector(this);
             this._connector.hostConnected();
           }
           backend = this._connector.render();

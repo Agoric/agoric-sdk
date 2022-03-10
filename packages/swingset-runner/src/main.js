@@ -11,8 +11,8 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
-import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox.js';
-import engineGC from '@agoric/swingset-vat/src/engine-gc.js';
+import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox/loopbox.js';
+import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 
 import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 
@@ -335,6 +335,8 @@ export async function main() {
   }
   if (useXS) {
     config.defaultManagerType = 'xs-worker';
+  } else {
+    config.defaultManagerType = 'local';
   }
   if (launchIndirectly) {
     config = generateIndirectConfig(config);

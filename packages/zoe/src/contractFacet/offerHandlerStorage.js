@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeWeakStore } from '@agoric/store';
-import { ToFarFunction } from '@agoric/marshal';
+import { ToFarFunction } from '@endo/marshal';
 
 import { makeHandle } from '../makeHandle.js';
 

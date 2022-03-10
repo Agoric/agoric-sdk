@@ -1,21 +1,19 @@
 import { E } from '@agoric/eventual-send';
 import { observeNotifier } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export const DEFAULT_TIMER_SERVICE_POLL_INTERVAL = 60_000n;
 export const DEFAULT_TIMER_DEVICE_SCALE = 1;
 
 // Make a function that returns the latest polled time.
 // This only provides as high resolution as the timer device.
-export const makeTimerDeviceDateNow = (
-  D,
-  timerDevice,
-  timerDeviceScale = DEFAULT_TIMER_DEVICE_SCALE,
-) => () => {
-  const stamp = D(timerDevice).getLastPolled();
-  const lastPolledStamp = parseInt(`${stamp}`, 10) * timerDeviceScale;
-  return lastPolledStamp;
-};
+export const makeTimerDeviceDateNow =
+  (D, timerDevice, timerDeviceScale = DEFAULT_TIMER_DEVICE_SCALE) =>
+  () => {
+    const stamp = D(timerDevice).getLastPolled();
+    const lastPolledStamp = parseInt(`${stamp}`, 10) * timerDeviceScale;
+    return lastPolledStamp;
+  };
 
 // Make a function that returns the latest polled time.  This only provides as
 // high resolution as the timer service poll interval.

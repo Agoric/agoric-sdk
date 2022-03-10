@@ -40,7 +40,7 @@
 
 /**
  * @typedef {Object} Connection
- * @property {(packetBytes: Data) => Promise<Bytes>} send Send a packet on the connection
+ * @property {(packetBytes: Data, opts?: Record<string, any>) => Promise<Bytes>} send Send a packet on the connection
  * @property {() => Promise<void>} close Close both ends of the connection
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this connection
  * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
@@ -49,10 +49,17 @@
 /**
  * @typedef {Object} ConnectionHandler A handler for a given Connection
  * @property {(connection: Connection, localAddr: Endpoint, remoteAddr: Endpoint, c: ConnectionHandler) => void} [onOpen] The connection has been opened
- * @property {(connection: Connection, packetBytes: Bytes, c: ConnectionHandler) => Promise<Data>} [onReceive] The connection received a packet
+ * @property {(connection: Connection, packetBytes: Bytes, c: ConnectionHandler, opts?: Record<string, any>) => Promise<Data>} [onReceive] The connection received a packet
  * @property {(connection: Connection, reason?: CloseReason, c?: ConnectionHandler) => Promise<void>} [onClose] The connection has been closed
  *
  * @typedef {any?} CloseReason The reason a connection was closed
+ */
+
+/**
+ * @typedef {Object} AttemptDescription
+ * @property {ConnectionHandler} handler
+ * @property {Endpoint} [remoteAddress]
+ * @property {Endpoint} [localAddress]
  */
 
 /**
@@ -64,11 +71,11 @@
  * @property {(port: Port, localAddr: Endpoint, listenHandler: ListenHandler, p: ProtocolHandler) => Promise<void>} onListenRemove A port listener has been reset
  * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, p: ProtocolHandler) => Promise<Endpoint>} [onInstantiate] Return unique suffix for
  * local address
- * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, c: ConnectionHandler, p: ProtocolHandler) => Promise<[Endpoint, ConnectionHandler]>} onConnect A port initiates an outbound connection
+ * @property {(port: Port, localAddr: Endpoint, remote: Endpoint, c: ConnectionHandler, p: ProtocolHandler) => Promise<AttemptDescription>} onConnect A port initiates an outbound connection
  * @property {(port: Port, localAddr: Endpoint, p: ProtocolHandler) => Promise<void>} onRevoke The port is being completely destroyed
  *
  * @typedef {Object} InboundAttempt An inbound connection attempt
- * @property {(connectionHandler: ConnectionHandler) => Promise<Connection>} accept Establish the connection
+ * @property {(desc: AttemptDescription) => Promise<Connection>} accept Establish the connection
  * @property {() => Endpoint} getLocalAddress Return the local address for this attempt
  * @property {() => Endpoint} getRemoteAddress Return the remote address for this attempt
  * @property {() => Promise<void>} close Abort the attempt

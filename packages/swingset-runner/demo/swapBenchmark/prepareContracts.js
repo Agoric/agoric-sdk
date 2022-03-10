@@ -1,6 +1,6 @@
-import '@agoric/install-ses/pre-bundle-source.js';
-import '@agoric/install-ses';
-import bundleSource from '@agoric/bundle-source';
+import '@endo/init/pre-bundle-source.js';
+import '@endo/init';
+import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import fs from 'fs';

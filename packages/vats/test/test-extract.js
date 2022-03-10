@@ -1,17 +1,18 @@
-import '@agoric/install-ses';
-import test from 'ava';
+// @ts-check
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { extract } from '../src/core/boot.js';
+import { extract } from '../src/core/utils.js';
 
 test('extract picks from specimen based on template', t => {
   const specimen = { a: 1, b: { c: 2 } };
   const template = { b: { c: true } };
   const actual = extract(template, specimen);
   t.throws(() => actual.nonexistent, {
-    message: '(a string) not permitted, only (an object)',
+    message: '"nonexistent" not permitted, only ["b"]',
   });
   t.is(actual.b.c, 2);
   t.throws(() => actual.b.other, {
-    message: '(a string) not permitted, only (an object)',
+    message: '"other" not permitted, only ["c"]',
   });
 });

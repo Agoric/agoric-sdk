@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 /**
  * @typedef {Object} Deleter
@@ -12,9 +12,10 @@ import { Far } from '@agoric/marshal';
 
 /**
  * @typedef {Object} PriceAuthorityRegistryAdmin
- * @property {(pa: ERef<PriceAuthority>, brandIn: Brand, brandOut: Brand, force:
- * boolean | undefined)
- * => Deleter} registerPriceAuthority Add a unique price authority for a given
+ * @property {(pa: ERef<PriceAuthority>,
+ *             brandIn: Brand,
+ *             brandOut: Brand,
+ *             force?: boolean) => Deleter} registerPriceAuthority Add a unique price authority for a given
  * pair
  */
 

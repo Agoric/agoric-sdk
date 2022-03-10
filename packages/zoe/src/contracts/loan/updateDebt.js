@@ -1,7 +1,7 @@
 // @ts-check
 
 import '../../../exported.js';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
@@ -39,10 +39,8 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   // the last period-end for which interest has been added
   let lastCalculationTimestamp = basetime;
 
-  const {
-    updater: debtNotifierUpdater,
-    notifier: debtNotifier,
-  } = makeNotifierKit();
+  const { updater: debtNotifierUpdater, notifier: debtNotifier } =
+    makeNotifierKit();
 
   const getDebt = () => debt;
 

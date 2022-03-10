@@ -4,16 +4,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 
-import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
 import { setupMixed } from '../setupMixedMints.js';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -22,7 +20,8 @@ const auctionRoot = `${dirname}/../../../src/contracts/auction/index.js`;
 
 test('zoe - secondPriceAuction w/ 3 bids', async t => {
   t.plan(15);
-  const { moolaKit, simoleanKit, moola, simoleans, zoe } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
 
   const makeAlice = async (timer, moolaPayment) => {
     const moolaPurse = await E(moolaKit.issuer).makeEmptyPurse();
@@ -32,7 +31,8 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         // pack the contract
         const bundle = await bundleSource(auctionRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-auction', bundle);
+        const installationP = E(zoe).installBundleID('b1-auction');
         return installationP;
       },
       startInstance: async installation => {
@@ -247,8 +247,7 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
 
 test('zoe - secondPriceAuction - alice tries to exit', async t => {
   t.plan(12);
-  const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1n));
@@ -268,7 +267,8 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
   // Pack the contract.
   const bundle = await bundleSource(auctionRoot);
 
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-auction', bundle);
+  const installation = await E(zoe).installBundleID('b1-auction');
   const issuerKeywordRecord = harden({
     Asset: moolaR.issuer,
     Ask: simoleanR.issuer,
@@ -401,8 +401,7 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
 
 test('zoe - secondPriceAuction - all bidders try to exit', async t => {
   t.plan(10);
-  const { moolaR, simoleanR, moola, simoleans } = setup();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(1n));
@@ -418,8 +417,8 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(auctionRoot);
-
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-auction', bundle);
+  const installation = await E(zoe).installBundleID('b1-auction');
   const issuerKeywordRecord = harden({
     Asset: moolaR.issuer,
     Ask: simoleanR.issuer,
@@ -534,6 +533,7 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     cryptoCats,
     moola,
     zoe,
+    vatAdminState,
   } = setupMixed();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
@@ -561,8 +561,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(auctionRoot);
-
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-auction', bundle);
+  const installation = await E(zoe).installBundleID('b1-auction');
   const issuerKeywordRecord = harden({
     Asset: ccIssuer,
     Ask: moolaIssuer,
@@ -819,7 +819,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
 test('zoe - firstPriceAuction w/ 3 bids', async t => {
   t.plan(15);
-  const { moolaKit, simoleanKit, moola, simoleans, zoe } = setup();
+  const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
+    setup();
 
   const makeAlice = async (timer, moolaPayment) => {
     const moolaPurse = await E(moolaKit.issuer).makeEmptyPurse();
@@ -829,7 +830,8 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
         // pack the contract
         const bundle = await bundleSource(auctionRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-auction', bundle);
+        const installationP = E(zoe).installBundleID('b1-auction');
         return installationP;
       },
       startInstance: async installation => {

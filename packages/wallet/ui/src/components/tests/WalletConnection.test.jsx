@@ -36,16 +36,18 @@ jest.mock('../../util/WalletBackendAdapter.js', () => {
 const setConnectionState = jest.fn();
 const setBackend = jest.fn();
 let connectionStatus = 'idle';
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <Component
-      setConnectionState={setConnectionState}
-      connectionState={connectionStatus}
-      setBackend={setBackend}
-      {...props}
-    />
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <Component
+        setConnectionState={setConnectionState}
+        connectionState={connectionStatus}
+        setBackend={setBackend}
+        {...props}
+      />
+    );
+  };
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };
 });

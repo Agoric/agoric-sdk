@@ -13,8 +13,8 @@
 import childProcessPowers from 'child_process';
 import osPowers from 'os';
 import fsPowers from 'fs';
+import { makeQueue } from '@endo/stream';
 import { xsnap, DEFAULT_CRANK_METERING_LIMIT } from './xsnap.js';
-import { queue } from './stream.js';
 
 const { freeze } = Object;
 
@@ -182,7 +182,7 @@ export async function replayXSnap(
   folders,
   { readdirSync, readFileSync },
 ) {
-  const replies = queue();
+  const replies = makeQueue();
   async function handleCommand(_msg) {
     const r = await replies.get();
     // console.log('handleCommand', { r: decode(r), msg: decode(msg) });

@@ -2,7 +2,7 @@
 
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { observeNotifier } from '@agoric/notifier';
 import {
   natSafeMath,

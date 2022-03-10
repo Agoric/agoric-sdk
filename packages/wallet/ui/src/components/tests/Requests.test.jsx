@@ -48,20 +48,22 @@ const pendingOffers = new Set([3]);
 const declinedOffers = new Set([6]);
 const closedOffers = new Set([7]);
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <Component
-      purses={purses}
-      offers={offers}
-      dapps={dapps}
-      payments={payments}
-      pendingOffers={pendingOffers}
-      declinedOffers={declinedOffers}
-      closedOffers={closedOffers}
-      {...props}
-    />
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <Component
+        purses={purses}
+        offers={offers}
+        dapps={dapps}
+        payments={payments}
+        pendingOffers={pendingOffers}
+        declinedOffers={declinedOffers}
+        closedOffers={closedOffers}
+        {...props}
+      />
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };

@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { request } from 'http';
 
 import { spawn } from 'child_process';

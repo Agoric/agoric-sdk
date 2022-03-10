@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@agoric/eventual-send';
-import { Remotable } from '@agoric/marshal';
+import { Remotable } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 import { natSafeMath } from '../src/contractSupport/index.js';

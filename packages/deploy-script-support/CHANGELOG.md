@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.2...@agoric/deploy-script-support@0.6.3) (2022-02-24)
+
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+
+
+
+### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.1...@agoric/deploy-script-support@0.6.2) (2022-02-21)
+
+
+### Features
+
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+
+
+### Bug Fixes
+
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+
+
+
 ### [0.6.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.0...@agoric/deploy-script-support@0.6.1) (2021-12-22)
 
 **Note:** Version bump only for package @agoric/deploy-script-support

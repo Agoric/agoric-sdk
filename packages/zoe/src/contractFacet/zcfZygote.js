@@ -2,10 +2,10 @@
 
 import { assert, details as X, makeAssert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { Far, Remotable } from '@agoric/marshal';
+import { Far, Remotable, passStyleOf } from '@endo/marshal';
 import { AssetKind, AmountMath } from '@agoric/ertp';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { cleanProposal, coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { evalContractBundle } from './evalContractCode.js';
@@ -22,7 +22,7 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import '../../exported.js';
 import '../internal-types.js';
 
-import '@agoric/swingset-vat/src/types.js';
+import '@agoric/swingset-vat/src/types-ambient.js';
 
 /** @type {MakeZCFZygote} */
 export const makeZCFZygote = (
@@ -53,16 +53,12 @@ export const makeZCFZygote = (
     powers.exitVatWithFailure(reason);
   };
 
-  const {
-    makeZCFSeat,
-    reallocate,
-    reallocateForZCFMint,
-    dropAllReferences,
-  } = createSeatManager(
-    zoeInstanceAdmin,
-    getAssetKindByBrand,
-    shutdownWithFailure,
-  );
+  const { makeZCFSeat, reallocate, reallocateForZCFMint, dropAllReferences } =
+    createSeatManager(
+      zoeInstanceAdmin,
+      getAssetKindByBrand,
+      shutdownWithFailure,
+    );
 
   const { storeOfferHandler, takeOfferHandler } = makeOfferHandlerStorage();
 
@@ -210,9 +206,16 @@ export const makeZCFZygote = (
     return zcfMint;
   };
 
-  /** @type {MakeZCFMint} */
+  /**
+   * @template {AssetKind} [K='nat']
+   * @param {Keyword} keyword
+   * @param {K} [assetKind]
+   * @param {AdditionalDisplayInfo=} displayInfo
+   * @returns {Promise<ZCFMint>}
+   */
   const makeZCFMint = async (
     keyword,
+    // @ts-expect-error possible different subtype
     assetKind = AssetKind.NAT,
     displayInfo,
   ) => {
@@ -279,7 +282,6 @@ export const makeZCFZygote = (
     shutdown: completion => {
       E(zoeInstanceAdmin).exitAllSeats(completion);
       dropAllReferences();
-      // @ts-ignore powers is not typed correctly: https://github.com/Agoric/agoric-sdk/issues/3239s
       powers.exitVat(completion);
     },
     shutdownWithFailure,
@@ -344,7 +346,15 @@ export const makeZCFZygote = (
    * @type {ZCFZygote}
    * */
   const zcfZygote = {
-    evaluateContract: bundle => {
+    evaluateContract: bundleOrBundleCap => {
+      let bundle;
+      if (passStyleOf(bundleOrBundleCap) === 'remotable') {
+        const bundleCap = bundleOrBundleCap;
+        // @ts-expect-error vatPowers is not typed correctly: https://github.com/Agoric/agoric-sdk/issues/3239
+        bundle = powers.D(bundleCap).getBundle();
+      } else {
+        bundle = bundleOrBundleCap;
+      }
       contractCode = evalContractBundle(bundle);
       handlePWarning(contractCode);
     },

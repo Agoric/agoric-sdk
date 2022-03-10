@@ -9,7 +9,7 @@ import '../../../../exported.js';
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { makeNotifierKit } from '@agoric/notifier';
 
 import { checkDetails, checkPayout } from './helpers.js';
@@ -35,13 +35,20 @@ test.todo('loan - lend - wrong exit rule');
 test.todo('loan - lend - must want nothing');
 
 test('loan - lend - exit before borrow', async t => {
-  const { moolaKit: collateralKit, simoleanKit: loanKit, zoe } = setup();
+  const {
+    moolaKit: collateralKit,
+    simoleanKit: loanKit,
+    zoe,
+    vatAdminState,
+  } = setup();
   const bundle = await bundleSource(loanRoot);
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-loan', bundle);
+  const installation = await E(zoe).installBundleID('b1-loan');
 
   // Create autoswap installation and instance
   const autoswapBundle = await bundleSource(autoswapRoot);
-  const autoswapInstallation = await E(zoe).install(autoswapBundle);
+  vatAdminState.installBundle('b1-autoswap', autoswapBundle);
+  const autoswapInstallation = await E(zoe).installBundleID('b1-autoswap');
 
   const { instance: autoswapInstance } = await E(zoe).startInstance(
     autoswapInstallation,

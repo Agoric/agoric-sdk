@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { setupCreateZCFVat } from '../../../src/zoeService/createZCFVat.js';
 
@@ -11,22 +11,21 @@ test('setupCreateZCFVat', async t => {
   // This is difficult to unit test, since the real functionality
   // creates a new vat
 
+  const zcfBundleCap = Far('zcfBundleCap', {});
   const fakeVatAdminSvc = Far('fakeVatAdminSvc', {
-    createVatByName: _name => {
-      return harden({ adminNode: undefined, root: undefined });
+    getNamedBundleCap: name => {
+      assert.equal(name, 'zcf');
+      return zcfBundleCap;
     },
-    createVat: _bundle => {
+    createVat: bundleCap => {
+      assert.equal(bundleCap, zcfBundleCap);
       return harden({ adminNode: undefined, root: undefined });
     },
   });
 
   // @ts-ignore fakeVatAdminSvc is mocked
-  t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, undefined)(), {
-    adminNode: undefined,
-    root: undefined,
-  });
-  // @ts-ignore fakeVatAdminSvc is mocked
-  t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, 'myVat')(), {
+  t.deepEqual(await setupCreateZCFVat(fakeVatAdminSvc, { name: 'zcf' })(), {
+    // @ts-ignore fakeVatAdminSvc is mocked
     adminNode: undefined,
     root: undefined,
   });

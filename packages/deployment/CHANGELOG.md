@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.1.0...@agoric/deployment@2.2.0) (2022-02-24)
+
+
+### Features
+
+* **cosmic-swingset:** add tools for core-eval governance ([7368aa6](https://github.com/Agoric/agoric-sdk/commit/7368aa6c22be840733843b1da125eb659cc21d84))
+
+
+
+## [2.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.0.0...@agoric/deployment@2.1.0) (2022-02-21)
+
+
+### Features
+
+* **deployment:** include short loadgen test in CI ([bae4ce8](https://github.com/Agoric/agoric-sdk/commit/bae4ce82a044a7ff745b5fa40815a79e522ef5e8))
+
+
+### Bug Fixes
+
+* **deployment:** capture `flight-recorder.bin` ([451a817](https://github.com/Agoric/agoric-sdk/commit/451a81775e8d60b68c072759afaed07420a2b400))
+* **deployment:** use docker API instead of CLI ([0c049b4](https://github.com/Agoric/agoric-sdk/commit/0c049b4ffdd51af2b3c39541a84f7f349027a10d))
+
+
+
 ## [2.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@1.30.0...@agoric/deployment@2.0.0) (2021-12-22)
 
 

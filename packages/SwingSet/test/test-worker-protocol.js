@@ -4,12 +4,12 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import {
   arrayEncoderStream,
   arrayDecoderStream,
-} from '../src/worker-protocol.js';
+} from '../src/lib-nodejs/worker-protocol.js';
 import {
   encode,
   netstringEncoderStream,
   netstringDecoderStream,
-} from '../src/netstring.js';
+} from '../src/lib/netstring.js';
 
 test('arrayEncoderStream', async t => {
   const e = arrayEncoderStream();

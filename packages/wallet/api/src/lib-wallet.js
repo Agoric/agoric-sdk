@@ -16,14 +16,14 @@ import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@agoric/eventual-send';
 
-import { makeMarshal, passStyleOf, Far, mapIterable } from '@agoric/marshal';
+import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import {
   makeNotifierKit,
   observeIteration,
   observeNotifier,
 } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeIssuerTable } from './issuerTable.js';
 import { makeDehydrator } from './lib-dehydrate.js';
@@ -127,9 +127,6 @@ export function makeWallet({
   /** @type {WeakStore<Issuer, string>} */
   const issuerToBoardId = makeScalarWeakMap('issuer');
 
-  /** @type {Petname} */
-  let feePursePetname;
-
   // Idempotently initialize the issuer's synchronous boardId mapping.
   const initIssuerToBoardId = async issuer => {
     if (issuerToBoardId.has(issuer)) {
@@ -220,10 +217,8 @@ export function makeWallet({
   });
 
   /** @type {NotifierRecord<OfferState[]>} */
-  const {
-    notifier: offersNotifier,
-    updater: offersUpdater,
-  } = makeNotifierKit();
+  const { notifier: offersNotifier, updater: offersUpdater } =
+    makeNotifierKit();
 
   const { pursesNotifier, attenuatedPursesNotifier, pursesUpdater } = (() => {
     /** @type {NotifierRecord<PursesFullState[]>} */
@@ -318,7 +313,7 @@ export function makeWallet({
       ...(depositBoardId && { depositBoardId }),
       brandPetname,
       pursePetname,
-      displayInfo: (issuerRecord && issuerRecord.displayInfo),
+      displayInfo: issuerRecord && issuerRecord.displayInfo,
       value,
       currentAmountSlots: dehydratedCurrentAmount,
       currentAmount: fillInSlots(dehydratedCurrentAmount),
@@ -379,7 +374,6 @@ export function makeWallet({
     const displayInfo = await E(E(zoe).getFeeIssuer()).getDisplayInfo();
     const augmentedDetails = {
       ...invitationDetails,
-      feePursePetname,
       fee: { ...fee, displayInfo },
     };
     return display(augmentedDetails);
@@ -484,12 +478,10 @@ export function makeWallet({
     inboxStateChangeHandler(getInboxState());
   }
 
-  const {
-    updater: issuersUpdater,
-    notifier: issuersNotifier,
-  } = /** @type {NotifierRecord<Array<[Petname, BrandRecord]>>} */ (makeNotifierKit(
-    [],
-  ));
+  const { updater: issuersUpdater, notifier: issuersNotifier } =
+    /** @type {NotifierRecord<Array<[Petname, BrandRecord]>>} */ (
+      makeNotifierKit([])
+    );
 
   function updateAllIssuersState() {
     issuersUpdater.updateState(
@@ -692,12 +684,10 @@ export function makeWallet({
     return issuerBoardId;
   };
 
-  const {
-    updater: contactsUpdater,
-    notifier: contactsNotifier,
-  } = /** @type {NotifierRecord<Array<[Petname, Contact]>>} */ (makeNotifierKit(
-    [],
-  ));
+  const { updater: contactsUpdater, notifier: contactsNotifier } =
+    /** @type {NotifierRecord<Array<[Petname, Contact]>>} */ (
+      makeNotifierKit([])
+    );
 
   /**
    * @param {Petname} petname
@@ -787,10 +777,9 @@ export function makeWallet({
     // Just notice the balance updates for the purse.
     observeNotifier(E(purse).getCurrentAmountNotifier(), {
       updateState(_balance) {
-        updatePursesState(
-          purseMapping.valToPetname.get(purse),
-          purse,
-        ).catch(e => console.error('cannot updateState', e));
+        updatePursesState(purseMapping.valToPetname.get(purse), purse).catch(
+          e => console.error('cannot updateState', e),
+        );
       },
       fail(reason) {
         console.error(`failed updateState observer`, reason);
@@ -917,10 +906,8 @@ export function makeWallet({
 
   /** @type {Store<string, DappRecord>} */
   const dappOrigins = makeScalarMap('dappOrigin');
-  const {
-    notifier: dappsNotifier,
-    updater: dappsUpdater,
-  } = /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
+  const { notifier: dappsNotifier, updater: dappsUpdater } =
+    /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
 
   const updateDapp = dappRecord => {
     harden(addMeta(dappRecord));
@@ -1196,10 +1183,8 @@ export function makeWallet({
 
   /** @type {Store<number, PaymentRecord>} */
   const idToPaymentRecord = makeScalarMap('paymentId');
-  const {
-    updater: paymentsUpdater,
-    notifier: paymentsNotifier,
-  } = /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
+  const { updater: paymentsUpdater, notifier: paymentsNotifier } =
+    /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
   /**
    * @param {PaymentRecord} param0
    */
@@ -1614,10 +1599,8 @@ export function makeWallet({
         return addPayment(payment);
       },
     });
-    const [address] = await Promise.all([
-      E(myAddressNameAdmin).getMyAddress(),
-      E(myAddressNameAdmin).update('depositFacet', selfDepositFacet),
-    ]);
+
+    const address = await E(myAddressNameAdmin).getMyAddress();
     // We need to do this before we can enable auto deposit.
     selfContactP = addContact('Self', selfDepositFacet, address);
 
@@ -1635,13 +1618,15 @@ export function makeWallet({
       .then(makeInvitePurse)
       .then(addInviteDepositFacet);
     zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
+
+    await E(myAddressNameAdmin).update('depositFacet', selfDepositFacet);
   };
 
   // Importing assets as virtual purses from the bank is a highly-trusted path.
   // We don't want to expose this mechanism to the user, in case they shoot
   // themselves in the foot with it by importing an asset/virtual purse they
   // don't really trust.
-  const importBankAssets = async (bank, feePurseP) => {
+  const importBankAssets = async bank => {
     observeIteration(E(bank).getAssetSubscription(), {
       async updateState({ proposedName, issuerName, issuer, brand }) {
         try {
@@ -1664,18 +1649,6 @@ export function makeWallet({
         }
       },
     }).finally(() => console.error('/// This is the end of the bank assets'));
-    if (!feePurseP) {
-      return;
-    }
-    const feePurse = await feePurseP;
-    const feeIssuer = await E(zoe).getFeeIssuer();
-    const issuerName = await addIssuer('RUN', feeIssuer);
-    feePursePetname = await internalUnsafeImportPurse(
-      issuerName,
-      'Zoe fees',
-      false,
-      feePurse,
-    );
   };
   return {
     admin: wallet,

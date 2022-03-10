@@ -12,11 +12,16 @@ jest.mock('../views/Dashboard', () => () => 'Dashboard');
 jest.mock('../views/Dapps', () => () => 'Dapps');
 jest.mock('../views/Contacts', () => () => 'Contacts');
 jest.mock('../views/Issuers', () => () => 'Issuers');
+jest.mock('@cosmjs/stargate', () => () => {
+  jest.mock();
+});
 
 const connectionState = 'connecting';
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return <Component connectionState={connectionState} {...props} />;
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return <Component connectionState={connectionState} {...props} />;
+  };
 
 jest.mock('../contexts/Application', () => {
   return { withApplicationContext };

@@ -1,6 +1,6 @@
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;

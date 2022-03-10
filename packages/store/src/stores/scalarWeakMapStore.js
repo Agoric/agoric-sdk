@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, assertPassable, passStyleOf } from '@agoric/marshal';
+import { Far, assertPassable, passStyleOf } from '@endo/marshal';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
 const { details: X, quote: q } = assert;
@@ -83,19 +83,19 @@ export const makeWeakMapStoreMethods = (
  *
  * @template K,V
  * @param {string} [keyName='key'] - the column name for the key
- * @param {Partial<StoreOptions>=} options
+ * @param {StoreOptions=} options
  * @returns {WeakMapStore<K,V>}
  */
 export const makeScalarWeakMapStore = (
   keyName = 'key',
-  { longLived = true, keyPattern = undefined, valuePattern = undefined } = {},
+  { longLived = true, keySchema = undefined, valueSchema = undefined } = {},
 ) => {
   const jsmap = new (longLived ? WeakMap : Map)();
-  if (keyPattern !== undefined) {
-    assertPattern(keyPattern);
+  if (keySchema !== undefined) {
+    assertPattern(keySchema);
   }
-  if (valuePattern !== undefined) {
-    assertPattern(valuePattern);
+  if (valueSchema !== undefined) {
+    assertPattern(valueSchema);
   }
 
   const assertKVOkToSet = (_key, value) => {
@@ -104,8 +104,8 @@ export const makeScalarWeakMapStore = (
     harden(value);
 
     assertPassable(value);
-    if (valuePattern !== undefined) {
-      fit(value, valuePattern);
+    if (valueSchema !== undefined) {
+      fit(value, valueSchema);
     }
   };
 
@@ -118,8 +118,8 @@ export const makeScalarWeakMapStore = (
       passStyleOf(key) === 'remotable',
       X`Only remotables can be keys of scalar WeakMapStores: ${key}`,
     );
-    if (keyPattern !== undefined) {
-      fit(key, keyPattern);
+    if (keySchema !== undefined) {
+      fit(key, keySchema);
     }
     assertKVOkToSet(key, value);
   };

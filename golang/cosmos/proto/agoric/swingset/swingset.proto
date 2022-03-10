@@ -6,6 +6,32 @@ import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
+// CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
+// core.
+// See `agoric-sdk/packages/vats/src/core/eval.js`.
+message CoreEvalProposal {
+  option (gogoproto.goproto_getters) = false;
+
+  string            title       = 1;
+  string            description = 2;
+
+  // Although evals are sequential, they may run concurrently, since they each
+  // can return a Promise.
+  repeated CoreEval evals       = 3 [(gogoproto.nullable) = false];
+}
+
+// CoreEval defines an individual SwingSet core evaluation, for use in
+// CoreEvalProposal.
+message CoreEval {
+  // Grant these JSON-stringified core bootstrap permits to the jsCode, as the
+  // `powers` endowment.
+  string json_permits = 1 [(gogoproto.moretags) = "yaml:\"json_permits\""];
+
+  // Evaluate this JavaScript code in a Compartment endowed with `powers` as
+  // well as some powerless helpers.
+  string js_code      = 2 [(gogoproto.moretags) = "yaml:\"js_code\""];
+}
+
 // Params are the swingset configuration/governance parameters.
 message Params {
     option (gogoproto.equal) = true;

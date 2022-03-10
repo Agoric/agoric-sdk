@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore, makeStore } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
@@ -50,6 +50,8 @@ export const createSeatManager = (
    * @returns {Allocation}
    */
   const getCurrentAllocation = zcfSeat => {
+    // TODO update docs that getCurrentAllocation() fails after exit
+    // https://github.com/Agoric/documentation/issues/630
     assertActive(zcfSeat);
     return activeZCFSeats.get(zcfSeat);
   };

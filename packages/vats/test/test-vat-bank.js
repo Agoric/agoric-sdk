@@ -2,9 +2,19 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { economyBundles } from '@agoric/run-protocol/src/importedBundles.js';
+import { makeZoeKit } from '@agoric/zoe';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { observeIteration } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
+import {
+  mintInitialSupply,
+  addBankAssets,
+} from '../src/core/basic-behaviors.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 
 test('communication', async t => {
   t.plan(38);
@@ -101,7 +111,7 @@ test('communication', async t => {
     message: /"brand" not found/,
   });
 
-  /** @type {undefined | IteratorResult<{brand: Brand, issuer: Issuer, proposedName: string}>} */
+  /** @type {undefined | IteratorResult<{brand: Brand, issuer: ERef<Issuer>, proposedName: string}>} */
   let itResult;
   const p = it.next().then(r => (itResult = r));
   t.is(itResult, undefined);
@@ -128,9 +138,9 @@ test('communication', async t => {
   // TODO: We can fix this only if the ERTP methods also allow consuming a
   // `Remote<Payment>` instead of just `Payment`.  That typing has not yet been
   // done, hence the cast.
-  const payment2 = /** @type {Payment} */ (await E(vpurse).withdraw(
-    paymentAmount,
-  ));
+  const payment2 = /** @type {Payment} */ (
+    await E(vpurse).withdraw(paymentAmount)
+  );
   const actualPaymentAmount2 = await E(kit.issuer).burn(
     payment2,
     paymentAmount,
@@ -183,4 +193,95 @@ test('communication', async t => {
     E(bankMgr).getFeeCollectorDepositFacet('ufee', feeKit),
   ).receive(feePayment);
   t.assert(AmountMath.isEqual(feeReceived, feeAmount));
+});
+
+test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
+  // Supply bootstrap prerequisites.
+  const space = /** @type { any } */ (makePromiseSpace(t.log));
+  const { produce, consume } =
+    /** @type { BootstrapPowers & { consume: { loadVat: VatLoader<any> }}} */ (
+      space
+    );
+  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  produce.agoricNames.resolve(agoricNames);
+
+  produce.centralSupplyBundle.resolve(economyBundles.centralSupply);
+  produce.mintHolderBundle.resolve(economyBundles.mintHolder);
+
+  const { zoeService, feeMintAccess } = makeZoeKit(
+    makeFakeVatAdmin(() => {}).admin,
+  );
+  produce.zoe.resolve(zoeService);
+  produce.feeMintAccess.resolve(feeMintAccess);
+
+  // Genesis RUN supply: 50
+  const bootMsg = {
+    type: 'INIT@@',
+    chainID: 'ag',
+    storagePort: 1,
+    supplyCoins: [{ amount: '50000000', denom: 'urun' }],
+    vbankPort: 2,
+    vibcPort: 3,
+  };
+
+  // Now run the function under test.
+  await mintInitialSupply({
+    vatParameters: {
+      argv: {
+        bootMsg,
+        ROLE: 'x',
+        hardcodedClientAddresses: [],
+        noFakeCurrencies: true,
+        FIXME_GCI: '',
+        PROVISIONER_INDEX: 1,
+      },
+    },
+    consume,
+    produce,
+    devices: /** @type { any } */ ({}),
+    vats: /** @type { any } */ ({}),
+    vatPowers: /** @type { any } */ ({}),
+    runBehaviors: /** @type { any } */ ({}),
+    modules: {},
+    ...spaces,
+  });
+
+  // check results: initialSupply
+  const runIssuer = await E(zoeService).getFeeIssuer();
+  const runBrand = await E(runIssuer).getBrand();
+  const pmt = await consume.initialSupply;
+  const amt = await E(runIssuer).getAmountOf(pmt);
+  t.deepEqual(
+    amt,
+    { brand: runBrand, value: 50_000_000n },
+    'initialSupply of 50 RUN',
+  );
+
+  const loadVat = async name => {
+    assert.equal(name, 'bank');
+    return E(buildRootObject)();
+  };
+  produce.loadVat.resolve(loadVat);
+  produce.bridgeManager.resolve(undefined);
+
+  await addBankAssets({ consume, produce, ...spaces });
+
+  // check results: bankManager assets
+  const assets = E(consume.bankManager).getAssetSubscription();
+  const expected = ['BLD', 'RUN'];
+  const seen = new Set();
+  const done = makePromiseKit();
+  observeIteration(assets, {
+    updateState: asset => {
+      seen.add(asset.issuerName);
+      if (asset.issuerName === 'RUN') {
+        t.is(asset.issuer, runIssuer);
+      }
+      if (seen.size === expected.length) {
+        done.resolve(seen);
+      }
+    },
+  });
+  await done.promise;
+  t.deepEqual([...seen].sort(), expected);
 });

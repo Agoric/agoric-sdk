@@ -1,12 +1,13 @@
 /// <reference types="ses"/>
 
 /**
- * @typedef {import('@agoric/marshal').InterfaceSpec} InterfaceSpec
- * @typedef {import('@agoric/marshal').GetInterfaceOf} GetInterfaceOf
+ * @typedef {import('@endo/marshal').InterfaceSpec} InterfaceSpec
+ * @typedef {import('@endo/marshal').GetInterfaceOf} GetInterfaceOf
  */
 
 /**
- * @typedef {Object} Amount
+ * @template {AssetKind} [K=AssetKind]
+ * @typedef {object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
  * AmountMath executes the logic of how amounts are changed when digital
@@ -16,12 +17,12 @@
  * relies heavily on polymorphic MathHelpers, which manipulate the unbranded
  * portion.
  *
- * @property {Brand} brand
- * @property {AmountValue} value
+ * @property {Brand<K>} brand
+ * @property {AssetValueForKind<K>} value
  */
 
 /**
- * @typedef {NatValue | SetValue | CopySetValue} AmountValue
+ * @typedef {NatValue | SetValue | CopySetValue | CopyBagValue} AmountValue
  * An `AmountValue` describes a set or quantity of assets that can be owned or
  * shared.
  *
@@ -37,7 +38,7 @@
  * to represent the array of its elements. `CopySetValue` is the proper
  * representation using a CopySet.
  *
- * TODO Eventually add `CopyBagValue` for semi-fungible rights represented as a
+ * A semi-fungible `CopyBagValue` is represented as a
  * `CopyBag` of `Key` objects. "Bag" is synonymous with MultiSet, where an
  * element of a bag can be present once or more times, i.e., some positive
  * bigint number of times, representing that quantity of the asset represented
@@ -51,113 +52,32 @@
  */
 
 /**
- * @typedef {'nat' | 'set' | 'copySet' } AssetKind
+ * @typedef {'nat' | 'set' | 'copySet' | 'copyBag' } AssetKind
  *
  * See doc-comment for `AmountValue`.
  */
 
 /**
- * @callback MakeEmpty
- * @param {Brand} brand
- * @param {AssetKind=} assetKind
- * @returns {Amount}
+ * @template {AssetKind} K
+ * @typedef {K extends 'nat' ? NatValue :
+ * K extends 'set' ? SetValue :
+ * K extends 'copySet' ? CopySetValue:
+ * K extends 'copyBag' ? CopyBagValue :
+ * never
+ * } AssetValueForKind
  */
 
 /**
- * This section blindly imitates what Endo's ses/src/error/types.js
- * does to express type overloaded methods.
- *
- * @callback AmountMake
- * @param {Brand} brand
- * @param {AmountValue} allegedValue
- * @returns {Amount}
- *
- * @callback AmountCoerce
- * @param {Brand} brand
- * @param {Amount} allegedAmount
- * @returns {Amount}
- *
- * @callback AmountGetValue
- * @param {Brand} brand
- * @param {Amount} allegedAmount
- * @returns {AmountValue}
+ * @template {AmountValue} V
+ * @typedef {V extends NatValue ? 'nat' :
+ *  V extends SetValue ? 'set' :
+ *  V extends CopySetValue ? 'copySet' :
+ *  V extends CopyBagValue ? 'copyBag' :
+ *  never} AssetKindForValue
  */
 
 /**
- * @typedef {Object} AmountMath
- * Logic for manipulating amounts.
- *
- * Amounts are the canonical description of tradable goods. They are manipulated
- * by issuers and mints, and represent the goods and currency carried by purses
- * and
- * payments. They can be used to represent things like currency, stock, and the
- * abstract right to participate in a particular exchange.
- *
- * @property {AmountMake} make
- * Make an amount from a value by adding the brand.
- *
- * @property {AmountCoerce} coerce
- * Make sure this amount is valid enough, and return a corresponding
- * valid amount if so.
- *
- * @property {AmountGetValue} getValue
- * Extract and return the value.
- *
- * @property {MakeEmpty} makeEmpty
- * Return the amount representing an empty amount. This is the
- * identity element for MathHelpers.add and MatHelpers.subtract.
- *
- * @property {(amount: Amount) => Amount} makeEmptyFromAmount
- * Return the amount representing an empty amount, using another
- * amount as the template for the brand and assetKind.
- *
- * @property {(amount: Amount, brand?: Brand) => boolean} isEmpty
- * Return true if the Amount is empty. Otherwise false.
- *
- * @property {(
- *   leftAmount: Amount,
- *   rightAmount: Amount,
- *   brand?: Brand
- * ) => boolean} isGTE
- * Returns true if the leftAmount is greater than or equal to the
- * rightAmount. For non-scalars, "greater than or equal to" depends
- * on the kind of amount, as defined by the MathHelpers. For example,
- * whether rectangle A is greater than rectangle B depends on whether rectangle
- * A includes rectangle B as defined by the logic in MathHelpers.
- *
- * @property {(
- *   leftAmount: Amount,
- *   rightAmount: Amount,
- *   brand?: Brand
- * ) => boolean} isEqual
- * Returns true if the leftAmount equals the rightAmount. We assume
- * that if isGTE is true in both directions, isEqual is also true
- *
- * @property {(
- *   leftAmount: Amount,
- *   rightAmount: Amount,
- *   brand?: Brand
- * ) => Amount} add
- * Returns a new amount that is the union of both leftAmount and rightAmount.
- *
- * For fungible amount this means adding the values. For other kinds of
- * amount, it usually means including all of the elements from both
- * left and right.
- *
- * @property {(
- *   leftAmount: Amount,
- *   rightAmount: Amount,
- *   brand?: Brand
- * ) => Amount} subtract
- * Returns a new amount that is the leftAmount minus the rightAmount
- * (i.e. everything in the leftAmount that is not in the
- * rightAmount). If leftAmount doesn't include rightAmount
- * (subtraction results in a negative), throw  an error. Because the
- * left amount must include the right amount, this is NOT equivalent
- * to set subtraction.
- */
-
-/**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} DisplayInfo
  * @property {number=} decimalPlaces Tells the display software how
  *   many decimal places to move the decimal over to the left, or in
@@ -169,12 +89,13 @@
  *   assets, should not be specified. The decimalPlaces property
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
- * @property {AssetKind} assetKind - the kind of asset, either
+ * @property {K} assetKind - the kind of asset, either
  *   AssetKind.NAT (fungible) or
  *   AssetKind.SET or AssertKind.COPY_SET (non-fungible)
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} Brand
  * The brand identifies the kind of issuer, and has a function to get the
  * alleged name for the kind of asset described. The alleged name (such
@@ -297,6 +218,7 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} Issuer
  *
  * The issuer cannot mint a new amount, but it can create empty purses
@@ -306,7 +228,7 @@
  * source and then relied upon as the decider of whether an untrusted
  * payment is valid.
  *
- * @property {() => Brand} getBrand Get the Brand for this Issuer. The
+ * @property {() => Brand<K>} getBrand Get the Brand for this Issuer. The
  * Brand indicates the type of digital asset and is shared by the
  * mint, the issuer, and any purses and payments of this particular
  * kind. The brand is not closely held, so this function should not be
@@ -360,55 +282,17 @@
  */
 
 /**
- * @callback MakeIssuerKit
- * @param {string} allegedName
- * @param {AssetKind} [assetKind=AssetKind.NAT]
- * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
- * in the middle of an atomic action (which btw should never happen), it
- * potentially leaves its ledger in a corrupted state. If this function was
- * provided, then it the failed atomic action will call it, so that some
- * larger unit of computation, like the enclosing vat, can be shutdown
- * before anything else is corrupted by that corrupted state.
- * See https://github.com/Agoric/agoric-sdk/issues/3434
- * @returns {IssuerKit}
- *
- * The allegedName becomes part of the brand in asset descriptions. The
- * allegedName doesn't have to be a string, but it will only be used for
- * its value. The allegedName is useful for debugging and double-checking
- * assumptions, but should not be trusted.
- *
- * The assetKind will be used to import a specific mathHelpers
- * from the mathHelpers library. For example, natMathHelpers, the
- * default, is used for basic fungible tokens.
- *
- *  `displayInfo` gives information to UI on how to display the amount.
- *
- * @typedef {Object} IssuerKit
- * The return value of makeIssuerKit
- *
- * @property {Mint} mint
- * @property {Issuer} issuer
- * @property {Brand} brand
- * @property {DisplayInfo} displayInfo
+ * @typedef {import('./issuerKit').IssuerKit} IssuerKit
  */
 
 /**
- * @callback MintPayment
- *
- * Creates a new Payment containing newly minted amount.
- *
- * @param {Amount} newAmount
- * @returns {Payment}
- */
-
-/**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} Mint
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  *
- * @property {() => Issuer} getIssuer Gets the Issuer for this mint.
- * @property {MintPayment} mintPayment
+ * @property {() => Issuer<K>} getIssuer Gets the Issuer for this mint.
+ * @property {MintPayment<K>} mintPayment
  */
 
 /**
@@ -493,8 +377,8 @@
  */
 
 /**
- * @template V
- * @typedef {Object} MathHelpers<V>
+ * @template {AssetKind} K
+ * @typedef {Object} MathHelpers<K>
  * All of the difference in how digital asset amount are manipulated can be
  * reduced to the behavior of the math on values. We extract this
  * custom logic into mathHelpers. MathHelpers are about value
@@ -554,6 +438,14 @@
 
 /**
  * @typedef {MathHelpers<CopySetValue>} CopySetMathHelpers
+ */
+
+/**
+ * @typedef {CopyBag<Key>} CopyBagValue
+ */
+
+/**
+ * @typedef {MathHelpers<CopyBagValue>} CopyBagMathHelpers
  */
 
 /**

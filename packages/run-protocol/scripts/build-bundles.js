@@ -1,9 +1,9 @@
-import '@agoric/install-ses/pre-bundle-source.js';
-import '@agoric/install-ses';
+import '@endo/init/pre-bundle-source.js';
+import '@endo/init';
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 const filename = new URL(import.meta.url).pathname;
@@ -34,6 +34,8 @@ async function main() {
       `${srcDir}/vaultFactory/vaultFactory.js`,
       `${bundlesDir}/bundle-vaultFactory.js`,
     ],
+    [`${srcDir}/centralSupply.js`, `${bundlesDir}/bundle-centralSupply.js`],
+    [`${srcDir}/mintHolder.js`, `${bundlesDir}/bundle-mintHolder.js`],
     [
       `${srcDir}/vaultFactory/liquidateMinimum.js`,
       `${bundlesDir}/bundle-liquidateMinimum.js`,

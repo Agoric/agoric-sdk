@@ -1,5 +1,5 @@
-import { E, makeCapTP } from '@agoric/captp';
-import { Far } from '@agoric/marshal';
+import { E, makeCapTP } from '@endo/captp';
+import { Far } from '@endo/marshal';
 
 export const getCapTPHandler = (
   send,
@@ -23,7 +23,11 @@ export const getCapTPHandler = (
       const sendObj = o => {
         send(o, [channelHandle]);
       };
-      const { dispatch, abort, getBootstrap: getRemoteBootstrap } = makeCapTP(
+      const {
+        dispatch,
+        abort,
+        getBootstrap: getRemoteBootstrap,
+      } = makeCapTP(
         origin,
         sendObj,
         async o => getLocalBootstrap(getRemoteBootstrap(), meta, o),

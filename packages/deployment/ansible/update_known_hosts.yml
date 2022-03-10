@@ -3,7 +3,7 @@
   gather_facts: no
   become: no
   vars:
-    ssh_known_hosts: "{{ SETUP_HOME }}/provision/ssh_known_hosts"
+    ssh_known_hosts: '{{ SETUP_HOME }}/provision/ssh_known_hosts'
   tasks:
     - name: get port and host, default 22
       delegate_to: localhost
@@ -19,16 +19,16 @@
     - name: ensure host keys were returned
       delegate_to: localhost
       assert:
-        that: "{{ (ssh_keys | length) > 0 }}"
+        that: '{{ (ssh_keys | length) > 0 }}'
 
     - name: ensure host keys exist in file
       delegate_to: localhost
       lineinfile:
-        path: "{{ ssh_known_hosts }}"
+        path: '{{ ssh_known_hosts }}'
         create: yes
         state: present
-        line: "{{ item }}"
-      with_items: "{{ ssh_keys.splitlines() }}"
+        line: '{{ item }}'
+      with_items: '{{ ssh_keys.splitlines() }}'
 
     - name: Set master authorized SSH key
       authorized_key:

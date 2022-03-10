@@ -1,14 +1,14 @@
 // @ts-check
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
-import { isPromise } from '@agoric/promise-kit';
+import { isPromise } from '@endo/promise-kit';
 
 import '@agoric/ertp/exported.js';
 import '@agoric/notifier/exported.js';
 
 /**
  * @template T
- * @typedef {import('@agoric/far').EOnly<T>} EOnly
+ * @typedef {import('@endo/far').EOnly<T>} EOnly
  */
 
 /**
@@ -64,10 +64,8 @@ function makeVirtualPurse(vpc, kit) {
   }
 
   /** @type {NotifierRecord<Amount>} */
-  const {
-    notifier: balanceNotifier,
-    updater: balanceUpdater,
-  } = makeNotifierKit();
+  const { notifier: balanceNotifier, updater: balanceUpdater } =
+    makeNotifierKit();
 
   /** @type {ERef<Amount>} */
   let lastBalance = E.get(balanceNotifier.getUpdateSince()).value;

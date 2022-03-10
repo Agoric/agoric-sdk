@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { E } from '@agoric/eventual-send';
 
@@ -44,15 +44,18 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin().admin);
+    const { admin, vatAdminState } = makeFakeVatAdmin();
+    const { zoeService: zoe } = makeZoeKit(admin);
 
     const oracleContractBundle = await bundleSource(oracleContractPath);
     const bountyContractBundle = await bundleSource(bountyContractPath);
 
     // Install the contracts on Zoe, getting installations. We use these
     // installations to instantiate the contracts.
-    const oracleInstallation = await E(zoe).install(oracleContractBundle);
-    const bountyInstallation = await E(zoe).install(bountyContractBundle);
+    vatAdminState.installBundle('b1-oracle', oracleContractBundle);
+    const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
+    vatAdminState.installBundle('b1-bounty', bountyContractBundle);
+    const bountyInstallation = await E(zoe).installBundleID('b1-bounty');
     const { moolaIssuer, moolaMint, moola } = setup();
 
     ot.context.zoe = zoe;

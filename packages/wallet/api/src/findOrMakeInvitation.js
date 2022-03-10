@@ -1,6 +1,6 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
-import { passStyleOf } from '@agoric/marshal';
+import { passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 export const makeId = (dappOrigin, rawId) => `${dappOrigin}#${rawId}`;

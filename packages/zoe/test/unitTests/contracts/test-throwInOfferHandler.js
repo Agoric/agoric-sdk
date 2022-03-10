@@ -4,11 +4,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
 import { E } from '@agoric/eventual-send';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
-import fakeVatAdmin from '../../../tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -16,22 +16,22 @@ const dirname = path.dirname(filename);
 const contractRoot = `${dirname}/throwInOfferHandler.js`;
 
 test('throw in offerHandler', async t => {
+  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  const installation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-throw', bundle);
+  const installation = await E(zoe).installBundleID('b1-throw');
 
   const { creatorFacet } = await E(zoe).startInstance(installation);
 
-  const throwInOfferHandlerInvitation = E(
-    creatorFacet,
-  ).makeThrowInOfferHandlerInvitation();
+  const throwInOfferHandlerInvitation =
+    E(creatorFacet).makeThrowInOfferHandlerInvitation();
 
-  const throwInDepositToSeatInvitation = E(
-    creatorFacet,
-  ).makeThrowInDepositToSeatInvitation();
+  const throwInDepositToSeatInvitation =
+    E(creatorFacet).makeThrowInDepositToSeatInvitation();
 
   const throwsInOfferHandlerSeat = E(zoe).offer(throwInOfferHandlerInvitation);
 

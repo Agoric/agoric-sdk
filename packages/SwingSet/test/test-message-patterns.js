@@ -11,15 +11,15 @@ import '../tools/prepare-test-env.js';
 import test from 'ava';
 
 import path from 'path';
-import bundleSource from '@agoric/bundle-source';
-import { provideHostStorage } from '../src/hostStorage.js';
+import bundleSource from '@endo/bundle-source';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import {
   initializeSwingset,
   makeSwingsetController,
   buildVatController,
   buildKernelBundles,
 } from '../src/index.js';
-import { buildLoopbox } from '../src/devices/loopbox.js';
+import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import { buildPatterns } from './message-patterns.js';
 
 // This exercises all the patterns in 'message-patterns.js' twice (once with
@@ -128,9 +128,8 @@ for (const name of Array.from(bp.patterns.keys()).sort()) {
 
 export async function runVatsInComms(t, name) {
   const { commsConfig, kernelBundles } = t.context.data;
-  const { passOneMessage, loopboxSrcPath, loopboxEndowments } = buildLoopbox(
-    'queued',
-  );
+  const { passOneMessage, loopboxSrcPath, loopboxEndowments } =
+    buildLoopbox('queued');
   const devices = {
     loopbox: {
       sourceSpec: loopboxSrcPath,

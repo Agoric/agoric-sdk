@@ -8,11 +8,6 @@ export const STAKING_MAX_VALIDATORS = 150;
 // Required for IBC connections not to time out.
 export const STAKING_MIN_HISTORICAL_ENTRIES = 10000;
 
-// We reserve the default `transfer` IBC port for Pegasus (JS-level ERTP
-// assets).  The `cosmos-transfer` IBC port is used for ibc-go (Cosmos-level
-// prefixed string token denominations).
-export const COSMOS_TRANSFER_PORT_ID = 'cosmos-transfer';
-
 export const DENOM_METADATA = [
   {
     name: 'Agoric Staking Token',
@@ -51,6 +46,7 @@ export const DENOM_METADATA = [
 ];
 
 export const GOV_DEPOSIT_COINS = [{ amount: '1000000', denom: MINT_DENOM }];
+export const GOV_VOTING_PERIOD = '36h';
 export const DEFAULT_MINIMUM_GAS_PRICES = `0${CENTRAL_DENOM}`;
 
 // Can't beat the speed of light, we need 600ms round trip time for the other
@@ -92,9 +88,9 @@ export function finishCosmosApp({
   }
 
   // Offset the GRPC listener from our rpc port.
-  app.grpc.address = `0.0.0.0:${rpcPort +
-    DEFAULT_GRPC_PORT -
-    DEFAULT_RPC_PORT}`;
+  app.grpc.address = `0.0.0.0:${
+    rpcPort + DEFAULT_GRPC_PORT - DEFAULT_RPC_PORT
+  }`;
 
   // Lengthen the pruning span.
   app.pruning = 'custom';
@@ -185,15 +181,12 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   genesis.app_state.staking.params.bond_denom = STAKING_DENOM;
   genesis.app_state.staking.params.max_validators = STAKING_MAX_VALIDATORS;
-  const {
-    historical_entries: existingHistoricalEntries = 0,
-  } = genesis.app_state.staking.params;
+  const { historical_entries: existingHistoricalEntries = 0 } =
+    genesis.app_state.staking.params;
   genesis.app_state.staking.params.historical_entries = Math.max(
     existingHistoricalEntries,
     STAKING_MIN_HISTORICAL_ENTRIES,
   );
-
-  genesis.app_state.transfer.port_id = COSMOS_TRANSFER_PORT_ID;
 
   // We scale this parameter according to our own block cadence, so
   // that we tolerate the same downtime as the old genesis.
@@ -210,6 +203,7 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   genesis.app_state.mint.params.mint_denom = MINT_DENOM;
   genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
   genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
+  genesis.app_state.gov.voting_params.voting_period = GOV_VOTING_PERIOD;
 
   // Reduce the cost of a transaction.
   genesis.app_state.auth.params.tx_size_cost_per_byte = '1';

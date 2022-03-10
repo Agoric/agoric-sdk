@@ -1,6 +1,6 @@
 {
   "name": "@agoric/access-token",
-  "version": "0.4.16",
+  "version": "0.4.17",
   "description": "Persistent credentials for Agoric users, backed by a simple JSON file",
   "type": "module",
   "main": "src/access-token.js",
@@ -12,12 +12,11 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
+    "@agoric/assert": "^0.3.16",
     "n-readlines": "^1.0.0"
   },
   "devDependencies": {

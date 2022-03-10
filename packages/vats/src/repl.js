@@ -1,6 +1,6 @@
-import { isPromise } from '@agoric/promise-kit';
-import { Far } from '@agoric/far';
-import * as farExports from '@agoric/far';
+import { isPromise } from '@endo/promise-kit';
+import { Far } from '@endo/far';
+import * as farExports from '@endo/far';
 
 import { Nat } from '@agoric/nat';
 
@@ -189,6 +189,7 @@ export function getReplHandler(replObjects, send) {
 
   const endowments = {
     ...farExports,
+    assert,
     console: replConsole,
     commands,
     history,

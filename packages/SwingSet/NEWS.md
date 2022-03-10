@@ -4,7 +4,7 @@ User-visible changes in SwingSet:
 
 * change Command Device (`buildCommand()`) to take `broadcastCallback` as an
   argument, rather than set in a subsequent call (#185)
-* outsource vat/kernel source bundling with @agoric/bundle-source
+* outsource vat/kernel source bundling with @endo/bundle-source
 
 
 ## Release 0.2.0 (27-Oct-2019)
@@ -208,7 +208,7 @@ evaluateExpr('a+1') === 5; // true
 ## Release 0.0.12 (07-Jun-2019)
 
 * move ERTP libraries and examples to `@agoric/ertp` (#73)
-* move marshalling code into `@agoric/marshal`
+* move marshalling code into `@endo/marshal`
 
 
 ## Release 0.0.11 (02-Jun-2019)

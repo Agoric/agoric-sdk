@@ -1,9 +1,9 @@
 /* global process setTimeout setInterval clearInterval */
 /* eslint-disable no-await-in-loop */
 
-import { E, makeCapTP } from '@agoric/captp';
-import { makePromiseKit } from '@agoric/promise-kit';
-import bundleSource from '@agoric/bundle-source';
+import { E, makeCapTP } from '@endo/captp';
+import { makePromiseKit } from '@endo/promise-kit';
+import bundleSource from '@endo/bundle-source';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
 import path from 'path';
 import inquirer from 'inquirer';
@@ -166,9 +166,9 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         // Take a new copy, since the chain objects have been added to bootstrap.
         bootP = getBootstrap();
 
-        const pluginManager = await E.get(
-          E.get(bootP).local,
-        ).plugin.catch(_ => {});
+        const pluginManager = await E.get(E.get(bootP).local).plugin.catch(
+          _ => {},
+        );
         const pluginDir = await E(pluginManager)
           .getPluginDir()
           .catch(_ => {});
@@ -232,17 +232,16 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
           // Use Node.js ESM support if package.json of template says "type":
           // "module".
           const read = async url => fs.readFile(new URL(url).pathname);
-          const {
-            packageDescriptorText,
-          } = await readContainingPackageDescriptor(
-            read,
-            `file://${moduleFile}`,
-          ).catch(cause => {
-            throw new Error(
-              `Expected a package.json beside deploy script ${moduleFile}, ${cause}`,
-              { cause },
-            );
-          });
+          const { packageDescriptorText } =
+            await readContainingPackageDescriptor(
+              read,
+              `file://${moduleFile}`,
+            ).catch(cause => {
+              throw new Error(
+                `Expected a package.json beside deploy script ${moduleFile}, ${cause}`,
+                { cause },
+              );
+            });
           const packageDescriptor = JSON.parse(packageDescriptorText);
           const nativeEsm = packageDescriptor.type === 'module';
           console.log(

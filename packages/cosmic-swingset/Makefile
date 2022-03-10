@@ -7,9 +7,17 @@ REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
+VOTING_PERIOD = 2m
+
+EVAL_PERMIT = test/gov-permit.json
+EVAL_CODE = test/gov-code.js
+EVAL_DEPOSIT = 1000000ubld
+VOTE_PROPOSAL = 1
+VOTE_OPTION = yes
 
 GOSRC = ../../golang/cosmos
-AG_SOLO = $(shell cd ../solo/bin && pwd)/ag-solo
+DEBUG ?= SwingSet:ls,SwingSet:vat
+AG_SOLO = DEBUG=$(DEBUG) $(shell cd ../solo/bin && pwd)/ag-solo
 
 SHELL = bash
 
@@ -20,7 +28,8 @@ FAKE_CHAIN_DELAY = 0
 NUM_SOLOS?=1
 BASE_PORT?=8000
 
-OTEL_EXPORTER_PROMETHEUS_PORT = 9461
+OTEL_EXPORTER_PROMETHEUS_PORT = 9464
+SOLO_OTEL_EXPORTER_PROMETHEUS_PORT = 9465
 GAS_ADJUSTMENT = 1.2
 
 AGC_START_ARGS =
@@ -55,7 +64,7 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-AGC = DEBUG=SwingSet:ls,SwingSet:vat PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
+AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
 AGCH = $(GOSRC)/build/agd
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
@@ -77,7 +86,9 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 validate-genesis
 	NODE_OPTIONS= ../agoric-cli/bin/agoric set-defaults --export-metrics ag-chain-cosmos t1/n0/config
 	# Set the chain address in all the ag-solos.
-	jq '. + { genesis_time: "$(GENESIS_TIME)", initial_height: "$(INITIAL_HEIGHT)" }' t1/n0/config/genesis.json > t1/n0/config/genesis2.json
+	jq --arg gen $(GENESIS_TIME) --arg init $(INITIAL_HEIGHT) --arg votepd $(VOTING_PERIOD) \
+		'. * { genesis_time: $$gen, initial_height: $$init, app_state: { gov: { voting_params: { voting_period: $$votepd }}}}' \
+		t1/n0/config/genesis.json > t1/n0/config/genesis2.json
 	mv t1/n0/config/genesis2.json t1/n0/config/genesis.json
 	$(MAKE) set-local-gci-ingress
 
@@ -177,7 +188,21 @@ t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/co
 		$(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
 		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 		bootstrap $$addr 1urun
-	cd t1/$(BASE_PORT) && $(AG_SOLO) start
+	cd t1/$(BASE_PORT) && \
+		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT) \
+		$(AG_SOLO) start
+
+scenario2-core-eval:
+	$(AGCH) --home=t1/bootstrap tx gov submit-proposal swingset-core-eval \
+		$(EVAL_PERMIT) $(EVAL_CODE) \
+		--title="Swingset core eval" --description="Evaluate $(EVAL_CODE)" --deposit=$(EVAL_DEPOSIT) \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) \
+		--yes --chain-id=$(CHAIN_ID) --keyring-backend=test --from=bootstrap -b block
+
+scenario2-vote:
+	$(AGCH) --home=t1/bootstrap tx gov vote $(VOTE_PROPOSAL) $(VOTE_OPTION) \
+		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) \
+		--yes --chain-id=$(CHAIN_ID) --keyring-backend=test --from=bootstrap -b block
 
 # scenario3 is a single JS process without any Golang.  However,
 # the client and the chain within the process run two separate
@@ -200,6 +225,7 @@ scenario3-run:
 	cd t3 && \
 		NODE_OPTIONS= $(AG_SOLO) set-fake-chain --delay=$(FAKE_CHAIN_DELAY) mySimGCI
 	cd t3 && \
+		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT) \
 		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AG_SOLO) start
 

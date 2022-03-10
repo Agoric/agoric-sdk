@@ -15,6 +15,61 @@
  */
 
 /**
+ * @typedef {Object} DoublePoolSwapResult
+ * @property {Amount} swapperGives
+ * @property {Amount} swapperGets
+ * @property {Amount} inPoolIncrement
+ * @property {Amount} inPoolDecrement
+ * @property {Amount} outPoolIncrement
+ * @property {Amount} outPoolDecrement
+ * @property {Amount} protocolFee
+ */
+
+/**
+ * @callback GetDoublePoolSwapQuote
+ * @param {Amount} amountIn
+ * @param {Amount} amountOut
+ * @returns {DoublePoolSwapResult}
+ */
+
+/**
+ * @callback GetSinglePoolSwapQuote
+ * @param {Amount} amountIn
+ * @param {Amount} amountOut
+ * @returns {SwapResult}
+ */
+
+/**
+ * @typedef {Object} VPoolInternalFacet - virtual pool for price quotes and trading
+ * @property {GetDoublePoolSwapQuote} getPriceForInput
+ * @property {GetDoublePoolSwapQuote} getPriceForOutput
+ */
+
+/**
+ * @callback AddLiquidityActual
+ * @param {XYKPool} pool
+ * @param {ZCFSeat} zcfSeat
+ * @param {Amount} secondaryAmount
+ * @param {Amount} poolCentralAmount
+ * @param {ZCFSeat} feeSeat
+ * @returns {string}
+ */
+
+/**
+ * @typedef {Object} SinglePoolInternalFacet
+ * @property {GetSinglePoolSwapQuote} getPriceForInput
+ * @property {GetSinglePoolSwapQuote} getPriceForOutput
+ * @property {AddLiquidityActual} addLiquidityActual
+ */
+
+/**
+ * @template T
+ * @typedef {Object} VPoolWrapper - wrapper holding external and internal facets
+ * @property {VPool} externalFacet
+ * @property {T} internalFacet
+ */
+
+/**
  * @typedef {Object} XYKPool
  * @property {() => bigint} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
@@ -27,9 +82,13 @@
  * @property {() => void} updateState
  * @property {() => PriceAuthority} getToCentralPriceAuthority
  * @property {() => PriceAuthority} getFromCentralPriceAuthority
- * @property {() => VPool} getVPool
+ * @property {() => VPoolWrapper<unknown>} getVPool
  */
 
+/**
+ * @typedef {Object} XYKAMMCreatorFacet
+ * @property {() => Promise<Invitation>} makeCollectFeesInvitation
+ */
 /**
  * @typedef {Object} XYKAMMPublicFacet
  * @property {(issuer: Issuer, keyword: Keyword) => Promise<Issuer>} addPool
@@ -49,10 +108,10 @@
  * @property {(brand: Brand) => Issuer} getLiquidityIssuer
  * @property {(brand: Brand) => bigint} getLiquiditySupply get the current value of
  * liquidity in the pool for brand held by investors.
- * @property {(amountIn: Amount, brandOut: Brand) => VPoolPriceQuote} getInputPrice
+ * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getInputPrice
  * calculate the amount of brandOut that will be returned if the amountIn is
  * offered using makeSwapInInvitation at the current price.
- * @property {(amountOut: Amount, brandIn: Brand) => VPoolPriceQuote} getOutputPrice
+ * @property {(amountOut: Amount, amountIn: Amount) => VPoolPriceQuote} getOutputPrice
  * calculate the amount of brandIn that is required in order to get amountOut
  * using makeSwapOutInvitation at the current price
  * @property {(brand: Brand) => Record<string, Amount>} getPoolAllocation get an

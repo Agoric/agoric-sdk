@@ -1,5 +1,4 @@
 ---
-
 - name: restart fluentd
-#  shell: "echo done"
+  #  shell: "echo done"
   service: name=td-agent state=restarted

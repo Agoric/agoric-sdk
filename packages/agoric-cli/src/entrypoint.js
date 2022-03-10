@@ -2,11 +2,9 @@
 
 /* global process */
 
-import '@agoric/install-ses/pre-bundle-source.js';
-// TODO Remove esm preinitialization
-// https://github.com/endojs/endo/issues/768
+import '@endo/init/pre.js';
 import 'esm';
-import '@agoric/install-ses';
+import '@endo/init';
 
 import path from 'path';
 import WebSocket from 'ws';

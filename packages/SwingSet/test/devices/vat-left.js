@@ -1,4 +1,4 @@
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers) {
   const { D, testLog: log } = vatPowers;

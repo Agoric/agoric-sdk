@@ -1,14 +1,18 @@
 // @ts-check
 
 import { makeWeakStore, keyEQ } from '@agoric/store';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/far';
 import { makeAddPool } from './pool.js';
-import { makeMakeAddLiquidityInvitation } from './addLiquidity.js';
+import {
+  makeMakeAddLiquidityInvitation,
+  makeMakeAddLiquidityAtRateInvitation,
+} from './addLiquidity.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 
 import '@agoric/zoe/exported.js';
@@ -17,8 +21,7 @@ import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
 import { makeParamManager, POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
 
-const { details: X } = assert;
-
+const { quote: q, details: X } = assert;
 /**
  * Multipool AMM is a rewrite of Uniswap that supports multiple liquidity pools,
  * and direct exchanges across pools. Please see the documentation for more:
@@ -115,20 +118,29 @@ const start = async (zcf, privateArgs) => {
   } = /** @type { Terms & AMMTerms } */ (zcf.getTerms());
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
+
   const { initialPoserInvitation } = privateArgs;
 
-  const paramManager = await makeParamManager(
-    zcf.getZoeService(),
-    poolFeeParam.value,
-    protocolFeeParam.value,
-    initialPoserInvitation,
+  const [paramManager, centralDisplayInfo] = await Promise.all([
+    makeParamManager(
+      zcf.getZoeService(),
+      poolFeeParam.value,
+      protocolFeeParam.value,
+      initialPoserInvitation,
+    ),
+    E(centralBrand).getDisplayInfo(),
+  ]);
+
+  assert.equal(
+    centralDisplayInfo.assetKind,
+    AssetKind.NAT,
+    X`Central must be of kind ${q(AssetKind.NAT)}, not ${q(
+      centralDisplayInfo.assetKind,
+    )}`,
   );
-  const {
-    wrapPublicFacet,
-    wrapCreatorFacet,
-    getNat,
-    getInvitationAmount,
-  } = handleParamGovernance(zcf, paramManager);
+
+  const { wrapPublicFacet, wrapCreatorFacet, getNat, getInvitationAmount } =
+    handleParamGovernance(zcf, paramManager);
 
   const electorateInvAmt = getInvitationAmount(CONTRACT_ELECTORATE);
   assert(
@@ -166,9 +178,7 @@ const start = async (zcf, privateArgs) => {
     protocolSeat,
   );
   const getPoolAllocation = brand => {
-    return getPool(brand)
-      .getPoolSeat()
-      .getCurrentAllocation();
+    return getPool(brand).getPoolSeat().getCurrentAllocation();
   };
 
   const getPriceAuthorities = brand => {
@@ -182,7 +192,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {Brand} brandIn
    * @param {Brand} brandOut
-   * @returns {VPool}
+   * @returns {VPoolWrapper<unknown>}
    */
   const provideVPool = (brandIn, brandOut) => {
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
@@ -201,21 +211,25 @@ const start = async (zcf, privateArgs) => {
   };
 
   const getInputPrice = (amountIn, amountOut) => {
-    const pool = provideVPool(amountIn.brand, amountOut.brand);
+    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
     return pool.getInputPrice(amountIn, amountOut);
   };
   const getOutputPrice = (amountIn, amountOut) => {
-    const pool = provideVPool(amountIn.brand, amountOut.brand);
+    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
     return pool.getOutputPrice(amountIn, amountOut);
   };
 
-  const {
-    makeSwapInInvitation,
-    makeSwapOutInvitation,
-  } = makeMakeSwapInvitation(zcf, provideVPool);
+  const { makeSwapInInvitation, makeSwapOutInvitation } =
+    makeMakeSwapInvitation(zcf, provideVPool);
   const makeAddLiquidityInvitation = makeMakeAddLiquidityInvitation(
     zcf,
     getPool,
+  );
+  const makeAddLiquidityAtRateInvitation = makeMakeAddLiquidityAtRateInvitation(
+    zcf,
+    getPool,
+    provideVPool,
+    protocolSeat,
   );
 
   const makeRemoveLiquidityInvitation = makeMakeRemoveLiquidityInvitation(
@@ -243,6 +257,7 @@ const start = async (zcf, privateArgs) => {
       makeSwapInInvitation,
       makeSwapOutInvitation,
       makeAddLiquidityInvitation,
+      makeAddLiquidityAtRateInvitation,
       makeRemoveLiquidityInvitation,
       getQuoteIssuer: () => quoteIssuerKit.issuer,
       getPriceAuthorities,

@@ -4,7 +4,7 @@
 import '../prepare-test-env.js';
 
 // eslint-disable-next-line import/order
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { xsnap } from '@agoric/xsnap';
 import * as proc from 'child_process';
 import * as os from 'os';
@@ -27,6 +27,9 @@ function countingPolicy() {
       return true;
     },
     crankFailed() {
+      return true;
+    },
+    emptyCrank() {
       return true;
     },
 

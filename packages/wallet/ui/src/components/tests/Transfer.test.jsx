@@ -79,16 +79,18 @@ const contacts = [
 ];
 const setPendingTransfers = jest.fn();
 
-const withApplicationContext = (Component, _) => ({ ...props }) => {
-  return (
-    <Component
-      purses={purses}
-      contacts={contacts}
-      setPendingTransfers={setPendingTransfers}
-      {...props}
-    />
-  );
-};
+const withApplicationContext =
+  (Component, _) =>
+  ({ ...props }) => {
+    return (
+      <Component
+        purses={purses}
+        contacts={contacts}
+        setPendingTransfers={setPendingTransfers}
+        {...props}
+      />
+    );
+  };
 
 jest.mock('../../contexts/Application', () => {
   return { withApplicationContext };

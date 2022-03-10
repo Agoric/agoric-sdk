@@ -16,8 +16,9 @@ import '../../exported.js';
 import '../internal-types.js';
 
 import { AssetKind } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { E } from '@agoric/eventual-send';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -35,7 +36,7 @@ import { createFeeMint } from './feeMint.js';
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {string} [zcfBundleName] - The name of the contract facet bundle.
+ * @param {ZCFSpec} [zcfSpec] - Pointer to the contract facet bundle.
  * @returns {{
  *   zoeService: ZoeService,
  *   feeMintAccess: FeeMintAccess,
@@ -49,7 +50,7 @@ const makeZoeKit = (
     assetKind: AssetKind.NAT,
     displayInfo: harden({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
   },
-  zcfBundleName = undefined,
+  zcfSpec = { name: 'zcf' },
 ) => {
   // We must pass the ZoeService to `makeStartInstance` before it is
   // defined. See below where the promise is resolved.
@@ -61,10 +62,12 @@ const makeZoeKit = (
     shutdownZoeVat,
   );
 
+  const getBundleCapFromID = bundleID => E(vatAdminSvc).getBundleCap(bundleID);
+
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
-  const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfBundleName);
+  const createZCFVat = setupCreateZCFVat(vatAdminSvc, zcfSpec);
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
@@ -72,8 +75,10 @@ const makeZoeKit = (
     depositPayments,
     getAssetKindByBrand,
     makeZoeInstanceStorageManager,
-    install,
+    installBundle,
+    installBundleID,
     unwrapInstallation,
+    getBundleIDFromInstallation,
     getPublicFacet,
     getBrands,
     getIssuers,
@@ -83,6 +88,7 @@ const makeZoeKit = (
     invitationIssuer,
   } = makeZoeStorageManager(
     createZCFVat,
+    getBundleCapFromID,
     getFeeIssuerKit,
     shutdownZoeVat,
     feeIssuer,
@@ -106,11 +112,8 @@ const makeZoeKit = (
 
   // Make the methods that allow users to easily and credibly get
   // information about their invitations.
-  const {
-    getInstance,
-    getInstallation,
-    getInvitationDetails,
-  } = makeInvitationQueryFns(invitationIssuer);
+  const { getInstance, getInstallation, getInvitationDetails } =
+    makeInvitationQueryFns(invitationIssuer);
 
   const getConfiguration = () => {
     return harden({
@@ -120,7 +123,8 @@ const makeZoeKit = (
 
   /** @type {ZoeService} */
   const zoeService = Far('zoeService', {
-    install,
+    install: installBundle,
+    installBundleID,
     startInstance,
     offer,
     /**
@@ -148,6 +152,7 @@ const makeZoeKit = (
     getInstallation,
     getInvitationDetails,
     getConfiguration,
+    getBundleIDFromInstallation,
   });
 
   // startInstance must pass the ZoeService to the newly created ZCF

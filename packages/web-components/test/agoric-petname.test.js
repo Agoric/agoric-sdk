@@ -13,9 +13,7 @@ describe('AgoricPetname', () => {
 
   it('passes the a11y audit', async () => {
     const el = await fixture(
-      html`
-        <agoric-petname uid="AG.1"></agoric-petname>
-      `,
+      html` <agoric-petname uid="AG.1"></agoric-petname> `,
     );
 
     await expect(el).shadowDom.to.be.accessible();
@@ -24,9 +22,7 @@ describe('AgoricPetname', () => {
   it('calls Powerbox.expandPetdata on update', async () => {
     const expandPetdataStub = stub(Powerbox, 'expandPetdata');
     const el = await fixture(
-      html`
-        <agoric-petname uid="AG.1"></agoric-petname>
-      `,
+      html` <agoric-petname uid="AG.1"></agoric-petname> `,
     );
     expect(expandPetdataStub).to.have.callCount(1);
 
@@ -37,9 +33,7 @@ describe('AgoricPetname', () => {
 
   it('renders a span with the correct data', async () => {
     const el = await fixture(
-      html`
-        <agoric-petname uid="AG.1"></agoric-petname>
-      `,
+      html` <agoric-petname uid="AG.1"></agoric-petname> `,
     );
 
     const inner = el.shadowRoot.querySelector('span');

@@ -151,8 +151,8 @@ like this:
 
 ``` javascript
 return makeParamManagerBuilder()
-  .addNat(CHARGING_PERIOD_KEY, loanParams.chargingPeriod)
-  .addNat(RECORDING_PERIOD_KEY, loanParams.recordingPeriod)
+  .addNat(CHARGING_PERIOD_KEY, loanTiming.chargingPeriod)
+  .addNat(RECORDING_PERIOD_KEY, loanTiming.recordingPeriod)
   .addRatio(INITIAL_MARGIN_KEY, rates.initialMargin)
   .addRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
   .addRatio(INTEREST_RATE_KEY, rates.interestRate)
@@ -267,10 +267,6 @@ voters. The
 contract makes no attempt to make the voters legible to others. This might be
 useful for a private group making a decision, or a case where a dictator has the
 ability to appoint a committee that will make decisions.
-
-ShareHolders is an Electorate that gives the ability to vote to anyone who has
-an Attestation payment from the Attestation contract. Observers can't tell who
-the voters are, but they can validate the qualifications to vote.
 
 Another plausible electorate would use the result of a public vote to give
 voting facets to the election winners. There would have to be some kind of

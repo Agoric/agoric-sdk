@@ -3,8 +3,8 @@
 /// <reference types="ses"/>
 
 import { HandledPromise, E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import './types.js';
 

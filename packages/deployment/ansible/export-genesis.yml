@@ -1,14 +1,13 @@
 ---
-
-- hosts: "{{ service }}"
-  user: "root"
+- hosts: '{{ service }}'
+  user: 'root'
   #any_errors_fatal: true
   gather_facts: no
   strategy: free
   vars:
     - service: ag-chain-cosmos
-    - user: "{{ service }}"
-    - exported: "{{ SETUP_HOME }}/exported"
+    - user: '{{ service }}'
+    - exported: '{{ SETUP_HOME }}/exported'
   roles:
     - stop
     - export-genesis

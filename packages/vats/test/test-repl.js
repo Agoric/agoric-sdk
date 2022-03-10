@@ -1,4 +1,4 @@
-import '@agoric/install-ses';
+import '@endo/init';
 import test from 'ava';
 import { getReplHandler } from '../src/repl.js';
 
@@ -86,11 +86,9 @@ test('repl: Symbols', async t => {
   let m = sentMessages.shift();
 
   let histnum = 0;
-  const exprDisplays = [
-    'asyncIterator',
-    'toStringTag',
-    'hasInstance',
-  ].map(name => [`Symbol.${name}`, `Symbol(Symbol.${name})`]);
+  const exprDisplays = ['asyncIterator', 'toStringTag', 'hasInstance'].map(
+    name => [`Symbol.${name}`, `Symbol(Symbol.${name})`],
+  );
   exprDisplays.push(
     [`Symbol.for('foo')`, `Symbol(foo)`],
     [`Symbol('foo')`, `Symbol(foo)`],

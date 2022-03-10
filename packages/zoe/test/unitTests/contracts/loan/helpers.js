@@ -7,7 +7,7 @@ import path from 'path';
 import '../../../../exported.js';
 
 import { E } from '@agoric/eventual-send';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 
 import { setup } from '../../setupBasicMints.js';
@@ -106,10 +106,8 @@ export const setupLoanUnitTest = async terms => {
     Loan: loanKit.issuer,
   });
 
-  const { zcf, zoe, installation, instance } = await setupZCFTest(
-    issuerKeywordRecord,
-    terms,
-  );
+  const { zcf, zoe, installation, instance, vatAdminState } =
+    await setupZCFTest(issuerKeywordRecord, terms);
 
   return {
     zcf,
@@ -118,6 +116,7 @@ export const setupLoanUnitTest = async terms => {
     loanKit,
     installation,
     instance,
+    vatAdminState,
   };
 };
 
@@ -195,12 +194,14 @@ export const makeAutoswapInstance = async (
   collateralKit,
   loanKit,
   initialLiquidityKeywordRecord,
+  vatAdminState,
 ) => {
   const autoswapRoot = `${dirname}/../../../../src/contracts/autoswap`;
 
   // Create autoswap installation and instance
   const autoswapBundle = await bundleSource(autoswapRoot);
-  const autoswapInstallation = await E(zoe).install(autoswapBundle);
+  vatAdminState.installBundle('b1-autoswap', autoswapBundle);
+  const autoswapInstallation = await E(zoe).installBundleID('b1-autoswap');
 
   const { instance: autoswapInstance, publicFacet } = await E(
     zoe,

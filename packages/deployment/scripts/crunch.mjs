@@ -8,11 +8,8 @@ import fs from 'fs';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import ReadlineTransform from 'readline-transform';
 
-const [
-  TRACE_FILE,
-  FIRST_BLOCK_HEIGHT = 0,
-  LAST_BLOCK_HEIGHT = Infinity,
-] = process.argv.slice(2);
+const [TRACE_FILE, FIRST_BLOCK_HEIGHT = 0, LAST_BLOCK_HEIGHT = Infinity] =
+  process.argv.slice(2);
 if (!TRACE_FILE) {
   console.error(
     'usage: crunch trace-file [first-block-height [last-block-height]]',
@@ -44,9 +41,7 @@ const escapeCharCode = c => {
 
 const decode = b64 => {
   const b = Buffer.from(b64, 'base64');
-  return Array.from(b)
-    .map(escapeCharCode)
-    .join('');
+  return Array.from(b).map(escapeCharCode).join('');
 };
 
 const main = async () => {

@@ -3,13 +3,14 @@ set -e
 
 thisdir=$(dirname -- "$0")
 FAUCET_HOME=$thisdir/../faucet
+DELEGATES="$thisdir/cosmos-delegates.txt"
 
 MAX_LINES=-1
 STAKE=75000000ubld
 # GIFT=251000000000urun
 GIFT=100000000urun
 # SOLO_COINS=100000000urun
-SOLO_COINS=220000000000urun,75000000ubld
+# SOLO_COINS=220000000000urun,75000000ubld
 
 
 OP=$1
@@ -30,12 +31,12 @@ IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmo
 
 rpcAddrs=(${origRpcAddrs[@]})
 while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
-  r=$(( $RANDOM % ${#rpcAddrs[@]} ))
+  r=$(( RANDOM % ${#rpcAddrs[@]} ))
   selected=${rpcAddrs[$r]}
   rpcAddrs=( ${rpcAddrs[@]/$selected} )
 
   # echo "Checking if $selected is alive"
-  if [[ $(curl -s http://$selected/status | jq .result.sync_info.catching_up) == false ]]; then
+  if [[ $(curl -s http://"$selected"/status | jq .result.sync_info.catching_up) == false ]]; then
     QUERY="$ACH query --node=tcp://$selected"
     TX="$ACH tx --node=tcp://$selected --chain-id=$chainName --keyring-backend=test --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=sync --from=$FAUCET_ADDR"
     case $OP in
@@ -57,11 +58,15 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
       fi
       # Send the message in a single transaction.
       body0=$($TX swingset provision-one --generate-only --gas=600000 -- "$NAME" "$ADDR")
-      msg1=$($TX bank send --generate-only --gas=600000 -- "$FAUCET_ADDR" "$ADDR" "$SOLO_COINS" | jq .body.messages)
+      if test -n "$SOLO_COINS"; then
+        msg1=$($TX bank send --generate-only --gas=600000 -- "$FAUCET_ADDR" "$ADDR" "$SOLO_COINS" | jq .body.messages)
+      else
+        msg1='[]'
+      fi
       txfile="/tmp/faucet.$$.json"
-      trap "rm -f $txfile" EXIT
+      trap 'rm -f "$txfile"' EXIT
       echo "$body0" | jq ".body.messages += $msg1" > "$txfile"
-      $TX sign "$txfile" | $TX broadcast $BROADCAST_FLAGS - | tee /dev/stderr | grep -q '^code: 0'
+      $TX sign "$txfile" | $TX broadcast "$BROADCAST_FLAGS" - | tee /dev/stderr | grep -q '^code: 0'
       exit $? 
       ;;
     gift)
@@ -70,7 +75,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         exit 0
       fi
       echo sending "$GIFT" to "$ADDR"
-      exec $TX \
+      exec "$TX" \
         bank send \
         --broadcast-mode=block \
         -- faucet "$ADDR" "$GIFT"
@@ -83,12 +88,12 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
       NAME=$1
       ADDR=$2
 
-      if [[ $UNIQUE != no && $MAX_LINES -ge 0 && $(wc -l $thisdir/cosmos-delegates.txt | sed -e 's/ .*//') -ge $MAX_LINES ]]; then
+      if [[ $UNIQUE != no && $MAX_LINES -ge 0 && $(wc -l "$DELEGATES" | sed -e 's/ .*//') -ge $MAX_LINES ]]; then
         echo "Sorry, we've capped the number of validators at $MAX_LINES"
         exit 1
       fi
       if [[ $UNIQUE != no ]]; then
-        line=$(grep -e ":$NAME$" $thisdir/cosmos-delegates.txt || true)
+        line=$(grep -e ":$NAME$" "$DELEGATES" || true)
         if [[ -n $line ]]; then
           echo "$NAME has already tapped the faucet:" 1>&2
           echo "$line" 1>&2
@@ -96,7 +101,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         fi
       fi
       if [[ $UNIQUE != no ]]; then
-        line=$(grep -e "^$ADDR:" $thisdir/cosmos-delegates.txt || true)
+        line=$(grep -e "^$ADDR:" "$DELEGATES" || true)
         if [[ -n $line ]]; then
           echo "$ADDR already received a tap:" 1>&2
           echo "$line" 1>&2
@@ -109,9 +114,9 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         --broadcast-mode=block \
         -- faucet "$ADDR" "$STAKE"; then
         # Record the information before exiting, if the file exists.
-        test -f $thisdir/cosmos-delegates || exit 0
-        sed -i -e "/:$NAME$/d" $thisdir/cosmos-delegates.txt
-        echo "$ADDR:$STAKE:$NAME" >> $thisdir/cosmos-delegates.txt
+        test -f "$DELEGATES" || exit 0
+        sed -i -e "/:$NAME$/d" "$DELEGATES"
+        echo "$ADDR:$STAKE:$NAME" >> "$DELEGATES"
         exit 0
       fi
       ;;
@@ -123,5 +128,5 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
   fi
 done
 
-echo 1>&2 "No active chain nodes found in: ${origRpcAddrs[@]}"
+echo 1>&2 "No active chain nodes found in: ${origRpcAddrs[*]}"
 exit 1

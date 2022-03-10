@@ -24,14 +24,12 @@ test('test doLiquidation with mocked autoswap', async t => {
   );
 
   const collateral = AmountMath.make(collateralKit.brand, 10n);
-  const {
-    zcfSeat: collateralSeat,
-    userSeat: collateralUserSeat,
-  } = await makeSeatKit(
-    zcf,
-    { give: { Collateral: collateral } },
-    { Collateral: collateralKit.mint.mintPayment(collateral) },
-  );
+  const { zcfSeat: collateralSeat, userSeat: collateralUserSeat } =
+    await makeSeatKit(
+      zcf,
+      { give: { Collateral: collateral } },
+      { Collateral: collateralKit.mint.mintPayment(collateral) },
+    );
 
   const loan1000 = AmountMath.make(loanKit.brand, 1000n);
 
@@ -109,14 +107,12 @@ test('test with malfunctioning autoswap', async t => {
   );
 
   const collateral = AmountMath.make(collateralKit.brand, 10n);
-  const {
-    zcfSeat: collateralSeat,
-    userSeat: collateralUserSeat,
-  } = await makeSeatKit(
-    zcf,
-    { give: { Collateral: collateral } },
-    { Collateral: collateralKit.mint.mintPayment(collateral) },
-  );
+  const { zcfSeat: collateralSeat, userSeat: collateralUserSeat } =
+    await makeSeatKit(
+      zcf,
+      { give: { Collateral: collateral } },
+      { Collateral: collateralKit.mint.mintPayment(collateral) },
+    );
 
   // Create non-functioning autoswap.
 

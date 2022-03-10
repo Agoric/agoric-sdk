@@ -3,7 +3,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { getAllState, setAllState } from '@agoric/swing-store';
 
-import { provideHostStorage } from '../src/hostStorage.js';
+import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { buildVatController, loadBasedir } from '../src/index.js';
 
 test('transcript-light load', async t => {
@@ -14,7 +14,8 @@ test('transcript-light load', async t => {
   const c = await buildVatController(config, ['one'], { hostStorage });
   const state0 = getAllState(hostStorage);
   t.is(state0.kvStuff.initialized, 'true');
-  t.not(state0.kvStuff.runQueue, '[]');
+  t.is(state0.kvStuff.runQueue, '[]');
+  t.not(state0.kvStuff.acceptanceQueue, '[]');
 
   await c.step();
   const state1 = getAllState(hostStorage);

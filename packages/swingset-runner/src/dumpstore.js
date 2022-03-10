@@ -45,10 +45,15 @@ export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
 
   popt('crankNumber');
   popt('kernel.defaultManagerType');
+  popt('kernel.defaultReapInterval');
   popt('pinnedObjects');
   popt('vatAdminRootKref');
   popt('gcActions');
+  popt('reapQueue');
+  popt('meter.nextID');
+  popt('activityhash');
   popt('kernelStats');
+  popt('local.kernelStats');
   gap();
 
   p('// bundles');
@@ -147,6 +152,8 @@ export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
     popt(`${v}.o.nextID`);
     popt(`${v}.p.nextID`);
     popt(`${v}.nextDeliveryNum`);
+    popt(`${v}.reapInterval`);
+    popt(`${v}.reapCountdown`);
     const endPos = JSON.parse(popt(`${v}.t.endPosition`));
     vatInfo.push([v, vn, endPos]);
     for (const key of groupKeys(`${v}.c.kd`)) {

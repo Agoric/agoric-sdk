@@ -1,22 +1,16 @@
-/* global makeKind */
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
+import { defineKind } from '../../src/storeModule.js';
 
-function makeHolderInstance(state) {
-  function init(value) {
-    state.value = value;
-  }
-  const self = Far('holder-vo', {
-    getValue() {
-      return state.value;
-    },
-    setValue(newValue) {
+const makeHolder = defineKind(
+  'holder-vo',
+  value => ({ value }),
+  state => ({
+    getValue: () => state.value,
+    setValue: newValue => {
       state.value = newValue;
     },
-  });
-  return { init, self };
-}
-
-const holderMaker = makeKind(makeHolderInstance);
+  }),
+);
 
 export function buildRootObject() {
   const testWeakMap = new WeakMap();
@@ -30,10 +24,10 @@ export function buildRootObject() {
   return Far('root', {
     prepareWeakMap(theirStuff) {
       memorableExportRemotable = Far('remember-exp', {});
-      memorableExportVirtualObject = holderMaker('remember-exp-vo');
+      memorableExportVirtualObject = makeHolder('remember-exp-vo');
       memorableExportPromise = new Promise((_res, _rej) => {});
       forgetableExportRemotable = Far('forget-exp', {});
-      forgetableExportVirtualObject = holderMaker('forget-exp-vo');
+      forgetableExportVirtualObject = makeHolder('forget-exp-vo');
       forgetableExportPromise = new Promise((_res, _rej) => {});
 
       const result = [

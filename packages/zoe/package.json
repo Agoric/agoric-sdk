@@ -1,11 +1,11 @@
 {
   "name": "@agoric/zoe",
-  "version": "0.21.1",
+  "version": "0.21.3",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "type": "module",
   "main": "./src/zoeService/zoe.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "yarn build-zcfBundle",
@@ -17,11 +17,10 @@
     "test:xs-unit": "ava-xs --verbose",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
     "build-zcfBundle": "node scripts/build-zcfBundle.js",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -41,24 +40,22 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/bundle-source": "^2.0.1",
-    "@agoric/ertp": "^0.13.1",
-    "@agoric/eventual-send": "^0.14.0",
-    "@agoric/far": "^0.1.1",
-    "@agoric/governance": "^0.4.1",
-    "@agoric/import-bundle": "^0.2.33",
-    "@agoric/marshal": "^0.5.0",
+    "@agoric/assert": "^0.3.16",
+    "@agoric/ertp": "^0.13.3",
+    "@agoric/eventual-send": "^0.14.1",
     "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.33",
-    "@agoric/promise-kit": "^0.2.29",
-    "@agoric/store": "^0.6.8",
-    "@agoric/swingset-vat": "^0.24.1"
+    "@agoric/notifier": "^0.3.35",
+    "@agoric/store": "^0.6.10",
+    "@agoric/swingset-vat": "^0.25.1",
+    "@endo/bundle-source": "^2.1.1",
+    "@endo/far": "^0.1.9",
+    "@endo/import-bundle": "^0.2.41",
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
-    "@agoric/babel-standalone": "^7.14.3",
-    "@agoric/captp": "^1.10.8",
-    "@agoric/install-ses": "^0.5.29",
+    "@endo/captp": "^2.0.3",
+    "@endo/init": "^0.5.37",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1"

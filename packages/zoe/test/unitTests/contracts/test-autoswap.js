@@ -34,9 +34,14 @@ test('autoSwap API interactions, no jig', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const installation = await installationPFromSource(zoe, autoswap);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    autoswap,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(10n));
@@ -131,10 +136,8 @@ test('autoSwap API interactions, no jig', async t => {
   // Bob swaps
   assertOfferResult(t, bobSeat, 'Swap successfully completed.');
 
-  const {
-    In: bobMoolaPayout1,
-    Out: bobSimoleanPayout1,
-  } = await bobSeat.getPayouts();
+  const { In: bobMoolaPayout1, Out: bobSimoleanPayout1 } =
+    await bobSeat.getPayouts();
 
   await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout1, moola(0n));
   await assertPayoutAmount(
@@ -178,10 +181,8 @@ test('autoSwap API interactions, no jig', async t => {
 
   assertOfferResult(t, bobSeat, 'Swap successfully completed.');
 
-  const {
-    Out: bobMoolaPayout2,
-    In: bobSimoleanPayout2,
-  } = await bobSecondSeat.getPayouts();
+  const { Out: bobMoolaPayout2, In: bobSimoleanPayout2 } =
+    await bobSecondSeat.getPayouts();
   await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout2, moola(5n));
   await assertPayoutAmount(
     t,
@@ -252,8 +253,13 @@ test('autoSwap - thorough jig test init, add, swap', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, autoswap);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    autoswap,
+  );
 
   // create an autoswap instance
   const issuerKeywordRecord = harden({
@@ -370,8 +376,13 @@ test('autoSwap jig - add liquidity in exact ratio', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, autoswap);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    autoswap,
+  );
 
   // create an autoswap instance
   const issuerKeywordRecord = harden({
@@ -464,8 +475,13 @@ test('autoSwap - trade attempt before init, no jig', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, autoswap);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    autoswap,
+  );
 
   const issuerKeywordRecord = harden({
     Central: moolaIssuer,
@@ -518,8 +534,13 @@ test('autoSwap jig - swap varying amounts', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, autoswap);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    autoswap,
+  );
 
   // create an autoswap instance
   const issuerKeywordRecord = harden({
@@ -661,8 +682,13 @@ test('autoSwap price quote for zero', async t => {
     moola,
     simoleans,
     zoe,
+    vatAdminState,
   } = setup();
-  const installation = await installationPFromSource(zoe, autoswap);
+  const installation = await installationPFromSource(
+    zoe,
+    vatAdminState,
+    autoswap,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(10n));

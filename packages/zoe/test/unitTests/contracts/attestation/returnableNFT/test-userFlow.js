@@ -9,40 +9,35 @@ import { setupZCFTest } from '../../../zcf/setupZcfTest.js';
 
 import { setupAttestation } from '../../../../../src/contracts/attestation/returnable/returnableNFT.js';
 
-const makeDoReturnAttestation = (
-  zoe,
-  issuer,
-  makeReturnAttInvitation,
-) => async attestation => {
-  const invitation = makeReturnAttInvitation();
-  const attestationAmount = await E(issuer).getAmountOf(attestation);
-  const proposal = harden({ give: { Attestation: attestationAmount } });
-  const payments = harden({ Attestation: attestation });
-  const userSeat = E(zoe).offer(invitation, proposal, payments);
-  const payout = await E(userSeat).getPayouts();
-  const amounts = await Promise.all(
-    Object.values(payout).map(paymentP => E(issuer).getAmountOf(paymentP)),
-  );
-  return harden({
-    amounts,
-    userSeat,
-  });
-};
+const makeDoReturnAttestation =
+  (zoe, issuer, makeReturnAttInvitation) => async attestation => {
+    const invitation = makeReturnAttInvitation();
+    const attestationAmount = await E(issuer).getAmountOf(attestation);
+    const proposal = harden({ give: { Attestation: attestationAmount } });
+    const payments = harden({ Attestation: attestation });
+    const userSeat = E(zoe).offer(invitation, proposal, payments);
+    const payout = await E(userSeat).getPayouts();
+    const amounts = await Promise.all(
+      Object.values(payout).map(paymentP => E(issuer).getAmountOf(paymentP)),
+    );
+    return harden({
+      amounts,
+      userSeat,
+    });
+  };
 
-const makeTestAttestationAmount = (t, issuer, brand, address) => async (
-  attestation,
-  amountLiened,
-) => {
-  const attestationAmount = await E(issuer).getAmountOf(attestation);
+const makeTestAttestationAmount =
+  (t, issuer, brand, address) => async (attestation, amountLiened) => {
+    const attestationAmount = await E(issuer).getAmountOf(attestation);
 
-  t.deepEqual(attestationAmount.value, [
-    {
-      address,
-      amountLiened,
-    },
-  ]);
-  t.is(attestationAmount.brand, brand);
-};
+    t.deepEqual(attestationAmount.value, [
+      {
+        address,
+        amountLiened,
+      },
+    ]);
+    t.is(attestationAmount.brand, brand);
+  };
 
 const makeTestLienAmount = (t, getLienAmount, address) => expectedLien => {
   t.deepEqual(getLienAmount(address), expectedLien);

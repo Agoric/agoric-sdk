@@ -3,20 +3,20 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 
-import { makeXsSubprocessFactory } from '../src/kernel/vatManager/manager-subprocess-xsnap.js';
-import { makeStartXSnap } from '../src/controller.js';
+import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
+import { makeStartXSnap } from '../src/controller/controller.js';
 import { capargs } from './util.js';
 
 test('child termination distinguished from meter exhaustion', async t => {
   const makeb = rel =>
     bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
   const lockdown = await makeb(
-    '../src/kernel/vatManager/lockdown-subprocess-xsnap.js',
+    '../src/supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
   );
   const supervisor = await makeb(
-    '../src/kernel/vatManager/supervisor-subprocess-xsnap.js',
+    '../src/supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
   );
   const bundles = [lockdown, supervisor];
 
@@ -39,6 +39,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   const kernelKeeper = {
     provideVatKeeper: () => ({
       getLastSnapshot: () => undefined,
+      addToTranscript: () => undefined,
     }),
   };
 
@@ -56,7 +57,7 @@ test('child termination distinguished from meter exhaustion', async t => {
 
   /** @type { ManagerOptions } */
   // @ts-ignore close enough for this test
-  const managerOptions = {};
+  const managerOptions = { useTranscript: true };
   const schandler = _vso => ['ok', null];
   const m = await xsWorkerFactory.createFromBundle(
     'v1',
@@ -64,6 +65,8 @@ test('child termination distinguished from meter exhaustion', async t => {
     managerOptions,
     schandler,
   );
+
+  await m.deliver(['startVat']);
 
   const msg = { method: 'hang', args: capargs([]) };
   /** @type { VatDeliveryObject } */

@@ -14,6 +14,7 @@ import (
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
+	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 )
 
@@ -27,8 +28,7 @@ type Keeper struct {
 	scopedKeeper  capabilitykeeper.ScopedKeeper
 	bankKeeper    bankkeeper.Keeper
 
-	// CallToController dispatches a message to the controlling process
-	CallToController func(ctx sdk.Context, str string) (string, error)
+	PushAction vm.ActionPusher
 }
 
 // NewKeeper creates a new dIBC Keeper instance
@@ -37,17 +37,17 @@ func NewKeeper(
 	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
 	bankKeeper bankkeeper.Keeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
-	callToController func(ctx sdk.Context, str string) (string, error),
+	pushAction vm.ActionPusher,
 ) Keeper {
 
 	return Keeper{
-		storeKey:         key,
-		cdc:              cdc,
-		bankKeeper:       bankKeeper,
-		channelKeeper:    channelKeeper,
-		portKeeper:       portKeeper,
-		scopedKeeper:     scopedKeeper,
-		CallToController: callToController,
+		storeKey:      key,
+		cdc:           cdc,
+		bankKeeper:    bankKeeper,
+		channelKeeper: channelKeeper,
+		portKeeper:    portKeeper,
+		scopedKeeper:  scopedKeeper,
+		PushAction:    pushAction,
 	}
 }
 
@@ -85,7 +85,19 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 		return err
 	}
 	chanCapName := host.ChannelCapabilityPath(portID, channelID)
-	return k.ClaimCapability(ctx, chanCap, chanCapName)
+	err = k.ClaimCapability(ctx, chanCap, chanCapName)
+	if err != nil {
+		return err
+	}
+
+	// We need to emit a channel event to notify the relayer.
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, channeltypes.AttributeValueCategory),
+		),
+	})
+	return nil
 }
 
 // SendPacket defines a wrapper function for the channel Keeper's function
@@ -122,7 +134,19 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
+	err := k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
+	if err != nil {
+		return err
+	}
+
+	// We need to emit a channel event to notify the relayer.
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, channeltypes.AttributeValueCategory),
+		),
+	})
+	return nil
 }
 
 // BindPort defines a wrapper function for the port Keeper's function in

@@ -1,17 +1,16 @@
 {
   "name": "@agoric/same-structure",
-  "version": "0.1.29",
+  "version": "0.1.31",
   "description": "Deep equals",
   "type": "module",
   "main": "index.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
-    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },
@@ -30,9 +29,9 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/marshal": "^0.5.0",
-    "@agoric/store": "^0.6.8"
+    "@agoric/assert": "^0.3.16",
+    "@agoric/store": "^0.6.10",
+    "@endo/marshal": "^0.6.3"
   },
   "devDependencies": {
     "ava": "^3.12.1"

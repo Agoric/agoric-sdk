@@ -4,7 +4,7 @@ import '../../exported.js';
 import { assert, details as X } from '@agoric/assert';
 import { keyEQ, fit } from '@agoric/store';
 import { E } from '@agoric/eventual-send';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
@@ -277,12 +277,44 @@ const reverse = (keywordRecord = {}) => {
   );
 };
 
-/** @type {OfferTo} */
+/**
+ * Make an offer to another contract instance (labeled contractB below),
+ * withdrawing the payments for the offer from a seat in the current
+ * contract instance (contractA) and depositing the payouts in another
+ * seat in the current contract instance (contractA).
+ *
+ * @param {ContractFacet} zcf
+ *   Zoe Contract Facet for contractA
+ *
+ * @param {ERef<Invitation>} invitation
+ *   Invitation to contractB
+ *
+ * @param {KeywordKeywordRecord=} keywordMapping
+ *   Mapping of keywords used in contractA to keywords to be used in
+ *   contractB. Note that the pathway to deposit the payout back to
+ *   contractA reverses this mapping.
+ *
+ * @param {Proposal=} proposal
+ *   The proposal for the offer to be made to contractB
+ *
+ * @param {ZCFSeat} fromSeat
+ *   The seat in contractA to take the offer payments from.
+ *
+ * @param {ZCFSeat=} [toSeat=fromSeat]
+ *   The seat in contractA to deposit the payout of the offer to.
+ *   If `toSeat` is not provided, this defaults to the `fromSeat`.
+ *
+ * @returns {Promise<{userSeatPromise: Promise<UserSeat>, deposited: Promise<AmountKeywordRecord>}>}
+ *   A promise for the userSeat for the offer to the other contract, and a
+ *   promise (`deposited`) which resolves when the payout for the offer has been
+ *   deposited to the `toSeat`
+ */
 export const offerTo = async (
   zcf,
   invitation,
   keywordMapping = {},
   proposal,
+  // @ts-expect-error A required parameter cannot follow an optional parameter.
   fromSeat,
   toSeat,
 ) => {
@@ -321,9 +353,7 @@ export const offerTo = async (
     depositedPromiseKit.resolve(mappedAmounts);
   };
 
-  E(userSeatPromise)
-    .getPayouts()
-    .then(doDeposit);
+  E(userSeatPromise).getPayouts().then(doDeposit);
 
   return harden({ userSeatPromise, deposited: depositedPromiseKit.promise });
 };

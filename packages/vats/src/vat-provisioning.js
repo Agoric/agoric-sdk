@@ -1,4 +1,4 @@
-import { E, Far } from '@agoric/far';
+import { E, Far } from '@endo/far';
 import { makeNotifierKit } from '@agoric/notifier';
 
 // This vat contains the controller-side provisioning service. To enable local

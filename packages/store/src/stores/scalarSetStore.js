@@ -1,9 +1,8 @@
 // @ts-check
 
-import { Far, filterIterable } from '@agoric/marshal';
+import { Far, filterIterable } from '@endo/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
-import { assertScalarKey } from '../keys/checkKey.js';
-import { makeCopySet } from '../keys/copySet.js';
+import { assertScalarKey, makeCopySet } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
@@ -24,17 +23,15 @@ export const makeSetStoreMethods = (
   assertKeyOkToDelete = undefined,
   keyName = 'key',
 ) => {
-  const {
-    assertUpdateOnAdd,
-    assertUpdateOnDelete,
-    iterableKeys,
-  } = makeCurrentKeysKit(
-    () => jsset.keys(),
-    compareRank,
-    assertKeyOkToAdd,
-    assertKeyOkToDelete,
-    keyName,
-  );
+  const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
+    makeCurrentKeysKit(
+      () => jsset.keys(),
+      k => jsset.has(k),
+      compareRank,
+      assertKeyOkToAdd,
+      assertKeyOkToDelete,
+      keyName,
+    );
 
   /**
    * @param {Pattern=} keyPatt
@@ -54,6 +51,8 @@ export const makeSetStoreMethods = (
     ),
 
     keys,
+
+    values: keys,
 
     snapshot: (keyPatt = undefined) => makeCopySet(keys(keyPatt)),
 
@@ -84,16 +83,16 @@ export const makeSetStoreMethods = (
  *
  * @template K
  * @param {string} [keyName='key'] - the column name for the key
- * @param {Partial<StoreOptions>=} options
+ * @param {StoreOptions=} options
  * @returns {SetStore<K>}
  */
 export const makeScalarSetStore = (
   keyName = 'key',
-  { keyPattern = undefined } = {},
+  { keySchema = undefined } = {},
 ) => {
   const jsset = new Set();
-  if (keyPattern !== undefined) {
-    assertPattern(keyPattern);
+  if (keySchema !== undefined) {
+    assertPattern(keySchema);
   }
 
   const assertKeyOkToAdd = key => {
@@ -102,8 +101,8 @@ export const makeScalarSetStore = (
     harden(key);
 
     assertScalarKey(key);
-    if (keyPattern !== undefined) {
-      fit(key, keyPattern);
+    if (keySchema !== undefined) {
+      fit(key, keySchema);
     }
   };
 

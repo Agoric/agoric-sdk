@@ -1,6 +1,6 @@
 {
   "name": "@agoric/stat-logger",
-  "version": "0.4.24",
+  "version": "0.4.25",
   "description": "Simple library for logging and graphing performance statistics",
   "type": "module",
   "main": "src/index.js",
@@ -11,7 +11,6 @@
     "build": "exit 0",
     "test": "exit 0",
     "test:xs": "exit 0",
-    "lint-check": "yarn lint",
     "lint-fix": "eslint --fix '**/*.js'",
     "lint": "eslint '**/*.js'"
   },

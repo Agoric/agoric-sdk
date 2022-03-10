@@ -4,12 +4,12 @@ import { E } from '@agoric/eventual-send';
 import { makeLegacyMap } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 
 import './types.js';
 import './internal-types.js';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * A fake clock that also logs progress.
@@ -139,7 +139,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
     makeNotifier(delay, interval) {
       assert.typeof(delay, 'bigint');
       assert(
-        (delay % timeStep) === 0n,
+        delay % timeStep === 0n,
         `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
       );
       assert.typeof(interval, 'bigint');
@@ -162,7 +162,7 @@ export default function buildManualTimer(log, startValue = 0n, timeStep = 1n) {
     delay(delay) {
       assert.typeof(delay, 'bigint');
       assert(
-        (delay % timeStep) === 0n,
+        delay % timeStep === 0n,
         `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
       );
       const promiseKit = makePromiseKit();

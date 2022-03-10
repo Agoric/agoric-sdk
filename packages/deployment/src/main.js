@@ -30,59 +30,57 @@ const isPersistentPeer = isPublicRpc;
 
 const dirname = new URL('./', import.meta.url).pathname;
 
-const makeGuardFile = ({ rd, wr }) => async (file, maker) => {
-  if (await rd.exists(file)) {
-    return 0;
-  }
-  const parent = rd.dirname(file);
-  await wr.mkdir(parent, { recursive: true });
-  let made = false;
-  const ret = await maker(async contents => {
-    await wr.createFile(file, contents);
-    made = true;
-  });
-  if (!made) {
-    if (!ret) {
-      // Create a timestamp by default.
-      await wr.createFile(file, String(new Date()));
-    } else {
-      // They failed.
-      throw ret;
+const makeGuardFile =
+  ({ rd, wr }) =>
+  async (file, maker) => {
+    if (await rd.exists(file)) {
+      return 0;
     }
-  }
-  return ret;
-};
+    const parent = rd.dirname(file);
+    await wr.mkdir(parent, { recursive: true });
+    let made = false;
+    const ret = await maker(async contents => {
+      await wr.createFile(file, contents);
+      made = true;
+    });
+    if (!made) {
+      if (!ret) {
+        // Create a timestamp by default.
+        await wr.createFile(file, String(new Date()));
+      } else {
+        // They failed.
+        throw ret;
+      }
+    }
+    return ret;
+  };
 
-const waitForStatus = ({ setup, running }) => async (
-  user,
-  host,
-  service,
-  doRetry,
-  acceptFn,
-) => {
-  const hostArgs = host ? [`-l${host}`] : [];
-  const serviceArgs = service ? [`-eservice=${service}`] : [];
-  let retryNum = 0;
-  for (;;) {
-    // eslint-disable-next-line no-await-in-loop
-    await doRetry(retryNum);
-    let buf = '';
-    // eslint-disable-next-line no-await-in-loop
-    const code = await running.doRun(
-      setup.playbook('status', `-euser=${user}`, ...hostArgs, ...serviceArgs),
-      undefined,
-      chunk => {
-        running.stdout.write(chunk);
-        buf += String(chunk);
-      },
-    );
-    const accepted = acceptFn(buf, code);
-    if (accepted !== undefined) {
-      return accepted;
+const waitForStatus =
+  ({ setup, running }) =>
+  async (user, host, service, doRetry, acceptFn) => {
+    const hostArgs = host ? [`-l${host}`] : [];
+    const serviceArgs = service ? [`-eservice=${service}`] : [];
+    let retryNum = 0;
+    for (;;) {
+      // eslint-disable-next-line no-await-in-loop
+      await doRetry(retryNum);
+      let buf = '';
+      // eslint-disable-next-line no-await-in-loop
+      const code = await running.doRun(
+        setup.playbook('status', `-euser=${user}`, ...hostArgs, ...serviceArgs),
+        undefined,
+        chunk => {
+          running.stdout.write(chunk);
+          buf += String(chunk);
+        },
+      );
+      const accepted = acceptFn(buf, code);
+      if (accepted !== undefined) {
+        return accepted;
+      }
+      retryNum += 1;
     }
-    retryNum += 1;
-  }
-};
+  };
 
 const provisionOutput = async ({ rd, wr, running }) => {
   const jsonFile = `${PROVISION_DIR}/terraform-output.json`;
@@ -107,15 +105,8 @@ const main = async (progname, rawArgs, powers) => {
   const trimReadFile = async file =>
     String(await rd.readFile(file)).trimRight();
   const guardFile = makeGuardFile({ rd, wr });
-  const {
-    doRun,
-    needDoRun,
-    needBacktick,
-    setSilent,
-    cwd,
-    chdir,
-    stdout,
-  } = running;
+  const { doRun, needDoRun, needBacktick, setSilent, cwd, chdir, stdout } =
+    running;
 
   const reMain = async reArgs => {
     const displayArgs = [progname, ...args];
@@ -195,16 +186,17 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      const { _: subArgs, 'boot-tokens': bootTokens, ...subOpts } = parseArgs(
-        args.slice(1),
-        {
-          default: {
-            'boot-tokens': DEFAULT_BOOT_TOKENS,
-          },
-          string: ['bump', 'import-from', 'genesis'],
-          stopEarly: true,
+      const {
+        _: subArgs,
+        'boot-tokens': bootTokens,
+        ...subOpts
+      } = parseArgs(args.slice(1), {
+        default: {
+          'boot-tokens': DEFAULT_BOOT_TOKENS,
         },
-      );
+        string: ['bump', 'import-from', 'genesis'],
+        stopEarly: true,
+      });
 
       const dir = setup.SETUP_HOME;
       if (await rd.exists(`${dir}/network.txt`)) {
@@ -479,8 +471,9 @@ show-config      display the client connection parameters
           'play',
           'install',
           `-eexecline=${shellEscape(
-            `/usr/local/bin/ag-chain-cosmos start ${env.AG_COSMOS_START_ARGS ??
-              '--log_level=warn'}`,
+            `/usr/local/bin/ag-chain-cosmos start ${
+              env.AG_COSMOS_START_ARGS ?? '--log_level=warn'
+            }`,
           )}`,
           ...agChainCosmosEnvironment,
         ]),
@@ -813,9 +806,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
     case 'show-gci': {
       const genesis = await rd.readFile(`${COSMOS_DIR}/data/genesis.json`);
       const s = djson.stringify(JSON.parse(String(genesis)));
-      const gci = createHash('sha256')
-        .update(s)
-        .digest('hex');
+      const gci = createHash('sha256').update(s).digest('hex');
       stdout.write(gci);
       break;
     }

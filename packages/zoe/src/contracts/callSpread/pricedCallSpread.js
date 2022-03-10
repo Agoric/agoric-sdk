@@ -4,9 +4,9 @@ import '../../../exported.js';
 import './types.js';
 
 import { assert, details as X } from '@agoric/assert';
-import { makePromiseKit } from '@agoric/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import {
   assertProposalShape,
@@ -60,12 +60,8 @@ const BASIS_POINTS = 10000n;
 
 /** @type {ContractStartFn} */
 const start = zcf => {
-  const {
-    brands,
-    strikePrice1,
-    strikePrice2,
-    settlementAmount,
-  } = zcf.getTerms();
+  const { brands, strikePrice1, strikePrice2, settlementAmount } =
+    zcf.getTerms();
   assertNatAssetKind(zcf, brands.Collateral);
   assertNatAssetKind(zcf, brands.Strike);
   // notice that we don't assert that the Underlying is fungible.

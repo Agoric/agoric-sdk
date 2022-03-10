@@ -1,7 +1,7 @@
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
 import { makePrintLog } from './printLog.js';
@@ -360,9 +360,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const liquidityTokenPayment = await E(liquidityTokenPurseP).withdraw(
       liquidity(10n),
     );
-    const removeLiquidityInvitation = E(
-      publicFacet,
-    ).makeRemoveLiquidityInvitation();
+    const removeLiquidityInvitation =
+      E(publicFacet).makeRemoveLiquidityInvitation();
 
     const removeLiquiditySeatP = await E(zoe).offer(
       removeLiquidityInvitation,
@@ -395,7 +394,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     const { mintAndSellNFT } = installations;
     const { creatorFacet } = await E(zoe).startInstance(mintAndSellNFT);
 
-    // completeObj exists because of a current limitation in @agoric/marshal : https://github.com/Agoric/agoric-sdk/issues/818
+    // completeObj exists because of a current limitation in @endo/marshal : https://github.com/Agoric/agoric-sdk/issues/818
     const {
       sellItemsInstance: ticketSalesInstance,
       sellItemsCreatorSeat,

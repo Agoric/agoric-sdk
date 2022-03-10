@@ -1,15 +1,12 @@
 // @ts-check
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/babel-standalone';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@agoric/install-ses';
+import '@endo/init';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
+import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 import path from 'path';
 
 const CONTRACT_FILES = ['committee', 'binaryVoteCounter'];
@@ -47,6 +44,7 @@ test.before(async t => {
     parameters: { contractBundles }, // argv will be added to this
   };
   const config = { bootstrap: 'bootstrap', vats };
+  config.bundles = { zcf: { bundle: zcfBundle } };
   config.defaultManagerType = 'xs-worker';
 
   const step4 = Date.now();

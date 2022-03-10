@@ -3,13 +3,31 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { ALLOW_IMPLICIT_REMOTABLES, Far, passStyleOf } from '@agoric/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';
 import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
+import { makeScalarSetStore } from '../src/stores/scalarSetStore.js';
 import { makeScalarWeakMapStore } from '../src/stores/scalarWeakMapStore.js';
 
 import '../src/types.js';
+
+/**
+ * Simulate ava v4 "assertions now return a boolean indicating whether they passed" behavior
+ * https://github.com/avajs/ava/releases/tag/v4.0.0#:~:text=Assertions%20as%20type%20guards
+ *
+ * @param {boolean | undefined} assertionResult
+ * @param {() => boolean} getFallbackResult
+ * @returns {boolean}
+ */
+export const assertionPassed = (assertionResult, getFallbackResult) => {
+  if (assertionResult === undefined) return getFallbackResult();
+  console.warn(
+    'Got non-undefined assertion result, has ava been upgraded to v4+? ' +
+      'Consider removing assertionPassed.',
+  );
+  return assertionResult;
+};
 
 function check(t, mode, objMaker) {
   // Check the full API, and make sure object identity isn't a problem by
@@ -121,13 +139,8 @@ test('reject promise keys', t => {
 test('passability of stores', t => {
   t.is(passStyleOf(makeScalarMapStore('foo')), 'remotable');
   t.is(passStyleOf(makeScalarWeakMapStore('foo')), 'remotable');
-  if (ALLOW_IMPLICIT_REMOTABLES) {
-    t.is(passStyleOf(makeLegacyMap('foo')), 'remotable');
-    t.is(passStyleOf(makeLegacyWeakMap('foo')), 'remotable');
-  } else {
-    t.throws(() => passStyleOf(makeLegacyMap('foo')), { message: /x/ });
-    t.throws(() => passStyleOf(makeLegacyWeakMap('foo')), { message: /x/ });
-  }
+  t.throws(() => passStyleOf(makeLegacyMap('foo')), { message: /x/ });
+  t.throws(() => passStyleOf(makeLegacyWeakMap('foo')), { message: /x/ });
 });
 
 test('passability of store iters', t => {
@@ -141,4 +154,76 @@ test('passability of store iters', t => {
   t.is(passStyleOf(iter), 'remotable');
   const iterResult = iter.next();
   t.is(passStyleOf(iterResult), 'copyRecord');
+});
+
+test('iteration fails with concurrent addition', t => {
+  const m = makeScalarMapStore('mapFail');
+  const s = makeScalarSetStore('setFail');
+  for (let i = 0; i < 6; i += 1) {
+    m.init(i, `foo`);
+    s.add(i);
+  }
+
+  let pos = 0;
+  t.throws(
+    () => {
+      // eslint-disable-next-line no-unused-vars
+      for (const k of m.keys()) {
+        pos += 1;
+        if (pos === 2) {
+          m.init(47, 'nonsense');
+        }
+      }
+    },
+    {
+      message: `Store "mapFail" cursor stale`,
+    },
+  );
+
+  pos = 0;
+  t.throws(
+    () => {
+      // eslint-disable-next-line no-unused-vars
+      for (const k of s.keys()) {
+        pos += 1;
+        if (pos === 2) {
+          s.add(47);
+        }
+      }
+    },
+    {
+      message: `Store "setFail" cursor stale`,
+    },
+  );
+});
+
+test('iteration succeeds with concurrent deletion', t => {
+  const m = makeScalarMapStore('mapOK');
+  const s = makeScalarSetStore('setOK');
+  for (let i = 0; i < 6; i += 1) {
+    m.init(i, `foo`);
+    s.add(i);
+  }
+
+  let pos = 0;
+  const seenKeys = [];
+  for (const k of m.keys()) {
+    seenKeys.push(k);
+    pos += 1;
+    if (pos === 2) {
+      m.delete(4);
+    }
+  }
+  t.deepEqual(seenKeys, [0, 1, 2, 3, 5]);
+
+  pos = 0;
+  const seenValues = [];
+  for (const v of s.values()) {
+    seenValues.push(v);
+    pos += 1;
+    if (pos === 2) {
+      s.delete(4);
+    }
+  }
+  t.deepEqual(seenValues, [0, 1, 2, 3, 5]);
 });

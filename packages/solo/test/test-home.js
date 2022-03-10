@@ -1,6 +1,6 @@
 /* global process */
 
-import '@agoric/install-ses/pre-bundle-source.js';
+import '@endo/init/pre-bundle-source.js';
 
 // `test.after.always` does not yet seem compatible with ses-ava
 // See https://github.com/endojs/endo/issues/647
@@ -10,14 +10,14 @@ import '@agoric/swingset-vat/tools/prepare-test-env.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/issuers.js';
 
 import { makeFixture, E } from './captp-fixture.js';
 
+const CENTRAL_ISSUER_NAME = 'RUN';
 const SOLO_PORT = 7999;
 
 // This runs before all the tests.
@@ -36,12 +36,12 @@ test.before('setup', async t => {
 test.serial('home.board', async t => {
   const { board } = E.get(home);
   await t.throwsAsync(
-    () => E(board).getValue('148'),
+    () => E(board).getValue('board0120'),
     { message: /board does not have id/ },
     `getting a value for a fake id throws`,
   );
   await t.throwsAsync(
-    () => E(board).getValue('0000000000'),
+    () => E(board).getValue('board0000000000'),
     { message: /id is probably a typo/ },
     `using a non-verified id throws`,
   );

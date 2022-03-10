@@ -3,6 +3,53 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.25.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.25.0...@agoric/swingset-vat@0.25.1) (2022-02-24)
+
+
+### Features
+
+* overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
+* run vat creation and initialization in a crank to access to syscall and transcript logging ([2218e07](https://github.com/Agoric/agoric-sdk/commit/2218e07437a168226666fbb67b2158937cc30372)), closes [#2910](https://github.com/Agoric/agoric-sdk/issues/2910)
+
+
+
+## [0.25.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.24.1...@agoric/swingset-vat@0.25.0) (2022-02-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **SwingSet:** fill out addresses in `attempt.accept`
+
+### Features
+
+* **swingset:** devices.bundle, install-bundle, bundlecaps, createVat(bundlecap) ([1c39ebd](https://github.com/Agoric/agoric-sdk/commit/1c39ebd329cc2405635380b8199d7be0eadbd158)), closes [#4372](https://github.com/Agoric/agoric-sdk/issues/4372) [#3269](https://github.com/Agoric/agoric-sdk/issues/3269) [#4373](https://github.com/Agoric/agoric-sdk/issues/4373)
+* support element deletion during iteration over a store ([8bb9770](https://github.com/Agoric/agoric-sdk/commit/8bb97702fd478b0b47e2d5454373e80765042106)), closes [#4503](https://github.com/Agoric/agoric-sdk/issues/4503)
+* **ibc:** reimplement `relativeTimeoutNs`, per `ibc-go` ([4673493](https://github.com/Agoric/agoric-sdk/commit/4673493df11f51e9aa018b0ded9632776759f1ee))
+* **swingset:** support raw devices ([e74cf17](https://github.com/Agoric/agoric-sdk/commit/e74cf179c096ff83f5d373a9f57fa071c9bef966)), closes [#1346](https://github.com/Agoric/agoric-sdk/issues/1346) [#1346](https://github.com/Agoric/agoric-sdk/issues/1346)
+* **SwingSet:** allow `slogSender` to process all slog messages ([ca4b5bc](https://github.com/Agoric/agoric-sdk/commit/ca4b5bc74068855c3c18908238c992440621622b))
+* **SwingSet:** fill out addresses in `attempt.accept` ([bc69f80](https://github.com/Agoric/agoric-sdk/commit/bc69f80958817204f46bd8adcd31606ca427ebb5))
+* implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
+
+
+### Bug Fixes
+
+* **SwingSet:** Carry ambient ses-ava types ([2fda391](https://github.com/Agoric/agoric-sdk/commit/2fda391170724d5c3a5673367a969759d7acff06))
+* Remove extraneous eslint globals ([17087e4](https://github.com/Agoric/agoric-sdk/commit/17087e4605db7d3b30dfccf2434b2850b45e3408))
+* **meter:** use `process.env` not `process.environment` ([c703d07](https://github.com/Agoric/agoric-sdk/commit/c703d07e58ae12d849b417256598aa9015d9e513))
+* **store:** use explicit `import('@endo/marshal')` JSDoc ([4795147](https://github.com/Agoric/agoric-sdk/commit/47951473d4679c7e95104f5ae32fe63c8547598e))
+* **swingset:** don't kernel panic upon device error ([eb56677](https://github.com/Agoric/agoric-sdk/commit/eb56677533b77ae91a3bcafb329b427dac95c51a)), closes [#4326](https://github.com/Agoric/agoric-sdk/issues/4326)
+* **swingset:** use consistent lowercase `bundlecap' in API/docs ([872f956](https://github.com/Agoric/agoric-sdk/commit/872f95619c48bd79186781c893e347f227dcf9af)), closes [#4372](https://github.com/Agoric/agoric-sdk/issues/4372)
+* don't swallow errors that happen during delivery into a vat ([e39ce77](https://github.com/Agoric/agoric-sdk/commit/e39ce771e45068be80235121bd30e77397515fba))
+* fake VOM bitrot ([c9faf9c](https://github.com/Agoric/agoric-sdk/commit/c9faf9cb890b68f717ddfe060802be5083064443)), closes [#4591](https://github.com/Agoric/agoric-sdk/issues/4591)
+* **slogSender:** serialise the JSON to ensure SLOGFILE is pristine ([854a59a](https://github.com/Agoric/agoric-sdk/commit/854a59a09117fb035be828bbad339b70c7909667))
+* Enhance TypeScript node_modules traversal depth ([000f738](https://github.com/Agoric/agoric-sdk/commit/000f73850d46dc7272b2399c06ad774dd3b8fe6e))
+* remove pureCopy deleted from endo 1061 ([#4458](https://github.com/Agoric/agoric-sdk/issues/4458)) ([50e8523](https://github.com/Agoric/agoric-sdk/commit/50e852346d0b4005c613e30d10b469d89a4e5564))
+* **SwingSet:** don't do liveSlots logging in consensus mode ([d563783](https://github.com/Agoric/agoric-sdk/commit/d563783cd20da195093f23aa7214f1fd2405f7cc))
+* **SwingSet:** Update snapshot hashes ([d5f54c6](https://github.com/Agoric/agoric-sdk/commit/d5f54c64585edf3759afb8c8ad3052815eb334eb))
+* **xsnap:** use `object-inspect` to render `print` output better ([3c3a353](https://github.com/Agoric/agoric-sdk/commit/3c3a353bb67b8b623e5b931632d28d96a535f215))
+
+
+
 ### [0.24.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.24.0...@agoric/swingset-vat@0.24.1) (2021-12-22)
 
 

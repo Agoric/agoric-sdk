@@ -1,20 +1,19 @@
 {
   "name": "@agoric/assert",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "Assert expression support that protects sensitive data",
   "type": "module",
   "main": "src/assert.js",
   "engines": {
-    "node": ">=11.0"
+    "node": ">=14.15.0"
   },
   "scripts": {
     "build": "exit 0",
     "test": "exit 0",
     "test:nyc": "exit 0",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix && yarn lint:types",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
     "lint:types": "tsc -p jsconfig.json"
   },

@@ -2,15 +2,32 @@
 
 import { assert, details as X, q } from '@agoric/assert';
 import {
+  assertRecord,
   getTag,
   nameForPassableSymbol,
   passStyleOf,
-  sameValueZero,
-} from '@agoric/marshal';
+} from '@endo/marshal';
 
-const { fromEntries, entries, setPrototypeOf } = Object;
+/** @typedef {import('@endo/marshal').PassStyle} PassStyle */
+
+const { fromEntries, entries, setPrototypeOf, is } = Object;
 
 const { ownKeys } = Reflect;
+
+/**
+ * This is the equality comparison used by JavaScript's Map and Set
+ * abstractions, where NaN is the same as NaN and -0 is the same as
+ * 0. Marshal serializes -0 as zero, so the semantics of our distributed
+ * object system does not distinguish 0 from -0.
+ *
+ * `sameValueZero` is the EcmaScript spec name for this equality comparison,
+ * but TODO we need a better name for the API.
+ *
+ * @param {any} x
+ * @param {any} y
+ * @returns {boolean}
+ */
+const sameValueZero = (x, y) => x === y || is(x, y);
 
 /**
  * @type {[PassStyle, RankCover][]}
@@ -56,6 +73,18 @@ const memoOfSorted = new WeakMap();
  */
 const comparatorMirrorImages = new WeakMap();
 
+export const recordParts = record => {
+  assertRecord(record);
+  // TODO Measure which is faster: a reverse sort by sorting and
+  // reversing, or by sorting with an inverse comparison function.
+  // If it makes a significant difference, use the faster one.
+  const names = ownKeys(record).sort().reverse();
+  // @ts-expect-error It thinks name might be a symbol, which it doesn't like.
+  const vals = names.map(name => record[name]);
+  return harden([names, vals]);
+};
+harden(recordParts);
+
 /**
  * @param {RankCompare=} compareRemotables
  * An option to create a comparator in which an internal order is
@@ -64,7 +93,7 @@ const comparatorMirrorImages = new WeakMap();
  * for the same rank.
  * @returns {RankComparatorKit}
  */
-const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
+export const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
   /** @type {RankCompare} */
   const comparator = (left, right) => {
     if (sameValueZero(left, right)) {
@@ -134,25 +163,13 @@ const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
         // of these names, which we then compare lexicographically. This ensures
         // that if the names of record X are a subset of the names of record Y,
         // then record X will have an earlier rank and sort to the left of Y.
-        const leftNames = harden(
-          ownKeys(left)
-            .sort()
-            // TODO Measure which is faster: a reverse sort by sorting and
-            // reversing, or by sorting with an inverse comparison function.
-            // If it makes a significant difference, use the faster one.
-            .reverse(),
-        );
-        const rightNames = harden(
-          ownKeys(right)
-            .sort()
-            .reverse(),
-        );
+        const [leftNames, leftValues] = recordParts(left);
+        const [rightNames, rightValues] = recordParts(right);
+
         const result = comparator(leftNames, rightNames);
         if (result !== 0) {
           return result;
         }
-        const leftValues = harden(leftNames.map(name => left[name]));
-        const rightValues = harden(rightNames.map(name => right[name]));
         return comparator(leftValues, rightValues);
       }
       case 'copyArray': {
@@ -383,10 +400,8 @@ export const intersectRankCovers = (compare, covers) => {
   return covers.reduce(intersectRankCoverPair, ['', '{']);
 };
 
-export const {
-  comparator: compareRank,
-  antiComparator: compareAntiRank,
-} = makeComparatorKit();
+export const { comparator: compareRank, antiComparator: compareAntiRank } =
+  makeComparatorKit();
 
 /**
  * Create a comparator kit in which remotables are fully ordered

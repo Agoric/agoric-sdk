@@ -1,7 +1,29 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { pureCopy, assertRecord } from '@agoric/marshal';
+import { assertRecord, isObject, passStyleOf } from '@endo/marshal';
+
+// TODO Once https://github.com/endojs/endo/pull/1061 is merged, then we
+// should add `assertPure` to the imports from `@endo/marshal` and remove
+// the redundant definition here.
+const assertPure = (pureData, optNameOfData = 'Allegedly pure data') => {
+  const passStyle = passStyleOf(pureData);
+  switch (passStyle) {
+    case 'copyArray':
+    case 'copyRecord':
+    case 'tagged': {
+      return true;
+    }
+    default: {
+      if (!isObject(pureData)) {
+        return true;
+      }
+      assert.fail(
+        X`${q(optNameOfData)} ${pureData} must be pure, not a ${q(passStyle)}`,
+      );
+    }
+  }
+};
 
 // TODO: assertSubset is copied from Zoe. Move this code to a location
 // where it can be used by ERTP and Zoe easily. Perhaps another
@@ -32,11 +54,8 @@ const displayInfoKeys = harden(['decimalPlaces', 'assetKind']);
 export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
   // We include this check for a better error message
   assertRecord(allegedDisplayInfo, 'displayInfo');
+  assertPure(allegedDisplayInfo, 'displayInfo');
 
-  // `pureCopy` ensures the resulting object is not a proxy. Note that
-  // `pureCopy` works in this case because displayInfo is a copyRecord
-  // that is pure data, meaning no remotables and no promises.
-  allegedDisplayInfo = pureCopy(allegedDisplayInfo);
   if (allegedDisplayInfo.assetKind !== undefined) {
     assert(
       allegedDisplayInfo.assetKind === assetKind,

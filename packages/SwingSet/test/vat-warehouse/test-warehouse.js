@@ -6,7 +6,7 @@ import fs from 'fs';
 import tmp from 'tmp';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadBasedir, buildVatController } from '../../src/index.js';
-import { makeLRU } from '../../src/kernel/vatManager/vat-warehouse.js';
+import { makeLRU } from '../../src/kernel/vat-warehouse.js';
 
 async function makeController(managerType, runtimeOptions) {
   const config = await loadBasedir(new URL('./', import.meta.url).pathname);

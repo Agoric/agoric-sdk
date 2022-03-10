@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import '@agoric/install-ses';
+import '@endo/init';
 import process from 'process';
 import { openSwingStore } from '@agoric/swing-store';
 

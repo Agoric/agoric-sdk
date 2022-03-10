@@ -4,9 +4,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@agoric/bundle-source';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@agoric/eventual-send';
-import { Far } from '@agoric/marshal';
+import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { keyEQ } from '@agoric/store';
 
@@ -31,6 +31,7 @@ test('zoe - coveredCall', async t => {
     simoleans,
     bucks,
     zoe,
+    vatAdminState,
   } = setup();
 
   const makeAlice = async (timer, moolaPayment) => {
@@ -42,7 +43,8 @@ test('zoe - coveredCall', async t => {
         // pack the contract
         const bundle = await bundleSource(coveredCallRoot);
         // install the contract
-        const installationP = E(zoe).install(bundle);
+        vatAdminState.installBundle('b1-coveredcall', bundle);
+        const installationP = E(zoe).installBundleID('b1-coveredcall');
         return installationP;
       },
       startInstance: async installation => {
@@ -225,10 +227,13 @@ test('zoe - coveredCall', async t => {
 
 test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, async t => {
   t.plan(13);
-  const { moolaR, simoleanR, moola, simoleans, zoe } = setup();
+  const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
   // Pack the contract.
   const bundle = await bundleSource(coveredCallRoot);
-  const coveredCallInstallation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
   const timer = buildManualTimer(console.log);
 
   // Setup Alice
@@ -346,14 +351,27 @@ test('zoe - coveredCall with swap for invitation', async t => {
   t.plan(24);
   // Setup the environment
   const timer = buildManualTimer(console.log);
-  const { moolaR, simoleanR, bucksR, moola, simoleans, bucks, zoe } = setup();
+  const {
+    moolaR,
+    simoleanR,
+    bucksR,
+    moola,
+    simoleans,
+    bucks,
+    zoe,
+    vatAdminState,
+  } = setup();
   // Pack the contract.
   const coveredCallBundle = await bundleSource(coveredCallRoot);
 
-  const coveredCallInstallation = await E(zoe).install(coveredCallBundle);
+  vatAdminState.installBundle('b1-coveredcall', coveredCallBundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
   const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
-  const swapInstallationId = await E(zoe).install(atomicSwapBundle);
+  vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
+  const swapInstallationId = await E(zoe).installBundleID('b1-atomicswap');
 
   // Setup Alice
   // Alice starts with 3 moola
@@ -598,12 +616,24 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.plan(31);
   // Setup the environment
   const timer = buildManualTimer(console.log);
-  const { moolaR, simoleanR, bucksR, moola, simoleans, bucks, zoe } = setup();
+  const {
+    moolaR,
+    simoleanR,
+    bucksR,
+    moola,
+    simoleans,
+    bucks,
+    zoe,
+    vatAdminState,
+  } = setup();
 
   // Pack the contract.
   const bundle = await bundleSource(coveredCallRoot);
 
-  const coveredCallInstallation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
 
   // Setup Alice
   // Alice starts with 3 moola
@@ -871,11 +901,16 @@ test('zoe - coveredCall non-fungible', async t => {
     rpgItems,
     createRpgItem,
     zoe,
+    vatAdminState,
   } = setupNonFungible();
 
   // install the contract.
   const bundle = await bundleSource(coveredCallRoot);
-  const coveredCallInstallation = await E(zoe).install(bundle);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+
+  const coveredCallInstallation = await E(zoe).installBundleID(
+    'b1-coveredcall',
+  );
   const timer = buildManualTimer(console.log);
 
   // Setup Alice

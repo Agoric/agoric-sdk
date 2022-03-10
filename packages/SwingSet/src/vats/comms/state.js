@@ -1,11 +1,11 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { insistCapData } from '../../capdata.js';
+import { insistCapData } from '../../lib/capdata.js';
 import {
   makeVatSlot,
   insistVatType,
   parseVatSlot,
-} from '../../parseVatSlots.js';
+} from '../../lib/parseVatSlots.js';
 import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots.js';
 import { initializeRemoteState, makeRemote, insistRemoteID } from './remote.js';
 import { cdebug } from './cdebug.js';
@@ -50,7 +50,15 @@ function makeSyscallStore(syscall) {
 }
 
 function commaSplit(s) {
-  if (s === undefined || s === '') {
+  // 's' might be 'undefined' (because the DB key that feeds it was not
+  // present, and undefined is the obvious return value from a
+  // .get(missingKey), or null (because the DB lookup actually happened on
+  // the other side of a JSON-encoded vat-worker-to-kernel-process pipe and
+  // the JSON decoder produces null instead of undefined), or '' (because the
+  // key is present but was populated with slots.join(',') and slots was
+  // empty, so join() produces an empty string). In all three cases, and
+  // empty list is the correct return value.
+  if (!s) {
     return [];
   }
   return s.split(',');
@@ -375,10 +383,9 @@ export function makeState(syscall, identifierBase = 0) {
           if (!reachable) {
             // the object is unreachable
 
-            // eslint-disable-next-line no-use-before-define
-            const { owner, isReachable, isRecognizable } = getOwnerAndStatus(
-              lref,
-            );
+            const { owner, isReachable, isRecognizable } =
+              // eslint-disable-next-line no-use-before-define
+              getOwnerAndStatus(lref);
             if (isReachable) {
               // but the exporter doesn't realize it yet, so schedule a
               // dropExport to them, which will clear the isReachable flag at

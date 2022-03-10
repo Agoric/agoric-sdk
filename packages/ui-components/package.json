@@ -1,16 +1,16 @@
 {
   "name": "@agoric/ui-components",
-  "version": "0.2.28",
+  "version": "0.2.30",
   "description": "Reusable UI Components for Agoric Dapps, built with React and MaterialUI",
   "type": "module",
   "main": "dist/index.js",
   "dependencies": {
-    "@agoric/assert": "^0.3.15",
-    "@agoric/ertp": "^0.13.1",
-    "@agoric/eventual-send": "^0.14.0",
-    "@agoric/install-ses": "^0.5.29",
+    "@agoric/assert": "^0.3.16",
+    "@agoric/ertp": "^0.13.3",
+    "@agoric/eventual-send": "^0.14.1",
     "@agoric/nat": "^4.1.0",
-    "@agoric/zoe": "^0.21.1",
+    "@agoric/zoe": "^0.21.3",
+    "@endo/init": "^0.5.37",
     "clsx": "^1.1.1"
   },
   "peerDependencies": {
@@ -26,10 +26,9 @@
     "build:src": "rm -rf dist && BABEL_ENV='test' ./node_modules/.bin/babel src --out-dir dist",
     "build": "yarn build:src && yarn build:tests",
     "lint-fix": "yarn lint --fix",
-    "lint-check": "yarn lint",
-    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
-    "lint:types": "tsc -p jsconfig.json"
+    "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json"
   },
   "eslintConfig": {
     "extends": [
@@ -52,7 +51,7 @@
     "@babel/core": "^7.12.13",
     "@babel/plugin-syntax-jsx": "^7.12.1",
     "@material-ui/core": "4.11.3",
-    "@typescript-eslint/eslint-plugin": "^4.14.2",
+    "@typescript-eslint/eslint-plugin": "^5.14.0",
     "ava": "^3.15.0",
     "babel-eslint": "^10.1.0",
     "babel-plugin-named-asset-import": "^0.3.7",
@@ -60,13 +59,13 @@
     "c8": "^7.7.2",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",
-    "eslint-config-react-app": "^6.0.0",
+    "eslint-config-react-app": "^7.0.0",
     "eslint-plugin-flowtype": "^5.2.0",
-    "eslint-plugin-react": "^7.22.0",
-    "eslint-plugin-react-hooks": "^4.2.0",
+    "eslint-plugin-react": "^7.28.0",
+    "eslint-plugin-react-hooks": "^4.3.0",
     "react": "^16.14.0",
     "react-dom": "^16.8.0",
-    "typescript": "^4.2.3"
+    "typescript": "~4.6.2"
   },
   "ava": {
     "files": [
