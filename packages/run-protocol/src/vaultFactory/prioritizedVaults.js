@@ -10,8 +10,8 @@ import { toVaultKey } from './storeUtils.js';
 
 /**
  *
- * @param {Amount<NatValue>} debtAmount
- * @param {Amount<NatValue>} collateralAmount
+ * @param {Amount<'nat'>} debtAmount
+ * @param {Amount<'nat'>} collateralAmount
  * @returns {Ratio}
  */
 const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
@@ -111,8 +111,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
 
   /**
    *
-   * @param {Amount<NatValue>} oldDebt
-   * @param {Amount<NatValue>} oldCollateral
+   * @param {Amount<'nat'>} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
    */
   const removeVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
@@ -159,8 +159,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   }
 
   /**
-   * @param {Amount<NatValue>} oldDebt
-   * @param {Amount<NatValue>} oldCollateral
+   * @param {Amount<'nat'>} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
    */
   const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {

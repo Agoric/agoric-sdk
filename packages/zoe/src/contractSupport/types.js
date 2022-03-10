@@ -81,13 +81,13 @@
 
 /**
  * @typedef {Object} Ratio
- * @property {Amount<NatValue>} numerator
- * @property {Amount<NatValue>} denominator
+ * @property {Amount<'nat'>} numerator
+ * @property {Amount<'nat'>} denominator
  */
 
 /**
  * @callback ScaleAmount
  * @param {Amount} amount
  * @param {Ratio} ratio
- * @returns {Amount<NatValue>}
+ * @returns {Amount<'nat'>}
  */
