@@ -39,6 +39,12 @@ async function* slogToDiagram(entries) {
   let blockHeight;
   let dInfo;
 
+  const seen = {
+    type: new Set(),
+    deliver: new Set(),
+    syscall: new Set(),
+  };
+
   for await (const entry of entries) {
     // handle off-chain use, such as in unit tests
     if (!tBlock) {
@@ -105,6 +111,10 @@ async function* slogToDiagram(entries) {
             break;
           }
           default:
+            if (!seen.deliver.has(kd[0])) {
+              console.warn('delivery tag unknown:', kd[0]);
+              seen.deliver.add(kd[0]);
+            }
             break;
         }
         break;
@@ -118,6 +128,10 @@ async function* slogToDiagram(entries) {
         // supplement deliver entry with compute meter
         const { dr } = entry;
         if (dr[2] && 'compute' in dr[2]) {
+          if (!dInfo) {
+            console.warn('no dInfo???', dr[2]);
+            break;
+          }
           const { compute } = dr[2];
           dInfo.compute = compute;
         }
@@ -152,13 +166,20 @@ async function* slogToDiagram(entries) {
             break;
           }
           default:
+            if (!seen.syscall.has(entry.ksc[0])) {
+              console.warn('syscall tag unknown:', entry.ksc[0]);
+              seen.syscall.add(entry.ksc[0]);
+            }
             // skip
             break;
         }
         break;
       }
       default:
-        // pass
+        if (!seen.type.has(entry.type)) {
+          console.warn('type unknown:', entry.type);
+          seen.type.add(entry.type);
+        }
         break;
     }
   }
@@ -212,7 +233,11 @@ async function* slogToDiagram(entries) {
         : undefined;
 
     // yield `autonumber ${blockHeight}.${t}\n`;
-    yield `autonumber ${t}\n`;
+    if (t > 0) {
+      yield `autonumber ${t}\n`;
+    } else {
+      console.warn('??? t < 0', elapsed);
+    }
     if (typeof ref === 'object') {
       yield `[-> ${dest} : ${target}.${method || state}(${argSize || ''})\n`;
       if (computeNote) yield computeNote;
