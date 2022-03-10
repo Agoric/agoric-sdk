@@ -636,7 +636,6 @@ export const makeInnerVault = (
     updateUiState();
     clientSeat.exit();
 
-    // TODO get rid of strings?
     return 'We have adjusted your balances, thank you for your business';
   };
 
