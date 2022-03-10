@@ -598,6 +598,33 @@ export function makeWallet({
       },
     );
 
+    const depositAttestation = async payoutP => {
+      console.log('deposit attestation1!!!');
+      const [getRUNInstance, issuer] = await Promise.all([
+        E(agoricNames)?.lookup('instance', 'getRUN'),
+        E(agoricNames)?.lookup('issuer', 'Attestation'),
+      ]);
+      console.log('deposit attestation2!!!');
+
+      const [publicFacet, amount] = await Promise.all([
+        E(zoe).getPublicFacet(getRUNInstance),
+        E(issuer).getAmountOf(await payoutP),
+      ]);
+      console.log('deposit attestation3!!!');
+
+      const invitation = E(publicFacet).makeReturnAttInvitation();
+      console.log('deposit attestation4!!!');
+
+      const depositProposal = harden({ give: { Attestation: amount } });
+      const payments = harden({ Attestation: await payoutP });
+      console.log('deposit attestation5!!!');
+
+      const userSeat = E(zoe).offer(invitation, depositProposal, payments);
+      console.log('deposit attestation6!!!');
+
+      return E(userSeat).getOfferResult();
+    };
+
     // Try reclaiming any of our payments that we successfully withdrew, but
     // were left unclaimed.
     const tryReclaimingWithdrawnPayments = () =>
@@ -619,8 +646,7 @@ export function makeWallet({
             (await E(payment).getAllegedBrand()) ===
             (await E(attestationIssuer).getBrand())
           ) {
-            console.log('SHOULD RETURN ATTESTATION TO GETRUN CONTRACT!');
-            return undefined;
+            return depositAttestation(payment);
           }
 
           // Find out where it came from.
@@ -669,7 +695,10 @@ export function makeWallet({
 
     if (proposal.want) {
       proposal.want = Object.fromEntries(
-        Object.entries(proposal.want).map(([keyword, { amount }]) => {
+        Object.entries(proposal.want).map(([keyword, { amount, type }]) => {
+          if (type === 'Attestation') {
+            keywordToAttestation.set(keyword, null);
+          }
           return [keyword, amount];
         }),
       );
@@ -691,7 +720,7 @@ export function makeWallet({
             console.log('PAYOUT!!!', keyword);
             // TODO: Return attestation to getRUN contract
             if (keywordToAttestation.has(keyword)) {
-              return true;
+              return depositAttestation(payoutP);
             }
 
             // We try to find a purse for this keyword, but even if we don't,
