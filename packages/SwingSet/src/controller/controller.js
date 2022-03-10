@@ -3,6 +3,7 @@
 
 import fs from 'fs';
 import process from 'process';
+import crypto from 'crypto';
 import { performance } from 'perf_hooks';
 import { spawn as ambientSpawn } from 'child_process';
 import { type as osType } from 'os';
@@ -13,7 +14,7 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
-import { computeBundleID } from '../lib-nodejs/validate-archive.js';
+import { checkBundle } from '@endo/check-bundle/lite.js';
 import { createSHA256 } from '../lib-nodejs/hasher.js';
 import engineGC from '../lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '../lib-nodejs/spawnSubprocessWorker.js';
@@ -26,6 +27,13 @@ import {
   swingsetIsInitialized,
   initializeSwingset,
 } from './initializeSwingset.js';
+
+/** @param {Uint8Array} bytes */
+export function computeSha512(bytes) {
+  const hash = crypto.createHash('sha512');
+  hash.update(bytes);
+  return hash.digest().toString('hex');
+}
 
 /** @param {string} tag */
 function makeConsole(tag) {
@@ -303,22 +311,27 @@ export async function makeSwingsetController(
    * @returns { Promise<BundleID> }
    */
   async function validateAndInstallBundle(bundle, allegedBundleID) {
-    // TODO: validation: unpack, parse sources, check hashes
-
-    // during the transition to endo's new format, preemptively ignore the
-    // hash it provides
-    bundle = harden({
-      moduleFormat: bundle.moduleFormat,
-      endoZipBase64: bundle.endoZipBase64,
-    });
-
-    // this only computes the hash of the compartment map, it does not check
-    // that the rest of the bundle matches
-    const bundleID = await computeBundleID(bundle);
-    if (allegedBundleID) {
+    // TODO The following assertion may be removed when checkBundle subsumes
+    // the responsibility to verify the permanence of a bundle's properties.
+    // https://github.com/endojs/endo/issues/1106
+    assert(
+      Object.values(Object.getOwnPropertyDescriptors(bundle)).every(
+        descriptor =>
+          descriptor.get === undefined &&
+          descriptor.writable === false &&
+          descriptor.configurable === false &&
+          typeof descriptor.value === 'string',
+      ),
+      `Bundle with alleged ID ${allegedBundleID} must be a frozen object with only string value properties, no accessors`,
+    );
+    await checkBundle(bundle, computeSha512);
+    const { endoZipBase64Sha512 } = bundle;
+    assert.typeof(endoZipBase64Sha512, 'string');
+    const bundleID = `b1-${endoZipBase64Sha512}`;
+    if (allegedBundleID !== undefined) {
       assert.equal(
-        allegedBundleID,
         bundleID,
+        allegedBundleID,
         `alleged bundleID ${allegedBundleID} does not match actual ${bundleID}`,
       );
     }
