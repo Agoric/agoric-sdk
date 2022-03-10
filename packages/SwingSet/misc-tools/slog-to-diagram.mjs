@@ -1,3 +1,4 @@
+/* eslint-disable no-continue */
 // @ts-check
 
 import { pipeline } from 'stream';
@@ -8,6 +9,7 @@ import { pipeline } from 'stream';
  * TODO: refactor as readLines, map JSON.parse
  *
  * @param {AsyncIterable<Buffer>} data
+ * @yields { unknown }
  */
 async function* readJSONLines(data) {
   let buf = '';
@@ -23,6 +25,7 @@ async function* readJSONLines(data) {
 
 /**
  * @param {AsyncIterable<SlogEntry>} entries
+ * @yields { string }
  */
 async function* slogToDiagram(entries) {
   /** @type { Map<string, SlogCreateVatEntry> } */
@@ -217,8 +220,9 @@ async function* slogToDiagram(entries) {
     }
     if (!departure.has(ref)) {
       console.warn('no source for', { ref });
-      yield `[o-> ${dest} : ${ref} <- ${target}.${method || state}(${argSize ||
-        ''})\n`;
+      yield `[o-> ${dest} : ${ref} <- ${target}.${method || state}(${
+        argSize || ''
+      })\n`;
       if (computeNote) yield computeNote;
       continue;
     }
