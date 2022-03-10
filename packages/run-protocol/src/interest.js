@@ -7,7 +7,6 @@ import {
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { E } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
