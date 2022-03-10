@@ -2,6 +2,8 @@ import { E } from '@agoric/eventual-send';
 import { Far } from '@endo/marshal';
 
 export function buildRootObject(_vatPowers) {
+  // 'other' is not read but it's used to hold a hard ref
+  // eslint-disable-next-line no-unused-vars
   let other;
   let bob;
   let me;
@@ -22,8 +24,6 @@ export function buildRootObject(_vatPowers) {
       goCount -= 1;
     },
     deliverThing(thing) {
-      // eslint thinks 'other' is unused, but eslint is wrong.
-      // eslint-disable-next-line no-unused-vars
       other = thing;
       E(me).go();
     },

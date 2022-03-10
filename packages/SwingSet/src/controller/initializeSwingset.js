@@ -11,7 +11,6 @@ import '../types-ambient.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
 import { kdebugEnable } from '../lib/kdebug.js';
-import { computeBundleID } from '../lib-nodejs/validate-archive.js';
 
 /**
  * @param {X[]} xs
@@ -392,7 +391,12 @@ export async function initializeSwingset(
       // during config, we believe bundle.id, but not at runtime!
       return bundle;
     }
-    return computeBundleID(bundle).then(id => ({ ...bundle, id }));
+    const { endoZipBase64Sha512 } = bundle;
+    assert.typeof(endoZipBase64Sha512, 'string');
+    return {
+      ...bundle,
+      id: `b1-${endoZipBase64Sha512}`,
+    };
   }
 
   // fires with BundleWithID: { ...bundle, id }

@@ -15,8 +15,8 @@
   },
   "devDependencies": {
     "@agoric/vats": "^0.7.0",
-    "@endo/bundle-source": "^2.1.0",
-    "@endo/init": "^0.5.36",
+    "@endo/bundle-source": "^2.1.1",
+    "@endo/init": "^0.5.37",
     "ava": "^3.12.1"
   },
   "dependencies": {
@@ -27,8 +27,8 @@
     "@agoric/notifier": "^0.3.35",
     "@agoric/store": "^0.6.10",
     "@agoric/zoe": "^0.21.3",
-    "@endo/marshal": "^0.6.2",
-    "@endo/promise-kit": "^0.2.36",
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37",
     "import-meta-resolve": "^1.1.1"
   },
   "eslintConfig": {
