@@ -1,4 +1,5 @@
 // @ts-check
+
 import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
@@ -155,7 +156,6 @@ export const makeVaultManager = (
     const liquidations = Array.from(vaultsToLiquidate.entries()).map(
       async ([key, vault]) => {
         trace('liquidating', vault.getVaultSeat().getProposal());
-
         try {
           // Start liquidation (vaultState: LIQUIDATING)
           await liquidate(
@@ -165,7 +165,6 @@ export const makeVaultManager = (
             liquidationStrategy,
             collateralBrand,
           );
-
           vaultsToLiquidate.delete(key);
         } catch (e) {
           // XXX should notify interested parties
@@ -263,22 +262,21 @@ export const makeVaultManager = (
     const interestRate = shared.getInterestRate();
 
     // Update local state with the results of charging interest
-    ({ compoundedInterest, latestInterestUpdate, totalDebt } =
-      await chargeInterest(
-        {
-          mint: debtMint,
-          reallocateWithFee,
-          poolIncrementSeat,
-          seatAllocationKeyword: 'RUN',
-        },
-        {
-          interestRate,
-          chargingPeriod: shared.getChargingPeriod(),
-          recordingPeriod: shared.getRecordingPeriod(),
-        },
-        { latestInterestUpdate, compoundedInterest, totalDebt },
-        updateTime,
-      ));
+    ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
+      {
+        mint: debtMint,
+        reallocateWithFee,
+        poolIncrementSeat,
+        seatAllocationKeyword: 'RUN',
+      },
+      {
+        interestRate,
+        chargingPeriod: shared.getChargingPeriod(),
+        recordingPeriod: shared.getRecordingPeriod(),
+      },
+      { latestInterestUpdate, compoundedInterest, totalDebt },
+      updateTime,
+    ));
 
     /** @type {AssetState} */
     const payload = harden({
@@ -302,6 +300,7 @@ export const makeVaultManager = (
    */
   // TODO https://github.com/Agoric/agoric-sdk/issues/4599
   const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
+    // This does not use AmountMath because it could be validly negative
     const delta = newDebtOnVault.value - oldDebtOnVault.value;
     trace(`updating total debt ${totalDebt} by ${delta}`);
     if (delta === 0n) {
@@ -332,7 +331,6 @@ export const makeVaultManager = (
 
   const timeObserver = {
     updateState: updateTime =>
-      // XXX notify interested parties
       chargeAllVaults(updateTime, poolIncrementSeat).catch(e =>
         console.error('🚨 vaultManager failed to charge interest', e),
       ),
@@ -384,6 +382,8 @@ export const makeVaultManager = (
     const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
 
     try {
+      // TODO `await` is allowed until the above ordering is fixed
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await innerVault.initVaultKit(seat);
       seat.exit();
       return vaultKit;

@@ -143,7 +143,7 @@ export const setupAmm = async ({
 
   if (!ammPublicFacet) {
     // ISSUE: what is this test for?!
-    throw new Error(`ammPublicFacet broken  ${ammPublicFacet}`);
+    throw Error(`ammPublicFacet broken  ${ammPublicFacet}`);
   }
 
   ammInstanceProducer.resolve(instance);
