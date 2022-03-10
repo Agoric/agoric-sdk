@@ -194,7 +194,7 @@ export const makeInnerVault = (
    * @param {Amount} oldCollateral - actual collateral
    * @param {Amount} newDebt - actual principal and all accrued interest
    */
-  const refreshLoanTracking = (oldDebt, oldCollateral, newDebt) => {
+  const updateDebtAccounting = (oldDebt, oldCollateral, newDebt) => {
     updateDebtSnapshot(newDebt);
     // update vault manager which tracks total debt
     manager.applyDebtDelta(oldDebt, newDebt);
@@ -627,7 +627,7 @@ export const makeInnerVault = (
     manager.reallocateWithFee(fee, vaultSeat, clientSeat);
 
     // parent needs to know about the change in debt
-    refreshLoanTracking(oldDebt, oldCollateral, newDebt);
+    updateDebtAccounting(oldDebt, oldCollateral, newDebt);
 
     mint.burnLosses(harden({ RUN: debtAfter.vault }), vaultSeat);
 
@@ -686,7 +686,7 @@ export const makeInnerVault = (
     );
     manager.reallocateWithFee(fee, vaultSeat, seat);
 
-    refreshLoanTracking(oldDebt, oldCollateral, stagedDebt);
+    updateDebtAccounting(oldDebt, oldCollateral, stagedDebt);
 
     const vaultKit = makeVaultKit(innerVault, state.assetNotifier);
     state.outerUpdater = vaultKit.vaultUpdater;
