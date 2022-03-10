@@ -7,7 +7,8 @@ die() {
 	exit 1
 }
 
-cd "$(dirname "$0")"/../.. ||
+# NB: script assumes it runs one level below repo root
+cd "$(dirname "$0")"/.. ||
 	die "Could not cd to top-level directory"
 
 mkdir -p .vscode ||
@@ -24,7 +25,49 @@ cat >.vscode/settings.json.new <<\EOF ||
 EOF
 	die "Could not write settings.json"
 
-for file in .vscode/settings.json; do
+cat > .vscode/launch.json.new <<\EOF ||
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Debug AVA file",
+            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/ava",
+            "runtimeArgs": [
+              "${file}"
+            ],
+            "outputCapture": "std",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+        },
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Debug AVA match",
+            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/ava",
+            "runtimeArgs": [
+              "${file}",
+              "-m",
+              "${selectedText}"
+            ],
+            "outputCapture": "std",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+        }
+
+    ]
+}
+EOF
+	die "Could not write launch.json"
+
+for file in .vscode/launch.json .vscode/settings.json; do
+	echo "\nComparing $file"
 	if test -f $file; then
 		if git diff --no-index --quiet --exit-code $file $file.new; then
 			echo "Your existing configuration matches the recommendations."
