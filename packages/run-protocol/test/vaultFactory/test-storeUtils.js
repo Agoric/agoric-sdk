@@ -8,26 +8,6 @@ import * as StoreUtils from '../../src/vaultFactory/storeUtils.js';
 
 export const mockBrand = Far('brand');
 
-for (const [before, after] of [
-  // matches
-  [1, 1],
-  [-1, -1],
-  [123 / 456, 123 / 456],
-  [Infinity, Infinity],
-  [-Infinity, -Infinity],
-  [NaN, NaN],
-  [Number.MAX_VALUE, Number.MAX_VALUE],
-  // changes
-  [-0, NaN],
-]) {
-  test(`cycle number from DB entry key function: ${before} => ${after}`, t => {
-    t.is(
-      StoreUtils.dbEntryKeyToNumber(StoreUtils.numberToDBEntryKey(before)),
-      after,
-    );
-  });
-}
-
 for (const [debt, collat, vaultId, expectedKey, numberOut] of [
   [0, 100, 'vault-A', 'fc399000000000000:vault-A', 450359962737049600], // Infinity collateralized but we treat 0 as epsilon for safer serialization
   [1, 100, 'vault-B', 'fc059000000000000:vault-B', 100.0],
