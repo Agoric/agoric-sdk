@@ -3,8 +3,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 
-const { details: X } = assert;
-
 /**
  * The sole purpose of this contract is to mint the initial
  * supply of the central currency, RUN.
@@ -18,39 +16,21 @@ export const start = async (zcf, { feeMintAccess }) => {
   assert.typeof(bootstrapPaymentValue, 'bigint');
 
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
-  const { brand: runBrand } = await E(runMint).getIssuerRecord();
-  const mintBootstrapPayment = () => {
-    const { zcfSeat: bootstrapZCFSeat, userSeat: bootstrapUserSeat } =
-      zcf.makeEmptySeatKit();
-    const bootstrapAmount = AmountMath.make(runBrand, bootstrapPaymentValue);
-    runMint.mintGains(
-      harden({
-        Bootstrap: bootstrapAmount,
-      }),
-      bootstrapZCFSeat,
-    );
-    bootstrapZCFSeat.exit();
-    const bootstrapPayment = E(bootstrapUserSeat).getPayout('Bootstrap');
-
-    /**
-     * @param {Amount=} expectedAmount - if provided, assert that the bootstrap
-     * payment is at least the expected amount
-     */
-    const getBootstrapPayment = expectedAmount => {
-      if (expectedAmount) {
-        assert(
-          AmountMath.isGTE(bootstrapAmount, expectedAmount),
-          X`${bootstrapAmount} is not at least ${expectedAmount}`,
-        );
-      }
-      return bootstrapPayment;
-    };
-    return getBootstrapPayment;
-  };
+  const { brand: runBrand } = runMint.getIssuerRecord();
+  const { zcfSeat: bootstrapZCFSeat, userSeat: bootstrapUserSeat } =
+    zcf.makeEmptySeatKit();
+  runMint.mintGains(
+    harden({
+      Bootstrap: AmountMath.make(runBrand, bootstrapPaymentValue),
+    }),
+    bootstrapZCFSeat,
+  );
+  bootstrapZCFSeat.exit();
+  const bootstrapPayment = await E(bootstrapUserSeat).getPayout('Bootstrap');
 
   return {
     creatorFacet: Far('creator', {
-      getBootstrapPayment: mintBootstrapPayment(),
+      getBootstrapPayment: () => bootstrapPayment,
     }),
   };
 };
