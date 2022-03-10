@@ -6,7 +6,6 @@ import crypto from 'crypto';
 import bundleSource from '@endo/bundle-source';
 import { parseArchive } from '@endo/compartment-mapper';
 import { decodeBase64 } from '@endo/base64';
-import { computeBundleID } from '../../src/lib-nodejs/validate-archive.js';
 import { makeKernelEndowments } from '../util.js';
 import buildKernel from '../../src/kernel/index.js';
 import { initializeKernel } from '../../src/controller/initializeKernel.js';
@@ -22,14 +21,12 @@ test('install bundle', async t => {
   // during the transition to endo's new format, preemptively ignore the
   // hash it provides
   let bundle = await bundleSource(bundleFile);
+  const { endoZipBase64Sha512: expectedSha512 } = bundle;
+  const bundleID = `b1-${expectedSha512}`;
   bundle = harden({
     moduleFormat: bundle.moduleFormat,
     endoZipBase64: bundle.endoZipBase64,
   });
-
-  // my code to compute the bundleID
-  const bundleID = await computeBundleID(bundle);
-  // console.log(bundleID);
 
   // confirm that Endo agrees
   function computeSha512(bytes) {
@@ -37,21 +34,13 @@ test('install bundle', async t => {
     hash.update(bytes);
     return hash.digest().toString('hex');
   }
-  const expectedSha512 = bundleID.slice(3);
+
   // eslint-disable-next-line no-unused-vars
   const a = await parseArchive(
     decodeBase64(bundle.endoZipBase64),
     '<unknown>',
     { computeSha512, expectedSha512 },
   );
-  // Hrm, I see compartment-mapper/test/scaffold.js setup() and test-main.js
-  // as examples, but I'm not sure how to build enough 'builtin' to let
-  // .import work. It's not important to exercise here, though, all I really
-  // care about is that my computeBundleID matches what Endo cares about
-  // during parseArchive or other validation work it does
-  // const importOptions = { Compartment };
-  // const ns = await a.import(importOptions);
-  // console.log(ns);
 
   const badVersion =
     'b2-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';

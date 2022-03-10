@@ -1462,6 +1462,14 @@
     "@endo/nat" "^4.1.8"
     "@endo/promise-kit" "^0.2.37"
 
+"@endo/check-bundle@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@endo/check-bundle/-/check-bundle-0.1.2.tgz#0cdaf1436f858d08ea597081755602df2cdacfdc"
+  integrity sha512-vj44CM52WsXN+YryrCBRfC1V2jzQVgl27rT6hjUg6qR0/xJ7Py/Zgi9eF3kO3Vntx+/RIOa73QYBIfzxevY5MA==
+  dependencies:
+    "@endo/base64" "^0.2.21"
+    "@endo/compartment-mapper" "^0.7.1"
+
 "@endo/cjs-module-analyzer@^0.2.21":
   version "0.2.21"
   resolved "https://registry.yarnpkg.com/@endo/cjs-module-analyzer/-/cjs-module-analyzer-0.2.21.tgz#e6b6f65d9378d1e56a62caa69948f9e2e442dd17"

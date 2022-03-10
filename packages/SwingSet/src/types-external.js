@@ -322,7 +322,7 @@ export {};
  *
  * @typedef { string } BundleID
  * @typedef {*} BundleCap
- * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string } } EndoZipBase64Bundle
+ * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512 } } EndoZipBase64Bundle
  *
  * @typedef { unknown } Meter
  *

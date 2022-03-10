@@ -21,7 +21,6 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
-    "@endo/compartment-mapper": "^0.7.1",
     "@endo/ses-ava": "^0.2.21",
     "@types/tmp": "^0.2.0",
     "ava": "^3.12.1",
@@ -38,6 +37,8 @@
     "@endo/base64": "^0.2.21",
     "@endo/bundle-source": "^2.1.1",
     "@endo/captp": "^2.0.3",
+    "@endo/compartment-mapper": "^0.7.1",
+    "@endo/check-bundle": "^0.1.2",
     "@endo/import-bundle": "^0.2.41",
     "@endo/init": "^0.5.37",
     "@endo/marshal": "^0.6.3",
