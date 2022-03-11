@@ -28,7 +28,8 @@ You must also prepare a `ConnectionHandler` object to manage the connection you'
 Then you will call the `connect()` method on your local `Port`. This will return a `Promise` that will fire with a new `Connection` object, on which you can send data. Your `ConnectionHandler` will be notified about the new channel, and will receive inbound data from the other side.
 
 ```js
-E(home.ibcport[0]).connect(endpoint, connectionHandler)
+const remoteEndpoint = `/ibc-hop/${hopName}/ibc-port/${portName}/ordered/${version}`;
+E(home.ibcport[0]).connect(remoteEndpoint, connectionHandler)
   .then(conn => doSomethingWithConnection(conn));
 ```
 
@@ -56,8 +57,6 @@ You can ask the `Port` object this returns for its local address, which is espec
 E(port).getLocalAddress().then(localAddress => useIt(localAddress))
 ```
 
-`E(home.ibcport[0]).addListener()`
-
 Once the port is bound, you must call `addListener` to mark it as ready for inbound connections. You must provide this with a `ListenHandler` object, which has methods to react to listening events. As with `ConnectionHandler`, these methods are all optional.
 
 * `onListen(port, handler)`: called when the port starts listening
@@ -71,7 +70,7 @@ Once your `ChannelHandler` is prepared, call `addListener`:
 port.addListener(handler).then(() => console.log('listener is active'))
 ```
 
-Of all the methods, `onAccept` is the interesting one. It is called with a `remote` endpoint, which tells you the address of the `Port` at the other end, where someone else called `.connect`. You can use this to decide if you want to accept the connection, or what sort of authority to exercise in response to messages arriving therein.
+`onAccept()` is the most important method. It is called with a `remote` endpoint, which tells you the address of the `Port` at the other end, where someone else called `.connect`. You can use this to decide if you want to accept the connection, or what sort of authority to exercise in response to messages arriving therein.
 
 If you choose to accept, your `onAccept` method must return a `Promise` that fires with a `ConnectionHandler`. This will be used just like the one you would pass into `connect()`. To decline, throw an error.
 
@@ -95,12 +94,10 @@ You must provide each open connection with a `ConnectionHandler` object, where y
 You can omit any of the methods and those events will simply be ignored. All these methods include the Connection object as the first argument, and the `ConnectionHandler` itself as the last argument, which might help if you want to share a common handler function among multiple connections.
 
 * `onOpen(connection, handler)`: this is called when the connection is established, which tells you that the remote end has successfully accepted the connection request
-* `onReceive(connection, packetBytes, handler)`: this is called each time the remote end sends a packet full of data
-* `onClose(connection, reason, handler)`: this is called when the connection is closed, either because one side wanted it to close, or because an error occurred
+* `onReceive(connection, packetBytes, handler)`: this is called each time the remote end sends a packet of data
+* `onClose(connection, reason, handler)`: this is called when the connection is closed, either because one side wanted it to close, or because an error occurred. `reason` may be `undefined`.
 
-The `reason` in `onclose` is optional, as in it may be `undefined`.
-
-`onReceive` is the most important method. Each time the remote end sends a packet, your `onReceive` method will be called with the data inside that packet (currently as a String, but ideally as an ArrayBuffer with a custom `.toString()` method with an optional `encoding` argument (default `'latin1'`), so that it can contain arbitrary bytes).
+`onReceive()` is the most important method. Each time the remote end sends a packet, your `onReceive()` method will be called with the data inside that packet (currently as a String, but ideally as an ArrayBuffer with a custom `toString(encoding='latin1')` method so that it can contain arbitrary bytes).
 
 The return value of `onReceive` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\1'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
 
