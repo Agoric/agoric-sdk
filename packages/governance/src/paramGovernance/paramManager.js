@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far, mapIterable } from '@endo/marshal';
+import { Far } from '@endo/marshal';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
@@ -18,23 +18,11 @@ import {
 
 const { details: X } = assert;
 /**
- * @type {{
- *  AMOUNT: 'amount',
- *  BRAND: 'brand',
- *  INSTANCE: 'instance',
- *  INSTALLATION: 'installation',
- *  INVITATION: 'invitation',
- *  NAT: 'nat',
- *  RATIO: 'ratio',
- *  STRING: 'string',
- *  UNKNOWN: 'unknown',
- * }}
- *
  * UNKNOWN is an escape hatch for types we haven't added yet. If you are
  * developing a new contract and use UNKNOWN, please also file an issue to ask
  * us to support the new type.
  */
-const ParamType = {
+const ParamType = /** @type {const} */ ({
   AMOUNT: 'amount',
   BRAND: 'brand',
   INSTANCE: 'instance',
@@ -44,7 +32,7 @@ const ParamType = {
   RATIO: 'ratio',
   STRING: 'string',
   UNKNOWN: 'unknown',
-};
+});
 
 /** @type {(zoe?:ERef<ZoeService>) => ParamManagerBuilder} */
 const makeParamManagerBuilder = zoe => {
@@ -73,8 +61,7 @@ const makeParamManagerBuilder = zoe => {
     const publicMethods = Far(`Parameter ${name}`, {
       getValue: () => current,
       assertType: assertion,
-      makeDescription: () => ({ name, type, value: current }),
-      makeShortDescription: () => ({ type, value: current }),
+      makeDescription: () => ({ type, value: current }),
       getVisibleValue,
       getType: () => type,
     });
@@ -116,7 +103,7 @@ const makeParamManagerBuilder = zoe => {
     return builder;
   };
 
-  /** @type {(name: string, value: Installation, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: Installation<unknown>, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addInstallation = (name, value, builder) => {
     const assertInstallation = makeAssertInstallation(name);
     buildCopyParam(name, value, assertInstallation, ParamType.INSTALLATION);
@@ -175,7 +162,12 @@ const makeParamManagerBuilder = zoe => {
   };
 
   // Invitations are closely held, so we should only reveal the amount publicly.
+  // ??? how is this guaranteed: ?
   // getInternalValue() will only be accessible within the contract.
+  /**
+   * @param {string} name
+   * @param {Invitation} invitation
+   */
   const buildInvitationParam = async (name, invitation) => {
     assert(zoe, `zoe must be provided for governed Invitations ${zoe}`);
     let currentInvitation;
@@ -197,9 +189,6 @@ const makeParamManagerBuilder = zoe => {
     };
     await setInvitation(invitation);
 
-    const makeDescription = () => {
-      return { name, type: ParamType.INVITATION, value: currentAmount };
-    };
     const makeShortDescription = () => {
       return { type: ParamType.INVITATION, value: currentAmount };
     };
@@ -211,7 +200,6 @@ const makeParamManagerBuilder = zoe => {
       getValue: () => currentAmount,
       getInternalValue: () => currentInvitation,
       assertType: assertInvitation,
-      makeDescription,
       makeShortDescription,
       getType: () => ParamType.INVITATION,
       getVisibleValue,
@@ -239,10 +227,6 @@ const makeParamManagerBuilder = zoe => {
 
   // PARAM MANAGER METHODS ////////////////////////////////////////////////////
 
-  const getParam = name => {
-    return namesToParams.get(name).makeDescription();
-  };
-
   const getTypedParam = (type, name) => {
     const param = namesToParams.get(name);
     assert(type === param.getType(), X`${name} is not ${type}`);
@@ -253,9 +237,6 @@ const makeParamManagerBuilder = zoe => {
     const param = namesToParams.get(name);
     return param.getVisibleValue(proposed);
   };
-
-  const getParamList = () =>
-    harden(mapIterable(namesToParams.keys(), k => getParam(k)));
 
   // should be exposed within contracts, and not externally, for invitations
   const getInternalParamValue = name => {
@@ -290,7 +271,6 @@ const makeParamManagerBuilder = zoe => {
       getString: name => getTypedParam(ParamType.STRING, name),
       getUnknown: name => getTypedParam(ParamType.UNKNOWN, name),
       getVisibleValue,
-      getParamList,
       getInternalParamValue,
       ...updateFunctions,
     });

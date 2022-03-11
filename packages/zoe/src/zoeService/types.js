@@ -144,6 +144,7 @@
  */
 
 /**
+ * @template {object} CF Creator facet
  * @callback StartInstance
  *
  * Zoe is long-lived. We can use Zoe to create smart contract
@@ -161,14 +162,14 @@
  * the creator facet, public facet, and creator invitation as defined
  * by the contract.
  *
- * @param {ERef<Installation>} installation
+ * @param {ERef<Installation<CF>>} installation
  * @param {IssuerKeywordRecord=} issuerKeywordRecord
  * @param {Object=} terms
  * @param {Object=} privateArgs
  * An optional configuration object
  * that can be used to pass in arguments that should not be in the
  * public terms
- * @returns {Promise<StartInstanceResult>}
+ * @returns {Promise<StartInstanceResult<CF>}
  */
 
 /**
@@ -216,8 +217,9 @@
  */
 
 /**
+ * @template {object} CF Creator facet
  * @typedef {Object} StartInstanceResult
- * @property {any} creatorFacet
+ * @property {CF} creatorFacet
  * @property {any} publicFacet
  * @property {Instance} instance
  * @property {Payment | undefined} creatorInvitation
@@ -319,7 +321,8 @@
  */
 
 /**
- * @typedef {Object} Installation
+ * @template {object} [CF=unknown] Creator facet
+ * @typedef {Object} Installation<CF>
  * @property {() => SourceBundle} getBundle
  */
 

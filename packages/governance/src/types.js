@@ -419,7 +419,6 @@
  * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
  *   most types, the visible value is the same as proposedValue. For Invitations
  *   the visible value is the amount of the invitation.
- * @property {() => ParamDescriptions} getParamList
  * @property {(name: string) => Promise<Invitation>} getInternalParamValue
  * @property {() => Subscription<ParamDescription>} getSubscription
  */
@@ -526,7 +525,7 @@
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {() => any} getPublicFacet - public facet of the governed contract
- * @property {() => Promise<Instance>} getInstance - instance of the governed
+ * @property {() => Instance} getInstance - instance of the governed
  *   contract
  */
 

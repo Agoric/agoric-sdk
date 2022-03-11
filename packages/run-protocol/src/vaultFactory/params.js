@@ -3,9 +3,7 @@
 import './types.js';
 
 import {
-  makeGovernedNat,
   makeGovernedInvitation,
-  makeGovernedRatio,
   makeParamManagerBuilder,
   CONTRACT_ELECTORATE,
 } from '@agoric/governance';

@@ -80,10 +80,11 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * contract (as electionManager) so clients will be able to look up the state
  * of the governed parameters.
  *
+ * @template {ContractPowerfulCreatorFacet} CF Creator facet of governed
  * @param {ContractFacet<{
  *   timer: Timer,
  *   electorateInstance: Instance,
- *   governedContractInstallation: Installation,
+ *   governedContractInstallation: Installation<CF>,
  *   governed: Record<string, any>, // FIXME
  * }>} zcf
  */
@@ -109,11 +110,13 @@ const start = async zcf => {
     electionManager: zcf.getInstance(),
   });
 
+  /** @type {StartInstance<CF>} */
+  const hackStartInstance = E(zoe).startInstance;
   const {
     creatorFacet: governedCF,
     instance: governedInstance,
     publicFacet: governedPF,
-  } = await E(zoe).startInstance(
+  } = await hackStartInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
     augmentedTerms,
@@ -164,7 +167,6 @@ const start = async zcf => {
   };
 
   /** @type {GovernedContractFacetAccess} */
-  // @ts-expect-error FIXME getInstance
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChange,
     getCreatorFacet: () => limitedCreatorFacet,
