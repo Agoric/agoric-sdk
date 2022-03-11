@@ -27,20 +27,6 @@ const makeElectorateParams = electorateInvitationAmount => {
 };
 
 /**
- * @param {LoanTiming} loanTiming
- * @param {Rates} rates
- */
-const makeLoanParams = (loanTiming, rates) => {
-  return harden({
-    [CHARGING_PERIOD_KEY]: makeGovernedNat(loanTiming.chargingPeriod),
-    [RECORDING_PERIOD_KEY]: makeGovernedNat(loanTiming.recordingPeriod),
-    [LIQUIDATION_MARGIN_KEY]: makeGovernedRatio(rates.liquidationMargin),
-    [INTEREST_RATE_KEY]: makeGovernedRatio(rates.interestRate),
-    [LOAN_FEE_KEY]: makeGovernedRatio(rates.loanFee),
-  });
-};
-
-/**
  * @param {LoanTiming} initialValues
  * @returns {ParamManagerFull & {
  *   updateChargingPeriod: (period: bigint) => void,
@@ -124,13 +110,5 @@ const makeGovernedTerms = (
 harden(makeVaultParamManager);
 harden(makeElectorateParamManager);
 harden(makeGovernedTerms);
-harden(makeLoanParams);
-harden(makeElectorateParams);
 
-export {
-  makeElectorateParamManager,
-  makeVaultParamManager,
-  makeGovernedTerms,
-  makeLoanParams,
-  makeElectorateParams,
-};
+export { makeElectorateParamManager, makeVaultParamManager, makeGovernedTerms };
