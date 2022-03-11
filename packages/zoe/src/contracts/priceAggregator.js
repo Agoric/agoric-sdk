@@ -21,7 +21,7 @@ const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * This contract aggregates price values from a set of oracles and provides a
  * PriceAuthority for their median.
  *
- * @type {ContractStartFn}
+ * @param {ContractFacet<Record<string, any>>} zcf
  */
 const start = async zcf => {
   const {

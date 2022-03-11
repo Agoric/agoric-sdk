@@ -48,7 +48,7 @@ import '../../exported.js';
  * offered are already escrowed, and the trade is guaranteed to
  * succeed if their proposal matches the quote.
  *
- * @type {ContractStartFn}
+ * @param {ContractFacet<Record<string, any>>} zcf
  */
 const start = zcf => {
   const { coveredCallInstallation } = zcf.getTerms();

@@ -25,7 +25,7 @@ import { assert } from '@agoric/assert';
  * allows selling the tickets that were produced. You can reuse the ticket maker
  * to mint more tickets (e.g. for a separate show.)
  *
- * @type {ContractStartFn}
+ * @param {ContractFacet<Record<string, any>>} zcf
  */
 const start = zcf => {
   const { tokenName = 'token' } = zcf.getTerms();

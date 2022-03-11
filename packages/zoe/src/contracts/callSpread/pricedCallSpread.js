@@ -56,9 +56,9 @@ const BASIS_POINTS = 10000n;
  *
  * Future enhancements:
  * + issue multiple option pairs with the same expiration from a single instance
+ *
+ * @param {ContractFacet<Record<string, any>>} zcf
  */
-
-/** @type {ContractStartFn} */
 const start = zcf => {
   const { brands, strikePrice1, strikePrice2, settlementAmount } =
     zcf.getTerms();

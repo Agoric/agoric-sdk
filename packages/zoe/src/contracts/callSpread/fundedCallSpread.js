@@ -55,7 +55,9 @@ import { Position } from './position.js';
  *   denominator.value=10000)
  */
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ContractFacet<Record<string, any>>} zcf
+ */
 const start = async zcf => {
   const { brands, strikePrice1, strikePrice2, settlementAmount } =
     zcf.getTerms();
