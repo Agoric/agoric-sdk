@@ -15,18 +15,17 @@ export const start = async (zcf, { feeMintAccess }) => {
   const { bootstrapPaymentValue } = zcf.getTerms();
   assert.typeof(bootstrapPaymentValue, 'bigint');
 
-  const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
-  const { brand: runBrand } = runMint.getIssuerRecord();
-  const { zcfSeat: bootstrapZCFSeat, userSeat: bootstrapUserSeat } =
-    zcf.makeEmptySeatKit();
-  runMint.mintGains(
+  const mint = await zcf.registerFeeMint('Bootstrap', feeMintAccess);
+  const { brand } = mint.getIssuerRecord();
+  const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
+  mint.mintGains(
     harden({
-      Bootstrap: AmountMath.make(runBrand, bootstrapPaymentValue),
+      Bootstrap: AmountMath.make(brand, bootstrapPaymentValue),
     }),
-    bootstrapZCFSeat,
+    zcfSeat,
   );
-  bootstrapZCFSeat.exit();
-  const bootstrapPayment = await E(bootstrapUserSeat).getPayout('Bootstrap');
+  zcfSeat.exit();
+  const bootstrapPayment = await E(userSeat).getPayout('Bootstrap');
 
   return {
     creatorFacet: Far('creator', {
