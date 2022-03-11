@@ -87,7 +87,7 @@
 /**
  * @callback GetTerms
  * @param {Instance} instance
- * @returns {Promise<Terms>}
+ * @returns {Promise<AnyTerms>}
  */
 
 /**

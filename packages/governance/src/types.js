@@ -21,7 +21,7 @@
 
 /**
  * @typedef { 'amount' | 'brand' | 'instance' | 'installation' | 'invitation' |
- *   'nat' | 'ratio' | 'string' | 'unknown' } ParamType
+ *   'nat' | 'ratio' | 'relativeTime' | 'string' | 'unknown' } ParamType
  */
 
 /**
@@ -39,40 +39,38 @@
  */
 
 /**
- * @template T
- * @typedef {{ type: T }} ParamRecord<T>
+ * @template {ParamType} T
+ * @typedef {T extends 'amount' ? Amount :
+ * T extends 'brand' ? Brand :
+ * T extends 'installation' ? Installation:
+ * T extends 'instance' ? Instance :
+ * T extends 'invitation' ? Amount :
+ * T extends 'nat' ? bigint :
+ * T extends 'ratio' ? Ratio :
+ * T extends 'relativeTime' ? RelativeTime :
+ * T extends 'string' ? string :
+ * T extends 'unknown' ? unknown :
+ * never
+ * } ParamValueForType
  */
 
 /**
- * @typedef {ParamRecord<'amount'> & { value: Amount } |
- *   ParamRecord<'brand'> & { value: Brand } |
- *   ParamRecord<'installation'> & { value: Installation } |
- *   ParamRecord<'instance'> & { value: Instance } |
- *   ParamRecord<'invitation'> & { value: Amount } |
- *   ParamRecord<'nat'> & { value: bigint } |
- *   ParamRecord<'ratio'> & { value: Ratio } |
- *   ParamRecord<'relativeTime'> & { value: RelativeTime } |
- *   ParamRecord<'string'> & { value: string } |
- *   ParamRecord<'unknown'> & { value: unknown }
+ * @template {ParamType} T
+ * @typedef {{ type: T, value: ParamValueForType<T> }} ParamRecord<T>
+ */
+
+/**
+ * @typedef {ParamRecord<'amount'> |
+ *   ParamRecord<'brand'> |
+ *   ParamRecord<'installation'> |
+ *   ParamRecord<'instance'> |
+ *   ParamRecord<'invitation'> |
+ *   ParamRecord<'nat'> |
+ *   ParamRecord<'ratio'> |
+ *   ParamRecord<'relativeTime'> |
+ *   ParamRecord<'string'> |
+ *   ParamRecord<'unknown'>
  * } ParamDescription
- */
-
-/**
- * @template T
- * @typedef {{ type: T }} ParamShortRecord
- */
-
-/**
- * @typedef {ParamShortRecord<'amount'> & { value: Amount } |
- *   ParamShortRecord<'brand'> & { value: Brand } |
- *   ParamShortRecord<'installation'> & { value: Installation } |
- *   ParamShortRecord<'instance'> & { value: Instance } |
- *   ParamShortRecord<'invitation'> & { value: Amount } |
- *   ParamShortRecord<'nat'> & { value: bigint } |
- *   ParamShortRecord<'ratio'> & { value: Ratio } |
- *   ParamShortRecord<'string'> & { value: string } |
- *   ParamShortRecord<'unknown'> & { value: unknown }
- * } ParamShortDescription
  */
 
 /**
@@ -403,12 +401,12 @@
 /**
  * @callback GetParams - getParams() retrieves a Record containing
  *   keyword pairs with descriptions of parameters under governance.
- * @returns {Record<Keyword,ParamShortDescription>}
+ * @returns {Record<Keyword,ParamDescription>}
  */
 
 /**
  * @typedef {Object} ParamManagerBase
- * @property {() => Record<Keyword, ParamShortDescription>} getParams
+ * @property {() => Record<Keyword, ParamDescription>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -477,7 +475,7 @@
 /**
  * @typedef {Object} GovernorPublic
  * @property {() => Promise<Instance>} getElectorate
- * @property {() => Promise<Instance>} getGovernedContract
+ * @property {() => Instance} getGovernedContract
  * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
  * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
  * @property {(details: QuestionDetails) => boolean} validateTimer
@@ -508,7 +506,7 @@
  *
  * The creatorFacet for the governed contract that will be passed to the
  * responsible party. It does not have access to the paramManager.
- * @property {() => Instance} getContractGovernor
+ * @property {() => VoteOnParamChange} getContractGovernor
  */
 
 /**
@@ -535,7 +533,7 @@
 /**
  * @typedef {Object} GovernedPublicFacet
  * @property {() => Subscription<ParamDescription>} getSubscription
- * @property {VoteOnParamChange} getContractGovernor
+ * @property {() => VoteOnParamChange} getContractGovernor
  * @property {GetParams} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
@@ -644,13 +642,6 @@
  * @property {Timer} timer
  * @property {IssuerKeywordRecord} issuerKeywordRecord
  * @property {Object} privateArgs
- */
-
-/**
- * @typedef {Object} ContractGovernorTerms
- * @property {VoteOnParamChange} timer
- * @property {Instance} electorateInstance
- * @property {Installation} governedContractInstallation
  */
 
 /**

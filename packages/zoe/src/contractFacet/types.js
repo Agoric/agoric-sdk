@@ -12,6 +12,7 @@
  */
 
 /**
+ * @template {object} [CT=Record<string, unknown>] Contract's custom terms
  * @typedef {Object} ContractFacet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
@@ -33,7 +34,7 @@
  * @property {Assert} assert
  * @property {() => ERef<ZoeService>} getZoeService
  * @property {() => Issuer} getInvitationIssuer
- * @property {() => Terms} getTerms
+ * @property {() => StandardTerms & CT} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind

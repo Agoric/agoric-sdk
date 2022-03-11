@@ -17,13 +17,12 @@ const { details: X, quote: q } = assert;
  *  parameter values, and the governance guarantees only hold if they're not
  *  used directly by the governed contract.
  *
- * @param {ContractFacet} zcf
+ * @param {ContractFacet<{electionManager: VoteOnParamChange, main: Record<string, ParamDescription>}>} zcf
  * @param {ParamManagerFull} paramManager
  * @returns {ParamGovernorBundle}
  */
 const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
-  /** @type {ParamDescriptions} */
   const governedParams = terms.main;
   const { electionManager } = terms;
 

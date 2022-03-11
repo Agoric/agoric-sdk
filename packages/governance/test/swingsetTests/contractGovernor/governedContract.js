@@ -27,7 +27,16 @@ const makeParamManager = async (zoe, number, invitation) => {
   return builder.build();
 };
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ContractFacet<{
+ *   electionManager: VoteOnParamChange,
+ *   main: {
+ *     MalleableNumber: ParamRecord<'nat'>,
+ *     Electorate: ParamRecord<'amount'>,
+ *   },
+ * }>} zcf
+ * @param {{initialPoserInvitation: Payment}} privateArgs
+ */
 const start = async (zcf, privateArgs) => {
   const {
     main: {
@@ -49,6 +58,7 @@ const start = async (zcf, privateArgs) => {
   const invitationAmount = getInvitationAmount(CONTRACT_ELECTORATE);
   assert(
     keyEQ(invitationAmount, electorateParam.value),
+    // @ts-expect-error 'amount' prop?
     X`electorate amount ${electorateParam.amount} didn't match ${invitationAmount}`,
   );
 

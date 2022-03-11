@@ -39,7 +39,7 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 const { details: X } = assert;
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ContractFacet<Record<string, any> & {main: {Electorate: ParamRecord<'amount'>}}>} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {

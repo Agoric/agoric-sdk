@@ -18,7 +18,11 @@ const trace = makeTracer('LM');
  * uses the AMM's swapIn instead.
  */
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ContractFacet<{
+ *   amm: AutoswapPublicFacet,
+ * }>} zcf
+ */
 const start = async zcf => {
   const { amm } = zcf.getTerms();
 

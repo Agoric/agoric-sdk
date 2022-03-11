@@ -140,7 +140,7 @@
 
 /**
  * @typedef {Object} VaultParamManager
- * @property {() => Record<Keyword, ParamShortDescription> & {
+ * @property {() => Record<Keyword, ParamDescription> & {
  *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
  *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
  *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
