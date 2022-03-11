@@ -57,35 +57,35 @@ You can ask the `Port` object this returns for its local address, which is espec
 E(port).getLocalAddress().then(localAddress => useIt(localAddress))
 ```
 
-Once the port is bound, you must call `addListener` to mark it as ready for inbound connections. You must provide this with a `ListenHandler` object, which has methods to react to listening events. As with `ConnectionHandler`, these methods are all optional.
+Once the port is bound, you must call `addListener()` to mark it as ready for inbound connections. You must provide this with a `ListenHandler` object, which has methods to react to listening events. As with `ConnectionHandler`, these methods are all optional.
 
 * `onListen(port, handler)`: called when the port starts listening
 * `onAccept(port, remote, handler)`: called when a new channel has been accepted
 * `onError(port, rejection, handler)`: called if the port is no longer able to accept channels, such as if the Connection to the remote chain has failed, perhaps because a consensus failure was observed
 * `onRemove(port, handler)`: called when the `ListenHandler` is being removed
 
-Once your `ChannelHandler` is prepared, call `addListener`:
+Once your `ChannelHandler` is prepared, call `addListener()`:
 
 ```js
 port.addListener(handler).then(() => console.log('listener is active'))
 ```
 
-`onAccept()` is the most important method. It is called with a `remote` endpoint, which tells you the address of the `Port` at the other end, where someone else called `.connect`. You can use this to decide if you want to accept the connection, or what sort of authority to exercise in response to messages arriving therein.
+`onAccept()` is the most important method. It is called with a `remote` endpoint, which tells you the address of the `Port` at the other end, where someone else called `connect()`. You can use this to decide if you want to accept the connection, or what sort of authority to exercise in response to messages arriving therein.
 
-If you choose to accept, your `onAccept` method must return a `Promise` that fires with a [`ConnectionHandler`](#receiving-data). This will be used just like the one you would pass into `connect()`. To decline, throw an error.
+If you choose to accept, your `onAccept()` method must return a `Promise` that fires with a [`ConnectionHandler`](#receiving-data). This will be used just like the one you would pass into `connect()`. To decline, throw an error.
 
 
 ## Sending Data
 
 The Networking API (at least for IBC) provides a "record pipe", in which each packet is transmitted intact over the network, requiring no additional framing to distinguish where one packet ends and the next one begins. This is in contrast to the "byte pipe" provided by a TCP connection, where you must typically prepend length headers to establish framing boundaries.
 
-Once you have a `Connection` object, you send data by calling its `send` method:
+Once you have a `Connection` object, you send data by calling its `send()` method:
 
 ```js
 connection.send('data');
 ```
 
-`send` actually returns a Promise (for more `Bytes`), which contains the ACK data for this message.  NOTE: The type of this data and ACK is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
+`send()` actually returns a Promise (for more `Bytes`), which contains the ACK data for this message.  NOTE: The type of this data and ACK is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
 
 ## Receiving Data
 
@@ -99,7 +99,7 @@ You can omit any of the methods and those events will simply be ignored. All the
 
 `onReceive()` is the most important method. Each time the remote end sends a packet, your `onReceive()` method will be called with the data inside that packet (currently as a String, but ideally as an ArrayBuffer with a custom `toString(encoding='latin1')` method so that it can contain arbitrary bytes).
 
-The return value of `onReceive` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\1'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
+The return value of `onReceive()` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\1'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
 
 ## Closing the Connection
 
@@ -125,7 +125,7 @@ Note that if you want to listen on this port again, you can just call `port.addL
 
 ### Closing the Port Entirely
 
-Removing a listener doesn't release the port address to make it available for other `bind` requests.  You can call:
+Removing a listener doesn't release the port address to make it available for other `bind()` requests.  You can call:
 
 ```js
 port.revoke();
@@ -133,4 +133,4 @@ port.revoke();
 
 to completely deallocate the port, remove all listeners, close all pending connections, and release its address.
 
-**CAUTION:** Be aware that if you call `E(home.ibcport[0]).revoke()`, it will be useless for new `.connect` or `.addListener` attempts.  You will need to provision a new Agoric client via https://testnet.agoric.com/ to obtain a new setup with a functioning `home.ibcport`.
+**CAUTION:** Be aware that if you call `E(home.ibcport[0]).revoke()`, it will be useless for new `connect()` or `addListener()` attempts.  You will need to provision a new Agoric client via https://testnet.agoric.com/ to obtain a new setup with a functioning `home.ibcport`.
