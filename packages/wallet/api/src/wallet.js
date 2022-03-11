@@ -159,6 +159,10 @@ export function buildRootObject(vatPowers) {
         await approve();
         return walletAdmin.addOffer(offer, { ...meta, dappOrigin });
       },
+      async getAccountState() {
+        await approve();
+        return walletAdmin.getAccountState();
+      },
       async getOffersNotifier(status = null) {
         await approve();
         const { notifier, updater } = makeNotifierKit(inboxState);

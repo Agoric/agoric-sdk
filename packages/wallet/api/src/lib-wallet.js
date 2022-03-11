@@ -548,6 +548,13 @@ export function makeWallet({
       });
   }
 
+  const attMakerPK = makePromiseKit();
+
+  const getAccountState = async () => E(attMakerPK.promise).getAccountState();
+
+  const makeAttestationAmount = async bldAmount =>
+    E(attMakerPK.promise).makeAttestationAmount(bldAmount);
+
   async function executeOffer(compiledOfferP) {
     // =====================
     // === AWAITING TURN ===
@@ -559,20 +566,76 @@ export function makeWallet({
     /** @type {Map<Payment, Purse>} */
     const paymentToPurse = new Map();
 
+    // Track which gives/wants are attestations.
+    const keywordToAttestation = new Map();
+
     // We now have everything we need to provide Zoe, so do the actual withdrawals.
     // Payments are made for the keywords in proposal.give.
     const keywordPaymentPs = Object.entries(proposal.give || harden({})).map(
-      async ([keyword, amount]) => {
+      async ([keyword, { amount, type }]) => {
         const purse = purseKeywordRecord[keyword];
         assert(
           purse !== undefined,
           X`purse was not found for keyword ${q(keyword)}`,
         );
-        const payment = await E(purse).withdraw(amount);
-        paymentToPurse.set(payment, purse);
+        let payment;
+        if (type === 'Attestation') {
+          payment = await E(attMakerPK.promise).makeAttestation(amount);
+          // TODO: Preload the issuer to decrease round-trips.
+          const attestationIssuer = await E(agoricNames)?.lookup(
+            'issuer',
+            'Attestation',
+          );
+          keywordToAttestation.set(
+            keyword,
+            await E(attestationIssuer).getAmountOf(payment),
+          );
+        } else {
+          payment = await E(purse).withdraw(amount);
+          paymentToPurse.set(payment, purse);
+        }
         return [keyword, payment];
       },
     );
+
+    console.log('GET ATTESTATION AMOUNTS');
+    // Get Attestation-branded amounts for Attestastation "wants".
+    await Promise.all(
+      Object.entries(proposal.want || harden({})).map(
+        async ([keyword, { amount, type }]) => {
+          console.log('TYPE', type);
+          if (type === 'Attestation') {
+            const attestationAmount = await makeAttestationAmount(amount);
+            console.log('GOT ATTESTATION AMOUNT', attestationAmount);
+            keywordToAttestation.set(keyword, attestationAmount);
+          }
+        },
+      ),
+    );
+    console.log('GOT ATTESTATION AMOUNTS');
+
+    const depositAttestation = async payoutP => {
+      console.log('DEPOSITING ATTESTATION!!!');
+      const [getRUNInstance, issuer] = await Promise.all([
+        E(agoricNames)?.lookup('instance', 'getRUN'),
+        E(agoricNames)?.lookup('issuer', 'Attestation'),
+      ]);
+
+      const [publicFacet, amount] = await Promise.all([
+        E(zoe).getPublicFacet(getRUNInstance),
+        E(issuer).getAmountOf(payoutP),
+      ]);
+
+      const invitation = E(publicFacet).makeReturnAttInvitation();
+
+      const depositProposal = harden({ give: { Attestation: amount } });
+      const payments = harden({ Attestation: await payoutP });
+
+      const userSeat = E(zoe).offer(invitation, depositProposal, payments);
+
+      await E(userSeat).getOfferResult();
+      console.log('DEPOSITED ATTESTATION!!!');
+    };
 
     // Try reclaiming any of our payments that we successfully withdrew, but
     // were left unclaimed.
@@ -584,6 +647,20 @@ export function makeWallet({
           // Wait for the withdrawal to complete.  This protects against a race
           // when updating paymentToPurse.
           const [_keyword, payment] = await keywordPaymentP;
+
+          const attestationIssuer = E(agoricNames)?.lookup(
+            'issuer',
+            'Attestation',
+          );
+
+          // TODO: Return attestation to getRUN contract.
+          if (
+            (await E(payment).getAllegedBrand()) ===
+            (await E(attestationIssuer).getBrand())
+          ) {
+            console.log('SHOULD RETURN ATTESTATION TO GETRUN CONTRACT!');
+            return depositAttestation(payment);
+          }
 
           // Find out where it came from.
           const purse = paymentToPurse.get(payment);
@@ -618,6 +695,27 @@ export function makeWallet({
     const paymentKeywords = await withdrawAllPayments;
     const paymentKeywordRecord = harden(Object.fromEntries(paymentKeywords));
 
+    // Convert gives'/wants' BLD amounts to Attestation amounts for
+    // Attestations.
+    const convertToAttestationAmounts = ([keyword, { amount, type }]) => {
+      if (type === 'Attestation') {
+        amount = keywordToAttestation.get(keyword);
+      }
+      return [keyword, amount];
+    };
+
+    if (proposal.give) {
+      proposal.give = Object.fromEntries(
+        Object.entries(proposal.give).map(convertToAttestationAmounts),
+      );
+    }
+
+    if (proposal.want) {
+      proposal.want = Object.fromEntries(
+        Object.entries(proposal.want).map(convertToAttestationAmounts),
+      );
+    }
+
     const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
     // By the time Zoe settles the seat promise, the escrow should be complete.
     // Reclaim if it is somehow not.
@@ -628,8 +726,15 @@ export function makeWallet({
     const depositedP = E(seat)
       .getPayouts()
       .then(payoutObj => {
+        console.log('GOT PAYOUTS!!!', payoutObj);
+
         return Promise.all(
           Object.entries(payoutObj).map(([keyword, payoutP]) => {
+            // TODO: Return attestation to getRUN contract
+            if (keywordToAttestation.has(keyword)) {
+              console.log('SHOULD DEPOSIT ATTESATION PAYOUT!!!', keyword);
+              return depositAttestation(payoutP);
+            }
             // We try to find a purse for this keyword, but even if we don't,
             // we still make it a normal incoming payment.
             const purseOrUndefined = purseKeywordRecord[keyword];
@@ -844,24 +949,22 @@ export function makeWallet({
     const purseKeywordRecord = {};
 
     const compile = amountKeywordRecord => {
-      return harden(
-        Object.fromEntries(
-          Object.entries(amountKeywordRecord).map(
-            ([keyword, { pursePetname, value }]) => {
-              // Automatically convert numbers to Nats.
-              if (typeof value === 'number') {
-                value = Nat(value);
-              }
-              const purse = getPurse(pursePetname);
-              purseKeywordRecord[keyword] = purse;
-              const brand = purseToBrand.get(purse);
-              const amount = {
-                brand,
-                value,
-              };
-              return [keyword, amount];
-            },
-          ),
+      return Object.fromEntries(
+        Object.entries(amountKeywordRecord).map(
+          ([keyword, { pursePetname, value, type }]) => {
+            // Automatically convert numbers to Nats.
+            if (typeof value === 'number') {
+              value = Nat(value);
+            }
+            const purse = getPurse(pursePetname);
+            purseKeywordRecord[keyword] = purse;
+            const brand = purseToBrand.get(purse);
+            const amount = {
+              brand,
+              value,
+            };
+            return [keyword, { amount, type }];
+          },
         ),
       );
     };
@@ -1499,6 +1602,8 @@ export function makeWallet({
     saveOfferResult,
     getOfferResult,
     waitForDappApproval,
+    getAccountState,
+    makeAttestationAmount,
     getDappsNotifier() {
       return dappsNotifier;
     },
