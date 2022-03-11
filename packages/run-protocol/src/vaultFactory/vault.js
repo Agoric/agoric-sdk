@@ -191,7 +191,7 @@ export const makeInnerVault = (
   /**
    * Update the debt balance and propagate upwards to
    * maintain aggregate debt and liquidation order.
-   * 
+   *
    * @param {Amount} oldDebt - prior principal and all accrued interest
    * @param {Amount} oldCollateral - actual collateral
    * @param {Amount} newDebt - actual principal and all accrued interest
