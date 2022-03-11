@@ -124,12 +124,3 @@
  * @property {() => Brand[]} getAllPoolBrands
  * @property {() => Allocation} getProtocolPoolBalance
  */
-
-/**
- * @callback MakeAmmParamManager
- * @param {ERef<ZoeService>} zoe
- * @param {bigint} poolFeeBP
- * @param {bigint} protocolFeeBP
- * @param {Invitation} poserInvitation - invitation for the question poser
- * @returns {Promise<ParamManagerFull>}
- */
