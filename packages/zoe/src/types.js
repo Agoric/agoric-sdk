@@ -31,10 +31,11 @@
  * @property {Terms} terms - contract parameters
  
  *
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} IssuerRecord
- * @property {Brand} brand
- * @property {Issuer} issuer
- * @property {AssetKind} assetKind
+ * @property {Brand<K>} brand
+ * @property {Issuer<K>} issuer
+ * @property {K} assetKind
  * @property {any} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation

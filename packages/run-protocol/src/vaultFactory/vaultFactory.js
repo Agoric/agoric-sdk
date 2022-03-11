@@ -146,28 +146,29 @@ export const start = async (zcf, privateArgs) => {
     return vm;
   };
 
+  /** @param {ZCFSeat} seat */
+  const makeVaultHook = async seat => {
+    assertProposalShape(seat, {
+      give: { Collateral: null },
+      want: { RUN: null },
+    });
+    const {
+      give: { Collateral: collateralAmount },
+    } = seat.getProposal();
+    const { brand: brandIn } = collateralAmount;
+    assert(
+      collateralTypes.has(brandIn),
+      X`Not a supported collateral type ${brandIn}`,
+    );
+    /** @type {VaultManager} */
+    const mgr = collateralTypes.get(brandIn);
+    return mgr.makeVaultKit(seat);
+  };
+
+  // TODO add a `collateralBrand` argument to makeVaultInvitation`
   /** Make a loan in the vaultManager based on the collateral type. */
   const makeVaultInvitation = () => {
-    /** @param {ZCFSeat} seat */
-    const makeLoanHook = async seat => {
-      assertProposalShape(seat, {
-        give: { Collateral: null },
-        want: { RUN: null },
-      });
-      const {
-        give: { Collateral: collateralAmount },
-      } = seat.getProposal();
-      const { brand: brandIn } = collateralAmount;
-      assert(
-        collateralTypes.has(brandIn),
-        X`Not a supported collateral type ${brandIn}`,
-      );
-      /** @type {VaultManager} */
-      const mgr = collateralTypes.get(brandIn);
-      return mgr.makeVaultKit(seat);
-    };
-
-    return zcf.makeInvitation(makeLoanHook, 'MakeLoan');
+    return zcf.makeInvitation(makeVaultHook, 'MakeVault');
   };
 
   const getCollaterals = async () => {

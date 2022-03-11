@@ -33,12 +33,12 @@
   "dependencies": {
     "@agoric/assert": "^0.3.16",
     "@agoric/eventual-send": "^0.14.1",
-    "@endo/marshal": "^0.6.2",
-    "@endo/promise-kit": "^0.2.36"
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.36",
-    "@endo/ses-ava": "^0.2.20",
+    "@endo/init": "^0.5.37",
+    "@endo/ses-ava": "^0.2.21",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

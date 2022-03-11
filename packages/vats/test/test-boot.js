@@ -57,7 +57,9 @@ const mock = {
     spawner: {
       buildSpawner: () => ({ _: 'spawner' }),
     },
-    timer: { createTimerService: async () => buildManualTimer(console.log) },
+    timer: Far('TimerVat', {
+      createTimerService: async () => buildManualTimer(console.log),
+    }),
     uploads: { getUploads: () => ({ _: 'uploads' }) },
 
     network: Far('network', {

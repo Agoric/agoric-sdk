@@ -374,11 +374,11 @@ async function doResultPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
+    // inhibit GC of the Presence, so the tests see stable syscalls
+    // eslint-disable-next-line no-unused-vars
     let pin;
     return Far('root', {
       async run(target1) {
-        // inhibit GC of the Presence, so the tests see stable syscalls
-        // eslint-disable-next-line no-unused-vars
         pin = target1;
         const p1 = E(target1).getTarget2();
         hush(p1);
@@ -697,6 +697,7 @@ test('GC syscall.dropImports', async t => {
   const { log, syscall } = buildSyscall();
   let wr;
   function build(_vatPowers) {
+    // eslint-disable-next-line no-unused-vars
     let presence1;
     const root = Far('root', {
       one(arg) {
@@ -705,7 +706,6 @@ test('GC syscall.dropImports', async t => {
       },
       two() {},
       three() {
-        // eslint-disable-next-line no-unused-vars
         presence1 = undefined; // drops the import
       },
     });
@@ -763,10 +763,10 @@ test('GC syscall.dropImports', async t => {
 test('GC dispatch.retireImports', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
+    // eslint-disable-next-line no-unused-vars
     let presence1;
     const root = Far('root', {
       one(arg) {
-        // eslint-disable-next-line no-unused-vars
         presence1 = arg;
       },
     });

@@ -8,7 +8,6 @@ import { assert } from '@agoric/assert';
 import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { computeBundleID } from '../../src/lib-nodejs/validate-archive.js';
 import { capargs } from '../util.js';
 
 function bfile(name) {
@@ -137,7 +136,7 @@ test('bundles', async t => {
     Error(`bundleID not yet installed: ${missingBundleID}`),
   );
 
-  const bid1 = await computeBundleID(installableVatBundle);
+  const bid1 = `b1-${installableVatBundle.endoZipBase64Sha512}`;
 
   // vatAdminService~.getBundleCap(bid1) should reject: not installed yet
   await checkRejects(
