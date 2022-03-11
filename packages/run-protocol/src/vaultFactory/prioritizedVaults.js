@@ -4,6 +4,7 @@
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { Far } from '@endo/marshal';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
 
@@ -171,8 +172,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     addVault(vaultId, vault);
   };
 
-  // TODO make Far
-  return harden({
+  return Far('PrioritizedVaults', {
     addVault,
     entries: vaults.entries,
     entriesPrioritizedGTE,

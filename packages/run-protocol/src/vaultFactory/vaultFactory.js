@@ -146,7 +146,8 @@ export const start = async (zcf, privateArgs) => {
     return vm;
   };
 
-  const makeLoanHook = async seat => {
+  /** @param {ZCFSeat} seat */
+  const makeVaultHook = async seat => {
     assertProposalShape(seat, {
       give: { Collateral: null },
       want: { RUN: null },
@@ -167,8 +168,7 @@ export const start = async (zcf, privateArgs) => {
   // TODO add a `collateralBrand` argument to makeVaultInvitation`
   /** Make a loan in the vaultManager based on the collateral type. */
   const makeVaultInvitation = () => {
-    /** @param {ZCFSeat} seat */
-    return zcf.makeInvitation(makeLoanHook, 'MakeLoan');
+    return zcf.makeInvitation(makeVaultHook, 'MakeVault');
   };
 
   const getCollaterals = async () => {
