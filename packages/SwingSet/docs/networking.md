@@ -23,7 +23,7 @@ This is currently the only way for user code to get an IBC `Port`, though non-IB
 
 To establish a connection, you must start with a local `Port` object, and you must know the name of the remote endpoint. The remote endpoint will have a name like `/ibc-hop/$HOPNAME/ibc-port/$PORTNAME/ordered/$VERSION` (where `ibc-hop`, `ibc-port` and `ordered` are literal strings, spelled just like that, but `$HOPNAME`, `$PORTNAME`, and `$VERSION` are placeholders for arbitrary values that will vary from one endpoint to another).
 
-You must also prepare a `ConnectionHandler` object to manage the connection you're about to create. This has a number of methods which will be called when the things happen to the connection, including packets arriving. This is described below.
+You must also prepare a `ConnectionHandler` object to manage the connection you're about to create. This has a number of methods which will be called when the things happen to the connection, including packets arriving. This is described in [Receiving Data](#receiving-data).
 
 Then you will call the `connect()` method on your local `Port`. This will return a `Promise` that will fire with a new `Connection` object, on which you can send data. Your `ConnectionHandler` will be notified about the new channel, and will receive inbound data from the other side.
 
@@ -72,7 +72,7 @@ port.addListener(handler).then(() => console.log('listener is active'))
 
 `onAccept()` is the most important method. It is called with a `remote` endpoint, which tells you the address of the `Port` at the other end, where someone else called `.connect`. You can use this to decide if you want to accept the connection, or what sort of authority to exercise in response to messages arriving therein.
 
-If you choose to accept, your `onAccept` method must return a `Promise` that fires with a `ConnectionHandler`. This will be used just like the one you would pass into `connect()`. To decline, throw an error.
+If you choose to accept, your `onAccept` method must return a `Promise` that fires with a [`ConnectionHandler`](#receiving-data). This will be used just like the one you would pass into `connect()`. To decline, throw an error.
 
 
 ## Sending Data
@@ -87,7 +87,7 @@ connection.send('data');
 
 `send` actually returns a Promise (for more `Bytes`), which contains the ACK data for this message.  NOTE: The type of this data and ACK is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
 
-## Receiving Data: The ConnectionHandler
+## Receiving Data
 
 You must provide each open connection with a `ConnectionHandler` object, where you write methods that will be called when various things happen to the connection. You can share a single handler object between multiple connections, if you like, or you can make a separate one for each.
 
