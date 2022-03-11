@@ -9,7 +9,7 @@ For now, our IBC implementation can only use pre-established hops, and provides 
 
 A channel via these IBC hops will terminate in IBC-aware code on either end. These endpoints might be traditional (static) IBC handlers (such as an ICS-20 token transfer module), or dynamic IBC handlers (e.g. running in a SwingSet vat). SwingSet vat code that wants to speak to vat code in a different SwingSet machine would not use the IBC connection directly: instead it would simply perform normal eventual-send operations (`E(target).foo(args)`) and let the "CapTP" promise-pipelining layer handle the details. But vat code which wants to speak to an ICS-20 handler in some other chain would need to use this layer.
 
-Vats which live inside a solo machine are able to use traditional networking layers, like TCP, HTTP, and WebSockets. This enables them to communicate with e.g. browser-side UI frontends that use WebSockets to query the vat for order status. These connections do not have to follow normal ocap rules, so vat code which accept them must provide their own authentication and access control protections.
+Vats which live inside a solo machine are able to use traditional networking layers, like TCP, HTTP, and WebSockets. This enables them to communicate with e.g. browser-side UI frontends that use WebSockets to query the vat for order status. These connections do not have to follow normal ocap rules, so vat code which accepts them must provide its own authentication and access control protections.
 
 Solo machines may be able to talk to chains and vice versa using specialized protocols. This will be used by CapTP to provide ocap messaging between these heterogeneous machine types.
 
@@ -40,11 +40,11 @@ To get a listening port, you need a `NetworkInterface` object (such as the one o
 
 ```js
 // ask for a random allocation - ends with a slash
-E(home.network).bind('/ibc-port/`)
+E(home.network).bind('/ibc-port/')
   .then(port => usePort(port));
-//
+
 // or ask for a specific port name
-E(home.network).bind('/ibc-port/my-cool-port-name`)
+E(home.network).bind('/ibc-port/my-cool-port-name')
   .then(port => usePort(port));
 ```
 
