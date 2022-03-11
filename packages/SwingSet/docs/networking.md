@@ -99,7 +99,7 @@ You can omit any of the methods and those events will simply be ignored. All the
 
 `onReceive()` is the most important method. Each time the remote end sends a packet, your `onReceive()` method will be called with the data inside that packet (currently as a String, but ideally as an ArrayBuffer with a custom `toString(encoding='latin1')` method so that it can contain arbitrary bytes).
 
-The return value of `onReceive()` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\1'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
+The return value of `onReceive()` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\x01'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
 
 ## Closing the Connection
 
@@ -133,4 +133,4 @@ port.revoke();
 
 to completely deallocate the port, remove all listeners, close all pending connections, and release its address.
 
-**CAUTION:** Be aware that if you call `E(home.ibcport[0]).revoke()`, it will be useless for new `connect()` or `addListener()` attempts.  You will need to provision a new Agoric client via https://testnet.agoric.com/ to obtain a new setup with a functioning `home.ibcport`.
+**CAUTION:** Be aware that if you call `E(home.ibcport[0]).revoke()`, it will be useless for new `connect()` or `addListener()` attempts.  You will need to provision a new Agoric client to obtain a new setup with a functioning `home.ibcport[0]`.
