@@ -31,7 +31,7 @@ const setSize = Object.getOwnPropertyDescriptor(Set.prototype, 'size').get;
 const setForEach = Set.prototype.forEach;
 const weakMapHas = WeakMap.prototype.has;
 const weakSetHas = WeakSet.prototype.has;
-const weakRefDeref = WeakRef.prototype.deref;
+const weakRefDeref = WeakRef && WeakRef.prototype.deref;
 const booleanValueOf = Boolean.prototype.valueOf;
 const objectToString = Object.prototype.toString;
 const functionToString = Function.prototype.toString;
@@ -53,7 +53,7 @@ const dateToISOString = Date.prototype.toISOString;
 const gPO = Reflect.getPrototypeOf;
 const hasOwn = Object.prototype.hasOwnProperty;
 
-export default function inspect0(obj, opts = {}, depth = 0, seen = new Set()) {
+function inspect0(obj, opts = {}, depth = 0, seen = new Set()) {
   if (typeof obj === 'undefined') {
     return 'undefined';
   }
@@ -487,3 +487,5 @@ function arrObjKeys(obj, inspect) {
   }
   return xs;
 }
+
+export default harden(inspect0);

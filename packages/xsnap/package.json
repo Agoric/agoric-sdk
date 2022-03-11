@@ -34,7 +34,8 @@
     "@endo/netstring": "^0.3.7",
     "@endo/stream": "^0.3.6",
     "@endo/stream-node": "^0.2.7",
-    "glob": "^7.1.6"
+    "glob": "^7.1.6",
+    "rollup-plugin-string": "^3.0.0"
   },
   "devDependencies": {
     "@endo/base64": "^0.2.21",

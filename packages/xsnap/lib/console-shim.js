@@ -1,6 +1,12 @@
 /* global globalThis, print */
 
-import inspect from '../src/object-inspect.js';
+// Default implementation just stringifies.
+let inspect = String;
+
+// Allow the importer to override the inspect function.
+export const setObjectInspector = objectInspector => {
+  inspect = objectInspector;
+};
 
 const printAll = (...args) => {
   // Though xsnap doesn't have a whole console, it does have print().
