@@ -7,7 +7,6 @@ import {
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { E } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
@@ -118,9 +117,9 @@ export const calculateCompoundedInterest = (
  * @param {ZCFMint} mint
  * @param {Amount} debt
  */
-const validatedBrand = async (mint, debt) => {
+const validatedBrand = (mint, debt) => {
   const { brand: debtBrand } = debt;
-  const { brand: issuerBrand } = await E(mint).getIssuerRecord();
+  const { brand: issuerBrand } = mint.getIssuerRecord();
   assert(
     debtBrand === issuerBrand,
     X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
@@ -145,10 +144,10 @@ const validatedBrand = async (mint, debt) => {
  *  compoundedInterest: Ratio,
  *  totalDebt: Amount<'nat'>}} prior
  * @param {bigint} accruedUntil
- * @returns {Promise<{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<'nat'> }>}
+ * @returns {{compoundedInterest: Ratio, latestInterestUpdate: bigint, totalDebt: Amount<'nat'> }}
  */
-export const chargeInterest = async (powers, params, prior, accruedUntil) => {
-  const brand = await validatedBrand(powers.mint, prior.totalDebt);
+export const chargeInterest = (powers, params, prior, accruedUntil) => {
+  const brand = validatedBrand(powers.mint, prior.totalDebt);
 
   const interestCalculator = makeInterestCalculator(
     params.interestRate,
