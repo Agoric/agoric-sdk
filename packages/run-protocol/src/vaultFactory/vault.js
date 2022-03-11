@@ -189,6 +189,9 @@ export const makeInnerVault = (
   };
 
   /**
+   * Update the debt balance and propagate upwards to
+   * maintain aggregate debt and liquidation order.
+   *
    * @param {Amount} oldDebt - prior principal and all accrued interest
    * @param {Amount} oldCollateral - actual collateral
    * @param {Amount} newDebt - actual principal and all accrued interest
@@ -512,10 +515,7 @@ export const makeInnerVault = (
     } else if (proposal.give.RUN) {
       // We don't allow debt to be negative, so we'll refund overpayments
       const currentDebt = getCurrentDebt();
-      const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
-        ? currentDebt
-        : proposal.give.RUN;
-
+      const acceptedRun = AmountMath.min(proposal.give.RUN, currentDebt);
       vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: acceptedRun })));
     }
   };
@@ -595,9 +595,10 @@ export const makeInnerVault = (
     // If the collateral decreased, we pro-rate maxDebt
     if (AmountMath.isGTE(targetCollateralAmount, vaultCollateral)) {
       // We can pro-rate maxDebt because the quote is either linear (price is
-      // unchanging) or super-linear (meaning it's an AMM. When the volume sold
-      // falls, the proceeds fall less than linearly, so this is a conservative
-      // choice.) floorMultiply because the debt ceiling should constrain more.
+      // unchanging) or super-linear (also called "convex". meaning it's an AMM.
+      // When the volume sold falls, the proceeds fall less than linearly, so
+      // this is a conservative choice.) floorMultiply because the debt ceiling
+      // should constrain more.
       const maxDebtAfter = floorMultiplyBy(
         vaultCollateral,
         priceOfCollateralInRun,

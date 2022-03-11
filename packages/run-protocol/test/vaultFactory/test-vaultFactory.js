@@ -1395,7 +1395,7 @@ test('transfer vault', async t => {
   );
 
   // Adjust is multi-turn. Confirm that an interleaved transfer prevents it
-  const adjustPromise = E(zoe).offer(
+  const adjustSeatPromise = E(zoe).offer(
     adjustInvitation,
     harden({
       give: { RUN: payoffRun2 },
@@ -1408,7 +1408,13 @@ test('transfer vault', async t => {
   const { vault: t2Vault, vaultNotifier: t2Notifier } = await E(
     t2Seat,
   ).getOfferResult();
-  t.throwsAsync(async () => E(adjustPromise).getOfferResult());
+  t.throwsAsync(
+    () => E(adjustSeatPromise).getOfferResult(),
+    {
+      message: 'Transfer during vault adjustment',
+    },
+    'adjust balances should have been rejected',
+  );
   t.throwsAsync(() => E(transferVault).getCurrentDebt());
   const debtAfter2 = await E(t2Vault).getCurrentDebt();
   t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 RUN + fees');
