@@ -287,13 +287,18 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       lienBridge: true,
       client: true,
       chainTimerService: true,
+      economicCommitteeCreatorFacet: 'economicCommittee',
     },
-    produce: { getRUNCreatorFacet: 'getRUN' },
+    produce: {
+      getRUNCreatorFacet: 'getRUN',
+      getRUNGovernorCreatorFacet: 'getRUNGovernor',
+    },
     installation: {
       consume: { contractGovernor: 'zoe', committee: 'zoe' },
       produce: { getRUN: 'zoe' },
     },
     instance: {
+      consume: { economicCommittee: 'economicCommittee' },
       produce: { getRUN: 'getRUN' },
     },
     brand: {

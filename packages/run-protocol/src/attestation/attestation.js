@@ -248,7 +248,7 @@ export const makeAttestationFacets = async (
 
   /**
    * @param {string} address
-   * @param {Amount} amountToLien
+   * @param {Amount<NatValue>} amountToLien
    */
   const makeAttestationsInternal = async (address, amountToLien) => {
     amountToLien = AmountMath.coerce(underlyingBrand, amountToLien);
@@ -261,6 +261,18 @@ export const makeAttestationFacets = async (
     );
     return returnableAttManager.addReturnableLien(address, amountToLien);
   };
+
+  /**
+   * Creates an attestation amount equivalent to the amount of `bldAmount`.
+   *
+   * @param {string} address
+   * @param {Amount<NatValue>} bldAmount
+   */
+  const makeAttestationAmountInternal = (address, bldAmount) =>
+    AmountMath.make(
+      returnableAttManager.getBrand(),
+      makeCopyBag([[address, bldAmount.value]]),
+    );
 
   const publicFacet = Far('attestation publicFacet', {
     makeReturnAttInvitation: returnableAttManager.makeReturnAttInvitation,
@@ -278,6 +290,8 @@ export const makeAttestationFacets = async (
    */
   const makeAttMaker = address =>
     Far('attMaker', {
+      makeAttestationAmount: bldAmount =>
+        makeAttestationAmountInternal(address, bldAmount),
       makeAttestation: amountToLien =>
         makeAttestationsInternal(address, amountToLien),
       // TODO: should we provide a notifier?
