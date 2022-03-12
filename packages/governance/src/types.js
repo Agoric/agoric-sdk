@@ -46,7 +46,7 @@
  * T extends 'brandedRatio' ? Ratio :
  * T extends 'installation' ? Installation:
  * T extends 'instance' ? Instance :
- * T extends 'invitation' ? Invitation :
+ * T extends 'invitation' ? Amount :
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
  * T extends 'relativeTime' ? RelativeTime :

@@ -14,13 +14,28 @@ import {
   makeParamManagerSync,
 } from '../../src/paramGovernance/typedParamManager.js';
 
-// type safety test, not run by Ava but kept here because it's a test
-const mgr = makeParamManagerSync({
-  // @ts-expect-error FIXME can we get this to error on type mismatch?
-  Foo: ['brand', 'not a brand'],
+test('types', t => {
+  t.throws(() =>
+    makeParamManagerSync({
+      // @ts-expect-error invalid value for the declared type
+      BrokenBrand: ['brand', 'not a brand'],
+
+      BrokenInvitation: [
+        // @ts-expect-error not supported in makeParamManagerSync
+        'invitation',
+        undefined,
+      ],
+    }),
+  );
+  const mgr = makeParamManagerSync({
+    Working: ['nat', 0n],
+  });
+  mgr.getWorking().valueOf();
+  t.throws(() =>
+    // @ts-expect-error should break
+    mgr.updateWorking('not a bigint'),
+  );
 });
-// @ts-expect-error type implied by 'brand'
-mgr.updateFoo('another not brand');
 
 test('two parameters', t => {
   const drachmaKit = makeIssuerKit('drachma');

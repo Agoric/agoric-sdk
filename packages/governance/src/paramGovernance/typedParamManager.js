@@ -17,7 +17,7 @@ import { makeParamManagerBuilder } from './paramManager.js';
  */
 
 /**
- * @template {Record<Keyword, ParamRecordTuple>} T
+ * @template {Record<Keyword, ST<ParamType>>} T
  * @typedef {ParamManagerBase & Getters<T> & Updaters<T>} TypedParamManager
  */
 
@@ -38,8 +38,28 @@ const isAsync = {
  */
 
 /**
+ * @template {ParamType} T
+ * @typedef {[type: T, value: ParamValueForType<T>]} ST
+ */
+
+/**
+ * @typedef {ST<'amount'>
+ * | ST<'brand'>
+ * | ST<'brandedAmount'>
+ * | ST<'brandedRatio'>
+ * | ST<'installation'>
+ * | ST<'instance'>
+ * | ST<'nat'>
+ * | ST<'ratio'>
+ * | ST<'string'>
+ * | ST<'unknown'>} SyncSpecTuple
+ *
+ * @typedef {['invitation', Invitation]} AsyncSpecTuple
+ */
+
+/**
  * @see makeParamManagerSync
- * @template {Record<Keyword, ParamRecordTuple>} T
+ * @template {Record<Keyword, AsyncSpecTuple | SyncSpecTuple>} T
  * @param {T} spec
  * @param {ERef<ZoeService>} [zoe]
  * @returns {Promise<TypedParamManager<T>>}
@@ -64,7 +84,7 @@ const makeParamManager = async (spec, zoe) => {
 
 /**
  * @see makeParamManager
- * @template {Record<Keyword, ParamRecordTuple>} T
+ * @template {Record<Keyword, SyncSpecTuple>} T
  * @param {T} spec
  * @returns {TypedParamManager<T>}
  */
