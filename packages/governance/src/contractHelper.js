@@ -18,7 +18,7 @@ const { details: X, quote: q } = assert;
  *  used directly by the governed contract.
  *
  * @param {ContractFacet<{electionManager: VoteOnParamChange, main: Record<string, ParamDescription>}>} zcf
- * @param {ParamManagerFull} paramManager
+ * @param {AnyParamManager} paramManager
  * @returns {ParamGovernorBundle}
  */
 const handleParamGovernance = (zcf, paramManager) => {

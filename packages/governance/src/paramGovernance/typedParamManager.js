@@ -12,18 +12,22 @@ import { makeParamManagerBuilder } from './paramManager.js';
 /**
  * @template {Record<Keyword, ParamDescription>} T
  * @typedef {{
- *   [Property in keyof T as `update${string & Property}`]: (value: any) => void
+ *   [Property in keyof T as `update${string & Property}`]: (value: T[Property]['value']) => void
  * }} Updaters
  */
 
 /**
- *
+ * @template {Record<Keyword, ParamDescription>} T
+ * @typedef {ParamManagerBase & Getters<T> & Updaters<T>} TypedParamManager
+ */
+
+/**
  * @param {ParamType} type
  */
 const builderMethodName = type =>
   `add${type[0].toUpperCase() + type.substring(1)}`;
 
-/** @type{Partial<Record<ParamType, boolean>>} */
+/** @type {Partial<Record<ParamType, boolean>>} */
 const isAsync = {
   invitation: true,
 };
@@ -33,6 +37,7 @@ const isAsync = {
  * @template {Record<Keyword, ParamDescription>} T
  * @param {T} spec
  * @param {ERef<ZoeService>} [zoe]
+ * @returns {Promise<TypedParamManager<T>>}
  */
 const makeParamManager = async (spec, zoe) => {
   const builder = makeParamManagerBuilder(zoe);
@@ -48,6 +53,7 @@ const makeParamManager = async (spec, zoe) => {
   }
   await Promise.all(promises);
 
+  // @ts-expect-error cast
   return builder.build();
 };
 
@@ -55,6 +61,7 @@ const makeParamManager = async (spec, zoe) => {
  * @see makeParamManager
  * @template {Record<Keyword, ParamDescription>} T
  * @param {T} spec
+ * @returns {TypedParamManager<T>}
  */
 const makeParamManagerSync = spec => {
   const builder = makeParamManagerBuilder();
@@ -64,6 +71,7 @@ const makeParamManagerSync = spec => {
     add(name, value);
   }
 
+  // @ts-expect-error cast
   return builder.build();
 };
 

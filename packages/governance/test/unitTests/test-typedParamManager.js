@@ -1,7 +1,7 @@
 // @ts-check
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@agoric/eventual-send';
@@ -55,6 +55,7 @@ test('Amount', async t => {
   // paramManager.updateShimmer(AmountMath.make(brand2, 300n));
   // t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand2, 300n));
 
+  // @ts-expect-error
   t.throws(() => paramManager.updateShimmer('fear,loathing'), {
     message: 'Expected an Amount for Shimmer, got "fear,loathing"',
   });
@@ -79,6 +80,7 @@ test.skip('Branded Amount', async t => {
     },
   );
 
+  // @ts-expect-error
   t.throws(() => paramManager.updateShimmer('fear,loathing'), {
     message: 'Expected an Amount for Shimmer, got "fear,loathing"',
   });
@@ -97,6 +99,7 @@ test('params one installation', async t => {
 
   t.deepEqual(paramManager.getPName(), installationHandle);
   t.throws(
+    // @ts-expect-error
     () => paramManager.updatePName(18.1),
     {
       message: 'value for "PName" must be an Installation, was 18.1',
@@ -106,6 +109,7 @@ test('params one installation', async t => {
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
+  // @ts-expect-error FIXME overly deep type inspection
   paramManager.updatePName(handle2);
   // @ts-expect-error FIXME overly deep type inspection
   t.deepEqual(paramManager.getPName(), handle2);
@@ -134,6 +138,7 @@ test('params one instance', async t => {
 
   t.deepEqual(paramManager.getPName(), instanceHandle);
   t.throws(
+    // @ts-expect-error
     () => paramManager.updatePName(18.1),
     {
       message: 'value for "PName" must be an Instance, was 18.1',
@@ -224,6 +229,7 @@ test('two Nats', async t => {
   t.is(paramManager.getAcres(), 50n);
   t.is(paramManager.getSpeedLimit(), 299_792_458n);
 
+  // @ts-expect-error
   t.throws(() => paramManager.updateSpeedLimit(300000000), {
     message: '300000000 must be a bigint',
   });
@@ -246,6 +252,7 @@ test('Ratio', async t => {
   const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
   paramManager.updateGoldenRatio(morePrecise);
   t.is(paramManager.getGoldenRatio(), morePrecise);
+  // @ts-expect-error
   t.throws(() => paramManager.updateGoldenRatio(300000000), {
     message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
   });
@@ -286,6 +293,7 @@ test('Strings', async t => {
 
   paramManager.updateOurWeapons('fear,surprise');
   t.is(paramManager.getOurWeapons(), 'fear,surprise');
+  // @ts-expect-error
   t.throws(() => paramManager.updateOurWeapons(300000000), {
     message: '300000000 must be a string',
   });
@@ -300,6 +308,8 @@ test('Unknown', async t => {
 
   paramManager.updateSurprise('gift');
   t.is(paramManager.getSurprise(), 'gift');
+  // @ts-expect-error
   paramManager.updateSurprise(['gift', 'party']);
+  // @ts-expect-error
   t.deepEqual(paramManager.getSurprise(), ['gift', 'party']);
 });

@@ -430,7 +430,7 @@
  * and use typedParamManager to create a version that includes the static types.
  *
  * @typedef { Record<string, any>} ParamManagerGettersAndUpdaters
- * @typedef {ParamManagerBase & ParamManagerGettersAndUpdaters} ParamManagerFull
+ * @typedef {ParamManagerBase & ParamManagerGettersAndUpdaters} AnyParamManager
  */
 
 /**
@@ -456,7 +456,7 @@
  *   the values, and clients of the contract can verify that a ContractGovernor
  *   can change the values in a legible way.
  * @param {ParamDescriptions} paramDescriptions
- * @returns {ParamManagerFull}
+ * @returns {AnyParamManager}
  */
 
 /**
@@ -599,7 +599,7 @@
 
 /**
  * @typedef {Object} ParamManagerRetriever
- * @property {(paramKey?: ParamKey) => ParamManagerFull} get
+ * @property {(paramKey?: ParamKey) => AnyParamManager} get
  */
 
 /**
@@ -714,5 +714,5 @@
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addBrandedRatio
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
- * @property {() => ParamManagerFull} build
+ * @property {() => AnyParamManager} build
  */
