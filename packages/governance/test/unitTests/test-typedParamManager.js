@@ -14,14 +14,22 @@ import {
   makeParamManagerSync,
 } from '../../src/paramGovernance/typedParamManager.js';
 
+// type safety test, not run by Ava but kept here because it's a test
+const mgr = makeParamManagerSync({
+  // @ts-expect-error FIXME can we get this to error on type mismatch?
+  Foo: ['brand', 'not a brand'],
+});
+// @ts-expect-error type implied by 'brand'
+mgr.updateFoo('another not brand');
+
 test('two parameters', t => {
   const drachmaKit = makeIssuerKit('drachma');
 
   const drachmaBrand = drachmaKit.brand;
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
-    Currency: { type: 'brand', value: drachmaBrand },
-    Amt: { type: 'amount', value: drachmas },
+    Currency: ['brand', drachmaBrand],
+    Amt: ['amount', drachmas],
   });
 
   t.is(paramManager.getCurrency(), drachmaBrand);
@@ -45,7 +53,7 @@ test('Amount', async t => {
   const { brand } = makeIssuerKit('floor wax');
   const { brand: brand2 } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerSync({
-    Shimmer: { type: 'amount', value: AmountMath.make(brand, 250n) },
+    Shimmer: ['amount', AmountMath.make(brand, 250n)],
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand, 250n));
 
@@ -62,7 +70,7 @@ test('Branded Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerSync({
-    Shimmer: { type: 'brandedAmount', value: AmountMath.make(floorBrand, 2n) },
+    Shimmer: ['brandedAmount', AmountMath.make(floorBrand, 2n)],
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 2n));
 
@@ -91,7 +99,7 @@ test('params one installation', async t => {
   });
 
   const paramManager = makeParamManagerSync({
-    PName: { type: 'installation', value: installationHandle },
+    PName: ['installation', installationHandle],
   });
 
   t.deepEqual(paramManager.getPName(), installationHandle);
@@ -106,9 +114,7 @@ test('params one installation', async t => {
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
-  // @ts-expect-error FIXME overly deep type inspection
   paramManager.updatePName(handle2);
-  // @ts-expect-error FIXME overly deep type inspection
   t.deepEqual(paramManager.getPName(), handle2);
 
   t.deepEqual(
@@ -129,7 +135,7 @@ test('params one instance', async t => {
   const instanceHandle = makeHandle(instanceKey);
 
   const paramManager = makeParamManagerSync({
-    PName: { type: 'instance', value: instanceHandle },
+    PName: ['instance', instanceHandle],
   });
 
   t.deepEqual(paramManager.getPName(), instanceHandle);
@@ -178,9 +184,9 @@ test('Invitation', async t => {
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
   const paramManager = await makeParamManager(
     {
-      Currency: { type: 'brand', value: drachmaBrand },
-      Amt: { type: 'amount', value: drachmaAmount },
-      Invite: { type: 'invitation', value: invitation },
+      Currency: ['brand', drachmaBrand],
+      Amt: ['amount', drachmaAmount],
+      Invite: ['invitation', invitation],
     },
     zoe,
   );
@@ -214,8 +220,8 @@ test('Invitation', async t => {
 
 test('two Nats', async t => {
   const paramManager = makeParamManagerSync({
-    Acres: { type: 'nat', value: 50n },
-    SpeedLimit: { type: 'nat', value: 299_792_458n },
+    Acres: ['nat', 50n],
+    SpeedLimit: ['nat', 299_792_458n],
   });
 
   t.is(paramManager.getAcres(), 50n);
@@ -236,8 +242,8 @@ test('Ratio', async t => {
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerSync({
-    Acres: { type: 'nat', value: 50n },
-    GoldenRatio: { type: 'ratio', value: ratio },
+    Acres: ['nat', 50n],
+    GoldenRatio: ['ratio', ratio],
   });
   t.is(paramManager.getGoldenRatio(), ratio);
 
@@ -255,8 +261,8 @@ test('Branded Ratio', async t => {
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerSync({
-    Acres: { type: 'nat', value: 50n },
-    GoldenRatio: { type: 'brandedRatio', value: ratio },
+    Acres: ['nat', 50n],
+    GoldenRatio: ['brandedRatio', ratio],
   });
   t.is(paramManager.getGoldenRatio(), ratio);
 
@@ -278,8 +284,8 @@ test('Branded Ratio', async t => {
 
 test('Strings', async t => {
   const paramManager = makeParamManagerSync({
-    Acres: { type: 'nat', value: 50n },
-    OurWeapons: { type: 'string', value: 'fear' },
+    Acres: ['nat', 50n],
+    OurWeapons: ['string', 'fear'],
   });
   t.is(paramManager.getOurWeapons(), 'fear');
 
@@ -293,15 +299,13 @@ test('Strings', async t => {
 
 test('Unknown', async t => {
   const paramManager = makeParamManagerSync({
-    Label: { type: 'string', value: 'birtday' },
-    Surprise: { type: 'unknown', value: 'party' },
+    Label: ['string', 'birtday'],
+    Surprise: ['unknown', 'party'],
   });
   t.is(paramManager.getSurprise(), 'party');
 
   paramManager.updateSurprise('gift');
   t.is(paramManager.getSurprise(), 'gift');
-  // @ts-expect-error
   paramManager.updateSurprise(['gift', 'party']);
-  // @ts-expect-error
   t.deepEqual(paramManager.getSurprise(), ['gift', 'party']);
 });

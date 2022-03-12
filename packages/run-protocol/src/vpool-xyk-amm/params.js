@@ -27,9 +27,9 @@ const makeAmmParamManager = async (
 ) => {
   return makeParamManager(
     {
-      [POOL_FEE_KEY]: { type: 'nat', value: poolFeeBP },
-      [PROTOCOL_FEE_KEY]: { type: 'nat', value: protocolFeeBP },
-      [CONTRACT_ELECTORATE]: { type: 'invitation', value: poserInvitation },
+      [POOL_FEE_KEY]: ['nat', poolFeeBP],
+      [PROTOCOL_FEE_KEY]: ['nat', protocolFeeBP],
+      [CONTRACT_ELECTORATE]: ['invitation', poserInvitation],
     },
     zoe,
   );

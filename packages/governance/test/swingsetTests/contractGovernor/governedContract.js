@@ -42,11 +42,8 @@ const start = async (zcf, privateArgs) => {
 
   const paramManager = await makeParamManager(
     {
-      [MALLEABLE_NUMBER]: { type: 'nat', value: numberParam.value },
-      [CONTRACT_ELECTORATE]: {
-        type: 'invitation',
-        value: initialPoserInvitation,
-      },
+      [MALLEABLE_NUMBER]: ['nat', numberParam.value],
+      [CONTRACT_ELECTORATE]: ['invitation', initialPoserInvitation],
     },
     zcf.getZoeService(),
   );

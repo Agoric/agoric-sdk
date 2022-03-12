@@ -54,6 +54,7 @@ harden(makeGovernedRatio);
 harden(makeGovernedString);
 harden(makeGovernedUnknown);
 
+// ??? do we still need these?
 export {
   makeGovernedAmount,
   makeGovernedBrand,

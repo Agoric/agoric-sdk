@@ -3,21 +3,21 @@
 import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
- * @template {Record<Keyword, ParamRecord>} T
+ * @template {Record<Keyword, ParamRecordTuple>} T
  * @typedef {{
- *   [Property in keyof T as `get${string & Property}`]: () => T[Property]['value']
+ *   [Property in keyof T as `get${string & Property}`]: () => ParamValueForType<T[Property][0]>
  * }} Getters
  */
 
 /**
- * @template {Record<Keyword, ParamRecord>} T
+ * @template {Record<Keyword, ParamRecordTuple>} T
  * @typedef {{
- *   [Property in keyof T as `update${string & Property}`]: (value: T[Property]['value']) => void
+ *   [Property in keyof T as `update${string & Property}`]: (value: ParamValueForType<T[Property][0]>) => void
  * }} Updaters
  */
 
 /**
- * @template {Record<Keyword, ParamRecord>} T
+ * @template {Record<Keyword, ParamRecordTuple>} T
  * @typedef {ParamManagerBase & Getters<T> & Updaters<T>} TypedParamManager
  */
 
@@ -33,8 +33,13 @@ const isAsync = {
 };
 
 /**
+ * @template {ParamType} [T=ParamType]
+ * @typedef {[type: T, value: ParamValueForType<T>]} ParamRecordTuple
+ */
+
+/**
  * @see makeParamManagerSync
- * @template {Record<Keyword, ParamRecord>} T
+ * @template {Record<Keyword, ParamRecordTuple>} T
  * @param {T} spec
  * @param {ERef<ZoeService>} [zoe]
  * @returns {Promise<TypedParamManager<T>>}
@@ -43,7 +48,7 @@ const makeParamManager = async (spec, zoe) => {
   const builder = makeParamManagerBuilder(zoe);
 
   const promises = [];
-  for (const [name, { type, value }] of Object.entries(spec)) {
+  for (const [name, [type, value]] of Object.entries(spec)) {
     const add = builder[builderMethodName(type)];
     if (isAsync[type]) {
       promises.push(add(name, value));
@@ -59,14 +64,14 @@ const makeParamManager = async (spec, zoe) => {
 
 /**
  * @see makeParamManager
- * @template {Record<Keyword, ParamRecord>} T
+ * @template {Record<Keyword, ParamRecordTuple>} T
  * @param {T} spec
  * @returns {TypedParamManager<T>}
  */
 const makeParamManagerSync = spec => {
   const builder = makeParamManagerBuilder();
 
-  for (const [name, { type, value }] of Object.entries(spec)) {
+  for (const [name, [type, value]] of Object.entries(spec)) {
     const add = builder[builderMethodName(type)];
     add(name, value);
   }

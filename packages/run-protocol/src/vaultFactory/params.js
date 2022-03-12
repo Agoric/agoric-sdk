@@ -30,12 +30,9 @@ const makeElectorateParams = electorateInvitationAmount => {
  */
 const makeVaultParamManager = rates =>
   makeParamManagerSync({
-    [LIQUIDATION_MARGIN_KEY]: {
-      type: 'brandedRatio',
-      value: rates.liquidationMargin,
-    },
-    [INTEREST_RATE_KEY]: { type: 'brandedRatio', value: rates.interestRate },
-    [LOAN_FEE_KEY]: { type: 'brandedRatio', value: rates.loanFee },
+    [LIQUIDATION_MARGIN_KEY]: ['brandedRatio', rates.liquidationMargin],
+    [INTEREST_RATE_KEY]: ['brandedRatio', rates.interestRate],
+    [LOAN_FEE_KEY]: ['brandedRatio', rates.loanFee],
   });
 /** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
 
@@ -46,10 +43,7 @@ const makeVaultParamManager = rates =>
 const makeElectorateParamManager = async (zoe, electorateInvitation) => {
   return makeParamManager(
     {
-      [CONTRACT_ELECTORATE]: {
-        type: 'invitation',
-        value: electorateInvitation,
-      },
+      [CONTRACT_ELECTORATE]: ['invitation', electorateInvitation],
     },
     zoe,
   );
@@ -76,8 +70,8 @@ const makeGovernedTerms = (
   bootstrapPaymentValue = 0n,
 ) => {
   const timingParamMgr = makeParamManagerSync({
-    [CHARGING_PERIOD_KEY]: { type: 'nat', value: loanTiming.chargingPeriod },
-    [RECORDING_PERIOD_KEY]: { type: 'nat', value: loanTiming.recordingPeriod },
+    [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
+    [RECORDING_PERIOD_KEY]: ['nat', loanTiming.recordingPeriod],
   });
 
   const rateParamMgr = makeVaultParamManager(rates);
