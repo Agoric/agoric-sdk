@@ -89,7 +89,6 @@ export function makeVatLoader(stuff) {
     'description',
     'meterID',
     'managerType', // TODO: not sure we want vats to be able to control this
-    'vatParameters',
     'enableSetup',
     'enablePipelining',
     'enableVatstore',
@@ -101,7 +100,6 @@ export function makeVatLoader(stuff) {
   const allowedStaticOptions = [
     'description',
     'name',
-    'vatParameters',
     'managerType',
     'enableDisavow',
     'enableSetup',
@@ -143,10 +141,6 @@ export function makeVatLoader(stuff) {
    *        used by each crank. The meter will eventually underflow unless it
    *        is topped up, at which point the vat is terminated. If undefined,
    *        the vat is unmetered. Static vats cannot be metered.
-   *
-   * @param {Record<string, unknown>} [options.vatParameters] provides
-   *        the contents of the second argument to
-   *        'buildRootObject()'.  Defaults to `{}`.
    *
    * @param {boolean} [options.enableSetup] If true,
    *        permits the vat to construct itself using the
@@ -220,7 +214,6 @@ export function makeVatLoader(stuff) {
     );
     const {
       meterID,
-      vatParameters = {},
       managerType,
       enableSetup = false,
       enableDisavow = false,
@@ -240,7 +233,6 @@ export function makeVatLoader(stuff) {
       name,
       vatSourceBundle,
       managerType,
-      vatParameters,
     );
 
     const managerOptions = {
@@ -252,7 +244,6 @@ export function makeVatLoader(stuff) {
       enablePipelining,
       vatConsole: makeVatConsole('vat', vatID),
       liveSlotsConsole: makeVatConsole('ls', vatID),
-      vatParameters,
       enableVatstore,
       virtualObjectCacheSize,
       useTranscript,

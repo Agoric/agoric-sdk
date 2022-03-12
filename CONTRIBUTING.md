@@ -4,7 +4,7 @@ Thanks for getting involved!
 
 ## Platforms, Dev Tools and Testing
 
-We support MacOS, linux, and Windows Subsystem for Linux (wsl).
+We support MacOS, Linux, and Windows Subsystem for Linux (WSL).
 
 For many of the packages here, JavaScript development tools suffice:
 
@@ -29,6 +29,9 @@ yarn build
 yarn test
 yarn lint
 ```
+
+A standard Visual Studio Code configuration can be initialized or updated by
+running [`scripts/configure-vscode.sh`](scripts/configure-vscode.sh).
 
 See also notes on [Coding
 style](https://github.com/Agoric/agoric-sdk/wiki/Coding-Style),

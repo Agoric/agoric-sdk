@@ -7,8 +7,8 @@ die() {
 	exit 1
 }
 
-# NB: script assumes it runs one level below repo root
-cd "$(dirname "$0")"/.. ||
+# Run at the top level of the repository
+cd "$(git rev-parse --show-toplevel)" ||
 	die "Could not cd to top-level directory"
 
 mkdir -p .vscode ||

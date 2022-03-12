@@ -125,6 +125,9 @@ async function prep(t, options = {}) {
   const logA = [];
   function setupA(syscall, _state, _helpers, _vatPowers) {
     function dispatch(vd) {
+      if (vd[0] === 'startVat') {
+        return; // skip startVat
+      }
       // console.log(`dispatchA`, vd);
       logA.push(vd);
       if (vd[0] === 'message' && vd[2].method === 'one-alice') {
@@ -176,6 +179,9 @@ async function prep(t, options = {}) {
   const logB = [];
   function setupB(syscall, _state, _helpers, _vatPowers) {
     function dispatch(vd) {
+      if (vd[0] === 'startVat') {
+        return; // skip startVat
+      }
       logB.push(vd);
       // console.log(`dispatchB`, vd);
       if (vd[0] === 'message' && vd[2].method === 'two') {
@@ -249,6 +255,9 @@ async function prep(t, options = {}) {
   const logC = [];
   function setupC(syscall, _state, _helpers, _vatPowers) {
     function dispatch(vd) {
+      if (vd[0] === 'startVat') {
+        return; // skip startVat
+      }
       logC.push(vd);
       if (vd[0] === 'message' && vd[2].method === 'two') {
         vrefs.amyForCarol = vd[2].args.slots[0];

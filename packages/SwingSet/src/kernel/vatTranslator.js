@@ -13,9 +13,6 @@ import {
 /** @type { VatDeliveryBringOutYourDead } */
 const reapMessageVatDelivery = harden(['bringOutYourDead']);
 
-/** @type { VatDeliveryStartVat } */
-const startVatMessageVatDelivery = harden(['startVat']);
-
 export function assertValidVatstoreKey(key) {
   assert.typeof(key, 'string');
 }
@@ -151,8 +148,21 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     return vatDelivery;
   }
 
-  function translateStartVat() {
-    return startVatMessageVatDelivery;
+  /**
+   *
+   * @param {unknown} kernelVP
+   * @returns { VatDeliveryStartVat }
+   */
+  function translateStartVat(kernelVP) {
+    /** @type { VatDeliveryStartVat } */
+    return harden(['startVat', kernelVP]); // TODO until capdata
+    // const vatVP = {
+    //   ...kernelVP,
+    //   slots: kernelVP.slots.map(slot => mapKernelSlotToVatSlot(slot)),
+    // };
+    // /** @type { VatDeliveryStartVat } */
+    // const startVatMessageVatDelivery = harden(['startVat', vatVP]);
+    // return startVatMessageVatDelivery;
   }
 
   function translateBringOutYourDead() {
