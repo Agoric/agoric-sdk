@@ -9,7 +9,7 @@ For now, our IBC implementation can only use pre-established hops, and provides 
 
 A channel via these IBC hops will terminate in IBC-aware code on either end. These endpoints might be traditional (static) IBC handlers (such as an ICS-20 token transfer module), or dynamic IBC handlers (e.g. running in a SwingSet vat). SwingSet vat code that wants to speak to vat code in a different SwingSet machine would not use the IBC connection directly: instead it would simply perform normal eventual-send operations (`E(target).foo(args)`) and let the "CapTP" promise-pipelining layer handle the details. But vat code which wants to speak to an ICS-20 handler in some other chain would need to use this layer.
 
-Vats which live inside a solo machine are able to use traditional networking layers, like TCP, HTTP, and WebSockets. This enables them to communicate with e.g. browser-side UI frontends that use WebSockets to query the vat for order status. These connections do not have to follow normal ocap rules, so vat code which accept them must provide their own authentication and access control protections.
+Vats which live inside a solo machine are able to use traditional networking layers, like TCP, HTTP, and WebSockets. This enables them to communicate with e.g. browser-side UI frontends that use WebSockets to query the vat for order status. These connections do not have to follow normal ocap rules, so vat code which accepts them must provide its own authentication and access control protections.
 
 Solo machines may be able to talk to chains and vice versa using specialized protocols. This will be used by CapTP to provide ocap messaging between these heterogeneous machine types.
 
@@ -23,12 +23,13 @@ This is currently the only way for user code to get an IBC `Port`, though non-IB
 
 To establish a connection, you must start with a local `Port` object, and you must know the name of the remote endpoint. The remote endpoint will have a name like `/ibc-hop/$HOPNAME/ibc-port/$PORTNAME/ordered/$VERSION` (where `ibc-hop`, `ibc-port` and `ordered` are literal strings, spelled just like that, but `$HOPNAME`, `$PORTNAME`, and `$VERSION` are placeholders for arbitrary values that will vary from one endpoint to another).
 
-You must also prepare a `ConnectionHandler` object to manage the connection you're about to create. This has a number of methods which will be called when the things happen to the connection, including packets arriving. This is described below.
+You must also prepare a `ConnectionHandler` object to manage the connection you're about to create. This has a number of methods which will be called when the things happen to the connection, including packets arriving. This is described in [Receiving Data](#receiving-data).
 
 Then you will call the `connect()` method on your local `Port`. This will return a `Promise` that will fire with a new `Connection` object, on which you can send data. Your `ConnectionHandler` will be notified about the new channel, and will receive inbound data from the other side.
 
 ```js
-E(home.ibcport[0]).connect(endpoint, connectionHandler)
+const remoteEndpoint = `/ibc-hop/${hopName}/ibc-port/${portName}/ordered/${version}`;
+E(home.ibcport[0]).connect(remoteEndpoint, connectionHandler)
   .then(conn => doSomethingWithConnection(conn));
 ```
 
@@ -40,11 +41,11 @@ To get a listening port, you need a `NetworkInterface` object (such as the one o
 
 ```js
 // ask for a random allocation - ends with a slash
-E(home.network).bind('/ibc-port/`)
+E(home.network).bind('/ibc-port/')
   .then(port => usePort(port));
-//
+
 // or ask for a specific port name
-E(home.network).bind('/ibc-port/my-cool-port-name`)
+E(home.network).bind('/ibc-port/my-cool-port-name')
   .then(port => usePort(port));
 ```
 
@@ -56,53 +57,49 @@ You can ask the `Port` object this returns for its local address, which is espec
 E(port).getLocalAddress().then(localAddress => useIt(localAddress))
 ```
 
-`E(home.ibcport[0]).addListener()`
-
-Once the port is bound, you must call `addListener` to mark it as ready for inbound connections. You must provide this with a `ListenHandler` object, which has methods to react to listening events. As with `ConnectionHandler`, these methods are all optional.
+Once the port is bound, you must call `addListener()` to mark it as ready for inbound connections. You must provide this with a `ListenHandler` object, which has methods to react to listening events. As with `ConnectionHandler`, these methods are all optional.
 
 * `onListen(port, handler)`: called when the port starts listening
 * `onAccept(port, remote, handler)`: called when a new channel has been accepted
 * `onError(port, rejection, handler)`: called if the port is no longer able to accept channels, such as if the Connection to the remote chain has failed, perhaps because a consensus failure was observed
 * `onRemove(port, handler)`: called when the `ListenHandler` is being removed
 
-Once your `ChannelHandler` is prepared, call `addListener`:
+Once your `ChannelHandler` is prepared, call `addListener()`:
 
 ```js
 port.addListener(handler).then(() => console.log('listener is active'))
 ```
 
-Of all the methods, `onAccept` is the interesting one. It is called with a `remote` endpoint, which tells you the address of the `Port` at the other end, where someone else called `.connect`. You can use this to decide if you want to accept the connection, or what sort of authority to exercise in response to messages arriving therein.
+`onAccept()` is the most important method. It is called with a `remote` endpoint, which tells you the address of the `Port` at the other end, where someone else called `connect()`. You can use this to decide if you want to accept the connection, or what sort of authority to exercise in response to messages arriving therein.
 
-If you choose to accept, your `onAccept` method must return a `Promise` that fires with a `ConnectionHandler`. This will be used just like the one you would pass into `connect()`. To decline, throw an error.
+If you choose to accept, your `onAccept()` method must return a `Promise` that fires with a [`ConnectionHandler`](#receiving-data). This will be used just like the one you would pass into `connect()`. To decline, throw an error.
 
 
 ## Sending Data
 
 The Networking API (at least for IBC) provides a "record pipe", in which each packet is transmitted intact over the network, requiring no additional framing to distinguish where one packet ends and the next one begins. This is in contrast to the "byte pipe" provided by a TCP connection, where you must typically prepend length headers to establish framing boundaries.
 
-Once you have a `Connection` object, you send data by calling its `send` method:
+Once you have a `Connection` object, you send data by calling its `send()` method:
 
 ```js
 connection.send('data');
 ```
 
-`send` actually returns a Promise (for more `Bytes`), which contains the ACK data for this message.  NOTE: The type of this data and ACK is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
+`send()` actually returns a Promise (for more `Bytes`), which contains the ACK data for this message.  NOTE: The type of this data and ACK is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
 
-## Receiving Data: The ConnectionHandler
+## Receiving Data
 
 You must provide each open connection with a `ConnectionHandler` object, where you write methods that will be called when various things happen to the connection. You can share a single handler object between multiple connections, if you like, or you can make a separate one for each.
 
 You can omit any of the methods and those events will simply be ignored. All these methods include the Connection object as the first argument, and the `ConnectionHandler` itself as the last argument, which might help if you want to share a common handler function among multiple connections.
 
 * `onOpen(connection, handler)`: this is called when the connection is established, which tells you that the remote end has successfully accepted the connection request
-* `onReceive(connection, packetBytes, handler)`: this is called each time the remote end sends a packet full of data
-* `onClose(connection, reason, handler)`: this is called when the connection is closed, either because one side wanted it to close, or because an error occurred
+* `onReceive(connection, packetBytes, handler)`: this is called each time the remote end sends a packet of data
+* `onClose(connection, reason, handler)`: this is called when the connection is closed, either because one side wanted it to close, or because an error occurred. `reason` may be `undefined`.
 
-The `reason` in `onclose` is optional, as in it may be `undefined`.
+`onReceive()` is the most important method. Each time the remote end sends a packet, your `onReceive()` method will be called with the data inside that packet (currently as a String, but ideally as an ArrayBuffer with a custom `toString(encoding='latin1')` method so that it can contain arbitrary bytes).
 
-`onReceive` is the most important method. Each time the remote end sends a packet, your `onReceive` method will be called with the data inside that packet (currently as a String, but ideally as an ArrayBuffer with a custom `.toString()` method with an optional `encoding` argument (default `'latin1'`), so that it can contain arbitrary bytes).
-
-The return value of `onReceive` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\1'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
+The return value of `onReceive()` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\x01'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
 
 ## Closing the Connection
 
@@ -128,7 +125,7 @@ Note that if you want to listen on this port again, you can just call `port.addL
 
 ### Closing the Port Entirely
 
-Removing a listener doesn't release the port address to make it available for other `bind` requests.  You can call:
+Removing a listener doesn't release the port address to make it available for other `bind()` requests.  You can call:
 
 ```js
 port.revoke();
@@ -136,4 +133,4 @@ port.revoke();
 
 to completely deallocate the port, remove all listeners, close all pending connections, and release its address.
 
-**CAUTION:** Be aware that if you call `E(home.ibcport[0]).revoke()`, it will be useless for new `.connect` or `.addListener` attempts.  You will need to provision a new Agoric client via https://testnet.agoric.com/ to obtain a new setup with a functioning `home.ibcport`.
+**CAUTION:** Be aware that if you call `E(home.ibcport[0]).revoke()`, it will be useless for new `connect()` or `addListener()` attempts.  You will need to provision a new Agoric client to obtain a new setup with a functioning `home.ibcport[0]`.

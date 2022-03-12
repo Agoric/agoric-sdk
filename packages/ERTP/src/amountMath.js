@@ -86,12 +86,7 @@ const helpers = {
 
 /**
  * @template {AmountValue} V
- * @type {(value: V) =>
- *  V extends NatValue ? 'nat' :
- *  V extends SetValue ? 'set' :
- *  V extends CopySetValue ? 'copySet' :
- *  V extends CopyBagValue ? 'copyBag' :
- *  never}
+ * @type {(value: V) => AssetKindForValue<V>}
  */
 const assertValueGetAssetKind = value => {
   const passStyle = passStyleOf(value);
@@ -148,10 +143,10 @@ const optionalBrandCheck = (allegedBrand, brand) => {
 };
 
 /**
- * @template {AmountValue} [V=AmountValue]
- * @param {Amount<V>} leftAmount
- * @param {Amount<V>} rightAmount
- * @param {Brand | undefined} brand
+ * @template {AssetKind} [K=AssetKind]
+ * @param {Amount<K>} leftAmount
+ * @param {Amount<K>} rightAmount
+ * @param {Brand<K> | undefined} brand
  * @returns {MathHelpers<*>}
  */
 const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
@@ -179,11 +174,11 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
 };
 
 /**
- * @template {AmountValue} V
- * @param {MathHelpers<AmountValue>} h
- * @param {Amount<V>} leftAmount
- * @param {Amount<V>} rightAmount
- * @returns {[V, V]}
+ * @template {AssetKind} K
+ * @param {MathHelpers<AssetKind>} h
+ * @param {Amount<K>} leftAmount
+ * @param {Amount<K>} rightAmount
+ * @returns {[K, K]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
   // @ts-ignore cast (ignore b/c erroring in CI but not my IDE)
@@ -203,10 +198,10 @@ const AmountMath = {
   /**
    * Make an amount from a value by adding the brand.
    *
-   * @template {AmountValue} [V=AmountValue]
-   * @param {Brand} brand
-   * @param {V extends NatValue ? NatValue : V extends SetValue ? SetValue : V extends CopySetValue ? CopySetValue : V extends CopyBagValue ? CopyBagValue : never} allegedValue
-   * @returns {Amount<V>}
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Brand<K>} brand
+   * @param {AssetValueForKind<K>} allegedValue
+   * @returns {Amount<K>}
    */
   // allegedValue has a conditional expression for type widening, to prevent V being bound to a a literal like 1n
   make: (brand, allegedValue) => {
@@ -220,10 +215,10 @@ const AmountMath = {
    * Make sure this amount is valid enough, and return a corresponding
    * valid amount if so.
    *
-   * @template {AmountValue} [V=AmountValue]
+   * @template {AssetKind} [K=AssetKind]
    * @param {Brand} brand
-   * @param {Amount<V>} allegedAmount
-   * @returns {Amount<V>}
+   * @param {Amount<K>} allegedAmount
+   * @returns {Amount<K>}
    */
   coerce: (brand, allegedAmount) => {
     assertRemotable(brand, 'brand');
@@ -240,10 +235,10 @@ const AmountMath = {
   /**
    * Extract and return the value.
    *
-   * @template {AmountValue} [V=AmountValue]
-   * @param {Brand} brand
-   * @param {Amount<V>} amount
-   * @returns {V}
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Brand<K>} brand
+   * @param {Amount<K>} amount
+   * @returns {AssetValueForKind<K>}
    */
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   /**
@@ -251,9 +246,9 @@ const AmountMath = {
    * identity element for MathHelpers.add and MatHelpers.subtract.
    *
    * @template {AssetKind} K
-   * @param {Brand} brand
-   * @param {K=} [assetKind='nat']
-   * @returns {Amount<K extends 'nat' ? NatValue: K extends 'set' ? SetValue: K extends 'copySet' ? CopySetValue: K extends 'copyBag' ? CopyBagValue : never>}
+   * @param {Brand<K>} brand
+   * @param {K} [assetKind]
+   * @returns {Amount<K>}
    */
   // @ts-expect-error TS/jsdoc things 'nat' can't be assigned to K subclassing AssetKind
   // If we were using TypeScript we'd simply overload the function definition for each case.
@@ -268,9 +263,9 @@ const AmountMath = {
    * Return the amount representing an empty amount, using another
    * amount as the template for the brand and assetKind.
    *
-   * @template {AmountValue} V
-   * @param {Amount<V>} amount
-   * @returns {Amount<V>}
+   * @template {AssetKind} K
+   * @param {Amount<K>} amount
+   * @returns {Amount<K>}
    */
   makeEmptyFromAmount: amount => {
     assertRecord(amount, 'amount');
@@ -302,10 +297,10 @@ const AmountMath = {
    * whether rectangle A is greater than rectangle B depends on whether rectangle
    * A includes rectangle B as defined by the logic in MathHelpers.
    *
-   * @template {AmountValue} [V=AmountValue]
-   * @param {Amount<V>} leftAmount
-   * @param {Amount<V>} rightAmount
-   * @param {Brand=} brand
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Amount<K>} leftAmount
+   * @param {Amount<K>} rightAmount
+   * @param {Brand<K>=} brand
    * @returns {boolean}
    */
   isGTE: (leftAmount, rightAmount, brand = undefined) => {
@@ -316,10 +311,10 @@ const AmountMath = {
    * Returns true if the leftAmount equals the rightAmount. We assume
    * that if isGTE is true in both directions, isEqual is also true
    *
-   * @template {AmountValue} [V=AmountValue]
-   * @param {Amount<V>} leftAmount
-   * @param {Amount<V>} rightAmount
-   * @param {Brand=} brand
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Amount<K>} leftAmount
+   * @param {Amount<K>} rightAmount
+   * @param {Brand<K>=} brand
    * @returns {boolean}
    */
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
@@ -333,11 +328,11 @@ const AmountMath = {
    * amount, it usually means including all of the elements from both
    * left and right.
    *
-   * @template {AmountValue} [V=AmountValue]
-   * @param {Amount<V>} leftAmount
-   * @param {Amount<V>} rightAmount
-   * @param {Brand=} brand
-   * @returns {Amount<V>}
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Amount<K>} leftAmount
+   * @param {Amount<K>} rightAmount
+   * @param {Brand<K>=} brand
+   * @returns {Amount<K>}
    */
   add: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
@@ -352,11 +347,11 @@ const AmountMath = {
    * left amount must include the right amount, this is NOT equivalent
    * to set subtraction.
    *
-   * @template {AmountValue} [V=AmountValue]
-   * @param {Amount<V>} leftAmount
-   * @param {Amount<V>} rightAmount
-   * @param {Brand=} brand
-   * @returns {Amount<V>}
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Amount<K>} leftAmount
+   * @param {Amount<K>} rightAmount
+   * @param {Brand<K>=} brand
+   * @returns {Amount<K>}
    */
   subtract: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
@@ -366,21 +361,21 @@ const AmountMath = {
   /**
    * Returns the min value between x and y using isGTE
    *
-   * @template {AmountValue} [V=AmountValue]
-   * @param {Amount<V>} x
-   * @param {Amount<V>} y
-   * @param {Brand=} brand
-   * @returns {Amount<V>}
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Amount<K>} x
+   * @param {Amount<K>} y
+   * @param {Brand<K>=} brand
+   * @returns {Amount<K>}
    */
   min: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? y : x),
   /**
    * Returns the max value between x and y using isGTE
    *
-   * @template {AmountValue} [V=AmountValue]
-   * @param {Amount<V>} x
-   * @param {Amount<V>} y
-   * @param {Brand=} brand
-   * @returns {Amount<V>}
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Amount<K>} x
+   * @param {Amount<K>} y
+   * @param {Brand<K>=} brand
+   * @returns {Amount<K>}
    */
   max: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? x : y),
 };

@@ -1,8 +1,10 @@
 // @ts-check
+// @jessie-check
 
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { Far } from '@endo/marshal';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
 
@@ -10,8 +12,8 @@ import { toVaultKey } from './storeUtils.js';
 
 /**
  *
- * @param {Amount<NatValue>} debtAmount
- * @param {Amount<NatValue>} collateralAmount
+ * @param {Amount<'nat'>} debtAmount
+ * @param {Amount<'nat'>} collateralAmount
  * @returns {Ratio}
  */
 const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
@@ -80,7 +82,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     if (vaults.getSize() === 0) {
       return undefined;
     }
-
+    // Get the first vault.
     const [vault] = vaults.values();
     const collateralAmount = vault.getCollateralAmount();
     if (AmountMath.isEmpty(collateralAmount)) {
@@ -111,8 +113,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
 
   /**
    *
-   * @param {Amount<NatValue>} oldDebt
-   * @param {Amount<NatValue>} oldCollateral
+   * @param {Amount<'nat'>} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
    */
   const removeVaultByAttributes = (oldDebt, oldCollateral, vaultId) => {
@@ -144,7 +146,9 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
    * @yields {[string, InnerVault]>}
    * @returns {IterableIterator<[string, InnerVault]>}
    */
+  // Allow generator function
   // eslint-disable-next-line func-names
+  // eslint-disable-next-line no-restricted-syntax
   function* entriesPrioritizedGTE(ratio) {
     // TODO use a Pattern to limit the query https://github.com/Agoric/agoric-sdk/issues/4550
     for (const [key, vault] of vaults.entries()) {
@@ -159,8 +163,8 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
   }
 
   /**
-   * @param {Amount<NatValue>} oldDebt
-   * @param {Amount<NatValue>} oldCollateral
+   * @param {Amount<'nat'>} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
    */
   const refreshVaultPriority = (oldDebt, oldCollateral, vaultId) => {
@@ -168,7 +172,7 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     addVault(vaultId, vault);
   };
 
-  return harden({
+  return Far('PrioritizedVaults', {
     addVault,
     entries: vaults.entries,
     entriesPrioritizedGTE,

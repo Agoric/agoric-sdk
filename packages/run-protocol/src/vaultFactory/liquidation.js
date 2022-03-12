@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 
 import { E } from '@agoric/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -57,9 +58,9 @@ const liquidate = async (
   // We can use this because only liquidation adds RUN to the vaultSeat.
   const proceeds = vaultZcfSeat.getAmountAllocated('RUN', runBrand);
 
-  const isUnderwater = !AmountMath.isGTE(proceeds, debt);
-  const runToBurn = isUnderwater ? proceeds : debt;
-  trace({ debt, isUnderwater, runToBurn });
+  const isShortfall = !AmountMath.isGTE(proceeds, debt);
+  const runToBurn = isShortfall ? proceeds : debt;
+  trace({ debt, isShortfall, runToBurn });
   burnLosses(harden({ RUN: runToBurn }), vaultZcfSeat);
   innerVault.liquidated(AmountMath.subtract(debt, runToBurn));
 

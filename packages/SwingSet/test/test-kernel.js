@@ -47,6 +47,8 @@ function makeKernel() {
   return buildKernel(endowments, {}, {});
 }
 
+const tsv = [{ d: ['startVat', {}], syscalls: [] }];
+
 test('build kernel', async t => {
   const kernel = makeKernel();
   await kernel.start(); // empty queue
@@ -62,6 +64,9 @@ test('simple call', async t => {
   function setup1(syscall, state, _helpers, vatPowers) {
     function dispatch(vatDeliverObject) {
       // TODO: just push the vatDeliverObject
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push([facetID, method, args]);
       vatPowers.testLog(JSON.stringify({ facetID, method, args }));
@@ -71,7 +76,7 @@ test('simple call', async t => {
   await kernel.createTestVat('vat1', setup1);
   const vat1 = kernel.vatNameToID('vat1');
   let data = kernel.dump();
-  t.deepEqual(data.vatTables, [{ vatID: vat1, state: { transcript: [] } }]);
+  t.deepEqual(data.vatTables, [{ vatID: vat1, state: { transcript: tsv } }]);
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(data.log, []);
   t.deepEqual(log, []);
@@ -108,6 +113,9 @@ test('vat store', async t => {
   const log = [];
   function setup(syscall, _state, _helpers, _vatPowers) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { method, args } = extractMessage(vatDeliverObject);
       switch (method) {
         case 'get': {
@@ -161,6 +169,9 @@ test('map inbound', async t => {
   const log = [];
   function setup1(_syscall) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push([facetID, method, args]);
     }
@@ -172,8 +183,8 @@ test('map inbound', async t => {
   const vat2 = kernel.vatNameToID('vat2');
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
-    { vatID: vat1, state: { transcript: [] } },
-    { vatID: vat2, state: { transcript: [] } },
+    { vatID: vat1, state: { transcript: tsv } },
+    { vatID: vat2, state: { transcript: tsv } },
   ]);
   t.deepEqual(data.kernelTable, []);
   t.deepEqual(log, []);
@@ -240,6 +251,9 @@ test('outbound call', async t => {
       return makeVatSlot('promise', true, index);
     }
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`d1/${facetID} called`);
       log.push(['d1', facetID, method, args]);
@@ -257,6 +271,9 @@ test('outbound call', async t => {
 
   function setup2(_syscall) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`d2/${facetID} called`);
       log.push(['d2', facetID, method, args]);
@@ -275,8 +292,8 @@ test('outbound call', async t => {
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
-    { vatID: vat1, state: { transcript: [] } },
-    { vatID: vat2, state: { transcript: [] } },
+    { vatID: vat1, state: { transcript: tsv } },
+    { vatID: vat2, state: { transcript: tsv } },
   ]);
 
   const kt = [
@@ -469,6 +486,9 @@ test('three-party', async t => {
       return makeVatSlot('promise', true, index);
     }
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`vatA/${facetID} called`);
       log.push(['vatA', facetID, method, args]);
@@ -482,6 +502,9 @@ test('three-party', async t => {
 
   function setupB(_syscall) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       // console.log(`vatB/${facetID} called`);
       log.push(['vatB', facetID, method, args]);
@@ -492,6 +515,9 @@ test('three-party', async t => {
 
   function setupC(_syscall) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push(['vatC', facetID, method, args]);
     }
@@ -516,9 +542,9 @@ test('three-party', async t => {
 
   const data = kernel.dump();
   t.deepEqual(data.vatTables, [
-    { vatID: vatA, state: { transcript: [] } },
-    { vatID: vatB, state: { transcript: [] } },
-    { vatID: vatC, state: { transcript: [] } },
+    { vatID: vatA, state: { transcript: tsv } },
+    { vatID: vatB, state: { transcript: tsv } },
+    { vatID: vatC, state: { transcript: tsv } },
   ]);
   const kt = [
     [alice, vatA, 'o+4'],
@@ -603,6 +629,9 @@ test('transfer promise', async t => {
   function setupA(syscall) {
     syscallA = syscall;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       logA.push([facetID, method, args]);
     }
@@ -615,6 +644,9 @@ test('transfer promise', async t => {
   function setupB(syscall) {
     syscallB = syscall;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       logB.push([facetID, method, args]);
     }
@@ -708,6 +740,9 @@ test('subscribe to promise', async t => {
   function setup(s) {
     syscall = s;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args } = extractMessage(vatDeliverObject);
       log.push(['deliver', facetID, method, args]);
     }
@@ -752,6 +787,9 @@ test('promise resolveToData', async t => {
   function setupA(s) {
     syscallA = s;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       log.push(vatDeliverObject);
     }
     return dispatch;
@@ -806,6 +844,7 @@ test('promise resolveToData', async t => {
   await kernel.step();
   // Deliver the notify
   await kernel.step();
+
   // the kernelPromiseID gets mapped back to the vat PromiseID
   t.deepEqual(log.shift(), [
     'notify',
@@ -824,6 +863,9 @@ test('promise resolveToPresence', async t => {
   function setupA(s) {
     syscallA = s;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       log.push(vatDeliverObject);
     }
     return dispatch;
@@ -904,6 +946,9 @@ test('promise reject', async t => {
   function setupA(s) {
     syscallA = s;
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       log.push(vatDeliverObject);
     }
     return dispatch;
@@ -975,6 +1020,9 @@ test('transcript', async t => {
 
   function setup(syscall, _state) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, args } = extractMessage(vatDeliverObject);
       if (facetID === aliceForAlice) {
         syscall.send(args.slots[1], 'foo', capdata('fooarg'), 'p+5');
@@ -1000,8 +1048,9 @@ test('transcript', async t => {
   // the transcript records vat-specific import/export slots
 
   const tr = kernel.dump().vatTables[0].state.transcript;
-  t.is(tr.length, 1);
-  t.deepEqual(tr[0], {
+  t.is(tr.length, 2);
+  t.deepEqual(tr[0], tsv[0]);
+  t.deepEqual(tr[1], {
     d: [
       'message',
       aliceForAlice,
@@ -1043,6 +1092,9 @@ test('non-pipelined promise queueing', async t => {
 
   function setupB(_s) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args, result } =
         extractMessage(vatDeliverObject);
       log.push([facetID, method, args, result]);
@@ -1167,6 +1219,9 @@ test('pipelined promise queueing', async t => {
 
   function setupB(_s) {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       const { facetID, method, args, result } =
         extractMessage(vatDeliverObject);
       log.push([facetID, method, args, result]);
@@ -1281,6 +1336,9 @@ async function reapTest(t, freq) {
   const log = [];
   function setup() {
     function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
       log.push(vatDeliverObject);
     }
     return dispatch;

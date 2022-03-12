@@ -97,7 +97,7 @@ export {};
  * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
  * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
- * @typedef { [tag: 'startVat' ]} VatDeliveryStartVat
+ * @typedef { [tag: 'startVat', vatParameters: unknown ]} VatDeliveryStartVat
  * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
  *            | VatDeliveryRetireExports | VatDeliveryRetireImports
@@ -136,7 +136,7 @@ export {};
  * @typedef { [tag: 'dropExports', krefs: string[] ]} KernelDeliveryDropExports
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelDeliveryRetireExports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
- * @typedef { [tag: 'startVat']} KernelDeliveryStartVat
+ * @typedef { [tag: 'startVat', vatParameters: unknown ]} KernelDeliveryStartVat
  * @typedef { [tag: 'bringOutYourDead']} KernelDeliveryBringOutYourDead
  * @typedef { KernelDeliveryMessage | KernelDeliveryNotify | KernelDeliveryDropExports
  *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports
@@ -322,7 +322,7 @@ export {};
  *
  * @typedef { string } BundleID
  * @typedef {*} BundleCap
- * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string } } EndoZipBase64Bundle
+ * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512 } } EndoZipBase64Bundle
  *
  * @typedef { unknown } Meter
  *

@@ -69,6 +69,8 @@ export function buildDispatch(onDispatchCallback = undefined) {
       if (onDispatchCallback) {
         onDispatchCallback(d);
       }
+    } else if (type === 'startVat') {
+      // ignore
     } else {
       throw Error(`unknown vatDeliverObject type ${type}`);
     }

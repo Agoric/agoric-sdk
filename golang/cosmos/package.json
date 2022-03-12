@@ -2,11 +2,7 @@
   "name": "@agoric/cosmos",
   "version": "0.28.0",
   "description": "Connect JS to the Cosmos blockchain SDK",
-  "parsers": {
-    "js": "mjs"
-  },
-  "main": "src/index.js",
-  "module": "src/index.js",
+  "main": "src/index.cjs",
   "engines": {
     "node": ">=14.15.0"
   },
@@ -16,8 +12,8 @@
     "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
     "test:xs": "exit 0",
     "build": "exit 0",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "eslint --fix '**/*.{cjs,js}'",
+    "lint": "eslint '**/*.{cjs,js}'"
   },
   "dependencies": {
     "bindings": "^1.2.1"
@@ -52,14 +48,5 @@
   ],
   "publishConfig": {
     "access": "public"
-  },
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ],
-    "require": [
-      "esm"
-    ],
-    "timeout": "2m"
   }
 }

@@ -69,11 +69,11 @@ test.serial('d0', async t => {
   // console.log(util.inspect(c.dump(), { depth: null }));
   t.deepEqual(JSON.parse(c.dump().log[0]), [
     {
-      bootstrap: { '@qclass': 'slot', iface: 'Alleged: vref', index: 0 },
-      comms: { '@qclass': 'slot', iface: 'Alleged: vref', index: 1 },
-      timer: { '@qclass': 'slot', iface: 'Alleged: vref', index: 2 },
-      vatAdmin: { '@qclass': 'slot', iface: 'Alleged: vref', index: 3 },
-      vattp: { '@qclass': 'slot', iface: 'Alleged: vref', index: 4 },
+      bootstrap: { '@qclass': 'slot', iface: 'Alleged: root', index: 0 },
+      comms: { '@qclass': 'slot', iface: 'Alleged: root', index: 1 },
+      timer: { '@qclass': 'slot', iface: 'Alleged: root', index: 2 },
+      vatAdmin: { '@qclass': 'slot', iface: 'Alleged: root', index: 3 },
+      vattp: { '@qclass': 'slot', iface: 'Alleged: root', index: 4 },
     },
     {
       d0: { '@qclass': 'slot', iface: 'Alleged: device', index: 5 },

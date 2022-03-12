@@ -39,15 +39,14 @@
     "@agoric/swingset-vat": "^0.25.1",
     "@agoric/vats": "^0.7.0",
     "@agoric/zoe": "^0.21.3",
-    "@endo/bundle-source": "^2.1.0",
-    "@endo/captp": "^2.0.2",
-    "@endo/far": "^0.1.8",
-    "@endo/marshal": "^0.6.2",
-    "@endo/promise-kit": "^0.2.36"
+    "@endo/bundle-source": "^2.1.1",
+    "@endo/captp": "^2.0.3",
+    "@endo/far": "^0.1.9",
+    "@endo/marshal": "^0.6.3",
+    "@endo/promise-kit": "^0.2.37"
   },
   "devDependencies": {
-    "@agoric/babel-standalone": "^7.14.3",
-    "@endo/init": "^0.5.36",
+    "@endo/init": "^0.5.37",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "fast-check": "^2.21.0",

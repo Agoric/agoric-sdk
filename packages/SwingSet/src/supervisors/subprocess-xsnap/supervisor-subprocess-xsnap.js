@@ -183,7 +183,6 @@ function makeWorker(port) {
   /**
    * @param {unknown} vatID
    * @param {unknown} bundle
-   * @param {unknown} vatParameters
    * @param {unknown} virtualObjectCacheSize
    * @param {boolean} enableDisavow
    * @param {boolean} enableVatstore
@@ -194,7 +193,6 @@ function makeWorker(port) {
   async function setBundle(
     vatID,
     bundle,
-    vatParameters,
     virtualObjectCacheSize,
     enableDisavow,
     enableVatstore,
@@ -294,7 +292,6 @@ function makeWorker(port) {
       syscall,
       vatID,
       vatPowers,
-      vatParameters,
       cacheSize,
       enableDisavow,
       enableVatstore,
@@ -315,14 +312,14 @@ function makeWorker(port) {
     switch (tag) {
       case 'setBundle': {
         assert(!dispatch, 'cannot setBundle again');
-        const enableDisavow = !!args[4];
-        const enableVatstore = !!args[5];
-        const gcEveryCrank = args[7] === undefined ? true : !!args[7];
+        const enableDisavow = !!args[3];
+        const enableVatstore = !!args[4];
+        const consensusMode = !!args[5];
+        const gcEveryCrank = args[6] === undefined ? true : !!args[6];
         return setBundle(
           args[0],
           args[1],
           args[2],
-          args[3],
           enableDisavow,
           enableVatstore,
           false, // consensusMode

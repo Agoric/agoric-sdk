@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 // @ts-check
 
-// TODO Remove babel-standalone preinitialization
-// https://github.com/endojs/endo/issues/768
-import '@agoric/babel-standalone';
 import '@endo/init';
 import process from 'process';
 import { spawn } from 'child_process';

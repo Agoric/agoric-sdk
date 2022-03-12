@@ -1,4 +1,5 @@
 // @ts-check
+
 import '@agoric/zoe/exported.js';
 
 import { E } from '@agoric/eventual-send';
@@ -39,7 +40,7 @@ const trace = makeTracer('VM');
  *  compoundedInterest: Ratio,
  *  interestRate: Ratio,
  *  latestInterestUpdate: bigint,
- *  totalDebt: Amount<NatValue>,
+ *  totalDebt: Amount<'nat'>,
  * }} AssetState */
 
 /**
@@ -49,7 +50,7 @@ const trace = makeTracer('VM');
  * the collateral is provided in exchange for borrowed RUN.
  *
  * @param {ContractFacet} zcf
- * @param {ZCFMint} runMint
+ * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {{
@@ -65,7 +66,7 @@ const trace = makeTracer('VM');
  */
 export const makeVaultManager = (
   zcf,
-  runMint,
+  debtMint,
   collateralBrand,
   priceAuthority,
   timingParams,
@@ -75,7 +76,8 @@ export const makeVaultManager = (
   liquidationStrategy,
   startTimeStamp,
 ) => {
-  const { brand: runBrand } = runMint.getIssuerRecord();
+  /** @type {{brand: Brand<'nat'>}} */
+  const { brand: debtBrand } = debtMint.getIssuerRecord();
 
   /** @type {GetVaultParams} */
   const shared = {
@@ -92,7 +94,7 @@ export const makeVaultManager = (
       const decimalPlaces = displayInfo?.decimalPlaces || 0n;
       return E(priceAuthority).quoteGiven(
         AmountMath.make(collateralBrand, 10n ** Nat(decimalPlaces)),
-        runBrand,
+        debtBrand,
       );
     },
   };
@@ -116,10 +118,10 @@ export const makeVaultManager = (
 
   /** @type {MutableQuote=} */
   let outstandingQuote;
-  /** @type {Amount<NatValue>} */
-  let totalDebt = AmountMath.makeEmpty(runBrand, 'nat');
+  /** @type {Amount<'nat'>} */
+  let totalDebt = AmountMath.makeEmpty(debtBrand, 'nat');
   /** @type {Ratio}} */
-  let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
+  let compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
 
   /**
    * timestamp of most recent update to interest
@@ -154,17 +156,15 @@ export const makeVaultManager = (
     const liquidations = Array.from(vaultsToLiquidate.entries()).map(
       async ([key, vault]) => {
         trace('liquidating', vault.getVaultSeat().getProposal());
-
         try {
           // Start liquidation (vaultState: LIQUIDATING)
           await liquidate(
             zcf,
             vault,
-            runMint.burnLosses,
+            debtMint.burnLosses,
             liquidationStrategy,
             collateralBrand,
           );
-
           vaultsToLiquidate.delete(key);
         } catch (e) {
           // XXX should notify interested parties
@@ -262,22 +262,21 @@ export const makeVaultManager = (
     const interestRate = shared.getInterestRate();
 
     // Update local state with the results of charging interest
-    ({ compoundedInterest, latestInterestUpdate, totalDebt } =
-      await chargeInterest(
-        {
-          mint: runMint,
-          reallocateWithFee,
-          poolIncrementSeat,
-          seatAllocationKeyword: 'RUN',
-        },
-        {
-          interestRate,
-          chargingPeriod: shared.getChargingPeriod(),
-          recordingPeriod: shared.getRecordingPeriod(),
-        },
-        { latestInterestUpdate, compoundedInterest, totalDebt },
-        updateTime,
-      ));
+    ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
+      {
+        mint: debtMint,
+        reallocateWithFee,
+        poolIncrementSeat,
+        seatAllocationKeyword: 'RUN',
+      },
+      {
+        interestRate,
+        chargingPeriod: shared.getChargingPeriod(),
+        recordingPeriod: shared.getRecordingPeriod(),
+      },
+      { latestInterestUpdate, compoundedInterest, totalDebt },
+      updateTime,
+    ));
 
     /** @type {AssetState} */
     const payload = harden({
@@ -296,11 +295,12 @@ export const makeVaultManager = (
   /**
    * Update total debt of this manager given the change in debt on a vault
    *
-   * @param {Amount<NatValue>} oldDebtOnVault
-   * @param {Amount<NatValue>} newDebtOnVault
+   * @param {Amount<'nat'>} oldDebtOnVault
+   * @param {Amount<'nat'>} newDebtOnVault
    */
   // TODO https://github.com/Agoric/agoric-sdk/issues/4599
   const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
+    // This does not use AmountMath because it could be validly negative
     const delta = newDebtOnVault.value - oldDebtOnVault.value;
     trace(`updating total debt ${totalDebt} by ${delta}`);
     if (delta === 0n) {
@@ -309,12 +309,12 @@ export const makeVaultManager = (
     }
 
     // totalDebt += delta (Amount type ensures natural value)
-    totalDebt = AmountMath.make(runBrand, totalDebt.value + delta);
+    totalDebt = AmountMath.make(debtBrand, totalDebt.value + delta);
   };
 
   /**
-   * @param {Amount<NatValue>} oldDebt
-   * @param {Amount<NatValue>} oldCollateral
+   * @param {Amount<'nat'>} oldDebt
+   * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    */
   const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {
@@ -331,7 +331,6 @@ export const makeVaultManager = (
 
   const timeObserver = {
     updateState: updateTime =>
-      // XXX notify interested parties
       chargeAllVaults(updateTime, poolIncrementSeat).catch(e =>
         console.error('🚨 vaultManager failed to charge interest', e),
       ),
@@ -374,7 +373,7 @@ export const makeVaultManager = (
       managerFacet,
       assetNotifer,
       vaultId,
-      runMint,
+      debtMint,
       priceAuthority,
     );
 
@@ -383,6 +382,8 @@ export const makeVaultManager = (
     const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
 
     try {
+      // TODO `await` is allowed until the above ordering is fixed
+      // eslint-disable-next-line @jessie.js/no-nested-await
       const vaultKit = await innerVault.initVaultKit(seat);
       seat.exit();
       return vaultKit;

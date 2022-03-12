@@ -31,6 +31,11 @@ const wrapVault = innerVault => {
     return inner;
   };
 
+  /**
+   * Public API of the vault.
+   *
+   * @see {InnerVault} for the internal API it wraps.
+   */
   const vault = Far('vault', {
     getNotifier: () => notifier,
     makeAdjustBalancesInvitation: () =>
@@ -54,6 +59,7 @@ const wrapVault = innerVault => {
 };
 
 /**
+ * Create a kit of utilities for use of the (inner) vault.
  *
  * @param {InnerVault} inner
  * @param {Notifier<import('./vaultManager').AssetState>} assetNotifier

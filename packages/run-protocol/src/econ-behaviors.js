@@ -20,6 +20,7 @@ import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
 
 import * as Collect from './collect.js';
 
+const { details: X } = assert;
 const { entries } = Object;
 
 const SECONDS_PER_HOUR = 60n * 60n;
@@ -141,10 +142,8 @@ export const setupAmm = async ({
   ammGovernorCreatorFacet.resolve(g.creatorFacet);
   ammCreatorFacet.resolve(creatorFacet);
 
-  if (!ammPublicFacet) {
-    // ISSUE: what is this test for?!
-    throw new Error(`ammPublicFacet broken  ${ammPublicFacet}`);
-  }
+  // Confirm that the amm was indeed setup
+  assert(ammPublicFacet, X`ammPublicFacet broken  ${ammPublicFacet}`);
 
   ammInstanceProducer.resolve(instance);
   ammGovernor.resolve(g.instance);

@@ -80,7 +80,7 @@ function commaSplit(s) {
 // record the new `p+NN` value anywhere. The counter we use for allocation
 // will continue on to the next higher NN.
 
-export function makeState(syscall, identifierBase = 0) {
+export function makeState(syscall) {
   // Comms vat state is kept in the vatstore, which is managed by the kernel and
   // accessed as part of the syscall interface.  The schema used here is very
   // similar to (in fact, modelled upon) the schema the kernel uses for its own
@@ -139,9 +139,10 @@ export function makeState(syscall, identifierBase = 0) {
   }
   const store = makeSyscallStore(syscall);
 
-  function maybeInitialize(controller) {
+  function initialize(controller, identifierBase) {
     if (!store.get('initialized')) {
       store.set('identifierBase', `${identifierBase}`);
+      store.set('sendExplicitSeqNums', '1');
       store.set('lo.nextID', `${identifierBase + 10}`);
       store.set('lp.nextID', `${identifierBase + 20}`);
       store.set('o.nextID', `${identifierBase + 30}`);
@@ -154,6 +155,16 @@ export function makeState(syscall, identifierBase = 0) {
         cdebug(`comms controller is ${controller}`);
       }
     }
+  }
+
+  function setSendExplicitSeqNums(sendExplicitSeqNums) {
+    const digit = Number(Boolean(sendExplicitSeqNums));
+    store.set('sendExplicitSeqNums', `${digit}`);
+  }
+
+  function getSendExplicitSeqNums() {
+    const digit = Number(store.getRequired('sendExplicitSeqNums'));
+    return Boolean(digit);
   }
 
   function deleteLocalPromiseState(lpid) {
@@ -737,7 +748,10 @@ export function makeState(syscall, identifierBase = 0) {
   }
 
   const state = harden({
-    maybeInitialize,
+    initialize,
+
+    setSendExplicitSeqNums,
+    getSendExplicitSeqNums,
 
     mapFromKernel,
     mapToKernel,
