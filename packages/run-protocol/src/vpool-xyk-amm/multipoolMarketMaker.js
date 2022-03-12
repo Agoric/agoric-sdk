@@ -19,7 +19,11 @@ import '@agoric/zoe/exported.js';
 import { makeMakeCollectFeesInvitation } from './collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
-import { makeParamManager, POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
+import {
+  makeAmmParamManager,
+  POOL_FEE_KEY,
+  PROTOCOL_FEE_KEY,
+} from './params.js';
 
 const { quote: q, details: X } = assert;
 /**
@@ -130,7 +134,7 @@ const start = async (zcf, privateArgs) => {
   const { initialPoserInvitation } = privateArgs;
 
   const [paramManager, centralDisplayInfo] = await Promise.all([
-    makeParamManager(
+    makeAmmParamManager(
       zcf.getZoeService(),
       poolFeeParam.value,
       protocolFeeParam.value,

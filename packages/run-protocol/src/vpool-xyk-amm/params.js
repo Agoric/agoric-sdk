@@ -10,11 +10,16 @@ import {
 export const POOL_FEE_KEY = 'PoolFee';
 export const PROTOCOL_FEE_KEY = 'ProtocolFee';
 
-const POOL_FEE_BP = 24n;
-const PROTOCOL_FEE_BP = 6n;
+const DEFAULT_POOL_FEE_BP = 24n;
+const DEFAULT_PROTOCOL_FEE_BP = 6n;
 
-/** @type {MakeAmmParamManager} */
-const makeParamManager = async (
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {bigint} poolFeeBP
+ * @param {bigint} protocolFeeBP
+ * @param {Invitation} poserInvitation - invitation for the question poser
+ */
+const makeAmmParamManager = async (
   zoe,
   poolFeeBP,
   protocolFeeBP,
@@ -43,8 +48,8 @@ const makeAmmParams = (
 const makeAmmTerms = (
   timer,
   poserInvitationAmount,
-  protocolFeeBP = PROTOCOL_FEE_BP,
-  poolFeeBP = POOL_FEE_BP,
+  protocolFeeBP = DEFAULT_PROTOCOL_FEE_BP,
+  poolFeeBP = DEFAULT_POOL_FEE_BP,
 ) => ({
   timer,
   poolFeeBP,
@@ -52,8 +57,8 @@ const makeAmmTerms = (
   main: makeAmmParams(poserInvitationAmount, protocolFeeBP, poolFeeBP),
 });
 
-harden(makeParamManager);
+harden(makeAmmParamManager);
 harden(makeAmmTerms);
 harden(makeAmmParams);
 
-export { makeParamManager, makeAmmTerms, makeAmmParams };
+export { makeAmmParamManager, makeAmmTerms, makeAmmParams };
