@@ -6,6 +6,8 @@ import {
   makeGovernedInvitation,
   makeParamManagerBuilder,
   CONTRACT_ELECTORATE,
+  makeParamManagerSync,
+  makeParamManager,
 } from '@agoric/governance';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -25,21 +27,6 @@ const makeElectorateParams = electorateInvitationAmount => {
 };
 
 /**
- * @param {LoanTiming} initialValues
- * @returns {ParamManagerFull & {
- *   updateChargingPeriod: (period: bigint) => void,
- *   updateRecordingPeriod: (period: bigint) => void,
- * }}
- */
-const makeLoanTimingManager = initialValues => {
-  // @ts-expect-error until makeParamManagerBuilder can be generic */
-  return makeParamManagerBuilder()
-    .addNat(CHARGING_PERIOD_KEY, initialValues.chargingPeriod)
-    .addNat(RECORDING_PERIOD_KEY, initialValues.recordingPeriod)
-    .build();
-};
-
-/**
  * @param {Rates} rates
  * @returns {VaultParamManager}
  */
@@ -55,18 +42,17 @@ const makeVaultParamManager = rates => {
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {Invitation} electorateInvitation
- * @returns {Promise<{
- *   getParams: GetGovernedVaultParams,
- *   getInvitationAmount: (name: string) => Amount,
- *   getInternalParamValue: (name: string) => Invitation,
- *   updateElectorate: (invitation: Invitation) => void,
- * }>}
  */
 const makeElectorateParamManager = async (zoe, electorateInvitation) => {
-  // @ts-expect-error casting to ElectorateParamManager
-  return makeParamManagerBuilder(zoe)
-    .addInvitation(CONTRACT_ELECTORATE, electorateInvitation)
-    .then(builder => builder.build());
+  return makeParamManager(
+    {
+      [CONTRACT_ELECTORATE]: {
+        type: 'invitation',
+        value: electorateInvitation,
+      },
+    },
+    zoe,
+  );
 };
 
 /**
@@ -89,8 +75,12 @@ const makeGovernedTerms = (
   ammPublicFacet,
   bootstrapPaymentValue = 0n,
 ) => {
-  const timingParamMgr = makeLoanTimingManager(loanTiming);
+  const timingParamMgr = makeParamManagerSync({
+    [CHARGING_PERIOD_KEY]: { type: 'nat', value: loanTiming.chargingPeriod },
+    [RECORDING_PERIOD_KEY]: { type: 'nat', value: loanTiming.recordingPeriod },
+  });
 
+  // FIXME support branded ratios
   const rateParamMgr = makeVaultParamManager(rates);
 
   return harden({

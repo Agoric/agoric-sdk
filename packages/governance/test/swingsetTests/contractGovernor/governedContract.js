@@ -3,12 +3,12 @@
 import { keyEQ } from '@agoric/store';
 
 import { handleParamGovernance } from '../../../src/contractHelper.js';
-import { makeParamManagerBuilder } from '../../../src/paramGovernance/paramManager.js';
 import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
 import {
   makeGovernedNat,
   makeGovernedInvitation,
 } from '../../../src/paramGovernance/paramMakers.js';
+import { makeParamManager } from '../../../src/index.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
@@ -19,12 +19,6 @@ const makeParamTerms = (number, invitationAmount) => {
     [MALLEABLE_NUMBER]: makeGovernedNat(number),
     [CONTRACT_ELECTORATE]: makeGovernedInvitation(invitationAmount),
   });
-};
-
-const makeParamManager = async (zoe, number, invitation) => {
-  const builder = makeParamManagerBuilder(zoe).addNat(MALLEABLE_NUMBER, number);
-  await builder.addInvitation(CONTRACT_ELECTORATE, invitation);
-  return builder.build();
 };
 
 /**
@@ -47,9 +41,14 @@ const start = async (zcf, privateArgs) => {
   const { initialPoserInvitation } = privateArgs;
 
   const paramManager = await makeParamManager(
+    {
+      [MALLEABLE_NUMBER]: { type: 'nat', value: numberParam.value },
+      [CONTRACT_ELECTORATE]: {
+        type: 'invitation',
+        value: initialPoserInvitation,
+      },
+    },
     zcf.getZoeService(),
-    numberParam.value,
-    initialPoserInvitation,
   );
 
   const { wrapPublicFacet, wrapCreatorFacet, getInvitationAmount } =

@@ -44,7 +44,7 @@
  * T extends 'brand' ? Brand :
  * T extends 'installation' ? Installation:
  * T extends 'instance' ? Instance :
- * T extends 'invitation' ? Amount :
+ * T extends 'invitation' ? Invitation :
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
  * T extends 'relativeTime' ? RelativeTime :

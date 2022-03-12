@@ -1,10 +1,10 @@
 // @ts-check
 
 import {
-  makeParamManagerBuilder,
   CONTRACT_ELECTORATE,
   makeGovernedNat,
   makeGovernedInvitation,
+  makeParamManager,
 } from '@agoric/governance';
 
 export const POOL_FEE_KEY = 'PoolFee';
@@ -25,12 +25,14 @@ const makeAmmParamManager = async (
   protocolFeeBP,
   poserInvitation,
 ) => {
-  const builder = makeParamManagerBuilder(zoe)
-    .addNat(POOL_FEE_KEY, poolFeeBP)
-    .addNat(PROTOCOL_FEE_KEY, protocolFeeBP);
-
-  await builder.addInvitation(CONTRACT_ELECTORATE, poserInvitation);
-  return builder.build();
+  return makeParamManager(
+    {
+      [POOL_FEE_KEY]: { type: 'nat', value: poolFeeBP },
+      [PROTOCOL_FEE_KEY]: { type: 'nat', value: protocolFeeBP },
+      [CONTRACT_ELECTORATE]: { type: 'invitation', value: poserInvitation },
+    },
+    zoe,
+  );
 };
 
 const makeAmmParams = (

@@ -33,6 +33,11 @@ export {
 } from './paramGovernance/paramManager.js';
 
 export {
+  makeParamManager,
+  makeParamManagerSync,
+} from './paramGovernance/typedParamManager.js';
+
+export {
   assertContractGovernance,
   assertContractElectorate,
 } from './validators.js';
