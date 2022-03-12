@@ -14,6 +14,9 @@ import {
   makeParamManagerSync,
 } from '../../src/paramGovernance/typedParamManager.js';
 
+const drachmaKit = makeIssuerKit('drachma');
+const drachmaBrand = drachmaKit.brand;
+
 test('types', t => {
   t.throws(() =>
     makeParamManagerSync({
@@ -37,10 +40,18 @@ test('types', t => {
   );
 });
 
-test('two parameters', t => {
-  const drachmaKit = makeIssuerKit('drachma');
+test('asGetters', t => {
+  const drachmas = AmountMath.make(drachmaBrand, 37n);
+  const paramManager = makeParamManagerSync({
+    Currency: ['brand', drachmaBrand],
+    Amt: ['amount', drachmas],
+  });
+  const getters = paramManager.asGetters();
+  t.is(paramManager.getCurrency, getters.getCurrency);
+  t.is(paramManager.getAmt, getters.getAmt);
+});
 
-  const drachmaBrand = drachmaKit.brand;
+test('two parameters', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
     Currency: ['brand', drachmaBrand],
@@ -48,6 +59,7 @@ test('two parameters', t => {
   });
 
   t.is(paramManager.getCurrency(), drachmaBrand);
+  t.is(paramManager.asGetters().getCurrency(), drachmaBrand);
   t.deepEqual(paramManager.getAmt(), drachmas);
   t.deepEqual(
     paramManager.getParams(),
@@ -178,7 +190,6 @@ test('params one instance', async t => {
 });
 
 test('Invitation', async t => {
-  const drachmaKit = makeIssuerKit('drachma');
   const terms = harden({
     mmr: makeRatio(150n, drachmaKit.brand),
   });
@@ -195,7 +206,6 @@ test('Invitation', async t => {
     invitation,
   );
 
-  const drachmaBrand = drachmaKit.brand;
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
   const paramManager = await makeParamManager(
     {

@@ -136,7 +136,7 @@ export const start = async (zcf, privateArgs) => {
       collateralBrand,
       priceAuthority,
       loanTimingParams,
-      vaultParamManager.getParams,
+      vaultParamManager.asGetters(),
       reallocateWithFee,
       timerService,
       liquidationStrategy,

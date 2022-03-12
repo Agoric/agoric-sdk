@@ -18,7 +18,7 @@ import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
  * @template {Record<Keyword, ST<ParamType>>} T
- * @typedef {ParamManagerBase & Getters<T> & Updaters<T>} TypedParamManager
+ * @typedef {ParamManagerBase & Getters<T> & Updaters<T> & {asGetters: () => Getters<T>}} TypedParamManager
  */
 
 /**
@@ -39,7 +39,7 @@ const isAsync = {
 
 /**
  * @template {ParamType} T
- * @typedef {[type: T, value: ParamValueForType<T>]} ST
+ * @typedef {[type: T, value: ParamValueForType<T>]} ST param spec tuple
  */
 
 /**

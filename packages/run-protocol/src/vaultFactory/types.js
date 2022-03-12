@@ -138,13 +138,4 @@
  * them and interest is not accumulated for them.
  */
 
-/**
- * @callback GetGovernedVaultParams
- * @returns {{
- *  InterestRate: ParamRecord<'ratio'>,
- *  LiquidationMargin: ParamRecord<'ratio'>,
- *  LoanFee: ParamRecord<'ratio'>,
- * }}
- */
-
 /** @typedef {import('./vault').InnerVault} InnerVault */
