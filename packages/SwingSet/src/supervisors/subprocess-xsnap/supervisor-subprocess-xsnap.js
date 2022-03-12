@@ -186,7 +186,6 @@ function makeWorker(port) {
    * @param {unknown} virtualObjectCacheSize
    * @param {boolean} enableDisavow
    * @param {boolean} enableVatstore
-   * @param {false} _consensusMode
    * @param {boolean} [gcEveryCrank]
    * @returns { Promise<Tagged> }
    */
@@ -196,7 +195,6 @@ function makeWorker(port) {
     virtualObjectCacheSize,
     enableDisavow,
     enableVatstore,
-    _consensusMode,
     gcEveryCrank,
   ) {
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
@@ -314,21 +312,19 @@ function makeWorker(port) {
         assert(!dispatch, 'cannot setBundle again');
         const enableDisavow = !!args[3];
         const enableVatstore = !!args[4];
-        const consensusMode = !!args[5];
-        const gcEveryCrank = args[6] === undefined ? true : !!args[6];
+        const gcEveryCrank = args[5] === undefined ? true : !!args[5];
         return setBundle(
           args[0],
           args[1],
           args[2],
           enableDisavow,
           enableVatstore,
-          false, // consensusMode
           gcEveryCrank,
         );
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');
-        const [vatDeliveryObject, _consensusMode] = args;
+        const [vatDeliveryObject] = args;
         insistVatDeliveryObject(vatDeliveryObject);
         return dispatch(vatDeliveryObject);
       }

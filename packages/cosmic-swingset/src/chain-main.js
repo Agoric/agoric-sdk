@@ -344,9 +344,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
 
-    // We want to make it hard for a validator to accidentally disable
-    // consensusMode.
-    const consensusMode = true;
     const s = await launch({
       actionQueue,
       kernelStateDBDir: stateDBDir,
@@ -358,7 +355,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       metricsProvider,
       slogFile: SLOGFILE,
       slogSender,
-      consensusMode,
       mapSize,
     });
     return s;

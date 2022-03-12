@@ -45,13 +45,8 @@ parentPort.on('message', ([type, ...margs]) => {
     workerLog(`got start`);
     sendUplink(['gotStart']);
   } else if (type === 'setBundle') {
-    const [
-      bundle,
-      virtualObjectCacheSize,
-      enableDisavow,
-      enableVatstore,
-      _consensusMode,
-    ] = margs;
+    const [bundle, virtualObjectCacheSize, enableDisavow, enableVatstore] =
+      margs;
 
     function testLog(...args) {
       sendUplink(['testLog', ...args]);
