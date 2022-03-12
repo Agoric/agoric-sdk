@@ -72,7 +72,7 @@ const makeParamManagerBuilder = zoe => {
     const publicMethods = Far(`Parameter ${name}`, {
       getValue: () => current,
       assertType: assertion,
-      makeDescription: () => ({ name, type, value: current }),
+      makeDescription: () => ({ type, value: current }),
       getVisibleValue,
       getType: () => type,
     });
@@ -211,7 +211,7 @@ const makeParamManagerBuilder = zoe => {
     await setInvitation(invitation);
 
     const makeDescription = () => {
-      return { name, type: ParamType.INVITATION, value: currentAmount };
+      return { type: ParamType.INVITATION, value: currentAmount };
     };
 
     const getVisibleValue = async allegedInvitation =>

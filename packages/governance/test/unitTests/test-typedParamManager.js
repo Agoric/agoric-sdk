@@ -30,12 +30,10 @@ test('two parameters', t => {
     paramManager.getParams(),
     harden({
       Currency: {
-        name: 'Currency',
         type: ParamType.BRAND,
         value: drachmaBrand,
       },
       Amt: {
-        name: 'Amt',
         type: ParamType.AMOUNT,
         value: drachmas,
       },
@@ -118,7 +116,6 @@ test('params one installation', async t => {
     paramManager.getParams(),
     harden({
       PName: {
-        name: 'PName',
         type: ParamType.INSTALLATION,
         value: handle2,
       },
@@ -153,7 +150,6 @@ test('params one instance', async t => {
     paramManager.getParams(),
     harden({
       PName: {
-        name: 'PName',
         type: ParamType.INSTANCE,
         value: handle2,
       },
@@ -202,17 +198,14 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
-        name: 'Amt',
         type: ParamType.AMOUNT,
         value: drachmaAmount,
       },
       Currency: {
-        name: 'Currency',
         type: ParamType.BRAND,
         value: drachmaBrand,
       },
       Invite: {
-        name: 'Invite',
         type: ParamType.INVITATION,
         value: invitationAmount,
       },
