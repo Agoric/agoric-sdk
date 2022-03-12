@@ -433,6 +433,7 @@ export const makeInnerVault = (
    * Stage a transfer between `fromSeat` and `toSeat`, specified as the delta between
    * the gain and a loss on teh `fromSeat`. The gain/loss are typically from the
    * give/want respectively of a proposal. The `key` is the allocation keyword.
+   *
    * @param {ZCFSeat} fromSeat
    * @param {ZCFSeat} toSeat
    * @param {Amount} fromLoses
@@ -465,7 +466,9 @@ export const makeInnerVault = (
 
   /**
    * Calculate the fee, the amount to mint and the resulting debt.
-   * The give and the want together reflect a delta, where the 
+   * The give and the want together reflect a delta, where typpically
+   * one is zero. In that case, the `fee` will also be zero, so the
+   * simple math works.
    *
    * @param {Amount} currentDebt
    * @param {Amount} giveAmount
@@ -479,12 +482,13 @@ export const makeInnerVault = (
   };
 
   /**
-   * Check whether we can proceed with an `adjustBalances`
+   * Check whether we can proceed with an `adjustBalances`.
+   *
    * @param {Amount} oldCollateralAfter
    * @param {Amount} oldMaxDebt
    * @param {Amount} newCollateral
    * @param {Amount} newDebt
-   * @returns
+   * @returns {boolean}
    */
   const checkRestart = (
     oldCollateralAfter,
