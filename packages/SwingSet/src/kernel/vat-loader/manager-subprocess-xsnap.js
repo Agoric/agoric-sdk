@@ -51,8 +51,6 @@ export function makeXsSubprocessFactory({
   ) {
     parentLog(vatID, 'createFromBundle', { vatID });
     const {
-      consensusMode,
-      vatParameters,
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
@@ -147,11 +145,9 @@ export function makeXsSubprocessFactory({
         'setBundle',
         vatID,
         bundle,
-        vatParameters,
         virtualObjectCacheSize,
         enableDisavow,
         enableVatstore,
-        consensusMode,
         gcEveryCrank,
       ]);
       if (bundleReply[0] === 'dispatchReady') {
@@ -170,7 +166,7 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, `sending delivery`, delivery);
       let result;
       try {
-        result = await issueTagged(['deliver', delivery, consensusMode]);
+        result = await issueTagged(['deliver', delivery]);
       } catch (err) {
         parentLog('issueTagged error:', err.code, err.message);
         let message;

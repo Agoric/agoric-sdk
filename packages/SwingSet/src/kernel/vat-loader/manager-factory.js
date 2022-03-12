@@ -48,7 +48,6 @@ export function makeVatManagerFactory({
 
   function validateManagerOptions(managerOptions) {
     assertKnownOptions(managerOptions, [
-      'consensusMode',
       'enablePipelining',
       'managerType',
       'gcEveryCrank',
@@ -62,7 +61,6 @@ export function makeVatManagerFactory({
       'virtualObjectCacheSize',
       'useTranscript',
       'reapInterval',
-      'vatParameters',
       'vatConsole',
       'name',
       'compareSyscalls',

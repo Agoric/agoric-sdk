@@ -526,13 +526,13 @@ export default function buildKernel(
    * @returns { Promise<DeliveryStatus> }
    */
   async function processStartVat(message) {
-    const { type, vatID } = message;
+    const { vatID, vatParameters } = message;
     // console.log(`-- processStartVat(${vatID})`);
     insistVatID(vatID);
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
     /** @type { KernelDeliveryStartVat } */
-    const kd = harden([type]); // TODO(4381) add vatParameters here
+    const kd = harden(['startVat', vatParameters]); // TODO(4381) add vatParameters here
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     // TODO: can we provide a computron count to the run policy?
@@ -547,7 +547,7 @@ export default function buildKernel(
    */
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
-    const { vatID, source, dynamicOptions } = message;
+    const { vatID, source, vatParameters, dynamicOptions } = message;
     kernelKeeper.addDynamicVatID(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const options = { ...dynamicOptions };
@@ -599,7 +599,9 @@ export default function buildKernel(
       vatWarehouse
         .createDynamicVat(vatID)
         // if createDynamicVat fails, go directly to makeErrorResponse
-        .then(_vatinfo => processStartVat({ type: 'startVat', vatID }))
+        .then(_vatinfo =>
+          processStartVat({ type: 'startVat', vatID, vatParameters }),
+        )
         // TODO(4381) add vatParameters here
         // If processStartVat/deliverAndLogToVat observes a worker error, it
         // will return status={ terminate: problem } rather than throw an
@@ -768,11 +770,12 @@ export default function buildKernel(
    * @typedef { { type: 'send', target: string, msg: Message }} RunQueueEventSend
    * @typedef { { type: 'create-vat', vatID: VatID,
    *              source: { bundle: Bundle } | { bundleID: BundleID },
+   *              vatParameters: SwingSetCapData,
    *              dynamicOptions: InternalDynamicVatOptions }
    *          } RunQueueEventCreateVat
    * @typedef { { type: 'upgrade-vat', vatID: VatID, upgradeID: string,
    *              bundleID: BundleID, vatParameters: SwingSetCapData } } RunQueueEventUpgradeVat
-   * @typedef { { type: 'startVat', vatID: VatID } } RunQueueEventStartVat
+   * @typedef { { type: 'startVat', vatID: VatID, vatParameters: unknown } } RunQueueEventStartVat
    * @typedef { { type: 'dropExports', vatID: VatID, krefs: string[] } } RunQueueEventDropExports
    * @typedef { { type: 'retireExports', vatID: VatID, krefs: string[] } } RunQueueEventRetireExports
    * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
@@ -1205,7 +1208,6 @@ export default function buildKernel(
     ]);
 
     assert(!kernelKeeper.hasVatWithName(name), X`vat ${name} already exists`);
-    creationOptions.vatParameters = vatParameters;
 
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
@@ -1217,6 +1219,13 @@ export default function buildKernel(
     vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
 
     await vatWarehouse.loadTestVat(vatID, setup, creationOptions);
+
+    /** @type { RunQueueEventStartVat } */
+    const startVatMessage = { type: 'startVat', vatID, vatParameters };
+    // eslint-disable-next-line no-unused-vars
+    const ds = await processStartVat(startVatMessage);
+    // TODO: do something with DeliveryStatus, maybe just assert it's ok
+
     return vatID;
   }
 
@@ -1238,7 +1247,15 @@ export default function buildKernel(
         // TODO: translate dynamicOptions.vatParameters.slots from dref to kref
         const source = { bundle };
         const vatID = kernelKeeper.allocateUnusedVatID();
-        const event = { type: 'create-vat', vatID, source, dynamicOptions };
+        const { vatParameters, ...rest } = dynamicOptions;
+        dynamicOptions = rest;
+        const event = {
+          type: 'create-vat',
+          vatID,
+          source,
+          vatParameters,
+          dynamicOptions,
+        };
         kernelKeeper.addToAcceptanceQueue(harden(event));
         // the device gets the new vatID immediately, and will be notified
         // later when it is created and a root object is available
@@ -1249,7 +1266,15 @@ export default function buildKernel(
         // TODO: translate dynamicOptions.vatParameters.slots from dref to kref
         const source = { bundleID };
         const vatID = kernelKeeper.allocateUnusedVatID();
-        const event = { type: 'create-vat', vatID, source, dynamicOptions };
+        const { vatParameters, ...rest } = dynamicOptions;
+        dynamicOptions = rest;
+        const event = {
+          type: 'create-vat',
+          vatID,
+          source,
+          vatParameters,
+          dynamicOptions,
+        };
         kernelKeeper.addToAcceptanceQueue(harden(event));
         // the device gets the new vatID immediately, and will be notified
         // later when it is created and a root object is available

@@ -108,8 +108,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     },
   };
 
-  // We don't want to force a sim chain to use consensus mode.
-  const consensusMode = false;
   const s = await launch({
     actionQueue,
     kernelStateDBDir: stateDBdir,
@@ -120,7 +118,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     metricsProvider,
     slogFile: SLOGFILE,
     slogSender,
-    consensusMode,
     mapSize,
   });
 

@@ -49,7 +49,7 @@ export function makeLocalVatManagerFactory(tools) {
   function createFromSetup(vatID, setup, managerOptions, vatSyscallHandler) {
     assert.typeof(setup, 'function', 'setup is not an in-realm function');
 
-    const { vatParameters, compareSyscalls, useTranscript } = managerOptions;
+    const { compareSyscalls, useTranscript } = managerOptions;
     const { syscall, finish } = prepare(
       vatID,
       vatSyscallHandler,
@@ -61,7 +61,7 @@ export function makeLocalVatManagerFactory(tools) {
     const state = null; // TODO remove from setup()
     const vatPowers = harden({ ...baseVP, testLog });
 
-    const dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
+    const dispatch = setup(syscall, state, helpers, vatPowers);
     return finish(dispatch);
   }
 
@@ -72,10 +72,8 @@ export function makeLocalVatManagerFactory(tools) {
     vatSyscallHandler,
   ) {
     const {
-      consensusMode,
       enableDisavow = false,
       enableSetup = false,
-      vatParameters = {},
       vatConsole,
       liveSlotsConsole,
       enableVatstore = false,
@@ -94,7 +92,6 @@ export function makeLocalVatManagerFactory(tools) {
 
     const vatPowers = harden({
       ...baseVP,
-      vatParameters,
       testLog: allVatPowers.testLog,
     });
 
@@ -102,17 +99,7 @@ export function makeLocalVatManagerFactory(tools) {
       const makeLog = level => {
         const log = logger[level];
         assert.typeof(log, 'function', X`logger[${level}] must be a function`);
-        return (...args) => {
-          // We have to dynamically wrap the consensus mode so that it can change
-          // during the lifetime of the supervisor (which when snapshotting, is
-          // restored to its current heap across restarts, not actually stopping
-          // until the vat is terminated).
-          if (consensusMode) {
-            return;
-          }
-
-          log(...args);
-        };
+        return log;
       };
       return makeLog;
     };
@@ -146,14 +133,13 @@ export function makeLocalVatManagerFactory(tools) {
       assert.typeof(setup, 'function');
       const helpers = harden({}); // DEPRECATED, todo remove from setup()
       const state = null; // TODO remove from setup()
-      const dispatch = setup(syscall, state, helpers, vatPowers, vatParameters);
+      const dispatch = setup(syscall, state, helpers, vatPowers);
       return finish(dispatch);
     } else {
       const ls = makeLiveSlots(
         syscall,
         vatID,
         vatPowers,
-        vatParameters,
         virtualObjectCacheSize,
         enableDisavow,
         enableVatstore,
