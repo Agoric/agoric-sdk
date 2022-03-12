@@ -479,6 +479,46 @@ export const makeInnerVault = (
   };
 
   /**
+   * Check whether we can proceed with an `adjustBalances`
+   * @param {Amount} oldCollateralAfter
+   * @param {Amount} oldMaxDebt
+   * @param {Amount} newCollateral
+   * @param {Amount} newDebt
+   * @returns
+   */
+  const checkRestart = (
+    oldCollateralAfter,
+    oldMaxDebt,
+    newCollateral,
+    newDebt,
+  ) => {
+    if (AmountMath.isGTE(oldCollateralAfter, newCollateral)) {
+      // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
+      // We can pro-rate maxDebt because the quote is either linear (price is
+      // unchanging) or super-linear (also called "convex"). Super-linear is from
+      // AMMs: selling less collateral would mean an even smalle price impact, so
+      // this is a conservative choice. `floorMultiply` because the debt ceiling
+      // should constrain more.
+      const runPerCollateral = makeRatioFromAmounts(
+        oldMaxDebt,
+        oldCollateralAfter,
+      );
+      const maxDebtAfter = floorMultiplyBy(newCollateral, runPerCollateral);
+      assert(
+        AmountMath.isGTE(maxDebtAfter, newDebt),
+        X`The requested debt ${q(
+          newDebt,
+        )} is more than the collateralization ratio allows: ${q(maxDebtAfter)}`,
+      );
+      // The `collateralAfter` can still cover the `newDebt`, so don't restart.
+      return false;
+    }
+    // The collateral went up. Restart if the debt *also* went up because
+    // the price quote might not apply at the higher numbers.
+    return !AmountMath.isGTE(oldMaxDebt, newDebt);
+  };
+
+  /**
    * Adjust principal and collateral (atomically for offer safety)
    *
    * @param {ZCFSeat} clientSeat
@@ -494,25 +534,20 @@ export const makeInnerVault = (
     const giveColl = proposal.give.Collateral || emptyCollateral;
     const wantColl = proposal.want.Collateral || emptyCollateral;
 
-    const targetCollateral = applyDelta(oldCollateral, giveColl, wantColl);
+    const oldCollateralAfter = applyDelta(oldCollateral, giveColl, wantColl);
     // max debt supported by current Collateral as modified by proposal
-    const maxDebtForOriginalTarget = await maxDebtFor(targetCollateral);
+    const oldMaxDebt = await maxDebtFor(oldCollateralAfter);
     assert(
       oldUpdater === state.outerUpdater,
       X`Transfer during vault adjustment`,
     );
     assertActive();
 
-    const priceOfCollateralInRun = makeRatioFromAmounts(
-      maxDebtForOriginalTarget,
-      targetCollateral,
-    );
-
     // After the AWAIT, we retrieve the vault's allocations again.
     // Get new balances after calling the priceAuthority, so we can compare
     // to the debt limit based on the new values.
     const currentCollateral = getCollateralAllocated(vaultSeat);
-    const collateralAfter = applyDelta(currentCollateral, giveColl, wantColl);
+    const newCollateral = applyDelta(currentCollateral, giveColl, wantColl);
 
     const currentDebt = getCurrentDebt();
     const giveRUN = AmountMath.min(proposal.give.RUN || emptyRUN, currentDebt);
@@ -523,37 +558,15 @@ export const makeInnerVault = (
     // then mint, reallocate, and burn.
     const { newDebt, fee, toMint } = loanFee(currentDebt, giveRUN, wantRUN);
 
-    const vaultCollateral = collateralAfter;
-
     trace('adjustBalancesHook', {
-      targetCollateralAmount: targetCollateral,
-      vaultCollateral,
+      oldCollateralAfter,
+      newCollateral,
       fee,
       toMint,
       newDebt,
     });
 
-    // If the collateral decreased, we pro-rate maxDebt
-    if (AmountMath.isGTE(targetCollateral, vaultCollateral)) {
-      // We can pro-rate maxDebt because the quote is either linear (price is
-      // unchanging) or super-linear (also called "convex". meaning it's an AMM.
-      // When the volume sold falls, the proceeds fall less than linearly, so
-      // this is a conservative choice.) floorMultiply because the debt ceiling
-      // should constrain more.
-      const maxDebtAfter = floorMultiplyBy(
-        vaultCollateral,
-        priceOfCollateralInRun,
-      );
-      assert(
-        AmountMath.isGTE(maxDebtAfter, newDebt),
-        X`The requested debt ${q(
-          newDebt,
-        )} is more than the collateralization ratio allows: ${q(maxDebtAfter)}`,
-      );
-    } else if (!AmountMath.isGTE(maxDebtForOriginalTarget, newDebt)) {
-      // When the re-checked collateral was larger than the original amount, we
-      // should restart, unless the new debt is less than the original target
-      // (in which case, we're fine to proceed with the reallocate)
+    if (checkRestart(oldCollateralAfter, oldMaxDebt, newCollateral, newDebt)) {
       return adjustBalancesHook(clientSeat);
     }
 
