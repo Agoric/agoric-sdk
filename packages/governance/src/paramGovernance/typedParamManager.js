@@ -18,14 +18,33 @@ import { ParamType } from './paramManager.js';
 const { details: X } = assert;
 
 /**
- *
- * @param {Record<Keyword, ParamDescription>} spec
+ * @template {Record<Keyword, ParamDescription>} T
+ * @typedef {{
+ *   [Property in keyof T as `get${string & Property}`]: () => T[Property]['value']
+ * }} Getters
+ */
+
+/**
+ * @template {Record<Keyword, ParamDescription>} T
+ * @typedef {{
+ *   [Property in keyof T as `update${string & Property}`]: (value: any) => void
+ * }} Updaters
+ */
+
+/**
+ * @template {Record<Keyword, ParamDescription>} T
+ * @param {T} spec
  * @param {ERef<ZoeService>} [zoe]
  */
 const makeParamManager = (spec, zoe) => {
   const namesToParams = makeStore('Parameter Name');
   const { publication, subscription } = makeSubscriptionKit();
-  const paramFunctions = {};
+  /** @type {Getters<spec>} */
+  // @ts-expect-error these get defined below
+  const getters = {};
+  /** @type {Updaters<spec>} */
+  // @ts-expect-error these get defined below
+  const updaters = {};
 
   // support for parameters that are copy objects
   const buildCopyParam = (name, value, assertion, type) => {
@@ -53,12 +72,14 @@ const makeParamManager = (spec, zoe) => {
       getType: () => type,
     });
 
+    // @ts-expect-error checker doesn't know that 'name' is a keyof T
+    getters[`get${name}`] = () => current;
     // CRUCIAL: here we're creating the update functions that can change the
     // values of the governed contract's parameters. We'll return the updateFns
     // to our caller. They must handle them carefully to ensure that they end up
     // in appropriate hands.
-    paramFunctions[`update${name}`] = setParamValue;
-    paramFunctions[`get${name}`] = () => current;
+    // @ts-expect-error checker doesn't know that 'name' is a keyof T
+    updaters[`update${name}`] = setParamValue;
     namesToParams.init(name, publicMethods);
   };
 
@@ -153,7 +174,8 @@ const makeParamManager = (spec, zoe) => {
     getSubscription: () => subscription,
     getVisibleValue,
     getInternalParamValue,
-    ...paramFunctions,
+    ...getters,
+    ...updaters,
   });
 };
 

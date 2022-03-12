@@ -101,6 +101,7 @@ test('params one installation', async t => {
     getBundle: () => ({ condensed: '() => {})' }),
   });
   paramManager.updateOneInst(handle2);
+  // @ts-expect-error FIXME overly deep type inspection
   t.deepEqual(paramManager.getOneInst(), handle2);
 
   t.deepEqual(
