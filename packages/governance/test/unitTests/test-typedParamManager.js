@@ -156,7 +156,7 @@ test('params one instance', async t => {
   );
 });
 
-test.skip('Invitation', async t => {
+test('Invitation', async t => {
   const drachmaKit = makeIssuerKit('drachma');
   const terms = harden({
     mmr: makeRatio(150n, drachmaKit.brand),
@@ -176,17 +176,18 @@ test.skip('Invitation', async t => {
 
   const drachmaBrand = drachmaKit.brand;
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
-  const paramManagerBuilder = makeParamManager(zoe)
-    .addBrand('Currency', drachmaBrand)
-    .addAmount('Amt', drachmaAmount);
-  // addInvitation is async, so it can't be part of the cascade.
-  await paramManagerBuilder.addInvitation('Invite', invitation);
-  const paramManager = paramManagerBuilder.build();
+  const paramManager = await makeParamManager(
+    {
+      Currency: { type: 'brand', value: drachmaBrand },
+      Amt: { type: 'amount', value: drachmaAmount },
+      Invite: { type: 'invitation', value: invitation },
+    },
+    zoe,
+  );
 
-  t.is(paramManager.getBrand('Currency'), drachmaBrand);
-  t.is(paramManager.getAmount('Amt'), drachmaAmount);
-  const invitationActualAmount =
-    paramManager.getInvitationAmount('Invite').value;
+  t.is(paramManager.getCurrency(), drachmaBrand);
+  t.is(paramManager.getAmt(), drachmaAmount);
+  const invitationActualAmount = paramManager.getInvite().value;
   t.is(invitationActualAmount, invitationAmount.value);
   t.is(invitationActualAmount[0].description, 'simple');
 

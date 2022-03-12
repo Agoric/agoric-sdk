@@ -1,22 +1,6 @@
 // @ts-check
 
-import { Far } from '@endo/marshal';
-import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { AmountMath } from '@agoric/ertp';
-import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
-import { Nat } from '@agoric/nat';
-import { makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
-
-import {
-  makeLooksLikeBrand,
-  makeAssertInstallation,
-  makeAssertInstance,
-  makeAssertBrandedRatio,
-} from './assertions.js';
-import { makeParamManagerBuilder, ParamType } from './paramManager.js';
-
-const { details: X } = assert;
+import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
  * @template {Record<Keyword, ParamDescription>} T
@@ -39,13 +23,33 @@ const { details: X } = assert;
 const builderMethodName = type =>
   `add${type[0].toUpperCase() + type.substring(1)}`;
 
+/** @type{Partial<Record<ParamType, boolean>>} */
+const isAsync = {
+  invitation: true,
+};
+
 /**
  * @see makeParamManagerSync
  * @template {Record<Keyword, ParamDescription>} T
  * @param {T} spec
  * @param {ERef<ZoeService>} [zoe]
  */
-const makeParamManager = async (spec, zoe) => {};
+const makeParamManager = async (spec, zoe) => {
+  const builder = makeParamManagerBuilder(zoe);
+
+  const promises = [];
+  for (const [name, { type, value }] of Object.entries(spec)) {
+    const add = builder[builderMethodName(type)];
+    if (isAsync[type]) {
+      promises.push(add(name, value));
+    } else {
+      add(name, value);
+    }
+  }
+  await Promise.all(promises);
+
+  return builder.build();
+};
 
 /**
  * @see makeParamManager
