@@ -351,7 +351,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       exitStatus = await chainSpawn([
         'add-genesis-account',
         addrs.rly2,
-        DELEGATE0_COINS,
+        PROVISION_COINS,
       ]);
       if (exitStatus) {
         return exitStatus;
