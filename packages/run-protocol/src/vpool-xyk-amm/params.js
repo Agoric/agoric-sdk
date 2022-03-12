@@ -3,18 +3,17 @@
 import {
   makeParamManagerBuilder,
   CONTRACT_ELECTORATE,
+  makeGovernedNat,
+  makeGovernedInvitation,
 } from '@agoric/governance';
 
 export const POOL_FEE_KEY = 'PoolFee';
 export const PROTOCOL_FEE_KEY = 'ProtocolFee';
 
-/**
- * @param {ERef<ZoeService>} zoe
- * @param {bigint} poolFeeBP
- * @param {bigint} protocolFeeBP
- * @param {Invitation} poserInvitation - invitation for the question poser
- * @returns {Promise<ParamManagerFull>}
- */
+const POOL_FEE_BP = 24n;
+const PROTOCOL_FEE_BP = 6n;
+
+/** @type {MakeAmmParamManager} */
 const makeParamManager = async (
   zoe,
   poolFeeBP,
@@ -29,6 +28,32 @@ const makeParamManager = async (
   return builder.build();
 };
 
-harden(makeParamManager);
+const makeAmmParams = (
+  electorateInvitationAmount,
+  protocolFeeBP,
+  poolFeeBP,
+) => {
+  return harden({
+    [POOL_FEE_KEY]: makeGovernedNat(poolFeeBP),
+    [PROTOCOL_FEE_KEY]: makeGovernedNat(protocolFeeBP),
+    [CONTRACT_ELECTORATE]: makeGovernedInvitation(electorateInvitationAmount),
+  });
+};
 
-export { makeParamManager };
+const makeAmmTerms = (
+  timer,
+  poserInvitationAmount,
+  protocolFeeBP = PROTOCOL_FEE_BP,
+  poolFeeBP = POOL_FEE_BP,
+) => ({
+  timer,
+  poolFeeBP,
+  protocolFeeBP,
+  main: makeAmmParams(poserInvitationAmount, protocolFeeBP, poolFeeBP),
+});
+
+harden(makeParamManager);
+harden(makeAmmTerms);
+harden(makeAmmParams);
+
+export { makeParamManager, makeAmmTerms, makeAmmParams };
