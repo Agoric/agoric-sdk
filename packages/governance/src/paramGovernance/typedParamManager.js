@@ -71,7 +71,7 @@ const makeParamManager = (spec, zoe) => {
     amount: (name, value) => {
       const assertAmount = a => {
         assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
-        return AmountMath.coerce(a.brand, a);
+        return AmountMath.coerce(value.brand, a);
       };
       buildCopyParam(name, value, assertAmount, ParamType.AMOUNT);
     },
@@ -134,14 +134,22 @@ const makeParamManager = (spec, zoe) => {
   const getInternalParamValue = name =>
     namesToParams.get(name).getInternalValue();
 
-  const mgr = { getParams: () => spec, getSubscription: () => subscription };
+  const getParams = () => {
+    /** @type {Record<Keyword,ParamDescription>} */
+    const descriptions = {};
+    for (const [name, param] of namesToParams.entries()) {
+      descriptions[name] = param.makeDescription();
+    }
+    return harden(descriptions);
+  };
+
   for (const [name, desc] of Object.entries(spec)) {
     const { type, value } = desc;
     const add = adders[type];
     add(name, value);
   }
   return Far('param manager', {
-    getParams: () => spec, // FIXME
+    getParams,
     getSubscription: () => subscription,
     getVisibleValue,
     getInternalParamValue,
