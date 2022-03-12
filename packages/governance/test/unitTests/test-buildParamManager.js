@@ -20,6 +20,7 @@ test('two parameters', t => {
     .build();
 
   t.is(paramManager.getBrand('Currency'), drachmaBrand);
+  t.is(paramManager.getCurrency(), drachmaBrand);
   t.deepEqual(
     paramManager.getAmount('Amt'),
     AmountMath.make(drachmaBrand, 37n),
@@ -40,10 +41,12 @@ test('getParams', t => {
     paramManager.getParams(),
     harden({
       Currency: {
+        name: 'Currency',
         type: ParamType.BRAND,
         value: drachmaBrand,
       },
       Amt: {
+        name: 'Amt',
         type: ParamType.AMOUNT,
         value: drachmas,
       },
@@ -127,7 +130,6 @@ test('Branded Amount', async t => {
 });
 
 test('params one installation', async t => {
-  const installationKey = 'Installation';
   // this is sufficient for the current type check. When we add
   // isInstallation() (#3344), we'll need to make a mockZoe.
   const installationHandle = Far('fake Installation', {
@@ -135,36 +137,32 @@ test('params one installation', async t => {
   });
 
   const paramManager = makeParamManagerBuilder()
-    .addInstallation('Installation', installationHandle)
+    .addInstallation('PName', installationHandle)
     .build();
 
-  t.deepEqual(
-    paramManager.getInstallation(installationKey),
-    installationHandle,
-  );
+  t.deepEqual(paramManager.getInstallation('PName'), installationHandle);
   t.throws(
-    // @ts-ignore updateInstallation is a generated name
-    () => paramManager.updateInstallation(18.1),
+    () => paramManager.updatePName(18.1),
     {
-      message: 'value for "Installation" must be an Installation, was 18.1',
+      message: 'value for "PName" must be an Installation, was 18.1',
     },
     'value should be an installation',
   );
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
-  // @ts-ignore updateInstallation is a generated name
-  paramManager.updateInstallation(handle2);
-  t.deepEqual(paramManager.getInstallation(installationKey), handle2);
+  paramManager.updatePName(handle2);
+  t.deepEqual(paramManager.getInstallation('PName'), handle2);
 
-  t.throws(() => paramManager.getNat('Installation'), {
-    message: '"Installation" is not "nat"',
+  t.throws(() => paramManager.getNat('PName'), {
+    message: '"PName" is not "nat"',
   });
 
   t.deepEqual(
     paramManager.getParams(),
     harden({
-      Installation: {
+      PName: {
+        name: 'PName',
         type: ParamType.INSTALLATION,
         value: handle2,
       },
@@ -173,33 +171,32 @@ test('params one installation', async t => {
 });
 
 test('params one instance', async t => {
-  const instanceKey = 'Instance';
+  const handleType = 'Instance';
   // this is sufficient for the current type check. When we add
   // isInstallation() (#3344), we'll need to make a mockZoe.
-  const instanceHandle = makeHandle(instanceKey);
+  const instanceHandle = makeHandle(handleType);
 
   const paramManager = makeParamManagerBuilder()
-    .addInstance(instanceKey, instanceHandle)
+    .addInstance('PName', instanceHandle)
     .build();
 
-  t.deepEqual(paramManager.getInstance(instanceKey), instanceHandle);
+  t.deepEqual(paramManager.getInstance('PName'), instanceHandle);
   t.throws(
-    // @ts-ignore updateInstance is a generated name
-    () => paramManager.updateInstance(18.1),
+    () => paramManager.updatePName(18.1),
     {
-      message: 'value for "Instance" must be an Instance, was 18.1',
+      message: 'value for "PName" must be an Instance, was 18.1',
     },
     'value should be an instance',
   );
-  const handle2 = makeHandle(instanceKey);
-  // @ts-ignore updateInstance is a generated name
-  paramManager.updateInstance(handle2);
-  t.deepEqual(paramManager.getInstance(instanceKey), handle2);
+  const handle2 = makeHandle(handleType);
+  paramManager.updatePName(handle2);
+  t.deepEqual(paramManager.getInstance('PName'), handle2);
 
   t.deepEqual(
     paramManager.getParams(),
     harden({
-      Instance: {
+      PName: {
+        name: 'PName',
         type: ParamType.INSTANCE,
         value: handle2,
       },
@@ -248,14 +245,17 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
+        name: 'Amt',
         type: ParamType.AMOUNT,
         value: drachmaAmount,
       },
       Currency: {
+        name: 'Currency',
         type: ParamType.BRAND,
         value: drachmaBrand,
       },
       Invite: {
+        name: 'Invite',
         type: ParamType.INVITATION,
         value: invitationAmount,
       },

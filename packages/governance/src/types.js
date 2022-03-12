@@ -424,9 +424,13 @@
  */
 
 /**
- * @typedef {{ [updater: string]: (arg: ParamValue) => void
- *  }} ParamManagerUpdaters
- * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerFull
+ * These are typed `any` because the builder pattern of paramManager makes it very
+ * complicated for the type system to know the set of param-specific functions
+ * returned by `.build()`. Instead we let paramManager create the desired methods
+ * and use typedParamManager to create a version that includes the static types.
+ *
+ * @typedef { Record<string, any>} ParamManagerGettersAndUpdaters
+ * @typedef {ParamManagerBase & ParamManagerGettersAndUpdaters} ParamManagerFull
  */
 
 /**
