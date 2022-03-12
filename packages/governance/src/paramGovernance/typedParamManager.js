@@ -12,6 +12,7 @@ import {
   makeLooksLikeBrand,
   makeAssertInstallation,
   makeAssertInstance,
+  makeAssertBrandedRatio,
 } from './assertions.js';
 import { ParamType } from './paramManager.js';
 
@@ -126,7 +127,8 @@ const makeParamManager = (spec, zoe) => {
     },
 
     ratio: (name, value) => {
-      buildCopyParam(name, value, assertIsRatio, ParamType.RATIO);
+      const assertBrandedRatio = makeAssertBrandedRatio(name, value);
+      buildCopyParam(name, value, assertBrandedRatio, ParamType.RATIO);
     },
 
     relativeTime: (name, value) => {
