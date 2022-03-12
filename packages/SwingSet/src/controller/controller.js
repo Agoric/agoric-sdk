@@ -132,7 +132,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  *   slogSender?: (obj: any, jsonObj: string) => void,
  *   testTrackDecref?: unknown,
  *   warehousePolicy?: { maxVatsOnline?: number },
- *   overrideVatManagerOptions?: { consensusMode?: boolean },
+ *   overrideVatManagerOptions?: unknown,
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>
  * }} runtimeOptions
@@ -445,8 +445,7 @@ export async function makeSwingsetController(
  * @param {{ hostStorage?: HostStore, env?: Record<string, string>, verbose?:
  *   boolean, kernelBundles?: Record<string, string>, debugPrefix?: string,
  *   slogCallbacks?: unknown, testTrackDecref?: unknown, warehousePolicy?: {
- *   maxVatsOnline?: number }, overrideVatManagerOptions?: { consensusMode?:
- *   boolean }, slogFile?: string, }} runtimeOptions
+ *   maxVatsOnline?: number }, slogFile?: string }} runtimeOptions
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(

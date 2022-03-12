@@ -17,7 +17,6 @@ export function makeNodeSubprocessFactory(tools) {
 
   function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
     const {
-      consensusMode,
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
@@ -108,7 +107,6 @@ export function makeNodeSubprocessFactory(tools) {
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
-      consensusMode,
     ]);
 
     function shutdown() {
