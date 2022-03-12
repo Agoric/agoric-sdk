@@ -61,7 +61,7 @@ const isAsync = {
  * @see makeParamManagerSync
  * @template {Record<Keyword, AsyncSpecTuple | SyncSpecTuple>} T
  * @param {T} spec
- * @param {ERef<ZoeService>} [zoe]
+ * @param {ERef<ZoeService<unknown>>} [zoe]
  * @returns {Promise<TypedParamManager<T>>}
  */
 const makeParamManager = async (spec, zoe) => {

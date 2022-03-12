@@ -110,13 +110,13 @@ const start = async zcf => {
     electionManager: zcf.getInstance(),
   });
 
-  /** @type {StartInstance<CF>} */
-  const hackStartInstance = E(zoe).startInstance;
+  /** @type {StartInstance<CF>} cast */
+  const startInstance = E(zoe).startInstance;
   const {
     creatorFacet: governedCF,
     instance: governedInstance,
     publicFacet: governedPF,
-  } = await hackStartInstance(
+  } = await startInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
     augmentedTerms,
