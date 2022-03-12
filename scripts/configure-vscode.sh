@@ -92,7 +92,7 @@ for file in .vscode/launch.json .vscode/settings.json; do
 		else
 			printf "The file %s.new has these changes:\n\n" $file
 			git --no-pager diff --no-index $file $file.new
-			printf "\n\nTo overwrite yours:\n\n  mv %s.new %s\n\n" $file
+			printf "\n\nTo overwrite yours:\n\n  mv %s.new %s\n\n" $file $file
 		fi
 	else
 		mv $file.new $file
