@@ -947,7 +947,6 @@ test('dropImports', async t => {
     syscall,
     'vatA',
     {},
-    {},
     undefined,
     false,
     false,
@@ -1087,7 +1086,6 @@ test('buildVatNamespace not called until after startVat', async t => {
   const ls = makeLiveSlots(
     syscall,
     'vatA',
-    {},
     {},
     undefined,
     false,

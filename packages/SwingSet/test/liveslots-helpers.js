@@ -122,7 +122,6 @@ export async function makeDispatch(
     syscall,
     vatID,
     {},
-    {},
     cacheSize,
     enableDisavow,
     false,

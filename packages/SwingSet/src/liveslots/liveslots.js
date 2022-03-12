@@ -34,7 +34,6 @@ const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to 
  * @param {boolean} enableDisavow
  * @param {boolean} enableVatstore
  * @param {*} vatPowers
- * @param {*} vatParameters
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
  * @param {Console} console
@@ -49,7 +48,6 @@ function build(
   enableDisavow,
   enableVatstore,
   vatPowers,
-  vatParameters,
   gcTools,
   console,
   buildVatNamespace,
@@ -1075,19 +1073,9 @@ function build(
     assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
   }
 
-  async function startVat() {
+  async function startVat(vatParameters) {
     assert(!didStartVat);
     didStartVat = true;
-    // Note that unlike dispatch.deliver or dispatch.notify we didn't
-    // deserialize any data in the course of getting here, so there's no
-    // opportunity for GC-based meter divergence.  However, we were invoked by
-    // `dispatchToUserspace` which in turn is wrapped by `unmeteredDispatch` so
-    // we need to consume that first (unmetered) turn it introduced to ensure
-    // that all vat module code runs with metering.  At some point we will add
-    // `vatParameters` to this event, which will reintroduce unserialization
-    // that will happen during the unmetered turn and the following line, which
-    // is a bit of an ungly hack, should be removed.
-    await Promise.resolve();
 
     // Build the `vatPowers` provided to `buildRootObject`. We include
     // vatGlobals and inescapableGlobalProperties to make it easier to write
@@ -1150,9 +1138,12 @@ function build(
       });
     }
 
+    // TODO: unserialize(vatParameters)
+
     // Below this point, user-provided code might crash or overrun a meter, so
     // any prior-to-user-code setup that can be done without reference to the
     // content of the user-provided code should be above this point.
+    await Promise.resolve();
 
     // syscalls/VatData/makeKind must be enabled before invoking buildVatNamespace
     const vatNS = await buildVatNamespace(
@@ -1220,7 +1211,8 @@ function build(
         break;
       }
       case 'startVat': {
-        result = startVat();
+        const [vatParameters] = args;
+        result = startVat(vatParameters);
         break;
       }
       default:
@@ -1320,7 +1312,6 @@ function build(
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
- * @param {*} vatParameters
  * @param {number} cacheSize  Upper bound on virtual object cache size
  * @param {boolean} enableDisavow
  * @param {boolean} enableVatstore
@@ -1356,7 +1347,6 @@ export function makeLiveSlots(
   syscall,
   forVatID = 'unknown',
   vatPowers = harden({}),
-  vatParameters = harden({}),
   cacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
   enableDisavow = false,
   enableVatstore = false,
@@ -1375,7 +1365,6 @@ export function makeLiveSlots(
     enableDisavow,
     enableVatstore,
     allVatPowers,
-    vatParameters,
     gcTools,
     liveSlotsConsole,
     buildVatNamespace,
@@ -1397,7 +1386,6 @@ export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
     DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
     false,
     false,
-    {},
     {},
     gcTools,
     console,
