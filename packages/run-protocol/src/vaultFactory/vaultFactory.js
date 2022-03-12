@@ -104,7 +104,7 @@ export const start = async (zcf, privateArgs) => {
 
   const zoe = zcf.getZoeService();
 
-  /** @type { Store<Brand, VaultParamManager> } */
+  /** @type { Store<Brand, import('./params.js').VaultParamManager> } */
   const vaultParamManagers = makeScalarMap('brand');
 
   /** @type {AddVaultType} */

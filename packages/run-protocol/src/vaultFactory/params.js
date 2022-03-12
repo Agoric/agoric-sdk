@@ -4,7 +4,6 @@ import './types.js';
 
 import {
   makeGovernedInvitation,
-  makeParamManagerBuilder,
   CONTRACT_ELECTORATE,
   makeParamManagerSync,
   makeParamManager,
@@ -28,16 +27,17 @@ const makeElectorateParams = electorateInvitationAmount => {
 
 /**
  * @param {Rates} rates
- * @returns {VaultParamManager}
  */
-const makeVaultParamManager = rates => {
-  // @ts-expect-error until makeParamManagerBuilder can be generic */
-  return makeParamManagerBuilder()
-    .addBrandedRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
-    .addBrandedRatio(INTEREST_RATE_KEY, rates.interestRate)
-    .addBrandedRatio(LOAN_FEE_KEY, rates.loanFee)
-    .build();
-};
+const makeVaultParamManager = rates =>
+  makeParamManagerSync({
+    [LIQUIDATION_MARGIN_KEY]: {
+      type: 'brandedRatio',
+      value: rates.liquidationMargin,
+    },
+    [INTEREST_RATE_KEY]: { type: 'brandedRatio', value: rates.interestRate },
+    [LOAN_FEE_KEY]: { type: 'brandedRatio', value: rates.loanFee },
+  });
+/** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -80,7 +80,6 @@ const makeGovernedTerms = (
     [RECORDING_PERIOD_KEY]: { type: 'nat', value: loanTiming.recordingPeriod },
   });
 
-  // FIXME support branded ratios
   const rateParamMgr = makeVaultParamManager(rates);
 
   return harden({

@@ -17,7 +17,7 @@ const { details: X, quote: q } = assert;
  *  parameter values, and the governance guarantees only hold if they're not
  *  used directly by the governed contract.
  *
- * @param {ContractFacet<{electionManager: VoteOnParamChange, main: Record<string, ParamDescription>}>} zcf
+ * @param {ContractFacet<{electionManager: VoteOnParamChange, main: Record<string, ParamRecord>}>} zcf
  * @param {AnyParamManager} paramManager
  * @returns {ParamGovernorBundle}
  */

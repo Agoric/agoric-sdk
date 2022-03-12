@@ -49,9 +49,8 @@ test('Amount', async t => {
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand, 250n));
 
-  // FIXME decide whether we need the optional brand check on Amount and Ratio, and if so how to express
-  // paramManager.updateShimmer(AmountMath.make(brand2, 300n));
-  // t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand2, 300n));
+  paramManager.updateShimmer(AmountMath.make(brand2, 300n));
+  t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand2, 300n));
 
   // @ts-expect-error
   t.throws(() => paramManager.updateShimmer('fear,loathing'), {
@@ -59,11 +58,11 @@ test('Amount', async t => {
   });
 });
 
-test.skip('Branded Amount', async t => {
+test('Branded Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerSync({
-    Shimmer: { type: 'amount', value: AmountMath.make(floorBrand, 2n) },
+    Shimmer: { type: 'brandedAmount', value: AmountMath.make(floorBrand, 2n) },
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 2n));
 
@@ -251,13 +250,13 @@ test('Ratio', async t => {
   });
 });
 
-test.skip('Branded Ratio', async t => {
+test('Branded Ratio', async t => {
   const unitlessBrand = makeIssuerKit('unitless').brand;
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerSync({
     Acres: { type: 'nat', value: 50n },
-    GoldenRatio: { type: 'ratio', value: ratio },
+    GoldenRatio: { type: 'brandedRatio', value: ratio },
   });
   t.is(paramManager.getGoldenRatio(), ratio);
 

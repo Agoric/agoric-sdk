@@ -139,20 +139,6 @@
  */
 
 /**
- * @typedef {Object} VaultParamManager
- * @property {() => {
- *  InterestRate: ParamRecord<'ratio'>,
- *  LiquidationMargin: ParamRecord<'ratio'>,
- *  LoanFee: ParamRecord<'ratio'>,
- * }} getParams
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(margin: Ratio) => void} updateLiquidationMargin
- * @property {(ratio: Ratio) => void} updateInterestRate
- * @property {(ratio: Ratio) => void} updateLoanFee
- */
-
-/**
  * @callback GetGovernedVaultParams
  * @returns {{
  *  InterestRate: ParamRecord<'ratio'>,

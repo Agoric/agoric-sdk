@@ -20,7 +20,7 @@
  */
 
 /**
- * @typedef { 'amount' | 'brand' | 'instance' | 'installation' | 'invitation' |
+ * @typedef { 'amount' | 'brand' | 'brandedAmount'| 'brandedRatio'  | 'instance' | 'installation' | 'invitation' |
  *   'nat' | 'ratio' | 'relativeTime' | 'string' | 'unknown' } ParamType
  */
 
@@ -42,6 +42,8 @@
  * @template {ParamType} T
  * @typedef {T extends 'amount' ? Amount :
  * T extends 'brand' ? Brand :
+ * T extends 'brandedAmount' ? Amount :
+ * T extends 'brandedRatio' ? Ratio :
  * T extends 'installation' ? Installation:
  * T extends 'instance' ? Instance :
  * T extends 'invitation' ? Invitation :
@@ -55,22 +57,8 @@
  */
 
 /**
- * @template {ParamType} T
+ * @template {ParamType} [T=ParamType]
  * @typedef {{ type: T, value: ParamValueForType<T> }} ParamRecord<T>
- */
-
-/**
- * @typedef {ParamRecord<'amount'> |
- *   ParamRecord<'brand'> |
- *   ParamRecord<'installation'> |
- *   ParamRecord<'instance'> |
- *   ParamRecord<'invitation'> |
- *   ParamRecord<'nat'> |
- *   ParamRecord<'ratio'> |
- *   ParamRecord<'relativeTime'> |
- *   ParamRecord<'string'> |
- *   ParamRecord<'unknown'>
- * } ParamDescription
  */
 
 /**
@@ -401,12 +389,12 @@
 /**
  * @callback GetParams - getParams() retrieves a Record containing
  *   keyword pairs with descriptions of parameters under governance.
- * @returns {Record<Keyword,ParamDescription>}
+ * @returns {Record<Keyword,ParamRecord>}
  */
 
 /**
  * @typedef {Object} ParamManagerBase
- * @property {() => Record<Keyword, ParamDescription>} getParams
+ * @property {() => Record<Keyword, ParamRecord>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -420,7 +408,7 @@
  *   most types, the visible value is the same as proposedValue. For Invitations
  *   the visible value is the amount of the invitation.
  * @property {(name: string) => Promise<Invitation>} getInternalParamValue
- * @property {() => Subscription<ParamDescription>} getSubscription
+ * @property {() => Subscription<ParamRecord>} getSubscription
  */
 
 /**
@@ -434,7 +422,7 @@
  */
 
 /**
- * @typedef {Iterable<ParamDescription>} ParamDescriptions
+ * @typedef {Iterable<ParamRecord>} ParamRecords
  */
 
 /**
@@ -455,7 +443,7 @@
  *   instantiated inside the contract, the contract has synchronous access to
  *   the values, and clients of the contract can verify that a ContractGovernor
  *   can change the values in a legible way.
- * @param {ParamDescriptions} paramDescriptions
+ * @param {ParamRecords} paramDescriptions
  * @returns {AnyParamManager}
  */
 
@@ -535,7 +523,7 @@
 
 /**
  * @typedef {Object} GovernedPublicFacet
- * @property {() => Subscription<ParamDescription>} getSubscription
+ * @property {() => Subscription<ParamRecord>} getSubscription
  * @property {() => VoteOnParamChange} getContractGovernor
  * @property {GetParams} getGovernedParams - get descriptions of
  *   all the governed parameters

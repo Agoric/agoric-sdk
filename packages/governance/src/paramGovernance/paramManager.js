@@ -25,6 +25,8 @@ const { details: X } = assert;
 const ParamType = /** @type {const} */ ({
   AMOUNT: 'amount',
   BRAND: 'brand',
+  BRANDED_AMOUNT: 'brandedAmount',
+  BRANDED_RATIO: 'brandedRatio',
   INSTANCE: 'instance',
   INSTALLATION: 'installation',
   INVITATION: 'invitation',
@@ -267,7 +269,7 @@ const makeParamManagerBuilder = zoe => {
   };
 
   const getParams = () => {
-    /** @type {Record<Keyword,ParamDescription>} */
+    /** @type {Record<Keyword,ParamRecord>} */
     const descriptions = {};
     for (const [name, param] of namesToParams.entries()) {
       console.log(name, param);

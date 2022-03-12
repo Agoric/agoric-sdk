@@ -3,21 +3,21 @@
 import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
- * @template {Record<Keyword, ParamDescription>} T
+ * @template {Record<Keyword, ParamRecord>} T
  * @typedef {{
  *   [Property in keyof T as `get${string & Property}`]: () => T[Property]['value']
  * }} Getters
  */
 
 /**
- * @template {Record<Keyword, ParamDescription>} T
+ * @template {Record<Keyword, ParamRecord>} T
  * @typedef {{
  *   [Property in keyof T as `update${string & Property}`]: (value: T[Property]['value']) => void
  * }} Updaters
  */
 
 /**
- * @template {Record<Keyword, ParamDescription>} T
+ * @template {Record<Keyword, ParamRecord>} T
  * @typedef {ParamManagerBase & Getters<T> & Updaters<T>} TypedParamManager
  */
 
@@ -34,7 +34,7 @@ const isAsync = {
 
 /**
  * @see makeParamManagerSync
- * @template {Record<Keyword, ParamDescription>} T
+ * @template {Record<Keyword, ParamRecord>} T
  * @param {T} spec
  * @param {ERef<ZoeService>} [zoe]
  * @returns {Promise<TypedParamManager<T>>}
@@ -59,7 +59,7 @@ const makeParamManager = async (spec, zoe) => {
 
 /**
  * @see makeParamManager
- * @template {Record<Keyword, ParamDescription>} T
+ * @template {Record<Keyword, ParamRecord>} T
  * @param {T} spec
  * @returns {TypedParamManager<T>}
  */
