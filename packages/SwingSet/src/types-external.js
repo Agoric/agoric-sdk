@@ -33,7 +33,6 @@ export {};
  *
  * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' | 'xs-worker-no-gc' } ManagerType
  * @typedef {{
- *   consensusMode: boolean,
  *   enablePipelining?: boolean,
  *   managerType: ManagerType,
  *   gcEveryCrank?: boolean,

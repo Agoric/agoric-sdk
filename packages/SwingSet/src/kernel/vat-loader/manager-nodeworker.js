@@ -37,7 +37,6 @@ export function makeNodeWorkerVatManagerFactory(tools) {
 
   function createFromBundle(vatID, bundle, managerOptions, vatSyscallHandler) {
     const {
-      consensusMode,
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
@@ -113,7 +112,6 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       virtualObjectCacheSize,
       enableDisavow,
       enableVatstore,
-      consensusMode,
     ]);
 
     function deliverToWorker(delivery) {

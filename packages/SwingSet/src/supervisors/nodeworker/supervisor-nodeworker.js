@@ -45,13 +45,8 @@ parentPort.on('message', ([type, ...margs]) => {
     workerLog(`got start`);
     sendUplink(['gotStart']);
   } else if (type === 'setBundle') {
-    const [
-      bundle,
-      virtualObjectCacheSize,
-      enableDisavow,
-      enableVatstore,
-      consensusMode,
-    ] = margs;
+    const [bundle, virtualObjectCacheSize, enableDisavow, enableVatstore] =
+      margs;
 
     function testLog(...args) {
       sendUplink(['testLog', ...args]);
@@ -85,14 +80,6 @@ parentPort.on('message', ([type, ...margs]) => {
         const log = logger[level];
         assert.typeof(log, 'function', X`logger[${level}] must be a function`);
         return (...args) => {
-          // We have to dynamically wrap the consensus mode so that it can change
-          // during the lifetime of the supervisor (which when snapshotting, is
-          // restored to its current heap across restarts, not actually stopping
-          // until the vat is terminated).
-          if (consensusMode) {
-            return;
-          }
-
           log(...args);
         };
       };

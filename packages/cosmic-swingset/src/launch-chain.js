@@ -35,7 +35,7 @@ async function buildSwingset(
   hostStorage,
   vatconfig,
   argv,
-  { consensusMode, debugName = undefined, slogCallbacks, slogFile, slogSender },
+  { debugName = undefined, slogCallbacks, slogFile, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   let config = await loadSwingsetConfigFile(vatconfig);
@@ -79,7 +79,6 @@ async function buildSwingset(
     hostStorage,
     deviceEndowments,
     {
-      overrideVatManagerOptions: { consensusMode },
       slogCallbacks,
       slogFile,
       slogSender,
@@ -151,7 +150,6 @@ export async function launch({
   metricsProvider = DEFAULT_METER_PROVIDER,
   slogFile = undefined,
   slogSender,
-  consensusMode = true,
   mapSize = DEFAULT_LMDB_MAP_SIZE,
 }) {
   console.info('Launching SwingSet kernel');
@@ -184,7 +182,6 @@ export async function launch({
       slogCallbacks,
       slogFile,
       slogSender,
-      consensusMode,
     },
   );
 

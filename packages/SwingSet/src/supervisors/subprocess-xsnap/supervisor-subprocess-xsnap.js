@@ -180,16 +180,12 @@ function makeWorker(port) {
   /** @type { ((delivery: VatDeliveryObject) => Promise<VatDeliveryResult>) | null } */
   let dispatch = null;
 
-  /** @type {unknown} */
-  let currentConsensusMode;
-
   /**
    * @param {unknown} vatID
    * @param {unknown} bundle
    * @param {unknown} virtualObjectCacheSize
    * @param {boolean} enableDisavow
    * @param {boolean} enableVatstore
-   * @param {boolean} consensusMode
    * @param {boolean} [gcEveryCrank]
    * @returns { Promise<Tagged> }
    */
@@ -199,12 +195,8 @@ function makeWorker(port) {
     virtualObjectCacheSize,
     enableDisavow,
     enableVatstore,
-    consensusMode,
     gcEveryCrank,
   ) {
-    // Enable or disable the consensus mode according to current settings.
-    currentConsensusMode = consensusMode;
-
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
     function syscallToManager(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
@@ -255,14 +247,6 @@ function makeWorker(port) {
           port.send([dst, level, ...args]);
         };
         return (...args) => {
-          // We have to dynamically wrap the consensus mode so that it can change
-          // during the lifetime of the supervisor (which when snapshotting, is
-          // restored to its current heap across restarts, not actually stopping
-          // until the vat is terminated).
-          if (currentConsensusMode) {
-            return;
-          }
-
           // Use the causal console, but output to the port.
           //
           // FIXME: This is a hack until the start compartment can create
@@ -328,22 +312,19 @@ function makeWorker(port) {
         assert(!dispatch, 'cannot setBundle again');
         const enableDisavow = !!args[3];
         const enableVatstore = !!args[4];
-        const consensusMode = !!args[5];
-        const gcEveryCrank = args[6] === undefined ? true : !!args[6];
+        const gcEveryCrank = args[5] === undefined ? true : !!args[5];
         return setBundle(
           args[0],
           args[1],
           args[2],
           enableDisavow,
           enableVatstore,
-          consensusMode,
           gcEveryCrank,
         );
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');
-        const [vatDeliveryObject, consensusMode] = args;
-        currentConsensusMode = consensusMode;
+        const [vatDeliveryObject] = args;
         insistVatDeliveryObject(vatDeliveryObject);
         return dispatch(vatDeliveryObject);
       }
