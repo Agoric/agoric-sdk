@@ -95,8 +95,12 @@ const { quote: q, details: X } = assert;
  * those internal methods, and reveals the original AMM creatorFacet to its own
  * creator.
  *
- * @param {ContractFacet<AMMTerms>} zcf
- * @param {{initialPoserInvitation: Payment}} privateArgs
+ * @type ContractStartFn<
+ * XYKAMMPublicFacet,
+ * undefined,
+ * AMMTerms,
+ * {initialPoserInvitation: Payment}
+ * >
  */
 const start = async (zcf, privateArgs) => {
   /**
@@ -246,8 +250,6 @@ const start = async (zcf, privateArgs) => {
     centralBrand,
   );
 
-  /** @type {XYKAMMPublicFacet} */
-  // @ts-ignore wrapPublicFacet includes all the methods that are passed in.
   const publicFacet = wrapPublicFacet(
     Far('AMM public facet', {
       addPool,
@@ -275,6 +277,7 @@ const start = async (zcf, privateArgs) => {
       makeCollectFeesInvitation,
     }),
   );
+  // @ts-expect-error wrapped public facet not remotable. ??? should it be?
   return harden({ publicFacet, creatorFacet });
 };
 
