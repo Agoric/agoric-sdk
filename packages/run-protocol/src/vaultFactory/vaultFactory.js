@@ -196,18 +196,6 @@ export const start = async (zcf, privateArgs) => {
   // bookkeeping. It's needed in tests.
   const getRewardAllocation = () => rewardPoolSeat.getCurrentAllocation();
 
-  const getRatioParamState = paramDesc => {
-    return vaultParamManagers
-      .get(paramDesc.collateralBrand)
-      .getRatio(paramDesc.parameterName);
-  };
-
-  const getNatParamState = paramDesc => {
-    return vaultParamManagers
-      .get(paramDesc.collateralBrand)
-      .getNat(paramDesc.parameterName);
-  };
-
   const getGovernedParams = paramDesc => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
@@ -218,8 +206,6 @@ export const start = async (zcf, privateArgs) => {
     makeVaultInvitation,
     getCollaterals,
     getRunIssuer: () => runIssuer,
-    getNatParamState,
-    getRatioParamState,
     getGovernedParams,
     getContractGovernor: () => governorPublic,
     getInvitationAmount: electorateParamManager.getInvitationAmount,
