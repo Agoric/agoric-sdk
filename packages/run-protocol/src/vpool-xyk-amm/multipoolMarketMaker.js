@@ -1,10 +1,10 @@
 // @ts-check
 
-import { makeWeakStore, keyEQ } from '@agoric/store';
+import { makeWeakStore } from '@agoric/store';
 import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
+import { handleParamGovernance } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
@@ -125,7 +125,6 @@ const start = async (zcf, privateArgs) => {
     main: {
       [POOL_FEE_KEY]: poolFeeParam,
       [PROTOCOL_FEE_KEY]: protocolFeeParam,
-      [CONTRACT_ELECTORATE]: electorateParam,
     },
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
@@ -151,18 +150,10 @@ const start = async (zcf, privateArgs) => {
     )}`,
   );
 
-  const { wrapPublicFacet, wrapCreatorFacet, getNat, getInvitationAmount } =
-    handleParamGovernance(zcf, paramManager);
-
-  const electorateInvAmt = getInvitationAmount(CONTRACT_ELECTORATE);
-  assert(
-    keyEQ(electorateInvAmt, electorateParam.value),
-    X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
+  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
+    zcf,
+    paramManager,
   );
-
-  // Every access to these values will get them from the paramManager
-  const getPoolFeeBP = () => getNat(POOL_FEE_KEY);
-  const getProtocolFeeBP = () => getNat(PROTOCOL_FEE_KEY);
 
   /** @type {WeakStore<Brand,XYKPool>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');
@@ -185,8 +176,8 @@ const start = async (zcf, privateArgs) => {
     centralBrand,
     timer,
     quoteIssuerKit,
-    getProtocolFeeBP,
-    getPoolFeeBP,
+    paramManager.getProtocolFee,
+    paramManager.getPoolFee,
     protocolSeat,
   );
   const getPoolAllocation = brand => {
@@ -212,8 +203,8 @@ const start = async (zcf, privateArgs) => {
         zcf,
         getPool(brandIn),
         getPool(brandOut),
-        getProtocolFeeBP,
-        getPoolFeeBP,
+        paramManager.getProtocolFee,
+        paramManager.getPoolFee,
         protocolSeat,
       );
     }

@@ -17,14 +17,15 @@ const { details: X, quote: q } = assert;
  *  parameter values, and the governance guarantees only hold if they're not
  *  used directly by the governed contract.
  *
+ * @template T
  * @param {ContractFacet<{electionManager: VoteOnParamChange, main: Record<string, ParamRecord>}>} zcf
- * @param {AnyParamManager} paramManager
- * @returns {ParamGovernorBundle}
+ * @param {import('./paramGovernance/typedParamManager').TypedParamManager<T>} paramManager
  */
 const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
   const governedParams = terms.main;
   const { electionManager } = terms;
+  const paramGetters = paramManager.asGetters();
 
   assert(
     keyEQ(governedParams, paramManager.getParams()),
@@ -46,11 +47,11 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @param {T} originalPublicFacet
-   * @returns {T & GovernedPublicFacet}
-   * @template T
+   * @template PF
+   * @param {PF} originalPublicFacet
+   * @returns {PF & GovernedPublicFacet}
    */
-  const wrapPublicFacet = (originalPublicFacet = /** @type {T} */ ({})) => {
+  const wrapPublicFacet = (originalPublicFacet = /** @type {PF} */ ({})) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
@@ -61,9 +62,9 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @param {T} originalCreatorFacet
-   * @returns {T & LimitedCreatorFacet}
-   * @template T
+   * @template CF
+   * @param {CF} originalCreatorFacet
+   * @returns {CF & LimitedCreatorFacet}
    */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
     return Far('governedContract creator facet', {
@@ -73,12 +74,12 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @param {T} originalCreatorFacet
-   * @returns { GovernedCreatorFacet<T> }
-   * @template T
+   * @template CF
+   * @param {CF} originalCreatorFacet
+   * @returns { GovernedCreatorFacet<CF> }
    */
   const wrapCreatorFacet = (
-    originalCreatorFacet = Far('creatorFacet', /** @type {T} */ ({})),
+    originalCreatorFacet = Far('creatorFacet', /** @type {CF} */ ({})),
   ) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
@@ -95,7 +96,7 @@ const handleParamGovernance = (zcf, paramManager) => {
   return harden({
     wrapPublicFacet,
     wrapCreatorFacet,
-    ...typedAccessors,
+    ...paramManager.asGetters(),
   });
 };
 harden(handleParamGovernance);

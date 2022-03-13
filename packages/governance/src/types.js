@@ -565,21 +565,6 @@
  */
 
 /**
- * @typedef {Object} ParamGovernorBundle
- * @property {WrapPublicFacet<unknown>} wrapPublicFacet
- * @property {WrapCreatorFacet<unknown>} wrapCreatorFacet
- * @property {(name: string) => Amount} getAmount
- * @property {(name: string) => Brand} getBrand
- * @property {(name: string) => Instance} getInstance
- * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount} getInvitationAmount
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(name: string) => string} getString
- * @property {(name: string) => any} getUnknown
- */
-
-/**
  * @callback AssertBallotConcernsQuestion
  * @param {string} paramName
  * @param {QuestionDetails} questionDetails

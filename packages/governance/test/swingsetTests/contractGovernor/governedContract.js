@@ -48,10 +48,10 @@ const start = async (zcf, privateArgs) => {
     zcf.getZoeService(),
   );
 
-  const { wrapPublicFacet, wrapCreatorFacet, getInvitationAmount } =
+  const { wrapPublicFacet, wrapCreatorFacet, getElectorate } =
     handleParamGovernance(zcf, paramManager);
 
-  const invitationAmount = getInvitationAmount(CONTRACT_ELECTORATE);
+  const invitationAmount = getElectorate();
   assert(
     keyEQ(invitationAmount, electorateParam.value),
     // @ts-expect-error 'amount' prop?
