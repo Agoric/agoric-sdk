@@ -18,7 +18,7 @@ import '../../exported.js';
  * invitations for them, which when used to make an offer, will payout
  * the specified amount of tokens.
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<{getTokenIssuer: unknown}, {makeInvitation: unknown, getTokenIssuer: unknown}>}
  */
 const start = async zcf => {
   // Create the internal token mint for a fungible digital asset. Note

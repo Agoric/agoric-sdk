@@ -212,15 +212,21 @@
  */
 
 /**
+ * @template {object} [PF=undefined] Public facet
+ * @template {object=} [CF=undefined] Creator facet
+ * @template {object=} [CT=Record<string, unknown] Custom terms
+ * @template {object=} [PA=undefined] Private args
  * @callback ContractStartFn
- * @param {ContractFacet} zcf
- * @param {Object=} privateArgs
- * @returns {ContractStartFnResult}
+ * @param {ContractFacet<CT>} zcf
+ * @param {PA} privateArgs
+ * @returns {ContractStartFnResult<PF, CF>}
  */
 
 /**
+ * @template PF Public facet
+ * @template CF Creator facet
  * @typedef {Object} ContractStartFnResult
- * @property {Object=} creatorFacet
- * @property {Promise<Invitation>=} creatorInvitation
- * @property {Object=} publicFacet
+ * @property {PF & { __Remote__: T }} [publicFacet]
+ * @property {CF & { __Remote__: T }} [creatorFacet]
+ * @property {Promise<Invitation>=} [creatorInvitation]
  */

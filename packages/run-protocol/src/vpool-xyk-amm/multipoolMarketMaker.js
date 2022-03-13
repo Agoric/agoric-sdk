@@ -83,7 +83,7 @@ const { quote: q, details: X } = assert;
  *
  * The contract gets the initial values for those parameters from its terms, and
  * thereafter can be seen to only use the values provided by the
- * `getNat()` method returned by the paramManager.
+ * getter method returned by the paramManager.
  *
  * `handleParamGovernance()` adds several methods to the publicFacet of the
  * contract, and bundles the privateFacet to ensure that governance

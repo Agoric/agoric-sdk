@@ -11,7 +11,7 @@ import { E } from '@agoric/eventual-send';
 /**
  * This contract provides oracle queries for a fee or for free.
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<{query: unknown, makeQueryInvitation: unknown}, {initialize: unknown}>}
  *
  */
 const start = async zcf => {

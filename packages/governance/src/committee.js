@@ -26,10 +26,10 @@ const { ceilDivide } = natSafeMath;
  * for elections where the set of voters needs to be known, unless the contract
  * is used in a way that makes the distribution of voter facets visible.
  *
- * @param {ContractFacet<{
+ * @type ContractStartFn<CommitteeElectoratePublic, CommitteeElectorateCreatorFacet, {
  *   committeeName: string,
  *   committeeSize: number,
- * }>} zcf
+ * }>
  */
 const start = zcf => {
   /** @type {Store<Handle<'Question'>, QuestionRecord>} */
@@ -91,7 +91,6 @@ const start = zcf => {
     );
   };
 
-  /** @type {CommitteeElectoratePublic} */
   const publicFacet = Far('publicFacet', {
     getQuestionSubscription: () => subscription,
     getOpenQuestions: () => getOpenQuestions(allQuestions),
@@ -100,7 +99,6 @@ const start = zcf => {
     getQuestion: handleP => getQuestion(handleP, allQuestions),
   });
 
-  /** @type {CommitteeElectorateCreatorFacet} */
   const creatorFacet = Far('adminFacet', {
     getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
     addQuestion,

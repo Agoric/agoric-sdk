@@ -49,7 +49,7 @@ const handleParamGovernance = (zcf, paramManager) => {
   /**
    * @template PF
    * @param {PF} originalPublicFacet
-   * @returns {PF & GovernedPublicFacet}
+   * @returns {GovernedPublicFacet<PF>}
    */
   const wrapPublicFacet = (originalPublicFacet = /** @type {PF} */ ({})) => {
     return Far('publicFacet', {

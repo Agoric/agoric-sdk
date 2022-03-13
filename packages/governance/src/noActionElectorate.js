@@ -8,12 +8,11 @@ import { makePromiseKit } from '@endo/promise-kit';
  * This Electorate visibly has no members, takes no votes, and approves no
  * changes.
  *
- *  @type {ContractStartFn}
+ *  @type {ContractStartFn<ElectoratePublic, ElectorateCreatorFacet>}
  */
 const start = zcf => {
   const { subscription } = makeSubscriptionKit();
 
-  /** @type {ElectoratePublic} */
   const publicFacet = Far('publicFacet', {
     getQuestionSubscription: () => subscription,
     getOpenQuestions: () => {
@@ -30,7 +29,6 @@ const start = zcf => {
     },
   });
 
-  /** @type {ElectorateCreatorFacet} */
   const creatorFacet = Far('creatorFacet', {
     getPoserInvitation: () => {
       return zcf.makeInvitation(() => {},

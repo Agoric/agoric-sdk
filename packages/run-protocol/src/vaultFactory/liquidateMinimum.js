@@ -19,9 +19,9 @@ const trace = makeTracer('LM');
  */
 
 /**
- * @param {ContractFacet<{
+ * @type ContractStartFn<undefined, {makeDebtorInvitation: unknown}, {
  *   amm: AutoswapPublicFacet,
- * }>} zcf
+ * }>
  */
 const start = async zcf => {
   const { amm } = zcf.getTerms();

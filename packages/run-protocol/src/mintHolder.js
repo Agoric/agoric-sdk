@@ -8,12 +8,11 @@ import { makeIssuerKit } from '@agoric/ertp';
  * makeIssuerKit in its own contract, and hence in
  * its own vat.
  *
- * @param {ContractFacet<{
+ * @type ContractStartFn<Issuer, Mint, {
  *   keyword: string,
  *   assetKind: AssetKind,
  *   displayInfo: DisplayInfo,
- * }>} zcf
- * @returns {{ publicFacet: Issuer, creatorFacet: Mint }}
+ * }>
  */
 export const start = zcf => {
   const { keyword, assetKind, displayInfo } = zcf.getTerms();
@@ -21,7 +20,9 @@ export const start = zcf => {
   const { mint, issuer } = makeIssuerKit(keyword, assetKind, displayInfo);
 
   return {
+    // @ts-expect-error not remotable. ??? should it be?
     publicFacet: issuer,
+    // @ts-expect-error not remotable. ??? should it be?
     creatorFacet: mint,
   };
 };

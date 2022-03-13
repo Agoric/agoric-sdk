@@ -22,14 +22,17 @@ const makeParamTerms = (number, invitationAmount) => {
 };
 
 /**
- * @param {ContractFacet<{
+ * @type ContractStartFn<
+ * GovernedPublicFacet<{}>,
+ * GovernedCreatorFacet<any>,
+ * {
  *   electionManager: VoteOnParamChange,
  *   main: {
  *     MalleableNumber: ParamRecord<'nat'>,
  *     Electorate: ParamRecord<'amount'>,
  *   },
- * }>} zcf
- * @param {{initialPoserInvitation: Payment}} privateArgs
+ * },
+ * {initialPoserInvitation: Payment}>
  */
 const start = async (zcf, privateArgs) => {
   const {
@@ -59,7 +62,9 @@ const start = async (zcf, privateArgs) => {
   );
 
   return {
+    // @ts-expect-error wrapped is not remotable. ??? should it be?
     publicFacet: wrapPublicFacet({}),
+    // @ts-expect-error wrapped is not remotable. ??? should it be?
     creatorFacet: wrapCreatorFacet({}),
   };
 };

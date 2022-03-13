@@ -6,7 +6,7 @@ import { E } from '@agoric/eventual-send';
 /**
  * Tests zcf.registerFeeMint
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<undefined, {getMintedAmount: unknown, getMintedPayout: unknown}>}
  */
 const start = async (zcf, privateArgs) => {
   // make the `zcf` and `instance` available to the tests
@@ -34,6 +34,7 @@ const start = async (zcf, privateArgs) => {
     },
   });
 
+  // @ts-expect-error creatorFacet not Far(), should it be?
   return harden({ creatorFacet });
 };
 

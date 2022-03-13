@@ -274,6 +274,8 @@ async function setupServices(
     liquidate: E(agoricNames).lookup('installation', 'liquidate'),
   });
 
+  /** @type {ERef<GovernedContractFacetAccess<VaultFactoryPublicFacet>>} */
+  // @ts-expect-error cast
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet>} */
   const vaultFactoryCreatorFacet = /** @type { any } */ (

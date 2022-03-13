@@ -488,7 +488,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
  */
 
 /**
- * @param {ContractFacet<{board: ERef<BoardDepositFacet>, namesByAddress: ERef<NameHub>}>} zcf
+ * @type ContractStartFn<unknown, undefined, {board: ERef<BoardDepositFacet>, namesByAddress: ERef<NameHub>}>
  */
 const start = zcf => {
   const { board, namesByAddress } = zcf.getTerms();

@@ -511,18 +511,19 @@
  */
 
 /**
+ * @template {object} PF Public facet of governed contract
  * @typedef {Object} GovernedContractFacetAccess
  * @property {VoteOnParamChange} voteOnParamChange
  * @property {() => Promise<LimitedCreatorFacet>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
- * @property {() => any} getPublicFacet - public facet of the governed contract
+ * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
  * @property {() => Instance} getInstance - instance of the governed
  *   contract
  */
 
 /**
- * @typedef {Object} GovernedPublicFacet
+ * @typedef GovernedPublicFacetMethods
  * @property {() => Subscription<ParamRecord>} getSubscription
  * @property {() => VoteOnParamChange} getContractGovernor
  * @property {GetParams} getGovernedParams - get descriptions of
@@ -536,6 +537,11 @@
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
  * @property {(name: string) => any} getUnknown
+ */
+
+/**
+ * @template {object} PF Public facet
+ * @typedef {PF & GovernedPublicFacetMethods} GovernedPublicFacet
  */
 
 /**

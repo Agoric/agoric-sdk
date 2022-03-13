@@ -16,7 +16,7 @@ import '../../exported.js';
  * anything in `give` and `want`. The amount in `give` will be returned, and
  * `want` will be ignored.
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<AutomaticRefundPublicFacet>}
  * @param {ContractFacet} zcf
  */
 const start = zcf => {
@@ -30,7 +30,6 @@ const start = zcf => {
   };
   const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
 
-  /** @type {AutomaticRefundPublicFacet} */
   const publicFacet = Far('publicFacet', {
     getOffersCount: () => offersCount,
     makeInvitation: makeRefundInvitation,

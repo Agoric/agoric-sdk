@@ -168,7 +168,7 @@
  *   consume: {
  *     agoricNames: Promise<NameHub>,
  *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
- *     ammGovernorCreatorFacet: ERef<GovernedContractFacetAccess>,
+ *     ammGovernorCreatorFacet: ERef<GovernedContractFacetAccess<unknown>>,
  *     chainTimerService: ERef<TimerService>,
  *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
  *     ammBundle: ERef<SourceBundle>,
@@ -185,7 +185,7 @@
  *     priceAuthority: ERef<PriceAuthority>,
  *     priceAuthorityAdmin: ERef<PriceAuthorityRegistryAdmin>,
  *     vaultFactoryCreator: ERef<VaultFactory>,
- *     vaultFactoryGovernorCreator: ERef<GovernedContractFacetAccess>,
+ *     vaultFactoryGovernorCreator: ERef<GovernedContractFacetAccess<unknown>>,
  *     zoe: ERef<ZoeService>,
  *   },
  *   produce: {
