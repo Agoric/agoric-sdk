@@ -68,6 +68,57 @@ export const start = async (zcf, privateArgs) => {
     );
   };
 
+  function getFeeRate() {
+    return makeRatio(gov.getFeeBP(), stableBrand, BASIS_POINTS);
+  }
+
+  function giveStable(seat, wanted, given) {
+    assert(wanted.brand === anchorBrand, X`Unexpected brand ${wanted}`);
+    const feeRate = getFeeRate();
+    const fee = ceilMultiplyBy(given, feeRate);
+    const afterFee = AmountMath.subtract(given, fee);
+    const maxAnchor = AmountMath.make(anchorBrand, afterFee.value);
+    // TODO this prevents the reallocate from failing. Can this be tested otherwise?
+    assert(
+      AmountMath.isGTE(maxAnchor, wanted),
+      X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
+    );
+    stage.incrementBy(seat.decrementBy({ Stable: afterFee }));
+    feePool.incrementBy(seat.decrementBy({ Stable: fee }));
+    seat.incrementBy(anchorPool.decrementBy({ Anchor: maxAnchor }));
+    zcf.reallocate(seat, anchorPool, stage, feePool);
+    stableMint.burnLosses({ Stable: afterFee }, stage);
+  }
+
+  function wantStable(seat, given, wanted) {
+    const anchorAfterTrade = AmountMath.add(
+      anchorPool.getAmountAllocated('Anchor'),
+      given,
+    );
+    assertUnderLimit(anchorAfterTrade);
+    assert(wanted.brand === stableBrand, X`Unexpected brand ${wanted}`);
+    const feeRate = getFeeRate();
+    const asStable = AmountMath.make(wanted.brand, given.value);
+    const fee = ceilMultiplyBy(asStable, feeRate);
+    const afterFee = AmountMath.subtract(asStable, fee);
+    // TODO use the offer-safe check to be sure that reallocate will work?
+    assert(
+      AmountMath.isGTE(afterFee, wanted),
+      X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
+    );
+    stableMint.mintGains({ Stable: asStable }, stage);
+    anchorPool.incrementBy(seat.decrementBy({ Anchor: given }));
+    seat.incrementBy(stage.decrementBy({ Stable: afterFee }));
+    feePool.incrementBy(stage.decrementBy({ Stable: fee }));
+    try {
+      zcf.reallocate(seat, anchorPool, stage, feePool);
+    } catch (e) {
+      // TODO reallocate should guarantee that this case cannot happen
+      stableMint.burnLosses({ Stable: asStable }, stage);
+      throw e;
+    }
+  }
+
   const swapHook = seat => {
     assertProposalShape(seat, {
       give: { In: null },
@@ -77,49 +128,10 @@ export const start = async (zcf, privateArgs) => {
       give: { In: given },
       want: { Out: wanted },
     } = seat.getProposal();
-    const feeRate = makeRatio(gov.getFeeBP(), stableBrand, BASIS_POINTS);
-
     if (given.brand === stableBrand) {
-      assert(wanted.brand === anchorBrand, X`Unexpected brand ${wanted}`);
-      const fee = ceilMultiplyBy(given, feeRate);
-      const afterFee = AmountMath.subtract(given, fee);
-      const maxAnchor = AmountMath.make(anchorBrand, afterFee.value);
-      // TODO this prevents the reallocate from failing. Can this be tested otherwise?
-      assert(
-        AmountMath.isGTE(maxAnchor, wanted),
-        X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
-      );
-      stage.incrementBy(seat.decrementBy({ Stable: afterFee }));
-      feePool.incrementBy(seat.decrementBy({ Stable: fee }));
-      seat.incrementBy(anchorPool.decrementBy({ Anchor: maxAnchor }));
-      zcf.reallocate(seat, anchorPool, stage, feePool);
-      stableMint.burnLosses({ Stable: afterFee }, stage);
+      giveStable(seat, wanted, given);
     } else if (given.brand === anchorBrand) {
-      const anchorAfterTrade = AmountMath.add(
-        anchorPool.getAmountAllocated('Anchor'),
-        given,
-      );
-      assertUnderLimit(anchorAfterTrade);
-      assert(wanted.brand === stableBrand, X`Unexpected brand ${wanted}`);
-      const asStable = AmountMath.make(wanted.brand, given.value);
-      const fee = ceilMultiplyBy(asStable, feeRate);
-      const afterFee = AmountMath.subtract(asStable, fee);
-      // TODO use the offer-safe check to be sure that reallocate will work?
-      assert(
-        AmountMath.isGTE(afterFee, wanted),
-        X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
-      );
-      stableMint.mintGains({ Stable: asStable }, stage);
-      anchorPool.incrementBy(seat.decrementBy({ Anchor: given }));
-      seat.incrementBy(stage.decrementBy({ Stable: afterFee }));
-      feePool.incrementBy(stage.decrementBy({ Stable: fee }));
-      try {
-        zcf.reallocate(seat, anchorPool, stage, feePool);
-      } catch (e) {
-        // TODO reallocate should guarantee that this case cannot happen
-        stableMint.burnLosses({ Stable: asStable }, stage);
-        throw e;
-      }
+      wantStable(seat, given, wanted);
     } else {
       throw Error(`unexpected brand ${given.brand}`);
     }
