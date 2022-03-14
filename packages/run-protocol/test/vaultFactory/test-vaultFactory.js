@@ -43,7 +43,7 @@ const contractRoots = {
   VaultFactory: '../../src/vaultFactory/vaultFactory.js',
 };
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryPublicFacet} VaultFactoryPublicFacet */
+/** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
 const trace = makeTracer('TestST');
 
@@ -279,7 +279,7 @@ async function setupServices(
   const vaultFactoryCreatorFacet = /** @type { any } */ (
     E(governorCreatorFacet).getCreatorFacet()
   );
-  /** @type {[any, VaultFactory, VaultFactoryPublicFacet]} */
+  /** @type {[any, VaultFactory, VFC['publicFacet']]} */
   const [governorInstance, vaultFactory, lender] = await Promise.all([
     E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
     vaultFactoryCreatorFacet,

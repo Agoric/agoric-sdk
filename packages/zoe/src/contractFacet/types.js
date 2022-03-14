@@ -11,7 +11,9 @@
  * @returns {ZcfSeatKit}
  */
 
+// XXX TODO change `any` to `unknown`
 /**
+ * @template {object} [CT=Record<string, any>] Contract's custom terms
  * @typedef {Object} ContractFacet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
@@ -33,7 +35,7 @@
  * @property {Assert} assert
  * @property {() => ERef<ZoeService>} getZoeService
  * @property {() => Issuer} getInvitationIssuer
- * @property {() => Terms} getTerms
+ * @property {() => StandardTerms & CT} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
@@ -210,16 +212,41 @@
  * @returns {OR}
  */
 
+// XXX TODO change `any` to `unknown`
 /**
+ * @template {object} [PF=any] Public facet
+ * @template {object=} [CF=any] Creator facet
+ * @template {object=} [CT=Record<string, any] Custom terms
+ * @template {object=} [PA=any] Private args
  * @callback ContractStartFn
- * @param {ContractFacet} zcf
- * @param {Object=} privateArgs
- * @returns {ContractStartFnResult}
+ * @param {ContractFacet<CT>} zcf
+ * @param {PA} privateArgs
+ * @returns {ContractStartFnResult<PF, CF>}
  */
 
 /**
+ * @template PF Public facet
+ * @template CF Creator facet
  * @typedef {Object} ContractStartFnResult
- * @property {Object=} creatorFacet
- * @property {Promise<Invitation>=} creatorInvitation
- * @property {Object=} publicFacet
+ * @property {PF} [publicFacet]
+ * @property {CF} [creatorFacet]
+ * @property {Promise<Invitation>=} [creatorInvitation]
+ */
+
+/**
+ * @template { (zcf?: any, privateArgs?: any) => {creatorFacet?: unknown, creatorInvitation?: unknown, publicFacet?: unknown } } S start function
+ * @typedef ContractOfSync
+ * @property {ReturnType<Awaited<S>>['creatorFacet']} creatorFacet
+ * @property {ReturnType<Awaited<S>>['publicFacet']} publicFacet
+ * @property {ReturnType<Parameters<S>[0]['getTerms']>} terms
+ * @property {Parameters<S>[1]} privateArgs
+ */
+
+/**
+ * @template { (zcf?: any, privateArgs?: any) => Promise<{creatorFacet?: unknown, creatorInvitation?: unknown, publicFacet?: unknown }> } S async start function
+ * @typedef ContractOfAsync
+ * @property {Awaited<ReturnType<S>>['creatorFacet']} creatorFacet
+ * @property {Awaited<ReturnType<S>>['publicFacet']} publicFacet
+ * @property {ReturnType<Parameters<S>[0]['getTerms']>} terms
+ * @property {Parameters<S>[1]} privateArgs
  */
