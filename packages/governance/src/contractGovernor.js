@@ -46,10 +46,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  */
 
 /**
- * @typedef {{[CONTRACT_ELECTORATE]: unknown}} GTSpec
- */
-
-/**
  * ContractGovernor is an ElectionManager that starts up a contract and hands its
  * own creator a facet that allows them to call for votes on parameters that
  * were declared by the contract.
@@ -86,7 +82,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *
  * @template {object} PF Public facet of governed
  * @template {ContractPowerfulCreatorFacet} CF Creator facet of governed
- * @type {ContractStartFn<GovernorPublic, GovernedContractFacetAccess<GTSpec, PF>,{
+ * @type {ContractStartFn<GovernorPublic, GovernedContractFacetAccess<PF>,{
  *   timer: Timer,
  *   electorateInstance: Instance,
  *   governedContractInstallation: Installation<CF>,
@@ -119,7 +115,7 @@ const start = async zcf => {
     electionManager: zcf.getInstance(),
   });
 
-  /** @type {StartInstance<GovernedPublicFacet<GTSpec, PF>, CF>} cast */
+  /** @type {StartInstance<GovernedPublicFacet<PF>, CF>} cast */
   const startInstance = E(zoe).startInstance;
   const {
     creatorFacet: governedCF,
@@ -135,7 +131,9 @@ const start = async zcf => {
   /** @type {() => Promise<Instance>} */
   const getElectorateInstance = async () => {
     // @ts-expect-error XXX EProxy
-    const invitationAmount = await E(governedPF).getElectorate();
+    const invitationAmount = await E(governedPF).getInvitationAmount(
+      CONTRACT_ELECTORATE,
+    );
     return invitationAmount.value[0].instance;
   };
 
@@ -182,7 +180,7 @@ const start = async zcf => {
   });
 
   const publicFacet = Far('contract governor public', {
-    getElectorateInstance,
+    getElectorate: getElectorateInstance,
     getGovernedContract: () => governedInstance,
     validateVoteCounter,
     validateElectorate,

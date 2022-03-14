@@ -14,7 +14,7 @@ const { quote: q } = assert;
  * @param {ERef<ZoeService>} zoe
  * @param {(string:string) => undefined} log
  * @param {Record<string,Installation>} installations
- * @param {ERef<GovernedContractFacetAccess<unknown, unknown>>} contractFacetAccess
+ * @param {ERef<GovernedContractFacetAccess<unknown>>} contractFacetAccess
  * @param {bigint} deadline
  * @returns {Promise<*>}
  */
