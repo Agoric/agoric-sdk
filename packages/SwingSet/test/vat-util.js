@@ -16,15 +16,18 @@ export function capdata(body, slots = []) {
   return harden({ body, slots });
 }
 
-function marshalBigIntReplacer(_, arg) {
+function replacer(_, arg) {
   if (typeof arg === 'bigint') {
     return { [QCLASS]: 'bigint', digits: String(arg) };
+  }
+  if (arg === undefined) {
+    return { [QCLASS]: 'undefined' };
   }
   return arg;
 }
 
 export function capargs(args, slots = []) {
-  return capdata(JSON.stringify(args, marshalBigIntReplacer), slots);
+  return capdata(JSON.stringify(args, replacer), slots);
 }
 
 export function ignore(p) {

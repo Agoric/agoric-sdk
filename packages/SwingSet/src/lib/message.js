@@ -66,8 +66,9 @@ export function insistVatDeliveryObject(vdo) {
       break;
     }
     case 'startVat': {
-      const [_vatParameters] = rest;
-      // TODO: insistCapData(vatParameters);
+      assert(rest.length === 1);
+      const [vatParameters] = rest;
+      insistCapData(vatParameters);
       break;
     }
     case 'bringOutYourDead': {

@@ -150,7 +150,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 
   /**
    *
-   * @param {unknown} kernelVP
+   * @param {SwingSetCapData} kernelVP
    * @returns { VatDeliveryStartVat }
    */
   function translateStartVat(kernelVP) {
