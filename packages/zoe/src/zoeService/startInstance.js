@@ -14,14 +14,14 @@ import { handlePKitWarning } from '../handleWarning.js';
  * @param {Promise<ZoeService>} zoeServicePromise
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
- * @returns {StartInstance<unknown>}
+ * @returns {StartInstance<unknown, unknown>}
  */
 export const makeStartInstance = (
   zoeServicePromise,
   makeZoeInstanceStorageManager,
   unwrapInstallation,
 ) => {
-  /** @type {StartInstance<unknown>} */
+  /** @type {StartInstance<unknown, unknown>} */
   const startInstance = async (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),

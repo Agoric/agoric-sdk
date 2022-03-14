@@ -115,7 +115,7 @@ const start = async zcf => {
     electionManager: zcf.getInstance(),
   });
 
-  /** @type {StartInstance<CF>} cast */
+  /** @type {StartInstance<GovernedPublicFacet<PF>, CF>} cast */
   const startInstance = E(zoe).startInstance;
   const {
     creatorFacet: governedCF,
@@ -130,6 +130,7 @@ const start = async zcf => {
 
   /** @type {() => Promise<Instance>} */
   const getElectorateInstance = async () => {
+    // @ts-expect-error XXX EProxy
     const invitationAmount = await E(governedPF).getInvitationAmount(
       CONTRACT_ELECTORATE,
     );

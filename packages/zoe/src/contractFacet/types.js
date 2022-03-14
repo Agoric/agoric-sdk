@@ -226,7 +226,7 @@
  * @template PF Public facet
  * @template CF Creator facet
  * @typedef {Object} ContractStartFnResult
- * @property {PF & { __Remote__: T }} [publicFacet]
- * @property {CF & { __Remote__: T }} [creatorFacet]
+ * @property {PF} [publicFacet]
+ * @property {CF} [creatorFacet]
  * @property {Promise<Invitation>=} [creatorInvitation]
  */

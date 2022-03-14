@@ -194,7 +194,6 @@ const start = zcf => {
     ...publicFacet,
     getInstance: zcf.getInstance,
   });
-  // @ts-expect-error creatorFacet is not Remotable. ??? should it be?
   return { publicFacet: publicFacetWithGetInstance, creatorFacet };
 };
 

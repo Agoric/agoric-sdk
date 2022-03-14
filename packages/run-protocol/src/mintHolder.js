@@ -20,9 +20,7 @@ export const start = zcf => {
   const { mint, issuer } = makeIssuerKit(keyword, assetKind, displayInfo);
 
   return {
-    // @ts-expect-error not remotable. ??? should it be?
     publicFacet: issuer,
-    // @ts-expect-error not remotable. ??? should it be?
     creatorFacet: mint,
   };
 };

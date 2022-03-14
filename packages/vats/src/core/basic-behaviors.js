@@ -233,9 +233,10 @@ export const addBankAssets = async ({
 
   const bundle = await mintHolderBundle;
 
-  /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
+  /** @type {StartInstance<Issuer, Mint>} cast, XXX E() loses the method type */
+  const startInstance = E(zoe).startInstance;
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
-    E(zoe).startInstance(
+    startInstance(
       E(zoe).install(bundle),
       harden({}),
       harden({

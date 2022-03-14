@@ -62,9 +62,7 @@ const start = async (zcf, privateArgs) => {
   );
 
   return {
-    // @ts-expect-error wrapped is not remotable. ??? should it be?
     publicFacet: wrapPublicFacet({}),
-    // @ts-expect-error wrapped is not remotable. ??? should it be?
     creatorFacet: wrapCreatorFacet({}),
   };
 };

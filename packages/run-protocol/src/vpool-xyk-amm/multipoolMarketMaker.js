@@ -97,7 +97,7 @@ const { quote: q, details: X } = assert;
  *
  * @type ContractStartFn<
  * XYKAMMPublicFacet,
- * undefined,
+ * GovernedCreatorFacet<*>,
  * AMMTerms,
  * {initialPoserInvitation: Payment}
  * >
@@ -277,7 +277,6 @@ const start = async (zcf, privateArgs) => {
       makeCollectFeesInvitation,
     }),
   );
-  // @ts-expect-error wrapped public facet not remotable. ??? should it be?
   return harden({ publicFacet, creatorFacet });
 };
 

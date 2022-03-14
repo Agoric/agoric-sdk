@@ -144,6 +144,7 @@
  */
 
 /**
+ * @template {object} PF Public facet
  * @template {object} CF Creator facet
  * @callback StartInstance
  *
@@ -169,7 +170,7 @@
  * An optional configuration object
  * that can be used to pass in arguments that should not be in the
  * public terms
- * @returns {Promise<StartInstanceResult<CF>}
+ * @returns {Promise<StartInstanceResult<PF, CF>}
  */
 
 /**
@@ -217,10 +218,11 @@
  */
 
 /**
+ * @template {object} PF Public facet
  * @template {object} CF Creator facet
  * @typedef {Object} StartInstanceResult
  * @property {CF} creatorFacet
- * @property {any} publicFacet
+ * @property {PF} publicFacet
  * @property {Instance} instance
  * @property {Payment | undefined} creatorInvitation
  * @property {AdminFacet} adminFacet
