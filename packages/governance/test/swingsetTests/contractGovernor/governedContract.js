@@ -22,8 +22,15 @@ const makeParamTerms = (number, invitationAmount) => {
 };
 
 /**
+ * @typedef {{
+ *   MalleableNumber: unknown,
+ *   Electorate: unknown,
+ * }} GovernedTermsSpec
+ */
+
+/**
  * @type ContractStartFn<
- * GovernedPublicFacet<{}>,
+ * GovernedPublicFacet<GovernedTermsSpec, {}>,
  * GovernedCreatorFacet<any>,
  * {
  *   electionManager: VoteOnParamChange,

@@ -25,7 +25,6 @@ const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
   const governedParams = terms.main;
   const { electionManager } = terms;
-  const paramGetters = paramManager.asGetters();
 
   assert(
     keyEQ(governedParams, paramManager.getParams()),
@@ -34,22 +33,10 @@ const handleParamGovernance = (zcf, paramManager) => {
     )}`,
   );
 
-  const typedAccessors = {
-    getAmount: paramManager.getAmount,
-    getBrand: paramManager.getBrand,
-    getInstance: paramManager.getInstance,
-    getInstallation: paramManager.getInstallation,
-    getInvitationAmount: paramManager.getInvitationAmount,
-    getNat: paramManager.getNat,
-    getRatio: paramManager.getRatio,
-    getString: paramManager.getString,
-    getUnknown: paramManager.getUnknown,
-  };
-
   /**
    * @template PF
    * @param {PF} originalPublicFacet
-   * @returns {GovernedPublicFacet<PF>}
+   * @returns {GovernedPublicFacet<T, PF>}
    */
   const wrapPublicFacet = (originalPublicFacet = /** @type {PF} */ ({})) => {
     return Far('publicFacet', {
@@ -57,7 +44,7 @@ const handleParamGovernance = (zcf, paramManager) => {
       getSubscription: () => paramManager.getSubscription(),
       getContractGovernor: () => electionManager,
       getGovernedParams: () => paramManager.getParams(),
-      ...typedAccessors,
+      ...paramManager.asGetters(),
     });
   };
 

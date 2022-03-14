@@ -465,7 +465,7 @@
 
 /**
  * @typedef {Object} GovernorPublic
- * @property {() => Promise<Instance>} getElectorate
+ * @property {() => Promise<Instance>} getElectorateInstance
  * @property {() => Instance} getGovernedContract
  * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
  * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
@@ -511,37 +511,31 @@
  */
 
 /**
+ * @template {object} GT Governed terms
  * @template {object} PF Public facet of governed contract
  * @typedef {Object} GovernedContractFacetAccess
  * @property {VoteOnParamChange} voteOnParamChange
  * @property {() => Promise<LimitedCreatorFacet>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
- * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
+ * @property {() => GovernedPublicFacet<GT, PF>} getPublicFacet - public facet of the governed contract
  * @property {() => Instance} getInstance - instance of the governed
  *   contract
  */
 
 /**
- * @typedef GovernedPublicFacetMethods
+ * @template {object} GT Governed terms
+ * @typedef {import("./paramGovernance/typedParamManager").Getters<GT>} GovernedPublicFacetMethods
  * @property {() => Subscription<ParamRecord>} getSubscription
  * @property {() => VoteOnParamChange} getContractGovernor
  * @property {GetParams} getGovernedParams - get descriptions of
  *   all the governed parameters
- * @property {(name: string) => Amount} getAmount
- * @property {(name: string) => Brand} getBrand
- * @property {(name: string) => Instance} getInstance
- * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount} getInvitationAmount
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(name: string) => string} getString
- * @property {(name: string) => any} getUnknown
  */
 
 /**
+ * @template {object} GT Governed terms
  * @template {object} PF Public facet
- * @typedef {PF & GovernedPublicFacetMethods} GovernedPublicFacet
+ * @typedef {PF & GovernedPublicFacetMethods<GT>} GovernedPublicFacet
  */
 
 /**

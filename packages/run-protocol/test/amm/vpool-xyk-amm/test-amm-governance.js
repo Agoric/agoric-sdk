@@ -6,13 +6,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@agoric/eventual-send';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import {
-  POOL_FEE_KEY,
-  PROTOCOL_FEE_KEY,
-} from '../../../src/vpool-xyk-amm/params.js';
+import { PROTOCOL_FEE_KEY } from '../../../src/vpool-xyk-amm/params.js';
 import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js';
 import { startEconomicCommittee } from '../../../src/econ-behaviors.js';
 
@@ -37,24 +33,9 @@ test('amm change param via Governance', async t => {
   const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
     await setupAmmServices(electorateTerms, centralR, timer);
 
-  t.deepEqual(
-    await E(amm.ammPublicFacet).getGovernedParams(),
-    {
-      [POOL_FEE_KEY]: {
-        type: 'nat',
-        value: 24n,
-      },
-      [PROTOCOL_FEE_KEY]: {
-        type: 'nat',
-        value: 6n,
-      },
-      [CONTRACT_ELECTORATE]: {
-        type: 'invitation',
-        value: invitationAmount,
-      },
-    },
-    'initial values',
-  );
+  t.is(await E(amm.ammPublicFacet).getPoolFee(), 6n);
+  t.is(await E(amm.ammPublicFacet).getProtocolFee(), 24n);
+  t.deepEqual(await E(amm.ammPublicFacet).getElectorate(), invitationAmount);
 
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
@@ -77,7 +58,7 @@ test('amm change param via Governance', async t => {
   await timer.tick();
   await timer.tick();
 
-  const paramValue = await E(amm.ammPublicFacet).getNat(PROTOCOL_FEE_KEY);
+  const paramValue = await E(amm.ammPublicFacet).getProtocolFee();
   t.deepEqual(paramValue, 20n, 'updated value');
 });
 
@@ -136,24 +117,9 @@ test('price check after Governance param change', async t => {
     AmountMath.makeEmpty(centralR.brand),
   );
 
-  t.deepEqual(
-    await E(amm.ammPublicFacet).getGovernedParams(),
-    {
-      PoolFee: {
-        type: 'nat',
-        value: 24n,
-      },
-      ProtocolFee: {
-        type: 'nat',
-        value: 6n,
-      },
-      Electorate: {
-        type: 'invitation',
-        value: invitationAmount,
-      },
-    },
-    'initial values',
-  );
+  t.is(await E(amm.ammPublicFacet).getPoolFee(), 6n);
+  t.is(await E(amm.ammPublicFacet).getProtocolFee(), 24n);
+  t.deepEqual(await E(amm.ammPublicFacet).getElectorate(), invitationAmount);
 
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
@@ -176,7 +142,7 @@ test('price check after Governance param change', async t => {
   await timer.tick();
   await timer.tick();
 
-  const paramValue = await E(amm.ammPublicFacet).getNat(PROTOCOL_FEE_KEY);
+  const paramValue = await E(amm.ammPublicFacet).getProtocolFee();
   t.deepEqual(paramValue, 20n, 'updated value');
 
   const priceAfter = await E(amm.ammPublicFacet).getInputPrice(
