@@ -27,6 +27,15 @@ const trace = makeTracer('IV');
  *
  * The logic here is for InnerVault which is the majority of logic of vaults but
  * the user view is the `vault` value contained in VaultKit.
+ *
+ * A note on naming convention:
+ * - `Pre` is used as a postfix for any mutable value retrieved *before* an
+ *    `await`, to flag values that must used very carefully after the `await`
+ * - `new` is a prefix for values that describe the result of executing a
+ *   transaction; e.g., `debt` is the value before the txn, and `newDebt`
+ *   will be value if the txn completes.
+ * - the absence of one of these implies the opposite, so `newDebt` is the
+ *   future value fo `debt`, as computed based on values after any `await`
  */
 
 /**
@@ -423,15 +432,9 @@ export const makeInnerVault = (
     );
   };
 
-  // Was this simple, but you can't subtract `empty` from a missing allocation.
-  // const transfer = (fromSeat, toSeat, fromLoses, fromGains, key) => {
-  //   toSeat.incrementBy(fromSeat.decrementBy(harden({ [key]: fromLoses })));
-  //   fromSeat.incrementBy(toSeat.decrementBy(harden({ [key]: fromGains })));
-  // };
-
   /**
    * Stage a transfer between `fromSeat` and `toSeat`, specified as the delta between
-   * the gain and a loss on teh `fromSeat`. The gain/loss are typically from the
+   * the gain and a loss on the `fromSeat`. The gain/loss are typically from the
    * give/want respectively of a proposal. The `key` is the allocation keyword.
    *
    * @param {ZCFSeat} fromSeat
@@ -441,6 +444,7 @@ export const makeInnerVault = (
    * @param {Keyword} key
    */
   const transfer = (fromSeat, toSeat, fromLoses, fromGains, key) => {
+    // Must check `isEmpty`; can't subtract `empty` from a missing allocation.
     if (!AmountMath.isEmpty(fromLoses)) {
       toSeat.incrementBy(fromSeat.decrementBy(harden({ [key]: fromLoses })));
     }
@@ -451,10 +455,10 @@ export const makeInnerVault = (
 
   /**
    * Apply a delta to the `base` Amount, where the delta is represented as
-   * and amount to gain and and amount to lose. Typically one of those will
+   * an amount to gain and an amount to lose. Typically one of those will
    * be empty because gain/loss comes from the give/want for a specific asset
-   * on a proposal. We have to use two amount because we cannot otherwise
-   * represent a negative number.
+   * on a proposal. We use two Amounts because an Amount cannot represent
+   * a negative number (so we use a "loss" that will be subtracted).
    *
    * @param {Amount} base
    * @param {Amount} gain
@@ -466,9 +470,10 @@ export const makeInnerVault = (
 
   /**
    * Calculate the fee, the amount to mint and the resulting debt.
-   * The give and the want together reflect a delta, where typpically
-   * one is zero. In that case, the `fee` will also be zero, so the
-   * simple math works
+   * The give and the want together reflect a delta, where typically
+   * one is zero because they come from the gave/want of an offer
+   * proposal. If the `want` is zero, the `fee` will also be zero,
+   * so the simple math works.
    *
    * @param {Amount} currentDebt
    * @param {Amount} giveAmount
@@ -500,13 +505,13 @@ export const makeInnerVault = (
       // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
       // We can pro-rate maxDebt because the quote is either linear (price is
       // unchanging) or super-linear (also called "convex"). Super-linear is from
-      // AMMs: selling less collateral would mean an even smalle price impact, so
-      // this is a conservative choice. `floorMultiply` because the debt ceiling
-      // should constrain more.
+      // AMMs: selling less collateral would mean an even smaller price impact, so
+      // this is a conservative choice.
       const runPerCollateral = makeRatioFromAmounts(
         maxDebtPre,
         newCollateralPre,
       );
+      // `floorMultiply` because the debt ceiling should be tight
       const maxDebtAfter = floorMultiplyBy(newCollateral, runPerCollateral);
       assert(
         AmountMath.isGTE(maxDebtAfter, newDebt),
@@ -622,7 +627,6 @@ export const makeInnerVault = (
       want: { RUN: wantRUN },
     } = seat.getProposal();
 
-    // todo trigger process() check right away, in case the price dropped while we ran
     const {
       newDebt: newDebtPre,
       fee,
@@ -632,7 +636,7 @@ export const makeInnerVault = (
       !AmountMath.isEmpty(fee),
       X`loan requested (${wantRUN}) is too small; cannot accrue interest`,
     );
-    assert(AmountMath.isEqual(newDebtPre, toMint), X`loan fee mismatch`);
+    assert(AmountMath.isEqual(newDebtPre, toMint), X`fee mismatch for vault`);
     trace(
       idInManager,
       'initVault',
