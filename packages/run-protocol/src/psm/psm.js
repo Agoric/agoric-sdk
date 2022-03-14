@@ -35,6 +35,7 @@ export const start = async (zcf, privateArgs) => {
 
   const { feeMintAccess } = privateArgs;
   // TODO should this know that the name is 'Stable'
+  // TODO get the RUN magic out of here so the contract is more reusable
   const stableMint = await zcf.registerFeeMint('Stable', feeMintAccess);
   const { brand: stableBrand } = stableMint.getIssuerRecord();
   zcf.setTestJig(() => ({
@@ -68,11 +69,11 @@ export const start = async (zcf, privateArgs) => {
     );
   };
 
-  function getFeeRate() {
+  const getFeeRate = () => {
     return makeRatio(gov.getFeeBP(), stableBrand, BASIS_POINTS);
-  }
+  };
 
-  function giveStable(seat, wanted, given) {
+  const giveStable = (seat, wanted, given) => {
     assert(wanted.brand === anchorBrand, X`Unexpected brand ${wanted}`);
     const feeRate = getFeeRate();
     const fee = ceilMultiplyBy(given, feeRate);
@@ -88,15 +89,15 @@ export const start = async (zcf, privateArgs) => {
     seat.incrementBy(anchorPool.decrementBy({ Anchor: maxAnchor }));
     zcf.reallocate(seat, anchorPool, stage, feePool);
     stableMint.burnLosses({ Stable: afterFee }, stage);
-  }
+  };
 
-  function wantStable(seat, given, wanted) {
+  const wantStable = (seat, given, wanted) => {
+    assert(wanted.brand === stableBrand, X`Unexpected brand ${wanted}`);
     const anchorAfterTrade = AmountMath.add(
-      anchorPool.getAmountAllocated('Anchor'),
+      anchorPool.getAmountAllocated('Anchor', anchorBrand),
       given,
     );
     assertUnderLimit(anchorAfterTrade);
-    assert(wanted.brand === stableBrand, X`Unexpected brand ${wanted}`);
     const feeRate = getFeeRate();
     const asStable = AmountMath.make(wanted.brand, given.value);
     const fee = ceilMultiplyBy(asStable, feeRate);
@@ -117,7 +118,7 @@ export const start = async (zcf, privateArgs) => {
       stableMint.burnLosses({ Stable: asStable }, stage);
       throw e;
     }
-  }
+  };
 
   const swapHook = seat => {
     assertProposalShape(seat, {
@@ -143,6 +144,8 @@ export const start = async (zcf, privateArgs) => {
   const getRewardAllocation = () => feePool.getCurrentAllocation();
 
   const publicFacet = Far('Parity Stability Module', {
+    getCurrentLiquidity: () =>
+      anchorPool.getAmountAllocated('Anchor', anchorBrand),
     makeSwapInvitation,
     // getContractGovernor: () => electionManager,
   });
