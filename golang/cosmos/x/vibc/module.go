@@ -29,7 +29,6 @@ var (
 
 // app module Basics object
 type AppModuleBasic struct {
-	cdc codec.Codec
 }
 
 func (AppModuleBasic) Name() string {

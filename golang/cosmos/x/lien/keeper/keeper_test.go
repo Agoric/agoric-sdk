@@ -126,7 +126,10 @@ func makeTestKit() testKit {
 	ms.MountStoreWithDB(bankStoreKey, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(stakingStoreKey, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(lienStoreKey, sdk.StoreTypeIAVL, db)
-	ms.LoadLatestVersion()
+	err := ms.LoadLatestVersion()
+	if err != nil {
+		panic(err)
+	}
 	ctx := sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
 
 	wak.SetParams(ctx, authtypes.DefaultParams())
@@ -354,11 +357,16 @@ func TestAccountState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot undelegate: %v", err)
 	}
+
+	state = keeper.GetAccountState(ctx, addr1)
 	wantState = types.AccountState{
 		Total:     amt2,
 		Bonded:    ubld(9),
 		Unbonding: ubld(1),
 		Liened:    amt1,
+	}
+	if !state.IsEqual(wantState) {
+		t.Errorf("GetAccountState() ver 5 got %v, want %v", state, wantState)
 	}
 }
 
@@ -540,7 +548,11 @@ func TestWrap(t *testing.T) {
 
 	tk.initAccount(t, addr1, addr2, types.AccountState{Total: ubld(33)})
 	acc := innerAk.GetAccount(ctx, addr2)
-	acc.SetAccountNumber(8)
+	err := acc.SetAccountNumber(8)
+	if err != nil {
+		t.Error(err.Error())
+	}
+
 	wrapper := NewAccountWrapper(keeper)
 	wrapped := wrapper.Wrap(ctx, acc)
 	if wrapped != acc {
@@ -549,7 +561,11 @@ func TestWrap(t *testing.T) {
 
 	tk.initAccount(t, addr1, addr3, types.AccountState{Total: ubld(10), Liened: ubld(8)})
 	acc = innerAk.GetAccount(ctx, addr3)
-	acc.SetAccountNumber(17)
+	err = acc.SetAccountNumber(17)
+	if err != nil {
+		t.Error(err.Error())
+	}
+
 	wrapped = wrapper.Wrap(ctx, acc)
 	lienAcc, ok := wrapped.(*LienAccount)
 	if !ok {
