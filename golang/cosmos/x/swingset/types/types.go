@@ -34,14 +34,15 @@ func NewKeys() *Keys {
 
 // FIXME: Should have @agoric/nat
 func Nat(num float64) (uint64, error) {
+	if num < 0 {
+		return 0, errors.New("Not a natural")
+	}
+
 	nat := uint64(num)
 	if float64(nat) != num {
 		return 0, errors.New("Not a precise integer")
 	}
 
-	if nat < 0 {
-		return 0, errors.New("Not a natural")
-	}
 	return nat, nil
 }
 
