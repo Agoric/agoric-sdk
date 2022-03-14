@@ -1,4 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
+import { parse } from '@endo/marshal';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 import { insistMessage } from '../../lib/message.js';
 import { makeState } from './state.js';
@@ -45,7 +46,10 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
   // our root object (o+0) is the Comms Controller
   const controller = makeVatSlot('object', true, 0);
 
-  function doStartVat(vatParameters = {}) {
+  function doStartVat(vatParametersCapData) {
+    insistCapData(vatParametersCapData);
+    assert(vatParametersCapData.slots.length === 0, 'comms got slots');
+    const vatParameters = parse(vatParametersCapData.body) || {};
     const { identifierBase = 0, sendExplicitSeqNums } = vatParameters;
     state.initialize(controller, identifierBase);
     if (sendExplicitSeqNums !== undefined) {

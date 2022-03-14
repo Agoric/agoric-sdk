@@ -1097,7 +1097,8 @@ function build(
     assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
   }
 
-  async function startVat(vatParameters) {
+  async function startVat(vatParametersCapData) {
+    insistCapData(vatParametersCapData);
     assert(!didStartVat);
     didStartVat = true;
 
@@ -1162,7 +1163,7 @@ function build(
       });
     }
 
-    // TODO: unserialize(vatParameters)
+    const vatParameters = m.unserialize(vatParametersCapData);
 
     // Below this point, user-provided code might crash or overrun a meter, so
     // any prior-to-user-code setup that can be done without reference to the
@@ -1235,8 +1236,8 @@ function build(
         break;
       }
       case 'startVat': {
-        const [vatParameters] = args;
-        result = startVat(vatParameters);
+        const [vpCapData] = args;
+        result = startVat(vpCapData);
         break;
       }
       default:

@@ -7,6 +7,7 @@ import { makeState } from '../src/vats/comms/state.js';
 import { makeCListKit } from '../src/vats/comms/clist.js';
 import { debugState } from '../src/vats/comms/dispatch.js';
 import {
+  capargs,
   makeMessage,
   makeDropExports,
   makeRetireExports,
@@ -127,7 +128,7 @@ test('transmit', t => {
   // remote 'bob' on machine B
   const { syscall, sends } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  dispatch(['startVat']);
+  dispatch(['startVat', capargs()]);
   const { state, clistKit } = debugState.get(dispatch);
   const {
     provideKernelForLocal,
@@ -202,7 +203,7 @@ test('receive', t => {
   // vat's object 'bob'
   const { syscall, sends, gcs } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  dispatch(['startVat']);
+  dispatch(['startVat', capargs()]);
   const { state, clistKit } = debugState.get(dispatch);
   const {
     provideLocalForKernel,
@@ -348,7 +349,7 @@ test('receive', t => {
 test('addEgress', t => {
   const { syscall } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  dispatch(['startVat']);
+  dispatch(['startVat', capargs()]);
   const { state, clistKit } = debugState.get(dispatch);
   const { getLocalForKernel, getRemoteForLocal } = clistKit;
   const transmitterID = 'o-1';
@@ -381,7 +382,7 @@ test('addEgress', t => {
 test('addIngress', t => {
   const { syscall, resolves } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  dispatch(['startVat']);
+  dispatch(['startVat', capargs()]);
   const { state, clistKit } = debugState.get(dispatch);
   const { getLocalForKernel, getRemoteForLocal } = clistKit;
   const transmitterID = 'o-1';
@@ -415,7 +416,7 @@ test('comms gc', t => {
   // about various objects that are dropped and retired
   const { syscall, sends, gcs } = mockSyscall();
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  dispatch(['startVat']);
+  dispatch(['startVat', capargs()]);
   const { state, clistKit: ck } = debugState.get(dispatch);
   const transmitterID = 'o-1'; // vat-tp target for B
   const { remoteID, receiverID } = state.addRemote('B', transmitterID);

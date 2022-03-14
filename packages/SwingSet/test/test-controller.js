@@ -10,11 +10,9 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
-import { checkKT } from './util.js';
+import { checkKT, capdata, capargs } from './util.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+const emptyVP = capargs({});
 
 function removeTriple(arr, a, b, c) {
   for (let i = 0; i < arr.length; i += 1) {
@@ -69,11 +67,11 @@ async function simpleCall(t) {
   controller.queueToVatRoot('vat1', 'foo', capdata('args'));
   t.deepEqual(controller.dump().runQueue, []);
   t.deepEqual(controller.dump().acceptanceQueue, [
-    { type: 'startVat', vatID: 'v1', vatParameters: {} },
-    { type: 'startVat', vatID: 'v2', vatParameters: {} },
-    { type: 'startVat', vatID: 'v3', vatParameters: {} },
-    { type: 'startVat', vatID: 'v4', vatParameters: {} },
-    { type: 'startVat', vatID: 'v5', vatParameters: {} },
+    { type: 'startVat', vatID: 'v1', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v2', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v3', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v4', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v5', vatParameters: emptyVP },
     {
       msg: {
         method: 'foo',
@@ -222,13 +220,13 @@ test.serial('bootstrap export', async t => {
 
   t.deepEqual(c.dump().runQueue, []);
   t.deepEqual(c.dump().acceptanceQueue, [
-    { type: 'startVat', vatID: 'v1', vatParameters: {} },
-    { type: 'startVat', vatID: 'v2', vatParameters: {} },
-    { type: 'startVat', vatID: 'v3', vatParameters: { argv: [] } },
-    { type: 'startVat', vatID: 'v4', vatParameters: {} },
-    { type: 'startVat', vatID: 'v5', vatParameters: {} },
-    { type: 'startVat', vatID: 'v6', vatParameters: {} },
-    { type: 'startVat', vatID: 'v7', vatParameters: {} },
+    { type: 'startVat', vatID: 'v1', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v2', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v3', vatParameters: capargs({ argv: [] }) },
+    { type: 'startVat', vatID: 'v4', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v5', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v6', vatParameters: emptyVP },
+    { type: 'startVat', vatID: 'v7', vatParameters: emptyVP },
     {
       msg: {
         result: 'kp40',

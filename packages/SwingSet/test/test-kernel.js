@@ -17,6 +17,7 @@ function capargs(args, slots = []) {
 }
 
 const slot0arg = { '@qclass': 'slot', index: 0 };
+const emptyVP = capargs({});
 
 function oneResolution(promiseID, rejected, data) {
   return [[promiseID, rejected, data]];
@@ -47,7 +48,7 @@ function makeKernel() {
   return buildKernel(endowments, {}, {});
 }
 
-const tsv = [{ d: ['startVat', {}], syscalls: [] }];
+const tsv = [{ d: ['startVat', emptyVP], syscalls: [] }];
 
 test('build kernel', async t => {
   const kernel = makeKernel();
