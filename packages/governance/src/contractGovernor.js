@@ -38,7 +38,14 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
   return validateQuestionDetails(zoe, electorate, questionDetails);
 };
 
-/*
+/**
+ * @typedef {StandardTerms} ContractGovernorTerms
+ * @property {Timer} timer
+ * @property {Instance} electorateInstance
+ * @property {Installation} governedContractInstallation
+ */
+
+/**
  * ContractGovernor is an ElectionManager that starts up a contract and hands its
  * own creator a facet that allows them to call for votes on parameters that
  * were declared by the contract.
@@ -73,7 +80,12 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * contract (as electionManager) so clients will be able to look up the state
  * of the governed parameters.
  *
- * @type {ContractStartFn}
+ * @param {ContractFacet<{
+ * timer: Timer,
+ * electorateInstance: Instance,
+ * governedContractInstallation: Installation,
+ * governed: { issuerKeywordRecord: IssuerKeywordRecord, terms: any, privateArgs: unknown},
+ * }>} zcf
  */
 const start = async zcf => {
   const zoe = zcf.getZoeService();
@@ -85,7 +97,7 @@ const start = async zcf => {
       terms: governedTerms,
       privateArgs: privateContractArgs,
     },
-  } = /** @type {ContractGovernorTerms} */ zcf.getTerms();
+  } = zcf.getTerms();
 
   assert(
     governedTerms.main[CONTRACT_ELECTORATE],
@@ -175,3 +187,5 @@ harden(start);
 harden(validateQuestionDetails);
 harden(validateQuestionFromCounter);
 export { start, validateQuestionDetails, validateQuestionFromCounter };
+
+/** @typedef {ContractOfAsync<start>} ContractGovernorContract */

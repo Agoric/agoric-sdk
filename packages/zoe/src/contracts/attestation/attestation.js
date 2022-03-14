@@ -116,7 +116,7 @@ export const makeAttestationFacets = async (
 };
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ContractFacet<{returnableAttName: string}>} zcf
  */
 const start = async zcf => {
   const {
