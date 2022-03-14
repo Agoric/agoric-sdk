@@ -62,5 +62,14 @@ export function buildRootObject(vatPowers, _vatParameters) {
         return e;
       }
     },
+
+    step6() {
+      try {
+        D(devices.dr).sixError();
+        return false;
+      } catch (e) {
+        return e;
+      }
+    },
   });
 }
