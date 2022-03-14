@@ -1,11 +1,7 @@
 // @ts-check
-
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
-
-// import { E } from '@agoric/eventual-send';
 import '@agoric/governance/src/exported';
-
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   ceilMultiplyBy,
@@ -26,12 +22,7 @@ const BASIS_POINTS = 10000n;
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  const {
-    // main: {
-    //   [FEE_PARAM]: feeParam,
-    // },
-    anchorBrand,
-  } = zcf.getTerms();
+  const { anchorBrand } = zcf.getTerms();
 
   const { feeMintAccess } = privateArgs;
   // TODO should this know that the name is 'Stable'
@@ -41,18 +32,22 @@ export const start = async (zcf, privateArgs) => {
   zcf.setTestJig(() => ({
     stableIssuerRecord: stableMint.getIssuerRecord(),
   }));
+  const emptyStable = AmountMath.makeEmpty(stableBrand);
+  const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
   // HACK for simple governance API
-  const getGovernance = _zcf => {
-    // const FEE_PARAM = 'FEE';
-    // const {
-    //   main: { [FEE_PARAM]: feeBP },
-    // } = zcf.getTerms();
-    const FEE_BP = 2n;
-    const MINT_LIMIT = AmountMath.make(anchorBrand, 20_000_000n * 1_000_000n);
+  const getGovernance = _ => {
+    const {
+      main: { FeeBP, MintLimit },
+    } = zcf.getTerms();
+    assert(FeeBP > 0n, X`FeeBP ${FeeBP} must be > 0n`);
+    assert(
+      AmountMath.isGTE(MintLimit, emptyAnchor),
+      X`MintLimit ${MintLimit} must specificy a limit in ${anchorBrand}`,
+    );
     return {
-      getFeeBP: () => FEE_BP,
-      getMintLimit: () => MINT_LIMIT,
+      getFeeBP: () => FeeBP,
+      getMintLimit: () => MintLimit,
     };
   };
 
@@ -73,8 +68,7 @@ export const start = async (zcf, privateArgs) => {
     return makeRatio(gov.getFeeBP(), stableBrand, BASIS_POINTS);
   };
 
-  const giveStable = (seat, wanted, given) => {
-    assert(wanted.brand === anchorBrand, X`Unexpected brand ${wanted}`);
+  const giveStable = (seat, given, wanted = emptyAnchor) => {
     const feeRate = getFeeRate();
     const fee = ceilMultiplyBy(given, feeRate);
     const afterFee = AmountMath.subtract(given, fee);
@@ -84,22 +78,24 @@ export const start = async (zcf, privateArgs) => {
       AmountMath.isGTE(maxAnchor, wanted),
       X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
     );
-    stage.incrementBy(seat.decrementBy({ Stable: afterFee }));
-    feePool.incrementBy(seat.decrementBy({ Stable: fee }));
-    seat.incrementBy(anchorPool.decrementBy({ Anchor: maxAnchor }));
+    seat.decrementBy({ In: afterFee });
+    stage.incrementBy({ Stable: afterFee });
+    seat.decrementBy({ In: fee });
+    feePool.incrementBy({ Stable: fee });
+    anchorPool.decrementBy({ Anchor: maxAnchor });
+    seat.incrementBy({ Out: maxAnchor });
     zcf.reallocate(seat, anchorPool, stage, feePool);
     stableMint.burnLosses({ Stable: afterFee }, stage);
   };
 
-  const wantStable = (seat, given, wanted) => {
-    assert(wanted.brand === stableBrand, X`Unexpected brand ${wanted}`);
+  const wantStable = (seat, given, wanted = emptyStable) => {
     const anchorAfterTrade = AmountMath.add(
       anchorPool.getAmountAllocated('Anchor', anchorBrand),
       given,
     );
     assertUnderLimit(anchorAfterTrade);
     const feeRate = getFeeRate();
-    const asStable = AmountMath.make(wanted.brand, given.value);
+    const asStable = AmountMath.make(stableBrand, given.value);
     const fee = ceilMultiplyBy(asStable, feeRate);
     const afterFee = AmountMath.subtract(asStable, fee);
     // TODO use the offer-safe check to be sure that reallocate will work?
@@ -108,8 +104,10 @@ export const start = async (zcf, privateArgs) => {
       X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
     );
     stableMint.mintGains({ Stable: asStable }, stage);
-    anchorPool.incrementBy(seat.decrementBy({ Anchor: given }));
-    seat.incrementBy(stage.decrementBy({ Stable: afterFee }));
+    seat.decrementBy({ In: given });
+    anchorPool.incrementBy({ Anchor: given });
+    stage.decrementBy({ Stable: afterFee });
+    seat.incrementBy({ Out: afterFee });
     feePool.incrementBy(stage.decrementBy({ Stable: fee }));
     try {
       zcf.reallocate(seat, anchorPool, stage, feePool);
@@ -123,19 +121,19 @@ export const start = async (zcf, privateArgs) => {
   const swapHook = seat => {
     assertProposalShape(seat, {
       give: { In: null },
-      want: { Out: null },
     });
     const {
       give: { In: given },
-      want: { Out: wanted },
+      want: { Out: wanted } = { Out: undefined },
     } = seat.getProposal();
     if (given.brand === stableBrand) {
-      giveStable(seat, wanted, given);
+      giveStable(seat, given, wanted);
     } else if (given.brand === anchorBrand) {
       wantStable(seat, given, wanted);
     } else {
       throw Error(`unexpected brand ${given.brand}`);
     }
+    seat.exit();
   };
   const makeSwapInvitation = () => zcf.makeInvitation(swapHook, 'swap');
 
@@ -159,3 +157,4 @@ export const start = async (zcf, privateArgs) => {
 
   return { creatorFacet, publicFacet };
 };
+/** @typedef {ReturnType<typeof start>} PSM */
