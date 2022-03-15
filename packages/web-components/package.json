@@ -27,7 +27,7 @@
     "robot3": "^0.2.19"
   },
   "devDependencies": {
-    "@endo/eventual-send": "^0.14.1",
+    "@endo/eventual-send": "^0.14.8",
     "@custom-elements-manifest/analyzer": "^0.4.17",
     "@endo/init": "^0.5.37",
     "@lit-labs/react": "^1.0.1",
