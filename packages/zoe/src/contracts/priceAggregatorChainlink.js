@@ -63,6 +63,11 @@ const start = async zcf => {
   // --- [begin] Chainlink specific values
   /** @type {bigint} */
   let reportingRoundId = 0n;
+  const { notifier: roundStartNotifier, updater: roundStartUpdater } =
+    makeNotifierKit(
+      // Start with the first round.
+      add(reportingRoundId, 1),
+    );
 
   /** @type {LegacyMap<Instance, ReturnType<typeof makeOracleStatus>>} */
   const oracleStatuses = makeLegacyMap('oracleStatus');
@@ -295,6 +300,7 @@ const start = async zcf => {
     updateTimedOutRoundInfo(subtract(_roundId, 1), blockTimestamp);
 
     reportingRoundId = _roundId;
+    roundStartUpdater.updateState(reportingRoundId);
 
     details.init(
       _roundId,
@@ -762,6 +768,9 @@ const start = async zcf => {
   const publicFacet = Far('publicFacet', {
     getPriceAuthority() {
       return priceAuthority;
+    },
+    getRoundStartNotifier() {
+      return roundStartNotifier;
     },
   });
 

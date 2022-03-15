@@ -3,8 +3,7 @@
  * @property {() => Promise<void>} delete
  * Remove the oracle from the aggregator
  * @property {(result: any) => Promise<void>} pushResult
- * Rather than waiting for
- * the polling query, push a result directly from this oracle
+ * Rather than waiting for the polling query, push a result directly from this oracle
  */
 
 /**
