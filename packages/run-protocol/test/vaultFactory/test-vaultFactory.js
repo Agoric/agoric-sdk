@@ -1350,8 +1350,16 @@ test('transfer vault', async t => {
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
 
+  const getInvitationProperties = async invitation => {
+    const invitationIssuer = E(zoe).getInvitationIssuer();
+    const amount = await E(invitationIssuer).getAmountOf(invitation);
+    return amount.value[0];
+  };
+
   // TODO this should not need `await`
   const transferInvite = await E(aliceVault).makeTransferInvitation();
+  const inviteProps = await getInvitationProperties(transferInvite);
+  trace('TRANSFER INVITE', transferInvite, inviteProps);
   /** @type {UserSeat<VaultKit>} */
   const transferSeat = await E(zoe).offer(transferInvite);
   const { vault: transferVault, vaultNotifier: transferNotifier } = await E(
@@ -1368,6 +1376,21 @@ test('transfer vault', async t => {
     aliceFinish.value.vaultState,
     Phase.TRANSFER,
     'transfer closed old notifier',
+  );
+
+  t.deepEqual(
+    {
+      // simplify test by including any properties not mentioned below
+      ...inviteProps,
+      debtSnapshot: {
+        debt: debtAmount,
+        interest: aliceFinish.value.debtSnapshot.interest,
+      },
+      description: 'TransferVault',
+      locked: collateralAmount,
+      vaultState: 'active',
+    },
+    inviteProps,
   );
 
   const transferStatus = await E(transferNotifier).getUpdateSince();
