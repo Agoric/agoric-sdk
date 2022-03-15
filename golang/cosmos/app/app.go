@@ -745,7 +745,10 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 // Commit tells the controller that the block is commited
 func (app *GaiaApp) Commit() abci.ResponseCommit {
 	// Frontrun the BaseApp's Commit method
-	swingset.CommitBlock(app.SwingSetKeeper)
+	err := swingset.CommitBlock(app.SwingSetKeeper)
+	if err != nil {
+		panic(err.Error())
+	}
 	return app.BaseApp.Commit()
 }
 

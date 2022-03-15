@@ -245,7 +245,11 @@ func makeTestKit(bank types.BankKeeper) (Keeper, sdk.Context) {
 	ms.MountStoreWithDB(vbankStoreKey, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(paramsTStoreKey, sdk.StoreTypeTransient, db)
-	ms.LoadLatestVersion()
+	err := ms.LoadLatestVersion()
+	if err != nil {
+		panic(err)
+	}
+
 	ctx := sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
 
 	keeper.SetParams(ctx, types.DefaultParams())

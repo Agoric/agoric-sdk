@@ -10,7 +10,6 @@ import (
 	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
-const paramsKey string = "params"
 const stateKey string = "state"
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
