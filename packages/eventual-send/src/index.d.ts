@@ -1,7 +1,7 @@
 /* eslint-disable no-shadow,no-use-before-define,no-var,vars-on-top */
 // Type definitions for eventual-send
 
-// Sourced from Endo
+// Sourced from Endo (and edited)
 
 export type Callable = (...args: any[]) => any;
 
@@ -118,16 +118,26 @@ declare namespace global {
 }
 
 /* Types for E proxy calls. */
-type ESingleMethod<T> = {
-  readonly [P in keyof T]: T[P] extends Callable
-    ? (...args: Parameters<T[P]>) => Promise<Awaited<ReturnType<T[P]>>>
-    : never;
+
+/**
+ * Ensure each function in T returns a promise
+ */
+type ECalls<T> = {
+  readonly [P in keyof T]: ReturnType<T[P]> extends Promise<infer U>
+    ? // function already returns a promise
+      T[P]
+    : // make it return a promise
+      (...args: Parameters<T[P]>) => Promise<ReturnType<T[P]>>;
 };
-type ESingleCall<T> = T extends Callable
-  ? ((...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>>) &
-      ESingleMethod<Required<T>>
-  : ESingleMethod<Required<T>>;
-type ESingleGet<T> = {
+
+type ECallsOrSingleCall<T> = T extends Callable
+  ? // If the target itself is callable, return a function to call it
+    ((...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>>) &
+      ECalls<Required<T>>
+  : // Otherwise return a map of method names to functions
+    ECalls<Required<T>>;
+
+type ESingleGets<T> = {
   readonly [P in keyof T]: Promise<Awaited<T[P]>>;
 };
 
@@ -148,6 +158,7 @@ interface ESendOnly {
   <T>(x: T): ESingleCallOnly<Awaited<T>>;
 }
 
+// Generic on the proxy target {T}
 interface EProxy {
   /**
    * E(x) returns a proxy on which you can call arbitrary methods. Each of
@@ -155,10 +166,10 @@ interface EProxy {
    * whatever 'x' designates (or resolves to) in a future turn, not this
    * one.
    *
-   * @param {*} x target for method/function call
-   * @returns {ESingleCall} method/function call proxy
+   * @param x target for method/function call
+   * @returns method/function call proxy
    */
-  <T>(x: T): ESingleCall<RemoteFunctions<T>>;
+  <T>(x: T): ECallsOrSingleCall<RemoteFunctions<T>>;
 
   /**
    * E.get(x) returns a proxy on which you can get arbitrary properties.
@@ -166,10 +177,10 @@ interface EProxy {
    * value will be the property fetched from whatever 'x' designates (or
    * resolves to) in a future turn, not this one.
    *
-   * @param {*} x target for property get
-   * @returns {ESingleGet} property get proxy
+   * @param x target for property get
+   * @returns property get proxy
    */
-  readonly get: <T>(x: T) => ESingleGet<PromisedData<T>>;
+  readonly get: <T>(x: T) => ESingleGets<PromisedData<T>>;
 
   /**
    * E.resolve(x) converts x to a handled promise. It is
