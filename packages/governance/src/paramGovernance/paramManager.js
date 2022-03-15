@@ -92,7 +92,7 @@ const makeParamManagerBuilder = zoe => {
 
   // HANDLERS FOR EACH PARAMETER TYPE /////////////////////////////////////////
 
-  /** @type {(name: string, amount: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addAmount = (name, value, builder) => {
     const assertAmount = a => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
@@ -102,13 +102,13 @@ const makeParamManagerBuilder = zoe => {
     return builder;
   };
 
-  /** @type {(name: string, amount: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addBrandedAmount = (name, amount, builder) => {
+  /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addBrandedAmount = (name, value, builder) => {
     const assertAmount = a => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
-      return AmountMath.coerce(amount.brand, a);
+      return AmountMath.coerce(value.brand, a);
     };
-    buildCopyParam(name, amount, assertAmount, ParamType.AMOUNT);
+    buildCopyParam(name, value, assertAmount, ParamType.AMOUNT);
     return builder;
   };
 
