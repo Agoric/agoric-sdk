@@ -24,7 +24,7 @@
  * creates the ERTP payments that represent the right to interact with
  * a smart contract in particular ways.
  *
- * @property {Install} install
+ * @property {InstallBundle} install
  * @property {InstallBundleID} installBundleID
  * @property {import('./utils').StartInstance} startInstance
  * @property {Offer} offer
@@ -114,13 +114,15 @@
  * @returns {Promise<InvitationDetails>}
  */
 
+// XXX include `SourceBundle` because that's how this function is used.
+// ??? why isn't SourceBundle a Bundle?
 /**
  * @callback InstallBundle
  *
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.
  *
- * @param {Bundle} bundle
+ * @param {Bundle | SourceBundle} bundle
  * @returns {Promise<Installation>}
  */
 

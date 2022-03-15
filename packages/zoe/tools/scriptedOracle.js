@@ -42,7 +42,6 @@ export async function makeScriptedOracle(
   });
 
   /** @type {OracleStartFnResult} */
-  // @ts-expect-error FIXME
   const startResult = await E(zoe).startInstance(oracleInstallation, {
     Fee: feeIssuer,
   });

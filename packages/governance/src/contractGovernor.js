@@ -84,7 +84,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * timer: Timer,
  * electorateInstance: Instance,
  * governedContractInstallation: Installation,
- * governed: { issuerKeywordRecord: IssuerKeywordRecord, terms: any, privateArgs: unknown},
+ * governed: { issuerKeywordRecord: IssuerKeywordRecord, terms: any, privateArgs: any},
  * }>} zcf
  */
 const start = async zcf => {

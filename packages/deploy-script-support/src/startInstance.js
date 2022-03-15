@@ -4,7 +4,27 @@ import { assert } from '@agoric/assert';
 import { E } from '@agoric/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 
-/** @type {MakeStartInstanceAndSave} */
+/**
+ * @template T
+ * @typedef {Object} PetnameManager
+ * @property {(petname: Petname, object: T) => Promise<void>} rename
+ * @property {(petname: Petname) => T} get
+ * @property { () => Array<[Petname, T]>} getAll
+ * @property {(petname: Petname, object: T) => Promise<void>} add
+ */
+
+/**
+ * @typedef {PetnameManager<Installation>} InstallationManager
+ * @typedef {PetnameManager<Instance>} InstanceManager
+ * @typedef {PetnameManager<Issuer>} IssuerManager
+ */
+
+/**
+ * @param {ERef<IssuerManager>} issuerManager
+ * @param {ERef<InstanceManager>} instanceManager
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<Purse>} zoeInvitationPurse
+ */
 export const makeStartInstance = (
   issuerManager,
   instanceManager,
@@ -32,7 +52,16 @@ export const makeStartInstance = (
     return makeIssuerKeywordRecord(issuerPetnameKeywordRecord);
   };
 
-  /** @type {StartInstanceAndSave} */
+  /**
+   * @template {Installation} I
+   * @param {{
+   * instancePetname: Petname,
+   * installation: I,
+   * issuerKeywordRecord?: IssuerKeywordRecord,
+   * issuerPetnameKeywordRecord?: Record<Keyword,Petname>,
+   * terms?: Object,
+   * }} config
+   */
   const startInstance = async config => {
     const {
       instancePetname,

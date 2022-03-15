@@ -14,13 +14,27 @@ export type ContractOfInstallation<Type> = Type extends Installation<infer X>
   ? X
   : never;
 
-export type ContractKit<C> = {
-  creatorFacet: C['creatorFacet'];
-  publicFacet: C['publicFacet'];
-  instance: Instance;
-  creatorInvitation: C['creatorInvitation'];
-  adminFacet: AdminFacet;
-};
+interface ContractSpec {
+  creatorFacet?: {};
+  publicFacet?: {};
+  creatorInvitation?: Payment;
+}
+
+export type ContractKit<C> = C extends ContractSpec
+  ? {
+      creatorFacet: C['creatorFacet'];
+      publicFacet: C['publicFacet'];
+      instance: Instance;
+      creatorInvitation: C['creatorInvitation'];
+      adminFacet: AdminFacet;
+    }
+  : {
+      creatorFacet: any;
+      publicFacet: any;
+      instance: Instance;
+      creatorInvitation: any;
+      adminFacet: AdminFacet;
+    };
 
 export type CKitForInstallation<I> = ContractKit<ContractOfInstallation<I>>;
 
@@ -41,7 +55,7 @@ export type CKitForInstallation<I> = ContractKit<ContractOfInstallation<I>>;
  * by the contract.
  */
 export type StartInstance = <I extends Installation<any>>(
-  installation: I,
+  installation: I | Promise<I>,
   issuerKeywordRecord?: IssuerKeywordRecord,
   terms?: Object,
   privateArgs?: Object,

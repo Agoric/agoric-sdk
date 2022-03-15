@@ -33,10 +33,14 @@ const setupContract = async () => {
     bundleSource(counterRoot),
   ]);
   // install the contract
+  /** @typedef {Installation<import('../../src/committee.js').CommitteeContract>} CommitteInstallation */
+  /** @type {[CommitteInstallation, Installation<import('../../src/binaryVoteCounter.js').BinaryVoteCounterContract>] } */
   const [electorateInstallation, counterInstallation] = await Promise.all([
     E(zoe).install(electorateBundle),
     E(zoe).install(counterBundle),
   ]);
+  /** @typedef {typeof electorateInstallation} EI */
+  /** @typedef {import('@agoric/zoe/src/zoeService/utils').ContractOfInstallation<EI>} EC */
   const terms = { committeeName: 'illuminati', committeeSize: 13 };
   const electorateStartResult = await E(zoe).startInstance(
     electorateInstallation,

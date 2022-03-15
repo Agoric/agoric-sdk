@@ -237,11 +237,11 @@
 /**
  * @template { (zcf?: any, privateArgs?: any) => {creatorFacet?: unknown, creatorInvitation?: unknown, publicFacet?: unknown } } S start function
  * @typedef ContractOfSync
- * @property {ReturnType<Awaited<S>>['creatorFacet']} creatorFacet
- * @property {ReturnType<Awaited<S>>['publicFacet']} publicFacet
+ * @property {ReturnType<S>['creatorFacet']} creatorFacet
+ * @property {ReturnType<S>['publicFacet']} publicFacet
  * @property {ReturnType<Parameters<S>[0]['getTerms']>} terms
  * @property {Parameters<S>[1]} privateArgs
- * @property {ReturnType<Awaited<S>>['creatorInvitation']} creatorInvitation
+ * @property {ReturnType<S>['creatorInvitation']} creatorInvitation
  */
 
 /**
