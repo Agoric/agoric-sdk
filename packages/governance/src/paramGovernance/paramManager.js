@@ -269,7 +269,6 @@ const makeParamManagerBuilder = zoe => {
     /** @type {Record<Keyword,ParamRecord>} */
     const descriptions = {};
     for (const [name, param] of namesToParams.entries()) {
-      console.log(name, param);
       descriptions[name] = param.makeDescription();
     }
     return harden(descriptions);
