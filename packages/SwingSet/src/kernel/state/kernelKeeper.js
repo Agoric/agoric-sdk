@@ -1300,10 +1300,12 @@ export default function makeKernelKeeper(
     return harden(vatIDs);
   }
 
+  /*
+   * @returns { DeviceID | undefined }
+   */
   function getDeviceIDForName(name) {
     assert.typeof(name, 'string');
     const k = `device.name.${name}`;
-    assert(kvStore.has(k), X`device name ${name} must exist, but doesn't`);
     return kvStore.get(k);
   }
 

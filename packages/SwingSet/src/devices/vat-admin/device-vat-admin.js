@@ -93,9 +93,6 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
 
 export function buildDevice(tools, endowments) {
   const { hasBundle, getBundle, getNamedBundleID } = endowments;
-  const { pushCreateVatBundleEvent, pushCreateVatIDEvent } = endowments;
-  const { pushUpgradeVatEvent } = endowments;
-  const { terminate } = endowments;
   const { meterCreate, meterAddRemaining, meterSetThreshold, meterGet } =
     endowments;
 
@@ -194,65 +191,43 @@ export function buildDevice(tools, endowments) {
 
         // D(devices.vatAdmin).createByBundle(bundle, options) -> vatID
         if (method === 'createByBundle') {
-          // see #4588
-          assert.equal(argsCapdata.slots.length, 0, 'cannot handle refs');
-          const args = unserialize(argsCapdata);
-          const [bundle, options] = args;
-          // options cannot hold caps yet, but I expect #4486 will remove
-          // this case before #4381 needs them here
-          const vatID = pushCreateVatBundleEvent(bundle, options);
+          const res = syscall.callKernelHook('createByBundle', argsCapdata);
+          const vatID = JSON.parse(res.body);
+          assert.typeof(vatID, 'string', `createByBundle gave non-VatID`);
           return returnFromInvoke(vatID);
         }
 
         // D(devices.vatAdmin).createByBundleID(bundleID, options) -> vatID
         if (method === 'createByBundleID') {
-          // see #4588
-          assert.equal(argsCapdata.slots.length, 0, 'cannot handle refs');
-          const args = unserialize(argsCapdata);
-          const [bundleID, options] = args;
-          assert.typeof(bundleID, 'string', `createByBundleID() bundleID`);
-          // TODO: options cannot hold caps yet, #4381 will want them in
-          // vatParameters, follow the pattern in terminateWithFailure
-          const vatID = pushCreateVatIDEvent(bundleID, options);
+          const res = syscall.callKernelHook('createByID', argsCapdata);
+          const vatID = JSON.parse(res.body);
+          assert.typeof(vatID, 'string', `createByID gave non-VatID`);
           return returnFromInvoke(vatID);
         }
 
-        // D(devices.vatAdmin).upgradeVat(bundleID, vatParameters) > upgradeID
+        // D(devices.vatAdmin).upgradeVat(bundleID, vatParameters) -> upgradeID
         if (method === 'upgradeVat') {
-          // see #4381, we really need to accept slots in vatParameters
-          // so we can pass contract bundlecaps to upgraded ZCF
-          const { body, slots } = argsCapdata;
-          // this has all the same problems described in terminateWithFailure
-          assert.equal(slots.length, 0, 'upgradeVat() cannot handle refs yet');
-          const args = JSON.parse(body);
+          const args = JSON.parse(argsCapdata.body);
           assert(Array.isArray(args), 'upgradeVat() args array');
           assert.equal(args.length, 2, `upgradeVat() args length`);
-          const [bundleID, vatParameters] = args;
+          const [bundleID, _vatParameters] = args;
           assert.typeof(bundleID, 'string', `upgradeVat() bundleID`);
-          const vpCapdata = { body: JSON.stringify(vatParameters), slots };
-          const upgradeID = pushUpgradeVatEvent(bundleID, vpCapdata);
+
+          const res = syscall.callKernelHook('upgrade', argsCapdata);
+          const upgradeID = JSON.parse(res.body);
+          assert.typeof(upgradeID, 'string', 'upgradeVat gave non-upgradeID');
           return returnFromInvoke(upgradeID);
         }
 
         // D(devices.vatAdmin).terminateWithFailure(vatID, reason)
         if (method === 'terminateWithFailure') {
-          // 'args' is capdata([vatID, reason]), and comes from vatAdmin (but
-          // 'reason' comes from user code). We want to extract vatID and get
-          // capdata(reason) to send into terminate(). Don't use the
-          // deviceTools serialize(), it isn't a complete marshal and we just
-          // want to passthrough anyways.
-          const { body, slots } = argsCapdata;
-          // TODO: these slots are drefs, and the kernel terminate()
-          // endowment needs krefs, so we forbid them entirely for now
-          // see #4588
-          assert.equal(slots.length, 0, 'cannot handle refs in terminate');
-          const args = JSON.parse(body);
+          const args = JSON.parse(argsCapdata.body);
           assert(Array.isArray(args), 'terminateWithFailure() args array');
           assert.equal(args.length, 2, `terminateWithFailure() args length`);
-          const [vatID, reason] = args;
+          const [vatID, _reason] = args;
           assert.typeof(vatID, 'string', `terminateWithFailure() vatID`);
-          const reasonCapdata = { body: JSON.stringify(reason), slots };
-          terminate(vatID, reasonCapdata);
+
+          syscall.callKernelHook('terminate', argsCapdata);
           return returnFromInvoke(undefined);
         }
 

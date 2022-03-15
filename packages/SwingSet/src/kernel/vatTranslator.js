@@ -154,15 +154,11 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
    * @returns { VatDeliveryStartVat }
    */
   function translateStartVat(kernelVP) {
+    const slots = kernelVP.slots.map(slot => mapKernelSlotToVatSlot(slot));
+    const vatVP = { ...kernelVP, slots };
     /** @type { VatDeliveryStartVat } */
-    return harden(['startVat', kernelVP]); // TODO until capdata
-    // const vatVP = {
-    //   ...kernelVP,
-    //   slots: kernelVP.slots.map(slot => mapKernelSlotToVatSlot(slot)),
-    // };
-    // /** @type { VatDeliveryStartVat } */
-    // const startVatMessageVatDelivery = harden(['startVat', vatVP]);
-    // return startVatMessageVatDelivery;
+    const startVatMessageVatDelivery = harden(['startVat', vatVP]);
+    return startVatMessageVatDelivery;
   }
 
   function translateBringOutYourDead() {
