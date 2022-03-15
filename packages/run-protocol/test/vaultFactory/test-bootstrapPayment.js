@@ -59,8 +59,6 @@ const startContract = async bootstrapPaymentValue => {
     bootstrapPaymentValue,
   };
 
-  const resultP = E(zoe).startInstance(centralSupplyInstall);
-
   const { creatorFacet } = await E(zoe).startInstance(
     centralSupplyInstall,
     harden({}),

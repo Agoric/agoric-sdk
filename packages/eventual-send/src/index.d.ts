@@ -1,18 +1,45 @@
 /* eslint-disable no-shadow,no-use-before-define,no-var,vars-on-top */
 // Type definitions for eventual-send
+// *Eventually* to be moved to @endo/eventual-send
 
-// Sourced from Endo (and edited)
+/**
+ * @file Type definitions for @agoric/eventual-send
+ *
+ * Some useful background knowledge:
+ *
+ * `Omit<T, U>` means to return a record type `T2` which has none of the properties whose keys are part of `U`.
+ * `Omit<{a: 1, b: 2, c: 3}, 'b'>` is the type `{a: 1, c: 3}`.
+ *
+ * `Pick<T, U>` means to return a record type `T2` which has only the properties whose keys are part of `U`.
+ * `Pick<{a: 1, b: 2, c: 3}, 'b'>` is the type `{b: 2}`.
+ *
+ * `PromiseLike<T>` is a thenable which resolves to `T`.
+ *
+ * `Promise<PromiseLike<T>>` doesn't handle recursion and is distinct from `T`.
+ *
+ * `Unpromise<PromiseLike<T>>` strips off just one layer and is just `T`.  `Unpromise<PromiseLike<PromiseLIke<T>>` is `PromiseLike<T>`.
+ *
+ * `Awaited<PromiseLike<T>>` recurses, and is just `T`.
+ * `Awaited<PromiseLike<PromiseLike<T>>>` is just `T` as well.
+ *
+ * @see {@link https://www.typescriptlang.org/docs/handbook/2/generics.html#handbook-content}
+ * @see {@link https://www.typescriptlang.org/docs/handbook/2/conditional-types.html}
+ */
 
 // TODO adopt symbol after https://github.com/endojs/endo/issues/1035 and eventual-send lives in Endo only
 // declare const RemoteTag: unique symbol;
 // For now maintain compatibility with @endo/marshal that is using '__Remote__' literal
 declare const RemoteTag: '__Remote__';
+/**
+ * The remote interface of T
+ */
 export interface Remotable<T> {
   [RemoteTag]: T;
 }
 
 export type Callable = (...args: any[]) => any;
 
+// Same as https://github.com/microsoft/TypeScript/issues/31394
 export type ERef<T> = PromiseLike<T> | T;
 
 // Type for an object that must only be invoked with E.  It supports a given
@@ -25,22 +52,46 @@ export type EOnly<T> = T extends (...args: infer P) => infer R
     }>
   : ERef<T>;
 
+/**
+ * Return a union of property names/symbols/numbers P for which the record element T[P]'s type extends U.
+ *
+ * Given const x = { a: 123, b: 'hello', c: 42, 49: () => {}, 53: 67 },
+ *
+ * FilteredKeys<typeof x, number> is the type 'a' | 'c' | 53.
+ * FilteredKeys<typeof x, string> is the type 'b'.
+ * FilteredKeys<typeof x, 42 | 67> is the type 'c' | 53.
+ * FilteredKeys<typeof x, boolean> is the type never.
+ */
 export type FilteredKeys<T, U> = {
   [P in keyof T]: T[P] extends U ? P : never;
 }[keyof T];
 
+/**
+ * `DataOnly<T>` means to return a record type `T2` consisting only of properties that are *not* functions.
+ */
 export type DataOnly<T> = Omit<T, FilteredKeys<T, Callable>>;
+/**
+ * `FunctionOnly<T>` means to return a record type `T2` consisting only of properties that are functions.
+ */
 export type FunctionOnly<T> = Pick<T, FilteredKeys<T, Callable>> &
   (T extends Callable ? (...args: Parameters<T>) => ReturnType<T> : {});
+
+/**
+ * Creates a type that accepts both near and marshalled references that were returned from `Remotable` or `Far`.
+ */
 export type Remote<Primary, Local = DataOnly<Primary>> = ERef<
   Local & Remotable<Primary>
 >;
 
-export type RemoteFunctions<T> = T extends Remotable<infer U>
-  ? FunctionOnly<U>
-  : Awaited<T> extends Remotable<infer U>
-  ? FunctionOnly<U>
-  : Awaited<T>;
+export type RemoteFunctions<T> = T extends Remotable<infer U> // if a given T is the remote interface of some U
+  ? // then,
+    FunctionOnly<U> // use all the function properties of that U
+  : // otherwise,
+  Awaited<T> extends Remotable<infer U> // if the final resolution of T is the remote interface of some U
+  ? // then,
+    FunctionOnly<U> // use the function properties of that U
+  : // otherwise,
+    Awaited<T>; // use the final resolution of that T
 
 export type PromisedData<T> = T extends Remotable<infer U>
   ? DataOnly<U>
