@@ -19,7 +19,7 @@ const trace = makeTracer('LM');
  */
 
 /**
- * @type ContractStartFn<undefined, {makeDebtorInvitation: unknown}, {
+ * @type ContractStartFn<undefined, {makeDebtorInvitation: (debtAmount: Amount) => Promise<Invitation>}, {
  *   amm: AutoswapPublicFacet,
  * }>
  */
