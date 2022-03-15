@@ -161,6 +161,7 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @callback IssuerGetAmountOf
  *
  * Get the amount of digital assets in the payment. Because the
@@ -171,8 +172,7 @@
  * resolution.
  *
  * @param {ERef<Payment>} payment
- * @returns {Promise<Amount>}
- *
+ * @returns {Promise<Amount<K>>}
  */
 
 /**
@@ -244,7 +244,7 @@
  * @property {() => Purse} makeEmptyPurse Make an empty purse of this
  * brand.
  * @property {IssuerIsLive} isLive
- * @property {IssuerGetAmountOf} getAmountOf
+ * @property {IssuerGetAmountOf<K>} getAmountOf
  * @property {IssuerBurn} burn
  * @property {IssuerClaim} claim
  * @property {IssuerCombine} combine
