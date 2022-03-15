@@ -10,7 +10,6 @@ export default [
   "@agoric/deployment",
   "@agoric/ertp",
   "@agoric/eslint-config",
-  "@endo/eventual-send",
   "@agoric/governance",
   "@agoric/import-manager",
   "@agoric/notifier",
