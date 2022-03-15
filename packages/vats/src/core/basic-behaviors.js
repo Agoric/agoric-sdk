@@ -199,13 +199,13 @@ export const mintInitialSupply = async ({
   const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
 
   const installation = E(zoe).install(centralSupplyBundle);
-  const start = E(zoe).startInstance(
+  const { creatorFacet } = await E(zoe).startInstance(
     installation,
     {},
     { bootstrapPaymentValue },
     { feeMintAccess },
   );
-  const payment = await E(E.get(start).creatorFacet).getBootstrapPayment();
+  const payment = creatorFacet.getBootstrapPayment();
   // TODO: shut down the centralSupply contract, now that we have the payment?
   initialSupply.resolve(payment);
 };
@@ -233,18 +233,17 @@ export const addBankAssets = async ({
 
   const bundle = await mintHolderBundle;
 
-  /** @type {StartInstance<Issuer, Mint>} cast, XXX E() loses the method type */
-  const startInstance = E(zoe).startInstance;
-  const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
-    startInstance(
-      E(zoe).install(bundle),
-      harden({}),
-      harden({
-        keyword: Tokens.BLD.name,
-        assetKind: AssetKind.NAT,
-        displayInfo: Tokens.BLD.displayInfo,
-      }),
-    ),
+  /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
+  const { creatorFacet: bldMint, publicFacet: bldIssuer } = await E(
+    zoe,
+  ).startInstance(
+    E(zoe).install(bundle),
+    harden({}),
+    harden({
+      keyword: Tokens.BLD.name,
+      assetKind: AssetKind.NAT,
+      displayInfo: Tokens.BLD.displayInfo,
+    }),
   );
   const bldBrand = await E(bldIssuer).getBrand();
   const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
