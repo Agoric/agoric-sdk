@@ -1,54 +1,67 @@
-/* eslint-disable no-shadow,no-unused-vars,no-use-before-define,no-var,vars-on-top */
+/* eslint-disable no-shadow,no-use-before-define,no-var,vars-on-top */
 // Type definitions for eventual-send
-// TODO: Add jsdocs.
 
-type Property = string | number | symbol;
+// Sourced from Endo
 
-type ERef<T> = PromiseLike<T> | T;
+export type Callable = (...args: any[]) => any;
+
+export type ERef<T> = PromiseLike<T> | T;
 
 // Type for an object that must only be invoked with E.  It supports a given
 // interface but declares all the functions as asyncable.
 export type EOnly<T> = T extends (...args: infer P) => infer R
   ? (...args: P) => ERef<R> | EOnly<R>
-  : T extends Record<string | number | symbol, Function>
+  : T extends Record<PropertyKey, Callable>
   ? ERef<{
       [K in keyof T]: EOnly<T[K]>;
     }>
   : ERef<T>;
 
-type FilteredKeys<T, U> = {
+export type FilteredKeys<T, U> = {
   [P in keyof T]: T[P] extends U ? P : never;
 }[keyof T];
 
-type DataOnly<T> = Omit<T, FilteredKeys<T, Function>>;
-type FunctionOnly<T> = Pick<T, FilteredKeys<T, Function>> &
-  (T extends Function ? (...args: Parameters<T>) => ReturnType<T> : {});
-
-interface Remotable<T> {
+export type DataOnly<T> = Omit<T, FilteredKeys<T, Callable>>;
+export type FunctionOnly<T> = Pick<T, FilteredKeys<T, Callable>> &
+  (T extends Callable ? (...args: Parameters<T>) => ReturnType<T> : {});
+export interface Remotable<T> {
   __Remote__: T;
 }
-type Remote<Primary, Local = DataOnly<Primary>> = ERef<
+export type Remote<Primary, Local = DataOnly<Primary>> = ERef<
   Local & Remotable<Primary>
 >;
-interface EHandler<T> {
-  get?: (p: T, name: Property, returnedP?: Promise<unknown>) => any;
-  getSendOnly?: (p: T, name: Property) => void;
+
+export type RemoteFunctions<T> = T extends Remotable<infer U>
+  ? FunctionOnly<U>
+  : Awaited<T> extends Remotable<infer U>
+  ? FunctionOnly<U>
+  : Awaited<T>;
+
+export type PromisedData<T> = T extends Remotable<infer U>
+  ? DataOnly<U>
+  : Awaited<T> extends Remotable<infer U>
+  ? DataOnly<U>
+  : Awaited<T>;
+
+export interface EHandler<T> {
+  get?: (p: T, name: PropertyKey, returnedP?: Promise<unknown>) => any;
+  getSendOnly?: (p: T, name: PropertyKey) => void;
   applyFunction?: (p: T, args: unknown[], returnedP?: Promise<unknown>) => any;
   applyFunctionSendOnly?: (p: T, args: unknown[]) => void;
   applyMethod?: (
     p: T,
-    name: Property | undefined,
+    name: PropertyKey | undefined,
     args: unknown[],
     returnedP?: Promise<unknown>,
   ) => any;
   applyMethodSendOnly?: (
     p: T,
-    name: Property | undefined,
+    name: PropertyKey | undefined,
     args: unknown[],
   ) => void;
 }
 
-type HandledExecutor<R> = (
+export type HandledExecutor<R> = (
   resolveHandled: (value?: R) => void,
   rejectHandled: (reason?: unknown) => void,
   resolveWithPresence: (
@@ -57,7 +70,7 @@ type HandledExecutor<R> = (
   ) => object,
 ) => void;
 
-type ResolveWithPresenceOptionsBag<T extends Object> = {
+export type ResolveWithPresenceOptionsBag<T extends Object> = {
   proxy?: {
     handler: ProxyHandler<T>;
     target: unknown;
@@ -65,22 +78,26 @@ type ResolveWithPresenceOptionsBag<T extends Object> = {
   };
 };
 
-declare interface HandledPromiseStaticMethods {
-  resolve<T>(x: T): Promise<Awaited<T>>;
-  resolve(): Promise<undefined>;
+export interface HandledPromiseStaticMethods {
+  resolve(): Promise<void>;
+  resolve<T>(value: T | PromiseLike<T>): Promise<T>;
   applyFunction(target: unknown, args: unknown[]): Promise<unknown>;
   applyFunctionSendOnly(target: unknown, args: unknown[]): void;
   applyMethod(
     target: unknown,
-    prop: Property | undefined,
+    prop: PropertyKey | undefined,
     args: unknown[],
   ): Promise<unknown>;
-  applyMethodSendOnly(target: unknown, prop: Property, args: unknown[]): void;
-  get(target: unknown, prop: Property): Promise<unknown>;
-  getSendOnly(target: unknown, prop: Property): void;
+  applyMethodSendOnly(
+    target: unknown,
+    prop: PropertyKey,
+    args: unknown[],
+  ): void;
+  get(target: unknown, prop: PropertyKey): Promise<unknown>;
+  getSendOnly(target: unknown, prop: PropertyKey): void;
 }
 
-declare interface HandledPromiseConstructor
+export interface HandledPromiseConstructor
   extends PromiseConstructor,
     HandledPromiseStaticMethods {
   new <R>(
@@ -90,21 +107,19 @@ declare interface HandledPromiseConstructor
   prototype: Promise<unknown>;
 }
 
-declare var HandledPromise: HandledPromiseConstructor;
+export declare const HandledPromise: HandledPromiseConstructor;
 
 declare namespace global {
   var HandledPromise: HandledPromiseConstructor;
 }
 
-declare function makeHandledPromise(): HandledPromiseConstructor;
-
 /* Types for E proxy calls. */
 type ESingleMethod<T> = {
-  readonly [P in keyof T]: (
-    ...args: Parameters<T[P]>
-  ) => Promise<Awaited<ReturnType<T[P]>>>;
+  readonly [P in keyof T]: T[P] extends Callable
+    ? (...args: Parameters<T[P]>) => Promise<Awaited<ReturnType<T[P]>>>
+    : never;
 };
-type ESingleCall<T> = T extends Function
+type ESingleCall<T> = T extends Callable
   ? ((...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>>) &
       ESingleMethod<Required<T>>
   : ESingleMethod<Required<T>>;
@@ -114,9 +129,11 @@ type ESingleGet<T> = {
 
 /* Same types for send-only. */
 type ESingleMethodOnly<T> = {
-  readonly [P in keyof T]: (...args: Parameters<T[P]>) => void;
+  readonly [P in keyof T]: T[P] extends Callable
+    ? (...args: Parameters<T[P]>) => void
+    : never;
 };
-type ESingleCallOnly<T> = T extends Function
+type ESingleCallOnly<T> = T extends Callable
   ? ((...args: Parameters<T>) => void) & ESingleMethodOnly<T>
   : ESingleMethodOnly<T>;
 type ESingleGetOnly<T> = {
@@ -137,13 +154,7 @@ interface EProxy {
    * @param {*} x target for method/function call
    * @returns {ESingleCall} method/function call proxy
    */
-  <T>(x: T): ESingleCall<
-    T extends Remotable<infer U>
-      ? FunctionOnly<U>
-      : Awaited<T> extends Remotable<infer U>
-      ? FunctionOnly<U>
-      : Awaited<T>
-  >;
+  <T>(x: T): ESingleCall<RemoteFunctions<T>>;
 
   /**
    * E.get(x) returns a proxy on which you can get arbitrary properties.
@@ -154,15 +165,7 @@ interface EProxy {
    * @param {*} x target for property get
    * @returns {ESingleGet} property get proxy
    */
-  readonly get: <T>(
-    x: T,
-  ) => ESingleGet<
-    T extends Remotable<infer U>
-      ? DataOnly<U>
-      : Awaited<T> extends Remotable<infer U>
-      ? DataOnly<U>
-      : Awaited<T>
-  >;
+  readonly get: <T>(x: T) => ESingleGet<PromisedData<T>>;
 
   /**
    * E.resolve(x) converts x to a handled promise. It is
