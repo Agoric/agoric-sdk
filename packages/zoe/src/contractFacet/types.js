@@ -1,5 +1,6 @@
 /// <reference types="ses"/>
 
+// XXX can be tighter than 'any'
 /**
  * @typedef {any} Completion
  * Any passable non-thenable. Often an explanatory string.
@@ -240,6 +241,7 @@
  * @property {ReturnType<Awaited<S>>['publicFacet']} publicFacet
  * @property {ReturnType<Parameters<S>[0]['getTerms']>} terms
  * @property {Parameters<S>[1]} privateArgs
+ * @property {ReturnType<Awaited<S>>['creatorInvitation']} creatorInvitation
  */
 
 /**
@@ -249,4 +251,5 @@
  * @property {Awaited<ReturnType<S>>['publicFacet']} publicFacet
  * @property {ReturnType<Parameters<S>[0]['getTerms']>} terms
  * @property {Parameters<S>[1]} privateArgs
+ * @property {Awaited<ReturnType<S>>['creatorInvitation']} creatorInvitation
  */
