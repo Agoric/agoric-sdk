@@ -43,15 +43,8 @@ export {
 } from './validators.js';
 
 export {
-  makeGovernedAmount,
-  makeGovernedBrand,
-  makeGovernedInstallation,
-  makeGovernedInstance,
   makeGovernedInvitation,
   makeGovernedNat,
-  makeGovernedRatio,
-  makeGovernedString,
-  makeGovernedUnknown,
 } from './paramGovernance/paramMakers.js';
 
 export { makeBinaryVoteCounter } from './binaryVoteCounter.js';

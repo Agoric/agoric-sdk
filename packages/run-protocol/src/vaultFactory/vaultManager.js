@@ -48,8 +48,8 @@ const trace = makeTracer('VM');
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {{
- *  ChargingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
- *  RecordingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
+ *  ChargingPeriod: ParamRecord<'relativeTime'>
+ *  RecordingPeriod: ParamRecord<'relativeTime'>
  * }} timingParams
  * @param {{
  *  getInterestRate: () => Ratio,

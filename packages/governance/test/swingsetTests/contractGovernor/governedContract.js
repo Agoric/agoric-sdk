@@ -3,12 +3,12 @@
 import { keyEQ } from '@agoric/store';
 
 import { handleParamGovernance } from '../../../src/contractHelper.js';
+import { makeParamManager } from '../../../src/index.js';
 import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
 import {
   makeGovernedNat,
   makeGovernedInvitation,
 } from '../../../src/paramGovernance/paramMakers.js';
-import { makeParamManager } from '../../../src/index.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 

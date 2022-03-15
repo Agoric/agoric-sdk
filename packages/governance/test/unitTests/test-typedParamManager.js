@@ -324,7 +324,7 @@ test('Strings', async t => {
 
 test('Unknown', async t => {
   const paramManager = makeParamManagerSync({
-    Label: ['string', 'birtday'],
+    Label: ['string', 'birthday'],
     Surprise: ['unknown', 'party'],
   });
   t.is(paramManager.getSurprise(), 'party');
