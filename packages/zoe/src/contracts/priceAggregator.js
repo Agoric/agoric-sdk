@@ -335,6 +335,9 @@ const start = async zcf => {
     getPriceAuthority() {
       return priceAuthority;
     },
+    async getRoundStartNotifier() {
+      return undefined;
+    },
   });
 
   return harden({ creatorFacet, publicFacet });
