@@ -3,6 +3,14 @@
 
 // Sourced from Endo (and edited)
 
+// TODO adopt symbol after https://github.com/endojs/endo/issues/1035 and eventual-send lives in Endo only
+// declare const RemoteTag: unique symbol;
+// For now maintain compatibility with @endo/marshal that is using '__Remote__' literal
+declare const RemoteTag: '__Remote__';
+export interface Remotable<T> {
+  [RemoteTag]: T;
+}
+
 export type Callable = (...args: any[]) => any;
 
 export type ERef<T> = PromiseLike<T> | T;
@@ -24,9 +32,6 @@ export type FilteredKeys<T, U> = {
 export type DataOnly<T> = Omit<T, FilteredKeys<T, Callable>>;
 export type FunctionOnly<T> = Pick<T, FilteredKeys<T, Callable>> &
   (T extends Callable ? (...args: Parameters<T>) => ReturnType<T> : {});
-export interface Remotable<T> {
-  __Remote__: T;
-}
 export type Remote<Primary, Local = DataOnly<Primary>> = ERef<
   Local & Remotable<Primary>
 >;
@@ -117,27 +122,25 @@ declare namespace global {
   var HandledPromise: HandledPromiseConstructor;
 }
 
+/**
+ * "E" short for "Eventual", what we call something that has to return a promise.
+ */
+type ECallable<T extends Callable> = ReturnType<T> extends Promise<infer U>
+  ? // function already returns a promise
+    T
+  : // make it return a promise
+    (...args: Parameters<T>) => Promise<ReturnType<T>>;
+
 /* Types for E proxy calls. */
 
 /**
  * Ensure each function in T returns a promise
  */
-type ECalls<T> = {
-  readonly [P in keyof T]: ReturnType<T[P]> extends Promise<infer U>
-    ? // function already returns a promise
-      T[P]
-    : // make it return a promise
-      (...args: Parameters<T[P]>) => Promise<ReturnType<T[P]>>;
+type EMethods<T> = {
+  readonly [P in keyof T]: ECallable<T[P]>;
 };
 
-type ECallsOrSingleCall<T> = T extends Callable
-  ? // If the target itself is callable, return a function to call it
-    ((...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>>) &
-      ECalls<Required<T>>
-  : // Otherwise return a map of method names to functions
-    ECalls<Required<T>>;
-
-type ESingleGets<T> = {
+type EGetters<T> = {
   readonly [P in keyof T]: Promise<Awaited<T[P]>>;
 };
 
@@ -169,7 +172,14 @@ interface EProxy {
    * @param x target for method/function call
    * @returns method/function call proxy
    */
-  <T>(x: T): ECallsOrSingleCall<RemoteFunctions<T>>;
+  // T is an object of methods
+  <T>(x: T): EMethods<Required<RemoteFunctions<T>>>;
+  /**
+   * T is callable, but may still contain methods. E.g.,
+   * const a = () => 'primary';
+   * a.foo = () => 'nested';
+   */
+  <T extends Callable>(x: T): ECallable<T> & EMethods<Required<T>>;
 
   /**
    * E.get(x) returns a proxy on which you can get arbitrary properties.
@@ -180,7 +190,7 @@ interface EProxy {
    * @param x target for property get
    * @returns property get proxy
    */
-  readonly get: <T>(x: T) => ESingleGets<PromisedData<T>>;
+  readonly get: <T>(x: T) => EGetters<PromisedData<T>>;
 
   /**
    * E.resolve(x) converts x to a handled promise. It is
