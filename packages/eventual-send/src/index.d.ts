@@ -223,14 +223,13 @@ interface EProxy {
    * @param x target for method/function call
    * @returns method/function call proxy
    */
-  // T is an object of methods
-  <T>(x: T): EMethods<Required<RemoteFunctions<T>>>;
-  /**
-   * T is callable, but may still contain methods. E.g.,
-   * const a = () => 'primary';
-   * a.foo = () => 'nested';
-   */
+  // T is callable, but may still contain methods. E.g.,
+  // const a = () => 'primary';
+  // a.foo = () => 'nested';
   <T extends Callable>(x: T): ECallable<T> & EMethods<Required<T>>;
+  // T is an object of methods.
+  // Must be defined after the `T extends Callable` overload so it doesn't consume that case.
+  <T>(x: T): EMethods<Required<RemoteFunctions<T>>>;
 
   /**
    * E.get(x) returns a proxy on which you can get arbitrary properties.
