@@ -44,16 +44,20 @@ export type PromisedData<T> = T extends Remotable<infer U>
   : Awaited<T>;
 
 export interface EHandler<T> {
-  get?: (p: T, name: PropertyKey, returnedP?: Promise<unknown>) => any;
+  get?: (p: T, name: PropertyKey, returnedP?: Promise<unknown>) => unknown;
   getSendOnly?: (p: T, name: PropertyKey) => void;
-  applyFunction?: (p: T, args: unknown[], returnedP?: Promise<unknown>) => any;
+  applyFunction?: (
+    p: T,
+    args: unknown[],
+    returnedP?: Promise<unknown>,
+  ) => unknown;
   applyFunctionSendOnly?: (p: T, args: unknown[]) => void;
   applyMethod?: (
     p: T,
     name: PropertyKey | undefined,
     args: unknown[],
     returnedP?: Promise<unknown>,
-  ) => any;
+  ) => unknown;
   applyMethodSendOnly?: (
     p: T,
     name: PropertyKey | undefined,
