@@ -177,10 +177,14 @@ const makeParamManagerBuilder = zoe => {
     assert(instance && installation, 'must be an invitation');
   };
 
-  // Invitations are closely held, so we should only reveal the amount publicly.
-  // ??? how is this guaranteed: ?
-  // getInternalValue() will only be accessible within the contract.
   /**
+   * Invitations are closely held, so we should publicly reveal only the amount.
+   * The approach here makes it possible for contracts to get the actual
+   * invitation privately, and legibly assure clients that it matches the
+   * publicly visible invitation amount. Contract reviewers still have to
+   * manually verify that the actual invitation is handled carefully.
+   * `getInternalValue()` will only be accessible within the contract.
+   *
    * @param {string} name
    * @param {Invitation} invitation
    */
