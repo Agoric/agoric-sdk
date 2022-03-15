@@ -1,6 +1,6 @@
 // @ts-check
 
-import { E as defaultE } from '@agoric/eventual-send';
+import { E as defaultE } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';

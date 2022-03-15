@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 
 /** @type {MakeStartInstanceAndSave} */

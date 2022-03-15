@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@agoric/eventual-send": "^0.14.1",
+    "@endo/eventual-send": "^0.14.1",
     "@endo/bundle-source": "^2.1.1",
     "@endo/init": "^0.5.37",
     "@endo/netstring": "^0.3.7",

@@ -2,7 +2,7 @@
 
 import '../../../exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 import { offerTo } from '../../contractSupport/zoeHelpers.js';

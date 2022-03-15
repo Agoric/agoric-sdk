@@ -32,7 +32,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@agoric/eventual-send": "^0.14.1",
+    "@endo/eventual-send": "^0.14.1",
     "@endo/marshal": "^0.6.3",
     "@endo/promise-kit": "^0.2.37"
   },

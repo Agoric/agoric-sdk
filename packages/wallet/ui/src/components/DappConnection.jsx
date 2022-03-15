@@ -1,4 +1,4 @@
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import Chip from '@mui/material/Chip';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';

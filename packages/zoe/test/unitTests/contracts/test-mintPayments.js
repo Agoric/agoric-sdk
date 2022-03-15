@@ -5,7 +5,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 

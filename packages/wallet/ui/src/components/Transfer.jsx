@@ -15,7 +15,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import { parseAsValue } from '@agoric/ui-components';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import Snackbar from '@mui/material/Snackbar';
 import PurseAmount from './PurseAmount';
 import { withApplicationContext } from '../contexts/Application';

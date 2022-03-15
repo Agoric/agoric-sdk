@@ -3,7 +3,7 @@
 // I turned off dot-notation so eslint won't rewrite the grep-preserving
 // test.stuff patterns.
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { quote as q } from '@agoric/assert';
 import { Far } from '@endo/marshal';
