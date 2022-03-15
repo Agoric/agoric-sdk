@@ -3,10 +3,13 @@
 import { Far } from '@endo/marshal';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
-// A Faucet providing RUN so we can provide initial liquidity to the AMM so the
-// VaultFactory can reliably liquidate.
-
-/** @type {ContractStartFn} */
+/**
+ * A Faucet providing RUN so we can provide initial liquidity to the AMM so the
+ * VaultFactory can reliably liquidate.
+ *
+ * @param {ContractFacet} zcf
+ * @param {{feeMintAccess: FeeMintAccess}} privateArgs
+ */
 export async function start(zcf, privateArgs) {
   const { feeMintAccess } = privateArgs;
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
@@ -30,3 +33,5 @@ export async function start(zcf, privateArgs) {
   const creatorFacet = Far('faucetInvitationMaker', { makeFaucetInvitation });
   return harden({ creatorFacet });
 }
+
+/** @typedef {ContractOfAsync<start>} FaucetContract */

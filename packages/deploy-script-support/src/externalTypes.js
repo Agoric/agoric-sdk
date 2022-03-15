@@ -8,7 +8,7 @@
 /**
  * @typedef {Object} StartInstanceAndSaveConfig
  * @property {Petname} instancePetname
- * @property {ERef<Installation>} installation
+ * @property {Installation} installation
  * @property {IssuerKeywordRecord=} issuerKeywordRecord
  * @property {Record<Keyword,Petname>=} issuerPetnameKeywordRecord
  * @property {Object=} terms

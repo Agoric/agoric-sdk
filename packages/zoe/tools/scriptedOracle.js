@@ -13,12 +13,11 @@ import { Far } from '@endo/marshal';
  * time, the event is 'nothing to report'.
  *
  * @param {Record<string, any>} script
- * @param {Installation} oracleInstallation
+ * @param {Installation<import('../src/contracts/oracle').OracleContract>} oracleInstallation
  * @param {TimerService} timer
  * @param {ZoeService} zoe
  * @param {Issuer} feeIssuer
  */
-
 export async function makeScriptedOracle(
   script,
   oracleInstallation,
@@ -43,6 +42,7 @@ export async function makeScriptedOracle(
   });
 
   /** @type {OracleStartFnResult} */
+  // @ts-expect-error FIXME
   const startResult = await E(zoe).startInstance(oracleInstallation, {
     Fee: feeIssuer,
   });

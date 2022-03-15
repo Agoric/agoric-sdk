@@ -85,6 +85,7 @@ const start = zcf => {
 
     const { userSeatPromise: coveredCallUserSeat } = await offerTo(
       zcf,
+      // @ts-expect-error FIXME
       creatorInvitation,
       undefined,
       proposal,

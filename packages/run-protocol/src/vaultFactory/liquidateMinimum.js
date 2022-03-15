@@ -16,9 +16,9 @@ const trace = makeTracer('LM');
  * necessary. Because it has offer safety, it can refuse the trade. When that
  * happens, we fall back to selling using the default strategy, which currently
  * uses the AMM's swapIn instead.
+ *
+ * @param {ContractFacet<{amm: any}>} zcf
  */
-
-/** @type {ContractStartFn} */
 const start = async zcf => {
   const { amm } = zcf.getTerms();
 
@@ -123,3 +123,5 @@ harden(start);
 harden(makeLiquidationStrategy);
 
 export { start, makeLiquidationStrategy };
+
+/** @typedef {ContractOfAsync<start>} LiquidateMinimumContract */

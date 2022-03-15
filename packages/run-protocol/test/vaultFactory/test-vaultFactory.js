@@ -176,14 +176,17 @@ async function getRunFromFaucet(
   runInitialLiquidity,
 ) {
   const bundle = await bundlePs.faucet;
+  /** @type {Installation<import('./faucet.js').FaucetContract>} */
+  const installation = E(zoe).install(bundle);
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
-    E(zoe).install(bundle),
+    installation,
     {},
     {},
     harden({ feeMintAccess }),
   );
   const faucetSeat = E(zoe).offer(
+    // @ts-expect-error FIXME
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
