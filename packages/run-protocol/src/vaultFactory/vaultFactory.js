@@ -109,13 +109,13 @@ export const start = async (zcf, privateArgs) => {
 
   /** @type {AddVaultType} */
   const addVaultType = async (collateralIssuer, collateralKeyword, rates) => {
-    await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     // We create only one vault per collateralType.
     assert(
       !collateralTypes.has(collateralBrand),
       `Collateral brand ${collateralBrand} has already been added`,
     );
+    await zcf.saveIssuer(collateralIssuer, collateralKeyword);
 
     /** a powerful object; can modify parameters */
     const vaultParamManager = makeVaultParamManager(rates);
