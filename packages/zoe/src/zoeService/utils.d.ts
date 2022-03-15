@@ -55,7 +55,7 @@ export type CKitForInstallation<I> = ContractKit<ContractOfInstallation<I>>;
  * by the contract.
  */
 export type StartInstance = <I extends Installation<any>>(
-  installation: I | Promise<I>,
+  installation: I | PromiseLike<I>,
   issuerKeywordRecord?: IssuerKeywordRecord,
   terms?: Object,
   privateArgs?: Object,

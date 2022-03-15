@@ -115,7 +115,7 @@
  */
 
 // XXX include `SourceBundle` because that's how this function is used.
-// ??? why isn't SourceBundle a Bundle?
+// TODO remove this function https://github.com/Agoric/agoric-sdk/issues/4565
 /**
  * @callback InstallBundle
  *
@@ -124,6 +124,9 @@
  *
  * @param {Bundle | SourceBundle} bundle
  * @returns {Promise<Installation>}
+ *
+ * @deprecated
+ * @see InstallBundleID
  */
 
 /**
@@ -279,7 +282,7 @@
  */
 
 /**
- * @template [C=unknown] contract
+ * @template {ContractSpec} [C] contract
  * @typedef {Object} Installation
  * @property {() => SourceBundle} getBundle
  */
