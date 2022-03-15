@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 // Wait for the wallet to finish loading.
 export const waitForBootstrap = async getBootstrap => {

@@ -1,6 +1,6 @@
 import { useState, useReducer } from 'react';
 import { Typography } from '@mui/material';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import Button from '@mui/material/Button';
 import Add from '@mui/icons-material/Add';
 import CircularProgress from '@mui/material/CircularProgress';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import TextField from '@mui/material/TextField';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { withApplicationContext } from '../contexts/Application';
 
 const DappWithoutContext = ({ dapp, dapps }) => {

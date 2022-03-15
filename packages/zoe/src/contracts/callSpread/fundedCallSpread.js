@@ -5,7 +5,7 @@ import './types.js';
 
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import {
   assertProposalShape,

@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import { makeSubscriptionKit } from '@agoric/notifier';

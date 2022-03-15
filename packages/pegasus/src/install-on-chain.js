@@ -1,5 +1,5 @@
 // @ts-check
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 // TODO: TECHDEBT: ambient types don't work here.
 // import '@agoric/vats/src/core/types.js';
 

@@ -25,7 +25,7 @@
     "@agoric/access-token": "^0.4.17",
     "@agoric/assert": "^0.3.16",
     "@agoric/cosmic-swingset": "^0.34.6",
-    "@agoric/eventual-send": "^0.14.1",
+    "@endo/eventual-send": "^0.14.8",
     "@agoric/notifier": "^0.3.35",
     "@agoric/spawner": "^0.4.35",
     "@agoric/store": "^0.6.10",

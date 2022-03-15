@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-import '@agoric/eventual-send/shim';
+import '@endo/eventual-send/shim';
 
 import React from 'react';
 import ReactDOM from 'react-dom';

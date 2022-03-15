@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import {
   makeNetworkProtocol,
   makeLoopbackProtocolHandler,

@@ -9,7 +9,7 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
 import bundleSource from '@endo/bundle-source';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import { makeZoeKit } from '../../../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../../../tools/fakeVatAdmin.js';

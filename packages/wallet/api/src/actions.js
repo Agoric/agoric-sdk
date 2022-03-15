@@ -2,7 +2,7 @@
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 export const makePaymentActions = ({
   getBrandRecord,
