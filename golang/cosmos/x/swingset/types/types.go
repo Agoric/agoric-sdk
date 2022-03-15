@@ -89,6 +89,9 @@ func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
 			return nil, errors.New("Message Num is not an integer")
 		}
 		ret.Nums[i], err = Nat(numFloat)
+		if err != nil {
+			return nil, errors.New("Message num is not a Nat")
+		}
 		msg, ok := nummsg[1].(string)
 		if !ok {
 			return nil, errors.New("Message is not a string")
