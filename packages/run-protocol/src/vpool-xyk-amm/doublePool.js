@@ -21,7 +21,7 @@ const publicPrices = prices => {
 };
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {XYKPool} collateralInPool
  * @param {XYKPool} collateralOutPool
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value

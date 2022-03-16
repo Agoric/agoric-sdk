@@ -11,7 +11,7 @@ import { E } from '@agoric/eventual-send';
 /**
  * This contract provides oracle queries for a fee or for free.
  *
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  */
 const start = async zcf => {
   const feeBrand = zcf.getTerms().brands.Fee;

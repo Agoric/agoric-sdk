@@ -8,7 +8,7 @@ import {
 } from './constantProduct/calcSwapPrices.js';
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {XYKPool} pool
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value

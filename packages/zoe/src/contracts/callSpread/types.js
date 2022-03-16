@@ -16,7 +16,7 @@
 
 /**
  * @callback MakePayoffHandler
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {Record<PositionKind,PromiseRecord<ZCFSeat>>} seatPromiseKits
  * @param {ZCFSeat} collateralSeat
  * @returns {PayoffHandler}

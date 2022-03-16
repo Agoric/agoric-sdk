@@ -15,7 +15,7 @@
 // XXX TODO change `any` to `unknown`
 /**
  * @template {object} [CT=Record<string, any>] Contract's custom terms
- * @typedef {Object} ContractFacet
+ * @typedef {Object} ZoeCF
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
  * Facet is an API object used by running contract instances to access
@@ -220,7 +220,7 @@
  * @template {object=} [CT=Record<string, any] Custom terms
  * @template {object=} [PA=any] Private args
  * @callback ContractStartFn
- * @param {ContractFacet<CT>} zcf
+ * @param {ZoeCF<CT>} zcf
  * @param {PA} privateArgs
  * @returns {ContractStartFnResult<PF, CF>}
  */

@@ -241,7 +241,7 @@ export const makeZCFZygote = (
     return doMakeZCFMint(keyword, zoeMintP);
   };
 
-  /** @type {ContractFacet} */
+  /** @type {ZoeCF} */
   const zcf = Remotable('Alleged: zcf', undefined, {
     // Using Remotable rather than Far because too many complications
     // imposing checking wrappers: makeInvitation and setJig want to

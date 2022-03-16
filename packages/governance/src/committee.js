@@ -26,7 +26,7 @@ const { ceilDivide } = natSafeMath;
  * for elections where the set of voters needs to be known, unless the contract
  * is used in a way that makes the distribution of voter facets visible.
  *
- * @param {ContractFacet<{
+ * @param {ZoeCF<{
  *   committeeName: string,
  *   committeeSize: number,
  * }>} zcf

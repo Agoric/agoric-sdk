@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {ZCFSeat} feeSeat
  * @param {Brand} runBrand
  */

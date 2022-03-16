@@ -17,7 +17,7 @@ const trace = makeTracer('LM');
  * happens, we fall back to selling using the default strategy, which currently
  * uses the AMM's swapIn instead.
  *
- * @param {ContractFacet<{amm: any}>} zcf
+ * @param {ZoeCF<{amm: any}>} zcf
  */
 const start = async zcf => {
   const { amm } = zcf.getTerms();

@@ -17,7 +17,7 @@ const { details: X, quote: q } = assert;
  *  parameter values, and the governance guarantees only hold if they're not
  *  used directly by the governed contract.
  *
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {ParamManagerFull} paramManager
  * @returns {ParamGovernorBundle}
  */

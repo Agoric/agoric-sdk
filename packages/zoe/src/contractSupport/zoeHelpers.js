@@ -38,7 +38,7 @@ export const assertIssuerKeywords = (zcf, expected) => {
  * (update's values prevailing if the keywords are the same)
  * to produce the newAllocation.
  *
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {ZcfSeatPartial} seat
  * @param {AmountKeywordRecord} update
  * @returns {boolean}
@@ -172,7 +172,7 @@ export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
  * The `amounts` and `payments` records must have corresponding
  * keywords.
  *
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {ZCFSeat} recipientSeat
  * @param {AmountKeywordRecord} amounts
  * @param {PaymentPKeywordRecord} payments
@@ -216,7 +216,7 @@ export async function depositToSeat(zcf, recipientSeat, amounts, payments) {
  * the payments must not and cannot violate offer safety for the seat. The
  * `amounts` and `payments` records must have corresponding keywords.
  *
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {ZCFSeat} seat
  * @param {AmountKeywordRecord} amounts
  * @returns {Promise<PaymentPKeywordRecord>}
@@ -236,7 +236,7 @@ export async function withdrawFromSeat(zcf, seat, amounts) {
  * the method `zcf.saveIssuer`. This does not error if any of the keywords
  * already exist. If the keyword is already present, it is ignored.
  *
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {IssuerKeywordRecord} issuerKeywordRecord Issuers to save to
  * ZCF
  */
@@ -283,7 +283,7 @@ const reverse = (keywordRecord = {}) => {
  * contract instance (contractA) and depositing the payouts in another
  * seat in the current contract instance (contractA).
  *
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  *   Zoe Contract Facet for contractA
  *
  * @param {ERef<Invitation>} invitation
@@ -362,10 +362,10 @@ export const offerTo = async (
  * Create a wrapped version of zcf that asserts an invariant
  * before performing a reallocation.
  *
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {(seats: ZCFSeat[]) => void} assertFn - an assertion
  * that must be true for the reallocate to occur
- * @returns {ContractFacet}
+ * @returns {ZoeCF}
  */
 export const checkZCF = (zcf, assertFn) => {
   const checkedZCF = harden({

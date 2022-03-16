@@ -22,7 +22,7 @@ const trace = makeTracer('TestVault');
  * The properties will be asssigned by `setTestJig` in the contract.
  *
  * @typedef {Object} TestContext
- * @property {ContractFacet} zcf
+ * @property {ZoeCF} zcf
  * @property {ZCFMint} runMint
  * @property {IssuerKit} collateralKit
  * @property {Vault} vault

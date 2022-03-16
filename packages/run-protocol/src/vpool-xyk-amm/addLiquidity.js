@@ -11,7 +11,7 @@ import '@agoric/zoe/exported.js';
 
 const { add, multiply } = natSafeMath;
 /**
- * @param {ContractFacet} zcf
+ * @param {ZoeCF} zcf
  * @param {(brand: Brand) => XYKPool} getPool
  */
 const makeMakeAddLiquidityInvitation = (zcf, getPool) => {

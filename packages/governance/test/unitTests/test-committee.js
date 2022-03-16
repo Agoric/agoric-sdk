@@ -48,7 +48,7 @@ const setupContract = async () => {
     terms,
   );
 
-  /** @type {ContractFacet} */
+  /** @type {ZoeCF} */
   return { electorateStartResult, counterInstallation };
 };
 
