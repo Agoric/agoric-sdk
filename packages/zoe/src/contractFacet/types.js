@@ -217,7 +217,7 @@
 /**
  * @template {object} [PF=any] Public facet
  * @template {object=} [CF=any] Creator facet
- * @template {object=} [CT=Record<string, any] Custom terms
+ * @template {object=} [CT=Record<string, unknown] Custom terms
  * @template {object=} [PA=any] Private args
  * @callback ContractStartFn
  * @param {ZoeCF<CT>} zcf

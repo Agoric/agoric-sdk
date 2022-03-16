@@ -21,11 +21,20 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * This contract aggregates price values from a set of oracleStatuses and provides a
  * PriceAuthority for their median.
  *
- * @type {ContractStartFn}
+ * @param {ZoeCF<{
+ * timer: TimerService,
+ * maxSubmissionCount: number,
+ * minSubmissionCount: number,
+ * restartDelay: bigint,
+ * timeout: number,
+ * minSubmissionValue: number,
+ * maxSubmissionValue: number,
+ * unitAmountIn: Amount,
+ * }>} zcf
  */
 const start = async zcf => {
   const {
-    timer: rawTimer,
+    timer,
     brands: { In: brandIn, Out: brandOut },
     maxSubmissionCount,
     minSubmissionCount,
@@ -38,9 +47,6 @@ const start = async zcf => {
   } = zcf.getTerms();
 
   const unitIn = AmountMath.getValue(brandIn, unitAmountIn);
-
-  /** @type {ERef<TimerService>} */
-  const timer = rawTimer;
 
   // Get the timer's identity.
   const timerPresence = await timer;
