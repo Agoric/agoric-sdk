@@ -39,11 +39,6 @@ export {
   assertContractElectorate,
 } from './validators.js';
 
-export {
-  makeGovernedInvitation,
-  makeGovernedNat,
-} from './paramGovernance/paramMakers.js';
-
 export { ParamTypes } from './constants.js';
 
 export { makeBinaryVoteCounter } from './binaryVoteCounter.js';

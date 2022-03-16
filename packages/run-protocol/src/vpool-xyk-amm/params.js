@@ -2,9 +2,8 @@
 
 import {
   CONTRACT_ELECTORATE,
-  makeGovernedNat,
-  makeGovernedInvitation,
   makeParamManager,
+  ParamTypes,
 } from '@agoric/governance';
 
 export const POOL_FEE_KEY = 'PoolFee';
@@ -41,9 +40,12 @@ const makeAmmParams = (
   poolFeeBP,
 ) => {
   return harden({
-    [POOL_FEE_KEY]: makeGovernedNat(poolFeeBP),
-    [PROTOCOL_FEE_KEY]: makeGovernedNat(protocolFeeBP),
-    [CONTRACT_ELECTORATE]: makeGovernedInvitation(electorateInvitationAmount),
+    [POOL_FEE_KEY]: { type: ParamTypes.Nat, value: poolFeeBP },
+    [PROTOCOL_FEE_KEY]: { type: ParamTypes.Nat, value: protocolFeeBP },
+    [CONTRACT_ELECTORATE]: {
+      type: ParamTypes.Invitation,
+      value: electorateInvitationAmount,
+    },
   });
 };
 

@@ -12,11 +12,7 @@ import { makeLoopback } from '@endo/captp';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
-import {
-  CONTRACT_ELECTORATE,
-  makeGovernedNat,
-  makeGovernedInvitation,
-} from '../../src/index.js';
+import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 
 const voteCounterRoot = '../../src/binaryVoteCounter.js';
 const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
@@ -95,8 +91,14 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
 
   const governedTerms = {
     main: {
-      [MALLEABLE_NUMBER]: makeGovernedNat(602214090000000000000000n),
-      [CONTRACT_ELECTORATE]: makeGovernedInvitation(invitationAmount),
+      [MALLEABLE_NUMBER]: {
+        type: ParamTypes.Nat,
+        value: 602214090000000000000000n,
+      },
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.Invitation,
+        value: invitationAmount,
+      },
     },
   };
   const governorTerms = {

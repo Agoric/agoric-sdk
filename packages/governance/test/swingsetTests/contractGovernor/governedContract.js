@@ -3,12 +3,8 @@
 import { keyEQ } from '@agoric/store';
 
 import { handleParamGovernance } from '../../../src/contractHelper.js';
-import { makeParamManager } from '../../../src/index.js';
+import { makeParamManager, ParamTypes } from '../../../src/index.js';
 import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
-import {
-  makeGovernedNat,
-  makeGovernedInvitation,
-} from '../../../src/paramGovernance/paramMakers.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
@@ -16,8 +12,11 @@ const { details: X } = assert;
 
 const makeParamTerms = (number, invitationAmount) => {
   return harden({
-    [MALLEABLE_NUMBER]: makeGovernedNat(number),
-    [CONTRACT_ELECTORATE]: makeGovernedInvitation(invitationAmount),
+    [MALLEABLE_NUMBER]: { type: ParamTypes.Nat, value: number },
+    [CONTRACT_ELECTORATE]: {
+      type: ParamTypes.Invitation,
+      value: invitationAmount,
+    },
   });
 };
 

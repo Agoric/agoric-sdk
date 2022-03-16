@@ -98,7 +98,7 @@ const makeParamManagerBuilder = zoe => {
   /** @type {(name: string, value: Brand, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addBrand = (name, value, builder) => {
     const assertBrand = makeLooksLikeBrand(name);
-    buildCopyParam(name, value, assertBrand, ParamTypes.BRAND);
+    buildCopyParam(name, value, assertBrand, ParamTypes.Brand);
     return builder;
   };
 
@@ -265,7 +265,7 @@ const makeParamManagerBuilder = zoe => {
       getParams,
       getSubscription: () => subscription,
       getAmount: name => getTypedParam(ParamTypes.Amount, name),
-      getBrand: name => getTypedParam(ParamTypes.BRAND, name),
+      getBrand: name => getTypedParam(ParamTypes.Brand, name),
       getInstance: name => getTypedParam(ParamTypes.Instance, name),
       getInstallation: name => getTypedParam(ParamTypes.Installation, name),
       getInvitationAmount: name => getTypedParam(ParamTypes.Invitation, name),

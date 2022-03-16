@@ -3,10 +3,10 @@
 import './types.js';
 
 import {
-  makeGovernedInvitation,
   CONTRACT_ELECTORATE,
   makeParamManagerSync,
   makeParamManager,
+  ParamTypes,
 } from '@agoric/governance';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -21,7 +21,10 @@ export const LOAN_FEE_KEY = 'LoanFee';
  */
 const makeElectorateParams = electorateInvitationAmount => {
   return harden({
-    [CONTRACT_ELECTORATE]: makeGovernedInvitation(electorateInvitationAmount),
+    [CONTRACT_ELECTORATE]: {
+      type: ParamTypes.Invitation,
+      value: electorateInvitationAmount,
+    },
   });
 };
 
