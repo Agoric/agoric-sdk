@@ -91,6 +91,7 @@ const start = zcf => {
     );
   };
 
+  /** @type {CommitteeElectoratePublic} */
   const publicFacet = Far('publicFacet', {
     getQuestionSubscription: () => subscription,
     getOpenQuestions: () => getOpenQuestions(allQuestions),
@@ -99,6 +100,7 @@ const start = zcf => {
     getQuestion: handleP => getQuestion(handleP, allQuestions),
   });
 
+  /** @type {CommitteeElectorateCreatorFacet} */
   const creatorFacet = Far('adminFacet', {
     getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
     addQuestion,

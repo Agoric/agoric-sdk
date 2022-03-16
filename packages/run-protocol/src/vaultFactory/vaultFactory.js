@@ -39,14 +39,14 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 const { details: X } = assert;
 
 /**
- * @typedef {import('@agoric/eventual-send/src/index').Remotable<{
+ * @typedef {{
  *   makeVaultInvitation: () => Promise<Payment>,
  *   getCollaterals: () => unknown,
  *   getRunIssuer: () => Issuer,
  *   getGovernedParams: () => unknown,
  *   getContractGovernor: () => unknown,
  *   getInvitationAmount: (string) => Amount,
- * }>} VaultFactoryPublicFacet
+ * }} VaultFactoryPublicFacet
  */
 
 /**

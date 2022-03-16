@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
@@ -131,7 +131,7 @@ test('params one installation', async t => {
 
   t.deepEqual(paramManager.getPName(), installationHandle);
   t.throws(
-    // @ts-expect-error
+    // @ts-expect-error throw test
     () => paramManager.updatePName(18.1),
     {
       message: 'value for "PName" must be an Installation, was 18.1',
