@@ -1367,7 +1367,7 @@ test('transfer vault', async t => {
   ).getOfferResult();
   t.throwsAsync(() => E(aliceVault).getCurrentDebt());
   const debtAfter = await E(transferVault).getCurrentDebt();
-  t.deepEqual(debtAmount, debtAfter, 'vault lent 5000 RUN + fees');
+  t.deepEqual(debtAfter, debtAmount, 'vault lent 5000 RUN + fees');
   const collateralAfter = await E(transferVault).getCollateralAmount();
   t.deepEqual(collateralAmount, collateralAfter, 'vault has 1000n aEth');
 
@@ -1378,20 +1378,16 @@ test('transfer vault', async t => {
     'transfer closed old notifier',
   );
 
-  t.deepEqual(
-    {
-      // simplify test by including any properties not mentioned below
-      ...inviteProps,
-      debtSnapshot: {
-        debt: debtAmount,
-        interest: aliceFinish.value.debtSnapshot.interest,
-      },
-      description: 'TransferVault',
-      locked: collateralAmount,
-      vaultState: 'active',
+  t.like(inviteProps, {
+    // simplify test by including any properties not mentioned below
+    debtSnapshot: {
+      debt: debtAmount,
+      interest: aliceFinish.value.debtSnapshot.interest,
     },
-    inviteProps,
-  );
+    description: 'TransferVault',
+    locked: collateralAmount,
+    vaultState: 'active',
+  });
 
   const transferStatus = await E(transferNotifier).getUpdateSince();
   t.deepEqual(
