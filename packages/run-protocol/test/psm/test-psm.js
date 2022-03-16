@@ -21,21 +21,6 @@ const dirname = path.dirname(pathname);
 const psmRoot = `${dirname}/../../src/psm/psm.js`;
 const trace = makeTracer('TestPSM');
 
-// /**
-//  * The properties will be asssigned by `setTestJig` in the contract.
-//  *
-//  * @typedef {Object} TestContext
-//  * @property {ContractFacet} zcf
-//  * @property {ZCFMint} runMint
-//  * @property {IssuerKit} collateralKit
-//  * @property {PSM} psm
-//  * @property {Function} setInterestRate
-//  */
-// let testJig;
-// const setJig = jig => {
-//   testJig = jig;
-// };
-
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
   const contractBundle = await bundleSource(new URL(url).pathname);
@@ -72,8 +57,8 @@ const minusFee = amount =>
     BigInt((amount.value * (BASIS_POINTS - FEE_BP)) / BASIS_POINTS),
   );
 
-const startContract = async () => {
-  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+const startContract = async (testJig = () => {}) => {
+  const { zoe, feeMintAccess } = await setUpZoeForTest(testJig);
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   const anchorKit = makeIssuerKit('aUSD');
@@ -120,7 +105,7 @@ test('simple trades', async t => {
   const runPayout = await E(seat1).getPayout('Out');
   const expectedRun = minusFee(AmountMath.make(runBrand, give.value));
   const actualRun = await E(runIssuer).getAmountOf(runPayout);
-  t.deepEqual(expectedRun, actualRun);
+  t.deepEqual(actualRun, expectedRun);
   const liq = await E(publicFacet).getCurrentLiquidity();
   t.true(AmountMath.isEqual(liq, give));
   trace('get stable', { give, expectedRun, actualRun, liq });
@@ -134,7 +119,7 @@ test('simple trades', async t => {
   const anchorPayout = await E(seat2).getPayout('Out');
   const actualAnchor = await E(anchorIssuer).getAmountOf(anchorPayout);
   const expectedAnchor = AmountMath.make(anchorBrand, minusFee(runGive).value);
-  t.deepEqual(expectedAnchor, actualAnchor);
+  t.deepEqual(actualAnchor, expectedAnchor);
   const liq2 = await E(publicFacet).getCurrentLiquidity();
   t.deepEqual(AmountMath.subtract(give, expectedAnchor), liq2);
   trace('get anchor', { runGive, expectedRun, actualAnchor, liq2 });
