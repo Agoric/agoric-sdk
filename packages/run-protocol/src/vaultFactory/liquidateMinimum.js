@@ -123,5 +123,3 @@ harden(start);
 harden(makeLiquidationStrategy);
 
 export { start, makeLiquidationStrategy };
-
-/** @typedef {ContractOfAsync<start>} LiquidateMinimumContract */

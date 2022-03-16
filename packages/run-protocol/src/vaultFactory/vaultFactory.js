@@ -267,4 +267,4 @@ export const start = async (zcf, privateArgs) => {
   });
 };
 
-/** @typedef {ContractOfAsync<start>} VaultFactoryContract */
+/** @typedef {ContractOf<typeof start>} VaultFactoryContract */

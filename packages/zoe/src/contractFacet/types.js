@@ -235,21 +235,6 @@
  */
 
 /**
- * @template { (zcf?: any, privateArgs?: any) => {creatorFacet?: unknown, creatorInvitation?: unknown, publicFacet?: unknown } } S start function
- * @typedef ContractOfSync
- * @property {ReturnType<S>['creatorFacet']} creatorFacet
- * @property {ReturnType<S>['publicFacet']} publicFacet
- * @property {ReturnType<Parameters<S>[0]['getTerms']>} terms
- * @property {Parameters<S>[1]} privateArgs
- * @property {ReturnType<S>['creatorInvitation']} creatorInvitation
- */
-
-/**
- * @template { (zcf?: any, privateArgs?: any) => Promise<{creatorFacet?: unknown, creatorInvitation?: unknown, publicFacet?: unknown }> } S async start function
- * @typedef ContractOfAsync
- * @property {Awaited<ReturnType<S>>['creatorFacet']} creatorFacet
- * @property {Awaited<ReturnType<S>>['publicFacet']} publicFacet
- * @property {ReturnType<Parameters<S>[0]['getTerms']>} terms
- * @property {Parameters<S>[1]} privateArgs
- * @property {Awaited<ReturnType<S>>['creatorInvitation']} creatorInvitation
+ * @template S
+ * @typedef {import('../zoeService/utils').ContractOf<S>} ContractOf
  */

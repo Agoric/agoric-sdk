@@ -33,22 +33,23 @@ const setupContract = async () => {
     bundleSource(counterRoot),
   ]);
   // install the contract
-  /** @typedef {Installation<import('../../src/committee.js').CommitteeContract>} CommitteInstallation */
-  /** @type {[CommitteInstallation, Installation<import('../../src/binaryVoteCounter.js').BinaryVoteCounterContract>] } */
+  /** @typedef {Installation<import('../../src/committee.js').start>} CommitteInstallation */
+  /** @typedef {Installation<import('../../src/binaryVoteCounter.js').start>} CounterInstallation */
+  /** @type {[CommitteInstallation, CounterInstallation] } */
+  // @ts-expect-error cast
   const [electorateInstallation, counterInstallation] = await Promise.all([
     E(zoe).install(electorateBundle),
     E(zoe).install(counterBundle),
   ]);
-  /** @typedef {typeof electorateInstallation} EI */
-  /** @typedef {import('@agoric/zoe/src/zoeService/utils').ContractOfInstallation<EI>} EC */
   const terms = { committeeName: 'illuminati', committeeSize: 13 };
-  const electorateStartResult = await E(zoe).startInstance(
+  /** @type {import('@agoric/zoe/src/zoeService/utils').StartInstance} */
+  const startInstance = E(zoe).startInstance;
+  const electorateStartResult = await startInstance(
     electorateInstallation,
     {},
     terms,
   );
 
-  /** @type {ZoeCF} */
   return { electorateStartResult, counterInstallation };
 };
 
@@ -83,6 +84,7 @@ test('committee-open question:one', async t => {
   const questions = await publicFacet.getOpenQuestions();
   const question = E(publicFacet).getQuestion(questions[0]);
   const questionDetails = await E(question).getDetails();
+  // @ts-expect-error FIXME missing prop
   t.deepEqual(questionDetails.issue.text, 'why');
 });
 

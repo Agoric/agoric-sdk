@@ -250,6 +250,6 @@ export const makeStartInstance = (
       };
     });
   };
-  // @ts-expect-error type kink
+  // @ts-expect-error cast
   return startInstance;
 };

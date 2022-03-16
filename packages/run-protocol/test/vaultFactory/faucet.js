@@ -33,5 +33,3 @@ export async function start(zcf, privateArgs) {
   const creatorFacet = Far('faucetInvitationMaker', { makeFaucetInvitation });
   return harden({ creatorFacet });
 }
-
-/** @typedef {ContractOfAsync<start>} FaucetContract */

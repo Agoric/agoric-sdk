@@ -26,7 +26,7 @@
  *
  * @property {InstallBundle} install
  * @property {InstallBundleID} installBundleID
- * @property {import('./utils').StartInstance} startInstance
+ * @property {import('./utils').StartInstance<I>} startInstance
  * @property {Offer} offer
  * @property {GetPublicFacet} getPublicFacet
  * @property {GetIssuers} getIssuers
@@ -282,9 +282,13 @@
  */
 
 /**
- * @template {ContractSpec} [C] contract
- * @typedef {Object} Installation
- * @property {() => SourceBundle} getBundle
+ * @template [C=unknown] contract
+ * @typedef {import('./utils').Installation<C>} Installation
+ */
+
+/**
+ * @template {Installation} I
+ * @typedef {import('./utils').InstallationStart<I>} InstallationStart
  */
 
 /**

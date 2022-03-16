@@ -187,5 +187,3 @@ harden(start);
 harden(validateQuestionDetails);
 harden(validateQuestionFromCounter);
 export { start, validateQuestionDetails, validateQuestionFromCounter };
-
-/** @typedef {ContractOfAsync<start>} ContractGovernorContract */

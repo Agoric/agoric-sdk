@@ -237,6 +237,7 @@ export const addBankAssets = async ({
   const installation = E(zoe).install(bundle);
 
   /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
+  // @ts-expect-error cast
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
     E(zoe).startInstance(
       installation,

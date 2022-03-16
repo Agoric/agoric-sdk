@@ -7,8 +7,6 @@ import { Far } from '@endo/marshal';
 import '../../exported.js';
 import { assert } from '@agoric/assert';
 
-/** @typedef {import('./sellItems.js').SellItemsContract} SellItemsContract */
-
 /**
  * This contract mints non-fungible tokens and creates a selling contract
  * instance to sell the tokens in exchange for some sort of money.
@@ -38,7 +36,7 @@ const start = zcf => {
 
   /**
    * @param {object} obj
-   * @param {Installation<SellItemsContract>} obj.sellItemsInstallation
+   * @param {Installation<import('./sellItems.js').start>} obj.sellItemsInstallation
    * @param {*} obj.customValueProperties
    * @param {number} obj.count
    * @param {*} obj.moneyIssuer
@@ -87,14 +85,13 @@ const start = zcf => {
     const sellItemsTerms = harden({
       pricePerItem,
     });
+    // FIXME EProxy types, startInstance is any
     const instanceRecordP = E(zoeService).startInstance(
       sellItemsInstallation,
       issuerKeywordRecord,
       sellItemsTerms,
     );
     return instanceRecordP.then(
-      // XXX cast shouldn't be necessary
-      /** @param {import('../zoeService/utils.js').ContractKit<SellItemsContract>} obj */
       ({ creatorInvitation, creatorFacet, instance, publicFacet }) => {
         assert(creatorInvitation);
         return E(zoeService)

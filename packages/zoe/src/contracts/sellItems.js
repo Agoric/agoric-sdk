@@ -154,5 +154,3 @@ const start = zcf => {
 
 harden(start);
 export { start };
-
-/** @typedef {ContractOfSync<start>} SellItemsContract */

@@ -200,5 +200,3 @@ harden(start);
 harden(makeBinaryVoteCounter);
 
 export { makeBinaryVoteCounter, start };
-
-/** @typedef {ContractOfSync<start>} BinaryVoteCounterContract */

@@ -100,7 +100,7 @@ const start = zcf => {
     getQuestion: handleP => getQuestion(handleP, allQuestions),
   });
 
-  /** @type {CommitteeElectorateCreatorFacet} */
+  /** stale def: {CommitteeElectorateCreatorFacet} */
   const creatorFacet = Far('adminFacet', {
     getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
     addQuestion,
@@ -114,5 +114,3 @@ const start = zcf => {
 
 harden(start);
 export { start };
-
-/** @typedef {ContractOfSync<start>} CommitteeContract */

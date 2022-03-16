@@ -107,5 +107,3 @@ const start = async zcf => {
 
 harden(start);
 export { start };
-
-/** @typedef {ContractOfAsync<start>} OracleContract */

@@ -1,42 +1,58 @@
+import { Callable } from '@agoric/eventual-send';
 import type { Instance, IssuerKeywordRecord, Payment } from './types.js';
 
+// XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
+
+type ContractFacet<T extends {} = {}> = {
+  readonly [P in keyof T]: T[P] extends Callable ? T[P] : never;
+};
 
 type AdminFacet = {
   getVatShutdownPromise: () => Promise<any>; // Completion, which is currently any
 };
 
-export type Installation<C> = {
+/**
+ * Installation of a contract, typed by its start function.
+ */
+declare const StartFunction: unique symbol;
+export type Installation<SF> = {
   getBundle: () => SourceBundle;
+  // because TS is structural, without this the generic is ignored
+  [StartFunction]: SF;
 };
 
-export type ContractOfInstallation<Type> = Type extends Installation<infer X>
-  ? X
+// XXX contortions to not include the fn on the Installation object
+export type InstallationStart<I> = I extends Installation<infer SF>
+  ? SF
   : never;
 
-interface ContractSpec {
-  creatorFacet?: {};
-  publicFacet?: {};
-  creatorInvitation?: Payment;
-}
+type StartParams<S> = {
+  terms: ReturnType<Parameters<S>[0]['getTerms']>;
+  privateArgs: Parameters<S>[1];
+};
 
-export type ContractKit<C> = C extends ContractSpec
-  ? {
-      creatorFacet: C['creatorFacet'];
-      publicFacet: C['publicFacet'];
-      instance: Instance;
-      creatorInvitation: C['creatorInvitation'];
-      adminFacet: AdminFacet;
-    }
-  : {
-      creatorFacet: any;
-      publicFacet: any;
-      instance: Instance;
-      creatorInvitation: any;
-      adminFacet: AdminFacet;
-    };
+type StartResult<S> = S extends (...args: any) => Promise<infer U>
+  ? U
+  : ReturnType<S>;
 
-export type CKitForInstallation<I> = ContractKit<ContractOfInstallation<I>>;
+/**
+ * Convenience record for contract start function, merging its result with params.
+ */
+export type ContractOf<S> = StartParams<S> & StartResult<S>;
+
+type StartContractInstance<C> = (
+  installation: Installation<C>,
+  issuerKeywordRecord?: IssuerKeywordRecord,
+  terms?: Object,
+  privateArgs?: Object,
+) => Promise<{
+  creatorFacet: C['creatorFacet'];
+  publicFacet: C['publicFacet'];
+  instance: Instance;
+  creatorInvitation: C['creatorInvitation'];
+  adminFacet: AdminFacet;
+}>;
 
 /**
  * Zoe is long-lived. We can use Zoe to create smart contract
@@ -54,9 +70,14 @@ export type CKitForInstallation<I> = ContractKit<ContractOfInstallation<I>>;
  * the creator facet, public facet, and creator invitation as defined
  * by the contract.
  */
-export type StartInstance = <I extends Installation<any>>(
+export type StartInstance = <I extends Installation>(
   installation: I | PromiseLike<I>,
   issuerKeywordRecord?: IssuerKeywordRecord,
-  terms?: Object,
+  terms?: object,
   privateArgs?: Object,
-) => Promise<CKitForInstallation<I>>;
+) => Promise<
+  {
+    instance: Instance;
+    adminFacet: AdminFacet;
+  } & ReturnType<InstallationStart<I>>
+>;

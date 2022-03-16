@@ -37,4 +37,4 @@ export const start = async (zcf, { feeMintAccess }) => {
 };
 harden(start);
 
-/** @typedef {ContractOfAsync<start>} CentralSupplyContract */
+/** @typedef {ContractOf<typeof start>} CentralSupplyContract */

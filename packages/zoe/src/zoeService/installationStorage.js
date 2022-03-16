@@ -30,6 +30,7 @@ export const makeInstallationStorage = getBundleCapForID => {
   const installBundle = async bundle => {
     assert.typeof(bundle, 'object', 'a bundle must be provided');
     /** @type {Installation} */
+    // @ts-expect-error cast
     const installation = Far('Installation', {
       getBundle: () => bundle,
     });
@@ -46,6 +47,7 @@ export const makeInstallationStorage = getBundleCapForID => {
     // AWAIT
 
     /** @type {Installation} */
+    // @ts-expect-error cast
     const installation = Far('Installation', {
       getBundle: () => {
         throw Error('bundleID-based Installation');
