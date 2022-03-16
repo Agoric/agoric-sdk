@@ -6,7 +6,7 @@ import '@endo/init';
 import rawTest from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import path from 'path';
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 import {

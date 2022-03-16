@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@endo/captp';
 import { makeZoeKit } from '@agoric/zoe';

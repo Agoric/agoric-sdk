@@ -16,7 +16,7 @@ import '../../exported.js';
 import '../internal-types.js';
 
 import { AssetKind } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 

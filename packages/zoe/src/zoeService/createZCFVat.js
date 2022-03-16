@@ -1,4 +1,4 @@
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 /**
  * Attenuate the power of vatAdminSvc by restricting it such that only

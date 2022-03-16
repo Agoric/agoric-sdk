@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, quote as q } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far, passStyleOf } from '@endo/marshal';
 import { makeWeakStore } from '@agoric/store';

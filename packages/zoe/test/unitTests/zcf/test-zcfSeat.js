@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';

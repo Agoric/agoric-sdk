@@ -1,6 +1,6 @@
 // @ts-check
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 export const showPurseBalance = async (purseP, name, log) => {

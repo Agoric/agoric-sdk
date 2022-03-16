@@ -7,7 +7,7 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { makeZoeKit } from '@agoric/zoe';
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
 // eslint-disable-next-line import/no-extraneous-dependencies

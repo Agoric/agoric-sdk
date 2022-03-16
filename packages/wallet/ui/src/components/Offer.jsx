@@ -4,7 +4,7 @@ import { stringifyPurseValue } from '@agoric/ui-components';
 import Chip from '@mui/material/Chip';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import Request from './Request';
 import Petname from './Petname';
 import { icons, defaultIcon } from '../util/Icons.js';

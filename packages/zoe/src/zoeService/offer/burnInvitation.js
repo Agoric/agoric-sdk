@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 /**
  * Burn the invitation, assert that only one invitation was burned,

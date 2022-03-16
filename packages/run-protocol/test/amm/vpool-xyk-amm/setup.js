@@ -1,7 +1,7 @@
 // @ts-check
 
 import bundleSource from '@endo/bundle-source';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makeLoopback } from '@endo/captp';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';

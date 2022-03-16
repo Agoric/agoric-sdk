@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { makeWeakStore, makeStore } from '@agoric/store';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
