@@ -49,7 +49,6 @@
  * T extends 'invitation' ? Amount :
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
- * T extends 'relativeTime' ? RelativeTime :
  * T extends 'string' ? string :
  * T extends 'unknown' ? unknown :
  * never
