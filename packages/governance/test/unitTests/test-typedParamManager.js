@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { ParamType } from '../../src/index.js';
+import { ParamTypes } from '../../src/index.js';
 import {
   makeParamManager,
   makeParamManagerSync,
@@ -65,11 +65,11 @@ test('two parameters', t => {
     paramManager.getParams(),
     harden({
       Currency: {
-        type: ParamType.BRAND,
+        type: ParamTypes.Brand,
         value: drachmaBrand,
       },
       Amt: {
-        type: ParamType.AMOUNT,
+        type: ParamTypes.Amount,
         value: drachmas,
       },
     }),
@@ -148,7 +148,7 @@ test('params one installation', async t => {
     paramManager.getParams(),
     harden({
       PName: {
-        type: ParamType.INSTALLATION,
+        type: ParamTypes.Installation,
         value: handle2,
       },
     }),
@@ -182,7 +182,7 @@ test('params one instance', async t => {
     paramManager.getParams(),
     harden({
       PName: {
-        type: ParamType.INSTANCE,
+        type: ParamTypes.Instance,
         value: handle2,
       },
     }),
@@ -228,15 +228,15 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
-        type: ParamType.AMOUNT,
+        type: ParamTypes.Amount,
         value: drachmaAmount,
       },
       Currency: {
-        type: ParamType.BRAND,
+        type: ParamTypes.Brand,
         value: drachmaBrand,
       },
       Invite: {
-        type: ParamType.INVITATION,
+        type: ParamTypes.Invitation,
         value: invitationAmount,
       },
     }),

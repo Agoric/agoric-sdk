@@ -42,6 +42,9 @@ const isAsync = {
  * @typedef {[type: T, value: ParamValueForType<T>]} ST param spec tuple
  */
 
+// XXX better to use the manifest constant ParamTypes
+// but importing that here turns this file into a module,
+// breaking the ambient typing
 /**
  * @typedef {ST<'amount'>
  * | ST<'brand'>

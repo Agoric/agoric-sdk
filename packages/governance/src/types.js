@@ -19,10 +19,7 @@
  * issue, while the others have a issue presented as a string.
  */
 
-/**
- * @typedef { 'amount' | 'brand' | 'brandedAmount'| 'brandedRatio'  | 'instance' | 'installation' | 'invitation' |
- *   'nat' | 'ratio' | 'relativeTime' | 'string' | 'unknown' } ParamType
- */
+/** @typedef {import('./constants.js').ParamType} ParamType */
 
 /**
  * @typedef { 'majority' | 'all' | 'no_quorum' } QuorumRule
@@ -38,6 +35,9 @@
  *   Ratio | string | unknown } ParamValue
  */
 
+// XXX better to use the manifest constant ParamTypes
+// but importing that here turns this file into a module,
+// breaking the ambient typing
 /**
  * @template {ParamType} T
  * @typedef {T extends 'amount' ? Amount :

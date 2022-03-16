@@ -27,10 +27,7 @@ export {
   CONTRACT_ELECTORATE,
 } from './paramGovernance/governParam.js';
 
-export {
-  ParamType,
-  makeParamManagerBuilder,
-} from './paramGovernance/paramManager.js';
+export { makeParamManagerBuilder } from './paramGovernance/paramManager.js';
 
 export {
   makeParamManager,
@@ -46,5 +43,7 @@ export {
   makeGovernedInvitation,
   makeGovernedNat,
 } from './paramGovernance/paramMakers.js';
+
+export { ParamTypes } from './constants.js';
 
 export { makeBinaryVoteCounter } from './binaryVoteCounter.js';
