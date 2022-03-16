@@ -76,12 +76,12 @@ const makeParamManagerBuilder = zoe => {
   // HANDLERS FOR EACH PARAMETER TYPE /////////////////////////////////////////
 
   /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addAmount = (name, value, builder) => {
+  const addAmountValue = (name, value, builder) => {
     const assertAmount = a => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
       return AmountMath.coerce(a.brand, a);
     };
-    buildCopyParam(name, value, assertAmount, ParamTypes.Amount);
+    buildCopyParam(name, value, assertAmount, ParamTypes.AmountValue);
     return builder;
   };
 
@@ -91,7 +91,7 @@ const makeParamManagerBuilder = zoe => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
       return AmountMath.coerce(value.brand, a);
     };
-    buildCopyParam(name, value, assertAmount, ParamTypes.Amount);
+    buildCopyParam(name, value, assertAmount, ParamTypes.AmountValue);
     return builder;
   };
 
@@ -128,15 +128,15 @@ const makeParamManagerBuilder = zoe => {
   };
 
   /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addRatio = (name, value, builder) => {
-    buildCopyParam(name, value, assertIsRatio, ParamTypes.Ratio);
+  const addRatioValue = (name, value, builder) => {
+    buildCopyParam(name, value, assertIsRatio, ParamTypes.RatioValue);
     return builder;
   };
 
   /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addBrandedRatio = (name, value, builder) => {
     const assertBrandedRatio = makeAssertBrandedRatio(name, value);
-    buildCopyParam(name, value, assertBrandedRatio, ParamTypes.Ratio);
+    buildCopyParam(name, value, assertBrandedRatio, ParamTypes.RatioValue);
     return builder;
   };
 
@@ -264,13 +264,13 @@ const makeParamManagerBuilder = zoe => {
     return Far('param manager', {
       getParams,
       getSubscription: () => subscription,
-      getAmount: name => getTypedParam(ParamTypes.Amount, name),
+      getAmount: name => getTypedParam(ParamTypes.AmountValue, name),
       getBrand: name => getTypedParam(ParamTypes.Brand, name),
       getInstance: name => getTypedParam(ParamTypes.Instance, name),
       getInstallation: name => getTypedParam(ParamTypes.Installation, name),
       getInvitationAmount: name => getTypedParam(ParamTypes.Invitation, name),
       getNat: name => getTypedParam(ParamTypes.Nat, name),
-      getRatio: name => getTypedParam(ParamTypes.Ratio, name),
+      getRatio: name => getTypedParam(ParamTypes.RatioValue, name),
       getString: name => getTypedParam(ParamTypes.String, name),
       getUnknown: name => getTypedParam(ParamTypes.Unknown, name),
       getVisibleValue,
@@ -284,7 +284,7 @@ const makeParamManagerBuilder = zoe => {
   };
 
   const builder = {
-    addAmount: (n, v) => addAmount(n, v, builder),
+    addAmountValue: (n, v) => addAmountValue(n, v, builder),
     addBrandedAmount: (n, v) => addBrandedAmount(n, v, builder),
     addBrand: (n, v) => addBrand(n, v, builder),
     addInstallation: (n, v) => addInstallation(n, v, builder),
@@ -292,7 +292,7 @@ const makeParamManagerBuilder = zoe => {
     addUnknown: (n, v) => addUnknown(n, v, builder),
     addInvitation: (n, v) => addInvitation(n, v, builder),
     addNat: (n, v) => addNat(n, v, builder),
-    addRatio: (n, v) => addRatio(n, v, builder),
+    addRatioValue: (n, v) => addRatioValue(n, v, builder),
     addBrandedRatio: (n, v) => addBrandedRatio(n, v, builder),
     addString: (n, v) => addString(n, v, builder),
     build: () => makeParamManager(),

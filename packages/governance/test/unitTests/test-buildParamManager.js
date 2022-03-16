@@ -16,7 +16,7 @@ test('two parameters', t => {
   const drachmaBrand = drachmaKit.brand;
   const paramManager = makeParamManagerBuilder()
     .addBrand('Currency', drachmaBrand)
-    .addAmount('Amt', AmountMath.make(drachmaBrand, 37n))
+    .addAmountValue('Amt', AmountMath.make(drachmaBrand, 37n))
     .build();
 
   t.is(paramManager.getBrand('Currency'), drachmaBrand);
@@ -34,7 +34,7 @@ test('getParams', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerBuilder()
     .addBrand('Currency', drachmaBrand)
-    .addAmount('Amt', drachmas)
+    .addAmountValue('Amt', drachmas)
     .build();
 
   t.deepEqual(
@@ -45,7 +45,7 @@ test('getParams', t => {
         value: drachmaBrand,
       },
       Amt: {
-        type: ParamTypes.Amount,
+        type: ParamTypes.AmountValue,
         value: drachmas,
       },
     }),
@@ -71,7 +71,7 @@ test('Amount', async t => {
   const { brand } = makeIssuerKit('floor wax');
   const { brand: brand2 } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerBuilder()
-    .addAmount('Shimmer', AmountMath.make(brand, 250n))
+    .addAmountValue('Shimmer', AmountMath.make(brand, 250n))
     .build();
   t.deepEqual(paramManager.getAmount('Shimmer'), AmountMath.make(brand, 250n));
 
@@ -222,7 +222,7 @@ test('Invitation', async t => {
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
   const paramManagerBuilder = makeParamManagerBuilder(zoe)
     .addBrand('Currency', drachmaBrand)
-    .addAmount('Amt', drachmaAmount);
+    .addAmountValue('Amt', drachmaAmount);
   // addInvitation is async, so it can't be part of the cascade.
   await paramManagerBuilder.addInvitation('Invite', invitation);
   const paramManager = paramManagerBuilder.build();
@@ -241,7 +241,7 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
-        type: ParamTypes.Amount,
+        type: ParamTypes.AmountValue,
         value: drachmaAmount,
       },
       Currency: {
@@ -282,7 +282,7 @@ test('Ratio', async t => {
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerBuilder()
     .addNat('Acres', 50n)
-    .addRatio('GoldenRatio', ratio)
+    .addRatioValue('GoldenRatio', ratio)
     .build();
   t.is(paramManager.getRatio('GoldenRatio'), ratio);
 

@@ -1,12 +1,12 @@
 /**
  * Enum of parameter types
  *
- * UNKNOWN is an escape hatch for types we haven't added yet. If you are
+ * `Unknown` is an escape hatch for types we haven't added yet. If you are
  * developing a new contract and use UNKNOWN, please also file an issue to ask
  * us to support the new type.
  */
 export const ParamTypes = /** @type {const} */ ({
-  Amount: 'amount',
+  AmountValue: 'amountValue',
   Brand: 'brand',
   BrandedAmount: 'brandedAmount',
   BrandedRatio: 'brandedRatio',
@@ -14,7 +14,7 @@ export const ParamTypes = /** @type {const} */ ({
   Installation: 'installation',
   Invitation: 'invitation',
   Nat: 'nat',
-  Ratio: 'ratio',
+  RatioValue: 'ratioValue',
   String: 'string',
   Unknown: 'unknown',
 });

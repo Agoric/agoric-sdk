@@ -27,8 +27,8 @@ const makeParamTerms = (number, invitationAmount) => {
  * {
  *   electionManager: VoteOnParamChange,
  *   main: {
- *     MalleableNumber: ParamRecord<'nat'>,
- *     Electorate: ParamRecord<'amount'>,
+ *     MalleableNumber: ParamRecord<typeof ParamTypes.Nat>,
+ *     Electorate: ParamRecord<typeof ParamTypes.AmountValue>,
  *   },
  * },
  * {initialPoserInvitation: Payment}>

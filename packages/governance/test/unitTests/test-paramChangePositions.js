@@ -6,7 +6,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { makeParamChangePositions } from '../../src/index.js';
+import { makeParamChangePositions, ParamTypes } from '../../src/index.js';
 
 const positive = (name, val) => {
   return { changeParam: name, proposedValue: val };
@@ -17,7 +17,10 @@ const negative = name => {
 };
 
 test('positions amount', t => {
-  const amountSpec = { parameterName: 'amount', key: 'something' };
+  const amountSpec = {
+    parameterName: ParamTypes.AmountValue,
+    key: 'something',
+  };
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
   const amount = AmountMath.makeEmpty(brand);
 

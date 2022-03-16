@@ -153,10 +153,10 @@ like this:
 return makeParamManagerBuilder()
   .addNat(CHARGING_PERIOD_KEY, loanTiming.chargingPeriod)
   .addNat(RECORDING_PERIOD_KEY, loanTiming.recordingPeriod)
-  .addRatio(INITIAL_MARGIN_KEY, rates.initialMargin)
-  .addRatio(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
-  .addRatio(INTEREST_RATE_KEY, rates.interestRate)
-  .addRatio(LOAN_FEE_KEY, rates.loanFee)
+  .addRatioValue(INITIAL_MARGIN_KEY, rates.initialMargin)
+  .addRatioValue(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
+  .addRatioValue(INTEREST_RATE_KEY, rates.interestRate)
+  .addRatioValue(LOAN_FEE_KEY, rates.loanFee)
   .build();
 ```
 
@@ -166,8 +166,8 @@ call cascade. At the end, `.build()` is called. One of the calls,
 
 ``` javascript
   const paramManagerBuilder = makeParamManagerBuilder(zoe)
-    .addBrand('Currency', drachmaBrand)
-    .addAmount('Amt', drachmaAmount);
+    .addBrandValue('Currency', drachmaBrand)
+    .addAmountValue('Amt', drachmaAmount);
   // addInvitation is async, so it can't be part of the cascade.
   await paramManagerBuilder.addInvitation('Invite', invitation);
   const paramManager = paramManagerBuilder.build();

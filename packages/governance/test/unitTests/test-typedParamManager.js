@@ -21,7 +21,7 @@ test('types', t => {
   t.throws(() =>
     makeParamManagerSync({
       // @ts-expect-error invalid value for the declared type
-      BrokenBrand: ['brand', 'not a brand'],
+      BrokenBrand: [ParamTypes.Brand, 'not a brand'],
 
       BrokenInvitation: [
         // @ts-expect-error not supported in makeParamManagerSync
@@ -31,7 +31,7 @@ test('types', t => {
     }),
   );
   const mgr = makeParamManagerSync({
-    Working: ['nat', 0n],
+    Working: [ParamTypes.Nat, 0n],
   });
   mgr.getWorking().valueOf();
   t.throws(() =>
@@ -43,8 +43,8 @@ test('types', t => {
 test('asGetters', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
-    Currency: ['brand', drachmaBrand],
-    Amt: ['amount', drachmas],
+    Currency: [ParamTypes.Brand, drachmaBrand],
+    Amt: [ParamTypes.AmountValue, drachmas],
   });
   const getters = paramManager.asGetters();
   t.is(paramManager.getCurrency, getters.getCurrency);
@@ -54,8 +54,8 @@ test('asGetters', t => {
 test('two parameters', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
-    Currency: ['brand', drachmaBrand],
-    Amt: ['amount', drachmas],
+    Currency: [ParamTypes.Brand, drachmaBrand],
+    Amt: [ParamTypes.AmountValue, drachmas],
   });
 
   t.is(paramManager.getCurrency(), drachmaBrand);
@@ -69,7 +69,7 @@ test('two parameters', t => {
         value: drachmaBrand,
       },
       Amt: {
-        type: ParamTypes.Amount,
+        type: ParamTypes.AmountValue,
         value: drachmas,
       },
     }),
@@ -80,7 +80,7 @@ test('Amount', async t => {
   const { brand } = makeIssuerKit('floor wax');
   const { brand: brand2 } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerSync({
-    Shimmer: ['amount', AmountMath.make(brand, 250n)],
+    Shimmer: [ParamTypes.AmountValue, AmountMath.make(brand, 250n)],
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand, 250n));
 
@@ -97,7 +97,7 @@ test('Branded Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerSync({
-    Shimmer: ['brandedAmount', AmountMath.make(floorBrand, 2n)],
+    Shimmer: [ParamTypes.BrandedAmount, AmountMath.make(floorBrand, 2n)],
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 2n));
 
@@ -209,8 +209,8 @@ test('Invitation', async t => {
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
   const paramManager = await makeParamManager(
     {
-      Currency: ['brand', drachmaBrand],
-      Amt: ['amount', drachmaAmount],
+      Currency: [ParamTypes.Brand, drachmaBrand],
+      Amt: [ParamTypes.AmountValue, drachmaAmount],
       Invite: ['invitation', invitation],
     },
     zoe,
@@ -228,7 +228,7 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
-        type: ParamTypes.Amount,
+        type: ParamTypes.AmountValue,
         value: drachmaAmount,
       },
       Currency: {
@@ -245,8 +245,8 @@ test('Invitation', async t => {
 
 test('two Nats', async t => {
   const paramManager = makeParamManagerSync({
-    Acres: ['nat', 50n],
-    SpeedLimit: ['nat', 299_792_458n],
+    Acres: [ParamTypes.Nat, 50n],
+    SpeedLimit: [ParamTypes.Nat, 299_792_458n],
   });
 
   t.is(paramManager.getAcres(), 50n);
@@ -267,8 +267,8 @@ test('Ratio', async t => {
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerSync({
-    Acres: ['nat', 50n],
-    GoldenRatio: ['ratio', ratio],
+    Acres: [ParamTypes.Nat, 50n],
+    GoldenRatio: [ParamTypes.RatioValue, ratio],
   });
   t.is(paramManager.getGoldenRatio(), ratio);
 
@@ -286,7 +286,7 @@ test('Branded Ratio', async t => {
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerSync({
-    Acres: ['nat', 50n],
+    Acres: [ParamTypes.Nat, 50n],
     GoldenRatio: ['brandedRatio', ratio],
   });
   t.is(paramManager.getGoldenRatio(), ratio);
@@ -309,7 +309,7 @@ test('Branded Ratio', async t => {
 
 test('Strings', async t => {
   const paramManager = makeParamManagerSync({
-    Acres: ['nat', 50n],
+    Acres: [ParamTypes.Nat, 50n],
     OurWeapons: ['string', 'fear'],
   });
   t.is(paramManager.getOurWeapons(), 'fear');

@@ -46,14 +46,14 @@ const isAsync = {
 // but importing that here turns this file into a module,
 // breaking the ambient typing
 /**
- * @typedef {ST<'amount'>
+ * @typedef {ST<'amountValue'>
  * | ST<'brand'>
  * | ST<'brandedAmount'>
  * | ST<'brandedRatio'>
  * | ST<'installation'>
  * | ST<'instance'>
  * | ST<'nat'>
- * | ST<'ratio'>
+ * | ST<'ratioValue'>
  * | ST<'string'>
  * | ST<'unknown'>} SyncSpecTuple
  *

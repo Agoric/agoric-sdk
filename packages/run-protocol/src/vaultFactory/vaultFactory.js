@@ -55,7 +55,7 @@ const { details: X } = assert;
  * { getLimitedCreatorFacet: () => VaultFactory },
  * Record<string, any> &
  *  {electionManager: Instance,
- *   main: {Electorate: ParamRecord<'amount'>},
+ *   main: {Electorate: ParamRecord<'amountValue'>},
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>},
  * {feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}>
