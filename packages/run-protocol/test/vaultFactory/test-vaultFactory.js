@@ -1379,7 +1379,6 @@ test('transfer vault', async t => {
   );
 
   t.like(inviteProps, {
-    // simplify test by including any properties not mentioned below
     debtSnapshot: {
       debt: debtAmount,
       interest: aliceFinish.value.debtSnapshot.interest,
