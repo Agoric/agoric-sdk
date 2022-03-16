@@ -139,49 +139,40 @@ exercised if/when the vote is successful.
 ### ParamManager
 
 `ContractGovernor` expects to work with contracts that use `ParamManager` to
-manage their parameters. `makeParamManagerBuilder()` is designed to be called
+manage their parameters. `makeParamManager()` is designed to be called
 within the managed contract so that internal access to the parameter values is
 synchronous. A separate facet allows visible management of changes to the
 parameter values.
 
-`makeParamManagerBuilder(zoe)` makes a builder for the ParamManager. The
-parameters that will be managed are specified by a sequence of calls to the
-builder, each describing one parameter. For instance, such a sequence might look
-like this:
+`makeParamManager(zoe)` makes a ParamManager:
 
 ``` javascript
-return makeParamManagerBuilder()
-  .addNat(CHARGING_PERIOD_KEY, loanTiming.chargingPeriod)
-  .addNat(RECORDING_PERIOD_KEY, loanTiming.recordingPeriod)
-  .addRatioValue(INITIAL_MARGIN_KEY, rates.initialMargin)
-  .addRatioValue(LIQUIDATION_MARGIN_KEY, rates.liquidationMargin)
-  .addRatioValue(INTEREST_RATE_KEY, rates.interestRate)
-  .addRatioValue(LOAN_FEE_KEY, rates.loanFee)
-  .build();
+  const paramManager = await makeParamManager(
+    {
+      'MyChangeableNumber': ['nat', startingValue],
+      'ContractElectorate': ['invitation', initialPoserInvitation],
+    },
+    zcf.getZoeService(),
+  );
+
+  paramManager.getMyChangeableNumber() === startingValue;
+  paramManager.updatetMyChangeableNumber((newValue);
+  paramManager.getMyChangeableNumber() === newValue;
 ```
 
-Each `addType()` call returns the builder, so the next call can continue the
-call cascade. At the end, `.build()` is called. One of the calls,
-`addInvitation()`, is `async`, so it can't be cascaded.
-
+If you don't need any parameters that depend on the Zoe service, there's
+an alternative function that returns synchronously:
 ``` javascript
-  const paramManagerBuilder = makeParamManagerBuilder(zoe)
-    .addBrandValue('Currency', drachmaBrand)
-    .addAmountValue('Amt', drachmaAmount);
-  // addInvitation is async, so it can't be part of the cascade.
-  await paramManagerBuilder.addInvitation('Invite', invitation);
-  const paramManager = paramManagerBuilder.build();
+  const paramManager = await makeParamManagerSync(
+    {
+      'Currency': ['brand', drachmaBrand],
+    },
+  );
 ```
 
-The parameter values are retrieved by name. A separate facet of the paramManager
-allows the holder to call `updateFoo()` to change the value. ContractGovernor
-wraps that facet up so its usage is visible.
-
-Current supported methods for adding parameters include 'addAmount', 'addBrand',
-'addInstance', 'addInstallation', 'addInvitation', 'addNat', 'addRatio',
-'addString', and 'addUnknown'. The list can be extended as we find more types
-that contracts want to manage. (If you find yourself using 'addUnknown', let us
-know, as that's a sign that we should support a new type). 
+See [ParamTypes definition](./src/constants.js) for all supported types. More
+types will be supported as we learn what contracts need to manage. (If you find
+yourself using 'addUnknown', let us know!)
 
 ### Governed Contracts
 
