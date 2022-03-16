@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
 import buildManualTimer from '../../tools/manualTimer.js';
 

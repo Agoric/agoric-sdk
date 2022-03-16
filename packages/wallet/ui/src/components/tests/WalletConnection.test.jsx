@@ -5,7 +5,7 @@ import Tooltip from '@mui/material/Tooltip';
 import WalletConnection from '../WalletConnection';
 import { makeBackendFromWalletBridge } from '../../util/WalletBackendAdapter.js';
 
-jest.mock('@agoric/eventual-send', () => ({
+jest.mock('@endo/eventual-send', () => ({
   E: obj =>
     new Proxy(obj, {
       get(target, propKey) {

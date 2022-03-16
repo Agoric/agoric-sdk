@@ -18,7 +18,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 // to satisfy contractGovernor. It needs to return a creatorFacet with
 // { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import '@agoric/governance/src/exported';
 
 import { makeScalarMap, keyEQ } from '@agoric/store';

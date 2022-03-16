@@ -3,7 +3,7 @@
 import { makeStore } from '@agoric/store';
 import { makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';
-import { E, HandledPromise } from '@agoric/eventual-send';
+import { E, HandledPromise } from '@endo/eventual-send';
 import { Remotable, Far } from '@endo/marshal';
 
 import '@agoric/store/exported.js';

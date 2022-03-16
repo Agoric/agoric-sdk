@@ -1,7 +1,7 @@
 // @ts-check
 import '@agoric/zoe/exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import {
   assertProposalShape,
   getAmountOut,

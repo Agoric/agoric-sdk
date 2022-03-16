@@ -1327,7 +1327,7 @@ function build(
  *
  * buildRootObject(vatPowers, vatParameters)
  *
- * Within the vat, `import { E } from '@agoric/eventual-send'` will
+ * Within the vat, `import { E } from '@endo/eventual-send'` will
  * provide the E wrapper. For any object x, E(x) returns a proxy object
  * that converts any method invocation into a corresponding eventual send
  * to x. That is, E(x).foo(arg1, arg2) is equivalent to x~.foo(arg1,

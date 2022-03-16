@@ -4,7 +4,7 @@ import Dapp from '../Dapp';
 import DappConnection from '../DappConnection';
 
 jest.mock('../Dapp', () => () => 'Dapp');
-jest.mock('@agoric/eventual-send', () => ({
+jest.mock('@endo/eventual-send', () => ({
   E: obj =>
     new Proxy(obj, {
       get(target, propKey) {

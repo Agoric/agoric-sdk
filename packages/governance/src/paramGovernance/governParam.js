@@ -1,6 +1,6 @@
 // @ts-check
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { keyEQ } from '@agoric/store';

@@ -22,7 +22,7 @@ As SES is on the JavaScript standards track, it includes other proposed features
 
 `harden` is available as a global. It freezes the API surface (enumerable data properties) of an object. For more details, see [the `harden` package](https://github.com/Agoric/SES-shim/blob/SES-v0.8.0/packages/harden/README.md).
 
-`HandledPromise` is also a global. The `E` wrapper (`E(target).methodname(args)`) can be imported as `import { E } from '@agoric/eventual-send`. These two are defined by the TC39 [Eventual-Send Proposal](https://github.com/tc39/proposal-eventual-send).
+`HandledPromise` is also a global. The `E` wrapper (`E(target).methodname(args)`) can be imported as `import { E } from '@endo/eventual-send`. These two are defined by the TC39 [Eventual-Send Proposal](https://github.com/tc39/proposal-eventual-send).
 
 `Compartment` (a [part of SES](https://github.com/Agoric/SES-shim/tree/SES-v0.8.0/packages/ses#compartment)) is a global. Vat code runs inside a `Compartment`, but vat code can create sub-compartments to host other code (with different globals or transforms).
 

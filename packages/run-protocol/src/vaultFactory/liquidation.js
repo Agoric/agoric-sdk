@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';

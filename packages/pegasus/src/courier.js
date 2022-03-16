@@ -2,7 +2,7 @@
 import { details as X } from '@agoric/assert';
 
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeOncePromiseKit } from './once-promise-kit.js';
 

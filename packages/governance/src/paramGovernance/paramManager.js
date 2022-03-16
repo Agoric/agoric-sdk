@@ -7,7 +7,7 @@ import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore } from '@agoric/store';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 import {
   makeLooksLikeBrand,

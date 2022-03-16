@@ -2,7 +2,7 @@
 
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { makeWeakStore } from '@agoric/store';
 
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */

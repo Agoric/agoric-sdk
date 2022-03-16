@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 function makeBobMaker() {
