@@ -120,7 +120,7 @@ const start = async (zcf, privateArgs) => {
    *   main: {
    *     PoolFee: ParamRecord<'nat'>,
    *     ProtocolFee: ParamRecord<'nat'>,
-   *     Electorate: ParamRecord<'amountValue'>,
+   *     Electorate: ParamRecord<'invitation'>,
    *   }
    * }} AMMTerms
    *

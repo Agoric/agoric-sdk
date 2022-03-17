@@ -23,7 +23,7 @@ const { details: X } = assert;
 /**
  *
  * @param {AnyParamManager} paramManager
- * @param {{[CONTRACT_ELECTORATE]: ParamRecord<'amountValue'>}} governedParams
+ * @param {{[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}} governedParams
  */
 const assertElectorateMatches = (paramManager, governedParams) => {
   const managerElectorate =
@@ -38,7 +38,23 @@ const assertElectorateMatches = (paramManager, governedParams) => {
 };
 
 /**
- * @type {(zoe?:ERef<ZoeService>) => ParamManagerBuilder}
+ * @typedef {Object} ParamManagerBuilder
+ * @property {(name: string, value: Amount) => ParamManagerBuilder} addAmountValue
+ * @property {(name: string, value: Amount) => ParamManagerBuilder} addBrandedAmount
+ * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
+ * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
+ * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
+ * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
+ * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
+ * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatioValue
+ * @property {(name: string, value: Ratio) => ParamManagerBuilder} addBrandedRatio
+ * @property {(name: string, value: string) => ParamManagerBuilder} addString
+ * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
+ * @property {() => AnyParamManager} build
+ */
+
+/**
+ * @param {ERef<ZoeService>} [zoe]
  */
 const makeParamManagerBuilder = zoe => {
   const namesToParams = makeStore('Parameter Name');
@@ -301,6 +317,7 @@ const makeParamManagerBuilder = zoe => {
     });
   };
 
+  /** @type {ParamManagerBuilder} */
   const builder = {
     addAmountValue: (n, v) => addAmountValue(n, v, builder),
     addBrandedAmount: (n, v) => addBrandedAmount(n, v, builder),

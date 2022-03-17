@@ -23,7 +23,7 @@ const { details: X, quote: q } = assert;
  * @template T
  * @param {ContractFacet<{
  * electionManager: VoteOnParamChange,
- * main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'amountValue'>}
+ * main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}
  * }>} zcf
  * @param {import('./paramGovernance/typedParamManager').TypedParamManager<T>} paramManager
  */
