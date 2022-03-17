@@ -16,7 +16,7 @@ const trace = makeTracer('LIQ');
  * Once collateral has been sold using the contract, we burn the amount
  * necessary to cover the debt and return the remainder.
  *
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {InnerVault} innerVault
  * @param {(losses: AmountKeywordRecord,
  *             zcfSeat: ZCFSeat

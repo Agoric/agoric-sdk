@@ -198,6 +198,8 @@ export const mintInitialSupply = async ({
   ) || { amount: '0' };
   const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
 
+  /** @type {Installation<import('../../../run-protocol/src/centralSupply.js').CentralSupplyContract>} */
+  // @ts-expect-error bundle types are borked
   const installation = E(zoe).install(centralSupplyBundle);
   const start = E(zoe).startInstance(
     installation,
@@ -232,11 +234,13 @@ export const addBankAssets = async ({
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
 
   const bundle = await mintHolderBundle;
+  const installation = E(zoe).install(bundle);
 
   /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
+  // @ts-expect-error cast
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
     E(zoe).startInstance(
-      E(zoe).install(bundle),
+      installation,
       harden({}),
       harden({
         keyword: Tokens.BLD.name,

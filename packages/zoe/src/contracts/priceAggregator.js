@@ -21,20 +21,21 @@ const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * This contract aggregates price values from a set of oracles and provides a
  * PriceAuthority for their median.
  *
- * @type {ContractStartFn}
+ * @param {ZCF<{
+ * timer: TimerService,
+ * POLL_INTERVAL: bigint,
+ * unitAmountIn: Amount,
+ * }>} zcf
  */
 const start = async zcf => {
   const {
-    timer: rawTimer,
+    timer,
     POLL_INTERVAL,
     brands: { In: brandIn, Out: brandOut },
     unitAmountIn = AmountMath.make(brandIn, 1n),
   } = zcf.getTerms();
 
   const unitIn = AmountMath.getValue(brandIn, unitAmountIn);
-
-  /** @type {TimerService} */
-  const timer = rawTimer;
 
   /** @type {IssuerRecord & { mint: ERef<Mint> }} */
   let quoteKit;

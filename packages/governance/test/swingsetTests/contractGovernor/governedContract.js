@@ -27,7 +27,16 @@ const makeParamManager = async (zoe, number, invitation) => {
   return builder.build();
 };
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ZCF<{
+ *   electionManager: Instance,
+ *   main: {
+ *     [MALLEABLE_NUMBER]: ParamDescription,
+ *     [CONTRACT_ELECTORATE]: ParamDescription,
+ *   }
+ * }>} zcf
+ * @param {{initialPoserInvitation: Invitation}} privateArgs
+ */
 const start = async (zcf, privateArgs) => {
   const {
     main: {
@@ -49,7 +58,7 @@ const start = async (zcf, privateArgs) => {
   const invitationAmount = getInvitationAmount(CONTRACT_ELECTORATE);
   assert(
     keyEQ(invitationAmount, electorateParam.value),
-    X`electorate amount ${electorateParam.amount} didn't match ${invitationAmount}`,
+    X`electorate amount ${electorateParam.value} didn't match ${invitationAmount}`,
   );
 
   return {

@@ -16,7 +16,14 @@
 
 /**
  * @callback MakePayoffHandler
- * @param {ContractFacet} zcf
+ * @param {ZCF<{
+ * strikePrice1: Amount,
+ * strikePrice2: Amount,
+ * settlementAmount: Amount,
+ * priceAuthority: PriceAuthority,
+ * expiration: bigint,
+ * underlyingAmount: Amount,
+ * }>} zcf
  * @param {Record<PositionKind,PromiseRecord<ZCFSeat>>} seatPromiseKits
  * @param {ZCFSeat} collateralSeat
  * @returns {PayoffHandler}

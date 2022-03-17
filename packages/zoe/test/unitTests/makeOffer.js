@@ -5,7 +5,7 @@ import { assert } from '@agoric/assert';
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {Proposal=} proposal
  * @param {PaymentPKeywordRecord=} payments
  * @returns {Promise<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}

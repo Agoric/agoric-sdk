@@ -55,7 +55,16 @@ import { Position } from './position.js';
  *   denominator.value=10000)
  */
 
-/** @type {ContractStartFn} */
+/**
+ * @param {ZCF<{
+ * strikePrice1: Amount,
+ * strikePrice2: Amount,
+ * settlementAmount: Amount,
+ * priceAuthority: PriceAuthority,
+ * expiration: bigint,
+ * underlyingAmount: Amount,
+ * }>} zcf
+ */
 const start = async zcf => {
   const { brands, strikePrice1, strikePrice2, settlementAmount } =
     zcf.getTerms();

@@ -39,7 +39,11 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 const { details: X } = assert;
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF<Record<string, any> &
+ *  {electionManager: Instance,
+ *   main: {Electorate: ParamShortRecord<'amount'> & { value: Amount } },
+ *   timerService: TimerService,
+ *   priceAuthority: ERef<PriceAuthority>}>} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
@@ -262,4 +266,5 @@ export const start = async (zcf, privateArgs) => {
     publicFacet,
   });
 };
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} VaultFactoryPublicFacet */
+
+/** @typedef {ContractOf<typeof start>} VaultFactoryContract */

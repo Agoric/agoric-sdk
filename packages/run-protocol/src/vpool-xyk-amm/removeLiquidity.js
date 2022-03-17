@@ -5,7 +5,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import '@agoric/zoe/exported.js';
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {(brand: Brand) => XYKPool} getPool
  */
 export const makeMakeRemoveLiquidityInvitation = (zcf, getPool) => {

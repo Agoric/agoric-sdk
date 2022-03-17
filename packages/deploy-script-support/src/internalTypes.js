@@ -10,15 +10,6 @@
 // TODO: import this from agoric-cli
 
 /**
- * @callback MakeStartInstanceAndSave
- * @param {ERef<IssuerManager>} issuerManager
- * @param {ERef<InstanceManager>} instanceManager
- * @param {ERef<ZoeService>} zoe
- * @param {ERef<Purse>} zoeInvitationPurse
- * @returns {StartInstanceAndSave}
- */
-
-/**
  * @callback MakeOfferAndFindInvitationAmount
  * @param {ERef<WalletAdminFacet>} walletAdmin - an internal type of the
  * wallet, not defined here

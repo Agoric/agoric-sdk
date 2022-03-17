@@ -24,9 +24,9 @@
  * creates the ERTP payments that represent the right to interact with
  * a smart contract in particular ways.
  *
- * @property {Install} install
+ * @property {InstallBundle} install
  * @property {InstallBundleID} installBundleID
- * @property {StartInstance} startInstance
+ * @property {import('./utils').StartInstance<I>} startInstance
  * @property {Offer} offer
  * @property {GetPublicFacet} getPublicFacet
  * @property {GetIssuers} getIssuers
@@ -114,14 +114,19 @@
  * @returns {Promise<InvitationDetails>}
  */
 
+// XXX include `SourceBundle` because that's how this function is used.
+// TODO remove this function https://github.com/Agoric/agoric-sdk/issues/4565
 /**
  * @callback InstallBundle
  *
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.
  *
- * @param {Bundle} bundle
+ * @param {Bundle | SourceBundle} bundle
  * @returns {Promise<Installation>}
+ *
+ * @deprecated
+ * @see InstallBundleID
  */
 
 /**
@@ -141,34 +146,6 @@
  *
  * @param {ERef<Installation>}
  * @returns {Promise<BundleID>}
- */
-
-/**
- * @callback StartInstance
- *
- * Zoe is long-lived. We can use Zoe to create smart contract
- * instances by specifying a particular contract installation to use,
- * as well as the `terms` of the contract. The `terms.issuers` is a
- * record mapping string names (keywords) to issuers, such as `{
- * Asset: simoleanIssuer}`. (Note that the keywords must begin with a
- * capital letter and must be ASCII identifiers.) Parties to the
- * contract will use the keywords to index their proposal and their
- * payments.
- *
- * The custom terms are the arguments to the contract, such as the
- * number of bids an auction will wait for before closing. Custom
- * terms are up to the discretion of the smart contract. We get back
- * the creator facet, public facet, and creator invitation as defined
- * by the contract.
- *
- * @param {ERef<Installation>} installation
- * @param {IssuerKeywordRecord=} issuerKeywordRecord
- * @param {Object=} terms
- * @param {Object=} privateArgs
- * An optional configuration object
- * that can be used to pass in arguments that should not be in the
- * public terms
- * @returns {Promise<StartInstanceResult>}
  */
 
 /**
@@ -208,20 +185,6 @@
  * @property {() => void=} tryExit
  * @property {() => Promise<boolean>} hasExited
  * @property {() => Promise<Notifier<Allocation>>} getNotifier
- */
-
-/**
- * @typedef {Object} AdminFacet
- * @property {() => Promise<Completion>} getVatShutdownPromise
- */
-
-/**
- * @typedef {Object} StartInstanceResult
- * @property {any} creatorFacet
- * @property {any} publicFacet
- * @property {Instance} instance
- * @property {Payment | undefined} creatorInvitation
- * @property {AdminFacet} adminFacet
  */
 
 /**
@@ -319,8 +282,13 @@
  */
 
 /**
- * @typedef {Object} Installation
- * @property {() => SourceBundle} getBundle
+ * @template [C=unknown] contract
+ * @typedef {import('./utils').Installation<C>} Installation
+ */
+
+/**
+ * @template {Installation} I
+ * @typedef {import('./utils').InstallationStart<I>} InstallationStart
  */
 
 /**

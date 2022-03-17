@@ -1,5 +1,6 @@
 /// <reference types="ses"/>
 
+// XXX can be tighter than 'any'
 /**
  * @typedef {any} Completion
  * Any passable non-thenable. Often an explanatory string.
@@ -12,7 +13,8 @@
  */
 
 /**
- * @typedef {Object} ContractFacet
+ * @template {object} [CT=Record<string, unknown>] Contract's custom terms
+ * @typedef {Object} ZCF Zoe Contract Facet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
  * Facet is an API object used by running contract instances to access
@@ -33,7 +35,7 @@
  * @property {Assert} assert
  * @property {() => ERef<ZoeService>} getZoeService
  * @property {() => Issuer} getInvitationIssuer
- * @property {() => Terms} getTerms
+ * @property {() => StandardTerms & CT} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
@@ -211,15 +213,26 @@
  */
 
 /**
+ * @template {object} [PF] Public facet
+ * @template {object} [CF] Creator facet
+ * @template {object} [CT] Custom terms
+ * @template {object} [PA] Private args
  * @callback ContractStartFn
- * @param {ContractFacet} zcf
- * @param {Object=} privateArgs
- * @returns {ContractStartFnResult}
+ * @param {ZCF<CT>} zcf
+ * @param {PA} privateArgs
+ * @returns {ContractStartFnResult<PF, CF>}
  */
 
 /**
+ * @template PF Public facet
+ * @template CF Creator facet
  * @typedef {Object} ContractStartFnResult
- * @property {Object=} creatorFacet
- * @property {Promise<Invitation>=} creatorInvitation
- * @property {Object=} publicFacet
+ * @property {PF} [publicFacet]
+ * @property {CF} [creatorFacet]
+ * @property {Promise<Invitation>=} [creatorInvitation]
+ */
+
+/**
+ * @template S
+ * @typedef {import('../zoeService/utils').ContractOf<S>} ContractOf
  */

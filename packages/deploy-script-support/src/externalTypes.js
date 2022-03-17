@@ -6,27 +6,12 @@
  */
 
 /**
- * @typedef {Object} StartInstanceAndSaveConfig
- * @property {Petname} instancePetname
- * @property {ERef<Installation>} installation
- * @property {IssuerKeywordRecord=} issuerKeywordRecord
- * @property {Record<Keyword,Petname>=} issuerPetnameKeywordRecord
- * @property {Object=} terms
- */
-
-/**
  * @typedef {Object} StartInstanceResultWithDetailsNoInvitation
  * @property {any} creatorFacet
  * @property {any} publicFacet
  * @property {Instance} instance
  * @property {InvitationDetails} creatorInvitationDetails
  * @property {AdminFacet} adminFacet
- */
-
-/**
- * @callback StartInstanceAndSave
- * @param {StartInstanceAndSaveConfig} config
- * @returns {StartInstanceResult | StartInstanceResultWithDetailsNoInvitation}
  */
 
 /**

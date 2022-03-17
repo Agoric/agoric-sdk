@@ -17,5 +17,5 @@
   },
   // To include tests, change to:
   //  "include": ["src/**/*.js", "exported.js", "tools/**/*.js", "test/**/*.js"], 
-  "include": ["src/**/*.js", "exported.js", "tools/**/*.js"],
+  "include": ["src/**/*.js", "exported.js", "tools/**/*.js", "src/zoeService/types.d.ts"],
 }

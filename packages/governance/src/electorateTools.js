@@ -63,7 +63,7 @@ const getQuestion = (questionHandleP, questionStore) =>
   );
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {AddQuestion} addQuestion
  */
 const getPoserInvitation = (zcf, addQuestion) => {

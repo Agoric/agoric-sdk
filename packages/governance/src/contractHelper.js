@@ -17,13 +17,12 @@ const { details: X, quote: q } = assert;
  *  parameter values, and the governance guarantees only hold if they're not
  *  used directly by the governed contract.
  *
- * @param {ContractFacet} zcf
+ * @param {ZCF<{electionManager: Instance, main: unknown}>} zcf
  * @param {ParamManagerFull} paramManager
  * @returns {ParamGovernorBundle}
  */
 const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
-  /** @type {ParamDescriptions} */
   const governedParams = terms.main;
   const { electionManager } = terms;
 
@@ -52,6 +51,7 @@ const handleParamGovernance = (zcf, paramManager) => {
    * @template T
    */
   const wrapPublicFacet = (originalPublicFacet = /** @type {T} */ ({})) => {
+    // @ts-expect-error FIXME alleged type mismatch
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),

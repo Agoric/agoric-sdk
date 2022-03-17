@@ -291,7 +291,7 @@
 
 /**
  * @typedef {Object} ElectorateCreatorFacet
- *  addQuestion() can be used directly when the creator doesn't need any
+ * @property {AddQuestion} addQuestion can be used directly when the creator doesn't need any
  *  reassurance. When someone needs to connect addQuestion to the Electorate
  *  instance, getPoserInvitation() lets them get addQuestion with assurance.
  * @property {() => Promise<Invitation>} getPoserInvitation
@@ -641,7 +641,7 @@
 
 /**
  * @typedef {Object} GovernedContractTerms
- * @property {Timer} timer
+ * @property {TimerService} timer
  * @property {IssuerKeywordRecord} issuerKeywordRecord
  * @property {Object} privateArgs
  */
