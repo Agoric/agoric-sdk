@@ -25,7 +25,7 @@ import { assert } from '@agoric/assert';
  * allows selling the tickets that were produced. You can reuse the ticket maker
  * to mint more tickets (e.g. for a separate show.)
  *
- * @param {ZoeCF<{
+ * @param {ZCF<{
  * tokenName: string,
  * }>} zcf
  */

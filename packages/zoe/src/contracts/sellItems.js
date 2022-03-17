@@ -34,7 +34,7 @@ import '../../exported.js';
  * exit early to collect their winnings. The remaining items will still be
  * available for sale, but the creator won't be able to collect later earnings.
  *
- * @param {ZoeCF<any>} zcf
+ * @param {ZCF<any>} zcf
  */
 const start = zcf => {
   const { pricePerItem, issuers, brands } = zcf.getTerms();

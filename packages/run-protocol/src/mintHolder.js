@@ -8,7 +8,7 @@ import { makeIssuerKit } from '@agoric/ertp';
  * makeIssuerKit in its own contract, and hence in
  * its own vat.
  *
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @returns {{ publicFacet: Issuer, creatorFacet: Mint }}
  *
  * @typedef {{

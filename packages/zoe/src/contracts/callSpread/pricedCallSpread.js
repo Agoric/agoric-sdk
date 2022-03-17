@@ -59,7 +59,7 @@ const BASIS_POINTS = 10000n;
  */
 
 /**
- * @param {ZoeCF<{
+ * @param {ZCF<{
  * strikePrice1: Amount,
  * strikePrice2: Amount,
  * settlementAmount: Amount,

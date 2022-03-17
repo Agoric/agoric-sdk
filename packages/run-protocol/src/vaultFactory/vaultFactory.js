@@ -39,7 +39,7 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 const { details: X } = assert;
 
 /**
- * @param {ZoeCF<Record<string, any> &
+ * @param {ZCF<Record<string, any> &
  *  {electionManager: Instance,
  *   main: {Electorate: ParamShortRecord<'amount'> & { value: Amount } },
  *   timerService: TimerService,

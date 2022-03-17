@@ -55,7 +55,7 @@ import { makeLendInvitation } from './lend.js';
  *  * Keyword: 'Loan' - The issuer for the digital assets to be loaned
  *    out.
  *
- * @param {ZoeCF<{
+ * @param {ZCF<{
  *   mmr: Ratio,
  *   autoswapInstance: Instance,
  *   priceAuthority: PriceAuthority,

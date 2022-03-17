@@ -7,7 +7,7 @@
 
 /**
  * @callback StartCounter
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {QuestionSpec} questionSpec
  * @param {unknown} quorumThreshold
  * @param {ERef<Installation>} voteCounter

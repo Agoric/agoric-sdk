@@ -7,7 +7,7 @@ import { E, Far } from '@endo/far';
  * The sole purpose of this contract is to mint the initial
  * supply of the central currency, RUN.
  *
- * @param {ZoeCF<{
+ * @param {ZCF<{
  *  bootstrapPaymentValue: bigint,
  * }>} zcf
  * @param {Object} privateArgs

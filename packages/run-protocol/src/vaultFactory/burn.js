@@ -4,7 +4,7 @@ import '@agoric/zoe/exported.js';
 import { E } from '@endo/eventual-send';
 
 /**
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {ZCFMint} zcfMint
  * @param {Amount} amount
  */

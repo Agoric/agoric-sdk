@@ -27,7 +27,7 @@
  *
  * The keywords for both seats must match.
  *
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {ZCFSeat} leftSeat
  * @param {ZCFSeat} rightSeat
  * @returns {string}
@@ -44,7 +44,7 @@
  * If the swap fails, no assets are transferred, both seats will fail,
  * and the function throws.
  *
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {ZCFSeat} leftSeat
  * @param {ZCFSeat} rightSeat
  * @returns {string}

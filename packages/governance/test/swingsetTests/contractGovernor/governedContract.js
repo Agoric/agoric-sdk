@@ -28,7 +28,7 @@ const makeParamManager = async (zoe, number, invitation) => {
 };
 
 /**
- * @param {ZoeCF<{
+ * @param {ZCF<{
  *   main: {
  *     [MALLEABLE_NUMBER]: ParamDescription,
  *     [CONTRACT_ELECTORATE]: ParamDescription,

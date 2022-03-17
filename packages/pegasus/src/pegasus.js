@@ -28,7 +28,7 @@ const TRANSFER_PROPOSAL_SHAPE = {
 /**
  * Make a Pegasus public API.
  *
- * @param {ZoeCF} zcf the Zoe Contract Facet
+ * @param {ZCF} zcf the Zoe Contract Facet
  * @param {ERef<BoardDepositFacet>} board where to find depositFacets by boardID
  * @param {ERef<NameHub>} namesByAddress where to find depositFacets by bech32
  */
@@ -488,7 +488,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
  */
 
 /**
- * @param {ZoeCF<{
+ * @param {ZCF<{
  *  board: ERef<BoardDepositFacet>,
  *  namesByAddress: ERef<NameHub>,
  * }>} zcf

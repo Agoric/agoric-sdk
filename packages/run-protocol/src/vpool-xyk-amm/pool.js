@@ -22,7 +22,7 @@ const { details: X } = assert;
 // single pool or multiple hops.
 
 /**
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {(brand: Brand) => boolean} isInSecondaries
  * @param {(brand: Brand, pool: XYKPool) => void} initPool
  * @param {Brand} centralBrand

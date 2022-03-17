@@ -3,7 +3,7 @@
 import { AmountMath } from '@agoric/ertp';
 
 /**
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {ZCFSeat} sellSeat
  * @param {Array<ZCFSeat>} bidSeats
  */

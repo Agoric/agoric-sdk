@@ -11,7 +11,7 @@ import { E } from '@endo/eventual-send';
 /**
  * This contract provides oracle queries for a fee or for free.
  *
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  */
 const start = async zcf => {
   const feeBrand = zcf.getTerms().brands.Fee;

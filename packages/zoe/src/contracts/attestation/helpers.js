@@ -24,7 +24,7 @@ const validateInputs = (externalBrand, address, amount) => {
 harden(validateInputs);
 
 /**
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {ZCFMint} zcfMint
  * @param {Amount} amountToMint
  * @returns {Promise<Payment>}

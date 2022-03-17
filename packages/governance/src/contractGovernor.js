@@ -80,7 +80,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * contract (as electionManager) so clients will be able to look up the state
  * of the governed parameters.
  *
- * @param {ZoeCF<{
+ * @param {ZCF<{
  * timer: Timer,
  * electorateInstance: Instance,
  * governedContractInstallation: Installation,

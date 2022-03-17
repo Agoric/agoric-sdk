@@ -17,7 +17,7 @@ import '../../exported.js';
  * `want` will be ignored.
  *
  * @type {ContractStartFn}
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   let offersCount = 0n;

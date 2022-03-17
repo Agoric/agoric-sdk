@@ -94,7 +94,7 @@ const validTransitions = {
  * priceAuthority: ERef<PriceAuthority>,
  * mint: ZCFMint,
  * vaultSeat: ZCFSeat,
- * zcf: ZoeCF,
+ * zcf: ZCF,
  * }>} ImmutableState
  */
 
@@ -110,7 +110,7 @@ const validTransitions = {
  */
 
 /**
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {InnerVaultManagerBase & GetVaultParams} manager
  * @param {Notifier<import('./vaultManager').AssetState>} assetNotifier
  * @param {VaultId} idInManager

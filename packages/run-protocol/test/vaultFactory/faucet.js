@@ -7,7 +7,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
  * A Faucet providing RUN so we can provide initial liquidity to the AMM so the
  * VaultFactory can reliably liquidate.
  *
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
 export async function start(zcf, privateArgs) {

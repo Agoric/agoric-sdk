@@ -16,7 +16,7 @@ const { details: X } = assert;
  * @param {string} attestationTokenName - the name for the attestation
  * token
  * @param {Amount} empty
- * @param {ZoeCF} zcf
+ * @param {ZCF} zcf
  * @returns {Promise<{makeReturnAttInvitation:
  * MakeReturnAttInvitation, addReturnableLien: AddReturnableLien,
  * getLienAmount: GetReturnableLienAmount, getIssuer: () => Issuer,

@@ -21,7 +21,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * This contract aggregates price values from a set of oracleStatuses and provides a
  * PriceAuthority for their median.
  *
- * @param {ZoeCF<{
+ * @param {ZCF<{
  * timer: TimerService,
  * maxSubmissionCount: number,
  * minSubmissionCount: number,

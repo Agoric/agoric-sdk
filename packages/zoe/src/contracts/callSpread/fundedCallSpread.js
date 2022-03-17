@@ -56,7 +56,7 @@ import { Position } from './position.js';
  */
 
 /**
- * @param {ZoeCF<{
+ * @param {ZCF<{
  * strikePrice1: Amount,
  * strikePrice2: Amount,
  * settlementAmount: Amount,
