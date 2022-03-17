@@ -5,7 +5,7 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Nat } from '@agoric/nat';
 import { makeNameHubKit } from '../nameHub.js';
 
-import { feeIssuerConfig } from './utils.js';
+import { ORACLE_BRAND_PRICE_NAME, feeIssuerConfig } from './utils.js';
 
 // TODO/TECHDEBT: move to run-protocol?
 const Tokens = harden({
@@ -129,11 +129,11 @@ export const makeOracleBrands = async ({
   oracleBrand: { produce: oracleBrandProduce },
 }) => {
   const { brand } = makeIssuerKit(
-    'USD',
+    ORACLE_BRAND_PRICE_NAME,
     AssetKind.NAT,
     harden({ decimalPlaces: 6 }),
   );
-  oracleBrandProduce.USD.resolve(brand);
+  oracleBrandProduce[ORACLE_BRAND_PRICE_NAME].resolve(brand);
 };
 harden(makeOracleBrands);
 

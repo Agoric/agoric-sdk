@@ -2,7 +2,10 @@
 
 import { E, Far } from '@endo/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
+import {
+  CENTRAL_ISSUER_NAME,
+  ORACLE_PRICE_BRAND_NAME,
+} from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
@@ -236,6 +239,9 @@ export const startVaultFactory = async (
     produce, // {  vaultFactoryCreator }
     brand: {
       consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
+    },
+    oracleBrand: {
+      consume: { [ORACLE_PRICE_BRAND_NAME]: oraclePriceBrandP },
     },
     instance,
     installation,

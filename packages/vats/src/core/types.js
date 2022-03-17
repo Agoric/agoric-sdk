@@ -141,8 +141,8 @@
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' | 'liquidate' |
  *     'runStake' | 'runStakeGovernor' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
- *   oracleBrand:
- *     'USD',
+ *   oracleBrand: |
+ *     import('./utils').ORACLE_BRAND_PRICE_NAME,
  *   uiConfig: |
  *     'VaultFactory' |
  *     'Treasury' // compat.

@@ -13,6 +13,7 @@ const mapEntries = (obj, f) =>
   fromEntries(entries(obj).map(([p, v]) => f(p, v)));
 
 export const CENTRAL_ISSUER_NAME = 'RUN';
+export const ORACLE_BRAND_PRICE_NAME = 'USD';
 
 /**
  * We reserve these keys in name hubs.
