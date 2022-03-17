@@ -78,6 +78,7 @@
     "rules": {
       "react/prop-types": "off",
       "react/react-in-jsx-scope": "off",
+      "import/no-default-export": "off",
       "import/no-extraneous-dependencies": "off",
       "react/display-name": "off"
     },
