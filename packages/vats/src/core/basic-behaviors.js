@@ -1,6 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { AssetKind } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { Nat } from '@agoric/nat';
 import { makeNameHubKit } from '../nameHub.js';
@@ -97,6 +97,23 @@ export const buildZoe = async ({
   ]);
 };
 harden(buildZoe);
+
+/**
+ * Create inert brands (no mint or issuer) referred to by price oracles.
+ *
+ * @param {BootstrapPowers} powers
+ */
+export const makeOracleBrands = async ({
+  oracleBrand: { produce: oracleBrandProduce },
+}) => {
+  const { brand } = makeIssuerKit(
+    'USD',
+    AssetKind.NAT,
+    harden({ decimalPlaces: 6 }),
+  );
+  oracleBrandProduce.USD.resolve(brand);
+};
+harden(makeOracleBrands);
 
 /**
  * TODO: rename this to getBoard?
