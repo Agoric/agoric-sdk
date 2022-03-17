@@ -4,7 +4,10 @@ import { makeWeakStore } from '@agoric/store';
 import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { handleParamGovernance } from '@agoric/governance';
+import {
+  assertElectorateMatches,
+  handleParamGovernance,
+} from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
@@ -129,6 +132,7 @@ const start = async (zcf, privateArgs) => {
     main: {
       [POOL_FEE_KEY]: poolFeeParam,
       [PROTOCOL_FEE_KEY]: protocolFeeParam,
+      ...otherGovernedTerms
     },
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
@@ -158,6 +162,8 @@ const start = async (zcf, privateArgs) => {
     zcf,
     paramManager,
   );
+
+  assertElectorateMatches(paramManager, otherGovernedTerms);
 
   /** @type {WeakStore<Brand,XYKPool>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');

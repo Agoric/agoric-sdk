@@ -27,7 +27,10 @@ export {
   CONTRACT_ELECTORATE,
 } from './paramGovernance/governParam.js';
 
-export { makeParamManagerBuilder } from './paramGovernance/paramManager.js';
+export {
+  assertElectorateMatches,
+  makeParamManagerBuilder,
+} from './paramGovernance/paramManager.js';
 
 export {
   makeParamManager,

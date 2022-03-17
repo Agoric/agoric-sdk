@@ -2,6 +2,9 @@
 
 import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
+// eslint-disable-next-line -- https://github.com/Agoric/agoric-sdk/pull/4837
+import { CONTRACT_ELECTORATE } from './paramGovernance/governParam.js';
+import { assertElectorateMatches } from './paramGovernance/paramManager.js';
 
 const { details: X, quote: q } = assert;
 
@@ -18,20 +21,22 @@ const { details: X, quote: q } = assert;
  *  used directly by the governed contract.
  *
  * @template T
- * @param {ContractFacet<{electionManager: VoteOnParamChange, main: Record<string, ParamRecord>}>} zcf
+ * @param {ContractFacet<{
+ * electionManager: VoteOnParamChange,
+ * main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'amountValue'>}
+ * }>} zcf
  * @param {import('./paramGovernance/typedParamManager').TypedParamManager<T>} paramManager
  */
 const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
   const governedParams = terms.main;
-  const { electionManager } = terms;
-
   assert(
     keyEQ(governedParams, paramManager.getParams()),
     X`Terms must include ${q(paramManager.getParams())}, but were ${q(
       governedParams,
     )}`,
   );
+  assertElectorateMatches(paramManager, governedParams);
 
   const typedAccessors = {
     getAmount: paramManager.getAmount,
@@ -44,6 +49,8 @@ const handleParamGovernance = (zcf, paramManager) => {
     getString: paramManager.getString,
     getUnknown: paramManager.getUnknown,
   };
+
+  const { electionManager } = terms;
 
   /**
    * @template PF

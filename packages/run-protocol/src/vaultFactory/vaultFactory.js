@@ -21,7 +21,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { E } from '@endo/eventual-send';
 import '@agoric/governance/src/exported';
 
-import { makeScalarMap, keyEQ } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountOut,
@@ -29,7 +29,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
-import { CONTRACT_ELECTORATE } from '@agoric/governance';
+import { assertElectorateMatches } from '@agoric/governance';
 
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
@@ -67,7 +67,7 @@ export const start = async (zcf, privateArgs) => {
     timerService,
     liquidationInstall,
     electionManager,
-    main: { [CONTRACT_ELECTORATE]: electorateParam },
+    main: governedTerms,
     loanTimingParams,
   } = zcf.getTerms();
 
@@ -87,12 +87,7 @@ export const start = async (zcf, privateArgs) => {
     initialPoserInvitation,
   );
 
-  const electorateInvAmt =
-    electorateParamManager.getInvitationAmount(CONTRACT_ELECTORATE);
-  assert(
-    keyEQ(electorateInvAmt, electorateParam.value),
-    X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
-  );
+  assertElectorateMatches(electorateParamManager, governedTerms);
 
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 

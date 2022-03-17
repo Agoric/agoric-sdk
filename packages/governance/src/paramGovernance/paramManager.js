@@ -6,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
 import { makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { keyEQ, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { ParamTypes } from '../constants.js';
 
@@ -16,8 +16,26 @@ import {
   makeAssertInstance,
   makeAssertBrandedRatio,
 } from './assertions.js';
+import { CONTRACT_ELECTORATE } from './governParam.js';
 
 const { details: X } = assert;
+
+/**
+ *
+ * @param {AnyParamManager} paramManager
+ * @param {{[CONTRACT_ELECTORATE]: ParamRecord<'amountValue'>}} governedParams
+ */
+const assertElectorateMatches = (paramManager, governedParams) => {
+  const managerElectorate =
+    paramManager.getInvitationAmount(CONTRACT_ELECTORATE);
+  const {
+    [CONTRACT_ELECTORATE]: { value: paramElectorate },
+  } = governedParams;
+  assert(
+    keyEQ(managerElectorate, paramElectorate),
+    X`Electorate in manager (${managerElectorate})} incompatible with terms (${paramElectorate}`,
+  );
+};
 
 /**
  * @type {(zoe?:ERef<ZoeService>) => ParamManagerBuilder}
@@ -300,6 +318,7 @@ const makeParamManagerBuilder = zoe => {
   return builder;
 };
 
+harden(assertElectorateMatches);
 harden(makeParamManagerBuilder);
 
-export { makeParamManagerBuilder };
+export { assertElectorateMatches, makeParamManagerBuilder };

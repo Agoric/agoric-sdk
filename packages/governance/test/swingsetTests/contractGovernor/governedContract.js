@@ -1,14 +1,14 @@
 // @ts-check
 
-import { keyEQ } from '@agoric/store';
-
 import { handleParamGovernance } from '../../../src/contractHelper.js';
-import { makeParamManager, ParamTypes } from '../../../src/index.js';
+import {
+  assertElectorateMatches,
+  makeParamManager,
+  ParamTypes,
+} from '../../../src/index.js';
 import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
-
-const { details: X } = assert;
 
 const makeParamTerms = (number, invitationAmount) => {
   return harden({
@@ -35,10 +35,7 @@ const makeParamTerms = (number, invitationAmount) => {
  */
 const start = async (zcf, privateArgs) => {
   const {
-    main: {
-      [MALLEABLE_NUMBER]: numberParam,
-      [CONTRACT_ELECTORATE]: electorateParam,
-    },
+    main: { [MALLEABLE_NUMBER]: numberParam, ...otherOovernedTerms },
   } = zcf.getTerms();
   const { initialPoserInvitation } = privateArgs;
 
@@ -50,15 +47,12 @@ const start = async (zcf, privateArgs) => {
     zcf.getZoeService(),
   );
 
-  const { wrapPublicFacet, wrapCreatorFacet, getElectorate } =
-    handleParamGovernance(zcf, paramManager);
-
-  const invitationAmount = getElectorate();
-  assert(
-    keyEQ(invitationAmount, electorateParam.value),
-    // @ts-expect-error 'amount' prop?
-    X`electorate amount ${electorateParam.amount} didn't match ${invitationAmount}`,
+  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
+    zcf,
+    paramManager,
   );
+
+  assertElectorateMatches(paramManager, otherOovernedTerms);
 
   return {
     publicFacet: wrapPublicFacet({}),
