@@ -100,7 +100,7 @@ const start = zcf => {
     getQuestion: handleP => getQuestion(handleP, allQuestions),
   });
 
-  /** stale def: {CommitteeElectorateCreatorFacet} */
+  /** @type {CommitteeElectorateCreatorFacet} */
   const creatorFacet = Far('adminFacet', {
     getPoserInvitation: () => getPoserInvitation(zcf, addQuestion),
     addQuestion,
