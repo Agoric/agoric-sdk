@@ -24,7 +24,7 @@ import * as Collect from '@agoric/run-protocol/src/collect.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as BRIDGE_ID from '../bridge-ids.js';
 
-import { callProperties, extractPowers } from './utils.js';
+import { callProperties, extractPowers, makeInertBrand } from './utils.js';
 import { makeNameHubKit } from '../nameHub.js';
 
 export { installOnChain as installPegasusOnChain } from '@agoric/pegasus/src/install-on-chain.js';
@@ -96,6 +96,21 @@ export const bridgeCoreEval = async allPowers => {
   await E(bridgeManager).register(BRIDGE_ID.CORE, handler);
 };
 harden(bridgeCoreEval);
+
+/**
+ * @param {BootstrapPowers} powers
+ */
+export const makeOffChainBrands = async ({
+  brand: {
+    produce: { USD: usdBrandProducer },
+  },
+}) => {
+  // Create the USD brand referred to by price oracles.
+  usdBrandProducer.resolve(
+    makeInertBrand('USD', undefined, { decimalPlaces: 6 }),
+  );
+};
+harden(makeOffChainBrands);
 
 /**
  * @param {BootstrapPowers & {

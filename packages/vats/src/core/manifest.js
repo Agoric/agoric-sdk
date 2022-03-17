@@ -1,5 +1,12 @@
 // @ts-check
 const SHARED_BOOTSTRAP_MANIFEST = harden({
+  makeOffChainBrands: {
+    brand: {
+      produce: {
+        USD: true,
+      },
+    },
+  },
   makeVatsFromBundles: {
     vats: {
       vatAdmin: 'vatAdmin',

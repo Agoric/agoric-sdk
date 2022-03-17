@@ -122,6 +122,8 @@
 
 /**
  * @typedef {{
+ *   brand: |
+ *     'RUN' | 'BLD' | 'USD',
  *   issuer: |
  *     'RUN' | 'BLD',
  *   installation: |
@@ -145,8 +147,8 @@
  *     consume: Record<WellKnownName['issuer'], Promise<Issuer>>,
  *   },
  *   brand: {
- *     produce: Record<WellKnownName['issuer'], Producer<Brand>>,
- *     consume: Record<WellKnownName['issuer'], Promise<Brand>>,
+ *     produce: Record<WellKnownName['brand'], Producer<Brand>>,
+ *     consume: Record<WellKnownName['brand'], Promise<Brand>>,
  *   },
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
