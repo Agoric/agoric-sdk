@@ -146,10 +146,10 @@ const makeMakeAddLiquidityAtRateInvitation = (
     const poolSeat = pool.getPoolSeat();
     const transferForTrade = (prices, incrementKey, decrementKey) => {
       seat.decrementBy(harden({ [incrementKey]: prices.swapperGives }));
+      poolSeat.decrementBy(harden({ [decrementKey]: prices.yDecrement }));
       seat.incrementBy(harden({ [decrementKey]: prices.swapperGets }));
       feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
       poolSeat.incrementBy(harden({ [incrementKey]: prices.xIncrement }));
-      poolSeat.decrementBy(harden({ [decrementKey]: prices.yDecrement }));
     };
 
     //   1C  Stage the changes for the trade
