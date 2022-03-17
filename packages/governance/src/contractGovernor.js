@@ -40,7 +40,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
- * @property {Timer} timer
+ * @property {TimerService} timer
  * @property {Instance} electorateInstance
  * @property {Installation} governedContractInstallation
  */

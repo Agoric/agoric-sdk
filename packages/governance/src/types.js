@@ -641,7 +641,7 @@
 
 /**
  * @typedef {Object} GovernedContractTerms
- * @property {Timer} timer
+ * @property {TimerService} timer
  * @property {IssuerKeywordRecord} issuerKeywordRecord
  * @property {Object} privateArgs
  */
