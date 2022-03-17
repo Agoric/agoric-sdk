@@ -12,9 +12,8 @@
  * @returns {ZcfSeatKit}
  */
 
-// XXX TODO change `any` to `unknown`
 /**
- * @template {object} [CT=Record<string, any>] Contract's custom terms
+ * @template {object} [CT=Record<string, unknown>] Contract's custom terms
  * @typedef {Object} ZCF Zoe Contract Facet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
@@ -213,12 +212,11 @@
  * @returns {OR}
  */
 
-// XXX TODO change `any` to `unknown`
 /**
- * @template {object} [PF=any] Public facet
- * @template {object=} [CF=any] Creator facet
- * @template {object=} [CT=Record<string, unknown] Custom terms
- * @template {object=} [PA=any] Private args
+ * @template {object} [PF] Public facet
+ * @template {object} [CF] Creator facet
+ * @template {object} [CT] Custom terms
+ * @template {object} [PA] Private args
  * @callback ContractStartFn
  * @param {ZCF<CT>} zcf
  * @param {PA} privateArgs

@@ -63,6 +63,9 @@ const BASIS_POINTS = 10000n;
  * strikePrice1: Amount,
  * strikePrice2: Amount,
  * settlementAmount: Amount,
+ * priceAuthority: PriceAuthority,
+ * expiration: bigint,
+ * underlyingAmount: Amount,
  * }>} zcf
  */
 const start = zcf => {

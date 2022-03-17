@@ -91,7 +91,8 @@ const { quote: q, details: X } = assert;
  * those internal methods, and reveals the original AMM creatorFacet to its own
  * creator.
  *
- * @type {ContractStartFn}
+ * @param {ZCF<Terms & AMMTerms>} zcf
+ * @param {{initialPoserInvitation: Invitation}} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   /**
@@ -115,7 +116,7 @@ const start = async (zcf, privateArgs) => {
       [PROTOCOL_FEE_KEY]: protocolFeeParam,
       [CONTRACT_ELECTORATE]: electorateParam,
     },
-  } = /** @type { Terms & AMMTerms } */ (zcf.getTerms());
+  } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
@@ -140,6 +141,7 @@ const start = async (zcf, privateArgs) => {
   );
 
   const { wrapPublicFacet, wrapCreatorFacet, getNat, getInvitationAmount } =
+    // @ts-expect-error FIXME bad custom terms def
     handleParamGovernance(zcf, paramManager);
 
   const electorateInvAmt = getInvitationAmount(CONTRACT_ELECTORATE);

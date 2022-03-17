@@ -29,6 +29,7 @@ const makeParamManager = async (zoe, number, invitation) => {
 
 /**
  * @param {ZCF<{
+ *   electionManager: Instance,
  *   main: {
  *     [MALLEABLE_NUMBER]: ParamDescription,
  *     [CONTRACT_ELECTORATE]: ParamDescription,

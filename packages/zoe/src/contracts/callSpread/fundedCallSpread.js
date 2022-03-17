@@ -60,7 +60,10 @@ import { Position } from './position.js';
  * strikePrice1: Amount,
  * strikePrice2: Amount,
  * settlementAmount: Amount,
- * }>}zcf
+ * priceAuthority: PriceAuthority,
+ * expiration: bigint,
+ * underlyingAmount: Amount,
+ * }>} zcf
  */
 const start = async zcf => {
   const { brands, strikePrice1, strikePrice2, settlementAmount } =
