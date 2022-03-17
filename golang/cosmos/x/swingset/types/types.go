@@ -34,14 +34,15 @@ func NewKeys() *Keys {
 
 // FIXME: Should have @agoric/nat
 func Nat(num float64) (uint64, error) {
+	if num < 0 {
+		return 0, errors.New("Not a natural")
+	}
+
 	nat := uint64(num)
 	if float64(nat) != num {
 		return 0, errors.New("Not a precise integer")
 	}
 
-	if nat < 0 {
-		return 0, errors.New("Not a natural")
-	}
 	return nat, nil
 }
 
@@ -88,6 +89,9 @@ func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
 			return nil, errors.New("Message Num is not an integer")
 		}
 		ret.Nums[i], err = Nat(numFloat)
+		if err != nil {
+			return nil, errors.New("Message num is not a Nat")
+		}
 		msg, ok := nummsg[1].(string)
 		if !ok {
 			return nil, errors.New("Message is not a string")

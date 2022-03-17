@@ -7,7 +7,7 @@ import path from 'path';
 
 import '../../../../exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';
 import { makeNotifierKit } from '@agoric/notifier';

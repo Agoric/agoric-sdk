@@ -6,7 +6,7 @@ recommendations.
 ## Installation
 
 ```bash
-yarn add @agoric/wallet-connection ses @agoric/eventual-send
+yarn add @agoric/wallet-connection ses @endo/eventual-send
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ needed by your app:
 ```js
 /* global lockdown */
 import 'ses'; // adds lockdown, harden, and Compartment
-import '@agoric/eventual-send/shim.js'; // adds support needed by E
+import '@endo/eventual-send/shim.js'; // adds support needed by E
 
 // Help lock down the JS environment.  The start compartment (current evaluation context)
 // can still access powerful globals, but this start compartment can use `new Compartment(...)`
@@ -71,7 +71,7 @@ Where `lockdown.umd.js` can be brought in with a script like:
 Somewhere else, you will need to define a custom state event handler:
 
 ```js
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 const onWalletState = ev => {
   const { walletConnection, state } = ev.detail;

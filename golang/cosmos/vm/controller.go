@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"errors"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -66,7 +65,7 @@ func UnregisterPortHandler(portNum int) error {
 func ReceiveFromController(portNum int, msg string) (string, error) {
 	handler := portToHandler[portNum]
 	if handler == nil {
-		return "", errors.New(fmt.Sprintf("Unregistered port %d", portNum))
+		return "", fmt.Errorf("Unregistered port %d", portNum)
 	}
 	return handler.Receive(&controllerContext, msg)
 }

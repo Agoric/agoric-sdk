@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { Typography } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';

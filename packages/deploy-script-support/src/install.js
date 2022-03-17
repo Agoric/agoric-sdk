@@ -3,7 +3,7 @@
 import './externalTypes.js';
 import './internalTypes.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 /** @type {MakeInstallSaveAndPublish} */
 export const makeInstall = (bundleSource, zoe, installationManager, board) => {

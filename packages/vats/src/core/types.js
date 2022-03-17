@@ -1,6 +1,6 @@
 // @ts-check
 
-/** @typedef { import('@agoric/eventual-send').EProxy } EProxy */
+/** @typedef { import('@endo/eventual-send').EProxy } EProxy */
 
 /**
  * This type conflicts with packages/SwingSet/src/vats/plugin-manager.js

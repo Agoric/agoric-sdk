@@ -57,7 +57,6 @@ func minCoins(a, b sdk.Coins) sdk.Coins {
 
 // app module Basics object
 type AppModuleBasic struct {
-	cdc codec.Codec
 }
 
 func (AppModuleBasic) Name() string {
@@ -92,7 +91,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 }
 
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	_ = types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd implements AppModuleBasic interface
@@ -189,14 +188,21 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// Dump all the addressToBalances entries to SwingSet.
 	action := getBalanceUpdate(ctx, am.keeper, addressToBalance)
 	if action != nil {
-		am.PushAction(ctx, action)
+		err := am.PushAction(ctx, action)
+		if err != nil {
+			panic(err)
+		}
+
 	}
 
 	// Distribute rewards.
 	state := am.keeper.GetState(ctx)
 	xfer := minCoins(state.RewardRate, state.RewardPool)
 	if !xfer.IsZero() {
-		am.keeper.SendCoinsToFeeCollector(ctx, xfer)
+		err := am.keeper.SendCoinsToFeeCollector(ctx, xfer)
+		if err != nil {
+			stdlog.Println("Cannot send rewards", err.Error())
+		}
 		state.RewardPool = state.RewardPool.Sub(xfer)
 		am.keeper.SetState(ctx, state)
 	}

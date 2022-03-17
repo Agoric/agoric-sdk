@@ -11,7 +11,7 @@ HandledPromise is defined by eventual send shim.
 /* global __dirname, __filename, issueCommand, test */
 // @ts-check
 /// <reference types="ses" />
-/// <reference types="@agoric/eventual-send" />
+/// <reference types="@endo/eventual-send" />
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

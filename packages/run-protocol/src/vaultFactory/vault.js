@@ -1,7 +1,7 @@
 // @ts-check
 import '@agoric/zoe/exported.js';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import {
   assertProposalShape,
   getAmountOut,
@@ -27,6 +27,15 @@ const trace = makeTracer('IV');
  *
  * The logic here is for InnerVault which is the majority of logic of vaults but
  * the user view is the `vault` value contained in VaultKit.
+ *
+ * A note on naming convention:
+ * - `Pre` is used as a postfix for any mutable value retrieved *before* an
+ *    `await`, to flag values that must used very carefully after the `await`
+ * - `new` is a prefix for values that describe the result of executing a
+ *   transaction; e.g., `debt` is the value before the txn, and `newDebt`
+ *   will be value if the txn completes.
+ * - the absence of one of these implies the opposite, so `newDebt` is the
+ *   future value fo `debt`, as computed based on values after any `await`
  */
 
 /**
@@ -121,6 +130,9 @@ export const makeInnerVault = (
   /** @type {{brand: Brand<'nat'>}} */
   const { brand: debtBrand } = mint.getIssuerRecord();
 
+  const emptyCollateral = AmountMath.makeEmpty(collateralBrand);
+  const emptyDebt = AmountMath.makeEmpty(debtBrand);
+
   /**
    * State object to support virtualization when available
    *
@@ -145,7 +157,7 @@ export const makeInnerVault = (
 
     // Two values from the same moment
     interestSnapshot: manager.getCompoundedInterest(),
-    debtSnapshot: AmountMath.makeEmpty(debtBrand),
+    debtSnapshot: emptyDebt,
   };
 
   // #region Phase logic
@@ -280,7 +292,7 @@ export const makeInnerVault = (
     const { vaultSeat } = state;
     // getCollateralAllocated would return final allocations
     return vaultSeat.hasExited()
-      ? AmountMath.makeEmpty(collateralBrand)
+      ? emptyCollateral
       : getCollateralAllocated(vaultSeat);
   };
 
@@ -360,7 +372,7 @@ export const makeInnerVault = (
       // you're paying off the debt, you get everything back. If you were
       // underwater, we should have liquidated some collateral earlier: we
       // missed our chance.
-      const currentDebt = getCurrentDebt();
+      const debt = getCurrentDebt();
       const {
         give: { RUN: runOffered },
       } = seat.getProposal();
@@ -368,8 +380,8 @@ export const makeInnerVault = (
       // you must pay off the entire remainder but if you offer too much, we won't
       // take more than you owe
       assert(
-        AmountMath.isGTE(runOffered, currentDebt),
-        X`Offer ${runOffered} is not sufficient to pay off debt ${currentDebt}`,
+        AmountMath.isGTE(runOffered, debt),
+        X`Offer ${runOffered} is not sufficient to pay off debt ${debt}`,
       );
 
       // Return any overpayment
@@ -379,7 +391,7 @@ export const makeInnerVault = (
         ),
       );
       zcf.reallocate(seat, vaultSeat);
-      mint.burnLosses(harden({ RUN: currentDebt }), seat);
+      mint.burnLosses(harden({ RUN: debt }), seat);
     } else if (phase === VaultPhase.LIQUIDATED) {
       // Simply reallocate vault assets to the offer seat.
       // Don't take anything from the offer, even if vault is underwater.
@@ -391,7 +403,7 @@ export const makeInnerVault = (
 
     seat.exit();
     assignPhase(VaultPhase.CLOSED);
-    updateDebtSnapshot(AmountMath.makeEmpty(debtBrand));
+    updateDebtSnapshot(emptyDebt);
     updateUiState();
 
     assertVaultHoldsNoRun();
@@ -410,7 +422,6 @@ export const makeInnerVault = (
   const assertOnlyKeys = (proposal, keys) => {
     const onlyKeys = clause =>
       Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
-
     assert(
       onlyKeys(proposal.give),
       X`extraneous terms in give: ${proposal.give}`,
@@ -421,126 +432,99 @@ export const makeInnerVault = (
     );
   };
 
-  // Calculate the target level for Collateral for the vaultSeat and
-  // clientSeat implied by the proposal. If the proposal wants Collateral,
-  // transfer that amount from vault to client. If the proposal gives
-  // Collateral, transfer the opposite direction. Otherwise, return the current level.
-  const targetCollateralLevels = seat => {
-    const { vaultSeat } = state;
-    const proposal = seat.getProposal();
-    const startVaultAmount = getCollateralAllocated(vaultSeat);
-    const startClientAmount = getCollateralAllocated(seat);
-    if (proposal.want.Collateral) {
-      return {
-        vault: AmountMath.subtract(startVaultAmount, proposal.want.Collateral),
-        client: AmountMath.add(startClientAmount, proposal.want.Collateral),
-      };
-    } else if (proposal.give.Collateral) {
-      return {
-        vault: AmountMath.add(startVaultAmount, proposal.give.Collateral),
-        client: AmountMath.subtract(
-          startClientAmount,
-          proposal.give.Collateral,
-        ),
-      };
-    } else {
-      return {
-        vault: startVaultAmount,
-        client: startClientAmount,
-      };
+  /**
+   * Stage a transfer between `fromSeat` and `toSeat`, specified as the delta between
+   * the gain and a loss on the `fromSeat`. The gain/loss are typically from the
+   * give/want respectively of a proposal. The `key` is the allocation keyword.
+   *
+   * @param {ZCFSeat} fromSeat
+   * @param {ZCFSeat} toSeat
+   * @param {Amount} fromLoses
+   * @param {Amount} fromGains
+   * @param {Keyword} key
+   */
+  const transfer = (fromSeat, toSeat, fromLoses, fromGains, key) => {
+    // Must check `isEmpty`; can't subtract `empty` from a missing allocation.
+    if (!AmountMath.isEmpty(fromLoses)) {
+      toSeat.incrementBy(fromSeat.decrementBy(harden({ [key]: fromLoses })));
     }
-  };
-
-  const transferCollateral = seat => {
-    const { vaultSeat } = state;
-    const proposal = seat.getProposal();
-    if (proposal.want.Collateral) {
-      seat.incrementBy(
-        vaultSeat.decrementBy(harden({ Collateral: proposal.want.Collateral })),
-      );
-    } else if (proposal.give.Collateral) {
-      vaultSeat.incrementBy(
-        seat.decrementBy(harden({ Collateral: proposal.give.Collateral })),
-      );
+    if (!AmountMath.isEmpty(fromGains)) {
+      fromSeat.incrementBy(toSeat.decrementBy(harden({ [key]: fromGains })));
     }
   };
 
   /**
-   * Calculate the target RUN level for the vaultSeat and clientSeat implied
-   * by the proposal. If the proposal wants collateral, transfer that amount
-   * from vault to client. If the proposal gives collateral, transfer the
-   * opposite direction. Otherwise, return the current level.
+   * Apply a delta to the `base` Amount, where the delta is represented as
+   * an amount to gain and an amount to lose. Typically one of those will
+   * be empty because gain/loss comes from the give/want for a specific asset
+   * on a proposal. We use two Amounts because an Amount cannot represent
+   * a negative number (so we use a "loss" that will be subtracted).
    *
-   * Since we don't allow the debt to go negative, we will reduce the amount we
-   * accept when the proposal says to give more RUN than are owed.
-   *
-   * @param {ZCFSeat} seat
-   * @returns {{vault: Amount, client: Amount}}
+   * @param {Amount} base
+   * @param {Amount} gain
+   * @param {Amount} loss
+   * @returns {Amount}
    */
-  const targetRunLevels = seat => {
-    const clientAllocation = getRunAllocated(seat);
-    const proposal = seat.getProposal();
-    if (proposal.want.RUN) {
-      return {
-        vault: AmountMath.makeEmpty(debtBrand),
-        client: AmountMath.add(clientAllocation, proposal.want.RUN),
-      };
-    } else if (proposal.give.RUN) {
-      // We don't allow debt to be negative, so we'll refund overpayments
-      // TODO this is the same as in `transferRun`
-      const currentDebt = getCurrentDebt();
-      const acceptedRun = AmountMath.isGTE(proposal.give.RUN, currentDebt)
-        ? currentDebt
-        : proposal.give.RUN;
-
-      return {
-        vault: acceptedRun,
-        client: AmountMath.subtract(clientAllocation, acceptedRun),
-      };
-    } else {
-      return {
-        vault: AmountMath.makeEmpty(debtBrand),
-        client: clientAllocation,
-      };
-    }
-  };
-
-  const transferRun = seat => {
-    const { vaultSeat } = state;
-    const proposal = seat.getProposal();
-    if (proposal.want.RUN) {
-      seat.incrementBy(
-        vaultSeat.decrementBy(harden({ RUN: proposal.want.RUN })),
-      );
-    } else if (proposal.give.RUN) {
-      // We don't allow debt to be negative, so we'll refund overpayments
-      const currentDebt = getCurrentDebt();
-      const acceptedRun = AmountMath.min(proposal.give.RUN, currentDebt);
-      vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: acceptedRun })));
-    }
-  };
+  const applyDelta = (base, gain, loss) =>
+    AmountMath.subtract(AmountMath.add(base, gain), loss);
 
   /**
-   * Calculate the fee, the amount to mint and the resulting debt
+   * Calculate the fee, the amount to mint and the resulting debt.
+   * The give and the want together reflect a delta, where typically
+   * one is zero because they come from the gave/want of an offer
+   * proposal. If the `want` is zero, the `fee` will also be zero,
+   * so the simple math works.
    *
-   * @param {ProposalRecord} proposal
-   * @param {{vault: Amount, client: Amount}} debtAfter
+   * @param {Amount} currentDebt
+   * @param {Amount} giveAmount
+   * @param {Amount} wantAmount
    */
-  const loanFee = (proposal, debtAfter) => {
-    let newDebt;
-    const currentDebt = getCurrentDebt();
-    let toMint = AmountMath.makeEmpty(debtBrand);
-    let fee = AmountMath.makeEmpty(debtBrand);
-    if (proposal.want.RUN) {
-      fee = ceilMultiplyBy(proposal.want.RUN, manager.getLoanFee());
-      toMint = AmountMath.add(proposal.want.RUN, fee);
-      newDebt = AmountMath.add(currentDebt, toMint);
-    } else if (proposal.give.RUN) {
-      newDebt = AmountMath.subtract(currentDebt, debtAfter.vault);
-    } else {
-      newDebt = currentDebt;
-    }
+  const loanFee = (currentDebt, giveAmount, wantAmount) => {
+    const fee = ceilMultiplyBy(wantAmount, manager.getLoanFee());
+    const toMint = AmountMath.add(wantAmount, fee);
+    const newDebt = applyDelta(currentDebt, toMint, giveAmount);
     return { newDebt, toMint, fee };
+  };
+
+  /**
+   * Check whether we can proceed with an `adjustBalances`.
+   *
+   * @param {Amount} newCollateralPre
+   * @param {Amount} maxDebtPre
+   * @param {Amount} newCollateral
+   * @param {Amount} newDebt
+   * @returns {boolean}
+   */
+  const checkRestart = (
+    newCollateralPre,
+    maxDebtPre,
+    newCollateral,
+    newDebt,
+  ) => {
+    if (AmountMath.isGTE(newCollateralPre, newCollateral)) {
+      // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
+      // We can pro-rate maxDebt because the quote is either linear (price is
+      // unchanging) or super-linear (also called "convex"). Super-linear is from
+      // AMMs: selling less collateral would mean an even smaller price impact, so
+      // this is a conservative choice.
+      const runPerCollateral = makeRatioFromAmounts(
+        maxDebtPre,
+        newCollateralPre,
+      );
+      // `floorMultiply` because the debt ceiling should be tight
+      const maxDebtAfter = floorMultiplyBy(newCollateral, runPerCollateral);
+      assert(
+        AmountMath.isGTE(maxDebtAfter, newDebt),
+        X`The requested debt ${q(
+          newDebt,
+        )} is more than the collateralization ratio allows: ${q(maxDebtAfter)}`,
+      );
+      // The `collateralAfter` can still cover the `newDebt`, so don't restart.
+      return false;
+    }
+    // The collateral went up. Restart if the debt *also* went up because
+    // the price quote might not apply at the higher numbers.
+    return !AmountMath.isGTE(maxDebtPre, newDebt);
   };
 
   /**
@@ -549,87 +533,65 @@ export const makeInnerVault = (
    * @param {ZCFSeat} clientSeat
    */
   const adjustBalancesHook = async clientSeat => {
-    const oldUpdater = state.outerUpdater;
+    const { vaultSeat, outerUpdater: updaterPre } = state;
     const proposal = clientSeat.getProposal();
-    const oldDebt = getCurrentDebt();
-    const oldCollateral = getCollateralAmount();
-
     assertOnlyKeys(proposal, ['Collateral', 'RUN']);
 
-    const targetCollateralAmount = targetCollateralLevels(clientSeat).vault;
+    const debtPre = getCurrentDebt();
+    const collateralPre = getCollateralAllocated(vaultSeat);
+
+    const giveColl = proposal.give.Collateral || emptyCollateral;
+    const wantColl = proposal.want.Collateral || emptyCollateral;
+
+    const newCollateralPre = applyDelta(collateralPre, giveColl, wantColl);
     // max debt supported by current Collateral as modified by proposal
-    const maxDebtForOriginalTarget = await maxDebtFor(targetCollateralAmount);
+    const maxDebtPre = await maxDebtFor(newCollateralPre);
     assert(
-      oldUpdater === state.outerUpdater,
+      updaterPre === state.outerUpdater,
       X`Transfer during vault adjustment`,
     );
     assertActive();
 
-    const priceOfCollateralInRun = makeRatioFromAmounts(
-      maxDebtForOriginalTarget,
-      targetCollateralAmount,
-    );
-
     // After the AWAIT, we retrieve the vault's allocations again.
-    const collateralAfter = targetCollateralLevels(clientSeat);
-    const debtAfter = targetRunLevels(clientSeat);
+    // Get new balances after calling the priceAuthority, so we can compare
+    // to the debt limit based on the new values.
+    const collateral = getCollateralAllocated(vaultSeat);
+    const newCollateral = applyDelta(collateral, giveColl, wantColl);
+
+    const debt = getCurrentDebt();
+    const giveRUN = AmountMath.min(proposal.give.RUN || emptyDebt, debt);
+    const wantRUN = proposal.want.RUN || emptyDebt;
 
     // Calculate the fee, the amount to mint and the resulting debt. We'll
     // verify that the target debt doesn't violate the collateralization ratio,
     // then mint, reallocate, and burn.
-    const { fee, toMint, newDebt } = loanFee(proposal, debtAfter);
-
-    // Get new balances after calling the priceAuthority, so we can compare
-    // to the debt limit based on the new values.
-    const vaultCollateral =
-      collateralAfter.vault || AmountMath.makeEmpty(collateralBrand);
+    const { newDebt, fee, toMint } = loanFee(debt, giveRUN, wantRUN);
 
     trace('adjustBalancesHook', {
-      targetCollateralAmount,
-      vaultCollateral,
+      newCollateralPre,
+      newCollateral,
       fee,
       toMint,
       newDebt,
     });
 
-    // If the collateral decreased, we pro-rate maxDebt
-    if (AmountMath.isGTE(targetCollateralAmount, vaultCollateral)) {
-      // We can pro-rate maxDebt because the quote is either linear (price is
-      // unchanging) or super-linear (also called "convex". meaning it's an AMM.
-      // When the volume sold falls, the proceeds fall less than linearly, so
-      // this is a conservative choice.) floorMultiply because the debt ceiling
-      // should constrain more.
-      const maxDebtAfter = floorMultiplyBy(
-        vaultCollateral,
-        priceOfCollateralInRun,
-      );
-      assert(
-        AmountMath.isGTE(maxDebtAfter, newDebt),
-        X`The requested debt ${q(
-          newDebt,
-        )} is more than the collateralization ratio allows: ${q(maxDebtAfter)}`,
-      );
-
-      // When the re-checked collateral was larger than the original amount, we
-      // should restart, unless the new debt is less than the original target
-      // (in which case, we're fine to proceed with the reallocate)
-    } else if (!AmountMath.isGTE(maxDebtForOriginalTarget, newDebt)) {
+    if (checkRestart(newCollateralPre, maxDebtPre, newCollateral, newDebt)) {
       return adjustBalancesHook(clientSeat);
     }
 
     // mint to vaultSeat, then reallocate to reward and client, then burn from
     // vaultSeat. Would using a separate seat clarify the accounting?
     // TODO what if there isn't anything to mint?
-    const { vaultSeat } = state;
     mint.mintGains(harden({ RUN: toMint }), vaultSeat);
-    transferCollateral(clientSeat);
-    transferRun(clientSeat);
+
+    transfer(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
+    transfer(clientSeat, vaultSeat, giveRUN, wantRUN, 'RUN');
     manager.reallocateWithFee(fee, vaultSeat, clientSeat);
 
     // parent needs to know about the change in debt
-    updateDebtAccounting(oldDebt, oldCollateral, newDebt);
+    updateDebtAccounting(debtPre, collateralPre, newDebt);
 
-    mint.burnLosses(harden({ RUN: debtAfter.vault }), vaultSeat);
+    mint.burnLosses(harden({ RUN: giveRUN }), vaultSeat);
 
     assertVaultHoldsNoRun();
 
@@ -653,40 +615,47 @@ export const makeInnerVault = (
       AmountMath.isEmpty(state.debtSnapshot),
       X`vault must be empty initially`,
     );
-    const oldDebt = getCurrentDebt();
-    const oldCollateral = getCollateralAmount();
-    trace('initVaultKit start: collateral', { oldDebt, oldCollateral });
+    // TODO should this be simplified to know that the oldDebt mut be empty?
+    const debtPre = getCurrentDebt();
+    const collateralPre = getCollateralAmount();
+    trace('initVaultKit start: collateral', { debtPre, collateralPre });
 
     // get the payout to provide access to the collateral if the
     // contract abandons
     const {
-      give: { Collateral: collateralAmount },
-      want: { RUN: wantedRun },
+      give: { Collateral: giveCollateral },
+      want: { RUN: wantRUN },
     } = seat.getProposal();
 
-    // todo trigger process() check right away, in case the price dropped while we ran
+    const {
+      newDebt: newDebtPre,
+      fee,
+      toMint,
+    } = loanFee(debtPre, emptyDebt, wantRUN);
+    assert(
+      !AmountMath.isEmpty(fee),
+      X`loan requested (${wantRUN}) is too small; cannot accrue interest`,
+    );
+    assert(AmountMath.isEqual(newDebtPre, toMint), X`fee mismatch for vault`);
+    trace(
+      idInManager,
+      'initVault',
+      { wantedRun: wantRUN, fee },
+      getCollateralAmount(),
+    );
 
-    const fee = ceilMultiplyBy(wantedRun, manager.getLoanFee());
-    if (AmountMath.isEmpty(fee)) {
-      throw seat.fail(
-        Error('loan requested is too small; cannot accrue interest'),
-      );
-    }
-    trace(idInManager, 'initVault', { wantedRun, fee }, getCollateralAmount());
-
-    const stagedDebt = AmountMath.add(wantedRun, fee);
-    await assertSufficientCollateral(collateralAmount, stagedDebt);
+    await assertSufficientCollateral(giveCollateral, newDebtPre);
 
     const { vaultSeat } = state;
-    mint.mintGains(harden({ RUN: stagedDebt }), vaultSeat);
+    mint.mintGains(harden({ RUN: toMint }), vaultSeat);
 
-    seat.incrementBy(vaultSeat.decrementBy(harden({ RUN: wantedRun })));
+    seat.incrementBy(vaultSeat.decrementBy(harden({ RUN: wantRUN })));
     vaultSeat.incrementBy(
-      seat.decrementBy(harden({ Collateral: collateralAmount })),
+      seat.decrementBy(harden({ Collateral: giveCollateral })),
     );
     manager.reallocateWithFee(fee, vaultSeat, seat);
 
-    updateDebtAccounting(oldDebt, oldCollateral, stagedDebt);
+    updateDebtAccounting(debtPre, collateralPre, newDebtPre);
 
     const vaultKit = makeVaultKit(innerVault, state.assetNotifier);
     state.outerUpdater = vaultKit.vaultUpdater;
@@ -721,12 +690,28 @@ export const makeInnerVault = (
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
     makeTransferInvitation: () => {
-      const { outerUpdater } = state;
+      // Bring the debt snapshot current for the final report before transfer
+      updateDebtSnapshot(getCurrentDebt());
+      const {
+        outerUpdater,
+        debtSnapshot: debt,
+        interestSnapshot: interest,
+        phase,
+      } = state;
       if (outerUpdater) {
         outerUpdater.finish(snapshotState(VaultPhase.TRANSFER));
         state.outerUpdater = null;
       }
-      return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');
+      const transferState = {
+        debtSnapshot: { debt, interest },
+        locked: getCollateralAmount(),
+        vaultState: phase,
+      };
+      return zcf.makeInvitation(
+        makeTransferInvitationHook,
+        'TransferVault',
+        transferState,
+      );
     },
 
     // for status/debugging

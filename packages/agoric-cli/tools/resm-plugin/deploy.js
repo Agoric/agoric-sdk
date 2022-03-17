@@ -1,6 +1,6 @@
 /* globals setTimeout */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 const PONG_TIMEOUT = 10_000;
 

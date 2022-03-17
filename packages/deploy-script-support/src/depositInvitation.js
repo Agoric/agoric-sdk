@@ -1,6 +1,6 @@
 // @ts-check
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 
 /** @type {MakeDepositInvitation} */
 export const makeDepositInvitation = zoeInvitationPurse => {

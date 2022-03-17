@@ -4,7 +4,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import { createInvitationKit } from '../../../src/zoeService/makeInvitation.js';
 
 test('createInvitationKit', async t => {

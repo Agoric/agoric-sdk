@@ -9,7 +9,7 @@ import Transfer from '../Transfer';
 
 jest.mock('../PurseAmount', () => () => 'PurseAmount');
 
-jest.mock('@agoric/eventual-send', () => ({
+jest.mock('@endo/eventual-send', () => ({
   E: obj =>
     new Proxy(obj, {
       get(target, propKey) {
