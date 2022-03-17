@@ -690,12 +690,28 @@ export const makeInnerVault = (
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
     makeTransferInvitation: () => {
-      const { outerUpdater } = state;
+      // Bring the debt snapshot current for the final report before transfer
+      updateDebtSnapshot(getCurrentDebt());
+      const {
+        outerUpdater,
+        debtSnapshot: debt,
+        interestSnapshot: interest,
+        phase,
+      } = state;
       if (outerUpdater) {
         outerUpdater.finish(snapshotState(VaultPhase.TRANSFER));
         state.outerUpdater = null;
       }
-      return zcf.makeInvitation(makeTransferInvitationHook, 'TransferVault');
+      const transferState = {
+        debtSnapshot: { debt, interest },
+        locked: getCollateralAmount(),
+        vaultState: phase,
+      };
+      return zcf.makeInvitation(
+        makeTransferInvitationHook,
+        'TransferVault',
+        transferState,
+      );
     },
 
     // for status/debugging
