@@ -8,7 +8,7 @@ import {
 } from './constantProduct/calcSwapPrices.js';
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {XYKPool} pool
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
@@ -42,11 +42,11 @@ export const makeSinglePool = (
     feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
 
     if (inBrand === secondaryBrand) {
-      poolSeat.incrementBy(harden({ Secondary: prices.xIncrement }));
       poolSeat.decrementBy(harden({ Central: prices.yDecrement }));
+      poolSeat.incrementBy(harden({ Secondary: prices.xIncrement }));
     } else {
-      poolSeat.incrementBy(harden({ Central: prices.xIncrement }));
       poolSeat.decrementBy(harden({ Secondary: prices.yDecrement }));
+      poolSeat.incrementBy(harden({ Central: prices.xIncrement }));
     }
 
     zcf.reallocate(poolSeat, seat, feeSeat);

@@ -21,7 +21,7 @@ const publicPrices = prices => {
 };
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {XYKPool} collateralInPool
  * @param {XYKPool} collateralOutPool
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
@@ -58,12 +58,12 @@ export const makeDoublePool = (
     const outPoolSeat = collateralOutPool.getPoolSeat();
 
     seat.decrementBy(harden({ In: prices.swapperGives }));
-    seat.incrementBy(harden({ Out: prices.swapperGets }));
-    feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
-    inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
     inPoolSeat.decrementBy(harden({ Central: prices.inPoolDecrement }));
-    outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
     outPoolSeat.decrementBy(harden({ Secondary: prices.outPoolDecrement }));
+    seat.incrementBy(harden({ Out: prices.swapperGets }));
+    inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
+    outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
+    feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
 
     zcf.reallocate(outPoolSeat, inPoolSeat, feeSeat, seat);
     seat.exit();

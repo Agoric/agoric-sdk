@@ -15,9 +15,9 @@ const dirname = path.dirname(filename);
 const contractRoot = `${dirname}/zcfTesterContract.js`;
 
 export const setupZCFTest = async (issuerKeywordRecord, terms) => {
-  /** @type {ContractFacet} */
+  /** @type {ZCF} */
   let zcf;
-  /** @type {ContractFacet} */
+  /** @type {ZCF} */
   let zcf2;
 
   // We would like to start two contract instances in order to get two

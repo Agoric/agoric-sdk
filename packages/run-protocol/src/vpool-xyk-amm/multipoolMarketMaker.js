@@ -98,12 +98,8 @@ const { quote: q, details: X } = assert;
  * those internal methods, and reveals the original AMM creatorFacet to its own
  * creator.
  *
- * @type ContractStartFn<
- * XYKAMMPublicFacet,
- * GovernedCreatorFacet<*>,
- * AMMTerms,
- * {initialPoserInvitation: Payment}
- * >
+ * @param {ZCF<AMMTerms>} zcf
+ * @param {{initialPoserInvitation: Invitation}} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   /**
@@ -256,6 +252,7 @@ const start = async (zcf, privateArgs) => {
     centralBrand,
   );
 
+  /** @type {XYKAMMPublicFacet} */
   const publicFacet = wrapPublicFacet(
     Far('AMM public facet', {
       addPool,
@@ -278,6 +275,7 @@ const start = async (zcf, privateArgs) => {
     }),
   );
 
+  /** @type {GovernedCreatorFacet<*>} */
   const creatorFacet = wrapCreatorFacet(
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,

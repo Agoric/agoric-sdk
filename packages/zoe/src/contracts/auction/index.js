@@ -34,7 +34,11 @@ const SECOND_PRICE = 'second-price';
  * seller's offer. Each bidder can submit an offer: { give: { Bid:
  * null } want: { Asset: null } }.
  *
- * @param {ContractFacet<Record<string, any>>} zcf
+ * @param {ZCF<{
+ * timeAuthority: TimerService,
+ * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
+ * bidDuration: bigint,
+ * }>} zcf
  */
 const start = zcf => {
   const {

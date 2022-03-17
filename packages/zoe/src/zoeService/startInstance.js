@@ -14,14 +14,13 @@ import { handlePKitWarning } from '../handleWarning.js';
  * @param {Promise<ZoeService>} zoeServicePromise
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @param {UnwrapInstallation} unwrapInstallation
- * @returns {StartInstance<unknown, unknown>}
+ * @returns {import('./utils.js').StartInstance}
  */
 export const makeStartInstance = (
   zoeServicePromise,
   makeZoeInstanceStorageManager,
   unwrapInstallation,
 ) => {
-  /** @type {StartInstance<unknown, unknown>} */
   const startInstance = async (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
@@ -251,5 +250,6 @@ export const makeStartInstance = (
       };
     });
   };
+  // @ts-expect-error cast
   return startInstance;
 };

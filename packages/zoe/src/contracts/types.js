@@ -12,7 +12,7 @@
 /**
  * @typedef {Object} SellItemsParameters
  * @property {Record<string, any>} customValueProperties
- * @property {bigint} count
+ * @property {number} count
  * @property {Issuer} moneyIssuer
  * @property {Installation} sellItemsInstallation
  * @property {Amount} pricePerItem

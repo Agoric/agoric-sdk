@@ -130,6 +130,8 @@ test('Branded Amount', async t => {
 test('params one installation', async t => {
   // this is sufficient for the current type check. When we add
   // isInstallation() (#3344), we'll need to make a mockZoe.
+  /** @type {Installation} */
+  // @ts-expect-error cast
   const installationHandle = Far('fake Installation', {
     getBundle: () => ({ obfuscated: 42 }),
   });
@@ -146,6 +148,8 @@ test('params one installation', async t => {
     },
     'value should be an installation',
   );
+  /** @type {Installation} */
+  // @ts-expect-error cast
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });

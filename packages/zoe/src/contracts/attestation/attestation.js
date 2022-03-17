@@ -14,7 +14,7 @@ import { makeGetAttMaker } from './attMaker.js';
 const { details: X } = assert;
 
 /**
- * @param {ContractFacet<Record<string, any>>} zcf
+ * @param {ZCF} zcf
  * @param {Brand} underlyingBrand
  * @param {string} returnableAttName
  */
@@ -116,7 +116,7 @@ export const makeAttestationFacets = async (
 };
 
 /**
- * @param {ContractFacet<Record<string, any>>} zcf
+ * @param {ZCF<{returnableAttName: string}>} zcf
  */
 const start = async zcf => {
   const {

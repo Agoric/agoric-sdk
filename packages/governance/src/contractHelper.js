@@ -21,7 +21,7 @@ const { details: X, quote: q } = assert;
  *  used directly by the governed contract.
  *
  * @template T
- * @param {ContractFacet<{
+ * @param {ZCF<{
  * electionManager: VoteOnParamChange,
  * main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}
  * }>} zcf
@@ -57,7 +57,8 @@ const handleParamGovernance = (zcf, paramManager) => {
    * @param {PF} originalPublicFacet
    * @returns {GovernedPublicFacet<PF>}
    */
-  const wrapPublicFacet = (originalPublicFacet = /** @type {PF} */ ({})) => {
+  // @ts-expect-error FIXME before merge: alleged type mismatch
+  const wrapPublicFacet = (originalPublicFacet = /** @type {T} */ ({})) => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),

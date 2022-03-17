@@ -1,5 +1,6 @@
 /// <reference types="ses"/>
 
+// XXX can be tighter than 'any'
 /**
  * @typedef {any} Completion
  * Any passable non-thenable. Often an explanatory string.
@@ -13,7 +14,7 @@
 
 /**
  * @template {object} [CT=Record<string, unknown>] Contract's custom terms
- * @typedef {Object} ContractFacet
+ * @typedef {Object} ZCF Zoe Contract Facet
  *
  * The Zoe interface specific to a contract instance. The Zoe Contract
  * Facet is an API object used by running contract instances to access
@@ -212,12 +213,15 @@
  */
 
 /**
- * @template {object} [PF=undefined] Public facet
- * @template {object=} [CF=undefined] Creator facet
- * @template {object=} [CT=Record<string, unknown] Custom terms
- * @template {object=} [PA=undefined] Private args
+ * API for a contract start function.
+ * FIXME before merge: assumes synchronous
+ *
+ * @template {object} [PF] Public facet
+ * @template {object} [CF] Creator facet
+ * @template {object} [CT] Custom terms
+ * @template {object} [PA] Private args
  * @callback ContractStartFn
- * @param {ContractFacet<CT>} zcf
+ * @param {ZCF<CT>} zcf
  * @param {PA} privateArgs
  * @returns {ContractStartFnResult<PF, CF>}
  */
@@ -229,4 +233,9 @@
  * @property {PF} [publicFacet]
  * @property {CF} [creatorFacet]
  * @property {Promise<Invitation>=} [creatorInvitation]
+ */
+
+/**
+ * @template S
+ * @typedef {import('../zoeService/utils').ContractOf<S>} ContractOf
  */

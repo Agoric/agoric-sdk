@@ -22,11 +22,8 @@ const SECONDS_PER_HOUR = 60n * 60n;
 const DAY = SECONDS_PER_HOUR * 24n;
 
 /**
- * @type {ContractStartFn<
- * undefined,
- * { makeAdjustBalancesInvitation: unknown, mintRun: unknown },
- * {},
- * {feeMintAccess: FeeMintAccess}>}
+ * @param {ZCF} zcf
+ * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
 export async function start(zcf, privateArgs) {
   console.log(`contract started`);

@@ -16,8 +16,8 @@ import '../../exported.js';
  * anything in `give` and `want`. The amount in `give` will be returned, and
  * `want` will be ignored.
  *
- * @type {ContractStartFn<AutomaticRefundPublicFacet>}
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   let offersCount = 0n;

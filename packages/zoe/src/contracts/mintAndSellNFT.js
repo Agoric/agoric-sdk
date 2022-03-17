@@ -25,7 +25,9 @@ import { assert } from '@agoric/assert';
  * allows selling the tickets that were produced. You can reuse the ticket maker
  * to mint more tickets (e.g. for a separate show.)
  *
- * @param {ContractFacet<Record<string, any>>} zcf
+ * @param {ZCF<{
+ * tokenName: string,
+ * }>} zcf
  */
 const start = zcf => {
   const { tokenName = 'token' } = zcf.getTerms();
@@ -34,6 +36,14 @@ const start = zcf => {
 
   const zoeService = zcf.getZoeService();
 
+  /**
+   * @param {object} obj
+   * @param {Installation<import('./sellItems.js').start>} obj.sellItemsInstallation
+   * @param {*} obj.customValueProperties
+   * @param {number} obj.count
+   * @param {*} obj.moneyIssuer
+   * @param {*} obj.pricePerItem
+   */
   const sellTokens = ({
     customValueProperties,
     count,
@@ -77,14 +87,7 @@ const start = zcf => {
     const sellItemsTerms = harden({
       pricePerItem,
     });
-    /**
-     * @type {Promise<{
-     *   creatorInvitation: Invitation | undefined,
-     *   creatorFacet: SellItemsCreatorFacet,
-     *   instance: Instance,
-     *   publicFacet: SellItemsPublicFacet,
-     * }>}
-     */
+    // FIXME EProxy types, startInstance is any
     const instanceRecordP = E(zoeService).startInstance(
       sellItemsInstallation,
       issuerKeywordRecord,

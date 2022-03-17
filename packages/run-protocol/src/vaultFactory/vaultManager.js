@@ -43,7 +43,7 @@ const trace = makeTracer('VM');
  * It manages some number of outstanding loans, each called a Vault, for which
  * the collateral is provided in exchange for borrowed RUN.
  *
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority

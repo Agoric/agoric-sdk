@@ -99,27 +99,27 @@
 
 /**
  * @callback ScheduleLiquidation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  */
 
 /**
  * @callback MakeLendInvitation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanTerms} config
  * @returns {Promise<Invitation>} lendInvitation
  */
 
 /**
  * @callback MakeBorrowInvitation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithLender} config
  * @returns {Promise<Invitation>} borrowInvitation
  */
 
 /**
  * @callback MakeCloseLoanInvitation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  * @returns {Promise<Invitation>} closeLoanInvitation
  */
@@ -129,14 +129,14 @@
  * after adding.
  *
  * @callback MakeAddCollateralInvitation
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  * @returns {Promise<Invitation>} addCollateralInvitation
  */
 
 /**
  * @callback Liquidate
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {LoanConfigWithBorrower} config
  * @returns {void}
  */
@@ -173,7 +173,7 @@
  *
  *  the period at which the outstanding debt increases by the interestRate
  *
- * @property {ContractFacet} zcf
+ * @property {ZCF} zcf
  *
  * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
  * @property {Timestamp} basetime The starting point from which to calculate

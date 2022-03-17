@@ -55,7 +55,14 @@ import { makeLendInvitation } from './lend.js';
  *  * Keyword: 'Loan' - The issuer for the digital assets to be loaned
  *    out.
  *
- * @param {ContractFacet<Record<string, any>>} zcf
+ * @param {ZCF<{
+ *   mmr: Ratio,
+ *   autoswapInstance: Instance,
+ *   priceAuthority: PriceAuthority,
+ *   periodNotifier: PeriodNotifier,
+ *   interestRate: Ratio,
+ *   interestPeriod: bigint,
+ * }>} zcf
  */
 const start = async zcf => {
   assertIssuerKeywords(zcf, harden(['Collateral', 'Loan']));

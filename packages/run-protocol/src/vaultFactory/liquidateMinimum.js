@@ -16,9 +16,7 @@ const trace = makeTracer('LM');
  * necessary. Because it has offer safety, it can refuse the trade. When that
  * happens, we fall back to selling using the default strategy, which currently
  * uses the AMM's swapIn instead.
- */
-
-/**
+ *
  * @type ContractStartFn<undefined, {makeDebtorInvitation: (debtAmount: Amount) => Promise<Invitation>}, {
  *   amm: AutoswapPublicFacet,
  * }>
