@@ -319,6 +319,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const argv = {
       ROLE: 'chain',
       noFakeCurrencies: !env.FAKE_CURRENCIES,
+      vaultFactoryControllerAddress: env.VAULT_FACTORY_CONTROLLER_ADDR,
       bootMsg,
     };
     const vatconfig = new URL(
