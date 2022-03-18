@@ -316,6 +316,16 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       },
     },
   },
+  grantVaultFactoryControl: {
+    vatParameters: {
+      argv: { vaultFactoryControllerAddress: true },
+    },
+    consume: {
+      client: 'provisioning',
+      priceAuthorityAdmin: 'priceAuthority',
+      vaultFactoryCreator: 'VaultFactory',
+    },
+  },
   configureVaultFactoryUI: {
     consume: {
       board: true,
@@ -371,7 +381,7 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
       mints: 'mints',
       priceAuthorityVat: 'priceAuthority',
       priceAuthorityAdmin: 'priceAuthority',
-      vaultFactoryCreator: 'vaultFactory',
+      vaultFactoryCreator: 'VaultFactory',
       zoe: true,
     },
     issuer: {

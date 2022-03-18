@@ -282,6 +282,37 @@ export const startVaultFactory = async (
   );
 };
 
+/**
+ * Grant access to the VaultFactory creatorFacet
+ * to up to one user based on address.
+ *
+ * @param { BootstrapSpace & {
+ *   vatParameters: { argv: { vaultFactoryControllerAddress?: string } }
+ * }} powers
+ */
+export const grantVaultFactoryControl = async ({
+  vatParameters: {
+    argv: { vaultFactoryControllerAddress },
+  },
+  consume: { client, priceAuthorityAdmin, vaultFactoryCreator },
+}) => {
+  E(client).assignBundle([
+    addr => ({
+      vaultFactoryCreatorFacet:
+        typeof vaultFactoryControllerAddress === 'string' &&
+        addr === vaultFactoryControllerAddress
+          ? vaultFactoryCreator
+          : undefined,
+      priceAuthorityAdminFacet:
+        typeof vaultFactoryControllerAddress === 'string' &&
+        addr === vaultFactoryControllerAddress
+          ? priceAuthorityAdmin
+          : undefined,
+    }),
+  ]);
+};
+harden(grantVaultFactoryControl);
+
 /** @param { BootstrapPowers } powers */
 export const configureVaultFactoryUI = async ({
   consume: { board, zoe },
