@@ -12,9 +12,9 @@ const MALLEABLE_NUMBER = 'MalleableNumber';
 
 const makeParamTerms = (number, invitationAmount) => {
   return harden({
-    [MALLEABLE_NUMBER]: { type: ParamTypes.Nat, value: number },
+    [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
     [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.Invitation,
+      type: ParamTypes.INVITATION,
       value: invitationAmount,
     },
   });

@@ -21,7 +21,7 @@ test('types', t => {
   t.throws(() =>
     makeParamManagerSync({
       // @ts-expect-error invalid value for the declared type
-      BrokenBrand: [ParamTypes.Brand, 'not a brand'],
+      BrokenBrand: [ParamTypes.BRAND, 'not a brand'],
 
       BrokenInvitation: [
         // @ts-expect-error not supported in makeParamManagerSync
@@ -31,7 +31,7 @@ test('types', t => {
     }),
   );
   const mgr = makeParamManagerSync({
-    Working: [ParamTypes.Nat, 0n],
+    Working: [ParamTypes.NAT, 0n],
   });
   mgr.getWorking().valueOf();
   t.throws(() =>
@@ -43,8 +43,8 @@ test('types', t => {
 test('readonly', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
-    Currency: [ParamTypes.Brand, drachmaBrand],
-    Amt: [ParamTypes.AmountValue, drachmas],
+    Currency: [ParamTypes.BRAND, drachmaBrand],
+    Amt: [ParamTypes.AMOUNT_VALUE, drachmas],
   });
   const getters = paramManager.readonly();
   t.is(paramManager.getCurrency, getters.getCurrency);
@@ -54,8 +54,8 @@ test('readonly', t => {
 test('two parameters', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
-    Currency: [ParamTypes.Brand, drachmaBrand],
-    Amt: [ParamTypes.AmountValue, drachmas],
+    Currency: [ParamTypes.BRAND, drachmaBrand],
+    Amt: [ParamTypes.AMOUNT_VALUE, drachmas],
   });
 
   t.is(paramManager.getCurrency(), drachmaBrand);
@@ -65,11 +65,11 @@ test('two parameters', t => {
     paramManager.getParams(),
     harden({
       Currency: {
-        type: ParamTypes.Brand,
+        type: ParamTypes.BRAND,
         value: drachmaBrand,
       },
       Amt: {
-        type: ParamTypes.AmountValue,
+        type: ParamTypes.AMOUNT_VALUE,
         value: drachmas,
       },
     }),
@@ -80,7 +80,7 @@ test('Amount', async t => {
   const { brand } = makeIssuerKit('floor wax');
   const { brand: brand2 } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerSync({
-    Shimmer: [ParamTypes.AmountValue, AmountMath.make(brand, 250n)],
+    Shimmer: [ParamTypes.AMOUNT_VALUE, AmountMath.make(brand, 250n)],
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand, 250n));
 
@@ -97,7 +97,7 @@ test('Branded Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerSync({
-    Shimmer: [ParamTypes.BrandedAmount, AmountMath.make(floorBrand, 2n)],
+    Shimmer: [ParamTypes.BRANDED_AMOUNT, AmountMath.make(floorBrand, 2n)],
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 2n));
 
@@ -161,7 +161,7 @@ test('params one installation', async t => {
     paramManager.getParams(),
     harden({
       PName: {
-        type: ParamTypes.Installation,
+        type: ParamTypes.INSTALLATION,
         value: handle2,
       },
     }),
@@ -195,7 +195,7 @@ test('params one instance', async t => {
     paramManager.getParams(),
     harden({
       PName: {
-        type: ParamTypes.Instance,
+        type: ParamTypes.INSTANCE,
         value: handle2,
       },
     }),
@@ -222,8 +222,8 @@ test('Invitation', async t => {
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
   const paramManager = await makeParamManager(
     {
-      Currency: [ParamTypes.Brand, drachmaBrand],
-      Amt: [ParamTypes.AmountValue, drachmaAmount],
+      Currency: [ParamTypes.BRAND, drachmaBrand],
+      Amt: [ParamTypes.AMOUNT_VALUE, drachmaAmount],
       Invite: ['invitation', invitation],
     },
     zoe,
@@ -241,15 +241,15 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
-        type: ParamTypes.AmountValue,
+        type: ParamTypes.AMOUNT_VALUE,
         value: drachmaAmount,
       },
       Currency: {
-        type: ParamTypes.Brand,
+        type: ParamTypes.BRAND,
         value: drachmaBrand,
       },
       Invite: {
-        type: ParamTypes.Invitation,
+        type: ParamTypes.INVITATION,
         value: invitationAmount,
       },
     }),
@@ -258,8 +258,8 @@ test('Invitation', async t => {
 
 test('two Nats', async t => {
   const paramManager = makeParamManagerSync({
-    Acres: [ParamTypes.Nat, 50n],
-    SpeedLimit: [ParamTypes.Nat, 299_792_458n],
+    Acres: [ParamTypes.NAT, 50n],
+    SpeedLimit: [ParamTypes.NAT, 299_792_458n],
   });
 
   t.is(paramManager.getAcres(), 50n);
@@ -280,8 +280,8 @@ test('Ratio', async t => {
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerSync({
-    Acres: [ParamTypes.Nat, 50n],
-    GoldenRatio: [ParamTypes.RatioValue, ratio],
+    Acres: [ParamTypes.NAT, 50n],
+    GoldenRatio: [ParamTypes.RATIO_VALUE, ratio],
   });
   t.is(paramManager.getGoldenRatio(), ratio);
 
@@ -299,7 +299,7 @@ test('Branded Ratio', async t => {
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerSync({
-    Acres: [ParamTypes.Nat, 50n],
+    Acres: [ParamTypes.NAT, 50n],
     GoldenRatio: ['brandedRatio', ratio],
   });
   t.is(paramManager.getGoldenRatio(), ratio);
@@ -322,7 +322,7 @@ test('Branded Ratio', async t => {
 
 test('Strings', async t => {
   const paramManager = makeParamManagerSync({
-    Acres: [ParamTypes.Nat, 50n],
+    Acres: [ParamTypes.NAT, 50n],
     OurWeapons: ['string', 'fear'],
   });
   t.is(paramManager.getOurWeapons(), 'fear');

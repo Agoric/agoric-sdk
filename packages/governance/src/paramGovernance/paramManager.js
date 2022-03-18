@@ -115,7 +115,7 @@ const makeParamManagerBuilder = zoe => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
       return AmountMath.coerce(a.brand, a);
     };
-    buildCopyParam(name, value, assertAmount, ParamTypes.AmountValue);
+    buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT_VALUE);
     return builder;
   };
 
@@ -125,28 +125,28 @@ const makeParamManagerBuilder = zoe => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
       return AmountMath.coerce(value.brand, a);
     };
-    buildCopyParam(name, value, assertAmount, ParamTypes.AmountValue);
+    buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT_VALUE);
     return builder;
   };
 
   /** @type {(name: string, value: Brand, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addBrand = (name, value, builder) => {
     const assertBrand = makeLooksLikeBrand(name);
-    buildCopyParam(name, value, assertBrand, ParamTypes.Brand);
+    buildCopyParam(name, value, assertBrand, ParamTypes.BRAND);
     return builder;
   };
 
   /** @type {(name: string, value: Installation<unknown>, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addInstallation = (name, value, builder) => {
     const assertInstallation = makeAssertInstallation(name);
-    buildCopyParam(name, value, assertInstallation, ParamTypes.Installation);
+    buildCopyParam(name, value, assertInstallation, ParamTypes.INSTALLATION);
     return builder;
   };
 
   /** @type {(name: string, value: Instance, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addInstance = (name, value, builder) => {
     const assertInstance = makeAssertInstance(name);
-    buildCopyParam(name, value, assertInstance, ParamTypes.Instance);
+    buildCopyParam(name, value, assertInstance, ParamTypes.INSTANCE);
     return builder;
   };
 
@@ -157,34 +157,34 @@ const makeParamManagerBuilder = zoe => {
       Nat(v);
       return true;
     };
-    buildCopyParam(name, value, assertNat, ParamTypes.Nat);
+    buildCopyParam(name, value, assertNat, ParamTypes.NAT);
     return builder;
   };
 
   /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addRatioValue = (name, value, builder) => {
-    buildCopyParam(name, value, assertIsRatio, ParamTypes.RatioValue);
+    buildCopyParam(name, value, assertIsRatio, ParamTypes.RATIO_VALUE);
     return builder;
   };
 
   /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addBrandedRatio = (name, value, builder) => {
     const assertBrandedRatio = makeAssertBrandedRatio(name, value);
-    buildCopyParam(name, value, assertBrandedRatio, ParamTypes.RatioValue);
+    buildCopyParam(name, value, assertBrandedRatio, ParamTypes.RATIO_VALUE);
     return builder;
   };
 
   /** @type {(name: string, value: string, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addString = (name, value, builder) => {
     const assertString = v => assert.typeof(v, 'string');
-    buildCopyParam(name, value, assertString, ParamTypes.String);
+    buildCopyParam(name, value, assertString, ParamTypes.STRING);
     return builder;
   };
 
   /** @type {(name: string, value: any, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addUnknown = (name, value, builder) => {
     const assertUnknown = _v => true;
-    buildCopyParam(name, value, assertUnknown, ParamTypes.Unknown);
+    buildCopyParam(name, value, assertUnknown, ParamTypes.UNKNOWN);
     return builder;
   };
 
@@ -219,7 +219,7 @@ const makeParamManagerBuilder = zoe => {
       currentInvitation = i;
       publication.updateState({
         name,
-        type: ParamTypes.Invitation,
+        type: ParamTypes.INVITATION,
         value: currentAmount,
       });
       return currentAmount;
@@ -227,7 +227,7 @@ const makeParamManagerBuilder = zoe => {
     await setInvitation(invitation);
 
     const makeDescription = () => {
-      return { type: ParamTypes.Invitation, value: currentAmount };
+      return { type: ParamTypes.INVITATION, value: currentAmount };
     };
 
     const getVisibleValue = async allegedInvitation =>
@@ -238,12 +238,12 @@ const makeParamManagerBuilder = zoe => {
       getInternalValue: () => currentInvitation,
       assertType: assertInvitation,
       makeDescription,
-      getType: () => ParamTypes.Invitation,
+      getType: () => ParamTypes.INVITATION,
       getVisibleValue,
     });
 
     // eslint-disable-next-line no-use-before-define
-    getters[`get${name}`] = () => getTypedParam(ParamTypes.Invitation, name);
+    getters[`get${name}`] = () => getTypedParam(ParamTypes.INVITATION, name);
     // CRUCIAL: here we're creating the update functions that can change the
     // values of the governed contract's parameters. We'll return the updateFns
     // to our caller. They must handle them carefully to ensure that they end up
@@ -298,15 +298,15 @@ const makeParamManagerBuilder = zoe => {
     return Far('param manager', {
       getParams,
       getSubscription: () => subscription,
-      getAmount: name => getTypedParam(ParamTypes.AmountValue, name),
-      getBrand: name => getTypedParam(ParamTypes.Brand, name),
-      getInstance: name => getTypedParam(ParamTypes.Instance, name),
-      getInstallation: name => getTypedParam(ParamTypes.Installation, name),
-      getInvitationAmount: name => getTypedParam(ParamTypes.Invitation, name),
-      getNat: name => getTypedParam(ParamTypes.Nat, name),
-      getRatio: name => getTypedParam(ParamTypes.RatioValue, name),
-      getString: name => getTypedParam(ParamTypes.String, name),
-      getUnknown: name => getTypedParam(ParamTypes.Unknown, name),
+      getAmount: name => getTypedParam(ParamTypes.AMOUNT_VALUE, name),
+      getBrand: name => getTypedParam(ParamTypes.BRAND, name),
+      getInstance: name => getTypedParam(ParamTypes.INSTANCE, name),
+      getInstallation: name => getTypedParam(ParamTypes.INSTALLATION, name),
+      getInvitationAmount: name => getTypedParam(ParamTypes.INVITATION, name),
+      getNat: name => getTypedParam(ParamTypes.NAT, name),
+      getRatio: name => getTypedParam(ParamTypes.RATIO_VALUE, name),
+      getString: name => getTypedParam(ParamTypes.STRING, name),
+      getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
       getVisibleValue,
       getInternalParamValue,
       // Getters and setters for each param value

@@ -92,11 +92,11 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
   const governedTerms = {
     main: {
       [MALLEABLE_NUMBER]: {
-        type: ParamTypes.Nat,
+        type: ParamTypes.NAT,
         value: 602214090000000000000000n,
       },
       [CONTRACT_ELECTORATE]: {
-        type: ParamTypes.Invitation,
+        type: ParamTypes.INVITATION,
         value: invitationAmount,
       },
     },
