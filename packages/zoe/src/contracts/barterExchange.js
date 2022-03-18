@@ -19,7 +19,7 @@ import { satisfies } from '../contractSupport/index.js';
  * successful trader gets their `want` and may trade with counter-parties who
  * specify any amount up to their specified `give`.
  *
- * @type {ContractStartFn<{makeInvitation: unknown}>}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   // bookOrders is a Map of Maps. The first key is the brand of the offer's

@@ -54,7 +54,7 @@ import '../../exported.js';
  * (getLiquidityIssuer), the current outstanding liquidity (getLiquiditySupply),
  * and the current balances in the pool (getPoolAllocation).
  *
- * @type {ContractStartFn<AutoswapPublicFacet>}
+ * @param {ZCF} zcf
  */
 const start = async zcf => {
   // Create a local liquidity mint and issuer.
@@ -375,6 +375,7 @@ const start = async zcf => {
 
   const getPoolAllocation = poolSeat.getCurrentAllocation;
 
+  /** @type {AutoswapPublicFacet} */
   const publicFacet = Far('publicFacet', {
     getInputPrice: getOutputForGivenInput,
     getOutputPrice: getInputForGivenOutput,

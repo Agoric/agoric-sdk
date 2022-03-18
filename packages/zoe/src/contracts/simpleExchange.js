@@ -30,7 +30,7 @@ import {
  *
  * The publicFacet is returned from the contract.
  *
- * @type {ContractStartFn<SimpleExchangePublicFacet>}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   let sellSeats = [];

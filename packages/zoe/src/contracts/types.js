@@ -33,11 +33,6 @@
  * @property {() => bigint} getOffersCount
  * @property {() => Promise<Invitation>} makeInvitation
  */
-/**
- * @typedef {Object} SimpleExchangePublicFacet
- * @property {() => Promise<Invitation>} makeInvitation
- * @property {() => Notifier<any>} getNotifier
- */
 
 /**
  * @typedef {Object} AutoswapPublicFacet
