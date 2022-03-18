@@ -6,7 +6,7 @@ import {
   makeParamManager,
   ParamTypes,
 } from '../../../src/index.js';
-import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
+import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
@@ -56,7 +56,7 @@ const start = async (zcf, privateArgs) => {
 
   return {
     publicFacet: wrapPublicFacet({}),
-    creatorFacet: wrapCreatorFacet({}),
+    creatorFacet: wrapCreatorFacet({ getGovernedApis: () => {} }),
   };
 };
 

@@ -277,6 +277,7 @@ const start = async (zcf, privateArgs) => {
 
   /** @type {GovernedCreatorFacet<*>} */
   const creatorFacet = wrapCreatorFacet(
+    // @ts-expect-error XXX getGovernedApis should be optional
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,
     }),

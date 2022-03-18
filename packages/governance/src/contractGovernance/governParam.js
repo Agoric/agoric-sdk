@@ -62,33 +62,15 @@ const assertBallotConcernsQuestion = (paramName, questionDetails) => {
 };
 
 /** @type {SetupGovernance} */
-const setupGovernance = async (
+const setupParamGovernance = async (
   zoe,
   paramManagerRetriever,
   contractInstance,
   timer,
+  getUpdatedPoserFacet,
 ) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
-  let poserFacet;
-  let currentInvitation;
-
-  const getUpdatedPoserFacet = async () => {
-    const newInvitation = await E(
-      E(paramManagerRetriever).get({ key: 'main' }),
-    ).getInternalParamValue(CONTRACT_ELECTORATE);
-
-    if (newInvitation === currentInvitation) {
-      return poserFacet;
-    }
-
-    poserFacet = E(E(zoe).offer(newInvitation)).getOfferResult();
-    currentInvitation = newInvitation;
-    return poserFacet;
-  };
-  await getUpdatedPoserFacet();
-
-  assert(poserFacet, X`question poser facet must be initialized`);
 
   /** @type {VoteOnParamChange} */
   const voteOnParamChange = async (
@@ -124,9 +106,8 @@ const setupGovernance = async (
       tieOutcome: negative,
     });
 
-    const updatedPoserFacet = await getUpdatedPoserFacet();
     const { publicFacet: counterPublicFacet, instance: voteCounter } = await E(
-      updatedPoserFacet,
+      getUpdatedPoserFacet(),
     ).addQuestion(voteCounterInstallation, questionSpec);
 
     voteCounters.add(voteCounter);
@@ -170,12 +151,12 @@ const setupGovernance = async (
   });
 };
 
-harden(setupGovernance);
+harden(setupParamGovernance);
 harden(makeParamChangePositions);
 harden(validateParamChangeQuestion);
 harden(assertBallotConcernsQuestion);
 export {
-  setupGovernance,
+  setupParamGovernance,
   makeParamChangePositions,
   validateParamChangeQuestion,
   assertBallotConcernsQuestion,
