@@ -5,6 +5,7 @@ import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeLiveSlots } from '../src/liveslots/liveslots.js';
+import { capargs } from './vat-util.js';
 
 export function buildSyscall() {
   const log = [];
@@ -131,7 +132,7 @@ export async function makeDispatch(
       return { buildRootObject: build };
     },
   );
-  await startVat();
+  await startVat(capargs());
   if (returnTestHooks) {
     returnTestHooks[0] = testHooks;
   }

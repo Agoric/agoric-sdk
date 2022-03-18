@@ -2,7 +2,8 @@
 
 const start = _zcf => {
   VatData.defineKind();
-  VatData.defineDurableKind();
+  const kh = VatData.makeKindHandle();
+  VatData.defineDurableKind(kh);
   VatData.makeScalarBigMapStore();
   VatData.makeScalarBigWeakMapStore();
   VatData.makeScalarBigSetStore();

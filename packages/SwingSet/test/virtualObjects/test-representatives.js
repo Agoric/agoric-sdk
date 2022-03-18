@@ -179,12 +179,14 @@ test.serial('exercise cache', async t => {
   // init cache - []
 
   await make('thing1', true, T1); // make t1 - [t1]
-  ck('set', esKey(1), '1');
+  ck('get', esKey(1), undefined);
+  ck('set', esKey(1), 'r');
   ck('set', dataKey(1), thingVal('thing1'));
   done();
 
   await make('thing2', false, T2); // make t2 - [t2 t1]
-  ck('set', esKey(2), '1');
+  ck('get', esKey(2), undefined);
+  ck('set', esKey(2), 'r');
   ck('set', dataKey(2), thingVal('thing2'));
   done();
 
@@ -193,51 +195,57 @@ test.serial('exercise cache', async t => {
   await readHeld('thing1'); // refresh t1 - [t1 t2]
 
   await make('thing3', false, T3); // make t3 - [t3 t1 t2]
-  ck('set', esKey(3), '1');
+  ck('get', esKey(3), undefined);
+  ck('set', esKey(3), 'r');
   ck('set', dataKey(3), thingVal('thing3'));
   done();
 
   await make('thing4', false, T4); // make t4 - [t4 t3 t1 t2]
-  ck('set', esKey(4), '1');
+  ck('get', esKey(4), undefined);
+  ck('set', esKey(4), 'r');
   ck('set', dataKey(4), thingVal('thing4'));
   done();
 
   await make('thing5', false, T5); // evict t2, make t5 - [t5 t4 t3 t1]
-  ck('set', esKey(5), '1');
+  ck('get', esKey(5), undefined);
+  ck('set', esKey(5), 'r');
   ck('get', rcKey(2), undefined);
-  ck('get', esKey(2), '1');
+  ck('get', esKey(2), 'r');
   ck('set', dataKey(5), thingVal('thing5'));
   done();
 
   await make('thing6', false, T6); // evict t1, make t6 - [t6 t5 t4 t3]
-  ck('set', esKey(6), '1');
+  ck('get', esKey(6), undefined);
+  ck('set', esKey(6), 'r');
   ck('set', dataKey(6), thingVal('thing6'));
   done();
 
   await make('thing7', false, T7); // evict t3, make t7 - [t7 t6 t5 t4]
-  ck('set', esKey(7), '1');
+  ck('get', esKey(7), undefined);
+  ck('set', esKey(7), 'r');
   ck('get', rcKey(3), undefined);
-  ck('get', esKey(3), '1');
+  ck('get', esKey(3), 'r');
   ck('set', dataKey(7), thingVal('thing7'));
   done();
 
   await make('thing8', false, T8); // evict t4, make t8 - [t8 t7 t6 t5]
-  ck('set', esKey(8), '1');
+  ck('get', esKey(8), undefined);
+  ck('set', esKey(8), 'r');
   ck('get', rcKey(4), undefined);
-  ck('get', esKey(4), '1');
+  ck('get', esKey(4), 'r');
   ck('set', dataKey(8), thingVal('thing8'));
   done();
 
   await read(T2, 'thing2'); // reanimate t2, evict t5 - [t2 t8 t7 t6]
   ck('get', dataKey(2), thingVal('thing2'));
   ck('get', rcKey(5), undefined);
-  ck('get', esKey(5), '1');
+  ck('get', esKey(5), 'r');
   done();
 
   await readHeld('thing1'); // reanimate t1, evict t6 - [t1 t2 t8 t7]
   ck('get', dataKey(1), thingVal('thing1'));
   ck('get', rcKey(6), undefined);
-  ck('get', esKey(6), '1');
+  ck('get', esKey(6), 'r');
   done();
 
   await write(T2, 'thing2 updated'); // refresh t2 - [t2 t1 t8 t7]
@@ -253,7 +261,7 @@ test.serial('exercise cache', async t => {
   await read(T6, 'thing6'); // reanimate t6, evict t2 - [t6 t7 t8 t1]
   ck('get', dataKey(6), thingVal('thing6'));
   ck('get', rcKey(2), undefined);
-  ck('get', esKey(2), '1');
+  ck('get', esKey(2), 'r');
   done();
 
   await read(T5, 'thing5'); // reanimate t5, evict t1 - [t5 t6 t7 t8]
@@ -263,41 +271,41 @@ test.serial('exercise cache', async t => {
   await read(T4, 'thing4'); // reanimate t4, evict t8 - [t4 t5 t6 t7]
   ck('get', dataKey(4), thingVal('thing4'));
   ck('get', rcKey(8), undefined);
-  ck('get', esKey(8), '1');
+  ck('get', esKey(8), 'r');
   done();
 
   await read(T3, 'thing3'); // reanimate t3, evict t7 - [t3 t4 t5 t6]
   ck('get', dataKey(3), thingVal('thing3'));
   ck('get', rcKey(7), undefined);
-  ck('get', esKey(7), '1');
+  ck('get', esKey(7), 'r');
   done();
 
   await read(T2, 'thing2 updated'); // reanimate t2, evict t6 - [t2 t3 t4 t5]
   ck('get', dataKey(2), thingVal('thing2 updated'));
   ck('get', rcKey(6), undefined);
-  ck('get', esKey(6), '1');
+  ck('get', esKey(6), 'r');
   done();
 
   await readHeld('thing1 updated'); // reanimate t1, evict t5 - [t1 t2 t3 t4]
   ck('get', dataKey(1), thingVal('thing1 updated'));
   ck('get', rcKey(5), undefined);
-  ck('get', esKey(5), '1');
+  ck('get', esKey(5), 'r');
   done();
 
   await forgetHeld(); // cache unchanged - [t1 t2 t3 t4]
   ck('get', rcKey(1), undefined);
-  ck('get', esKey(1), '1');
+  ck('get', esKey(1), 'r');
   done();
 
   await hold(T8); // cache unchanged - [t1 t2 t3 t4]
   ck('get', rcKey(4), undefined);
-  ck('get', esKey(4), '1');
+  ck('get', esKey(4), 'r');
   done();
 
   await read(T7, 'thing7'); // reanimate t7, evict t4 - [t7 t1 t2 t3]
   ck('get', dataKey(7), thingVal('thing7'));
   ck('get', rcKey(3), undefined);
-  ck('get', esKey(3), '1');
+  ck('get', esKey(3), 'r');
   done();
 
   await writeHeld('thing8 updated'); // reanimate t8, evict t3 - [t8 t7 t1 t2]
@@ -376,10 +384,41 @@ test('virtual object gc', async t => {
     remainingVOs[key] = hostStorage.kvStore.get(key);
   }
   t.deepEqual(remainingVOs, {
-    'v1.vs.vom.es.o+1/3': '1',
+    'v1.vs.vom.es.o+1/3': 'r',
     'v1.vs.vom.o+1/2': '{"label":{"body":"\\"thing #2\\"","slots":[]}}',
     'v1.vs.vom.o+1/3': '{"label":{"body":"\\"thing #3\\"","slots":[]}}',
     'v1.vs.vom.o+1/8': '{"label":{"body":"\\"thing #8\\"","slots":[]}}',
     'v1.vs.vom.o+1/9': '{"label":{"body":"\\"thing #9\\"","slots":[]}}',
   });
+});
+
+// Check that facets which don't reference their state still kill their cohort alive
+test('empty facets are not orphaned', async t => {
+  const config = {
+    bootstrap: 'bootstrap',
+    vats: {
+      bob: {
+        sourceSpec: new URL('vat-orphan-bob.js', import.meta.url).pathname,
+        creationOptions: {
+          virtualObjectCacheSize: 0,
+        },
+      },
+      bootstrap: {
+        sourceSpec: new URL('vat-orphan-bootstrap.js', import.meta.url)
+          .pathname,
+      },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+
+  const c = await buildVatController(config, [], { hostStorage });
+  c.pinVatRoot('bootstrap');
+
+  await c.run();
+  t.deepEqual(
+    c.kpResolution(c.bootstrapResult),
+    capargs({ '@qclass': 'undefined' }),
+  );
+  t.deepEqual(c.dump().log, ['compare originalFacet === thing : true']);
 });

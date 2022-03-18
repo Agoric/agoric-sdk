@@ -2,7 +2,7 @@ import { assert, details as X } from '@agoric/assert';
 import buildCommsDispatch from '../src/vats/comms/index.js';
 import { debugState } from '../src/vats/comms/dispatch.js';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';
-import { makeMessage, makeResolutions } from './util.js';
+import { capargs, makeMessage, makeResolutions } from './util.js';
 
 // This module provides a power tool for testing the comms vat implementation.
 // It provides support for injecting events into the comms vat and observing
@@ -350,7 +350,7 @@ export function commsVatDriver(t, verbose = false) {
   const log = [];
   const syscall = loggingSyscall(log);
   const dispatch = buildCommsDispatch(syscall, 'fakestate', 'fakehelpers');
-  dispatch(['startVat']);
+  dispatch(['startVat', capargs()]);
   const { state } = debugState.get(dispatch);
 
   const remotes = new Map();

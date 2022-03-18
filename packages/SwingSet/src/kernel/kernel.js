@@ -529,10 +529,11 @@ export default function buildKernel(
     const { vatID, vatParameters } = message;
     // console.log(`-- processStartVat(${vatID})`);
     insistVatID(vatID);
+    insistCapData(vatParameters);
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
     /** @type { KernelDeliveryStartVat } */
-    const kd = harden(['startVat', vatParameters]); // TODO(4381) add vatParameters here
+    const kd = harden(['startVat', vatParameters]);
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     // TODO: can we provide a computron count to the run policy?
@@ -548,6 +549,7 @@ export default function buildKernel(
   async function processCreateVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     const { vatID, source, vatParameters, dynamicOptions } = message;
+    insistCapData(vatParameters);
     kernelKeeper.addDynamicVatID(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const options = { ...dynamicOptions };
@@ -602,7 +604,6 @@ export default function buildKernel(
         .then(_vatinfo =>
           processStartVat({ type: 'startVat', vatID, vatParameters }),
         )
-        // TODO(4381) add vatParameters here
         // If processStartVat/deliverAndLogToVat observes a worker error, it
         // will return status={ terminate: problem } rather than throw an
         // error, so makeSuccessResponse will sendNewVatCallback. But the
@@ -623,7 +624,8 @@ export default function buildKernel(
   async function processUpgradeVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
     // const { upgradeID, bundleID, vatParameters } = message;
-    const { upgradeID } = message;
+    const { upgradeID, vatParameters } = message;
+    insistCapData(vatParameters);
     // for now, all attempts to upgrade will fail
 
     // TODO: decref the bundleID and vatParameters.slots
@@ -775,7 +777,7 @@ export default function buildKernel(
    *          } RunQueueEventCreateVat
    * @typedef { { type: 'upgrade-vat', vatID: VatID, upgradeID: string,
    *              bundleID: BundleID, vatParameters: SwingSetCapData } } RunQueueEventUpgradeVat
-   * @typedef { { type: 'startVat', vatID: VatID, vatParameters: unknown } } RunQueueEventStartVat
+   * @typedef { { type: 'startVat', vatID: VatID, vatParameters: SwingSetCapData } } RunQueueEventStartVat
    * @typedef { { type: 'dropExports', vatID: VatID, krefs: string[] } } RunQueueEventDropExports
    * @typedef { { type: 'retireExports', vatID: VatID, krefs: string[] } } RunQueueEventRetireExports
    * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
@@ -1220,8 +1222,13 @@ export default function buildKernel(
 
     await vatWarehouse.loadTestVat(vatID, setup, creationOptions);
 
+    const vpCapData = { body: stringify(harden(vatParameters)), slots: [] };
     /** @type { RunQueueEventStartVat } */
-    const startVatMessage = { type: 'startVat', vatID, vatParameters };
+    const startVatMessage = {
+      type: 'startVat',
+      vatID,
+      vatParameters: vpCapData,
+    };
     // eslint-disable-next-line no-unused-vars
     const ds = await processStartVat(startVatMessage);
     // TODO: do something with DeliveryStatus, maybe just assert it's ok
@@ -1246,9 +1253,11 @@ export default function buildKernel(
       pushCreateVatBundleEvent(bundle, dynamicOptions) {
         // TODO: translate dynamicOptions.vatParameters.slots from dref to kref
         const source = { bundle };
-        const vatID = kernelKeeper.allocateUnusedVatID();
-        const { vatParameters, ...rest } = dynamicOptions;
+        const { vatParameters: rawVP, ...rest } = dynamicOptions;
+        const vatParameters = { body: stringify(harden(rawVP)), slots: [] };
+        insistCapData(vatParameters);
         dynamicOptions = rest;
+        const vatID = kernelKeeper.allocateUnusedVatID();
         const event = {
           type: 'create-vat',
           vatID,
@@ -1265,9 +1274,11 @@ export default function buildKernel(
         assert(kernelKeeper.hasBundle(bundleID), bundleID);
         // TODO: translate dynamicOptions.vatParameters.slots from dref to kref
         const source = { bundleID };
-        const vatID = kernelKeeper.allocateUnusedVatID();
-        const { vatParameters, ...rest } = dynamicOptions;
+        const { vatParameters: rawVP, ...rest } = dynamicOptions;
+        const vatParameters = { body: stringify(harden(rawVP)), slots: [] };
+        insistCapData(vatParameters);
         dynamicOptions = rest;
+        const vatID = kernelKeeper.allocateUnusedVatID();
         const event = {
           type: 'create-vat',
           vatID,
@@ -1280,7 +1291,9 @@ export default function buildKernel(
         // later when it is created and a root object is available
         return vatID;
       },
-      pushUpgradeVatEvent(bundleID, vatParameters) {
+      pushUpgradeVatEvent(bundleID, rawVP) {
+        const vatParameters = { body: stringify(harden(rawVP)), slots: [] };
+        insistCapData(vatParameters);
         const upgradeID = kernelKeeper.allocateUpgradeID();
         // TODO: translate vatParameters.slots from dref to kref
         // TODO: incref both bundleID and slots in vatParameters

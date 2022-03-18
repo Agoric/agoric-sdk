@@ -101,12 +101,12 @@ function build(
    */
 
   const valToSlot = new WeakMap(); // object -> vref
-  const slotToVal = new Map(); // vref -> WeakRef(object)
+  const slotToVal = new Map(); // baseRef -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
   const kernelRecognizableRemotables = new Set(); // vrefs
   const pendingPromises = new Set(); // Promises
   const importedDevices = new Set(); // device nodes
-  const possiblyDeadSet = new Set(); // vrefs that need to be checked for being dead
+  const possiblyDeadSet = new Set(); // baseRefs that need to be checked for being dead
   const possiblyRetiredSet = new Set(); // vrefs that might need to be rechecked for being retired
 
   function retainExportedVref(vref) {
@@ -157,41 +157,41 @@ function build(
 
     Each state thus has a set of perhaps-measurable properties:
 
-    * UNKNOWN: slotToVal[vref] is missing, vref not in deadSet
+    * UNKNOWN: slotToVal[baseRef] is missing, baseRef not in deadSet
     * REACHABLE: slotToVal has live weakref, userspace can reach
     * UNREACHABLE: slotToVal has live weakref, userspace cannot reach
-    * COLLECTED: slotToVal[vref] has dead weakref
-    * FINALIZED: slotToVal[vref] is missing, vref is in deadSet
+    * COLLECTED: slotToVal[baseRef] has dead weakref
+    * FINALIZED: slotToVal[baseRef] is missing, baseRef is in deadSet
 
     Our finalizer callback is queued by the engine's transition from
-    UNREACHABLE to COLLECTED, but the vref might be re-introduced before the
+    UNREACHABLE to COLLECTED, but the baseRef might be re-introduced before the
     callback has a chance to run. There might even be multiple copies of the
     finalizer callback queued. So the callback must deduce the current state
     and only perform cleanup (i.e. delete the slotToVal entry and add the
-    vref to the deadSet) in the COLLECTED state.
+    baseRef to the deadSet) in the COLLECTED state.
 
   */
 
-  function finalizeDroppedObject(vref) {
+  function finalizeDroppedObject(baseRef) {
     // TODO: Ideally this function should assert that it is not metered.  This
     // appears to be fine in practice, but it breaks a number of unit tests in
     // ways that are not obvious how to fix.
     // meterControl.assertNotMetered();
-    const wr = slotToVal.get(vref);
+    const wr = slotToVal.get(baseRef);
     // The finalizer for a given Presence might run in any state:
     // * COLLECTED: most common. Action: move to FINALIZED
     // * REACHABLE/UNREACHABLE: after re-introduction. Action: ignore
     // * FINALIZED: after re-introduction and subsequent finalizer invocation
-    //   (second finalizer executed for the same vref). Action: be idempotent
+    //   (second finalizer executed for the same baseRef). Action: be idempotent
     // * UNKNOWN: after re-introduction, multiple finalizer invocation,
-    //   and post-crank cleanup does dropImports and deletes vref from
+    //   and post-crank cleanup does dropImports and deletes baseRef from
     //   deadSet. Action: ignore
 
     if (wr && !wr.deref()) {
       // we're in the COLLECTED state, or FINALIZED after a re-introduction
       // eslint-disable-next-line no-use-before-define
-      addToPossiblyDeadSet(vref);
-      slotToVal.delete(vref);
+      addToPossiblyDeadSet(baseRef);
+      slotToVal.delete(baseRef);
     }
   }
   const vreffedObjectRegistry = new FinalizationRegistry(finalizeDroppedObject);
@@ -218,10 +218,10 @@ function build(
       // manifestation *right now* (i.e. the non-resurrected ones), for which
       // we must check the remaining pillars.
       const deadSet = new Set();
-      for (const vref of possiblyDeadSet) {
+      for (const baseRef of possiblyDeadSet) {
         // eslint-disable-next-line no-use-before-define
-        if (!slotToVal.has(vref)) {
-          deadSet.add(vref);
+        if (!slotToVal.has(baseRef)) {
+          deadSet.add(baseRef);
         }
       }
       possiblyDeadSet.clear();
@@ -239,33 +239,35 @@ function build(
       }
       possiblyRetiredSet.clear();
 
-      const deadVrefs = Array.from(deadSet);
-      deadVrefs.sort();
-      for (const vref of deadVrefs) {
-        const { virtual, allocatedByVat, type } = parseVatSlot(vref);
+      const deadBaseRefs = Array.from(deadSet);
+      deadBaseRefs.sort();
+      for (const baseRef of deadBaseRefs) {
+        const { virtual, allocatedByVat, type } = parseVatSlot(baseRef);
         assert(type === 'object', `unprepared to track ${type}`);
         if (virtual) {
           // Representative: send nothing, but perform refcount checking
           // eslint-disable-next-line no-use-before-define
-          const [gcAgain, doRetire] = vrm.possibleVirtualObjectDeath(vref);
-          if (doRetire) {
-            exportsToRetire.push(vref);
+          const [gcAgain, retirees] = vrm.possibleVirtualObjectDeath(baseRef);
+          if (retirees) {
+            retirees.map(retiree => exportsToRetire.push(retiree));
           }
           doMore = doMore || gcAgain;
         } else if (allocatedByVat) {
           // Remotable: send retireExport
-          if (kernelRecognizableRemotables.has(vref)) {
-            kernelRecognizableRemotables.delete(vref);
-            exportsToRetire.push(vref);
+          // for remotables, vref === baseRef
+          if (kernelRecognizableRemotables.has(baseRef)) {
+            kernelRecognizableRemotables.delete(baseRef);
+            exportsToRetire.push(baseRef);
           }
         } else {
           // Presence: send dropImport unless reachable by VOM
           // eslint-disable-next-line no-lonely-if, no-use-before-define
-          if (!vrm.isPresenceReachable(vref)) {
-            importsToDrop.push(vref);
+          if (!vrm.isPresenceReachable(baseRef)) {
+            importsToDrop.push(baseRef);
             // eslint-disable-next-line no-use-before-define
-            if (!vrm.isVrefRecognizable(vref)) {
-              importsToRetire.push(vref);
+            if (!vrm.isVrefRecognizable(baseRef)) {
+              // for presences, baseRef === vref
+              importsToRetire.push(baseRef);
             }
           }
         }
@@ -491,21 +493,21 @@ function build(
     return valToSlot.get(val);
   }
 
-  function getValForSlot(slot) {
+  function getValForSlot(baseRef) {
     meterControl.assertNotMetered();
-    const wr = slotToVal.get(slot);
+    const wr = slotToVal.get(baseRef);
     return wr && wr.deref();
   }
 
-  function requiredValForSlot(slot) {
-    const wr = slotToVal.get(slot);
+  function requiredValForSlot(baseRef) {
+    const wr = slotToVal.get(baseRef);
     const result = wr && wr.deref();
-    assert(result, X`no value for ${slot}`);
+    assert(result, X`no value for ${baseRef}`);
     return result;
   }
 
-  function addToPossiblyDeadSet(vref) {
-    possiblyDeadSet.add(vref);
+  function addToPossiblyDeadSet(baseRef) {
+    possiblyDeadSet.add(baseRef);
   }
 
   function addToPossiblyRetiredSet(vref) {
@@ -574,15 +576,15 @@ function build(
         assert.equal(passStyleOf(val), 'remotable');
         slot = exportPassByPresence();
       }
-      const { type } = parseVatSlot(slot); // also used as assertion
+      const { type, baseRef } = parseVatSlot(slot); // also used as assertion
       valToSlot.set(val, slot);
-      slotToVal.set(slot, new WeakRef(val));
+      slotToVal.set(baseRef, new WeakRef(val));
       if (type === 'object') {
         // Set.delete() metering seems unaffected by presence/absence, but it
         // doesn't matter anyway because deadSet.add only happens when
         // finializers run, and we wrote xsnap.c to ensure they only run
         // deterministically (during gcAndFinalize)
-        vreffedObjectRegistry.register(val, slot, val);
+        vreffedObjectRegistry.register(val, baseRef, val);
       }
     }
     return valToSlot.get(val);
@@ -598,13 +600,23 @@ function build(
     return result;
   }
 
-  function registerValue(slot, val) {
-    const { type } = parseVatSlot(slot);
-    slotToVal.set(slot, new WeakRef(val));
-    valToSlot.set(val, slot);
+  function registerValue(baseRef, val, valIsCohort) {
+    const { type, facet } = parseVatSlot(baseRef);
+    assert(
+      !facet,
+      `registerValue(${baseRef} should not receive individual facets`,
+    );
+    slotToVal.set(baseRef, new WeakRef(val));
+    if (valIsCohort) {
+      for (let i = 0; i < val.length; i += 1) {
+        valToSlot.set(val[i], `${baseRef}:${i}`);
+      }
+    } else {
+      valToSlot.set(val, baseRef);
+    }
     // we don't dropImports on promises, to avoid interaction with retire
     if (type === 'object') {
-      vreffedObjectRegistry.register(val, slot, val);
+      vreffedObjectRegistry.register(val, baseRef, val);
     }
   }
 
@@ -616,8 +628,9 @@ function build(
   // m.unserialize) must be wrapped by unmetered().
   function convertSlotToVal(slot, iface = undefined) {
     meterControl.assertNotMetered();
-    const { type, allocatedByVat, virtual } = parseVatSlot(slot);
-    let val = getValForSlot(slot);
+    const { type, allocatedByVat, virtual, facet, baseRef } =
+      parseVatSlot(slot);
+    let val = getValForSlot(baseRef);
     if (val) {
       if (virtual) {
         // If it's a virtual object for which we already have a representative,
@@ -626,16 +639,23 @@ function build(
         // code to make a new representative anyway (which we'll discard) so
         // that as far as the user code is concerned we are making a new
         // representative with each act of deserialization.  This way they can't
-        // detect reanimation by playing games inside their instanceKitMaker to
+        // detect reanimation by playing games inside their kind definition to
         // try to observe when new representatives are created (e.g., by
         // counting calls or squirreling things away in hidden WeakMaps).
-        vrm.reanimate(slot, true); // N.b.: throwing away the result
+        vrm.reanimate(baseRef, true); // N.b.: throwing away the result
+        if (facet !== undefined) {
+          return val[facet];
+        }
       }
       return val;
     }
+    let result;
     if (virtual) {
       assert.equal(type, 'object');
-      val = vrm.reanimate(slot, false);
+      val = vrm.reanimate(baseRef, false);
+      if (facet !== undefined) {
+        result = val[facet];
+      }
     } else {
       assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
       if (type === 'object') {
@@ -665,8 +685,11 @@ function build(
         assert.fail(X`unrecognized slot type '${type}'`);
       }
     }
-    registerValue(slot, val);
-    return val;
+    registerValue(baseRef, val, facet !== undefined);
+    if (!result) {
+      result = val;
+    }
+    return result;
   }
 
   function resolutionCollector() {
@@ -1050,6 +1073,7 @@ function build(
     VatData: {
       defineKind: vom.defineKind,
       defineDurableKind: vom.defineDurableKind,
+      makeKindHandle: vom.makeKindHandle,
       makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,
       makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
@@ -1073,7 +1097,8 @@ function build(
     assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
   }
 
-  async function startVat(vatParameters) {
+  async function startVat(vatParametersCapData) {
+    insistCapData(vatParametersCapData);
     assert(!didStartVat);
     didStartVat = true;
 
@@ -1138,7 +1163,7 @@ function build(
       });
     }
 
-    // TODO: unserialize(vatParameters)
+    const vatParameters = m.unserialize(vatParametersCapData);
 
     // Below this point, user-provided code might crash or overrun a meter, so
     // any prior-to-user-code setup that can be done without reference to the
@@ -1211,8 +1236,8 @@ function build(
         break;
       }
       case 'startVat': {
-        const [vatParameters] = args;
-        result = startVat(vatParameters);
+        const [vpCapData] = args;
+        result = startVat(vpCapData);
         break;
       }
       default:

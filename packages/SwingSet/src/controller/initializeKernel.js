@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 
-import { makeMarshal, Far } from '@endo/marshal';
+import { makeMarshal, Far, stringify } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { createSHA256 } from '../lib-nodejs/hasher.js';
 import { assertKnownOptions } from '../lib/assertOptions.js';
@@ -87,8 +87,9 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundleID }, creationOptions);
       vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
+      const vpCapData = { body: stringify(harden(vatParameters)), slots: [] };
       kernelKeeper.addToAcceptanceQueue(
-        harden({ type: 'startVat', vatID, vatParameters }),
+        harden({ type: 'startVat', vatID, vatParameters: vpCapData }),
       );
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it

@@ -1,8 +1,10 @@
 // @ts-check
 /* eslint-disable no-use-before-define */
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, q } from '@agoric/assert';
 import { Far } from '@endo/marshal';
+import { parseVatSlot } from '../lib/parseVatSlots.js';
+
 // import { kdebug } from './kdebug.js';
 
 /**
@@ -10,10 +12,10 @@ import { Far } from '@endo/marshal';
  *
  * @param {number} size  Maximum number of entries to keep in the cache before
  *    starting to throw them away.
- * @param {(vobjID: string) => Object} fetch  Function to retrieve an
- *    object's raw state from the store by its vobjID
- * @param {(vobjID: string, rawData: Object) => void} store  Function to
- *   store raw object state by its vobjID
+ * @param {(baseRef: string) => Object} fetch  Function to retrieve an
+ *    object's raw state from the store by its baseRef
+ * @param {(baseRef: string, rawState: Object) => void} store  Function to
+ *   store raw object state by its baseRef
  *
  * @returns {Object}  An LRU cache of (up to) the given size
  *
@@ -29,14 +31,14 @@ export function makeCache(size, fetch, store) {
   const cache = {
     makeRoom() {
       while (liveTable.size > size && lruTail) {
-        // kdebug(`### vo LRU evict ${lruTail.vobjID} (dirty=${lruTail.dirty})`);
-        liveTable.delete(lruTail.vobjID);
+        // kdebug(`### vo LRU evict ${lruTail.baseRef} (dirty=${lruTail.dirty})`);
+        liveTable.delete(lruTail.baseRef);
         if (lruTail.dirty) {
-          store(lruTail.vobjID, lruTail.rawData);
+          store(lruTail.baseRef, lruTail.rawState);
           lruTail.dirty = false;
           dirtyCount -= 1;
         }
-        lruTail.rawData = null;
+        lruTail.rawState = null;
         if (lruTail.prev) {
           lruTail.prev.next = undefined;
         } else {
@@ -59,7 +61,7 @@ export function makeCache(size, fetch, store) {
         let entry = lruTail;
         while (entry) {
           if (entry.dirty) {
-            store(entry.vobjID, entry.rawData);
+            store(entry.baseRef, entry.rawState);
             entry.dirty = false;
           }
           entry = entry.prev;
@@ -68,11 +70,11 @@ export function makeCache(size, fetch, store) {
       }
     },
     remember(innerObj) {
-      if (liveTable.has(innerObj.vobjID)) {
+      if (liveTable.has(innerObj.baseRef)) {
         return;
       }
       cache.makeRoom();
-      liveTable.set(innerObj.vobjID, innerObj);
+      liveTable.set(innerObj.baseRef, innerObj);
       innerObj.prev = undefined;
       innerObj.next = lruHead;
       if (lruHead) {
@@ -82,7 +84,7 @@ export function makeCache(size, fetch, store) {
       if (!lruTail) {
         lruTail = innerObj;
       }
-      // kdebug(`### vo LRU remember ${lruHead.vobjID}`);
+      // kdebug(`### vo LRU remember ${lruHead.baseRef}`);
     },
     refresh(innerObj) {
       if (innerObj !== lruHead) {
@@ -102,19 +104,19 @@ export function makeCache(size, fetch, store) {
         innerObj.next = lruHead;
         lruHead.prev = innerObj;
         lruHead = innerObj;
-        // kdebug(`### vo LRU refresh ${lruHead.vobjID}`);
+        // kdebug(`### vo LRU refresh ${lruHead.baseRef}`);
       }
     },
-    lookup(vobjID, load) {
-      let innerObj = liveTable.get(vobjID);
+    lookup(baseRef, load) {
+      let innerObj = liveTable.get(baseRef);
       if (innerObj) {
         cache.refresh(innerObj);
       } else {
-        innerObj = { vobjID, rawData: null, repCount: 0 };
+        innerObj = { baseRef, rawState: null, repCount: 0 };
         cache.remember(innerObj);
       }
-      if (load && !innerObj.rawData) {
-        innerObj.rawData = fetch(vobjID);
+      if (load && !innerObj.rawState) {
+        innerObj.rawState = fetch(baseRef);
       }
       return innerObj;
     },
@@ -133,7 +135,7 @@ export function makeCache(size, fetch, store) {
  * @param { (val: Object) => string} getSlotForVal  A function that returns the
  *   object ID (vref) for a given object, if any.  their corresponding export
  *   IDs
- * @param {*} registerEntry  Function to register a new slot+value in liveSlot's
+ * @param {*} registerValue  Function to register a new slot+value in liveSlot's
  *   various tables
  * @param {*} serialize  Serializer for this vat
  * @param {*} unserialize  Unserializer for this vat
@@ -174,24 +176,30 @@ export function makeVirtualObjectManager(
   vrm,
   allocateExportID,
   getSlotForVal,
-  registerEntry,
+  registerValue,
   serialize,
   unserialize,
   cacheSize,
 ) {
   const cache = makeCache(cacheSize, fetch, store);
 
+  // WeakMap from VO states to VO representatives, to prevent anyone who retains
+  // a state object from being able to observe the comings and goings of
+  // representatives.
+  const stateToRepresentative = new WeakMap();
+  const facetToCohort = new WeakMap();
+
   /**
    * Fetch an object's state from secondary storage.
    *
-   * @param {string} vobjID  The virtual object ID of the object whose state is
-   *    being fetched.
+   * @param {string} baseRef The baseRef of the object whose state is being
+   *    fetched.
    * @returns {*} an object representing the object's stored state.
    */
-  function fetch(vobjID) {
-    const raw = syscall.vatstoreGet(`vom.${vobjID}`);
-    if (raw) {
-      return JSON.parse(raw);
+  function fetch(baseRef) {
+    const rawState = syscall.vatstoreGet(`vom.${baseRef}`);
+    if (rawState) {
+      return JSON.parse(rawState);
     } else {
       return undefined;
     }
@@ -200,12 +208,12 @@ export function makeVirtualObjectManager(
   /**
    * Write an object's state to secondary storage.
    *
-   * @param {string} vobjID  The virtual object ID of the object whose state is
-   *    being stored.
-   * @param {*} rawData  A data object representing the state to be written.
+   * @param {string} baseRef The baseRef of the object whose state is being
+   *    stored.
+   * @param {*} rawState  A data object representing the state to be written.
    */
-  function store(vobjID, rawData) {
-    syscall.vatstoreSet(`vom.${vobjID}`, JSON.stringify(rawData));
+  function store(baseRef, rawState) {
+    syscall.vatstoreSet(`vom.${baseRef}`, JSON.stringify(rawState));
   }
 
   /* eslint max-classes-per-file: ["error", 2] */
@@ -353,7 +361,60 @@ export function makeVirtualObjectManager(
   });
 
   /**
+   * Assess the facetiousness of a value.  If the value is an object containing
+   * only named properties and each such property's value is a function, `obj`
+   * represents a single facet and 'one' is returned.  If each property's value
+   * is instead an object of facetiousness 'one', `obj` represents multiple
+   * facets and 'many' is returned.  In all other cases `obj` does not represent
+   * any kind of facet abstraction and 'not' is returned.
+   *
+   * @typedef {'one'|'many'|'not'} Facetiousness
+   *
+   * @param {*} obj  The (alleged) object to be assessed
+   * @param {boolean} [inner]  True if this is being called recursively; no more
+   *    than one level of recursion is allowed.
+   *
+   * @returns {Facetiousness} an assessment of the facetiousness of `obj`
+   */
+  function assessFacetiousness(obj, inner) {
+    if (typeof obj !== 'object') {
+      return 'not';
+    }
+    if (Object.getOwnPropertySymbols(obj).length !== 0) {
+      return 'not';
+    }
+    let established;
+    for (const [_name, value] of Object.entries(obj)) {
+      let current;
+      if (typeof value === 'function') {
+        current = 'one';
+      } else if (
+        !inner &&
+        typeof value === 'object' &&
+        assessFacetiousness(value, true) === 'one'
+      ) {
+        current = 'many';
+      } else {
+        return 'not';
+      }
+      if (!established) {
+        established = current;
+      } else if (established !== current) {
+        return 'not';
+      }
+    }
+    if (!established) {
+      // empty objects are methodless Far objects
+      return 'one';
+    } else {
+      return /** @type {Facetiousness} */ (established);
+    }
+  }
+
+  /**
    * Define a new kind of virtual object.
+   *
+   * @param {string} kindID  The kind ID to associate with the new kind.
    *
    * @param {string} tag  A descriptive tag string as used in calls to `Far`
    *
@@ -435,8 +496,7 @@ export function makeVirtualObjectManager(
    * reference to the state is nulled out and the object holding the state
    * becomes garbage collectable.
    */
-  function defineKindInternal(tag, init, actualize, finish, durable) {
-    const kindID = `${allocateExportID()}`;
+  function defineKindInternal(kindID, tag, init, actualize, finish, durable) {
     let nextInstanceID = 1;
     const propertyNames = new Set();
 
@@ -444,29 +504,29 @@ export function makeVirtualObjectManager(
       if (!proForma) {
         assert(
           innerSelf.repCount === 0,
-          X`${innerSelf.vobjID} already has a representative`,
+          X`${innerSelf.baseRef} already has a representative`,
         );
         innerSelf.repCount += 1;
       }
 
       function ensureState() {
-        if (innerSelf.rawData) {
+        if (innerSelf.rawState) {
           cache.refresh(innerSelf);
         } else {
-          innerSelf = cache.lookup(innerSelf.vobjID, true);
+          innerSelf = cache.lookup(innerSelf.baseRef, true);
         }
       }
 
-      const wrappedData = {};
+      const wrappedState = {};
       for (const prop of propertyNames) {
-        Object.defineProperty(wrappedData, prop, {
+        Object.defineProperty(wrappedState, prop, {
           get: () => {
             ensureState();
-            return unserialize(innerSelf.rawData[prop]);
+            return unserialize(innerSelf.rawState[prop]);
           },
           set: value => {
             ensureState();
-            const before = innerSelf.rawData[prop];
+            const before = innerSelf.rawState[prop];
             const after = serialize(value);
             if (durable) {
               after.slots.map(vref =>
@@ -477,57 +537,91 @@ export function makeVirtualObjectManager(
               );
             }
             vrm.updateReferenceCounts(before.slots, after.slots);
-            innerSelf.rawData[prop] = after;
+            innerSelf.rawState[prop] = after;
             cache.markDirty(innerSelf);
           },
         });
       }
-      harden(wrappedData);
+      harden(wrappedState);
 
       if (initializing) {
         cache.remember(innerSelf);
       }
-      const representative = Far(tag, actualize(wrappedData));
-      if (!proForma) {
-        innerSelf.representative = representative;
+      const self = actualize(wrappedState);
+      let toHold;
+      let toExpose;
+      const facetiousness = assessFacetiousness(self);
+      switch (facetiousness) {
+        case 'one': {
+          toHold = Far(tag, self);
+          vrm.checkOrAcquireFacetNames(kindID, null);
+          toExpose = toHold;
+          break;
+        }
+        case 'many': {
+          toExpose = {};
+          toHold = [];
+          const facetNames = Object.getOwnPropertyNames(self).sort();
+          assert(
+            facetNames.length > 1,
+            'a multi-facet object must have multiple facets',
+          );
+          vrm.checkOrAcquireFacetNames(kindID, facetNames);
+          for (const facetName of facetNames) {
+            const facet = Far(`${tag} ${facetName}`, self[facetName]);
+            toExpose[facetName] = facet;
+            toHold.push(facet);
+            facetToCohort.set(facet, toHold);
+          }
+          harden(toExpose);
+          break;
+        }
+        case 'not':
+          assert.fail(X`invalid self actualization for ${q(tag)}`);
+        default:
+          assert.fail(X`unexepected facetiousness: ${q(facetiousness)}`);
       }
-      return [representative, wrappedData];
+      if (!proForma) {
+        innerSelf.representative = toHold;
+        stateToRepresentative.set(wrappedState, toHold);
+      }
+      return [toHold, toExpose, wrappedState];
     }
 
-    function reanimate(vobjID, proForma) {
-      // kdebug(`vo reanimate ${vobjID}`);
-      const innerSelf = cache.lookup(vobjID, false);
-      const [representative] = makeRepresentative(innerSelf, false, proForma);
+    function reanimate(baseRef, proForma) {
+      // kdebug(`vo reanimate ${baseRef}`);
+      const innerSelf = cache.lookup(baseRef, false);
+      const [toHold] = makeRepresentative(innerSelf, false, proForma);
       if (proForma) {
         return null;
       } else {
-        return representative;
+        return toHold;
       }
     }
 
-    function deleteStoredVO(vobjID) {
+    function deleteStoredVO(baseRef) {
       let doMoreGC = false;
-      const state = fetch(vobjID);
-      if (state) {
-        for (const propValue of Object.values(state)) {
+      const rawState = fetch(baseRef);
+      if (rawState) {
+        for (const propValue of Object.values(rawState)) {
           propValue.slots.map(
             vref => (doMoreGC = doMoreGC || vrm.removeReachableVref(vref)),
           );
         }
       }
-      syscall.vatstoreDelete(`vom.${vobjID}`);
+      syscall.vatstoreDelete(`vom.${baseRef}`);
       return doMoreGC;
     }
 
     vrm.registerKind(kindID, reanimate, deleteStoredVO, durable);
 
     function makeNewInstance(...args) {
-      const vobjID = `o+${kindID}/${nextInstanceID}`;
+      const baseRef = `o+${kindID}/${nextInstanceID}`;
       nextInstanceID += 1;
-      // kdebug(`vo make ${vobjID}`);
+      // kdebug(`vo make ${baseRef}`);
 
       const initialData = init ? init(...args) : {};
-      const rawData = {};
+      const rawState = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         const data = serialize(initialData[prop]);
         if (durable) {
@@ -536,32 +630,68 @@ export function makeVirtualObjectManager(
           );
         }
         data.slots.map(vrm.addReachableVref);
-        rawData[prop] = data;
+        rawState[prop] = data;
         propertyNames.add(prop);
       }
-      const innerSelf = { vobjID, rawData, repCount: 0 };
-      const [initialRepresentative, wrappedData] = makeRepresentative(
+      const innerSelf = { baseRef, rawState, repCount: 0 };
+      const [toHold, toExpose, state] = makeRepresentative(
         innerSelf,
         true,
         false,
       );
-      registerEntry(vobjID, initialRepresentative);
+      registerValue(baseRef, toHold, Array.isArray(toHold));
       if (finish) {
-        finish(wrappedData, initialRepresentative);
+        finish(state, toExpose);
       }
       cache.markDirty(innerSelf);
-      return initialRepresentative;
+      return toExpose;
     }
 
     return makeNewInstance;
   }
 
   function defineKind(tag, init, actualize, finish) {
-    return defineKindInternal(tag, init, actualize, finish, false);
+    const kindID = `${allocateExportID()}`;
+    return defineKindInternal(kindID, tag, init, actualize, finish, false);
   }
 
-  function defineDurableKind(tag, init, actualize, finish) {
-    return defineKindInternal(tag, init, actualize, finish, true);
+  let kindIDID;
+  const kindDescriptors = new WeakMap();
+
+  function reanimateDurableKindID(vobjID, _proforma) {
+    const { subid: kindID } = parseVatSlot(vobjID);
+    const raw = syscall.vatstoreGet(`vom.kind.${kindID}`);
+    assert(raw, X`unknown kind ID ${kindID}`);
+    const durableKindDescriptor = harden(JSON.parse(raw));
+    const kindHandle = Far('kind', {});
+    kindDescriptors.set(kindHandle, durableKindDescriptor);
+    return kindHandle;
+  }
+
+  const makeKindHandle = tag => {
+    if (!kindIDID) {
+      kindIDID = `${allocateExportID()}`;
+      syscall.vatstoreSet('kindIDID', kindIDID);
+      vrm.registerKind(kindIDID, reanimateDurableKindID, () => null, true);
+    }
+    const kindID = `${allocateExportID()}`;
+    const kindIDvref = `o+${kindIDID}/${kindID}`;
+    const durableKindDescriptor = harden({ kindID, tag });
+    const kindHandle = Far('kind', {});
+    kindDescriptors.set(kindHandle, durableKindDescriptor);
+    registerValue(kindIDvref, kindHandle, false);
+    syscall.vatstoreSet(
+      `vom.kind.${kindID}`,
+      JSON.stringify(durableKindDescriptor),
+    );
+    return kindHandle;
+  };
+
+  function defineDurableKind(kindHandle, init, actualize, finish) {
+    const durableKindDescriptor = kindDescriptors.get(kindHandle);
+    assert(durableKindDescriptor);
+    const { kindID, tag } = durableKindDescriptor;
+    return defineKindInternal(kindID, tag, init, actualize, finish, true);
   }
 
   function countWeakKeysForCollection(collection) {
@@ -583,6 +713,7 @@ export function makeVirtualObjectManager(
   return harden({
     defineKind,
     defineDurableKind,
+    makeKindHandle,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     flushCache: cache.flush,

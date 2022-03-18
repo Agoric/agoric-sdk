@@ -43,6 +43,13 @@ function thingVal(counter, label, resetCounter) {
   });
 }
 
+function multiThingVal(name, count) {
+  return JSON.stringify({
+    name: capdata(JSON.stringify(name)),
+    count: capdata(JSON.stringify(count)),
+  });
+}
+
 function minThing(label) {
   return thingVal(0, label, 0);
 }
@@ -76,6 +83,63 @@ function zotVal(arbitrary, name, tag, count) {
     count: capdata(JSON.stringify(count)),
   });
 }
+
+test('multifaceted virtual objects', t => {
+  const log = [];
+  const { defineKind } = makeFakeVirtualObjectManager({ cacheSize: 0, log });
+
+  const makeMultiThing = defineKind(
+    'multithing',
+    name => ({
+      name,
+      count: 0,
+    }),
+    state => {
+      const getName = () => state.name;
+      const getCount = () => state.count;
+      return {
+        incr: {
+          inc: () => {
+            state.count += 1;
+          },
+          getName,
+          getCount,
+        },
+        decr: {
+          dec: () => {
+            state.count -= 1;
+          },
+          getName,
+          getCount,
+        },
+      };
+    },
+  );
+  const { incr, decr } = makeMultiThing('foo');
+  t.is(incr.getName(), 'foo');
+  t.is(incr.getCount(), 0);
+  t.is(decr.getName(), 'foo');
+  t.is(decr.getCount(), 0);
+  incr.inc();
+  t.is(incr.getCount(), 1);
+  incr.inc();
+  t.is(incr.getCount(), 2);
+  decr.dec();
+  t.is(decr.getCount(), 1);
+  const other = makeMultiThing('other');
+  t.is(log.shift(), `set vom.o+1/1 ${multiThingVal('foo', 1)}`);
+  t.deepEqual(log, []);
+  incr.inc();
+  t.is(log.shift(), `set vom.o+1/2 ${multiThingVal('other', 0)}`);
+  t.is(log.shift(), `get vom.o+1/1 => ${multiThingVal('foo', 1)}`);
+  other.decr.dec();
+  t.is(log.shift(), `set vom.o+1/1 ${multiThingVal('foo', 2)}`);
+  t.is(log.shift(), `get vom.o+1/2 => ${multiThingVal('other', 0)}`);
+  incr.inc();
+  t.is(log.shift(), `set vom.o+1/2 ${multiThingVal('other', -1)}`);
+  t.is(log.shift(), `get vom.o+1/1 => ${multiThingVal('foo', 2)}`);
+  t.deepEqual(log, []);
+});
 
 // prettier-ignore
 test('virtual object operations', t => {
@@ -326,6 +390,69 @@ test('virtual object cycles using the finish function', t => {
   t.is(thing.getOtherThing().getFirstThing(), thing);
 });
 
+test('durable kind IDs can be reanimated', t => {
+  const log = [];
+  const { vom, vrm, cm, fakeStuff } = makeFakeVirtualStuff({
+    cacheSize: 0,
+    log,
+  });
+  const { makeKindHandle, defineDurableKind, flushCache } = vom;
+  const { possibleVirtualObjectDeath } = vrm;
+  const { makeScalarBigMapStore } = cm;
+  const { deleteEntry } = fakeStuff;
+
+  // Make a persistent place to put the durable kind ID
+  const placeToPutIt = makeScalarBigMapStore();
+  // Not verifying here that makeScalarBigMapStore worked -- it's tested elsewhere
+  log.length = 0;
+
+  // Create a durable kind ID, but don't use it yet
+  let kindHandle = makeKindHandle('testkind');
+  t.is(log.shift(), 'set kindIDID 9');
+  t.is(log.shift(), 'set vom.kind.10 {"kindID":"10","tag":"testkind"}');
+  t.deepEqual(log, []);
+
+  // Store it in the store without having used it
+  placeToPutIt.init('savedKindID', kindHandle);
+  t.is(log.shift(), 'get vc.1.ssavedKindID => undefined');
+  t.is(log.shift(), 'get vom.rc.o+9/10 => undefined');
+  t.is(log.shift(), 'set vom.rc.o+9/10 1');
+  const kindBody =
+    '"{\\"@qclass\\":\\"slot\\",\\"iface\\":\\"Alleged: kind\\",\\"index\\":0}"';
+  const kindSer = `{"body":${kindBody},"slots":["o+9/10"]}`;
+  t.is(log.shift(), `set vc.1.ssavedKindID ${kindSer}`);
+  t.is(log.shift(), 'get vc.1.|entryCount => 0');
+  t.is(log.shift(), 'set vc.1.|entryCount 1');
+  t.deepEqual(log, []);
+
+  // Forget its existence
+  kindHandle = null;
+  deleteEntry('o+9/10');
+  possibleVirtualObjectDeath('o+9/10');
+  t.is(log.shift(), 'get vom.rc.o+9/10 => 1');
+  t.is(log.shift(), 'get vom.es.o+9/10 => undefined');
+  t.deepEqual(log, []);
+
+  // Fetch it from the store, which should reanimate it
+  const fetchedKindID = placeToPutIt.get('savedKindID');
+  t.is(log.shift(), `get vc.1.ssavedKindID => ${kindSer}`);
+  t.is(log.shift(), 'get vom.kind.10 => {"kindID":"10","tag":"testkind"}');
+  t.deepEqual(log, []);
+
+  // Use it now, to define a durable kind
+  const makeThing = defineDurableKind(fetchedKindID, initThing, actualizeThing);
+  t.deepEqual(log, []);
+
+  // Make an instance of the new kind, just to be sure it's there
+  makeThing('laterThing');
+  flushCache();
+  t.is(
+    log.shift(),
+    'set vom.o+10/1 {"counter":{"body":"0","slots":[]},"label":{"body":"\\"laterThing\\"","slots":[]},"resetCounter":{"body":"0","slots":[]}}',
+  );
+  t.deepEqual(log, []);
+});
+
 test('virtual object gc', t => {
   const log = [];
   const { vom, vrm, fakeStuff } = makeFakeVirtualStuff({ cacheSize: 3, log });
@@ -373,15 +500,16 @@ test('virtual object gc', t => {
   // case 1: export, drop local ref, drop export
   // export
   setExportStatus('o+1/1', 'reachable');
-  t.is(log.shift(), `set vom.es.o+1/1 1`);
+  t.is(log.shift(), `get vom.es.o+1/1 => undefined`);
+  t.is(log.shift(), `set vom.es.o+1/1 r`);
   t.deepEqual(log, []);
   // drop local ref -- should not delete because exported
   pretendGC('o+1/1');
   t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
-  t.is(log.shift(), `get vom.es.o+1/1 => 1`);
+  t.is(log.shift(), `get vom.es.o+1/1 => r`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/1', '1'],
+    ['vom.es.o+1/1', 'r'],
     ['vom.o+1/1', minThing('thing #1')],
     ['vom.o+1/2', minThing('thing #2')],
     ['vom.o+1/3', minThing('thing #3')],
@@ -390,12 +518,13 @@ test('virtual object gc', t => {
   ]);
   // drop export -- should delete
   setExportStatus('o+1/1', 'recognizable');
-  t.is(log.shift(), `set vom.es.o+1/1 0`);
+  t.is(log.shift(), `get vom.es.o+1/1 => r`);
+  t.is(log.shift(), `set vom.es.o+1/1 s`);
   t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
   t.deepEqual(log, []);
   pretendGC('o+1/1');
   t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
-  t.is(log.shift(), `get vom.es.o+1/1 => 0`);
+  t.is(log.shift(), `get vom.es.o+1/1 => s`);
   t.is(log.shift(), `get vom.o+1/1 => ${thingVal(0, 'thing #1', 0)}`);
   t.is(log.shift(), `delete vom.o+1/1`);
   t.is(log.shift(), `delete vom.rc.o+1/1`);
@@ -411,15 +540,17 @@ test('virtual object gc', t => {
   // case 2: export, drop export, drop local ref
   // export
   setExportStatus('o+1/2', 'reachable');
-  t.is(log.shift(), `set vom.es.o+1/2 1`);
+  t.is(log.shift(), `get vom.es.o+1/2 => undefined`);
+  t.is(log.shift(), `set vom.es.o+1/2 r`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd locally
   setExportStatus('o+1/2', 'recognizable');
-  t.is(log.shift(), `set vom.es.o+1/2 0`);
+  t.is(log.shift(), `get vom.es.o+1/2 => r`);
+  t.is(log.shift(), `set vom.es.o+1/2 s`);
   t.is(log.shift(), `get vom.rc.o+1/2 => undefined`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/2', '0'],
+    ['vom.es.o+1/2', 's'],
     ['vom.o+1/2', minThing('thing #2')],
     ['vom.o+1/3', minThing('thing #3')],
     ['vom.o+1/4', minThing('thing #4')],
@@ -428,7 +559,7 @@ test('virtual object gc', t => {
   // drop local ref -- should delete
   pretendGC('o+1/2');
   t.is(log.shift(), `get vom.rc.o+1/2 => undefined`);
-  t.is(log.shift(), `get vom.es.o+1/2 => 0`);
+  t.is(log.shift(), `get vom.es.o+1/2 => s`);
   t.is(log.shift(), `get vom.o+1/2 => ${thingVal(0, 'thing #2', 0)}`);
   t.is(log.shift(), `delete vom.o+1/2`);
   t.is(log.shift(), `delete vom.rc.o+1/2`);
@@ -471,23 +602,26 @@ test('virtual object gc', t => {
   ]);
   // export
   setExportStatus('o+1/4', 'reachable');
-  t.is(log.shift(), `set vom.es.o+1/4 1`);
+  t.is(log.shift(), `get vom.es.o+1/4 => undefined`);
+  t.is(log.shift(), `set vom.es.o+1/4 r`);
   t.deepEqual(log, []);
   // drop local ref -- should not delete because ref'd virtually AND exported
   pretendGC('o+1/4');
   t.is(log.shift(), `get vom.rc.o+1/4 => 1`);
-  t.is(log.shift(), `get vom.es.o+1/4 => 1`);
+  t.is(log.shift(), `get vom.es.o+1/4 => r`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd virtually
   setExportStatus('o+1/4', 'recognizable');
-  t.is(log.shift(), `set vom.es.o+1/4 0`);
+  t.is(log.shift(), `get vom.es.o+1/4 => r`);
+  t.is(log.shift(), `set vom.es.o+1/4 s`);
   t.is(log.shift(), `get vom.rc.o+1/4 => 1`);
   t.deepEqual(log, []);
 
   // case 5: export, ref virtually, drop local ref, drop export
   // export
   setExportStatus('o+1/5', 'reachable');
-  t.is(log.shift(), `set vom.es.o+1/5 1`);
+  t.is(log.shift(), `get vom.es.o+1/5 => undefined`);
+  t.is(log.shift(), `set vom.es.o+1/5 r`);
   t.deepEqual(log, []);
   // ref virtually
   // eslint-disable-next-line no-unused-vars
@@ -497,8 +631,8 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.o+1/7 ${minThing('thing #7')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/4', '0'],
-    ['vom.es.o+1/5', '1'],
+    ['vom.es.o+1/4', 's'],
+    ['vom.es.o+1/5', 'r'],
     ['vom.o+1/4', minThing('thing #4')],
     ['vom.o+1/5', minThing('thing #5')],
     ['vom.o+1/6', minThing('thing #6')],
@@ -509,11 +643,12 @@ test('virtual object gc', t => {
   // drop local ref -- should not delete because ref'd virtually AND exported
   pretendGC('o+1/5');
   t.is(log.shift(), `get vom.rc.o+1/5 => 1`);
-  t.is(log.shift(), `get vom.es.o+1/5 => 1`);
+  t.is(log.shift(), `get vom.es.o+1/5 => r`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd virtually
   setExportStatus('o+1/5', 'recognizable');
-  t.is(log.shift(), `set vom.es.o+1/5 0`);
+  t.is(log.shift(), `get vom.es.o+1/5 => r`);
+  t.is(log.shift(), `set vom.es.o+1/5 s`);
   t.is(log.shift(), `get vom.rc.o+1/5 => 1`);
   t.deepEqual(log, []);
 
@@ -526,8 +661,8 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.o+1/8 ${minThing('thing #8')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/4', '0'],
-    ['vom.es.o+1/5', '0'],
+    ['vom.es.o+1/4', 's'],
+    ['vom.es.o+1/5', 's'],
     ['vom.o+1/4', minThing('thing #4')],
     ['vom.o+1/5', minThing('thing #5')],
     ['vom.o+1/6', minThing('thing #6')],
@@ -543,8 +678,8 @@ test('virtual object gc', t => {
   t.is(log.shift(), `get vom.es.o+1/6 => undefined`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/4', '0'],
-    ['vom.es.o+1/5', '0'],
+    ['vom.es.o+1/4', 's'],
+    ['vom.es.o+1/5', 's'],
     ['vom.o+1/4', minThing('thing #4')],
     ['vom.o+1/5', minThing('thing #5')],
     ['vom.o+1/6', minThing('thing #6')],
