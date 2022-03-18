@@ -7,6 +7,7 @@ import {
   ParamTypes,
 } from '../../../src/index.js';
 import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
+import { makeParamManagerFromTerms } from '../../../src/contractGovernance/typedParamManager.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
@@ -35,30 +36,23 @@ const makeTerms = (number, invitationAmount) => {
  * },
  * {initialPoserInvitation: Payment}>
  */
+// XXX passing full zcf and privateArgs simplifies the caller but isn't POLA
 const start = async (zcf, privateArgs) => {
-  const {
-    main: { [MALLEABLE_NUMBER]: numberParam, ...otherGovernedTerms },
-  } = zcf.getTerms();
-  const { initialPoserInvitation } = privateArgs;
+  const paramManager = await makeParamManagerFromTerms(zcf, privateArgs, {
+    [MALLEABLE_NUMBER]: 'nat',
+    [CONTRACT_ELECTORATE]: 'invitation',
+  });
 
-  const paramManager = await makeParamManager(
-    {
-      [MALLEABLE_NUMBER]: ['nat', numberParam.value],
-      [CONTRACT_ELECTORATE]: ['invitation', initialPoserInvitation],
-    },
-    zcf.getZoeService(),
-  );
+  // ??? call this within makeParamManagerFromTerms ?
+  assertElectorateMatches(paramManager, zcf.getTerms().main);
 
   const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
     zcf,
     paramManager,
   );
 
-  assertElectorateMatches(paramManager, otherGovernedTerms);
-
   let governanceAPICalled = 0;
   const governanceApi = () => (governanceAPICalled += 1);
-
   return {
     publicFacet: wrapPublicFacet({
       getNum: () => paramManager.getMalleableNumber(),

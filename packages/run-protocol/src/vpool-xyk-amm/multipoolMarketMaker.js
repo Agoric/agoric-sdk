@@ -7,10 +7,12 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import {
   assertElectorateMatches,
   handleParamGovernance,
+  ParamTypes,
 } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
+import { makeParamManagerFromTerms } from '@agoric/governance/src/paramGovernance/typedParamManager';
 import { makeAddPool } from './pool.js';
 import {
   makeMakeAddLiquidityInvitation,
@@ -125,24 +127,16 @@ const start = async (zcf, privateArgs) => {
   const {
     brands: { Central: centralBrand },
     timer,
-    main: {
-      [POOL_FEE_KEY]: poolFeeParam,
-      [PROTOCOL_FEE_KEY]: protocolFeeParam,
-      ...otherGovernedTerms
-    },
+    main: governedTerms,
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
-  const { initialPoserInvitation } = privateArgs;
-
   const [paramManager, centralDisplayInfo] = await Promise.all([
-    makeAmmParamManager(
-      zcf.getZoeService(),
-      poolFeeParam.value,
-      protocolFeeParam.value,
-      initialPoserInvitation,
-    ),
+    makeParamManagerFromTerms(zcf, privateArgs, {
+      [POOL_FEE_KEY]: ParamTypes.NAT,
+      [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
+    }),
     E(centralBrand).getDisplayInfo(),
   ]);
 
@@ -159,7 +153,7 @@ const start = async (zcf, privateArgs) => {
     paramManager,
   );
 
-  assertElectorateMatches(paramManager, otherGovernedTerms);
+  assertElectorateMatches(paramManager, governedTerms);
 
   /** @type {WeakStore<Brand,XYKPool>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');

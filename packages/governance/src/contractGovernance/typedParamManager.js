@@ -1,5 +1,7 @@
 // @ts-check
 
+import { ParamTypes } from '../constants.js';
+import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
@@ -84,6 +86,7 @@ const makeParamManager = async (spec, zoe) => {
 };
 
 /**
+ * @deprecated this can never be used; any governed contract has to provide an initialPoserInvitation which implies async
  * @see makeParamManager
  * @template {Record<Keyword, SyncSpecTuple>} T
  * @param {T} spec
@@ -102,6 +105,32 @@ const makeParamManagerSync = spec => {
   return builder.build();
 };
 
+// TODO rename 'main' to 'governed'
+// FIXME define return type in terms of GT
+/**
+ * @template GT Governed terms
+ * @param {ZCF<{main: GT}>} zcf
+ * @param {{initialPoserInvitation: Payment}} privateArgs
+ * @param {Record<string, ParamType>} paramSpec
+ * @returns {Promise<TypedParamManager<*>>}
+ */
+const makeParamManagerFromTerms = async (zcf, privateArgs, paramSpec) => {
+  const governedTerms = zcf.getTerms().main;
+  const makerSpecEntries = Object.entries(paramSpec).map(
+    ([paramKey, paramType]) => [paramKey, [paramType, governedTerms[paramKey]]],
+  );
+  // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
+  makerSpecEntries.push([
+    CONTRACT_ELECTORATE,
+    [ParamTypes.INVITATION, privateArgs.initialPoserInvitation],
+  ]);
+  return makeParamManager(
+    Object.fromEntries(makerSpecEntries),
+    zcf.getZoeService(),
+  );
+};
+
 harden(makeParamManager);
 harden(makeParamManagerSync);
-export { makeParamManager, makeParamManagerSync };
+harden(makeParamManagerFromTerms);
+export { makeParamManager, makeParamManagerSync, makeParamManagerFromTerms };
