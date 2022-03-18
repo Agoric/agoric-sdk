@@ -3,8 +3,8 @@
 import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
 // eslint-disable-next-line -- https://github.com/Agoric/agoric-sdk/pull/4837
-import { CONTRACT_ELECTORATE } from './paramGovernance/governParam.js';
-import { assertElectorateMatches } from './paramGovernance/paramManager.js';
+import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
+import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 
 const { details: X, quote: q } = assert;
 
@@ -22,10 +22,10 @@ const { details: X, quote: q } = assert;
  *
  * @template T
  * @param {ZCF<{
- * electionManager: VoteOnParamChange,
- * main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}
+ *   electionManager: VoteOnParamChange,
+ *   main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}
  * }>} zcf
- * @param {import('./paramGovernance/typedParamManager').TypedParamManager<T>} paramManager
+ * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
  */
 const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
@@ -53,7 +53,7 @@ const handleParamGovernance = (zcf, paramManager) => {
   const { electionManager } = terms;
 
   /**
-   * @template PF
+   * @template {{}} PF public facet
    * @param {PF} originalPublicFacet
    * @returns {GovernedPublicFacet<PF>}
    */
@@ -68,9 +68,9 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @template CF
-   * @param {CF} originalCreatorFacet
-   * @returns {CF & LimitedCreatorFacet}
+   * @template {GovernableCreatorFacet} CF creator facet
+   * @param {ERef<CF>} originalCreatorFacet
+   * @returns {ERef<LimitedCreatorFacet<CF>>}
    */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
     return Far('governedContract creator facet', {
@@ -80,15 +80,16 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @template CF
-   * @param {CF} originalCreatorFacet
-   * @returns { GovernedCreatorFacet<CF> }
+   * @template {GovernableCreatorFacet} CF creator facet
+   * @param {ERef<CF>} originalCreatorFacet
+   * @returns { ERef<GovernedCreatorFacet<CF>> }
    */
   const wrapCreatorFacet = originalCreatorFacet => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
     return Far('creatorFacet', {
+      // @ts-expect-error special case
       getParamMgrRetriever: () => {
         return Far('paramRetriever', { get: () => paramManager });
       },

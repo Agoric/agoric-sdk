@@ -5,7 +5,7 @@ import { keyEQ } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Nat } from '@agoric/nat';
 
-import { makeAssertInstance } from './paramGovernance/assertions.js';
+import { makeAssertInstance } from './contractGovernance/assertions.js';
 
 const { details: X, quote: q } = assert;
 
@@ -33,6 +33,7 @@ const ChoiceMethod = {
  *   PARAM_CHANGE: 'param_change',
  *   ELECTION: 'election',
  *   SURVEY: 'survey',
+ *   API_INVOCATION: 'api_invocation',
  * }}
  */
 const ElectionType = {
@@ -41,6 +42,8 @@ const ElectionType = {
   // choose one or multiple winners, depending on ChoiceMethod
   ELECTION: 'election',
   SURVEY: 'survey',
+  // whether or not to invoke an API method
+  API_INVOCATION: 'api_invocation',
 };
 
 /** @type {{
@@ -80,6 +83,14 @@ const looksLikeParamChangeIssue = issue => {
   assertInstance(issue.contract);
 };
 
+const looksLikeApiInvocation = issue => {
+  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
+  assert(
+    issue && typeof issue.apiMethod === 'string',
+    X`Issue ("${issue}") must be a record with apiMethod: aString`,
+  );
+};
+
 /** @type {LooksLikeIssueForType} */
 const looksLikeIssueForType = (electionType, issue) => {
   assert(
@@ -94,6 +105,9 @@ const looksLikeIssueForType = (electionType, issue) => {
       break;
     case ElectionType.PARAM_CHANGE:
       looksLikeParamChangeIssue(/** @type {ParamChangeIssue} */ (issue));
+      break;
+    case ElectionType.API_INVOCATION:
+      looksLikeApiInvocation(/** @type {ApiInvocationIssue} */ (issue));
       break;
     default:
       throw Error(`Election type unrecognized`);

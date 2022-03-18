@@ -1,22 +1,30 @@
 // @ts-check
 
+import { assert } from '@agoric/assert';
+import { Far } from '@endo/far';
+
 import { handleParamGovernance } from '../../../src/contractHelper.js';
 import {
   assertElectorateMatches,
   makeParamManager,
   ParamTypes,
 } from '../../../src/index.js';
-import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
+import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
+
+const { details: X } = assert;
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
-const makeParamTerms = (number, invitationAmount) => {
+const makeTerms = (number, invitationAmount) => {
   return harden({
-    [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: invitationAmount,
+    main: {
+      [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: invitationAmount,
+      },
     },
+    governedApis: ['governanceApi'],
   });
 };
 
@@ -30,14 +38,23 @@ const makeParamTerms = (number, invitationAmount) => {
  *     MalleableNumber: ParamRecord<'nat'>,
  *     Electorate: ParamRecord<'invitation'>,
  *   },
+ *   governedApis: ['governanceApi'],
  * },
  * {initialPoserInvitation: Payment}>
  */
 const start = async (zcf, privateArgs) => {
   const {
-    main: { [MALLEABLE_NUMBER]: numberParam, ...otherOovernedTerms },
+    main: { [MALLEABLE_NUMBER]: numberParam, ...otherGovernedTerms },
+    governedApis,
   } = zcf.getTerms();
   const { initialPoserInvitation } = privateArgs;
+
+  assert(
+    Array.isArray(governedApis) &&
+      governedApis.length === 1 &&
+      governedApis.includes('governanceApi'),
+    X`terms must declare "governanceApi" as a governed API`,
+  );
 
   const paramManager = await makeParamManager(
     {
@@ -52,16 +69,24 @@ const start = async (zcf, privateArgs) => {
     paramManager,
   );
 
-  assertElectorateMatches(paramManager, otherOovernedTerms);
+  assertElectorateMatches(paramManager, otherGovernedTerms);
+
+  let governanceAPICalled = 0;
+  const governanceApi = () => (governanceAPICalled += 1);
 
   return {
-    publicFacet: wrapPublicFacet({}),
-    creatorFacet: wrapCreatorFacet({}),
+    publicFacet: wrapPublicFacet({
+      getNum: () => paramManager.getMalleableNumber(),
+      getApiCalled: () => governanceAPICalled,
+    }),
+    creatorFacet: wrapCreatorFacet({
+      getGovernedApis: () => Far('governedAPIs', { governanceApi }),
+    }),
   };
 };
 
 harden(start);
 harden(MALLEABLE_NUMBER);
-harden(makeParamTerms);
+harden(makeTerms);
 
-export { start, MALLEABLE_NUMBER, makeParamTerms };
+export { start, MALLEABLE_NUMBER, makeTerms };

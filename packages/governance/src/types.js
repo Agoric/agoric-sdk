@@ -12,7 +12,7 @@
  */
 
 /**
- * @typedef { 'param_change' | 'election' | 'survey' } ElectionType
+ * @typedef { 'param_change' | 'election' | 'survey' | 'api_invocation' } ElectionType
  * param_change is very specific. Survey means multiple answers are possible,
  * Election means some candidates are going to "win". It's not clear these are
  * orthogonal. The important distinction is that param_change has a structured
@@ -352,6 +352,13 @@
  */
 
 /**
+ * @typedef {Object} ApiInvocationIssue
+ * @property {string} methodName
+ * @property {Instance} contract
+ * @property {any} methodParams
+ */
+
+/**
  * @typedef {Object} ParamChangePositions
  * @property {ChangeParamPosition} positive
  * @property {NoChangeParamPosition} negative
@@ -481,7 +488,7 @@
  */
 
 /**
- * @typedef {Object} ParamChangeVoteResult
+ * @typedef {Object} ContractGovernanceVoteResult
  * @property {Instance} instance - instance of the VoteCounter
  * @property {ERef<QuestionDetails>} details
  * @property {Promise<ParamValue>} outcomeOfUpdate - A promise for the result
@@ -490,11 +497,18 @@
  */
 
 /**
- * @typedef {Object} LimitedCreatorFacet
+ * @typedef {{
+ *   getGovernedApis: () => unknown
+ * }} GovernableCreatorFacet
+ */
+
+/**
+ * @template {GovernableCreatorFacet} [CF=any]
+ * @typedef {CF} LimitedCreatorFacet
  *
  * The creatorFacet for the governed contract that will be passed to the
  * responsible party. It does not have access to the paramManager.
- * @property {() => VoteOnParamChange} getContractGovernor
+ * @property {() => Instance} getContractGovernor
  */
 
 /**
@@ -511,6 +525,7 @@
  * @template {object} PF Public facet of governed contract
  * @typedef {Object} GovernedContractFacetAccess
  * @property {VoteOnParamChange} voteOnParamChange
+ * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {() => Promise<LimitedCreatorFacet>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
@@ -542,15 +557,15 @@
  */
 
 /**
- * @typedef {Object} GovernedCreatorFacet
+ * @template {object} CF creator facet
+ * @typedef {CF} GovernedCreatorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => T} getLimitedCreatorFacet - the creator
+ * @property {() => CF & LimitedCreatorFacet} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
- * @template {LimitedCreatorFacet} T
  */
 
 /**
@@ -583,8 +598,17 @@
  * @param {ParamSpecification} paramSpec
  * @param {ParamValue} proposedValue
  * @param {Installation} voteCounterInstallation
- * @param {bigint} deadline
- * @returns {ParamChangeVoteResult}
+ * @param {Timestamp} deadline
+ * @returns {ContractGovernanceVoteResult}
+ */
+
+/**
+ * @callback VoteOnApiInvocation
+ * @param {string} apiMethod
+ * @param {any} methodParams
+ * @param {Installation} voteCounterInstallation
+ * @param {Timestamp} deadline
+ * @returns {ContractGovernanceVoteResult}
  */
 
 /**
@@ -594,11 +618,23 @@
  */
 
 /**
+ * @typedef {Object} ApiGovernor
+ * @property {VoteOnApiInvocation} voteOnApiInvocation
+ * @property {CreatedQuestion} createdQuestion
+ */
+
+/**
+ * @callback GetUpdatedPoserFacet
+ * @returns {Promise<PoserFacet>}
+ */
+
+/**
  * @callback SetupGovernance
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
  * @param {Instance} contractInstance
- * @param {Timer} timer
+ * @param {TimerService} timer
+ * @param {GetUpdatedPoserFacet} getUpdatedPoserFacet
  * @returns {ParamGovernor}
  */
 

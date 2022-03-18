@@ -12,7 +12,7 @@ import { ParamTypes } from '../../src/index.js';
 import {
   makeParamManager,
   makeParamManagerSync,
-} from '../../src/paramGovernance/typedParamManager.js';
+} from '../../src/contractGovernance/typedParamManager.js';
 
 const drachmaKit = makeIssuerKit('drachma');
 const drachmaBrand = drachmaKit.brand;
