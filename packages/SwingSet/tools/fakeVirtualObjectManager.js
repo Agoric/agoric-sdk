@@ -17,6 +17,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
   const {
     defineKind,
     defineDurableKind,
+    makeKindHandle,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     flushCache,
@@ -34,6 +35,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
   const normalVOM = {
     defineKind,
     defineDurableKind,
+    makeKindHandle,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
   };

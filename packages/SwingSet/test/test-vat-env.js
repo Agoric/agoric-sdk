@@ -14,19 +14,17 @@ const actualizeThing = _state => ({
 });
 
 test('kind makers are in the test environment', t => {
-  // eslint-disable-next-line no-undef
   const makeVThing = VatData.defineKind('thing', null, actualizeThing);
   const vthing = makeVThing('vthing');
   t.is(vthing.ping(), 4);
 
-  const makeDThing = VatData.defineDurableKind('thing', null, actualizeThing);
+  const kind = VatData.makeKindHandle('thing');
+  const makeDThing = VatData.defineDurableKind(kind, null, actualizeThing);
   const dthing = makeDThing('dthing');
   t.is(dthing.ping(), 4);
 });
 
 test('store makers are in the test environment', t => {
-  // TODO: configure eslint to know that VatData is a global
-  // eslint-disable-next-line no-undef
   const o = harden({ size: 10, color: 'blue' });
 
   const m = VatData.makeScalarBigMapStore();
@@ -67,6 +65,7 @@ async function testForExpectedGlobals(t, workerType) {
     'VatData: object',
     'VatData.defineKind: function',
     'VatData.defineDurableKind: function',
+    'VatData.makeKindHandle: function',
     'VatData.makeScalarBigMapStore: function',
     'VatData.makeScalarBigWeakMapStore: function',
     'VatData.makeScalarBigSetStore: function',

@@ -12,7 +12,8 @@ test('harden from SES is in the zoe contract environment', t => {
 test('(mock) kind makers from SwingSet are in the zoe contract environment', t => {
   // @ts-ignore testing existence of function only
   VatData.defineKind();
-  VatData.defineDurableKind();
+  const kh = VatData.makeKindHandle();
+  VatData.defineDurableKind(kh);
   t.pass();
 });
 
