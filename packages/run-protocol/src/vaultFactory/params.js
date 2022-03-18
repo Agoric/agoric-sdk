@@ -22,7 +22,7 @@ export const LOAN_FEE_KEY = 'LoanFee';
 const makeElectorateParams = electorateInvitationAmount => {
   return harden({
     [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.Invitation,
+      type: ParamTypes.INVITATION,
       value: electorateInvitationAmount,
     },
   });
@@ -33,9 +33,9 @@ const makeElectorateParams = electorateInvitationAmount => {
  */
 const makeVaultParamManager = rates =>
   makeParamManagerSync({
-    [LIQUIDATION_MARGIN_KEY]: ['brandedRatio', rates.liquidationMargin],
-    [INTEREST_RATE_KEY]: ['brandedRatio', rates.interestRate],
-    [LOAN_FEE_KEY]: ['brandedRatio', rates.loanFee],
+    [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, rates.liquidationMargin],
+    [INTEREST_RATE_KEY]: [ParamTypes.RATIO, rates.interestRate],
+    [LOAN_FEE_KEY]: [ParamTypes.RATIO, rates.loanFee],
   });
 /** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
 

@@ -46,14 +46,12 @@ const isAsync = {
 // but importing that here turns this file into a module,
 // breaking the ambient typing
 /**
- * @typedef {ST<'amountValue'>
+ * @typedef {ST<'amount'>
  * | ST<'brand'>
- * | ST<'brandedAmount'>
- * | ST<'brandedRatio'>
  * | ST<'installation'>
  * | ST<'instance'>
  * | ST<'nat'>
- * | ST<'ratioValue'>
+ * | ST<'ratio'>
  * | ST<'string'>
  * | ST<'unknown'>} SyncSpecTuple
  *
@@ -96,6 +94,7 @@ const makeParamManagerSync = spec => {
 
   for (const [name, [type, value]] of Object.entries(spec)) {
     const add = builder[builderMethodName(type)];
+    assert(add, `No builder method for param type '${type}'`);
     add(name, value);
   }
 

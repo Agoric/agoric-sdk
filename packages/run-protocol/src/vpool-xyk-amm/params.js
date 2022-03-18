@@ -26,9 +26,9 @@ const makeAmmParamManager = async (
 ) => {
   return makeParamManager(
     {
-      [POOL_FEE_KEY]: ['nat', poolFeeBP],
-      [PROTOCOL_FEE_KEY]: ['nat', protocolFeeBP],
-      [CONTRACT_ELECTORATE]: ['invitation', poserInvitation],
+      [POOL_FEE_KEY]: [ParamTypes.NAT, poolFeeBP],
+      [PROTOCOL_FEE_KEY]: [ParamTypes.NAT, protocolFeeBP],
+      [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, poserInvitation],
     },
     zoe,
   );
@@ -40,10 +40,10 @@ const makeAmmParams = (
   poolFeeBP,
 ) => {
   return harden({
-    [POOL_FEE_KEY]: { type: ParamTypes.Nat, value: poolFeeBP },
-    [PROTOCOL_FEE_KEY]: { type: ParamTypes.Nat, value: protocolFeeBP },
+    [POOL_FEE_KEY]: { type: ParamTypes.NAT, value: poolFeeBP },
+    [PROTOCOL_FEE_KEY]: { type: ParamTypes.NAT, value: protocolFeeBP },
     [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.Invitation,
+      type: ParamTypes.INVITATION,
       value: electorateInvitationAmount,
     },
   });

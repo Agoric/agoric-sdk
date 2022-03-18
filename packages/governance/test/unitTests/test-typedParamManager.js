@@ -44,7 +44,7 @@ test('readonly', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
     Currency: [ParamTypes.BRAND, drachmaBrand],
-    Amt: [ParamTypes.AMOUNT_VALUE, drachmas],
+    Amt: [ParamTypes.AMOUNT, drachmas],
   });
   const getters = paramManager.readonly();
   t.is(paramManager.getCurrency, getters.getCurrency);
@@ -55,7 +55,7 @@ test('two parameters', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
     Currency: [ParamTypes.BRAND, drachmaBrand],
-    Amt: [ParamTypes.AMOUNT_VALUE, drachmas],
+    Amt: [ParamTypes.AMOUNT, drachmas],
   });
 
   t.is(paramManager.getCurrency(), drachmaBrand);
@@ -69,7 +69,7 @@ test('two parameters', t => {
         value: drachmaBrand,
       },
       Amt: {
-        type: ParamTypes.AMOUNT_VALUE,
+        type: ParamTypes.AMOUNT,
         value: drachmas,
       },
     }),
@@ -77,32 +77,20 @@ test('two parameters', t => {
 });
 
 test('Amount', async t => {
-  const { brand } = makeIssuerKit('floor wax');
-  const { brand: brand2 } = makeIssuerKit('dessertTopping');
-  const paramManager = makeParamManagerSync({
-    Shimmer: [ParamTypes.AMOUNT_VALUE, AmountMath.make(brand, 250n)],
-  });
-  t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand, 250n));
-
-  paramManager.updateShimmer(AmountMath.make(brand2, 300n));
-  t.deepEqual(paramManager.getShimmer(), AmountMath.make(brand2, 300n));
-
-  // @ts-expect-error
-  t.throws(() => paramManager.updateShimmer('fear,loathing'), {
-    message: 'Expected an Amount for Shimmer, got "fear,loathing"',
-  });
-});
-
-test('Branded Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerSync({
-    Shimmer: [ParamTypes.BRANDED_AMOUNT, AmountMath.make(floorBrand, 2n)],
+    Shimmer: [ParamTypes.AMOUNT, AmountMath.make(floorBrand, 2n)],
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 2n));
 
   paramManager.updateShimmer(AmountMath.make(floorBrand, 5n));
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 5n));
+
+  // @ts-expect-error
+  t.throws(() => paramManager.updateShimmer('fear,loathing'), {
+    message: 'Expected an Amount for Shimmer, got "fear,loathing"',
+  });
 
   t.throws(
     () => paramManager.updateShimmer(AmountMath.make(dessertBrand, 20n)),
@@ -223,7 +211,7 @@ test('Invitation', async t => {
   const paramManager = await makeParamManager(
     {
       Currency: [ParamTypes.BRAND, drachmaBrand],
-      Amt: [ParamTypes.AMOUNT_VALUE, drachmaAmount],
+      Amt: [ParamTypes.AMOUNT, drachmaAmount],
       Invite: ['invitation', invitation],
     },
     zoe,
@@ -241,7 +229,7 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
-        type: ParamTypes.AMOUNT_VALUE,
+        type: ParamTypes.AMOUNT,
         value: drachmaAmount,
       },
       Currency: {
@@ -281,32 +269,18 @@ test('Ratio', async t => {
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerSync({
     Acres: [ParamTypes.NAT, 50n],
-    GoldenRatio: [ParamTypes.RATIO_VALUE, ratio],
+    GoldenRatio: ['ratio', ratio],
   });
   t.is(paramManager.getGoldenRatio(), ratio);
 
   const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
   paramManager.updateGoldenRatio(morePrecise);
   t.is(paramManager.getGoldenRatio(), morePrecise);
-  // @ts-expect-error
+
+  // @ts-expect-error throws
   t.throws(() => paramManager.updateGoldenRatio(300000000), {
     message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
   });
-});
-
-test('Branded Ratio', async t => {
-  const unitlessBrand = makeIssuerKit('unitless').brand;
-
-  const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
-  const paramManager = makeParamManagerSync({
-    Acres: [ParamTypes.NAT, 50n],
-    GoldenRatio: ['brandedRatio', ratio],
-  });
-  t.is(paramManager.getGoldenRatio(), ratio);
-
-  const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
-  paramManager.updateGoldenRatio(morePrecise);
-  t.is(paramManager.getGoldenRatio(), morePrecise);
 
   const anotherBrand = makeIssuerKit('arbitrary').brand;
 

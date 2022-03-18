@@ -1,7 +1,6 @@
 // @ts-check
 
 import { Far } from '@endo/marshal';
-import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
@@ -39,15 +38,13 @@ const assertElectorateMatches = (paramManager, governedParams) => {
 
 /**
  * @typedef {Object} ParamManagerBuilder
- * @property {(name: string, value: Amount) => ParamManagerBuilder} addAmountValue
- * @property {(name: string, value: Amount) => ParamManagerBuilder} addBrandedAmount
+ * @property {(name: string, value: Amount) => ParamManagerBuilder} addAmount
  * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
  * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
  * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
  * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
- * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatioValue
- * @property {(name: string, value: Ratio) => ParamManagerBuilder} addBrandedRatio
+ * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
  * @property {() => AnyParamManager} build
@@ -110,22 +107,12 @@ const makeParamManagerBuilder = zoe => {
   // HANDLERS FOR EACH PARAMETER TYPE /////////////////////////////////////////
 
   /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addAmountValue = (name, value, builder) => {
-    const assertAmount = a => {
-      assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
-      return AmountMath.coerce(a.brand, a);
-    };
-    buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT_VALUE);
-    return builder;
-  };
-
-  /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addBrandedAmount = (name, value, builder) => {
+  const addAmount = (name, value, builder) => {
     const assertAmount = a => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
       return AmountMath.coerce(value.brand, a);
     };
-    buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT_VALUE);
+    buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT);
     return builder;
   };
 
@@ -162,15 +149,9 @@ const makeParamManagerBuilder = zoe => {
   };
 
   /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addRatioValue = (name, value, builder) => {
-    buildCopyParam(name, value, assertIsRatio, ParamTypes.RATIO_VALUE);
-    return builder;
-  };
-
-  /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addBrandedRatio = (name, value, builder) => {
+  const addRatio = (name, value, builder) => {
     const assertBrandedRatio = makeAssertBrandedRatio(name, value);
-    buildCopyParam(name, value, assertBrandedRatio, ParamTypes.RATIO_VALUE);
+    buildCopyParam(name, value, assertBrandedRatio, ParamTypes.RATIO);
     return builder;
   };
 
@@ -298,13 +279,13 @@ const makeParamManagerBuilder = zoe => {
     return Far('param manager', {
       getParams,
       getSubscription: () => subscription,
-      getAmount: name => getTypedParam(ParamTypes.AMOUNT_VALUE, name),
+      getAmount: name => getTypedParam(ParamTypes.AMOUNT, name),
       getBrand: name => getTypedParam(ParamTypes.BRAND, name),
       getInstance: name => getTypedParam(ParamTypes.INSTANCE, name),
       getInstallation: name => getTypedParam(ParamTypes.INSTALLATION, name),
       getInvitationAmount: name => getTypedParam(ParamTypes.INVITATION, name),
       getNat: name => getTypedParam(ParamTypes.NAT, name),
-      getRatio: name => getTypedParam(ParamTypes.RATIO_VALUE, name),
+      getRatio: name => getTypedParam(ParamTypes.RATIO, name),
       getString: name => getTypedParam(ParamTypes.STRING, name),
       getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
       getVisibleValue,
@@ -319,16 +300,14 @@ const makeParamManagerBuilder = zoe => {
 
   /** @type {ParamManagerBuilder} */
   const builder = {
-    addAmountValue: (n, v) => addAmountValue(n, v, builder),
-    addBrandedAmount: (n, v) => addBrandedAmount(n, v, builder),
+    addAmount: (n, v) => addAmount(n, v, builder),
     addBrand: (n, v) => addBrand(n, v, builder),
     addInstallation: (n, v) => addInstallation(n, v, builder),
     addInstance: (n, v) => addInstance(n, v, builder),
     addUnknown: (n, v) => addUnknown(n, v, builder),
     addInvitation: (n, v) => addInvitation(n, v, builder),
     addNat: (n, v) => addNat(n, v, builder),
-    addRatioValue: (n, v) => addRatioValue(n, v, builder),
-    addBrandedRatio: (n, v) => addBrandedRatio(n, v, builder),
+    addRatio: (n, v) => addRatio(n, v, builder),
     addString: (n, v) => addString(n, v, builder),
     build: () => makeParamManager(),
   };

@@ -6,15 +6,13 @@
  * us to support the new type.
  */
 export const ParamTypes = /** @type {const} */ ({
-  AMOUNT_VALUE: 'amountValue',
+  AMOUNT: 'amount',
   BRAND: 'brand',
-  BRANDED_AMOUNT: 'brandedAmount',
-  BRANDED_RATIO: 'brandedRatio',
-  INSTANCE: 'instance',
   INSTALLATION: 'installation',
+  INSTANCE: 'instance',
   INVITATION: 'invitation',
   NAT: 'nat',
-  RATIO_VALUE: 'ratioValue',
+  RATIO: 'ratio',
   STRING: 'string',
   UNKNOWN: 'unknown',
 });

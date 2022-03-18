@@ -16,7 +16,7 @@ test('two parameters', t => {
   const drachmaBrand = drachmaKit.brand;
   const paramManager = makeParamManagerBuilder()
     .addBrand('Currency', drachmaBrand)
-    .addAmountValue('Amt', AmountMath.make(drachmaBrand, 37n))
+    .addAmount('Amt', AmountMath.make(drachmaBrand, 37n))
     .build();
 
   t.is(paramManager.getBrand('Currency'), drachmaBrand);
@@ -34,7 +34,7 @@ test('getParams', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerBuilder()
     .addBrand('Currency', drachmaBrand)
-    .addAmountValue('Amt', drachmas)
+    .addAmount('Amt', drachmas)
     .build();
 
   t.deepEqual(
@@ -45,7 +45,7 @@ test('getParams', t => {
         value: drachmaBrand,
       },
       Amt: {
-        type: ParamTypes.AMOUNT_VALUE,
+        type: ParamTypes.AMOUNT,
         value: drachmas,
       },
     }),
@@ -68,32 +68,10 @@ test('params duplicate entry', async t => {
 });
 
 test('Amount', async t => {
-  const { brand } = makeIssuerKit('floor wax');
-  const { brand: brand2 } = makeIssuerKit('dessertTopping');
-  const paramManager = makeParamManagerBuilder()
-    .addAmountValue('Shimmer', AmountMath.make(brand, 250n))
-    .build();
-  t.deepEqual(paramManager.getAmount('Shimmer'), AmountMath.make(brand, 250n));
-
-  // @ts-ignore updateShimmer is a generated name
-  paramManager.updateShimmer(AmountMath.make(brand2, 300n));
-  t.deepEqual(paramManager.getAmount('Shimmer'), AmountMath.make(brand2, 300n));
-
-  // @ts-ignore updateShimmer is a generated name
-  t.throws(() => paramManager.updateShimmer('fear,loathing'), {
-    message: 'Expected an Amount for Shimmer, got "fear,loathing"',
-  });
-
-  t.throws(() => paramManager.getNat('Shimmer'), {
-    message: '"Shimmer" is not "nat"',
-  });
-});
-
-test('Branded Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerBuilder()
-    .addBrandedAmount('Shimmer', AmountMath.make(floorBrand, 2n))
+    .addAmount('Shimmer', AmountMath.make(floorBrand, 2n))
     .build();
   t.deepEqual(
     paramManager.getAmount('Shimmer'),
@@ -226,7 +204,7 @@ test('Invitation', async t => {
   const drachmaAmount = AmountMath.make(drachmaBrand, 37n);
   const paramManagerBuilder = makeParamManagerBuilder(zoe)
     .addBrand('Currency', drachmaBrand)
-    .addAmountValue('Amt', drachmaAmount);
+    .addAmount('Amt', drachmaAmount);
   // addInvitation is async, so it can't be part of the cascade.
   await paramManagerBuilder.addInvitation('Invite', invitation);
   const paramManager = paramManagerBuilder.build();
@@ -245,7 +223,7 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
-        type: ParamTypes.AMOUNT_VALUE,
+        type: ParamTypes.AMOUNT,
         value: drachmaAmount,
       },
       Currency: {
@@ -285,27 +263,7 @@ test('Ratio', async t => {
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerBuilder()
-    .addNat('Acres', 50n)
-    .addRatioValue('GoldenRatio', ratio)
-    .build();
-  t.is(paramManager.getRatio('GoldenRatio'), ratio);
-
-  const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
-  // @ts-ignore updateGoldenRatio is a generated name
-  paramManager.updateGoldenRatio(morePrecise);
-  t.is(paramManager.getRatio('GoldenRatio'), morePrecise);
-  // @ts-ignore updateGoldenRatio is a generated name
-  t.throws(() => paramManager.updateGoldenRatio(300000000), {
-    message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
-  });
-});
-
-test('Branded Ratio', async t => {
-  const unitlessBrand = makeIssuerKit('unitless').brand;
-
-  const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
-  const paramManager = makeParamManagerBuilder()
-    .addBrandedRatio('GoldenRatio', ratio)
+    .addRatio('GoldenRatio', ratio)
     .build();
   t.is(paramManager.getRatio('GoldenRatio'), ratio);
 
@@ -315,6 +273,11 @@ test('Branded Ratio', async t => {
   t.is(paramManager.getRatio('GoldenRatio'), morePrecise);
 
   const anotherBrand = makeIssuerKit('arbitrary').brand;
+
+  // @ts-ignore updateGoldenRatio is a generated name
+  t.throws(() => paramManager.updateGoldenRatio(300000000), {
+    message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
+  });
 
   // @ts-ignore updateGoldenRatio is a generated name
   t.throws(

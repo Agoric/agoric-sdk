@@ -40,15 +40,13 @@
 // breaking the ambient typing
 /**
  * @template {ParamType} T
- * @typedef {T extends 'amountValue' ? Amount :
+ * @typedef {T extends 'amount' ? Amount :
  * T extends 'brand' ? Brand :
- * T extends 'brandedAmount' ? Amount :
- * T extends 'brandedRatio' ? Ratio :
  * T extends 'installation' ? Installation:
  * T extends 'instance' ? Instance :
  * T extends 'invitation' ? Amount :
  * T extends 'nat' ? bigint :
- * T extends 'ratioValue' ? Ratio :
+ * T extends 'ratio' ? Ratio :
  * T extends 'string' ? string :
  * T extends 'unknown' ? unknown :
  * never
@@ -677,20 +675,4 @@
  * parameter change for a governed contract.
  *
  * @param {ParamChangeIssueDetails} details
- */
-
-/**
- * @typedef {Object} ParamManagerBuilder
- * @property {(name: string, value: Amount) => ParamManagerBuilder} addAmountValue
- * @property {(name: string, value: Amount) => ParamManagerBuilder} addBrandedAmount
- * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
- * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
- * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
- * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
- * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
- * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatioValue
- * @property {(name: string, value: Ratio) => ParamManagerBuilder} addBrandedRatio
- * @property {(name: string, value: string) => ParamManagerBuilder} addString
- * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
- * @property {() => AnyParamManager} build
  */

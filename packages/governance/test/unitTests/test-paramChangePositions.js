@@ -18,7 +18,7 @@ const negative = name => {
 
 test('positions amount', t => {
   const amountSpec = {
-    parameterName: ParamTypes.AMOUNT_VALUE,
+    parameterName: ParamTypes.AMOUNT,
     key: 'something',
   };
   const { brand } = makeIssuerKit('roses', AssetKind.SET);
