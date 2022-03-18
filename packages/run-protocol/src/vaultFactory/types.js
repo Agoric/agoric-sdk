@@ -138,27 +138,4 @@
  * them and interest is not accumulated for them.
  */
 
-/**
- * @typedef {Object} VaultParamManager
- * @property {() => Record<Keyword, ParamShortDescription> & {
- *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
- *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
- *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
- * }} getParams
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(margin: Ratio) => void} updateLiquidationMargin
- * @property {(ratio: Ratio) => void} updateInterestRate
- * @property {(ratio: Ratio) => void} updateLoanFee
- */
-
-/**
- * @callback GetGovernedVaultParams
- * @returns {{
- *  InterestRate: ParamRecord<'ratio'> & { value: Ratio },
- *  LiquidationMargin: ParamRecord<'ratio'> & { value: Ratio },
- *  LoanFee: ParamRecord<'ratio'> & { value: Ratio },
- * }}
- */
-
 /** @typedef {import('./vault').InnerVault} InnerVault */

@@ -16,7 +16,7 @@ import '../../../exported.js';
  * This contract throws exceptions in various
  * situations. We want to see that each is handled correctly.
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<any>}
  */
 const start = zcf => {
   const terms = zcf.getTerms();

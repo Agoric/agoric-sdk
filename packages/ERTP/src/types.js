@@ -353,6 +353,7 @@
  */
 
 /**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {Object} Payment
  * Payments hold amount of digital assets of the same brand in transit. Payments
  * can be deposited in purses, split into multiple payments, combined, and
@@ -369,7 +370,7 @@
  * calling `issuer.makeEmptyPurse()` to create a purse, then
  * `purse.deposit(payment)`.
  *
- * @property {() => Brand} getAllegedBrand
+ * @property {() => Brand<K>} getAllegedBrand
  * Get the allegedBrand, indicating the type of digital asset this
  * payment purports to be, and which issuer to use. Because payments
  * are not trusted, any method calls on payments should be treated

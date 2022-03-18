@@ -66,7 +66,7 @@ import { isAfterDeadlineExitRule } from '../typeGuards.js';
  * specified in the invitation value, and want the underlying assets
  * exactly.
  *
- * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   const sellSeatExpiredMsg = `The covered call option is expired.`;

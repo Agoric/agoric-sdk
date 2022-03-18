@@ -213,6 +213,9 @@
  */
 
 /**
+ * API for a contract start function.
+ * FIXME before merge: assumes synchronous
+ *
  * @template {object} [PF] Public facet
  * @template {object} [CF] Creator facet
  * @template {object} [CT] Custom terms
@@ -227,8 +230,8 @@
  * @template PF Public facet
  * @template CF Creator facet
  * @typedef {Object} ContractStartFnResult
- * @property {PF} [publicFacet]
- * @property {CF} [creatorFacet]
+ * @property {PF} publicFacet
+ * @property {CF} creatorFacet
  * @property {Promise<Invitation>=} [creatorInvitation]
  */
 

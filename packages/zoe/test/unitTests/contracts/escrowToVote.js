@@ -23,7 +23,7 @@ import '../../../exported.js';
  * issuerKeywordRecord. The instantiator gets the only Secretary
  * access through the creatorFacet.
  *
- * @type {ContractStartFn}
+ * @type {ContractStartFn<undefined, {closeElection: unknown, makeVoterInvitation: unknown}>}
  */
 const start = zcf => {
   const {

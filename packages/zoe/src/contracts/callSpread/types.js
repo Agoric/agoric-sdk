@@ -15,21 +15,6 @@
  */
 
 /**
- * @callback MakePayoffHandler
- * @param {ZCF<{
- * strikePrice1: Amount,
- * strikePrice2: Amount,
- * settlementAmount: Amount,
- * priceAuthority: PriceAuthority,
- * expiration: bigint,
- * underlyingAmount: Amount,
- * }>} zcf
- * @param {Record<PositionKind,PromiseRecord<ZCFSeat>>} seatPromiseKits
- * @param {ZCFSeat} collateralSeat
- * @returns {PayoffHandler}
- */
-
-/**
  * @typedef {Object} CalculateSharesReturn
  * Return value from calculateShares, which represents the portions assigned to
  * the long and short side of a transaction. These will be two non-negative

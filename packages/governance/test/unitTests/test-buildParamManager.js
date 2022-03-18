@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { ParamType, makeParamManagerBuilder } from '../../src/index.js';
+import { ParamTypes, makeParamManagerBuilder } from '../../src/index.js';
 
 test('two parameters', t => {
   const drachmaKit = makeIssuerKit('drachma');
@@ -20,6 +20,7 @@ test('two parameters', t => {
     .build();
 
   t.is(paramManager.getBrand('Currency'), drachmaBrand);
+  t.is(paramManager.getCurrency(), drachmaBrand);
   t.deepEqual(
     paramManager.getAmount('Amt'),
     AmountMath.make(drachmaBrand, 37n),
@@ -40,11 +41,11 @@ test('getParams', t => {
     paramManager.getParams(),
     harden({
       Currency: {
-        type: ParamType.BRAND,
+        type: ParamTypes.BRAND,
         value: drachmaBrand,
       },
       Amt: {
-        type: ParamType.AMOUNT,
+        type: ParamTypes.AMOUNT,
         value: drachmas,
       },
     }),
@@ -67,32 +68,10 @@ test('params duplicate entry', async t => {
 });
 
 test('Amount', async t => {
-  const { brand } = makeIssuerKit('floor wax');
-  const { brand: brand2 } = makeIssuerKit('dessertTopping');
-  const paramManager = makeParamManagerBuilder()
-    .addAmount('Shimmer', AmountMath.make(brand, 250n))
-    .build();
-  t.deepEqual(paramManager.getAmount('Shimmer'), AmountMath.make(brand, 250n));
-
-  // @ts-ignore updateShimmer is a generated name
-  paramManager.updateShimmer(AmountMath.make(brand2, 300n));
-  t.deepEqual(paramManager.getAmount('Shimmer'), AmountMath.make(brand2, 300n));
-
-  // @ts-ignore updateShimmer is a generated name
-  t.throws(() => paramManager.updateShimmer('fear,loathing'), {
-    message: 'Expected an Amount for Shimmer, got "fear,loathing"',
-  });
-
-  t.throws(() => paramManager.getNat('Shimmer'), {
-    message: '"Shimmer" is not "nat"',
-  });
-});
-
-test('Branded Amount', async t => {
   const { brand: floorBrand } = makeIssuerKit('floor wax');
   const { brand: dessertBrand } = makeIssuerKit('dessertTopping');
   const paramManager = makeParamManagerBuilder()
-    .addBrandedAmount('Shimmer', AmountMath.make(floorBrand, 2n))
+    .addAmount('Shimmer', AmountMath.make(floorBrand, 2n))
     .build();
   t.deepEqual(
     paramManager.getAmount('Shimmer'),
@@ -127,7 +106,6 @@ test('Branded Amount', async t => {
 });
 
 test('params one installation', async t => {
-  const installationKey = 'Installation';
   // this is sufficient for the current type check. When we add
   // isInstallation() (#3344), we'll need to make a mockZoe.
   /** @type {Installation} */
@@ -137,18 +115,14 @@ test('params one installation', async t => {
   });
 
   const paramManager = makeParamManagerBuilder()
-    .addInstallation('Installation', installationHandle)
+    .addInstallation('PName', installationHandle)
     .build();
 
-  t.deepEqual(
-    paramManager.getInstallation(installationKey),
-    installationHandle,
-  );
+  t.deepEqual(paramManager.getInstallation('PName'), installationHandle);
   t.throws(
-    // @ts-ignore updateInstallation is a generated name
-    () => paramManager.updateInstallation(18.1),
+    () => paramManager.updatePName(18.1),
     {
-      message: 'value for "Installation" must be an Installation, was 18.1',
+      message: 'value for "PName" must be an Installation, was 18.1',
     },
     'value should be an installation',
   );
@@ -157,19 +131,18 @@ test('params one installation', async t => {
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
-  // @ts-ignore updateInstallation is a generated name
-  paramManager.updateInstallation(handle2);
-  t.deepEqual(paramManager.getInstallation(installationKey), handle2);
+  paramManager.updatePName(handle2);
+  t.deepEqual(paramManager.getInstallation('PName'), handle2);
 
-  t.throws(() => paramManager.getNat('Installation'), {
-    message: '"Installation" is not "nat"',
+  t.throws(() => paramManager.getNat('PName'), {
+    message: '"PName" is not "nat"',
   });
 
   t.deepEqual(
     paramManager.getParams(),
     harden({
-      Installation: {
-        type: ParamType.INSTALLATION,
+      PName: {
+        type: ParamTypes.INSTALLATION,
         value: handle2,
       },
     }),
@@ -177,34 +150,32 @@ test('params one installation', async t => {
 });
 
 test('params one instance', async t => {
-  const instanceKey = 'Instance';
+  const handleType = 'Instance';
   // this is sufficient for the current type check. When we add
   // isInstallation() (#3344), we'll need to make a mockZoe.
-  const instanceHandle = makeHandle(instanceKey);
+  const instanceHandle = makeHandle(handleType);
 
   const paramManager = makeParamManagerBuilder()
-    .addInstance(instanceKey, instanceHandle)
+    .addInstance('PName', instanceHandle)
     .build();
 
-  t.deepEqual(paramManager.getInstance(instanceKey), instanceHandle);
+  t.deepEqual(paramManager.getInstance('PName'), instanceHandle);
   t.throws(
-    // @ts-ignore updateInstance is a generated name
-    () => paramManager.updateInstance(18.1),
+    () => paramManager.updatePName(18.1),
     {
-      message: 'value for "Instance" must be an Instance, was 18.1',
+      message: 'value for "PName" must be an Instance, was 18.1',
     },
     'value should be an instance',
   );
-  const handle2 = makeHandle(instanceKey);
-  // @ts-ignore updateInstance is a generated name
-  paramManager.updateInstance(handle2);
-  t.deepEqual(paramManager.getInstance(instanceKey), handle2);
+  const handle2 = makeHandle(handleType);
+  paramManager.updatePName(handle2);
+  t.deepEqual(paramManager.getInstance('PName'), handle2);
 
   t.deepEqual(
     paramManager.getParams(),
     harden({
-      Instance: {
-        type: ParamType.INSTANCE,
+      PName: {
+        type: ParamTypes.INSTANCE,
         value: handle2,
       },
     }),
@@ -252,15 +223,15 @@ test('Invitation', async t => {
     paramManager.getParams(),
     harden({
       Amt: {
-        type: ParamType.AMOUNT,
+        type: ParamTypes.AMOUNT,
         value: drachmaAmount,
       },
       Currency: {
-        type: ParamType.BRAND,
+        type: ParamTypes.BRAND,
         value: drachmaBrand,
       },
       Invite: {
-        type: ParamType.INVITATION,
+        type: ParamTypes.INVITATION,
         value: invitationAmount,
       },
     }),
@@ -292,27 +263,7 @@ test('Ratio', async t => {
 
   const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
   const paramManager = makeParamManagerBuilder()
-    .addNat('Acres', 50n)
     .addRatio('GoldenRatio', ratio)
-    .build();
-  t.is(paramManager.getRatio('GoldenRatio'), ratio);
-
-  const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
-  // @ts-ignore updateGoldenRatio is a generated name
-  paramManager.updateGoldenRatio(morePrecise);
-  t.is(paramManager.getRatio('GoldenRatio'), morePrecise);
-  // @ts-ignore updateGoldenRatio is a generated name
-  t.throws(() => paramManager.updateGoldenRatio(300000000), {
-    message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
-  });
-});
-
-test('Branded Ratio', async t => {
-  const unitlessBrand = makeIssuerKit('unitless').brand;
-
-  const ratio = makeRatio(16180n, unitlessBrand, 10_000n);
-  const paramManager = makeParamManagerBuilder()
-    .addBrandedRatio('GoldenRatio', ratio)
     .build();
   t.is(paramManager.getRatio('GoldenRatio'), ratio);
 
@@ -322,6 +273,11 @@ test('Branded Ratio', async t => {
   t.is(paramManager.getRatio('GoldenRatio'), morePrecise);
 
   const anotherBrand = makeIssuerKit('arbitrary').brand;
+
+  // @ts-ignore updateGoldenRatio is a generated name
+  t.throws(() => paramManager.updateGoldenRatio(300000000), {
+    message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
+  });
 
   // @ts-ignore updateGoldenRatio is a generated name
   t.throws(

@@ -2,11 +2,6 @@
 
 import { E, Far } from '@endo/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import {
-  makeGovernedInvitation,
-  CONTRACT_ELECTORATE,
-  makeGovernedNat,
-} from '@agoric/governance';
 import { CENTRAL_ISSUER_NAME } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
@@ -16,7 +11,7 @@ import { makeGovernedTerms } from './vaultFactory/params.js';
 
 import '../exported.js';
 
-import { PROTOCOL_FEE_KEY, POOL_FEE_KEY } from './vpool-xyk-amm/params.js';
+import { makeAmmTerms } from './vpool-xyk-amm/params.js';
 
 import * as Collect from './collect.js';
 
@@ -27,8 +22,6 @@ const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
 const BASIS_POINTS = 10_000n;
-const DEFAULT_POOL_FEE = 24n;
-const DEFAULT_PROTOCOL_FEE = 6n;
 
 const CENTRAL_DENOM_NAME = 'urun';
 
@@ -93,8 +86,6 @@ export const setupAmm = async ({
 }) => {
   const bundle = await ammBundle;
   const ammInstallation = E(zoe).install(bundle);
-  const poolFee = DEFAULT_POOL_FEE;
-  const protocolFee = DEFAULT_PROTOCOL_FEE;
 
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
@@ -104,16 +95,7 @@ export const setupAmm = async ({
 
   const timer = await chainTimerService; // avoid promise for legibility
 
-  const ammTerms = {
-    timer,
-    poolFeeBP: poolFee,
-    protocolFeeBP: protocolFee,
-    main: {
-      [PROTOCOL_FEE_KEY]: makeGovernedNat(protocolFee),
-      [POOL_FEE_KEY]: makeGovernedNat(poolFee),
-      [CONTRACT_ELECTORATE]: makeGovernedInvitation(poserInvitationAmount),
-    },
-  };
+  const ammTerms = makeAmmTerms(timer, poserInvitationAmount);
 
   const ammGovernorTerms = {
     timer,

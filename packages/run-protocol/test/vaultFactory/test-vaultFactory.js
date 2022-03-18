@@ -283,6 +283,7 @@ async function setupServices(
     E(governorCreatorFacet).getCreatorFacet()
   );
   /** @type {[any, VaultFactory, VFC['publicFacet']]} */
+  // @ts-expect-error cast
   const [governorInstance, vaultFactory, lender] = await Promise.all([
     E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
     vaultFactoryCreatorFacet,

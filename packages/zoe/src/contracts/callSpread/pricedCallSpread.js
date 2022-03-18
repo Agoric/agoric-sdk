@@ -56,9 +56,7 @@ const BASIS_POINTS = 10000n;
  *
  * Future enhancements:
  * + issue multiple option pairs with the same expiration from a single instance
- */
-
-/**
+ *
  * @param {ZCF<{
  * strikePrice1: Amount,
  * strikePrice2: Amount,

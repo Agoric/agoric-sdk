@@ -23,12 +23,12 @@
  * @property {BrandKeywordRecord} brands - record with keywords
  * keys, brand values
  *
- * @typedef {StandardTerms & Record<string, any>} Terms
+ * @typedef {StandardTerms & Record<string, any>} AnyTerms
  *
  * @typedef {Object} InstanceRecord
  * @property {Installation} installation
  * @property {Instance} instance
- * @property {Terms} terms - contract parameters
+ * @property {AnyTerms} terms - contract parameters
  
  *
  * @template {AssetKind} [K=AssetKind]
@@ -43,8 +43,5 @@
  */
 
 /**
- * XXX offer() return value at runtime is implied by the invitation but it's not typed
- *
- * @template {object} [OR=unknown]
- * @typedef {Payment} Invitation
+ * @typedef {Payment<'set'>} Invitation
  */

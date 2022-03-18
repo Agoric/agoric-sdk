@@ -80,12 +80,18 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * contract (as electionManager) so clients will be able to look up the state
  * of the governed parameters.
  *
- * @param {ZCF<{
- * timer: Timer,
- * electorateInstance: Instance,
- * governedContractInstallation: Installation,
- * governed: { issuerKeywordRecord: IssuerKeywordRecord, terms: any, privateArgs: any},
- * }>} zcf
+ * @template {object} PF Public facet of governed
+ * @template {ContractPowerfulCreatorFacet} CF Creator facet of governed
+ * @type {ContractStartFn<GovernorPublic, GovernedContractFacetAccess<PF>,{
+ *   timer: TimerService,
+ *   electorateInstance: Instance,
+ *   governedContractInstallation: Installation<CF>,
+ *   governed: {
+ *     issuerKeywordRecord: IssuerKeywordRecord,
+ *     terms: {main: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
+ *     privateArgs: unknown,
+ *   }
+ * }>}
  */
 const start = async zcf => {
   const zoe = zcf.getZoeService();
@@ -163,7 +169,6 @@ const start = async zcf => {
     });
   };
 
-  /** @type {GovernedContractFacetAccess} */
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChange,
     getCreatorFacet: () => limitedCreatorFacet,
@@ -171,7 +176,6 @@ const start = async zcf => {
     getPublicFacet: () => governedPF,
   });
 
-  /** @type {GovernorPublic} */
   const publicFacet = Far('contract governor public', {
     getElectorate: getElectorateInstance,
     getGovernedContract: () => governedInstance,

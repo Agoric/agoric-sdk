@@ -21,7 +21,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { E } from '@endo/eventual-send';
 import '@agoric/governance/src/exported';
 
-import { makeScalarMap, keyEQ } from '@agoric/store';
+import { makeScalarMap } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountOut,
@@ -29,7 +29,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
-import { CONTRACT_ELECTORATE } from '@agoric/governance';
+import { assertElectorateMatches } from '@agoric/governance';
 
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
@@ -41,7 +41,7 @@ const { details: X } = assert;
 /**
  * @param {ZCF<Record<string, any> &
  *  {electionManager: Instance,
- *   main: {Electorate: ParamShortRecord<'amount'> & { value: Amount } },
+ *   main: {Electorate: ParamRecord<'invitation'>},
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>}>} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
@@ -53,7 +53,7 @@ export const start = async (zcf, privateArgs) => {
     timerService,
     liquidationInstall,
     electionManager,
-    main: { [CONTRACT_ELECTORATE]: electorateParam },
+    main: governedTerms,
     loanTimingParams,
   } = zcf.getTerms();
 
@@ -73,12 +73,7 @@ export const start = async (zcf, privateArgs) => {
     initialPoserInvitation,
   );
 
-  const electorateInvAmt =
-    electorateParamManager.getInvitationAmount(CONTRACT_ELECTORATE);
-  assert(
-    keyEQ(electorateInvAmt, electorateParam.value),
-    X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
-  );
+  assertElectorateMatches(electorateParamManager, governedTerms);
 
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
@@ -108,7 +103,7 @@ export const start = async (zcf, privateArgs) => {
 
   const zoe = zcf.getZoeService();
 
-  /** @type { Store<Brand, VaultParamManager> } */
+  /** @type { Store<Brand, import('./params.js').VaultParamManager> } */
   const vaultParamManagers = makeScalarMap('brand');
 
   /** @type {AddVaultType} */
@@ -140,7 +135,7 @@ export const start = async (zcf, privateArgs) => {
       collateralBrand,
       priceAuthority,
       loanTimingParams,
-      vaultParamManager.getParams,
+      vaultParamManager.readonly(),
       reallocateWithFee,
       timerService,
       liquidationStrategy,
@@ -200,18 +195,6 @@ export const start = async (zcf, privateArgs) => {
   // bookkeeping. It's needed in tests.
   const getRewardAllocation = () => rewardPoolSeat.getCurrentAllocation();
 
-  const getRatioParamState = paramDesc => {
-    return vaultParamManagers
-      .get(paramDesc.collateralBrand)
-      .getRatio(paramDesc.parameterName);
-  };
-
-  const getNatParamState = paramDesc => {
-    return vaultParamManagers
-      .get(paramDesc.collateralBrand)
-      .getNat(paramDesc.parameterName);
-  };
-
   const getGovernedParams = paramDesc => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
@@ -222,8 +205,6 @@ export const start = async (zcf, privateArgs) => {
     makeVaultInvitation,
     getCollaterals,
     getRunIssuer: () => runIssuer,
-    getNatParamState,
-    getRatioParamState,
     getGovernedParams,
     getContractGovernor: () => governorPublic,
     getInvitationAmount: electorateParamManager.getInvitationAmount,

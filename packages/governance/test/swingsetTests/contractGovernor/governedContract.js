@@ -1,65 +1,58 @@
 // @ts-check
 
-import { keyEQ } from '@agoric/store';
-
 import { handleParamGovernance } from '../../../src/contractHelper.js';
-import { makeParamManagerBuilder } from '../../../src/paramGovernance/paramManager.js';
-import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
 import {
-  makeGovernedNat,
-  makeGovernedInvitation,
-} from '../../../src/paramGovernance/paramMakers.js';
+  assertElectorateMatches,
+  makeParamManager,
+  ParamTypes,
+} from '../../../src/index.js';
+import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
-const { details: X } = assert;
-
 const makeParamTerms = (number, invitationAmount) => {
   return harden({
-    [MALLEABLE_NUMBER]: makeGovernedNat(number),
-    [CONTRACT_ELECTORATE]: makeGovernedInvitation(invitationAmount),
+    [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
+    [CONTRACT_ELECTORATE]: {
+      type: ParamTypes.INVITATION,
+      value: invitationAmount,
+    },
   });
 };
 
-const makeParamManager = async (zoe, number, invitation) => {
-  const builder = makeParamManagerBuilder(zoe).addNat(MALLEABLE_NUMBER, number);
-  await builder.addInvitation(CONTRACT_ELECTORATE, invitation);
-  return builder.build();
-};
-
 /**
- * @param {ZCF<{
- *   electionManager: Instance,
+ * @type ContractStartFn<
+ * GovernedPublicFacet<{}>,
+ * GovernedCreatorFacet<any>,
+ * {
+ *   electionManager: VoteOnParamChange,
  *   main: {
- *     [MALLEABLE_NUMBER]: ParamDescription,
- *     [CONTRACT_ELECTORATE]: ParamDescription,
- *   }
- * }>} zcf
- * @param {{initialPoserInvitation: Invitation}} privateArgs
+ *     MalleableNumber: ParamRecord<'nat'>,
+ *     Electorate: ParamRecord<'invitation'>,
+ *   },
+ * },
+ * {initialPoserInvitation: Payment}>
  */
 const start = async (zcf, privateArgs) => {
   const {
-    main: {
-      [MALLEABLE_NUMBER]: numberParam,
-      [CONTRACT_ELECTORATE]: electorateParam,
-    },
+    main: { [MALLEABLE_NUMBER]: numberParam, ...otherOovernedTerms },
   } = zcf.getTerms();
   const { initialPoserInvitation } = privateArgs;
 
   const paramManager = await makeParamManager(
+    {
+      [MALLEABLE_NUMBER]: ['nat', numberParam.value],
+      [CONTRACT_ELECTORATE]: ['invitation', initialPoserInvitation],
+    },
     zcf.getZoeService(),
-    numberParam.value,
-    initialPoserInvitation,
   );
 
-  const { wrapPublicFacet, wrapCreatorFacet, getInvitationAmount } =
-    handleParamGovernance(zcf, paramManager);
-
-  const invitationAmount = getInvitationAmount(CONTRACT_ELECTORATE);
-  assert(
-    keyEQ(invitationAmount, electorateParam.value),
-    X`electorate amount ${electorateParam.value} didn't match ${invitationAmount}`,
+  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
+    zcf,
+    paramManager,
   );
+
+  assertElectorateMatches(paramManager, otherOovernedTerms);
 
   return {
     publicFacet: wrapPublicFacet({}),

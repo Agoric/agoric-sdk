@@ -171,7 +171,9 @@ const makeBinaryVoteCounter = (questionSpec, threshold, instance) => {
 // It schedules the closing of the vote, finally inserting the contract
 // instance in the publicFacet before returning public and creator facets.
 
-/** @param { ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint}> } zcf */
+/**
+ * @type {ContractStartFn<VoteCounterPublicFacet, VoteCounterCreatorFacet, {questionSpec: QuestionSpec, quorumThreshold: bigint}>}
+ */
 const start = zcf => {
   // There are a variety of ways of counting quorums. The parameters must be
   // visible in the terms. We're doing a simple threshold here. If we wanted to
@@ -188,7 +190,6 @@ const start = zcf => {
 
   scheduleClose(questionSpec.closingRule, closeFacet.closeVoting);
 
-  /** @type {VoteCounterPublicFacet} */
   const publicFacetWithGetInstance = Far('publicFacet', {
     ...publicFacet,
     getInstance: zcf.getInstance,
