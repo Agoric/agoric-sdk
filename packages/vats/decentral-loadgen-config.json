@@ -14,6 +14,7 @@
             "board": true,
             "faucet": true,
             "zoe": true,
+            "priceAuthorityAdminFacet": true,
             "vaultFactoryCreatorFacet": true
           }
         }

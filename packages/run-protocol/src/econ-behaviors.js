@@ -293,7 +293,7 @@ export const grantVaultFactoryControl = async ({
   vatParameters: {
     argv: { vaultFactoryControllerAddress },
   },
-  consume: { client, vaultFactoryCreator },
+  consume: { client, priceAuthorityAdmin, vaultFactoryCreator },
 }) => {
   E(client).assignBundle([
     addr => ({
@@ -301,6 +301,11 @@ export const grantVaultFactoryControl = async ({
         typeof vaultFactoryControllerAddress === 'string' &&
         addr === vaultFactoryControllerAddress
           ? vaultFactoryCreator
+          : undefined,
+      priceAuthorityAdminFacet:
+        typeof vaultFactoryControllerAddress === 'string' &&
+        addr === vaultFactoryControllerAddress
+          ? priceAuthorityAdmin
           : undefined,
     }),
   ]);
