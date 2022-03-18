@@ -39,26 +39,12 @@ import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 const { details: X } = assert;
 
 /**
- * @typedef {{
- *   makeVaultInvitation: () => Promise<Payment>,
- *   getCollaterals: () => unknown,
- *   getRunIssuer: () => Issuer,
- *   getGovernedParams: () => unknown,
- *   getContractGovernor: () => unknown,
- *   getInvitationAmount: (string) => Amount,
- * }} VaultFactoryPublicFacet
- */
-
-/**
- * @type ContractStartFn<
- * VaultFactoryPublicFacet,
- * { getLimitedCreatorFacet: () => VaultFactory },
- * Record<string, any> &
+ * @param {ZCF<Record<string, any> &
  *  {electionManager: Instance,
  *   main: {Electorate: ParamRecord<'invitation'>},
  *   timerService: TimerService,
- *   priceAuthority: ERef<PriceAuthority>},
- * {feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}>
+ *   priceAuthority: ERef<PriceAuthority>}>} zcf
+ * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
   const {
