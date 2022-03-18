@@ -1,4 +1,5 @@
 // @ts-check
+
 const SHARED_BOOTSTRAP_MANIFEST = harden({
   makeVatsFromBundles: {
     vats: {
@@ -245,6 +246,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       ammBundle: true,
       vaultBundles: true,
       governanceBundles: true,
+      reserveBundle: true,
     },
   },
   startEconomicCommittee: {
@@ -332,6 +334,36 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       vaultFactoryCreator: 'VaultFactory',
     },
   },
+
+  setupReserve: {
+    consume: {
+      feeMintAccess: 'zoe',
+      vaultBundles: true,
+      chainTimerService: 'timer',
+      zoe: 'zoe',
+      economicCommitteeCreatorFacet: 'economicCommittee',
+      reserveBundle: true,
+    },
+    issuer: { consume: { RUN: 'zoe' } },
+    produce: {
+      reserveCreatorFacet: 'reserve',
+      reserveGovernorCreatorFacet: 'reserve',
+      reservePublicFacet: 'reserve',
+    },
+    brand: { consume: { RUN: 'zoe' } },
+    installation: {
+      consume: { contractGovernor: 'zoe' },
+      produce: { reserve: 'zoe' },
+    },
+    instance: {
+      consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
+      produce: {
+        reserve: 'reserve',
+        reserveGovernor: 'ReserveGovernor',
+      },
+    },
+  },
+
   configureVaultFactoryUI: {
     consume: {
       board: true,

@@ -201,13 +201,13 @@ export const mintInitialSupply = async ({
   /** @type {Installation<import('../../../run-protocol/src/centralSupply.js').CentralSupplyContract>} */
   // @ts-expect-error bundle types are borked
   const installation = E(zoe).install(centralSupplyBundle);
-  const start = E(zoe).startInstance(
+  const { creatorFacet } = await E(zoe).startInstance(
     installation,
     {},
     { bootstrapPaymentValue },
     { feeMintAccess },
   );
-  const payment = await E(E.get(start).creatorFacet).getBootstrapPayment();
+  const payment = creatorFacet.getBootstrapPayment();
   // TODO: shut down the centralSupply contract, now that we have the payment?
   initialSupply.resolve(payment);
 };

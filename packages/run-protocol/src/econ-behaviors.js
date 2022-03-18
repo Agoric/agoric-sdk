@@ -8,10 +8,10 @@ import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
 import { makeGovernedTerms } from './vaultFactory/params.js';
+import { makeAmmTerms } from './vpool-xyk-amm/params.js';
+import { makeReserveTerms } from './reserve/params.js';
 
 import '../exported.js';
-
-import { makeAmmTerms } from './vpool-xyk-amm/params.js';
 
 import * as Collect from './collect.js';
 
@@ -130,6 +130,81 @@ export const setupAmm = async ({
   ammInstanceProducer.resolve(instance);
   ammGovernor.resolve(g.instance);
   return ammInstallation.then(i => ammInstallationProducer.resolve(i));
+};
+
+/** @param { EconomyBootstrapPowers } powers */
+export const setupReserve = async ({
+  consume: {
+    feeMintAccess: feeMintAccessP,
+    chainTimerService,
+    zoe,
+    economicCommitteeCreatorFacet: committeeCreator,
+    reserveBundle,
+  },
+  produce: {
+    reserveCreatorFacet,
+    reserveGovernorCreatorFacet,
+    reservePublicFacet,
+  },
+  issuer: {
+    consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
+  },
+  instance: {
+    consume: { economicCommittee: electorateInstance, amm: ammInstanceP },
+    produce: { reserve: reserveInstanceProducer, reserveGovernor },
+  },
+  installation: {
+    consume: { contractGovernor: governorInstallation },
+    produce: { reserve: reserveInstallationProducer },
+  },
+}) => {
+  const bundle = await reserveBundle;
+  const reserveInstallation = E(zoe).install(bundle);
+
+  const poserInvitationP = E(committeeCreator).getPoserInvitation();
+  const [poserInvitation, poserInvitationAmount] = await Promise.all([
+    poserInvitationP,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+  ]);
+  const timer = await chainTimerService; // avoid promise for legibility
+
+  const ammInstance = await ammInstanceP;
+
+  const reserveTerms = makeReserveTerms(poserInvitationAmount, ammInstance);
+
+  const feeMintAccess = await feeMintAccessP;
+  const reserveGovernorTerms = {
+    timer,
+    electorateInstance,
+    governedContractInstallation: reserveInstallation,
+    governed: {
+      terms: reserveTerms,
+      issuerKeywordRecord: { Central: centralIssuer },
+      privateArgs: { feeMintAccess, initialPoserInvitation: poserInvitation },
+    },
+  };
+  const g = await E(zoe).startInstance(
+    governorInstallation,
+    {},
+    reserveGovernorTerms,
+    {
+      electorateCreatorFacet: committeeCreator,
+    },
+  );
+
+  const [creatorFacet, publicFacet, instance] = await Promise.all([
+    E(g.creatorFacet).getCreatorFacet(),
+    E(g.creatorFacet).getPublicFacet(),
+    E(g.publicFacet).getGovernedContract(),
+  ]);
+
+  reserveGovernorCreatorFacet.resolve(g.creatorFacet);
+  reserveCreatorFacet.resolve(creatorFacet);
+  reservePublicFacet.resolve(publicFacet);
+
+  reserveInstanceProducer.resolve(instance);
+  reserveGovernor.resolve(g.instance);
+  return reserveInstallation.then(i => reserveInstallationProducer.resolve(i));
 };
 
 /**

@@ -11,6 +11,7 @@ import {
   governanceBundles,
   economyBundles,
   ammBundle,
+  reserveBundle,
 } from '@agoric/run-protocol/src/importedBundles.js';
 import pegasusBundle from '@agoric/pegasus/bundles/bundle-pegasus.js';
 import { CONTRACT_NAME as PEGASUS_NAME } from '@agoric/pegasus/src/install-on-chain.js';
@@ -293,7 +294,12 @@ export const shareBootContractBundles = async ({
 
 /** @param {BootstrapPowers} powers */
 export const shareEconomyBundles = async ({
-  produce: { ammBundle: ammP, vaultBundles, governanceBundles: govP },
+  produce: {
+    ammBundle: ammP,
+    vaultBundles,
+    governanceBundles: govP,
+    reserveBundle: reserveP,
+  },
 }) => {
   govP.resolve(governanceBundles);
   ammP.resolve(ammBundle);
@@ -301,6 +307,7 @@ export const shareEconomyBundles = async ({
     VaultFactory: economyBundles.VaultFactory,
     liquidate: economyBundles.liquidate,
   });
+  reserveP.resolve(reserveBundle);
 };
 harden(shareEconomyBundles);
 
