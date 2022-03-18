@@ -5,9 +5,43 @@ import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
+import { Nat } from '@agoric/nat';
 import { makeNotifier } from '@agoric/notifier';
 
+import { makeRatioFromAmounts } from './ratio.js';
+
 import '../../exported.js';
+
+/**
+ * Create a "unit" amount, which is 10**decimalPlaces for a fungible brand.
+ *
+ * Unlike most uses of `decimalPlaces` for display only, this is specifically to
+ * enable the scaling operations needed to convert fungible amounts between one
+ * brand and another whose "unit" value is deemed equivalent, but whose
+ * decimalPlaces differ.
+ *
+ * @param {Brand<'nat'>} brand
+ */
+const makeUnitAmount = async brand => {
+  const decimals = await E.get(E(brand).getDisplayInfo()).decimalPlaces;
+  return AmountMath.make(brand, 10n ** Nat(decimals || 0));
+};
+harden(makeUnitAmount);
+
+/**
+ * Create a conversion ratio between two brands with equally-valued "unit"s.
+ *
+ * @param {Brand<'nat'>} fromBrand
+ * @param {Brand<'nat'>} toBrand
+ */
+export const makeUnitConversionRatio = async (fromBrand, toBrand) => {
+  const [fromUnit, toUnit] = await Promise.all([
+    makeUnitAmount(fromBrand),
+    makeUnitAmount(toBrand),
+  ]);
+  return makeRatioFromAmounts(fromUnit, toUnit);
+};
+harden(makeUnitConversionRatio);
 
 /**
  * @callback CompareAmount
