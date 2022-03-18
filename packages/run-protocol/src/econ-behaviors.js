@@ -495,3 +495,19 @@ export const startRewardDistributor = async ({
   );
 };
 harden(startRewardDistributor);
+
+/**
+ * @typedef { import('@endo/eventual-send/').Unpromise<T> } Unpromise<T>
+ * @template T
+ */
+
+/**
+ * TODO: refactor vats/core/types.js like this
+ *
+ * @template T
+ * @typedef {{
+ *   consume: { [P in keyof T]: ERef<T[P]> },
+ *   produce: { [P in keyof T]: Producer<T[P]> },
+ * }} PromiseMarket
+ */
+
