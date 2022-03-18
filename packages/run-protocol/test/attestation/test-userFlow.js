@@ -5,9 +5,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
-import { setupZCFTest } from '../../../zcf/setupZcfTest.js';
+import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 
-import { setupAttestation } from '../../../../../src/contracts/attestation/returnable/returnableNFT.js';
+import { makeCopyBag } from '@agoric/store';
+import { makeAttestationFacets } from '../../src/runStake/attestation.js';
+import { makeMockLienBridge } from './test-attestation.js';
 
 const makeDoReturnAttestation =
   (zoe, issuer, makeReturnAttInvitation) => async attestation => {
@@ -30,12 +32,10 @@ const makeTestAttestationAmount =
   (t, issuer, brand, address) => async (attestation, amountLiened) => {
     const attestationAmount = await E(issuer).getAmountOf(attestation);
 
-    t.deepEqual(attestationAmount.value, [
-      {
-        address,
-        amountLiened,
-      },
-    ]);
+    t.deepEqual(
+      attestationAmount.value,
+      makeCopyBag([[address, amountLiened.value]]),
+    );
     t.is(attestationAmount.brand, brand);
   };
 
@@ -46,22 +46,21 @@ const makeTestLienAmount = (t, getLienAmount, address) => expectedLien => {
 test(`typical flow`, async t => {
   const attestationTokenName = 'Token';
   const { brand: externalBrand } = makeIssuerKit('external');
-  const empty = AmountMath.makeEmpty(externalBrand);
 
   const { zoe, zcf } = await setupZCFTest();
 
   const address = 'myaddress';
 
-  const {
-    makeReturnAttInvitation,
-    addReturnableLien,
-    getLienAmount,
-    getIssuer,
-    getBrand,
-  } = await setupAttestation(attestationTokenName, empty, zcf);
+  const { publicFacet, creatorFacet } = await makeAttestationFacets(
+    zcf,
+    externalBrand,
+    attestationTokenName,
+    makeMockLienBridge(externalBrand, t),
+  );
+  const { makeReturnAttInvitation } = publicFacet;
 
-  const attestationIssuer = getIssuer();
-  const attestationBrand = getBrand();
+  const attestationIssuer = publicFacet.getIssuer();
+  const attestationBrand = publicFacet.getBrand();
 
   const testAttestationAmount = makeTestAttestationAmount(
     t,
@@ -69,7 +68,11 @@ test(`typical flow`, async t => {
     attestationBrand,
     address,
   );
-  const testLienAmount = makeTestLienAmount(t, getLienAmount, address);
+  const testLienAmount = makeTestLienAmount(
+    t,
+    a => creatorFacet.getLiened(a, externalBrand),
+    address,
+  );
 
   const doReturnAttestation = makeDoReturnAttestation(
     zoe,
@@ -82,7 +85,8 @@ test(`typical flow`, async t => {
 
   // Add a lien of 100n
   const amountToLien = AmountMath.make(externalBrand, 100n);
-  const attestation = await addReturnableLien(address, amountToLien);
+  const attMaker = E(creatorFacet).provideAttestationMaker(address);
+  const attestation = await E(attMaker).makeAttestation(amountToLien);
 
   // LienAmount is now 100n
   testLienAmount(amountToLien);
@@ -92,7 +96,7 @@ test(`typical flow`, async t => {
 
   // take out another expiration for 50n
   const amountToLien2 = AmountMath.make(externalBrand, 50n);
-  const attestation2 = await addReturnableLien(address, amountToLien2);
+  const attestation2 = await E(attMaker).makeAttestation(amountToLien2);
 
   // LienAmount is now 150n
   testLienAmount(AmountMath.add(amountToLien, amountToLien2));
