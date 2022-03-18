@@ -83,7 +83,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * @template {object} PF Public facet of governed
  * @template {ContractPowerfulCreatorFacet} CF Creator facet of governed
  * @type {ContractStartFn<GovernorPublic, GovernedContractFacetAccess<PF>,{
- *   timer: Timer,
+ *   timer: TimerService,
  *   electorateInstance: Instance,
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
