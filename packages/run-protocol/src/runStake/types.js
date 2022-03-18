@@ -17,7 +17,7 @@
 
 /**
  * @typedef {Object} StakingAuthority
- * @property {(address: string, amount: Amount<'nat'>) => Promise<void>} setLiened
+ * @property {(address: string, previous: Amount, target: Amount) => Promise<void>} setLiened
  * @property {(address: string, brand: Brand<'nat'>) => ERef<AccountState> } getAccountState
  * @typedef {Object} AccountState
  * @property {Amount<'nat'>} bonded

@@ -126,15 +126,10 @@ const makeAttestationKit = async (zcf, keyword, stakeBrand, lienBridge) => {
       wrapLienedAmount(address, lienDelta),
     );
 
-    // screw case:
-    // Alice makes call1 100 -> 150, gets an attestation for 50
-    // Alice makes call2 100 -> 150, gets another attestation for 50
-    // but the total liened amount is only 150
-
     // If setLiened returns successfully, then
     // the preconditions were indeed met and we
     // can update the stored liened amount.
-    await E(lienBridge).setLiened(address, target);
+    await E(lienBridge).setLiened(address, current, target);
     amountByAddress.set(address, target);
     return attestationPaymentP;
   };
@@ -151,7 +146,7 @@ const makeAttestationKit = async (zcf, keyword, stakeBrand, lienBridge) => {
     const liened = amountByAddress.get(address); // or throw
     const updated = subtract(liened, amountReturned); // or throw
 
-    await E(lienBridge).setLiened(address, updated);
+    await E(lienBridge).setLiened(address, liened, updated);
     // COMMIT. Burn the escrowed attestation payment and exit the seat
     amountByAddress.set(address, updated);
     zcfMint.burnLosses(harden({ Attestation: attestationAmount }), seat);

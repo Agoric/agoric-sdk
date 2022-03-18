@@ -10,12 +10,14 @@ import { makeCopyBag } from '@agoric/store';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { makeAttestationFacets } from '../../src/runStake/attestation.js';
 
+const { details: X } = assert;
+
 /**
  * @param {Brand} uBrand
- * @param {*} t
+ * @param {*} _t for debug logging
  * @returns {StakingAuthority}
  */
-export const makeMockLienBridge = (uBrand, t) => {
+export const makeMockLienBridge = (uBrand, _t) => {
   const currentTime = 10n;
   const liened = new Map();
   const empty = AmountMath.make(uBrand, 0n);
@@ -33,7 +35,12 @@ export const makeMockLienBridge = (uBrand, t) => {
         currentTime,
       });
     },
-    setLiened: async (address, amount) => {
+    setLiened: async (address, previous, amount) => {
+      const expected = liened.get(address) || empty;
+      assert(
+        AmountMath.isEqual(previous, expected),
+        X`cannot setLien from ${previous}; expected ${expected}`,
+      );
       // t.log('setLiened:', { address, amount });
       liened.set(address, amount);
     },
