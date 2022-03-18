@@ -3,20 +3,22 @@
 import '@agoric/zoe/src/types.js';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { E } from '@endo/far';
 
 import { assert } from '@agoric/assert';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import {
   floorDivideBy,
+  floorMultiplyBy,
   makeRatio,
   multiplyRatios,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+  makeUnitConversionRatio,
+  getAmountOut,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 
 import { makeNotifierKit } from '@agoric/notifier';
-import { getAmountOut } from '@agoric/zoe/src/contractSupport';
-import { E } from '@endo/eventual-send';
 import { makeInnerVault } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
@@ -41,6 +43,18 @@ export async function start(zcf, privateArgs) {
 
   const LIQUIDATION_MARGIN = makeRatio(105n, runBrand);
 
+  const runDecimalPlaces = await E.get(E(runBrand).getDisplayInfo())
+    .decimalPlaces;
+  const { brand: priceBrand } = makeIssuerKit(
+    'USD',
+    AssetKind.NAT,
+    harden({
+      decimalPlaces: (runDecimalPlaces || 0) + 3, // Arbitrarily different than runDecimalPlaces.
+    }),
+  );
+
+  const debtToPrice = await makeUnitConversionRatio(runBrand, priceBrand);
+  const collateralToPrice = makeRatio(1n, collateralBrand, 1n, collateralBrand);
   const { zcfSeat: vaultFactorySeat } = zcf.makeEmptySeatKit();
 
   let vaultCounter = 0;
@@ -55,20 +69,32 @@ export async function start(zcf, privateArgs) {
   const timer = buildManualTimer(console.log, 0n, DAY);
   const options = {
     actualBrandIn: collateralBrand,
-    actualBrandOut: runBrand,
-    priceList: [80],
+    actualBrandOut: priceBrand,
+    // Scale the priceList by the debtToPrice.
+    priceList: [80].map(
+      n =>
+        floorDivideBy(AmountMath.make(runBrand, BigInt(n)), debtToPrice).value,
+    ),
     tradeList: undefined,
     timer,
     quoteMint: makeIssuerKit('quote', AssetKind.SET).mint,
   };
+
   const priceAuthority = makeFakePriceAuthority(options);
   const maxDebtFor = async collateralAmount => {
-    const quoteAmount = await E(priceAuthority).quoteGiven(
+    const collateralPriceAmount = floorDivideBy(
       collateralAmount,
-      runBrand,
+      collateralToPrice,
+    );
+    const quoteAmount = await E(priceAuthority).quoteGiven(
+      collateralPriceAmount,
+      debtToPrice.denominator.brand,
     );
     // floorDivide because we want the debt ceiling lower
-    return floorDivideBy(getAmountOut(quoteAmount), LIQUIDATION_MARGIN);
+    return floorDivideBy(
+      floorMultiplyBy(getAmountOut(quoteAmount), debtToPrice),
+      LIQUIDATION_MARGIN,
+    );
   };
 
   const reallocateWithFee = (fee, wanted, seat, ...otherSeats) => {

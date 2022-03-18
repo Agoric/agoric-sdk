@@ -37,6 +37,7 @@
  * @param {Issuer} collateralIssuer
  * @param {Keyword} collateralKeyword
  * @param {VaultManagerParamValues} params
+ * @param {Brand} [collateralPriceBrand]
  * @returns {Promise<VaultManager>}
  */
 

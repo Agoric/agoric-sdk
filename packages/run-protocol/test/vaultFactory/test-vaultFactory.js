@@ -9,10 +9,13 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { ORACLE_BRAND_PRICE_NAME } from '@agoric/vats/src/core/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   makeRatio,
   ceilMultiplyBy,
+  floorDivideBy,
+  makeUnitConversionRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
@@ -218,7 +221,7 @@ async function getRunFromFaucet(
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
  * @param {LoanTiming} loanTiming
- * @param {unknown} priceList
+ * @param {import('@agoric/zoe/tools/fakePriceAuthority.js').Numeric[]} priceList
  * @param {Amount} unitAmountIn
  * @param {Brand} aethBrand
  * @param {unknown} electorateTerms
@@ -266,11 +269,28 @@ async function setupServices(
   );
   const { consume, produce } = space;
 
+  const runDecimalPlaces = await E.get(E(runBrand).getDisplayInfo())
+    .decimalPlaces;
+  const { brand: priceBrand } = makeIssuerKit(
+    ORACLE_BRAND_PRICE_NAME,
+    AssetKind.NAT,
+    harden({
+      decimalPlaces: (runDecimalPlaces || 0) + 3, // Arbitrarily different than runDecimalPlaces.
+    }),
+  );
+  space.oracleBrand.produce[ORACLE_BRAND_PRICE_NAME].resolve(priceBrand);
+
+  const debtToPrice = await makeUnitConversionRatio(runBrand, priceBrand);
+
   const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
   const priceAuthority = makeScriptedPriceAuthority({
     actualBrandIn: aethBrand,
-    actualBrandOut: runBrand,
-    priceList,
+    actualBrandOut: priceBrand,
+    // Scale the priceList by the debtToPrice.
+    priceList: priceList.map(
+      n =>
+        floorDivideBy(AmountMath.make(runBrand, BigInt(n)), debtToPrice).value,
+    ),
     timer,
     quoteMint,
     unitAmountIn,
@@ -324,6 +344,7 @@ async function setupServices(
     ammFacets,
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
+    priceBrand,
   };
 }
 // #endregion
@@ -815,6 +836,7 @@ test('vaultFactory display collateral', async t => {
 
   const {
     runKit: { brand: runBrand },
+    priceBrand,
   } = services;
   const { vaultFactory } = services.vaultFactory;
 
@@ -831,7 +853,7 @@ test('vaultFactory display collateral', async t => {
     brand: aethBrand,
     liquidationMargin: makeRatio(105n, runBrand),
     stabilityFee: makeRatio(530n, runBrand, BASIS_POINTS),
-    marketPrice: makeRatio(5n, runBrand, 1n, aethBrand),
+    marketPrice: makeRatio(5555n, priceBrand, 1n, aethBrand),
     interestRate: makeRatio(100n, runBrand, 10000n, runBrand),
   });
 });

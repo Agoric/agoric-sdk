@@ -26,8 +26,12 @@ import {
   assertProposalShape,
   getAmountOut,
   getAmountIn,
+  makeUnitConversionRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  makeRatio,
+  makeRatioFromAmounts,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 import { assertElectorateMatches } from '@agoric/governance';
 
@@ -45,10 +49,14 @@ const { details: X } = assert;
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
  *   timerService: TimerService,
- *   priceAuthority: ERef<PriceAuthority>}>} zcf
+ *   priceAuthority: ERef<PriceAuthority>,
+ *   debtToPrice?: Ratio }>} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
+  const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const { issuer: debtIssuer, brand: debtBrand } = debtMint.getIssuerRecord();
+
   const {
     ammPublicFacet,
     priceAuthority,
@@ -57,14 +65,12 @@ export const start = async (zcf, privateArgs) => {
     electionManager,
     governedParams: governedTerms,
     loanTimingParams,
+    debtToPrice = makeRatio(1n, debtBrand, 1n, debtBrand),
   } = zcf.getTerms();
 
   /** @type {Promise<GovernorPublic>} */
   const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
 
-  const { feeMintAccess, initialPoserInvitation } = privateArgs;
-  const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
-  const { issuer: debtIssuer, brand: debtBrand } = debtMint.getIssuerRecord();
   zcf.setTestJig(() => ({
     runIssuerRecord: debtMint.getIssuerRecord(),
   }));
@@ -131,6 +137,7 @@ export const start = async (zcf, privateArgs) => {
     collateralIssuer,
     collateralKeyword,
     initialParamValues,
+    collateralPriceBrand,
   ) => {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
@@ -152,13 +159,18 @@ export const start = async (zcf, privateArgs) => {
     );
     const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
 
-    const startTimeStamp = await E(timerService).getCurrentTimestamp();
+    const collateralToPrice = await makeUnitConversionRatio(
+      collateralBrand,
+      collateralPriceBrand || collateralBrand,
+    );
 
+    const startTimeStamp = await E(timerService).getCurrentTimestamp();
     const vm = makeVaultManager(
       zcf,
       debtMint,
-      collateralBrand,
       priceAuthority,
+      collateralToPrice,
+      debtToPrice,
       loanTimingParams,
       vaultParamManager.readonly(),
       mintAndReallocate,

@@ -3,7 +3,6 @@
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
-import { Nat } from '@agoric/nat';
 import {
   assertProposalShape,
   makeRatioFromAmounts,
@@ -13,6 +12,7 @@ import {
   ceilDivideBy,
   makeRatio,
   floorDivideBy,
+  floorMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
@@ -45,8 +45,9 @@ const trace = makeTracer('VM');
  *
  * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
- * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {Ratio} collateralToPrice not a tunable parameter; determined by priceAuthority
+ * @param {Ratio} debtToPrice not a tunable parameter; determined by priceAuthority
  * @param {{
  *  ChargingPeriod: ParamRecord<'nat'>
  *  RecordingPeriod: ParamRecord<'nat'>
@@ -68,8 +69,9 @@ const trace = makeTracer('VM');
 export const makeVaultManager = (
   zcf,
   debtMint,
-  collateralBrand,
   priceAuthority,
+  collateralToPrice,
+  debtToPrice,
   timingParams,
   loanParamGetters,
   mintAndReallocateWithFee,
@@ -89,11 +91,9 @@ export const makeVaultManager = (
     getRecordingPeriod: () => timingParams[RECORDING_PERIOD_KEY].value,
     async getCollateralQuote() {
       // get a quote for one unit of the collateral
-      const displayInfo = await E(collateralBrand).getDisplayInfo();
-      const decimalPlaces = displayInfo?.decimalPlaces || 0n;
       return E(priceAuthority).quoteGiven(
-        AmountMath.make(collateralBrand, 10n ** Nat(decimalPlaces)),
-        debtBrand,
+        collateralToPrice.denominator,
+        debtToPrice.denominator.brand,
       );
     },
   };
@@ -145,7 +145,7 @@ export const makeVaultManager = (
       vault,
       debtMint.burnLosses,
       liquidationStrategy,
-      collateralBrand,
+      collateralToPrice.numerator.brand,
       penaltyPoolSeat,
       loanParamGetters.getLiquidationPenalty(),
     )
@@ -182,13 +182,20 @@ export const makeVaultManager = (
 
     const liquidationMargin = shared.getLiquidationMargin();
 
+    const triggerCollateral = floorDivideBy(
+      highestDebtRatio.denominator,
+      collateralToPrice,
+    );
+
     // ask to be alerted when the price level falls enough that the vault
     // with the highest debt to collateral ratio will no longer be valued at the
     // liquidationMargin above its debt.
-    const triggerPoint = ceilMultiplyBy(
+    const debtTriggerPoint = ceilMultiplyBy(
       highestDebtRatio.numerator, // debt
       liquidationMargin,
     );
+    const priceTriggerPoint = ceilDivideBy(debtTriggerPoint, debtToPrice);
+    console.error('@@@ priceTriggerPoint', priceTriggerPoint);
 
     // if there's an outstanding quote, reset the level. If there's no current
     // quote (because this is the first loan, or because a quote just resolved)
@@ -196,10 +203,7 @@ export const makeVaultManager = (
     // liquidate anything that's above the price level.
     if (outstandingQuote) {
       // Safe to call extraneously (lightweight and idempotent)
-      E(outstandingQuote).updateLevel(
-        highestDebtRatio.denominator, // collateral
-        triggerPoint,
-      );
+      E(outstandingQuote).updateLevel(triggerCollateral, priceTriggerPoint);
       trace('updating level for outstandingQuote');
       return;
     }
@@ -213,8 +217,8 @@ export const makeVaultManager = (
     // callback that may not fire until much later.
     // Callers shouldn't expect a response from this function.
     outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
-      highestDebtRatio.denominator, // collateral
-      triggerPoint,
+      triggerCollateral, // collateral price
+      priceTriggerPoint,
     );
 
     const quote = await E(outstandingQuote).getPromise();
@@ -222,9 +226,10 @@ export const makeVaultManager = (
     // sufficient collateral, (even if the trigger was set for a different
     // level) because we use the actual price ratio plus margin here. Use
     // ceilDivide to round up because ratios above this will be liquidated.
+    const debtAmountOut = ceilMultiplyBy(getAmountOut(quote), debtToPrice);
     const quoteRatioPlusMargin = makeRatioFromAmounts(
-      ceilDivideBy(getAmountOut(quote), liquidationMargin),
-      getAmountIn(quote),
+      ceilDivideBy(debtAmountOut, liquidationMargin),
+      ceilMultiplyBy(getAmountIn(quote), collateralToPrice), // collateral
     );
 
     outstandingQuote = undefined;
@@ -302,13 +307,17 @@ export const makeVaultManager = (
   };
 
   const maxDebtFor = async collateralAmount => {
-    const quoteAmount = await E(priceAuthority).quoteGiven(
+    const collateralPriceAmount = ceilDivideBy(
       collateralAmount,
-      debtBrand,
+      collateralToPrice,
+    );
+    const quoteAmount = await E(priceAuthority).quoteGiven(
+      collateralPriceAmount,
+      debtToPrice.denominator.brand,
     );
     // floorDivide because we want the debt ceiling lower
     return floorDivideBy(
-      getAmountOut(quoteAmount),
+      floorMultiplyBy(getAmountOut(quoteAmount), debtToPrice),
       shared.getLiquidationMargin(),
     );
   };
@@ -368,7 +377,7 @@ export const makeVaultManager = (
     mintAndReallocate,
     burnAndRecord,
     getNotifier: () => assetNotifer,
-    getCollateralBrand: () => collateralBrand,
+    getCollateralBrand: () => collateralToPrice.numerator.brand,
     getDebtBrand: () => debtBrand,
     getCompoundedInterest: () => compoundedInterest,
     updateVaultPriority,

@@ -1,10 +1,13 @@
 // @ts-check
 
 import { E, Far } from '@endo/far';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  makeRatio,
+  makeUnitConversionRatio,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import {
   CENTRAL_ISSUER_NAME,
-  ORACLE_PRICE_BRAND_NAME,
+  ORACLE_BRAND_PRICE_NAME,
 } from '@agoric/vats/src/core/utils.js';
 import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
@@ -241,7 +244,7 @@ export const startVaultFactory = async (
       consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
     },
     oracleBrand: {
-      consume: { [ORACLE_PRICE_BRAND_NAME]: oraclePriceBrandP },
+      consume: { [ORACLE_BRAND_PRICE_NAME]: oraclePriceBrandP },
     },
     instance,
     installation,
@@ -265,7 +268,15 @@ export const startVaultFactory = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
-  const centralBrand = await centralBrandP;
+  const [centralBrand, oraclePriceBrand] = await Promise.all([
+    centralBrandP,
+    oraclePriceBrandP,
+  ]);
+
+  const debtToPrice = await makeUnitConversionRatio(
+    centralBrand,
+    oraclePriceBrand,
+  );
 
   /**
    * Types for the governed params for the vaultFactory; addVaultType() sets actual values
@@ -292,6 +303,7 @@ export const startVaultFactory = async (
 
   const vaultFactoryTerms = makeGovernedTerms(
     priceAuthority,
+    debtToPrice,
     loanParams,
     installations.liquidate,
     chainTimerService,

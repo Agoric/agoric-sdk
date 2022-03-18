@@ -58,6 +58,7 @@ const makeElectorateParamManager = async (zoe, electorateInvitation) => {
 
 /**
  * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {Ratio} debtToPrice
  * @param {LoanTiming} loanTiming
  * @param {Installation} liquidationInstall
  * @param {ERef<TimerService>} timerService
@@ -68,6 +69,7 @@ const makeElectorateParamManager = async (zoe, electorateInvitation) => {
  */
 const makeGovernedTerms = (
   priceAuthority,
+  debtToPrice,
   loanTiming,
   liquidationInstall,
   timerService,
@@ -86,6 +88,7 @@ const makeGovernedTerms = (
   return harden({
     ammPublicFacet,
     priceAuthority,
+    debtToPrice,
     loanParams: vmParamMgr.getParams(),
     loanTimingParams: timingParamMgr.getParams(),
     timerService,
