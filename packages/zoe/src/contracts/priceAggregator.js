@@ -31,7 +31,8 @@ const start = async zcf => {
   const {
     timer,
     POLL_INTERVAL,
-    brands: { In: brandIn, Out: brandOut },
+    brandIn,
+    brandOut,
     unitAmountIn = AmountMath.make(brandIn, 1n),
   } = zcf.getTerms();
 

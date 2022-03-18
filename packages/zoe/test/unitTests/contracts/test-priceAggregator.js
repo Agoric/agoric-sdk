@@ -67,8 +67,9 @@ test.before(
       'b1-aggregator',
     );
 
-    const link = makeIssuerKit('$LINK', AssetKind.NAT);
-    const usd = makeIssuerKit('$USD', AssetKind.NAT);
+    const link = makeIssuerKit('$ATOM', AssetKind.NAT);
+    const { brand: atomBrand } = makeIssuerKit('$ATOM', AssetKind.NAT);
+    const { brand: usdBrand } = makeIssuerKit('$USD', AssetKind.NAT);
 
     /** @type {MakeFakePriceOracle} */
     const makeFakePriceOracle = async (t, valueOut = undefined) => {
@@ -111,8 +112,8 @@ test.before(
       const timer = buildManualTimer(() => {});
       const aggregator = await E(zoe).startInstance(
         aggregatorInstallation,
-        { In: link.issuer, Out: usd.issuer },
-        { timer, POLL_INTERVAL },
+        undefined,
+        { timer, POLL_INTERVAL, brandIn: atomBrand, brandOut: usdBrand },
       );
       await E(aggregator.creatorFacet).initializeQuoteMint(quote.mint);
       return aggregator;
@@ -129,7 +130,8 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
   const aggregator = await t.context.makeMedianAggregator(1n);
   const {
     timer: oracleTimer,
-    brands: { In: brandIn, Out: brandOut },
+    brandIn,
+    brandOut,
     issuers: { Quote: rawQuoteIssuer },
     unitAmountIn = AmountMath.make(brandIn, 1n),
   } = await E(zoe).getTerms(aggregator.instance);
@@ -259,7 +261,8 @@ test('median aggregator - push only', /** @param {ExecutionContext} t */ async t
   const aggregator = await t.context.makeMedianAggregator(1n);
   const {
     timer: oracleTimer,
-    brands: { In: brandIn, Out: brandOut },
+    brandIn,
+    brandOut,
     issuers: { Quote: rawQuoteIssuer },
     unitAmountIn = AmountMath.make(brandIn, 1n),
   } = await E(zoe).getTerms(aggregator.instance);
@@ -353,7 +356,8 @@ test('quoteAtTime', /** @param {ExecutionContext} t */ async t => {
   const aggregator = await t.context.makeMedianAggregator(1n);
   const {
     timer: oracleTimer,
-    brands: { Out: usdBrand, In: brandIn },
+    brandIn,
+    brandOut: usdBrand,
     issuers: { Quote: rawQuoteIssuer },
   } = await E(zoe).getTerms(aggregator.instance);
   /** @type {Issuer<'set'>} */
@@ -477,7 +481,8 @@ test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
   const {
     timer: oracleTimer,
     issuers: { Quote: rawQuoteIssuer },
-    brands,
+    brandIn,
+    brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
@@ -488,8 +493,8 @@ test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const quoteWhenGTE = E(pa).quoteWhenGTE(
-    AmountMath.make(brands.In, 37n),
-    AmountMath.make(brands.Out, 1183n * 37n),
+    AmountMath.make(brandIn, 37n),
+    AmountMath.make(brandOut, 1183n * 37n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -503,8 +508,8 @@ test('quoteWhen', /** @param {ExecutionContext} t */ async t => {
   );
 
   const quoteWhenLTE = E(pa).quoteWhenLTE(
-    AmountMath.make(brands.In, 29n),
-    AmountMath.make(brands.Out, 974n * 29n),
+    AmountMath.make(brandIn, 29n),
+    AmountMath.make(brandOut, 974n * 29n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -598,7 +603,8 @@ test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async
   const {
     timer: oracleTimer,
     issuers: { Quote: rawQuoteIssuer },
-    brands,
+    brandIn,
+    brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
@@ -609,8 +615,8 @@ test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
-    AmountMath.make(brands.In, 37n),
-    AmountMath.make(brands.Out, 1183n * 37n),
+    AmountMath.make(brandIn, 37n),
+    AmountMath.make(brandOut, 1183n * 37n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -626,8 +632,8 @@ test('mutableQuoteWhen no replacement', /** @param {ExecutionContext} t */ async
     );
 
   const mutableQuoteWhenLTE = E(pa).mutableQuoteWhenLTE(
-    AmountMath.make(brands.In, 29n),
-    AmountMath.make(brands.Out, 974n * 29n),
+    AmountMath.make(brandIn, 29n),
+    AmountMath.make(brandOut, 974n * 29n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -727,7 +733,8 @@ test('mutableQuoteWhen with update', /** @param {ExecutionContext} t */ async t 
   const {
     timer: oracleTimer,
     issuers: { Quote: rawQuoteIssuer },
-    brands,
+    brandIn,
+    brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
   /** @type {Issuer<'set'>} */
   const quoteIssuer = rawQuoteIssuer;
@@ -736,8 +743,8 @@ test('mutableQuoteWhen with update', /** @param {ExecutionContext} t */ async t 
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
-    AmountMath.make(brands.In, 25n),
-    AmountMath.make(brands.Out, 1240n * 25n),
+    AmountMath.make(brandIn, 25n),
+    AmountMath.make(brandOut, 1240n * 25n),
   );
 
   /** @type {PriceQuote | undefined} */
@@ -759,8 +766,8 @@ test('mutableQuoteWhen with update', /** @param {ExecutionContext} t */ async t 
   await E(oracleTimer).tick();
 
   await E(mutableQuoteWhenGTE).updateLevel(
-    AmountMath.make(brands.In, 25n),
-    AmountMath.make(brands.Out, 1245n * 25n),
+    AmountMath.make(brandIn, 25n),
+    AmountMath.make(brandOut, 1245n * 25n),
   );
 
   await E(oracleTimer).tick();
@@ -797,16 +804,18 @@ test('cancel mutableQuoteWhen', /** @param {ExecutionContext} t */ async t => {
 
   const aggregator = await t.context.makeMedianAggregator(1n);
 
-  const { timer: oracleTimer, brands } = await E(zoe).getTerms(
-    aggregator.instance,
-  );
+  const {
+    timer: oracleTimer,
+    brandIn,
+    brandOut,
+  } = await E(zoe).getTerms(aggregator.instance);
 
   const price1200 = await makeFakePriceOracle(t, 1200n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
-    AmountMath.make(brands.In, 25n),
-    AmountMath.make(brands.Out, 1240n * 25n),
+    AmountMath.make(brandIn, 25n),
+    AmountMath.make(brandOut, 1240n * 25n),
   );
 
   /** @type {PriceQuote | undefined} */
