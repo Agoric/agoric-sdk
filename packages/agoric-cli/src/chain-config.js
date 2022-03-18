@@ -136,6 +136,7 @@ export function finishTendermintConfig({
   config.p2p.seeds = seeds;
   config.rpc.laddr = `tcp://0.0.0.0:${rpcPort}`;
   config.rpc.max_body_bytes = RPC_MAX_BODY_BYTES;
+  config.mempool.max_tx_bytes = RPC_MAX_BODY_BYTES;
   config.rpc.timeout_broadcast_tx_commit = `${RPC_BROADCAST_TIMEOUT_S}s`;
 
   if (
