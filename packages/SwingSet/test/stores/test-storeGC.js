@@ -519,7 +519,8 @@ function validateFetchAndHold(v, rp, idx) {
 }
 
 function validateExportHeld(v, rp, idx) {
-  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, '1'));
+  validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, NONE));
+  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, 'r'));
   validate(v, matchResolveOne(rp, mapRefVal(idx)));
   validateDone(v);
 }
@@ -570,27 +571,30 @@ function validateDropHeld(v, rp, rc, es) {
 function validateDropHeldWithGCAndRetire(v, rp) {
   validateReturned(v, rp);
   validateRefCountCheck(v, mapRef(2), NONE);
-  validateDeleteMetadata(v, '0', 2, 0);
+  validateDeleteMetadata(v, 's', 2, 0);
   validate(v, matchRetireExports(mapRef(2)));
   validateDone(v);
 }
 
-function validateDropExports(v, idx, rc, es) {
-  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, es));
+function validateDropExports(v, idx, rc) {
+  validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, 'r'));
+  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, 's'));
   validate(v, matchVatstoreGet(`vom.rc.${mapRef(idx)}`, rc));
   validateDone(v);
 }
 
-function validateDropExportsWithGCAndRetire(v, idx, rc, es) {
-  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, es));
+function validateDropExportsWithGCAndRetire(v, idx, rc) {
+  validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, 'r'));
+  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, 's'));
   validate(v, matchVatstoreGet(`vom.rc.${mapRef(idx)}`, rc));
   validateRefCountCheck(v, mapRef(2), rc);
-  validateDeleteMetadata(v, es, 2, 0);
+  validateDeleteMetadata(v, 's', 2, 0);
   validate(v, matchRetireExports(mapRef(2)));
   validateDone(v);
 }
 
 function validateRetireExports(v, idx) {
+  validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, 's'));
   validate(v, matchVatstoreDelete(`vom.es.${mapRef(idx)}`));
   validateDone(v);
 }
@@ -650,7 +654,7 @@ test.serial('store lifecycle 2', async t => {
 
   // LERV -> lERV  Drop the in-memory reference again, but it's still exported and virtual referenced
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, '1', '1');
+  validateDropHeld(v, rp, '1', 'r');
 
   // lERV -> LERV  Reread from storage, all three legs again
   rp = await dispatchMessage('fetchAndHold');
@@ -658,7 +662,7 @@ test.serial('store lifecycle 2', async t => {
 
   // LERV -> lERV  Drop in-memory reference (stepping stone to other states)
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, '1', '1');
+  validateDropHeld(v, rp, '1', 'r');
 
   // lERV -> LERV  Reintroduce the in-memory reference via message
   rp = await dispatchMessage('importAndHold', mapRefArg(2));
@@ -666,11 +670,11 @@ test.serial('store lifecycle 2', async t => {
 
   // LERV -> lERV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, '1', '1');
+  validateDropHeld(v, rp, '1', 'r');
 
   // lERV -> leRV  Drop the export
   await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, '1', '0');
+  validateDropExports(v, 2, '1');
 
   // leRV -> LeRV  Fetch from storage
   rp = await dispatchMessage('fetchAndHold');
@@ -678,7 +682,7 @@ test.serial('store lifecycle 2', async t => {
 
   // LeRV -> leRV  Forget about it *again*
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, '1', '0');
+  validateDropHeld(v, rp, '1', 's');
 
   // leRV -> LeRV  Fetch from storage *again*
   rp = await dispatchMessage('fetchAndHold');
@@ -709,11 +713,11 @@ test.serial('store lifecycle 3', async t => {
 
   // LERV -> LeRV  Drop the export
   await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, '1', '0');
+  validateDropExports(v, 2, '1');
 
   // LeRV -> leRV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, '1', '0');
+  validateDropHeld(v, rp, '1', 's');
 
   // leRV -> lerV  Retire the export
   await dispatchRetireExports(mapRef(2));
@@ -741,7 +745,7 @@ test.serial('store lifecycle 4', async t => {
 
   // LERv -> LeRv  Drop the export
   await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, NONE, '0');
+  validateDropExports(v, 2, NONE);
 
   // LeRv -> lerv  Drop in-memory reference (gc and retire)
   rp = await dispatchMessage('dropHeld');
@@ -764,7 +768,7 @@ test.serial('store lifecycle 5', async t => {
 
   // LERv -> LeRv  Drop the export
   await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, NONE, '0');
+  validateDropExports(v, 2, NONE);
 
   // LeRv -> Lerv  Retire the export
   await dispatchRetireExports(mapRef(2));
@@ -792,7 +796,7 @@ test.serial('store lifecycle 6', async t => {
 
   // LERv -> LeRv  Drop the export
   await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, NONE, '0');
+  validateDropExports(v, 2, NONE);
 
   // LeRv -> LeRV  Store store reference virtually
   rp = await dispatchMessage('storeHeld');
@@ -808,11 +812,11 @@ test.serial('store lifecycle 6', async t => {
 
   // LeRV -> leRV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, '1', '0');
+  validateDropHeld(v, rp, '1', 's');
 
   // leRV -> lerv  Drop stored reference (gc and retire)
   rp = await dispatchMessage('dropStored');
-  validateDropStoredWithGCAndRetire(v, rp, true, '0', '0');
+  validateDropStoredWithGCAndRetire(v, rp, true, '0', 's');
 });
 
 // test 7: lerv -> Lerv -> LERv -> lERv -> LERv -> lERv -> lerv
@@ -832,7 +836,7 @@ test.serial('store lifecycle 7', async t => {
 
   // LERv -> lERv  Drop in-memory reference, no GC because exported
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, NONE, '1');
+  validateDropHeld(v, rp, NONE, 'r');
 
   // lERv -> LERv  Reintroduce the in-memory reference via message
   rp = await dispatchMessage('importAndHold', mapRefArg(2));
@@ -840,11 +844,11 @@ test.serial('store lifecycle 7', async t => {
 
   // LERv -> lERv  Drop in-memory reference again, still no GC because exported
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, NONE, '1');
+  validateDropHeld(v, rp, NONE, 'r');
 
   // lERv -> lerv  Drop the export (gc and retire)
   rp = await dispatchDropExports(mapRef(2));
-  validateDropExportsWithGCAndRetire(v, 2, NONE, '0');
+  validateDropExportsWithGCAndRetire(v, 2, NONE);
 });
 
 // test 8: lerv -> Lerv -> LERv -> LERV -> LERv -> LERV -> lERV -> lERv -> lerv
@@ -876,15 +880,15 @@ test.serial('store lifecycle 8', async t => {
 
   // LERV -> lERV  Drop the in-memory reference
   rp = await dispatchMessage('dropHeld');
-  validateDropHeld(v, rp, '1', '1');
+  validateDropHeld(v, rp, '1', 'r');
 
   // lERV -> lERv  Overwrite virtual reference
   rp = await dispatchMessage('dropStored');
-  validateDropStored(v, rp, true, '0', '1');
+  validateDropStored(v, rp, true, '0', 'r');
 
   // lERv -> lerv  Drop the export (gc and retire)
   rp = await dispatchDropExports(mapRef(2));
-  validateDropExportsWithGCAndRetire(v, 2, '0', '0');
+  validateDropExportsWithGCAndRetire(v, 2, '0');
 });
 
 function validatePrepareStore3(

@@ -35,10 +35,11 @@ export function makeVirtualReferenceManager(
    * Check if a virtual object is truly dead - i.e., unreachable - and truly
    * delete it if so.
    *
-   * A virtual object is kept alive by being reachable by any of three legs:
-   *  - any in-memory references to it (if so, it will have a representative and
-   *    thus a non-null slot-to-val entry)
-   *  - any virtual references to it (if so, it will have a refcount > 0)
+   * A virtual object is kept alive if it or any of its facets are reachable by
+   * any of three legs:
+   *  - in-memory references (if so, it will have a representative and thus a
+   *    non-null slot-to-val entry)
+   *  - virtual references (if so, it will have a refcount > 0)
    *  - being exported (if so, its export flag will be set)
    *
    * This function is called after a leg has been reported missing, and only
@@ -51,27 +52,61 @@ export function makeVirtualReferenceManager(
    * it had been exported, we also inform the kernel that the vref has been
    * retired, so other vats can delete their weak collection entries too.
    *
-   * @param {string} vobjID  The vref of the virtual object that's plausibly dead
+   * @param {string} baseRef  The virtual object cohort that's plausibly dead
    *
-   * @returns {[boolean, boolean]} A pair of flags: the first is true if this
-   *    possibly created a new GC opportunity, the second is true if the object
-   *    should now be regarded as unrecognizable
+   * @returns {[boolean, string[]]} A pair of a flag that's true if this
+   *    possibly created a new GC opportunity and an array of vrefs that should
+   *    now be regarded as unrecognizable
    */
-  function possibleVirtualObjectDeath(vobjID) {
-    const refCount = getRefCount(vobjID);
-    const exportStatus = getExportStatus(vobjID);
-    if (exportStatus !== 'reachable' && refCount === 0) {
-      let doMoreGC = deleteStoredRepresentation(vobjID);
-      syscall.vatstoreDelete(`vom.rc.${vobjID}`);
-      syscall.vatstoreDelete(`vom.es.${vobjID}`);
-      doMoreGC = doMoreGC || ceaseRecognition(vobjID);
-      return [doMoreGC, exportStatus !== 'none'];
+  function possibleVirtualObjectDeath(baseRef) {
+    const refCount = getRefCount(baseRef);
+    const [reachable, retirees] = getExportStatus(baseRef);
+    if (!reachable && refCount === 0) {
+      let doMoreGC = deleteStoredRepresentation(baseRef);
+      syscall.vatstoreDelete(`vom.rc.${baseRef}`);
+      syscall.vatstoreDelete(`vom.es.${baseRef}`);
+      const more = ceaseRecognition(baseRef);
+      doMoreGC = doMoreGC || more;
+      return [doMoreGC, retirees];
     }
-    return [false, false];
+    return [false, []];
   }
 
-  function getRefCount(vobjID) {
-    const raw = syscall.vatstoreGet(`vom.rc.${vobjID}`);
+  /**
+   * Get information about the export status of a virtual object.
+   *
+   * @param {string} baseRef  The baseRef of the virtual object of interest.
+   *
+   * @returns {[boolean, string[]]} A pair of a flag that's true if the
+   *     indicated virtual object is reachable and an array of vrefs (to facets
+   *     of the object) that should now be regarded as unrecognizable
+   */
+  function getExportStatus(baseRef) {
+    const es = syscall.vatstoreGet(`vom.es.${baseRef}`);
+    if (es) {
+      const reachable = es.indexOf('r') >= 0;
+      const retirees = [];
+      if (!reachable) {
+        if (es === 's') {
+          // unfaceted
+          retirees.push(baseRef);
+        } else {
+          // faceted
+          for (let i = 0; i < es.length; i += 1) {
+            if (es[i] === 's') {
+              retirees.push(`${baseRef}:${i}`);
+            }
+          }
+        }
+      }
+      return [reachable, retirees];
+    } else {
+      return [false, []];
+    }
+  }
+
+  function getRefCount(baseRef) {
+    const raw = syscall.vatstoreGet(`vom.rc.${baseRef}`);
     if (raw) {
       return Number(raw);
     } else {
@@ -79,31 +114,47 @@ export function makeVirtualReferenceManager(
     }
   }
 
-  function getExportStatus(vobjID) {
-    const raw = syscall.vatstoreGet(`vom.es.${vobjID}`);
-    switch (raw) {
-      case '0':
-        return 'recognizable';
-      case '1':
-        return 'reachable';
-      default:
-        return 'none';
-    }
-  }
-
-  function setRefCount(vobjID, refCount) {
-    const { virtual } = parseVatSlot(vobjID);
-    syscall.vatstoreSet(`vom.rc.${vobjID}`, `${Nat(refCount)}`);
+  function setRefCount(baseRef, refCount) {
+    const { virtual, facet } = parseVatSlot(baseRef);
+    assert(
+      !facet,
+      `setRefCount ${baseRef} should not receive individual facets`,
+    );
+    syscall.vatstoreSet(`vom.rc.${baseRef}`, `${Nat(refCount)}`);
     if (refCount === 0) {
       if (!virtual) {
-        syscall.vatstoreDelete(`vom.rc.${vobjID}`);
+        syscall.vatstoreDelete(`vom.rc.${baseRef}`);
       }
-      addToPossiblyDeadSet(vobjID);
+      addToPossiblyDeadSet(baseRef);
     }
   }
 
-  function setExportStatus(vobjID, exportStatus) {
-    const key = `vom.es.${vobjID}`;
+  function getFacetCount(baseRef) {
+    // Note that this only works if the VDO is in memory
+    const val = requiredValForSlot(baseRef);
+    if (Array.isArray(val)) {
+      return val.length;
+    } else {
+      return 1;
+    }
+  }
+
+  function setExportStatus(vref, exportStatus) {
+    const { baseRef, facet } = parseVatSlot(vref);
+    const key = `vom.es.${baseRef}`;
+    const esRaw = syscall.vatstoreGet(key);
+    // If `esRaw` is undefined, it means there's no export status information
+    // available, which can only happen when we are exporting the object for the
+    // first time, which in turn means that the object must be in memory (since
+    // export is happening when it's being serialized) and thus it has an
+    // instance or cohort record from which a facet count can be derived.  On
+    // the other hand, if `esRaw` does have a value, the value will be a string
+    // whose length is the facet count.  Either way, we will know how many
+    // facets there are.
+    const es = Array.from(esRaw || 'n'.repeat(getFacetCount(baseRef)));
+    const facetIdx = facet === undefined ? 0 : facet;
+    // The export status of each facet is encoded as:
+    // 's' -> 'recogizable' ('s' for "see"), 'r' -> 'reachable', 'n' -> 'none'
     switch (exportStatus) {
       // POSSIBLE TODO: An anticipated refactoring may merge
       // dispatch.dropExports with dispatch.retireExports. If this happens, and
@@ -112,33 +163,40 @@ export function makeVirtualReferenceManager(
       // reachable and the none cases (possibly reading the old status first, if
       // we must ensure addToPossiblyDeadSet only happens once).
       case 'recognizable': {
-        syscall.vatstoreSet(key, '0');
-        const refCount = getRefCount(vobjID);
-        if (refCount === 0) {
-          addToPossiblyDeadSet(vobjID);
+        es[facetIdx] = 's';
+        syscall.vatstoreSet(key, es.join(''));
+        const refCount = getRefCount(baseRef);
+        if (refCount === 0 && es.indexOf('r') < 0) {
+          addToPossiblyDeadSet(baseRef);
         }
         break;
       }
       case 'reachable':
-        syscall.vatstoreSet(key, '1');
+        es[facetIdx] = 'r';
+        syscall.vatstoreSet(key, es.join(''));
         break;
       case 'none':
-        syscall.vatstoreDelete(key);
+        es[facetIdx] = 'n';
+        if (es.indexOf('r') < 0 && es.indexOf('s') < 0) {
+          syscall.vatstoreDelete(key);
+        } else {
+          syscall.vatstoreSet(key, es.join(''));
+        }
         break;
       default:
         assert.fail(`invalid set export status ${exportStatus}`);
     }
   }
 
-  function incRefCount(vobjID) {
-    const oldRefCount = getRefCount(vobjID);
-    setRefCount(vobjID, oldRefCount + 1);
+  function incRefCount(baseRef) {
+    const oldRefCount = getRefCount(baseRef);
+    setRefCount(baseRef, oldRefCount + 1);
   }
 
-  function decRefCount(vobjID) {
-    const oldRefCount = getRefCount(vobjID);
-    assert(oldRefCount > 0, `attempt to decref ${vobjID} below 0`);
-    setRefCount(vobjID, oldRefCount - 1);
+  function decRefCount(baseRef) {
+    const oldRefCount = getRefCount(baseRef);
+    assert(oldRefCount > 0, `attempt to decref ${baseRef} below 0`);
+    setRefCount(baseRef, oldRefCount - 1);
   }
 
   /**
@@ -158,6 +216,49 @@ export function makeVirtualReferenceManager(
    */
   function registerKind(kindID, reanimator, deleter, durable) {
     kindInfoTable.set(`${kindID}`, { reanimator, deleter, durable });
+  }
+
+  /**
+   * Compare two arrays (shallowly) for equality.
+   *
+   * @template T
+   * @param {T[]} a1
+   * @param {T[]} a2
+   * @returns {boolean}
+   */
+  const arrayEquals = (a1, a2) => {
+    assert(Array.isArray(a1));
+    assert(Array.isArray(a2));
+    if (a1.length !== a2.length) {
+      return false;
+    }
+    return a1.every((elem, idx) => Object.is(a2[idx], elem));
+  };
+
+  /**
+   * Check a list of facet names against what's already been established for a
+   * kind.  If they don't match, it's an error.  If nothing has been established
+   * yet, establish it now.
+   *
+   * @param {string} kindID  The kind we're talking about
+   * @param {string[]|null} facetNames  A sorted array of facet names to be
+   *    checked or acquired, or null if the kind is unfaceted
+   */
+  function checkOrAcquireFacetNames(kindID, facetNames) {
+    const kindInfo = kindInfoTable.get(`${kindID}`);
+    assert(kindInfo, `no kind info for ${kindID}`);
+    if (kindInfo.facetNames !== undefined) {
+      if (facetNames === null) {
+        assert(kindInfo.facetNames === null);
+      } else {
+        assert(
+          arrayEquals(facetNames, kindInfo.facetNames),
+          'all virtual objects of the same kind must have the same facet names',
+        );
+      }
+    } else {
+      kindInfo.facetNames = facetNames;
+    }
   }
 
   /**
@@ -201,18 +302,18 @@ export function makeVirtualReferenceManager(
    * Create an in-memory representation of a given object by reanimating it from
    * persistent storage.  Used for deserializing.
    *
-   * @param {string} vobjID  The virtual object ID of the object being dereferenced
+   * @param {string} baseRef  The baseRef of the object being reanimated
    * @param {boolean} proForma  If true, representative creation is for formal
    *   use only and result will be ignored.
    *
-   * @returns {Object}  A representative of the object identified by `vobjID`
+   * @returns {Object}  A representative of the object identified by `baseRef`
    */
-  function reanimate(vobjID, proForma) {
-    const { id } = parseVatSlot(vobjID);
+  function reanimate(baseRef, proForma) {
+    const { id } = parseVatSlot(baseRef);
     const kindID = `${id}`;
     const { reanimator } = kindInfoTable.get(kindID);
     if (reanimator) {
-      return reanimator(vobjID, proForma);
+      return reanimator(baseRef, proForma);
     } else {
       assert.fail(X`unknown kind ${kindID}`);
     }
@@ -254,11 +355,11 @@ export function makeVirtualReferenceManager(
   // from the `remotableRefCounts` map).
 
   function addReachableVref(vref) {
-    const { type, virtual, allocatedByVat } = parseVatSlot(vref);
+    const { type, virtual, allocatedByVat, baseRef } = parseVatSlot(vref);
     if (type === 'object') {
       if (allocatedByVat) {
         if (virtual) {
-          incRefCount(vref);
+          incRefCount(baseRef);
         } else {
           // exported non-virtual object: Remotable
           const remotable = requiredValForSlot(vref);
@@ -268,18 +369,18 @@ export function makeVirtualReferenceManager(
       } else {
         // We refcount imports, to preserve their vrefs against
         // syscall.dropImport when the Presence itself goes away.
-        incRefCount(vref);
+        incRefCount(baseRef);
       }
     }
   }
 
   function removeReachableVref(vref) {
     let droppedMemoryReference = false;
-    const { type, virtual, allocatedByVat } = parseVatSlot(vref);
+    const { type, virtual, allocatedByVat, baseRef } = parseVatSlot(vref);
     if (type === 'object') {
       if (allocatedByVat) {
         if (virtual) {
-          decRefCount(vref);
+          decRefCount(baseRef);
         } else {
           // exported non-virtual object: Remotable
           const remotable = requiredValForSlot(vref);
@@ -293,7 +394,7 @@ export function makeVirtualReferenceManager(
           }
         }
       } else {
-        decRefCount(vref);
+        decRefCount(baseRef);
       }
     }
     return droppedMemoryReference;
@@ -301,17 +402,17 @@ export function makeVirtualReferenceManager(
 
   // for testing only
   function getReachableRefCount(vref) {
-    const { type, virtual, allocatedByVat } = parseVatSlot(vref);
+    const { type, virtual, allocatedByVat, baseRef } = parseVatSlot(vref);
     assert(type === 'object');
     if (allocatedByVat) {
       if (virtual) {
-        return getRefCount(vref);
+        return getRefCount(baseRef);
       } else {
-        const remotable = requiredValForSlot(vref);
+        const remotable = requiredValForSlot(baseRef);
         return remotableRefCounts.get(remotable);
       }
     } else {
-      return getRefCount(vref);
+      return getRefCount(baseRef);
     }
   }
 
@@ -440,8 +541,32 @@ export function makeVirtualReferenceManager(
    * @returns {boolean} true if this possibly creates a GC opportunity
    */
   function ceaseRecognition(vref) {
-    const recognizerSet = vrefRecognizers.get(vref);
     let doMoreGC = false;
+    const { id, facet } = parseVatSlot(vref);
+    if (facet === undefined) {
+      // If `vref` identifies a multi-faceted object that should no longer be
+      // "recognized", what that really means that all references to its
+      // individual facets should no longer be recognized -- nobody actually
+      // references the object itself except internal data structures.  So in
+      // this case we need individually to stop recognizing the facets
+      // themselves.
+      const kindInfo = kindInfoTable.get(`${id}`);
+      // This function can be called either from `dispatch.retireImports` or
+      // from `possibleVirtualObjectDeath`.  In the latter case the vref is
+      // actually a baseRef and so needs to be expanded to cease recognition of
+      // all the facets.
+      if (kindInfo) {
+        const { facetNames } = kindInfo;
+        if (facetNames) {
+          for (let i = 0; i < facetNames.length; i += 1) {
+            const more = ceaseRecognition(`${vref}:${i}`);
+            doMoreGC = doMoreGC || more;
+          }
+          return doMoreGC;
+        }
+      }
+    }
+    const recognizerSet = vrefRecognizers.get(vref);
     if (recognizerSet) {
       vrefRecognizers.delete(vref);
       for (const recognizer of recognizerSet) {
@@ -491,6 +616,7 @@ export function makeVirtualReferenceManager(
     droppedCollectionRegistry,
     isDurable,
     registerKind,
+    checkOrAcquireFacetNames,
     reanimate,
     addReachableVref,
     removeReachableVref,

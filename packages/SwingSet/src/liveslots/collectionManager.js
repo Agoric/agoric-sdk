@@ -24,7 +24,7 @@ export function makeCollectionManager(
   allocateExportID,
   convertValToSlot,
   convertSlotToVal,
-  registerEntry,
+  registerValue,
   serialize,
   unserialize,
 ) {
@@ -660,7 +660,7 @@ export function makeCollectionManager(
       valueSchema,
     );
     const store = collectionToMapStore(collection);
-    registerEntry(vobjID, store);
+    registerValue(vobjID, store, false);
     return store;
   }
 
@@ -687,7 +687,7 @@ export function makeCollectionManager(
       valueSchema,
     );
     const store = collectionToWeakMapStore(collection);
-    registerEntry(vobjID, store);
+    registerValue(vobjID, store, false);
     return store;
   }
 
@@ -712,7 +712,7 @@ export function makeCollectionManager(
       valueSchema,
     );
     const store = collectionToSetStore(collection);
-    registerEntry(vobjID, store);
+    registerValue(vobjID, store, false);
     return store;
   }
 
@@ -739,7 +739,7 @@ export function makeCollectionManager(
       valueSchema,
     );
     const store = collectionToWeakSetStore(collection);
-    registerEntry(vobjID, store);
+    registerValue(vobjID, store, false);
     return store;
   }
 
