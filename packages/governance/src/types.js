@@ -19,10 +19,7 @@
  * issue, while the others have a issue presented as a string.
  */
 
-/**
- * @typedef { 'amount' | 'brand' | 'instance' | 'installation' | 'invitation' |
- *   'nat' | 'ratio' | 'string' | 'unknown' } ParamType
- */
+/** @typedef {import('./constants.js').ParamType} ParamType */
 
 /**
  * @typedef { 'majority' | 'all' | 'no_quorum' } QuorumRule
@@ -38,41 +35,27 @@
  *   Ratio | string | unknown } ParamValue
  */
 
+// XXX better to use the manifest constant ParamTypes
+// but importing that here turns this file into a module,
+// breaking the ambient typing
 /**
- * @template T
- * @typedef {{ type: T }} ParamRecord<T>
+ * @template {ParamType} T
+ * @typedef {T extends 'amount' ? Amount :
+ * T extends 'brand' ? Brand :
+ * T extends 'installation' ? Installation:
+ * T extends 'instance' ? Instance :
+ * T extends 'invitation' ? Amount :
+ * T extends 'nat' ? bigint :
+ * T extends 'ratio' ? Ratio :
+ * T extends 'string' ? string :
+ * T extends 'unknown' ? unknown :
+ * never
+ * } ParamValueForType
  */
 
 /**
- * @typedef {ParamRecord<'amount'> & { value: Amount } |
- *   ParamRecord<'brand'> & { value: Brand } |
- *   ParamRecord<'installation'> & { value: Installation } |
- *   ParamRecord<'instance'> & { value: Instance } |
- *   ParamRecord<'invitation'> & { value: Amount } |
- *   ParamRecord<'nat'> & { value: bigint } |
- *   ParamRecord<'ratio'> & { value: Ratio } |
- *   ParamRecord<'relativeTime'> & { value: RelativeTime } |
- *   ParamRecord<'string'> & { value: string } |
- *   ParamRecord<'unknown'> & { value: unknown }
- * } ParamDescription
- */
-
-/**
- * @template T
- * @typedef {{ type: T }} ParamShortRecord
- */
-
-/**
- * @typedef {ParamShortRecord<'amount'> & { value: Amount } |
- *   ParamShortRecord<'brand'> & { value: Brand } |
- *   ParamShortRecord<'installation'> & { value: Installation } |
- *   ParamShortRecord<'instance'> & { value: Instance } |
- *   ParamShortRecord<'invitation'> & { value: Amount } |
- *   ParamShortRecord<'nat'> & { value: bigint } |
- *   ParamShortRecord<'ratio'> & { value: Ratio } |
- *   ParamShortRecord<'string'> & { value: string } |
- *   ParamShortRecord<'unknown'> & { value: unknown }
- * } ParamShortDescription
+ * @template {ParamType} [T=ParamType]
+ * @typedef {{ type: T, value: ParamValueForType<T> }} ParamRecord<T>
  */
 
 /**
@@ -403,12 +386,12 @@
 /**
  * @callback GetParams - getParams() retrieves a Record containing
  *   keyword pairs with descriptions of parameters under governance.
- * @returns {Record<Keyword,ParamShortDescription>}
+ * @returns {Record<Keyword,ParamRecord>}
  */
 
 /**
  * @typedef {Object} ParamManagerBase
- * @property {() => Record<Keyword, ParamShortDescription>} getParams
+ * @property {() => Record<Keyword, ParamRecord>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -421,19 +404,22 @@
  * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
  *   most types, the visible value is the same as proposedValue. For Invitations
  *   the visible value is the amount of the invitation.
- * @property {() => ParamDescriptions} getParamList
  * @property {(name: string) => Promise<Invitation>} getInternalParamValue
- * @property {() => Subscription<ParamDescription>} getSubscription
+ * @property {() => Subscription<ParamRecord>} getSubscription
  */
 
 /**
- * @typedef {{ [updater: string]: (arg: ParamValue) => void
- *  }} ParamManagerUpdaters
- * @typedef {ParamManagerBase & ParamManagerUpdaters} ParamManagerFull
+ * These are typed `any` because the builder pattern of paramManager makes it very
+ * complicated for the type system to know the set of param-specific functions
+ * returned by `.build()`. Instead we let paramManager create the desired methods
+ * and use typedParamManager to create a version that includes the static types.
+ *
+ * @typedef { Record<string, any>} ParamManagerGettersAndUpdaters
+ * @typedef {ParamManagerBase & ParamManagerGettersAndUpdaters} AnyParamManager
  */
 
 /**
- * @typedef {Iterable<ParamDescription>} ParamDescriptions
+ * @typedef {Iterable<ParamRecord>} ParamRecords
  */
 
 /**
@@ -454,8 +440,8 @@
  *   instantiated inside the contract, the contract has synchronous access to
  *   the values, and clients of the contract can verify that a ContractGovernor
  *   can change the values in a legible way.
- * @param {ParamDescriptions} paramDescriptions
- * @returns {ParamManagerFull}
+ * @param {ParamRecords} paramDescriptions
+ * @returns {AnyParamManager}
  */
 
 /**
@@ -477,7 +463,7 @@
 /**
  * @typedef {Object} GovernorPublic
  * @property {() => Promise<Instance>} getElectorate
- * @property {() => Promise<Instance>} getGovernedContract
+ * @property {() => Instance} getGovernedContract
  * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
  * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
  * @property {(details: QuestionDetails) => boolean} validateTimer
@@ -508,7 +494,7 @@
  *
  * The creatorFacet for the governed contract that will be passed to the
  * responsible party. It does not have access to the paramManager.
- * @property {() => Instance} getContractGovernor
+ * @property {() => VoteOnParamChange} getContractGovernor
  */
 
 /**
@@ -522,20 +508,21 @@
  */
 
 /**
+ * @template {object} PF Public facet of governed contract
  * @typedef {Object} GovernedContractFacetAccess
  * @property {VoteOnParamChange} voteOnParamChange
  * @property {() => Promise<LimitedCreatorFacet>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
- * @property {() => any} getPublicFacet - public facet of the governed contract
- * @property {() => Promise<Instance>} getInstance - instance of the governed
+ * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
+ * @property {() => Instance} getInstance - instance of the governed
  *   contract
  */
 
 /**
- * @typedef {Object} GovernedPublicFacet
- * @property {() => Subscription<ParamDescription>} getSubscription
- * @property {VoteOnParamChange} getContractGovernor
+ * @typedef GovernedPublicFacetMethods
+ * @property {() => Subscription<ParamRecord>} getSubscription
+ * @property {() => VoteOnParamChange} getContractGovernor
  * @property {GetParams} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
@@ -547,6 +534,11 @@
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
  * @property {(name: string) => any} getUnknown
+ */
+
+/**
+ * @template {object} PF Public facet
+ * @typedef {PF & GovernedPublicFacetMethods} GovernedPublicFacet
  */
 
 /**
@@ -576,21 +568,6 @@
  */
 
 /**
- * @typedef {Object} ParamGovernorBundle
- * @property {WrapPublicFacet<unknown>} wrapPublicFacet
- * @property {WrapCreatorFacet<unknown>} wrapCreatorFacet
- * @property {(name: string) => Amount} getAmount
- * @property {(name: string) => Brand} getBrand
- * @property {(name: string) => Instance} getInstance
- * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount} getInvitationAmount
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(name: string) => string} getString
- * @property {(name: string) => any} getUnknown
- */
-
-/**
  * @callback AssertBallotConcernsQuestion
  * @param {string} paramName
  * @param {QuestionDetails} questionDetails
@@ -598,7 +575,7 @@
 
 /**
  * @typedef {Object} ParamManagerRetriever
- * @property {(paramKey?: ParamKey) => ParamManagerFull} get
+ * @property {(paramKey?: ParamKey) => AnyParamManager} get
  */
 
 /**
@@ -644,13 +621,6 @@
  * @property {TimerService} timer
  * @property {IssuerKeywordRecord} issuerKeywordRecord
  * @property {Object} privateArgs
- */
-
-/**
- * @typedef {Object} ContractGovernorTerms
- * @property {VoteOnParamChange} timer
- * @property {Instance} electorateInstance
- * @property {Installation} governedContractInstallation
  */
 
 /**
@@ -705,20 +675,4 @@
  * parameter change for a governed contract.
  *
  * @param {ParamChangeIssueDetails} details
- */
-
-/**
- * @typedef {Object} ParamManagerBuilder
- * @property {(name: string, value: Amount) => ParamManagerBuilder} addAmount
- * @property {(name: string, value: Amount) => ParamManagerBuilder} addBrandedAmount
- * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
- * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
- * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
- * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
- * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
- * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
- * @property {(name: string, value: Ratio) => ParamManagerBuilder} addBrandedRatio
- * @property {(name: string, value: string) => ParamManagerBuilder} addString
- * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
- * @property {() => ParamManagerFull} build
  */

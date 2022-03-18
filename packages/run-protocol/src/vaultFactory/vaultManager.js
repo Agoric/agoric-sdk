@@ -22,13 +22,7 @@ import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
-import {
-  RECORDING_PERIOD_KEY,
-  LIQUIDATION_MARGIN_KEY,
-  LOAN_FEE_KEY,
-  INTEREST_RATE_KEY,
-  CHARGING_PERIOD_KEY,
-} from './params.js';
+import { RECORDING_PERIOD_KEY, CHARGING_PERIOD_KEY } from './params.js';
 import { chargeInterest } from '../interest.js';
 
 const { details: X } = assert;
@@ -54,10 +48,14 @@ const trace = makeTracer('VM');
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {{
- *  ChargingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
- *  RecordingPeriod: ParamRecord<'relativeTime'> & { value: RelativeTime },
+ *  ChargingPeriod: ParamRecord<'nat'>
+ *  RecordingPeriod: ParamRecord<'nat'>
  * }} timingParams
- * @param {GetGovernedVaultParams} getLoanParams
+ * @param {{
+ *  getInterestRate: () => Ratio,
+ *  getLiquidationMargin: () => Ratio,
+ *  getLoanFee: () => Ratio,
+ * }} loanParamGetters
  * @param {ReallocateWithFee} reallocateWithFee
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
@@ -70,7 +68,7 @@ export const makeVaultManager = (
   collateralBrand,
   priceAuthority,
   timingParams,
-  getLoanParams,
+  loanParamGetters,
   reallocateWithFee,
   timerService,
   liquidationStrategy,
@@ -81,11 +79,7 @@ export const makeVaultManager = (
 
   /** @type {GetVaultParams} */
   const shared = {
-    // loans below this margin may be liquidated
-    getLiquidationMargin: () => getLoanParams()[LIQUIDATION_MARGIN_KEY].value,
-    // loans must initially have at least 1.2x collateralization
-    getLoanFee: () => getLoanParams()[LOAN_FEE_KEY].value,
-    getInterestRate: () => getLoanParams()[INTEREST_RATE_KEY].value,
+    ...loanParamGetters,
     getChargingPeriod: () => timingParams[CHARGING_PERIOD_KEY].value,
     getRecordingPeriod: () => timingParams[RECORDING_PERIOD_KEY].value,
     async getCollateralQuote() {

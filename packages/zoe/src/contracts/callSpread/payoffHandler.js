@@ -13,7 +13,10 @@ import { calculateShares } from './calculateShares.js';
  * makePayoffHandler returns an object with methods that are useful for
  * callSpread contracts.
  *
- * @type {MakePayoffHandler}
+ * @param {ZCF<Record<string, any>>} zcf
+ * @param {Record<PositionKind,PromiseRecord<ZCFSeat>>} seatPromiseKits
+ * @param {ZCFSeat} collateralSeat
+ * @returns {PayoffHandler}
  */
 function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   const terms = zcf.getTerms();

@@ -1,13 +1,13 @@
 // @ts-check
 
-import { Far, mapIterable } from '@endo/marshal';
-import { assertIsRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
 import { makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore } from '@agoric/store';
+import { keyEQ, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
+import { ParamTypes } from '../constants.js';
 
 import {
   makeLooksLikeBrand,
@@ -15,44 +15,60 @@ import {
   makeAssertInstance,
   makeAssertBrandedRatio,
 } from './assertions.js';
+import { CONTRACT_ELECTORATE } from './governParam.js';
 
 const { details: X } = assert;
+
 /**
- * @type {{
- *  AMOUNT: 'amount',
- *  BRAND: 'brand',
- *  INSTANCE: 'instance',
- *  INSTALLATION: 'installation',
- *  INVITATION: 'invitation',
- *  NAT: 'nat',
- *  RATIO: 'ratio',
- *  STRING: 'string',
- *  UNKNOWN: 'unknown',
- * }}
  *
- * UNKNOWN is an escape hatch for types we haven't added yet. If you are
- * developing a new contract and use UNKNOWN, please also file an issue to ask
- * us to support the new type.
+ * @param {AnyParamManager} paramManager
+ * @param {{[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}} governedParams
  */
-const ParamType = {
-  AMOUNT: 'amount',
-  BRAND: 'brand',
-  INSTANCE: 'instance',
-  INSTALLATION: 'installation',
-  INVITATION: 'invitation',
-  NAT: 'nat',
-  RATIO: 'ratio',
-  STRING: 'string',
-  UNKNOWN: 'unknown',
+const assertElectorateMatches = (paramManager, governedParams) => {
+  const managerElectorate =
+    paramManager.getInvitationAmount(CONTRACT_ELECTORATE);
+  const {
+    [CONTRACT_ELECTORATE]: { value: paramElectorate },
+  } = governedParams;
+  assert(
+    keyEQ(managerElectorate, paramElectorate),
+    X`Electorate in manager (${managerElectorate})} incompatible with terms (${paramElectorate}`,
+  );
 };
 
-/** @type {(zoe?:ERef<ZoeService>) => ParamManagerBuilder} */
+/**
+ * @typedef {Object} ParamManagerBuilder
+ * @property {(name: string, value: Amount) => ParamManagerBuilder} addAmount
+ * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
+ * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
+ * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
+ * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
+ * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
+ * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
+ * @property {(name: string, value: string) => ParamManagerBuilder} addString
+ * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
+ * @property {() => AnyParamManager} build
+ */
+
+/**
+ * @param {ERef<ZoeService>} [zoe]
+ */
 const makeParamManagerBuilder = zoe => {
   const namesToParams = makeStore('Parameter Name');
   const { publication, subscription } = makeSubscriptionKit();
-  const updateFns = {};
+  const getters = {};
+  const setters = {};
 
-  // support for parameters that are copy objects
+  /**
+   * Support for parameters that are copy objects
+   *
+   * @see buildInvitationParam
+   *
+   * @param {Keyword} name
+   * @param {unknown} value
+   * @param {(val) => void} assertion
+   * @param {ParamType} type
+   */
   const buildCopyParam = (name, value, assertion, type) => {
     let current;
     assertKeywordName(name);
@@ -73,60 +89,51 @@ const makeParamManagerBuilder = zoe => {
     const publicMethods = Far(`Parameter ${name}`, {
       getValue: () => current,
       assertType: assertion,
-      makeDescription: () => ({ name, type, value: current }),
-      makeShortDescription: () => ({ type, value: current }),
+      makeDescription: () => ({ type, value: current }),
       getVisibleValue,
       getType: () => type,
     });
 
+    // eslint-disable-next-line no-use-before-define
+    getters[`get${name}`] = () => getTypedParam(type, name);
     // CRUCIAL: here we're creating the update functions that can change the
     // values of the governed contract's parameters. We'll return the updateFns
     // to our caller. They must handle them carefully to ensure that they end up
     // in appropriate hands.
-    updateFns[`update${name}`] = setParamValue;
+    setters[`update${name}`] = setParamValue;
     namesToParams.init(name, publicMethods);
   };
 
   // HANDLERS FOR EACH PARAMETER TYPE /////////////////////////////////////////
 
-  /** @type {(name: string, amount: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addAmount = (name, amount, builder) => {
+  /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addAmount = (name, value, builder) => {
     const assertAmount = a => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
-      return AmountMath.coerce(a.brand, a);
+      return AmountMath.coerce(value.brand, a);
     };
-    buildCopyParam(name, amount, assertAmount, ParamType.AMOUNT);
-    return builder;
-  };
-
-  /** @type {(name: string, amount: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addBrandedAmount = (name, amount, builder) => {
-    const assertAmount = a => {
-      assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
-      return AmountMath.coerce(amount.brand, a);
-    };
-    buildCopyParam(name, amount, assertAmount, ParamType.AMOUNT);
+    buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT);
     return builder;
   };
 
   /** @type {(name: string, value: Brand, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addBrand = (name, value, builder) => {
     const assertBrand = makeLooksLikeBrand(name);
-    buildCopyParam(name, value, assertBrand, ParamType.BRAND);
+    buildCopyParam(name, value, assertBrand, ParamTypes.BRAND);
     return builder;
   };
 
-  /** @type {(name: string, value: Installation, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: Installation<unknown>, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addInstallation = (name, value, builder) => {
     const assertInstallation = makeAssertInstallation(name);
-    buildCopyParam(name, value, assertInstallation, ParamType.INSTALLATION);
+    buildCopyParam(name, value, assertInstallation, ParamTypes.INSTALLATION);
     return builder;
   };
 
   /** @type {(name: string, value: Instance, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addInstance = (name, value, builder) => {
     const assertInstance = makeAssertInstance(name);
-    buildCopyParam(name, value, assertInstance, ParamType.INSTANCE);
+    buildCopyParam(name, value, assertInstance, ParamTypes.INSTANCE);
     return builder;
   };
 
@@ -137,34 +144,28 @@ const makeParamManagerBuilder = zoe => {
       Nat(v);
       return true;
     };
-    buildCopyParam(name, value, assertNat, ParamType.NAT);
+    buildCopyParam(name, value, assertNat, ParamTypes.NAT);
     return builder;
   };
 
   /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addRatio = (name, value, builder) => {
-    buildCopyParam(name, value, assertIsRatio, ParamType.RATIO);
-    return builder;
-  };
-
-  /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
-  const addBrandedRatio = (name, value, builder) => {
     const assertBrandedRatio = makeAssertBrandedRatio(name, value);
-    buildCopyParam(name, value, assertBrandedRatio, ParamType.RATIO);
+    buildCopyParam(name, value, assertBrandedRatio, ParamTypes.RATIO);
     return builder;
   };
 
   /** @type {(name: string, value: string, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addString = (name, value, builder) => {
     const assertString = v => assert.typeof(v, 'string');
-    buildCopyParam(name, value, assertString, ParamType.STRING);
+    buildCopyParam(name, value, assertString, ParamTypes.STRING);
     return builder;
   };
 
   /** @type {(name: string, value: any, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addUnknown = (name, value, builder) => {
     const assertUnknown = _v => true;
-    buildCopyParam(name, value, assertUnknown, ParamType.UNKNOWN);
+    buildCopyParam(name, value, assertUnknown, ParamTypes.UNKNOWN);
     return builder;
   };
 
@@ -174,8 +175,17 @@ const makeParamManagerBuilder = zoe => {
     assert(instance && installation, 'must be an invitation');
   };
 
-  // Invitations are closely held, so we should only reveal the amount publicly.
-  // getInternalValue() will only be accessible within the contract.
+  /**
+   * Invitations are closely held, so we should publicly reveal only the amount.
+   * The approach here makes it possible for contracts to get the actual
+   * invitation privately, and legibly assure clients that it matches the
+   * publicly visible invitation amount. Contract reviewers still have to
+   * manually verify that the actual invitation is handled carefully.
+   * `getInternalValue()` will only be accessible within the contract.
+   *
+   * @param {string} name
+   * @param {Invitation} invitation
+   */
   const buildInvitationParam = async (name, invitation) => {
     assert(zoe, `zoe must be provided for governed Invitations ${zoe}`);
     let currentInvitation;
@@ -190,7 +200,7 @@ const makeParamManagerBuilder = zoe => {
       currentInvitation = i;
       publication.updateState({
         name,
-        type: ParamType.INVITATION,
+        type: ParamTypes.INVITATION,
         value: currentAmount,
       });
       return currentAmount;
@@ -198,10 +208,7 @@ const makeParamManagerBuilder = zoe => {
     await setInvitation(invitation);
 
     const makeDescription = () => {
-      return { name, type: ParamType.INVITATION, value: currentAmount };
-    };
-    const makeShortDescription = () => {
-      return { type: ParamType.INVITATION, value: currentAmount };
+      return { type: ParamTypes.INVITATION, value: currentAmount };
     };
 
     const getVisibleValue = async allegedInvitation =>
@@ -212,16 +219,17 @@ const makeParamManagerBuilder = zoe => {
       getInternalValue: () => currentInvitation,
       assertType: assertInvitation,
       makeDescription,
-      makeShortDescription,
-      getType: () => ParamType.INVITATION,
+      getType: () => ParamTypes.INVITATION,
       getVisibleValue,
     });
 
+    // eslint-disable-next-line no-use-before-define
+    getters[`get${name}`] = () => getTypedParam(ParamTypes.INVITATION, name);
     // CRUCIAL: here we're creating the update functions that can change the
     // values of the governed contract's parameters. We'll return the updateFns
     // to our caller. They must handle them carefully to ensure that they end up
     // in appropriate hands.
-    updateFns[`update${name}`] = setInvitation;
+    setters[`update${name}`] = setInvitation;
     namesToParams.init(name, publicMethods);
     return name;
   };
@@ -239,10 +247,6 @@ const makeParamManagerBuilder = zoe => {
 
   // PARAM MANAGER METHODS ////////////////////////////////////////////////////
 
-  const getParam = name => {
-    return namesToParams.get(name).makeDescription();
-  };
-
   const getTypedParam = (type, name) => {
     const param = namesToParams.get(name);
     assert(type === param.getType(), X`${name} is not ${type}`);
@@ -254,52 +258,49 @@ const makeParamManagerBuilder = zoe => {
     return param.getVisibleValue(proposed);
   };
 
-  const getParamList = () =>
-    harden(mapIterable(namesToParams.keys(), k => getParam(k)));
-
   // should be exposed within contracts, and not externally, for invitations
   const getInternalParamValue = name => {
     return namesToParams.get(name).getInternalValue();
   };
 
   const getParams = () => {
-    /** @type {Record<Keyword,ParamDescription>} */
+    /** @type {Record<Keyword,ParamRecord>} */
     const descriptions = {};
     for (const [name, param] of namesToParams.entries()) {
-      descriptions[name] = param.makeShortDescription();
+      descriptions[name] = param.makeDescription();
     }
     return harden(descriptions);
   };
 
-  // XXX some type safety but you don't know what keys are valid
-  // TODO replace with explicit keys that map to value types
-  const makeParamManager = updateFunctions => {
+  const makeParamManager = () => {
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by
     // contractGovernor. The getParams method can be shared widely.
     return Far('param manager', {
       getParams,
       getSubscription: () => subscription,
-      getAmount: name => getTypedParam(ParamType.AMOUNT, name),
-      getBrand: name => getTypedParam(ParamType.BRAND, name),
-      getInstance: name => getTypedParam(ParamType.INSTANCE, name),
-      getInstallation: name => getTypedParam(ParamType.INSTALLATION, name),
-      getInvitationAmount: name => getTypedParam(ParamType.INVITATION, name),
-      getNat: name => getTypedParam(ParamType.NAT, name),
-      getRatio: name => getTypedParam(ParamType.RATIO, name),
-      getString: name => getTypedParam(ParamType.STRING, name),
-      getUnknown: name => getTypedParam(ParamType.UNKNOWN, name),
+      getAmount: name => getTypedParam(ParamTypes.AMOUNT, name),
+      getBrand: name => getTypedParam(ParamTypes.BRAND, name),
+      getInstance: name => getTypedParam(ParamTypes.INSTANCE, name),
+      getInstallation: name => getTypedParam(ParamTypes.INSTALLATION, name),
+      getInvitationAmount: name => getTypedParam(ParamTypes.INVITATION, name),
+      getNat: name => getTypedParam(ParamTypes.NAT, name),
+      getRatio: name => getTypedParam(ParamTypes.RATIO, name),
+      getString: name => getTypedParam(ParamTypes.STRING, name),
+      getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
       getVisibleValue,
-      getParamList,
       getInternalParamValue,
-      ...updateFunctions,
+      // Getters and setters for each param value
+      ...getters,
+      ...setters,
+      // Collection of all getters for passing to read-only contexts
+      readonly: () => harden(getters),
     });
   };
 
   /** @type {ParamManagerBuilder} */
   const builder = {
     addAmount: (n, v) => addAmount(n, v, builder),
-    addBrandedAmount: (n, v) => addBrandedAmount(n, v, builder),
     addBrand: (n, v) => addBrand(n, v, builder),
     addInstallation: (n, v) => addInstallation(n, v, builder),
     addInstance: (n, v) => addInstance(n, v, builder),
@@ -307,14 +308,13 @@ const makeParamManagerBuilder = zoe => {
     addInvitation: (n, v) => addInvitation(n, v, builder),
     addNat: (n, v) => addNat(n, v, builder),
     addRatio: (n, v) => addRatio(n, v, builder),
-    addBrandedRatio: (n, v) => addBrandedRatio(n, v, builder),
     addString: (n, v) => addString(n, v, builder),
-    build: () => makeParamManager(updateFns),
+    build: () => makeParamManager(),
   };
   return builder;
 };
 
+harden(assertElectorateMatches);
 harden(makeParamManagerBuilder);
-harden(ParamType);
 
-export { ParamType, makeParamManagerBuilder };
+export { assertElectorateMatches, makeParamManagerBuilder };

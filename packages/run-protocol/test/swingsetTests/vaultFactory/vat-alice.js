@@ -26,7 +26,7 @@ const build = async (log, zoe, brands, payments, timer) => {
 
     /** @type {UserSeat<VaultKit>} */
     const loanSeat = await E(zoe).offer(
-      E(vaultFactory).makeLoanInvitation(),
+      E(vaultFactory).makeVaultInvitation(),
       harden({
         give: { Collateral: AmountMath.make(moolaBrand, 100n) },
         want: { RUN: AmountMath.make(runBrand, 500000n) },

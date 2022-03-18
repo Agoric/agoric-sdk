@@ -30,7 +30,7 @@ import {
  *
  * The publicFacet is returned from the contract.
  *
- * @type {ContractStartFn}
+ * @param {ZCF} zcf
  */
 const start = zcf => {
   let sellSeats = [];
@@ -134,7 +134,6 @@ const start = zcf => {
   const makeExchangeInvitation = () =>
     zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
-  /** @type {SimpleExchangePublicFacet} */
   const publicFacet = Far('SimpleExchangePublicFacet', {
     makeInvitation: makeExchangeInvitation,
     getNotifier: () => notifier,

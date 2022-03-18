@@ -28,25 +28,20 @@ export {
 } from './paramGovernance/governParam.js';
 
 export {
-  ParamType,
+  assertElectorateMatches,
   makeParamManagerBuilder,
 } from './paramGovernance/paramManager.js';
+
+export {
+  makeParamManager,
+  makeParamManagerSync,
+} from './paramGovernance/typedParamManager.js';
 
 export {
   assertContractGovernance,
   assertContractElectorate,
 } from './validators.js';
 
-export {
-  makeGovernedAmount,
-  makeGovernedBrand,
-  makeGovernedInstallation,
-  makeGovernedInstance,
-  makeGovernedInvitation,
-  makeGovernedNat,
-  makeGovernedRatio,
-  makeGovernedString,
-  makeGovernedUnknown,
-} from './paramGovernance/paramMakers.js';
+export { ParamTypes } from './constants.js';
 
 export { makeBinaryVoteCounter } from './binaryVoteCounter.js';

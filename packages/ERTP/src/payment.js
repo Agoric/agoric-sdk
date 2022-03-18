@@ -3,9 +3,10 @@
 import { Far } from '@endo/marshal';
 
 /**
+ * @template {AssetKind} K
  * @param {string} allegedName
- * @param {Brand} brand
- * @returns {Payment}
+ * @param {Brand<K>} brand
+ * @returns {Payment<K>}
  */
 export const makePayment = (allegedName, brand) => {
   return Far(`${allegedName} payment`, {

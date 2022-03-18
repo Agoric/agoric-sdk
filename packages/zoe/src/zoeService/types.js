@@ -87,7 +87,7 @@
 /**
  * @callback GetTerms
  * @param {Instance} instance
- * @returns {Promise<Terms>}
+ * @returns {Promise<AnyTerms>}
  */
 
 /**
@@ -188,6 +188,7 @@
  */
 
 /**
+ *
  * @typedef {Partial<ProposalRecord>} Proposal
  *
  * @typedef {{give: AmountKeywordRecord,

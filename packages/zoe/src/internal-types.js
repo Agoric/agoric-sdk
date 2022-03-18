@@ -295,7 +295,7 @@
 
 /**
  * @callback InstanceRecordManagerGetTerms
- * @returns {Terms}
+ * @returns {AnyTerms}
  */
 
 /**

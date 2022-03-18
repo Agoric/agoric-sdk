@@ -1,10 +1,13 @@
 // @ts-check
 
-import { makeWeakStore, keyEQ } from '@agoric/store';
+import { makeWeakStore } from '@agoric/store';
 import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
+import {
+  assertElectorateMatches,
+  handleParamGovernance,
+} from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
@@ -19,7 +22,11 @@ import '@agoric/zoe/exported.js';
 import { makeMakeCollectFeesInvitation } from './collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
-import { makeParamManager, POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
+import {
+  makeAmmParamManager,
+  POOL_FEE_KEY,
+  PROTOCOL_FEE_KEY,
+} from './params.js';
 
 const { quote: q, details: X } = assert;
 /**
@@ -79,7 +86,7 @@ const { quote: q, details: X } = assert;
  *
  * The contract gets the initial values for those parameters from its terms, and
  * thereafter can be seen to only use the values provided by the
- * `getNat()` method returned by the paramManager.
+ * getter method returned by the paramManager.
  *
  * `handleParamGovernance()` adds several methods to the publicFacet of the
  * contract, and bundles the privateFacet to ensure that governance
@@ -91,7 +98,7 @@ const { quote: q, details: X } = assert;
  * those internal methods, and reveals the original AMM creatorFacet to its own
  * creator.
  *
- * @param {ZCF<Terms & AMMTerms>} zcf
+ * @param {ZCF<AMMTerms>} zcf
  * @param {{initialPoserInvitation: Invitation}} privateArgs
  */
 const start = async (zcf, privateArgs) => {
@@ -101,9 +108,16 @@ const start = async (zcf, privateArgs) => {
    *
    * @typedef {{
    *   brands: { Central: Brand },
+   *   issuers: {},
    *   timer: TimerService,
+   *   electionManager: VoteOnParamChange,
    *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
    *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
+   *   main: {
+   *     PoolFee: ParamRecord<'nat'>,
+   *     ProtocolFee: ParamRecord<'nat'>,
+   *     Electorate: ParamRecord<'invitation'>,
+   *   }
    * }} AMMTerms
    *
    * @typedef { bigint } BasisPoints -- hundredths of a percent
@@ -114,7 +128,7 @@ const start = async (zcf, privateArgs) => {
     main: {
       [POOL_FEE_KEY]: poolFeeParam,
       [PROTOCOL_FEE_KEY]: protocolFeeParam,
-      [CONTRACT_ELECTORATE]: electorateParam,
+      ...otherGovernedTerms
     },
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
@@ -123,7 +137,7 @@ const start = async (zcf, privateArgs) => {
   const { initialPoserInvitation } = privateArgs;
 
   const [paramManager, centralDisplayInfo] = await Promise.all([
-    makeParamManager(
+    makeAmmParamManager(
       zcf.getZoeService(),
       poolFeeParam.value,
       protocolFeeParam.value,
@@ -140,19 +154,12 @@ const start = async (zcf, privateArgs) => {
     )}`,
   );
 
-  const { wrapPublicFacet, wrapCreatorFacet, getNat, getInvitationAmount } =
-    // @ts-expect-error FIXME bad custom terms def
-    handleParamGovernance(zcf, paramManager);
-
-  const electorateInvAmt = getInvitationAmount(CONTRACT_ELECTORATE);
-  assert(
-    keyEQ(electorateInvAmt, electorateParam.value),
-    X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
+  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
+    zcf,
+    paramManager,
   );
 
-  // Every access to these values will get them from the paramManager
-  const getPoolFeeBP = () => getNat(POOL_FEE_KEY);
-  const getProtocolFeeBP = () => getNat(PROTOCOL_FEE_KEY);
+  assertElectorateMatches(paramManager, otherGovernedTerms);
 
   /** @type {WeakStore<Brand,XYKPool>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');
@@ -175,8 +182,8 @@ const start = async (zcf, privateArgs) => {
     centralBrand,
     timer,
     quoteIssuerKit,
-    getProtocolFeeBP,
-    getPoolFeeBP,
+    paramManager.getProtocolFee,
+    paramManager.getPoolFee,
     protocolSeat,
   );
   const getPoolAllocation = brand => {
@@ -202,8 +209,8 @@ const start = async (zcf, privateArgs) => {
         zcf,
         getPool(brandIn),
         getPool(brandOut),
-        getProtocolFeeBP,
-        getPoolFeeBP,
+        paramManager.getProtocolFee,
+        paramManager.getPoolFee,
         protocolSeat,
       );
     }
@@ -246,7 +253,6 @@ const start = async (zcf, privateArgs) => {
   );
 
   /** @type {XYKAMMPublicFacet} */
-  // @ts-ignore wrapPublicFacet includes all the methods that are passed in.
   const publicFacet = wrapPublicFacet(
     Far('AMM public facet', {
       addPool,
@@ -269,6 +275,7 @@ const start = async (zcf, privateArgs) => {
     }),
   );
 
+  /** @type {GovernedCreatorFacet<*>} */
   const creatorFacet = wrapCreatorFacet(
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,

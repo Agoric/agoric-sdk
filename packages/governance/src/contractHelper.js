@@ -2,6 +2,9 @@
 
 import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
+// eslint-disable-next-line -- https://github.com/Agoric/agoric-sdk/pull/4837
+import { CONTRACT_ELECTORATE } from './paramGovernance/governParam.js';
+import { assertElectorateMatches } from './paramGovernance/paramManager.js';
 
 const { details: X, quote: q } = assert;
 
@@ -17,21 +20,23 @@ const { details: X, quote: q } = assert;
  *  parameter values, and the governance guarantees only hold if they're not
  *  used directly by the governed contract.
  *
- * @param {ZCF<{electionManager: Instance, main: unknown}>} zcf
- * @param {ParamManagerFull} paramManager
- * @returns {ParamGovernorBundle}
+ * @template T
+ * @param {ZCF<{
+ * electionManager: VoteOnParamChange,
+ * main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}
+ * }>} zcf
+ * @param {import('./paramGovernance/typedParamManager').TypedParamManager<T>} paramManager
  */
 const handleParamGovernance = (zcf, paramManager) => {
   const terms = zcf.getTerms();
   const governedParams = terms.main;
-  const { electionManager } = terms;
-
   assert(
     keyEQ(governedParams, paramManager.getParams()),
     X`Terms must include ${q(paramManager.getParams())}, but were ${q(
       governedParams,
     )}`,
   );
+  assertElectorateMatches(paramManager, governedParams);
 
   const typedAccessors = {
     getAmount: paramManager.getAmount,
@@ -45,13 +50,14 @@ const handleParamGovernance = (zcf, paramManager) => {
     getUnknown: paramManager.getUnknown,
   };
 
+  const { electionManager } = terms;
+
   /**
-   * @param {T} originalPublicFacet
-   * @returns {T & GovernedPublicFacet}
-   * @template T
+   * @template PF
+   * @param {PF} originalPublicFacet
+   * @returns {GovernedPublicFacet<PF>}
    */
-  const wrapPublicFacet = (originalPublicFacet = /** @type {T} */ ({})) => {
-    // @ts-expect-error FIXME alleged type mismatch
+  const wrapPublicFacet = originalPublicFacet => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
@@ -62,9 +68,9 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @param {T} originalCreatorFacet
-   * @returns {T & LimitedCreatorFacet}
-   * @template T
+   * @template CF
+   * @param {CF} originalCreatorFacet
+   * @returns {CF & LimitedCreatorFacet}
    */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
     return Far('governedContract creator facet', {
@@ -74,13 +80,11 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @param {T} originalCreatorFacet
-   * @returns { GovernedCreatorFacet<T> }
-   * @template T
+   * @template CF
+   * @param {CF} originalCreatorFacet
+   * @returns { GovernedCreatorFacet<CF> }
    */
-  const wrapCreatorFacet = (
-    originalCreatorFacet = Far('creatorFacet', /** @type {T} */ ({})),
-  ) => {
+  const wrapCreatorFacet = originalCreatorFacet => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
@@ -96,7 +100,7 @@ const handleParamGovernance = (zcf, paramManager) => {
   return harden({
     wrapPublicFacet,
     wrapCreatorFacet,
-    ...typedAccessors,
+    ...paramManager.readonly(),
   });
 };
 harden(handleParamGovernance);
