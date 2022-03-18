@@ -40,13 +40,13 @@ test('types', t => {
   );
 });
 
-test('asGetters', t => {
+test('readonly', t => {
   const drachmas = AmountMath.make(drachmaBrand, 37n);
   const paramManager = makeParamManagerSync({
     Currency: [ParamTypes.Brand, drachmaBrand],
     Amt: [ParamTypes.AmountValue, drachmas],
   });
-  const getters = paramManager.asGetters();
+  const getters = paramManager.readonly();
   t.is(paramManager.getCurrency, getters.getCurrency);
   t.is(paramManager.getAmt, getters.getAmt);
 });
@@ -59,7 +59,7 @@ test('two parameters', t => {
   });
 
   t.is(paramManager.getCurrency(), drachmaBrand);
-  t.is(paramManager.asGetters().getCurrency(), drachmaBrand);
+  t.is(paramManager.readonly().getCurrency(), drachmaBrand);
   t.deepEqual(paramManager.getAmt(), drachmas);
   t.deepEqual(
     paramManager.getParams(),

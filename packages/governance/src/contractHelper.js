@@ -57,8 +57,7 @@ const handleParamGovernance = (zcf, paramManager) => {
    * @param {PF} originalPublicFacet
    * @returns {GovernedPublicFacet<PF>}
    */
-  // @ts-expect-error FIXME before merge: alleged type mismatch
-  const wrapPublicFacet = (originalPublicFacet = /** @type {T} */ ({})) => {
+  const wrapPublicFacet = originalPublicFacet => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
@@ -85,9 +84,7 @@ const handleParamGovernance = (zcf, paramManager) => {
    * @param {CF} originalCreatorFacet
    * @returns { GovernedCreatorFacet<CF> }
    */
-  const wrapCreatorFacet = (
-    originalCreatorFacet = Far('creatorFacet', /** @type {CF} */ ({})),
-  ) => {
+  const wrapCreatorFacet = originalCreatorFacet => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
@@ -103,7 +100,7 @@ const handleParamGovernance = (zcf, paramManager) => {
   return harden({
     wrapPublicFacet,
     wrapCreatorFacet,
-    ...paramManager.asGetters(),
+    ...paramManager.readonly(),
   });
 };
 harden(handleParamGovernance);

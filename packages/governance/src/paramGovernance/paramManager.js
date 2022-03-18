@@ -313,7 +313,7 @@ const makeParamManagerBuilder = zoe => {
       ...getters,
       ...setters,
       // Collection of all getters for passing to read-only contexts
-      asGetters: () => getters,
+      readonly: () => harden(getters),
     });
   };
 

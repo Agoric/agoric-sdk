@@ -18,7 +18,7 @@ import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
  * @template {Record<Keyword, ST<ParamType>>} T
- * @typedef {ParamManagerBase & Getters<T> & Updaters<T> & {asGetters: () => Getters<T>}} TypedParamManager
+ * @typedef {ParamManagerBase & Getters<T> & Updaters<T> & {readonly: () => Getters<T>}} TypedParamManager
  */
 
 /**
