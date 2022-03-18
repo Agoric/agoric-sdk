@@ -230,8 +230,8 @@
  * @template PF Public facet
  * @template CF Creator facet
  * @typedef {Object} ContractStartFnResult
- * @property {PF} [publicFacet]
- * @property {CF} [creatorFacet]
+ * @property {PF} publicFacet
+ * @property {CF} creatorFacet
  * @property {Promise<Invitation>=} [creatorInvitation]
  */
 
