@@ -119,15 +119,26 @@ test('Branded Amount', async t => {
 });
 
 test('params one installation', async t => {
-  // this is sufficient for the current type check. When we add
-  // isInstallation() (#3344), we'll need to make a mockZoe.
+  const terms = harden({
+    mmr: makeRatio(150n, drachmaKit.brand),
+  });
+  const issuerKeywordRecord = harden({
+    Ignore: drachmaKit.issuer,
+  });
+  const { zoe } = await setupZCFTest(issuerKeywordRecord, terms);
+
+  /** @type {Installation} */
+  // @ts-expect-error mock
   const installationHandle = Far('fake Installation', {
     getBundle: () => ({ obfuscated: 42 }),
   });
 
-  const paramManager = makeParamManagerSync({
-    PName: ['installation', installationHandle],
-  });
+  const paramManager = await makeParamManager(
+    {
+      PName: ['installation', installationHandle],
+    },
+    zoe,
+  );
 
   t.deepEqual(paramManager.getPName(), installationHandle);
   t.throws(
@@ -138,6 +149,8 @@ test('params one installation', async t => {
     },
     'value should be an installation',
   );
+  /** @type {Installation} */
+  // @ts-expect-error mock
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
