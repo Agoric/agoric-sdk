@@ -81,10 +81,10 @@ test('expected globals are in the XS worker vat environment', async t => {
   await testForExpectedGlobals(t, 'xs-worker');
 });
 
-test('expected globals are in the node worker vat environment', async t => {
+test.skip('expected globals are in the node worker vat environment', async t => {
   await testForExpectedGlobals(t, 'nodeWorker');
 });
 
-test('expected globals are in the node sub-process worker vat environment', async t => {
+test.skip('expected globals are in the node sub-process worker vat environment', async t => {
   await testForExpectedGlobals(t, 'node-subprocess');
 });

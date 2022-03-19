@@ -170,12 +170,12 @@ async function doVatResolveCase1(t, mode) {
     });
   }
   const dispatch = await makeDispatch(syscall, build);
-  t.deepEqual(log, []);
+  log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
   const target1 = 'o-1';
   const target2 = 'o-2';
-  const localTarget = 'o+1';
+  const localTarget = 'o+9';
   const expectedP1 = 'p+5';
   const expectedP2 = 'p+6';
   const expectedP3 = 'p+7';
@@ -324,11 +324,11 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     });
   }
   const dispatch = await makeDispatch(syscall, build);
-  t.deepEqual(log, []);
+  log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
   const target1 = 'o-1';
-  const localTarget = 'o+1';
+  const localTarget = 'o+9';
   const p1 = 'p-8';
   const expectedP2 = 'p+5';
   const expectedP3 = 'p+6';
@@ -542,7 +542,7 @@ async function doVatResolveCase4(t, mode) {
     });
   }
   const dispatch = await makeDispatch(syscall, build);
-  t.deepEqual(log, []);
+  log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
   const target1 = 'o-1';
@@ -671,7 +671,7 @@ test('inter-vat circular promise references', async t => {
   }
   const dispatchA = await makeDispatch(syscall, build, 'vatA');
   // const dispatchB = await makeDispatch(syscall, build, 'vatB');
-  t.deepEqual(log, []);
+  log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
   // const rootB = 'o+0';

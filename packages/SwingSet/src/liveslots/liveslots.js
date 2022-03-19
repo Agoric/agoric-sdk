@@ -1097,6 +1097,7 @@ function build(
     assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
   }
 
+  let baggage;
   async function startVat(vatParametersCapData) {
     insistCapData(vatParametersCapData);
     assert(!didStartVat);
@@ -1183,7 +1184,12 @@ function build(
     );
 
     // here we finally invoke the vat code, and get back the root object
-    const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
+    baggage = collectionManager.provideBaggage();
+    const rootObject = buildRootObject(
+      harden(vpow),
+      harden(vatParameters),
+      baggage,
+    );
     assert.equal(
       passStyleOf(rootObject),
       'remotable',
