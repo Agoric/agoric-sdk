@@ -105,19 +105,26 @@ const makeParamManagerSync = spec => {
   return builder.build();
 };
 
-// TODO rename 'main' to 'governed'
-// FIXME define return type in terms of GT
 /**
- * @template GT Governed terms
+ * @template {Record<string, ParamRecord>} GT Governed terms of contract
+ * @typedef {{ [K in keyof GT]: GT[K]['type'] }} ParamsForTerms
+ */
+
+// TODO rename 'main' to 'governed'
+/**
+ * @template {Record<string, ParamRecord>} GT Governed terms
  * @param {ZCF<{main: GT}>} zcf
  * @param {{initialPoserInvitation: Payment}} privateArgs
  * @param {Record<string, ParamType>} paramSpec
- * @returns {Promise<TypedParamManager<*>>}
+ * @returns {Promise<TypedParamManager<ParamsForTerms<GT>>>}
  */
 const makeParamManagerFromTerms = async (zcf, privateArgs, paramSpec) => {
   const governedTerms = zcf.getTerms().main;
   const makerSpecEntries = Object.entries(paramSpec).map(
-    ([paramKey, paramType]) => [paramKey, [paramType, governedTerms[paramKey]]],
+    ([paramKey, paramType]) => [
+      paramKey,
+      [paramType, governedTerms[paramKey].value],
+    ],
   );
   // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
   makerSpecEntries.push([

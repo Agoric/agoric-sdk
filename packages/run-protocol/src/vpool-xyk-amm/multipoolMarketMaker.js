@@ -24,11 +24,7 @@ import '@agoric/zoe/exported.js';
 import { makeMakeCollectFeesInvitation } from './collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
-import {
-  makeAmmParamManager,
-  POOL_FEE_KEY,
-  PROTOCOL_FEE_KEY,
-} from './params.js';
+import { POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
 
 const { quote: q, details: X } = assert;
 /**
