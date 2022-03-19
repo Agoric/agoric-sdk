@@ -38,7 +38,7 @@ const start = async (zcf, privateArgs) => {
     [CONTRACT_ELECTORATE]: ParamTypes.INVITATION,
   });
 
-  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
+  const { augmentPublicFacet, makeGovernorFacet } = handleParamGovernance(
     zcf,
     paramManager,
   );
@@ -46,11 +46,11 @@ const start = async (zcf, privateArgs) => {
   let governanceAPICalled = 0;
   const governanceApi = () => (governanceAPICalled += 1);
   return {
-    publicFacet: wrapPublicFacet({
+    publicFacet: augmentPublicFacet({
       getNum: () => paramManager.getMalleableNumber(),
       getApiCalled: () => governanceAPICalled,
     }),
-    creatorFacet: wrapCreatorFacet({}, { governanceApi }),
+    creatorFacet: makeGovernorFacet({}, { governanceApi }),
   };
 };
 

@@ -211,7 +211,7 @@ parameters.
 When a governed contract starts up, it should get the parameter declarations
 from `terms`, use them to create a paramManager, and pass that to
 `handleParamGovernance`. `handleParamGovernance()` returns functions
-(`wrapPublicFacet()` and `wrapCreatorFacet()`) that add
+(`augmentPublicFacet()` and `makeGovernorFacet()`) that add
 required methods to the public and creator facets. Since the governed contract
 uses the values passed in `terms` to create the paramManager, reviewers of the
 contract can verify that all and only the declared parameters are under the

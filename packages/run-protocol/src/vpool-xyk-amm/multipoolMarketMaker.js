@@ -139,7 +139,7 @@ const start = async (zcf, privateArgs) => {
     )}`,
   );
 
-  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
+  const { augmentPublicFacet, makeGovernorFacet } = handleParamGovernance(
     zcf,
     paramManager,
   );
@@ -236,7 +236,7 @@ const start = async (zcf, privateArgs) => {
   );
 
   /** @type {XYKAMMPublicFacet} */
-  const publicFacet = wrapPublicFacet(
+  const publicFacet = augmentPublicFacet(
     Far('AMM public facet', {
       addPool,
       getPoolAllocation,
@@ -259,7 +259,7 @@ const start = async (zcf, privateArgs) => {
   );
 
   /** @type {GovernedCreatorFacet<*>} */
-  const creatorFacet = wrapCreatorFacet(
+  const creatorFacet = makeGovernorFacet(
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,
     }),
