@@ -322,9 +322,12 @@ test('runStake API usage', async t => {
   // Bob gets a lien against 2k of his 3k staked BLD.
   const bobToLien = AmountMath.make(bldBrand, 2_000n * micro.unit);
   const attPmt = E(bobWallet.attMaker).makeAttestation(bobToLien);
+  const runStakeTerms = await E(zoe).getTerms(
+    await space.instance.consume.runStake,
+  );
   const {
     issuers: { BldLienAtt: attIssuer },
-  } = await E(zoe).getTerms(await space.instance.consume.runStake);
+  } = runStakeTerms;
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
   // Bob borrows 200 RUN against the lien.

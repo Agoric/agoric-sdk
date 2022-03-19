@@ -31,7 +31,7 @@ const getOrElse = (store, key, make) => {
  * We still use a ZCFMint because returning attestations is done
  * through Zoe offers.
  *
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {ZCFMint} zcfMint
  * @param {Amount} amountToMint
  * @returns {Promise<Payment>}
@@ -48,7 +48,7 @@ const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
  * putting a lien on staked assets. Payments can be returned,
  * releasing (part of) the lien.
  *
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {string} keyword for use in makeZCFMint
  * @param {Brand<'nat'>} stakeBrand brand of the staked assets
  * @param {ERef<StakingAuthority>} lienBridge bridge to account state
@@ -183,7 +183,7 @@ const makeAttestationKit = async (zcf, keyword, stakeBrand, lienBridge) => {
  * Authorize each account holder to lien some of their staked assets
  * and get an attestation that the lien is in place.
  *
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {Brand} stakeBrand
  * @param {string} keyword for attestation issuer
  * @param {ERef<StakingAuthority>} lienBridge

@@ -30,7 +30,7 @@ const validTransitions = {
 /**
  * Make RUNstake kit, subject to policy.
  *
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
  * @param {ReturnType<import('./runStakeManager.js').makeRunStakeManager>} manager
  * @param { ZCFMint<'nat'> } mint

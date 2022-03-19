@@ -8,7 +8,6 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { fit, getCopyBagEntries, M } from '@agoric/store';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { E } from '@endo/far';
-import { RUNstakeParams } from './params.js';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
 
@@ -17,10 +16,10 @@ const { details: X } = assert;
 const trace = makeTracer('RM');
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
- * @param {(name: string) => Ratio} getRatio
+ * @param {*} paramManager
  * @param {ReallocateWithFee} reallocateWithFee
  * @param {Object} timing
  * @param {ERef<TimerService>} timing.timerService
@@ -32,12 +31,12 @@ export const makeRunStakeManager = (
   zcf,
   debtMint,
   brands,
-  getRatio,
+  paramManager,
   reallocateWithFee,
   { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
 ) => {
   const maxDebtForLien = attestationGiven => {
-    const mintingRatio = getRatio(RUNstakeParams.MintingRatio);
+    const mintingRatio = paramManager.getMintingRatio();
     assert.equal(
       mintingRatio.numerator.brand,
       brands.debt,
@@ -83,7 +82,7 @@ export const makeRunStakeManager = (
   const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
     harden({
       compoundedInterest,
-      interestRate: getRatio(RUNstakeParams.InterestRate),
+      interestRate: paramManager.getInterestRate(),
       latestInterestUpdate,
       totalDebt,
     }),
@@ -96,7 +95,7 @@ export const makeRunStakeManager = (
    */
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
     trace('chargeAllVaults', { updateTime });
-    const interestRate = getRatio(RUNstakeParams.InterestRate);
+    const interestRate = paramManager.getInterestRate();
 
     // Update local state with the results of charging interest
     ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
@@ -170,11 +169,11 @@ export const makeRunStakeManager = (
 
   return harden({
     getCurrentTerms: () => ({
-      mintingRatio: getRatio(RUNstakeParams.MintingRatio),
-      interestRate: getRatio(RUNstakeParams.InterestRate),
-      loanFee: getRatio(RUNstakeParams.LoanFee),
+      mintingRatio: paramManager.getMintingRatio(),
+      interestRate: paramManager.getInterestRate(),
+      loanFee: paramManager.getLoanFee(),
     }),
-    getLoanFee: () => getRatio(RUNstakeParams.LoanFee),
+    getLoanFee: paramManager.getLoanFee,
     maxDebtForLien,
     checkBorrow,
     reallocateWithFee,

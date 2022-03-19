@@ -596,19 +596,26 @@ export const startRunStake = async (
     ]);
 
   // t.log({ electorateCreatorFacet, electorateInstance });
-  const main = makeRunStakeTerms({
-    mintingRatio: makeRatio(
-      config.mintingRatio[0],
-      runBrand,
-      config.mintingRatio[1],
-      bldBrand,
-    ),
-    interestRate: makeRatio(config.interestRateBP, runBrand, BASIS_POINTS),
-    loanFee: makeRatio(config.loanFeeBP, runBrand, BASIS_POINTS),
-    electorateInvitationAmount,
-  });
+  const runStakeTerms = makeRunStakeTerms(
+    {
+      timerService: timer,
+      chargingPeriod: config.chargingPeriod,
+      recordingPeriod: config.recordingPeriod,
+    },
+    {
+      mintingRatio: makeRatio(
+        config.mintingRatio[0],
+        runBrand,
+        config.mintingRatio[1],
+        bldBrand,
+      ),
+      interestRate: makeRatio(config.interestRateBP, runBrand, BASIS_POINTS),
+      loanFee: makeRatio(config.loanFeeBP, runBrand, BASIS_POINTS),
+      electorateInvitationAmount,
+    },
+  );
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess}} */
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<any>}} */
   const governorFacets = await E(zoe).startInstance(
     installations.governor,
     {},
@@ -617,12 +624,7 @@ export const startRunStake = async (
       economicCommittee,
       governedContractInstallation: installations.getRUN,
       governed: harden({
-        terms: {
-          main,
-          timerService: timer,
-          chargingPeriod: config.chargingPeriod,
-          recordingPeriod: config.recordingPeriod,
-        },
+        terms: runStakeTerms,
         issuerKeywordRecord: { Stake: bldIssuer },
         privateArgs: { feeMintAccess, initialPoserInvitation, lienBridge },
       }),

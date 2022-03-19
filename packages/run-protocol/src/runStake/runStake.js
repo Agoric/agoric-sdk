@@ -1,17 +1,13 @@
 // @ts-check
-import {
-  CONTRACT_ELECTORATE,
-  handleParamGovernance,
-  makeParamManagerBuilder,
-} from '@agoric/governance';
+import { handleParamGovernance } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationFacets } from './attestation.js';
-import { RUNstakeParams } from './params.js';
+import { makeRunStakeParamManager } from './params.js';
 import { makeRUNstakeKit } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager';
 
 /**
- * @param { ContractFacet } zcf
+ * @param { ZCF<RunStakeTerms> } zcf
  * @param {{
  *   feeMintAccess: FeeMintAccess,
  *   initialPoserInvitation: Invitation,
@@ -22,6 +18,14 @@ import { makeRunStakeManager } from './runStakeManager';
  *   timerService: TimerService,
  *   chargingPeriod: bigint,
  *   recordingPeriod: bigint,
+ *   lienAttestationName: string,
+ *   electionManager: VoteOnParamChange,
+ *   main: {
+ *     MintingRatio: ParamRecord<'ratio'>,
+ *     InterestRate: ParamRecord<'ratio'>,
+ *     LoanFee: ParamRecord<'ratio'>,
+ *     Electorate: ParamRecord<'invitation'>,
+ *   },
  * }} RunStakeTerms
  */
 const start = async (
@@ -35,7 +39,7 @@ const start = async (
     chargingPeriod,
     recordingPeriod,
     lienAttestationName = 'BldLienAtt',
-  } = /** @type { RunStakeTerms & Terms } */ (zcf.getTerms());
+  } = zcf.getTerms();
   assert.typeof(chargingPeriod, 'bigint', 'chargingPeriod must be a bigint');
   assert.typeof(recordingPeriod, 'bigint', 'recordingPeriod must be a bigint');
 
@@ -48,27 +52,24 @@ const start = async (
   // TODO: remove publicFacet wart
   const attestBrand = await E(att.publicFacet).getBrand();
 
-  const builder = makeParamManagerBuilder(zcf.getZoeService())
-    .addBrandedRatio(
-      RUNstakeParams.MintingRatio,
-      initialValue[RUNstakeParams.MintingRatio].value,
-    )
-    .addBrandedRatio(
-      RUNstakeParams.InterestRate,
-      initialValue[RUNstakeParams.InterestRate].value,
-    )
-    .addBrandedRatio(
-      RUNstakeParams.LoanFee,
-      initialValue[RUNstakeParams.LoanFee].value,
-    );
-  await builder.addInvitation(CONTRACT_ELECTORATE, initialPoserInvitation);
-  const paramManager = builder.build();
-  const { wrapPublicFacet, wrapCreatorFacet, getRatio } = handleParamGovernance(
+  const paramManager = await makeRunStakeParamManager(
+    zcf.getZoeService(),
+    {
+      mintingRatio: initialValue.MintingRatio.value,
+      interestRate: initialValue.InterestRate.value,
+      loanFee: initialValue.LoanFee.value,
+    },
+    initialPoserInvitation,
+  );
+
+  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
     zcf,
     paramManager,
   );
 
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
+
+  // assertElectorateMatches(paramManager, otherGovernedTerms);
 
   /**
    * We provide an easy way for the policy to add rewards to
@@ -99,7 +100,7 @@ const start = async (
     zcf,
     runMint,
     { Attestation: attestBrand, debt: runBrand, Stake: stakeBrand },
-    getRatio,
+    paramManager.readonly(),
     reallocateWithFee,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
