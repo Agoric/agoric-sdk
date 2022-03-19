@@ -118,6 +118,7 @@ const makeParamManagerSync = spec => {
  * @param {Record<string, ParamType>} paramSpec
  * @returns {Promise<TypedParamManager<ParamsForTerms<GT>>>}
  */
+// XXX passing full zcf and privateArgs simplifies the caller but isn't POLA
 const makeParamManagerFromTerms = async (zcf, privateArgs, paramSpec) => {
   const governedTerms = zcf.getTerms().main;
   const makerSpecEntries = Object.entries(paramSpec).map(

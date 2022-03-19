@@ -4,11 +4,7 @@ import { makeWeakStore } from '@agoric/store';
 import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import {
-  assertElectorateMatches,
-  handleParamGovernance,
-  ParamTypes,
-} from '@agoric/governance';
+import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
@@ -123,7 +119,6 @@ const start = async (zcf, privateArgs) => {
   const {
     brands: { Central: centralBrand },
     timer,
-    main: governedTerms,
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
@@ -148,8 +143,6 @@ const start = async (zcf, privateArgs) => {
     zcf,
     paramManager,
   );
-
-  assertElectorateMatches(paramManager, governedTerms);
 
   /** @type {WeakStore<Brand,XYKPool>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');
