@@ -18,6 +18,21 @@ const { details: X } = assert;
 const BASIS_POINTS = 10000n;
 
 /**
+ * Stage a transfer of a singe asset from one seat to another, with an optional
+ * remapping of the Keywords. Check that the remapping is for the same amount.
+ *
+ * @param {ZCFSeat} from
+ * @param {ZCFSeat} to
+ * @param {AmountKeywordRecord} txFrom
+ * @param {AmountKeywordRecord} txTo
+ */
+function stageTransfer(from, to, txFrom, txTo = txFrom) {
+  assert(AmountMath.isEqual(Object.values(txFrom)[0], Object.values(txTo)[0]));
+  from.decrementBy(txFrom);
+  to.incrementBy(txTo);
+}
+
+/**
  * @param {ContractFacet} zcf
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
@@ -38,19 +53,20 @@ export const start = async (zcf, privateArgs) => {
   // HACK for simple governance API
   const getGovernance = _ => {
     const {
-      main: { FeeBP, MintLimit },
+      main: { WantStableFeeBP, GiveStableFeeBP, MintLimit },
     } = zcf.getTerms();
-    assert(FeeBP > 0n, X`FeeBP ${FeeBP} must be > 0n`);
     assert(
       AmountMath.isGTE(MintLimit, emptyAnchor),
       X`MintLimit ${MintLimit} must specificy a limit in ${anchorBrand}`,
     );
     return {
-      getFeeBP: () => FeeBP,
+      getWantStableRate: () =>
+        makeRatio(WantStableFeeBP, stableBrand, BASIS_POINTS),
+      getGiveStableRate: () =>
+        makeRatio(GiveStableFeeBP, stableBrand, BASIS_POINTS),
       getMintLimit: () => MintLimit,
     };
   };
-
   const gov = getGovernance(zcf);
 
   const { zcfSeat: anchorPool } = zcf.makeEmptySeatKit();
@@ -64,13 +80,8 @@ export const start = async (zcf, privateArgs) => {
     );
   };
 
-  const getFeeRate = () => {
-    return makeRatio(gov.getFeeBP(), stableBrand, BASIS_POINTS);
-  };
-
   const giveStable = (seat, given, wanted = emptyAnchor) => {
-    const feeRate = getFeeRate();
-    const fee = ceilMultiplyBy(given, feeRate);
+    const fee = ceilMultiplyBy(given, gov.getGiveStableRate());
     const afterFee = AmountMath.subtract(given, fee);
     const maxAnchor = AmountMath.make(anchorBrand, afterFee.value);
     // TODO this prevents the reallocate from failing. Can this be tested otherwise?
@@ -78,12 +89,9 @@ export const start = async (zcf, privateArgs) => {
       AmountMath.isGTE(maxAnchor, wanted),
       X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
     );
-    seat.decrementBy({ In: afterFee });
-    stage.incrementBy({ Stable: afterFee });
-    seat.decrementBy({ In: fee });
-    feePool.incrementBy({ Stable: fee });
-    anchorPool.decrementBy({ Anchor: maxAnchor });
-    seat.incrementBy({ Out: maxAnchor });
+    stageTransfer(seat, stage, { In: afterFee }, { Stable: afterFee });
+    stageTransfer(seat, feePool, { In: fee }, { Stable: fee });
+    stageTransfer(anchorPool, seat, { Anchor: maxAnchor }, { Out: maxAnchor });
     zcf.reallocate(seat, anchorPool, stage, feePool);
     stableMint.burnLosses({ Stable: afterFee }, stage);
   };
@@ -94,21 +102,18 @@ export const start = async (zcf, privateArgs) => {
       given,
     );
     assertUnderLimit(anchorAfterTrade);
-    const feeRate = getFeeRate();
     const asStable = AmountMath.make(stableBrand, given.value);
-    const fee = ceilMultiplyBy(asStable, feeRate);
+    const fee = ceilMultiplyBy(asStable, gov.getWantStableRate());
     const afterFee = AmountMath.subtract(asStable, fee);
-    // TODO use the offer-safe check to be sure that reallocate will work?
     assert(
       AmountMath.isGTE(afterFee, wanted),
       X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
     );
     stableMint.mintGains({ Stable: asStable }, stage);
-    seat.decrementBy({ In: given });
-    anchorPool.incrementBy({ Anchor: given });
-    stage.decrementBy({ Stable: afterFee });
-    seat.incrementBy({ Out: afterFee });
-    feePool.incrementBy(stage.decrementBy({ Stable: fee }));
+
+    stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
+    stageTransfer(stage, seat, { Stable: afterFee }, { Out: afterFee });
+    stageTransfer(stage, feePool, { Stable: fee });
     try {
       zcf.reallocate(seat, anchorPool, stage, feePool);
     } catch (e) {
@@ -157,4 +162,5 @@ export const start = async (zcf, privateArgs) => {
 
   return { creatorFacet, publicFacet };
 };
+
 /** @typedef {ReturnType<typeof start>} PSM */

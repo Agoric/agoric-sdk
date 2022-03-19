@@ -48,14 +48,25 @@ const setUpZoeForTest = async setJig => {
 };
 
 const BASIS_POINTS = 10000n;
-const FEE_BP = 2n;
+const WantStableFeeBP = 1n;
+const GiveStableFeeBP = 3n;
 const MINT_LIMIT = 20_000_000n * 1_000_000n;
 
-const minusFee = amount =>
-  AmountMath.make(
-    amount.brand,
-    BigInt((amount.value * (BASIS_POINTS - FEE_BP)) / BASIS_POINTS),
+/**
+ * Compute the fee in runBrand based on `given`. Choose the fee ratio
+ * appropriate to teh `given` brand.
+ *
+ * @param {Amount<'nat'>} given
+ * @param {Brand} stableBrand
+ * @returns {Amount<'nat'>}
+ */
+const minusFee = (given, stableBrand) => {
+  const feeBP = given.brand === stableBrand ? GiveStableFeeBP : WantStableFeeBP;
+  return AmountMath.make(
+    stableBrand,
+    BigInt((given.value * (BASIS_POINTS - feeBP)) / BASIS_POINTS),
   );
+};
 
 const startContract = async (testJig = () => {}) => {
   const { zoe, feeMintAccess } = await setUpZoeForTest(testJig);
@@ -67,7 +78,7 @@ const startContract = async (testJig = () => {}) => {
   const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
   const terms = {
     anchorBrand,
-    main: { FeeBP: FEE_BP, MintLimit: mintLimit },
+    main: { WantStableFeeBP, GiveStableFeeBP, MintLimit: mintLimit },
   };
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
@@ -96,14 +107,13 @@ test('simple trades', async t => {
     mint: anchorMint,
   } = anchorKit;
   const give = AmountMath.make(anchorBrand, 200n * 1_000_000n);
-  // TODO we should not need to await the swap invitation
   const seat1 = await E(zoe).offer(
-    await E(publicFacet).makeSwapInvitation(),
+    E(publicFacet).makeSwapInvitation(),
     harden({ give: { In: give } }),
     harden({ In: anchorMint.mintPayment(give) }),
   );
   const runPayout = await E(seat1).getPayout('Out');
-  const expectedRun = minusFee(AmountMath.make(runBrand, give.value));
+  const expectedRun = minusFee(give, runBrand);
   const actualRun = await E(runIssuer).getAmountOf(runPayout);
   t.deepEqual(actualRun, expectedRun);
   const liq = await E(publicFacet).getCurrentLiquidity();
@@ -112,13 +122,16 @@ test('simple trades', async t => {
   const runGive = AmountMath.make(runBrand, 100n * 1_000_000n);
   const [runPayment, _moreRun] = await E(runIssuer).split(runPayout, runGive);
   const seat2 = await E(zoe).offer(
-    await E(publicFacet).makeSwapInvitation(),
+    E(publicFacet).makeSwapInvitation(),
     harden({ give: { In: runGive } }),
     harden({ In: runPayment }),
   );
   const anchorPayout = await E(seat2).getPayout('Out');
   const actualAnchor = await E(anchorIssuer).getAmountOf(anchorPayout);
-  const expectedAnchor = AmountMath.make(anchorBrand, minusFee(runGive).value);
+  const expectedAnchor = AmountMath.make(
+    anchorBrand,
+    minusFee(runGive, runBrand).value,
+  );
   t.deepEqual(actualAnchor, expectedAnchor);
   const liq2 = await E(publicFacet).getCurrentLiquidity();
   t.deepEqual(AmountMath.subtract(give, expectedAnchor), liq2);
