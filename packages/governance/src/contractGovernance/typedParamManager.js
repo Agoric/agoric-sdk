@@ -5,6 +5,10 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
+ * @typedef {Record<Keyword, ParamType>} ParamTypesMap
+ */
+
+/**
  * @template {Record<Keyword, ParamRecordTuple>} T
  * @typedef {{
  *   [Property in keyof T as `get${string & Property}`]: () => ParamValueForType<T[Property][0]>
