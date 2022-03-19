@@ -1,4 +1,4 @@
-// @ts-check
+/// no @ts-check because AVA context is hard to type
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -28,25 +28,6 @@ const makeBundle = async sourceRoot => {
   return contractBundle;
 };
 
-// makeBundle is slow, so we bundle each contract once and reuse in all tests.
-const [psmBundle] = await Promise.all([makeBundle(psmRoot)]);
-const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
-
-const setUpZoeForTest = async setJig => {
-  const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(setJig, makeRemote).admin,
-  );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  trace('makeZoe');
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
-  return {
-    zoe,
-    feeMintAccess,
-  };
-};
-
 const BASIS_POINTS = 10000n;
 const WantStableFeeBP = 1n;
 const GiveStableFeeBP = 3n;
@@ -68,44 +49,72 @@ const minusFee = (given, stableBrand) => {
   );
 };
 
-const startContract = async (testJig = () => {}) => {
-  const { zoe, feeMintAccess } = await setUpZoeForTest(testJig);
-  const runIssuer = E(zoe).getFeeIssuer();
+/**
+ * The properties will be asssigned by `setTestJig` in the contract.
+ *
+ * @typedef {Object} TestContext
+ * @property {ContractFacet} zcf
+ * @property {ZCFMint} runMint
+ * @property {IssuerKit} collateralKit
+ * @property {Vault} vault
+ * @property {Function} advanceRecordingPeriod
+ * @property {Function} setInterestRate
+ */
+let testJig;
+const setJig = jig => {
+  testJig = jig;
+};
+
+/**
+ * @param {ExecuteContract} t
+ */
+test.before(async t => {
+  // makeBundle is slow, so we bundle each contract once and reuse in all tests.
+  const [psmBundle] = await Promise.all([makeBundle(psmRoot)]);
+  t.context.bundles = { psmBundle };
+  const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
+  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+    makeFakeVatAdmin(setJig, makeRemote).admin,
+  );
+  /** @type {ERef<ZoeService>} */
+  const zoe = makeFar(zoeService);
+  t.context.zoe = zoe;
+  trace('makeZoe');
+  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
+  t.context.feeMintAccess = feeMintAccess;
+
+  const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
+  t.context.runKit = { runIssuer, runBrand };
   const anchorKit = makeIssuerKit('aUSD');
-  const { brand: anchorBrand, issuer: anchorIssuer } = anchorKit;
-  const psmInstall = await installBundle(zoe, psmBundle);
+  t.context.anchorKit = anchorKit;
+
+  const { brand: anchorBrand } = anchorKit;
+  const psmInstall = await E(zoe).install(psmBundle);
+  t.context.installs = { psmInstall };
   const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
-  const terms = {
+  t.context.mintLimit = mintLimit;
+  t.context.terms = {
     anchorBrand,
     main: { WantStableFeeBP, GiveStableFeeBP, MintLimit: mintLimit },
   };
-  const { creatorFacet, publicFacet } = await E(zoe).startInstance(
+});
+
+test('simple trades', async t => {
+  const {
+    zoe,
+    feeMintAccess,
+    terms,
+    installs: { psmInstall },
+    runKit: { runIssuer, runBrand },
+    anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
+  } = t.context;
+  const { publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchorIssuer }),
     terms,
     harden({ feeMintAccess }),
   );
-  return {
-    runIssuer,
-    runBrand,
-    anchorKit,
-    creatorFacet,
-    publicFacet,
-    feeMintAccess,
-    zoe,
-  };
-};
-
-test('simple trades', async t => {
-  const { runIssuer, runBrand, _creatorFacet, publicFacet, anchorKit, zoe } =
-    await startContract();
-
-  const {
-    brand: anchorBrand,
-    issuer: anchorIssuer,
-    mint: anchorMint,
-  } = anchorKit;
   const give = AmountMath.make(anchorBrand, 200n * 1_000_000n);
   const seat1 = await E(zoe).offer(
     E(publicFacet).makeSwapInvitation(),
@@ -138,45 +147,56 @@ test('simple trades', async t => {
   trace('get anchor', { runGive, expectedRun, actualAnchor, liq2 });
 });
 
-// test('bootstrap payment - only minted once', async t => {
-//   // This test value is not a statement about the actual value to
-//   // be minted
-//   const bootstrapPaymentValue = 20000n * 10n ** 6n;
+test('limit', async t => {
+  const {
+    zoe,
+    feeMintAccess,
+    terms,
+    mintLimit,
+    installs: { psmInstall },
+    runKit: { runIssuer, runBrand },
+    anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
+  } = t.context;
+  const { publicFacet } = await E(zoe).startInstance(
+    psmInstall,
+    harden({ AUSD: anchorIssuer }),
+    terms,
+    harden({ feeMintAccess }),
+  );
+  const initialPool = AmountMath.make(anchorBrand, 1n);
+  await E(zoe).offer(
+    E(publicFacet).makeSwapInvitation(),
+    harden({ give: { In: initialPool } }),
+    harden({ In: anchorMint.mintPayment(initialPool) }),
+  );
+  t.assert(
+    AmountMath.isEqual(await E(publicFacet).getCurrentLiquidity(), initialPool),
+  );
+  trace('test going over limit');
+  const give = mintLimit;
+  const seat1 = await E(zoe).offer(
+    E(publicFacet).makeSwapInvitation(),
+    harden({ give: { In: give } }),
+    harden({ In: anchorMint.mintPayment(give) }),
+  );
+  trace('gone over limit');
 
-//   const { runIssuer, runBrand, creatorFacet, publicFacet, anchorKit } =
-//     await startContract();
+  const paymentPs = await E(seat1).getPayouts();
+  // const refundAmount = await E(localIssuerP).getAmountOf(paymentPs.Transfer);
 
-//   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
-
-//   const issuers = { RUN: runIssuer };
-
-//   const claimedPayment = await E(issuers.RUN).claim(bootstrapPayment);
-//   const bootstrapAmount = await E(issuers.RUN).getAmountOf(claimedPayment);
-
-//   t.true(
-//     AmountMath.isEqual(
-//       bootstrapAmount,
-//       AmountMath.make(runBrand, bootstrapPaymentValue),
-//     ),
-//   );
-
-//   // Try getting another payment
-
-//   const bootstrapPayment2 = E(creatorFacet).getBootstrapPayment();
-
-//   await t.throwsAsync(() => E(issuers.RUN).claim(bootstrapPayment2), {
-//     message: /was not a live payment/,
-//   });
-// });
-
-// test('bootstrap payment - default value is 0n', async t => {
-//   const { runIssuer, creatorFacet, runBrand } = await startContract(0n);
-
-//   const issuers = { RUN: runIssuer };
-
-//   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
-
-//   const bootstrapAmount = await E(issuers.RUN).getAmountOf(bootstrapPayment);
-
-//   t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(runBrand, 0n)));
-// });
+  trace('PAYOUTS', paymentPs);
+  // We should get 0 RUN but all our anchor back
+  // TODO should this be expecteed to be an empty Out?
+  t.falsy(t.Out);
+  // const actualRun = await E(runIssuer).getAmountOf(runPayout);
+  // t.deepEqual(actualRun, AmountMath.makeEmpty(runBrand));
+  const anchorReturn = await paymentPs.In;
+  const actualAnchor = await E(anchorIssuer).getAmountOf(anchorReturn);
+  t.deepEqual(actualAnchor, give);
+  // The pool should be unchanged
+  t.assert(
+    AmountMath.isEqual(await E(publicFacet).getCurrentLiquidity(), initialPool),
+  );
+  // TODO Offer result should be an error
+  // t.throwsAsync(() => await E(seat1).getOfferResult());
+});
