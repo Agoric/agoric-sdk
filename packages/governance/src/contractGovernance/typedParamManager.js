@@ -86,7 +86,8 @@ const makeParamManager = async (spec, zoe) => {
 };
 
 /**
- * @deprecated this can never be used; any governed contract has to provide an initialPoserInvitation which implies async
+ * Used only when the contract has multiple param managers.
+ *
  * @see makeParamManager
  * @template {Record<Keyword, SyncSpecTuple>} T
  * @param {T} spec
