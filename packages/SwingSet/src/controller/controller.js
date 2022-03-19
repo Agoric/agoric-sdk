@@ -382,14 +382,19 @@ export async function makeSwingsetController(
       return kernel.getActivityhash();
     },
 
+    // everything beyond here is for tests, and everything should be migrated
+    // to be on this 'debug' object to make that clear
+
+    debug: {
+      addDeviceHook: kernel.addDeviceHook,
+    },
+
     pinVatRoot(vatName) {
       const vatID = kernel.vatNameToID(vatName);
       const kref = kernel.getRootObject(vatID);
       kernel.pinObject(kref);
       return kref;
     },
-
-    // these are for tests
 
     kpStatus(kpid) {
       return kernel.kpStatus(kpid);

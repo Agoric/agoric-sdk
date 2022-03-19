@@ -79,21 +79,19 @@ export function buildDispatch(onDispatchCallback = undefined) {
   return { log, dispatch };
 }
 
-export function capSlot(index) {
-  return { '@qclass': 'slot', iface: 'Alleged: export', index };
+export function capSlot(index, iface = 'export') {
+  iface = iface ? `Alleged: ${iface}` : undefined;
+  return { '@qclass': 'slot', iface, index };
 }
 
-export function capdataOneSlot(slot) {
-  return capargs({ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }, [
-    slot,
-  ]);
+export function capdataOneSlot(slot, iface = 'export') {
+  iface = iface ? `Alleged: ${iface}` : undefined;
+  return capargs({ '@qclass': 'slot', iface, index: 0 }, [slot]);
 }
 
-export function capargsOneSlot(slot) {
-  return capargs(
-    [{ '@qclass': 'slot', iface: 'Alleged: export', index: 0 }],
-    [slot],
-  );
+export function capargsOneSlot(slot, iface = 'export') {
+  iface = iface ? `Alleged: ${iface}` : undefined;
+  return capargs([{ '@qclass': 'slot', iface, index: 0 }], [slot]);
 }
 
 export function makeMessage(target, method, args, result = null) {

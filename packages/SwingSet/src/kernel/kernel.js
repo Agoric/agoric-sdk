@@ -126,6 +126,16 @@ export default function buildKernel(
     log: [],
   };
 
+  /**
+   * @typedef { (args: SwingSetCapData) => SwingSetCapData } DeviceHook
+   * @typedef { string } HookName
+   * @typedef { Record<HookName, DeviceHook> } HooksForOneDevice
+   * @typedef { string } DeviceID
+   * @typedef { Map<DeviceID, HooksForOneDevice> } HooksForAllDevices
+   * @type HooksForAllDevices
+   */
+  const deviceHooks = new Map();
+
   // This is a low-level output-only string logger used by old unit tests to
   // see whether vats made progress or not. The array it appends to is
   // available as c.dump().log . New unit tests should instead use the
@@ -312,6 +322,7 @@ export default function buildKernel(
     doSubscribe,
     doResolve,
     requestTermination,
+    deviceHooks,
   });
 
   /**
@@ -1236,6 +1247,10 @@ export default function buildKernel(
     return vatID;
   }
 
+  // note: deviceEndowments.vatAdmin can move out here,
+  // makeSwingsetController() calls buildKernel() and kernel.start() in
+  // nearly rapid succession
+
   async function start() {
     if (started) {
       throw Error('kernel.start already called');
@@ -1352,6 +1367,7 @@ export default function buildKernel(
           },
         });
 
+        deviceHooks.set(deviceID, {});
         const manager = makeDeviceManager(
           name,
           NS,
@@ -1549,6 +1565,15 @@ export default function buildKernel(
     }
   }
 
+  function addDeviceHook(deviceName, hookName, hook) {
+    const deviceID = kernelKeeper.getDeviceIDForName(deviceName);
+    assert(deviceID, `no such device ${deviceName}`);
+    assert(deviceHooks.has(deviceID), `no such device ${deviceID}`);
+    const hooks = deviceHooks.get(deviceID);
+    assert(hooks, `no hooks for ${deviceName}`);
+    hooks[hookName] = hook;
+  }
+
   const kernel = harden({
     // these are meant for the controller
     installBundle,
@@ -1601,6 +1626,7 @@ export default function buildKernel(
     kpRegisterInterest,
     kpStatus,
     kpResolution,
+    addDeviceHook,
   });
 
   return kernel;

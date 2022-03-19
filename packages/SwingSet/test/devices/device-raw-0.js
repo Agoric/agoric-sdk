@@ -63,6 +63,10 @@ export function buildDevice(tools, endowments) {
           throw Error('intentional device error');
         }
 
+        if (method === 'sixError') {
+          return harden(['error', 'deliberate raw-device result error']);
+        }
+
         throw TypeError(`target[${method}] does not exist`);
       }
 

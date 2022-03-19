@@ -95,4 +95,13 @@ test('d1', async t => {
     'syscall.callNow failed: device.invoke failed, see logs for details',
   );
   t.deepEqual(parse(c.kpResolution(r5).body), expected5);
+
+  // and raw devices can return an error result
+  const r6 = c.queueToVatRoot('bootstrap', 'step6', capargs([]));
+  await c.run();
+  // body: '{"@qclass":"error","errorId":"error:liveSlots:v1#70001","message":"syscall.callNow failed: device.invoke failed, see logs for details","name":"Error"}',
+  const expected6 = Error(
+    'syscall.callNow failed: deliberate raw-device result error',
+  );
+  t.deepEqual(parse(c.kpResolution(r6).body), expected6);
 });

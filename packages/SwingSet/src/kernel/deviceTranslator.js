@@ -136,6 +136,16 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
     return harden(['vatstoreDelete', deviceID, key]);
   }
 
+  function translateCallKernelHook(name, dargs) {
+    assert.typeof(name, 'string', `callKernelHook requires string hook name`);
+    insistCapData(dargs); // dref slots
+    const kargs = harden({
+      ...dargs,
+      slots: dargs.slots.map(slot => mapDeviceSlotToKernelSlot(slot)),
+    });
+    return harden(['callKernelHook', deviceID, name, kargs]);
+  }
+
   // vsc is [type, ...args]
   // ksc is:
   //  ['send', ktarget, kmsg]
@@ -158,6 +168,8 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
         return translateVatstoreGetAfter(...args);
       case 'vatstoreDelete':
         return translateVatstoreDelete(...args);
+      case 'callKernelHook':
+        return translateCallKernelHook(...args);
       default:
         assert.fail(X`unknown deviceSyscall type ${type}`);
     }
@@ -166,28 +178,46 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
   return deviceSyscallToKernelSyscall;
 }
 
-function kernelResultToDeviceResult(type, kres) {
-  const [successFlag, resultData] = kres;
-  assert(successFlag === 'ok', 'unexpected KSR error');
-  switch (type) {
-    case 'vatstoreGet':
-      if (resultData) {
-        assert.typeof(resultData, 'string');
-        return harden(['ok', resultData]);
-      } else {
-        return harden(['ok', undefined]);
+function makeKRTranslator(deviceID, kernelKeeper) {
+  const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
+  const { mapKernelSlotToDeviceSlot } = deviceKeeper;
+
+  function kernelResultToDeviceResult(type, kres) {
+    const [successFlag, resultData] = kres;
+    assert(successFlag === 'ok', 'unexpected KSR error');
+    switch (type) {
+      case 'vatstoreGet': {
+        if (resultData) {
+          assert.typeof(resultData, 'string');
+          return harden(['ok', resultData]);
+        } else {
+          return harden(['ok', undefined]);
+        }
       }
-    case 'vatstoreGetAfter':
-      if (resultData) {
-        assert(Array.isArray(resultData));
-        return harden(['ok', resultData]);
-      } else {
-        return harden(['ok', undefined]);
+      case 'vatstoreGetAfter': {
+        if (resultData) {
+          assert(Array.isArray(resultData));
+          return harden(['ok', resultData]);
+        } else {
+          return harden(['ok', undefined]);
+        }
       }
-    default:
-      assert(resultData === null);
-      return harden(['ok', null]);
+      case 'callKernelHook': {
+        insistCapData(resultData);
+        const kresult = resultData;
+        const dresult = harden({
+          ...kresult,
+          slots: kresult.slots.map(slot => mapKernelSlotToDeviceSlot(slot)),
+        });
+        return harden(['ok', dresult]);
+      }
+      default:
+        assert(resultData === null);
+        return harden(['ok', null]);
+    }
   }
+
+  return kernelResultToDeviceResult;
 }
 
 export function makeDeviceTranslators(deviceID, deviceName, kernelKeeper) {
@@ -202,6 +232,6 @@ export function makeDeviceTranslators(deviceID, deviceName, kernelKeeper) {
       deviceName,
       kernelKeeper,
     ),
-    kernelResultToDeviceResult,
+    kernelResultToDeviceResult: makeKRTranslator(deviceID, kernelKeeper),
   });
 }
