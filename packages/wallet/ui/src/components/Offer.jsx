@@ -216,12 +216,6 @@ const OfferWithoutContext = ({
         <span className="Blue">{dappOrigin || origin}</span>
       </div>
       <div>
-        {args === undefined || (
-          <div className="OfferArguments">
-            <h6>Arguments</h6>
-            <pre>{JSON.stringify(args, null, 2)}</pre>
-          </div>
-        )}
         {gives.map(Give)}
         {wants.map(Want)}
         {feeEntry}
@@ -231,6 +225,12 @@ const OfferWithoutContext = ({
             <div className="Expiry text-gray">
               {formatDateNow(parseFloat(expiry) * 1000)}
             </div>
+          </div>
+        )}
+        {args !== undefined && (
+          <div className="OfferEntry">
+            <h6>Arguments</h6>
+            <pre>{JSON.stringify(args, null, 2)}</pre>
           </div>
         )}
       </div>
