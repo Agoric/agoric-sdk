@@ -690,6 +690,7 @@ test('lib-wallet offer methods', async t => {
           },
         },
         exit: { onDemand: null },
+        arguments: { foo: 'bar' },
       },
     });
 
@@ -720,6 +721,7 @@ test('lib-wallet offer methods', async t => {
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1n } },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
         requestContext: { dappOrigin: 'unknown' },
         status: undefined,
@@ -851,6 +853,7 @@ test('lib-wallet offer methods', async t => {
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
         requestContext: { dappOrigin: 'unknown' },
         status: 'accept',
@@ -874,6 +877,7 @@ test('lib-wallet offer methods', async t => {
             },
           },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
       },
       {
@@ -901,6 +905,7 @@ test('lib-wallet offer methods', async t => {
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
         requestContext: { dappOrigin: 'unknown' },
         status: 'decline',
@@ -924,6 +929,7 @@ test('lib-wallet offer methods', async t => {
             },
           },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
       },
     ],
