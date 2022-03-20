@@ -1064,11 +1064,12 @@ export function makeWallet({
     return false;
   }
 
-  function declineOffer(id) {
+  async function declineOffer(id) {
     const offer = idToOffer.get(id);
     if (consummated(offer)) {
       return;
     }
+
     // Update status, drop the proposal
     const declinedOffer = addMeta({
       ...offer,
@@ -1076,6 +1077,15 @@ export function makeWallet({
     });
     idToOffer.set(id, declinedOffer);
     updateInboxState(id, declinedOffer);
+
+    // Try to reclaim the invitation.
+    const compiledOfferP = idToCompiledOfferP.get(id);
+    if (!compiledOfferP) {
+      return;
+    }
+
+    // eslint-disable-next-line no-use-before-define
+    await addPayment(E.get(compiledOfferP).inviteP).catch(console.error);
   }
 
   async function cancelOffer(id) {
