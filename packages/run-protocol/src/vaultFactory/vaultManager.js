@@ -389,10 +389,19 @@ export const makeVaultManager = (
     }
   };
 
+  const publicFacet = harden({
+    makeVaultInvitation: () => zcf.makeInvitation(makeVaultKit, 'MakeVault'),
+    getNotifier: () => assetNotifer,
+    getCompoundedInterest: () => compoundedInterest,
+  });
+
   /** @type {VaultManager} */
   return Far('vault manager', {
     ...shared,
     makeVaultKit,
     liquidateAll,
+    getPublicFacet: () => publicFacet,
   });
 };
+
+/** @typedef {Awaited<ReturnType<typeof makeVaultManager>>['getPublicFacet']} CollateralManager */

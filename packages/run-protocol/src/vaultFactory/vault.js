@@ -446,7 +446,7 @@ const constructFromState = state => {
    * @param {Amount} fromGains
    * @param {Keyword} key
    */
-  const transfer = (fromSeat, toSeat, fromLoses, fromGains, key) => {
+  const stageDelta = (fromSeat, toSeat, fromLoses, fromGains, key) => {
     // Must check `isEmpty`; can't subtract `empty` from a missing allocation.
     if (!AmountMath.isEmpty(fromLoses)) {
       toSeat.incrementBy(fromSeat.decrementBy(harden({ [key]: fromLoses })));
@@ -468,7 +468,7 @@ const constructFromState = state => {
    * @param {Amount} loss
    * @returns {Amount}
    */
-  const applyDelta = (base, gain, loss) =>
+  const addSubtract = (base, gain, loss) =>
     AmountMath.subtract(AmountMath.add(base, gain), loss);
 
   /**
@@ -485,7 +485,7 @@ const constructFromState = state => {
   const loanFee = (currentDebt, giveAmount, wantAmount) => {
     const fee = ceilMultiplyBy(wantAmount, manager.getLoanFee());
     const toMint = AmountMath.add(wantAmount, fee);
-    const newDebt = applyDelta(currentDebt, toMint, giveAmount);
+    const newDebt = addSubtract(currentDebt, toMint, giveAmount);
     return { newDebt, toMint, fee };
   };
 
@@ -546,7 +546,7 @@ const constructFromState = state => {
     const giveColl = proposal.give.Collateral || emptyCollateral;
     const wantColl = proposal.want.Collateral || emptyCollateral;
 
-    const newCollateralPre = applyDelta(collateralPre, giveColl, wantColl);
+    const newCollateralPre = addSubtract(collateralPre, giveColl, wantColl);
     // max debt supported by current Collateral as modified by proposal
     const maxDebtPre = await maxDebtFor(newCollateralPre);
     assert(
@@ -559,7 +559,7 @@ const constructFromState = state => {
     // Get new balances after calling the priceAuthority, so we can compare
     // to the debt limit based on the new values.
     const collateral = getCollateralAllocated(vaultSeat);
-    const newCollateral = applyDelta(collateral, giveColl, wantColl);
+    const newCollateral = addSubtract(collateral, giveColl, wantColl);
 
     const debt = getCurrentDebt();
     const giveRUN = AmountMath.min(proposal.give.RUN || emptyDebt, debt);
@@ -585,11 +585,11 @@ const constructFromState = state => {
     // mint to vaultSeat, then reallocate to reward and client, then burn from
     // vaultSeat. Would using a separate seat clarify the accounting?
     // TODO what if there isn't anything to mint?
-    mint.mintGains(harden({ RUN: toMint }), vaultSeat);
 
-    transfer(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
-    transfer(clientSeat, vaultSeat, giveRUN, wantRUN, 'RUN');
-    manager.reallocateWithFee(fee, vaultSeat, clientSeat);
+    stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
+    // `wantRUN is allocated in the reallocate and mint operation, and so not here
+    stageDelta(clientSeat, vaultSeat, giveRUN, emptyDebt, 'RUN');
+    manager.reallocateWithFee(fee, wantRUN, clientSeat, vaultSeat);
 
     // parent needs to know about the change in debt
     updateDebtAccounting(debtPre, collateralPre, newDebt);
@@ -650,13 +650,10 @@ const constructFromState = state => {
     await assertSufficientCollateral(giveCollateral, newDebtPre);
 
     const { vaultSeat } = state;
-    mint.mintGains(harden({ RUN: toMint }), vaultSeat);
-
-    seat.incrementBy(vaultSeat.decrementBy(harden({ RUN: wantRUN })));
     vaultSeat.incrementBy(
       seat.decrementBy(harden({ Collateral: giveCollateral })),
     );
-    manager.reallocateWithFee(fee, vaultSeat, seat);
+    manager.reallocateWithFee(fee, wantRUN, seat, vaultSeat);
 
     updateDebtAccounting(debtPre, collateralPre, newDebtPre);
 

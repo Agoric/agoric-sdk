@@ -52,9 +52,10 @@
  * pool, taken from the `fromSeat`. Then reallocate over all the seat
  * arguments and the rewardPoolSeat.
  *
- * @param {Amount} amount
+ * @param {Amount} fee
+ * @param {Amount} wanted
  * @param {ZCFSeat} fromSeat
- * @param {ZCFSeat=} otherSeat
+ * @param {...ZCFSeat} otherSeats
  * @returns {void}
  */
 
@@ -78,6 +79,7 @@
  * @typedef {Object} VaultManagerBase
  * @property {(seat: ZCFSeat) => Promise<VaultKit>}  makeVaultKit
  * @property {() => void} liquidateAll
+ * @property {() => CollateralManager} getPublicFacet
  */
 
 /**

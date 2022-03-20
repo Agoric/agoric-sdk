@@ -947,7 +947,7 @@ test('interest on multiple vaults', async t => {
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
 
-  // 160 is initial fee. interest is 3n/week. compounding is in the noise.
+  // 160n is initial fee. interest is 3n/week. compounding is in the noise.
   const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     calculateCurrentDebt(

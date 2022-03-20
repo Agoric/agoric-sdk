@@ -31,6 +31,7 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 import { assertElectorateMatches } from '@agoric/governance';
 
+import { AmountMath } from '@agoric/ertp';
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
@@ -75,6 +76,8 @@ export const start = async (zcf, privateArgs) => {
 
   assertElectorateMatches(electorateParamManager, governedTerms);
 
+  /** For temporary staging of newly minted tokens */
+  const { zcfSeat: stage } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
@@ -83,18 +86,23 @@ export const start = async (zcf, privateArgs) => {
    *
    * @type {ReallocateWithFee}
    */
-  const reallocateWithFee = (fee, fromSeat, otherSeat = undefined) => {
-    rewardPoolSeat.incrementBy(
-      fromSeat.decrementBy(
-        harden({
-          RUN: fee,
-        }),
-      ),
-    );
-    if (otherSeat !== undefined) {
-      zcf.reallocate(rewardPoolSeat, fromSeat, otherSeat);
-    } else {
-      zcf.reallocate(rewardPoolSeat, fromSeat);
+  const reallocateWithFee = (fee, wanted, seat, ...otherSeats) => {
+    const toMint = AmountMath.add(wanted, fee);
+    runMint.mintGains(harden({ RUN: toMint }), stage);
+    try {
+      rewardPoolSeat.incrementBy(stage.decrementBy(harden({ RUN: fee })));
+      seat.incrementBy(stage.decrementBy(harden({ RUN: wanted })));
+      zcf.reallocate(rewardPoolSeat, stage, seat, ...otherSeats);
+    } catch (e) {
+      stage.clear();
+      rewardPoolSeat.clear();
+      runMint.burnLosses(harden({ RUN: toMint }), stage);
+      throw e;
+    } finally {
+      assert(
+        AmountMath.isEmpty(stage.getAmountAllocated('RUN', runBrand)),
+        X`Stage should be empty of RUN`,
+      );
     }
   };
 
@@ -199,7 +207,17 @@ export const start = async (zcf, privateArgs) => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
 
+  const getCollateralManager = brandIn => {
+    assert(
+      collateralTypes.has(brandIn),
+      X`Not a supported collateral type ${brandIn}`,
+    );
+    /** @type {VaultManager} */
+    return collateralTypes.get(brandIn).getPublicFacet();
+  };
+
   const publicFacet = Far('vaultFactory public facet', {
+    getCollateralManager,
     /** @deprecated use makeVaultInvitation instead */
     makeLoanInvitation: makeVaultInvitation,
     makeVaultInvitation,

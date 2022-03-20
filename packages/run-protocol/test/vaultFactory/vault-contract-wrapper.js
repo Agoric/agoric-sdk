@@ -43,20 +43,27 @@ export async function start(zcf, privateArgs) {
   let currentInterest = makeRatio(5n, runBrand); // 5%
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
-  function reallocateWithFee(amount, fromSeat, otherSeat) {
-    vaultFactorySeat.incrementBy(
-      fromSeat.decrementBy(
-        harden({
-          RUN: amount,
-        }),
-      ),
-    );
-    if (otherSeat !== undefined) {
-      zcf.reallocate(vaultFactorySeat, fromSeat, otherSeat);
-    } else {
-      zcf.reallocate(vaultFactorySeat, fromSeat);
+  const { zcfSeat: stage } = zcf.makeEmptySeatKit();
+
+  const reallocateWithFee = (fee, wanted, seat, ...otherSeats) => {
+    const toMint = AmountMath.add(wanted, fee);
+    runMint.mintGains(harden({ RUN: toMint }), stage);
+    try {
+      vaultFactorySeat.incrementBy(stage.decrementBy(harden({ RUN: fee })));
+      seat.incrementBy(stage.decrementBy(harden({ RUN: wanted })));
+      zcf.reallocate(vaultFactorySeat, stage, seat, ...otherSeats);
+    } catch (e) {
+      stage.clear();
+      vaultFactorySeat.clear();
+      runMint.burnLosses(harden({ RUN: toMint }), stage);
+      throw e;
+    } finally {
+      assert(
+        AmountMath.isEmpty(stage.getAmountAllocated('RUN', runBrand)),
+        `Stage should be empty of RUN`,
+      );
     }
-  }
+  };
 
   /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerMock = Far('vault manager mock', {
@@ -89,6 +96,9 @@ export async function start(zcf, privateArgs) {
     getCompoundedInterest: () => compoundedInterest,
     updateVaultPriority: () => {
       // noop
+    },
+    mintforVault: async amount => {
+      runMint.mintGains({ RUN: amount });
     },
   });
 

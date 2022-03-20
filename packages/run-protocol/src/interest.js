@@ -198,7 +198,11 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
     harden({ [powers.seatAllocationKeyword]: rewarded }),
     powers.poolIncrementSeat,
   );
-  powers.reallocateWithFee(rewarded, powers.poolIncrementSeat);
+  powers.reallocateWithFee(
+    rewarded,
+    AmountMath.makeEmpty(brand),
+    powers.poolIncrementSeat,
+  );
 
   return {
     compoundedInterest,
