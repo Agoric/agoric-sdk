@@ -132,7 +132,7 @@ const validatedBrand = (mint, debt) => {
  *
  * @param {{
  *  mint: ZCFMint,
- *  reallocateWithFee: ReallocateWithFee,
+ *  mintAndReallocateWithFee: MintAndReallocate,
  *  poolIncrementSeat: ZCFSeat,
  *  seatAllocationKeyword: Keyword }} powers
  * @param {{
@@ -194,15 +194,7 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
 
   // mint that much of brand for the reward pool
   const rewarded = AmountMath.make(brand, interestAccrued);
-  powers.mint.mintGains(
-    harden({ [powers.seatAllocationKeyword]: rewarded }),
-    powers.poolIncrementSeat,
-  );
-  powers.reallocateWithFee(
-    rewarded,
-    AmountMath.makeEmpty(brand),
-    powers.poolIncrementSeat,
-  );
+  powers.mintAndReallocateWithFee(rewarded, rewarded, powers.poolIncrementSeat);
 
   return {
     compoundedInterest,

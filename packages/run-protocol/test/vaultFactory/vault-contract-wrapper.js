@@ -8,12 +8,15 @@ import { assert } from '@agoric/assert';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import {
+  floorDivideBy,
   makeRatio,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 
 import { makeNotifierKit } from '@agoric/notifier';
+import { getAmountOut } from '@agoric/zoe/src/contractSupport';
+import { E } from '@endo/eventual-send';
 import { makeInnerVault } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
@@ -36,6 +39,8 @@ export async function start(zcf, privateArgs) {
   const runMint = await zcf.registerFeeMint('RUN', privateArgs.feeMintAccess);
   const { brand: runBrand } = runMint.getIssuerRecord();
 
+  const LIQUIDATION_MARGIN = makeRatio(105n, runBrand);
+
   const { zcfSeat: vaultFactorySeat } = zcf.makeEmptySeatKit();
 
   let vaultCounter = 0;
@@ -44,6 +49,27 @@ export async function start(zcf, privateArgs) {
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
   const { zcfSeat: stage } = zcf.makeEmptySeatKit();
+
+  const { notifier: managerNotifier } = makeNotifierKit();
+
+  const timer = buildManualTimer(console.log, 0n, DAY);
+  const options = {
+    actualBrandIn: collateralBrand,
+    actualBrandOut: runBrand,
+    priceList: [80],
+    tradeList: undefined,
+    timer,
+    quoteMint: makeIssuerKit('quote', AssetKind.SET).mint,
+  };
+  const priceAuthority = makeFakePriceAuthority(options);
+  const maxDebtFor = async collateralAmount => {
+    const quoteAmount = await E(priceAuthority).quoteGiven(
+      collateralAmount,
+      runBrand,
+    );
+    // floorDivide because we want the debt ceiling lower
+    return floorDivideBy(getAmountOut(quoteAmount), LIQUIDATION_MARGIN);
+  };
 
   const reallocateWithFee = (fee, wanted, seat, ...otherSeats) => {
     const toMint = AmountMath.add(wanted, fee);
@@ -65,10 +91,19 @@ export async function start(zcf, privateArgs) {
     }
   };
 
+  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+    const wanted = AmountMath.subtract(toMint, fee);
+    reallocateWithFee(fee, wanted, seat, ...otherSeats);
+  };
+
+  const burnAndRecord = (toBurn, seat) => {
+    runMint.burnLosses(harden({ RUN: toBurn }), seat);
+  };
+
   /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerMock = Far('vault manager mock', {
     getLiquidationMargin() {
-      return makeRatio(105n, runBrand);
+      return LIQUIDATION_MARGIN;
     },
     getLoanFee() {
       return makeRatio(500n, runBrand, BASIS_POINTS);
@@ -79,14 +114,18 @@ export async function start(zcf, privateArgs) {
     getCollateralBrand() {
       return collateralBrand;
     },
+    getDebtBrand: () => runBrand,
+
     getChargingPeriod() {
       return DAY;
     },
     getRecordingPeriod() {
       return DAY;
     },
-    reallocateWithFee,
-    applyDebtDelta() {},
+    getNotifier: () => managerNotifier,
+    maxDebtFor,
+    mintAndReallocate,
+    burnAndRecord,
     getCollateralQuote() {
       return Promise.resolve({
         quoteAmount: AmountMath.make(runBrand, 0n),
@@ -102,27 +141,11 @@ export async function start(zcf, privateArgs) {
     },
   });
 
-  const timer = buildManualTimer(console.log, 0n, DAY);
-  const options = {
-    actualBrandIn: collateralBrand,
-    actualBrandOut: runBrand,
-    priceList: [80],
-    tradeList: undefined,
-    timer,
-    quoteMint: makeIssuerKit('quote', AssetKind.SET).mint,
-  };
-  const priceAuthority = makeFakePriceAuthority(options);
-
-  const { notifier: managerNotifier } = makeNotifierKit();
-
   const innerVault = await makeInnerVault(
     zcf,
     managerMock,
-    managerNotifier,
     // eslint-disable-next-line no-plusplus
     String(vaultCounter++),
-    runMint,
-    priceAuthority,
   );
 
   const advanceRecordingPeriod = () => {

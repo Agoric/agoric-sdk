@@ -84,10 +84,10 @@ export const start = async (zcf, privateArgs) => {
    * We provide an easy way for the vaultManager to add rewards to
    * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
    *
-   * @type {ReallocateWithFee}
+   * @type {MintAndReallocate}
    */
-  const reallocateWithFee = (fee, wanted, seat, ...otherSeats) => {
-    const toMint = AmountMath.add(wanted, fee);
+  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+    const wanted = AmountMath.subtract(toMint, fee);
     runMint.mintGains(harden({ RUN: toMint }), stage);
     try {
       rewardPoolSeat.incrementBy(stage.decrementBy(harden({ RUN: fee })));
@@ -104,6 +104,12 @@ export const start = async (zcf, privateArgs) => {
         X`Stage should be empty of RUN`,
       );
     }
+    // TODO add aggregate debt tracking
+    // totalDebt = AmountMath.add(totalDebt, toMint);
+  };
+
+  const burnDebt = (toBurn, seat) => {
+    runMint.burnLosses(harden({ RUN: toBurn }), seat);
   };
 
   /** @type {Store<Brand,VaultManager>} */
@@ -144,7 +150,8 @@ export const start = async (zcf, privateArgs) => {
       priceAuthority,
       loanTimingParams,
       vaultParamManager.readonly(),
-      reallocateWithFee,
+      mintAndReallocate,
+      burnDebt,
       timerService,
       liquidationStrategy,
       startTimeStamp,
@@ -220,6 +227,7 @@ export const start = async (zcf, privateArgs) => {
     getCollateralManager,
     /** @deprecated use makeVaultInvitation instead */
     makeLoanInvitation: makeVaultInvitation,
+    /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
     makeVaultInvitation,
     getCollaterals,
     getRunIssuer: () => runIssuer,

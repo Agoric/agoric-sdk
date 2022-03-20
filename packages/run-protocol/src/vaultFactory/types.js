@@ -46,16 +46,29 @@
  */
 
 /**
- * @callback ReallocateWithFee
+ * @callback MintAndReallocate
  *
- * Transfer the indicated amount to the vaultFactory's reward
- * pool, taken from the `fromSeat`. Then reallocate over all the seat
- * arguments and the rewardPoolSeat.
+ * Mint new debt, and transfer a `fee` part of that to the vaultFactory's reward
+ * pool. Then reallocate over all the seat arguments and the rewardPoolSeat. Update
+ * the `totalDebt` if the reallocate succeeds.
  *
+ * TODO check limits.
+ *
+ * @param {Amount} toMint
  * @param {Amount} fee
- * @param {Amount} wanted
  * @param {ZCFSeat} fromSeat
  * @param {...ZCFSeat} otherSeats
+ * @returns {void}
+ */
+
+/**
+ * @callback BurnDebt
+ *
+ * Burn debt tokens off a seat and update
+ * the `totalDebt` if the reallocate succeeds.
+ *
+ * @param {Amount} toBurn
+ * @param {ZCFSeat} fromSeat
  * @returns {void}
  */
 
