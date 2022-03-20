@@ -116,10 +116,9 @@ const makeParamManagerSync = spec => {
  * @typedef {{ [K in keyof GT]: GT[K]['type'] }} ParamsForTerms
  */
 
-// TODO rename 'main' to 'governed'
 /**
  * @template {Record<string, ParamRecord>} GT Governed terms
- * @param {ZCF<{main: GT}>} zcf
+ * @param {ZCF<{governed: GT}>} zcf
  * @param {Payment} initialPoserInvitation
  * @param {Record<string, ParamType>} paramSpec
  * @returns {Promise<TypedParamManager<ParamsForTerms<GT>>>}
@@ -129,7 +128,8 @@ const makeParamManagerFromTerms = async (
   initialPoserInvitation,
   paramSpec,
 ) => {
-  const governedTerms = zcf.getTerms().main;
+  const governedTerms = zcf.getTerms().governed;
+  console.log('DEBUG ZCF TERMS', zcf.getTerms());
   const makerSpecEntries = Object.entries(paramSpec).map(
     ([paramKey, paramType]) => [
       paramKey,
