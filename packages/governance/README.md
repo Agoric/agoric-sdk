@@ -198,7 +198,7 @@ the methods to be called.
 `contractHelper` provides support for the vast majority of expected clients that
 will have a single set of parameters to manage. A contract only has to define
 the parameters (including `CONTRACT_ELECTORATE`) in a call to
-`facetHelpers()`, and add any needed methods to the public and creator
+`handleParamGovernance()`, and add any needed methods to the public and creator
 facets. This will
  * validate that the declaration of the parameters is included in its `terms`,
  * add the parameter retriever appropriately to the publicFacet and creatorFacet
@@ -210,7 +210,7 @@ parameters.
 
 When a governed contract starts up, it should get the parameter declarations
 from `terms`, use them to create a paramManager, and pass that to
-`facetHelpers`. `facetHelpers()` returns functions
+`handleParamGovernance`. `handleParamGovernance()` returns functions
 (`augmentPublicFacet()` and `makeGovernorFacet()`) that add
 required methods to the public and creator facets. Since the governed contract
 uses the values passed in `terms` to create the paramManager, reviewers of the

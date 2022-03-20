@@ -91,6 +91,7 @@ const makeParamManager = async (spec, zoe) => {
 
 /**
  * Used only when the contract has multiple param managers.
+ * Exactly one must manage the electorate, which requires the async version.
  *
  * @see makeParamManager
  * @template {Record<Keyword, SyncSpecTuple>} T
@@ -119,12 +120,15 @@ const makeParamManagerSync = spec => {
 /**
  * @template {Record<string, ParamRecord>} GT Governed terms
  * @param {ZCF<{main: GT}>} zcf
- * @param {{initialPoserInvitation: Payment}} privateArgs
+ * @param {Payment} initialPoserInvitation
  * @param {Record<string, ParamType>} paramSpec
  * @returns {Promise<TypedParamManager<ParamsForTerms<GT>>>}
  */
-// XXX passing full zcf and privateArgs simplifies the caller but isn't POLA
-const makeParamManagerFromTerms = async (zcf, privateArgs, paramSpec) => {
+const makeParamManagerFromTerms = async (
+  zcf,
+  initialPoserInvitation,
+  paramSpec,
+) => {
   const governedTerms = zcf.getTerms().main;
   const makerSpecEntries = Object.entries(paramSpec).map(
     ([paramKey, paramType]) => [
@@ -135,7 +139,7 @@ const makeParamManagerFromTerms = async (zcf, privateArgs, paramSpec) => {
   // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
   makerSpecEntries.push([
     CONTRACT_ELECTORATE,
-    [ParamTypes.INVITATION, privateArgs.initialPoserInvitation],
+    [ParamTypes.INVITATION, initialPoserInvitation],
   ]);
   return makeParamManager(
     Object.fromEntries(makerSpecEntries),

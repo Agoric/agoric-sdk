@@ -13,20 +13,12 @@ const { details: X, quote: q } = assert;
  * Utility function for `makeParamGovernance`.
  *
  * @template T
-<<<<<<< HEAD
- * @param {ZCF<{
- *   electionManager: VoteOnParamChange,
- *   main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}
- * }>} zcf
- * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
-=======
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./paramGovernance/typedParamManager').TypedParamManager<T>} paramManager
->>>>>>> 8d4e307fe (remove facetHelpers from API)
+ * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
  */
 const facetHelpers = (zcf, paramManager) => {
   const terms = zcf.getTerms();
-  const governedParams = terms.main;
+  const governedParams = terms.governed;
   assert(
     keyEQ(governedParams, paramManager.getParams()),
     X`Terms must include ${q(paramManager.getParams())}, but were ${q(

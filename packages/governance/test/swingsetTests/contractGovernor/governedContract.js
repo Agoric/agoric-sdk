@@ -33,7 +33,7 @@ const makeTerms = (number, invitationAmount) => {
  */
 const start = async (zcf, privateArgs) => {
   const { augmentPublicFacet, makeGovernorFacet, params } =
-    await handleParamGovernance(zcf, privateArgs, {
+    await handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
       [MALLEABLE_NUMBER]: ParamTypes.NAT,
     });
 

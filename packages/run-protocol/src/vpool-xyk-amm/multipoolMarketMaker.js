@@ -126,7 +126,7 @@ const start = async (zcf, privateArgs) => {
     { augmentPublicFacet, makeGovernorFacet, params },
     centralDisplayInfo,
   ] = await Promise.all([
-    handleParamGovernance(zcf, privateArgs, {
+    handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
       [POOL_FEE_KEY]: ParamTypes.NAT,
       [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
     }),
