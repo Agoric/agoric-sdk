@@ -99,18 +99,15 @@ const start = async (zcf, privateArgs) => {
    * This contract must have a "Central" keyword and issuer in the
    * IssuerKeywordRecord.
    *
-   * @typedef {{
+   * @typedef {GovernanceTerms<{
+   *   PoolFee: ParamRecord<'nat'>,
+   *   ProtocolFee: ParamRecord<'nat'>,
+   * }> & {
    *   brands: { Central: Brand },
    *   issuers: {},
    *   timer: TimerService,
-   *   electionManager: VoteOnParamChange,
    *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
    *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
-   *   main: {
-   *     PoolFee: ParamRecord<'nat'>,
-   *     ProtocolFee: ParamRecord<'nat'>,
-   *     Electorate: ParamRecord<'invitation'>,
-   *   }
    * }} AMMTerms
    *
    * @typedef { bigint } BasisPoints -- hundredths of a percent
