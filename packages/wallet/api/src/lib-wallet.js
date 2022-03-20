@@ -380,7 +380,12 @@ export function makeWallet({
   };
 
   const displayProposal = proposalTemplate => {
-    const { want, give, exit = { onDemand: null } } = proposalTemplate;
+    const {
+      want,
+      give,
+      exit = { onDemand: null },
+      arguments: args,
+    } = proposalTemplate;
     const displayRecord = pursePetnameValueKeywordRecord => {
       if (pursePetnameValueKeywordRecord === undefined) {
         return undefined;
@@ -422,6 +427,9 @@ export function makeWallet({
       give: displayRecord(give),
       exit,
     };
+    if (args !== undefined) {
+      proposalForDisplay.arguments = display(args);
+    }
     return proposalForDisplay;
   };
 
@@ -553,7 +561,12 @@ export function makeWallet({
     // === AWAITING TURN ===
     // =====================
 
-    const { inviteP, purseKeywordRecord, proposal } = await compiledOfferP;
+    const {
+      inviteP,
+      purseKeywordRecord,
+      proposal,
+      arguments: args,
+    } = await compiledOfferP;
 
     // Track from whence our payment came.
     /** @type {Map<Payment, Purse>} */
@@ -618,7 +631,12 @@ export function makeWallet({
     const paymentKeywords = await withdrawAllPayments;
     const paymentKeywordRecord = harden(Object.fromEntries(paymentKeywords));
 
-    const seat = E(zoe).offer(inviteP, harden(proposal), paymentKeywordRecord);
+    const seat = E(zoe).offer(
+      inviteP,
+      harden(proposal),
+      paymentKeywordRecord,
+      args,
+    );
     // By the time Zoe settles the seat promise, the escrow should be complete.
     // Reclaim if it is somehow not.
     seat.finally(tryReclaimingWithdrawnPayments);
@@ -839,6 +857,7 @@ export function makeWallet({
       want = harden({}),
       give = harden({}),
       exit = { onDemand: null },
+      arguments: args,
     } = proposalTemplate;
 
     const purseKeywordRecord = {};
@@ -872,13 +891,15 @@ export function makeWallet({
       exit,
     };
 
-    return { proposal, purseKeywordRecord };
+    return { proposal, arguments: args, purseKeywordRecord };
   };
 
   const compileOffer = async offer => {
-    const { proposal, purseKeywordRecord } = compileProposal(
-      offer.proposalTemplate,
-    );
+    const {
+      proposal,
+      purseKeywordRecord,
+      arguments: args,
+    } = compileProposal(offer.proposalTemplate);
 
     // eslint-disable-next-line no-use-before-define
     const zoeIssuer = issuerManager.get(ZOE_INVITE_BRAND_PETNAME);
@@ -894,7 +915,8 @@ export function makeWallet({
     const invitationDetails = await E(zoe).getInvitationDetails(invitationP);
     const { installation, instance } = invitationDetails;
 
-    return {
+    const compiled = {
+      arguments: args,
       proposal,
       inviteP: invitationP,
       purseKeywordRecord,
@@ -902,6 +924,7 @@ export function makeWallet({
       installation,
       instance,
     };
+    return compiled;
   };
 
   /** @type {Store<string, DappRecord>} */
