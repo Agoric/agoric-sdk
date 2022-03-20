@@ -7,8 +7,12 @@
  */
 
 /**
+ * @typedef {{}} OracleKey
+ */
+
+/**
  * @callback PriceAggregatorCreatorFacetInitOracle
- * @param {Instance} oracleInstance
+ * @param {Instance=} oracleInstance
  * @param {unknown=} query
  * @returns {Promise<OracleAdmin>}
  */
@@ -28,6 +32,11 @@
  * @typedef {Object} PriceAggregatorKit
  * @property {PriceAggregatorPublicFacet} publicFacet
  * @property {PriceAggregatorCreatorFacet} creatorFacet
+ */
+
+/**
+ * @typedef {bigint | number | string} ParsableNumber
+ * @typedef {Readonly<ParsableNumber | { data: ParsableNumber }>} OraclePriceSubmission
  */
 
 /**
