@@ -239,19 +239,75 @@ const start = async zcf => {
       });
       ({ priceAuthority, adminFacet: priceAuthorityAdmin } = paKit);
     },
-    async initOracle(oracleInstance, query = undefined) {
+    makeOracleInvitation: async () => {
+      /** @type {OfferHandler<OracleAdmin>} */
+      const offerHandler = async (
+        seat,
+        { notifier: oracleNotifier, scaleValueOut = 1 } = {},
+      ) => {
+        const admin = await creatorFacet.initOracle();
+        seat.exit();
+        if (!oracleNotifier) {
+          // No notifier to track, just let them have the direct admin.
+          return admin;
+        }
+
+        // Adapt the notifier to push results.
+        const recurse = ({ value, updateCount }) => {
+          if (!oracleNotifier || !updateCount) {
+            // Interrupt the cycle because we either are deleted or the notifier
+            // finished.
+            return;
+          }
+          // Queue the next update.
+          E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
+
+          // See if we have associated parameters or just a raw value.
+          const data = value.data || value;
+
+          // Push the current scaled result.
+          const scaledData = Math.floor(parseInt(data, 10) * scaleValueOut);
+          const newData = BigInt(scaledData);
+
+          if (value.data) {
+            // We have some associated parameters to push.
+            const newValue = { ...value, data: newData };
+            admin.pushResult(newValue).catch(console.error);
+          } else {
+            admin.pushResult(newData).catch(console.error);
+          }
+        };
+
+        // Start the notifier.
+        E(oracleNotifier).getUpdateSince().then(recurse);
+
+        return Far('oracleAdmin', {
+          ...admin,
+          delete: async () => {
+            // Stop tracking the notifier on delete.
+            oracleNotifier = undefined;
+            return admin.delete();
+          },
+        });
+      };
+
+      return zcf.makeInvitation(offerHandler, 'oracle invitation');
+    },
+    async initOracle(oracleInstance = undefined, query = undefined) {
       assert(quoteKit, X`Must initializeQuoteMint before adding an oracle`);
+
+      const oracleKey = oracleInstance || Far('fresh key');
 
       /** @type {OracleRecord} */
       const record = { querier: undefined, lastSample: 0n };
 
       /** @type {Set<OracleRecord>} */
       let records;
-      if (instanceToRecords.has(oracleInstance)) {
-        records = instanceToRecords.get(oracleInstance);
+      if (instanceToRecords.has(oracleKey)) {
+        records = instanceToRecords.get(oracleKey);
       } else {
         records = new Set();
-        instanceToRecords.init(oracleInstance, records);
+        instanceToRecords.init(oracleKey, records);
       }
       records.add(record);
       oracleRecords.add(record);
@@ -262,10 +318,6 @@ const start = async zcf => {
         const sample = Nat(parseInt(result, 10));
         record.lastSample = sample;
       };
-
-      // Obtain the oracle's publicFacet.
-      const oracle = await E(zoe).getPublicFacet(oracleInstance);
-      assert(records.has(record), X`Oracle record is already deleted`);
 
       /** @type {OracleAdmin} */
       const oracleAdmin = Far('OracleAdmin', {
@@ -278,11 +330,11 @@ const start = async zcf => {
 
           if (
             records.size === 0 &&
-            instanceToRecords.has(oracleInstance) &&
-            instanceToRecords.get(oracleInstance) === records
+            instanceToRecords.has(oracleKey) &&
+            instanceToRecords.get(oracleKey) === records
           ) {
             // We should remove the entry entirely, as it is empty.
-            instanceToRecords.delete(oracleInstance);
+            instanceToRecords.delete(oracleKey);
           }
 
           // Delete complete, so try asynchronously updating the quote.
@@ -303,6 +355,11 @@ const start = async zcf => {
         // They don't want to be polled.
         return oracleAdmin;
       }
+
+      // Obtain the oracle's publicFacet.
+      assert(oracleInstance);
+      const oracle = await E(zoe).getPublicFacet(oracleInstance);
+      assert(records.has(record), X`Oracle record is already deleted`);
 
       let lastWakeTimestamp = 0n;
 

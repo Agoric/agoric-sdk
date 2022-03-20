@@ -8,7 +8,7 @@
 
 /**
  * @callback PriceAggregatorCreatorFacetInitOracle
- * @param {Instance} oracleInstance
+ * @param {Instance=} oracleInstance
  * @param {unknown=} query
  * @returns {Promise<OracleAdmin>}
  */
