@@ -12,7 +12,7 @@ jest.mock('@endo/eventual-send', () => ({
     new Proxy(obj, {
       get(target, propKey) {
         const method = target[propKey];
-        return (...args) => method.apply(this, args);
+        return (...args) => Promise.resolve(method.apply(this, args));
       },
     }),
 }));
@@ -66,6 +66,7 @@ const offer = {
     origin: 'unknown origin',
   },
   proposalForDisplay: {
+    arguments: [],
     give: {
       Collateral: {
         amount: {
@@ -127,7 +128,6 @@ test('renders the wants', () => {
   );
   expect(want.text()).toContain('into Zoe fees');
 });
-
 test('renders the fee', () => {
   const component = mount(<Offer offer={offer} />);
 
@@ -151,6 +151,17 @@ test('renders the expiry', () => {
   expect(expiry.text()).toContain('Expiry');
   expect(expiry.text()).toContain(
     formatDateNow(offer.invitationDetails.expiry),
+  );
+});
+
+test('renders the arguments', () => {
+  const component = mount(<Offer offer={offer} />);
+
+  const args = component.find('.OfferEntry').at(4);
+
+  expect(args.text()).toContain('Arguments');
+  expect(args.text()).toContain(
+    JSON.stringify(offer.proposalForDisplay.arguments, null, 2),
   );
 });
 
