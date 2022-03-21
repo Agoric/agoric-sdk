@@ -91,7 +91,7 @@
  *   anti-pattern.
  * @property {K} assetKind - the kind of asset, either
  *   AssetKind.NAT (fungible) or
- *   AssetKind.SET or AssertKind.COPY_SET (non-fungible)
+ *   AssetKind.SET or AssetKind.COPY_SET (non-fungible)
  */
 
 /**
