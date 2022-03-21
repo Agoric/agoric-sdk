@@ -13,18 +13,18 @@ const { details: X, quote: q } = assert;
 
 const trace = makeTracer('R1');
 
-const VaultPhase = {
-  ACTIVE: /** @type {'Active'} */ ('Active'),
-  CLOSED: /** @type {'Closed'} */ ('Closed'),
-};
+const LoanPhase = /** @type { const } */ ({
+  ACTIVE: 'Active',
+  CLOSED: 'Closed',
+});
 
 /**
- * @typedef {VaultPhase[keyof VaultPhase]} VaultPhaseValue
- * @type {{[K in VaultPhaseValue]: Array<VaultPhaseValue>}}
+ * @typedef {LoanPhase[keyof LoanPhase]} LoanPhaseValue
+ * @type {{[K in LoanPhaseValue]: Array<LoanPhaseValue>}}
  */
 const validTransitions = {
-  [VaultPhase.ACTIVE]: [VaultPhase.CLOSED],
-  [VaultPhase.CLOSED]: [],
+  [LoanPhase.ACTIVE]: [LoanPhase.CLOSED],
+  [LoanPhase.CLOSED]: [],
 };
 
 /**
@@ -32,12 +32,12 @@ const validTransitions = {
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
- * @param {ReturnType<import('./runStakeManager.js').makeRunStakeManager>} manager
+ * @param {import('./runStakeManager.js').RunStakeManager} manager
  * @param { ZCFMint<'nat'> } mint
  * return value follows the wallet invitationMakers pattern
- * @throws if startSeat proposal is not consistent with governance parameters in manager
+ * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
  */
-export const makeRUNstakeKit = (zcf, startSeat, manager, mint) => {
+export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
   // CONSTANTS
   const collateralBrand = manager.getCollateralBrand();
   /** @type {{brand: Brand<'nat'>}} */
@@ -67,8 +67,22 @@ export const makeRUNstakeKit = (zcf, startSeat, manager, mint) => {
   };
 
   const init = () => {
-    const { runWanted, attestationGiven } =
-      manager.checkOpenProposal(startSeat);
+    assertProposalShape(startSeat, {
+      give: { Attestation: null },
+      want: { RUN: null },
+    });
+    const {
+      give: { Attestation: attestationGiven },
+      want: { RUN: runWanted },
+    } = startSeat.getProposal();
+
+    const { maxDebt } = manager.maxDebtForLien(attestationGiven);
+    assert(
+      AmountMath.isGTE(maxDebt, runWanted),
+      X`wanted ${runWanted}, more than max debt (${maxDebt}) for ${attestationGiven}`,
+    );
+
+    // return checkBorrow(attAmt, runWanted);
 
     const { newDebt, fee, toMint } = loanFee(emptyDebt, emptyDebt, runWanted);
     assert(
@@ -93,7 +107,7 @@ export const makeRUNstakeKit = (zcf, startSeat, manager, mint) => {
   // the durable objects API.
   /** @type {VaultState} */
   const state = {
-    phase: VaultPhase.ACTIVE,
+    phase: LoanPhase.ACTIVE,
     vaultSeat,
     // Two values from the same moment
     interestSnapshot: manager.getCompoundedInterest(),
@@ -102,11 +116,11 @@ export const makeRUNstakeKit = (zcf, startSeat, manager, mint) => {
 
   const assertActive = () => {
     const { phase } = state;
-    assert.equal(phase, VaultPhase.ACTIVE);
+    assert.equal(phase, LoanPhase.ACTIVE);
   };
 
   /**
-   * @param {VaultPhaseValue} newPhase
+   * @param {LoanPhaseValue} newPhase
    */
   const assignPhase = newPhase => {
     const { phase } = state;
@@ -121,7 +135,7 @@ export const makeRUNstakeKit = (zcf, startSeat, manager, mint) => {
   /** @type {NotifierRecord<ReturnType<typeof snapshotState>>} */
   const { updater: uiUpdater, notifier } = makeNotifierKit();
 
-  /** @param {VaultPhaseValue} newPhase */
+  /** @param {LoanPhaseValue} newPhase */
   const snapshotState = newPhase => {
     const { debtSnapshot: amount, interestSnapshot: interestFactor } = state;
     /** @type {VaultUIState} */
@@ -138,10 +152,10 @@ export const makeRUNstakeKit = (zcf, startSeat, manager, mint) => {
     trace('updateUiState', uiState);
 
     switch (state.phase) {
-      case VaultPhase.ACTIVE:
+      case LoanPhase.ACTIVE:
         uiUpdater.updateState(uiState);
         break;
-      case VaultPhase.CLOSED:
+      case LoanPhase.CLOSED:
         uiUpdater.finish(uiState);
         break;
       default:
@@ -200,7 +214,7 @@ export const makeRUNstakeKit = (zcf, startSeat, manager, mint) => {
    * @param {ZCFSeat} clientSeat
    *
    * @typedef {{
-   *   phase: VaultPhaseValue,
+   *   phase: LoanPhaseValue,
    *   vaultSeat: ZCFSeat,
    *   interestSnapshot: Ratio,
    *   debtSnapshot: Amount<'nat'>,
@@ -310,7 +324,7 @@ export const makeRUNstakeKit = (zcf, startSeat, manager, mint) => {
 
     mint.burnLosses(harden({ RUN: currentDebt }), vaultSeat);
     seat.exit();
-    assignPhase(VaultPhase.CLOSED);
+    assignPhase(LoanPhase.CLOSED);
     updateDebtSnapshot(emptyDebt);
     updateUiState();
 

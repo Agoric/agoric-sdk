@@ -85,17 +85,6 @@ export const setUpZoeForTest = async () => {
 };
 harden(setUpZoeForTest);
 
-/**
- * @typedef {EconomyBootstrapPowers & WellKnownSpaces & {
- *   consume: {
- *     client: ERef<ClientManager> // to add home.attMaker
- *   },
- *   produce: {
- *     client: Producer<ClientManager>
- *   }
- * }} RunStakePowers
- */
-
 export const setupBootstrap = async (
   bundles,
   timer = buildManualTimer(console.log),

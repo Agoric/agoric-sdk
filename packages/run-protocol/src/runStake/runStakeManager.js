@@ -1,9 +1,6 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
-import {
-  assertProposalShape,
-  floorMultiplyBy,
-} from '@agoric/zoe/src/contractSupport/index.js';
+import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { fit, getCopyBagEntries, M } from '@agoric/store';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
@@ -26,6 +23,8 @@ const trace = makeTracer('RM'); // TODO: how to turn this off?
  * @param {bigint} timing.chargingPeriod
  * @param {bigint} timing.recordingPeriod
  * @param {bigint} timing.startTimeStamp
+ *
+ * @typedef {ReturnType<typeof makeRunStakeManager>} RunStakeManager
  */
 export const makeRunStakeManager = (
   zcf,
@@ -58,22 +57,6 @@ export const makeRunStakeManager = (
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
     const maxDebt = floorMultiplyBy(amountLiened, mintingRatio);
     return { maxDebt, amountLiened };
-  };
-
-  /**
-   * TODO: fold checkBorrow into runStakeKit with checkOpenProposal
-   *
-   * @param {Amount<'copyBag'>} attestationGiven
-   * @param {Amount<'nat'>} runWanted
-   */
-  const checkBorrow = (attestationGiven, runWanted) => {
-    const { maxDebt, amountLiened } = maxDebtForLien(attestationGiven);
-    assert(
-      AmountMath.isGTE(maxDebt, runWanted),
-      X`${attestationGiven} not enough to borrow ${runWanted}`,
-    );
-
-    return { runWanted, attestationGiven, amountLiened };
   };
 
   const getRunAllocated = seat => seat.getAmountAllocated('RUN', brands.debt);
@@ -178,7 +161,6 @@ export const makeRunStakeManager = (
     }),
     getLoanFee: paramManager.getLoanFee,
     maxDebtForLien,
-    checkBorrow,
     reallocateWithFee,
 
     getCollateralBrand: () => brands.Attestation,
@@ -186,21 +168,6 @@ export const makeRunStakeManager = (
       seat.getAmountAllocated('Attestation', brands.Attestation),
     getRunAllocated,
     applyDebtDelta,
-
-    // TODO: move checkOpenProposal code to runStakeKit
-    /** @param { ZCFSeat } seat */
-    checkOpenProposal: seat => {
-      assertProposalShape(seat, {
-        give: { Attestation: null },
-        want: { RUN: null },
-      });
-      const {
-        give: { Attestation: attAmt },
-        want: { RUN: runWanted },
-      } = seat.getProposal();
-
-      return checkBorrow(attAmt, runWanted);
-    },
 
     getCompoundedInterest: () => compoundedInterest,
     getAssetNotifier: () => assetNotifer,

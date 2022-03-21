@@ -3,7 +3,7 @@ import { handleParamGovernance } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationFacets } from './attestation.js';
 import { makeRunStakeParamManager } from './params.js';
-import { makeRUNstakeKit } from './runStakeKit.js';
+import { makeRunStakeKit } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager';
 
 /**
@@ -151,22 +151,21 @@ export const start = async (
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
 
-  // TODO: rename to makeRunStakeHook?
-  /** @type { OfferHandler } */
-  const makeRUNstakeHook = seat => {
-    // TODO: rename to makeRunStakeKit??
-    return makeRUNstakeKit(zcf, seat, manager, runMint);
-  };
-
   const publicFacet = wrapPublicFacet(
     Far('runStake public interface', {
       makeLoanInvitation: () =>
-        zcf.makeInvitation(makeRUNstakeHook, 'make RUNstake', undefined),
+        zcf.makeInvitation(
+          seat => makeRunStakeKit(zcf, seat, manager, runMint),
+          'make RUNstake',
+          undefined,
+        ),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
     }),
   );
 
+  const creatorFacet = wrapCreatorFacet(att.creatorFacet);
+
   // @ts-expect-error wrapCreatorFacet loses type info
-  return { publicFacet, creatorFacet: wrapCreatorFacet(att.creatorFacet) };
+  return { publicFacet, creatorFacet };
 };
 harden(start);

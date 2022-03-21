@@ -1,5 +1,4 @@
-// The proposal is not allowed to include any keys other than these,
-
+// @ts-check
 import { AmountMath } from '@agoric/ertp';
 
 const { details: X } = assert;
