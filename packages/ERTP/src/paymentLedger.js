@@ -253,7 +253,7 @@ export const makePaymentLedger = (
    * Creates a new Payment containing newly minted amount.
    *
    * @param {Amount<K>} newAmount
-   * @returns {Payment}
+   * @returns {Payment<K>}
    */
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
@@ -365,3 +365,5 @@ export const makePaymentLedger = (
     mint,
   });
 };
+
+/** @typedef {ReturnType<makePaymentLedger>} PaymentLedger */

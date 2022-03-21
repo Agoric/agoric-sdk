@@ -292,7 +292,7 @@
  * assets all have the same kind, which is called a Brand.
  *
  * @property {() => Issuer<K>} getIssuer Gets the Issuer for this mint.
- * @property {MintPayment<K>} mintPayment
+ * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment
  */
 
 /**
