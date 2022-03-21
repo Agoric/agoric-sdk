@@ -15,6 +15,7 @@ import {
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { M, matches } from '@agoric/store';
 import { makeParamManagerBuilder } from '@agoric/governance';
 
 import { makeTracer } from '../../src/makeTracer.js';
@@ -2189,4 +2190,80 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   // No change for Alice
   aliceUpdate = await E(aliceNotifier).getUpdateSince(); // can't use updateCount because there's no newer update
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+});
+
+test('addVaultType: invalid args do not modify state', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+  } = t.context;
+  const kw = 'Chit';
+  const chit = makeIssuerKit(kw);
+  const params = defaultParamValues(chit.brand);
+
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    AmountMath.make(aethBrand, 900n),
+    undefined,
+    undefined,
+    500n,
+  );
+
+  const { vaultFactory } = services.vaultFactory;
+
+  const failsForSameReason = async p =>
+    p
+      .then(oops => t.fail(`${oops}`))
+      .catch(reason1 => t.throwsAsync(p, { message: reason1.message }));
+  await failsForSameReason(
+    E(vaultFactory)
+      // @ts-ignore bad args on purpose for test
+      .addVaultType(chit.issuer, kw, null),
+  );
+  await failsForSameReason(
+    E(vaultFactory)
+      // @ts-ignore bad args on purpose for test
+      .addVaultType(chit.issuer, 'bogus kw', params),
+  );
+
+  // The keyword in the vault manager is not "stuck"; it's still available:
+  const actual = await E(vaultFactory).addVaultType(chit.issuer, kw, params);
+  t.true(matches(actual, M.remotable()));
+});
+
+test('addVaultType: extra, unexpected params', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+  } = t.context;
+  const chit = makeIssuerKit('chit');
+
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    AmountMath.make(aethBrand, 900n),
+    undefined,
+    undefined,
+    500n,
+  );
+
+  const { vaultFactory } = services.vaultFactory;
+
+  const params = { ...defaultParamValues(aethBrand), shoeSize: 10 };
+  const extraParams = { ...params, shoeSize: 10 };
+  const { interestRate: _1, ...missingParams } = {
+    ...defaultParamValues(aethBrand),
+    shoeSize: 10,
+  };
+
+  await t.throwsAsync(
+    E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
+    { message: /Must have same property names/ },
+  );
+
+  const actual = await E(vaultFactory).addVaultType(
+    chit.issuer,
+    'Chit',
+    extraParams,
+  );
+  t.true(matches(actual, M.remotable()), 'unexpected params are ignored');
 });
