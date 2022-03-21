@@ -448,7 +448,7 @@ test('forged Attestation fails', async t => {
  *
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<CommitteeElectorateCreatorFacet>} electorateCreator
- * @param {ERef<GovernedContractFacetAccess>} runStakeGovernorCreatorFacet
+ * @param {ERef<GovernedContractFacetAccess<unknown>>} runStakeGovernorCreatorFacet
  * @param {Installation} counter
  */
 const makeC1 = async (
