@@ -44,7 +44,10 @@ const build = async (log, zoe, brands, payments, timer) => {
       }),
     );
 
-    const { assetNotifier, vault } = await E(loanSeat).getOfferResult();
+    const {
+      notifiers: { asset: assetNotifier },
+      vault,
+    } = await E(loanSeat).getOfferResult();
 
     const timeLog = async msg =>
       log(

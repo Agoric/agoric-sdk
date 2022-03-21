@@ -370,7 +370,10 @@ test('first', async t => {
     }),
   );
 
-  const { vault, vaultNotifier } = await E(vaultSeat).getOfferResult();
+  const {
+    vault,
+    notifiers: { vault: vaultNotifier },
+  } = await E(vaultSeat).getOfferResult();
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 470n), rates.loanFee);
   t.deepEqual(
@@ -512,7 +515,10 @@ test('price drop', async t => {
   );
   trace('loan made', loanAmount);
 
-  const { vault, vaultNotifier } = await E(vaultSeat).getOfferResult();
+  const {
+    vault,
+    notifiers: { vault: vaultNotifier },
+  } = await E(vaultSeat).getOfferResult();
   trace('offer result', vault);
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(loanAmount, rates.loanFee);
@@ -656,7 +662,10 @@ test('price falls precipitously', async t => {
     }),
   );
 
-  const { vault, vaultNotifier } = await E(userSeat).getOfferResult();
+  const {
+    vault,
+    notifiers: { vault: vaultNotifier },
+  } = await E(userSeat).getOfferResult();
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 370n), rates.loanFee);
   t.deepEqual(
@@ -873,9 +882,8 @@ test('interest on multiple vaults', async t => {
     }),
   );
   const {
-    assetNotifier,
     vault: aliceVault,
-    vaultNotifier: aliceNotifier,
+    notifiers: { vault: aliceNotifier, asset: assetNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
@@ -912,9 +920,10 @@ test('interest on multiple vaults', async t => {
       Collateral: aethMint.mintPayment(bobCollateralAmount),
     }),
   );
-  const { vault: bobVault, vaultNotifier: bobNotifier } = await E(
-    bobLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: bobVault,
+    notifiers: { vault: bobNotifier },
+  } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
@@ -1026,9 +1035,10 @@ test('interest on multiple vaults', async t => {
       Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 2_000n)),
     }),
   );
-  const { vault: danVault, vaultNotifier: danNotifier } = await E(
-    danLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: danVault,
+    notifiers: { vault: danNotifier },
+  } = await E(danLoanSeat).getOfferResult();
   const danActualDebt = wantedRun + 50n; // includes fees
   t.is((await E(danVault).getCurrentDebt()).value, danActualDebt);
   const normalizedDebt = (await E(danVault).getNormalizedDebt()).value;
@@ -1095,9 +1105,10 @@ test('adjust balances', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    notifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -1348,9 +1359,10 @@ test('transfer vault', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    notifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
 
@@ -1366,9 +1378,10 @@ test('transfer vault', async t => {
   trace('TRANSFER INVITE', transferInvite, inviteProps);
   /** @type {UserSeat<VaultKit>} */
   const transferSeat = await E(zoe).offer(transferInvite);
-  const { vault: transferVault, vaultNotifier: transferNotifier } = await E(
-    transferSeat,
-  ).getOfferResult();
+  const {
+    vault: transferVault,
+    notifiers: { vault: transferNotifier },
+  } = await E(transferSeat).getOfferResult();
   t.throwsAsync(() => E(aliceVault).getCurrentDebt());
   const debtAfter = await E(transferVault).getCurrentDebt();
   t.deepEqual(debtAfter, debtAmount, 'vault lent 5000 RUN + fees');
@@ -1427,9 +1440,10 @@ test('transfer vault', async t => {
   const t2Invite = await E(transferVault).makeTransferInvitation();
   /** @type {UserSeat<VaultKit>} */
   const t2Seat = await E(zoe).offer(t2Invite);
-  const { vault: t2Vault, vaultNotifier: t2Notifier } = await E(
-    t2Seat,
-  ).getOfferResult();
+  const {
+    vault: t2Vault,
+    notifiers: { vault: t2Notifier },
+  } = await E(t2Seat).getOfferResult();
   t.throwsAsync(
     () => E(adjustSeatPromise).getOfferResult(),
     {
@@ -1513,9 +1527,10 @@ test('overdeposit', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    notifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -1678,9 +1693,10 @@ test('mutable liquidity triggers and interest', async t => {
       Collateral: aethMint.mintPayment(aliceCollateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    notifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -1718,9 +1734,10 @@ test('mutable liquidity triggers and interest', async t => {
       Collateral: aethMint.mintPayment(bobCollateralAmount),
     }),
   );
-  const { vault: bobVault, vaultNotifier: bobNotifier } = await E(
-    bobLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: bobVault,
+    notifiers: { vault: bobNotifier },
+  } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
@@ -1973,9 +1990,10 @@ test('close loan', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    notifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -2184,9 +2202,10 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
       Collateral: aethMint.mintPayment(aliceCollateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    notifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -2224,9 +2243,10 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
       Collateral: aethMint.mintPayment(bobCollateralAmount),
     }),
   );
-  const { vault: bobVault, vaultNotifier: bobNotifier } = await E(
-    bobLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: bobVault,
+    notifiers: { vault: bobNotifier },
+  } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);

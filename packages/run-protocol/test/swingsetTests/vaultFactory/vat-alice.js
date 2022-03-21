@@ -36,7 +36,10 @@ const build = async (log, zoe, brands, payments, timer) => {
       }),
     );
 
-    const { assetNotifier, vault } = await E(loanSeat).getOfferResult();
+    const {
+      notifiers: { asset: assetNotifier },
+      vault,
+    } = await E(loanSeat).getOfferResult();
     const firstNotif = await E(assetNotifier).getUpdateSince();
     log(`Alice owes ${q(await E(vault).getCurrentDebt())} after borrowing`);
     await E(timer).tick();

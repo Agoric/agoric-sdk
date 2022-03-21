@@ -67,8 +67,10 @@ const wrapVault = innerVault => {
 export const makeVaultKit = (inner, assetNotifier) => {
   const { vault, vaultUpdater } = wrapVault(inner);
   const vaultKit = harden({
-    assetNotifier,
-    vaultNotifier: vault.getNotifier(),
+    notifiers: {
+      vault: vault.getNotifier(),
+      asset: assetNotifier,
+    },
     invitationMakers: Far('invitation makers', {
       AdjustBalances: vault.makeAdjustBalancesInvitation,
       CloseVault: vault.makeCloseInvitation,
