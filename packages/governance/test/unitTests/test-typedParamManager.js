@@ -220,7 +220,7 @@ test('Invitation', async t => {
   t.is(paramManager.getCurrency(), drachmaBrand);
   t.is(paramManager.getAmt(), drachmaAmount);
   const invitationActualAmount = paramManager.getInvite().value;
-  t.is(invitationActualAmount, invitationAmount.value);
+  t.deepEqual(invitationActualAmount, invitationAmount.value);
   t.is(invitationActualAmount[0].description, 'simple');
 
   t.is(await paramManager.getInternalParamValue('Invite'), invitation);
