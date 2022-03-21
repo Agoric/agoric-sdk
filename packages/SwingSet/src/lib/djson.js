@@ -13,7 +13,7 @@
  * @param {any} val
  */
 function replacer(_, val) {
-  if (typeof val === 'object') {
+  if (val && typeof val === 'object') {
     const sortedObject = {};
     const names = Array.from(Object.getOwnPropertyNames(val));
     names.sort();

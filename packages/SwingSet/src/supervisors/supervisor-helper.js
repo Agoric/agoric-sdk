@@ -120,12 +120,11 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
     },
     vatstoreSet: (key, value) => doSyscall(['vatstoreSet', key, value]),
     vatstoreGetAfter: (priorKey, lowerBound, upperBound) => {
-      const result = doSyscall([
-        'vatstoreGetAfter',
-        priorKey,
-        lowerBound,
-        upperBound,
-      ]);
+      const syscall = ['vatstoreGetAfter', priorKey, lowerBound];
+      if (upperBound) {
+        syscall.push(upperBound);
+      }
+      const result = doSyscall(syscall);
       return result === null ? [undefined, undefined] : result;
     },
     vatstoreDelete: key => doSyscall(['vatstoreDelete', key]),

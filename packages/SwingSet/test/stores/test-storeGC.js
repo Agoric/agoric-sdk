@@ -3,16 +3,21 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { buildSyscall, makeDispatch } from '../liveslots-helpers.js';
 import {
-  capargs,
-  makeMessage,
-  makeDropExports,
-  makeRetireImports,
-  makeRetireExports,
-  makeBringOutYourDead,
-} from '../util.js';
-import engineGC from '../../src/lib-nodejs/engine-gc.js';
+  setupTestLiveslots,
+  matchResolveOne,
+  matchVatstoreGet,
+  matchVatstoreGetAfter,
+  matchVatstoreDelete,
+  matchVatstoreSet,
+  matchRetireExports,
+  matchDropImports,
+  matchRetireImports,
+  validate,
+  validateDone,
+  validateReturned,
+} from '../liveslots-helpers.js';
+import { capargs } from '../util.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js
@@ -20,7 +25,8 @@ import engineGC from '../../src/lib-nodejs/engine-gc.js';
 let aWeakMapStore;
 let aWeakSetStore;
 
-const mainHolderIdx = 1;
+const mainHolderIdx = 2;
+const mainHeldIdx = 3;
 
 function buildRootObject(vatPowers) {
   const { VatData } = vatPowers;
@@ -30,7 +36,7 @@ function buildRootObject(vatPowers) {
     makeScalarBigWeakSetStore,
   } = VatData;
 
-  let nextStoreNumber = 1;
+  let nextStoreNumber = 2;
   let heldStore = null;
 
   const holders = [];
@@ -136,20 +142,16 @@ function buildRootObject(vatPowers) {
   });
 }
 
-function makeRPMaker() {
-  let idx = 0;
-  return () => {
-    idx += 1;
-    return `p-${idx}`;
-  };
-}
-
-const qcUndefined = { '@qclass': 'undefined' };
 const NONE = undefined;
 const DONE = [undefined, undefined];
-const undefinedVal = capargs(qcUndefined);
 const anySchema = JSON.stringify(
-  capargs([{ '@qclass': 'tagged', tag: 'match:any', payload: qcUndefined }]),
+  capargs([
+    {
+      '@qclass': 'tagged',
+      tag: 'match:any',
+      payload: { '@qclass': 'undefined' },
+    },
+  ]),
 );
 
 function stringVal(str) {
@@ -214,119 +216,6 @@ function mapRefValString(idx) {
   return refValString(mapRef(idx), 'mapStore');
 }
 
-function matchResolveOne(vref, value) {
-  return { type: 'resolve', resolutions: [[vref, false, value]] };
-}
-
-function matchVatstoreGet(key, result) {
-  return { type: 'vatstoreGet', key, result };
-}
-
-function matchVatstoreGetAfter(priorKey, start, end, result) {
-  return { type: 'vatstoreGetAfter', priorKey, start, end, result };
-}
-
-function matchVatstoreDelete(key) {
-  return { type: 'vatstoreDelete', key };
-}
-
-function matchVatstoreSet(key, value) {
-  return { type: 'vatstoreSet', key, value };
-}
-
-function matchRetireExports(...slots) {
-  return { type: 'retireExports', slots };
-}
-
-function matchDropImports(...slots) {
-  return { type: 'dropImports', slots };
-}
-
-function matchRetireImports(...slots) {
-  return { type: 'retireImports', slots };
-}
-
-const root = 'o+0';
-
-async function setupLifecycleTest(t) {
-  const { log, syscall } = buildSyscall();
-  const nextRP = makeRPMaker();
-  const th = [];
-  const dispatch = await makeDispatch(
-    syscall,
-    buildRootObject,
-    'bob',
-    false,
-    0,
-    th,
-  );
-  const [testHooks] = th;
-
-  async function dispatchMessage(message, args = capargs([])) {
-    const rp = nextRP();
-    await dispatch(makeMessage(root, message, args, rp));
-    // XXX TERRIBLE HACK WARNING XXX The following GC call is terrible but
-    // apparently necessary.  Without it, the 'store refcount management 1' test
-    // will fail under Node 16 if this test file is run non-selectively (that
-    // is, without the "-m 'store refcount management 1'" flag) even though all
-    // tests will succeed under Node 14 regardless of how initiated and the
-    // single test will succeed under Node 16 if run standalone.
-    //
-    // This nonsense suggests that under Node 16 there may be a problem with
-    // Ava's logic for running multiple tests that is allowing one test to side
-    // effect others even though they are nominally run sequentially.  In
-    // particular, forcing a GC at the start of setupLifecycleTest (which you
-    // would think would reset the heap to a consistent initial state at the
-    // start of each test) does not change the circumstances of the failure, but
-    // inserting the GC after message dispatch does.  None of this makes any
-    // sense that I can discern, but I don't have time to diagnose this right
-    // now.  Since this hack is part of mocking the kernel side here anyway, I
-    // suspect that the likely large investment in time and effort to puzzle out
-    // what's going on here won't have much payoff; it seems plausible that
-    // whatever the issue is it may only impact the mock environment.
-    // Nevertheless there's a chance we may be courting some deeper problem,
-    // hence this comment.
-    engineGC();
-    await dispatch(makeBringOutYourDead());
-    return rp;
-  }
-  async function dispatchDropExports(...vrefs) {
-    await dispatch(makeDropExports(...vrefs));
-    await dispatch(makeBringOutYourDead());
-  }
-  async function dispatchRetireImports(...vrefs) {
-    await dispatch(makeRetireImports(...vrefs));
-    await dispatch(makeBringOutYourDead());
-  }
-  async function dispatchRetireExports(...vrefs) {
-    await dispatch(makeRetireExports(...vrefs));
-    await dispatch(makeBringOutYourDead());
-  }
-
-  const v = { t, log };
-
-  return {
-    v,
-    dispatchMessage,
-    dispatchDropExports,
-    dispatchRetireExports,
-    dispatchRetireImports,
-    testHooks,
-  };
-}
-
-function validate(v, match) {
-  v.t.deepEqual(v.log.shift(), match);
-}
-
-function validateDone(v) {
-  v.t.deepEqual(v.log, []);
-}
-
-function validateReturned(v, rp) {
-  validate(v, matchResolveOne(rp, undefinedVal));
-}
-
 function validateRefCountCheck(v, vref, rc) {
   validate(v, matchVatstoreGet(`vom.rc.${vref}`, rc));
 }
@@ -338,6 +227,19 @@ function validateExportStatusCheck(v, vref, es) {
 function validateStatusCheck(v, vref, rc, es) {
   validateRefCountCheck(v, vref, rc);
   validateExportStatusCheck(v, vref, es);
+}
+
+function validateCreateBaggage(v, idx) {
+  validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
+  validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
+  const baggageSchema = JSON.stringify(
+    capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
+  );
+  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
+  validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
+  validate(v, matchVatstoreSet('baggageID', 'o+5/1'));
+  validate(v, matchVatstoreGet('vom.rc.o+5/1', NONE));
+  validate(v, matchVatstoreSet('vom.rc.o+5/1', '1'));
 }
 
 function validateCreate(v, idx, isWeak = false) {
@@ -359,15 +261,18 @@ function validateUpdate(v, key, before, after) {
 }
 
 function validateMakeAndHold(v, rp) {
-  validateCreateStore(v, 2);
+  validateCreateStore(v, mainHeldIdx);
   validateReturned(v, rp);
   validateDone(v);
 }
 
 function validateStoreHeld(v, rp, rcBefore, rcAfter) {
   validate(v, matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, nullValString));
-  validateUpdate(v, `vom.rc.${mapRef(2)}`, rcBefore, rcAfter);
-  validate(v, matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(2)));
+  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, rcBefore, rcAfter);
+  validate(
+    v,
+    matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(mainHeldIdx)),
+  );
   validateReturned(v, rp);
   validateDone(v);
 }
@@ -479,31 +384,37 @@ function validateDeleteMetadata(
 }
 
 function validateDropStored(v, rp, postCheck, rc, es, deleteMetadata) {
-  validate(v, matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(2)));
-  validateUpdate(v, `vom.rc.${mapRef(2)}`, '1', '0');
+  validate(
+    v,
+    matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(mainHeldIdx)),
+  );
+  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '1', '0');
   validate(v, matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, nullValString));
   validateReturned(v, rp);
   if (postCheck) {
-    validateRefCountCheck(v, mapRef(2), rc);
+    validateRefCountCheck(v, mapRef(mainHeldIdx), rc);
     if (deleteMetadata) {
-      validateDeleteMetadata(v, es, 2, 0);
+      validateDeleteMetadata(v, es, mainHeldIdx, 0);
     } else {
-      validateExportStatusCheck(v, mapRef(2), es);
+      validateExportStatusCheck(v, mapRef(mainHeldIdx), es);
     }
   }
   validateDone(v);
 }
 
 function validateDropStoredWithGCAndRetire(v, rp, postCheck, rc, es) {
-  validate(v, matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(2)));
-  validateUpdate(v, `vom.rc.${mapRef(2)}`, '1', '0');
+  validate(
+    v,
+    matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(mainHeldIdx)),
+  );
+  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '1', '0');
   validate(v, matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, nullValString));
   validateReturned(v, rp);
   if (postCheck) {
-    validateRefCountCheck(v, mapRef(2), rc);
-    validateDeleteMetadata(v, es, 2, 0);
+    validateRefCountCheck(v, mapRef(mainHeldIdx), rc);
+    validateDeleteMetadata(v, es, mainHeldIdx, 0);
   }
-  validate(v, matchRetireExports(mapRef(2)));
+  validate(v, matchRetireExports(mapRef(mainHeldIdx)));
   validateDone(v);
 }
 
@@ -536,8 +447,8 @@ function validateImportAndHold(v, rp, idx) {
 
 function validateDropHeldWithGC(v, rp, rc, es) {
   validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(2), rc);
-  validateDeleteMetadata(v, es, 2, 0);
+  validateRefCountCheck(v, mapRef(mainHeldIdx), rc);
+  validateDeleteMetadata(v, es, mainHeldIdx, 0);
   validateDone(v);
 }
 
@@ -550,6 +461,7 @@ function validateCreateHolder(v, idx) {
 }
 
 function validateInit(v) {
+  validate(v, matchVatstoreGet('baggageID', NONE));
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
     v,
@@ -558,21 +470,22 @@ function validateInit(v) {
       '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
     ),
   );
-  validateCreateHolder(v, 1);
+  validateCreateBaggage(v, 1);
+  validateCreateHolder(v, 2);
 }
 
 function validateDropHeld(v, rp, rc, es) {
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet(`vom.rc.${mapRef(2)}`, rc));
-  validate(v, matchVatstoreGet(`vom.es.${mapRef(2)}`, es));
+  validate(v, matchVatstoreGet(`vom.rc.${mapRef(mainHeldIdx)}`, rc));
+  validate(v, matchVatstoreGet(`vom.es.${mapRef(mainHeldIdx)}`, es));
   validateDone(v);
 }
 
 function validateDropHeldWithGCAndRetire(v, rp) {
   validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(2), NONE);
-  validateDeleteMetadata(v, 's', 2, 0);
-  validate(v, matchRetireExports(mapRef(2)));
+  validateRefCountCheck(v, mapRef(mainHeldIdx), NONE);
+  validateDeleteMetadata(v, 's', mainHeldIdx, 0);
+  validate(v, matchRetireExports(mapRef(mainHeldIdx)));
   validateDone(v);
 }
 
@@ -587,9 +500,9 @@ function validateDropExportsWithGCAndRetire(v, idx, rc) {
   validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, 'r'));
   validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, 's'));
   validate(v, matchVatstoreGet(`vom.rc.${mapRef(idx)}`, rc));
-  validateRefCountCheck(v, mapRef(2), rc);
-  validateDeleteMetadata(v, 's', 2, 0);
-  validate(v, matchRetireExports(mapRef(2)));
+  validateRefCountCheck(v, mapRef(mainHeldIdx), rc);
+  validateDeleteMetadata(v, 's', mainHeldIdx, 0);
+  validate(v, matchRetireExports(mapRef(mainHeldIdx)));
   validateDone(v);
 }
 
@@ -605,11 +518,16 @@ function validateRetireExports(v, idx) {
 
 // test 1: lerv -> Lerv -> LerV -> Lerv -> lerv
 test.serial('store lifecycle 1', async t => {
-  const { v, dispatchMessage } = await setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
+  validateInit(v);
 
   // lerv -> Lerv  Create store
   let rp = await dispatchMessage('makeAndHold');
-  validateInit(v);
   validateMakeAndHold(v, rp);
 
   // Lerv -> LerV  Store store reference virtually (in another store)
@@ -629,7 +547,7 @@ test.serial('store lifecycle 1', async t => {
 //   lERV -> LERV -> lERV -> leRV -> LeRV -> leRV -> LeRV -> LerV
 test.serial('store lifecycle 2', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupLifecycleTest(t);
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   // lerv -> Lerv  Create store
   let rp = await dispatchMessage('makeAndHold');
@@ -646,11 +564,11 @@ test.serial('store lifecycle 2', async t => {
 
   // lerV -> LerV  Read virtual reference, now there's an in-memory reference again too
   rp = await dispatchMessage('fetchAndHold');
-  validateFetchAndHold(v, rp, 2);
+  validateFetchAndHold(v, rp, mainHeldIdx);
 
   // LerV -> LERV  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExportHeld(v, rp, 2);
+  validateExportHeld(v, rp, mainHeldIdx);
 
   // LERV -> lERV  Drop the in-memory reference again, but it's still exported and virtual referenced
   rp = await dispatchMessage('dropHeld');
@@ -658,27 +576,27 @@ test.serial('store lifecycle 2', async t => {
 
   // lERV -> LERV  Reread from storage, all three legs again
   rp = await dispatchMessage('fetchAndHold');
-  validateFetchAndHold(v, rp, 2);
+  validateFetchAndHold(v, rp, mainHeldIdx);
 
   // LERV -> lERV  Drop in-memory reference (stepping stone to other states)
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, '1', 'r');
 
   // lERV -> LERV  Reintroduce the in-memory reference via message
-  rp = await dispatchMessage('importAndHold', mapRefArg(2));
-  validateImportAndHold(v, rp, 2);
+  rp = await dispatchMessage('importAndHold', mapRefArg(mainHeldIdx));
+  validateImportAndHold(v, rp, mainHeldIdx);
 
   // LERV -> lERV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, '1', 'r');
 
   // lERV -> leRV  Drop the export
-  await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, '1');
+  await dispatchDropExports(mapRef(mainHeldIdx));
+  validateDropExports(v, mainHeldIdx, '1');
 
   // leRV -> LeRV  Fetch from storage
   rp = await dispatchMessage('fetchAndHold');
-  validateFetchAndHold(v, rp, 2);
+  validateFetchAndHold(v, rp, mainHeldIdx);
 
   // LeRV -> leRV  Forget about it *again*
   rp = await dispatchMessage('dropHeld');
@@ -686,17 +604,17 @@ test.serial('store lifecycle 2', async t => {
 
   // leRV -> LeRV  Fetch from storage *again*
   rp = await dispatchMessage('fetchAndHold');
-  validateFetchAndHold(v, rp, 2);
+  validateFetchAndHold(v, rp, mainHeldIdx);
 
   // LeRV -> LerV  Retire the export
-  await dispatchRetireExports(mapRef(2));
-  validateRetireExports(v, 2);
+  await dispatchRetireExports(mapRef(mainHeldIdx));
+  validateRetireExports(v, mainHeldIdx);
 });
 
 // test 3: lerv -> Lerv -> LerV -> LERV -> LeRV -> leRV -> lerV -> lerv
 test.serial('store lifecycle 3', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupLifecycleTest(t);
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   // lerv -> Lerv  Create store
   let rp = await dispatchMessage('makeAndHold');
@@ -709,19 +627,19 @@ test.serial('store lifecycle 3', async t => {
 
   // LerV -> LERV  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExportHeld(v, rp, 2);
+  validateExportHeld(v, rp, mainHeldIdx);
 
   // LERV -> LeRV  Drop the export
-  await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, '1');
+  await dispatchDropExports(mapRef(mainHeldIdx));
+  validateDropExports(v, mainHeldIdx, '1');
 
   // LeRV -> leRV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, '1', 's');
 
   // leRV -> lerV  Retire the export
-  await dispatchRetireExports(mapRef(2));
-  validateRetireExports(v, 2);
+  await dispatchRetireExports(mapRef(mainHeldIdx));
+  validateRetireExports(v, mainHeldIdx);
 
   // lerV -> lerv  Drop stored reference (gc and retire)
   rp = await dispatchMessage('dropStored');
@@ -730,8 +648,11 @@ test.serial('store lifecycle 3', async t => {
 
 // test 4: lerv -> Lerv -> LERv -> LeRv -> lerv
 test.serial('store lifecycle 4', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+  const { v, dispatchMessage, dispatchDropExports } = await setupTestLiveslots(
     t,
+    buildRootObject,
+    'bob',
+    true,
   );
 
   // lerv -> Lerv  Create store
@@ -741,11 +662,11 @@ test.serial('store lifecycle 4', async t => {
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExportHeld(v, rp, 2);
+  validateExportHeld(v, rp, mainHeldIdx);
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, NONE);
+  await dispatchDropExports(mapRef(mainHeldIdx));
+  validateDropExports(v, mainHeldIdx, NONE);
 
   // LeRv -> lerv  Drop in-memory reference (gc and retire)
   rp = await dispatchMessage('dropHeld');
@@ -755,7 +676,7 @@ test.serial('store lifecycle 4', async t => {
 // test 5: lerv -> Lerv -> LERv -> LeRv -> Lerv -> lerv
 test.serial('store lifecycle 5', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupLifecycleTest(t);
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   // lerv -> Lerv  Create store
   let rp = await dispatchMessage('makeAndHold');
@@ -764,15 +685,15 @@ test.serial('store lifecycle 5', async t => {
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExportHeld(v, rp, 2);
+  validateExportHeld(v, rp, mainHeldIdx);
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, NONE);
+  await dispatchDropExports(mapRef(mainHeldIdx));
+  validateDropExports(v, mainHeldIdx, NONE);
 
   // LeRv -> Lerv  Retire the export
-  await dispatchRetireExports(mapRef(2));
-  validateRetireExports(v, 2);
+  await dispatchRetireExports(mapRef(mainHeldIdx));
+  validateRetireExports(v, mainHeldIdx);
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced store gets GC'd
   rp = await dispatchMessage('dropHeld');
@@ -781,8 +702,11 @@ test.serial('store lifecycle 5', async t => {
 
 // test 6: lerv -> Lerv -> LERv -> LeRv -> LeRV -> LeRv -> LeRV -> leRV -> lerv
 test.serial('store lifecycle 6', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+  const { v, dispatchMessage, dispatchDropExports } = await setupTestLiveslots(
     t,
+    buildRootObject,
+    'bob',
+    true,
   );
 
   // lerv -> Lerv  Create store
@@ -792,11 +716,11 @@ test.serial('store lifecycle 6', async t => {
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExportHeld(v, rp, 2);
+  validateExportHeld(v, rp, mainHeldIdx);
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(mapRef(2));
-  validateDropExports(v, 2, NONE);
+  await dispatchDropExports(mapRef(mainHeldIdx));
+  validateDropExports(v, mainHeldIdx, NONE);
 
   // LeRv -> LeRV  Store store reference virtually
   rp = await dispatchMessage('storeHeld');
@@ -821,8 +745,11 @@ test.serial('store lifecycle 6', async t => {
 
 // test 7: lerv -> Lerv -> LERv -> lERv -> LERv -> lERv -> lerv
 test.serial('store lifecycle 7', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+  const { v, dispatchMessage, dispatchDropExports } = await setupTestLiveslots(
     t,
+    buildRootObject,
+    'bob',
+    true,
   );
 
   // lerv -> Lerv  Create store
@@ -832,29 +759,32 @@ test.serial('store lifecycle 7', async t => {
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExportHeld(v, rp, 2);
+  validateExportHeld(v, rp, mainHeldIdx);
 
   // LERv -> lERv  Drop in-memory reference, no GC because exported
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, NONE, 'r');
 
   // lERv -> LERv  Reintroduce the in-memory reference via message
-  rp = await dispatchMessage('importAndHold', mapRefArg(2));
-  validateImportAndHold(v, rp, 2);
+  rp = await dispatchMessage('importAndHold', mapRefArg(mainHeldIdx));
+  validateImportAndHold(v, rp, mainHeldIdx);
 
   // LERv -> lERv  Drop in-memory reference again, still no GC because exported
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, NONE, 'r');
 
   // lERv -> lerv  Drop the export (gc and retire)
-  rp = await dispatchDropExports(mapRef(2));
-  validateDropExportsWithGCAndRetire(v, 2, NONE);
+  rp = await dispatchDropExports(mapRef(mainHeldIdx));
+  validateDropExportsWithGCAndRetire(v, mainHeldIdx, NONE);
 });
 
 // test 8: lerv -> Lerv -> LERv -> LERV -> LERv -> LERV -> lERV -> lERv -> lerv
 test.serial('store lifecycle 8', async t => {
-  const { v, dispatchMessage, dispatchDropExports } = await setupLifecycleTest(
+  const { v, dispatchMessage, dispatchDropExports } = await setupTestLiveslots(
     t,
+    buildRootObject,
+    'bob',
+    true,
   );
 
   // lerv -> Lerv  Create store
@@ -864,7 +794,7 @@ test.serial('store lifecycle 8', async t => {
 
   // Lerv -> LERv  Export the reference
   rp = await dispatchMessage('exportHeld');
-  validateExportHeld(v, rp, 2);
+  validateExportHeld(v, rp, mainHeldIdx);
 
   // LERv -> LERV  Store store reference virtually
   rp = await dispatchMessage('storeHeld');
@@ -887,8 +817,8 @@ test.serial('store lifecycle 8', async t => {
   validateDropStored(v, rp, true, '0', 'r');
 
   // lERv -> lerv  Drop the export (gc and retire)
-  rp = await dispatchDropExports(mapRef(2));
-  validateDropExportsWithGCAndRetire(v, 2, '0');
+  rp = await dispatchDropExports(mapRef(mainHeldIdx));
+  validateDropExportsWithGCAndRetire(v, mainHeldIdx, '0');
 });
 
 function validatePrepareStore3(
@@ -937,165 +867,213 @@ function validatePrepareStore3(
   validateDone(v);
 }
 
+// prettier-ignore
 test.serial('store refcount management 1', async t => {
-  const { v, dispatchMessage } = await setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
 
   let rp = await dispatchMessage('makeAndHold');
   validateInit(v);
   validateMakeAndHold(v, rp);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, 3, mapRef(2), mapRefValString(2), true);
+  const base = mainHeldIdx + 1;
+  validatePrepareStore3(v, rp, base, mapRef(mainHeldIdx), mapRefValString(mainHeldIdx), true);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(`vc.3.sfoo`, mapRefValString(2)));
-  validateUpdate(v, `vom.rc.${mapRef(2)}`, '3', '2');
-  validate(v, matchVatstoreSet(`vc.3.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base}.sfoo`, mapRefValString(mainHeldIdx)));
+  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '3', '2');
+  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, nullValString));
 
-  validate(v, matchVatstoreGet(`vc.4.sfoo`, mapRefValString(2)));
-  validateUpdate(v, `vom.rc.${mapRef(2)}`, '2', '1');
-  validate(v, matchVatstoreSet(`vc.4.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base + 1}.sfoo`, mapRefValString(mainHeldIdx)));
+  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '2', '1');
+  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, nullValString));
 
-  validate(v, matchVatstoreGet(`vc.5.sfoo`, mapRefValString(2)));
-  validateUpdate(v, `vom.rc.${mapRef(2)}`, '1', '0');
-  validate(v, matchVatstoreSet(`vc.5.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base + 2}.sfoo`, mapRefValString(mainHeldIdx)));
+  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '1', '0');
+  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, nullValString));
 
   validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(2), '0');
-  validateDeleteMetadata(v, NONE, 2, 0);
+  validateRefCountCheck(v, mapRef(mainHeldIdx), '0');
+  validateDeleteMetadata(v, NONE, mainHeldIdx, 0);
   validateDone(v);
 });
 
+// prettier-ignore
 test.serial('store refcount management 2', async t => {
-  const { v, dispatchMessage } = await setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
 
   let rp = await dispatchMessage('makeAndHold');
   validateInit(v);
   validateMakeAndHold(v, rp);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, 3, mapRef(2), mapRefValString(2), true);
+  const base = mainHeldIdx + 1;
+  validatePrepareStore3(v, rp, base, mapRef(mainHeldIdx), mapRefValString(mainHeldIdx), true);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(3), NONE);
-  validateDeleteMetadata(v, NONE, 3, 1, mapRef(2), 'mapStore', 3);
+  validateRefCountCheck(v, mapRef(base), NONE);
+  validateDeleteMetadata(v, NONE, base, 1, mapRef(mainHeldIdx), 'mapStore', 3);
 
-  validateRefCountCheck(v, mapRef(4), NONE);
-  validateDeleteMetadata(v, NONE, 4, 1, mapRef(2), 'mapStore', 2);
+  validateRefCountCheck(v, mapRef(base + 1), NONE);
+  validateDeleteMetadata(v, NONE, base + 1, 1, mapRef(mainHeldIdx), 'mapStore', 2);
 
-  validateRefCountCheck(v, mapRef(5), NONE);
-  validateDeleteMetadata(v, NONE, 5, 1, mapRef(2), 'mapStore', 1);
+  validateRefCountCheck(v, mapRef(base + 2), NONE);
+  validateDeleteMetadata(v, NONE, base + 2, 1, mapRef(mainHeldIdx), 'mapStore', 1);
 
-  validateRefCountCheck(v, mapRef(2), '0', NONE);
-  validateDeleteMetadata(v, NONE, 2, 0, NONE, NONE, 1);
+  validateRefCountCheck(v, mapRef(mainHeldIdx), '0', NONE);
+  validateDeleteMetadata(v, NONE, mainHeldIdx, 0, NONE, NONE, 1);
 
   validateDone(v);
 });
 
+// prettier-ignore
 test.serial('store refcount management 3', async t => {
-  const { v, dispatchMessage } = await setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
 
   let rp = await dispatchMessage('makeAndHold');
   validateInit(v);
   validateMakeAndHold(v, rp);
 
   rp = await dispatchMessage('prepareStoreLinked');
-  validateCreate(v, 3);
-  validate(v, matchVatstoreGet(`vc.3.sfoo`, NONE));
-  validateUpdate(v, `vom.rc.${mapRef(2)}`, NONE, '1');
-  validate(v, matchVatstoreSet(`vc.3.sfoo`, mapRefValString(2)));
-  validate(v, matchVatstoreGet(`vc.3.|entryCount`, '0'));
-  validate(v, matchVatstoreSet(`vc.3.|entryCount`, '1'));
-  validateCreate(v, 4);
-  validate(v, matchVatstoreGet(`vc.4.sfoo`, NONE));
+  const base = mainHeldIdx + 1;
+  validateCreate(v, base);
+  validate(v, matchVatstoreGet(`vc.${base}.sfoo`, NONE));
   validateUpdate(v, `vom.rc.${mapRef(3)}`, NONE, '1');
-  validate(v, matchVatstoreSet(`vc.4.sfoo`, mapRefValString(3)));
-  validate(v, matchVatstoreGet(`vc.4.|entryCount`, '0'));
-  validate(v, matchVatstoreSet(`vc.4.|entryCount`, '1'));
-  validateCreate(v, 5);
-  validate(v, matchVatstoreGet(`vc.5.sfoo`, NONE));
-  validateUpdate(v, `vom.rc.${mapRef(4)}`, NONE, '1');
-  validate(v, matchVatstoreSet(`vc.5.sfoo`, mapRefValString(4)));
-  validate(v, matchVatstoreGet(`vc.5.|entryCount`, '0'));
-  validate(v, matchVatstoreSet(`vc.5.|entryCount`, '1'));
+  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, mapRefValString(3)));
+  validate(v, matchVatstoreGet(`vc.${base}.|entryCount`, '0'));
+  validate(v, matchVatstoreSet(`vc.${base}.|entryCount`, '1'));
+  validateCreate(v, base + 1);
+  validate(v, matchVatstoreGet(`vc.${base + 1}.sfoo`, NONE));
+  validateUpdate(v, `vom.rc.${mapRef(base)}`, NONE, '1');
+  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, mapRefValString(base)));
+  validate(v, matchVatstoreGet(`vc.${base + 1}.|entryCount`, '0'));
+  validate(v, matchVatstoreSet(`vc.${base + 1}.|entryCount`, '1'));
+  validateCreate(v, base + 2);
+  validate(v, matchVatstoreGet(`vc.${base + 2}.sfoo`, NONE));
+  validateUpdate(v, `vom.rc.${mapRef(base + 1)}`, NONE, '1');
+  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, mapRefValString(base + 1)));
+  validate(v, matchVatstoreGet(`vc.${base + 2}.|entryCount`, '0'));
+  validate(v, matchVatstoreSet(`vc.${base + 2}.|entryCount`, '1'));
   validateReturned(v, rp);
-  validateStatusCheck(v, mapRef(2), '1', NONE);
-  validateStatusCheck(v, mapRef(3), '1', NONE);
-  validateStatusCheck(v, mapRef(4), '1', NONE);
+  validateStatusCheck(v, mapRef(mainHeldIdx), '1', NONE);
+  validateStatusCheck(v, mapRef(base), '1', NONE);
+  validateStatusCheck(v, mapRef(base + 1), '1', NONE);
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(5), NONE);
-  validateDeleteMetadata(v, NONE, 5, 1, mapRef(4), 'mapStore', 1);
-  validateRefCountCheck(v, mapRef(4), '0');
-  validateDeleteMetadata(v, NONE, 4, 1, mapRef(3), 'mapStore', 1);
-  validateRefCountCheck(v, mapRef(3), '0');
-  validateDeleteMetadata(v, NONE, 3, 1, mapRef(2), 'mapStore', 1);
-  validateRefCountCheck(v, mapRef(2), '0');
-  validateDeleteMetadata(v, NONE, 2, 0, NONE, NONE, 1);
+  validateRefCountCheck(v, mapRef(base + 2), NONE);
+  validateDeleteMetadata(v, NONE, base + 2, 1, mapRef(base + 1), 'mapStore', 1);
+  validateRefCountCheck(v, mapRef(base + 1), '0');
+  validateDeleteMetadata(v, NONE, base + 1, 1, mapRef(base), 'mapStore', 1);
+  validateRefCountCheck(v, mapRef(base), '0');
+  validateDeleteMetadata(v, NONE, base, 1, mapRef(mainHeldIdx), 'mapStore', 1);
+  validateRefCountCheck(v, mapRef(mainHeldIdx), '0');
+  validateDeleteMetadata(v, NONE, mainHeldIdx, 0, NONE, NONE, 1);
   validateDone(v);
 });
 
+// prettier-ignore
 test.serial('presence refcount management 1', async t => {
-  const { v, dispatchMessage } = await setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
 
-  let rp = await dispatchMessage('importAndHold', thingArg('o-5'));
+  const base = mainHeldIdx;
+  const presenceRef = 'o-5';
+
+  let rp = await dispatchMessage('importAndHold', thingArg(presenceRef));
   validateInit(v);
   validateImportAndHold(v, rp);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, 2, 'o-5', thingRefValString('o-5'), false);
+  validatePrepareStore3(v, rp, base, presenceRef, thingRefValString(presenceRef), false);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(`vc.2.sfoo`, thingRefValString('o-5')));
-  validateUpdate(v, `vom.rc.o-5`, '3', '2');
-  validate(v, matchVatstoreSet(`vc.2.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base}.sfoo`, thingRefValString(presenceRef)));
+  validateUpdate(v, `vom.rc.${presenceRef}`, '3', '2');
+  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, nullValString));
 
-  validate(v, matchVatstoreGet(`vc.3.sfoo`, thingRefValString('o-5')));
-  validateUpdate(v, `vom.rc.o-5`, '2', '1');
-  validate(v, matchVatstoreSet(`vc.3.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base + 1}.sfoo`, thingRefValString(presenceRef)));
+  validateUpdate(v, `vom.rc.${presenceRef}`, '2', '1');
+  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, nullValString));
 
-  validate(v, matchVatstoreGet(`vc.4.sfoo`, thingRefValString('o-5')));
-  validateUpdate(v, `vom.rc.o-5`, '1', '0');
-  validate(v, matchVatstoreDelete(`vom.rc.o-5`));
-  validate(v, matchVatstoreSet(`vc.4.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base + 2}.sfoo`, thingRefValString(presenceRef)));
+  validateUpdate(v, `vom.rc.${presenceRef}`, '1', '0');
+  validate(v, matchVatstoreDelete(`vom.rc.${presenceRef}`));
+  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, nullValString));
 
   validateReturned(v, rp);
-  validateRefCountCheck(v, 'o-5', NONE);
-  validate(v, matchDropImports('o-5'));
-  validate(v, matchRetireImports('o-5'));
+  validateRefCountCheck(v, presenceRef, NONE);
+  validate(v, matchDropImports(presenceRef));
+  validate(v, matchRetireImports(presenceRef));
   validateDone(v);
 });
 
+// prettier-ignore
 test.serial('presence refcount management 2', async t => {
-  const { v, dispatchMessage } = await setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
 
-  let rp = await dispatchMessage('importAndHold', thingArg('o-5'));
+  const base = mainHeldIdx;
+  const presenceRef = 'o-5';
+
+  let rp = await dispatchMessage('importAndHold', thingArg(presenceRef));
   validateInit(v);
   validateImportAndHold(v, rp);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, 2, 'o-5', thingRefValString('o-5'), false);
+  validatePrepareStore3(v, rp, 3, presenceRef, thingRefValString(presenceRef), false);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(2), NONE);
-  validateDeleteMetadata(v, NONE, 2, 1, 'o-5', 'thing', 3);
-  validateRefCountCheck(v, mapRef(3), NONE);
-  validateDeleteMetadata(v, NONE, 3, 1, 'o-5', 'thing', 2);
-  validateRefCountCheck(v, mapRef(4), NONE);
-  validateDeleteMetadata(v, NONE, 4, 1, 'o-5', 'thing', 1);
+  validateRefCountCheck(v, mapRef(base), NONE);
+  validateDeleteMetadata(v, NONE, base, 1, presenceRef, 'thing', 3);
+  validateRefCountCheck(v, mapRef(base + 1), NONE);
+  validateDeleteMetadata(v, NONE, base + 1, 1, presenceRef, 'thing', 2);
+  validateRefCountCheck(v, mapRef(base + 2), NONE);
+  validateDeleteMetadata(v, NONE, base + 2, 1, presenceRef, 'thing', 1);
 
-  validate(v, matchVatstoreGet('vom.rc.o-5', NONE));
-  validate(v, matchDropImports('o-5'));
-  validate(v, matchRetireImports('o-5'));
+  validate(v, matchVatstoreGet(`vom.rc.${presenceRef}`, NONE));
+  validate(v, matchDropImports(presenceRef));
+  validate(v, matchRetireImports(presenceRef));
   validateDone(v);
 });
 
+// prettier-ignore
 test.serial('remotable refcount management 1', async t => {
-  const { v, dispatchMessage } = await setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
+
+  const base = mainHeldIdx;
+  const remotableRef = 'o+9';
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateInit(v);
@@ -1103,21 +1081,30 @@ test.serial('remotable refcount management 1', async t => {
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, 2, 'o+9', thingRefValString('o+9'), false, true);
+  validatePrepareStore3(v, rp, base, remotableRef, thingRefValString(remotableRef), false, true);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(`vc.2.sfoo`, refValString('o+9', 'thing')));
-  validate(v, matchVatstoreSet(`vc.2.sfoo`, nullValString));
-  validate(v, matchVatstoreGet(`vc.3.sfoo`, refValString('o+9', 'thing')));
-  validate(v, matchVatstoreSet(`vc.3.sfoo`, nullValString));
-  validate(v, matchVatstoreGet(`vc.4.sfoo`, refValString('o+9', 'thing')));
-  validate(v, matchVatstoreSet(`vc.4.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base}.sfoo`, refValString(remotableRef, 'thing')));
+  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base + 1}.sfoo`, refValString(remotableRef, 'thing')));
+  validate(v, matchVatstoreSet(`vc.${base + 1}.sfoo`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${base + 2}.sfoo`, refValString(remotableRef, 'thing')));
+  validate(v, matchVatstoreSet(`vc.${base + 2}.sfoo`, nullValString));
   validateReturned(v, rp);
   validateDone(v);
 });
 
+// prettier-ignore
 test.serial('remotable refcount management 2', async t => {
-  const { v, dispatchMessage } = await setupLifecycleTest(t);
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
+
+  const base = mainHeldIdx;
+  const remotableRef = 'o+9';
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateInit(v);
@@ -1125,201 +1112,215 @@ test.serial('remotable refcount management 2', async t => {
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, 2, 'o+9', thingRefValString('o+9'), false, true);
+  validatePrepareStore3(v, rp, base, remotableRef, thingRefValString(remotableRef), false, true);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(2), NONE);
-  validateDeleteMetadata(v, NONE, 2, 1, 'o+9', 'thing', 3, true);
-  validateRefCountCheck(v, mapRef(3), NONE);
-  validateDeleteMetadata(v, NONE, 3, 1, 'o+9', 'thing', 2, true);
-  validateRefCountCheck(v, mapRef(4), NONE);
-  validateDeleteMetadata(v, NONE, 4, 1, 'o+9', 'thing', 1, true);
+  validateRefCountCheck(v, mapRef(base), NONE);
+  validateDeleteMetadata(v, NONE, base, 1, remotableRef, 'thing', 3, true);
+  validateRefCountCheck(v, mapRef(base + 1), NONE);
+  validateDeleteMetadata(v, NONE, base + 1, 1, remotableRef, 'thing', 2, true);
+  validateRefCountCheck(v, mapRef(base + 2), NONE);
+  validateDeleteMetadata(v, NONE, base + 2, 1, remotableRef, 'thing', 1, true);
   validateDone(v);
 });
 
+// prettier-ignore
 test.serial('verify store weak key GC', async t => {
-  const { v, dispatchMessage, testHooks } = await setupLifecycleTest(t);
+  const { v, dispatchMessage, testHooks } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
 
   // Create a store to use as a key and hold onto it weakly
   let rp = await dispatchMessage('makeAndHoldAndKey');
   validateInit(v);
-  validateCreateStore(v, 2, true); // map
-  validateCreateStore(v, 3, true); // set
-  validateCreateStore(v, 4); // key
+  const mapID = 3;
+  validateCreateStore(v, mapID, true); // map
+  const setID = 4;
+  validateCreateStore(v, setID, true); // set
+  const keyID = 5;
+  validateCreateStore(v, keyID); // key
 
-  const ordinalKey = `r0000000001:${mapRef(4)}`;
+  const ordinalKey = `r0000000001:${mapRef(keyID)}`;
 
-  validate(v, matchVatstoreGet(`vc.2.|${mapRef(4)}`, NONE));
-  validate(v, matchVatstoreGet(`vc.2.|nextOrdinal`, '1'));
-  validate(v, matchVatstoreSet(`vc.2.|${mapRef(4)}`, '1'));
-  validate(v, matchVatstoreSet(`vc.2.|nextOrdinal`, '2'));
-  validate(v, matchVatstoreGet(`vc.2.|${mapRef(4)}`, '1'));
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${mapRef(keyID)}`, NONE));
+  validate(v, matchVatstoreGet(`vc.${mapID}.|nextOrdinal`, '1'));
+  validate(v, matchVatstoreSet(`vc.${mapID}.|${mapRef(keyID)}`, '1'));
+  validate(v, matchVatstoreSet(`vc.${mapID}.|nextOrdinal`, '2'));
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${mapRef(keyID)}`, '1'));
   validate(
     v,
-    matchVatstoreSet(`vc.2.${ordinalKey}`, stringValString('arbitrary')),
+    matchVatstoreSet(`vc.${mapID}.${ordinalKey}`, stringValString('arbitrary')),
   );
 
-  validate(v, matchVatstoreGet(`vc.3.|${mapRef(4)}`, NONE));
-  validate(v, matchVatstoreGet(`vc.3.|nextOrdinal`, '1'));
-  validate(v, matchVatstoreSet(`vc.3.|${mapRef(4)}`, '1'));
-  validate(v, matchVatstoreSet(`vc.3.|nextOrdinal`, '2'));
-  validate(v, matchVatstoreGet(`vc.3.|${mapRef(4)}`, '1'));
-  validate(v, matchVatstoreSet(`vc.3.${ordinalKey}`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${setID}.|${mapRef(keyID)}`, NONE));
+  validate(v, matchVatstoreGet(`vc.${setID}.|nextOrdinal`, '1'));
+  validate(v, matchVatstoreSet(`vc.${setID}.|${mapRef(keyID)}`, '1'));
+  validate(v, matchVatstoreSet(`vc.${setID}.|nextOrdinal`, '2'));
+  validate(v, matchVatstoreGet(`vc.${setID}.|${mapRef(keyID)}`, '1'));
+  validate(v, matchVatstoreSet(`vc.${setID}.${ordinalKey}`, nullValString));
   validateReturned(v, rp);
   validateDone(v);
 
-  t.is(testHooks.countCollectionsForWeakKey(mapRef(4)), 2);
-  t.is(testHooks.storeSizeInternal(mapRef(2)), 1);
+  t.is(testHooks.countCollectionsForWeakKey(mapRef(keyID)), 2);
+  t.is(testHooks.storeSizeInternal(mapRef(mapID)), 1);
   validate(
     v,
-    matchVatstoreGetAfter('', `vc.2.`, `vc.2.{`, [
-      `vc.2.${ordinalKey}`,
+    matchVatstoreGetAfter('', `vc.${mapID}.`, `vc.${mapID}.{`, [
+      `vc.${mapID}.${ordinalKey}`,
       stringValString('arbitrary'),
     ]),
   );
   validate(
     v,
-    matchVatstoreGetAfter(`vc.2.${ordinalKey}`, `vc.2.`, `vc.2.{`, DONE),
+    matchVatstoreGetAfter(`vc.${mapID}.${ordinalKey}`, `vc.${mapID}.`, `vc.${mapID}.{`, DONE),
   );
-  t.is(testHooks.storeSizeInternal(mapRef(3)), 1);
+  t.is(testHooks.storeSizeInternal(mapRef(setID)), 1);
   validate(
     v,
-    matchVatstoreGetAfter('', `vc.3.`, `vc.3.{`, [
-      `vc.3.${ordinalKey}`,
+    matchVatstoreGetAfter('', `vc.${setID}.`, `vc.${setID}.{`, [
+      `vc.${setID}.${ordinalKey}`,
       nullValString,
     ]),
   );
   validate(
     v,
-    matchVatstoreGetAfter(`vc.3.${ordinalKey}`, `vc.3.`, `vc.3.{`, DONE),
+    matchVatstoreGetAfter(`vc.${setID}.${ordinalKey}`, `vc.${setID}.`, `vc.${setID}.{`, DONE),
   );
   validateDone(v);
 
   // Drop in-memory reference, GC should cause weak entries to disappear
   rp = await dispatchMessage('dropHeld');
   validateReturned(v, rp);
-  validateStatusCheck(v, mapRef(4), NONE, NONE);
-  validateDeleteMetadataOnly(v, 4, 0, NONE, NONE, 47, false);
-  validate(v, matchVatstoreGet(`vc.2.|${mapRef(4)}`, '1'));
-  validate(v, matchVatstoreDelete(`vc.2.|${mapRef(4)}`));
-  validate(v, matchVatstoreDelete(`vc.2.${ordinalKey}`));
-  validate(v, matchVatstoreGet(`vc.3.|${mapRef(4)}`, '1'));
-  validate(v, matchVatstoreDelete(`vc.3.|${mapRef(4)}`));
-  validate(v, matchVatstoreDelete(`vc.3.${ordinalKey}`));
+  validateStatusCheck(v, mapRef(keyID), NONE, NONE);
+  validateDeleteMetadataOnly(v, keyID, 0, NONE, NONE, 47, false);
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${mapRef(keyID)}`, '1'));
+  validate(v, matchVatstoreDelete(`vc.${mapID}.|${mapRef(keyID)}`));
+  validate(v, matchVatstoreDelete(`vc.${mapID}.${ordinalKey}`));
+  validate(v, matchVatstoreGet(`vc.${setID}.|${mapRef(keyID)}`, '1'));
+  validate(v, matchVatstoreDelete(`vc.${setID}.|${mapRef(keyID)}`));
+  validate(v, matchVatstoreDelete(`vc.${setID}.${ordinalKey}`));
 
-  t.is(testHooks.countCollectionsForWeakKey(mapRef(4)), 0);
-  t.is(testHooks.storeSizeInternal(mapRef(2)), 0);
-  validate(v, matchVatstoreGetAfter('', `vc.2.`, `vc.2.{`, DONE));
-  t.is(testHooks.storeSizeInternal(mapRef(3)), 0);
-  validate(v, matchVatstoreGetAfter('', `vc.3.`, `vc.3.{`, DONE));
+  t.is(testHooks.countCollectionsForWeakKey(mapRef(keyID)), 0);
+  t.is(testHooks.storeSizeInternal(mapRef(mapID)), 0);
+  validate(v, matchVatstoreGetAfter('', `vc.${mapID}.`, `vc.${mapID}.{`, DONE));
+  t.is(testHooks.storeSizeInternal(mapRef(setID)), 0);
+  validate(v, matchVatstoreGetAfter('', `vc.${setID}.`, `vc.${setID}.{`, DONE));
   validateDone(v);
 });
 
+// prettier-ignore
 test.serial('verify presence weak key GC', async t => {
   const { v, dispatchMessage, dispatchRetireImports, testHooks } =
-    await setupLifecycleTest(t);
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+
+  const presenceRef = 'o-5';
 
   // Import a presence to use as a key and hold onto it weakly
-  let rp = await dispatchMessage('importAndHoldAndKey', thingArg('o-5'));
+  let rp = await dispatchMessage('importAndHoldAndKey', thingArg(presenceRef));
   validateInit(v);
-  validateCreateStore(v, 2, true); // map
-  validateCreateStore(v, 3, true); // set
+  const mapID = 3;
+  validateCreateStore(v, mapID, true); // map
+  const setID = 4;
+  validateCreateStore(v, setID, true); // set
 
-  const ordinalKey = `r0000000001:o-5`;
+  const ordinalKey = `r0000000001:${presenceRef}`;
 
-  validate(v, matchVatstoreGet(`vc.2.|o-5`, NONE));
-  validate(v, matchVatstoreGet(`vc.2.|nextOrdinal`, '1'));
-  validate(v, matchVatstoreSet(`vc.2.|o-5`, '1'));
-  validate(v, matchVatstoreSet(`vc.2.|nextOrdinal`, '2'));
-  validate(v, matchVatstoreGet(`vc.2.|o-5`, '1'));
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${presenceRef}`, NONE));
+  validate(v, matchVatstoreGet(`vc.${mapID}.|nextOrdinal`, '1'));
+  validate(v, matchVatstoreSet(`vc.${mapID}.|${presenceRef}`, '1'));
+  validate(v, matchVatstoreSet(`vc.${mapID}.|nextOrdinal`, '2'));
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${presenceRef}`, '1'));
   validate(
     v,
-    matchVatstoreSet(`vc.2.${ordinalKey}`, stringValString('arbitrary')),
+    matchVatstoreSet(`vc.${mapID}.${ordinalKey}`, stringValString('arbitrary')),
   );
 
-  validate(v, matchVatstoreGet(`vc.3.|o-5`, NONE));
-  validate(v, matchVatstoreGet(`vc.3.|nextOrdinal`, '1'));
-  validate(v, matchVatstoreSet(`vc.3.|o-5`, '1'));
-  validate(v, matchVatstoreSet(`vc.3.|nextOrdinal`, '2'));
-  validate(v, matchVatstoreGet(`vc.3.|o-5`, '1'));
-  validate(v, matchVatstoreSet(`vc.3.${ordinalKey}`, nullValString));
+  validate(v, matchVatstoreGet(`vc.${setID}.|${presenceRef}`, NONE));
+  validate(v, matchVatstoreGet(`vc.${setID}.|nextOrdinal`, '1'));
+  validate(v, matchVatstoreSet(`vc.${setID}.|${presenceRef}`, '1'));
+  validate(v, matchVatstoreSet(`vc.${setID}.|nextOrdinal`, '2'));
+  validate(v, matchVatstoreGet(`vc.${setID}.|${presenceRef}`, '1'));
+  validate(v, matchVatstoreSet(`vc.${setID}.${ordinalKey}`, nullValString));
   validateReturned(v, rp);
 
-  t.is(testHooks.countCollectionsForWeakKey('o-5'), 2);
-  t.is(testHooks.storeSizeInternal(mapRef(2)), 1);
+  t.is(testHooks.countCollectionsForWeakKey(presenceRef), 2);
+  t.is(testHooks.storeSizeInternal(mapRef(mapID)), 1);
   validate(
     v,
-    matchVatstoreGetAfter('', `vc.2.`, `vc.2.{`, [
-      `vc.2.${ordinalKey}`,
+    matchVatstoreGetAfter('', `vc.${mapID}.`, `vc.${mapID}.{`, [
+      `vc.${mapID}.${ordinalKey}`,
       stringValString('arbitrary'),
     ]),
   );
   validate(
     v,
-    matchVatstoreGetAfter(`vc.2.${ordinalKey}`, `vc.2.`, `vc.2.{`, DONE),
+    matchVatstoreGetAfter(`vc.${mapID}.${ordinalKey}`, `vc.${mapID}.`, `vc.${mapID}.{`, DONE),
   );
-  t.is(testHooks.storeSizeInternal(mapRef(3)), 1);
+  t.is(testHooks.storeSizeInternal(mapRef(setID)), 1);
   validate(
     v,
-    matchVatstoreGetAfter('', `vc.3.`, `vc.3.{`, [
-      `vc.3.${ordinalKey}`,
+    matchVatstoreGetAfter('', `vc.${setID}.`, `vc.${setID}.{`, [
+      `vc.${setID}.${ordinalKey}`,
       nullValString,
     ]),
   );
   validate(
     v,
-    matchVatstoreGetAfter(`vc.3.${ordinalKey}`, `vc.3.`, `vc.3.{`, DONE),
+    matchVatstoreGetAfter(`vc.${setID}.${ordinalKey}`, `vc.${setID}.`, `vc.${setID}.{`, DONE),
   );
   validateDone(v);
 
   rp = await dispatchMessage('dropHeld');
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet('vom.rc.o-5'));
-  validate(v, matchDropImports('o-5'));
-  t.is(testHooks.countCollectionsForWeakKey('o-5'), 2);
-  t.is(testHooks.storeSizeInternal(mapRef(2)), 1);
+  validate(v, matchVatstoreGet(`vom.rc.${presenceRef}`));
+  validate(v, matchDropImports(presenceRef));
+  t.is(testHooks.countCollectionsForWeakKey(presenceRef), 2);
+  t.is(testHooks.storeSizeInternal(mapRef(mapID)), 1);
   validate(
     v,
-    matchVatstoreGetAfter('', `vc.2.`, `vc.2.{`, [
-      `vc.2.${ordinalKey}`,
+    matchVatstoreGetAfter('', `vc.${mapID}.`, `vc.${mapID}.{`, [
+      `vc.${mapID}.${ordinalKey}`,
       stringValString('arbitrary'),
     ]),
   );
   validate(
     v,
-    matchVatstoreGetAfter(`vc.2.${ordinalKey}`, `vc.2.`, `vc.2.{`, DONE),
+    matchVatstoreGetAfter(`vc.${mapID}.${ordinalKey}`, `vc.${mapID}.`, `vc.${mapID}.{`, DONE),
   );
-  t.is(testHooks.storeSizeInternal(mapRef(3)), 1);
+  t.is(testHooks.storeSizeInternal(mapRef(setID)), 1);
   validate(
     v,
-    matchVatstoreGetAfter('', `vc.3.`, `vc.3.{`, [
-      `vc.3.${ordinalKey}`,
+    matchVatstoreGetAfter('', `vc.${setID}.`, `vc.${setID}.{`, [
+      `vc.${setID}.${ordinalKey}`,
       nullValString,
     ]),
   );
   validate(
     v,
-    matchVatstoreGetAfter(`vc.3.${ordinalKey}`, `vc.3.`, `vc.3.{`, DONE),
+    matchVatstoreGetAfter(`vc.${setID}.${ordinalKey}`, `vc.${setID}.`, `vc.${setID}.{`, DONE),
   );
   validateDone(v);
 
-  await dispatchRetireImports('o-5');
-  validate(v, matchVatstoreGet(`vc.2.|o-5`, '1'));
-  validate(v, matchVatstoreDelete(`vc.2.|o-5`));
-  validate(v, matchVatstoreDelete(`vc.2.${ordinalKey}`));
-  validate(v, matchVatstoreGet(`vc.3.|o-5`, '1'));
-  validate(v, matchVatstoreDelete(`vc.3.|o-5`));
-  validate(v, matchVatstoreDelete(`vc.3.${ordinalKey}`));
-  validateRefCountCheck(v, 'o-5', NONE);
-  validate(v, matchDropImports('o-5'));
-  validate(v, matchRetireImports('o-5'));
+  await dispatchRetireImports(presenceRef);
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${presenceRef}`, '1'));
+  validate(v, matchVatstoreDelete(`vc.${mapID}.|${presenceRef}`));
+  validate(v, matchVatstoreDelete(`vc.${mapID}.${ordinalKey}`));
+  validate(v, matchVatstoreGet(`vc.${setID}.|${presenceRef}`, '1'));
+  validate(v, matchVatstoreDelete(`vc.${setID}.|${presenceRef}`));
+  validate(v, matchVatstoreDelete(`vc.${setID}.${ordinalKey}`));
+  validateRefCountCheck(v, presenceRef, NONE);
+  validate(v, matchDropImports(presenceRef));
+  validate(v, matchRetireImports(presenceRef));
   validateDone(v);
 
-  t.is(testHooks.countCollectionsForWeakKey('o-5'), 0);
-  t.is(testHooks.storeSizeInternal(mapRef(2)), 0);
-  validate(v, matchVatstoreGetAfter('', `vc.2.`, `vc.2.{`, DONE));
-  t.is(testHooks.storeSizeInternal(mapRef(3)), 0);
-  validate(v, matchVatstoreGetAfter('', `vc.3.`, `vc.3.{`, DONE));
+  t.is(testHooks.countCollectionsForWeakKey(presenceRef), 0);
+  t.is(testHooks.storeSizeInternal(mapRef(mapID)), 0);
+  validate(v, matchVatstoreGetAfter('', `vc.${mapID}.`, `vc.${mapID}.{`, DONE));
+  t.is(testHooks.storeSizeInternal(mapRef(setID)), 0);
+  validate(v, matchVatstoreGetAfter('', `vc.${setID}.`, `vc.${setID}.{`, DONE));
   validateDone(v);
 });

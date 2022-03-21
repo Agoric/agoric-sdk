@@ -664,6 +664,23 @@ export function makeCollectionManager(
     return store;
   }
 
+  function provideBaggage() {
+    let baggageID = syscall.vatstoreGet('baggageID');
+    if (baggageID) {
+      return convertSlotToVal(baggageID);
+    } else {
+      const baggage = makeScalarBigMapStore('baggage', {
+        keySchema: M.string(),
+        durable: true,
+      });
+      baggageID = convertValToSlot(baggage);
+      syscall.vatstoreSet('baggageID', baggageID);
+      // artificially increment the baggage's refcount so it never gets GC'd
+      vrm.addReachableVref(baggageID);
+      return baggage;
+    }
+  }
+
   /**
    * Produce a *scalar* weak big map: keys can only be atomic values,
    * primitives, or remotables.
@@ -788,6 +805,7 @@ export function makeCollectionManager(
     makeScalarBigWeakMapStore,
     makeScalarBigSetStore,
     makeScalarBigWeakSetStore,
+    provideBaggage,
     testHooks,
   });
 }

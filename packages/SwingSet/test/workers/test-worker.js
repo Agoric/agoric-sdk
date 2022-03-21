@@ -65,7 +65,7 @@ test('xs vat manager', async t => {
   t.deepEqual(JSON.parse(c.kpResolution(c.bootstrapResult).body), expected);
 });
 
-test('nodeWorker vat manager', async t => {
+test.skip('nodeWorker vat manager', async t => {
   const c = await makeController('nodeWorker');
   t.teardown(c.shutdown);
 
@@ -75,7 +75,7 @@ test('nodeWorker vat manager', async t => {
   t.deepEqual(JSON.parse(c.kpResolution(c.bootstrapResult).body), expected);
 });
 
-test('node-subprocess vat manager', async t => {
+test.skip('node-subprocess vat manager', async t => {
   const c = await makeController('node-subprocess');
   t.teardown(c.shutdown);
 
