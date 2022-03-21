@@ -41,6 +41,8 @@ function validateCreateBaggage(v, idx) {
   validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
   validate(v, matchVatstoreSet('baggageID', 'o+5/1'));
+  validate(v, matchVatstoreGet('vom.rc.o+5/1', NONE));
+  validate(v, matchVatstoreSet('vom.rc.o+5/1', '1'));
 }
 
 function validateSetup(v) {

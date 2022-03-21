@@ -137,10 +137,6 @@ import { capargs } from '../util.js';
 //   lERV -overwr-> lERv
 //   LERV -overwr-> LERv
 
-// eslint's belief that the following var is unused is erroneous
-// eslint-disable-next-line no-unused-vars
-let preventBaggageGC;
-
 let aWeakMap;
 let aWeakSet;
 
@@ -188,8 +184,7 @@ const cacheDisplacerVref = thingVref(false, 1);
 const fCacheDisplacerVref = thingVref(true, 1);
 const virtualHolderVref = `${holderKindID}/1`;
 
-function buildRootObject(vatPowers, vatParameters, baggage) {
-  preventBaggageGC = baggage;
+function buildRootObject(vatPowers) {
   const { VatData, WeakMap, WeakSet } = vatPowers;
 
   const { defineKind } = VatData;
@@ -459,6 +454,8 @@ function validateCreateBaggage(v, idx) {
   validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
   validate(v, matchVatstoreSet('baggageID', 'o+5/1'));
+  validate(v, matchVatstoreGet(rcKey('o+5/1'), NONE));
+  validate(v, matchVatstoreSet(rcKey('o+5/1'), '1'));
 }
 
 function validateSetup(v) {

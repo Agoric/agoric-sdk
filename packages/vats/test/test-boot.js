@@ -88,9 +88,8 @@ const testRole = (ROLE, governanceActions) => {
   test(`test manifest permits: ${ROLE} gov: ${governanceActions}`, async t => {
     const root = buildRootObject(
       // @ts-expect-error Device<T> is a little goofy
-      { D: d => d },
+      { D: d => d, logger: t.log },
       { argv: argvByRole[ROLE], governanceActions },
-      t.log,
     );
 
     const fakeVatAdmin = makeFakeVatAdmin(() => {}).admin;

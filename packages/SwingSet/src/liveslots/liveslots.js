@@ -1165,6 +1165,7 @@ function build(
     }
 
     const vatParameters = m.unserialize(vatParametersCapData);
+    baggage = collectionManager.provideBaggage();
 
     // Below this point, user-provided code might crash or overrun a meter, so
     // any prior-to-user-code setup that can be done without reference to the
@@ -1184,7 +1185,6 @@ function build(
     );
 
     // here we finally invoke the vat code, and get back the root object
-    baggage = collectionManager.provideBaggage();
     const rootObject = buildRootObject(
       harden(vpow),
       harden(vatParameters),

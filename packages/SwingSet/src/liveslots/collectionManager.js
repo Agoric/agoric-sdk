@@ -665,7 +665,7 @@ export function makeCollectionManager(
   }
 
   function provideBaggage() {
-    const baggageID = syscall.vatstoreGet('baggageID');
+    let baggageID = syscall.vatstoreGet('baggageID');
     if (baggageID) {
       return convertSlotToVal(baggageID);
     } else {
@@ -673,7 +673,10 @@ export function makeCollectionManager(
         keySchema: M.string(),
         durable: true,
       });
-      syscall.vatstoreSet('baggageID', convertValToSlot(baggage));
+      baggageID = convertValToSlot(baggage);
+      syscall.vatstoreSet('baggageID', baggageID);
+      // artificially increment the baggage's refcount so it never gets GC'd
+      vrm.addReachableVref(baggageID);
       return baggage;
     }
   }

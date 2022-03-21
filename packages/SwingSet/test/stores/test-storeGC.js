@@ -28,12 +28,7 @@ let aWeakSetStore;
 const mainHolderIdx = 2;
 const mainHeldIdx = 3;
 
-// eslint's belief that the following var is unused is erroneous
-// eslint-disable-next-line no-unused-vars
-let preventBaggageGC;
-
-function buildRootObject(vatPowers, vatParameters, baggage) {
-  preventBaggageGC = baggage;
+function buildRootObject(vatPowers) {
   const { VatData } = vatPowers;
   const {
     makeScalarBigMapStore,
@@ -243,6 +238,8 @@ function validateCreateBaggage(v, idx) {
   validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
   validate(v, matchVatstoreSet('baggageID', 'o+5/1'));
+  validate(v, matchVatstoreGet('vom.rc.o+5/1', NONE));
+  validate(v, matchVatstoreSet('vom.rc.o+5/1', '1'));
 }
 
 function validateCreate(v, idx, isWeak = false) {

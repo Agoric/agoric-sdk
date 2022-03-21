@@ -133,13 +133,13 @@ test.serial('exercise cache', async t => {
     await doSimple('holdThing', what);
   }
   function dataKey(num) {
-    return `v1.vs.vom.o+1/${num}`;
+    return `v1.vs.vom.o+9/${num}`;
   }
   function esKey(num) {
-    return `v1.vs.vom.es.o+1/${num}`;
+    return `v1.vs.vom.es.o+9/${num}`;
   }
   function rcKey(num) {
-    return `v1.vs.vom.rc.o+1/${num}`;
+    return `v1.vs.vom.rc.o+9/${num}`;
   }
   function thingVal(name) {
     return JSON.stringify({
@@ -394,6 +394,7 @@ test('virtual object gc', async t => {
     'v1.vs.vom.o+9/3': '{"label":{"body":"\\"thing #3\\"","slots":[]}}',
     'v1.vs.vom.o+9/8': '{"label":{"body":"\\"thing #8\\"","slots":[]}}',
     'v1.vs.vom.o+9/9': '{"label":{"body":"\\"thing #9\\"","slots":[]}}',
+    'v1.vs.vom.rc.o+5/1': '1',
   });
 });
 
