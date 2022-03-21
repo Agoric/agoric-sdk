@@ -60,7 +60,7 @@ const OfferWithoutContext = ({
     instancePetname,
     instanceHandleBoardId,
     requestContext: { date, dappOrigin, origin = 'unknown origin' } = {},
-    proposalForDisplay: { give = {}, want = {} } = {},
+    proposalForDisplay: { give = {}, want = {}, arguments: args } = {},
     invitationDetails: { fee, feePursePetname, expiry } = {},
     id,
   } = offer;
@@ -81,16 +81,16 @@ const OfferWithoutContext = ({
 
   const approve = () => {
     setPendingOffers({ offerId: id, isPending: true });
-    E(offer.actions).accept();
+    E(offer.actions).accept().catch(console.error);
   };
 
   const decline = () => {
     setDeclinedOffers({ offerId: id, isDeclined: true });
-    E(offer.actions).decline();
+    E(offer.actions).decline().catch(console.error);
   };
 
   const exit = () => {
-    E(offer.actions).cancel();
+    E(offer.actions).cancel().catch(console.error);
   };
 
   const close = () => {
@@ -225,6 +225,12 @@ const OfferWithoutContext = ({
             <div className="Expiry text-gray">
               {formatDateNow(parseFloat(expiry) * 1000)}
             </div>
+          </div>
+        )}
+        {args !== undefined && (
+          <div className="OfferEntry">
+            <h6>Arguments</h6>
+            <pre>{JSON.stringify(args, null, 2)}</pre>
           </div>
         )}
       </div>

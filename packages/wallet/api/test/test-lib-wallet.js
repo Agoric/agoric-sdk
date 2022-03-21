@@ -643,7 +643,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 });
 
 test('lib-wallet offer methods', async t => {
-  t.plan(7);
+  t.plan(8);
   const {
     moolaBundle,
     wallet,
@@ -690,6 +690,7 @@ test('lib-wallet offer methods', async t => {
           },
         },
         exit: { onDemand: null },
+        arguments: { foo: 'bar' },
       },
     });
 
@@ -720,6 +721,7 @@ test('lib-wallet offer methods', async t => {
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1n } },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
         requestContext: { dappOrigin: 'unknown' },
         status: undefined,
@@ -753,12 +755,11 @@ test('lib-wallet offer methods', async t => {
   await wallet.deposit('Default Zoe invite purse', invite2);
   // `addOffer` withdraws the invite from the Zoe invite purse.
   await wallet.addOffer(offer2);
-  await wallet.declineOffer(id2);
-  // TODO: test cancelOffer with a contract that holds offers, like
-  // simpleExchange
   const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
   const zoePurseAmount = await E(zoeInvitePurse).getCurrentAmount();
   t.deepEqual(zoePurseAmount.value, [], `zoeInvitePurse balance`);
+  // TODO: test cancelOffer with a contract that holds offers, like
+  // simpleExchange
   const lastPurseState = JSON.parse(pursesStateChangeLog.pop());
   const [zoeInvitePurseState, moolaPurseState] = lastPurseState;
   t.deepEqual(
@@ -813,6 +814,16 @@ test('lib-wallet offer methods', async t => {
     },
     `moolaPurseState`,
   );
+
+  // `declineOffer` puts the invitation back.
+  await wallet.declineOffer(id2);
+  const zoePurseAmount2 = await E(zoeInvitePurse).getCurrentAmount();
+  t.deepEqual(
+    zoePurseAmount2.value,
+    [...invitationAmountValue2],
+    `zoeInvitePurse balance`,
+  );
+
   const lastInboxState = JSON.parse(inboxStateChangeLog.pop());
   t.deepEqual(
     lastInboxState,
@@ -842,6 +853,7 @@ test('lib-wallet offer methods', async t => {
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
         requestContext: { dappOrigin: 'unknown' },
         status: 'accept',
@@ -865,6 +877,7 @@ test('lib-wallet offer methods', async t => {
             },
           },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
       },
       {
@@ -892,6 +905,7 @@ test('lib-wallet offer methods', async t => {
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
         requestContext: { dappOrigin: 'unknown' },
         status: 'decline',
@@ -915,6 +929,7 @@ test('lib-wallet offer methods', async t => {
             },
           },
           exit: { onDemand: null },
+          arguments: { foo: 'bar' },
         },
       },
     ],
