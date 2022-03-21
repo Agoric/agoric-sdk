@@ -6,7 +6,7 @@ import '@agoric/zoe/exported.js';
 import '../../src/vaultFactory/types.js';
 
 import path from 'path';
-import { E } from '@agoric/eventual-send';
+import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
@@ -49,20 +49,9 @@ const minusFee = (given, stableBrand) => {
   );
 };
 
-/**
- * The properties will be asssigned by `setTestJig` in the contract.
- *
- * @typedef {Object} TestContext
- * @property {ContractFacet} zcf
- * @property {ZCFMint} runMint
- * @property {IssuerKit} collateralKit
- * @property {Vault} vault
- * @property {Function} advanceRecordingPeriod
- * @property {Function} setInterestRate
- */
-let testJig;
-const setJig = jig => {
-  testJig = jig;
+// let testJig;
+const setJig = _jig => {
+  // testJig = jig;
 };
 
 /**
@@ -154,7 +143,6 @@ test('limit', async t => {
     terms,
     mintLimit,
     installs: { psmInstall },
-    runKit: { runIssuer, runBrand },
     anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
   } = t.context;
   const { publicFacet } = await E(zoe).startInstance(

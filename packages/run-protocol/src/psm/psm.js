@@ -33,7 +33,13 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
 }
 
 /**
- * @param {ContractFacet} zcf
+ * @param {ZCF<{
+ *    anchorBrand: Brand,
+ *    main: {
+ *      WantStableFeeBP: bigint,
+ *      GiveStableFeeBP: bigint,
+ *      MintLimit: Amount } }>
+ * } zcf
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
@@ -162,5 +168,3 @@ export const start = async (zcf, privateArgs) => {
 
   return { creatorFacet, publicFacet };
 };
-
-/** @typedef {ReturnType<typeof start>} PSM */
