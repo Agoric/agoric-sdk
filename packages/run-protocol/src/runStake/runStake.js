@@ -7,18 +7,16 @@ import { makeRUNstakeKit } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager';
 
 /**
- * @param { ZCF<RunStakeTerms> } zcf
- * @param {{
- *   feeMintAccess: FeeMintAccess,
- *   initialPoserInvitation: Invitation,
- *   lienBridge: ERef<StakingAuthority>,
- * }} privateArgs
+ * Provide loans on the basis of staked assets that earn rewards.
+ *
+ * In addition to brands and issuers for `Staked`, `RUN`, and attestation,
+ * terms of the contract include a periodic interest rate plus
+ * a fee proportional to the amount borrowed, as well as a ratio
+ * of funds to mint and loan per unit of staked asset.
+ * These terms are subject to change by the `Electorate`
+ * and `electionManager` terms.
  *
  * @typedef {{
- *   timerService: TimerService,
- *   chargingPeriod: bigint,
- *   recordingPeriod: bigint,
- *   lienAttestationName: string,
  *   electionManager: VoteOnParamChange,
  *   main: {
  *     MintingRatio: ParamRecord<'ratio'>,
@@ -26,9 +24,58 @@ import { makeRunStakeManager } from './runStakeManager';
  *     LoanFee: ParamRecord<'ratio'>,
  *     Electorate: ParamRecord<'invitation'>,
  *   },
+ * }} RunStakeGovernanceTerms
+ *
+ * As in vaultFactory, `timerService` provides the periodic signal to
+ * charge interest according to `chargingPeriod` and `recordingPeriod`.
+ *
+ * @typedef { RunStakeGovernanceTerms & {
+ *   timerService: TimerService,
+ *   chargingPeriod: bigint,
+ *   recordingPeriod: bigint,
+ *   lienAttestationName?: string,
  * }} RunStakeTerms
+ *
+ * The public facet provides access to invitations to get a loan
+ * or to return an attestation in order to release a lien on staked assets.
+ *
+ * @typedef {{
+ *   makeLoanInvitation: () => Promise<Invitation>,
+ *   makeReturnAttInvitation: () => Promise<Invitation>,
+ * }} RunStakePublic
+ *
+ * To take out a loan, get an `AttMaker` for your address from
+ * the creator of this contract, and use
+ * `E(attMaker).makeAttestation(stakedAmount)` to take out a lien
+ * and get a payment that attests to the lien. Provide the payment
+ * in the `Attestation` keyword of an offer,
+ * using `{ want: { RUN: amountWanted }}`.
+ *
+ * Then, using the invitationMakers pattern, use `AdjustBalances` to
+ * pay down the loan or otherwise adjust the `RUN` and `Attestation`.
+ *
+ * Finally, `Close` the loan, providing `{ give: RUN: debtAmount }}`
+ *
+ * To start the contract, authorize minting assets by providing `feeMintAccess`
+ * and provide access to the underlying staking infrastructure in `lienBridge`.
+ *
+ * @typedef {{
+ *   feeMintAccess: FeeMintAccess,
+ *   initialPoserInvitation: Invitation,
+ *   lienBridge: ERef<StakingAuthority>,
+ * }} RunStakePrivateArgs
+ *
+ * The creator facet can make an `AttMaker` for each account, which
+ * authorizes placing a lien some of the staked assets in that account.
+ * @typedef {{
+ *   provideAttestationMaker: (addr: string) => AttMaker,
+ *   getLiened: (address: string, brand: Brand<'nat'>) => Amount<'nat'>,
+ * }} RunStakeCreator
+ *
+ * @type {ContractStartFn<RunStakePublic, RunStakeCreator,
+ *                        RunStakeTerms, RunStakePrivateArgs>}
  */
-const start = async (
+export const start = async (
   zcf,
   { feeMintAccess, initialPoserInvitation, lienBridge },
 ) => {
@@ -38,7 +85,7 @@ const start = async (
     timerService,
     chargingPeriod,
     recordingPeriod,
-    lienAttestationName = 'BldLienAtt',
+    lienAttestationName = 'BldLienAtt', // TODO: should be Attestation keyword?
   } = zcf.getTerms();
   assert.typeof(chargingPeriod, 'bigint', 'chargingPeriod must be a bigint');
   assert.typeof(recordingPeriod, 'bigint', 'recordingPeriod must be a bigint');
@@ -49,7 +96,6 @@ const start = async (
     lienAttestationName,
     lienBridge,
   );
-  // TODO: remove publicFacet wart
   const attestBrand = await E(att.publicFacet).getBrand();
 
   const paramManager = await makeRunStakeParamManager(
@@ -69,11 +115,11 @@ const start = async (
 
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
-  // assertElectorateMatches(paramManager, otherGovernedTerms);
+  // TODO: assertElectorateMatches(paramManager, otherGovernedTerms);
 
   /**
-   * We provide an easy way for the policy to add rewards to
-   * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
+   * Let the manager add rewards to the rewardPoolSeat
+   * without directly exposing the rewardPoolSeat to them.
    *
    * @type {ReallocateWithFee}
    */
@@ -105,21 +151,22 @@ const start = async (
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
 
+  // TODO: rename to makeRunStakeHook?
   /** @type { OfferHandler } */
   const makeRUNstakeHook = seat => {
+    // TODO: rename to makeRunStakeKit??
     return makeRUNstakeKit(zcf, seat, manager, runMint);
   };
 
   const publicFacet = wrapPublicFacet(
-    Far('getRUN Public API', {
+    Far('runStake public interface', {
       makeLoanInvitation: () =>
         zcf.makeInvitation(makeRUNstakeHook, 'make RUNstake', undefined),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
     }),
   );
 
+  // @ts-expect-error wrapCreatorFacet loses type info
   return { publicFacet, creatorFacet: wrapCreatorFacet(att.creatorFacet) };
 };
-
 harden(start);
-export { start };

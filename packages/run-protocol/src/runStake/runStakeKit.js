@@ -28,7 +28,7 @@ const validTransitions = {
 };
 
 /**
- * Make RUNstake kit, subject to policy.
+ * Make RUNstake kit, subject to runStake terms.
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat

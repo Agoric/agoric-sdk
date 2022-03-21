@@ -13,7 +13,7 @@ import { chargeInterest } from '../interest.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('RM');
+const trace = makeTracer('RM'); // TODO: how to turn this off?
 
 /**
  * @param {ZCF} zcf
@@ -35,6 +35,7 @@ export const makeRunStakeManager = (
   reallocateWithFee,
   { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
 ) => {
+  /** @param { Amount<'copyBag'>} attestationGiven */
   const maxDebtForLien = attestationGiven => {
     const mintingRatio = paramManager.getMintingRatio();
     assert.equal(
@@ -52,7 +53,6 @@ export const makeRunStakeManager = (
       brands.Attestation,
       X`Invalid Attestation ${attestationGiven}. Expected brand ${brands.Attestation}`,
     );
-    // TODO: what to do if more than 1 address is given???
     fit(attestationGiven.value, M.bagOf([M.string(), M.bigint()]));
     const [[_addr, valueLiened]] = getCopyBagEntries(attestationGiven.value);
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
@@ -61,6 +61,8 @@ export const makeRunStakeManager = (
   };
 
   /**
+   * TODO: fold checkBorrow into runStakeKit with checkOpenProposal
+   *
    * @param {Amount<'copyBag'>} attestationGiven
    * @param {Amount<'nat'>} runWanted
    */
@@ -153,7 +155,8 @@ export const makeRunStakeManager = (
    * @param {Amount<'nat'>} oldDebtOnVault
    * @param {Amount<'nat'>} newDebtOnVault
    */
-  // TODO https://github.com/Agoric/agoric-sdk/issues/4599
+  // TODO: Add limits for amounts between vault and vault manager
+  // https://github.com/Agoric/agoric-sdk/issues/4599
   const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
     // This does not use AmountMath because it could be validly negative
     const delta = newDebtOnVault.value - oldDebtOnVault.value;
@@ -184,6 +187,7 @@ export const makeRunStakeManager = (
     getRunAllocated,
     applyDebtDelta,
 
+    // TODO: move checkOpenProposal code to runStakeKit
     /** @param { ZCFSeat } seat */
     checkOpenProposal: seat => {
       assertProposalShape(seat, {
