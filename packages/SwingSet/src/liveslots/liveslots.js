@@ -61,6 +61,7 @@ function build(
   }
 
   let didStartVat = false;
+  let didStopVat = false;
 
   const outstandingProxies = new WeakSet();
 
@@ -893,6 +894,7 @@ function build(
 
   function deliver(target, method, argsdata, result) {
     assert(didStartVat);
+    assert(!didStopVat);
     insistCapData(argsdata);
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
@@ -1019,6 +1021,7 @@ function build(
 
   function notify(resolutions) {
     assert(didStartVat);
+    assert(!didStopVat);
     beginCollectingPromiseImports();
     for (const resolution of resolutions) {
       const [vpid, rejected, data] = resolution;
@@ -1149,6 +1152,7 @@ function build(
     insistCapData(vatParametersCapData);
     assert(!didStartVat);
     didStartVat = true;
+    assert(!didStopVat);
 
     // Build the `vatPowers` provided to `buildRootObject`. We include
     // vatGlobals and inescapableGlobalProperties to make it easier to write
@@ -1256,6 +1260,16 @@ function build(
   }
 
   /**
+   * @returns { Promise<void> }
+   */
+  async function stopVat() {
+    assert(didStartVat);
+    assert(!didStopVat);
+    didStopVat = true;
+    // empty for now
+  }
+
+  /**
    * @param { VatDeliveryObject } delivery
    * @returns { void | Promise<void> }
    */
@@ -1292,6 +1306,10 @@ function build(
       case 'startVat': {
         const [vpCapData] = args;
         result = startVat(vpCapData);
+        break;
+      }
+      case 'stopVat': {
+        result = stopVat();
         break;
       }
       default:
