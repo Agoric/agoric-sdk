@@ -3,45 +3,51 @@ import { Far } from '@endo/marshal';
 
 export function buildRootObject() {
   let admin;
+  let held;
+
+  const adder = Far('adder', { add1: x => x + 1 });
+  const options = { vatParameters: { adder } };
 
   return Far('root', {
     async bootstrap(vats, devices) {
       admin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      held = await E(vats['export-held']).createHeld();
     },
 
     async byBundle(bundle) {
-      const { root } = await E(admin).createVat(bundle);
+      const { root } = await E(admin).createVat(bundle, options);
       const n = await E(root).getANumber();
       return n;
     },
 
     async byName(bundleName) {
-      const { root } = await E(admin).createVatByName(bundleName);
+      const { root } = await E(admin).createVatByName(bundleName, options);
       const n = await E(root).getANumber();
       return n;
     },
 
     async byNamedBundleCap(name) {
       const bcap = await E(admin).getNamedBundleCap(name);
-      const { root } = await E(admin).createVat(bcap);
+      const { root } = await E(admin).createVat(bcap, options);
       const n = await E(root).getANumber();
       return n;
     },
 
     async byID(id) {
       const bcap = await E(admin).getBundleCap(id);
-      const { root } = await E(admin).createVat(bcap);
+      const { root } = await E(admin).createVat(bcap, options);
       const n = await E(root).getANumber();
       return n;
     },
 
     async counters(bundleName) {
-      const { root } = await E(admin).createVatByName(bundleName);
+      const { root } = await E(admin).createVatByName(bundleName, options);
       const c = E(root).createRcvr(1);
       const log = [];
       log.push(await E(c).increment(3));
       log.push(await E(c).increment(5));
       log.push(await E(c).ticker());
+      log.push(await E(c).add2(6));
       return log;
     },
 
@@ -51,6 +57,18 @@ export function buildRootObject() {
 
     async nonBundleCap() {
       return E(admin).createVat(Far('non-bundlecap', {})); // should reject
+    },
+
+    getHeld() {
+      return held;
+    },
+
+    refcount(id) {
+      // bootstrap retains 'held' the whole time, contributing one refcount
+      return E(admin)
+        .getBundleCap(id)
+        .then(bcap => E(admin).createVat(bcap, { vatParameters: { held } }))
+        .then(() => 0);
     },
   });
 }

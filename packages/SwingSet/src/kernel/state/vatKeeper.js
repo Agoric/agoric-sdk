@@ -123,6 +123,12 @@ export function makeVatKeeper(
   }
 
   function initializeReapCountdown(count) {
+    assert(
+      typeof count === 'number' ||
+        typeof count === 'bigint' ||
+        count === 'never',
+      `bad reapCountdown ${count}`,
+    );
     kvStore.set(`${vatID}.reapInterval`, `${count}`);
     kvStore.set(`${vatID}.reapCountdown`, `${count}`);
   }

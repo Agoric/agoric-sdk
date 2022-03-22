@@ -3,10 +3,9 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
-import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capargs } from '../util.js';
+import { capargs, capSlot, capdataOneSlot } from '../util.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -41,32 +40,27 @@ async function testUpgrade(t, defaultManagerType) {
     return [status, capdata];
   }
 
-  async function check(name, args, expectedResult) {
-    const [status, capdata] = await run(name, args);
-    const result = parse(capdata.body);
-    t.deepEqual([status, result], ['fulfilled', expectedResult]);
-  }
-
-  async function checkRejects(name, args, expectedResult) {
-    const [status, capdata] = await run(name, args);
-    const result = parse(capdata.body);
-    t.deepEqual([status, result], ['rejected', expectedResult]);
-  }
+  const mcd = await run('getMarker');
+  t.is(mcd[0], 'fulfilled');
+  const markerKref = mcd[1].slots[0]; // probably ko26
+  t.deepEqual(mcd[1], capdataOneSlot(markerKref, 'marker'));
+  const marker = capSlot(0, 'marker');
 
   // create initial version
-  await check('buildV1', [], ['v1', { youAre: 'v1' }]);
+  const [v1status, v1capdata] = await run('buildV1', []);
+  t.is(v1status, 'fulfilled');
+  t.deepEqual(JSON.parse(v1capdata.body), ['v1', { youAre: 'v1', marker }]);
+  t.deepEqual(v1capdata.slots, [markerKref]);
 
   // upgrade should work
-  // await check('upgradeV2', [], ['v2', { youAre: 'v2' }]);
+  const [v2status, v2capdata] = await run('upgradeV2', []);
+  // t.is(v2status, 'fulfilled');
+  // t.deepEqual(JSON.parse(v2capdata.body), ['v2', { youAre: 'v2', marker }]);
+  // t.deepEqual(v2capdata.slots, [markerKref]);
 
   // but for now, upgrade is just a stub
-  await checkRejects('upgradeV2', [], { error: 'not implemented' });
-
-  // await checkRejects(
-  //   'getBundleCap',
-  //   [invalidBundleID],
-  //   Error('syscall.callNow failed: device.invoke failed, see logs for details'),
-  // );
+  t.is(v2status, 'rejected');
+  t.deepEqual(JSON.parse(v2capdata.body), { error: 'not implemented' });
 }
 
 test('vat upgrade - local', async t => {

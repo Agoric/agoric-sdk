@@ -11,6 +11,14 @@ import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import { assert } from '@agoric/assert';
 
+const managerTypes = [
+  'local',
+  'nodeWorker',
+  'node-subprocess',
+  'xs-worker',
+  'xs-worker-no-gc',
+];
+
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();
   return [promise, { resolve, reject }];
@@ -109,14 +117,70 @@ export function buildRootObject(vatPowers) {
     });
   }
 
-  function convertOptions(origOptions) {
-    const options = { ...origOptions };
-    delete options.meterID;
-    delete options.meter;
-    if (origOptions.meter) {
-      const meterID = meterIDByMeter.get(origOptions.meter);
-      options.meterID = meterID;
+  function assertType(name, obj, type) {
+    if (obj) {
+      assert.typeof(obj, type, `CreateVatOptions(${name})`);
     }
+  }
+
+  function convertOptions(origOptions) {
+    const {
+      description,
+      meter, // stripped out and converted
+      managerType, // TODO: not sure we want vats to be able to control this
+      vatParameters, // stripped out and re-added
+      enableSetup,
+      enablePipelining,
+      enableVatstore,
+      virtualObjectCacheSize,
+      useTranscript,
+      reapInterval,
+      ...rest
+    } = origOptions;
+
+    // these are all flat data: no slots (Presences/Promises/etc)
+    assertType('description', description, 'string');
+    assertType('managerType', managerType, 'string');
+    if (managerType) {
+      assert(
+        managerTypes.includes(managerType),
+        `CreateVatOptions bad managerType ${managerType}`,
+      );
+    }
+    assertType('enableSetup', enableSetup, 'boolean');
+    assertType('enablePipelining', enablePipelining, 'boolean');
+    assertType('enableVatstore', enableVatstore, 'boolean');
+    assertType('virtualObjectCacheSize', virtualObjectCacheSize, 'number');
+    assertType('useTranscript', useTranscript, 'boolean');
+    assertType('reapInterval', reapInterval, 'number');
+
+    // reject unknown options
+    const unknown = Object.keys(rest).join(',');
+    if (unknown) {
+      assert.fail(`CreateVatOptions unknown options ${unknown}`);
+    }
+
+    // convert meter to meterID
+    let meterID;
+    if (meter) {
+      meterID = meterIDByMeter.get(origOptions.meter);
+    }
+
+    // TODO: assert vatParameters is Durable
+
+    // now glue everything back together
+    const options = {
+      description,
+      meterID, // replaces 'meter'
+      managerType,
+      vatParameters,
+      enableSetup,
+      enablePipelining,
+      enableVatstore,
+      virtualObjectCacheSize,
+      useTranscript,
+      reapInterval,
+    };
     return harden(options);
   }
 
