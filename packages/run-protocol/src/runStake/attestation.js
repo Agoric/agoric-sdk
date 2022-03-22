@@ -83,11 +83,11 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
     return { address, lienedAmount };
   };
 
-  /** @type {(hi: Amount, lo: Amount) => Amount} */
-  const subtractOr0 = (hi, lo) => (isGTE(hi, lo) ? subtract(hi, lo) : empty);
+  /** @type {(m: Amount, s: Amount) => Amount} */
+  const subtractOrZero = (m, s) => (isGTE(m, s) ? subtract(m, s) : empty);
   // check that x <= hi - lo
   const checkDelta = (x, label, hi, lo) => {
-    const bound = subtractOr0(hi, lo);
+    const bound = subtractOrZero(hi, lo);
     assert(
       isGTE(bound, coerce(stakeBrand, x)),
       // TODO: X`...${raw(label)}...`
@@ -96,7 +96,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
   };
   const checkAccountState = async (address, toLien) => {
     const s = await E(lienBridge).getAccountState(address, stakeBrand);
-    const unlocked = subtractOr0(s.total, s.locked);
+    const unlocked = subtractOrZero(s.total, s.locked);
     checkDelta(toLien, 'unliened', s.total, s.liened);
     checkDelta(toLien, 'bonded and unliened', s.bonded, s.liened);
     checkDelta(toLien, 'unlocked and unliened', unlocked, s.liened);
