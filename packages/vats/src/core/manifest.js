@@ -7,6 +7,14 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       },
     },
   },
+  startPriceAuthority: {
+    consume: { loadVat: true },
+    produce: {
+      priceAuthorityVat: 'priceAuthority',
+      priceAuthority: 'priceAuthority',
+      priceAuthorityAdmin: 'priceAuthority',
+    },
+  },
   makeVatsFromBundles: {
     vats: {
       vatAdmin: 'vatAdmin',
@@ -290,14 +298,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
     instance: {
       consume: { economicCommittee: 'economicCommittee' },
       produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
-    },
-  },
-  startPriceAuthority: {
-    consume: { loadVat: true },
-    produce: {
-      priceAuthorityVat: 'priceAuthority',
-      priceAuthority: 'priceAuthority',
-      priceAuthorityAdmin: 'priceAuthority',
     },
   },
   startVaultFactory: {
