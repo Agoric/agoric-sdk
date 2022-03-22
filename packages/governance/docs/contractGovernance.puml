@@ -10,7 +10,7 @@ package "GovernedContract Vat" <<Rectangle>>  {
     }
 
     class GovernedContract {
-        <i>verifiable</i>: Governor, params
+        <i>verifiable</i>: Governor, params, governedApis
         --
         +terms: { electionManager, governedParams }
         +getState()
@@ -30,9 +30,10 @@ class "ContractGovernor\n(an ElectionManager)" as ContractGovernor {
     +validateTimer()
     --
     -voteOnParamChange()
+    -voteOnApiInvocation()
     -getCreatorFacet() - The unrestricted part of the governed contract's creatorFacet
 }
-note left : ContractGovernor starts GovernedContract.\nvoteOnParamChange() should be tightly held.\ngetCreatorFacet() is for the contract's creator.
+note left : ContractGovernor starts GovernedContract.\nvoteOnParamChange() and voteOnApiInvocation()\nshould be tightly held. getCreatorFacet()\nis for the contract's creator.
 
 class Electorate {
     Questions
