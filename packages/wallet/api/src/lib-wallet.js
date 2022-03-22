@@ -1528,6 +1528,23 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
+  /**
+   * Gets the notifiers from an offer's result.
+   *
+   * @param {string} rawId - The offer's raw id.
+   * @param {string} dappOrigin - The origin of the dapp the offer came from.
+   */
+  async function getNotifiers(rawId, dappOrigin = 'unknown') {
+    const id = makeId(dappOrigin, rawId);
+    const offerResult = await idToOfferResultPromiseKit.get(id).promise;
+    assert(
+      passStyleOf(offerResult) === 'copyRecord',
+      `offerResult must be a record to have notifiers`,
+    );
+    assert(offerResult.notifiers, X`offerResult does not have notifiers`);
+    return offerResult.notifiers;
+  }
+
   const wallet = Far('wallet', {
     saveOfferResult,
     getOfferResult,
@@ -1606,6 +1623,7 @@ export function makeWallet({
       return paymentsNotifier;
     },
     getUINotifier,
+    getNotifiers,
     getZoe() {
       return zoe;
     },
