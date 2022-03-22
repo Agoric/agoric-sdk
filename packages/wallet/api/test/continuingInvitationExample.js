@@ -22,7 +22,7 @@ export const start = zcf => {
     updater.updateState('first offer made');
     return harden({
       uiNotifier: notifier,
-      notifiers: { notifier },
+      publicNotifiers: { notifier },
       invitationMakers: Far('second thing inviter', {
         SecondThing: makeDoSecondThingInvitation,
       }),

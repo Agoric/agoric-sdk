@@ -1358,7 +1358,7 @@ test('addOffer makeContinuingInvitation', async t => {
   await wallet.addOffer(offer);
 
   const uiNotifierP = wallet.getUINotifier(rawId, `unknown`);
-  const notifiersP = wallet.getNotifiers(rawId, `unknown`);
+  const publicNotifiersP = wallet.getPublicNotifiers(rawId, `unknown`);
 
   const accepted = await wallet.acceptOffer(id);
   assert(accepted);
@@ -1367,10 +1367,10 @@ test('addOffer makeContinuingInvitation', async t => {
   t.is(update.value, 'first offer made');
 
   // Test getNotifiers as well, even though it's redundant in this example.
-  const getNotifiersUpdate = await E(
-    E.get(notifiersP).notifier,
+  const publicNotifiersUpdate = await E(
+    E.get(publicNotifiersP).notifier,
   ).getUpdateSince();
-  t.is(getNotifiersUpdate.value, 'first offer made');
+  t.is(publicNotifiersUpdate.value, 'first offer made');
 
   // make the second offer
   const rawId2 = '1593482020371';

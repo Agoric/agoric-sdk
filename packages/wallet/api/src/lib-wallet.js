@@ -1529,20 +1529,31 @@ export function makeWallet({
   }
 
   /**
-   * Gets the notifiers from an offer's result.
+   * Gets the public notifiers from an offer's result.
    *
    * @param {string} rawId - The offer's raw id.
    * @param {string} dappOrigin - The origin of the dapp the offer came from.
    */
-  async function getNotifiers(rawId, dappOrigin = 'unknown') {
+  async function getPublicNotifiers(rawId, dappOrigin = 'unknown') {
     const id = makeId(dappOrigin, rawId);
+
     const offerResult = await idToOfferResultPromiseKit.get(id).promise;
     assert(
       passStyleOf(offerResult) === 'copyRecord',
-      `offerResult must be a record to have notifiers`,
+      `offerResult ${offerResult} must be a record to have publicNotifiers`,
     );
-    assert(offerResult.notifiers, X`offerResult does not have notifiers`);
-    return offerResult.notifiers;
+
+    const { publicNotifiers } = offerResult;
+    assert(
+      publicNotifiers,
+      X`offerResult ${offerResult} does not have notifiers`,
+    );
+    assert(
+      passStyleOf(publicNotifiers) === 'copyRecord',
+      X`publicNotifiers ${publicNotifiers} must be a record`,
+    );
+
+    return publicNotifiers;
   }
 
   const wallet = Far('wallet', {
@@ -1623,7 +1634,7 @@ export function makeWallet({
       return paymentsNotifier;
     },
     getUINotifier,
-    getNotifiers,
+    getPublicNotifiers,
     getZoe() {
       return zoe;
     },
