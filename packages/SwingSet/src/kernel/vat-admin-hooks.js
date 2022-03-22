@@ -78,9 +78,10 @@ export function makeVatAdminHooks(tools) {
     },
 
     upgrade(argsCapData) {
-      // marshal([bundleID, vatParameters]) -> upgradeID
+      // marshal([vatID, bundleID, vatParameters]) -> upgradeID
       const argsJSON = JSON.parse(argsCapData.body);
-      const [bundleID, vpJSON] = argsJSON;
+      const [vatID, bundleID, vpJSON] = argsJSON;
+      insistVatID(vatID);
       assert.typeof(bundleID, 'string');
       const vpCD = { body: JSON.stringify(vpJSON), slots: argsCapData.slots };
       for (const kref of vpCD.slots) {
@@ -89,6 +90,7 @@ export function makeVatAdminHooks(tools) {
       const upgradeID = kernelKeeper.allocateUpgradeID();
       const ev = {
         type: 'upgrade-vat',
+        vatID,
         upgradeID,
         bundleID,
         vatParameters: vpCD,
