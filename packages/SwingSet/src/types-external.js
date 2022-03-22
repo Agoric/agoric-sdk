@@ -97,10 +97,11 @@ export {};
  * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
  * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} VatDeliveryStartVat
+ * @typedef { [tag: 'stopVat' ]} VatDeliveryStopVat
  * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
  *            | VatDeliveryRetireExports | VatDeliveryRetireImports
- *            | VatDeliveryStartVat | VatDeliveryBringOutYourDead
+ *            | VatDeliveryStartVat | VatDeliveryStopVat | VatDeliveryBringOutYourDead
  *          } VatDeliveryObject
  * @typedef { [tag: 'ok', message: null, usage: { compute: number } | null] |
  *            [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult
@@ -136,10 +137,11 @@ export {};
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelDeliveryRetireExports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
  * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} KernelDeliveryStartVat
+ * @typedef { [tag: 'stopVat' ]} KernelDeliveryStopVat
  * @typedef { [tag: 'bringOutYourDead']} KernelDeliveryBringOutYourDead
  * @typedef { KernelDeliveryMessage | KernelDeliveryNotify | KernelDeliveryDropExports
  *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports
- *            | KernelDeliveryStartVat | KernelDeliveryBringOutYourDead
+ *            | KernelDeliveryStartVat | KernelDeliveryStopVat | KernelDeliveryBringOutYourDead
  *          } KernelDeliveryObject
  * @typedef { [tag: 'send', target: string, msg: Message] } KernelSyscallSend
  * @typedef { [tag: 'invoke', target: string, method: string, args: SwingSetCapData]} KernelSyscallInvoke
