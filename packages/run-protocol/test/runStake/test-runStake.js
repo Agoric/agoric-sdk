@@ -26,6 +26,7 @@ import {
 } from '../../src/importedBundles.js';
 import * as Collect from '../../src/collect.js';
 import { RUNstakeParams } from '../../src/runStake/params.js';
+import { KW } from '../../src/runStake/runStake.js';
 
 // 8	Partial repayment from reward stream - TODO
 // TODO: #4728 case 9: Extending LoC - unbonded (FAIL)
@@ -315,23 +316,23 @@ test('runStake API usage', async t => {
     await space.instance.consume.runStake,
   );
   const {
-    issuers: { BldLienAtt: attIssuer },
+    issuers: { [KW.Attestation]: attIssuer },
   } = runStakeTerms;
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
   // Bob borrows 200 RUN against the lien.
   const proposal = harden({
-    give: { Attestation: attAmt },
-    want: { RUN: AmountMath.make(runBrand, 200n * micro.unit) },
+    give: { [KW.Attestation]: attAmt },
+    want: { [KW.Debt]: AmountMath.make(runBrand, 200n * micro.unit) },
   });
   const seat = E(zoe).offer(
     E(publicFacet).makeLoanInvitation(),
     proposal,
-    harden({ Attestation: attPmt }),
+    harden({ [KW.Attestation]: attPmt }),
   );
-  const runPmt = E(seat).getPayout('RUN');
+  const runPmt = E(seat).getPayout(KW.Debt);
   const actual = await E(runIssuer).getAmountOf(runPmt);
-  t.deepEqual(actual, proposal.want.RUN);
+  t.deepEqual(actual, proposal.want[KW.Debt]);
 });
 
 test('extra offer keywords are rejected', async t => {
@@ -360,22 +361,22 @@ test('extra offer keywords are rejected', async t => {
   const bobToLien = AmountMath.make(bldBrand, 2_000n * micro.unit);
   const attPmt = E(bobWallet.attMaker).makeAttestation(bobToLien);
   const {
-    issuers: { BldLienAtt: attIssuer },
+    issuers: { [KW.Attestation]: attIssuer },
   } = await E(zoe).getTerms(await space.instance.consume.runStake);
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
   // Bob borrows 200 RUN against the lien.
   const proposal = harden({
-    give: { Attestation: attAmt },
+    give: { [KW.Attestation]: attAmt },
     want: {
-      RUN: AmountMath.make(runBrand, 199n * micro.unit),
+      [KW.Debt]: AmountMath.make(runBrand, 199n * micro.unit),
       Pony: AmountMath.make(runBrand, 1n * micro.unit),
     },
   });
   const seat = E(zoe).offer(
     E(publicFacet).makeLoanInvitation(),
     proposal,
-    harden({ Attestation: attPmt }),
+    harden({ [KW.Attestation]: attPmt }),
   );
   await t.throwsAsync(E(seat).getOfferResult(), {
     message: /Pony.*did not match/,
@@ -421,13 +422,13 @@ test('forged Attestation fails', async t => {
 
   // Mallory tries to borrow 200 RUN against the forged lien.
   const proposal = harden({
-    give: { Attestation: attAmt },
-    want: { RUN: AmountMath.make(runBrand, 200n * micro.unit) },
+    give: { [KW.Attestation]: attAmt },
+    want: { [KW.Debt]: AmountMath.make(runBrand, 200n * micro.unit) },
   });
   const seat = E(zoe).offer(
     E(publicFacet).makeLoanInvitation(),
     proposal,
-    harden({ Attestation: attPmt }),
+    harden({ [KW.Attestation]: attPmt }),
   );
   await t.throwsAsync(E(seat).getOfferResult());
 });
@@ -508,16 +509,16 @@ const makeWorld = async t0 => {
   );
 
   const {
-    issuers: { BldLienAtt: attIssuer },
-    brands: { BldLienAtt: attBrand },
+    issuers: { [KW.Attestation]: attIssuer },
+    brands: { [KW.Attestation]: attBrand },
   } = await E(zoe).getTerms(await runStake.instance);
 
   /** @param { Payment } att */
   const returnAttestation = async att => {
     const invitation = E(runStake.publicFacet).makeReturnAttInvitation();
     const attestationAmount = await E(attIssuer).getAmountOf(att);
-    const proposal = harden({ give: { Attestation: attestationAmount } });
-    const payments = harden({ Attestation: att });
+    const proposal = harden({ give: { [KW.Attestation]: attestationAmount } });
+    const payments = harden({ [KW.Attestation]: att });
     const userSeat = E(zoe).offer(invitation, proposal, payments);
     return E(userSeat).getOfferResult();
   };
@@ -590,15 +591,15 @@ const makeWorld = async t0 => {
       const attAmt = await E(attPurse).getCurrentAmount();
       const attPmt = await E(attPurse).withdraw(attAmt);
       const proposal = harden({
-        give: { Attestation: attAmt },
-        want: { RUN: AmountMath.make(runBrand, n * micro.unit) },
+        give: { [KW.Attestation]: attAmt },
+        want: { [KW.Debt]: AmountMath.make(runBrand, n * micro.unit) },
       });
       const seat = E(zoe).offer(
         E(runStake.publicFacet).makeLoanInvitation(),
         proposal,
-        harden({ Attestation: attPmt }),
+        harden({ [KW.Attestation]: attPmt }),
       );
-      const runPmt = await E(seat).getPayout('RUN');
+      const runPmt = await E(seat).getPayout(KW.Debt);
       E(runPurse).deposit(runPmt);
       offerResult = await E(seat).getOfferResult();
     },
@@ -613,16 +614,16 @@ const makeWorld = async t0 => {
       const attAmt = await E(attPurse).getCurrentAmount();
       const attPmt = await E(attPurse).withdraw(attAmt);
       const proposal = harden({
-        give: { Attestation: attAmt },
-        want: { RUN: runAmt },
+        give: { [KW.Attestation]: attAmt },
+        want: { [KW.Debt]: runAmt },
       });
       const seat = E(zoe).offer(
         E(offerResult.invitationMakers).AdjustBalances(),
         proposal,
-        harden({ Attestation: attPmt }),
+        harden({ [KW.Attestation]: attPmt }),
       );
       await E(seat).getOfferResult(); // check for errors
-      const runPmt = await E(seat).getPayout('RUN');
+      const runPmt = await E(seat).getPayout(KW.Debt);
       await E(runPurse).deposit(runPmt);
     },
     unlienBLD: async n => {
@@ -632,14 +633,14 @@ const makeWorld = async t0 => {
         makeCopyBag([[bob.getAddress(), n * micro.unit]]),
       );
       const proposal = harden({
-        want: { Attestation: attAmt },
+        want: { [KW.Attestation]: attAmt },
       });
       const seat = E(zoe).offer(
         E(offerResult.invitationMakers).AdjustBalances(),
         proposal,
       );
       await E(seat).getOfferResult(); // check for errors
-      const attBack = await E(seat).getPayout('Attestation');
+      const attBack = await E(seat).getPayout(KW.Attestation);
       await returnAttestation(attBack);
     },
     payDownRUN: async value => {
@@ -647,53 +648,53 @@ const makeWorld = async t0 => {
       const runAmt = AmountMath.make(runBrand, value * micro.unit);
       const runPmt = await E(runPurse).withdraw(runAmt);
       const proposal = harden({
-        give: { RUN: runAmt },
+        give: { [KW.Debt]: runAmt },
       });
       const seat = E(zoe).offer(
         E(offerResult.invitationMakers).AdjustBalances(),
         proposal,
-        harden({ RUN: runPmt }),
+        harden({ [KW.Debt]: runPmt }),
       );
       await E(seat).getOfferResult(); // check for errors
     },
     payToUnlien: async ([pay, unlien]) => {
       assert(offerResult, X`no offerResult; borrowRUN first?`);
       const proposal = harden({
-        give: { RUN: AmountMath.make(runBrand, pay * micro.unit) },
+        give: { [KW.Debt]: AmountMath.make(runBrand, pay * micro.unit) },
         want: {
-          Attestation: AmountMath.make(
+          [KW.Attestation]: AmountMath.make(
             attBrand,
             makeCopyBag([[bob.getAddress(), unlien * micro.unit]]),
           ),
         },
       });
-      const runPmt = await E(runPurse).withdraw(proposal.give.RUN);
+      const runPmt = await E(runPurse).withdraw(proposal.give[KW.Debt]);
       const seat = E(zoe).offer(
         E(offerResult.invitationMakers).AdjustBalances(),
         proposal,
-        harden({ RUN: runPmt }),
+        harden({ [KW.Debt]: runPmt }),
       );
       await E(seat).getOfferResult(); // check for errors
-      const attBack = await E(seat).getPayout('Attestation');
+      const attBack = await E(seat).getPayout(KW.Attestation);
       await returnAttestation(attBack);
     },
     payoffRUN: async value => {
       assert(offerResult, X`no offerResult; borrowRUN first?`);
       const proposal = harden({
-        give: { RUN: AmountMath.make(runBrand, value * micro.unit) },
+        give: { [KW.Debt]: AmountMath.make(runBrand, value * micro.unit) },
         want: {
           // TODO: want amount should match amount liened
-          Attestation: AmountMath.makeEmpty(attBrand, AssetKind.COPY_BAG),
+          [KW.Attestation]: AmountMath.makeEmpty(attBrand, AssetKind.COPY_BAG),
         },
       });
-      const runPayment = await E(runPurse).withdraw(proposal.give.RUN);
+      const runPayment = await E(runPurse).withdraw(proposal.give[KW.Debt]);
       const seat = await E(zoe).offer(
         E(offerResult.invitationMakers).CloseVault(),
         proposal,
-        harden({ RUN: runPayment }),
+        harden({ [KW.Debt]: runPayment }),
       );
       await E(seat).getOfferResult(); // 'RUN line of credit closed'
-      const attBack = await E(seat).getPayout('Attestation');
+      const attBack = await E(seat).getPayout(KW.Attestation);
 
       await returnAttestation(attBack);
     },

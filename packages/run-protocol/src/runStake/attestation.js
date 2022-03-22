@@ -7,7 +7,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 const { details: X } = assert;
 
-export const KW = harden({
+export const KW = /** @type { const } */ ({
   /** seat keyword for use in offers to return an attestation. */
   Attestation: 'Attestation',
 });
@@ -49,14 +49,13 @@ const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
  * releasing (part of) the lien.
  *
  * @param {ZCF} zcf
- * @param {string} keyword for use in makeZCFMint
  * @param {Brand<'nat'>} stakeBrand brand of the staked assets
  * @param {ERef<StakingAuthority>} lienBridge bridge to account state
  */
-const makeAttestationKit = async (zcf, keyword, stakeBrand, lienBridge) => {
+const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
   const { add, subtract, makeEmpty, isGTE, coerce } = AmountMath;
   const empty = makeEmpty(stakeBrand);
-  const zcfMint = await zcf.makeZCFMint(keyword, AssetKind.COPY_BAG);
+  const zcfMint = await zcf.makeZCFMint(KW.Attestation, AssetKind.COPY_BAG);
   const { issuer, brand: attBrand } = zcfMint.getIssuerRecord();
 
   /**
@@ -185,7 +184,6 @@ const makeAttestationKit = async (zcf, keyword, stakeBrand, lienBridge) => {
  *
  * @param {ZCF} zcf
  * @param {Brand} stakeBrand
- * @param {string} keyword for attestation issuer
  * @param {ERef<StakingAuthority>} lienBridge
  *
  * NOTE: the liened amount is kept both here in JS and on the
@@ -200,18 +198,12 @@ const makeAttestationKit = async (zcf, keyword, stakeBrand, lienBridge) => {
  *
  * Note the Attestation keyword for use in returnAttestation offers.
  */
-export const makeAttestationFacets = async (
-  zcf,
-  stakeBrand,
-  keyword,
-  lienBridge,
-) => {
+export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
   /** @type {Store<Address, AttMaker>} */
   const attMakerByAddress = makeStore('address');
 
   const { issuer, brand, lienMint } = await makeAttestationKit(
     zcf,
-    keyword,
     stakeBrand,
     lienBridge,
   );

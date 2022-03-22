@@ -7,6 +7,7 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { E } from '@endo/far';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
+import { KW } from './runStakeKit.js';
 
 const { details: X } = assert;
 
@@ -59,7 +60,7 @@ export const makeRunStakeManager = (
     return { maxDebt, amountLiened };
   };
 
-  const getRunAllocated = seat => seat.getAmountAllocated('RUN', brands.debt);
+  const getRunAllocated = seat => seat.getAmountAllocated(KW.Debt, brands.debt);
 
   let totalDebt = AmountMath.makeEmpty(brands.debt, 'nat');
   let compoundedInterest = makeRatio(100n, brands.debt); // starts at 1.0, no interest
@@ -88,7 +89,7 @@ export const makeRunStakeManager = (
         mint: debtMint,
         reallocateWithFee,
         poolIncrementSeat,
-        seatAllocationKeyword: 'RUN',
+        seatAllocationKeyword: KW.Debt,
       },
       {
         interestRate,

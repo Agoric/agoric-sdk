@@ -3,8 +3,10 @@ import { handleParamGovernance } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationFacets } from './attestation.js';
 import { makeRunStakeParamManager } from './params.js';
-import { makeRunStakeKit } from './runStakeKit.js';
-import { makeRunStakeManager } from './runStakeManager';
+import { makeRunStakeKit, KW } from './runStakeKit.js';
+import { makeRunStakeManager } from './runStakeManager.js';
+
+export { KW };
 
 /**
  * Provide loans on the basis of staked assets that earn rewards.
@@ -49,12 +51,12 @@ import { makeRunStakeManager } from './runStakeManager';
  * `E(attMaker).makeAttestation(stakedAmount)` to take out a lien
  * and get a payment that attests to the lien. Provide the payment
  * in the `Attestation` keyword of an offer,
- * using `{ want: { RUN: amountWanted }}`.
+ * using `{ want: { Debt: amountWanted }}`.
  *
  * Then, using the invitationMakers pattern, use `AdjustBalances` to
- * pay down the loan or otherwise adjust the `RUN` and `Attestation`.
+ * pay down the loan or otherwise adjust the `Debt` and `Attestation`.
  *
- * Finally, `Close` the loan, providing `{ give: RUN: debtAmount }}`
+ * Finally, `Close` the loan, providing `{ give: Debt: debtAmount }}`
  *
  * To start the contract, authorize minting assets by providing `feeMintAccess`
  * and provide access to the underlying staking infrastructure in `lienBridge`.
@@ -85,17 +87,11 @@ export const start = async (
     timerService,
     chargingPeriod,
     recordingPeriod,
-    lienAttestationName = 'BldLienAtt', // TODO: should be Attestation keyword?
   } = zcf.getTerms();
   assert.typeof(chargingPeriod, 'bigint', 'chargingPeriod must be a bigint');
   assert.typeof(recordingPeriod, 'bigint', 'recordingPeriod must be a bigint');
 
-  const att = await makeAttestationFacets(
-    zcf,
-    stakeBrand,
-    lienAttestationName,
-    lienBridge,
-  );
+  const att = await makeAttestationFacets(zcf, stakeBrand, lienBridge);
   const attestBrand = await E(att.publicFacet).getBrand();
 
   const paramManager = await makeRunStakeParamManager(
@@ -127,7 +123,7 @@ export const start = async (
     rewardPoolSeat.incrementBy(
       fromSeat.decrementBy(
         harden({
-          RUN: fee,
+          [KW.Debt]: fee,
         }),
       ),
     );
@@ -139,7 +135,7 @@ export const start = async (
   };
 
   /** @type {ZCFMint<'nat'>} */
-  const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const runMint = await zcf.registerFeeMint(KW.Debt, feeMintAccess);
   const { brand: runBrand } = runMint.getIssuerRecord();
   const startTimeStamp = await E(timerService).getCurrentTimestamp();
   const manager = makeRunStakeManager(

@@ -67,18 +67,12 @@ export const makeRunStakeParams = ({
 harden(makeRunStakeParams);
 
 export const makeRunStakeTerms = (
-  {
-    timerService,
-    chargingPeriod,
-    recordingPeriod,
-    lienAttestationName = 'BldLienAtt',
-  },
+  { timerService, chargingPeriod, recordingPeriod },
   { electorateInvitationAmount, mintingRatio, interestRate, loanFee },
 ) => ({
   timerService,
   chargingPeriod,
   recordingPeriod,
-  lienAttestationName,
   main: makeRunStakeParams({
     electorateInvitationAmount,
     mintingRatio,

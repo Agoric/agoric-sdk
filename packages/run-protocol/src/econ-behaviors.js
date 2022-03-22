@@ -631,8 +631,8 @@ export const startRunStake = async (
   const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
 
   const {
-    issuers: { BldLienAtt: attIssuer },
-    brands: { BldLienAtt: attBrand },
+    issuers: { Attestation: attIssuer },
+    brands: { Attestation: attBrand },
   } = await E(zoe).getTerms(governedInstance);
 
   runStakeCreatorFacet.resolve(creatorFacet);

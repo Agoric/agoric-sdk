@@ -62,7 +62,6 @@ const makeContext = async t => {
   const { publicFacet, creatorFacet } = await makeAttestationFacets(
     zcf,
     uBrand,
-    'BldAttLoc',
     makeMockLienBridge(uBrand, t),
   );
 

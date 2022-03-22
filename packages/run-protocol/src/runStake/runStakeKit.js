@@ -8,10 +8,16 @@ import { M, matches } from '@agoric/store';
 import { makeTracer } from '../makeTracer.js';
 import { addSubtract, assertOnlyKeys, transfer } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
+import { KW as AttKW } from './attestation.js';
 
 const { details: X, quote: q } = assert;
 
 const trace = makeTracer('R1');
+
+export const KW = /** @type { const } */ ({
+  [AttKW.Attestation]: AttKW.Attestation,
+  Debt: 'Debt',
+});
 
 const LoanPhase = /** @type { const } */ ({
   ACTIVE: 'Active',
@@ -68,12 +74,12 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
   const init = () => {
     assertProposalShape(startSeat, {
-      give: { Attestation: null },
-      want: { RUN: null },
+      give: { [KW.Attestation]: null },
+      want: { [KW.Debt]: null },
     });
     const {
-      give: { Attestation: attestationGiven },
-      want: { RUN: runWanted },
+      give: { [KW.Attestation]: attestationGiven },
+      want: { [KW.Debt]: runWanted },
     } = startSeat.getProposal();
 
     const { maxDebt } = manager.maxDebtForLien(attestationGiven);
@@ -93,8 +99,10 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
     trace('init', { runWanted, fee, attestationGiven });
 
     const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
-    mint.mintGains(harden({ RUN: runWanted }), mintSeat);
-    startSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: runWanted })));
+    mint.mintGains(harden({ [KW.Debt]: runWanted }), mintSeat);
+    startSeat.incrementBy(
+      mintSeat.decrementBy(harden({ [KW.Debt]: runWanted })),
+    );
     vaultSeat.incrementBy(
       startSeat.decrementBy(harden({ Attestation: attestationGiven })),
     );
@@ -226,13 +234,13 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
     assertActive();
 
     const proposal = clientSeat.getProposal();
-    assertOnlyKeys(proposal, ['Attestation', 'RUN']);
+    assertOnlyKeys(proposal, [KW.Attestation, KW.Debt]);
 
     const debt = getCurrentDebt();
     const collateral = manager.getCollateralAllocated(vaultSeat);
 
-    const giveColl = proposal.give.Attestation || emptyCollateral;
-    const wantColl = proposal.want.Attestation || emptyCollateral;
+    const giveColl = proposal.give[KW.Attestation] || emptyCollateral;
+    const wantColl = proposal.want[KW.Attestation] || emptyCollateral;
 
     // new = after the transaction gets applied
     const newCollateral = addSubtract(collateral, giveColl, wantColl);
@@ -240,11 +248,11 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
     const { amountLiened, maxDebt: newMaxDebt } =
       manager.maxDebtForLien(newCollateral);
 
-    const giveRUN = AmountMath.min(proposal.give.RUN || emptyDebt, debt);
-    const wantRUN = proposal.want.RUN || emptyDebt;
+    const giveRUN = AmountMath.min(proposal.give[KW.Debt] || emptyDebt, debt);
+    const wantRUN = proposal.want[KW.Debt] || emptyDebt;
     const giveRUNonly = matches(
       proposal,
-      harden({ give: { RUN: M.record() }, want: {}, exit: M.any() }),
+      harden({ give: { [KW.Debt]: M.record() }, want: {}, exit: M.any() }),
     );
 
     // Calculate the fee, the amount to mint and the resulting debt. We'll
@@ -268,21 +276,21 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
     // mint to vaultSeat, then reallocate to reward and client, then burn from
     // vaultSeat.
-    mint.mintGains(harden({ RUN: toMint }), vaultSeat);
+    mint.mintGains(harden({ [KW.Debt]: toMint }), vaultSeat);
 
-    transfer(clientSeat, vaultSeat, giveColl, wantColl, 'Attestation');
-    transfer(clientSeat, vaultSeat, giveRUN, wantRUN, 'RUN');
+    transfer(clientSeat, vaultSeat, giveColl, wantColl, KW.Attestation);
+    transfer(clientSeat, vaultSeat, giveRUN, wantRUN, KW.Debt);
     manager.reallocateWithFee(fee, vaultSeat, clientSeat);
 
     // parent needs to know about the change in debt
     updateDebtAccounting(debt, newDebt);
 
-    mint.burnLosses(harden({ RUN: giveRUN }), vaultSeat);
+    mint.burnLosses(harden({ [KW.Debt]: giveRUN }), vaultSeat);
 
     const assertVaultHoldsNoRun = () => {
       assert(
         AmountMath.isEmpty(manager.getRunAllocated(vaultSeat)),
-        X`Vault should be empty of RUN`,
+        X`Vault should be empty of debt`,
       );
     };
     assertVaultHoldsNoRun();
@@ -301,19 +309,19 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
   const closeHook = seat => {
     assertActive();
     assertProposalShape(seat, {
-      give: { RUN: null },
-      want: { Attestation: null },
+      give: { [KW.Debt]: null },
+      want: { [KW.Attestation]: null },
     });
 
     const currentDebt = getCurrentDebt();
     const {
-      give: { RUN: runOffered },
+      give: { [KW.Debt]: runOffered },
     } = seat.getProposal();
     assert(
       AmountMath.isGTE(runOffered, currentDebt),
       X`Offer ${runOffered} is not sufficient to pay off debt ${currentDebt}`,
     );
-    vaultSeat.incrementBy(seat.decrementBy(harden({ RUN: currentDebt })));
+    vaultSeat.incrementBy(seat.decrementBy(harden({ [KW.Debt]: currentDebt })));
     seat.incrementBy(
       vaultSeat.decrementBy(
         harden({ Attestation: vaultSeat.getAmountAllocated('Attestation') }),
@@ -322,7 +330,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
     zcf.reallocate(seat, vaultSeat);
 
-    mint.burnLosses(harden({ RUN: currentDebt }), vaultSeat);
+    mint.burnLosses(harden({ [KW.Debt]: currentDebt }), vaultSeat);
     seat.exit();
     assignPhase(LoanPhase.CLOSED);
     updateDebtSnapshot(emptyDebt);

@@ -44,7 +44,6 @@ const makeTestLienAmount = (t, getLienAmount, address) => expectedLien => {
 };
 
 test(`typical flow`, async t => {
-  const attestationTokenName = 'Token';
   const { brand: externalBrand } = makeIssuerKit('external');
 
   const { zoe, zcf } = await setupZCFTest();
@@ -54,7 +53,6 @@ test(`typical flow`, async t => {
   const { publicFacet, creatorFacet } = await makeAttestationFacets(
     zcf,
     externalBrand,
-    attestationTokenName,
     makeMockLienBridge(externalBrand, t),
   );
   const { makeReturnAttInvitation } = publicFacet;
