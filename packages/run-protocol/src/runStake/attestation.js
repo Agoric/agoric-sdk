@@ -48,6 +48,10 @@ const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
  * putting a lien on staked assets. Payments can be returned,
  * releasing (part of) the lien.
  *
+ * NOTE: Using Issuer.combine or AmountMath.add could result in
+ * Payments / Amounts with multiple addresses.
+ * Callers are responsible to split any such payment before returning.
+ *
  * @param {ZCF} zcf
  * @param {Brand<'nat'>} stakeBrand brand of the staked assets
  * @param {ERef<StakingAuthority>} lienBridge bridge to account state
@@ -72,7 +76,6 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
       attestationAmount.brand === attBrand,
       X`The escrowed attestation ${attestationAmount} was not of the attestation brand ${attBrand}`,
     );
-    // Caller is responsible to split payload of >1 item.
     fit(attestationAmount.value.payload, harden([[M.string(), M.bigint()]]));
     /** @type {[string, bigint][]} */
     const [[address, valueReturned]] = attestationAmount.value.payload;
@@ -172,7 +175,10 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
     mintAttestation,
     returnAttestation,
     getLiened,
-    /** @param { Amount<'copyBag'> } attAmt */
+    /**
+     * @param { Amount<'copyBag'> } attAmt
+     * @throws { Error } if `attAmt` payload length is not 1
+     */
     unwrapLienedAmount: attAmt => unwrapLienedAmount(attAmt).lienedAmount,
   });
   return harden({ issuer, brand: attBrand, lienMint });
