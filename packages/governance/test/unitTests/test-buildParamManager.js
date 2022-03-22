@@ -6,6 +6,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { keyEQ } from '@agoric/store';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { ParamTypes, makeParamManagerBuilder } from '../../src/index.js';
@@ -213,7 +214,8 @@ test('Invitation', async t => {
   t.is(paramManager.getAmount('Amt'), drachmaAmount);
   const invitationActualAmount =
     paramManager.getInvitationAmount('Invite').value;
-  t.is(invitationActualAmount, invitationAmount.value);
+  t.deepEqual(invitationActualAmount, invitationAmount.value);
+  t.assert(keyEQ(invitationActualAmount, invitationAmount.value));
   // @ts-ignore invitationActualAmount's type is unknown
   t.is(invitationActualAmount[0].description, 'simple');
 
