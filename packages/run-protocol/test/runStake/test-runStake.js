@@ -25,7 +25,6 @@ import {
   economyBundles,
 } from '../../src/importedBundles.js';
 import * as Collect from '../../src/collect.js';
-import { RUNstakeParams } from '../../src/runStake/params.js';
 import { KW } from '../../src/runStake/runStake.js';
 
 // 8	Partial repayment from reward stream - TODO
@@ -452,10 +451,7 @@ const makeC1 = async (
   const voteFacet = E(seat).getOfferResult();
   return harden({
     setMintingRatio: async (newValue, deadline) => {
-      const paramSpec = {
-        key: 'main',
-        parameterName: RUNstakeParams.MintingRatio,
-      };
+      const paramSpec = { key: 'main', parameterName: 'MintingRatio' };
 
       /** @type { ParamChangeVoteResult } */
       const { details, instance } = await E(

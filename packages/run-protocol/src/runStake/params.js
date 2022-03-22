@@ -6,8 +6,7 @@ import {
   ParamTypes,
 } from '@agoric/governance';
 
-/** RUNstakeParams are the parameters subject to governance. */
-export const RUNstakeParams = /** @type { const } */ ({
+const PKey = /** @type { const } */ ({
   MintingRatio: 'MintingRatio',
   InterestRate: 'InterestRate',
   LoanFee: 'LoanFee',
@@ -29,9 +28,9 @@ export const makeRunStakeParamManager = async (
 ) => {
   return makeParamManager(
     {
-      [RUNstakeParams.MintingRatio]: [ParamTypes.RATIO, mintingRatio],
-      [RUNstakeParams.InterestRate]: [ParamTypes.RATIO, interestRate],
-      [RUNstakeParams.LoanFee]: [ParamTypes.RATIO, loanFee],
+      [PKey.MintingRatio]: [ParamTypes.RATIO, mintingRatio],
+      [PKey.InterestRate]: [ParamTypes.RATIO, interestRate],
+      [PKey.LoanFee]: [ParamTypes.RATIO, loanFee],
       [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, electorateInvitation],
     },
     zoe,
@@ -46,18 +45,9 @@ export const makeRunStakeParams = ({
   loanFee,
 }) => {
   return harden({
-    [RUNstakeParams.MintingRatio]: {
-      type: ParamTypes.RATIO,
-      value: mintingRatio,
-    },
-    [RUNstakeParams.InterestRate]: {
-      type: ParamTypes.RATIO,
-      value: interestRate,
-    },
-    [RUNstakeParams.LoanFee]: {
-      type: ParamTypes.RATIO,
-      value: loanFee,
-    },
+    [PKey.MintingRatio]: { type: ParamTypes.RATIO, value: mintingRatio },
+    [PKey.InterestRate]: { type: ParamTypes.RATIO, value: interestRate },
+    [PKey.LoanFee]: { type: ParamTypes.RATIO, value: loanFee },
     [CONTRACT_ELECTORATE]: {
       type: ParamTypes.INVITATION,
       value: electorateInvitationAmount,
