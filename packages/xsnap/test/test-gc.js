@@ -52,7 +52,7 @@ test(`can provoke gc on xsnap`, async t => {
 ${makeGcAndFinalize}
 ${makeVictim}
 ${provokeGC}
-provokeGC(globalThis.gc).then(data => issueCommand(ArrayBuffer.fromString(JSON.stringify(data))));
+provokeGC(globalThis.gc).then(data => issueCommand(new TextEncoder().encode(JSON.stringify(data)).buffer));
 `;
   await vat.evaluate(code);
   await vat.close();

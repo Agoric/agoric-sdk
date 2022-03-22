@@ -48,12 +48,12 @@ async function main() {
       Base64
     });
     function handleCommand(request) {
-      const command = String.fromArrayBuffer(request);
+      const command = new TextDecoder().decode(request);
       let result = compartment.evaluate(command);
       if (result === undefined) {
         result = null;
       }
-      issueCommand(ArrayBuffer.fromString(JSON.stringify(result, null, 4)));
+      issueCommand(new TextEncoder().encode(JSON.stringify(result, null, 4)).buffer);
     }
   `);
 
