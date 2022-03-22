@@ -67,7 +67,7 @@ const wrapVault = innerVault => {
 export const makeVaultKit = (inner, assetNotifier) => {
   const { vault, vaultUpdater } = wrapVault(inner);
   const vaultKit = harden({
-    notifiers: {
+    publicNotifiers: {
       vault: vault.getNotifier(),
       asset: assetNotifier,
     },

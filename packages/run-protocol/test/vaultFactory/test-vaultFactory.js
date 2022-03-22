@@ -372,7 +372,7 @@ test('first', async t => {
 
   const {
     vault,
-    notifiers: { vault: vaultNotifier },
+    publicNotifiers: { vault: vaultNotifier },
   } = await E(vaultSeat).getOfferResult();
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 470n), rates.loanFee);
@@ -517,7 +517,7 @@ test('price drop', async t => {
 
   const {
     vault,
-    notifiers: { vault: vaultNotifier },
+    publicNotifiers: { vault: vaultNotifier },
   } = await E(vaultSeat).getOfferResult();
   trace('offer result', vault);
   const debtAmount = await E(vault).getCurrentDebt();
@@ -664,7 +664,7 @@ test('price falls precipitously', async t => {
 
   const {
     vault,
-    notifiers: { vault: vaultNotifier },
+    publicNotifiers: { vault: vaultNotifier },
   } = await E(userSeat).getOfferResult();
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 370n), rates.loanFee);
@@ -883,7 +883,7 @@ test('interest on multiple vaults', async t => {
   );
   const {
     vault: aliceVault,
-    notifiers: { vault: aliceNotifier, asset: assetNotifier },
+    publicNotifiers: { vault: aliceNotifier, asset: assetNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
@@ -922,7 +922,7 @@ test('interest on multiple vaults', async t => {
   );
   const {
     vault: bobVault,
-    notifiers: { vault: bobNotifier },
+    publicNotifiers: { vault: bobNotifier },
   } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
@@ -1037,7 +1037,7 @@ test('interest on multiple vaults', async t => {
   );
   const {
     vault: danVault,
-    notifiers: { vault: danNotifier },
+    publicNotifiers: { vault: danNotifier },
   } = await E(danLoanSeat).getOfferResult();
   const danActualDebt = wantedRun + 50n; // includes fees
   t.is((await E(danVault).getCurrentDebt()).value, danActualDebt);
@@ -1107,7 +1107,7 @@ test('adjust balances', async t => {
   );
   const {
     vault: aliceVault,
-    notifiers: { vault: aliceNotifier },
+    publicNotifiers: { vault: aliceNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
@@ -1361,7 +1361,7 @@ test('transfer vault', async t => {
   );
   const {
     vault: aliceVault,
-    notifiers: { vault: aliceNotifier },
+    publicNotifiers: { vault: aliceNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
@@ -1380,7 +1380,7 @@ test('transfer vault', async t => {
   const transferSeat = await E(zoe).offer(transferInvite);
   const {
     vault: transferVault,
-    notifiers: { vault: transferNotifier },
+    publicNotifiers: { vault: transferNotifier },
   } = await E(transferSeat).getOfferResult();
   t.throwsAsync(() => E(aliceVault).getCurrentDebt());
   const debtAfter = await E(transferVault).getCurrentDebt();
@@ -1442,7 +1442,7 @@ test('transfer vault', async t => {
   const t2Seat = await E(zoe).offer(t2Invite);
   const {
     vault: t2Vault,
-    notifiers: { vault: t2Notifier },
+    publicNotifiers: { vault: t2Notifier },
   } = await E(t2Seat).getOfferResult();
   t.throwsAsync(
     () => E(adjustSeatPromise).getOfferResult(),
@@ -1529,7 +1529,7 @@ test('overdeposit', async t => {
   );
   const {
     vault: aliceVault,
-    notifiers: { vault: aliceNotifier },
+    publicNotifiers: { vault: aliceNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
@@ -1695,7 +1695,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
   const {
     vault: aliceVault,
-    notifiers: { vault: aliceNotifier },
+    publicNotifiers: { vault: aliceNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
@@ -1736,7 +1736,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
   const {
     vault: bobVault,
-    notifiers: { vault: bobNotifier },
+    publicNotifiers: { vault: bobNotifier },
   } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
@@ -1992,7 +1992,7 @@ test('close loan', async t => {
   );
   const {
     vault: aliceVault,
-    notifiers: { vault: aliceNotifier },
+    publicNotifiers: { vault: aliceNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
@@ -2204,7 +2204,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   );
   const {
     vault: aliceVault,
-    notifiers: { vault: aliceNotifier },
+    publicNotifiers: { vault: aliceNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
@@ -2245,7 +2245,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   );
   const {
     vault: bobVault,
-    notifiers: { vault: bobNotifier },
+    publicNotifiers: { vault: bobNotifier },
   } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
