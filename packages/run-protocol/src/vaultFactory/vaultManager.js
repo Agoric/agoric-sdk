@@ -392,7 +392,7 @@ export const makeVaultManager = (
     }
   };
 
-  const publicFacet = harden({
+  const publicFacet = Far('collateral manager', {
     makeVaultInvitation: () => zcf.makeInvitation(makeVaultKit, 'MakeVault'),
     getNotifier: () => assetNotifer,
     getCompoundedInterest: () => compoundedInterest,

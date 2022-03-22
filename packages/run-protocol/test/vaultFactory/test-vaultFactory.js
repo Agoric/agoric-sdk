@@ -527,7 +527,7 @@ test('price drop', async t => {
 
   t.is(notification.value.vaultState, Phase.ACTIVE);
   t.deepEqual((await notification.value).debtSnapshot, {
-    run: AmountMath.add(loanAmount, fee),
+    debt: AmountMath.add(loanAmount, fee),
     interest: makeRatio(100n, runBrand),
   });
   const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocation();
@@ -951,7 +951,7 @@ test('interest on multiple vaults', async t => {
   const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     calculateCurrentDebt(
-      bobUpdate.value.debtSnapshot.run,
+      bobUpdate.value.debtSnapshot.debt,
       bobUpdate.value.debtSnapshot.interest,
       assetUpdate.value.compoundedInterest,
     ),
@@ -967,7 +967,7 @@ test('interest on multiple vaults', async t => {
   const aliceAddedDebt = 236n + 3n;
   t.deepEqual(
     calculateCurrentDebt(
-      aliceUpdate.value.debtSnapshot.run,
+      aliceUpdate.value.debtSnapshot.debt,
       aliceUpdate.value.debtSnapshot.interest,
       assetUpdate.value.compoundedInterest,
     ),
@@ -976,7 +976,7 @@ test('interest on multiple vaults', async t => {
   );
   // but no change to the snapshot
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
-    run: AmountMath.make(runBrand, 4935n),
+    debt: AmountMath.make(runBrand, 4935n),
     interest: makeRatio(100n, runBrand, 100n),
   });
   t.deepEqual(aliceUpdate.value.interestRate, interestRate);
@@ -1040,7 +1040,7 @@ test('interest on multiple vaults', async t => {
   const danUpdate = await E(danNotifier).getUpdateSince();
   // snapshot should equal actual since no additional time has elapsed
   const { debtSnapshot: danSnap } = danUpdate.value;
-  t.is(danSnap.run.value, danActualDebt);
+  t.is(danSnap.debt.value, danActualDebt);
 });
 
 test('adjust balances', async t => {
@@ -1118,9 +1118,9 @@ test('adjust balances', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
-    run: AmountMath.make(runBrand, 5250n),
+    debt: AmountMath.make(runBrand, 5250n),
     interest: makeRatio(100n, runBrand),
   });
 
@@ -1167,7 +1167,7 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
 
   // increase collateral 2 ////////////////////////////////// (want:s, give:c)
 
@@ -1214,9 +1214,9 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
-    run: AmountMath.make(runBrand, 5253n),
+    debt: AmountMath.make(runBrand, 5253n),
     interest: makeRatio(100n, runBrand),
   });
 
@@ -1267,7 +1267,7 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
 
   // NSF  ///////////////////////////////////// (want too much of both)
 
@@ -1535,7 +1535,7 @@ test('overdeposit', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebt);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebt);
   t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
   // Bob's loan /////////////////////////////////////
@@ -1593,7 +1593,7 @@ test('overdeposit', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(
-    aliceUpdate.value.debtSnapshot.run,
+    aliceUpdate.value.debtSnapshot.debt,
     AmountMath.makeEmpty(runBrand),
   );
 
@@ -1702,7 +1702,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, aliceRunDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   // Create a loan for Bob for 740 RUN with 100 Aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
@@ -1740,7 +1740,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
 
   let bobUpdate = await E(bobNotifier).getUpdateSince();
-  t.deepEqual(bobUpdate.value.debtSnapshot.run, bobRunDebtLevel);
+  t.deepEqual(bobUpdate.value.debtSnapshot.debt, bobRunDebtLevel);
 
   // reduce collateral  /////////////////////////////////////
 
@@ -1771,7 +1771,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, aliceRunDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.
@@ -1995,7 +1995,7 @@ test('close loan', async t => {
   );
 
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
   t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
   // Create a loan for Bob for 1000 RUN with 200 aeth collateral
@@ -2208,7 +2208,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, aliceRunDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   // Create a loan for Bob for 740 RUN with 100 Aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
@@ -2246,7 +2246,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   );
 
   let bobUpdate = await E(bobNotifier).getUpdateSince();
-  t.deepEqual(bobUpdate.value.debtSnapshot.run, bobRunDebtLevel);
+  t.deepEqual(bobUpdate.value.debtSnapshot.debt, bobRunDebtLevel);
 
   // reduce collateral  /////////////////////////////////////
 
@@ -2275,7 +2275,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, aliceRunDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.

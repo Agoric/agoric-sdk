@@ -77,7 +77,7 @@ export const start = async (zcf, privateArgs) => {
   assertElectorateMatches(electorateParamManager, governedTerms);
 
   /** For temporary staging of newly minted tokens */
-  const { zcfSeat: stage } = zcf.makeEmptySeatKit();
+  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
@@ -88,23 +88,25 @@ export const start = async (zcf, privateArgs) => {
    */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
     const wanted = AmountMath.subtract(toMint, fee);
-    runMint.mintGains(harden({ RUN: toMint }), stage);
+    runMint.mintGains(harden({ RUN: toMint }), mintSeat);
     try {
-      rewardPoolSeat.incrementBy(stage.decrementBy(harden({ RUN: fee })));
-      seat.incrementBy(stage.decrementBy(harden({ RUN: wanted })));
-      zcf.reallocate(rewardPoolSeat, stage, seat, ...otherSeats);
+      rewardPoolSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: fee })));
+      seat.incrementBy(mintSeat.decrementBy(harden({ RUN: wanted })));
+      zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
     } catch (e) {
-      stage.clear();
+      mintSeat.clear();
       rewardPoolSeat.clear();
-      runMint.burnLosses(harden({ RUN: toMint }), stage);
+      runMint.burnLosses(harden({ RUN: toMint }), mintSeat);
       throw e;
     } finally {
       assert(
-        AmountMath.isEmpty(stage.getAmountAllocated('RUN', runBrand)),
+        Object.values(mintSeat.getCurrentAllocation()).every(a =>
+          AmountMath.isEmpty(a),
+        ),
         X`Stage should be empty of RUN`,
       );
     }
-    // TODO add aggregate debt tracking
+    // TODO add aggregate debt tracking at the vaultFactory level #4482
     // totalDebt = AmountMath.add(totalDebt, toMint);
   };
 
@@ -179,8 +181,10 @@ export const start = async (zcf, privateArgs) => {
     return mgr.makeVaultKit(seat);
   };
 
-  // TODO add a `collateralBrand` argument to makeVaultInvitation`
-  /** Make a loan in the vaultManager based on the collateral type. */
+  /** Make a loan in the vaultManager based on the collateral type.
+   *
+   * @deprecated
+   */
   const makeVaultInvitation = () => {
     return zcf.makeInvitation(makeVaultHook, 'MakeVault');
   };

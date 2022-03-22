@@ -67,7 +67,7 @@ const validTransitions = {
  *
  * @typedef {Object} VaultUIState
  * @property {Amount<'nat'>} locked Amount of Collateral locked
- * @property {{run: Amount<'nat'>, interest: Ratio}} debtSnapshot Debt of 'run' at the point the compounded interest was 'interest'
+ * @property {{debt: Amount<'nat'>, interest: Ratio}} debtSnapshot 'debt' at the point the compounded interest was 'interest'
  * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
  * @property {OuterPhase} vaultState
@@ -274,15 +274,13 @@ const constructFromState = state => {
    * @param {OuterPhase} newPhase
    */
   const snapshotState = newPhase => {
-    const { debtSnapshot: run, interestSnapshot: interest } = state;
+    const { debtSnapshot: debt, interestSnapshot: interest } = state;
     /** @type {VaultUIState} */
     return harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
       interestRate: manager.getInterestRate(),
       liquidationRatio: manager.getLiquidationMargin(),
-      // XXX 'run' is implied by the brand in the amount\
-      // TODO rename the snapshot value to `debt`
-      debtSnapshot: { run, interest },
+      debtSnapshot: { debt, interest },
       locked: getCollateralAmount(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
       // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
@@ -338,10 +336,8 @@ const constructFromState = state => {
     assertCloseable();
     const { phase, vaultSeat } = state;
     if (phase === VaultPhase.ACTIVE) {
-      // TODO it seems to me that `Collateral` shouldn't be required here.
       assertProposalShape(seat, {
         give: { RUN: null },
-        want: { Collateral: null },
       });
 
       // you're paying off the debt, you get everything back.
@@ -522,7 +518,7 @@ const constructFromState = state => {
     );
     assertActive();
 
-    // After the AWAIT, we retrieve the vault's allocations again,
+    // After the `await`, we retrieve the vault's allocations again,
     // so we can compare to the debt limit based on the new values.
     const collateral = getCollateralAllocated(vaultSeat);
     const newCollateral = addSubtract(collateral, giveColl, wantColl);
