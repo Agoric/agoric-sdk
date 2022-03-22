@@ -38,9 +38,9 @@ const decodeRemotable = e => {
 const compareRemotables = (x, y) =>
   compareRank(encodeRemotable(x), encodeRemotable(y));
 
-const encodePassable = makeEncodePassable({ encodeRemotable });
+const encodeKey = makeEncodePassable({ encodeRemotable });
 
-const decodePassable = makeDecodePassable({ decodeRemotable });
+const decodeKey = makeDecodePassable({ decodeRemotable });
 
 const { comparator: compareFull } = makeComparatorKit(compareRemotables);
 
@@ -81,12 +81,12 @@ const goldenPairs = harden([
 
 test('golden round trips', t => {
   for (const [k, e] of goldenPairs) {
-    t.is(encodePassable(k), e, 'does k encode as expected');
-    t.is(decodePassable(e), k, 'does the key round trip through the encoding');
+    t.is(encodeKey(k), e, 'does k encode as expected');
+    t.is(decodeKey(e), k, 'does the key round trip through the encoding');
   }
   // Not round trips
-  t.is(encodePassable(-0), 'f8000000000000000');
-  t.is(decodePassable('f0000000000000000'), NaN);
+  t.is(encodeKey(-0), 'f8000000000000000');
+  t.is(decodeKey('f0000000000000000'), NaN);
 });
 
 const orderInvariants = (t, x, y) => {
@@ -110,11 +110,11 @@ const orderInvariants = (t, x, y) => {
       t.is(keyComp, fullComp);
       t.is(keyComp, rankComp);
     }
-    const ex = encodePassable(x);
-    const ey = encodePassable(y);
+    const ex = encodeKey(x);
+    const ey = encodeKey(y);
     const encComp = compareRank(ex, ey);
-    const dx = decodePassable(ex);
-    const dy = decodePassable(ey);
+    const dx = decodeKey(ex);
+    const dy = decodeKey(ey);
     t.assert(keyEQ(x, dx));
     t.assert(keyEQ(y, dy));
     t.is(encComp, fullComp);
@@ -132,7 +132,7 @@ test('order invariants', t => {
 test('BigInt values round-trip', async t => {
   await fc.assert(
     fc.property(fc.bigInt(), n => {
-      const rt = decodePassable(encodePassable(n));
+      const rt = decodeKey(encodeKey(n));
       return assertionPassed(t.is(rt, n), () => rt === n);
     }),
   );
@@ -141,8 +141,8 @@ test('BigInt values round-trip', async t => {
 test('BigInt encoding comparison corresponds with numeric comparison', async t => {
   await fc.assert(
     fc.property(fc.bigInt(), fc.bigInt(), (a, b) => {
-      const ea = encodePassable(a);
-      const eb = encodePassable(b);
+      const ea = encodeKey(a);
+      const eb = encodeKey(b);
       return (
         assertionPassed(t.is(a < b, ea < eb), () => a < b === ea < eb) &&
         assertionPassed(t.is(a > b, ea > eb), () => a > b === ea > eb)

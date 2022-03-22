@@ -152,12 +152,22 @@ export function makeCollectionManager(
       return `r${ordinalTag}:${convertValToSlot(remotable)}`;
     };
 
-    const encodePassable = makeEncodePassable({ encodeRemotable });
+    // `makeEncodePassable` has three named options:
+    // `encodeRemotable`, `encodeError`, and `encodePromise`.
+    // Those which are omitted default to a function that always throws.
+    // So by omitting `encodeError` and `encodePromise`, we know that
+    // the resulting function will encode only `Key` arguments.
+    const encodeKey = makeEncodePassable({ encodeRemotable });
 
     const decodeRemotable = encodedKey =>
       convertSlotToVal(encodedKey.substring(BIGINT_TAG_LEN + 2));
 
-    const decodePassable = makeDecodePassable({ decodeRemotable });
+    // `makeDecodePassable` has three named options:
+    // `decodeRemotable`, `decodeError`, and `decodePromise`.
+    // Those which are omitted default to a function that always throws.
+    // So by omitting `decodeError` and `decodePromise`, we know that
+    // the resulting function will decode only to `Key` results.
+    const decodeKey = makeDecodePassable({ decodeRemotable });
 
     function generateOrdinal(remotable) {
       const nextOrdinal = Number.parseInt(
@@ -180,12 +190,12 @@ export function makeCollectionManager(
     }
 
     function keyToDBKey(key) {
-      return prefix(encodePassable(key));
+      return prefix(encodeKey(key));
     }
 
     function dbKeyToKey(dbKey) {
       const dbEntryKey = dbKey.substring(dbKeyPrefix.length);
-      return decodePassable(dbEntryKey);
+      return decodeKey(dbEntryKey);
     }
 
     function has(key) {
@@ -330,7 +340,7 @@ export function makeCollectionManager(
       assert(needKeys || needValues);
       assertKeyPattern(keyPatt);
       assertPattern(valuePatt);
-      const [coverStart, coverEnd] = getRankCover(keyPatt, encodePassable);
+      const [coverStart, coverEnd] = getRankCover(keyPatt, encodeKey);
       let priorDBKey = '';
       const start = prefix(coverStart);
       const end = prefix(coverEnd);
