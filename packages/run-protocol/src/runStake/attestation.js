@@ -94,7 +94,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
       X`Only ${bound} was ${label}, but an attestation was attempted for ${x}`,
     );
   };
-  const checkAccountState = async (address, toLien) => {
+  const assertAccountStateOK = async (address, toLien) => {
     const s = await E(lienBridge).getAccountState(address, stakeBrand);
     const unlocked = subtractOrZero(s.total, s.locked);
     checkDelta(toLien, 'unliened', s.total, s.liened);
@@ -115,7 +115,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
     // Since things like the bonded amount can change out from under us,
     // we shouldn't rely on it completely.
     // TODO: consider performance implications vs. diagnostics.
-    await checkAccountState(address, lienDelta);
+    await assertAccountStateOK(address, lienDelta);
 
     const current = getOrElse(amountByAddress, address, () => empty);
     const target = add(current, lienDelta);
