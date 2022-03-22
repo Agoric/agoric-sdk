@@ -6,7 +6,7 @@ import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeNotifierKit } from '@agoric/notifier';
 import { M, matches } from '@agoric/store';
 import { makeTracer } from '../makeTracer.js';
-import { applyDelta, assertOnlyKeys, transfer } from '../contractSupport.js';
+import { addSubtract, assertOnlyKeys, transfer } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 
 const { details: X, quote: q } = assert;
@@ -62,7 +62,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
   const loanFee = (currentDebt, giveAmount, wantAmount) => {
     const fee = ceilMultiplyBy(wantAmount, manager.getLoanFee());
     const toMint = AmountMath.add(wantAmount, fee);
-    const newDebt = applyDelta(currentDebt, toMint, giveAmount);
+    const newDebt = addSubtract(currentDebt, toMint, giveAmount);
     return { newDebt, toMint, fee };
   };
 
@@ -235,7 +235,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
     const wantColl = proposal.want.Attestation || emptyCollateral;
 
     // new = after the transaction gets applied
-    const newCollateral = applyDelta(collateral, giveColl, wantColl);
+    const newCollateral = addSubtract(collateral, giveColl, wantColl);
     // max debt supported by current Collateral as modified by proposal
     const { amountLiened, maxDebt: newMaxDebt } =
       manager.maxDebtForLien(newCollateral);

@@ -610,7 +610,7 @@ export const startRunStake = async (
     },
   );
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<any>}} */
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<unknown>}} */
   const governorFacets = await E(zoe).startInstance(
     installations.governor,
     {},

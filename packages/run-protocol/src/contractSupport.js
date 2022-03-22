@@ -18,8 +18,12 @@ const { details: X } = assert;
 export const addSubtract = (base, gain, loss) =>
   AmountMath.subtract(AmountMath.add(base, gain), loss);
 
-// usually 'Collateral' and 'RUN'.
+/**
+ * @param {ProposalRecord} proposal
+ * @param {string[]} keys usually 'Collateral' and 'RUN'
+ */
 export const assertOnlyKeys = (proposal, keys) => {
+  /** @param { AmountKeywordRecord } clause */
   const onlyKeys = clause =>
     Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
   assert(
