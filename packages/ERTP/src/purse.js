@@ -3,6 +3,12 @@ import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
 import { AmountMath } from './amountMath.js';
 
 export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
+  // - This kind is a pair of purse and depositFacet that have a 1:1
+  //   correspondence.
+  // - They are virtualized together to share a single state record.
+  // - An alternative design considered was to have this return a Purse alone
+  //   that created depositFacet as needed. But this approach ensures a constant
+  //   identity for the facet and exercises the multi-faceted object style.
   const makePurseKit = defineKind(
     allegedName,
     () => {
