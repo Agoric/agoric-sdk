@@ -446,7 +446,7 @@
  * @callback KeyToDBKey
  * If this key can be encoded as a DBKey string which sorts correctly,
  * return that string. Else return `undefined`. For example, a scalar-only
- * encodeKey would return `undefined` for all non-scalar keys.
+ * encodePassable would return `undefined` for all non-scalar keys.
  * @param {Passable} key
  * @returns {string=}
  */
@@ -454,7 +454,7 @@
 /**
  * @callback GetRankCover
  * @param {Pattern} pattern
- * @param {KeyToDBKey} encodeKey
+ * @param {KeyToDBKey} encodePassable
  * @returns {RankCover}
  */
 
@@ -587,7 +587,7 @@
  *
  * @property {(
  *   payload: Passable,
- *   encodeKey: KeyToDBKey
+ *   encodePassable: KeyToDBKey
  * ) => RankCover} getRankCover
  * Assumes this is the payload of a CopyTagged with the corresponding
  * matchTag. Return a RankCover to bound from below and above,
