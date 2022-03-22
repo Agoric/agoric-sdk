@@ -2,6 +2,7 @@
 import { Nat } from '@agoric/nat';
 import { assert } from '@agoric/assert';
 import { buildSerializationTools } from '../lib/deviceTools.js';
+import { insistVatID } from '../../lib/id.js';
 
 /*
 
@@ -205,12 +206,13 @@ export function buildDevice(tools, endowments) {
           return returnFromInvoke(vatID);
         }
 
-        // D(devices.vatAdmin).upgradeVat(bundleID, vatParameters) -> upgradeID
+        // D(devices.vatAdmin).upgradeVat(vatID, bundleID, vatParameters) -> upgradeID
         if (method === 'upgradeVat') {
           const args = JSON.parse(argsCapdata.body);
           assert(Array.isArray(args), 'upgradeVat() args array');
-          assert.equal(args.length, 2, `upgradeVat() args length`);
-          const [bundleID, _vatParameters] = args;
+          assert.equal(args.length, 3, `upgradeVat() args length`);
+          const [vatID, bundleID, _vatParameters] = args;
+          insistVatID(vatID);
           assert.typeof(bundleID, 'string', `upgradeVat() bundleID`);
 
           const res = syscall.callKernelHook('upgrade', argsCapdata);

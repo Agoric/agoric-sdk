@@ -106,7 +106,11 @@ export function buildRootObject(vatPowers) {
           // 'bundlecap' probably wasn't a bundlecap
           throw Error('vat adminNode.upgrade() requires a bundlecap');
         }
-        const upgradeID = D(vatAdminNode).upgradeVat(bundleID, vatParameters);
+        const upgradeID = D(vatAdminNode).upgradeVat(
+          vatID,
+          bundleID,
+          vatParameters,
+        );
         const [upgradeCompleteP, upgradeRR] = producePRR();
         pendingUpgrades.set(upgradeID, upgradeRR);
         return upgradeCompleteP;
