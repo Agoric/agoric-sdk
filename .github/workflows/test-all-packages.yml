@@ -132,6 +132,8 @@ jobs:
         run: cd packages/wallet && yarn test
       - name: yarn test (eslint-config)
         run: cd packages/eslint-config && yarn test
+      - name: yarn test (vat-data)
+        run: cd packages/vat-data && yarn test
 
         # The meta-test!
       - name: Check for untested packages

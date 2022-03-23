@@ -23,7 +23,8 @@
     "@agoric/store": "^0.6.10"
   },
   "devDependencies": {
-    "ava": "^3.12.1"
+    "ava": "^3.12.1",
+    "@agoric/swingset-vat": "*"
   },
   "eslintConfig": {
     "extends": [
@@ -35,11 +36,5 @@
   },
   "engines": {
     "node": ">=14.15.0"
-  },
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ],
-    "timeout": "20m"
   }
 }
