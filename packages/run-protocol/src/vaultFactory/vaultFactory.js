@@ -240,6 +240,8 @@ export const start = async (zcf, privateArgs) => {
     getParamMgrRetriever,
     getInvitation: electorateParamManager.getInternalParamValue,
     getLimitedCreatorFacet: () => vaultFactory,
+    getGovernedApis: () => harden({}),
+    getGovernedApiNames: () => harden({}),
   });
 
   return harden({
