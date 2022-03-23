@@ -196,6 +196,13 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
     manager.applyDebtDelta(oldDebt, newDebt);
   };
 
+  const assertVaultHoldsNoRun = () => {
+    assert(
+      AmountMath.isEmpty(getRunAllocated(vaultSeat)),
+      X`Vault should be empty of debt`,
+    );
+  };
+
   /**
    * Adjust principal and collateral (atomically for offer safety)
    *
@@ -258,12 +265,6 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
     mint.burnLosses(harden({ [KW.Debt]: giveRUN }), vaultSeat);
 
-    const assertVaultHoldsNoRun = () => {
-      assert(
-        AmountMath.isEmpty(getRunAllocated(vaultSeat)),
-        X`Vault should be empty of debt`,
-      );
-    };
     assertVaultHoldsNoRun();
 
     updateUiState();
@@ -302,10 +303,11 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
     zcf.reallocate(seat, vaultSeat);
 
     mint.burnLosses(harden({ [KW.Debt]: currentDebt }), vaultSeat);
-    seat.exit();
     state.open = false;
     updateDebtSnapshot(emptyDebt);
     updateUiState();
+    assertVaultHoldsNoRun();
+    seat.exit();
 
     return 'Your RUNstake is closed; thank you for your business.';
   };
