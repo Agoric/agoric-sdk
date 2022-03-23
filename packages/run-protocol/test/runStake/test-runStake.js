@@ -25,7 +25,7 @@ import {
   economyBundles,
 } from '../../src/importedBundles.js';
 import * as Collect from '../../src/collect.js';
-import { KW } from '../../src/runStake/runStake.js';
+import { KW } from '../../src/runStake/params.js';
 
 // 8	Partial repayment from reward stream - TODO
 // TODO: #4728 case 9: Extending LoC - unbonded (FAIL)

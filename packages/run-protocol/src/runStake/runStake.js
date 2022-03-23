@@ -6,8 +6,6 @@ import { makeRunStakeParamManager } from './params.js';
 import { makeRunStakeKit, KW } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager.js';
 
-export { KW };
-
 /**
  * Provide loans on the basis of staked assets that earn rewards.
  *

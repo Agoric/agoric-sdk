@@ -6,6 +6,10 @@ import {
   ParamTypes,
 } from '@agoric/governance';
 
+import { KW } from './runStakeKit.js';
+
+export { KW };
+
 const PKey = /** @type { const } */ ({
   MintingRatio: 'MintingRatio',
   InterestRate: 'InterestRate',
