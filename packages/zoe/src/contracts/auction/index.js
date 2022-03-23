@@ -102,7 +102,7 @@ const start = zcf => {
     return bidSeats.map(seat => seat.getAmountAllocated('Bid', bidBrand));
   };
 
-  const getSessionDetails = () => {
+  const getSessionDetails = async () => {
     const sellerProposal = sellSeat.getProposal();
     return harden({
       auctionedAssets: sellerProposal.give.Asset,
@@ -110,12 +110,12 @@ const start = zcf => {
       winnerPriceOption,
       closesAfter,
       bidDuration,
-      timeAuthority,
+      timeAuthority: await timeAuthority,
       bids: getCurrentBids(),
     });
   };
 
-  const makeBidInvitation = () => {
+  const makeBidInvitation = async () => {
     /** @type {OfferHandler} */
     const performBid = seat => {
       assert(!isClosed, X`Auction session is closed, no more bidding`);
@@ -133,7 +133,7 @@ const start = zcf => {
       return defaultAcceptanceMsg;
     };
 
-    const customProperties = getSessionDetails();
+    const customProperties = await getSessionDetails();
     return zcf.makeInvitation(performBid, 'bid', customProperties);
   };
 

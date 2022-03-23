@@ -40,7 +40,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           Asset: moolaKit.issuer,
           Ask: simoleanKit.issuer,
         });
-        const terms = { timeAuthority: timer, bidDuration: 1n };
+        const terms = {
+          timeAuthority: Promise.resolve(timer),
+          bidDuration: 1n,
+        };
         const adminP = E(zoe).startInstance(
           installation,
           issuerKeywordRecord,
@@ -274,7 +277,10 @@ test('zoe - secondPriceAuction - alice tries to exit', async t => {
     Ask: simoleanR.issuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timeAuthority: timer, bidDuration: 1n });
+  const terms = harden({
+    timeAuthority: Promise.resolve(timer),
+    bidDuration: 1n,
+  });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
@@ -424,7 +430,10 @@ test('zoe - secondPriceAuction - all bidders try to exit', async t => {
     Ask: simoleanR.issuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timeAuthority: timer, bidDuration: 1n });
+  const terms = harden({
+    timeAuthority: Promise.resolve(timer),
+    bidDuration: 1n,
+  });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
@@ -568,7 +577,10 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     Ask: moolaIssuer,
   });
   const timer = buildManualTimer(console.log);
-  const terms = harden({ timeAuthority: timer, bidDuration: 1n });
+  const terms = harden({
+    timeAuthority: Promise.resolve(timer),
+    bidDuration: 1n,
+  });
   const { creatorInvitation: aliceInvitation } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
@@ -840,7 +852,7 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
           Ask: simoleanKit.issuer,
         });
         const terms = {
-          timeAuthority: timer,
+          timeAuthority: Promise.resolve(timer),
           bidDuration: 1n,
           winnerPriceOption: 'first-price',
         };
