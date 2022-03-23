@@ -1,5 +1,6 @@
 // @ts-check
 
+// NB: cannot import, breaks bundle building
 /* global VatData */
 
 import { importBundle } from '@endo/import-bundle';

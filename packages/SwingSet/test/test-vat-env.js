@@ -1,5 +1,4 @@
-/* global VatData */
-import { test } from '../tools/prepare-test-env-ava.js';
+import { test, VatData } from '../tools/prepare-test-env-ava.js';
 
 import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { buildVatController } from '../src/index.js';

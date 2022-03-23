@@ -7,7 +7,7 @@ The kernel currently provides two secondary storage mechanisms for the use of (a
 - Virtual and durable objects
 - Persistent stores
 
-These are accessed via properties of the `VatData` global made available to vat code, or more stylishly by importing from `@agoric/swingset-vat/src/storeModule.js` (that's a working placeholder module which we will be replacing it with a more ergonomic package name once we figure out what that should be).
+These are accessed via properties of the `VatData` global made available to vat code, or more stylishly by importing from `@agoric/vat-data` (that's a working placeholder module which we will be replacing it with a more ergonomic package name once we figure out what that should be).
 
 The APIs described here all have to do with storing data on disk.  However, you should understand an important distinction made in these APIs between the labels "virtual" and "durable".  In our usage here, things that are "virtual" will automatically swap their state to disk storage and thus don't eat up RAM space in the running vat process even if they grow large in number.  In contrast, things that are "durable" are not only stored on disk but survive the lifetime of the vat process holding them and may be retrieved later in a future version of the vat.
 
