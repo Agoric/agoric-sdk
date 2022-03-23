@@ -2,11 +2,13 @@
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/src/exported';
-import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import {
+  assertProposalShape,
   ceilMultiplyBy,
+  floorDivideBy,
+  floorMultiplyBy,
   makeRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 // import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
@@ -35,6 +37,7 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
 /**
  * @param {ZCF<{
  *    anchorBrand: Brand,
+ *    anchorPerStable: Ratio,
  *    main: {
  *      WantStableFeeBP: bigint,
  *      GiveStableFeeBP: bigint,
@@ -43,7 +46,7 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  const { anchorBrand } = zcf.getTerms();
+  const { anchorBrand, anchorPerStable } = zcf.getTerms();
 
   const { feeMintAccess } = privateArgs;
   // TODO should this know that the name is 'Stable'
@@ -89,7 +92,7 @@ export const start = async (zcf, privateArgs) => {
   const giveStable = (seat, given, wanted = emptyAnchor) => {
     const fee = ceilMultiplyBy(given, gov.getGiveStableRate());
     const afterFee = AmountMath.subtract(given, fee);
-    const maxAnchor = AmountMath.make(anchorBrand, afterFee.value);
+    const maxAnchor = floorMultiplyBy(afterFee, anchorPerStable);
     // TODO this prevents the reallocate from failing. Can this be tested otherwise?
     assert(
       AmountMath.isGTE(maxAnchor, wanted),
@@ -108,7 +111,7 @@ export const start = async (zcf, privateArgs) => {
       given,
     );
     assertUnderLimit(anchorAfterTrade);
-    const asStable = AmountMath.make(stableBrand, given.value);
+    const asStable = floorDivideBy(given, anchorPerStable);
     const fee = ceilMultiplyBy(asStable, gov.getWantStableRate());
     const afterFee = AmountMath.subtract(asStable, fee);
     assert(

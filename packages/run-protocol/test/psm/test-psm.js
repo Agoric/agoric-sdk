@@ -13,6 +13,11 @@ import { makeZoeKit } from '@agoric/zoe';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeLoopback } from '@endo/captp';
+import {
+  makeRatio,
+  floorDivideBy,
+  floorMultiplyBy,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../../src/makeTracer.js';
 
 const pathname = new URL(import.meta.url).pathname;
@@ -34,18 +39,31 @@ const GiveStableFeeBP = 3n;
 const MINT_LIMIT = 20_000_000n * 1_000_000n;
 
 /**
- * Compute the fee in runBrand based on `given`. Choose the fee ratio
- * appropriate to teh `given` brand.
+ * Compute the fee for giving an Amount in stable.
  *
- * @param {Amount<'nat'>} given
- * @param {Brand} stableBrand
+ * @param {Amount<'nat'>} stable
  * @returns {Amount<'nat'>}
  */
-const minusFee = (given, stableBrand) => {
-  const feeBP = given.brand === stableBrand ? GiveStableFeeBP : WantStableFeeBP;
+const minusStableFee = stable => {
+  const feeBP = GiveStableFeeBP;
   return AmountMath.make(
-    stableBrand,
-    BigInt((given.value * (BASIS_POINTS - feeBP)) / BASIS_POINTS),
+    stable.brand,
+    BigInt((stable.value * (BASIS_POINTS - feeBP)) / BASIS_POINTS),
+  );
+};
+
+/**
+ * Compute the fee in the stable asset of an Amount given in anchor.
+ *
+ * @param {Amount<'nat'>} anchor
+ * @param {Ratio} anchorPerStable
+ * @returns {Amount<'nat'>}
+ */
+const minusAnchorFee = (anchor, anchorPerStable) => {
+  const stable = floorDivideBy(anchor, anchorPerStable);
+  return AmountMath.make(
+    stable.brand,
+    BigInt((stable.value * (BASIS_POINTS - WantStableFeeBP)) / BASIS_POINTS),
   );
 };
 
@@ -85,6 +103,7 @@ test.before(async t => {
   t.context.mintLimit = mintLimit;
   t.context.terms = {
     anchorBrand,
+    anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
     main: { WantStableFeeBP, GiveStableFeeBP, MintLimit: mintLimit },
   };
 });
@@ -104,36 +123,36 @@ test('simple trades', async t => {
     terms,
     harden({ feeMintAccess }),
   );
-  const give = AmountMath.make(anchorBrand, 200n * 1_000_000n);
+  const giveAnchor = AmountMath.make(anchorBrand, 200n * 1_000_000n);
   const seat1 = await E(zoe).offer(
     E(publicFacet).makeSwapInvitation(),
-    harden({ give: { In: give } }),
-    harden({ In: anchorMint.mintPayment(give) }),
+    harden({ give: { In: giveAnchor } }),
+    harden({ In: anchorMint.mintPayment(giveAnchor) }),
   );
   const runPayout = await E(seat1).getPayout('Out');
-  const expectedRun = minusFee(give, runBrand);
+  const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerStable);
   const actualRun = await E(runIssuer).getAmountOf(runPayout);
   t.deepEqual(actualRun, expectedRun);
   const liq = await E(publicFacet).getCurrentLiquidity();
-  t.true(AmountMath.isEqual(liq, give));
-  trace('get stable', { give, expectedRun, actualRun, liq });
-  const runGive = AmountMath.make(runBrand, 100n * 1_000_000n);
-  const [runPayment, _moreRun] = await E(runIssuer).split(runPayout, runGive);
+  t.true(AmountMath.isEqual(liq, giveAnchor));
+  const giveRun = AmountMath.make(runBrand, 100n * 1_000_000n);
+  trace('get stable', { giveRun, expectedRun, actualRun, liq });
+  const [runPayment, _moreRun] = await E(runIssuer).split(runPayout, giveRun);
   const seat2 = await E(zoe).offer(
     E(publicFacet).makeSwapInvitation(),
-    harden({ give: { In: runGive } }),
+    harden({ give: { In: giveRun } }),
     harden({ In: runPayment }),
   );
   const anchorPayout = await E(seat2).getPayout('Out');
   const actualAnchor = await E(anchorIssuer).getAmountOf(anchorPayout);
   const expectedAnchor = AmountMath.make(
     anchorBrand,
-    minusFee(runGive, runBrand).value,
+    minusStableFee(giveRun).value,
   );
   t.deepEqual(actualAnchor, expectedAnchor);
   const liq2 = await E(publicFacet).getCurrentLiquidity();
-  t.deepEqual(AmountMath.subtract(give, expectedAnchor), liq2);
-  trace('get anchor', { runGive, expectedRun, actualAnchor, liq2 });
+  t.deepEqual(AmountMath.subtract(giveAnchor, expectedAnchor), liq2);
+  trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor, liq2 });
 });
 
 test('limit', async t => {
@@ -187,4 +206,52 @@ test('limit', async t => {
   );
   // TODO Offer result should be an error
   // t.throwsAsync(() => await E(seat1).getOfferResult());
+});
+
+test('anchor is 2x stable', async t => {
+  const {
+    zoe,
+    feeMintAccess,
+    terms,
+    installs: { psmInstall },
+    runKit: { runIssuer, runBrand },
+    anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
+  } = t.context;
+  const anchorPerStable = makeRatio(200n, anchorBrand, 100n, runBrand);
+  const { publicFacet } = await E(zoe).startInstance(
+    psmInstall,
+    harden({ AUSD: anchorIssuer }),
+    { ...terms, anchorPerStable },
+    harden({ feeMintAccess }),
+  );
+  const giveAnchor = AmountMath.make(anchorBrand, 400n * 1_000_000n);
+  const seat1 = await E(zoe).offer(
+    E(publicFacet).makeSwapInvitation(),
+    harden({ give: { In: giveAnchor } }),
+    harden({ In: anchorMint.mintPayment(giveAnchor) }),
+  );
+  const runPayout = await E(seat1).getPayout('Out');
+  const expectedRun = minusAnchorFee(giveAnchor, anchorPerStable);
+  const actualRun = await E(runIssuer).getAmountOf(runPayout);
+  t.deepEqual(actualRun, expectedRun);
+  const liq = await E(publicFacet).getCurrentLiquidity();
+  t.true(AmountMath.isEqual(liq, giveAnchor));
+  const giveRun = AmountMath.make(runBrand, 100n * 1_000_000n);
+  trace('get stable ratio', { giveRun, expectedRun, actualRun, liq });
+  const [runPayment, _moreRun] = await E(runIssuer).split(runPayout, giveRun);
+  const seat2 = await E(zoe).offer(
+    E(publicFacet).makeSwapInvitation(),
+    harden({ give: { In: giveRun } }),
+    harden({ In: runPayment }),
+  );
+  const anchorPayout = await E(seat2).getPayout('Out');
+  const actualAnchor = await E(anchorIssuer).getAmountOf(anchorPayout);
+  const expectedAnchor = floorMultiplyBy(
+    minusStableFee(giveRun),
+    anchorPerStable,
+  );
+  t.deepEqual(actualAnchor, expectedAnchor);
+  const liq2 = await E(publicFacet).getCurrentLiquidity();
+  t.deepEqual(AmountMath.subtract(giveAnchor, expectedAnchor), liq2);
+  trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor, liq2 });
 });
