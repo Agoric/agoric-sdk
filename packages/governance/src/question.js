@@ -87,8 +87,8 @@ const looksLikeParamChangeIssue = issue => {
 const looksLikeApiInvocation = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(
-    issue && typeof issue.apiMethod === 'string',
-    X`Issue ("${issue}") must be a record with apiMethod: aString`,
+    issue && typeof issue.apiMethodName === 'string',
+    X`Issue ("${issue}") must be a record with apiMethodName: aString`,
   );
 };
 
@@ -141,8 +141,11 @@ const assertEnumIncludes = (enumeration, value, name) => {
   );
 };
 
-/** @type {LooksLikeQuestionSpec} */
-const looksLikeQuestionSpec = ({
+/**
+ * @param {QuestionSpec} allegedQuestionSpec
+ * @returns {QuestionSpec}
+ */
+const coerceQuestionSpec = ({
   method,
   issue,
   positions,
@@ -206,7 +209,7 @@ harden(buildUnrankedQuestion);
 harden(ChoiceMethod);
 harden(ElectionType);
 harden(looksLikeIssueForType);
-harden(looksLikeQuestionSpec);
+harden(coerceQuestionSpec);
 harden(positionIncluded);
 harden(QuorumRule);
 
@@ -215,7 +218,7 @@ export {
   ChoiceMethod,
   ElectionType,
   looksLikeIssueForType,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
   positionIncluded,
   QuorumRule,
 };

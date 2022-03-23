@@ -59,7 +59,7 @@
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue } Issue
+ * @typedef { SimpleIssue | ParamChangeIssue | ApiInvocationIssue } Issue
  */
 
 /**
@@ -77,8 +77,7 @@
  */
 
 /**
- * @typedef { TextPosition | ChangeParamPosition |
- *   NoChangeParamPosition } Position
+ * @typedef { TextPosition | ChangeParamPosition | NoChangeParamPosition | InvokeApiPosition | DontInvokeApiPosition } Position
  */
 
 /**
@@ -209,12 +208,6 @@
  * @callback LooksLikeApiInvocation
  * @param {unknown} issue
  * @returns {asserts issue is ApiInvocationIssue}
- */
-
-/**
- * @callback LooksLikeQuestionSpec
- * @param {unknown} allegedQuestionSpec
- * @returns {QuestionSpec}
  */
 
 /**
@@ -359,8 +352,7 @@
 
 /**
  * @typedef {Object} ApiInvocationIssue
- * @property {string} methodName
- * @property {Instance} contract
+ * @property {string} apiMethodName
  * @property {[unknown]} methodParams
  */
 
@@ -461,6 +453,17 @@
  * @typedef {Object} ChangeParamPosition
  * @property {ParamSpecification} changeParam
  * @property {ParamValue} proposedValue
+ */
+
+/**
+ * @typedef {Object} InvokeApiPosition
+ * @property {string} apiMethodName
+ * @property {any} methodParams
+ */
+
+/**
+ * @typedef {Object} DontInvokeApiPosition
+ * @property {string} dontInvoke
  */
 
 /**
@@ -609,7 +612,7 @@
 
 /**
  * @callback VoteOnApiInvocation
- * @param {string} apiMethod
+ * @param {string} apiMethodName
  * @param {[unknown]} methodParams
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline

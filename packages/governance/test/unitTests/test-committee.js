@@ -15,7 +15,7 @@ import {
   ChoiceMethod,
   ElectionType,
   QuorumRule,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
 } from '../../src/index.js';
 
 const filename = new URL(import.meta.url).pathname;
@@ -67,7 +67,7 @@ test('committee-open question:one', async t => {
   } = await setupContract();
 
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: harden({ text: 'why' }),
     positions,
@@ -96,7 +96,7 @@ test('committee-open question:mixed', async t => {
 
   const timer = buildManualTimer(console.log);
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: harden({ text: 'why' }),
     positions,

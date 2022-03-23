@@ -9,7 +9,7 @@ import {
   ChoiceMethod,
   QuorumRule,
   ElectionType,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
 } from '../question.js';
 
 const { details: X, quote: q } = assert;
@@ -95,7 +95,7 @@ const setupParamGovernance = async (
       contract: contractInstance,
       proposedValue: visibleValue,
     });
-    const questionSpec = looksLikeQuestionSpec({
+    const questionSpec = coerceQuestionSpec({
       method: ChoiceMethod.UNRANKED,
       issue,
       positions: [positive, negative],

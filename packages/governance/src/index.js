@@ -6,7 +6,7 @@ export {
   ChoiceMethod,
   ElectionType,
   QuorumRule,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
   positionIncluded,
   looksLikeIssueForType,
   buildUnrankedQuestion,

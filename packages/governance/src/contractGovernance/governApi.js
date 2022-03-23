@@ -9,7 +9,7 @@ import {
   ChoiceMethod,
   QuorumRule,
   ElectionType,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
 } from '../question.js';
 
 const { details: X } = assert;
@@ -19,12 +19,12 @@ const { details: X } = assert;
  * the vote passes, the method will be called on the governedApis facet with the
  * parameters that were provided.
  *
- * @param {string} apiMethod
+ * @param {string} apiMethodName
  * @param {[unknown]} methodParams
  */
-const makeApiInvocationPositions = (apiMethod, methodParams) => {
-  const positive = harden({ apiMethod, methodParams });
-  const negative = harden({ dontInvoke: apiMethod });
+const makeApiInvocationPositions = (apiMethodName, methodParams) => {
+  const positive = harden({ apiMethodName, methodParams });
+  const negative = harden({ dontInvoke: apiMethodName });
   return { positive, negative };
 };
 
@@ -52,7 +52,7 @@ const setupApiGovernance = async (
 
   /** @type {VoteOnApiInvocation} */
   const voteOnApiInvocation = async (
-    apiMethod,
+    apiMethodName,
     methodParams,
     voteCounterInstallation,
     deadline,
@@ -60,16 +60,18 @@ const setupApiGovernance = async (
     const outcomeOfUpdateP = makePromiseKit();
 
     assert(
-      governedNames.includes(apiMethod),
-      X`${apiMethod} is not a governed API.`,
+      governedNames.includes(apiMethodName),
+      X`${apiMethodName} is not a governed API.`,
     );
 
     const { positive, negative } = makeApiInvocationPositions(
-      apiMethod,
+      apiMethodName,
       methodParams,
     );
-    const issue = harden({ apiMethod, methodParams });
-    const questionSpec = looksLikeQuestionSpec({
+
+    /** @type {ApiInvocationIssue} */
+    const issue = harden({ apiMethodName, methodParams });
+    const questionSpec = coerceQuestionSpec({
       method: ChoiceMethod.UNRANKED,
       issue,
       positions: [positive, negative],
@@ -99,7 +101,7 @@ const setupApiGovernance = async (
       .then(outcome => {
         if (keyEQ(positive, outcome)) {
           E(governedApis)
-            [apiMethod](...methodParams)
+            [apiMethodName](...methodParams)
             .then(returnValue => outcomeOfUpdateP.resolve(returnValue))
             .catch(e => {
               outcomeOfUpdateP.reject(e);
