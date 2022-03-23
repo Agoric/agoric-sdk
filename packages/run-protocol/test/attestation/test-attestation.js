@@ -8,7 +8,7 @@ import { E, Far } from '@endo/far';
 
 import { makeCopyBag } from '@agoric/store';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
-import { makeAttestationFacets } from '../../src/runStake/attestation.js';
+import { makeAttestationTools } from '../../src/runStake/attestation.js';
 
 const { details: X } = assert;
 
@@ -59,7 +59,7 @@ const makeContext = async t => {
   );
   const uBrand = stakeKit.brand;
 
-  const { publicFacet, creatorFacet } = await makeAttestationFacets(
+  const { publicFacet, creatorFacet } = await makeAttestationTools(
     zcf,
     uBrand,
     makeMockLienBridge(uBrand, t),

@@ -204,7 +204,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
  *
  * Note the Attestation keyword for use in returnAttestation offers.
  */
-export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
+export const makeAttestationTools = async (zcf, stakeBrand, lienBridge) => {
   /** @type {Store<Address, AttestationMaker>} */
   const attMakerByAddress = makeStore('address');
 

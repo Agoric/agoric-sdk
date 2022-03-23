@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 
 import { makeCopyBag } from '@agoric/store';
-import { makeAttestationFacets } from '../../src/runStake/attestation.js';
+import { makeAttestationTools } from '../../src/runStake/attestation.js';
 import { makeMockLienBridge } from './test-attestation.js';
 
 const makeDoReturnAttestation =
@@ -50,7 +50,7 @@ test(`typical flow`, async t => {
 
   const address = 'myaddress';
 
-  const { publicFacet, creatorFacet } = await makeAttestationFacets(
+  const { publicFacet, creatorFacet } = await makeAttestationTools(
     zcf,
     externalBrand,
     makeMockLienBridge(externalBrand, t),

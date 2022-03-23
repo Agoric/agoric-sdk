@@ -1,7 +1,7 @@
 // @ts-check
 import { handleParamGovernance } from '@agoric/governance';
 import { E, Far } from '@endo/far';
-import { makeAttestationFacets } from './attestation.js';
+import { makeAttestationTools } from './attestation.js';
 import { makeRunStakeParamManager } from './params.js';
 import { makeRunStakeKit, KW } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager.js';
@@ -93,7 +93,7 @@ export const start = async (
   assert.typeof(chargingPeriod, 'bigint', 'chargingPeriod must be a bigint');
   assert.typeof(recordingPeriod, 'bigint', 'recordingPeriod must be a bigint');
 
-  const att = await makeAttestationFacets(zcf, stakeBrand, lienBridge);
+  const att = await makeAttestationTools(zcf, stakeBrand, lienBridge);
   const attestBrand = await E(att.publicFacet).getBrand();
 
   const paramManager = await makeRunStakeParamManager(
@@ -150,18 +150,22 @@ export const start = async (
   );
 
   const publicFacet = wrapPublicFacet(
-    Far('runStake public interface', {
+    Far('runStake public', {
       makeLoanInvitation: () =>
         zcf.makeInvitation(
           seat => makeRunStakeKit(zcf, seat, manager, runMint),
           'make RUNstake',
-          undefined,
         ),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
     }),
   );
 
-  const creatorFacet = wrapCreatorFacet(att.creatorFacet);
+  const creatorFacet = wrapCreatorFacet(
+    Far('runStake creator', {
+      provideAttestationMaker: att.creatorFacet.provideAttestationMaker,
+      getLiened: att.creatorFacet.getLiened,
+    }),
+  );
 
   // @ts-expect-error wrapCreatorFacet loses type info
   return { publicFacet, creatorFacet };
