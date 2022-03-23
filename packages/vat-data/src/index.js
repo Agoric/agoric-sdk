@@ -1,4 +1,5 @@
-/* global VatData globalThis */
+/* global globalThis */
+import { assert } from '@agoric/assert';
 import {
   M,
   makeScalarMapStore,
@@ -15,11 +16,11 @@ export {
   makeScalarWeakSetStore,
 };
 
-/** @type {VatData} */
+/** @type {import('./types').VatData} */
 let VatDataGlobal;
 if ('VatData' in globalThis) {
-  assert(VatData, 'VatData defined in global as null or undefined');
-  VatDataGlobal = VatData;
+  assert(globalThis.VatData, 'VatData defined in global as null or undefined');
+  VatDataGlobal = globalThis.VatData;
 } else {
   // XXX this module has been known to get imported (transitively) in cases that
   // never use it so we make a version that will satisfy module resolution but
