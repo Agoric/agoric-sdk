@@ -1,7 +1,4 @@
 /* global VatData globalThis */
-
-import { Far } from '@endo/marshal';
-
 import {
   M,
   makeScalarMapStore,
@@ -18,20 +15,24 @@ export {
   makeScalarWeakSetStore,
 };
 
+/** @type {VatData} */
 let VatDataGlobal;
 if ('VatData' in globalThis) {
+  assert(VatData, 'VatData defined in global as null or undefined');
   VatDataGlobal = VatData;
 } else {
-  console.log('Emulating VatData');
+  // XXX this module has been known to get imported (transitively) in cases that
+  // never use it so we make a version that will satisfy module resolution but
+  // fail at runtime.
+  const unvailable = () => assert.fail('VatData unavailable');
   VatDataGlobal = {
-    defineKind: () => assert.fail('fake defineKind not yet implemented'),
-    defineDurableKind: () =>
-      assert.fail('fake defineDurableKind not yet implemented'),
-    makeKindHandle: tag => Far(`fake kind handle ${tag}`, {}),
-    makeScalarBigMapStore: makeScalarMapStore,
-    makeScalarBigWeakMapStore: makeScalarWeakMapStore,
-    makeScalarBigSetStore: makeScalarSetStore,
-    makeScalarBigWeakSetStore: makeScalarWeakSetStore,
+    defineKind: unvailable,
+    defineDurableKind: unvailable,
+    makeKindHandle: unvailable,
+    makeScalarBigMapStore: unvailable,
+    makeScalarBigWeakMapStore: unvailable,
+    makeScalarBigSetStore: unvailable,
+    makeScalarBigWeakSetStore: unvailable,
   };
 }
 
