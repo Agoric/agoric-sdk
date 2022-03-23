@@ -19,20 +19,6 @@ export const KW = /** @type { const } */ ({
   Debt: 'Debt',
 });
 
-const LoanPhase = /** @type { const } */ ({
-  ACTIVE: 'Active',
-  CLOSED: 'Closed',
-});
-
-/**
- * @typedef {LoanPhase[keyof LoanPhase]} LoanPhaseValue
- * @type {{[K in LoanPhaseValue]: Array<LoanPhaseValue>}}
- */
-const validTransitions = {
-  [LoanPhase.ACTIVE]: [LoanPhase.CLOSED],
-  [LoanPhase.CLOSED]: [],
-};
-
 /**
  * Make RUNstake kit, subject to runStake terms.
  *
@@ -59,7 +45,6 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
   /**
    * Calculate the fee, the amount to mint and the resulting debt.
-   * The give and the want together reflect a delta, where the
    *
    * @param {Amount} currentDebt
    * @param {Amount} giveAmount
@@ -88,8 +73,6 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
       X`wanted ${runWanted}, more than max debt (${maxDebt}) for ${attestationGiven}`,
     );
 
-    // return checkBorrow(attAmt, runWanted);
-
     const { newDebt, fee, toMint } = loanFee(emptyDebt, emptyDebt, runWanted);
     assert(
       !AmountMath.isEmpty(fee),
@@ -113,61 +96,58 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
   // NOTE: this record is mutable by design, anticipating
   // the durable objects API.
-  /** @type {VaultState} */
   const state = {
-    phase: LoanPhase.ACTIVE,
+    open: true,
     vaultSeat,
+    /** @type {NotifierRecord<VaultUIState> | { updater: undefined, notifier: * }} */
+    ui: makeNotifierKit(),
     // Two values from the same moment
     interestSnapshot: manager.getCompoundedInterest(),
     debtSnapshot: emptyDebt,
   };
 
-  const assertActive = () => {
-    const { phase } = state;
-    assert.equal(phase, LoanPhase.ACTIVE);
+  const getCollateralAllocated = seat =>
+    seat.getAmountAllocated(KW.Attestation, collateralBrand);
+  const getRunAllocated = seat => seat.getAmountAllocated(KW.Debt, debtBrand);
+  const getCollateralAmount = () => {
+    // getCollateralAllocated would return final allocations
+    return vaultSeat.hasExited()
+      ? emptyCollateral
+      : getCollateralAllocated(vaultSeat);
   };
 
-  /**
-   * @param {LoanPhaseValue} newPhase
-   */
-  const assignPhase = newPhase => {
-    const { phase } = state;
-    const validNewPhases = validTransitions[phase];
-    assert(
-      validNewPhases.includes(newPhase),
-      `Vault cannot transition from ${phase} to ${newPhase}`,
-    );
-    state.phase = newPhase;
-  };
-
-  /** @type {NotifierRecord<ReturnType<typeof snapshotState>>} */
-  const { updater: uiUpdater, notifier } = makeNotifierKit();
-
-  /** @param {LoanPhaseValue} newPhase */
-  const snapshotState = newPhase => {
-    const { debtSnapshot: amount, interestSnapshot: interestFactor } = state;
+  /** @param {boolean} newActive */
+  const snapshotState = newActive => {
+    const { debtSnapshot: run, interestSnapshot: interest } = state;
     /** @type {VaultUIState} */
-    return harden({
-      debtSnapshot: { amount, interestFactor },
-      vaultState: newPhase,
+    const result = harden({
+      // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
+      interestRate: manager.getInterestRate(),
+      liquidationRatio: manager.getMintingRatio(),
+      debtSnapshot: { run, interest },
+      locked: getCollateralAmount(),
+      // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
+      // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
+      vaultState: newActive ? 'active' : 'closed',
     });
+    return result;
   };
 
   /** call this whenever anything changes! */
   const updateUiState = async () => {
-    const { phase } = state;
-    const uiState = snapshotState(phase);
+    const { open: active, ui } = state;
+    if (!ui.updater) {
+      console.warn('updateUiState called after ui.updater removed');
+      return;
+    }
+    const uiState = snapshotState(active);
     trace('updateUiState', uiState);
 
-    switch (state.phase) {
-      case LoanPhase.ACTIVE:
-        uiUpdater.updateState(uiState);
-        break;
-      case LoanPhase.CLOSED:
-        uiUpdater.finish(uiState);
-        break;
-      default:
-        assert.fail(`unknown phase: ${state.phase}`);
+    if (active) {
+      ui.updater.updateState(uiState);
+    } else {
+      ui.updater.finish(uiState);
+      state.ui = { updater: undefined, notifier: state.ui.notifier };
     }
   };
 
@@ -220,24 +200,15 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
    * Adjust principal and collateral (atomically for offer safety)
    *
    * @param {ZCFSeat} clientSeat
-   *
-   * @typedef {{
-   *   phase: LoanPhaseValue,
-   *   vaultSeat: ZCFSeat,
-   *   interestSnapshot: Ratio,
-   *   debtSnapshot: Amount<'nat'>,
-   * }} VaultState
-   *
-   * @returns {unknown}
    */
   const adjustBalancesHook = clientSeat => {
-    assertActive();
+    assert(state.open);
 
     const proposal = clientSeat.getProposal();
     assertOnlyKeys(proposal, [KW.Attestation, KW.Debt]);
 
     const debt = getCurrentDebt();
-    const collateral = manager.getCollateralAllocated(vaultSeat);
+    const collateral = getCollateralAllocated(vaultSeat);
 
     const giveColl = proposal.give[KW.Attestation] || emptyCollateral;
     const wantColl = proposal.want[KW.Attestation] || emptyCollateral;
@@ -289,7 +260,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
     const assertVaultHoldsNoRun = () => {
       assert(
-        AmountMath.isEmpty(manager.getRunAllocated(vaultSeat)),
+        AmountMath.isEmpty(getRunAllocated(vaultSeat)),
         X`Vault should be empty of debt`,
       );
     };
@@ -307,7 +278,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
    * @type {OfferHandler}
    */
   const closeHook = seat => {
-    assertActive();
+    assert(state.open);
     assertProposalShape(seat, {
       give: { [KW.Debt]: null },
       want: { [KW.Attestation]: null },
@@ -332,7 +303,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
     mint.burnLosses(harden({ [KW.Debt]: currentDebt }), vaultSeat);
     seat.exit();
-    assignPhase(LoanPhase.CLOSED);
+    state.open = false;
     updateDebtSnapshot(emptyDebt);
     updateUiState();
 
@@ -340,16 +311,16 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
   };
 
   const makeAdjustBalancesInvitation = () => {
-    assertActive();
+    assert(state.open);
     return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
   };
   const makeCloseInvitation = () => {
-    assertActive();
+    assert(state.open);
     return zcf.makeInvitation(closeHook, 'CloseVault');
   };
 
   const vault = Far('RUNstake', {
-    getNotifier: () => notifier,
+    getNotifier: () => state.ui.notifier,
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
     getCurrentDebt,
@@ -362,7 +333,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
   return harden({
     assetNotifier: manager.getAssetNotifier(),
-    vaultNotifier: notifier,
+    vaultNotifier: state.ui.notifier,
     invitationMakers: Far('invitation makers', {
       AdjustBalances: () =>
         zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances'),

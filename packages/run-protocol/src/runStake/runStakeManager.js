@@ -60,8 +60,6 @@ export const makeRunStakeManager = (
     return { maxDebt, amountLiened };
   };
 
-  const getRunAllocated = seat => seat.getAmountAllocated(KW.Debt, brands.debt);
-
   let totalDebt = AmountMath.makeEmpty(brands.debt, 'nat');
   let compoundedInterest = makeRatio(100n, brands.debt); // starts at 1.0, no interest
   let latestInterestUpdate = startTimeStamp;
@@ -155,19 +153,13 @@ export const makeRunStakeManager = (
   };
 
   return harden({
-    getCurrentTerms: () => ({
-      mintingRatio: paramManager.getMintingRatio(),
-      interestRate: paramManager.getInterestRate(),
-      loanFee: paramManager.getLoanFee(),
-    }),
+    getMintingRatio: paramManager.getMintingRatio,
+    getInterestRate: paramManager.getInterestRate,
     getLoanFee: paramManager.getLoanFee,
     maxDebtForLien,
     reallocateWithFee,
 
     getCollateralBrand: () => brands.Attestation,
-    getCollateralAllocated: seat =>
-      seat.getAmountAllocated('Attestation', brands.Attestation),
-    getRunAllocated,
     applyDebtDelta,
 
     getCompoundedInterest: () => compoundedInterest,
