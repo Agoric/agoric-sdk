@@ -206,6 +206,12 @@
  */
 
 /**
+ * @callback LooksLikeApiInvocation
+ * @param {unknown} issue
+ * @returns {asserts issue is ApiInvocationIssue}
+ */
+
+/**
  * @callback LooksLikeQuestionSpec
  * @param {unknown} allegedQuestionSpec
  * @returns {QuestionSpec}
@@ -355,7 +361,7 @@
  * @typedef {Object} ApiInvocationIssue
  * @property {string} methodName
  * @property {Instance} contract
- * @property {any} methodParams
+ * @property {[unknown]} methodParams
  */
 
 /**
@@ -498,12 +504,11 @@
 
 /**
  * @typedef {{
- *   getGovernedApis: () => unknown
  * }} GovernableCreatorFacet
  */
 
 /**
- * @template {GovernableCreatorFacet} [CF=any]
+ * @template {GovernableCreatorFacet} CF
  * @typedef {CF} LimitedCreatorFacet
  *
  * The creatorFacet for the governed contract that will be passed to the
@@ -517,7 +522,7 @@
  *   A powerful facet that carries access to both the creatorFacet to be passed
  *   to the caller and the paramManager, which will be used exclusively by the
  *   ContractGovernor.
- * @property {() => Promise<LimitedCreatorFacet>} getLimitedCreatorFacet
+ * @property {() => Promise<LimitedCreatorFacet<any>>} getLimitedCreatorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever
  */
 
@@ -526,7 +531,7 @@
  * @typedef {Object} GovernedContractFacetAccess
  * @property {VoteOnParamChange} voteOnParamChange
  * @property {VoteOnApiInvocation} voteOnApiInvocation
- * @property {() => Promise<LimitedCreatorFacet>} getCreatorFacet - creator
+ * @property {() => Promise<LimitedCreatorFacet<any>>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
@@ -562,7 +567,7 @@
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => CF & LimitedCreatorFacet} getLimitedCreatorFacet - the creator
+ * @property {() => LimitedCreatorFacet<CF>} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
@@ -605,7 +610,7 @@
 /**
  * @callback VoteOnApiInvocation
  * @param {string} apiMethod
- * @param {any} methodParams
+ * @param {[unknown]} methodParams
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
  * @returns {ContractGovernanceVoteResult}
@@ -624,17 +629,12 @@
  */
 
 /**
- * @callback GetUpdatedPoserFacet
- * @returns {Promise<PoserFacet>}
- */
-
-/**
  * @callback SetupGovernance
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
  * @param {Instance} contractInstance
  * @param {TimerService} timer
- * @param {GetUpdatedPoserFacet} getUpdatedPoserFacet
+ * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ParamGovernor}
  */
 

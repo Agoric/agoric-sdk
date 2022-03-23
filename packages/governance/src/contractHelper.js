@@ -82,9 +82,10 @@ const handleParamGovernance = (zcf, paramManager) => {
   /**
    * @template {GovernableCreatorFacet} CF creator facet
    * @param {ERef<CF>} originalCreatorFacet
+   * @param {Record<string, (...args: any[]) => any>} governedApis
    * @returns { ERef<GovernedCreatorFacet<CF>> }
    */
-  const wrapCreatorFacet = originalCreatorFacet => {
+  const wrapCreatorFacet = (originalCreatorFacet, governedApis = {}) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
@@ -95,6 +96,8 @@ const handleParamGovernance = (zcf, paramManager) => {
       },
       getInvitation: name => paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: () => limitedCreatorFacet,
+      getGovernedApis: () => Far('governedAPIs', governedApis),
+      getGovernedApiNames: () => Object.keys(governedApis),
     });
   };
 

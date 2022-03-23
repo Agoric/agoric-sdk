@@ -48,7 +48,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   ).startInstance(installation, issuerKeywordRecord, terms);
   const { vatAdminState } = fakeVatAdmin;
   // @ts-ignore fix types to understand that zcf is always defined
-  assert(zcf !== undefined);
+  assert(zcf !== undefined, 'zcf is required');
   return {
     zoe,
     zcf,

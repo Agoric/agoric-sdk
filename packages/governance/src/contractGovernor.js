@@ -169,11 +169,17 @@ const start = async zcf => {
   /** @type {() => Promise<ApiGovernor>} */
   const initApiGovernance = async () => {
     // @ts-ignore `governedApis` is present on contracts wiht API invocation.
-    if (governedTerms.governedApis) {
+
+    const [governedApis, governedNames] = await Promise.all([
+      E(governedCF).getGovernedApis(),
+      E(governedCF).getGovernedApiNames(),
+    ]);
+    if (governedNames.length) {
       return setupApiGovernance(
         zoe,
         governedInstance,
-        E(limitedCreatorFacet).getGovernedApis(),
+        governedApis,
+        governedNames,
         timer,
         getUpdatedPoserFacet,
       );

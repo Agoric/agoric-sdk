@@ -83,6 +83,7 @@ const looksLikeParamChangeIssue = issue => {
   assertInstance(issue.contract);
 };
 
+/** @type {LooksLikeApiInvocation} */
 const looksLikeApiInvocation = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(

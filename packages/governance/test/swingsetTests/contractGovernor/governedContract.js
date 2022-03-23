@@ -1,8 +1,5 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
-import { Far } from '@endo/far';
-
 import { handleParamGovernance } from '../../../src/contractHelper.js';
 import {
   assertElectorateMatches,
@@ -10,8 +7,6 @@ import {
   ParamTypes,
 } from '../../../src/index.js';
 import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
-
-const { details: X } = assert;
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
@@ -24,7 +19,6 @@ const makeTerms = (number, invitationAmount) => {
         value: invitationAmount,
       },
     },
-    governedApis: ['governanceApi'],
   });
 };
 
@@ -38,23 +32,14 @@ const makeTerms = (number, invitationAmount) => {
  *     MalleableNumber: ParamRecord<'nat'>,
  *     Electorate: ParamRecord<'invitation'>,
  *   },
- *   governedApis: ['governanceApi'],
  * },
  * {initialPoserInvitation: Payment}>
  */
 const start = async (zcf, privateArgs) => {
   const {
     main: { [MALLEABLE_NUMBER]: numberParam, ...otherGovernedTerms },
-    governedApis,
   } = zcf.getTerms();
   const { initialPoserInvitation } = privateArgs;
-
-  assert(
-    Array.isArray(governedApis) &&
-      governedApis.length === 1 &&
-      governedApis.includes('governanceApi'),
-    X`terms must declare "governanceApi" as a governed API`,
-  );
 
   const paramManager = await makeParamManager(
     {
@@ -79,9 +64,7 @@ const start = async (zcf, privateArgs) => {
       getNum: () => paramManager.getMalleableNumber(),
       getApiCalled: () => governanceAPICalled,
     }),
-    creatorFacet: wrapCreatorFacet({
-      getGovernedApis: () => Far('governedAPIs', { governanceApi }),
-    }),
+    creatorFacet: wrapCreatorFacet({}, { governanceApi }),
   };
 };
 

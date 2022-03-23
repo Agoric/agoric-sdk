@@ -12,6 +12,8 @@ import {
   looksLikeQuestionSpec,
 } from '../question.js';
 
+const { details: X } = assert;
+
 /**
  * Make a pair of positions for a question about whether to invoke an API. If
  * the vote passes, the method will be called on the governedApis facet with the
@@ -32,14 +34,16 @@ const makeApiInvocationPositions = (apiMethod, methodParams) => {
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} governedInstance
  * @param {any} governedApis
+ * @param {string[]} governedNames
  * @param {ERef<TimerService>} timer
- * @param {GetUpdatedPoserFacet} getUpdatedPoserFacet
+ * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {Promise<ApiGovernor>}
  */
 const setupApiGovernance = async (
   zoe,
   governedInstance,
   governedApis,
+  governedNames,
   timer,
   getUpdatedPoserFacet,
 ) => {
@@ -54,6 +58,11 @@ const setupApiGovernance = async (
     deadline,
   ) => {
     const outcomeOfUpdateP = makePromiseKit();
+
+    assert(
+      governedNames.includes(apiMethod),
+      X`${apiMethod} is not a governed API.`,
+    );
 
     const { positive, negative } = makeApiInvocationPositions(
       apiMethod,
