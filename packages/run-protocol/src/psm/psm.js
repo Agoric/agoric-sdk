@@ -13,7 +13,7 @@ import { Far } from '@endo/marshal';
 // import { CONTRACT_ELECTORATE } from '@agoric/governance';
 
 import { AmountMath } from '@agoric/ertp';
-import { makeMakeCollectFeesInvitation } from '../vaultFactory/collectRewardFees.js';
+import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 
 const { details: X } = assert;
 
@@ -162,10 +162,15 @@ export const start = async (zcf, privateArgs) => {
     // getContractGovernor: () => electionManager,
   });
 
+  const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
+    zcf,
+    feePool,
+    stableBrand,
+    'Stable',
+  );
   const creatorFacet = Far('Parity Stability Module', {
     getRewardAllocation,
-    makeCollectFeesInvitation: () =>
-      makeMakeCollectFeesInvitation(zcf, feePool, stableBrand),
+    makeCollectFeesInvitation,
     // getContractGovernor: () => electionManager,
   });
 

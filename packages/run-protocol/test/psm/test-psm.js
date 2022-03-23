@@ -117,7 +117,7 @@ test('simple trades', async t => {
     runKit: { runIssuer, runBrand },
     anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
   } = t.context;
-  const { publicFacet } = await E(zoe).startInstance(
+  const { publicFacet, creatorFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchorIssuer }),
     terms,
@@ -153,6 +153,18 @@ test('simple trades', async t => {
   const liq2 = await E(publicFacet).getCurrentLiquidity();
   t.deepEqual(AmountMath.subtract(giveAnchor, expectedAnchor), liq2);
   trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor, liq2 });
+
+  // Check the fees
+  // 1BP per anchor = 30000n plus 3BP per stable = 20000n
+  const collectFeesSeat = await E(zoe).offer(
+    E(creatorFacet).makeCollectFeesInvitation(),
+  );
+  await E(collectFeesSeat).getOfferResult();
+  const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
+    .RUN;
+  const expectedFee = AmountMath.make(runBrand, 50000n);
+  trace('Reward Fee', { feePayoutAmount, expectedFee });
+  t.truthy(AmountMath.isEqual(feePayoutAmount, expectedFee));
 });
 
 test('limit', async t => {
@@ -189,10 +201,7 @@ test('limit', async t => {
   trace('gone over limit');
 
   const paymentPs = await E(seat1).getPayouts();
-  // const refundAmount = await E(localIssuerP).getAmountOf(paymentPs.Transfer);
-
-  trace('PAYOUTS', paymentPs);
-  // We should get 0 RUN but all our anchor back
+  // We should get 0 RUN and all our anchor back
   // TODO should this be expecteed to be an empty Out?
   t.falsy(t.Out);
   // const actualRun = await E(runIssuer).getAmountOf(runPayout);
