@@ -294,8 +294,6 @@ function build(
   const disavowalError = harden(Error(`this Presence has been disavowed`));
 
   const importedPromisesByPromiseID = new Map(); // vpid -> { resolve, reject }
-  let nextExportID = 1;
-  let nextPromiseID = 5;
 
   function makeImportedPresence(slot, iface = `Alleged: presence ${slot}`) {
     // Called by convertSlotToVal for type=object (an `o-NN` reference). We
@@ -438,6 +436,46 @@ function build(
     return Remotable(iface);
   }
 
+  let idCounters;
+  let idCountersAreDirty = false;
+
+  function initializeIDCounters() {
+    if (!idCounters) {
+      const raw = syscall.vatstoreGet('idCounters');
+      if (raw) {
+        idCounters = JSON.parse(raw);
+      } else {
+        idCounters = {};
+      }
+    }
+  }
+
+  function allocateNextID(name, initialValue = 1) {
+    if (!idCounters) {
+      // Normally `initializeIDCounters` would be called from startVat, but some
+      // tests bypass that so this is a backstop.  Note that the invocation from
+      // startVat is there to make vatStore access patterns a bit more
+      // consistent from one vat to another, principally as a confusion
+      // reduction measure in service of debugging; it is not a correctness
+      // issue.
+      initializeIDCounters();
+    }
+    if (!idCounters[name]) {
+      idCounters[name] = initialValue;
+    }
+    const result = idCounters[name];
+    idCounters[name] += 1;
+    idCountersAreDirty = true;
+    return result;
+  }
+
+  function flushIDCounters() {
+    if (idCountersAreDirty) {
+      syscall.vatstoreSet('idCounters', JSON.stringify(idCounters));
+      idCountersAreDirty = false;
+    }
+  }
+
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
   // allocatePromiseID() returns a slot, exportPromise() uses the slot from
   // allocatePromiseID(), exportPassByPresence() generates a slot itself using
@@ -446,14 +484,22 @@ function build(
   // use a slot from the corresponding allocateX
 
   function allocateExportID() {
-    const exportID = nextExportID;
-    nextExportID += 1;
-    return exportID;
+    // We start exportIDs with 1 because 'o+0' is always automatically
+    // pre-assigned to the root object.
+    return allocateNextID('exportID', 1);
+  }
+
+  function allocateCollectionID() {
+    return allocateNextID('collectionID', 1);
   }
 
   function allocatePromiseID() {
-    const promiseID = nextPromiseID;
-    nextPromiseID += 1;
+    // The starting point for numbering promiseIDs is pretty arbitrary.  We start
+    // from 5 as a very minor aid to debugging: It helps, when puzzling over
+    // trace logs and the like, for the numbers in the various species of IDs to
+    // be a little out of sync and thus a little less similar to each other when
+    // jumbled together.
+    const promiseID = allocateNextID('promiseID', 5);
     return makeVatSlot('promise', true, promiseID);
   }
 
@@ -539,6 +585,7 @@ function build(
     syscall,
     vrm,
     allocateExportID,
+    allocateCollectionID,
     // eslint-disable-next-line no-use-before-define
     convertValToSlot,
     unmeteredConvertSlotToVal,
@@ -1164,6 +1211,7 @@ function build(
       });
     }
 
+    initializeIDCounters();
     const vatParameters = m.unserialize(vatParametersCapData);
     baggage = collectionManager.provideBaggage();
 
@@ -1267,6 +1315,14 @@ function build(
   }
 
   /**
+   * Do things that should be done (such as flushing caches to disk) after a
+   * dispatch has completed and user code has relinquished agency.
+   */
+  function afterDispatchActions() {
+    flushIDCounters();
+  }
+
+  /**
    * This 'dispatch' function is the entry point for the vat as a whole: the
    * vat-worker supervisor gives us VatDeliveryObjects (like
    * dispatch.deliver) to execute. Here in liveslots, we invoke user-provided
@@ -1315,11 +1371,14 @@ function build(
       // any promise it returns to fire.
       const p = Promise.resolve(delivery).then(unmeteredDispatch);
 
-      // Instead, we wait for userspace to become idle by draining the
-      // promise queue. We return 'p' so that any bugs in liveslots that
+      // Instead, we wait for userspace to become idle by draining the promise
+      // queue. We clean up and then return 'p' so any bugs in liveslots that
       // cause an error during unmeteredDispatch will be reported to the
       // supervisor (but only after userspace is idle).
-      return gcTools.waitUntilQuiescent().then(() => p);
+      return gcTools.waitUntilQuiescent().then(() => {
+        afterDispatchActions();
+        return p;
+      });
     }
   }
   harden(dispatch);

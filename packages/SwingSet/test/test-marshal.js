@@ -21,7 +21,10 @@ function makeUnmeteredMarshaller(syscall) {
 }
 
 test('serialize exports', t => {
-  const { m } = makeMarshaller(undefined, gcTools);
+  const syscall = {
+    vatstoreGet: () => undefined,
+  };
+  const { m } = makeMarshaller(syscall, gcTools);
   const ser = m.serialize;
   const o1 = Far('o1', {});
   const o2 = Far('o2', {
@@ -70,7 +73,10 @@ test('deserialize imports', async t => {
 });
 
 test('deserialize exports', t => {
-  const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(undefined);
+  const syscall = {
+    vatstoreGet: () => undefined,
+  };
+  const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(syscall);
   const o1 = Far('o1', {});
   m.serialize(o1); // allocates slot=1
   const a = unmeteredUnserialize({
@@ -98,6 +104,7 @@ test('serialize promise', async t => {
     resolve(resolutions) {
       log.push(resolutions);
     },
+    vatstoreGet: () => undefined,
   };
 
   const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(syscall);
