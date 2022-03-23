@@ -182,18 +182,14 @@ const start = async (zcf, privateArgs) => {
     zcf.reallocate(offerToSeat, collateralSeat);
   };
 
-  const governedApis = Far('governed APIs', {
-    addLiquidityToAmmPool,
-  });
-
   const creatorFacet = wrapCreatorFacet(
-    Far('collateral reserve creator', {
+    {
       makeAddCollateralInvitation,
       // TODO: makeRedeemLiquidityTokensInvitation,
       getAllocations,
       addIssuer,
-      getGovernedApis: () => governedApis,
-    }),
+    },
+    { addLiquidityToAmmPool },
   );
 
   /** @typedef {typeof creatorFacet} ReserveCreatorFacet */
