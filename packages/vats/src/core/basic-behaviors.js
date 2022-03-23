@@ -207,7 +207,7 @@ export const mintInitialSupply = async ({
     { bootstrapPaymentValue },
     { feeMintAccess },
   );
-  const payment = creatorFacet.getBootstrapPayment();
+  const payment = E(creatorFacet).getBootstrapPayment();
   // TODO: shut down the centralSupply contract, now that we have the payment?
   initialSupply.resolve(payment);
 };
