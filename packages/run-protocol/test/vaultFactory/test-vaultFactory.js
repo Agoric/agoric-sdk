@@ -278,7 +278,7 @@ async function setupServices(
   });
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
-  /** @type {Promise<VaultFactory & LimitedCreatorFacet>} */
+  /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
   const vaultFactoryCreatorFacet = /** @type { any } */ (
     E(governorCreatorFacet).getCreatorFacet()
   );
