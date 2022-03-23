@@ -42,9 +42,6 @@ const start = async (zcf, privateArgs) => {
     },
   } = zcf.getTerms();
 
-  // we need a keyword for each issuer, but issuers don't have unique names. The
-  // first brand with any alleged name gets that as its keyword. Others get a
-  // modified version. The names aren't visible to users.
   /** @type {MapStore<Brand, Keyword>} */
   const keywordForBrand = makeStore('keywords');
   /** @type {MapStore<Keyword, [Brand, Brand]>} */
