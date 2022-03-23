@@ -1,5 +1,5 @@
 /**
- * @typedef AttMaker
+ * @typedef AttestationMaker
  * @property {(amountToLien: Amount<'nat'>) => Promise<Payment>} makeAttestation
  * @property {() => Amount<'nat'> }  getLiened
  * @property {() => Promise<AccountState>} getAccountState

@@ -12,18 +12,20 @@ export { KW };
  * Provide loans on the basis of staked assets that earn rewards.
  *
  * In addition to brands and issuers for `Staked`, `RUN`, and attestation,
- * terms of the contract include a periodic interest rate plus
- * a fee proportional to the amount borrowed, as well as a ratio
- * of funds to mint and loan per unit of staked asset.
+ * terms of the contract include a periodic `InterestRate`
+ * plus a `LoanFee` proportional to the amount borrowed, as well as
+ * a `MintingRatio` of funds to (mint and) loan per unit of staked asset.
  * These terms are subject to change by the `Electorate`
  * and `electionManager` terms.
  *
  * @typedef {{
+ *   MintingRatio: ParamRecord<'ratio'>,
+ *   InterestRate: ParamRecord<'ratio'>,
+ *   LoanFee: ParamRecord<'ratio'>,
+ * }} RunStakeParamTerms
+ * @typedef {{
  *   electionManager: VoteOnParamChange,
- *   main: {
- *     MintingRatio: ParamRecord<'ratio'>,
- *     InterestRate: ParamRecord<'ratio'>,
- *     LoanFee: ParamRecord<'ratio'>,
+ *   main: RunStakeParamTerms & {
  *     Electorate: ParamRecord<'invitation'>,
  *   },
  * }} RunStakeGovernanceTerms
@@ -46,7 +48,7 @@ export { KW };
  *   makeReturnAttInvitation: () => Promise<Invitation>,
  * }} RunStakePublic
  *
- * To take out a loan, get an `AttMaker` for your address from
+ * To take out a loan, get an `AttestationMaker` for your address from
  * the creator of this contract, and use
  * `E(attMaker).makeAttestation(stakedAmount)` to take out a lien
  * and get a payment that attests to the lien. Provide the payment
@@ -67,10 +69,10 @@ export { KW };
  *   lienBridge: ERef<StakingAuthority>,
  * }} RunStakePrivateArgs
  *
- * The creator facet can make an `AttMaker` for each account, which
+ * The creator facet can make an `AttestationMaker` for each account, which
  * authorizes placing a lien some of the staked assets in that account.
  * @typedef {{
- *   provideAttestationMaker: (addr: string) => AttMaker,
+ *   provideAttestationMaker: (addr: string) => AttestationMaker,
  *   getLiened: (address: string, brand: Brand<'nat'>) => Amount<'nat'>,
  * }} RunStakeCreator
  *
