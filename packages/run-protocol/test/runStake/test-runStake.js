@@ -691,8 +691,9 @@ const makeWorld = async t0 => {
       );
       await E(seat).getOfferResult(); // 'RUN line of credit closed'
       const attBack = await E(seat).getPayout(KW.Attestation);
-
+      const runPmt = await E(seat).getPayout(KW.Debt);
       await returnAttestation(attBack);
+      await E(runPurse).deposit(runPmt);
     },
     checkRUNBalance: async (target, t) => {
       const actual = await E(runPurse).getCurrentAmount();
