@@ -22,7 +22,7 @@ const transcript1 = [
   ],
   [
     '/xsnap-tests/00001-evaluate.dat',
-    'issueCommand(ArrayBuffer.fromString("Hello, World!"));',
+    'issueCommand(new TextEncoder().encode("Hello, World!").buffer);',
   ],
   ['/xsnap-tests/00002-command.dat', '{"currentHeap'],
   ['/xsnap-tests/00003-reply.dat', ''],
@@ -37,7 +37,9 @@ test('record: evaluate and issueCommand', async t => {
 
   const vat = recordXSnap(opts, '/xsnap-tests/', { writeFileSync });
 
-  await vat.evaluate(`issueCommand(ArrayBuffer.fromString("Hello, World!"));`);
+  await vat.evaluate(
+    `issueCommand(new TextEncoder().encode("Hello, World!").buffer);`,
+  );
   await vat.close();
   t.deepEqual(['Hello, World!'], opts.messages);
 

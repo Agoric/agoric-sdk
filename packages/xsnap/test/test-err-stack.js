@@ -35,9 +35,9 @@ async function makeWorker() {
   await vat.evaluate(`
     globalThis.handleCommand = bytes => {
       const report = {};
-      const src = String.fromArrayBuffer(bytes);
+      const src = new TextDecoder().decode(bytes);
       const it = eval(src);
-      report.result = ArrayBuffer.fromString(JSON.stringify(it));
+      report.result = new TextEncoder().encode(JSON.stringify(it)).buffer;
       return report;
     };
   `);

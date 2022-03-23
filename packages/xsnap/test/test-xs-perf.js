@@ -48,7 +48,7 @@ test('meter details', async t => {
 
   t.like(
     meters,
-    { compute: 1_380_192, allocate: 42_074_144 },
+    { compute: 1_380_187, allocate: 42_074_144 },
     'compute, allocate meters should be stable; update METER_TYPE?',
   );
 
@@ -62,7 +62,7 @@ test('meter details', async t => {
     },
     'evaluate returns meter details',
   );
-  t.is(meterType, 'xs-meter-12');
+  t.is(meterType, 'xs-meter-13');
 });
 
 test('isReady does not compute / allocate', async t => {
@@ -97,7 +97,7 @@ test('metering regex - REDOS', async t => {
   'aaaaaaaaa!'.match(/^(([a-z])+.)+/)
   `);
   const { meterUsage: meters } = result;
-  t.like(meters, { compute: 153 });
+  t.like(meters, { compute: 142 });
 });
 
 test('meter details are still available with no limit', async t => {
@@ -121,7 +121,7 @@ test('high resolution timer', async t => {
   const vat = xsnap(opts);
   t.teardown(() => vat.terminate());
   await vat.evaluate(`
-      const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+      const send = it => issueCommand(new TextEncoder().encode(JSON.stringify(it)).buffer);
 
       const t = performance.now();
       send(t);
@@ -169,7 +169,7 @@ test('metering switch - start compartment only', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     resetMeter(0, 0);
     try {
       (new Compartment()).evalate('resetMeter(0, 0)');
@@ -186,8 +186,10 @@ function dataStructurePerformance(logn) {
   // eslint-disable-next-line no-bitwise
   const n = 1 << logn;
   // @ts-ignore
-  // eslint-disable-next-line no-undef
-  const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  const send = it => {
+    // eslint-disable-next-line no-undef
+    return issueCommand(new TextEncoder().encode(JSON.stringify(it)).buffer);
+  };
   const t0 = performance.now();
   for (let i = 0; i < 256; i += 1) {
     const a = [];
