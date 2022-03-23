@@ -18,12 +18,12 @@ export {
   makeScalarWeakSetStore,
 };
 
-let MyVatData;
+let VatDataGlobal;
 if ('VatData' in globalThis) {
-  MyVatData = VatData;
+  VatDataGlobal = VatData;
 } else {
   console.log('Emulating VatData');
-  MyVatData = {
+  VatDataGlobal = {
     defineKind: () => assert.fail('fake defineKind not yet implemented'),
     defineDurableKind: () =>
       assert.fail('fake defineDurableKind not yet implemented'),
@@ -43,4 +43,4 @@ export const {
   makeScalarBigWeakMapStore,
   makeScalarBigSetStore,
   makeScalarBigWeakSetStore,
-} = MyVatData;
+} = VatDataGlobal;
