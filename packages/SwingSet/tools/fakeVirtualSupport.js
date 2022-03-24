@@ -141,6 +141,13 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     return exportID;
   }
 
+  let nextCollectionID = 1;
+  function allocateCollectionID() {
+    const collectionID = nextCollectionID;
+    nextCollectionID += 1;
+    return collectionID;
+  }
+
   // note: The real liveslots slotToVal() maps slots (vrefs) to a WeakRef,
   // and the WeakRef may or may not contain the target value. Use
   // options={weak:true} to match that behavior, or the default weak:false to
@@ -208,6 +215,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   return {
     syscall,
     allocateExportID,
+    allocateCollectionID,
     getSlotForVal,
     getValForSlot,
     setValForSlot,

@@ -263,6 +263,7 @@ function validateUpdate(v, key, before, after) {
 function validateMakeAndHold(v, rp) {
   validateCreateStore(v, mainHeldIdx);
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 }
 
@@ -442,6 +443,9 @@ function validateImportAndHold(v, rp, idx) {
     validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
   }
   validateReturned(v, rp);
+  if (idx === NONE) {
+    validate(v, matchVatstoreSet('idCounters'));
+  }
   validateDone(v);
 }
 
@@ -461,6 +465,7 @@ function validateCreateHolder(v, idx) {
 }
 
 function validateInit(v) {
+  validate(v, matchVatstoreGet('idCounters', NONE));
   validate(v, matchVatstoreGet('baggageID', NONE));
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
@@ -858,6 +863,7 @@ function validatePrepareStore3(
   validate(v, matchVatstoreSet(`vc.${base + 2}.|entryCount`, '1'));
 
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   if (!nonVirtual) {
     validateRefCountCheck(v, contentRef, '3');
     if (checkES) {
@@ -971,6 +977,7 @@ test.serial('store refcount management 3', async t => {
   validate(v, matchVatstoreGet(`vc.${base + 2}.|entryCount`, '0'));
   validate(v, matchVatstoreSet(`vc.${base + 2}.|entryCount`, '1'));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateStatusCheck(v, mapRef(mainHeldIdx), '1', NONE);
   validateStatusCheck(v, mapRef(base), '1', NONE);
   validateStatusCheck(v, mapRef(base + 1), '1', NONE);
@@ -1078,6 +1085,7 @@ test.serial('remotable refcount management 1', async t => {
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateInit(v);
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
@@ -1109,6 +1117,7 @@ test.serial('remotable refcount management 2', async t => {
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateInit(v);
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
@@ -1163,6 +1172,7 @@ test.serial('verify store weak key GC', async t => {
   validate(v, matchVatstoreGet(`vc.${setID}.|${mapRef(keyID)}`, '1'));
   validate(v, matchVatstoreSet(`vc.${setID}.${ordinalKey}`, nullValString));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   t.is(testHooks.countCollectionsForWeakKey(mapRef(keyID)), 2);
@@ -1246,6 +1256,7 @@ test.serial('verify presence weak key GC', async t => {
   validate(v, matchVatstoreGet(`vc.${setID}.|${presenceRef}`, '1'));
   validate(v, matchVatstoreSet(`vc.${setID}.${ordinalKey}`, nullValString));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
 
   t.is(testHooks.countCollectionsForWeakKey(presenceRef), 2);
   t.is(testHooks.storeSizeInternal(mapRef(mapID)), 1);
