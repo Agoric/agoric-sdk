@@ -404,11 +404,13 @@ export const splitAllCentralPayments = async (
   balances,
   central,
 ) => {
+  const runPurseP = E(central.issuer).makeEmptyPurse();
   const ammPoolAmounts = values(balances).map(b =>
     AmountMath.make(central.brand, b),
   );
 
-  const allPayments = await E(central.issuer).splitMany(
+  const allPayments = await E(central.issuer).adaptSplitMany(
+    runPurseP,
     bootstrapPayment,
     ammPoolAmounts,
   );
