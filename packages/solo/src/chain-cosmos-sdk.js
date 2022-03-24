@@ -571,7 +571,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
   /**
    * @typedef {bigint} SeqNum
-   * @type {[SeqNum, any][]} Ordered by seqnum
+   * @type {[SeqNum, any][]} Ordered By seqnum
    */
   let messagePool = [];
 

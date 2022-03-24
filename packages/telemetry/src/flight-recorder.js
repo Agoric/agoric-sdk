@@ -83,7 +83,7 @@ export const makeMemoryMappedCircularBuffer = async ({
     circularBufferSize,
   );
 
-  /** @type {Uint8Array} BufferFromFile mmap()s the file into the process address space. */
+  /** @type {Uint8Array} BufferFromFile Mmap()s the file into the process address space. */
   const fileBuf = BufferFromFile(filename).Uint8Array();
   const header = new DataView(fileBuf.buffer, 0, I_ARENA_START);
 

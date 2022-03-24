@@ -25,18 +25,12 @@
  * @property {IssuerKeywordRecord} issuers - Record with keywords keys, issuer values
  * @property {BrandKeywordRecord} brands - Record with keywords keys, brand values
  *
- *
- *
  * @typedef {StandardTerms & Record<string, any>} AnyTerms
- *
- *
  *
  * @typedef {Object} InstanceRecord
  * @property {Installation} installation
  * @property {Instance} instance
  * @property {AnyTerms} terms - Contract parameters
- *
- *
  *
  * @typedef {Object} IssuerRecord
  * @property {Brand<K>} brand
@@ -44,11 +38,7 @@
  * @property {K} assetKind
  * @property {any} [displayInfo]
  *
- *
- *
  * @typedef {AmountKeywordRecord} Allocation
- *
- *
  *
  * @typedef {Record<Keyword, AmountMath>} AmountMathKeywordRecord
  */

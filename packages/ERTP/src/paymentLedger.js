@@ -267,7 +267,7 @@ export const makePaymentLedger = (
    * Used by the purse code to implement purse.deposit
    *
    * @param {Amount} currentBalance - The current balance of the purse before a deposit
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
+   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - Commit the
    *   purse balance
    * @param {Payment} srcPayment
    * @param {Pattern} [optAmountShape]
@@ -305,7 +305,7 @@ export const makePaymentLedger = (
    * Used by the purse code to implement purse.withdraw
    *
    * @param {Amount} currentBalance - The current balance of the purse before a withdrawal
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
+   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - Commit the
    *   purse balance
    * @param {Amount} amount - The amount to be withdrawn
    * @returns {Payment}
