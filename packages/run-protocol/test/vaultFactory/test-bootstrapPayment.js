@@ -100,7 +100,11 @@ test('bootstrap payment - only minted once', async t => {
 
   const issuers = { RUN: runIssuer };
 
-  const claimedPayment = await E(issuers.RUN).claim(bootstrapPayment);
+  const runPurseP = E(runIssuer).makeEmptyPurse();
+  const claimedPayment = await E(issuers.RUN).adaptClaim(
+    runPurseP,
+    bootstrapPayment,
+  );
   const bootstrapAmount = await E(issuers.RUN).getAmountOf(claimedPayment);
 
   t.true(
@@ -114,9 +118,12 @@ test('bootstrap payment - only minted once', async t => {
 
   const bootstrapPayment2 = E(creatorFacet).getBootstrapPayment();
 
-  await t.throwsAsync(() => E(issuers.RUN).claim(bootstrapPayment2), {
-    message: /was not a live payment/,
-  });
+  await t.throwsAsync(
+    () => E(issuers.RUN).adaptClaim(runPurseP, bootstrapPayment2),
+    {
+      message: /was not a live payment/,
+    },
+  );
 });
 
 test('bootstrap payment - default value is 0n', async t => {

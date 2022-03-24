@@ -13,6 +13,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
   const [_moolaPayment, simoleanPayment, bucksPayment] = payments;
   const [moolaIssuer, simoleanIssuer, bucksIssuer] = issuers;
   const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   let secondPriceAuctionSeatP;
 
@@ -21,7 +22,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await E(invitationIssuer).adaptClaim(
+        invitationPurseP,
+        invitation,
+      );
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
@@ -71,7 +75,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await E(invitationIssuer).adaptClaim(
+        invitationPurseP,
+        invitation,
+      );
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );

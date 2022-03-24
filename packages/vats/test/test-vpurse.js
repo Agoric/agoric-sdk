@@ -271,10 +271,11 @@ test('vpurse.deposit', async t => {
 test('vpurse.deposit promise', async t => {
   t.plan(2);
   const { issuer, mint, brand, vpurse } = setup(t);
+  const homePurseP = E(issuer).makeEmptyPurse();
   const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
-  const exclusivePaymentP = E(issuer).claim(payment);
+  const exclusivePaymentP = E(issuer).adaptClaim(homePurseP, payment);
 
   await t.throwsAsync(
     // @ts-ignore deliberate invalid arguments for testing

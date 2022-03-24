@@ -40,6 +40,7 @@ test('barter with valid offers', async t => {
 
   // Setup Bob
   const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7n));
+  const bobInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // 1: Simon creates a barter instance and spreads the instance far and
   // wide with instructions on how to use it.
@@ -77,7 +78,10 @@ test('barter with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 4: Bob decides to join.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    bobInvitation,
+  );
 
   t.is(bobInstallation, installation);
   t.is(bobInstance, instance);

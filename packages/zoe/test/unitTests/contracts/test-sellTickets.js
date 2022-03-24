@@ -150,6 +150,7 @@ test(`mint and sell opera tickets`, async t => {
 
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
@@ -278,12 +279,16 @@ test(`mint and sell opera tickets`, async t => {
     );
   };
 
+  const jokerInvitationPurseP = E(invitationIssuerP).makeEmptyPurse();
   // === Joker part ===
   // Joker starts with 100 moolas
   // Joker attempts to buy ticket 1 (and should fail)
   const jokerBuysTicket1 = async (untrustedInvitation, moola100Payment) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await E(invitationIssuer).adaptClaim(
+      jokerInvitationPurseP,
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
@@ -356,7 +361,10 @@ test(`mint and sell opera tickets`, async t => {
     moola100Payment,
   ) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await E(invitationIssuer).adaptClaim(
+      jokerInvitationPurseP,
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
@@ -421,12 +429,16 @@ test(`mint and sell opera tickets`, async t => {
     );
   };
 
+  const bobInvitationPurseP = E(invitationIssuerP).makeEmptyPurse();
+
   const bobBuysTicket2And3 = async (untrustedInvitation, moola100Payment) => {
-    const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await E(invitationIssuerP).adaptClaim(
+      bobInvitationPurseP,
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
-    } = await E(invitationIssuer).getAmountOf(invitation);
+    } = await E(invitationIssuerP).getAmountOf(invitation);
     const ticketSalesPublicFacet = await E(zoe).getPublicFacet(
       ticketSalesInstance,
     );

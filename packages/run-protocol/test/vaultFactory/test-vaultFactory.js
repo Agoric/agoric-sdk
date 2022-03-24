@@ -346,6 +346,7 @@ test('first', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
+  const runPurseP = E(runIssuer).makeEmptyPurse();
 
   // Add a vault that will lend on aeth collateral
   const rates = makeRates(runBrand);
@@ -396,7 +397,8 @@ test('first', async t => {
   // partially payback
   const collateralWanted = AmountMath.make(aethBrand, 100n);
   const paybackAmount = AmountMath.make(runBrand, 200n);
-  const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
+  const [paybackPayment, _remainingPayment] = await E(runIssuer).adaptSplit(
+    runPurseP,
     runLent,
     paybackAmount,
   );
@@ -1075,6 +1077,7 @@ test('adjust balances', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
+  const runPurseP = E(runIssuer).makeEmptyPurse();
 
   const rates = makeRates(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
@@ -1132,7 +1135,8 @@ test('adjust balances', async t => {
   runDebtLevel = AmountMath.subtract(runDebtLevel, depositRunAmount);
   collateralLevel = AmountMath.add(collateralLevel, collateralIncrement);
 
-  const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
+  const [paybackPayment, _remainingPayment] = await E(runIssuer).adaptSplit(
+    runPurseP,
     runLent,
     depositRunAmount,
   );
@@ -1328,6 +1332,7 @@ test('transfer vault', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
+  const runPurseP = E(runIssuer).makeEmptyPurse();
 
   const rates = makeRates(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
@@ -1411,7 +1416,8 @@ test('transfer vault', async t => {
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 RUN');
   const borrowedRun = await aliceProceeds.RUN;
   const payoffRun2 = AmountMath.make(runBrand, 600n);
-  const [paybackPayment, _remainingPayment] = await E(runIssuer).split(
+  const [paybackPayment, _remainingPayment] = await E(runIssuer).adaptSplit(
+    runPurseP,
     borrowedRun,
     payoffRun2,
   );
@@ -1493,6 +1499,7 @@ test('overdeposit', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
+  const runPurseP = E(runIssuer).makeEmptyPurse();
 
   const rates = makeRates(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
@@ -1566,7 +1573,10 @@ test('overdeposit', async t => {
 
   // overpay debt ///////////////////////////////////// (give RUN)
 
-  const combinedRun = await E(runIssuer).combine(harden([borrowedRun, bobRun]));
+  const combinedRun = await E(runIssuer).adaptCombine(
+    runPurseP,
+    harden([borrowedRun, bobRun]),
+  );
   const depositRun2 = AmountMath.make(runBrand, 6000n);
 
   const aliceOverpaySeat = await E(zoe).offer(
@@ -1953,6 +1963,7 @@ test('close loan', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
+  const runPurseP = E(runIssuer).makeEmptyPurse();
 
   const rates = makeRates(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
@@ -2024,7 +2035,10 @@ test('close loan', async t => {
 
   // close loan, using Bob's RUN /////////////////////////////////////
 
-  const runRepayment = await E(runIssuer).combine(harden([bobRun, runLent]));
+  const runRepayment = await E(runIssuer).adaptCombine(
+    runPurseP,
+    harden([bobRun, runLent]),
+  );
 
   /** @type {UserSeat<string>} */
   const aliceCloseSeat = await E(zoe).offer(

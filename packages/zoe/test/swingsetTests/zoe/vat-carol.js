@@ -12,12 +12,16 @@ const build = async (log, zoe, issuers, payments, installations) => {
   const [_moolaPayment, simoleanPayment] = payments;
   const [moolaIssuer, simoleanIssuer] = issuers;
   const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   let secondPriceAuctionSeatP;
 
   return Far('build', {
     doSecondPriceAuctionBid: async invitationP => {
-      const invitation = await E(invitationIssuer).claim(invitationP);
+      const invitation = await E(invitationIssuer).adaptClaim(
+        invitationPurseP,
+        invitationP,
+      );
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);

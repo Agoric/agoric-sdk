@@ -113,8 +113,10 @@ test('assertLivePayment', async t => {
 
   const paymentB = E(mintB).mintPayment(AmountMath.make(brandB, 837n));
 
+  const homePurseP = E(issuer).makeEmptyPurse();
+
   // payment is of the wrong brand
-  await t.throwsAsync(() => E(issuer).claim(paymentB), {
+  await t.throwsAsync(() => E(issuer).adaptClaim(homePurseP, paymentB), {
     message:
       '"[Alleged: fungibleB payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
@@ -122,9 +124,9 @@ test('assertLivePayment', async t => {
   // payment is used up
   const payment = E(mint).mintPayment(AmountMath.make(brand, 10n));
   // use up payment
-  await E(issuer).claim(payment);
+  await E(issuer).adaptClaim(homePurseP, payment);
 
-  await t.throwsAsync(() => E(issuer).claim(payment), {
+  await t.throwsAsync(() => E(issuer).adaptClaim(homePurseP, payment), {
     message:
       '"[Alleged: fungible payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
@@ -132,12 +134,13 @@ test('assertLivePayment', async t => {
 
 test('issuer.combine bad payments array', async t => {
   const { issuer } = makeIssuerKit('fungible');
+  const homePurseP = E(issuer).makeEmptyPurse();
   const notAnArray = {
     length: 2,
     split: () => {},
   };
   // @ts-expect-error Intentional wrong type for testing
-  await t.throwsAsync(() => E(issuer).combine(notAnArray), {
+  await t.throwsAsync(() => E(issuer).adaptCombine(homePurseP, notAnArray), {
     message:
       'cannot serialize Remotables with non-methods like "length" in {"length":2,"split":"[Function split]"}',
   });
@@ -147,7 +150,7 @@ test('issuer.combine bad payments array', async t => {
     split: () => {},
   });
   // @ts-ignore Intentional wrong type for testing
-  await t.throwsAsync(() => E(issuer).combine(notAnArray2), {
+  await t.throwsAsync(() => E(issuer).adaptCombine(homePurseP, notAnArray2), {
     message:
       '"fromPaymentsArray" "[Alleged: notAnArray2]" must be a pass-by-copy array, not "remotable"',
   });

@@ -47,6 +47,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
   const swapInstallationId = await E(zoe).installBundleID('b1-atomicswap');
+  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitationBrand = await E(invitationIssuer).getBrand();
 
   // Setup Alice
   // Alice starts with 3 moola
@@ -59,6 +61,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
   const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
   const bobBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const bobInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // Setup Dave
   // Dave starts with 1 buck
@@ -113,9 +116,10 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // party in the covered call: Did the covered call use the
   // expected covered call installation (code)? Does it use the issuers
   // that he expects (moola and simoleans)?
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const invitationBrand = await E(invitationIssuer).getBrand();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    optionP,
+  );
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
   const optionDesc = optionAmount.value[0];
   t.is(optionDesc.installation, coveredCallInstallation);

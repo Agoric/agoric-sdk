@@ -43,6 +43,7 @@ test('simpleExchange with valid offers', async t => {
 
   // Setup Bob
   const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(7n));
+  const bobInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // 1: Alice creates a simpleExchange instance and spreads the publicFacet far
   // and wide with instructions on how to call makeInvitation().
@@ -121,7 +122,10 @@ test('simpleExchange with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 5: Bob decides to join.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    bobInvitation,
+  );
 
   const bobIssuers = await E(zoe).getIssuers(instance);
 
@@ -232,6 +236,7 @@ test('simpleExchange with multiple sell offers', async t => {
   const aliceSimoleanPurse = simoleanIssuer.makeEmptyPurse();
   await aliceMoolaPurse.deposit(aliceMoolaPayment);
   await aliceSimoleanPurse.deposit(aliceSimoleanPayment);
+  const aliceInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // 1: Simon creates a simpleExchange instance and spreads the publicFacet
   // far and wide with instructions on how to use it.
@@ -260,7 +265,8 @@ test('simpleExchange with multiple sell offers', async t => {
   );
 
   // 5: Alice adds another sell order to the exchange
-  const aliceInvitation2 = await E(invitationIssuer).claim(
+  const aliceInvitation2 = await E(invitationIssuer).adaptClaim(
+    aliceInvitationPurseP,
     await E(publicFacet).makeInvitation(),
   );
   const aliceSale2OrderProposal = harden({
@@ -278,7 +284,8 @@ test('simpleExchange with multiple sell offers', async t => {
   );
 
   // 5: Alice adds a buy order to the exchange
-  const aliceInvitation3 = await E(invitationIssuer).claim(
+  const aliceInvitation3 = await E(invitationIssuer).adaptClaim(
+    aliceInvitationPurseP,
     await E(publicFacet).makeInvitation(),
   );
   const aliceBuyOrderProposal = harden({
@@ -339,6 +346,7 @@ test('simpleExchange with non-fungible assets', async t => {
 
   // Setup Bob
   const bobCcPayment = ccMint.mintPayment(cryptoCats(harden(['Cheshire Cat'])));
+  const bobInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // 1: Simon creates a simpleExchange instance and spreads the invitation far and
   // wide with instructions on how to use it.
@@ -368,7 +376,10 @@ test('simpleExchange with non-fungible assets', async t => {
   // 5: Bob decides to join.
   const bobInstance = await E(zoe).getInstance(bobInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    bobInvitation,
+  );
 
   t.is(bobInstallation, installation);
 

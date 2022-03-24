@@ -101,11 +101,12 @@ export const makePaymentLedger = (
    * `purse.deposit` and `purse.withdraw` move assets between a purse and
    * a payment, and so must also enforce conservation there.
    *
+   * @param {Purse} home
    * @param {Payment[]} payments
    * @param {Amount[]} newPaymentBalances
    * @returns {Payment[]}
    */
-  const moveAssets = (payments, newPaymentBalances) => {
+  const adaptMoveAssets = (home, payments, newPaymentBalances) => {
     assertCopyArray(payments, 'payments');
     assertCopyArray(newPaymentBalances, 'newPaymentBalances');
 
@@ -187,14 +188,15 @@ export const makePaymentLedger = (
     });
   };
 
-  /** @type {IssuerClaim} */
-  const claim = (paymentP, optAmountShape = undefined) => {
-    return E.when(paymentP, srcPayment => {
+  /** @type {AdaptIssuerClaim} */
+  const adaptClaim = (homeP, paymentP, optAmountShape = undefined) => {
+    return Promise.all([homeP, paymentP]).then(([home, srcPayment]) => {
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       assertAmountConsistent(srcPaymentBalance, optAmountShape);
       // Note COMMIT POINT within moveAssets.
-      const [payment] = moveAssets(
+      const [payment] = adaptMoveAssets(
+        home,
         harden([srcPayment]),
         harden([srcPaymentBalance]),
       );
@@ -202,36 +204,44 @@ export const makePaymentLedger = (
     });
   };
 
-  /** @type {IssuerCombine} */
-  const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
+  /** @type {AdaptIssuerCombine} */
+  const adaptCombine = (
+    homeP,
+    fromPaymentsPArray,
+    optTotalAmount = undefined,
+  ) => {
     assertCopyArray(fromPaymentsPArray, 'fromPaymentsArray');
     // Payments in `fromPaymentsPArray` must be distinct. Alias
     // checking is delegated to the `moveAssets` function.
-    return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
-      fromPaymentsArray.every(assertLivePayment);
-      const totalPaymentsBalance = fromPaymentsArray
-        .map(paymentLedger.get)
-        .reduce(add, emptyAmount);
-      assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
-      // Note COMMIT POINT within moveAssets.
-      const [payment] = moveAssets(
-        harden(fromPaymentsArray),
-        harden([totalPaymentsBalance]),
-      );
-      return payment;
-    });
+    return Promise.all([homeP, ...fromPaymentsPArray]).then(
+      ([home, ...fromPaymentsArray]) => {
+        fromPaymentsArray.every(assertLivePayment);
+        const totalPaymentsBalance = fromPaymentsArray
+          .map(paymentLedger.get)
+          .reduce(add, emptyAmount);
+        assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
+        // Note COMMIT POINT within moveAssets.
+        const [payment] = adaptMoveAssets(
+          home,
+          harden(fromPaymentsArray),
+          harden([totalPaymentsBalance]),
+        );
+        return payment;
+      },
+    );
   };
 
-  /** @type {IssuerSplit} */
+  /** @type {AdaptIssuerSplit} */
   // payment to two payments, A and B
-  const split = (paymentP, paymentAmountA) => {
-    return E.when(paymentP, srcPayment => {
+  const adaptSplit = (homeP, paymentP, paymentAmountA) => {
+    return Promise.all([homeP, paymentP]).then(([home, srcPayment]) => {
       paymentAmountA = coerce(paymentAmountA);
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
       const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
       // Note COMMIT POINT within moveAssets.
-      const newPayments = moveAssets(
+      const newPayments = adaptMoveAssets(
+        home,
         harden([srcPayment]),
         harden([paymentAmountA, paymentAmountB]),
       );
@@ -239,14 +249,18 @@ export const makePaymentLedger = (
     });
   };
 
-  /** @type {IssuerSplitMany} */
-  const splitMany = (paymentP, amounts) => {
-    return E.when(paymentP, srcPayment => {
+  /** @type {AdaptIssuerSplitMany} */
+  const adaptSplitMany = (homeP, paymentP, amounts) => {
+    return Promise.all([homeP, paymentP]).then(([home, srcPayment]) => {
       assertLivePayment(srcPayment);
       assertCopyArray(amounts, 'amounts');
       amounts = amounts.map(coerce);
       // Note COMMIT POINT within moveAssets.
-      const newPayments = moveAssets(harden([srcPayment]), harden(amounts));
+      const newPayments = adaptMoveAssets(
+        home,
+        harden([srcPayment]),
+        harden(amounts),
+      );
       return newPayments;
     });
   };
@@ -351,10 +365,10 @@ export const makePaymentLedger = (
     isLive,
     getAmountOf,
     burn,
-    claim,
-    combine,
-    split,
-    splitMany,
+    adaptClaim,
+    adaptCombine,
+    adaptSplit,
+    adaptSplitMany,
     getBrand: () => brand,
     getAllegedName: () => allegedName,
     getAssetKind: () => assetKind,

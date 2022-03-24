@@ -51,6 +51,7 @@ test('autoSwap API interactions, no jig', async t => {
   // Setup Bob
   const bobMoolaPayment = moolaMint.mintPayment(moola(3n));
   const bobSimoleanPayment = simoleanMint.mintPayment(simoleans(3n));
+  const bobInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // Alice creates an autoswap instance
   const issuerKeywordRecord = harden({
@@ -107,7 +108,10 @@ test('autoSwap API interactions, no jig', async t => {
   const bobInvitation = await E(publicFacet).makeSwapInvitation();
 
   // Bob claims it
-  const bobExclInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclInvitation = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    bobInvitation,
+  );
   const bobInstance = await E(zoe).getInstance(bobExclInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobExclInvitation);
   t.is(bobInstallation, installation, `installation`);

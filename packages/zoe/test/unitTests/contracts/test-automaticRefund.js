@@ -112,6 +112,7 @@ test('zoe with automaticRefund', async t => {
   const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
   const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
   const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(17n));
+  const bobInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
@@ -154,7 +155,10 @@ test('zoe with automaticRefund', async t => {
   // will do a claim on the invitation with the Zoe invitation issuer and
   // will check that the installation and terms match what he
   // expects
-  const exclusBobInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const exclusBobInvitation = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    bobInvitation,
+  );
 
   const {
     value: [bobInvitationValue],
@@ -235,9 +239,11 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   const { moolaR, simoleanR, moola, simoleans, zoe, vatAdminState } = setup();
 
   // Setup Alice
+  const aliceMoolaPurseP = E(moolaR.issuer).makeEmptyPurse();
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(30n));
   const moola10 = moola(10n);
-  const aliceMoolaPayments = await moolaR.issuer.splitMany(
+  const aliceMoolaPayments = await moolaR.issuer.adaptSplitMany(
+    aliceMoolaPurseP,
     aliceMoolaPayment,
     harden([moola10, moola10, moola10]),
   );

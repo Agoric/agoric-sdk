@@ -30,6 +30,7 @@ async function build(name, zoe, issuers, payments, installations) {
   });
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const { atomicSwap } = installations;
+  const invitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   async function preReport() {
     await showPurseBalance(moolaPurseP, `${name} moola before`, log);
@@ -78,7 +79,10 @@ async function build(name, zoe, issuers, payments, installations) {
   async function respondToSwap(invitation) {
     await preReport();
 
-    const exclInvitation = await E(invitationIssuer).claim(invitation);
+    const exclInvitation = await E(invitationIssuer).adaptClaim(
+      invitationPurseP,
+      invitation,
+    );
 
     const buyProposal = harden({
       want: { Asset: moola(1) },

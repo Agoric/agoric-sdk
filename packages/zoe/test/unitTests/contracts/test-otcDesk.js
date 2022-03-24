@@ -118,14 +118,18 @@ const makeBob = (
   const moolaPurse = moolaIssuer.makeEmptyPurse();
   const simoleanPurse = simoleanIssuer.makeEmptyPurse();
   const bucksPurse = bucksIssuer.makeEmptyPurse();
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
+  const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
 
   moolaPurse.deposit(moolaPayment);
   simoleanPurse.deposit(simoleanPayment);
   bucksPurse.deposit(bucksPayment);
   return Far('Bob', {
     offerOk: async untrustedInvitation => {
-      const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await E(invitationIssuerP).adaptClaim(
+        invitationPurseP,
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -176,7 +180,10 @@ const makeBob = (
     },
     offerExpired: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).adaptClaim(
+        invitationPurseP,
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -230,7 +237,10 @@ const makeBob = (
     },
     offerWantTooMuch: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).adaptClaim(
+        invitationPurseP,
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,
@@ -292,7 +302,10 @@ const makeBob = (
     },
     offerNotCovered: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await E(invitationIssuer).adaptClaim(
+        invitationPurseP,
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       t.is(
         invitationValue.installation,

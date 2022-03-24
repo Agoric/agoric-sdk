@@ -91,14 +91,17 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
     return Far('bob', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
 
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
@@ -163,10 +166,14 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const makeLosingBidder = (bidAmount, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
     return Far('losing bidder', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
 
         const proposal = harden({
           give: { Bid: bidAmount },
@@ -546,16 +553,19 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   const bobMoolaPayment = moolaMint.mintPayment(moola(11n));
   const bobCcPurse = ccIssuer.makeEmptyPurse();
   const bobMoolaPurse = moolaIssuer.makeEmptyPurse();
+  const bobInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // Setup Carol
   const carolMoolaPayment = moolaMint.mintPayment(moola(7n));
   const carolCcPurse = ccIssuer.makeEmptyPurse();
   const carolMoolaPurse = moolaIssuer.makeEmptyPurse();
+  const carolInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // Setup Dave
   const daveMoolaPayment = moolaMint.mintPayment(moola(5n));
   const daveCcPurse = ccIssuer.makeEmptyPurse();
   const daveMoolaPurse = moolaIssuer.makeEmptyPurse();
+  const daveInvitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // Alice creates a secondPriceAuction instance
 
@@ -597,7 +607,10 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Alice spreads the invitations far and wide and Bob decides he
   // wants to participate in the auction.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    bobInvitation,
+  );
   const bobInvitationValue = await E(zoe).getInvitationDetails(
     bobExclusiveInvitation,
   );
@@ -635,7 +648,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Carol decides to bid for the one cc
 
-  const carolExclusiveInvitation = await E(invitationIssuer).claim(
+  const carolExclusiveInvitation = await E(invitationIssuer).adaptClaim(
+    carolInvitationPurseP,
     carolInvitation,
   );
   const carolInvitationValue = await E(zoe).getInvitationDetails(
@@ -678,7 +692,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   // Dave decides to bid for the one moola
-  const daveExclusiveInvitation = await E(invitationIssuer).claim(
+  const daveExclusiveInvitation = await E(invitationIssuer).adaptClaim(
+    daveInvitationPurseP,
     daveInvitation,
   );
   const daveInvitationValue = await E(zoe).getInvitationDetails(
@@ -894,14 +909,17 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
     return Far('bob', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
 
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
@@ -966,10 +984,14 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
   const makeLosingBidder = (bidAmount, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
     return Far('losing bidder', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
 
         const proposal = harden({
           give: { Bid: bidAmount },

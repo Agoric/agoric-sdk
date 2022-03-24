@@ -25,6 +25,7 @@ async function build(name, zoe, issuers, payments, publicFacet) {
   const [moolaPurseP, simoleanPurseP] = purses;
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   async function preReport(quiet) {
     const useLog = quiet ? () => {} : log;
@@ -78,7 +79,10 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     await preReport(quiet);
 
     const invitation = await invitationP;
-    const exclInvitation = await E(invitationIssuer).claim(invitation);
+    const exclInvitation = await E(invitationIssuer).adaptClaim(
+      invitationPurseP,
+      invitation,
+    );
 
     const myBuyOrderProposal = harden({
       want: { Asset: moola(1) },

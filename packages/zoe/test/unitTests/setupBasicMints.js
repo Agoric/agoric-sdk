@@ -45,7 +45,7 @@ const setup = () => {
    * @property {(value: AmountValue) => Amount} moola
    * @property {(value: AmountValue) => Amount} simoleans
    * @property {(value: AmountValue) => Amount} bucks
-   * @property {ERef<ZoeService>} zoe
+   * @property {ZoeService} zoe
    * @property {*} vatAdminState
    */
 

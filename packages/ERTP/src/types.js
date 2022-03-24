@@ -132,7 +132,7 @@
  */
 
 /**
- * @callback IssuerClaim
+ * @callback AdaptIssuerClaim
  *
  * Transfer all digital assets from the payment to a new payment and
  * delete the original. `optAmount` is optional. If `optAmount` is
@@ -143,6 +143,7 @@
  * If the payment is a promise, the operation will proceed upon
  * resolution.
  *
+ * @param {ERef<Purse>} home
  * @param {ERef<Payment>} payment
  * @param {Pattern=} optAmountShape
  * @returns {Promise<Payment>}
@@ -176,20 +177,21 @@
  */
 
 /**
- * @callback IssuerCombine
+ * @callback AdaptIssuerCombine
  *
  * Combine multiple payments into one payment.
  *
  * If any of the payments is a promise, the operation will proceed
  * upon resolution.
  *
+ * @param {ERef<Purse>} home
  * @param {ERef<Payment>[]} paymentsArray
  * @param {Amount=} optTotalAmount
  * @returns {Promise<Payment>}
  */
 
 /**
- * @callback IssuerSplit
+ * @callback AdaptIssuerSplit
  *
  * Split a single payment into two payments,
  * A and B, according to the paymentAmountA passed in.
@@ -197,13 +199,14 @@
  * If the payment is a promise, the operation will proceed upon
  * resolution.
  *
+ * @param {ERef<Purse>} home
  * @param {ERef<Payment>} payment
  * @param {Amount} paymentAmountA
  * @returns {Promise<Payment[]>}
  */
 
 /**
- * @callback IssuerSplitMany
+ * @callback AdaptIssuerSplitMany
  *
  * Split a single payment into many payments, according to the amounts
  * passed in.
@@ -211,6 +214,7 @@
  * If the payment is a promise, the operation will proceed upon
  * resolution.
  *
+ * @param {ERef<Purse>} home
  * @param {ERef<Payment>} payment
  * @param {Amount[]} amounts
  * @returns {Promise<Payment[]>}
@@ -246,10 +250,10 @@
  * @property {IssuerIsLive} isLive
  * @property {IssuerGetAmountOf} getAmountOf
  * @property {IssuerBurn} burn
- * @property {IssuerClaim} claim
- * @property {IssuerCombine} combine
- * @property {IssuerSplit} split
- * @property {IssuerSplitMany} splitMany
+ * @property {AdaptIssuerClaim} adaptClaim
+ * @property {AdaptIssuerCombine} adaptCombine
+ * @property {AdaptIssuerSplit} adaptSplit
+ * @property {AdaptIssuerSplitMany} adaptSplitMany
  */
 
 /**

@@ -194,7 +194,7 @@ test('purse.deposit promise', async t => {
 
   const purse = issuer.makeEmptyPurse();
   const payment = mint.mintPayment(fungible25);
-  const exclusivePaymentP = E(issuer).claim(payment);
+  const exclusivePaymentP = E(issuer).adaptClaim(purse, payment);
 
   await t.throwsAsync(
     // @ts-ignore deliberate invalid arguments for testing
@@ -264,8 +264,9 @@ test('issuer.claim', async t => {
   t.plan(3);
   const { issuer, mint, brand } = makeIssuerKit('fungible');
   const payment1 = mint.mintPayment(AmountMath.make(brand, 2n));
+  const homePurseP = E(issuer).makeEmptyPurse();
   await E(issuer)
-    .claim(payment1, AmountMath.make(brand, 2n))
+    .adaptClaim(homePurseP, payment1, AmountMath.make(brand, 2n))
     .then(async newPayment1 => {
       await issuer.getAmountOf(newPayment1).then(amount => {
         t.assert(
@@ -289,8 +290,9 @@ test('issuer.splitMany bad amount', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
   const badAmounts = harden(Array(2).fill(AmountMath.make(brand, 10n)));
+  const homePurseP = E(issuer).makeEmptyPurse();
   await t.throwsAsync(
-    _ => E(issuer).splitMany(payment, badAmounts),
+    _ => E(issuer).adaptSplitMany(homePurseP, payment, badAmounts),
     { message: /rights were not conserved/ },
     'successfully throw if rights are not conserved in proposed new payments',
   );
@@ -301,6 +303,7 @@ test('issuer.splitMany good amount', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const oldPayment = mint.mintPayment(AmountMath.make(brand, 100n));
   const goodAmounts = Array(10).fill(AmountMath.make(brand, 10n));
+  const homePurseP = E(issuer).makeEmptyPurse();
 
   const checkPayments = async splitPayments => {
     const amounts = await Promise.all(
@@ -321,7 +324,7 @@ test('issuer.splitMany good amount', async t => {
   };
 
   await E(issuer)
-    .splitMany(oldPayment, harden(goodAmounts))
+    .adaptSplitMany(homePurseP, oldPayment, harden(goodAmounts))
     .then(checkPayments);
 });
 
@@ -329,8 +332,14 @@ test('issuer.split bad amount', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const { brand: otherBrand } = makeIssuerKit('other fungible');
   const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
+  const homePurseP = E(issuer).makeEmptyPurse();
   await t.throwsAsync(
-    _ => E(issuer).split(payment, AmountMath.make(otherBrand, 10n)),
+    _ =>
+      E(issuer).adaptSplit(
+        homePurseP,
+        payment,
+        AmountMath.make(otherBrand, 10n),
+      ),
     {
       message:
         /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
@@ -343,6 +352,7 @@ test('issuer.split good amount', async t => {
   t.plan(3);
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const oldPayment = mint.mintPayment(AmountMath.make(brand, 20n));
+  const homePurseP = E(issuer).makeEmptyPurse();
 
   const checkPayments = async splitPayments => {
     const amounts = await Promise.all(
@@ -365,13 +375,14 @@ test('issuer.split good amount', async t => {
   };
 
   await E(issuer)
-    .split(oldPayment, AmountMath.make(brand, 10n))
+    .adaptSplit(homePurseP, oldPayment, AmountMath.make(brand, 10n))
     .then(checkPayments);
 });
 
 test('issuer.combine good payments', async t => {
   t.plan(101);
   const { mint, issuer, brand } = makeIssuerKit('fungible');
+  const homePurseP = E(issuer).makeEmptyPurse();
   const payments = [];
   for (let i = 0; i < 100; i += 1) {
     payments.push(mint.mintPayment(AmountMath.make(brand, 1n)));
@@ -396,16 +407,17 @@ test('issuer.combine good payments', async t => {
       ),
     );
   };
-  await E(issuer).combine(payments).then(checkCombinedPayment);
+  await E(issuer).adaptCombine(homePurseP, payments).then(checkCombinedPayment);
 });
 
 test('issuer.combine array of promises', async t => {
   t.plan(1);
   const { mint, issuer, brand } = makeIssuerKit('fungible');
+  const homePurseP = E(issuer).makeEmptyPurse();
   const paymentsP = [];
   for (let i = 0; i < 100; i += 1) {
     const freshPayment = mint.mintPayment(AmountMath.make(brand, 1n));
-    const paymentP = issuer.claim(freshPayment);
+    const paymentP = issuer.adaptClaim(homePurseP, freshPayment);
     paymentsP.push(paymentP);
   }
   harden(paymentsP);
@@ -416,13 +428,14 @@ test('issuer.combine array of promises', async t => {
     });
   };
 
-  await E(issuer).combine(paymentsP).then(checkCombinedResult);
+  await E(issuer).adaptCombine(homePurseP, paymentsP).then(checkCombinedResult);
 });
 
 test('issuer.combine bad payments', async t => {
   const { mint, issuer, brand } = makeIssuerKit('fungible');
   const { mint: otherMint, brand: otherBrand } =
     makeIssuerKit('other fungible');
+  const homePurseP = E(issuer).makeEmptyPurse();
   const payments = [];
   for (let i = 0; i < 100; i += 1) {
     payments.push(mint.mintPayment(AmountMath.make(brand, 1n)));
@@ -432,7 +445,7 @@ test('issuer.combine bad payments', async t => {
   harden(payments);
 
   await t.throwsAsync(
-    () => E(issuer).combine(payments),
+    () => E(issuer).adaptCombine(homePurseP, payments),
     {
       message: /"\[Alleged: other fungible payment\]"/,
     },

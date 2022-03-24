@@ -39,14 +39,18 @@ test('zoe - mint payments', async t => {
   };
 
   const makeBob = installation => {
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
     return {
       offer: async untrustedInvitation => {
-        const invitationIssuer = E(zoe).getInvitationIssuer();
-        const invitation = E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
 
         const {
           value: [invitationValue],
-        } = await E(invitationIssuer).getAmountOf(invitation);
+        } = await E(invitationIssuerP).getAmountOf(invitation);
 
         t.is(
           invitationValue.installation,
@@ -118,14 +122,18 @@ test('zoe - mint payments with unrelated give and want', async t => {
   };
 
   const makeBob = (installation, moolaPayment) => {
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
     return {
       offer: async untrustedInvitation => {
-        const invitationIssuer = E(zoe).getInvitationIssuer();
-        const invitation = E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
 
         const {
           value: [invitationValue],
-        } = await E(invitationIssuer).getAmountOf(invitation);
+        } = await E(invitationIssuerP).getAmountOf(invitation);
 
         t.is(
           invitationValue.installation,

@@ -117,13 +117,16 @@ test('zoe - coveredCall', async t => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     const bucksPurse = bucksKit.issuer.makeEmptyPurse();
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
     return Far('bob', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
 
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
@@ -235,6 +238,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
     'b1-coveredcall',
   );
   const timer = buildManualTimer(console.log);
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(3n));
@@ -245,6 +249,7 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   const bobSimoleanPayment = simoleanR.mint.mintPayment(simoleans(7n));
   const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
   const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
+  const bobInvitationPurseP = E(invitationIssuerP).makeEmptyPurse();
 
   // Alice creates a coveredCall instance
   const issuerKeywordRecord = harden({
@@ -286,7 +291,10 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   // already escrowed.
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
@@ -372,6 +380,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
   const swapInstallationId = await E(zoe).installBundleID('b1-atomicswap');
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
 
   // Setup Alice
   // Alice starts with 3 moola
@@ -384,6 +393,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
   const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
   const bobBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const bobInvitationPurseP = E(invitationIssuerP).makeEmptyPurse();
 
   // Setup Dave
   // Dave starts with 1 buck
@@ -440,7 +450,10 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    optionP,
+  );
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
   const optionDesc = optionAmount.value[0];
   t.is(optionDesc.installation, coveredCallInstallation);
@@ -634,6 +647,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const coveredCallInstallation = await E(zoe).installBundleID(
     'b1-coveredcall',
   );
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
 
   // Setup Alice
   // Alice starts with 3 moola
@@ -646,6 +660,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const bobMoolaPurse = moolaR.issuer.makeEmptyPurse();
   const bobSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
   const bobBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const bobInvitationPurseP = E(invitationIssuerP).makeEmptyPurse();
 
   // Setup Dave
   // Dave starts with 1 buck and 7 simoleans
@@ -654,6 +669,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const daveMoolaPurse = moolaR.issuer.makeEmptyPurse();
   const daveSimoleanPurse = simoleanR.issuer.makeEmptyPurse();
   const daveBucksPurse = bucksR.issuer.makeEmptyPurse();
+  const daveInvitationPurseP = E(invitationIssuerP).makeEmptyPurse();
 
   // Alice creates a coveredCall instance of moola for simoleans
   const issuerKeywordRecord = harden({
@@ -701,7 +717,10 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // expected covered call installation (code)? Does it use the issuers
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
@@ -752,7 +771,10 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // Dave is looking to buy the option to trade his 7 simoleans for
   // 3 moola, and is willing to pay 1 buck for the option. He
   // checks that this invitation matches what he wants
-  const daveExclOption = await E(invitationIssuer).claim(invitationForDaveP);
+  const daveExclOption = await E(invitationIssuer).adaptClaim(
+    daveInvitationPurseP,
+    invitationForDaveP,
+  );
   const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
@@ -912,6 +934,7 @@ test('zoe - coveredCall non-fungible', async t => {
     'b1-coveredcall',
   );
   const timer = buildManualTimer(console.log);
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
 
   // Setup Alice
   const growlTiger = harden(['GrowlTiger']);
@@ -930,6 +953,7 @@ test('zoe - coveredCall non-fungible', async t => {
   const bobRpgPayment = rpgMint.mintPayment(aGloriousShieldAmount);
   const bobCcPurse = ccIssuer.makeEmptyPurse();
   const bobRpgPurse = rpgIssuer.makeEmptyPurse();
+  const bobInvitationPurseP = E(invitationIssuerP).makeEmptyPurse();
 
   // Alice creates a coveredCall instance
   const issuerKeywordRecord = harden({
@@ -965,7 +989,10 @@ test('zoe - coveredCall non-fungible', async t => {
   // already escrowed.
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await E(invitationIssuer).adaptClaim(
+    bobInvitationPurseP,
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');

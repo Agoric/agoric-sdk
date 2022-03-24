@@ -3,6 +3,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
+import { E } from '@endo/eventual-send';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { assert } from '@agoric/assert';
 
@@ -98,6 +99,7 @@ test('non-fungible tokens example', async t => {
     issuer: balletTicketIssuer,
     brand,
   } = makeIssuerKit('Agoric Ballet Opera tickets', AssetKind.SET);
+  const homePurseP = E(balletTicketIssuer).makeEmptyPurse();
 
   const startDateString = new Date(2020, 1, 17, 20, 30).toISOString();
 
@@ -122,14 +124,18 @@ test('non-fungible tokens example', async t => {
   // Alice will buy ticket 1
   const paymentForAlice = balletTicketPayments[0];
   // Bob will buy tickets 3 and 4
-  const paymentForBob = balletTicketIssuer.combine(
+  const paymentForBob = balletTicketIssuer.adaptCombine(
+    homePurseP,
     harden([balletTicketPayments[2], balletTicketPayments[3]]),
   );
 
   // ALICE SIDE
   // Alice bought ticket 1 and has access to the balletTicketIssuer, because
   // it's public
-  const myTicketPaymentAlice = await balletTicketIssuer.claim(paymentForAlice);
+  const myTicketPaymentAlice = await balletTicketIssuer.adaptClaim(
+    homePurseP,
+    paymentForAlice,
+  );
   // the call to claim() hasn't thrown, so Alice knows myTicketPaymentAlice
   // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive
   // access to its handle
@@ -145,7 +151,10 @@ test('non-fungible tokens example', async t => {
   // BOB SIDE
   // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because
   // it's public
-  const bobTicketPayment = await balletTicketIssuer.claim(paymentForBob);
+  const bobTicketPayment = await balletTicketIssuer.adaptClaim(
+    homePurseP,
+    paymentForBob,
+  );
   const paymentAmountBob = await balletTicketIssuer.getAmountOf(
     bobTicketPayment,
   );

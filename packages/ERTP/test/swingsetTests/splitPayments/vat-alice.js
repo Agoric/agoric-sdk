@@ -7,10 +7,12 @@ import { AmountMath } from '../../../src/index.js';
 function makeAliceMaker(log) {
   return Far('aliceMaker', {
     make(issuer, brand, oldPaymentP) {
+      const homePurseP = E(issuer).makeEmptyPurse();
       const alice = Far('alice', {
         async testSplitPayments() {
           log('oldPayment balance:', await E(issuer).getAmountOf(oldPaymentP));
-          const splitPayments = await E(issuer).split(
+          const splitPayments = await E(issuer).adaptSplit(
+            homePurseP,
             oldPaymentP,
             AmountMath.make(brand, 10n),
           );

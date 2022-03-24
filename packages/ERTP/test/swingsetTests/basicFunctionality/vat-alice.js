@@ -33,7 +33,8 @@ function makeAliceMaker(log) {
           const moola200 = AmountMath.make(brand, 200n);
           const [paymentToBurn, paymentToClaim, ...payments] = await E(
             issuer,
-          ).splitMany(
+          ).adaptSplitMany(
+            purse,
             newPayment,
             harden([moola200, moola200, moola200, moola200, moola200]),
           );
@@ -43,14 +44,17 @@ function makeAliceMaker(log) {
           log('burned amount: ', burnedAmount);
 
           // claim
-          const claimedPayment = await E(issuer).claim(paymentToClaim);
+          const claimedPayment = await E(issuer).adaptClaim(
+            purse,
+            paymentToClaim,
+          );
           const claimedPaymentAmount = await E(issuer).getAmountOf(
             claimedPayment,
           );
           log('claimedPayment amount: ', claimedPaymentAmount);
 
           // combine
-          const combinedPayment = E(issuer).combine(payments);
+          const combinedPayment = E(issuer).adaptCombine(purse, payments);
           const combinedPaymentAmount = await E(issuer).getAmountOf(
             combinedPayment,
           );

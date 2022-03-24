@@ -86,14 +86,17 @@ test('zoe - atomicSwap', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
     return Far('bob', {
       offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
         t.is(
           invitationValue.installation,
@@ -247,17 +250,21 @@ test('zoe - non-fungible atomicSwap', async t => {
   };
 
   const makeBob = (installation, rpgPayment) => {
+    const invitationIssuerP = E(zoe).getInvitationIssuer();
+    const invitationPurseP = E(invitationIssuerP).makeEmptyPurse();
+
     return Far('bob', {
       offer: async (untrustedInvitation, calico37Amount, vorpalAmount) => {
         const ccPurse = ccIssuer.makeEmptyPurse();
         const rpgPurse = rpgIssuer.makeEmptyPurse();
 
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await E(invitationIssuerP).adaptClaim(
+          invitationPurseP,
+          untrustedInvitation,
+        );
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
         t.is(
@@ -345,6 +352,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   t.plan(13);
   const { moolaIssuer, moolaMint, moola, zoe, vatAdminState } = setup();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const invitationPurseP = E(invitationIssuer).makeEmptyPurse();
 
   // pack the contract
   const bundle = await bundleSource(atomicSwapRoot);
@@ -390,7 +398,8 @@ test('zoe - atomicSwap like-for-like', async t => {
   // counter-party.
 
   const bobInvitationP = E(aliceSeat).getOfferResult();
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(
+  const bobExclusiveInvitation = await E(invitationIssuer).adaptClaim(
+    invitationPurseP,
     bobInvitationP,
   );
   const bobInvitationValue = await E(zoe).getInvitationDetails(

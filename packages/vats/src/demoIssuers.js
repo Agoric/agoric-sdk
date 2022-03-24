@@ -265,6 +265,7 @@ export const connectFaucet = async ({
     zoe,
   });
   const runIssuer = await E(zoe).getFeeIssuer();
+  const runPurseP = E(runIssuer).makeEmptyPurse();
   const runBrand = await E(runIssuer).getBrand();
   const runIssuerKit = {
     issuer: runIssuer,
@@ -274,7 +275,8 @@ export const connectFaucet = async ({
         // TODO: what happens if faucetRunSupply doesn't have enough
         // remaining?
         let fragment;
-        [fragment, faucetRunSupply] = await E(runIssuer).split(
+        [fragment, faucetRunSupply] = await E(runIssuer).adaptSplit(
+          runPurseP,
           faucetRunSupply,
           amount,
         );
