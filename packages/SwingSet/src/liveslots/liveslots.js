@@ -1267,6 +1267,8 @@ function build(
     assert(didStartVat);
     assert(!didStopVat);
     didStopVat = true;
+    // eslint-disable-next-line no-use-before-define
+    await bringOutYourDead();
     // empty for now
   }
 
