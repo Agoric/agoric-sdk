@@ -343,7 +343,7 @@ export const makeVaultManager = (
   observeNotifier(periodNotifier, timeObserver);
 
   /** @type {Parameters<typeof makeInnerVault>[1]} */
-  const managerFacet = harden({
+  const managerFacet = Far('managerFacet', {
     ...shared,
     applyDebtDelta,
     reallocateWithFee,
