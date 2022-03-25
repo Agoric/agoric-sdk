@@ -77,7 +77,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
       X`The escrowed attestation ${attestationAmount} was not of the attestation brand ${attBrand}`,
     );
     fit(attestationAmount.value.payload, harden([[M.string(), M.bigint()]]));
-    /** @type {[string, bigint][]} */
+    /** @type {[Address, bigint][]} */
     const [[address, valueReturned]] = attestationAmount.value.payload;
     const lienedAmount = AmountMath.make(stakeBrand, valueReturned);
     return { address, lienedAmount };
@@ -106,7 +106,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
   const amountByAddress = makeStore('amount');
 
   /**
-   * @param { string } address
+   * @param { Address } address
    * @param { Amount<'nat'> } lienDelta
    */
   const mintAttestation = async (address, lienDelta) => {
@@ -158,7 +158,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
   /**
    * Get liened amount synchronously.
    *
-   * @param {string} address
+   * @param {Address} address
    * @param {Brand<'nat'>} brand
    */
   const getLiened = (address, brand) => {
@@ -214,7 +214,7 @@ export const makeAttestationTools = async (zcf, stakeBrand, lienBridge) => {
     lienBridge,
   );
 
-  /** @param { string } address */
+  /** @param { Address } address */
   const makeAttMaker = address =>
     Far('attMaker', {
       /** @param { Amount<'nat'> } lienedDelta */
@@ -240,7 +240,7 @@ export const makeAttestationTools = async (zcf, stakeBrand, lienBridge) => {
        * address. Only the owner can authorize creation of attestations and
        * the resulting liens on their underlying tokens.
        *
-       * @param { string } address
+       * @param { Address } address
        */
       provideAttestationMaker: address => {
         assert.typeof(address, 'string');

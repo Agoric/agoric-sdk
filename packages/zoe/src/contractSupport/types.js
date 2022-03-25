@@ -93,6 +93,8 @@
  */
 
 /**
+ * For example, an agoric1... Cosmos address
+ *
  * XXX zoe formerly defined the Address type for use
  * in the attestation contract. That contract has moved
  * to run-protocol, but various packages still expect
