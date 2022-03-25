@@ -6,7 +6,7 @@ import {
   ParamTypes,
 } from '@agoric/governance';
 
-export const AMM_INSTANCE_KEY = 'AmmInstance';
+export const AMM_INSTANCE = 'AmmInstance';
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -16,7 +16,7 @@ export const AMM_INSTANCE_KEY = 'AmmInstance';
 const makeParamManager = async (zoe, ammInstance, poserInvitation) => {
   return makeBaseParamManager(
     {
-      [AMM_INSTANCE_KEY]: ['instance', ammInstance],
+      [AMM_INSTANCE]: ['instance', ammInstance],
       [CONTRACT_ELECTORATE]: ['invitation', poserInvitation],
     },
     zoe,
@@ -26,7 +26,7 @@ const makeParamManager = async (zoe, ammInstance, poserInvitation) => {
 const makeReserveTerms = (poserInvitationAmount, ammInstance, timer) => ({
   timer,
   main: harden({
-    [AMM_INSTANCE_KEY]: { type: ParamTypes.INSTANCE, value: ammInstance },
+    [AMM_INSTANCE]: { type: ParamTypes.INSTANCE, value: ammInstance },
     [CONTRACT_ELECTORATE]: {
       type: ParamTypes.INVITATION,
       value: poserInvitationAmount,

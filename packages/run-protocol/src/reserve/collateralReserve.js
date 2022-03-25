@@ -6,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { AMM_INSTANCE_KEY, makeParamManager } from './params.js';
+import { AMM_INSTANCE, makeParamManager } from './params.js';
 
 const { details: X } = assert;
 
@@ -38,7 +38,7 @@ const start = async (zcf, privateArgs) => {
   const {
     main: {
       [CONTRACT_ELECTORATE]: electorateParam,
-      [AMM_INSTANCE_KEY]: ammInstance,
+      [AMM_INSTANCE]: ammInstance,
     },
   } = zcf.getTerms();
 
@@ -47,12 +47,7 @@ const start = async (zcf, privateArgs) => {
   /** @type {MapStore<Keyword, [Brand, Brand]>} */
   const brandForKeyword = makeStore('brands');
 
-  /**
-   *
-   * @param {*} issuer
-   * @param {string} keyword unique
-   * @returns {Promise<[argumentIssuer: Issuer, liquidityIssuer: Issuer]>}
-   */
+  /** @type {Promise<XYKAMMPublicFacet>} */
   const ammPublicFacet = E(zcf.getZoeService()).getPublicFacet(
     ammInstance.value,
   );
@@ -71,10 +66,10 @@ const start = async (zcf, privateArgs) => {
     ]);
   };
 
-  const getKeywordsForBrand = brand => {
+  const getKeywordForBrand = brand => {
     assert(
       keywordForBrand.has(brand),
-      `Please call addIssuer for brand ${brand}`,
+      `Issuer not defined for brand ${brand}; first call addIssuer()`,
     );
     return keywordForBrand.get(brand);
   };
@@ -95,11 +90,10 @@ const start = async (zcf, privateArgs) => {
   // compare invitation amount from privateArgs with electorateParam from terms
   assert(
     keyEQ(electorateInvAmt, electorateParam.value),
-    X`electorate amount (${electorateParam.value} didn't match ${electorateInvAmt}`,
+    X`invitation (${electorateParam.value} didn't match ${electorateInvAmt}`,
   );
 
-  // const brandToKeyword = makeStore('keyword');
-  // should liquidiity tokens go in a separate seat?
+  // We keep the associated liquidity tokens in the same seat
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
   const getAllocations = () => {
     return collateralSeat.getCurrentAllocation();
@@ -111,7 +105,7 @@ const start = async (zcf, privateArgs) => {
       give: { Collateral: amountIn },
     } = seat.getProposal();
 
-    const keyword = getKeywordsForBrand(amountIn.brand);
+    const keyword = getKeywordForBrand(amountIn.brand);
     seat.decrementBy(harden({ Collateral: amountIn }));
     collateralSeat.incrementBy(harden({ [keyword]: amountIn }));
 
@@ -129,7 +123,7 @@ const start = async (zcf, privateArgs) => {
 
   const addLiquidityToAmmPool = async (collateralAmount, runAmount) => {
     // verify we have the funds
-    const keyword = getKeywordsForBrand(collateralAmount.brand);
+    const keyword = getKeywordForBrand(collateralAmount.brand);
     if (
       !AmountMath.isGTE(
         collateralSeat.getCurrentAllocation()[keyword],
