@@ -12,6 +12,7 @@ import {
   ceilMultiplyBy,
   ceilDivideBy,
   makeRatio,
+  floorDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
@@ -56,11 +57,11 @@ const trace = makeTracer('VM');
  *  getLiquidationMargin: () => Ratio,
  *  getLoanFee: () => Ratio,
  * }} loanParamGetters
- * @param {ReallocateWithFee} reallocateWithFee
+ * @param {MintAndReallocate} mintAndReallocateWithFee
+ * @param {BurnDebt}  burnDebt
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {Timestamp} startTimeStamp
- * @returns {VaultManager}
  */
 export const makeVaultManager = (
   zcf,
@@ -69,7 +70,8 @@ export const makeVaultManager = (
   priceAuthority,
   timingParams,
   loanParamGetters,
-  reallocateWithFee,
+  mintAndReallocateWithFee,
+  burnDebt,
   timerService,
   liquidationStrategy,
   startTimeStamp,
@@ -259,7 +261,7 @@ export const makeVaultManager = (
     ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
       {
         mint: debtMint,
-        reallocateWithFee,
+        mintAndReallocateWithFee,
         poolIncrementSeat,
         seatAllocationKeyword: 'RUN',
       },
@@ -286,24 +288,16 @@ export const makeVaultManager = (
     reschedulePriceCheck();
   };
 
-  /**
-   * Update total debt of this manager given the change in debt on a vault
-   *
-   * @param {Amount<'nat'>} oldDebtOnVault
-   * @param {Amount<'nat'>} newDebtOnVault
-   */
-  // TODO https://github.com/Agoric/agoric-sdk/issues/4599
-  const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
-    // This does not use AmountMath because it could be validly negative
-    const delta = newDebtOnVault.value - oldDebtOnVault.value;
-    trace(`updating total debt ${totalDebt} by ${delta}`);
-    if (delta === 0n) {
-      // nothing to do
-      return;
-    }
-
-    // totalDebt += delta (Amount type ensures natural value)
-    totalDebt = AmountMath.make(debtBrand, totalDebt.value + delta);
+  const maxDebtFor = async collateralAmount => {
+    const quoteAmount = await E(priceAuthority).quoteGiven(
+      collateralAmount,
+      debtBrand,
+    );
+    // floorDivide because we want the debt ceiling lower
+    return floorDivideBy(
+      getAmountOut(quoteAmount),
+      shared.getLiquidationMargin(),
+    );
   };
 
   /**
@@ -342,12 +336,26 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
+  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+    mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
+    totalDebt = AmountMath.add(totalDebt, toMint);
+  };
+
+  const burnAndRecord = (toBurn, seat) => {
+    burnDebt(toBurn, seat);
+    totalDebt = AmountMath.subtract(totalDebt, toBurn);
+    // TODO signal updater?
+  };
+
   /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerFacet = Far('managerFacet', {
     ...shared,
-    applyDebtDelta,
-    reallocateWithFee,
+    maxDebtFor,
+    mintAndReallocate,
+    burnAndRecord,
+    getNotifier: () => assetNotifer,
     getCollateralBrand: () => collateralBrand,
+    getDebtBrand: () => debtBrand,
     getCompoundedInterest: () => compoundedInterest,
     updateVaultPriority,
   });
@@ -362,14 +370,7 @@ export const makeVaultManager = (
     vaultCounter += 1;
     const vaultId = String(vaultCounter);
 
-    const innerVault = makeInnerVault(
-      zcf,
-      managerFacet,
-      assetNotifer,
-      vaultId,
-      debtMint,
-      priceAuthority,
-    );
+    const innerVault = makeInnerVault(zcf, managerFacet, vaultId);
 
     // TODO Don't record the vault until it gets opened
     assert(prioritizedVaults);
@@ -389,10 +390,19 @@ export const makeVaultManager = (
     }
   };
 
-  /** @type {VaultManager} */
+  const publicFacet = Far('collateral manager', {
+    makeVaultInvitation: () => zcf.makeInvitation(makeVaultKit, 'MakeVault'),
+    getNotifier: () => assetNotifer,
+    getCompoundedInterest: () => compoundedInterest,
+  });
+
   return Far('vault manager', {
     ...shared,
     makeVaultKit,
     liquidateAll,
+    getPublicFacet: () => publicFacet,
   });
 };
+
+/** @typedef {ReturnType<typeof makeVaultManager>} VaultManager */
+/** @typedef {ReturnType<VaultManager['getPublicFacet']>} CollateralManager */
