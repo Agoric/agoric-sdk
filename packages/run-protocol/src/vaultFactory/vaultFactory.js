@@ -62,10 +62,10 @@ export const start = async (zcf, privateArgs) => {
   const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
 
   const { feeMintAccess, initialPoserInvitation } = privateArgs;
-  const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
-  const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();
+  const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const { issuer: debtIssuer, brand: debtBrand } = debtMint.getIssuerRecord();
   zcf.setTestJig(() => ({
-    runIssuerRecord: runMint.getIssuerRecord(),
+    runIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
   /** a powerful object; can modify the invitation */
@@ -88,7 +88,7 @@ export const start = async (zcf, privateArgs) => {
    */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
     const kept = AmountMath.subtract(toMint, fee);
-    runMint.mintGains(harden({ RUN: toMint }), mintSeat);
+    debtMint.mintGains(harden({ RUN: toMint }), mintSeat);
     try {
       rewardPoolSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: fee })));
       seat.incrementBy(mintSeat.decrementBy(harden({ RUN: kept })));
@@ -100,7 +100,7 @@ export const start = async (zcf, privateArgs) => {
       // That only relies on the internal mint, so it cannot fail without
       // there being much larger problems. There's no risk of tokens being
       // stolen here because the staging for them was already cleared.
-      runMint.burnLosses(harden({ RUN: toMint }), mintSeat);
+      debtMint.burnLosses(harden({ RUN: toMint }), mintSeat);
       throw e;
     } finally {
       assert(
@@ -115,7 +115,7 @@ export const start = async (zcf, privateArgs) => {
   };
 
   const burnDebt = (toBurn, seat) => {
-    runMint.burnLosses(harden({ RUN: toBurn }), seat);
+    debtMint.burnLosses(harden({ RUN: toBurn }), seat);
   };
 
   /** @type {Store<Brand,VaultManager>} */
@@ -142,7 +142,7 @@ export const start = async (zcf, privateArgs) => {
 
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
       liquidationInstall,
-      harden({ RUN: runIssuer, Collateral: collateralIssuer }),
+      harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
       harden({ amm: ammPublicFacet }),
     );
     const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
@@ -151,7 +151,7 @@ export const start = async (zcf, privateArgs) => {
 
     const vm = makeVaultManager(
       zcf,
-      runMint,
+      debtMint,
       collateralBrand,
       priceAuthority,
       loanTimingParams,
@@ -238,7 +238,7 @@ export const start = async (zcf, privateArgs) => {
     /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
     makeVaultInvitation,
     getCollaterals,
-    getRunIssuer: () => runIssuer,
+    getRunIssuer: () => debtIssuer,
     getGovernedParams,
     getContractGovernor: () => governorPublic,
     getInvitationAmount: electorateParamManager.getInvitationAmount,
@@ -247,7 +247,7 @@ export const start = async (zcf, privateArgs) => {
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
     zcf,
     rewardPoolSeat,
-    runBrand,
+    debtBrand,
   );
 
   const getParamMgrRetriever = () =>

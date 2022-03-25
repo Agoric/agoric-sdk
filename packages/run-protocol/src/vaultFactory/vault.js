@@ -343,14 +343,14 @@ const constructFromState = state => {
       // you're paying off the debt, you get everything back.
       const debt = getCurrentDebt();
       const {
-        give: { RUN: runOffered },
+        give: { RUN: given },
       } = seat.getProposal();
 
       // you must pay off the entire remainder but if you offer too much, we won't
       // take more than you owe
       assert(
-        AmountMath.isGTE(runOffered, debt),
-        X`Offer ${runOffered} is not sufficient to pay off debt ${debt}`,
+        AmountMath.isGTE(given, debt),
+        X`Offer ${given} is not sufficient to pay off debt ${debt}`,
       );
 
       // Return any overpayment
@@ -473,12 +473,12 @@ const constructFromState = state => {
       // unchanging) or super-linear (also called "convex"). Super-linear is from
       // AMMs: selling less collateral would mean an even smaller price impact, so
       // this is a conservative choice.
-      const runPerCollateral = makeRatioFromAmounts(
+      const debtPerCollateral = makeRatioFromAmounts(
         maxDebtPre,
         newCollateralPre,
       );
       // `floorMultiply` because the debt ceiling should be tight
-      const maxDebtAfter = floorMultiplyBy(newCollateral, runPerCollateral);
+      const maxDebtAfter = floorMultiplyBy(newCollateral, debtPerCollateral);
       assert(
         AmountMath.isGTE(maxDebtAfter, newDebt),
         X`The requested debt ${q(

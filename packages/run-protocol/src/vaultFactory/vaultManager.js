@@ -340,7 +340,6 @@ export const makeVaultManager = (
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
     mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
     totalDebt = AmountMath.add(totalDebt, toMint);
-    // TODO signal updater?
   };
 
   const burnAndRecord = (toBurn, seat) => {
