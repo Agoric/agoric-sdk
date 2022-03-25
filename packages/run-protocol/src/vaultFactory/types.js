@@ -48,7 +48,7 @@
 /**
  * @callback MintAndReallocate
  *
- * Mint new debt, and transfer a `fee` part of that to the vaultFactory's reward
+ * Mint new debt `toMint` and transfer the `fee` portion to the vaultFactory's reward
  * pool. Then reallocate over all the seat arguments and the rewardPoolSeat. Update
  * the `totalDebt` if the reallocate succeeds.
  *

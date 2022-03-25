@@ -87,15 +87,19 @@ export const start = async (zcf, privateArgs) => {
    * @type {MintAndReallocate}
    */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
-    const wanted = AmountMath.subtract(toMint, fee);
+    const kept = AmountMath.subtract(toMint, fee);
     runMint.mintGains(harden({ RUN: toMint }), mintSeat);
     try {
       rewardPoolSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: fee })));
-      seat.incrementBy(mintSeat.decrementBy(harden({ RUN: wanted })));
+      seat.incrementBy(mintSeat.decrementBy(harden({ RUN: kept })));
       zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
     } catch (e) {
       mintSeat.clear();
       rewardPoolSeat.clear();
+      // Make best efforts to burn the newly minted tokens, for hygiene.
+      // That only relies on the internal mint, so it cannot fail without
+      // there being much larger problems. There's no risk of tokens being
+      // stolen here because the staging for them was already cleared.
       runMint.burnLosses(harden({ RUN: toMint }), mintSeat);
       throw e;
     } finally {
