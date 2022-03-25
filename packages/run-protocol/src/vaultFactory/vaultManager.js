@@ -101,13 +101,11 @@ export const makeVaultManager = (
   /**
    * A store for vaultKits prioritized by their collaterization ratio.
    *
-   * It should be set only once but it's a `let` because it can't be set until after the
-   * definition of reschedulePriceCheck, which refers to sortedVaultKits
-   *
-   * @type {ReturnType<typeof makePrioritizedVaults>=}
+   * @type {ReturnType<typeof makePrioritizedVaults>}
    */
-  // XXX misleading mutability and confusing flow control; could be refactored with a listener
-  let prioritizedVaults;
+  // eslint-disable-next-line no-use-before-define
+  const prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
+
   /** @type {MutableQuote=} */
   let outstandingQuote;
   /** @type {Amount<'nat'>} */
@@ -148,7 +146,6 @@ export const makeVaultManager = (
       collateralBrand,
     )
       .then(() => {
-        assert(prioritizedVaults);
         prioritizedVaults?.removeVault(key);
         liquidationInProgress = false;
       })
@@ -171,8 +168,7 @@ export const makeVaultManager = (
    * high-water level when the request was made matches the current high-water
    * level.
    */
-  const reschedulePriceCheck = async () => {
-    assert(prioritizedVaults);
+  async function reschedulePriceCheck() {
     const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -235,15 +231,13 @@ export const makeVaultManager = (
     await (next ? liquidateAndRemove(next) : null);
 
     reschedulePriceCheck();
-  };
-  prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
+  }
 
   /**
    * In extreme situations, system health may require liquidating all vaults.
    * This starts the liquidations all in parallel.
    */
   const liquidateAll = async () => {
-    assert(prioritizedVaults);
     const toLiquidate = Array.from(prioritizedVaults.entries()).map(
       liquidateAndRemove,
     );
@@ -320,7 +314,6 @@ export const makeVaultManager = (
    * @param {VaultId} vaultId
    */
   const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {
-    assert(prioritizedVaults);
     prioritizedVaults.refreshVaultPriority(oldDebt, oldCollateral, vaultId);
     trace('updateVaultPriority complete', { totalDebt });
   };
@@ -389,7 +382,6 @@ export const makeVaultManager = (
     const innerVault = makeInnerVault(zcf, managerFacet, vaultId);
 
     // TODO Don't record the vault until it gets opened
-    assert(prioritizedVaults);
     const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
 
     try {
