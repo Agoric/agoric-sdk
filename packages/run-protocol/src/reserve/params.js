@@ -2,7 +2,7 @@
 
 import {
   CONTRACT_ELECTORATE,
-  makeParamManager as makeBaseParamManager,
+  makeParamManager,
   ParamTypes,
 } from '@agoric/governance';
 
@@ -13,8 +13,8 @@ export const AMM_INSTANCE = 'AmmInstance';
  * @param {Instance} ammInstance
  * @param {Invitation} poserInvitation - invitation for the question poser
  */
-const makeParamManager = async (zoe, ammInstance, poserInvitation) => {
-  return makeBaseParamManager(
+const makeReserveParamManager = async (zoe, ammInstance, poserInvitation) => {
+  return makeParamManager(
     {
       [AMM_INSTANCE]: ['instance', ammInstance],
       [CONTRACT_ELECTORATE]: ['invitation', poserInvitation],
@@ -32,10 +32,9 @@ const makeReserveTerms = (poserInvitationAmount, ammInstance, timer) => ({
       value: poserInvitationAmount,
     },
   }),
-  governedApis: ['addLiquidityToAmmPool'],
 });
 
-harden(makeParamManager);
+harden(makeReserveParamManager);
 harden(makeReserveTerms);
 
-export { makeParamManager, makeReserveTerms };
+export { makeReserveParamManager, makeReserveTerms };

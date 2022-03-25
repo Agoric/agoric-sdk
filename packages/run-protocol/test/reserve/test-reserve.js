@@ -85,7 +85,8 @@ test('reserve unregistered', async t => {
   await t.throwsAsync(
     () => E(collateralSeat).getOfferResult(),
     {
-      message: 'Please call addIssuer for brand [object Alleged: moola brand]',
+      message:
+        'Issuer not defined for brand [object Alleged: moola brand]; first call addIssuer()',
     },
     'Should not accept unregistered brand',
   );

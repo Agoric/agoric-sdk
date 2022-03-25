@@ -6,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { AMM_INSTANCE, makeParamManager } from './params.js';
+import { AMM_INSTANCE, makeReserveParamManager } from './params.js';
 
 const { details: X } = assert;
 
@@ -77,7 +77,7 @@ const start = async (zcf, privateArgs) => {
   const { initialPoserInvitation, feeMintAccess } = privateArgs;
 
   /** a powerful object; can modify the invitation */
-  const paramManager = await makeParamManager(
+  const paramManager = await makeReserveParamManager(
     zcf.getZoeService(),
     ammInstance.value,
     initialPoserInvitation,
@@ -105,9 +105,9 @@ const start = async (zcf, privateArgs) => {
       give: { Collateral: amountIn },
     } = seat.getProposal();
 
-    const keyword = getKeywordForBrand(amountIn.brand);
+    const collateralKeyword = getKeywordForBrand(amountIn.brand);
     seat.decrementBy(harden({ Collateral: amountIn }));
-    collateralSeat.incrementBy(harden({ [keyword]: amountIn }));
+    collateralSeat.incrementBy(harden({ [collateralKeyword]: amountIn }));
 
     zcf.reallocate(collateralSeat, seat);
     seat.exit();
@@ -121,12 +121,14 @@ const start = async (zcf, privateArgs) => {
   /** @type {ZCFMint} */
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
 
+  // Takes collateral from the reserve, mints RUN to accompany it, and uses both
+  // to add Liquidity to a pool in the AMM.
   const addLiquidityToAmmPool = async (collateralAmount, runAmount) => {
     // verify we have the funds
-    const keyword = getKeywordForBrand(collateralAmount.brand);
+    const collateralKeyword = getKeywordForBrand(collateralAmount.brand);
     if (
       !AmountMath.isGTE(
-        collateralSeat.getCurrentAllocation()[keyword],
+        collateralSeat.getCurrentAllocation()[collateralKeyword],
         collateralAmount,
       )
     ) {
@@ -138,7 +140,7 @@ const start = async (zcf, privateArgs) => {
     offerToSeat.incrementBy(
       collateralSeat.decrementBy(
         harden({
-          [keyword]: collateralAmount,
+          [collateralKeyword]: collateralAmount,
         }),
       ),
     );
@@ -150,10 +152,10 @@ const start = async (zcf, privateArgs) => {
     ).makeAddLiquidityAtRateInvitation();
     const mapping = harden({
       RUN: 'Central',
-      [keyword]: 'Secondary',
+      [collateralKeyword]: 'Secondary',
     });
 
-    const [_, liqBrand] = brandForKeyword.get(keyword);
+    const [_, liqBrand] = brandForKeyword.get(collateralKeyword);
     const proposal = harden({
       give: {
         Central: runAmount,
@@ -162,12 +164,13 @@ const start = async (zcf, privateArgs) => {
       want: { Liquidity: AmountMath.makeEmpty(liqBrand) },
     });
 
+    // chain await the completion of both the offer and the `deposited` promise
     await E.get(offerTo(zcf, invitation, mapping, proposal, offerToSeat))
       .deposited;
 
     // transfer from userSeat to LiquidityToken holdings
     const liquidityAmount = offerToSeat.getCurrentAllocation();
-    const liquidityKeyword = makeLiquidityKeyword(keyword);
+    const liquidityKeyword = makeLiquidityKeyword(collateralKeyword);
 
     offerToSeat.decrementBy(
       harden({
@@ -185,7 +188,7 @@ const start = async (zcf, privateArgs) => {
   const creatorFacet = wrapCreatorFacet(
     {
       makeAddCollateralInvitation,
-      // TODO: makeRedeemLiquidityTokensInvitation,
+      // add makeRedeemLiquidityTokensInvitation later. For now just store them
       getAllocations,
       addIssuer,
     },
@@ -194,9 +197,8 @@ const start = async (zcf, privateArgs) => {
 
   /** @typedef {typeof creatorFacet} ReserveCreatorFacet */
   const publicFacet = wrapPublicFacet(
-    Far('Collateal Reserve public', {
+    Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
-      // getAllocations,  perhaps this can't be public without a fee?
     }),
   );
 
