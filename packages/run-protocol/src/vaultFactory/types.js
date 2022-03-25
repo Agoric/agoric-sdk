@@ -3,6 +3,8 @@
 /** @typedef {import('./vault').VaultUIState} VaultUIState */
 /** @typedef {import('./vaultKit').VaultKit} VaultKit */
 /** @typedef {VaultKit['vault']} Vault */
+/** @typedef {import('./vaultManager').VaultManager} VaultManager */
+/** @typedef {import('./vaultManager').CollateralManager} CollateralManager */
 
 /**
  * @typedef  {Object} AutoswapLocal
@@ -86,17 +88,6 @@
 
 /**
  * @typedef {string} VaultId
- */
-
-/**
- * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<VaultKit>}  makeVaultKit
- * @property {() => void} liquidateAll
- * @property {() => CollateralManager} getPublicFacet
- */
-
-/**
- * @typedef {VaultManagerBase & GetVaultParams} VaultManager
  */
 
 /**

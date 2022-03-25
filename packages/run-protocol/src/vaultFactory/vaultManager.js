@@ -62,7 +62,6 @@ const trace = makeTracer('VM');
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {Timestamp} startTimeStamp
- * @returns {VaultManager}
  */
 export const makeVaultManager = (
   zcf,
@@ -397,7 +396,6 @@ export const makeVaultManager = (
     getCompoundedInterest: () => compoundedInterest,
   });
 
-  /** @type {VaultManager} */
   return Far('vault manager', {
     ...shared,
     makeVaultKit,
@@ -406,4 +404,5 @@ export const makeVaultManager = (
   });
 };
 
-/** @typedef {Awaited<ReturnType<typeof makeVaultManager>>['getPublicFacet']} CollateralManager */
+/** @typedef {ReturnType<typeof makeVaultManager>} VaultManager */
+/** @typedef {ReturnType<VaultManager['getPublicFacet']>} CollateralManager */
