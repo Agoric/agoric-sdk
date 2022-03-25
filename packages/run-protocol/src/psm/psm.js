@@ -17,6 +17,15 @@ import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 
 const { details: X } = assert;
 
+/**
+ * @file The Parity Stability Module supports efficiently minting/burning a
+ * stable token at a specified fixed ratio to a reference stable token, which
+ * thereby acts as an anchor to provide additional stability. For flexible
+ * economic policies, the fee percentage for trading into and out of the stable
+ * token are specified separately.
+ *
+ */
+
 const BASIS_POINTS = 10000n;
 
 /**
