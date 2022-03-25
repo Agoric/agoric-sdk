@@ -13,7 +13,7 @@ import {
 
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
+import { defineKind } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
@@ -117,7 +117,7 @@ const validTransitions = {
  * @param {ZCFMint} mint
  * @param {ERef<PriceAuthority>} priceAuthority
  */
-export const makeInnerVault = (
+const initState = (
   zcf,
   manager,
   assetNotifier,
@@ -125,20 +125,8 @@ export const makeInnerVault = (
   mint,
   priceAuthority,
 ) => {
-  // CONSTANTS
-  const collateralBrand = manager.getCollateralBrand();
-  /** @type {{brand: Brand<'nat'>}} */
-  const { brand: debtBrand } = mint.getIssuerRecord();
-
-  const emptyCollateral = AmountMath.makeEmpty(collateralBrand);
-  const emptyDebt = AmountMath.makeEmpty(debtBrand);
-
-  /**
-   * State object to support virtualization when available
-   *
-   * @type {ImmutableState & MutableState}
-   */
-  const state = {
+  /** @type {ImmutableState & MutableState} */
+  return harden({
     assetNotifier,
     idInManager,
     manager,
@@ -157,8 +145,23 @@ export const makeInnerVault = (
 
     // Two values from the same moment
     interestSnapshot: manager.getCompoundedInterest(),
-    debtSnapshot: emptyDebt,
-  };
+    debtSnapshot: AmountMath.makeEmpty(mint.getIssuerRecord().brand),
+  });
+};
+
+/** @param {ImmutableState & MutableState} state */
+const constructFromState = state => {
+  /** @type {ImmutableState} */
+  const { idInManager, manager, mint, priceAuthority, zcf } = state;
+
+  // #region Computed constants
+  const collateralBrand = manager.getCollateralBrand();
+  /** @type {{ brand: Brand<'nat'> }} */
+  const { brand: debtBrand } = mint.getIssuerRecord();
+
+  const emptyCollateral = AmountMath.makeEmpty(collateralBrand);
+  const emptyDebt = AmountMath.makeEmpty(debtBrand);
+  // #endregion
 
   // #region Phase logic
   /**
@@ -680,7 +683,7 @@ export const makeInnerVault = (
     return vaultKit;
   };
 
-  const innerVault = Far('innerVault', {
+  const innerVault = {
     getVaultSeat: () => state.vaultSeat,
 
     initVaultKit: seat => initVaultKit(seat, innerVault),
@@ -718,9 +721,15 @@ export const makeInnerVault = (
     getCollateralAmount,
     getCurrentDebt,
     getNormalizedDebt,
-  });
+  };
 
   return innerVault;
 };
+
+export const makeInnerVault = defineKind(
+  'InnerVault',
+  initState,
+  constructFromState,
+);
 
 /** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
