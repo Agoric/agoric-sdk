@@ -44,7 +44,7 @@ const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
 };
 
 /**
- * Make an ZCFMint attentuated so that minting represents
+ * Make a ZCFMint attentuated so that minting represents
  * putting a lien on staked assets. Payments can be returned,
  * releasing (part of) the lien.
  *
@@ -63,7 +63,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
   const { issuer, brand: attBrand } = zcfMint.getIssuerRecord();
 
   /**
-   * @param {string} address
+   * @param {Address} address
    * @param {Amount<'nat'>} lienedAmount
    * @returns {Amount<'copyBag'>}
    */
