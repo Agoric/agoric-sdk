@@ -96,7 +96,12 @@ const handleParamGovernance = (zcf, paramManager) => {
       },
       getInvitation: name => paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: () => limitedCreatorFacet,
+      // The contract provides a facet with the APIs that can be invoked by
+      // governance
       getGovernedApis: () => Far('governedAPIs', governedApis),
+      // The facet returned by getGovernedApis is Far, so we can't see what
+      // methods it has. There's no clean way to have contracts specify the APIs
+      // without also separately providing their names.
       getGovernedApiNames: () => Object.keys(governedApis),
     });
   };

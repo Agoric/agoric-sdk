@@ -45,7 +45,7 @@ const QuorumRule = /** @type {const} */ ({
  * @param {unknown} issue
  * @returns { asserts issue is SimpleIssue }
  */
-const looksLikeSimpleIssue = issue => {
+const assertSimpleIssue = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(
     issue && typeof issue.text === 'string',
@@ -58,8 +58,8 @@ const looksLikeSimpleIssue = issue => {
  * @param {unknown} issue
  * @returns { asserts issue is ParamChangeIssue }
  */
-const looksLikeParamChangeIssue = issue => {
-  assert(issue, X`argument to looksLikeParamChangeIssue cannot be null`);
+const assertParamChangeIssue = issue => {
+  assert(issue, X`argument to assertParamChangeIssue cannot be null`);
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert.typeof(
     issue && issue.paramSpec,
@@ -76,7 +76,7 @@ const looksLikeParamChangeIssue = issue => {
  * @param {unknown} issue
  * @returns {asserts issue is ApiInvocationIssue}
  */
-const looksLikeApiInvocation = issue => {
+const assertApiInvocation = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(
     issue && typeof issue.apiMethodName === 'string',
@@ -90,7 +90,7 @@ const looksLikeApiInvocation = issue => {
  * @param {unknown} issue
  * @returns { asserts issue is Issue }
  */
-const looksLikeIssueForType = (electionType, issue) => {
+const assertIssueForType = (electionType, issue) => {
   assert(
     passStyleOf(issue) === 'copyRecord',
     X`A question can only be a pass-by-copy record: ${issue}`,
@@ -99,13 +99,13 @@ const looksLikeIssueForType = (electionType, issue) => {
   switch (electionType) {
     case ElectionType.SURVEY:
     case ElectionType.ELECTION:
-      looksLikeSimpleIssue(/** @type {SimpleIssue} */ (issue));
+      assertSimpleIssue(/** @type {SimpleIssue} */ (issue));
       break;
     case ElectionType.PARAM_CHANGE:
-      looksLikeParamChangeIssue(/** @type {ParamChangeIssue} */ (issue));
+      assertParamChangeIssue(/** @type {ParamChangeIssue} */ (issue));
       break;
     case ElectionType.API_INVOCATION:
-      looksLikeApiInvocation(/** @type {ApiInvocationIssue} */ (issue));
+      assertApiInvocation(/** @type {ApiInvocationIssue} */ (issue));
       break;
     default:
       throw Error(`Election type unrecognized`);
@@ -118,13 +118,12 @@ const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
 
 // QuestionSpec contains the subset of QuestionDetails that can be specified before
 /**
- * @callback LooksLikeClosingRule
  * @param {unknown} closingRule
  * @returns { asserts closingRule is ClosingRule }
  */
 
-function looksLikeClosingRule(closingRule) {
-  assert(closingRule, X`argument to looksLikeClosingRule cannot be null`);
+function assertClosingRule(closingRule) {
+  assert(closingRule, X`argument to assertClosingRule cannot be null`);
   assert.typeof(
     closingRule,
     'object',
@@ -158,7 +157,7 @@ const coerceQuestionSpec = ({
   quorumRule,
   tieOutcome,
 }) => {
-  looksLikeIssueForType(electionType, issue);
+  assertIssueForType(electionType, issue);
 
   assert(
     positions.every(
@@ -176,7 +175,7 @@ const coerceQuestionSpec = ({
   assert(maxChoices > 0, X`maxChoices must be positive: ${maxChoices}`);
   assert(maxChoices <= positions.length, X`Choices must not exceed length`);
 
-  looksLikeClosingRule(closingRule);
+  assertClosingRule(closingRule);
 
   return harden({
     method,
@@ -211,7 +210,7 @@ const buildUnrankedQuestion = (questionSpec, counterInstance) => {
 harden(buildUnrankedQuestion);
 harden(ChoiceMethod);
 harden(ElectionType);
-harden(looksLikeIssueForType);
+harden(assertIssueForType);
 harden(coerceQuestionSpec);
 harden(positionIncluded);
 harden(QuorumRule);
@@ -220,7 +219,7 @@ export {
   buildUnrankedQuestion,
   ChoiceMethod,
   ElectionType,
-  looksLikeIssueForType,
+  assertIssueForType,
   coerceQuestionSpec,
   positionIncluded,
   QuorumRule,
