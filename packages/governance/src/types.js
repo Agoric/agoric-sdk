@@ -322,7 +322,7 @@
 /**
  * @typedef {Object} ApiInvocationIssue
  * @property {string} apiMethodName
- * @property {[unknown]} methodArgs
+ * @property {unknown[]} methodArgs
  */
 
 /**
@@ -427,7 +427,7 @@
 /**
  * @typedef {Object} InvokeApiPosition
  * @property {string} apiMethodName
- * @property {any} methodArgs
+ * @property {unknown[]} methodArgs
  */
 
 /**
@@ -475,12 +475,7 @@
  */
 
 /**
- * @typedef {{
- * }} GovernableCreatorFacet
- */
-
-/**
- * @template {GovernableCreatorFacet} CF
+ * @template {{}} CF
  * @typedef {CF} LimitedCreatorFacet
  *
  * The creatorFacet for the governed contract that will be passed to the
@@ -582,7 +577,7 @@
 /**
  * @callback VoteOnApiInvocation
  * @param {string} apiMethodName
- * @param {[unknown]} methodArgs
+ * @param {unknown[]} methodArgs
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
  * @returns {ContractGovernanceVoteResult}

@@ -194,11 +194,12 @@ const start = async zcf => {
     };
   };
 
-  const { voteOnApiInvocation, createdQuestion } = await initApiGovernance();
+  const { voteOnApiInvocation, createdQuestion: createdApiQuestion } =
+    await initApiGovernance();
 
   const validateVoteCounter = async voteCounter => {
     const createdParamQ = await E(createdParamQuestion)(voteCounter);
-    const createdApiQ = await E(createdQuestion)(voteCounter);
+    const createdApiQ = await E(createdApiQuestion)(voteCounter);
     assert(
       createdParamQ || createdApiQ,
       X`VoteCounter was not created by this contractGovernor`,

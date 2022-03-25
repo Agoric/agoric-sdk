@@ -41,6 +41,7 @@ const QuorumRule = /** @type {const} */ ({
   ALL: 'all',
 });
 
+// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} issue
  * @returns { asserts issue is SimpleIssue }
@@ -51,9 +52,9 @@ const assertSimpleIssue = issue => {
     issue && typeof issue.text === 'string',
     X`Issue ("${issue}") must be a record with text: aString`,
   );
-  return undefined;
 };
 
+// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} issue
  * @returns { asserts issue is ParamChangeIssue }
@@ -69,9 +70,9 @@ const assertParamChangeIssue = issue => {
   assert(issue && issue.proposedValue);
   const assertInstance = makeAssertInstance('contract');
   assertInstance(issue.contract);
-  return undefined;
 };
 
+// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} issue
  * @returns {asserts issue is ApiInvocationIssue}
@@ -82,9 +83,9 @@ const assertApiInvocation = issue => {
     issue && typeof issue.apiMethodName === 'string',
     X`Issue ("${issue}") must be a record with apiMethodName: aString`,
   );
-  return undefined;
 };
 
+// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {ElectionType} electionType
  * @param {unknown} issue
@@ -99,18 +100,17 @@ const assertIssueForType = (electionType, issue) => {
   switch (electionType) {
     case ElectionType.SURVEY:
     case ElectionType.ELECTION:
-      assertSimpleIssue(/** @type {SimpleIssue} */ (issue));
+      assertSimpleIssue(issue);
       break;
     case ElectionType.PARAM_CHANGE:
-      assertParamChangeIssue(/** @type {ParamChangeIssue} */ (issue));
+      assertParamChangeIssue(issue);
       break;
     case ElectionType.API_INVOCATION:
-      assertApiInvocation(/** @type {ApiInvocationIssue} */ (issue));
+      assertApiInvocation(issue);
       break;
     default:
       throw Error(`Election type unrecognized`);
   }
-  return undefined;
 };
 
 /** @type {PositionIncluded} */

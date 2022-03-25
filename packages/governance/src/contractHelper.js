@@ -68,8 +68,8 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @template {GovernableCreatorFacet} CF creator facet
-   * @param {ERef<CF>} originalCreatorFacet
+   * @template {{}} CF creator facet
+   * @param {CF} originalCreatorFacet
    * @returns {ERef<LimitedCreatorFacet<CF>>}
    */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
@@ -80,7 +80,7 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @template {GovernableCreatorFacet} CF creator facet
+   * @template {{}} CF creator facet
    * @param {ERef<CF>} originalCreatorFacet
    * @param {Record<string, (...args: any[]) => any>} governedApis
    * @returns { ERef<GovernedCreatorFacet<CF>> }

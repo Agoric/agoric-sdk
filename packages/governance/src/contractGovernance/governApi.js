@@ -19,7 +19,7 @@ const { details: X } = assert;
  * arguments that were provided.
  *
  * @param {string} apiMethodName
- * @param {[unknown]} methodArgs
+ * @param {unknown[]} methodArgs
  */
 const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
   const positive = harden({ apiMethodName, methodArgs });
@@ -98,7 +98,10 @@ const setupApiGovernance = async (
       // @ts-expect-error return types don't appear to match
       .then(outcome => {
         if (keyEQ(positive, outcome)) {
-          keyEQ(outcome, harden({ apiMethodName, methodArgs }));
+          assert(
+            keyEQ(outcome, harden({ apiMethodName, methodArgs })),
+            `The question's method name (${apiMethodName}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
+          );
 
           // E(remote)[name](args) invokes the method named 'name' on remote.
           return E(governedApis)
