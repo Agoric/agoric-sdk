@@ -125,12 +125,8 @@ const initState = (
   mint,
   priceAuthority,
 ) => {
-  /**
-   * State object to support virtualization when available
-   *
-   * @type {ImmutableState & MutableState}
-   */
-  const state = {
+  /** @type {ImmutableState & MutableState} */
+  return harden({
     assetNotifier,
     idInManager,
     manager,
@@ -150,8 +146,7 @@ const initState = (
     // Two values from the same moment
     interestSnapshot: manager.getCompoundedInterest(),
     debtSnapshot: AmountMath.makeEmpty(mint.getIssuerRecord().brand),
-  };
-  return harden(state);
+  });
 };
 
 /** @param {ImmutableState & MutableState} state */
