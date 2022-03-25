@@ -439,6 +439,7 @@ function validateStatusCheck(v, vref, rc, es, value) {
 }
 
 function validateFauxCacheDisplacerDeletion(v) {
+  validate(v, matchVatstoreSet('idCounters'));
   validate(v, matchVatstoreGet(rcKey(fCacheDisplacerVref), NONE));
   validate(v, matchVatstoreGet(esKey(fCacheDisplacerVref), NONE));
   validate(v, matchVatstoreGet(stateKey(fCacheDisplacerVref), cacheObjValue));
@@ -459,6 +460,7 @@ function validateCreateBaggage(v, idx) {
 }
 
 function validateSetup(v) {
+  validate(v, matchVatstoreGet('idCounters', NONE));
   validate(v, matchVatstoreGet('baggageID', NONE));
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
@@ -1445,6 +1447,7 @@ test.serial('remotable refcount management 1', async t => {
   validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(remotableID)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('finishClearHolders');
@@ -1477,6 +1480,7 @@ test.serial('remotable refcount management 2', async t => {
   validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(remotableID)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
@@ -1576,6 +1580,7 @@ test.serial('VO holding non-VO', async t => {
   // Lerv -> LERv  Export non-VO
   rp = await dispatchMessage('exportHeld');
   validate(v, matchResolveOne(rp, thingSer(remotableID)));
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   // LERv -> LERV  Store non-VO reference virtually

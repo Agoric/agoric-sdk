@@ -1,6 +1,6 @@
 // @ts-check
 
-import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
+import { defineKind } from '@agoric/vat-data';
 
 /**
  * @template {AssetKind} K

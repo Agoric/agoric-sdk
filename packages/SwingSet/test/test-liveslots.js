@@ -25,6 +25,10 @@ import {
   makeRetireImports,
 } from './util.js';
 
+function matchIDCounterSet(t, log) {
+  t.like(log.shift(), { type: 'vatstoreSet', key: 'idCounters' });
+}
+
 test('calls', async t => {
   const { log, syscall } = buildSyscall();
 
@@ -60,6 +64,7 @@ test('calls', async t => {
       capargs([{ '@qclass': 'slot', index: 0 }], ['p-1']),
     ),
   );
+  matchIDCounterSet(t, log);
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
   t.deepEqual(log.shift(), 'two true');
 
@@ -181,6 +186,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   });
   // then it subscribes to the result promise too
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // now we tell it the promise has resolved, to object 'o2'
@@ -195,6 +201,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   });
   // and nonpipe2() wants a result
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+6' });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // now call two(), which should send nonpipe3 to o2, not p1, since p1 has
@@ -209,6 +216,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
   });
   // and nonpipe3() wants a result
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+7' });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 });
 
@@ -308,6 +316,7 @@ async function doOutboundPromise(t, mode) {
   // and again it subscribes to the result promise
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultP2 });
 
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 }
 
@@ -427,6 +436,7 @@ async function doResultPromise(t, mode) {
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
 
   // now it should be waiting for p2 to resolve, before it can send two()
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // resolve p1 first. The one() call was already pipelined, so this
@@ -456,6 +466,7 @@ async function doResultPromise(t, mode) {
       resultSlot: expectedP3,
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
+    matchIDCounterSet(t, log);
   } else if (mode === 'to data' || mode === 'reject') {
     // Resolving to a non-target means a locally-generated error, and no
     // send() call
@@ -514,6 +525,7 @@ test('liveslots vs symbols', async t => {
     type: 'resolve',
     resolutions: [[rp1, false, capargs(['ok', 'asyncIterator', 'one'])]],
   });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // root~.good(target) -> send(methodname=Symbol.asyncIterator)
@@ -532,6 +544,7 @@ test('liveslots vs symbols', async t => {
     resultSlot: 'p+5',
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p+5' });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // root~.bad(target) -> error because other Symbols are rejected
@@ -574,6 +587,7 @@ test('disable disavow', async t => {
   // root~.one() // sendOnly
   await dispatch(makeMessage(rootA, 'one', capargs([])));
   t.deepEqual(log.shift(), false);
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 });
 
@@ -660,6 +674,7 @@ test('disavow', async t => {
   });
   t.deepEqual(log.shift(), Error('this Presence has been disavowed'));
   t.deepEqual(log.shift(), 'tried to send to disavowed');
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 });
 
@@ -734,6 +749,11 @@ test('GC syscall.dropImports', async t => {
   t.falsy(wr.deref());
 
   // first it will check that there are no VO's holding onto it
+  t.deepEqual(log.shift(), {
+    type: 'vatstoreSet',
+    key: 'idCounters',
+    value: '{"collectionID":2,"exportID":9}',
+  });
   const l2 = log.shift();
   t.deepEqual(l2, {
     type: 'vatstoreGet',
@@ -784,6 +804,7 @@ test('GC dispatch.retireImports', async t => {
   // dispatch.retireImport into the vat
   await dispatch(makeRetireImports(arg));
   // for now, we only care that it doesn't crash
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // when we implement VOM.vrefIsRecognizable, this test might do more
@@ -814,6 +835,7 @@ test('GC dispatch.retireExports', async t => {
     type: 'resolve',
     resolutions: [[rp1, false, capdataOneSlot(ex1)]],
   });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // All other vats drop the export, but since the vat holds it strongly, the
@@ -1128,6 +1150,11 @@ test('GC dispatch.dropExports', async t => {
     type: 'resolve',
     resolutions: [[rp1, false, capdataOneSlot(ex1)]],
   });
+  t.deepEqual(log.shift(), {
+    type: 'vatstoreSet',
+    key: 'idCounters',
+    value: '{"collectionID":2,"exportID":10}',
+  });
   t.deepEqual(log, []);
 
   // the exported Remotable should be held in place by exportedRemotables
@@ -1189,6 +1216,11 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   t.deepEqual(l1, {
     type: 'resolve',
     resolutions: [[rp1, false, capdataOneSlot(ex1)]],
+  });
+  t.deepEqual(log.shift(), {
+    type: 'vatstoreSet',
+    key: 'idCounters',
+    value: '{"collectionID":2,"exportID":10}',
   });
   t.deepEqual(log, []);
 
@@ -1260,6 +1292,7 @@ test('simple promise resolution', async t => {
     type: 'resolve',
     resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
   });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   await dispatch(makeMessage(rootA, 'resolve', capargs([])));
@@ -1327,6 +1360,7 @@ test('promise cycle', async t => {
       [expectedPA2, false, capargs([oneSlot], [expectedPB])],
     ],
   });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 });
 
@@ -1361,6 +1395,7 @@ test('unserializable promise resolution', async t => {
     type: 'resolve',
     resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
   });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   console.log('generating deliberate error');
@@ -1421,6 +1456,7 @@ test('unserializable promise rejection', async t => {
     type: 'resolve',
     resolutions: [[rp1, false, capargs(expectedResult1, [expectedPA])]],
   });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   console.log('generating deliberate error');

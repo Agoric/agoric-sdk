@@ -1,9 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import {
-  defineKind,
-  makeScalarBigWeakMapStore,
-} from '@agoric/swingset-vat/src/storeModule.js';
+import { defineKind, makeScalarBigWeakMapStore } from '@agoric/vat-data';
 
 const p = console.log;
 

@@ -10,6 +10,7 @@ export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
     fakeStuff.syscall,
     vrm,
     fakeStuff.allocateExportID,
+    fakeStuff.allocateCollectionID,
     fakeStuff.convertValToSlot,
     fakeStuff.convertSlotToVal,
     fakeStuff.registerEntry,

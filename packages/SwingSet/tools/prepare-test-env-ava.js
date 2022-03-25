@@ -23,3 +23,8 @@ import rawTest from 'ava';
 
 /** @type {typeof rawTest} */
 export const test = wrapTest(rawTest);
+
+// Does not import from a module because we're testing the global env
+/* global globalThis */
+export const VatData = globalThis.VatData;
+assert(VatData);
