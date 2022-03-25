@@ -102,8 +102,7 @@ export const makeVaultManager = (
    *
    * @type {ReturnType<typeof makePrioritizedVaults>}
    */
-  // eslint-disable-next-line no-use-before-define
-  const prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
+  const prioritizedVaults = makePrioritizedVaults();
 
   // Progress towards durability https://github.com/Agoric/agoric-sdk/issues/4568#issuecomment-1042346271
   /** @type {MapStore<string, InnerVault>} */
@@ -175,7 +174,7 @@ export const makeVaultManager = (
   // we won't reschedule the priceAuthority requests to reduce churn. Instead,
   // when a priceQuote is received, we'll only reschedule if the high-water
   // level when the request was made matches the current high-water level.
-  async function reschedulePriceCheck() {
+  const reschedulePriceCheck = async () => {
     const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -233,7 +232,8 @@ export const makeVaultManager = (
     await executeLiquidation();
 
     reschedulePriceCheck();
-  }
+  };
+  prioritizedVaults.setRescheduler(reschedulePriceCheck);
 
   // In extreme situations, system health may require liquidating all vaults.
   const liquidateAll = async () => {
