@@ -103,8 +103,7 @@ export const makeVaultManager = (
    *
    * @type {ReturnType<typeof makePrioritizedVaults>}
    */
-  // eslint-disable-next-line no-use-before-define
-  const prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
+  const prioritizedVaults = makePrioritizedVaults();
 
   /** @type {MutableQuote=} */
   let outstandingQuote;
@@ -168,7 +167,7 @@ export const makeVaultManager = (
    * high-water level when the request was made matches the current high-water
    * level.
    */
-  async function reschedulePriceCheck() {
+  const reschedulePriceCheck = async () => {
     const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -231,7 +230,8 @@ export const makeVaultManager = (
     await (next ? liquidateAndRemove(next) : null);
 
     reschedulePriceCheck();
-  }
+  };
+  prioritizedVaults.setRescheduler(reschedulePriceCheck);
 
   /**
    * In extreme situations, system health may require liquidating all vaults.
