@@ -24,6 +24,8 @@ const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * @param {ZCF<{
  * timer: TimerService,
  * POLL_INTERVAL: bigint,
+ * brandIn: Brand,
+ * brandOut: Brand,
  * unitAmountIn: Amount,
  * }>} zcf
  */
