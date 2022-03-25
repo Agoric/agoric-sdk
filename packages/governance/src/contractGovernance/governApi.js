@@ -2,7 +2,6 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
 import { keyEQ } from '@agoric/store';
 
 import {
@@ -17,13 +16,13 @@ const { details: X } = assert;
 /**
  * Make a pair of positions for a question about whether to invoke an API. If
  * the vote passes, the method will be called on the governedApis facet with the
- * parameters that were provided.
+ * arguments that were provided.
  *
  * @param {string} apiMethodName
- * @param {[unknown]} methodParams
+ * @param {[unknown]} methodArgs
  */
-const makeApiInvocationPositions = (apiMethodName, methodParams) => {
-  const positive = harden({ apiMethodName, methodParams });
+const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
+  const positive = harden({ apiMethodName, methodArgs });
   const negative = harden({ dontInvoke: apiMethodName });
   return { positive, negative };
 };
@@ -33,8 +32,8 @@ const makeApiInvocationPositions = (apiMethodName, methodParams) => {
  *
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} governedInstance
- * @param {any} governedApis
- * @param {string[]} governedNames
+ * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedApis
+ * @param {string[]} governedNames names of the governed API methods
  * @param {ERef<TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {Promise<ApiGovernor>}
@@ -53,12 +52,10 @@ const setupApiGovernance = async (
   /** @type {VoteOnApiInvocation} */
   const voteOnApiInvocation = async (
     apiMethodName,
-    methodParams,
+    methodArgs,
     voteCounterInstallation,
     deadline,
   ) => {
-    const outcomeOfUpdateP = makePromiseKit();
-
     assert(
       governedNames.includes(apiMethodName),
       X`${apiMethodName} is not a governed API.`,
@@ -66,11 +63,11 @@ const setupApiGovernance = async (
 
     const { positive, negative } = makeApiInvocationPositions(
       apiMethodName,
-      methodParams,
+      methodArgs,
     );
 
     /** @type {ApiInvocationIssue} */
-    const issue = harden({ apiMethodName, methodParams });
+    const issue = harden({ apiMethodName, methodArgs });
     const questionSpec = coerceQuestionSpec({
       method: ChoiceMethod.UNRANKED,
       issue,
@@ -92,30 +89,30 @@ const setupApiGovernance = async (
     // attempt to invoke the API if that's what the vote called for. We need to
     // make sure that outcomeOfUpdateP is updated whatever happens.
     //
-    // * If the vote was negative, resolve to the outcome
-    // * If the API invocation succeeds, say so
-    // * If the update fails, reject the promise
-    // * if the vote outcome failed, reject the promise.
-    E(counterPublicFacet)
+    // * If the vote passed, invoke the API, and return the positive position
+    // * If the vote was negative, return the negative position
+    // * If we can't do either, (the vote failed or the API invocation failed)
+    //   return a broken promise.
+    const outcomeOfUpdate = E(counterPublicFacet)
       .getOutcome()
+      // @ts-expect-error return types don't appear to match
       .then(outcome => {
         if (keyEQ(positive, outcome)) {
-          E(governedApis)
-            [apiMethodName](...methodParams)
-            .then(returnValue => outcomeOfUpdateP.resolve(returnValue))
-            .catch(e => {
-              outcomeOfUpdateP.reject(e);
+          keyEQ(outcome, harden({ apiMethodName, methodArgs }));
+
+          // E(remote)[name](args) invokes the method named 'name' on remote.
+          return E(governedApis)
+            [apiMethodName](...methodArgs)
+            .then(() => {
+              return positive;
             });
         } else {
-          outcomeOfUpdateP.resolve(negative);
+          return negative;
         }
-      })
-      .catch(e => {
-        outcomeOfUpdateP.reject(e);
       });
 
     return {
-      outcomeOfUpdate: outcomeOfUpdateP.promise,
+      outcomeOfUpdate,
       instance: voteCounter,
       details: E(counterPublicFacet).getDetails(),
     };

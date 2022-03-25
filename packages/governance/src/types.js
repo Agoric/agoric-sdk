@@ -205,37 +205,6 @@
  */
 
 /**
- * @callback LooksLikeApiInvocation
- * @param {unknown} issue
- * @returns {asserts issue is ApiInvocationIssue}
- */
-
-/**
- * @callback LooksLikeParamChangeIssue
- * @param {unknown} issue
- * @returns { asserts issue is ParamChangeIssue }
- */
-
-/**
- * @callback LooksLikeIssueForType
- * @param {ElectionType} electionType
- * @param {unknown} issue
- * @returns { asserts issue is Issue }
- */
-
-/**
- * @callback LooksLikeSimpleIssue
- * @param {unknown} issue
- * @returns { asserts issue is SimpleIssue }
- */
-
-/**
- * @callback LooksLikeClosingRule
- * @param {unknown} closingRule
- * @returns { asserts closingRule is ClosingRule }
- */
-
-/**
  * @callback SubmitVote
  * @param {Handle<'Voter'>} voterHandle
  * @param {Position[]} chosenPositions
@@ -353,7 +322,7 @@
 /**
  * @typedef {Object} ApiInvocationIssue
  * @property {string} apiMethodName
- * @property {[unknown]} methodParams
+ * @property {[unknown]} methodArgs
  */
 
 /**
@@ -458,7 +427,7 @@
 /**
  * @typedef {Object} InvokeApiPosition
  * @property {string} apiMethodName
- * @property {any} methodParams
+ * @property {any} methodArgs
  */
 
 /**
@@ -613,7 +582,7 @@
 /**
  * @callback VoteOnApiInvocation
  * @param {string} apiMethodName
- * @param {[unknown]} methodParams
+ * @param {[unknown]} methodArgs
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
  * @returns {ContractGovernanceVoteResult}

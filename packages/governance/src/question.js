@@ -18,25 +18,13 @@ const { details: X, quote: q } = assert;
 /**
  * "unranked" is more formally known as "approval" voting, but this is hard for
  * people to intuit when there are only two alternatives.
- *
- * @type {{
- *   UNRANKED: 'unranked',
- *   ORDER: 'order',
- * }}
  */
-const ChoiceMethod = {
+const ChoiceMethod = /** @type {const} */ ({
   UNRANKED: 'unranked',
   ORDER: 'order',
-};
+});
 
-/** @type {{
- *   PARAM_CHANGE: 'param_change',
- *   ELECTION: 'election',
- *   SURVEY: 'survey',
- *   API_INVOCATION: 'api_invocation',
- * }}
- */
-const ElectionType = {
+const ElectionType = /** @type {const} */ ({
   // A parameter is named, and a new value proposed
   PARAM_CHANGE: 'param_change',
   // choose one or multiple winners, depending on ChoiceMethod
@@ -44,22 +32,19 @@ const ElectionType = {
   SURVEY: 'survey',
   // whether or not to invoke an API method
   API_INVOCATION: 'api_invocation',
-};
+});
 
-/** @type {{
- *   MAJORITY: 'majority',
- *   NO_QUORUM: 'no_quorum',
- *   ALL: 'all',
- * }}
- */
-const QuorumRule = {
+const QuorumRule = /** @type {const} */ ({
   MAJORITY: 'majority',
   NO_QUORUM: 'no_quorum',
   // The election isn't valid unless all voters vote
   ALL: 'all',
-};
+});
 
-/** @type {LooksLikeSimpleIssue} */
+/**
+ * @param {unknown} issue
+ * @returns { asserts issue is SimpleIssue }
+ */
 const looksLikeSimpleIssue = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(
@@ -69,7 +54,10 @@ const looksLikeSimpleIssue = issue => {
   return undefined;
 };
 
-/** @type {LooksLikeParamChangeIssue} */
+/**
+ * @param {unknown} issue
+ * @returns { asserts issue is ParamChangeIssue }
+ */
 const looksLikeParamChangeIssue = issue => {
   assert(issue, X`argument to looksLikeParamChangeIssue cannot be null`);
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
@@ -81,18 +69,27 @@ const looksLikeParamChangeIssue = issue => {
   assert(issue && issue.proposedValue);
   const assertInstance = makeAssertInstance('contract');
   assertInstance(issue.contract);
+  return undefined;
 };
 
-/** @type {LooksLikeApiInvocation} */
+/**
+ * @param {unknown} issue
+ * @returns {asserts issue is ApiInvocationIssue}
+ */
 const looksLikeApiInvocation = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(
     issue && typeof issue.apiMethodName === 'string',
     X`Issue ("${issue}") must be a record with apiMethodName: aString`,
   );
+  return undefined;
 };
 
-/** @type {LooksLikeIssueForType} */
+/**
+ * @param {ElectionType} electionType
+ * @param {unknown} issue
+ * @returns { asserts issue is Issue }
+ */
 const looksLikeIssueForType = (electionType, issue) => {
   assert(
     passStyleOf(issue) === 'copyRecord',
@@ -113,13 +110,19 @@ const looksLikeIssueForType = (electionType, issue) => {
     default:
       throw Error(`Election type unrecognized`);
   }
+  return undefined;
 };
 
 /** @type {PositionIncluded} */
 const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
 
 // QuestionSpec contains the subset of QuestionDetails that can be specified before
-/** @type {LooksLikeClosingRule} */
+/**
+ * @callback LooksLikeClosingRule
+ * @param {unknown} closingRule
+ * @returns { asserts closingRule is ClosingRule }
+ */
+
 function looksLikeClosingRule(closingRule) {
   assert(closingRule, X`argument to looksLikeClosingRule cannot be null`);
   assert.typeof(
