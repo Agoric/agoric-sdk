@@ -154,14 +154,18 @@ export const makeVaultManager = (
       });
   };
 
-  // When any Vault's debt ratio is higher than the current high-water level,
-  // call reschedulePriceCheck() to request a fresh notification from the
-  // priceAuthority. There will be extra outstanding requests since we can't
-  // cancel them. (https://github.com/Agoric/agoric-sdk/issues/2713). When the
-  // vault with the current highest debt ratio is removed or reduces its ratio,
-  // we won't reschedule the priceAuthority requests to reduce churn. Instead,
-  // when a priceQuote is received, we'll only reschedule if the high-water
-  // level when the request was made matches the current high-water level.
+  /**
+   * When any Vault's debt ratio is higher than the current high-water level,
+   * call `reschedulePriceCheck()` to request a fresh notification from the
+   * priceAuthority. There will be extra outstanding requests since we can't
+   * cancel them. (https://github.com/Agoric/agoric-sdk/issues/2713).
+   *
+   * When the vault with the current highest debt ratio is removed or reduces
+   * its ratio, we won't reschedule the priceAuthority requests to reduce churn.
+   * Instead, when a priceQuote is received, we'll only reschedule if the
+   * high-water level when the request was made matches the current high-water
+   * level.
+   */
   const reschedulePriceCheck = async () => {
     assert(prioritizedVaults);
     const highestDebtRatio = prioritizedVaults.highestRatio();
@@ -212,20 +216,24 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
-    /** @type {Array<Promise<void>>} */
-    const toLiquidate = Array.from(
-      prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin),
-    ).map(liquidateAndRemove);
-
     outstandingQuote = undefined;
-    // Ensure all vaults complete
-    await Promise.all(toLiquidate);
+
+    // Liquidate serially
+    for (const [key, vault] of prioritizedVaults.entriesPrioritizedGTE(
+      quoteRatioPlusMargin,
+    )) {
+      // eslint-disable-next-line no-await-in-loop -- We want each liquidation to happen in a separate turn
+      await liquidateAndRemove([key, vault]);
+    }
 
     reschedulePriceCheck();
   };
   prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
 
-  // In extreme situations, system health may require liquidating all vaults.
+  /**
+   * In extreme situations, system health may require liquidating all vaults.
+   * This starts the liquidations all in parallel.
+   */
   const liquidateAll = async () => {
     assert(prioritizedVaults);
     const toLiquidate = Array.from(prioritizedVaults.entries()).map(
