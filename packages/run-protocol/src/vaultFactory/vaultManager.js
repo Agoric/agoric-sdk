@@ -133,25 +133,25 @@ export const makeVaultManager = (
    *
    * @param {[key: string, vaultKit: InnerVault]} record
    */
-  const liquidateAndRemove = async ([key, vault]) => {
-    assert(prioritizedVaults);
+  const liquidateAndRemove = ([key, vault]) => {
     trace('liquidating', vault.getVaultSeat().getProposal());
 
-    try {
-      // Start liquidation (vaultState: LIQUIDATING)
-      await liquidate(
-        zcf,
-        vault,
-        debtMint.burnLosses,
-        liquidationStrategy,
-        collateralBrand,
-      );
-
-      await prioritizedVaults.removeVault(key);
-    } catch (e) {
-      // XXX should notify interested parties
-      console.error('liquidateAndRemove failed with', e);
-    }
+    // Start liquidation (vaultState: LIQUIDATING)
+    return liquidate(
+      zcf,
+      vault,
+      debtMint.burnLosses,
+      liquidationStrategy,
+      collateralBrand,
+    )
+      .then(() => {
+        assert(prioritizedVaults);
+        prioritizedVaults?.removeVault(key);
+      })
+      .catch(e => {
+        // XXX should notify interested parties
+        console.error('liquidateAndRemove failed with', e);
+      });
   };
 
   // When any Vault's debt ratio is higher than the current high-water level,
