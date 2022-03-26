@@ -25,7 +25,7 @@ ARG XSNAP_NATIVE_URL
 WORKDIR /usr/src/agoric-sdk
 COPY . .
 
-RUN yarn install --network-timeout 100000
+RUN yarn install --network-timeout 1000000
 
 # Need to build the Node.js node extension that uses our above Golang shared library.
 COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
