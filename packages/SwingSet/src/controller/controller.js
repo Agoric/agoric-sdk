@@ -45,8 +45,13 @@ function makeConsole(tag) {
   return harden(cons);
 }
 
-/** @param {Error} e */
-function unhandledRejectionHandler(e) {
+/**
+ * @param {unknown} e
+ * @param {Promise} pr
+ */
+function unhandledRejectionHandler(e, pr) {
+  // Don't trigger sensitive hosts (like AVA).
+  pr.catch(() => {});
   console.error('UnhandledPromiseRejectionWarning:', e);
 }
 
