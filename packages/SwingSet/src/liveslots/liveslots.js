@@ -437,21 +437,29 @@ function build(
     return Remotable(iface);
   }
 
+  // We start exportIDs with 1 because 'o+0' is always automatically
+  // pre-assigned to the root object.  The starting point for
+  // numbering promiseIDs is pretty arbitrary.  We start from 5 as a
+  // very minor aid to debugging: It helps, when puzzling over trace
+  // logs and the like, for the numbers in the various species of IDs
+  // to be a little out of sync and thus a little less similar to each
+  // other when jumbled together.
+
+  const initialIDCounters = { exportID: 1, collectionID: 1, promiseID: 5 };
   let idCounters;
   let idCountersAreDirty = false;
 
   function initializeIDCounters() {
     if (!idCounters) {
-      const raw = syscall.vatstoreGet('idCounters');
-      if (raw) {
-        idCounters = JSON.parse(raw);
-      } else {
-        idCounters = {};
-      }
+      // the saved value might be missing, or from an older liveslots
+      // (with fewer counters), so merge it with our initial values
+      const saved = JSON.parse(syscall.vatstoreGet('idCounters') || '{}');
+      idCounters = { ...initialIDCounters, ...saved };
+      idCountersAreDirty = true;
     }
   }
 
-  function allocateNextID(name, initialValue = 1) {
+  function allocateNextID(name) {
     if (!idCounters) {
       // Normally `initializeIDCounters` would be called from startVat, but some
       // tests bypass that so this is a backstop.  Note that the invocation from
@@ -461,10 +469,8 @@ function build(
       // issue.
       initializeIDCounters();
     }
-    if (!idCounters[name]) {
-      idCounters[name] = initialValue;
-    }
     const result = idCounters[name];
+    assert(result !== undefined, `unknown idCounters[${name}]`);
     idCounters[name] += 1;
     idCountersAreDirty = true;
     return result;
@@ -485,22 +491,15 @@ function build(
   // use a slot from the corresponding allocateX
 
   function allocateExportID() {
-    // We start exportIDs with 1 because 'o+0' is always automatically
-    // pre-assigned to the root object.
-    return allocateNextID('exportID', 1);
+    return allocateNextID('exportID');
   }
 
   function allocateCollectionID() {
-    return allocateNextID('collectionID', 1);
+    return allocateNextID('collectionID');
   }
 
   function allocatePromiseID() {
-    // The starting point for numbering promiseIDs is pretty arbitrary.  We start
-    // from 5 as a very minor aid to debugging: It helps, when puzzling over
-    // trace logs and the like, for the numbers in the various species of IDs to
-    // be a little out of sync and thus a little less similar to each other when
-    // jumbled together.
-    const promiseID = allocateNextID('promiseID', 5);
+    const promiseID = allocateNextID('promiseID');
     return makeVatSlot('promise', true, promiseID);
   }
 
