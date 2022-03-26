@@ -1215,6 +1215,8 @@ function build(
     }
 
     initializeIDCounters();
+    collectionManager.initializeStoreKindInfo();
+
     const vatParameters = m.unserialize(vatParametersCapData);
     baggage = collectionManager.provideBaggage();
 

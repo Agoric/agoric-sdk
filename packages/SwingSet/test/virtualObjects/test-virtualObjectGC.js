@@ -461,7 +461,6 @@ function validateCreateBaggage(v, idx) {
 
 function validateSetup(v) {
   validate(v, matchVatstoreGet('idCounters', NONE));
-  validate(v, matchVatstoreGet('baggageID', NONE));
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
     v,
@@ -470,6 +469,7 @@ function validateSetup(v) {
       '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
     ),
   );
+  validate(v, matchVatstoreGet('baggageID', NONE));
   validateCreateBaggage(v, 1);
   validate(v, matchVatstoreSet(stateKey(cacheDisplacerVref), cacheObjValue));
   validate(v, matchVatstoreSet(stateKey(fCacheDisplacerVref), cacheObjValue));
