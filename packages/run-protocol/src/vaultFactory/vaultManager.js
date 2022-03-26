@@ -18,7 +18,6 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
@@ -107,11 +106,6 @@ export const makeVaultManager = (
    */
   // XXX misleading mutability and confusing flow control; could be refactored with a listener
   let prioritizedVaults;
-
-  // Progress towards durability https://github.com/Agoric/agoric-sdk/issues/4568#issuecomment-1042346271
-  /** @type {MapStore<string, InnerVault>} */
-  const vaultsToLiquidate = makeScalarBigMapStore('vaultsToLiquidate');
-
   /** @type {MutableQuote=} */
   let outstandingQuote;
   /** @type {Amount<'nat'>} */
@@ -136,39 +130,28 @@ export const makeVaultManager = (
   );
 
   /**
-   * @param {Iterable<[key: string, vaultKit: InnerVault]>} vaultEntries
+   *
+   * @param {[key: string, vaultKit: InnerVault]} record
    */
-  const enqueueToLiquidate = vaultEntries => {
+  const liquidateAndRemove = async ([key, vault]) => {
     assert(prioritizedVaults);
-    for (const [k, v] of vaultEntries) {
-      vaultsToLiquidate.init(k, v);
-      prioritizedVaults.removeVault(k);
-    }
-  };
+    trace('liquidating', vault.getVaultSeat().getProposal());
 
-  const executeLiquidation = async () => {
-    // Start all promises in parallel
-    // XXX we should have a direct method to map over entries
-    const liquidations = Array.from(vaultsToLiquidate.entries()).map(
-      async ([key, vault]) => {
-        trace('liquidating', vault.getVaultSeat().getProposal());
-        try {
-          // Start liquidation (vaultState: LIQUIDATING)
-          await liquidate(
-            zcf,
-            vault,
-            debtMint.burnLosses,
-            liquidationStrategy,
-            collateralBrand,
-          );
-          vaultsToLiquidate.delete(key);
-        } catch (e) {
-          // XXX should notify interested parties
-          console.error('liquidateAndRemove failed with', e);
-        }
-      },
-    );
-    return Promise.all(liquidations);
+    try {
+      // Start liquidation (vaultState: LIQUIDATING)
+      await liquidate(
+        zcf,
+        vault,
+        debtMint.burnLosses,
+        liquidationStrategy,
+        collateralBrand,
+      );
+
+      await prioritizedVaults.removeVault(key);
+    } catch (e) {
+      // XXX should notify interested parties
+      console.error('liquidateAndRemove failed with', e);
+    }
   };
 
   // When any Vault's debt ratio is higher than the current high-water level,
@@ -229,13 +212,14 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
-    enqueueToLiquidate(
+    /** @type {Array<Promise<void>>} */
+    const toLiquidate = Array.from(
       prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin),
-    );
+    ).map(liquidateAndRemove);
 
     outstandingQuote = undefined;
     // Ensure all vaults complete
-    await executeLiquidation();
+    await Promise.all(toLiquidate);
 
     reschedulePriceCheck();
   };
@@ -244,8 +228,10 @@ export const makeVaultManager = (
   // In extreme situations, system health may require liquidating all vaults.
   const liquidateAll = async () => {
     assert(prioritizedVaults);
-    enqueueToLiquidate(prioritizedVaults.entries());
-    await executeLiquidation();
+    const toLiquidate = Array.from(prioritizedVaults.entries()).map(
+      liquidateAndRemove,
+    );
+    await Promise.all(toLiquidate);
   };
 
   /**
