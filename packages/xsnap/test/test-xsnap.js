@@ -24,7 +24,9 @@ const ld = loader(import.meta.url);
 test('evaluate and issueCommand', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
-  await vat.evaluate(`issueCommand(ArrayBuffer.fromString("Hello, World!"));`);
+  await vat.evaluate(
+    `issueCommand(new TextEncoder().encode("Hello, World!").buffer);`,
+  );
   await vat.close();
   t.deepEqual(['Hello, World!'], opts.messages);
 });
@@ -34,7 +36,7 @@ test('evaluate until idle', async t => {
   const vat = xsnap(opts);
   await vat.evaluate(`
     (async () => {
-      issueCommand(ArrayBuffer.fromString("Hello, World!"));
+      issueCommand(new TextEncoder().encode("Hello, World!").buffer);
     })();
   `);
   await vat.close();
@@ -78,7 +80,7 @@ test('evaluate and report', async t => {
   const result = await vat.evaluate(`(() => {
     const report = {};
     Promise.resolve('hi').then(v => {
-      report.result = ArrayBuffer.fromString(v);
+      report.result = new TextEncoder().encode(v).buffer;
     });
     return report;
   })()`);
@@ -117,7 +119,7 @@ test('idle includes setImmediate too', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     setImmediate(() => send("end of crank"));
     Promise.resolve("turn 2").then(send);
     send("turn 1");
@@ -130,7 +132,7 @@ test('print - start compartment only', async t => {
   const opts = options(io);
   const vat = xsnap(opts);
   await vat.evaluate(`
-    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     print('print:', 123);
     try {
       (new Compartment()).evalate('print("456")');
@@ -147,7 +149,7 @@ test('gc - start compartment only', async t => {
   const vat = xsnap(opts);
   await vat.evaluate(`
     gc();
-    const send = it => issueCommand(ArrayBuffer.fromString(it));
+    const send = it => issueCommand(new TextEncoder().encode(it).buffer);
     gc();
     try {
       (new Compartment()).evalate('gc()');
@@ -178,9 +180,9 @@ test('issueCommand is synchronous inside, async outside', async t => {
   }
   const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
-    const response = issueCommand(ArrayBuffer.fromString('0'));
-    const number = +String.fromArrayBuffer(response);
-    issueCommand(ArrayBuffer.fromString(String(number + 1)));
+    const response = issueCommand(new TextEncoder().encode('0').buffer);
+    const number = +new TextDecoder().decode(response);
+    issueCommand(new TextEncoder().encode(String(number + 1)).buffer);
   `);
   await vat.close();
   t.deepEqual([0, 2], messages);
@@ -195,8 +197,8 @@ test('deliver a message', async t => {
   const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     function handleCommand(message) {
-      const number = +String.fromArrayBuffer(message);
-      issueCommand(ArrayBuffer.fromString(String(number + 1)));
+      const number = +new TextDecoder().decode(message);
+      issueCommand(new TextEncoder().encode(String(number + 1)).buffer);
     };
   `);
   await vat.issueStringCommand('0');
@@ -215,8 +217,8 @@ test('receive a response', async t => {
   const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     function handleCommand(message) {
-      const number = +String.fromArrayBuffer(message);
-      return ArrayBuffer.fromString(String(number + 1));
+      const number = +new TextDecoder().decode(message);
+      return new TextEncoder().encode(String(number + 1)).buffer;
     };
   `);
   t.is('1', (await vat.issueStringCommand('0')).reply);
@@ -240,8 +242,8 @@ test('serialize concurrent messages', async t => {
   const vat = xsnap({ ...options(io), handleCommand });
   await vat.evaluate(`
     globalThis.handleCommand = message => {
-      const number = +String.fromArrayBuffer(message);
-      issueCommand(ArrayBuffer.fromString(String(number + 1)));
+      const number = +new TextDecoder().decode(message);
+      issueCommand(new TextEncoder().encode(String(number + 1)).buffer);
     };
   `);
   await Promise.all([...count(100)].map(n => vat.issueStringCommand(`${n}`)));
@@ -271,7 +273,7 @@ test('write and read snapshot', async t => {
 
   const vat1 = xsnap({ ...options(io), handleCommand, snapshot });
   await vat1.evaluate(`
-    issueCommand(ArrayBuffer.fromString(hello));
+    issueCommand(new TextEncoder().encode(hello).buffer);
   `);
   await vat1.close();
 
@@ -379,7 +381,7 @@ test('GC after snapshot vs restore', async t => {
   t.teardown(worker.terminate);
 
   await worker.evaluate(`
-  globalThis.send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  globalThis.send = it => issueCommand(new TextEncoder().encode(JSON.stringify(it)).buffer);
   globalThis.runToGC = (${runToGC});
   runToGC();
   // bloat the heap

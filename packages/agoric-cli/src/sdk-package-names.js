@@ -27,6 +27,7 @@ export default [
   "@agoric/swingset-vat",
   "@agoric/telemetry",
   "@agoric/ui-components",
+  "@agoric/vat-data",
   "@agoric/vats",
   "@agoric/wallet",
   "@agoric/wallet-backend",

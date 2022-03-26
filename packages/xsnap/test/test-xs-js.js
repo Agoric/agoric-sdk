@@ -199,3 +199,50 @@ test('round-trip byte sequences via JSON including string literals', async t => 
     [true, true, true, true, true, true],
   );
 });
+
+test('Text encode / decode edge cases with CESU-8', async t => {
+  const opts = options(io);
+  const vat = xsnap(opts);
+  t.teardown(() => vat.terminate());
+
+  const send = _val => /* dummy */ {}; // for static checker
+
+  function runInXS() {
+    // eslint-disable-next-line no-useless-concat
+    const s = '\uD83D' + '\uDF08';
+    send(`s.length: ${s.length}`);
+    send(`s.charCodeAt(0): ${s.charCodeAt(0).toString(16)}`);
+    send(`s.charCodeAt(1): ${s.charCodeAt(1).toString(16)}`);
+    const sEscapeRT = unescape(escape(s));
+    send(`unescape(escape(s)): ${sEscapeRT}`);
+    const sEncoded = new TextEncoder().encode(s);
+    const sDecoded = new TextDecoder().decode(sEncoded);
+    const sEncodeRT = new TextEncoder().encode(sDecoded);
+    send(`encode(s): ${sEncoded}`);
+    send(`decode(encode(s)): ${sDecoded}`);
+    send(`encode(decode(encode(s))): ${sEncodeRT}`);
+
+    // eslint-disable-next-line no-useless-concat
+    send(['𝌆'.length, '\uD834' + '\uDF06' === '𝌆']);
+  }
+
+  await vat.evaluate(`\
+  const encoder = new TextEncoder();
+  const send = it => issueCommand(encoder.encode(JSON.stringify(it)).buffer);
+  ${runInXS}
+  `);
+  await vat.evaluate(`runInXS()`);
+  t.deepEqual(
+    opts.messages.map(s => JSON.parse(s)),
+    [
+      's.length: 2',
+      's.charCodeAt(0): d83d',
+      's.charCodeAt(1): df08',
+      'unescape(escape(s)): 🜈',
+      'encode(s): 240,159,156,136',
+      'decode(encode(s)): 🜈',
+      'encode(decode(encode(s))): 240,159,156,136',
+      [2, true],
+    ],
+  );
+});

@@ -66,7 +66,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
       txfile="/tmp/faucet.$$.json"
       trap 'rm -f "$txfile"' EXIT
       echo "$body0" | jq ".body.messages += $msg1" > "$txfile"
-      $TX sign "$txfile" | $TX broadcast "$BROADCAST_FLAGS" - | tee /dev/stderr | grep -q '^code: 0'
+      $TX sign "$txfile" | $TX broadcast --broadcast-mode=block - | tee /dev/stderr | grep -q '^code: 0'
       exit $? 
       ;;
     gift)

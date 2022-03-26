@@ -1,5 +1,5 @@
 import { makeNotifierKit } from '@agoric/notifier';
-import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
+import { defineKind } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 
 export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {

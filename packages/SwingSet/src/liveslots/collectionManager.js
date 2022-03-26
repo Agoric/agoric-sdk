@@ -22,6 +22,7 @@ export function makeCollectionManager(
   syscall,
   vrm,
   allocateExportID,
+  allocateCollectionID,
   convertValToSlot,
   convertSlotToVal,
   registerValue,
@@ -546,8 +547,6 @@ export function makeCollectionManager(
     return doMoreGC;
   }
 
-  let nextCollectionID = 1;
-
   function makeCollection(label, kindName, keySchema, valueSchema) {
     assert.typeof(label, 'string');
     assert(storeKindInfo[kindName]);
@@ -557,8 +556,7 @@ export function makeCollectionManager(
       assertPattern(valueSchema);
       schemata.push(valueSchema);
     }
-    const collectionID = nextCollectionID;
-    nextCollectionID += 1;
+    const collectionID = allocateCollectionID();
     const kindID = obtainStoreKindID(kindName);
     const vobjID = `o+${kindID}/${collectionID}`;
 

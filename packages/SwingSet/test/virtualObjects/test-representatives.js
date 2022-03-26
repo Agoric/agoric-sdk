@@ -382,6 +382,7 @@ test('virtual object gc', async t => {
   }
   t.deepEqual(remainingVOs, {
     'v1.vs.baggageID': 'o+5/1',
+    'v1.vs.idCounters': '{"collectionID":2,"exportID":10,"promiseID":8}',
     'v1.vs.storeKindIDTable':
       '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
     'v1.vs.vc.1.|entryCount': '0',

@@ -5,7 +5,7 @@ import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
 import { Far, assertCopyArray } from '@endo/marshal';
 import { fit } from '@agoric/store';
-import { makeScalarBigWeakMapStore } from '@agoric/swingset-vat/src/storeModule.js';
+import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makePaymentMaker } from './payment.js';
 import { makePurseMaker } from './purse.js';

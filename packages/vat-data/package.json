@@ -1,0 +1,40 @@
+{
+  "name": "@agoric/vat-data",
+  "version": "0.1.0",
+  "description": "Safe access to VatData global",
+  "type": "module",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "main": "./src/index.js",
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:c8": "exit 0",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:eslint": "eslint '**/*.js'",
+    "lint:types": "tsc"
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/assert": "*",
+    "@agoric/store": "^0.6.10"
+  },
+  "devDependencies": {
+    "ava": "^3.12.1",
+    "@agoric/swingset-vat": "*"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=14.15.0"
+  }
+}

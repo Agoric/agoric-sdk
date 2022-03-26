@@ -33,7 +33,7 @@ harden(zeroPad);
 const asNumber = new Float64Array(1);
 const asBits = new BigUint64Array(asNumber.buffer);
 
-// JavaScript numbers are encoded as keys by outputting the base-16
+// JavaScript numbers are encoded by outputting the base-16
 // representation of the binary value of the underlying IEEE floating point
 // representation.  For negative values, all bits of this representation are
 // complemented prior to the base-16 conversion, while for positive values, the
@@ -66,10 +66,10 @@ const encodeBinary64 = n => {
   return `f${zeroPad(bits.toString(16), 16)}`;
 };
 
-const decodeBinary64 = encodedKey => {
-  assert(encodedKey.startsWith('f'), X`Encoded number expected: ${encodedKey}`);
-  let bits = BigInt(`0x${encodedKey.substring(1)}`);
-  if (encodedKey[1] < '8') {
+const decodeBinary64 = encoded => {
+  assert(encoded.startsWith('f'), X`Encoded number expected: ${encoded}`);
+  let bits = BigInt(`0x${encoded.substring(1)}`);
+  if (encoded[1] < '8') {
     // eslint-disable-next-line no-bitwise
     bits ^= 0xffffffffffffffffn;
   } else {
@@ -78,7 +78,7 @@ const decodeBinary64 = encodedKey => {
   }
   asBits[0] = bits;
   const result = asNumber[0];
-  assert(!is(result, -0), X`Unexpected negative zero: ${encodedKey}`);
+  assert(!is(result, -0), X`Unexpected negative zero: ${encoded}`);
   return result;
 };
 
@@ -125,28 +125,25 @@ const encodeBigInt = n => {
   }
 };
 
-const decodeBigInt = encodedKey => {
-  const typePrefix = encodedKey[0];
-  let rem = encodedKey.slice(1);
+const decodeBigInt = encoded => {
+  const typePrefix = encoded[0];
+  let rem = encoded.slice(1);
   assert(
     typePrefix === 'p' || typePrefix === 'n',
-    X`Encoded bigint expected: ${encodedKey}`,
+    X`Encoded bigint expected: ${encoded}`,
   );
 
   const lDigits = rem.search(/[0-9]/) + 1;
-  assert(lDigits >= 1, X`Digit count expected: ${encodedKey}`);
+  assert(lDigits >= 1, X`Digit count expected: ${encoded}`);
   rem = rem.slice(lDigits - 1);
 
-  assert(
-    rem.length >= lDigits,
-    X`Complete digit count expected: ${encodedKey}`,
-  );
+  assert(rem.length >= lDigits, X`Complete digit count expected: ${encoded}`);
   const snDigits = rem.slice(0, lDigits);
   rem = rem.slice(lDigits);
 
   assert(
     /^[0-9]+$/.test(snDigits),
-    X`Decimal digit count expected: ${encodedKey}`,
+    X`Decimal digit count expected: ${encoded}`,
   );
   let nDigits = parseInt(snDigits, 10);
   if (typePrefix === 'n') {
@@ -155,12 +152,12 @@ const decodeBigInt = encodedKey => {
     nDigits = 10 ** lDigits - nDigits;
   }
 
-  assert(rem.startsWith(':'), X`Separator expected: ${encodedKey}`);
+  assert(rem.startsWith(':'), X`Separator expected: ${encoded}`);
   rem = rem.slice(1);
 
   assert(
     rem.length === nDigits,
-    X`Fixed-length digit sequence expected: ${encodedKey}`,
+    X`Fixed-length digit sequence expected: ${encoded}`,
   );
   let n = BigInt(rem);
   if (typePrefix === 'n') {
@@ -191,12 +188,12 @@ const encodeArray = (array, encodePassable) => {
   return chars.join('');
 };
 
-const decodeArray = (encodedKey, decodePassable) => {
-  assert(encodedKey.startsWith('['), X`Encoded array expected: ${encodedKey}`);
+const decodeArray = (encoded, decodePassable) => {
+  assert(encoded.startsWith('['), X`Encoded array expected: ${encoded}`);
   const elements = [];
   const elemChars = [];
-  for (let i = 1; i < encodedKey.length; i += 1) {
-    const c = encodedKey[i];
+  for (let i = 1; i < encoded.length; i += 1) {
+    const c = encoded[i];
     if (c === '\u0000') {
       const encodedElement = elemChars.join('');
       elemChars.length = 0;
@@ -204,11 +201,8 @@ const decodeArray = (encodedKey, decodePassable) => {
       elements.push(element);
     } else if (c === '\u0001') {
       i += 1;
-      assert(
-        i < encodedKey.length,
-        X`unexpected end of encoding ${encodedKey}`,
-      );
-      const c2 = encodedKey[i];
+      assert(i < encoded.length, X`unexpected end of encoding ${encoded}`);
+      const c2 = encoded[i];
       assert(
         c2 === '\u0000' || c2 === '\u0001',
         X`Unexpected character after u0001 escape: ${c2}`,
@@ -218,7 +212,7 @@ const decodeArray = (encodedKey, decodePassable) => {
       elemChars.push(c);
     }
   }
-  assert(elemChars.length === 0, X`encoding terminated early: ${encodedKey}`);
+  assert(elemChars.length === 0, X`encoding terminated early: ${encoded}`);
   return harden(elements);
 };
 
@@ -227,17 +221,17 @@ const encodeRecord = (record, encodePassable) => {
   return `(${encodeArray(harden([names, values]), encodePassable)}`;
 };
 
-const decodeRecord = (encodedKey, decodePassable) => {
-  assert(encodedKey.startsWith('('));
-  const keysvals = decodeArray(encodedKey.substring(1), decodePassable);
-  assert(keysvals.length === 2, X`expected keys,values pair: ${encodedKey}`);
+const decodeRecord = (encoded, decodePassable) => {
+  assert(encoded.startsWith('('));
+  const keysvals = decodeArray(encoded.substring(1), decodePassable);
+  assert(keysvals.length === 2, X`expected keys,values pair: ${encoded}`);
   const [keys, vals] = keysvals;
   assert(
     passStyleOf(keys) === 'copyArray' &&
       passStyleOf(vals) === 'copyArray' &&
       keys.length === vals.length &&
       keys.every(key => typeof key === 'string'),
-    X`not a valid record encoding: ${encodedKey}`,
+    X`not a valid record encoding: ${encoded}`,
   );
   const entries = keys.map((key, i) => [key, vals[i]]);
   const record = harden(fromEntries(entries));
@@ -248,14 +242,14 @@ const decodeRecord = (encodedKey, decodePassable) => {
 const encodeTagged = (tagged, encodePassable) =>
   `:${encodeArray(harden([getTag(tagged), tagged.payload]), encodePassable)}`;
 
-const decodeTagged = (encodedKey, decodePassable) => {
-  assert(encodedKey.startsWith(':'));
-  const tagpayload = decodeArray(encodedKey.substring(1), decodePassable);
-  assert(tagpayload.length === 2, X`expected tag,payload pair: ${encodedKey}`);
+const decodeTagged = (encoded, decodePassable) => {
+  assert(encoded.startsWith(':'));
+  const tagpayload = decodeArray(encoded.substring(1), decodePassable);
+  assert(tagpayload.length === 2, X`expected tag,payload pair: ${encoded}`);
   const [tag, payload] = tagpayload;
   assert(
     passStyleOf(tag) === 'string',
-    X`not a valid tagged encoding: ${encodedKey}`,
+    X`not a valid tagged encoding: ${encoded}`,
   );
   return makeTagged(tag, payload);
 };
@@ -273,15 +267,15 @@ const decodeTagged = (encodedKey, decodePassable) => {
 
 /**
  * @param {EncodeOptions=} encodeOptions
- * @returns {(key: Key) => string}
+ * @returns {(passable: Passable) => string}
  */
 export const makeEncodePassable = ({
   encodeRemotable = rem => assert.fail(X`remotable unexpected: ${rem}`),
   encodePromise = prom => assert.fail(X`promise unexpected: ${prom}`),
   encodeError = err => assert.fail(X`error unexpected: ${err}`),
 } = {}) => {
-  const encodePassable = key => {
-    const passStyle = passStyleOf(key);
+  const encodePassable = passable => {
+    const passStyle = passStyleOf(passable);
     switch (passStyle) {
       case 'null': {
         return 'v';
@@ -290,19 +284,19 @@ export const makeEncodePassable = ({
         return 'z';
       }
       case 'number': {
-        return encodeBinary64(key);
+        return encodeBinary64(passable);
       }
       case 'string': {
-        return `s${key}`;
+        return `s${passable}`;
       }
       case 'boolean': {
-        return `b${key}`;
+        return `b${passable}`;
       }
       case 'bigint': {
-        return encodeBigInt(key);
+        return encodeBigInt(passable);
       }
       case 'remotable': {
-        const result = encodeRemotable(key);
+        const result = encodeRemotable(passable);
         assert(
           result.startsWith('r'),
           X`internal: Remotable encoding must start with "r": ${result}`,
@@ -310,7 +304,7 @@ export const makeEncodePassable = ({
         return result;
       }
       case 'error': {
-        const result = encodeError(key);
+        const result = encodeError(passable);
         assert(
           result.startsWith('!'),
           X`internal: Error encoding must start with "!": ${result}`,
@@ -318,7 +312,7 @@ export const makeEncodePassable = ({
         return result;
       }
       case 'promise': {
-        const result = encodePromise(key);
+        const result = encodePromise(passable);
         assert(
           result.startsWith('?'),
           X`internal: Promise encoding must start with "p": ${result}`,
@@ -326,19 +320,21 @@ export const makeEncodePassable = ({
         return result;
       }
       case 'symbol': {
-        return `y${nameForPassableSymbol(key)}`;
+        return `y${nameForPassableSymbol(passable)}`;
       }
       case 'copyArray': {
-        return encodeArray(key, encodePassable);
+        return encodeArray(passable, encodePassable);
       }
       case 'copyRecord': {
-        return encodeRecord(key, encodePassable);
+        return encodeRecord(passable, encodePassable);
       }
       case 'tagged': {
-        return encodeTagged(key, encodePassable);
+        return encodeTagged(passable, encodePassable);
       }
       default: {
-        assert.fail(X`a ${q(passStyle)} cannot be used as a collection key`);
+        assert.fail(
+          X`a ${q(passStyle)} cannot be used as a collection passable`,
+        );
       }
     }
   };
@@ -359,15 +355,15 @@ harden(makeEncodePassable);
 
 /**
  * @param {DecodeOptions=} decodeOptions
- * @returns {(encodedKey: string) => Key}
+ * @returns {(encoded: string) => Passable}
  */
 export const makeDecodePassable = ({
   decodeRemotable = rem => assert.fail(X`remotable unexpected: ${rem}`),
   decodePromise = prom => assert.fail(X`promise unexpected: ${prom}`),
   decodeError = err => assert.fail(X`error unexpected: ${err}`),
 } = {}) => {
-  const decodePassable = encodedKey => {
-    switch (encodedKey[0]) {
+  const decodePassable = encoded => {
+    switch (encoded[0]) {
       case 'v': {
         return null;
       }
@@ -375,41 +371,41 @@ export const makeDecodePassable = ({
         return undefined;
       }
       case 'f': {
-        return decodeBinary64(encodedKey);
+        return decodeBinary64(encoded);
       }
       case 's': {
-        return encodedKey.substring(1);
+        return encoded.substring(1);
       }
       case 'b': {
-        return encodedKey.substring(1) !== 'false';
+        return encoded.substring(1) !== 'false';
       }
       case 'n':
       case 'p': {
-        return decodeBigInt(encodedKey);
+        return decodeBigInt(encoded);
       }
       case 'r': {
-        return decodeRemotable(encodedKey);
+        return decodeRemotable(encoded);
       }
       case '?': {
-        return decodePromise(encodedKey);
+        return decodePromise(encoded);
       }
       case '!': {
-        return decodeError(encodedKey);
+        return decodeError(encoded);
       }
       case 'y': {
-        return passableSymbolForName(encodedKey.substring(1));
+        return passableSymbolForName(encoded.substring(1));
       }
       case '[': {
-        return decodeArray(encodedKey, decodePassable);
+        return decodeArray(encoded, decodePassable);
       }
       case '(': {
-        return decodeRecord(encodedKey, decodePassable);
+        return decodeRecord(encoded, decodePassable);
       }
       case ':': {
-        return decodeTagged(encodedKey, decodePassable);
+        return decodeTagged(encoded, decodePassable);
       }
       default: {
-        assert.fail(X`invalid database key: ${encodedKey}`);
+        assert.fail(X`invalid database key: ${encoded}`);
       }
     }
   };

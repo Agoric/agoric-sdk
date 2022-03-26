@@ -42,6 +42,7 @@
     "@agoric/notifier": "^0.3.35",
     "@agoric/store": "^0.6.10",
     "@agoric/swingset-vat": "^0.25.1",
+    "@agoric/vat-data": "^0.1.0",
     "@endo/marshal": "^0.6.3",
     "@endo/promise-kit": "^0.2.37"
   },
