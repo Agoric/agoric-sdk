@@ -71,6 +71,10 @@ export function insistVatDeliveryObject(vdo) {
       insistCapData(vatParameters);
       break;
     }
+    case 'stopVat': {
+      assert(rest.length === 0);
+      break;
+    }
     case 'bringOutYourDead': {
       assert(rest.length === 0);
       break;

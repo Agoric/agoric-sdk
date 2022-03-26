@@ -640,9 +640,22 @@ export default function buildKernel(
    */
   async function processUpgradeVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
-    // const { upgradeID, bundleID, vatParameters } = message;
-    const { upgradeID, vatParameters } = message;
+    // const { bundleID } = message;
+    const { vatID, upgradeID, vatParameters } = message;
     insistCapData(vatParameters);
+
+    // eslint-disable-next-line no-use-before-define
+    assert(vatWarehouse.lookup(vatID));
+    /** @type { import('../types-external.js').KernelDeliveryStopVat } */
+    const kd = harden(['stopVat']);
+    // eslint-disable-next-line no-use-before-define
+    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    const status = await deliverAndLogToVat(vatID, kd, vd);
+
+    // TODO: if status.terminate then abort the crank, discard the
+    // upgrade event, and arrange to use vatUpgradeCallback to inform
+    // the caller
+
     // for now, all attempts to upgrade will fail
 
     // TODO: decref the bundleID and vatParameters.slots
@@ -651,7 +664,9 @@ export default function buildKernel(
       slots: [],
     };
     queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
-    return null; // no delivery made (yet)
+    // if stopVat fails, we want everything to be unwound. TODO: we
+    // need to notify caller about the failure
+    return { ...status, discardFailedDelivery: true };
   }
 
   function legibilizeMessage(message) {
