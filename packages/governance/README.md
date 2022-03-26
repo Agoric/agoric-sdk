@@ -70,32 +70,42 @@ voterHandle.
 
 ## ContractGovernor
 
-We want some contracts to be able to make it visible that their internal
-parameters are controlled by a public process, and allow observers to see who
-has control, and how those changes can happen. To do so, the contract will
-use a ParamManager to hold its mutable state. ParamManager has facets for
-accessing the param values and for setting them. The governed contract would use
-the access facet internally, and make that visible to anyone who should be able
-to see the values, while ensuring that the private facet, which can change the
-values, is only accessible to a visible ContractGovernor. The ContractGovernor
-makes the Electorate visible, while tightly controlling the process of
-creating new questions and presenting them to the electorate.
+We want some contracts to be able to make the manner of their governance
+legible. Contracts can specify aspects that are governed by a public process,
+specifically:
 
-The governor starts up the Contract and can see what parameters are subject to
-governance. It provides a private facet that carries the ability to request
-votes on changing particular parameters. Some day we may figure out how to make
-the process and schedule of selecting parameter changes to vote on also subject
-to governance, but that's too many meta-levels at this point.
+* changes to declared parameters
+* invocation of declared methods
+
+The governance package makes it possible for contracts to provide *legiblity*,
+meaning that observers (clients and voters) are able to see who has control, and
+what actions can be taken. To make control of parameters legible, the contract
+will hold its mutable state in a ParamManager. ParamManager has facets for
+accessing the param values, and for setting them. The APIs that allows setting
+the values and that can make particular changes to the behavior of the contract
+will only be accessible to an external ContractGovernor.
+
+The governed contract will only retain the accessor facet internally, and will
+also allow external observers to see those values. The private facet, which can
+change the values, is only accessible to the visible ContractGovernor. The
+ContractGovernor makes the Electorate visible, while tightly controlling the
+process of creating new questions and presenting them to the electorate.
+
+The governor starts up the Contract and can see what parameters and APIs are
+subject to governance. It provides private facets that carry the ability to
+request votes on changing parameters and invoking the controlled APIs. At some
+point, we may add governance control over the process and schedule of calling
+those votes, but that hasn't been planned in detail yet.
 
 The party that has the question-creating facet of the ContractGovernor can
-create a question that asks about changing a particular parameter on the
-contract instance. The electorate object creates new questions, and makes a new
-instance of a VoteCounter so everyone can see how questions will be counted.
-
+create questions on parameters or APIs for that contract instance. The
+electorate object creates new questions, and makes a new instance of a
+VoteCounter so everyone can see how questions will be counted.
 Electorates have a public method to get from the questionHandle to a question.
 Ballots include the questionSpec, the VoteCounter instance and closingRule. For
 contract governance, the question specifies the governed contract instance, the
-parameter to be changed, and the proposed new value.
+parameter to be changed and proposed new value, or the method to be invoked and
+the arguments to be provided.
 
 This is sufficient for voters and others to verify that the contract is managed
 by the governor, the electorate is the one the governor uses, and a particular
@@ -111,15 +121,16 @@ it's easy to tell that the ParamManager, with its ability to change the
 parameter values (and access any powerful invitations) is only used in limited
 ways, and is only passed to objects that treat it as a sensitive resource.
 
-The governed contract uses a ContractHelper to return a (powerful) creatorFacet
+The governed contract uses a ContractHelper to return a (powerful) creator facet
 with two methods: `getParamMgrRetriever` (which provides access to read and
 modify parameters), and `getLimitedCreatorFacet`, which has the creator facet
 provided by the governed contract and doesn't include any powerful governance
 capabilities. ContractGovernor starts the governed contract, so it gets the
 powerful creatorFacet. ContractGovernor needs access to the paramManager, but
-shouldn't share it. So the contractGovernor's creatorFacet provides access to
-the governed contract's publicFacet, creatorFacet, instance, and
-`voteOnParamChange()`, which the contract's owner should treat as powerful. 
+shouldn't share it. So the contractGovernor's `creatorFacet` provides access to
+the governed contract's `publicFacet`, `creatorFacet`, `instance`,
+`voteOnApiInvocation`, and `voteOnParamChange`. The contract's owner should
+treat `voteOnApiInvocation` and `voteOnParamChange` as particularly powerful.
 
 ### Governing Electorates
 
@@ -174,6 +185,14 @@ See [ParamTypes definition](./src/constants.js) for all supported types. More
 types will be supported as we learn what contracts need to manage. (If you find
 yourself using 'addUnknown', let us know!)
 
+### Governing APIs
+
+`ContractGovernor` has support for contracts that declare that some internal
+APIs should only be invoked under the control of governance. To opt in to this
+support, the contract should include `getGovernedApis` in its creator facet
+(passed to `wrapCreatorFacet`). That method should return a `Far` object with
+the methods to be called.
+
 ### Governed Contracts
 
 `contractHelper` provides support for the vast majority of expected clients that
@@ -197,6 +216,21 @@ required methods to the public and creator facets. Since the governed contract
 uses the values passed in `terms` to create the paramManager, reviewers of the
 contract can verify that all and only the declared parameters are under the
 control of the paramManager and made visible to the contract's clients.
+
+Governed methods and parameters must be included in terms.
+
+```
+  terms: {
+    main: {
+      [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: invitationAmount,
+      },
+    },
+    governedApis: ['makeItSo'],
+  },
+```
 
 When a contract is written without benefit of `contractHelper`, it is
 responsible for adding `getSubscription`, `getContractGovernor`, and

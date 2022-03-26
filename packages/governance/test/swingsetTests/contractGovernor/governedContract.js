@@ -6,16 +6,18 @@ import {
   makeParamManager,
   ParamTypes,
 } from '../../../src/index.js';
-import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
+import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
-const makeParamTerms = (number, invitationAmount) => {
+const makeTerms = (number, invitationAmount) => {
   return harden({
-    [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: invitationAmount,
+    main: {
+      [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: invitationAmount,
+      },
     },
   });
 };
@@ -35,7 +37,7 @@ const makeParamTerms = (number, invitationAmount) => {
  */
 const start = async (zcf, privateArgs) => {
   const {
-    main: { [MALLEABLE_NUMBER]: numberParam, ...otherOovernedTerms },
+    main: { [MALLEABLE_NUMBER]: numberParam, ...otherGovernedTerms },
   } = zcf.getTerms();
   const { initialPoserInvitation } = privateArgs;
 
@@ -52,16 +54,22 @@ const start = async (zcf, privateArgs) => {
     paramManager,
   );
 
-  assertElectorateMatches(paramManager, otherOovernedTerms);
+  assertElectorateMatches(paramManager, otherGovernedTerms);
+
+  let governanceAPICalled = 0;
+  const governanceApi = () => (governanceAPICalled += 1);
 
   return {
-    publicFacet: wrapPublicFacet({}),
-    creatorFacet: wrapCreatorFacet({}),
+    publicFacet: wrapPublicFacet({
+      getNum: () => paramManager.getMalleableNumber(),
+      getApiCalled: () => governanceAPICalled,
+    }),
+    creatorFacet: wrapCreatorFacet({}, { governanceApi }),
   };
 };
 
 harden(start);
 harden(MALLEABLE_NUMBER);
-harden(makeParamTerms);
+harden(makeTerms);
 
-export { start, MALLEABLE_NUMBER, makeParamTerms };
+export { start, MALLEABLE_NUMBER, makeTerms };

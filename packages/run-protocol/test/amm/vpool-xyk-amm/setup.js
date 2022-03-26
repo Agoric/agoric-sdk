@@ -25,13 +25,14 @@ const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
 const committeeRoot = '@agoric/governance/src/committee.js';
 const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
 
-const makeBundle = async sourceRoot => {
+export const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
   const path = new URL(url).pathname;
   const contractBundle = await bundleSource(path);
   console.log(`makeBundle ${sourceRoot}`);
   return contractBundle;
 };
+harden(makeBundle);
 
 // makeBundle is a slow step, so we do it once for all the tests.
 const ammBundleP = makeBundle(ammRoot);

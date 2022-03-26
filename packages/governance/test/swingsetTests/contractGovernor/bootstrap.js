@@ -5,7 +5,7 @@ import { Far } from '@endo/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { observeIteration } from '@agoric/notifier';
 
-import { makeParamTerms } from './governedContract.js';
+import { makeTerms } from './governedContract.js';
 import { CONTRACT_ELECTORATE, assertContractElectorate } from '../../../src';
 
 const { quote: q } = assert;
@@ -163,6 +163,27 @@ const setupElectorateChange = async (
   return { details, outcomeOfUpdate };
 };
 
+const setupApiCall = async (zoe, log, governor, installations) => {
+  const { details, instance, outcomeOfUpdate } = await E(
+    governor,
+  ).voteOnApiInvocation(
+    'governanceApi',
+    [], // empty params
+    installations.binaryVoteCounter,
+    2n,
+  );
+
+  E(E(zoe).getPublicFacet(instance))
+    .getOutcome()
+    .then(outcome => log(`vote outcome: ${q(outcome)}`))
+    .catch(e => log(`vote failed ${e}`));
+
+  E.when(outcomeOfUpdate, outcome => log(`update value: ${q(outcome)}`)).catch(
+    e => log(`update failed: ${e}`),
+  );
+  return { details, outcomeOfUpdate };
+};
+
 const validateElectorateChange = async (
   zoe,
   log,
@@ -212,15 +233,14 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     initialPoserInvitation,
   );
 
+  const terms = makeTerms(602214090000000000000000n, invitationValue);
   const governedContractTerms = {
     timer,
     electorateInstance: firstElectorateInstance,
     governedContractInstallation: installations.governedContract,
     governed: {
       issuerKeywordRecord: {},
-      terms: {
-        main: makeParamTerms(602214090000000000000000n, invitationValue),
-      },
+      terms,
       privateArgs: { initialPoserInvitation },
     },
   };
@@ -229,10 +249,15 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     zoe,
   ).startInstance(installations.contractGovernor, {}, governedContractTerms);
   const governedInstance = E(governor).getInstance();
+  const governedPF = E(governor).getPublicFacet();
 
   const [testName] = argv;
   switch (testName) {
     case 'contractGovernorStart': {
+      E(governedPF)
+        .getNum()
+        .then(num => log(`Number before: ${num}`));
+
       const votersP = createVoters(firstElectorateCreatorFacet, voterCreator);
       const { details: detailsP, outcomeOfUpdate: outcome1 } =
         await voteToChangeParameter(zoe, log, installations, governor, 3n);
@@ -254,6 +279,10 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       await outcome1;
 
       await checkContractState(zoe, governedInstance, log);
+
+      await E(governedPF)
+        .getNum()
+        .then(num => log(`Number after: ${num}`));
       break;
     }
     case 'changeElectorateStart': {
@@ -307,6 +336,25 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
       await checkContractState(zoe, governedInstance, log);
 
+      break;
+    }
+    case 'contractApiGovernanceStart': {
+      E(governedPF)
+        .getApiCalled()
+        .then(called => log(`Number before: ${called}`));
+
+      const voters1 = createVoters(firstElectorateCreatorFacet, voterCreator);
+      const { details: details1, outcomeOfUpdate: electorateOutcome } =
+        await setupApiCall(zoe, log, governor, installations);
+
+      await votersVote(details1, voters1, [1, 0, 0, 0, 1]);
+      await E(timer).tick();
+      await E(timer).tick();
+      await electorateOutcome;
+
+      await E(governedPF)
+        .getApiCalled()
+        .then(called => log(`Number after: ${called}`));
       break;
     }
     default:

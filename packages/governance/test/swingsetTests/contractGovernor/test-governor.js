@@ -81,6 +81,7 @@ const main = async (t, argv) => {
 
 const expectedcontractGovernorStartLog = [
   '=> voter and electorate vats are set up',
+  'Number before: 602214090000000000000000',
   '@@ schedule task for:3, currently: 0 @@',
   'Voter Alice voted for {"changeParam":{"key":"main","parameterName":"MalleableNumber"},"proposedValue":"[299792458n]"}',
   'Voter Bob voted for {"noChange":{"key":"main","parameterName":"MalleableNumber"}}',
@@ -96,6 +97,7 @@ const expectedcontractGovernorStartLog = [
   'MalleableNumber was changed to "[602214090000000000000000n]"',
   'current value of MalleableNumber is 299792458',
   'Electorate was changed to {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]}',
+  'Number after: 299792458',
   'MalleableNumber was changed to "[299792458n]"',
   'Voter Alice validated all the things',
 ];
@@ -140,4 +142,26 @@ const expectedChangeElectorateLog = [
 test.serial('change electorate', async t => {
   const dump = await main(t, ['changeElectorateStart']);
   t.deepEqual(dump.log, expectedChangeElectorateLog);
+});
+
+const expectedApiGovernanceLog = [
+  '=> voter and electorate vats are set up',
+  'Number before: 0',
+  '@@ schedule task for:2, currently: 0 @@',
+  'Voter Alice voted for {"dontInvoke":"governanceApi"}',
+  'Voter Bob voted for {"apiMethodName":"governanceApi","methodArgs":[]}',
+  'Voter Carol voted for {"apiMethodName":"governanceApi","methodArgs":[]}',
+  'Voter Dave voted for {"apiMethodName":"governanceApi","methodArgs":[]}',
+  'Voter Emma voted for {"dontInvoke":"governanceApi"}',
+  '@@ tick:1 @@',
+  '@@ tick:2 @@',
+  '&& running a task scheduled for 2. &&',
+  'vote outcome: {"apiMethodName":"governanceApi","methodArgs":[]}',
+  'update value: {"apiMethodName":"governanceApi","methodArgs":[]}',
+  'Number after: 1',
+];
+
+test.serial('api Governance', async t => {
+  const dump = await main(t, ['contractApiGovernanceStart']);
+  t.deepEqual(dump.log, expectedApiGovernanceLog);
 });

@@ -4,7 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
   ChoiceMethod,
   ElectionType,
   QuorumRule,
@@ -17,7 +17,7 @@ const closingRule = { timer, deadline: 37n };
 
 test('good QuestionSpec', t => {
   t.truthy(
-    looksLikeQuestionSpec(
+    coerceQuestionSpec(
       harden({
         method: ChoiceMethod.UNRANKED,
         issue,
@@ -35,7 +35,7 @@ test('good QuestionSpec', t => {
 test('bad Question', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
+      coerceQuestionSpec(
         // @ts-ignore Illegal Question
         harden({
           method: ChoiceMethod.UNRANKED,
@@ -57,7 +57,7 @@ test('bad Question', t => {
 test('bad timer', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
+      coerceQuestionSpec(
         // @ts-ignore Illegal timer
         harden({
           method: ChoiceMethod.UNRANKED,
@@ -77,7 +77,7 @@ test('bad timer', t => {
 test('bad method', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
+      coerceQuestionSpec(
         // @ts-ignore Illegal Method
         harden({
           method: 'choose',
@@ -97,7 +97,7 @@ test('bad method', t => {
 test('bad Quorum', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
+      coerceQuestionSpec(
         // @ts-ignore Illegal Quorum
         harden({
           method: ChoiceMethod.ORDER,
@@ -117,7 +117,7 @@ test('bad Quorum', t => {
 test('bad tieOutcome', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
+      coerceQuestionSpec(
         // @ts-ignore Illegal tieOutcome
         harden({
           method: ChoiceMethod.ORDER,
@@ -137,7 +137,7 @@ test('bad tieOutcome', t => {
 test('bad maxChoices', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec(
+      coerceQuestionSpec(
         harden({
           method: ChoiceMethod.ORDER,
           issue,
@@ -156,7 +156,7 @@ test('bad maxChoices', t => {
 test('bad positions', t => {
   t.throws(
     () =>
-      looksLikeQuestionSpec({
+      coerceQuestionSpec({
         method: ChoiceMethod.ORDER,
         issue,
         positions: [{ text: 'yes' }, { text: 'no' }],
