@@ -17,6 +17,7 @@ import {
   makeRatio,
   floorDivideBy,
   floorMultiplyBy,
+  natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../../src/makeTracer.js';
 
@@ -24,7 +25,7 @@ const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
 const psmRoot = `${dirname}/../../src/psm/psm.js`;
-const trace = makeTracer('TestPSM');
+const trace = makeTracer('TestPSM', false);
 
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
@@ -48,7 +49,10 @@ const minusStableFee = stable => {
   const feeBP = GiveStableFeeBP;
   return AmountMath.make(
     stable.brand,
-    BigInt((stable.value * (BASIS_POINTS - feeBP)) / BASIS_POINTS),
+    NatMath.floorDivide(
+      NatMath.multiply(stable.value, NatMath.subtract(BASIS_POINTS, feeBP)),
+      BASIS_POINTS,
+    ),
   );
 };
 
@@ -61,9 +65,14 @@ const minusStableFee = stable => {
  */
 const minusAnchorFee = (anchor, anchorPerStable) => {
   const stable = floorDivideBy(anchor, anchorPerStable);
+  const feeBP = WantStableFeeBP;
   return AmountMath.make(
     stable.brand,
-    BigInt((stable.value * (BASIS_POINTS - WantStableFeeBP)) / BASIS_POINTS),
+    NatMath.floorDivide(
+      NatMath.multiply(stable.value, NatMath.subtract(BASIS_POINTS, feeBP)),
+      BASIS_POINTS,
+    ),
+    BigInt((stable.value * (BASIS_POINTS - feeBP)) / BASIS_POINTS),
   );
 };
 
@@ -77,7 +86,7 @@ const setJig = _jig => {
  */
 test.before(async t => {
   // makeBundle is slow, so we bundle each contract once and reuse in all tests.
-  const [psmBundle] = await Promise.all([makeBundle(psmRoot)]);
+  const psmBundle = await makeBundle(psmRoot);
   t.context.bundles = { psmBundle };
   const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
@@ -133,7 +142,7 @@ test('simple trades', async t => {
   const expectedRun = minusAnchorFee(giveAnchor, terms.anchorPerStable);
   const actualRun = await E(runIssuer).getAmountOf(runPayout);
   t.deepEqual(actualRun, expectedRun);
-  const liq = await E(publicFacet).getCurrentLiquidity();
+  const liq = await E(publicFacet).getPoolBalance();
   t.true(AmountMath.isEqual(liq, giveAnchor));
   const giveRun = AmountMath.make(runBrand, 100n * 1_000_000n);
   trace('get stable', { giveRun, expectedRun, actualRun, liq });
@@ -150,7 +159,7 @@ test('simple trades', async t => {
     minusStableFee(giveRun).value,
   );
   t.deepEqual(actualAnchor, expectedAnchor);
-  const liq2 = await E(publicFacet).getCurrentLiquidity();
+  const liq2 = await E(publicFacet).getPoolBalance();
   t.deepEqual(AmountMath.subtract(giveAnchor, expectedAnchor), liq2);
   trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor, liq2 });
 
@@ -189,7 +198,7 @@ test('limit', async t => {
     harden({ In: anchorMint.mintPayment(initialPool) }),
   );
   t.assert(
-    AmountMath.isEqual(await E(publicFacet).getCurrentLiquidity(), initialPool),
+    AmountMath.isEqual(await E(publicFacet).getPoolBalance(), initialPool),
   );
   trace('test going over limit');
   const give = mintLimit;
@@ -211,7 +220,7 @@ test('limit', async t => {
   t.deepEqual(actualAnchor, give);
   // The pool should be unchanged
   t.assert(
-    AmountMath.isEqual(await E(publicFacet).getCurrentLiquidity(), initialPool),
+    AmountMath.isEqual(await E(publicFacet).getPoolBalance(), initialPool),
   );
   // TODO Offer result should be an error
   // t.throwsAsync(() => await E(seat1).getOfferResult());
@@ -243,7 +252,7 @@ test('anchor is 2x stable', async t => {
   const expectedRun = minusAnchorFee(giveAnchor, anchorPerStable);
   const actualRun = await E(runIssuer).getAmountOf(runPayout);
   t.deepEqual(actualRun, expectedRun);
-  const liq = await E(publicFacet).getCurrentLiquidity();
+  const liq = await E(publicFacet).getPoolBalance();
   t.true(AmountMath.isEqual(liq, giveAnchor));
   const giveRun = AmountMath.make(runBrand, 100n * 1_000_000n);
   trace('get stable ratio', { giveRun, expectedRun, actualRun, liq });
@@ -260,7 +269,7 @@ test('anchor is 2x stable', async t => {
     anchorPerStable,
   );
   t.deepEqual(actualAnchor, expectedAnchor);
-  const liq2 = await E(publicFacet).getCurrentLiquidity();
+  const liq2 = await E(publicFacet).getPoolBalance();
   t.deepEqual(AmountMath.subtract(giveAnchor, expectedAnchor), liq2);
   trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor, liq2 });
 });

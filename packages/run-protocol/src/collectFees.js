@@ -6,7 +6,6 @@
  * @param {ZCFSeat} feeSeat
  * @param {Brand} feeBrand
  * @param {string} keyword
- * @returns {{makeCollectFeesInvitation: (function(): *)}}
  */
 export const makeMakeCollectFeesInvitation = (
   zcf,

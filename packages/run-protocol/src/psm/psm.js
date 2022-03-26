@@ -26,10 +26,10 @@ const { details: X } = assert;
  *
  */
 
-const BASIS_POINTS = 10000n;
+const BASIS_POINTS = 10_000n;
 
 /**
- * Stage a transfer of a singe asset from one seat to another, with an optional
+ * Stage a transfer of a single asset from one seat to another, with an optional
  * remapping of the Keywords. Check that the remapping is for the same amount.
  *
  * @param {ZCFSeat} from
@@ -62,20 +62,26 @@ export const start = async (zcf, privateArgs) => {
   // TODO get the RUN magic out of here so the contract is more reusable
   const stableMint = await zcf.registerFeeMint('Stable', feeMintAccess);
   const { brand: stableBrand } = stableMint.getIssuerRecord();
+  assert(
+    anchorPerStable.numerator.brand === anchorBrand &&
+      anchorPerStable.denominator.brand === stableBrand,
+    X`Ratio ${anchorPerStable} is not consistent with brands ${anchorBrand} and ${stableBrand}`,
+  );
+
   zcf.setTestJig(() => ({
     stableIssuerRecord: stableMint.getIssuerRecord(),
   }));
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  // HACK for simple governance API
+  // Mock simple goverannce API for parameters that will be controlled by governance
   const getGovernance = _ => {
     const {
       main: { WantStableFeeBP, GiveStableFeeBP, MintLimit },
     } = zcf.getTerms();
     assert(
       AmountMath.isGTE(MintLimit, emptyAnchor),
-      X`MintLimit ${MintLimit} must specificy a limit in ${anchorBrand}`,
+      X`MintLimit ${MintLimit} must specify a limit in ${anchorBrand}`,
     );
     return {
       getWantStableRate: () =>
@@ -91,9 +97,13 @@ export const start = async (zcf, privateArgs) => {
   const { zcfSeat: feePool } = zcf.makeEmptySeatKit();
   const { zcfSeat: stage } = zcf.makeEmptySeatKit();
 
-  const assertUnderLimit = anchorAmount => {
+  const assertUnderLimit = given => {
+    const anchorAfterTrade = AmountMath.add(
+      anchorPool.getAmountAllocated('Anchor', anchorBrand),
+      given,
+    );
     assert(
-      AmountMath.isGTE(gov.getMintLimit(), anchorAmount),
+      AmountMath.isGTE(gov.getMintLimit(), anchorAfterTrade),
       X`Request would exceed mint limit`,
     );
   };
@@ -115,11 +125,7 @@ export const start = async (zcf, privateArgs) => {
   };
 
   const wantStable = (seat, given, wanted = emptyStable) => {
-    const anchorAfterTrade = AmountMath.add(
-      anchorPool.getAmountAllocated('Anchor', anchorBrand),
-      given,
-    );
-    assertUnderLimit(anchorAfterTrade);
+    assertUnderLimit(given);
     const asStable = floorDivideBy(given, anchorPerStable);
     const fee = ceilMultiplyBy(asStable, gov.getWantStableRate());
     const afterFee = AmountMath.subtract(asStable, fee);
@@ -128,14 +134,13 @@ export const start = async (zcf, privateArgs) => {
       X`wanted ${wanted} is more then ${given} minus fees ${fee}`,
     );
     stableMint.mintGains({ Stable: asStable }, stage);
-
     stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
     stageTransfer(stage, seat, { Stable: afterFee }, { Out: afterFee });
     stageTransfer(stage, feePool, { Stable: fee });
     try {
       zcf.reallocate(seat, anchorPool, stage, feePool);
     } catch (e) {
-      // TODO reallocate should guarantee that this case cannot happen
+      // NOTE someday, reallocate should guarantee that this case cannot happen
       stableMint.burnLosses({ Stable: asStable }, stage);
       throw e;
     }
@@ -160,17 +165,12 @@ export const start = async (zcf, privateArgs) => {
   };
   const makeSwapInvitation = () => zcf.makeInvitation(swapHook, 'swap');
 
-  // Eventually the reward pool will live elsewhere. For now it's here for
-  // bookkeeping. It's needed in tests.
-  const getRewardAllocation = () => feePool.getCurrentAllocation();
-
   const publicFacet = Far('Parity Stability Module', {
-    getCurrentLiquidity: () =>
-      anchorPool.getAmountAllocated('Anchor', anchorBrand),
+    getPoolBalance: () => anchorPool.getAmountAllocated('Anchor', anchorBrand),
     makeSwapInvitation,
-    // getContractGovernor: () => electionManager,
   });
 
+  const getRewardAllocation = () => feePool.getCurrentAllocation();
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
     zcf,
     feePool,
@@ -180,7 +180,6 @@ export const start = async (zcf, privateArgs) => {
   const creatorFacet = Far('Parity Stability Module', {
     getRewardAllocation,
     makeCollectFeesInvitation,
-    // getContractGovernor: () => electionManager,
   });
 
   return { creatorFacet, publicFacet };
