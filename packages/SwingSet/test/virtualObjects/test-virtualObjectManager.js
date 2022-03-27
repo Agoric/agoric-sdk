@@ -115,7 +115,7 @@ test('multifaceted virtual objects', t => {
       };
     },
   );
-  const kid = 'o+1';
+  const kid = 'o+2';
   const { incr, decr } = makeMultiThing('foo');
   t.is(incr.getName(), 'foo');
   t.is(incr.getCount(), 0);
@@ -128,6 +128,8 @@ test('multifaceted virtual objects', t => {
   decr.dec();
   t.is(decr.getCount(), 1);
   const other = makeMultiThing('other');
+  t.is(log.shift(), `get kindIDID => undefined`);
+  t.is(log.shift(), `set kindIDID 1`);
   t.is(log.shift(), `set vom.${kid}/1 ${multiThingVal('foo', 1)}`);
   t.deepEqual(log, []);
   incr.inc();
@@ -148,12 +150,12 @@ test('virtual object operations', t => {
   const { defineKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
   const makeThing = defineKind('thing', initThing, actualizeThing);
-  const tid = 'o+1';
+  const tid = 'o+2';
   const makeZot = defineKind('zot', initZot, actualizeZot);
-  const zid = 'o+2';
+  const zid = 'o+3';
 
   // phase 0: start
-  t.deepEqual(dumpStore(), []);
+  t.deepEqual(dumpStore(), [ ['kindIDID', '1']]);
 
   // phase 1: object creations
   const thing1 = makeThing('thing-1'); // [t1-0]
@@ -164,6 +166,8 @@ test('virtual object operations', t => {
   // t3-0: 'thing-3' 200 0
   const thing4 = makeThing('thing-4', 300); // [t4-0 t3-0 t2-0 t1-0]
   // t4-0: 'thing-4' 300 0
+  t.is(log.shift(), `get kindIDID => undefined`);
+  t.is(log.shift(), `set kindIDID 1`);
   t.deepEqual(log, []);
 
   const zot1 = makeZot(23, 'Alice', 'is this on?'); // [z1-0 t4-0 t3-0 t2-0] evict t1-0
@@ -187,6 +191,7 @@ test('virtual object operations', t => {
   t.deepEqual(log, []);
 
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     [`vom.${tid}/1`, thingVal(0, 'thing-1', 0)], // =t1-0
     [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
     [`vom.${tid}/3`, thingVal(200, 'thing-3', 0)], // =t3-0
@@ -247,6 +252,7 @@ test('virtual object operations', t => {
   t.deepEqual(log, []);
 
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     [`vom.${tid}/1`, thingVal(3, 'thing-1', 0)], // =t1-3
     [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
     [`vom.${tid}/3`, thingVal(200, 'thing-3', 0)], // =t3-0
@@ -324,6 +330,7 @@ test('virtual object operations', t => {
   t.deepEqual(log, []);
 
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     [`vom.${tid}/1`, thingVal(4, 'thing-1', 0)], // =t1-4
     [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
     [`vom.${tid}/3`, thingVal(200, 'thing-3', 0)], // =t3-0
@@ -349,6 +356,7 @@ test('virtual object operations', t => {
   t.deepEqual(log, []);
 
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     [`vom.${tid}/1`, thingVal(5, 'thing-1', 0)], // =t1-5
     [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
     [`vom.${tid}/3`, thingVal(201, 'thing-3', 0)], // =t3-1
@@ -411,10 +419,9 @@ test('durable kind IDs can be reanimated', t => {
 
   // Create a durable kind ID, but don't use it yet
   let kindHandle = makeKindHandle('testkind');
-  t.is(log.shift(), 'set kindIDID 9');
   t.is(log.shift(), 'set vom.kind.10 {"kindID":"10","tag":"testkind"}');
   t.deepEqual(log, []);
-  const khid = `o+9/10`;
+  const khid = `o+1/10`;
 
   // Store it in the store without having used it
   placeToPutIt.init('savedKindID', kindHandle);
@@ -465,7 +472,7 @@ test('virtual object gc', t => {
   const { deleteEntry, dumpStore } = fakeStuff;
 
   const makeThing = defineKind('thing', initThing, actualizeThing);
-  const tbase = 'o+9';
+  const tbase = 'o+10';
   const makeRef = defineKind(
     'ref',
     value => ({ value }),
@@ -476,9 +483,11 @@ test('virtual object gc', t => {
     }),
   );
 
+  t.is(log.shift(), `get kindIDID => undefined`);
+  t.is(log.shift(), `set kindIDID 1`);
   const skit = [
     'storeKindIDTable',
-    '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
+    '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
   ];
   t.is(log.shift(), `get storeKindIDTable => undefined`);
   t.is(log.shift(), `set ${skit[0]} ${skit[1]}`);
@@ -497,6 +506,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.${tbase}/5 ${minThing('thing #5')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.${tbase}/1`, minThing('thing #1')],
     [`vom.${tbase}/2`, minThing('thing #2')],
@@ -523,6 +533,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `get vom.es.${tbase}/1 => r`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.es.${tbase}/1`, 'r'],
     [`vom.${tbase}/1`, minThing('thing #1')],
@@ -546,6 +557,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.es.${tbase}/1`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.${tbase}/2`, minThing('thing #2')],
     [`vom.${tbase}/3`, minThing('thing #3')],
@@ -566,6 +578,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `get vom.rc.${tbase}/2 => undefined`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.es.${tbase}/2`, 's'],
     [`vom.${tbase}/2`, minThing('thing #2')],
@@ -583,6 +596,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.es.${tbase}/2`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.${tbase}/3`, minThing('thing #3')],
     [`vom.${tbase}/4`, minThing('thing #4')],
@@ -600,6 +614,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.es.${tbase}/3`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.${tbase}/4`, minThing('thing #4')],
     [`vom.${tbase}/5`, minThing('thing #5')],
@@ -614,6 +629,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.${tbase}/6 ${minThing('thing #6')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.${tbase}/4`, minThing('thing #4')],
     [`vom.${tbase}/5`, minThing('thing #5')],
@@ -651,6 +667,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.${tbase}/7 ${minThing('thing #7')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.es.${tbase}/4`, 's'],
     [`vom.es.${tbase}/5`, 'r'],
@@ -682,6 +699,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.${tbase}/8 ${minThing('thing #8')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.es.${tbase}/4`, 's'],
     [`vom.es.${tbase}/5`, 's'],
@@ -700,6 +718,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `get vom.es.${tbase}/6 => undefined`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
+    ['kindIDID', '1'],
     skit,
     [`vom.es.${tbase}/4`, 's'],
     [`vom.es.${tbase}/5`, 's'],

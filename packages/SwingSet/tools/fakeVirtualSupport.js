@@ -249,6 +249,7 @@ export function makeFakeVirtualStuff(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
+  vom.initializeKindHandleKind();
   fakeStuff.setVrm(vrm);
   const cm = makeFakeCollectionManager(vrm, fakeStuff, options);
   return { fakeStuff, vrm, vom, cm };
@@ -258,6 +259,7 @@ export function makeStandaloneFakeVirtualObjectManager(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
   const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
+  vom.initializeKindHandleKind();
   fakeStuff.setVrm(vrm);
   return vom;
 }

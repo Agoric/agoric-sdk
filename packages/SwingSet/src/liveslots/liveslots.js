@@ -1227,6 +1227,7 @@ function build(
     }
 
     initializeIDCounters();
+    vom.initializeKindHandleKind();
     collectionManager.initializeStoreKindInfo();
 
     const vatParameters = m.unserialize(vatParametersCapData);
