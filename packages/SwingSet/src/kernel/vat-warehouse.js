@@ -361,6 +361,13 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     }
   }
 
+  async function destroyWorker(vatID) {
+    // stop any existing worker, delete transcript and any snapshot
+    await evict(vatID);
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    vatKeeper.removeSnapshotAndTranscript();
+  }
+
   // mostly used by tests, only needed with thread/process-based workers
   function shutdown() {
     const work = Array.from(ephemeral.vats.values(), ({ manager }) =>
@@ -377,6 +384,8 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     kernelDeliveryToVatDelivery,
     deliverToVat,
     maybeSaveSnapshot,
+
+    destroyWorker,
 
     // mostly for testing?
     activeVatsInfo: () =>

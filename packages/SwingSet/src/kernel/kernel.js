@@ -640,33 +640,68 @@ export default function buildKernel(
    */
   async function processUpgradeVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
-    // const { bundleID } = message;
-    const { vatID, upgradeID, vatParameters } = message;
+    const { vatID, upgradeID, bundleID, vatParameters } = message;
     insistCapData(vatParameters);
 
     // eslint-disable-next-line no-use-before-define
     assert(vatWarehouse.lookup(vatID));
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     /** @type { import('../types-external.js').KernelDeliveryStopVat } */
-    const kd = harden(['stopVat']);
+    const kd1 = harden(['stopVat']);
     // eslint-disable-next-line no-use-before-define
-    const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
-    const status = await deliverAndLogToVat(vatID, kd, vd);
+    const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
+    const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
+    if (status1.terminate) {
+      // TODO: if stopVat fails, stop now, arrange for everything to
+      // be unwound. TODO: we need to notify caller about the failure
+      console.log(`-- upgrade-vat stopVat failed: ${status1.terminate}`);
+    }
 
-    // TODO: if status.terminate then abort the crank, discard the
-    // upgrade event, and arrange to use vatUpgradeCallback to inform
-    // the caller
+    // stop the worker, delete the transcript and any snapshot
+    // eslint-disable-next-line no-use-before-define
+    await vatWarehouse.destroyWorker(vatID);
+    const source = { bundleID };
+    const { options } = vatKeeper.getSourceAndOptions();
+    vatKeeper.setSourceAndOptions(source, options);
+    // TODO: decref the bundleID once setSourceAndOptions increfs it
 
-    // for now, all attempts to upgrade will fail
+    // pause, take a deep breath, appreciate this moment of silence
+    // between the old and the new. this moment will never come again.
 
-    // TODO: decref the bundleID and vatParameters.slots
-    const args = {
-      body: JSON.stringify([upgradeID, false, { error: `not implemented` }]),
-      slots: [],
-    };
-    queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
-    // if stopVat fails, we want everything to be unwound. TODO: we
-    // need to notify caller about the failure
-    return { ...status, discardFailedDelivery: true };
+    // deliver a startVat with the new vatParameters
+    /** @type { import('../types-external.js').KernelDeliveryStartVat } */
+    const kd2 = harden(['startVat', vatParameters]);
+    // eslint-disable-next-line no-use-before-define
+    const vd2 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd2);
+    // decref vatParameters now that translation did incref
+    for (const kref of vatParameters.slots) {
+      kernelKeeper.decrementRefCount(kref, 'upgrade-vat-event');
+    }
+    const status2 = await deliverAndLogToVat(vatID, kd2, vd2);
+    if (status2.terminate) {
+      console.log(`-- upgrade-vat startVat failed: ${status2.terminate}`);
+    }
+
+    if (status1.terminate || status2.terminate) {
+      // TODO: if status.terminate then abort the crank, discard the
+      // upgrade event, and arrange to use vatUpgradeCallback to inform
+      // the caller
+      console.log(`-- upgrade-vat delivery failed`);
+
+      // TODO: this is the message we want to send on failure, but we
+      // need to queue it after the crank was unwound, else this
+      // message will be unwound too
+      const args = {
+        body: JSON.stringify([upgradeID, false, { error: `not implemented` }]),
+        slots: [],
+      };
+      queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
+    } else {
+      const args = { body: JSON.stringify([upgradeID, true]), slots: [] };
+      queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
+    }
+    // return { ...status1, ...status2, discardFailedDelivery: true };
+    return {};
   }
 
   function legibilizeMessage(message) {

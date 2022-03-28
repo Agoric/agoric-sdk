@@ -54,13 +54,9 @@ async function testUpgrade(t, defaultManagerType) {
 
   // upgrade should work
   const [v2status, v2capdata] = await run('upgradeV2', []);
-  // t.is(v2status, 'fulfilled');
-  // t.deepEqual(JSON.parse(v2capdata.body), ['v2', { youAre: 'v2', marker }]);
-  // t.deepEqual(v2capdata.slots, [markerKref]);
-
-  // but for now, upgrade is just a stub
-  t.is(v2status, 'rejected');
-  t.deepEqual(JSON.parse(v2capdata.body), { error: 'not implemented' });
+  t.is(v2status, 'fulfilled');
+  t.deepEqual(JSON.parse(v2capdata.body), ['v2', { youAre: 'v2', marker }]);
+  t.deepEqual(v2capdata.slots, [markerKref]);
 }
 
 test('vat upgrade - local', async t => {
