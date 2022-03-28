@@ -127,14 +127,13 @@
  *   installation: |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'getRUN' |
- *     'Pegasus',
+ *     'Pegasus' | 'reserve',
  *   instance: |
  *     'economicCommittee' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' | 'liquidate' |
  *     'getRUN' | 'getRUNGovernor' |
- *     'Treasury' |
- *     'Pegasus',
- *   oracleBrand: |
+ *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
+ *   oracleBrand:
  *     'USD',
  *   uiConfig: |
  *     'VaultFactory' |
@@ -178,6 +177,9 @@
  *     chainTimerService: ERef<TimerService>,
  *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
  *     ammBundle: ERef<SourceBundle>,
+ *     reserveBundle: ERef<SourceBundle>,
+ *     reserveCreatorFacet: ERef<GovernedContractFacetAccess<any>>,
+ *     reserveGovernorCreatorFacet: ERef<GovernedContractFacetAccess<any>>,
  *     vaultBundles: ERef<Record<string, SourceBundle>>,
  *     centralSupplyBundle: ERef<SourceBundle>,
  *     mintHolderBundle: ERef<SourceBundle>,
@@ -202,6 +204,10 @@
  *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
  *     getRUNBundle: Producer<{ moduleFormat: string }>,
  *     ammBundle: Producer<SourceBundle>,
+ *     reserveBundle: Producer<SourceBundle>,
+ *     reservePublicFacet: Producer<unknown>,
+ *     reserveCreatorFacet: Producer<unknown>,
+ *     reserveGovernorCreatorFacet: Producer<GovernedContractFacetAccess<any>>,
  *     vaultBundles: Producer<Record<string, SourceBundle>>,
  *     governanceBundles: Producer<Record<string, SourceBundle>>,
  *     initialSupply: Producer<Payment>,
