@@ -521,6 +521,20 @@ function validateRetireExports(v, idx) {
 // collection during one test can interfere with the deterministic behavior of a
 // different test.
 
+// prettier-ignore
+test.serial('assert known scalarMapStore ID', async t => {
+  // The KindID for scalarMapStore is referenced by many of these
+  // tests (it is baked into our `mapRef()` function), and it might
+  // change if new IDs are allocated before the collection types are
+  // registered. Check it explicity here. If this test fails, consider
+  // updating `mapRef()` to use the new value.
+
+  const { testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const id = testHooks.obtainStoreKindID('scalarMapStore');
+  t.is(id, 1);
+  t.is(mapRef('INDEX'), 'o+1/INDEX');
+});
+
 // test 1: lerv -> Lerv -> LerV -> Lerv -> lerv
 test.serial('store lifecycle 1', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(
