@@ -2,7 +2,7 @@
 
 Each vat gets exclusive access to a portion of the kernel's `kvStore`, implemented with a simple prefix: when vat `v6` uses `syscall.vatstoreSet('key', 'value')`, the kvStore records the value in key `v6.vs.key`.
 
-Userspace gets an attenuated object named `vatPowers.vatstore`. When userspace calls `vatPowers.vatstore.set('key', 'value')`, liveslots performs `syscall.vatstoreSet('vvs.key', value)`, which results in a kernel kvStore entry under key `v6.vvs.key`.
+Userspace gets an attenuated object named `vatPowers.vatstore`. When userspace calls `vatPowers.vatstore.set('key', 'value')`, liveslots performs `syscall.vatstoreSet('vvs.key', value)`, which results in a kernel kvStore entry under key `v6.vs.vvs.key`.
 
 The rest of the vat's keyspace is used by liveslots:
 
@@ -28,8 +28,8 @@ Each time the kind constructor is called, a new "baseref" is allocated for the c
 The vref is used when interacting with the kernel (in `syscall.send` etc), and in virtualized data (inside the capdata `.slots` that point to other objects). The vatstore keys that track GC refcounts and the export status use the "baseref" instead.
 
 The vrefs are built out of three pieces:
-* Kind ID, e.g. `o+5`. These are allocated from the same numberspace as exported Remotables (JS `Object`s marked with `Far`).
-* Instance ID, an integer starting with "1" for the first instance of each Kind
+* Kind ID, e.g. `o+5`. These are allocated from the same "Export ID" numberspace as exported Remotables (JS `Object`s marked with `Far`).
+* Instance ID, an integer, "1" for the first instance of each Kind, incrementing thereafter
 * Facet ID, missing for single-facet Kinds, else an integer starting with "0"
 
 These are combined with simple delimiters: `/` between the Kind ID and the Instance ID, and `:` before the Facet ID (if any).
@@ -58,7 +58,7 @@ In the refcounting portion of the vatstore (`vs.vom.rc.${baseref}`), you will se
 In the export-status portion of the vatstore (`vs.vom.es.${baseref}`), you will see baserefs, and any facets are tracked in the value, not the key:
 
 * `v6.vs.vom.es.o+4`: `r`: the plain Remotable has been exported and is "reachable" by the kernel
-* `v6.vs.vom.es.o+4`: `s`: the Remotable was exported, the kernel dropped it, and is still "recognizable" by the kernel
+* `v6.vs.vom.es.o+4`: `s`: the Remotable was exported, the kernel dropped it, and is still "recognizable" by the kernel ("s" for "see")
   * if the kernel can neither reach nor recognize the export, the vatstore key will be missing entirely
 * `v6.vs.vom.es.o+5/1`: this records the export status for all the facets of the `o+5/1` cohort
   * if this Kind is single-facet, the value will be the same as for a plain Remotable: a single `r` or `s` character
@@ -84,13 +84,15 @@ Liveslots provides a handful of "virtual collection" types to vats, to store hig
 
 Each function accepts a `isDurable` argument, so there are currently 8 collection types.
 
-Each collection is assigned a Kind index. These index values are stored in `vs.storeKindIDTable`, as a mapping from the collection type name (`scalarMapStore`, `scalarDurableMapStore`, `scalarWeakSetStore`, etc) to the integer of their ID. The current value is:
+Each collection type is assigned a Kind index. These index values are stored in `vs.storeKindIDTable`, as a mapping from the collection type name (`scalarMapStore`, `scalarDurableMapStore`, `scalarWeakSetStore`, etc) to the integer of their ID. The current value is:
 
 * `v6.vs.storeKindIDTable` : `{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}`
 
 which means `o+1` is the Kind ID for `scalarMapStore`.
 
-Each new store, regardless of type, is allocated the next available collection ID. This is an integer that starts at "1", and is independent of the numberspace used by exported Remotables and Kind IDs. `o+1/1` is allocated for the "baggage" Kind, indicating that it is a `scalarMapStore` (`o+1` is used for that collection type), and also that it is the first collection allocated in the vat. If userspace calls `makeScalarBigWeakSetStore()` and then `makeScalarSetStore()` at vat startup, it is likely to get `o+4/2` and `o+3/3` respectively.
+Each new store, regardless of type, is allocated the next available Collection ID. This is an incrementing integer that starts at "1", and is independent of the numberspace used by exported Remotables and Kind IDs. The same Collection ID numberspace is shared by all collection types.
+
+`o+5/1` is allocated for the "baggage" Kind, indicating that it is a `scalarMapStore` (`o+5` is used for that collection type), and also that it is the first collection (of any type) allocated in the vat. If userspace calls `makeScalarBigWeakSetStore()` and then three `makeScalarSetStore()`s at vat startup, they are likely to be assigned `o+4/2`, `o+3/3`, `o+3/4`, and `o+3/5` respectively.
 
 We examine a vat which performs the following at startup:
 
@@ -116,7 +118,7 @@ Each collection stores a number of metadata keys in the vatstore, all with a pre
 * `v6.vs.vc.2.|nextOrdinal`: `1` : a counter used to allocate index values for Objects used as keys
 * `v6.vs.vc.2.|schemata`: `{"body":"[{\"@qclass\":\"tagged\",\"tag\":\"match:scalar\",\"payload\":{\"@qclass\":\"undefined\"}}]","slots":[]}`
 
-The `schemata` is a capdata serialization of the constraints recorded for the collection. These constraints can limit keys to be just strings, or numbers, etc.
+The `schemata` is a capdata serialization of the constraints recorded for the collection. These constraints can limit keys to be just strings, or numbers, etc. The schemata consists of one schema for the keys and a separate schema for the values.
 
 Each entry in the collection gets put into a single vatstore entry:
 
@@ -125,4 +127,4 @@ Each entry in the collection gets put into a single vatstore entry:
 * `v6.vs.vc.2.skey3`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+9/1"]}`
 * `v6.vs.vc.2.skey4`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+9/2"]}`
 
-The key string for the entry (e.g. `skey1` is formed by serializaing the key object. Strings get a simple `s` prefix. Other objects use more complex encodings, designed to allow numbers (floats and BigInts, separately) sort numerically despite the kvStore keys sorting lexicographically. See `packages/store/src/patterns/encodePassable.js` for details. Object references involve an additional kvStore entry or two, to manage the mapping from Object to ordinal and back.
+The key string for the entry (e.g. `skey1` is formed by serializing the key object. Strings get a simple `s` prefix. Other objects use more complex encodings, designed to allow numbers (floats and BigInts, separately) sort numerically despite the kvStore keys sorting lexicographically. See `packages/store/src/patterns/encodePassable.js` for details. Object references involve an additional kvStore entry, to manage the mapping from Object to ordinal and back.
