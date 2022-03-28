@@ -27,5 +27,8 @@
  * @property {Amount<'nat'>} unbonding
  * @property {bigint} currentTime
  *
+ * Perormance note: getAccountState is expensive, as it has to iterate over all
+ * delegations.
+ *
  * @typedef {(address: Address, brand: Brand<'nat'>) => Amount} GetLiened
  */

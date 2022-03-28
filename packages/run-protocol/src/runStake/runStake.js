@@ -2,7 +2,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { E, Far } from '@endo/far';
-import { makeAttestationTools } from './attestation.js';
+import { makeAttestationFacets } from './attestation.js';
 import { makeRunStakeParamManager } from './params.js';
 import { makeRunStakeKit, KW } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager.js';
@@ -99,7 +99,7 @@ export const start = async (
   const debtMint = await zcf.registerFeeMint(KW.Debt, feeMintAccess);
   const { brand: debtBrand } = debtMint.getIssuerRecord();
 
-  const att = await makeAttestationTools(zcf, stakeBrand, lienBridge);
+  const att = await makeAttestationFacets(zcf, stakeBrand, lienBridge);
   const attestBrand = await E(att.publicFacet).getBrand();
 
   const paramManager = await makeRunStakeParamManager(
@@ -180,7 +180,7 @@ export const start = async (
 
   const creatorFacet = wrapCreatorFacet(
     Far('runStake creator', {
-      provideAttestationMaker: att.creatorFacet.provideAttestationMaker,
+      provideAttestationMaker: att.creatorFacet.provideAttestationTool,
       getLiened: att.creatorFacet.getLiened,
     }),
   );

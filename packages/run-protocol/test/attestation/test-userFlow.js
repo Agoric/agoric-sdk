@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 
 import { makeCopyBag } from '@agoric/store';
-import { makeAttestationTools } from '../../src/runStake/attestation.js';
+import { makeAttestationFacets } from '../../src/runStake/attestation.js';
 import { makeMockLienBridge } from './test-attestation.js';
 
 const makeDoReturnAttestation =
@@ -50,7 +50,7 @@ test(`typical flow`, async t => {
 
   const address = 'myaddress';
 
-  const { publicFacet, creatorFacet } = await makeAttestationTools(
+  const { publicFacet, creatorFacet } = await makeAttestationFacets(
     zcf,
     externalBrand,
     makeMockLienBridge(externalBrand, t),
@@ -83,7 +83,7 @@ test(`typical flow`, async t => {
 
   // Add a lien of 100n
   const amountToLien = AmountMath.make(externalBrand, 100n);
-  const attMaker = E(creatorFacet).provideAttestationMaker(address);
+  const attMaker = E(creatorFacet).provideAttestationTool(address);
   const attestation = await E(attMaker).makeAttestation(amountToLien);
 
   // LienAmount is now 100n

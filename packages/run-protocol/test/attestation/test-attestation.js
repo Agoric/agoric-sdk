@@ -8,7 +8,7 @@ import { E, Far } from '@endo/far';
 
 import { makeCopyBag } from '@agoric/store';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
-import { makeAttestationTools } from '../../src/runStake/attestation.js';
+import { makeAttestationFacets } from '../../src/runStake/attestation.js';
 
 const { details: X } = assert;
 
@@ -59,7 +59,7 @@ const makeContext = async t => {
   );
   const uBrand = stakeKit.brand;
 
-  const { publicFacet, creatorFacet } = await makeAttestationTools(
+  const { publicFacet, creatorFacet } = await makeAttestationFacets(
     zcf,
     uBrand,
     makeMockLienBridge(uBrand, t),
@@ -86,7 +86,7 @@ test('refuse to attest to more than liened amount', async t => {
 
   const address1 = 'address01'; // note: keep addresses distinct among parallel tests
 
-  const attMaker = await E(creatorFacet).provideAttestationMaker(address1);
+  const attMaker = await E(creatorFacet).provideAttestationTool(address1);
 
   const largeAmount = AmountMath.make(uBrand, 1000n);
   await t.throwsAsync(() => E(attMaker).makeAttestation(largeAmount), {
@@ -107,7 +107,7 @@ test('attestations can be combined and split', async t => {
   const brand = await E(publicFacet).getBrand();
 
   const address1 = 'address1';
-  const attMaker = await E(creatorFacet).provideAttestationMaker(address1);
+  const attMaker = await E(creatorFacet).provideAttestationTool(address1);
 
   const uBrand = stakeKit.brand;
   const stake50 = AmountMath.make(uBrand, 50n);

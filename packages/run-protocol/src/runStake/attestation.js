@@ -56,7 +56,7 @@ const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
  * @param {Brand<'nat'>} stakeBrand brand of the staked assets
  * @param {ERef<StakingAuthority>} lienBridge bridge to account state
  */
-const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
+const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
   const { add, subtract, makeEmpty, isGTE, coerce } = AmountMath;
   const empty = makeEmpty(stakeBrand);
   const zcfMint = await zcf.makeZCFMint(KW.Attestation, AssetKind.COPY_BAG);
@@ -114,7 +114,8 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
     // This account state check is primarily to provide useful diagnostics.
     // Since things like the bonded amount can change out from under us,
     // we shouldn't rely on it completely.
-    // TODO: consider performance implications vs. diagnostics.
+    // PERFORMANCE NOTE: this check shouldn't be necessary and skipping it
+    // may speed things up.
     await assertAccountStateOK(address, lienDelta);
 
     const current = getOrElse(amountByAddress, address, () => empty);
@@ -122,7 +123,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
 
     // Since our mint is not subject to normal supply/demand,
     // minting here and failing in setLiened below does no harm.
-    const attestationPaymentP = mintZCFMintPayment(
+    const attestationPayment = await mintZCFMintPayment(
       zcf,
       zcfMint,
       wrapLienedAmount(address, lienDelta),
@@ -132,8 +133,9 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
     // the preconditions were indeed met and we
     // can update the stored liened amount.
     await E(lienBridge).setLiened(address, current, target);
+    // COMMIT
     amountByAddress.set(address, target);
-    return attestationPaymentP;
+    return attestationPayment;
   };
 
   /** @param {ZCFSeat} seat */
@@ -145,12 +147,12 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
     const { address, lienedAmount: amountReturned } =
       unwrapLienedAmount(attestationAmount);
 
-    const liened = amountByAddress.get(address); // or throw
-    const updated = subtract(liened, amountReturned); // or throw
+    const lienedPre = amountByAddress.get(address); // or throw
+    const lienedPost = subtract(lienedPre, amountReturned); // or throw
 
-    await E(lienBridge).setLiened(address, liened, updated);
+    await E(lienBridge).setLiened(address, lienedPre, lienedPost);
     // COMMIT. Burn the escrowed attestation payment and exit the seat
-    amountByAddress.set(address, updated);
+    amountByAddress.set(address, lienedPost);
     zcfMint.burnLosses(harden({ Attestation: attestationAmount }), seat);
     seat.exit();
   };
@@ -177,7 +179,7 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
     getLiened,
     /**
      * @param { Amount<'copyBag'> } attAmt
-     * @throws { Error } if `attAmt` payload length is not 1
+     * @throws if `attAmt` payload length is not 1
      */
     unwrapLienedAmount: attAmt => unwrapLienedAmount(attAmt).lienedAmount,
   });
@@ -202,26 +204,25 @@ const makeAttestationKit = async (zcf, stakeBrand, lienBridge) => {
  * provides the authorization for an address. The account holder
  * can then use attMaker.makeAttestation(lienDelta).
  *
- * Note the Attestation keyword for use in returnAttestation offers.
+ * The keyword for use in returnAttestation offers is `Attestation`.
  */
-export const makeAttestationTools = async (zcf, stakeBrand, lienBridge) => {
+export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
   /** @type {Store<Address, AttestationMaker>} */
   const attMakerByAddress = makeStore('address');
 
-  const { issuer, brand, lienMint } = await makeAttestationKit(
+  const { issuer, brand, lienMint } = await makeAttestationIssuerKit(
     zcf,
     stakeBrand,
     lienBridge,
   );
 
   /** @param { Address } address */
-  const makeAttMaker = address =>
-    Far('attMaker', {
+  const makeAttestationTool = address =>
+    Far('attestationTool', {
       /** @param { Amount<'nat'> } lienedDelta */
       makeAttestation: lienedDelta =>
         lienMint.mintAttestation(address, lienedDelta),
-      getLiened: () => lienMint.getLiened(address, stakeBrand),
-      getAccountState: () => E(lienBridge).getAccountState(address, stakeBrand),
+      getAccountState: () => lienMint.getAccountState(address, stakeBrand),
       makeReturnAttInvitation: () =>
         zcf.makeInvitation(lienMint.returnAttestation, 'returnAttestation'),
       unwrapLienedAmount: lienMint.unwrapLienedAmount,
@@ -242,10 +243,10 @@ export const makeAttestationTools = async (zcf, stakeBrand, lienBridge) => {
        *
        * @param { Address } address
        */
-      provideAttestationMaker: address => {
+      provideAttestationTool: address => {
         assert.typeof(address, 'string');
         return getOrElse(attMakerByAddress, address, () =>
-          makeAttMaker(address),
+          makeAttestationTool(address),
         );
       },
       getLiened: lienMint.getLiened,
