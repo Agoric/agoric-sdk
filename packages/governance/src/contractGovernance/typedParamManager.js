@@ -124,12 +124,12 @@ const makeParamManagerFromTerms = async (
   initialPoserInvitation,
   paramTypesMap,
 ) => {
-  const governedTerms = zcf.getTerms().governed;
+  const { governedParams } = zcf.getTerms();
   /** @type {Array<[Keyword, [ParamType, unknown]]>} */
   const makerSpecEntries = Object.entries(paramTypesMap).map(
     ([paramKey, paramType]) => [
       paramKey,
-      [paramType, governedTerms[paramKey].value],
+      [paramType, governedParams[paramKey].value],
     ],
   );
   // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg

@@ -85,13 +85,14 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * @template {ContractPowerfulCreatorFacet} CF Creator facet of governed
  * @type {ContractStartFn<
  * GovernorPublic,
- * GovernedContractFacetAccess<PF>,{
+ * GovernedContractFacetAccess<PF>,
+ * {
  *   timer: TimerService,
  *   electorateInstance: Instance,
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governed: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
  *     privateArgs: unknown,
  *   }
  * }>}
@@ -109,7 +110,7 @@ const start = async zcf => {
   } = zcf.getTerms();
 
   assert(
-    contractTerms.governed[CONTRACT_ELECTORATE],
+    contractTerms.governedParams[CONTRACT_ELECTORATE],
     X`Contract must declare ${CONTRACT_ELECTORATE} as a governed parameter`,
   );
 

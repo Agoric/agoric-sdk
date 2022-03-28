@@ -62,7 +62,7 @@
  * Terms a contract must provide in order to be governed.
  *
  * @template {Record<string, ParamRecord>} T Governed parameters of contract
- * @typedef {{ electionManager: Instance, governed: T & { Electorate: ParamRecord<'invitation'> } } } GovernanceTerms<T>
+ * @typedef {{ electionManager: Instance, governedParams: T & { Electorate: ParamRecord<'invitation'> } } } GovernanceTerms<T>
  */
 
 /**

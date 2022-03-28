@@ -18,7 +18,7 @@ const { details: X, quote: q } = assert;
  */
 const facetHelpers = (zcf, paramManager) => {
   const terms = zcf.getTerms();
-  const governedParams = terms.governed;
+  const { governedParams } = terms;
   assert(
     keyEQ(governedParams, paramManager.getParams()),
     X`Terms must include ${q(paramManager.getParams())}, but were ${q(

@@ -43,7 +43,7 @@ test('types', t => {
 
 test.only('makeParamManagerFromTerms', async t => {
   const terms = harden({
-    governed: {
+    governedParams: {
       Mmr: { type: 'nat', value: makeRatio(150n, drachmaKit.brand) },
     },
   });
@@ -60,7 +60,7 @@ test.only('makeParamManagerFromTerms', async t => {
       Mmr: 'ratio',
     },
   );
-  t.is(paramManager.getMmr(), terms.governed.Mmr.value);
+  t.is(paramManager.getMmr(), terms.governedParams.Mmr.value);
 });
 
 test('readonly', t => {

@@ -240,13 +240,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     governedContractInstallation: installations.governedContract,
     governed: {
       issuerKeywordRecord: {},
-<<<<<<< HEAD
       terms,
-=======
-      terms: {
-        governed: makeParamTerms(602214090000000000000000n, invitationValue),
-      },
->>>>>>> 84560129b (main -> governed)
       privateArgs: { initialPoserInvitation },
     },
   };

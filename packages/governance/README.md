@@ -221,7 +221,7 @@ Governed methods and parameters must be included in terms.
 
 ```
   terms: {
-    governed: {
+    governedParams: {
       [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
       [CONTRACT_ELECTORATE]: {
         type: ParamTypes.INVITATION,
