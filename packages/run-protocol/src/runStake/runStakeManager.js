@@ -18,7 +18,7 @@ const trace = makeTracer('RM'); // TODO: how to turn this off?
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
  * @param {*} paramManager
- * @param {ReallocateWithFee} reallocateWithFee
+ * @param {MintAndReallocate} mintAndReallocateWithFee
  * @param {Object} timing
  * @param {ERef<TimerService>} timing.timerService
  * @param {bigint} timing.chargingPeriod
@@ -32,7 +32,7 @@ export const makeRunStakeManager = (
   debtMint,
   brands,
   paramManager,
-  reallocateWithFee,
+  mintAndReallocateWithFee,
   { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
 ) => {
   /** @param { Amount<'copyBag'>} attestationGiven */
@@ -85,7 +85,7 @@ export const makeRunStakeManager = (
     ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
       {
         mint: debtMint,
-        reallocateWithFee,
+        mintAndReallocateWithFee,
         poolIncrementSeat,
         seatAllocationKeyword: KW.Debt,
       },
@@ -152,12 +152,17 @@ export const makeRunStakeManager = (
     totalDebt = AmountMath.make(brands.debt, totalDebt.value + delta);
   };
 
+  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+    mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
+    totalDebt = AmountMath.add(totalDebt, toMint);
+  };
+
   return harden({
     getMintingRatio: paramManager.getMintingRatio,
     getInterestRate: paramManager.getInterestRate,
     getLoanFee: paramManager.getLoanFee,
     maxDebtForLien,
-    reallocateWithFee,
+    mintAndReallocate,
 
     getCollateralBrand: () => brands.Attestation,
     applyDebtDelta,

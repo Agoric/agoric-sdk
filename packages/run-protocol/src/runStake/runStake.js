@@ -1,10 +1,14 @@
 // @ts-check
+import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationTools } from './attestation.js';
 import { makeRunStakeParamManager } from './params.js';
 import { makeRunStakeKit, KW } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager.js';
+
+const { details: X } = assert;
+const { values } = Object;
 
 /**
  * Provide loans on the basis of staked assets that earn rewards.
@@ -91,6 +95,10 @@ export const start = async (
   assert.typeof(chargingPeriod, 'bigint', 'chargingPeriod must be a bigint');
   assert.typeof(recordingPeriod, 'bigint', 'recordingPeriod must be a bigint');
 
+  /** @type {ZCFMint<'nat'>} */
+  const debtMint = await zcf.registerFeeMint(KW.Debt, feeMintAccess);
+  const { brand: debtBrand } = debtMint.getIssuerRecord();
+
   const att = await makeAttestationTools(zcf, stakeBrand, lienBridge);
   const attestBrand = await E(att.publicFacet).getBrand();
 
@@ -109,41 +117,53 @@ export const start = async (
     paramManager,
   );
 
-  const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
-
   // TODO: assertElectorateMatches(paramManager, otherGovernedTerms);
+
+  /** For temporary staging of newly minted tokens */
+  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
+  const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
    * Let the manager add rewards to the rewardPoolSeat
    * without directly exposing the rewardPoolSeat to them.
    *
-   * @type {ReallocateWithFee}
+   * @type {MintAndReallocate}
    */
-  const reallocateWithFee = (fee, fromSeat, otherSeat = undefined) => {
-    rewardPoolSeat.incrementBy(
-      fromSeat.decrementBy(
-        harden({
-          [KW.Debt]: fee,
-        }),
-      ),
-    );
-    if (otherSeat !== undefined) {
-      zcf.reallocate(rewardPoolSeat, fromSeat, otherSeat);
-    } else {
-      zcf.reallocate(rewardPoolSeat, fromSeat);
+  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+    const kept = AmountMath.subtract(toMint, fee);
+    debtMint.mintGains(harden({ RUN: toMint }), mintSeat);
+    try {
+      rewardPoolSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: fee })));
+      seat.incrementBy(mintSeat.decrementBy(harden({ RUN: kept })));
+      zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
+    } catch (e) {
+      mintSeat.clear();
+      rewardPoolSeat.clear();
+      // Make best efforts to burn the newly minted tokens, for hygiene.
+      // That only relies on the internal mint, so it cannot fail without
+      // there being much larger problems. There's no risk of tokens being
+      // stolen here because the staging for them was already cleared.
+      debtMint.burnLosses(harden({ RUN: toMint }), mintSeat);
+      throw e;
+    } finally {
+      assert(
+        values(mintSeat.getCurrentAllocation()).every(a =>
+          AmountMath.isEmpty(a),
+        ),
+        X`Stage should be empty of RUN`,
+      );
     }
+    // TODO add aggregate debt tracking at the vaultFactory level #4482
+    // totalDebt = AmountMath.add(totalDebt, toMint);
   };
 
-  /** @type {ZCFMint<'nat'>} */
-  const runMint = await zcf.registerFeeMint(KW.Debt, feeMintAccess);
-  const { brand: runBrand } = runMint.getIssuerRecord();
   const startTimeStamp = await E(timerService).getCurrentTimestamp();
   const manager = makeRunStakeManager(
     zcf,
-    runMint,
-    { Attestation: attestBrand, debt: runBrand, Stake: stakeBrand },
+    debtMint,
+    { Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand },
     paramManager.readonly(),
-    reallocateWithFee,
+    mintAndReallocate,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
 
@@ -151,7 +171,7 @@ export const start = async (
     Far('runStake public', {
       makeLoanInvitation: () =>
         zcf.makeInvitation(
-          seat => makeRunStakeKit(zcf, seat, manager, runMint),
+          seat => makeRunStakeKit(zcf, seat, manager, debtMint),
           'make RUNstake',
         ),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,

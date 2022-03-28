@@ -6,7 +6,7 @@ import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeNotifierKit } from '@agoric/notifier';
 import { M, matches } from '@agoric/store';
 import { makeTracer } from '../makeTracer.js';
-import { addSubtract, assertOnlyKeys, transfer } from '../contractSupport.js';
+import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { KW as AttKW } from './attestation.js';
 
@@ -118,13 +118,13 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
   /** @param {boolean} newActive */
   const snapshotState = newActive => {
-    const { debtSnapshot: run, interestSnapshot: interest } = state;
+    const { debtSnapshot: debt, interestSnapshot: interest } = state;
     /** @type {VaultUIState} */
     const result = harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
       interestRate: manager.getInterestRate(),
       liquidationRatio: manager.getMintingRatio(),
-      debtSnapshot: { run, interest },
+      debtSnapshot: { debt, interest },
       locked: getCollateralAmount(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
       // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
@@ -256,9 +256,9 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
     // vaultSeat.
     mint.mintGains(harden({ [KW.Debt]: toMint }), vaultSeat);
 
-    transfer(clientSeat, vaultSeat, giveColl, wantColl, KW.Attestation);
-    transfer(clientSeat, vaultSeat, giveRUN, wantRUN, KW.Debt);
-    manager.reallocateWithFee(fee, vaultSeat, clientSeat);
+    stageDelta(clientSeat, vaultSeat, giveColl, wantColl, KW.Attestation);
+    stageDelta(clientSeat, vaultSeat, giveRUN, wantRUN, KW.Debt);
+    manager.mintAndReallocate(fee, vaultSeat, clientSeat);
 
     // parent needs to know about the change in debt
     updateDebtAccounting(debt, newDebt);
