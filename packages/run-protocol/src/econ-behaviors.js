@@ -643,7 +643,6 @@ export const startRunStake = async (
   return Promise.all([
     E(client).assignBundle([
       address => ({
-        // @ts-expect-error threading types thru governance is WIP
         attMaker: E(creatorFacet).provideAttestationMaker(address),
       }),
     ]),

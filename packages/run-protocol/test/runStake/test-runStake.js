@@ -453,7 +453,7 @@ const makeC1 = async (
     setMintingRatio: async (newValue, deadline) => {
       const paramSpec = { key: 'main', parameterName: 'MintingRatio' };
 
-      /** @type { ParamChangeVoteResult } */
+      /** @type { ContractGovernanceVoteResult } */
       const { details, instance } = await E(
         runStakeGovernorCreatorFacet,
       ).voteOnParamChange(paramSpec, newValue, counter, deadline);
