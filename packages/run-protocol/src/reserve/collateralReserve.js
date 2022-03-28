@@ -1,14 +1,12 @@
 // @ts-check
 
 import { E, Far } from '@endo/far';
-import { makeStore, keyEQ } from '@agoric/store';
+import { makeStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
-import { CONTRACT_ELECTORATE, handleParamGovernance } from '@agoric/governance';
+import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { AMM_INSTANCE, makeReserveParamManager } from './params.js';
-
-const { details: X } = assert;
+import { AMM_INSTANCE } from './params.js';
 
 const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
 
@@ -22,34 +20,27 @@ const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
  * accompany it, and deposits both into an AMM pool, using the AMM's method that
  * allows the pool balance to be determined based on the contributed funds.
  *
- * @param {ZCF<
+ * @param {ZCF<GovernanceTerms<{AmmInstance: ParamRecord<'instance'>}> &
  * {
- *   electionManager: VoteOnParamChange,
- *   main: {
- *     AmmInstance: ParamRecord<'instance'>,
- *     Electorate: ParamRecord<'invitation'>,
- *   },
  *   governedApis: ['addLiquidityToAmmPool'],
  * }
  * >} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Payment}} privateArgs
  */
 const start = async (zcf, privateArgs) => {
-  const {
-    main: {
-      [CONTRACT_ELECTORATE]: electorateParam,
-      [AMM_INSTANCE]: ammInstance,
-    },
-  } = zcf.getTerms();
-
   /** @type {MapStore<Brand, Keyword>} */
   const keywordForBrand = makeStore('keywords');
   /** @type {MapStore<Keyword, [Brand, Brand]>} */
   const brandForKeyword = makeStore('brands');
 
+  const { augmentPublicFacet, makeGovernorFacet, params } =
+    await handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
+      [AMM_INSTANCE]: ParamTypes.INSTANCE,
+    });
+
   /** @type {Promise<XYKAMMPublicFacet>} */
   const ammPublicFacet = E(zcf.getZoeService()).getPublicFacet(
-    ammInstance.value,
+    params.getAmmInstance(),
   );
 
   const addIssuer = async (issuer, keyword) => {
@@ -74,24 +65,7 @@ const start = async (zcf, privateArgs) => {
     return keywordForBrand.get(brand);
   };
 
-  const { initialPoserInvitation, feeMintAccess } = privateArgs;
-
-  /** a powerful object; can modify the invitation */
-  const paramManager = await makeReserveParamManager(
-    zcf.getZoeService(),
-    ammInstance.value,
-    initialPoserInvitation,
-  );
-
-  const { wrapPublicFacet, wrapCreatorFacet, getElectorate } =
-    handleParamGovernance(zcf, paramManager);
-
-  const electorateInvAmt = getElectorate();
-  // compare invitation amount from privateArgs with electorateParam from terms
-  assert(
-    keyEQ(electorateInvAmt, electorateParam.value),
-    X`invitation (${electorateParam.value} didn't match ${electorateInvAmt}`,
-  );
+  const { feeMintAccess } = privateArgs;
 
   // We keep the associated liquidity tokens in the same seat
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
@@ -185,7 +159,7 @@ const start = async (zcf, privateArgs) => {
     zcf.reallocate(offerToSeat, collateralSeat);
   };
 
-  const creatorFacet = wrapCreatorFacet(
+  const creatorFacet = makeGovernorFacet(
     {
       makeAddCollateralInvitation,
       // add makeRedeemLiquidityTokensInvitation later. For now just store them
@@ -196,7 +170,7 @@ const start = async (zcf, privateArgs) => {
   );
 
   /** @typedef {typeof creatorFacet} ReserveCreatorFacet */
-  const publicFacet = wrapPublicFacet(
+  const publicFacet = augmentPublicFacet(
     Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
     }),

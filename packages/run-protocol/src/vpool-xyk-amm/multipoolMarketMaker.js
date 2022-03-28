@@ -4,10 +4,7 @@ import { makeWeakStore } from '@agoric/store';
 import { Far } from '@endo/marshal';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import {
-  assertElectorateMatches,
-  handleParamGovernance,
-} from '@agoric/governance';
+import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
@@ -22,11 +19,7 @@ import '@agoric/zoe/exported.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
-import {
-  makeAmmParamManager,
-  POOL_FEE_KEY,
-  PROTOCOL_FEE_KEY,
-} from './params.js';
+import { POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
 
 const { quote: q, details: X } = assert;
 /**
@@ -106,18 +99,15 @@ const start = async (zcf, privateArgs) => {
    * This contract must have a "Central" keyword and issuer in the
    * IssuerKeywordRecord.
    *
-   * @typedef {{
+   * @typedef {GovernanceTerms<{
+   *   PoolFee: ParamRecord<'nat'>,
+   *   ProtocolFee: ParamRecord<'nat'>,
+   * }> & {
    *   brands: { Central: Brand },
    *   issuers: {},
    *   timer: TimerService,
-   *   electionManager: VoteOnParamChange,
    *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
    *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
-   *   main: {
-   *     PoolFee: ParamRecord<'nat'>,
-   *     ProtocolFee: ParamRecord<'nat'>,
-   *     Electorate: ParamRecord<'invitation'>,
-   *   }
    * }} AMMTerms
    *
    * @typedef { bigint } BasisPoints -- hundredths of a percent
@@ -125,24 +115,18 @@ const start = async (zcf, privateArgs) => {
   const {
     brands: { Central: centralBrand },
     timer,
-    main: {
-      [POOL_FEE_KEY]: poolFeeParam,
-      [PROTOCOL_FEE_KEY]: protocolFeeParam,
-      ...otherGovernedTerms
-    },
   } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
   assert(centralBrand !== undefined, X`centralBrand must be present`);
 
-  const { initialPoserInvitation } = privateArgs;
-
-  const [paramManager, centralDisplayInfo] = await Promise.all([
-    makeAmmParamManager(
-      zcf.getZoeService(),
-      poolFeeParam.value,
-      protocolFeeParam.value,
-      initialPoserInvitation,
-    ),
+  const [
+    { augmentPublicFacet, makeGovernorFacet, params },
+    centralDisplayInfo,
+  ] = await Promise.all([
+    handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
+      [POOL_FEE_KEY]: ParamTypes.NAT,
+      [PROTOCOL_FEE_KEY]: ParamTypes.NAT,
+    }),
     E(centralBrand).getDisplayInfo(),
   ]);
 
@@ -153,13 +137,6 @@ const start = async (zcf, privateArgs) => {
       centralDisplayInfo.assetKind,
     )}`,
   );
-
-  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
-    zcf,
-    paramManager,
-  );
-
-  assertElectorateMatches(paramManager, otherGovernedTerms);
 
   /** @type {WeakStore<Brand,XYKPool>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');
@@ -182,8 +159,8 @@ const start = async (zcf, privateArgs) => {
     centralBrand,
     timer,
     quoteIssuerKit,
-    paramManager.getProtocolFee,
-    paramManager.getPoolFee,
+    params.getProtocolFee,
+    params.getPoolFee,
     protocolSeat,
   );
   const getPoolAllocation = brand => {
@@ -209,8 +186,8 @@ const start = async (zcf, privateArgs) => {
         zcf,
         getPool(brandIn),
         getPool(brandOut),
-        paramManager.getProtocolFee,
-        paramManager.getPoolFee,
+        params.getProtocolFee,
+        params.getPoolFee,
         protocolSeat,
       );
     }
@@ -254,7 +231,7 @@ const start = async (zcf, privateArgs) => {
   );
 
   /** @type {XYKAMMPublicFacet} */
-  const publicFacet = wrapPublicFacet(
+  const publicFacet = augmentPublicFacet(
     Far('AMM public facet', {
       addPool,
       getPoolAllocation,
@@ -277,7 +254,7 @@ const start = async (zcf, privateArgs) => {
   );
 
   /** @type {GovernedCreatorFacet<*>} */
-  const creatorFacet = wrapCreatorFacet(
+  const creatorFacet = makeGovernorFacet(
     Far('AMM Fee Collector facet', {
       makeCollectFeesInvitation,
     }),
