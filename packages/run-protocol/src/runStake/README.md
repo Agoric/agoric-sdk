@@ -7,7 +7,7 @@ The following sequence diagram shows an interaction between runStake and:
   - dapp: with rich interaction but low privilege
   - walletBridge: with high privilege and constrained interaction
   - attestation: a service within the runStake contract
-  - golang: the Cosmos SDK layer, including the `x/lien` module
+  - Cosmos_SDK: the Cosmos SDK layer, including the `x/lien` module
 
 Before this interaction, an `ag123` account has been provisioned,
 which provides an `AttestationMaker` for that account to the wallet.
@@ -20,7 +20,7 @@ sequenceDiagram
     participant walletBridge
     participant attestation
     participant runStake
-    participant golang
+    participant Cosmos_SDK
 
     note right of dapp: How dapp finds the current state
 
@@ -30,9 +30,9 @@ sequenceDiagram
 
     note right of attestation: ag123 is a cosmos address
     dapp ->> attestation: getMax(ag123)
-    attestation ->> golang: getAccountState(ag123)
-    note right of golang: Cosmos supports lien
-    golang -->> attestation: account status in which 4000 BLD liened
+    attestation ->> Cosmos_SDK: getAccountState(ag123)
+    note right of Cosmos_SDK: Cosmos supports lien
+    Cosmos_SDK -->> attestation: account status in which 4000 BLD liened
     attestation  -->> dapp: account status in which 4000 BLD liened
     note right of dapp: Treasury now knows
 
@@ -40,8 +40,8 @@ sequenceDiagram
     dapp ->> walletBridge: getReturnableAttestation(want: 450 RUN, give: 500 BLD-Att)
     note right of walletBridge: Blocks on user approval in wallet
     walletBridge ->> attestation: makeAttestation(500 BLD)
-    attestation ->> golang: setLienedAmount(4000 + 500 BLD)
-    golang -->> attestation: ACK or throws
+    attestation ->> Cosmos_SDK: setLienedAmount(4000 + 500 BLD)
+    Cosmos_SDK -->> attestation: ACK or throws
 
     attestation -->> walletBridge: Payment of 500 BLD-Att liened on ag123
 
