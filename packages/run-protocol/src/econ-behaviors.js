@@ -133,28 +133,6 @@ export const setupAmm = async ({
 };
 
 /**
- * @param {BootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<PriceAuthorityVat>>},
- * }} powers
- *
- * @typedef {ERef<ReturnType<import('../../vats/src/vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
- */
-export const startPriceAuthority = async ({
-  consume: { loadVat },
-  produce,
-}) => {
-  const vats = { priceAuthority: E(loadVat)('priceAuthority') };
-  const { priceAuthority, adminFacet } = await E(
-    vats.priceAuthority,
-  ).makePriceAuthorityRegistry();
-
-  produce.priceAuthorityVat.resolve(vats.priceAuthority);
-  produce.priceAuthority.resolve(priceAuthority);
-  produce.priceAuthorityAdmin.resolve(adminFacet);
-};
-harden(startPriceAuthority);
-
-/**
  * @param { EconomyBootstrapPowers } powers
  * @param { Object } config
  * @param { LoanTiming } config.loanParams

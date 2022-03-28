@@ -127,10 +127,7 @@ export async function start(zcf, privateArgs) {
     mintAndReallocate,
     burnAndRecord,
     getCollateralQuote() {
-      return Promise.resolve({
-        quoteAmount: AmountMath.make(runBrand, 0n),
-        quotePayment: null,
-      });
+      return Promise.reject(Error('Not implemented'));
     },
     getCompoundedInterest: () => compoundedInterest,
     updateVaultPriority: () => {

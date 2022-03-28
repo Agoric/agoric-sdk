@@ -1,5 +1,20 @@
 // @ts-check
 const SHARED_BOOTSTRAP_MANIFEST = harden({
+  makeOracleBrands: {
+    oracleBrand: {
+      produce: {
+        USD: true,
+      },
+    },
+  },
+  startPriceAuthority: {
+    consume: { loadVat: true },
+    produce: {
+      priceAuthorityVat: 'priceAuthority',
+      priceAuthority: 'priceAuthority',
+      priceAuthorityAdmin: 'priceAuthority',
+    },
+  },
   makeVatsFromBundles: {
     vats: {
       vatAdmin: 'vatAdmin',
@@ -43,7 +58,6 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       client: true,
     },
     produce: {
-      agoricNames: true,
       namesByAddress: true,
       namesByAddressAdmin: true,
     },
@@ -286,14 +300,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
     },
   },
-  startPriceAuthority: {
-    consume: { loadVat: true },
-    produce: {
-      priceAuthorityVat: 'priceAuthority',
-      priceAuthority: 'priceAuthority',
-      priceAuthorityAdmin: 'priceAuthority',
-    },
-  },
   startVaultFactory: {
     consume: {
       feeMintAccess: 'zoe',
@@ -309,6 +315,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       vaultFactoryVoteCreator: 'VaultFactory',
     },
     brand: { consume: { RUN: 'zoe' } },
+    oracleBrand: { consume: { USD: true } },
     installation: {
       consume: { contractGovernor: 'zoe' },
       produce: { VaultFactory: 'zoe', liquidate: 'zoe' },
