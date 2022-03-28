@@ -32,9 +32,10 @@ const getOrElse = (store, key, make) => {
  * through Zoe offers.
  *
  * @param {ZCF} zcf
- * @param {ZCFMint} zcfMint
- * @param {Amount} amountToMint
- * @returns {Promise<Payment>}
+ * @template {AssetKind} K
+ * @param {ZCFMint<K>} zcfMint
+ * @param {Amount<K>} amountToMint
+ * @returns {Promise<Payment<K>>}
  */
 const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
   const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
@@ -59,8 +60,10 @@ const mintZCFMintPayment = (zcf, zcfMint, amountToMint) => {
 const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
   const { add, subtract, makeEmpty, isGTE, coerce } = AmountMath;
   const empty = makeEmpty(stakeBrand);
-  const zcfMint = await zcf.makeZCFMint(KW.Attestation, AssetKind.COPY_BAG);
-  const { issuer, brand: attBrand } = zcfMint.getIssuerRecord();
+  /** @type { ZCFMint<'copyBag'> } */
+  const attMint = await zcf.makeZCFMint(KW.Attestation, AssetKind.COPY_BAG);
+  /** @type {{ issuer: Issuer<'copyBag'>, brand: Brand<'copyBag'>}} */
+  const { issuer, brand: attBrand } = attMint.getIssuerRecord();
 
   /**
    * @param {Address} address
@@ -83,6 +86,20 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     return { address, lienedAmount };
   };
 
+  /** @type {Store<Address, Amount<'nat'>>} */
+  const amountByAddress = makeStore('amount');
+
+  const getAccountState = async (address, brand) => {
+    assert.typeof(address, 'string');
+    const s = await E(lienBridge).getAccountState(address, brand);
+    assert(
+      amountByAddress.has(address)
+        ? AmountMath.isEqual(s.liened, amountByAddress.get(address))
+        : AmountMath.isEmpty(s.liened),
+    );
+    return s;
+  };
+
   /** @type {(m: Amount, s: Amount) => Amount} */
   const subtractOrZero = (m, s) => (isGTE(m, s) ? subtract(m, s) : empty);
   // check that x <= hi - lo
@@ -95,15 +112,12 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     );
   };
   const assertAccountStateOK = async (address, toLien) => {
-    const s = await E(lienBridge).getAccountState(address, stakeBrand);
+    const s = await getAccountState(address, stakeBrand);
     const unlocked = subtractOrZero(s.total, s.locked);
     checkDelta(toLien, 'unliened', s.total, s.liened);
     checkDelta(toLien, 'bonded and unliened', s.bonded, s.liened);
     checkDelta(toLien, 'unlocked and unliened', unlocked, s.liened);
   };
-
-  /** @type {Store<Address, Amount<'nat'>>} */
-  const amountByAddress = makeStore('amount');
 
   /**
    * @param { Address } address
@@ -125,7 +139,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     // minting here and failing in setLiened below does no harm.
     const attestationPayment = await mintZCFMintPayment(
       zcf,
-      zcfMint,
+      attMint,
       wrapLienedAmount(address, lienDelta),
     );
 
@@ -153,12 +167,12 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     await E(lienBridge).setLiened(address, lienedPre, lienedPost);
     // COMMIT. Burn the escrowed attestation payment and exit the seat
     amountByAddress.set(address, lienedPost);
-    zcfMint.burnLosses(harden({ Attestation: attestationAmount }), seat);
+    attMint.burnLosses(harden({ Attestation: attestationAmount }), seat);
     seat.exit();
   };
 
   /**
-   * Get liened amount synchronously.
+   * Get liened amount from the JS store, without using the lienBridge.
    *
    * @param {Address} address
    * @param {Brand<'nat'>} brand
@@ -177,6 +191,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     mintAttestation,
     returnAttestation,
     getLiened,
+    getAccountState,
     /**
      * @param { Amount<'copyBag'> } attAmt
      * @throws if `attAmt` payload length is not 1

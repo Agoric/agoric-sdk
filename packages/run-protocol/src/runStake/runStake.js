@@ -181,7 +181,6 @@ export const start = async (
   const creatorFacet = wrapCreatorFacet(
     Far('runStake creator', {
       provideAttestationMaker: att.creatorFacet.provideAttestationTool,
-      getLiened: att.creatorFacet.getLiened,
     }),
   );
 

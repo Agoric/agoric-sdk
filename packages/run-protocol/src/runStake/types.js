@@ -1,9 +1,8 @@
 /**
  * @typedef AttestationMaker
  * @property {(amountToLien: Amount<'nat'>) => Promise<Payment>} makeAttestation
- * @property {() => Amount<'nat'> }  getLiened
  * @property {() => Promise<AccountState>} getAccountState
- * @property {() => Promise<Invitation>} makeReturnAttInvitation Make an invitation for returning a returnable attestation.
+ * @property {() => Promise<Invitation>} makeReturnAttInvitation Make an invitation for returning an attestation.
  */
 
 /**
