@@ -133,6 +133,8 @@
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' | 'liquidate' |
  *     'getRUN' | 'getRUNGovernor' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
+ *   oracleBrand:
+ *     'USD',
  *   uiConfig: |
  *     'VaultFactory' |
  *     'Treasury' // compat.
@@ -146,6 +148,10 @@
  *   brand: {
  *     produce: Record<WellKnownName['issuer'], Producer<Brand>>,
  *     consume: Record<WellKnownName['issuer'], Promise<Brand>>,
+ *   },
+ *   oracleBrand: {
+ *     produce: Record<WellKnownName['oracleBrand'], Producer<Brand>>,
+ *     consume: Record<WellKnownName['oracleBrand'], Promise<Brand>>,
  *   },
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,

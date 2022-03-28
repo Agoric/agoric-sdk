@@ -26,6 +26,7 @@
     "@agoric/store": "^0.6.10",
     "@agoric/swing-store": "^0.6.5",
     "@agoric/swingset-vat": "^0.25.1",
+    "@agoric/vat-data": "^0.1.0",
     "@agoric/zoe": "^0.21.3",
     "@endo/bundle-source": "^2.1.1",
     "@endo/init": "^0.5.37",

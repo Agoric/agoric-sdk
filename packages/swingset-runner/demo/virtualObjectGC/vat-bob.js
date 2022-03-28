@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { defineKind } from '@agoric/swingset-vat/src/storeModule.js';
+import { defineKind } from '@agoric/vat-data';
 
 export function buildRootObject(_vatPowers) {
   const makeThing = defineKind(

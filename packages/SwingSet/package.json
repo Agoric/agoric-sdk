@@ -34,6 +34,7 @@
     "@agoric/store": "^0.6.10",
     "@agoric/swing-store": "^0.6.5",
     "@agoric/xsnap": "^0.11.2",
+    "@agoric/vat-data": "^0.1.0",
     "@endo/base64": "^0.2.21",
     "@endo/bundle-source": "^2.1.1",
     "@endo/captp": "^2.0.3",

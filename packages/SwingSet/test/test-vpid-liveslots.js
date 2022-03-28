@@ -151,6 +151,10 @@ function resolutionOf(vpid, mode, targets) {
   return resolution;
 }
 
+function matchIDCounterSet(t, log) {
+  t.like(log.shift(), { type: 'vatstoreSet', key: 'idCounters' });
+}
+
 async function doVatResolveCase1(t, mode) {
   // case 1
   const { log, syscall } = buildSyscall();
@@ -216,6 +220,7 @@ async function doVatResolveCase1(t, mode) {
   const targets2 = { target2, localTarget, p1: expectedP3 };
   t.deepEqual(log.shift(), resolutionOf(expectedTwoArg, mode, targets2));
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedResultOfTwo });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 }
 
@@ -346,7 +351,13 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   } else {
     assert.fail(X`bad which=${which}`);
   }
+  if (which === 2) {
+    matchIDCounterSet(t, log);
+  }
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
+  if (which === 3) {
+    matchIDCounterSet(t, log);
+  }
   t.deepEqual(log, []);
 
   await dispatch(
@@ -469,6 +480,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets2));
 
   // that's all the syscalls we should see
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // assert that the vat saw the local promise being resolved too
@@ -557,6 +569,7 @@ async function doVatResolveCase4(t, mode) {
 
   await dispatch(makeMessage(rootA, 'get', capargs([slot0arg], [p1])));
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   await dispatch(makeMessage(rootA, 'first', capargs([slot0arg], [target1])));
@@ -580,6 +593,7 @@ async function doVatResolveCase4(t, mode) {
     resultSlot: expectedP3,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   let r;
@@ -633,6 +647,7 @@ async function doVatResolveCase4(t, mode) {
   t.deepEqual(log.shift(), resolutionOf(expectedP4, mode, targets));
 
   // if p1 rejects or resolves to data, the kernel never hears about four()
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 }
 
@@ -681,6 +696,7 @@ test('inter-vat circular promise references', async t => {
   // const paB = 'p-19';
 
   await dispatchA(makeMessage(rootA, 'genPromise', capargs([], []), paA));
+  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // await dispatchB(makeMessage(rootB, 'genPromise', capargs([], []), pbB));

@@ -1528,7 +1528,86 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
+  // Create a map from the first "wallet" path element, to the next naming hub
+  // (which supports at least "lookup").
+  const createRootLookups = () => {
+    const rootPathToLookup = makeLegacyMap('lookups');
+
+    /**
+     * @param {string} kind
+     * @param {(...path: string[]) => any} lookup
+     */
+    const makeLookup = (kind, lookup) => {
+      rootPathToLookup.init(
+        kind,
+        Far(`${kind}Lookup`, {
+          lookup,
+        }),
+      );
+    };
+
+    // Adapt a lookup function to try looking for a string-only petname first,
+    // falling back on the array path if that fails.
+    const petnameOrPath =
+      lookup =>
+      (...path) => {
+        try {
+          if (path.length === 1) {
+            // Try the petname first.
+            return lookup(path[0]);
+          }
+        } catch (e) {
+          // do nothing
+        }
+        return lookup(path);
+      };
+
+    makeLookup('brand', petnameOrPath(brandMapping.petnameToVal.get));
+    makeLookup('contact', petnameOrPath(contactMapping.petnameToVal.get));
+    makeLookup('issuer', petnameOrPath(issuerManager.get));
+    makeLookup('instance', petnameOrPath(instanceMapping.petnameToVal.get));
+    makeLookup(
+      'installation',
+      petnameOrPath(installationMapping.petnameToVal.get),
+    );
+    makeLookup('purse', petnameOrPath(purseMapping.petnameToVal.get));
+
+    // Adapt a lookup function to try looking for only a single ID, not a path.
+    const idOnly =
+      (kind, lookup) =>
+      (...path) => {
+        assert.equal(
+          path.length,
+          1,
+          X`${assert.quote(
+            kind,
+          )} lookup must be called with a single offer ID, not ${path}`,
+        );
+        return lookup(path[0]);
+      };
+    makeLookup('offer', idOnly('offer', idToOffer.get));
+    makeLookup(
+      'offerResult',
+      idOnly('offerResult', id => idToOfferResultPromiseKit.get(id).promise),
+    );
+
+    return rootPathToLookup;
+  };
+
+  const firstPathToLookup = createRootLookups();
   const wallet = Far('wallet', {
+    lookup: (...path) => {
+      // Provide an entrypoint to the wallet's naming hub.
+      if (path.length === 0) {
+        return wallet;
+      }
+      const [first, ...remaining] = path;
+      const firstValue = firstPathToLookup.get(first);
+      if (remaining.length === 0) {
+        return firstValue;
+      }
+      return E(firstValue).lookup(...remaining);
+    },
     saveOfferResult,
     getOfferResult,
     waitForDappApproval,

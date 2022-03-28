@@ -22,6 +22,7 @@ export function makeCollectionManager(
   syscall,
   vrm,
   allocateExportID,
+  allocateCollectionID,
   convertValToSlot,
   convertSlotToVal,
   registerValue,
@@ -30,7 +31,6 @@ export function makeCollectionManager(
 ) {
   const storeKindIDToName = new Map();
 
-  let storeKindInfoNeedsInitialization = true;
   const storeKindInfo = {
     scalarMapStore: {
       hasWeakKeys: false,
@@ -94,33 +94,32 @@ export function makeCollectionManager(
     return `vc.${collectionID}.${dbEntryKey}`;
   }
 
-  function obtainStoreKindID(kindName) {
-    if (storeKindInfoNeedsInitialization) {
-      storeKindInfoNeedsInitialization = false;
-
-      let storeKindIDs = {};
-      const rawTable = syscall.vatstoreGet('storeKindIDTable');
-      if (rawTable) {
-        storeKindIDs = JSON.parse(rawTable);
-      }
-      for (const kind of Object.getOwnPropertyNames(storeKindInfo)) {
-        let kindID = storeKindIDs[kind];
-        if (!kindID) {
-          kindID = allocateExportID();
-          storeKindIDs[kind] = kindID;
-        }
-        storeKindInfo[kind].kindID = kindID;
-        storeKindIDToName.set(`${kindID}`, kind);
-        vrm.registerKind(
-          kindID,
-          storeKindInfo[kind].reanimator,
-          // eslint-disable-next-line no-use-before-define
-          deleteCollection,
-          storeKindInfo[kind].durable,
-        );
-      }
-      syscall.vatstoreSet('storeKindIDTable', JSON.stringify(storeKindIDs));
+  function initializeStoreKindInfo() {
+    let storeKindIDs = {};
+    const rawTable = syscall.vatstoreGet('storeKindIDTable');
+    if (rawTable) {
+      storeKindIDs = JSON.parse(rawTable);
     }
+    for (const kind of Object.getOwnPropertyNames(storeKindInfo)) {
+      let kindID = storeKindIDs[kind];
+      if (!kindID) {
+        kindID = allocateExportID();
+        storeKindIDs[kind] = kindID;
+      }
+      storeKindInfo[kind].kindID = kindID;
+      storeKindIDToName.set(`${kindID}`, kind);
+      vrm.registerKind(
+        kindID,
+        storeKindInfo[kind].reanimator,
+        // eslint-disable-next-line no-use-before-define
+        deleteCollection,
+        storeKindInfo[kind].durable,
+      );
+    }
+    syscall.vatstoreSet('storeKindIDTable', JSON.stringify(storeKindIDs));
+  }
+
+  function obtainStoreKindID(kindName) {
     return storeKindInfo[kindName].kindID;
   }
 
@@ -546,8 +545,6 @@ export function makeCollectionManager(
     return doMoreGC;
   }
 
-  let nextCollectionID = 1;
-
   function makeCollection(label, kindName, keySchema, valueSchema) {
     assert.typeof(label, 'string');
     assert(storeKindInfo[kindName]);
@@ -557,8 +554,7 @@ export function makeCollectionManager(
       assertPattern(valueSchema);
       schemata.push(valueSchema);
     }
-    const collectionID = nextCollectionID;
-    nextCollectionID += 1;
+    const collectionID = allocateCollectionID();
     const kindID = obtainStoreKindID(kindName);
     const vobjID = `o+${kindID}/${collectionID}`;
 
@@ -811,6 +807,7 @@ export function makeCollectionManager(
   const testHooks = { storeSizeInternal, makeCollection };
 
   return harden({
+    initializeStoreKindInfo,
     makeScalarBigMapStore,
     makeScalarBigWeakMapStore,
     makeScalarBigSetStore,

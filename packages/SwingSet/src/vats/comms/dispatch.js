@@ -194,6 +194,10 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
         // nothing to see here, move along
         break;
       }
+      case 'stopVat': {
+        // should never be called, but no-op implemented for completeness
+        break;
+      }
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }

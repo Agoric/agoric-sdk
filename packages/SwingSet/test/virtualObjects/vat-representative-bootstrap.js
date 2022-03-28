@@ -1,5 +1,5 @@
 import { Far } from '@endo/marshal';
-import { defineKind } from '../../src/storeModule.js';
+import { defineKind } from '@agoric/vat-data';
 
 const makeThing = defineKind(
   'thing',
