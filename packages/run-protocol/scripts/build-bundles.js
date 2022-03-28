@@ -45,6 +45,10 @@ async function main() {
       `${dirname}/../bundles/bundle-amm.js`,
     ],
     [
+      `${srcDir}/reserve/collateralReserve.js`,
+      `${dirname}/../bundles/bundle-reserve.js`,
+    ],
+    [
       '@agoric/governance/src/contractGovernor.js',
       `${dirname}/../bundles/bundle-contractGovernor.js`,
     ],

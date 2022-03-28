@@ -8,6 +8,7 @@ import ammBundle from '../bundles/bundle-amm.js';
 import vaultFactoryBundle from '../bundles/bundle-vaultFactory.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import mintHolderBundle from '../bundles/bundle-mintHolder.js';
+import reserveBundle from '../bundles/bundle-reserve.js';
 
 export const governanceBundles = {
   contractGovernor: contractGovernorBundle,
@@ -26,4 +27,4 @@ export const economyBundles = {
 };
 harden(economyBundles);
 
-export { ammBundle };
+export { reserveBundle, ammBundle };
