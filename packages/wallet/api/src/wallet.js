@@ -238,8 +238,11 @@ export function buildRootObject(vatPowers) {
    * @type {WalletBridge}
    */
   const preapprovedBridge = Far('preapprovedBridge', {
-    /** @type {WalletAdminFacet['addOffer']} */
-    addOffer(offer, meta = undefined) {
+    /**
+     * @param {unknown} offer
+     * @param {{}} [meta]
+     */
+    addOffer(offer, meta) {
       return walletAdmin.addOffer(offer, meta);
     },
     getDepositFacetId(brandBoardId) {

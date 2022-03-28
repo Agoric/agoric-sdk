@@ -323,7 +323,11 @@ const start = async zcf => {
 
       return zcf.makeInvitation(offerHandler, 'oracle invitation');
     },
-    async initOracle(oracleInstance = undefined, query = undefined) {
+    /**
+     * @param {Instance} [oracleInstance]
+     * @param {unknown} [query]
+     */
+    async initOracle(oracleInstance, query) {
       assert(quoteKit, X`Must initializeQuoteMint before adding an oracle`);
 
       /** @type {OracleKey} */
