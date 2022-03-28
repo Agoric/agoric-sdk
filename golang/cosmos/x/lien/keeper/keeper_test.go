@@ -595,4 +595,18 @@ func TestWrap(t *testing.T) {
 	if wrapped2 != nil {
 		t.Errorf("wrapped nil is %v, want nil", wrapped2)
 	}
+
+	modAcc := authtypes.NewEmptyModuleAccount("modname")
+	wrapped = wrapper.Wrap(ctx, modAcc)
+	_, ok = wrapped.(*LienAccount)
+	if ok {
+		t.Fatalf("should not wrap module accounts")
+	}
+	modAcc2, ok := wrapped.(*authtypes.ModuleAccount)
+	if !ok {
+		t.Fatalf("wrapped module account should be a module account")
+	}
+	if !reflect.DeepEqual(modAcc, modAcc2) {
+		t.Errorf("wrapped module account should not change")
+	}
 }

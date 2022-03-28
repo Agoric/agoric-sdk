@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -77,6 +78,10 @@ func (la *LienAccount) LockedCoins(ctx sdk.Context) sdk.Coins {
 func (la *LienAccount) LienedLockedCoins(ctx sdk.Context) sdk.Coins {
 	delegated := la.GetDelegatedFree().Add(la.GetDelegatedVesting()...)
 	liened := la.lien.Coins
+	acc := la.omniVestingAccount.(authtypes.AccountI)
+	if clawback, ok := acc.(*vestingtypes.ClawbackVestingAccount); ok {
+		liened = liened.Add(clawback.GetVestingCoins(ctx.BlockTime())...)
+	}
 	// Since coins can't go negative, even transiently, use the
 	// identity A + B = max(A, B) + min(A, B)
 	//    max(0, A - B) = max(B, A) - B = A - min(A, B)
