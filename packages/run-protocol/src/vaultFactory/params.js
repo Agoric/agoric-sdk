@@ -86,7 +86,7 @@ const makeGovernedTerms = (
     loanTimingParams: timingParamMgr.getParams(),
     timerService,
     liquidationInstall,
-    governed: makeElectorateParams(invitationAmount),
+    governedParams: makeElectorateParams(invitationAmount),
     bootstrapPaymentValue,
   });
 };

@@ -55,7 +55,7 @@ export const start = async (zcf, privateArgs) => {
     timerService,
     liquidationInstall,
     electionManager,
-    governed: governedTerms,
+    governedParams: governedTerms,
     loanTimingParams,
   } = zcf.getTerms();
 

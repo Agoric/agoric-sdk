@@ -58,7 +58,11 @@ const makeAmmTerms = (
   timer,
   poolFeeBP,
   protocolFeeBP,
-  governed: makeAmmParams(poserInvitationAmount, protocolFeeBP, poolFeeBP),
+  governedParams: makeAmmParams(
+    poserInvitationAmount,
+    protocolFeeBP,
+    poolFeeBP,
+  ),
 });
 
 harden(makeAmmParamManager);

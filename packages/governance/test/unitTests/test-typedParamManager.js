@@ -41,7 +41,7 @@ test('types', t => {
   );
 });
 
-test.only('makeParamManagerFromTerms', async t => {
+test('makeParamManagerFromTerms', async t => {
   const terms = harden({
     governedParams: {
       Mmr: { type: 'nat', value: makeRatio(150n, drachmaKit.brand) },
