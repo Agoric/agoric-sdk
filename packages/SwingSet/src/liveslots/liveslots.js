@@ -294,6 +294,16 @@ function build(
   const disavowedPresences = new WeakSet();
   const disavowalError = harden(Error(`this Presence has been disavowed`));
 
+  // This tracks all promises that we decide (i.e. we are obligated to
+  // call syscall.resolve on them before the end of stopVat). We add
+  // their vpid when we export the promise (or receive it as the
+  // 'result' of a dispatch.deliver) and remove it when we make the
+  // syscall.resolve . We do not need to include the ancillary
+  // promises that resolutionCollector() creates: those are resolved
+  // immediately after export. However we remove those during
+  // resolution just in case they overlap with non-ancillary ones.
+  const deciderVPIDs = new Set(); // vpids
+
   const importedPromisesByPromiseID = new Map(); // vpid -> { resolve, reject }
 
   function makeImportedPresence(slot, iface = `Alleged: presence ${slot}`) {
@@ -614,6 +624,7 @@ function build(
       if (isPromise(val)) {
         slot = exportPromise(val);
         pendingPromises.add(val); // keep it alive until resolved
+        deciderVPIDs.add(slot);
       } else {
         if (disavowedPresences.has(val)) {
           // eslint-disable-next-line no-use-before-define
@@ -820,6 +831,7 @@ function build(
     const resolutions = resolutionCollector().forSlots(serArgs.slots);
     if (resolutions.length > 0) {
       syscall.resolve(resolutions);
+      resolutions.map(([vpid]) => deciderVPIDs.delete(vpid));
     }
 
     // ideally we'd wait until .then is called on p before subscribing, but
@@ -943,6 +955,7 @@ function build(
     let notifyFailure = () => undefined;
     if (result) {
       insistVatType('promise', result);
+      deciderVPIDs.add(result);
       // eslint-disable-next-line no-use-before-define
       notifySuccess = thenResolve(res, result);
       // eslint-disable-next-line no-use-before-define
@@ -976,6 +989,7 @@ function build(
       );
 
       syscall.resolve(resolutions);
+      resolutions.map(([vpid]) => deciderVPIDs.delete(vpid));
 
       const pRec = importedPromisesByPromiseID.get(promiseID);
       if (pRec) {
@@ -1003,19 +1017,18 @@ function build(
       `ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`,
     );
     insistVatType('promise', promiseID);
-    // TODO: insist that we do not have decider authority for promiseID
-    assert(
-      importedPromisesByPromiseID.has(promiseID),
-      X`unknown promiseID '${promiseID}'`,
-    );
     const pRec = importedPromisesByPromiseID.get(promiseID);
-    meterControl.assertNotMetered();
-    const val = m.unserialize(data);
-    if (rejected) {
-      pRec.reject(val);
-    } else {
-      pRec.resolve(val);
+    if (pRec) {
+      // TODO: insist that we do not have decider authority for promiseID
+      meterControl.assertNotMetered();
+      const val = m.unserialize(data);
+      if (rejected) {
+        pRec.reject(val);
+      } else {
+        pRec.resolve(val);
+      }
     }
+    // else ignore: our predecessor version might have subscribed
   }
 
   function notify(resolutions) {
@@ -1267,9 +1280,23 @@ function build(
     assert(didStartVat);
     assert(!didStopVat);
     didStopVat = true;
+
+    // Pretend that userspace rejected all non-durable promises. We
+    // basically do the same thing that `thenReject(p,
+    // vpid)(rejection)` would have done, but we skip ahead to the
+    // syscall.resolve part. The real `thenReject` also does
+    // pRec.reject(), which would give control to userspace (who might
+    // have re-imported the promise and attached a .then to it), and
+    // stopVat() must not allow userspace to gain agency.
+
+    const rejectCapData = m.serialize('vat upgraded');
+    const vpids = Array.from(deciderVPIDs.keys()).sort();
+    const rejections = vpids.map(vpid => [vpid, true, rejectCapData]);
+    if (rejections.length) {
+      syscall.resolve(rejections);
+    }
     // eslint-disable-next-line no-use-before-define
     await bringOutYourDead();
-    // empty for now
   }
 
   /**
