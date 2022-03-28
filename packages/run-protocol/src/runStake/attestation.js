@@ -154,10 +154,11 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
 
   /** @param {ZCFSeat} seat */
   const returnAttestation = async seat => {
-    assertProposalShape(seat, { give: { Attestation: null }, want: {} });
+    assertProposalShape(seat, { give: { [KW.Attestation]: null }, want: {} });
 
-    /** @type {Amount<'copyBag'>} */
-    const attestationAmount = seat.getAmountAllocated(KW.Attestation);
+    const {
+      give: { [KW.Attestation]: attestationAmount },
+    } = seat.getProposal();
     const { address, lienedAmount: amountReturned } =
       unwrapLienedAmount(attestationAmount);
 
