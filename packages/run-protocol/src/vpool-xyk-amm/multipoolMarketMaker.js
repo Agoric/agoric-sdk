@@ -19,7 +19,7 @@ import {
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 
 import '@agoric/zoe/exported.js';
-import { makeMakeCollectFeesInvitation } from './collectFees.js';
+import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMakeSwapInvitation } from './swap.js';
 import { makeDoublePool } from './doublePool.js';
 import {
@@ -250,6 +250,7 @@ const start = async (zcf, privateArgs) => {
     zcf,
     protocolSeat,
     centralBrand,
+    'RUN',
   );
 
   /** @type {XYKAMMPublicFacet} */

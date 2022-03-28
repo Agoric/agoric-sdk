@@ -34,7 +34,7 @@ import { assertElectorateMatches } from '@agoric/governance';
 import { AmountMath } from '@agoric/ertp';
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
-import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
+import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 
 const { details: X } = assert;
@@ -248,6 +248,7 @@ export const start = async (zcf, privateArgs) => {
     zcf,
     rewardPoolSeat,
     debtBrand,
+    'RUN',
   );
 
   const getParamMgrRetriever = () =>
