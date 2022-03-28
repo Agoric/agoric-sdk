@@ -135,7 +135,10 @@ export function makeCollectionManager(
     keySchema = M.any(),
     valueSchema,
   ) {
-    const { hasWeakKeys, durable } = storeKindInfo[kindName];
+    assert.typeof(kindName, 'string');
+    const kindInfo = storeKindInfo[kindName];
+    assert(kindInfo, `unknown collection kind ${kindName}`);
+    const { hasWeakKeys, durable } = kindInfo;
     const dbKeyPrefix = `vc.${collectionID}.`;
     let currentGenerationNumber = 0;
 
@@ -523,6 +526,7 @@ export function makeCollectionManager(
   function storeSizeInternal(vobjID) {
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
+    assert(kindName, `unknown kind ID ${id}`);
     const collection = summonCollectionInternal(false, 'test', subid, kindName);
     return collection.sizeInternal();
   }
@@ -804,7 +808,7 @@ export function makeCollectionManager(
       : collectionToWeakSetStore(reanimateCollection(vobjID));
   }
 
-  const testHooks = { storeSizeInternal, makeCollection };
+  const testHooks = { obtainStoreKindID, storeSizeInternal, makeCollection };
 
   return harden({
     initializeStoreKindInfo,
