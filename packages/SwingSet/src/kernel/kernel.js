@@ -23,6 +23,7 @@ import { processNextGCAction } from './gc-actions.js';
 import { makeVatLoader } from './vat-loader/vat-loader.js';
 import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
+import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -547,6 +548,11 @@ export default function buildKernel(
     const kd = harden(['startVat', vatParameters]);
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+    // decref slots now that create-vat is off run-queue
+    for (const kref of vatParameters.slots) {
+      kernelKeeper.decrementRefCount(kref, 'create-vat-event');
+    }
+
     // TODO: can we provide a computron count to the run policy?
     const status = await deliverAndLogToVat(vatID, kd, vd);
     return { ...status, discardFailedDelivery: true };
@@ -634,18 +640,68 @@ export default function buildKernel(
    */
   async function processUpgradeVat(message) {
     assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
-    // const { upgradeID, bundleID, vatParameters } = message;
-    const { upgradeID, vatParameters } = message;
+    const { vatID, upgradeID, bundleID, vatParameters } = message;
     insistCapData(vatParameters);
-    // for now, all attempts to upgrade will fail
 
-    // TODO: decref the bundleID and vatParameters.slots
-    const args = {
-      body: JSON.stringify([upgradeID, false, { error: `not implemented` }]),
-      slots: [],
-    };
-    queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
-    return null; // no delivery made (yet)
+    // eslint-disable-next-line no-use-before-define
+    assert(vatWarehouse.lookup(vatID));
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    /** @type { import('../types-external.js').KernelDeliveryStopVat } */
+    const kd1 = harden(['stopVat']);
+    // eslint-disable-next-line no-use-before-define
+    const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
+    const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
+    if (status1.terminate) {
+      // TODO: if stopVat fails, stop now, arrange for everything to
+      // be unwound. TODO: we need to notify caller about the failure
+      console.log(`-- upgrade-vat stopVat failed: ${status1.terminate}`);
+    }
+
+    // stop the worker, delete the transcript and any snapshot
+    // eslint-disable-next-line no-use-before-define
+    await vatWarehouse.destroyWorker(vatID);
+    const source = { bundleID };
+    const { options } = vatKeeper.getSourceAndOptions();
+    vatKeeper.setSourceAndOptions(source, options);
+    // TODO: decref the bundleID once setSourceAndOptions increfs it
+
+    // pause, take a deep breath, appreciate this moment of silence
+    // between the old and the new. this moment will never come again.
+
+    // deliver a startVat with the new vatParameters
+    /** @type { import('../types-external.js').KernelDeliveryStartVat } */
+    const kd2 = harden(['startVat', vatParameters]);
+    // eslint-disable-next-line no-use-before-define
+    const vd2 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd2);
+    // decref vatParameters now that translation did incref
+    for (const kref of vatParameters.slots) {
+      kernelKeeper.decrementRefCount(kref, 'upgrade-vat-event');
+    }
+    const status2 = await deliverAndLogToVat(vatID, kd2, vd2);
+    if (status2.terminate) {
+      console.log(`-- upgrade-vat startVat failed: ${status2.terminate}`);
+    }
+
+    if (status1.terminate || status2.terminate) {
+      // TODO: if status.terminate then abort the crank, discard the
+      // upgrade event, and arrange to use vatUpgradeCallback to inform
+      // the caller
+      console.log(`-- upgrade-vat delivery failed`);
+
+      // TODO: this is the message we want to send on failure, but we
+      // need to queue it after the crank was unwound, else this
+      // message will be unwound too
+      const args = {
+        body: JSON.stringify([upgradeID, false, { error: `not implemented` }]),
+        slots: [],
+      };
+      queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
+    } else {
+      const args = { body: JSON.stringify([upgradeID, true]), slots: [] };
+      queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
+    }
+    // return { ...status1, ...status2, discardFailedDelivery: true };
+    return {};
   }
 
   function legibilizeMessage(message) {
@@ -1265,58 +1321,6 @@ export default function buildKernel(
       hasBundle: kernelKeeper.hasBundle,
       getBundle: kernelKeeper.getBundle,
       getNamedBundleID: kernelKeeper.getNamedBundleID,
-      pushCreateVatBundleEvent(bundle, dynamicOptions) {
-        // TODO: translate dynamicOptions.vatParameters.slots from dref to kref
-        const source = { bundle };
-        const { vatParameters: rawVP, ...rest } = dynamicOptions;
-        const vatParameters = { body: stringify(harden(rawVP)), slots: [] };
-        insistCapData(vatParameters);
-        dynamicOptions = rest;
-        const vatID = kernelKeeper.allocateUnusedVatID();
-        const event = {
-          type: 'create-vat',
-          vatID,
-          source,
-          vatParameters,
-          dynamicOptions,
-        };
-        kernelKeeper.addToAcceptanceQueue(harden(event));
-        // the device gets the new vatID immediately, and will be notified
-        // later when it is created and a root object is available
-        return vatID;
-      },
-      pushCreateVatIDEvent(bundleID, dynamicOptions) {
-        assert(kernelKeeper.hasBundle(bundleID), bundleID);
-        // TODO: translate dynamicOptions.vatParameters.slots from dref to kref
-        const source = { bundleID };
-        const { vatParameters: rawVP, ...rest } = dynamicOptions;
-        const vatParameters = { body: stringify(harden(rawVP)), slots: [] };
-        insistCapData(vatParameters);
-        dynamicOptions = rest;
-        const vatID = kernelKeeper.allocateUnusedVatID();
-        const event = {
-          type: 'create-vat',
-          vatID,
-          source,
-          vatParameters,
-          dynamicOptions,
-        };
-        kernelKeeper.addToAcceptanceQueue(harden(event));
-        // the device gets the new vatID immediately, and will be notified
-        // later when it is created and a root object is available
-        return vatID;
-      },
-      pushUpgradeVatEvent(bundleID, rawVP) {
-        const vatParameters = { body: stringify(harden(rawVP)), slots: [] };
-        insistCapData(vatParameters);
-        const upgradeID = kernelKeeper.allocateUpgradeID();
-        // TODO: translate vatParameters.slots from dref to kref
-        // TODO: incref both bundleID and slots in vatParameters
-        const ev = { type: 'upgrade-vat', upgradeID, bundleID, vatParameters };
-        kernelKeeper.addToAcceptanceQueue(harden(ev));
-        return upgradeID;
-      },
-      terminate: (vatID, reason) => terminateVat(vatID, true, reason),
       meterCreate: (remaining, threshold) =>
         kernelKeeper.allocateMeter(remaining, threshold),
       meterAddRemaining: (meterID, delta) =>
@@ -1383,6 +1387,13 @@ export default function buildKernel(
           `WARNING: skipping device ${deviceID} (${name}) because it has no endowments`,
         );
       }
+    }
+
+    // attach vat-admin device hooks
+    const vatAdminDeviceID = kernelKeeper.getDeviceIDForName('vatAdmin');
+    if (vatAdminDeviceID) {
+      const hooks = makeVatAdminHooks({ kernelKeeper, terminateVat });
+      deviceHooks.set(vatAdminDeviceID, hooks);
     }
 
     kernelKeeper.loadStats();

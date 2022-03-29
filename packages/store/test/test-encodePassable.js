@@ -5,7 +5,10 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import fc from 'fast-check';
 import { isKey } from '../src/keys/checkKey.js';
 import { compareKeys, keyEQ } from '../src/keys/compareKeys.js';
-import { makeEncodeKey, makeDecodeKey } from '../src/patterns/encodeKey.js';
+import {
+  makeEncodePassable,
+  makeDecodePassable,
+} from '../src/patterns/encodePassable.js';
 import { compareRank, makeComparatorKit } from '../src/patterns/rankOrder.js';
 import { assertionPassed } from './test-store.js';
 import { sample } from './test-rankOrder.js';
@@ -35,9 +38,9 @@ const decodeRemotable = e => {
 const compareRemotables = (x, y) =>
   compareRank(encodeRemotable(x), encodeRemotable(y));
 
-const encodeKey = makeEncodeKey(encodeRemotable);
+const encodeKey = makeEncodePassable({ encodeRemotable });
 
-const decodeKey = makeDecodeKey(decodeRemotable);
+const decodeKey = makeDecodePassable({ decodeRemotable });
 
 const { comparator: compareFull } = makeComparatorKit(compareRemotables);
 
@@ -55,6 +58,7 @@ const getNaN = (hexEncoding = '0008000000000000') => {
 
 const NegativeNaN = getNaN('ffffffffffffffff');
 
+/** @type {[Key, string][]} */
 const goldenPairs = harden([
   [1, 'fbff0000000000000'],
   [-1, 'f400fffffffffffff'],

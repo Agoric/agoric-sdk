@@ -3,6 +3,8 @@
 /** @typedef {import('./vault').VaultUIState} VaultUIState */
 /** @typedef {import('./vaultKit').VaultKit} VaultKit */
 /** @typedef {VaultKit['vault']} Vault */
+/** @typedef {import('./vaultManager').VaultManager} VaultManager */
+/** @typedef {import('./vaultManager').CollateralManager} CollateralManager */
 
 /**
  * @typedef  {Object} AutoswapLocal
@@ -46,15 +48,29 @@
  */
 
 /**
- * @callback ReallocateWithFee
+ * @callback MintAndReallocate
  *
- * Transfer the indicated amount to the vaultFactory's reward
- * pool, taken from the `fromSeat`. Then reallocate over all the seat
- * arguments and the rewardPoolSeat.
+ * Mint new debt `toMint` and transfer the `fee` portion to the vaultFactory's reward
+ * pool. Then reallocate over all the seat arguments and the rewardPoolSeat. Update
+ * the `totalDebt` if the reallocate succeeds.
  *
- * @param {Amount} amount
+ * TODO check limits.
+ *
+ * @param {Amount} toMint
+ * @param {Amount} fee
  * @param {ZCFSeat} fromSeat
- * @param {ZCFSeat=} otherSeat
+ * @param {...ZCFSeat} otherSeats
+ * @returns {void}
+ */
+
+/**
+ * @callback BurnDebt
+ *
+ * Burn debt tokens off a seat and update
+ * the `totalDebt` if the reallocate succeeds.
+ *
+ * @param {Amount} toBurn
+ * @param {ZCFSeat} fromSeat
  * @returns {void}
  */
 
@@ -72,16 +88,6 @@
 
 /**
  * @typedef {string} VaultId
- */
-
-/**
- * @typedef {Object} VaultManagerBase
- * @property {(seat: ZCFSeat) => Promise<VaultKit>}  makeVaultKit
- * @property {() => void} liquidateAll
- */
-
-/**
- * @typedef {VaultManagerBase & GetVaultParams} VaultManager
  */
 
 /**

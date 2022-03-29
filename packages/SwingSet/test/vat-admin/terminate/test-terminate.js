@@ -213,11 +213,28 @@ test('dead vat state removed', async t => {
   const kvStore = hostStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 11);
+  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 19);
 
   controller.queueToVatRoot('bootstrap', 'phase2', capargs([]));
   await controller.run();
   t.is(kvStore.get('vat.dynamicIDs'), '[]');
   t.is(kvStore.get('ko26.owner'), undefined);
   t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 0);
+});
+
+test('terminate with presence', async t => {
+  const configPath = new URL(
+    'swingset-terminate-with-presence.json',
+    import.meta.url,
+  ).pathname;
+  const config = await loadSwingsetConfigFile(configPath);
+  const controller = await buildVatController(config, [], t.context.data);
+  await controller.run();
+  t.deepEqual(controller.dump().log, [
+    'FOO 1',
+    'vat ready FOO SAYS 1',
+    'foreverP.catch Error: vat terminated',
+    'termP.then undefined',
+    'doneP.catch because true',
+  ]);
 });

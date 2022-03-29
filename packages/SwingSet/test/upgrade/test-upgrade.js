@@ -3,13 +3,21 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
-import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capargs } from '../util.js';
+import { capargs, capdataOneSlot } from '../util.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
+}
+
+function get(capdata, propname) {
+  const body = JSON.parse(capdata.body);
+  const value = body[propname];
+  if (typeof value === 'object' && value['@qclass'] === 'slot') {
+    return ['slot', capdata.slots[value.index]];
+  }
+  return value;
 }
 
 async function testUpgrade(t, defaultManagerType) {
@@ -41,32 +49,35 @@ async function testUpgrade(t, defaultManagerType) {
     return [status, capdata];
   }
 
-  async function check(name, args, expectedResult) {
-    const [status, capdata] = await run(name, args);
-    const result = parse(capdata.body);
-    t.deepEqual([status, result], ['fulfilled', expectedResult]);
-  }
-
-  async function checkRejects(name, args, expectedResult) {
-    const [status, capdata] = await run(name, args);
-    const result = parse(capdata.body);
-    t.deepEqual([status, result], ['rejected', expectedResult]);
-  }
+  const mcd = await run('getMarker');
+  t.is(mcd[0], 'fulfilled');
+  const markerKref = mcd[1].slots[0]; // probably ko26
+  t.deepEqual(mcd[1], capdataOneSlot(markerKref, 'marker'));
 
   // create initial version
-  await check('buildV1', [], ['v1', { youAre: 'v1' }]);
+  const [v1status, v1capdata] = await run('buildV1', []);
+  t.is(v1status, 'fulfilled');
+  t.deepEqual(get(v1capdata, 'version'), 'v1');
+  t.deepEqual(get(v1capdata, 'youAre'), 'v1');
+  t.deepEqual(get(v1capdata, 'marker'), ['slot', markerKref]);
+  // grab the promises that should be rejected
+  t.is(get(v1capdata, 'p1')[0], 'slot');
+  const v1p1Kref = get(v1capdata, 'p1')[1];
+  t.is(get(v1capdata, 'p2')[0], 'slot');
+  const v1p2Kref = get(v1capdata, 'p2')[1];
 
   // upgrade should work
-  // await check('upgradeV2', [], ['v2', { youAre: 'v2' }]);
+  const [v2status, v2capdata] = await run('upgradeV2', []);
+  t.is(v2status, 'fulfilled');
+  t.deepEqual(get(v2capdata, 'version'), 'v2');
+  t.deepEqual(get(v2capdata, 'youAre'), 'v2');
+  t.deepEqual(get(v2capdata, 'marker'), ['slot', markerKref]);
 
-  // but for now, upgrade is just a stub
-  await checkRejects('upgradeV2', [], { error: 'not implemented' });
-
-  // await checkRejects(
-  //   'getBundleCap',
-  //   [invalidBundleID],
-  //   Error('syscall.callNow failed: device.invoke failed, see logs for details'),
-  // );
+  // the old version's non-durable promises should be rejected
+  t.is(c.kpStatus(v1p1Kref), 'rejected');
+  t.deepEqual(c.kpResolution(v1p1Kref), capargs('vat upgraded'));
+  t.is(c.kpStatus(v1p2Kref), 'rejected');
+  t.deepEqual(c.kpResolution(v1p2Kref), capargs('vat upgraded'));
 }
 
 test('vat upgrade - local', async t => {

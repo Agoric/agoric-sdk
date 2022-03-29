@@ -10,9 +10,6 @@ import {
   legibilizeValue,
 } from '../lib/kdebug.js';
 
-/** @type { VatDeliveryBringOutYourDead } */
-const reapMessageVatDelivery = harden(['bringOutYourDead']);
-
 export function assertValidVatstoreKey(key) {
   assert.typeof(key, 'string');
 }
@@ -154,16 +151,22 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
    * @returns { VatDeliveryStartVat }
    */
   function translateStartVat(kernelVP) {
+    const slots = kernelVP.slots.map(slot => mapKernelSlotToVatSlot(slot));
+    const vatVP = { ...kernelVP, slots };
     /** @type { VatDeliveryStartVat } */
-    return harden(['startVat', kernelVP]); // TODO until capdata
-    // const vatVP = {
-    //   ...kernelVP,
-    //   slots: kernelVP.slots.map(slot => mapKernelSlotToVatSlot(slot)),
-    // };
-    // /** @type { VatDeliveryStartVat } */
-    // const startVatMessageVatDelivery = harden(['startVat', vatVP]);
-    // return startVatMessageVatDelivery;
+    const startVatMessageVatDelivery = harden(['startVat', vatVP]);
+    return startVatMessageVatDelivery;
   }
+
+  /** @type { import('../types-external.js').VatDeliveryStopVat } */
+  const stopVatMessage = harden(['stopVat']);
+
+  function translateStopVat() {
+    return stopVatMessage;
+  }
+
+  /** @type { VatDeliveryBringOutYourDead } */
+  const reapMessageVatDelivery = harden(['bringOutYourDead']);
 
   function translateBringOutYourDead() {
     return reapMessageVatDelivery;
@@ -200,6 +203,10 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
         const [_, ...args] = kd;
         return translateStartVat(...args);
       }
+      case 'stopVat': {
+        const [_, ...args] = kd;
+        return translateStopVat(...args);
+      }
       case 'bringOutYourDead': {
         const [_, ...args] = kd;
         return translateBringOutYourDead(...args);
@@ -214,6 +221,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     //  ['retireExports', vrefs]
     //  ['retireImports', vrefs]
     //  ['startVat']
+    //  ['stopVat']
     //  ['bringOutYourDead']
   }
 

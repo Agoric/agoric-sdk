@@ -1,21 +1,19 @@
 // @ts-check
 
 import { handleParamGovernance } from '../../../src/contractHelper.js';
-import {
-  assertElectorateMatches,
-  makeParamManager,
-  ParamTypes,
-} from '../../../src/index.js';
-import { CONTRACT_ELECTORATE } from '../../../src/paramGovernance/governParam.js';
+import { ParamTypes } from '../../../src/index.js';
+import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
 
 const MALLEABLE_NUMBER = 'MalleableNumber';
 
-const makeParamTerms = (number, invitationAmount) => {
+const makeTerms = (number, invitationAmount) => {
   return harden({
-    [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: invitationAmount,
+    governedParams: {
+      [MALLEABLE_NUMBER]: { type: ParamTypes.NAT, value: number },
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: invitationAmount,
+      },
     },
   });
 };
@@ -24,44 +22,30 @@ const makeParamTerms = (number, invitationAmount) => {
  * @type ContractStartFn<
  * GovernedPublicFacet<{}>,
  * GovernedCreatorFacet<any>,
- * {
- *   electionManager: VoteOnParamChange,
- *   main: {
- *     MalleableNumber: ParamRecord<'nat'>,
- *     Electorate: ParamRecord<'invitation'>,
- *   },
- * },
+ * GovernanceTerms<{
+ *   MalleableNumber: ParamRecord<'nat'>,
+ * }>,
  * {initialPoserInvitation: Payment}>
  */
 const start = async (zcf, privateArgs) => {
-  const {
-    main: { [MALLEABLE_NUMBER]: numberParam, ...otherOovernedTerms },
-  } = zcf.getTerms();
-  const { initialPoserInvitation } = privateArgs;
+  const { augmentPublicFacet, makeGovernorFacet, params } =
+    await handleParamGovernance(zcf, privateArgs.initialPoserInvitation, {
+      [MALLEABLE_NUMBER]: ParamTypes.NAT,
+    });
 
-  const paramManager = await makeParamManager(
-    {
-      [MALLEABLE_NUMBER]: ['nat', numberParam.value],
-      [CONTRACT_ELECTORATE]: ['invitation', initialPoserInvitation],
-    },
-    zcf.getZoeService(),
-  );
-
-  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
-    zcf,
-    paramManager,
-  );
-
-  assertElectorateMatches(paramManager, otherOovernedTerms);
-
+  let governanceAPICalled = 0;
+  const governanceApi = () => (governanceAPICalled += 1);
   return {
-    publicFacet: wrapPublicFacet({}),
-    creatorFacet: wrapCreatorFacet({}),
+    publicFacet: augmentPublicFacet({
+      getNum: () => params.getMalleableNumber(),
+      getApiCalled: () => governanceAPICalled,
+    }),
+    creatorFacet: makeGovernorFacet({}, { governanceApi }),
   };
 };
 
 harden(start);
 harden(MALLEABLE_NUMBER);
-harden(makeParamTerms);
+harden(makeTerms);
 
-export { start, MALLEABLE_NUMBER, makeParamTerms };
+export { start, MALLEABLE_NUMBER, makeTerms };

@@ -11,7 +11,7 @@ import {
   ChoiceMethod,
   ElectionType,
   QuorumRule,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
   makeParamChangePositions,
 } from '../../src/index.js';
 
@@ -35,7 +35,7 @@ const FAKE_CLOSING_RULE = {
 const FAKE_COUNTER_INSTANCE = makeHandle('Instance');
 
 test('binary question', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: ISSUE,
     positions: [FISH, BAIT],
@@ -63,7 +63,7 @@ test('binary question', async t => {
 });
 
 test('binary spoiled', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: ISSUE,
     positions: [FISH, BAIT],
@@ -94,7 +94,7 @@ test('binary spoiled', async t => {
 });
 
 test('binary tied', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: PARAM_CHANGE_ISSUE,
     positions: [positive, negative],
@@ -122,7 +122,7 @@ test('binary tied', async t => {
 });
 
 test('binary bad vote', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: PARAM_CHANGE_ISSUE,
     positions: [positive, negative],
@@ -145,7 +145,7 @@ test('binary bad vote', async t => {
 });
 
 test('binary no votes', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: PARAM_CHANGE_ISSUE,
     positions: [positive, negative],
@@ -167,7 +167,7 @@ test('binary no votes', async t => {
 });
 
 test('binary varying share weights', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: ISSUE,
     positions: [positive, negative],
@@ -198,7 +198,7 @@ test('binary varying share weights', async t => {
 });
 
 test('binary contested', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: ISSUE,
     positions: [positive, negative],
@@ -229,7 +229,7 @@ test('binary contested', async t => {
 });
 
 test('binary revote', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: PARAM_CHANGE_ISSUE,
     positions: [positive, negative],
@@ -261,7 +261,7 @@ test('binary revote', async t => {
 });
 
 test('binary question too many', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: ISSUE,
     positions: [FISH, BAIT],
@@ -290,7 +290,7 @@ test('binary question too many', async t => {
 });
 
 test('binary no quorum', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: ISSUE,
     positions: [FISH, BAIT],
@@ -318,7 +318,7 @@ test('binary no quorum', async t => {
 });
 
 test('binary too many positions', async t => {
-  const questionSpec = looksLikeQuestionSpec({
+  const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: ISSUE,
     positions: [FISH, BAIT, harden({ text: 'sleep' })],

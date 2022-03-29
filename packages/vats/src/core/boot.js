@@ -50,9 +50,10 @@ const roleToGovernanceActions = harden({
  *   bootstrapManifest?: Record<string, Record<string, unknown>>,
  *   governanceActions?: boolean,
  * }} vatParameters
- * @param {typeof console.log} [log]
  */
-const buildRootObject = (vatPowers, vatParameters, log = console.info) => {
+const buildRootObject = (vatPowers, vatParameters) => {
+  // @ts-expect-error no TS defs for rickety test scaffolding
+  const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, spaces } = makeAgoricNamesAccess(log);
   produce.agoricNames.resolve(agoricNames);

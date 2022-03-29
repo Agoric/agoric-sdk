@@ -1084,7 +1084,7 @@ test('terminated vat', async t => {
   let exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
   exports.sort();
   const doomedExport1Vref = exports[exports.length - 1];
-  t.is(doomedExport1Vref, 'o+1'); // arbitrary
+  t.is(doomedExport1Vref, 'o+9'); // arbitrary
   const doomedExport1Kref = vrefs[doomedExport1Vref];
   // this should also be deleted
   // console.log(`doomedExport1Kref`, doomedExport1Kref);
@@ -1107,7 +1107,7 @@ test('terminated vat', async t => {
   exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
   exports.sort();
   const doomedExport2Vref = exports[exports.length - 1];
-  t.is(doomedExport2Vref, 'o+2'); // arbitrary
+  t.is(doomedExport2Vref, 'o+9'); // arbitrary
   const doomedExport2Kref = vrefs[doomedExport2Vref];
   [refcounts, owners] = getRefCountsAndOwners();
   t.deepEqual(refcounts[doomedExport2Kref], [1, 1]); // from promise queue

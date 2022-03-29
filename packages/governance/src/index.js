@@ -6,9 +6,9 @@ export {
   ChoiceMethod,
   ElectionType,
   QuorumRule,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
   positionIncluded,
-  looksLikeIssueForType,
+  assertIssueForType,
   buildUnrankedQuestion,
 } from './question.js';
 
@@ -22,20 +22,20 @@ export { handleParamGovernance } from './contractHelper.js';
 export {
   assertBallotConcernsQuestion,
   makeParamChangePositions,
-  setupGovernance,
+  setupParamGovernance,
   validateParamChangeQuestion,
   CONTRACT_ELECTORATE,
-} from './paramGovernance/governParam.js';
+} from './contractGovernance/governParam.js';
 
 export {
   assertElectorateMatches,
   makeParamManagerBuilder,
-} from './paramGovernance/paramManager.js';
+} from './contractGovernance/paramManager.js';
 
 export {
   makeParamManager,
   makeParamManagerSync,
-} from './paramGovernance/typedParamManager.js';
+} from './contractGovernance/typedParamManager.js';
 
 export {
   assertContractGovernance,

@@ -1,6 +1,6 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-import { AssetKind } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { Nat } from '@agoric/nat';
 import { makeNameHubKit } from '../nameHub.js';
@@ -97,6 +97,45 @@ export const buildZoe = async ({
   ]);
 };
 harden(buildZoe);
+
+/**
+ * @param {BootstrapPowers & {
+ *   consume: { loadVat: ERef<VatLoader<PriceAuthorityVat>>},
+ * }} powers
+ *
+ * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
+ */
+export const startPriceAuthority = async ({
+  consume: { loadVat },
+  produce,
+}) => {
+  const vats = { priceAuthority: E(loadVat)('priceAuthority') };
+  const { priceAuthority, adminFacet } = await E(
+    vats.priceAuthority,
+  ).makePriceAuthorityRegistry();
+
+  produce.priceAuthorityVat.resolve(vats.priceAuthority);
+  produce.priceAuthority.resolve(priceAuthority);
+  produce.priceAuthorityAdmin.resolve(adminFacet);
+};
+harden(startPriceAuthority);
+
+/**
+ * Create inert brands (no mint or issuer) referred to by price oracles.
+ *
+ * @param {BootstrapPowers} powers
+ */
+export const makeOracleBrands = async ({
+  oracleBrand: { produce: oracleBrandProduce },
+}) => {
+  const { brand } = makeIssuerKit(
+    'USD',
+    AssetKind.NAT,
+    harden({ decimalPlaces: 6 }),
+  );
+  oracleBrandProduce.USD.resolve(brand);
+};
+harden(makeOracleBrands);
 
 /**
  * TODO: rename this to getBoard?
@@ -201,13 +240,13 @@ export const mintInitialSupply = async ({
   /** @type {Installation<import('../../../run-protocol/src/centralSupply.js').CentralSupplyContract>} */
   // @ts-expect-error bundle types are borked
   const installation = E(zoe).install(centralSupplyBundle);
-  const start = E(zoe).startInstance(
+  const { creatorFacet } = await E(zoe).startInstance(
     installation,
     {},
     { bootstrapPaymentValue },
     { feeMintAccess },
   );
-  const payment = await E(E.get(start).creatorFacet).getBootstrapPayment();
+  const payment = E(creatorFacet).getBootstrapPayment();
   // TODO: shut down the centralSupply contract, now that we have the payment?
   initialSupply.resolve(payment);
 };

@@ -222,10 +222,6 @@ const buildOwner = async (
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();
   const governedPublicFacet = E(zoe).getPublicFacet(governedInstance);
 
-  const {
-    issuers: { RUN: runIssuer },
-  } = await E(zoe).getTerms(governedInstance);
-
   await E(E(governorFacets.creatorFacet).getCreatorFacet()).addVaultType(
     moolaIssuer,
     'Moola',
@@ -235,8 +231,6 @@ const buildOwner = async (
   const QUOTE_INTERVAL = 24n * 60n * 60n;
   const moolaPriceAuthority = await E(priceAuthorityVat).makeFakePriceAuthority(
     harden({
-      issuerIn: moolaIssuer,
-      issuerOut: runIssuer,
       actualBrandIn: moolaBrand,
       actualBrandOut: runBrand,
       priceList: [100000n, 120000n, 110000n, 80000n],

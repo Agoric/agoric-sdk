@@ -61,6 +61,7 @@ function build(
   }
 
   let didStartVat = false;
+  let didStopVat = false;
 
   const outstandingProxies = new WeakSet();
 
@@ -293,9 +294,17 @@ function build(
   const disavowedPresences = new WeakSet();
   const disavowalError = harden(Error(`this Presence has been disavowed`));
 
+  // This tracks all promises that we decide (i.e. we are obligated to
+  // call syscall.resolve on them before the end of stopVat). We add
+  // their vpid when we export the promise (or receive it as the
+  // 'result' of a dispatch.deliver) and remove it when we make the
+  // syscall.resolve . We do not need to include the ancillary
+  // promises that resolutionCollector() creates: those are resolved
+  // immediately after export. However we remove those during
+  // resolution just in case they overlap with non-ancillary ones.
+  const deciderVPIDs = new Set(); // vpids
+
   const importedPromisesByPromiseID = new Map(); // vpid -> { resolve, reject }
-  let nextExportID = 1;
-  let nextPromiseID = 5;
 
   function makeImportedPresence(slot, iface = `Alleged: presence ${slot}`) {
     // Called by convertSlotToVal for type=object (an `o-NN` reference). We
@@ -438,6 +447,52 @@ function build(
     return Remotable(iface);
   }
 
+  // We start exportIDs with 1 because 'o+0' is always automatically
+  // pre-assigned to the root object.  The starting point for
+  // numbering promiseIDs is pretty arbitrary.  We start from 5 as a
+  // very minor aid to debugging: It helps, when puzzling over trace
+  // logs and the like, for the numbers in the various species of IDs
+  // to be a little out of sync and thus a little less similar to each
+  // other when jumbled together.
+
+  const initialIDCounters = { exportID: 1, collectionID: 1, promiseID: 5 };
+  let idCounters;
+  let idCountersAreDirty = false;
+
+  function initializeIDCounters() {
+    if (!idCounters) {
+      // the saved value might be missing, or from an older liveslots
+      // (with fewer counters), so merge it with our initial values
+      const saved = JSON.parse(syscall.vatstoreGet('idCounters') || '{}');
+      idCounters = { ...initialIDCounters, ...saved };
+      idCountersAreDirty = true;
+    }
+  }
+
+  function allocateNextID(name) {
+    if (!idCounters) {
+      // Normally `initializeIDCounters` would be called from startVat, but some
+      // tests bypass that so this is a backstop.  Note that the invocation from
+      // startVat is there to make vatStore access patterns a bit more
+      // consistent from one vat to another, principally as a confusion
+      // reduction measure in service of debugging; it is not a correctness
+      // issue.
+      initializeIDCounters();
+    }
+    const result = idCounters[name];
+    assert(result !== undefined, `unknown idCounters[${name}]`);
+    idCounters[name] += 1;
+    idCountersAreDirty = true;
+    return result;
+  }
+
+  function flushIDCounters() {
+    if (idCountersAreDirty) {
+      syscall.vatstoreSet('idCounters', JSON.stringify(idCounters));
+      idCountersAreDirty = false;
+    }
+  }
+
   // TODO: fix awkward non-orthogonality: allocateExportID() returns a number,
   // allocatePromiseID() returns a slot, exportPromise() uses the slot from
   // allocatePromiseID(), exportPassByPresence() generates a slot itself using
@@ -446,14 +501,15 @@ function build(
   // use a slot from the corresponding allocateX
 
   function allocateExportID() {
-    const exportID = nextExportID;
-    nextExportID += 1;
-    return exportID;
+    return allocateNextID('exportID');
+  }
+
+  function allocateCollectionID() {
+    return allocateNextID('collectionID');
   }
 
   function allocatePromiseID() {
-    const promiseID = nextPromiseID;
-    nextPromiseID += 1;
+    const promiseID = allocateNextID('promiseID');
     return makeVatSlot('promise', true, promiseID);
   }
 
@@ -539,6 +595,7 @@ function build(
     syscall,
     vrm,
     allocateExportID,
+    allocateCollectionID,
     // eslint-disable-next-line no-use-before-define
     convertValToSlot,
     unmeteredConvertSlotToVal,
@@ -567,6 +624,7 @@ function build(
       if (isPromise(val)) {
         slot = exportPromise(val);
         pendingPromises.add(val); // keep it alive until resolved
+        deciderVPIDs.add(slot);
       } else {
         if (disavowedPresences.has(val)) {
           // eslint-disable-next-line no-use-before-define
@@ -773,6 +831,7 @@ function build(
     const resolutions = resolutionCollector().forSlots(serArgs.slots);
     if (resolutions.length > 0) {
       syscall.resolve(resolutions);
+      resolutions.map(([vpid]) => deciderVPIDs.delete(vpid));
     }
 
     // ideally we'd wait until .then is called on p before subscribing, but
@@ -846,6 +905,7 @@ function build(
 
   function deliver(target, method, argsdata, result) {
     assert(didStartVat);
+    assert(!didStopVat);
     insistCapData(argsdata);
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${method} -> ${result}`,
@@ -895,6 +955,7 @@ function build(
     let notifyFailure = () => undefined;
     if (result) {
       insistVatType('promise', result);
+      deciderVPIDs.add(result);
       // eslint-disable-next-line no-use-before-define
       notifySuccess = thenResolve(res, result);
       // eslint-disable-next-line no-use-before-define
@@ -928,6 +989,7 @@ function build(
       );
 
       syscall.resolve(resolutions);
+      resolutions.map(([vpid]) => deciderVPIDs.delete(vpid));
 
       const pRec = importedPromisesByPromiseID.get(promiseID);
       if (pRec) {
@@ -955,23 +1017,23 @@ function build(
       `ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`,
     );
     insistVatType('promise', promiseID);
-    // TODO: insist that we do not have decider authority for promiseID
-    assert(
-      importedPromisesByPromiseID.has(promiseID),
-      X`unknown promiseID '${promiseID}'`,
-    );
     const pRec = importedPromisesByPromiseID.get(promiseID);
-    meterControl.assertNotMetered();
-    const val = m.unserialize(data);
-    if (rejected) {
-      pRec.reject(val);
-    } else {
-      pRec.resolve(val);
+    if (pRec) {
+      // TODO: insist that we do not have decider authority for promiseID
+      meterControl.assertNotMetered();
+      const val = m.unserialize(data);
+      if (rejected) {
+        pRec.reject(val);
+      } else {
+        pRec.resolve(val);
+      }
     }
+    // else ignore: our predecessor version might have subscribed
   }
 
   function notify(resolutions) {
     assert(didStartVat);
+    assert(!didStopVat);
     beginCollectingPromiseImports();
     for (const resolution of resolutions) {
       const [vpid, rejected, data] = resolution;
@@ -1097,10 +1159,12 @@ function build(
     assert(key.match(/^[-\w.+/]+$/), X`invalid vatstore key`);
   }
 
+  let baggage;
   async function startVat(vatParametersCapData) {
     insistCapData(vatParametersCapData);
     assert(!didStartVat);
     didStartVat = true;
+    assert(!didStopVat);
 
     // Build the `vatPowers` provided to `buildRootObject`. We include
     // vatGlobals and inescapableGlobalProperties to make it easier to write
@@ -1163,7 +1227,11 @@ function build(
       });
     }
 
+    initializeIDCounters();
+    collectionManager.initializeStoreKindInfo();
+
     const vatParameters = m.unserialize(vatParametersCapData);
+    baggage = collectionManager.provideBaggage();
 
     // Below this point, user-provided code might crash or overrun a meter, so
     // any prior-to-user-code setup that can be done without reference to the
@@ -1183,7 +1251,11 @@ function build(
     );
 
     // here we finally invoke the vat code, and get back the root object
-    const rootObject = buildRootObject(harden(vpow), harden(vatParameters));
+    const rootObject = buildRootObject(
+      harden(vpow),
+      harden(vatParameters),
+      baggage,
+    );
     assert.equal(
       passStyleOf(rootObject),
       'remotable',
@@ -1199,6 +1271,32 @@ function build(
     slotToVal.set(rootSlot, new WeakRef(rootObject));
     retainExportedVref(rootSlot);
     // we do not use vreffedObjectRegistry for root objects
+  }
+
+  /**
+   * @returns { Promise<void> }
+   */
+  async function stopVat() {
+    assert(didStartVat);
+    assert(!didStopVat);
+    didStopVat = true;
+
+    // Pretend that userspace rejected all non-durable promises. We
+    // basically do the same thing that `thenReject(p,
+    // vpid)(rejection)` would have done, but we skip ahead to the
+    // syscall.resolve part. The real `thenReject` also does
+    // pRec.reject(), which would give control to userspace (who might
+    // have re-imported the promise and attached a .then to it), and
+    // stopVat() must not allow userspace to gain agency.
+
+    const rejectCapData = m.serialize('vat upgraded');
+    const vpids = Array.from(deciderVPIDs.keys()).sort();
+    const rejections = vpids.map(vpid => [vpid, true, rejectCapData]);
+    if (rejections.length) {
+      syscall.resolve(rejections);
+    }
+    // eslint-disable-next-line no-use-before-define
+    await bringOutYourDead();
   }
 
   /**
@@ -1240,6 +1338,10 @@ function build(
         result = startVat(vpCapData);
         break;
       }
+      case 'stopVat': {
+        result = stopVat();
+        break;
+      }
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }
@@ -1258,6 +1360,14 @@ function build(
       return bringOutYourDead();
     }
     return undefined;
+  }
+
+  /**
+   * Do things that should be done (such as flushing caches to disk) after a
+   * dispatch has completed and user code has relinquished agency.
+   */
+  function afterDispatchActions() {
+    flushIDCounters();
   }
 
   /**
@@ -1309,11 +1419,14 @@ function build(
       // any promise it returns to fire.
       const p = Promise.resolve(delivery).then(unmeteredDispatch);
 
-      // Instead, we wait for userspace to become idle by draining the
-      // promise queue. We return 'p' so that any bugs in liveslots that
+      // Instead, we wait for userspace to become idle by draining the promise
+      // queue. We clean up and then return 'p' so any bugs in liveslots that
       // cause an error during unmeteredDispatch will be reported to the
       // supervisor (but only after userspace is idle).
-      return gcTools.waitUntilQuiescent().then(() => p);
+      return gcTools.waitUntilQuiescent().then(() => {
+        afterDispatchActions();
+        return p;
+      });
     }
   }
   harden(dispatch);

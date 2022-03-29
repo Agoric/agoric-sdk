@@ -6,16 +6,19 @@ export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
     makeScalarBigWeakMapStore,
     makeScalarBigSetStore,
     makeScalarBigWeakSetStore,
+    initializeStoreKindInfo,
   } = makeCollectionManager(
     fakeStuff.syscall,
     vrm,
     fakeStuff.allocateExportID,
+    fakeStuff.allocateCollectionID,
     fakeStuff.convertValToSlot,
     fakeStuff.convertSlotToVal,
     fakeStuff.registerEntry,
     fakeStuff.marshal.serialize,
     fakeStuff.marshal.unserialize,
   );
+  initializeStoreKindInfo();
 
   const normalCM = {
     makeScalarBigMapStore,

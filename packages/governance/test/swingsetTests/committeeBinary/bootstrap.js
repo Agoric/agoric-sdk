@@ -8,7 +8,7 @@ import {
   ChoiceMethod,
   QuorumRule,
   ElectionType,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
 } from '../../../src/index.js';
 
 const { quote: q } = assert;
@@ -27,7 +27,7 @@ const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {
     deadline: closingTime,
   };
 
-  const questionSpec = looksLikeQuestionSpec(
+  const questionSpec = coerceQuestionSpec(
     harden({
       method: ChoiceMethod.UNRANKED,
       issue,

@@ -1,5 +1,21 @@
 // @ts-check
+
 const SHARED_BOOTSTRAP_MANIFEST = harden({
+  makeOracleBrands: {
+    oracleBrand: {
+      produce: {
+        USD: true,
+      },
+    },
+  },
+  startPriceAuthority: {
+    consume: { loadVat: true },
+    produce: {
+      priceAuthorityVat: 'priceAuthority',
+      priceAuthority: 'priceAuthority',
+      priceAuthorityAdmin: 'priceAuthority',
+    },
+  },
   makeVatsFromBundles: {
     vats: {
       vatAdmin: 'vatAdmin',
@@ -43,7 +59,6 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       client: true,
     },
     produce: {
-      agoricNames: true,
       namesByAddress: true,
       namesByAddressAdmin: true,
     },
@@ -245,6 +260,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       ammBundle: true,
       vaultBundles: true,
       governanceBundles: true,
+      reserveBundle: true,
     },
   },
   startEconomicCommittee: {
@@ -286,14 +302,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
     },
   },
-  startPriceAuthority: {
-    consume: { loadVat: true },
-    produce: {
-      priceAuthorityVat: 'priceAuthority',
-      priceAuthority: 'priceAuthority',
-      priceAuthorityAdmin: 'priceAuthority',
-    },
-  },
   startVaultFactory: {
     consume: {
       feeMintAccess: 'zoe',
@@ -309,6 +317,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       vaultFactoryVoteCreator: 'VaultFactory',
     },
     brand: { consume: { RUN: 'zoe' } },
+    oracleBrand: { consume: { USD: true } },
     installation: {
       consume: { contractGovernor: 'zoe' },
       produce: { VaultFactory: 'zoe', liquidate: 'zoe' },
@@ -332,6 +341,36 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       vaultFactoryCreator: 'VaultFactory',
     },
   },
+
+  setupReserve: {
+    consume: {
+      feeMintAccess: 'zoe',
+      vaultBundles: true,
+      chainTimerService: 'timer',
+      zoe: 'zoe',
+      economicCommitteeCreatorFacet: 'economicCommittee',
+      reserveBundle: true,
+    },
+    issuer: { consume: { RUN: 'zoe' } },
+    produce: {
+      reserveCreatorFacet: 'reserve',
+      reserveGovernorCreatorFacet: 'reserve',
+      reservePublicFacet: 'reserve',
+    },
+    brand: { consume: { RUN: 'zoe' } },
+    installation: {
+      consume: { contractGovernor: 'zoe' },
+      produce: { reserve: 'zoe' },
+    },
+    instance: {
+      consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
+      produce: {
+        reserve: 'reserve',
+        reserveGovernor: 'ReserveGovernor',
+      },
+    },
+  },
+
   configureVaultFactoryUI: {
     consume: {
       board: true,

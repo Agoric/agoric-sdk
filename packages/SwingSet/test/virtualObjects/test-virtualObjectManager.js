@@ -115,6 +115,7 @@ test('multifaceted virtual objects', t => {
       };
     },
   );
+  const kid = 'o+1';
   const { incr, decr } = makeMultiThing('foo');
   t.is(incr.getName(), 'foo');
   t.is(incr.getCount(), 0);
@@ -127,17 +128,17 @@ test('multifaceted virtual objects', t => {
   decr.dec();
   t.is(decr.getCount(), 1);
   const other = makeMultiThing('other');
-  t.is(log.shift(), `set vom.o+1/1 ${multiThingVal('foo', 1)}`);
+  t.is(log.shift(), `set vom.${kid}/1 ${multiThingVal('foo', 1)}`);
   t.deepEqual(log, []);
   incr.inc();
-  t.is(log.shift(), `set vom.o+1/2 ${multiThingVal('other', 0)}`);
-  t.is(log.shift(), `get vom.o+1/1 => ${multiThingVal('foo', 1)}`);
+  t.is(log.shift(), `set vom.${kid}/2 ${multiThingVal('other', 0)}`);
+  t.is(log.shift(), `get vom.${kid}/1 => ${multiThingVal('foo', 1)}`);
   other.decr.dec();
-  t.is(log.shift(), `set vom.o+1/1 ${multiThingVal('foo', 2)}`);
-  t.is(log.shift(), `get vom.o+1/2 => ${multiThingVal('other', 0)}`);
+  t.is(log.shift(), `set vom.${kid}/1 ${multiThingVal('foo', 2)}`);
+  t.is(log.shift(), `get vom.${kid}/2 => ${multiThingVal('other', 0)}`);
   incr.inc();
-  t.is(log.shift(), `set vom.o+1/2 ${multiThingVal('other', -1)}`);
-  t.is(log.shift(), `get vom.o+1/1 => ${multiThingVal('foo', 2)}`);
+  t.is(log.shift(), `set vom.${kid}/2 ${multiThingVal('other', -1)}`);
+  t.is(log.shift(), `get vom.${kid}/1 => ${multiThingVal('foo', 2)}`);
   t.deepEqual(log, []);
 });
 
@@ -147,7 +148,9 @@ test('virtual object operations', t => {
   const { defineKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
   const makeThing = defineKind('thing', initThing, actualizeThing);
+  const tid = 'o+1';
   const makeZot = defineKind('zot', initZot, actualizeZot);
+  const zid = 'o+2';
 
   // phase 0: start
   t.deepEqual(dumpStore(), []);
@@ -165,41 +168,41 @@ test('virtual object operations', t => {
 
   const zot1 = makeZot(23, 'Alice', 'is this on?'); // [z1-0 t4-0 t3-0 t2-0] evict t1-0
   // z1-0: 23 'Alice' 'is this on?' 0
-  t.is(log.shift(), `set vom.o+1/1 ${thingVal(0, 'thing-1', 0)}`); // evict t1-0
+  t.is(log.shift(), `set vom.${tid}/1 ${thingVal(0, 'thing-1', 0)}`); // evict t1-0
   t.deepEqual(log, []);
 
   const zot2 = makeZot(29, 'Bob', 'what are you saying?'); // [z2-0 z1-0 t4-0 t3-0] evict t2-0
   // z2-0: 29 'Bob' 'what are you saying?' 0
-  t.is(log.shift(), `set vom.o+1/2 ${thingVal(100, 'thing-2', 0)}`); // evict t2-0
+  t.is(log.shift(), `set vom.${tid}/2 ${thingVal(100, 'thing-2', 0)}`); // evict t2-0
   t.deepEqual(log, []);
 
   const zot3 = makeZot(47, 'Carol', 'as if...'); // [z3-0 z2-0 z1-0 t4-0] evict t3-0
   // z3-0: 47 'Carol' 'as if...' 0
-  t.is(log.shift(), `set vom.o+1/3 ${thingVal(200, 'thing-3', 0)}`); // evict t3-0
+  t.is(log.shift(), `set vom.${tid}/3 ${thingVal(200, 'thing-3', 0)}`); // evict t3-0
   t.deepEqual(log, []);
 
   const zot4 = makeZot(66, 'Dave', 'you and what army?'); // [z4-0 z3-0 z2-0 z1-0] evict t4-0
   // z4-0: 66 'Dave' 'you and what army?' 0
-  t.is(log.shift(), `set vom.o+1/4 ${thingVal(300, 'thing-4', 0)}`); // evict t4-0
+  t.is(log.shift(), `set vom.${tid}/4 ${thingVal(300, 'thing-4', 0)}`); // evict t4-0
   t.deepEqual(log, []);
 
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/1', thingVal(0, 'thing-1', 0)], // =t1-0
-    ['vom.o+1/2', thingVal(100, 'thing-2', 0)], // =t2-0
-    ['vom.o+1/3', thingVal(200, 'thing-3', 0)], // =t3-0
-    ['vom.o+1/4', thingVal(300, 'thing-4', 0)], // =t4-0
+    [`vom.${tid}/1`, thingVal(0, 'thing-1', 0)], // =t1-0
+    [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
+    [`vom.${tid}/3`, thingVal(200, 'thing-3', 0)], // =t3-0
+    [`vom.${tid}/4`, thingVal(300, 'thing-4', 0)], // =t4-0
   ]);
 
   // phase 2: first batch-o-stuff
   t.is(thing1.inc(), 1); // [t1-1 z4-0 z3-0 z2-0] evict z1-0
-  t.is(log.shift(), `set vom.o+2/1 ${zotVal(23, 'Alice', 'is this on?', 0)}`); // evict z1-0
-  t.is(log.shift(), `get vom.o+1/1 => ${thingVal(0, 'thing-1', 0)}`); // load t1-0
+  t.is(log.shift(), `set vom.${zid}/1 ${zotVal(23, 'Alice', 'is this on?', 0)}`); // evict z1-0
+  t.is(log.shift(), `get vom.${tid}/1 => ${thingVal(0, 'thing-1', 0)}`); // load t1-0
   t.deepEqual(log, []);
 
   // t1-1: 'thing-1' 1 0
   t.is(zot1.sayHello('hello'), 'hello Alice'); // [z1-1 t1-1 z4-0 z3-0] evict z2-0
-  t.is(log.shift(), `set vom.o+2/2 ${zotVal(29, 'Bob', 'what are you saying?', 0)}`); // evict z2-0
-  t.is(log.shift(), `get vom.o+2/1 => ${zotVal(23, 'Alice', 'is this on?', 0)}`); // load z1-0
+  t.is(log.shift(), `set vom.${zid}/2 ${zotVal(29, 'Bob', 'what are you saying?', 0)}`); // evict z2-0
+  t.is(log.shift(), `get vom.${zid}/1 => ${zotVal(23, 'Alice', 'is this on?', 0)}`); // load z1-0
   t.deepEqual(log, []);
 
   // z1-1: 23 'Alice' 'is this on?' 1
@@ -208,8 +211,8 @@ test('virtual object operations', t => {
 
   // t1-2: 'thing-1' 2 0
   t.is(zot2.sayHello('hi'), 'hi Bob'); // [z2-1 t1-2 z1-1 z4-0] evict z3-0
-  t.is(log.shift(), `set vom.o+2/3 ${zotVal(47, 'Carol', 'as if...', 0)}`); // evict z3-0
-  t.is(log.shift(), `get vom.o+2/2 => ${zotVal(29, 'Bob', 'what are you saying?', 0)}`); // load z2-0
+  t.is(log.shift(), `set vom.${zid}/3 ${zotVal(47, 'Carol', 'as if...', 0)}`); // evict z3-0
+  t.is(log.shift(), `get vom.${zid}/2 => ${zotVal(29, 'Bob', 'what are you saying?', 0)}`); // load z2-0
   t.deepEqual(log, []);
 
   // z2-1: 29 'Bob' 'what are you saying?' 1
@@ -218,20 +221,20 @@ test('virtual object operations', t => {
 
   // t1-3: 'thing-1' 3 0
   t.is(zot3.sayHello('aloha'), 'aloha Carol'); // [z3-1 t1-3 z2-1 z1-1] evict z4-0
-  t.is(log.shift(), `set vom.o+2/4 ${zotVal(66, 'Dave', 'you and what army?', 0)}`); // evict z4-0
-  t.is(log.shift(), `get vom.o+2/3 => ${zotVal(47, 'Carol', 'as if...', 0)}`); // load z3-0
+  t.is(log.shift(), `set vom.${zid}/4 ${zotVal(66, 'Dave', 'you and what army?', 0)}`); // evict z4-0
+  t.is(log.shift(), `get vom.${zid}/3 => ${zotVal(47, 'Carol', 'as if...', 0)}`); // load z3-0
   t.deepEqual(log, []);
 
   // z3-1: 47 'Carol' 'as if...' 1
   t.is(zot4.sayHello('bonjour'), 'bonjour Dave'); // [z4-1 z3-1 t1-3 z2-1] evict z1-1
-  t.is(log.shift(), `set vom.o+2/1 ${zotVal(23, 'Alice', 'is this on?', 1)}`); // evict z1-1
-  t.is(log.shift(), `get vom.o+2/4 => ${zotVal(66, 'Dave', 'you and what army?', 0)}`); // load z4-0
+  t.is(log.shift(), `set vom.${zid}/1 ${zotVal(23, 'Alice', 'is this on?', 1)}`); // evict z1-1
+  t.is(log.shift(), `get vom.${zid}/4 => ${zotVal(66, 'Dave', 'you and what army?', 0)}`); // load z4-0
   t.deepEqual(log, []);
 
   // z4-1: 66 'Dave' 'you and what army?' 1
   t.is(zot1.sayHello('hello again'), 'hello again Alice'); // [z1-2 z4-1 z3-1 t1-3] evict z2-1
-  t.is(log.shift(), `set vom.o+2/2 ${zotVal(29, 'Bob', 'what are you saying?', 1)}`); // evict z2-1
-  t.is(log.shift(), `get vom.o+2/1 => ${zotVal(23, 'Alice', 'is this on?', 1)}`); // get z1-1
+  t.is(log.shift(), `set vom.${zid}/2 ${zotVal(29, 'Bob', 'what are you saying?', 1)}`); // evict z2-1
+  t.is(log.shift(), `get vom.${zid}/1 => ${zotVal(23, 'Alice', 'is this on?', 1)}`); // get z1-1
   t.deepEqual(log, []);
 
   // z1-2: 23 'Alice' 'is this on?' 2
@@ -239,25 +242,25 @@ test('virtual object operations', t => {
     thing2.describe(), // [t2-0 z1-2 z4-1 z3-1] evict t1-3
     'thing-2 counter has been reset 0 times and is now 100',
   );
-  t.is(log.shift(), `set vom.o+1/1 ${thingVal(3, 'thing-1', 0)}`); // evict t1-3
-  t.is(log.shift(), `get vom.o+1/2 => ${thingVal(100, 'thing-2', 0)}`); // load t2-0
+  t.is(log.shift(), `set vom.${tid}/1 ${thingVal(3, 'thing-1', 0)}`); // evict t1-3
+  t.is(log.shift(), `get vom.${tid}/2 => ${thingVal(100, 'thing-2', 0)}`); // load t2-0
   t.deepEqual(log, []);
 
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/1', thingVal(3, 'thing-1', 0)], // =t1-3
-    ['vom.o+1/2', thingVal(100, 'thing-2', 0)], // =t2-0
-    ['vom.o+1/3', thingVal(200, 'thing-3', 0)], // =t3-0
-    ['vom.o+1/4', thingVal(300, 'thing-4', 0)], // =t4-0
-    ['vom.o+2/1', zotVal(23, 'Alice', 'is this on?', 1)], // =z1-1
-    ['vom.o+2/2', zotVal(29, 'Bob', 'what are you saying?', 1)], // =z2-1
-    ['vom.o+2/3', zotVal(47, 'Carol', 'as if...', 0)], // =z3-0
-    ['vom.o+2/4', zotVal(66, 'Dave', 'you and what army?', 0)], // =z4-0
+    [`vom.${tid}/1`, thingVal(3, 'thing-1', 0)], // =t1-3
+    [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
+    [`vom.${tid}/3`, thingVal(200, 'thing-3', 0)], // =t3-0
+    [`vom.${tid}/4`, thingVal(300, 'thing-4', 0)], // =t4-0
+    [`vom.${zid}/1`, zotVal(23, 'Alice', 'is this on?', 1)], // =z1-1
+    [`vom.${zid}/2`, zotVal(29, 'Bob', 'what are you saying?', 1)], // =z2-1
+    [`vom.${zid}/3`, zotVal(47, 'Carol', 'as if...', 0)], // =z3-0
+    [`vom.${zid}/4`, zotVal(66, 'Dave', 'you and what army?', 0)], // =z4-0
   ]);
 
   // phase 3: second batch-o-stuff
   t.is(thing1.get(), 3); // [t1-3 t2-0 z1-2 z4-1] evict z3-1
-  t.is(log.shift(), `set vom.o+2/3 ${zotVal(47, 'Carol', 'as if...', 1)}`); // evict z3-1
-  t.is(log.shift(), `get vom.o+1/1 => ${thingVal(3, 'thing-1', 0)}`); // load t1-3
+  t.is(log.shift(), `set vom.${zid}/3 ${zotVal(47, 'Carol', 'as if...', 1)}`); // evict z3-1
+  t.is(log.shift(), `get vom.${tid}/1 => ${thingVal(3, 'thing-1', 0)}`); // load t1-3
   t.deepEqual(log, []);
 
   t.is(thing1.inc(), 4); // [t1-4 t2-0 z1-2 z4-1]
@@ -265,26 +268,26 @@ test('virtual object operations', t => {
 
   // t1-4: 'thing-1' 4 0
   t.is(thing4.reset(1000), 1); // [t4-1 t1-4 t2-0 z1-2] evict z4-1
-  t.is(log.shift(), `set vom.o+2/4 ${zotVal(66, 'Dave', 'you and what army?', 1)}`); // evict z4-1
-  t.is(log.shift(), `get vom.o+1/4 => ${thingVal(300, 'thing-4', 0)}`); // load t4-0
+  t.is(log.shift(), `set vom.${zid}/4 ${zotVal(66, 'Dave', 'you and what army?', 1)}`); // evict z4-1
+  t.is(log.shift(), `get vom.${tid}/4 => ${thingVal(300, 'thing-4', 0)}`); // load t4-0
   t.deepEqual(log, []);
 
   // t4-1: 'thing-4' 1000 1
   t.is(zot3.rename('Chester'), 'Chester'); // [z3-2 t4-1 t1-4 t2-0] evict z1-2
-  t.is(log.shift(), `set vom.o+2/1 ${zotVal(23, 'Alice', 'is this on?', 2)}`); // evict z1-2
-  t.is(log.shift(), `get vom.o+2/3 => ${zotVal(47, 'Carol', 'as if...', 1)}`); // load z3-1
+  t.is(log.shift(), `set vom.${zid}/1 ${zotVal(23, 'Alice', 'is this on?', 2)}`); // evict z1-2
+  t.is(log.shift(), `get vom.${zid}/3 => ${zotVal(47, 'Carol', 'as if...', 1)}`); // load z3-1
   t.deepEqual(log, []);
 
   // z3-2: 47 'Chester' 'as if...' 2
   t.is(zot1.getInfo(), 'zot Alice tag=is this on? count=3 arbitrary=23'); // [z1-3 z3-2 t4-1 t1-4] evict t2-0
   // evict t2-0 does nothing because t2 is not dirty
-  t.is(log.shift(), `get vom.o+2/1 => ${zotVal(23, 'Alice', 'is this on?', 2)}`); // load z1-2
+  t.is(log.shift(), `get vom.${zid}/1 => ${zotVal(23, 'Alice', 'is this on?', 2)}`); // load z1-2
   t.deepEqual(log, []);
 
   // z1-3: 23 'Alice' 'is this on?' 3
   t.is(zot2.getInfo(), 'zot Bob tag=what are you saying? count=2 arbitrary=29'); // [z2-2 z1-3 z3-2 t4-1] evict t1-4
-  t.is(log.shift(), `set vom.o+1/1 ${thingVal(4, 'thing-1', 0)}`); // evict t1-4
-  t.is(log.shift(), `get vom.o+2/2 => ${zotVal(29, 'Bob', 'what are you saying?', 1)}`); // load z2-1
+  t.is(log.shift(), `set vom.${tid}/1 ${thingVal(4, 'thing-1', 0)}`); // evict t1-4
+  t.is(log.shift(), `get vom.${zid}/2 => ${zotVal(29, 'Bob', 'what are you saying?', 1)}`); // load z2-1
   t.deepEqual(log, []);
 
   // z2-2: 29 'Bob' 'what are you saying?' 1
@@ -292,8 +295,8 @@ test('virtual object operations', t => {
     thing2.describe(), // [t2-0 z2-2 z1-3 z3-2] evict t4-1
     'thing-2 counter has been reset 0 times and is now 100',
   );
-  t.is(log.shift(), `set vom.o+1/4 ${thingVal(1000, 'thing-4', 1)}`); // evict t4-1
-  t.is(log.shift(), `get vom.o+1/2 => ${thingVal(100, 'thing-2', 0)}`); // load t2-0
+  t.is(log.shift(), `set vom.${tid}/4 ${thingVal(1000, 'thing-4', 1)}`); // evict t4-1
+  t.is(log.shift(), `get vom.${tid}/2 => ${thingVal(100, 'thing-2', 0)}`); // load t2-0
   t.deepEqual(log, []);
 
   t.is(zot3.getInfo(), 'zot Chester tag=as if... count=3 arbitrary=47'); // [z3-3 t2-0 z2-2 z1-3]
@@ -301,14 +304,14 @@ test('virtual object operations', t => {
 
   // z3-3: 47 'Chester' 'as if...' 3
   t.is(zot4.getInfo(), 'zot Dave tag=you and what army? count=2 arbitrary=66'); // [z4-1 z3-3 t2-0 z2-2] evict z1-3
-  t.is(log.shift(), `set vom.o+2/1 ${zotVal(23, 'Alice', 'is this on?', 3)}`); // evict z1-3
-  t.is(log.shift(), `get vom.o+2/4 => ${zotVal(66, 'Dave', 'you and what army?', 1)}`); // load z4-1
+  t.is(log.shift(), `set vom.${zid}/1 ${zotVal(23, 'Alice', 'is this on?', 3)}`); // evict z1-3
+  t.is(log.shift(), `get vom.${zid}/4 => ${zotVal(66, 'Dave', 'you and what army?', 1)}`); // load z4-1
   t.deepEqual(log, []);
 
   // z4-2: 66 'Dave' 'you and what army?' 2
   t.is(thing3.inc(), 201); // [t3-1 z4-2 z3-3 t2-0] evict z2-2
-  t.is(log.shift(), `set vom.o+2/2 ${zotVal(29, 'Bob', 'what are you saying?', 2)}`); // evict z2-2
-  t.is(log.shift(), `get vom.o+1/3 => ${thingVal(200, 'thing-3', 0)}`); // load t3-0
+  t.is(log.shift(), `set vom.${zid}/2 ${zotVal(29, 'Bob', 'what are you saying?', 2)}`); // evict z2-2
+  t.is(log.shift(), `get vom.${tid}/3 => ${thingVal(200, 'thing-3', 0)}`); // load t3-0
   t.deepEqual(log, []);
 
   // t3-1: 'thing-3' 201 0
@@ -317,43 +320,43 @@ test('virtual object operations', t => {
     'thing-4 counter has been reset 1 times and is now 1000',
   );
   // evict t2-0 does nothing because t2 is not dirty
-  t.is(log.shift(), `get vom.o+1/4 => ${thingVal(1000, 'thing-4', 1)}`); // load t4-1
+  t.is(log.shift(), `get vom.${tid}/4 => ${thingVal(1000, 'thing-4', 1)}`); // load t4-1
   t.deepEqual(log, []);
 
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/1', thingVal(4, 'thing-1', 0)], // =t1-4
-    ['vom.o+1/2', thingVal(100, 'thing-2', 0)], // =t2-0
-    ['vom.o+1/3', thingVal(200, 'thing-3', 0)], // =t3-0
-    ['vom.o+1/4', thingVal(1000, 'thing-4', 1)], // =t4-1
-    ['vom.o+2/1', zotVal(23, 'Alice', 'is this on?', 3)], // =z1-3
-    ['vom.o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
-    ['vom.o+2/3', zotVal(47, 'Carol', 'as if...', 1)], // =z3-1
-    ['vom.o+2/4', zotVal(66, 'Dave', 'you and what army?', 1)], // =z4-1
+    [`vom.${tid}/1`, thingVal(4, 'thing-1', 0)], // =t1-4
+    [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
+    [`vom.${tid}/3`, thingVal(200, 'thing-3', 0)], // =t3-0
+    [`vom.${tid}/4`, thingVal(1000, 'thing-4', 1)], // =t4-1
+    [`vom.${zid}/1`, zotVal(23, 'Alice', 'is this on?', 3)], // =z1-3
+    [`vom.${zid}/2`, zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
+    [`vom.${zid}/3`, zotVal(47, 'Carol', 'as if...', 1)], // =z3-1
+    [`vom.${zid}/4`, zotVal(66, 'Dave', 'you and what army?', 1)], // =z4-1
   ]);
 
   // phase 4: flush test
   t.is(thing1.inc(), 5); // [t1-5 t4-1 t3-1 z4-2] evict z3-3
-  t.is(log.shift(), `set vom.o+2/3 ${zotVal(47, 'Chester', 'as if...', 3)}`); // evict z3-3
-  t.is(log.shift(), `get vom.o+1/1 => ${thingVal(4, 'thing-1', 0)}`); // load t1-4
+  t.is(log.shift(), `set vom.${zid}/3 ${zotVal(47, 'Chester', 'as if...', 3)}`); // evict z3-3
+  t.is(log.shift(), `get vom.${tid}/1 => ${thingVal(4, 'thing-1', 0)}`); // load t1-4
   t.deepEqual(log, []);
 
   // t1-5: 'thing-1' 5 0
   flushCache(); // [] evict z4-2 t3-1 t4-1 t1-5
-  t.is(log.shift(), `set vom.o+2/4 ${zotVal(66, 'Dave', 'you and what army?', 2)}`); // evict z4-2
-  t.is(log.shift(), `set vom.o+1/3 ${thingVal(201, 'thing-3', 0)}`); // evict t3-1
+  t.is(log.shift(), `set vom.${zid}/4 ${zotVal(66, 'Dave', 'you and what army?', 2)}`); // evict z4-2
+  t.is(log.shift(), `set vom.${tid}/3 ${thingVal(201, 'thing-3', 0)}`); // evict t3-1
   // evict t4-1 does nothing because t4 is not dirty
-  t.is(log.shift(), `set vom.o+1/1 ${thingVal(5, 'thing-1', 0)}`); // evict t1-5
+  t.is(log.shift(), `set vom.${tid}/1 ${thingVal(5, 'thing-1', 0)}`); // evict t1-5
   t.deepEqual(log, []);
 
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/1', thingVal(5, 'thing-1', 0)], // =t1-5
-    ['vom.o+1/2', thingVal(100, 'thing-2', 0)], // =t2-0
-    ['vom.o+1/3', thingVal(201, 'thing-3', 0)], // =t3-1
-    ['vom.o+1/4', thingVal(1000, 'thing-4', 1)], // =t4-1
-    ['vom.o+2/1', zotVal(23, 'Alice', 'is this on?', 3)], // =z1-3
-    ['vom.o+2/2', zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
-    ['vom.o+2/3', zotVal(47, 'Chester', 'as if...', 3)], // =z3-3
-    ['vom.o+2/4', zotVal(66, 'Dave', 'you and what army?', 2)], // =z4-2
+    [`vom.${tid}/1`, thingVal(5, 'thing-1', 0)], // =t1-5
+    [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
+    [`vom.${tid}/3`, thingVal(201, 'thing-3', 0)], // =t3-1
+    [`vom.${tid}/4`, thingVal(1000, 'thing-4', 1)], // =t4-1
+    [`vom.${zid}/1`, zotVal(23, 'Alice', 'is this on?', 3)], // =z1-3
+    [`vom.${zid}/2`, zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
+    [`vom.${zid}/3`, zotVal(47, 'Chester', 'as if...', 3)], // =z3-3
+    [`vom.${zid}/4`, zotVal(66, 'Dave', 'you and what army?', 2)], // =z4-2
   ]);
 });
 
@@ -411,15 +414,16 @@ test('durable kind IDs can be reanimated', t => {
   t.is(log.shift(), 'set kindIDID 9');
   t.is(log.shift(), 'set vom.kind.10 {"kindID":"10","tag":"testkind"}');
   t.deepEqual(log, []);
+  const khid = `o+9/10`;
 
   // Store it in the store without having used it
   placeToPutIt.init('savedKindID', kindHandle);
   t.is(log.shift(), 'get vc.1.ssavedKindID => undefined');
-  t.is(log.shift(), 'get vom.rc.o+9/10 => undefined');
-  t.is(log.shift(), 'set vom.rc.o+9/10 1');
+  t.is(log.shift(), `get vom.rc.${khid} => undefined`);
+  t.is(log.shift(), `set vom.rc.${khid} 1`);
   const kindBody =
     '"{\\"@qclass\\":\\"slot\\",\\"iface\\":\\"Alleged: kind\\",\\"index\\":0}"';
-  const kindSer = `{"body":${kindBody},"slots":["o+9/10"]}`;
+  const kindSer = `{"body":${kindBody},"slots":["${khid}"]}`;
   t.is(log.shift(), `set vc.1.ssavedKindID ${kindSer}`);
   t.is(log.shift(), 'get vc.1.|entryCount => 0');
   t.is(log.shift(), 'set vc.1.|entryCount 1');
@@ -427,10 +431,10 @@ test('durable kind IDs can be reanimated', t => {
 
   // Forget its existence
   kindHandle = null;
-  deleteEntry('o+9/10');
-  possibleVirtualObjectDeath('o+9/10');
-  t.is(log.shift(), 'get vom.rc.o+9/10 => 1');
-  t.is(log.shift(), 'get vom.es.o+9/10 => undefined');
+  deleteEntry(khid);
+  possibleVirtualObjectDeath(khid);
+  t.is(log.shift(), `get vom.rc.${khid} => 1`);
+  t.is(log.shift(), `get vom.es.${khid} => undefined`);
   t.deepEqual(log, []);
 
   // Fetch it from the store, which should reanimate it
@@ -461,6 +465,7 @@ test('virtual object gc', t => {
   const { deleteEntry, dumpStore } = fakeStuff;
 
   const makeThing = defineKind('thing', initThing, actualizeThing);
+  const tbase = 'o+9';
   const makeRef = defineKind(
     'ref',
     value => ({ value }),
@@ -471,24 +476,33 @@ test('virtual object gc', t => {
     }),
   );
 
+  const skit = [
+    'storeKindIDTable',
+    '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
+  ];
+  t.is(log.shift(), `get storeKindIDTable => undefined`);
+  t.is(log.shift(), `set ${skit[0]} ${skit[1]}`);
+  t.deepEqual(log, []);
+
   // make a bunch of things which we'll use
   // all virtual objects are born locally ref'd
   const things = [];
   for (let i = 1; i <= 9; i += 1) {
     things.push(makeThing(`thing #${i}`));
   }
-  t.is(log.shift(), `set vom.o+1/1 ${minThing('thing #1')}`);
-  t.is(log.shift(), `set vom.o+1/2 ${minThing('thing #2')}`);
-  t.is(log.shift(), `set vom.o+1/3 ${minThing('thing #3')}`);
-  t.is(log.shift(), `set vom.o+1/4 ${minThing('thing #4')}`);
-  t.is(log.shift(), `set vom.o+1/5 ${minThing('thing #5')}`);
+  t.is(log.shift(), `set vom.${tbase}/1 ${minThing('thing #1')}`);
+  t.is(log.shift(), `set vom.${tbase}/2 ${minThing('thing #2')}`);
+  t.is(log.shift(), `set vom.${tbase}/3 ${minThing('thing #3')}`);
+  t.is(log.shift(), `set vom.${tbase}/4 ${minThing('thing #4')}`);
+  t.is(log.shift(), `set vom.${tbase}/5 ${minThing('thing #5')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/1', minThing('thing #1')],
-    ['vom.o+1/2', minThing('thing #2')],
-    ['vom.o+1/3', minThing('thing #3')],
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
+    skit,
+    [`vom.${tbase}/1`, minThing('thing #1')],
+    [`vom.${tbase}/2`, minThing('thing #2')],
+    [`vom.${tbase}/3`, minThing('thing #3')],
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
   ]);
 
   // This is what the finalizer would do if the local reference was dropped and GC'd
@@ -499,195 +513,204 @@ test('virtual object gc', t => {
 
   // case 1: export, drop local ref, drop export
   // export
-  setExportStatus('o+1/1', 'reachable');
-  t.is(log.shift(), `get vom.es.o+1/1 => undefined`);
-  t.is(log.shift(), `set vom.es.o+1/1 r`);
+  setExportStatus(`${tbase}/1`, 'reachable');
+  t.is(log.shift(), `get vom.es.${tbase}/1 => undefined`);
+  t.is(log.shift(), `set vom.es.${tbase}/1 r`);
   t.deepEqual(log, []);
   // drop local ref -- should not delete because exported
-  pretendGC('o+1/1');
-  t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
-  t.is(log.shift(), `get vom.es.o+1/1 => r`);
+  pretendGC(`${tbase}/1`);
+  t.is(log.shift(), `get vom.rc.${tbase}/1 => undefined`);
+  t.is(log.shift(), `get vom.es.${tbase}/1 => r`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/1', 'r'],
-    ['vom.o+1/1', minThing('thing #1')],
-    ['vom.o+1/2', minThing('thing #2')],
-    ['vom.o+1/3', minThing('thing #3')],
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
+    skit,
+    [`vom.es.${tbase}/1`, 'r'],
+    [`vom.${tbase}/1`, minThing('thing #1')],
+    [`vom.${tbase}/2`, minThing('thing #2')],
+    [`vom.${tbase}/3`, minThing('thing #3')],
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
   ]);
   // drop export -- should delete
-  setExportStatus('o+1/1', 'recognizable');
-  t.is(log.shift(), `get vom.es.o+1/1 => r`);
-  t.is(log.shift(), `set vom.es.o+1/1 s`);
-  t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
+  setExportStatus(`${tbase}/1`, 'recognizable');
+  t.is(log.shift(), `get vom.es.${tbase}/1 => r`);
+  t.is(log.shift(), `set vom.es.${tbase}/1 s`);
+  t.is(log.shift(), `get vom.rc.${tbase}/1 => undefined`);
   t.deepEqual(log, []);
-  pretendGC('o+1/1');
-  t.is(log.shift(), `get vom.rc.o+1/1 => undefined`);
-  t.is(log.shift(), `get vom.es.o+1/1 => s`);
-  t.is(log.shift(), `get vom.o+1/1 => ${thingVal(0, 'thing #1', 0)}`);
-  t.is(log.shift(), `delete vom.o+1/1`);
-  t.is(log.shift(), `delete vom.rc.o+1/1`);
-  t.is(log.shift(), `delete vom.es.o+1/1`);
+  pretendGC(`${tbase}/1`);
+  t.is(log.shift(), `get vom.rc.${tbase}/1 => undefined`);
+  t.is(log.shift(), `get vom.es.${tbase}/1 => s`);
+  t.is(log.shift(), `get vom.${tbase}/1 => ${thingVal(0, 'thing #1', 0)}`);
+  t.is(log.shift(), `delete vom.${tbase}/1`);
+  t.is(log.shift(), `delete vom.rc.${tbase}/1`);
+  t.is(log.shift(), `delete vom.es.${tbase}/1`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/2', minThing('thing #2')],
-    ['vom.o+1/3', minThing('thing #3')],
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
+    skit,
+    [`vom.${tbase}/2`, minThing('thing #2')],
+    [`vom.${tbase}/3`, minThing('thing #3')],
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
   ]);
 
   // case 2: export, drop export, drop local ref
   // export
-  setExportStatus('o+1/2', 'reachable');
-  t.is(log.shift(), `get vom.es.o+1/2 => undefined`);
-  t.is(log.shift(), `set vom.es.o+1/2 r`);
+  setExportStatus(`${tbase}/2`, 'reachable');
+  t.is(log.shift(), `get vom.es.${tbase}/2 => undefined`);
+  t.is(log.shift(), `set vom.es.${tbase}/2 r`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd locally
-  setExportStatus('o+1/2', 'recognizable');
-  t.is(log.shift(), `get vom.es.o+1/2 => r`);
-  t.is(log.shift(), `set vom.es.o+1/2 s`);
-  t.is(log.shift(), `get vom.rc.o+1/2 => undefined`);
+  setExportStatus(`${tbase}/2`, 'recognizable');
+  t.is(log.shift(), `get vom.es.${tbase}/2 => r`);
+  t.is(log.shift(), `set vom.es.${tbase}/2 s`);
+  t.is(log.shift(), `get vom.rc.${tbase}/2 => undefined`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/2', 's'],
-    ['vom.o+1/2', minThing('thing #2')],
-    ['vom.o+1/3', minThing('thing #3')],
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
+    skit,
+    [`vom.es.${tbase}/2`, 's'],
+    [`vom.${tbase}/2`, minThing('thing #2')],
+    [`vom.${tbase}/3`, minThing('thing #3')],
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
   ]);
   // drop local ref -- should delete
-  pretendGC('o+1/2');
-  t.is(log.shift(), `get vom.rc.o+1/2 => undefined`);
-  t.is(log.shift(), `get vom.es.o+1/2 => s`);
-  t.is(log.shift(), `get vom.o+1/2 => ${thingVal(0, 'thing #2', 0)}`);
-  t.is(log.shift(), `delete vom.o+1/2`);
-  t.is(log.shift(), `delete vom.rc.o+1/2`);
-  t.is(log.shift(), `delete vom.es.o+1/2`);
+  pretendGC(`${tbase}/2`);
+  t.is(log.shift(), `get vom.rc.${tbase}/2 => undefined`);
+  t.is(log.shift(), `get vom.es.${tbase}/2 => s`);
+  t.is(log.shift(), `get vom.${tbase}/2 => ${thingVal(0, 'thing #2', 0)}`);
+  t.is(log.shift(), `delete vom.${tbase}/2`);
+  t.is(log.shift(), `delete vom.rc.${tbase}/2`);
+  t.is(log.shift(), `delete vom.es.${tbase}/2`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/3', minThing('thing #3')],
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
+    skit,
+    [`vom.${tbase}/3`, minThing('thing #3')],
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
   ]);
 
   // case 3: drop local ref with no prior export
   // drop local ref -- should delete
-  pretendGC('o+1/3');
-  t.is(log.shift(), `get vom.rc.o+1/3 => undefined`);
-  t.is(log.shift(), `get vom.es.o+1/3 => undefined`);
-  t.is(log.shift(), `get vom.o+1/3 => ${thingVal(0, 'thing #3', 0)}`);
-  t.is(log.shift(), `delete vom.o+1/3`);
-  t.is(log.shift(), `delete vom.rc.o+1/3`);
-  t.is(log.shift(), `delete vom.es.o+1/3`);
+  pretendGC(`${tbase}/3`);
+  t.is(log.shift(), `get vom.rc.${tbase}/3 => undefined`);
+  t.is(log.shift(), `get vom.es.${tbase}/3 => undefined`);
+  t.is(log.shift(), `get vom.${tbase}/3 => ${thingVal(0, 'thing #3', 0)}`);
+  t.is(log.shift(), `delete vom.${tbase}/3`);
+  t.is(log.shift(), `delete vom.rc.${tbase}/3`);
+  t.is(log.shift(), `delete vom.es.${tbase}/3`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
+    skit,
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
   ]);
 
   // case 4: ref virtually, export, drop local ref, drop export
   // ref virtually
   // eslint-disable-next-line no-unused-vars
   const ref1 = makeRef(things[3]);
-  t.is(log.shift(), `get vom.rc.o+1/4 => undefined`);
-  t.is(log.shift(), `set vom.rc.o+1/4 1`);
-  t.is(log.shift(), `set vom.o+1/6 ${minThing('thing #6')}`);
+  t.is(log.shift(), `get vom.rc.${tbase}/4 => undefined`);
+  t.is(log.shift(), `set vom.rc.${tbase}/4 1`);
+  t.is(log.shift(), `set vom.${tbase}/6 ${minThing('thing #6')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
-    ['vom.o+1/6', minThing('thing #6')],
-    ['vom.rc.o+1/4', '1'],
+    skit,
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
+    [`vom.${tbase}/6`, minThing('thing #6')],
+    [`vom.rc.${tbase}/4`, '1'],
   ]);
   // export
-  setExportStatus('o+1/4', 'reachable');
-  t.is(log.shift(), `get vom.es.o+1/4 => undefined`);
-  t.is(log.shift(), `set vom.es.o+1/4 r`);
+  setExportStatus(`${tbase}/4`, 'reachable');
+  t.is(log.shift(), `get vom.es.${tbase}/4 => undefined`);
+  t.is(log.shift(), `set vom.es.${tbase}/4 r`);
   t.deepEqual(log, []);
   // drop local ref -- should not delete because ref'd virtually AND exported
-  pretendGC('o+1/4');
-  t.is(log.shift(), `get vom.rc.o+1/4 => 1`);
-  t.is(log.shift(), `get vom.es.o+1/4 => r`);
+  pretendGC(`${tbase}/4`);
+  t.is(log.shift(), `get vom.rc.${tbase}/4 => 1`);
+  t.is(log.shift(), `get vom.es.${tbase}/4 => r`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd virtually
-  setExportStatus('o+1/4', 'recognizable');
-  t.is(log.shift(), `get vom.es.o+1/4 => r`);
-  t.is(log.shift(), `set vom.es.o+1/4 s`);
-  t.is(log.shift(), `get vom.rc.o+1/4 => 1`);
+  setExportStatus(`${tbase}/4`, 'recognizable');
+  t.is(log.shift(), `get vom.es.${tbase}/4 => r`);
+  t.is(log.shift(), `set vom.es.${tbase}/4 s`);
+  t.is(log.shift(), `get vom.rc.${tbase}/4 => 1`);
   t.deepEqual(log, []);
 
   // case 5: export, ref virtually, drop local ref, drop export
   // export
-  setExportStatus('o+1/5', 'reachable');
-  t.is(log.shift(), `get vom.es.o+1/5 => undefined`);
-  t.is(log.shift(), `set vom.es.o+1/5 r`);
+  setExportStatus(`${tbase}/5`, 'reachable');
+  t.is(log.shift(), `get vom.es.${tbase}/5 => undefined`);
+  t.is(log.shift(), `set vom.es.${tbase}/5 r`);
   t.deepEqual(log, []);
   // ref virtually
   // eslint-disable-next-line no-unused-vars
   const ref2 = makeRef(things[4]);
-  t.is(log.shift(), `get vom.rc.o+1/5 => undefined`);
-  t.is(log.shift(), `set vom.rc.o+1/5 1`);
-  t.is(log.shift(), `set vom.o+1/7 ${minThing('thing #7')}`);
+  t.is(log.shift(), `get vom.rc.${tbase}/5 => undefined`);
+  t.is(log.shift(), `set vom.rc.${tbase}/5 1`);
+  t.is(log.shift(), `set vom.${tbase}/7 ${minThing('thing #7')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/4', 's'],
-    ['vom.es.o+1/5', 'r'],
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
-    ['vom.o+1/6', minThing('thing #6')],
-    ['vom.o+1/7', minThing('thing #7')],
-    ['vom.rc.o+1/4', '1'],
-    ['vom.rc.o+1/5', '1'],
+    skit,
+    [`vom.es.${tbase}/4`, 's'],
+    [`vom.es.${tbase}/5`, 'r'],
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
+    [`vom.${tbase}/6`, minThing('thing #6')],
+    [`vom.${tbase}/7`, minThing('thing #7')],
+    [`vom.rc.${tbase}/4`, '1'],
+    [`vom.rc.${tbase}/5`, '1'],
   ]);
   // drop local ref -- should not delete because ref'd virtually AND exported
-  pretendGC('o+1/5');
-  t.is(log.shift(), `get vom.rc.o+1/5 => 1`);
-  t.is(log.shift(), `get vom.es.o+1/5 => r`);
+  pretendGC(`${tbase}/5`);
+  t.is(log.shift(), `get vom.rc.${tbase}/5 => 1`);
+  t.is(log.shift(), `get vom.es.${tbase}/5 => r`);
   t.deepEqual(log, []);
   // drop export -- should not delete because ref'd virtually
-  setExportStatus('o+1/5', 'recognizable');
-  t.is(log.shift(), `get vom.es.o+1/5 => r`);
-  t.is(log.shift(), `set vom.es.o+1/5 s`);
-  t.is(log.shift(), `get vom.rc.o+1/5 => 1`);
+  setExportStatus(`${tbase}/5`, 'recognizable');
+  t.is(log.shift(), `get vom.es.${tbase}/5 => r`);
+  t.is(log.shift(), `set vom.es.${tbase}/5 s`);
+  t.is(log.shift(), `get vom.rc.${tbase}/5 => 1`);
   t.deepEqual(log, []);
 
   // case 6: ref virtually, drop local ref
   // ref virtually
   // eslint-disable-next-line no-unused-vars
   const ref3 = makeRef(things[5]);
-  t.is(log.shift(), `get vom.rc.o+1/6 => undefined`);
-  t.is(log.shift(), `set vom.rc.o+1/6 1`);
-  t.is(log.shift(), `set vom.o+1/8 ${minThing('thing #8')}`);
+  t.is(log.shift(), `get vom.rc.${tbase}/6 => undefined`);
+  t.is(log.shift(), `set vom.rc.${tbase}/6 1`);
+  t.is(log.shift(), `set vom.${tbase}/8 ${minThing('thing #8')}`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/4', 's'],
-    ['vom.es.o+1/5', 's'],
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
-    ['vom.o+1/6', minThing('thing #6')],
-    ['vom.o+1/7', minThing('thing #7')],
-    ['vom.o+1/8', minThing('thing #8')],
-    ['vom.rc.o+1/4', '1'],
-    ['vom.rc.o+1/5', '1'],
-    ['vom.rc.o+1/6', '1'],
+    skit,
+    [`vom.es.${tbase}/4`, 's'],
+    [`vom.es.${tbase}/5`, 's'],
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
+    [`vom.${tbase}/6`, minThing('thing #6')],
+    [`vom.${tbase}/7`, minThing('thing #7')],
+    [`vom.${tbase}/8`, minThing('thing #8')],
+    [`vom.rc.${tbase}/4`, '1'],
+    [`vom.rc.${tbase}/5`, '1'],
+    [`vom.rc.${tbase}/6`, '1'],
   ]);
   // drop local ref -- should not delete because ref'd virtually
-  pretendGC('o+1/6');
-  t.is(log.shift(), `get vom.rc.o+1/6 => 1`);
-  t.is(log.shift(), `get vom.es.o+1/6 => undefined`);
+  pretendGC(`${tbase}/6`);
+  t.is(log.shift(), `get vom.rc.${tbase}/6 => 1`);
+  t.is(log.shift(), `get vom.es.${tbase}/6 => undefined`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
-    ['vom.es.o+1/4', 's'],
-    ['vom.es.o+1/5', 's'],
-    ['vom.o+1/4', minThing('thing #4')],
-    ['vom.o+1/5', minThing('thing #5')],
-    ['vom.o+1/6', minThing('thing #6')],
-    ['vom.o+1/7', minThing('thing #7')],
-    ['vom.o+1/8', minThing('thing #8')],
-    ['vom.rc.o+1/4', '1'],
-    ['vom.rc.o+1/5', '1'],
-    ['vom.rc.o+1/6', '1'],
+    skit,
+    [`vom.es.${tbase}/4`, 's'],
+    [`vom.es.${tbase}/5`, 's'],
+    [`vom.${tbase}/4`, minThing('thing #4')],
+    [`vom.${tbase}/5`, minThing('thing #5')],
+    [`vom.${tbase}/6`, minThing('thing #6')],
+    [`vom.${tbase}/7`, minThing('thing #7')],
+    [`vom.${tbase}/8`, minThing('thing #8')],
+    [`vom.rc.${tbase}/4`, '1'],
+    [`vom.rc.${tbase}/5`, '1'],
+    [`vom.rc.${tbase}/6`, '1'],
   ]);
 });
 

@@ -11,8 +11,9 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { ParamTypes } from '../../src/index.js';
 import {
   makeParamManager,
+  makeParamManagerFromTerms,
   makeParamManagerSync,
-} from '../../src/paramGovernance/typedParamManager.js';
+} from '../../src/contractGovernance/typedParamManager.js';
 
 const drachmaKit = makeIssuerKit('drachma');
 const drachmaBrand = drachmaKit.brand;
@@ -38,6 +39,28 @@ test('types', t => {
     // @ts-expect-error should break
     mgr.updateWorking('not a bigint'),
   );
+});
+
+test('makeParamManagerFromTerms', async t => {
+  const terms = harden({
+    governedParams: {
+      Mmr: { type: 'nat', value: makeRatio(150n, drachmaKit.brand) },
+    },
+  });
+  const issuerKeywordRecord = harden({
+    Ignore: drachmaKit.issuer,
+  });
+  const { zcf } = await setupZCFTest(issuerKeywordRecord, terms);
+
+  const paramManager = await makeParamManagerFromTerms(
+    // @ts-expect-error missing governance terms
+    zcf,
+    zcf.makeInvitation(() => null, 'mock poser invitation'),
+    {
+      Mmr: 'ratio',
+    },
+  );
+  t.is(paramManager.getMmr(), terms.governedParams.Mmr.value);
 });
 
 test('readonly', t => {
@@ -220,7 +243,7 @@ test('Invitation', async t => {
   t.is(paramManager.getCurrency(), drachmaBrand);
   t.is(paramManager.getAmt(), drachmaAmount);
   const invitationActualAmount = paramManager.getInvite().value;
-  t.is(invitationActualAmount, invitationAmount.value);
+  t.deepEqual(invitationActualAmount, invitationAmount.value);
   t.is(invitationActualAmount[0].description, 'simple');
 
   t.is(await paramManager.getInternalParamValue('Invite'), invitation);

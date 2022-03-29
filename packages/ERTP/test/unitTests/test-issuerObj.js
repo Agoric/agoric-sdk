@@ -434,7 +434,7 @@ test('issuer.combine bad payments', async t => {
   await t.throwsAsync(
     () => E(issuer).combine(payments),
     {
-      message: '"payment" not found: "[Alleged: other fungible payment]"',
+      message: /"\[Alleged: other fungible payment\]"/,
     },
     'payment from other mint is not found',
   );

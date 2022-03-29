@@ -123,6 +123,12 @@ export function makeVatKeeper(
   }
 
   function initializeReapCountdown(count) {
+    assert(
+      typeof count === 'number' ||
+        typeof count === 'bigint' ||
+        count === 'never',
+      `bad reapCountdown ${count}`,
+    );
     kvStore.set(`${vatID}.reapInterval`, `${count}`);
     kvStore.set(`${vatID}.reapCountdown`, `${count}`);
   }
@@ -561,6 +567,27 @@ export function makeVatKeeper(
     return true;
   }
 
+  function removeSnapshotAndTranscript() {
+    const skey = `local.${vatID}.lastSnapshot`;
+    const epkey = `${vatID}.t.endPosition`;
+    if (snapStore) {
+      const notation = kvStore.get(skey);
+      if (notation) {
+        const { snapshotID } = JSON.parse(notation);
+        if (removeFromSnapshot(snapshotID) === 0) {
+          // TODO: if we roll back (because the upgrade failed), we must
+          // not really delete the snapshot
+          snapStore.prepareToDelete(snapshotID);
+        }
+        kvStore.delete(skey);
+      }
+    }
+    // TODO: same rollback concern
+    // TODO: streamStore.deleteStream(transcriptStream);
+    const newStart = streamStore.STREAM_START;
+    kvStore.set(epkey, `${JSON.stringify(newStart)}`);
+  }
+
   function vatStats() {
     function getCount(key, first) {
       const id = Nat(BigInt(getRequired(key)));
@@ -632,5 +659,6 @@ export function makeVatKeeper(
     saveSnapshot,
     getLastSnapshot,
     removeFromSnapshot,
+    removeSnapshotAndTranscript,
   });
 }

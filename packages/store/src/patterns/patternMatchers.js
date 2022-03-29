@@ -383,9 +383,9 @@ const makePatternKit = () => {
   // /////////////////////// getRankCover //////////////////////////////////////
 
   /** @type {GetRankCover} */
-  const getRankCover = (patt, encodeKey) => {
+  const getRankCover = (patt, encodePassable) => {
     if (isKey(patt)) {
-      const encoded = encodeKey(patt);
+      const encoded = encodePassable(patt);
       if (encoded !== undefined) {
         return [encoded, `${encoded}~`];
       }
@@ -397,7 +397,7 @@ const makePatternKit = () => {
         // strings. In the meantime, fall through to the default which
         // returns a cover that covers all copyArrays.
         //
-        // const rankCovers = patt.map(p => getRankCover(p, encodeKey));
+        // const rankCovers = patt.map(p => getRankCover(p, encodePassable));
         // return harden([
         //   rankCovers.map(([left, _right]) => left),
         //   rankCovers.map(([_left, right]) => right),
@@ -425,7 +425,7 @@ const makePatternKit = () => {
         if (matchHelper) {
           // Buried here is the important case, where we process
           // the various patternNodes
-          return matchHelper.getRankCover(patt.payload, encodeKey);
+          return matchHelper.getRankCover(patt.payload, encodePassable);
         }
         switch (tag) {
           case 'copySet': {
@@ -471,7 +471,7 @@ const makePatternKit = () => {
             // // this bug.
             // const [leftPayloadLimit, rightPayloadLimit] = getRankCover(
             //   patt.payload,
-            //   encodeKey,
+            //   encodePassable,
             // );
             // return harden([
             //   makeTagged('copyMap', leftPayloadLimit),
@@ -504,7 +504,7 @@ const makePatternKit = () => {
         X`Payload must be undefined: ${matcherPayload}`,
       ),
 
-    getRankCover: (_matchPayload, _encodeKey) => ['', '{'],
+    getRankCover: (_matchPayload, _encodePassable) => ['', '{'],
 
     checkKeyPattern: (_matcherPayload, _check = x => x) => true,
   });
@@ -525,10 +525,10 @@ const makePatternKit = () => {
       );
     },
 
-    getRankCover: (patts, encodeKey) =>
+    getRankCover: (patts, encodePassable) =>
       intersectRankCovers(
         compareRank,
-        patts.map(p => getRankCover(p, encodeKey)),
+        patts.map(p => getRankCover(p, encodePassable)),
       ),
 
     checkKeyPattern: (patts, check = x => x) => {
@@ -554,10 +554,10 @@ const makePatternKit = () => {
 
     checkIsMatcherPayload: matchAndHelper.checkIsMatcherPayload,
 
-    getRankCover: (patts, encodeKey) =>
+    getRankCover: (patts, encodePassable) =>
       unionRankCovers(
         compareRank,
-        patts.map(p => getRankCover(p, encodeKey)),
+        patts.map(p => getRankCover(p, encodePassable)),
       ),
 
     checkKeyPattern: (patts, check = x => x) => {
@@ -580,7 +580,7 @@ const makePatternKit = () => {
 
     checkIsMatcherPayload: checkPattern,
 
-    getRankCover: (_patt, _encodeKey) => ['', '{'],
+    getRankCover: (_patt, _encodePassable) => ['', '{'],
 
     checkKeyPattern: (patt, check = x => x) => checkKeyPattern(patt, check),
   });
@@ -592,7 +592,7 @@ const makePatternKit = () => {
 
     checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
 
-    getRankCover: (_matchPayload, _encodeKey) => ['a', 'z~'],
+    getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
     checkKeyPattern: (_matcherPayload, _check = x => x) => true,
   });
@@ -604,7 +604,7 @@ const makePatternKit = () => {
 
     checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
 
-    getRankCover: (_matchPayload, _encodeKey) => ['a', 'z~'],
+    getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
     checkKeyPattern: (_matcherPayload, _check = x => x) => true,
   });
@@ -616,7 +616,7 @@ const makePatternKit = () => {
 
     checkIsMatcherPayload: matchAnyHelper.checkIsMatcherPayload,
 
-    getRankCover: (_matchPayload, _encodeKey) => ['a', 'z~'],
+    getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
 
     checkKeyPattern: (_matcherPayload, _check = x => x) => true,
   });
@@ -641,7 +641,7 @@ const makePatternKit = () => {
         X`A kind name must be a string: ${allegedKeyKind}`,
       ),
 
-    getRankCover: (kind, _encodeKey) => {
+    getRankCover: (kind, _encodePassable) => {
       let style;
       switch (kind) {
         case 'copySet':
@@ -683,13 +683,13 @@ const makePatternKit = () => {
 
     checkIsMatcherPayload: checkKey,
 
-    getRankCover: (rightOperand, encodeKey) => {
+    getRankCover: (rightOperand, encodePassable) => {
       const passStyle = passStyleOf(rightOperand);
       // The prefer-const makes no sense when some of the variables need
       // to be `let`
       // eslint-disable-next-line prefer-const
       let [leftBound, rightBound] = getPassStyleCover(passStyle);
-      const newRightBound = `${encodeKey(rightOperand)}~`;
+      const newRightBound = `${encodePassable(rightOperand)}~`;
       if (newRightBound !== undefined) {
         rightBound = newRightBound;
       }
@@ -726,13 +726,13 @@ const makePatternKit = () => {
 
     checkIsMatcherPayload: checkKey,
 
-    getRankCover: (rightOperand, encodeKey) => {
+    getRankCover: (rightOperand, encodePassable) => {
       const passStyle = passStyleOf(rightOperand);
       // The prefer-const makes no sense when some of the variables need
       // to be `let`
       // eslint-disable-next-line prefer-const
       let [leftBound, rightBound] = getPassStyleCover(passStyle);
-      const newLeftBound = encodeKey(rightOperand);
+      const newLeftBound = encodePassable(rightOperand);
       if (newLeftBound !== undefined) {
         leftBound = newLeftBound;
       }

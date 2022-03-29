@@ -34,6 +34,11 @@ const aRemotableObject = Far('what', {
     return 'remote whatever';
   },
 });
+const aPassablePromise = harden(Promise.resolve(aString));
+const aPassableError = harden(Error(aString));
+const aNonScalarKey = harden([]);
+const aNonScalarNonKey = harden([aPassableError]);
+
 const aVirtualStore = makeScalarBigMapStore('vstore');
 const aDurableStore = makeScalarBigMapStore('dstore', { durable: true });
 
@@ -80,6 +85,8 @@ test('durability checks', t => {
   const passKey = f => t.notThrows(f);
   const passVal = f => t.notThrows(f);
   const passHold = f => t.notThrows(f);
+
+  const failNonKey = f => t.throws(f, m(/invalid key type for collection .*/));
 
   const virtualMap = makeScalarBigMapStore('vmap');
   const durableMap = makeScalarBigMapStore('dmap', { durable: true });
@@ -231,4 +238,24 @@ test('durability checks', t => {
   passHold(() => durableHolder.hold(anObjectFullOfDurableStuff));
   passHold(() => durableHolder.hold(anArrayFullOfDurableStuff));
   passHold(() => durableHolder.hold(durableHolderKind));
+
+  failNonKey(() => virtualMap.init(aPassablePromise, 47));
+  failNonKey(() => virtualMap.init(aPassableError, 47));
+  failNonKey(() => virtualMap.init(aNonScalarKey, 47));
+  failNonKey(() => virtualMap.init(aNonScalarNonKey, 47));
+
+  failNonKey(() => durableMap.init(aPassablePromise, 47));
+  failNonKey(() => durableMap.init(aPassableError, 47));
+  failNonKey(() => durableMap.init(aNonScalarKey, 47));
+  failNonKey(() => durableMap.init(aNonScalarNonKey, 47));
+
+  passVal(() => virtualMap.init('promise', aPassablePromise));
+  passVal(() => virtualMap.init('error', aPassableError));
+  passVal(() => virtualMap.init('non-scalar key', aNonScalarKey));
+  passVal(() => virtualMap.init('non-scalar non-key', aNonScalarNonKey));
+
+  failVal(() => durableMap.init('promise', aPassablePromise));
+  passVal(() => durableMap.init('error', aPassableError));
+  passVal(() => durableMap.init('non-scalar key', aNonScalarKey));
+  passVal(() => durableMap.init('non-scalar non-key', aNonScalarNonKey));
 });

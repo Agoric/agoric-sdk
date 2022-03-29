@@ -48,6 +48,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     D: bundleCap => ({
       getBundle: () => bundleCapToBundle.get(bundleCap),
     }),
+    testJigSetter: testContextSetter,
   };
 
   // This is explicitly intended to be mutable so that
@@ -70,11 +71,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       return Promise.resolve(
         harden({
           root: makeRemote(
-            E(evalContractBundle(bundle)).buildRootObject(
-              fakeVatPowers,
-              undefined,
-              testContextSetter,
-            ),
+            E(evalContractBundle(bundle)).buildRootObject(fakeVatPowers),
           ),
           adminNode: Far('adminNode', {
             done: () => {

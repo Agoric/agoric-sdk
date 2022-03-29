@@ -103,6 +103,9 @@
  * amount is calculated
  * @property {() => Promise<Invitation>} makeAddLiquidityInvitation make an
  * invitation that allows one to add liquidity to the pool.
+ * @property {() => Promise<Invitation>} makeAddLiquidityAtRateInvitation make
+ * an invitation that allows one to add liquidity to the pool at an arbitrary
+ * ratio of collateral to Central.
  * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
  * @property {(brand: Brand) => Issuer} getLiquidityIssuer

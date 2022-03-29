@@ -67,7 +67,7 @@ test('property name space exhaustion: orderly fail-stop', async t => {
 /** @typedef { [number | undefined, number, string | null] } TestCase */
 (() => {
   const grow = qty => `
-  const send = it => issueCommand(ArrayBuffer.fromString(JSON.stringify(it)));
+  const send = it => issueCommand(new TextEncoder().encode(JSON.stringify(it)).buffer);
   let expr = \`"\${Array(${qty}).fill('abcd').join('')}"\`;
   try {
     eval(expr);

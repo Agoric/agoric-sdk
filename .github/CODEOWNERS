@@ -1,0 +1,47 @@
+# Default code owners when not specified.
+# We prefer to explicitly specify owners for all subdirectories.
+*                                @warner @dckc @Chris-Hibbert @FUDCo @michaelfig
+
+/*                               @kriskowal @michaelfig @erights
+/.github/                        @kriskowal @michaelfig @erights
+/docker/                         @kriskowal @michaelfig @erights
+/patches/                        @kriskowal @michaelfig @erights
+/scripts/                        @kriskowal @michaelfig @erights
+/yarn.lock                       @mhofman
+
+# Golang @parts @of @the @repo.
+/go.*                            @JimLarson
+/golang/                         @JimLarson
+
+# Explicit @owners @for @our @packages
+/packages/ERTP/                  @erights @Chris-Hibbert
+/packages/SwingSet/              @warner @FUDCo
+/packages/access-token/          @kriskowal @michaelfig
+/packages/agoric-cli/            @kriskowal @michaelfig
+/packages/assert/                @kriskowal @turadg @michaelfig @erights
+/packages/cosmic-swingset/       @michaelfig
+/packages/deploy-script-support/ @michaelfig
+/packages/deployment/            @michaelfig
+/packages/eslint-config/         @kriskowal @michaelfig @erights @turadg @mhofman
+/packages/governance/            @Chris-Hibbert
+/packages/import-manager/        @michaelfig
+/packages/notifier/              @kriskowal @turadg @michaelfig @erights
+/packages/pegasus/               @michaelfig
+/packages/run-protocol           @Chris-Hibbert @turadg
+/packages/same-structure/        @kriskowal @turadg @michaelfig @erights
+/packages/sharing-service/       @michaelfig @Chris-Hibbert
+/packages/solo/                  @kriskowal @michaelfig
+/packages/sparse-ints/           @kriskowal @turadg @michaelfig
+/packages/spawner/               @michaelfig
+/packages/stat-logger/           @warner @FUDCo
+/packages/store/                 @warner @FUDCo @erights
+/packages/swing-store/           @warner @FUDCo
+/packages/swingset-runner/       @FUDCo
+/packages/tame-metering/         @kriskowal @michaelfig
+/packages/telemetry              @kriskowal @michaelfig @erights
+/packages/ui-components/         @michaelfig @samsiegart  @turadg
+/packages/vats/                  @michaelfig
+/packages/wallet/                @michaelfig @samsiegart
+/packages/wallet-connection/     @michaelfig @samsiegart
+/packages/xsnap/                 @warner @dckc @kriskowal
+/packages/zoe                    @erights @Chris-Hibbert

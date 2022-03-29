@@ -1,6 +1,6 @@
 // @ts-check
 // XXX avoid deep imports https://github.com/Agoric/agoric-sdk/issues/4255#issuecomment-1032117527
-import { makeScalarBigMapStore } from '@agoric/swingset-vat/src/storeModule.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { fromVaultKey, toVaultKey } from './storeUtils.js';
 
 /**

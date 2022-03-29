@@ -252,7 +252,7 @@ test('lib-wallet issuer and purse methods', async t => {
 });
 
 test('lib-wallet dapp suggests issuer, instance, installation petnames', async t => {
-  t.plan(13);
+  t.plan(15);
   const {
     board,
     zoe,
@@ -508,6 +508,11 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     `inboxStateChangeLog with names`,
   );
 
+  await t.throwsAsync(wallet.lookup('offer', 'bzzt'), {
+    message: '"offerId" not found: "bzzt"',
+  });
+  await t.notThrowsAsync(wallet.lookup('offer', 'unknown#1588645041696'));
+
   t.throws(
     () => wallet.getInstallation('whatever'),
     {
@@ -643,7 +648,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 });
 
 test('lib-wallet offer methods', async t => {
-  t.plan(8);
+  t.plan(9);
   const {
     moolaBundle,
     wallet,
@@ -729,6 +734,9 @@ test('lib-wallet offer methods', async t => {
     ],
     `offer structure`,
   );
+  wallet
+    .lookup('offerResult', 'unknown#1588645041696')
+    .then(or => t.is(or, 'The offer was accepted'));
   const accepted = await wallet.acceptOffer(id);
   assert(accepted);
   const { depositedP } = accepted;
@@ -1494,4 +1502,22 @@ test('stamps from dateNow', async t => {
       status: 'deposited',
     },
   ]);
+});
+
+test('lookup', async t => {
+  const { moolaBundle, wallet } = await setupTest();
+  await wallet.addIssuer('moola', moolaBundle.issuer);
+
+  t.is(await E(wallet).lookup('brand', 'moola'), moolaBundle.brand);
+  t.is(await E(wallet).lookup('issuer', 'moola'), moolaBundle.issuer);
+  const inviteBrand = await E(wallet).lookup('brand', 'zoe invite');
+  t.deepEqual(
+    await E(
+      E(wallet).lookup('purse', 'Default Zoe invite purse'),
+    ).getCurrentAmount(),
+    { brand: inviteBrand, value: [] },
+  );
+  await t.throwsAsync(E(wallet).lookup('purse2'), {
+    message: /"lookups" not found: "purse2"/,
+  });
 });

@@ -12,10 +12,13 @@ const mapEntries = (obj, f) =>
   // @ts-ignore entries() loses key type
   fromEntries(entries(obj).map(([p, v]) => f(p, v)));
 
-// TODO: phase out ./issuers.js
 export const CENTRAL_ISSUER_NAME = 'RUN';
 
-// We reserve these keys in name hubs.
+/**
+ * We reserve these keys in name hubs.
+ *
+ * @type {{ [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string } }}
+ */
 export const agoricNamesReserved = harden({
   issuer: {
     BLD: 'Agoric staking token',
@@ -36,7 +39,8 @@ export const agoricNamesReserved = harden({
     VaultFactory: 'vault factory',
     liquidate: 'liquidate',
     getRUN: 'getRUN',
-    pegasus: 'pegasus',
+    Pegasus: 'pegasus',
+    reserve: 'collateral reserve',
   },
   instance: {
     economicCommittee: 'Economic Committee',
@@ -49,6 +53,11 @@ export const agoricNamesReserved = harden({
     getRUN: 'getRUN',
     getRUNGovernor: 'getRUN governor',
     Pegasus: 'remote peg',
+    reserve: 'collateal reserve',
+    reserveGovernor: 'ReserveGovernor',
+  },
+  oracleBrand: {
+    USD: 'US Dollar',
   },
   uiConfig: {
     VaultFactory: 'vault factory',
