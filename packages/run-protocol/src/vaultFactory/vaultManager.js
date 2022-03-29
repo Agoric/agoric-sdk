@@ -95,6 +95,7 @@ export const makeVaultManager = (
   };
 
   let vaultCounter = 0;
+  let liquidationInProgress = false;
 
   /**
    * A store for vaultKits prioritized by their collaterization ratio.
@@ -135,6 +136,7 @@ export const makeVaultManager = (
    */
   const liquidateAndRemove = ([key, vault]) => {
     trace('liquidating', vault.getVaultSeat().getProposal());
+    liquidationInProgress = true;
 
     // Start liquidation (vaultState: LIQUIDATING)
     return liquidate(
@@ -147,8 +149,10 @@ export const makeVaultManager = (
       .then(() => {
         assert(prioritizedVaults);
         prioritizedVaults?.removeVault(key);
+        liquidationInProgress = false;
       })
       .catch(e => {
+        liquidationInProgress = false;
         // XXX should notify interested parties
         console.error('liquidateAndRemove failed with', e);
       });
@@ -197,6 +201,10 @@ export const makeVaultManager = (
       return;
     }
 
+    if (liquidationInProgress) {
+      return;
+    }
+
     outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
       highestDebtRatio.denominator, // collateral
       triggerPoint,
@@ -218,13 +226,10 @@ export const makeVaultManager = (
 
     outstandingQuote = undefined;
 
-    // Liquidate serially
-    for (const [key, vault] of prioritizedVaults.entriesPrioritizedGTE(
-      quoteRatioPlusMargin,
-    )) {
-      // eslint-disable-next-line no-await-in-loop -- We want each liquidation to happen in a separate turn
-      await liquidateAndRemove([key, vault]);
-    }
+    // Liquidate the head of the queue
+    const [next] =
+      prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
+    await (next ? liquidateAndRemove(next) : null);
 
     reschedulePriceCheck();
   };
