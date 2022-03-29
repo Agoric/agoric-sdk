@@ -41,12 +41,12 @@ export const makeRunStakeManager = (
     assert.equal(
       mintingRatio.numerator.brand,
       brands.debt,
-      X`${mintingRatio} not in RUN / Stake`,
+      X`${mintingRatio} not in Debt / Stake`,
     );
     assert.equal(
       mintingRatio.denominator.brand,
       brands.Stake,
-      X`${mintingRatio} not in RUN / Stake`,
+      X`${mintingRatio} not in Debt / Stake`,
     );
     assert.equal(
       attestationGiven.brand,
