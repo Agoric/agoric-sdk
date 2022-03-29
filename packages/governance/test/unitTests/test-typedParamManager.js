@@ -11,6 +11,7 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { ParamTypes } from '../../src/index.js';
 import {
   makeParamManager,
+  makeParamManagerFromTerms,
   makeParamManagerSync,
 } from '../../src/contractGovernance/typedParamManager.js';
 
@@ -38,6 +39,28 @@ test('types', t => {
     // @ts-expect-error should break
     mgr.updateWorking('not a bigint'),
   );
+});
+
+test('makeParamManagerFromTerms', async t => {
+  const terms = harden({
+    governedParams: {
+      Mmr: { type: 'nat', value: makeRatio(150n, drachmaKit.brand) },
+    },
+  });
+  const issuerKeywordRecord = harden({
+    Ignore: drachmaKit.issuer,
+  });
+  const { zcf } = await setupZCFTest(issuerKeywordRecord, terms);
+
+  const paramManager = await makeParamManagerFromTerms(
+    // @ts-expect-error missing governance terms
+    zcf,
+    zcf.makeInvitation(() => null, 'mock poser invitation'),
+    {
+      Mmr: 'ratio',
+    },
+  );
+  t.is(paramManager.getMmr(), terms.governedParams.Mmr.value);
 });
 
 test('readonly', t => {

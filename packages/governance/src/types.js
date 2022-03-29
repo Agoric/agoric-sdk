@@ -59,6 +59,13 @@
  */
 
 /**
+ * Terms a contract must provide in order to be governed.
+ *
+ * @template {Record<string, ParamRecord>} T Governed parameters of contract
+ * @typedef {{ electionManager: Instance, governedParams: T & { Electorate: ParamRecord<'invitation'> } } } GovernanceTerms<T>
+ */
+
+/**
  * @typedef { SimpleIssue | ParamChangeIssue | ApiInvocationIssue } Issue
  */
 
@@ -509,7 +516,7 @@
 /**
  * @typedef GovernedPublicFacetMethods
  * @property {() => Subscription<ParamRecord>} getSubscription
- * @property {() => VoteOnParamChange} getContractGovernor
+ * @property {() => Instance} getContractGovernor
  * @property {GetParams} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount

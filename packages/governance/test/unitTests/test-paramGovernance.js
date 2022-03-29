@@ -88,7 +88,7 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
   );
 
   const governedTerms = {
-    main: {
+    governedParams: {
       [MALLEABLE_NUMBER]: {
         type: ParamTypes.NAT,
         value: 602214090000000000000000n,
