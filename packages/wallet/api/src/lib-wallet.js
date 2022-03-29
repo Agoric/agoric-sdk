@@ -1533,6 +1533,7 @@ export function makeWallet({
    *
    * @param {string} rawId - The offer's raw id.
    * @param {string} dappOrigin - The origin of the dapp the offer came from.
+   * @throws if the offer result doesn't have notifiers.
    */
   async function getPublicNotifiers(rawId, dappOrigin = 'unknown') {
     const id = makeId(dappOrigin, rawId);
@@ -1633,6 +1634,7 @@ export function makeWallet({
     getPaymentsNotifier() {
       return paymentsNotifier;
     },
+    /** @deprecated use `getPublicNotifiers` instead. */
     getUINotifier,
     getPublicNotifiers,
     getZoe() {

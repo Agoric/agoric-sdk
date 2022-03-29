@@ -1368,7 +1368,7 @@ test('addOffer makeContinuingInvitation', async t => {
 
   // Test getNotifiers as well, even though it's redundant in this example.
   const publicNotifiersUpdate = await E(
-    E.get(publicNotifiersP).notifier,
+    E.get(publicNotifiersP).offers,
   ).getUpdateSince();
   t.is(publicNotifiersUpdate.value, 'first offer made');
 
