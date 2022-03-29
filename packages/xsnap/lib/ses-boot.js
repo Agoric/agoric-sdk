@@ -1,7 +1,7 @@
 import { setObjectInspector } from './console-shim.js';
 import '@endo/init';
-import objectInspect from './object-inspect.js';
+import confinedObjectInspect from './confined-object-inspect.js';
 
-setObjectInspector(objectInspect);
+setObjectInspector(confinedObjectInspect);
 
 harden(console);
