@@ -1,6 +1,7 @@
 // @ts-check
 /* global process setTimeout */
 import fs from 'fs';
+import url from 'url';
 import path from 'path';
 import temp from 'temp';
 import { fork } from 'child_process';
@@ -142,7 +143,7 @@ const buildSwingset = async (
   const plugin = buildPlugin(pluginDir, importPlugin, queueThunkForKernel);
 
   const config = await loadSwingsetConfigFile(
-    new URL('../solo-config.json', import.meta.url).pathname,
+    url.fileURLToPath(new URL('../solo-config.json', import.meta.url)),
   );
   assert(config);
   config.devices = {
