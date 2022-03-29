@@ -66,6 +66,7 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
@@ -125,6 +126,7 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
@@ -171,6 +173,7 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
@@ -210,6 +213,7 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
@@ -249,6 +253,7 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
