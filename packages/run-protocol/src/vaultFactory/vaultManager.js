@@ -26,7 +26,7 @@ import { makeTracer } from '../makeTracer.js';
 import { RECORDING_PERIOD_KEY, CHARGING_PERIOD_KEY } from './params.js';
 import { chargeInterest } from '../interest.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 const trace = makeTracer('VM');
 
@@ -53,6 +53,7 @@ const trace = makeTracer('VM');
  *  RecordingPeriod: ParamRecord<'nat'>
  * }} timingParams
  * @param {{
+ *  getDebtLimit: () => Amount<'nat'>,
  *  getInterestRate: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
  *  getLoanFee: () => Ratio,
@@ -288,6 +289,18 @@ export const makeVaultManager = (
     reschedulePriceCheck();
   };
 
+  /**
+   * @param {Amount<'nat'>} toMint
+   * @throws if minting would exceed total debt
+   */
+  const checkDebtLimit = toMint => {
+    const debtPost = AmountMath.add(totalDebt, toMint);
+    const limit = loanParamGetters.getDebtLimit();
+    if (AmountMath.isGTE(debtPost, limit)) {
+      assert.fail(X`Minting would exceed total debt limit ${q(limit)}`);
+    }
+  };
+
   const maxDebtFor = async collateralAmount => {
     const quoteAmount = await E(priceAuthority).quoteGiven(
       collateralAmount,
@@ -336,7 +349,9 @@ export const makeVaultManager = (
 
   observeNotifier(periodNotifier, timeObserver);
 
+  /** @type {MintAndReallocate} */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+    checkDebtLimit(toMint);
     mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
     totalDebt = AmountMath.add(totalDebt, toMint);
   };

@@ -47,11 +47,18 @@ const installContracts = async (zoe, cb) => {
   return installations;
 };
 
-const makeRates = runBrand => {
+/**
+ * Provide initial values for governed vault manager params.
+ *
+ * @param {Brand} debtBrand
+ * @returns {VaultManagerParamValues}
+ */
+const makeRates = debtBrand => {
   return {
-    liquidationMargin: makeRatio(105n, runBrand),
-    interestRate: makeRatio(250n, runBrand, BASIS_POINTS),
-    loanFee: makeRatio(200n, runBrand, BASIS_POINTS),
+    debtLimit: AmountMath.make(debtBrand, 1_000_000n),
+    liquidationMargin: makeRatio(105n, debtBrand),
+    interestRate: makeRatio(250n, debtBrand, BASIS_POINTS),
+    loanFee: makeRatio(200n, debtBrand, BASIS_POINTS),
   };
 };
 
