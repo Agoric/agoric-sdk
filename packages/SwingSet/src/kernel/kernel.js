@@ -691,8 +691,13 @@ export default function buildKernel(
       // TODO: this is the message we want to send on failure, but we
       // need to queue it after the crank was unwound, else this
       // message will be unwound too
+      const err = {
+        '@qclass': 'error',
+        name: 'Error',
+        message: 'vat-upgrade failure notification not implemented',
+      };
       const args = {
-        body: JSON.stringify([upgradeID, false, { error: `not implemented` }]),
+        body: JSON.stringify([upgradeID, false, err]),
         slots: [],
       };
       queueToKref(vatAdminRootKref, 'vatUpgradeCallback', args, 'logFailure');
