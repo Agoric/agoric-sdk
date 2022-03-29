@@ -146,7 +146,7 @@ const start = async zcf => {
   /** @type {() => Promise<PoserFacet>} */
   const getUpdatedPoserFacet = async () => {
     const newInvitation = await E(
-      E(E(governedCF).getParamMgrRetriever()).get(),
+      E(E(governedCF).getParamMgrRetriever()).get({ key: 'governedParams' }),
     ).getInternalParamValue(CONTRACT_ELECTORATE);
 
     if (newInvitation !== currentInvitation) {

@@ -47,7 +47,7 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
  * @param {ZCF<{
  *    anchorBrand: Brand,
  *    anchorPerStable: Ratio,
- *    main: {
+ *    governedParams: {
  *      WantStableFeeBP: bigint,
  *      GiveStableFeeBP: bigint,
  *      MintLimit: Amount } }>
@@ -77,7 +77,7 @@ export const start = async (zcf, privateArgs) => {
   // Mock simple goverannce API for parameters that will be controlled by governance
   const getGovernance = _ => {
     const {
-      main: { WantStableFeeBP, GiveStableFeeBP, MintLimit },
+      governedParams: { WantStableFeeBP, GiveStableFeeBP, MintLimit },
     } = zcf.getTerms();
     assert(
       AmountMath.isGTE(MintLimit, emptyAnchor),

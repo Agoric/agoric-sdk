@@ -113,7 +113,7 @@ test.before(async t => {
   t.context.terms = {
     anchorBrand,
     anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
-    main: { WantStableFeeBP, GiveStableFeeBP, MintLimit: mintLimit },
+    governedParams: { WantStableFeeBP, GiveStableFeeBP, MintLimit: mintLimit },
   };
 });
 

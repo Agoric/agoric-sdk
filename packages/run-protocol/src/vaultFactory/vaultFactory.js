@@ -255,7 +255,7 @@ export const start = async (zcf, privateArgs) => {
   const getParamMgrRetriever = () =>
     Far('paramManagerRetriever', {
       get: paramDesc => {
-        if (paramDesc.key === 'main') {
+        if (paramDesc.key === 'governedParams') {
           return electorateParamManager;
         } else {
           return vaultParamManagers.get(paramDesc.collateralBrand);
