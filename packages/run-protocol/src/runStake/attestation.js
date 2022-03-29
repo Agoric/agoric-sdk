@@ -89,14 +89,26 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
   /** @type {Store<Address, Amount<'nat'>>} */
   const amountByAddress = makeStore('amount');
 
-  const getAccountState = async (address, brand) => {
+  /**
+   * Get liened amount from the JS store, without using the lienBridge.
+   *
+   * @param {Address} address
+   * @param {Brand<'nat'>} brand
+   */
+  const getLiened = (address, brand) => {
     assert.typeof(address, 'string');
+    assert.equal(brand, stakeBrand);
+    if (amountByAddress.has(address)) {
+      return amountByAddress.get(address);
+    }
+    // Don't bother storing empty amounts.
+    return empty;
+  };
+
+  const getAccountState = async (address, brand) => {
+    const liened = getLiened(address, brand);
     const s = await E(lienBridge).getAccountState(address, brand);
-    assert(
-      amountByAddress.has(address)
-        ? AmountMath.isEqual(s.liened, amountByAddress.get(address))
-        : AmountMath.isEmpty(s.liened),
-    );
+    assert(AmountMath.isEqual(liened, s.liened));
     return s;
   };
 
@@ -124,7 +136,6 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
    * @param { Amount<'nat'> } lienDelta
    */
   const mintAttestation = async (address, lienDelta) => {
-    assert.typeof(address, 'string');
     // This account state check is primarily to provide useful diagnostics.
     // Since things like the bonded amount can change out from under us,
     // we shouldn't rely on it completely.
@@ -132,7 +143,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     // may speed things up.
     await assertAccountStateOK(address, lienDelta);
 
-    const current = getOrElse(amountByAddress, address, () => empty);
+    const current = getLiened(address, stakeBrand);
     const target = add(current, lienDelta);
 
     // Since our mint is not subject to normal supply/demand,
@@ -148,7 +159,11 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     // can update the stored liened amount.
     await E(lienBridge).setLiened(address, current, target);
     // COMMIT
-    amountByAddress.set(address, target);
+    if (amountByAddress.has(address)) {
+      amountByAddress.set(address, target);
+    } else {
+      amountByAddress.init(address, target);
+    }
     return attestationPayment;
   };
 
@@ -170,22 +185,6 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     amountByAddress.set(address, lienedPost);
     attMint.burnLosses(harden({ Attestation: attestationAmount }), seat);
     seat.exit();
-  };
-
-  /**
-   * Get liened amount from the JS store, without using the lienBridge.
-   *
-   * @param {Address} address
-   * @param {Brand<'nat'>} brand
-   */
-  const getLiened = (address, brand) => {
-    assert.typeof(address, 'string');
-    assert.equal(
-      brand,
-      stakeBrand,
-      X`This contract can only make attestations for ${brand}`,
-    );
-    return getOrElse(amountByAddress, address, () => empty);
   };
 
   const lienMint = harden({
