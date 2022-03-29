@@ -1,10 +1,6 @@
 // @ts-check
 
-import {
-  CONTRACT_ELECTORATE,
-  makeParamManager,
-  ParamTypes,
-} from '@agoric/governance';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 
 import { KW } from './runStakeKit.js';
 
@@ -16,33 +12,7 @@ const PKey = /** @type { const } */ ({
   LoanFee: 'LoanFee',
 });
 
-/**
- * @param {ERef<ZoeService>} zoe
- * @param {{
- *   mintingRatio: Ratio,
- *   interestRate: Ratio,
- *   loanFee: Ratio,
- * }} rates
- * @param { Invitation} electorateInvitation
- */
-export const makeRunStakeParamManager = async (
-  zoe,
-  { mintingRatio, interestRate, loanFee },
-  electorateInvitation,
-) => {
-  return makeParamManager(
-    {
-      [PKey.MintingRatio]: [ParamTypes.RATIO, mintingRatio],
-      [PKey.InterestRate]: [ParamTypes.RATIO, interestRate],
-      [PKey.LoanFee]: [ParamTypes.RATIO, loanFee],
-      [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, electorateInvitation],
-    },
-    zoe,
-  );
-};
-harden(makeRunStakeParamManager);
-
-export const makeRunStakeParams = ({
+const makeRunStakeParams = ({
   electorateInvitationAmount,
   mintingRatio,
   interestRate,

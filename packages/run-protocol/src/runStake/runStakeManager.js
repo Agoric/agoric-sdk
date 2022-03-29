@@ -17,9 +17,13 @@ const trace = makeTracer('RM'); // TODO: how to turn this off?
  * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
- * @param {*} paramManager
+ * @param {{
+ *  getInterestRate: () => Ratio,
+ *  getMintingRatio: () => Ratio,
+ *  getLoanFee: () => Ratio,
+ * }} paramManager
  * @param {MintAndReallocate} mintAndReallocateWithFee
- * @param {*} burnDebt
+ * @param {BurnDebt} burnDebt
  * @param {Object} timing
  * @param {ERef<TimerService>} timing.timerService
  * @param {bigint} timing.chargingPeriod

@@ -3,7 +3,6 @@ import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationFacets } from './attestation.js';
-import { makeRunStakeParamManager } from './params.js';
 import { makeRunStakeKit, KW } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager.js';
 
@@ -80,7 +79,6 @@ export const start = async (
   { feeMintAccess, initialPoserInvitation, lienBridge },
 ) => {
   const {
-    governedParams: initialValue,
     brands: { Stake: stakeBrand },
     timerService,
     chargingPeriod,
@@ -96,25 +94,12 @@ export const start = async (
   const att = await makeAttestationFacets(zcf, stakeBrand, lienBridge);
   const attestBrand = await E(att.publicFacet).getBrand();
 
-  const paramManager = await makeRunStakeParamManager(
-    zcf.getZoeService(),
-    {
-      mintingRatio: initialValue.MintingRatio.value,
-      interestRate: initialValue.InterestRate.value,
-      loanFee: initialValue.LoanFee.value,
-    },
-    initialPoserInvitation,
-  );
-
-  const { augmentPublicFacet, makeGovernorFacet } = await handleParamGovernance(
-    zcf,
-    initialPoserInvitation,
-    {
+  const { augmentPublicFacet, makeGovernorFacet, params } =
+    await handleParamGovernance(zcf, initialPoserInvitation, {
       InterestRate: ParamTypes.RATIO,
       LoanFee: ParamTypes.RATIO,
       MintingRatio: ParamTypes.RATIO,
-    },
-  );
+    });
 
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
@@ -170,7 +155,7 @@ export const start = async (
     zcf,
     debtMint,
     { Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand },
-    paramManager.readonly(),
+    params,
     mintAndReallocate,
     burnDebt,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
