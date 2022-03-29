@@ -183,7 +183,7 @@ export const start = async (
     Far('runStake public', {
       makeLoanInvitation: () =>
         zcf.makeInvitation(
-          seat => makeRunStakeKit(zcf, seat, manager, debtMint),
+          seat => makeRunStakeKit(zcf, seat, manager),
           'make RUNstake',
         ),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,

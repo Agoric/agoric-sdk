@@ -25,15 +25,13 @@ export const KW = /** @type { const } */ ({
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
  * @param {import('./runStakeManager.js').RunStakeManager} manager
- * @param { ZCFMint<'nat'> } mint
  * return value follows the wallet invitationMakers pattern
  * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
  */
-export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
+export const makeRunStakeKit = (zcf, startSeat, manager) => {
   // CONSTANTS
   const collateralBrand = manager.getCollateralBrand();
-  /** @type {{brand: Brand<'nat'>}} */
-  const { brand: debtBrand } = mint.getIssuerRecord();
+  const debtBrand = manager.getDebtBrand();
 
   const emptyCollateral = AmountMath.makeEmpty(
     collateralBrand,
@@ -295,7 +293,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
 
     zcf.reallocate(seat, vaultSeat);
 
-    mint.burnLosses(harden({ [KW.Debt]: currentDebt }), vaultSeat);
+    manager.burnDebt(currentDebt, vaultSeat);
     state.open = false;
     updateDebtSnapshot(emptyDebt);
     updateUiState();

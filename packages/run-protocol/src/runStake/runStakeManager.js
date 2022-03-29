@@ -167,6 +167,7 @@ export const makeRunStakeManager = (
     mintAndReallocate,
     burnDebt,
 
+    getDebtBrand: () => brands.debt,
     getCollateralBrand: () => brands.Attestation,
     applyDebtDelta,
 
