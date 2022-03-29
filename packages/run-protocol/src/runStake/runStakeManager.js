@@ -19,6 +19,7 @@ const trace = makeTracer('RM'); // TODO: how to turn this off?
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
  * @param {*} paramManager
  * @param {MintAndReallocate} mintAndReallocateWithFee
+ * @param {*} burnDebt
  * @param {Object} timing
  * @param {ERef<TimerService>} timing.timerService
  * @param {bigint} timing.chargingPeriod
@@ -33,6 +34,7 @@ export const makeRunStakeManager = (
   brands,
   paramManager,
   mintAndReallocateWithFee,
+  burnDebt,
   { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
 ) => {
   /** @param { Amount<'copyBag'>} attestationGiven */
@@ -163,6 +165,7 @@ export const makeRunStakeManager = (
     getLoanFee: paramManager.getLoanFee,
     maxDebtForLien,
     mintAndReallocate,
+    burnDebt,
 
     getCollateralBrand: () => brands.Attestation,
     applyDebtDelta,

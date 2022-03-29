@@ -81,15 +81,12 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
     assert(AmountMath.isEqual(newDebt, toMint), X`loan fee mismatch`);
     trace('init', { runWanted, fee, attestationGiven });
 
-    const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
-    mint.mintGains(harden({ [KW.Debt]: runWanted }), mintSeat);
-    startSeat.incrementBy(
-      mintSeat.decrementBy(harden({ [KW.Debt]: runWanted })),
-    );
     vaultSeat.incrementBy(
-      startSeat.decrementBy(harden({ Attestation: attestationGiven })),
+      startSeat.decrementBy(harden({ [KW.Attestation]: attestationGiven })),
     );
-    zcf.reallocate(startSeat, vaultSeat, mintSeat);
+
+    manager.mintAndReallocate(toMint, fee, startSeat, vaultSeat);
+
     startSeat.exit();
     return newDebt;
   };
@@ -252,18 +249,14 @@ export const makeRunStakeKit = (zcf, startSeat, manager, mint) => {
       newDebt,
     });
 
-    // mint to vaultSeat, then reallocate to reward and client, then burn from
-    // vaultSeat.
-    mint.mintGains(harden({ [KW.Debt]: toMint }), vaultSeat);
-
     stageDelta(clientSeat, vaultSeat, giveColl, wantColl, KW.Attestation);
-    stageDelta(clientSeat, vaultSeat, giveRUN, wantRUN, KW.Debt);
-    manager.mintAndReallocate(fee, vaultSeat, clientSeat);
+    stageDelta(clientSeat, vaultSeat, giveRUN, emptyDebt, KW.Debt);
+    manager.mintAndReallocate(toMint, fee, clientSeat, vaultSeat);
 
     // parent needs to know about the change in debt
     updateDebtAccounting(debt, newDebt);
 
-    mint.burnLosses(harden({ [KW.Debt]: giveRUN }), vaultSeat);
+    manager.burnDebt(giveRUN, vaultSeat);
 
     assertVaultHoldsNoRun();
 

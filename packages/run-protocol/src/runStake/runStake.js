@@ -131,11 +131,18 @@ export const start = async (
    */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
     const kept = AmountMath.subtract(toMint, fee);
-    debtMint.mintGains(harden({ RUN: toMint }), mintSeat);
+    debtMint.mintGains(harden({ [KW.Debt]: toMint }), mintSeat);
     try {
-      rewardPoolSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: fee })));
-      seat.incrementBy(mintSeat.decrementBy(harden({ RUN: kept })));
-      zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
+      rewardPoolSeat.incrementBy(
+        mintSeat.decrementBy(harden({ [KW.Debt]: fee })),
+      );
+      seat.incrementBy(mintSeat.decrementBy(harden({ [KW.Debt]: kept })));
+      zcf.reallocate(
+        rewardPoolSeat,
+        mintSeat,
+        seat,
+        ...otherSeats.filter(s => s.hasStagedAllocation()),
+      );
     } catch (e) {
       mintSeat.clear();
       rewardPoolSeat.clear();
@@ -143,18 +150,22 @@ export const start = async (
       // That only relies on the internal mint, so it cannot fail without
       // there being much larger problems. There's no risk of tokens being
       // stolen here because the staging for them was already cleared.
-      debtMint.burnLosses(harden({ RUN: toMint }), mintSeat);
+      debtMint.burnLosses(harden({ [KW.Debt]: toMint }), mintSeat);
       throw e;
     } finally {
       assert(
         values(mintSeat.getCurrentAllocation()).every(a =>
           AmountMath.isEmpty(a),
         ),
-        X`Stage should be empty of RUN`,
+        X`Stage should be empty of Debt`,
       );
     }
     // TODO add aggregate debt tracking at the vaultFactory level #4482
     // totalDebt = AmountMath.add(totalDebt, toMint);
+  };
+
+  const burnDebt = (toBurn, seat) => {
+    debtMint.burnLosses(harden({ [KW.Debt]: toBurn }), seat);
   };
 
   const startTimeStamp = await E(timerService).getCurrentTimestamp();
@@ -164,6 +175,7 @@ export const start = async (
     { Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand },
     paramManager.readonly(),
     mintAndReallocate,
+    burnDebt,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
 
