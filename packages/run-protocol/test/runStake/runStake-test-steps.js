@@ -56,8 +56,6 @@ export const CASES = [
       ['borrowMoreRUN', 500n, false],
       ['checkRUNBalance', 1000n],
       ['checkBLDLiened', 8000n],
-      ['checkBLDLiened', 8000n],
-      ['checkRUNBalance', 1000n],
       ['earnRUNReward', 25n],
       ['payoffRUN', 1021n],
       ['checkRUNDebt', 0n],
