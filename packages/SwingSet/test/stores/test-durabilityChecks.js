@@ -13,17 +13,17 @@ const { defineKind, defineDurableKind, makeKindHandle } = vom;
 const durableHolderKind = makeKindHandle('holder');
 
 const initHolder = (held = null) => ({ held });
-const actualizeHolder = state => ({
-  hold: value => {
+const holderBehavior = {
+  hold: ({ state }, value) => {
     state.held = value;
   },
-});
+};
 
-const makeVirtualHolder = defineKind('holder', initHolder, actualizeHolder);
+const makeVirtualHolder = defineKind('holder', initHolder, holderBehavior);
 const makeDurableHolder = defineDurableKind(
   durableHolderKind,
   initHolder,
-  actualizeHolder,
+  holderBehavior,
 );
 
 const aString = 'zorch!';

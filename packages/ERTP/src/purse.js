@@ -3,6 +3,11 @@ import { defineKind } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 
 export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
+  const updatePurseBalance = (state, newPurseBalance) => {
+    state.currentBalance = newPurseBalance;
+    state.balanceUpdater.updateState(state.currentBalance);
+  };
+
   // - This kind is a pair of purse and depositFacet that have a 1:1
   //   correspondence.
   // - They are virtualized together to share a single state record.
@@ -24,41 +29,33 @@ export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
         balanceUpdater,
       };
     },
-    state => {
-      const { balanceNotifier, balanceUpdater } = state;
-      const updatePurseBalance = newPurseBalance => {
-        state.currentBalance = newPurseBalance;
-        balanceUpdater.updateState(state.currentBalance);
-      };
-
-      /** @type {Purse} */
-      const purse = {
-        deposit: (srcPayment, optAmountShape = undefined) => {
+    {
+      purse: {
+        deposit: ({ state }, srcPayment, optAmountShape = undefined) => {
           // Note COMMIT POINT within deposit.
           return purseMethods.deposit(
             state.currentBalance,
-            updatePurseBalance,
+            newPurseBalance => updatePurseBalance(state, newPurseBalance),
             srcPayment,
             optAmountShape,
           );
         },
-        withdraw: amount =>
+        withdraw: ({ state }, amount) =>
           // Note COMMIT POINT within withdraw.
           purseMethods.withdraw(
             state.currentBalance,
-            updatePurseBalance,
+            newPurseBalance => updatePurseBalance(state, newPurseBalance),
             amount,
           ),
-        getCurrentAmount: () => state.currentBalance,
-        getCurrentAmountNotifier: () => balanceNotifier,
+        getCurrentAmount: ({ state }) => state.currentBalance,
+        getCurrentAmountNotifier: ({ state }) => state.balanceNotifier,
         getAllegedBrand: () => brand,
         // eslint-disable-next-line no-use-before-define
-        getDepositFacet: () => depositFacet,
-      };
-      const depositFacet = {
-        receive: purse.deposit,
-      };
-      return { purse, depositFacet };
+        getDepositFacet: ({ facets }) => facets.depositFacet,
+      },
+      depositFacet: {
+        receive: ({ facets }, ...args) => facets.purse.deposit(...args),
+      },
     },
   );
   return () => makePurseKit().purse;

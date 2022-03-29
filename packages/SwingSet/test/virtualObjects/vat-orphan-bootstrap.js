@@ -1,11 +1,12 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-export function buildRootObject(_vatPowers) {
+export function buildRootObject(_vatPowers, vatParameters) {
   return Far('root', {
     async bootstrap(vats) {
-      const thing = await E(vats.bob).getYourThing();
-      await E(vats.bob).isThingYourThing(thing);
+      const mode = vatParameters.argv[0];
+      const thing = await E(vats.bob).retain(mode);
+      await E(vats.bob).testForRetention(thing);
     },
   });
 }

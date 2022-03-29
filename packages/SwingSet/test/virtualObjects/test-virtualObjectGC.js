@@ -192,25 +192,17 @@ function buildRootObject(vatPowers) {
 
   const { defineKind } = VatData;
 
-  const makeThing = defineKind(
-    'thing',
-    label => ({ label }),
-    state => ({
-      getLabel: () => state.label,
-    }),
-  );
-  const makeFacetedThing = defineKind(
-    'thing',
-    label => ({ label }),
-    state => ({
-      facetA: {
-        getLabelA: () => state.label,
-      },
-      facetB: {
-        getLabelB: () => state.label,
-      },
-    }),
-  );
+  const makeThing = defineKind('thing', label => ({ label }), {
+    getLabel: ({ state }) => state.label,
+  });
+  const makeFacetedThing = defineKind('thing', label => ({ label }), {
+    facetA: {
+      getLabelA: ({ state }) => state.label,
+    },
+    facetB: {
+      getLabelB: ({ state }) => state.label,
+    },
+  });
   const cacheDisplacer = makeThing('cacheDisplacer');
   // This immediately goes out of scope and gets GC'd and deleted, but its
   // creation consumes the same subID in its kind as the `cacheDisplacer` that
@@ -220,29 +212,25 @@ function buildRootObject(vatPowers) {
   // eslint-disable-next-line no-unused-vars
   const unusedFacetedCacheDisplacer = makeFacetedThing('cacheDisplacer');
 
-  const makeVirtualHolder = defineKind(
-    'holder',
-    (held = null) => ({ held }),
-    state => ({
-      setValue: value => {
-        state.held = value;
-      },
-      getValue: () => state.held,
-    }),
-  );
+  const makeVirtualHolder = defineKind('holder', (held = null) => ({ held }), {
+    setValue: ({ state }, value) => {
+      state.held = value;
+    },
+    getValue: ({ state }) => state.held,
+  });
   const virtualHolder = makeVirtualHolder();
 
   const makeDualMarkerThing = defineKind(
     'thing',
     () => ({ unused: 'uncared for' }),
-    _state => ({
+    {
       facetA: {
         methodA: () => 0,
       },
       facetB: {
         methodB: () => 0,
       },
-    }),
+    },
   );
 
   let nextThingNumber = 0;

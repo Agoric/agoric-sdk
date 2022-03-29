@@ -219,46 +219,17 @@ export function makeVirtualReferenceManager(
   }
 
   /**
-   * Compare two arrays (shallowly) for equality.
-   *
-   * @template T
-   * @param {T[]} a1
-   * @param {T[]} a2
-   * @returns {boolean}
-   */
-  const arrayEquals = (a1, a2) => {
-    assert(Array.isArray(a1));
-    assert(Array.isArray(a2));
-    if (a1.length !== a2.length) {
-      return false;
-    }
-    return a1.every((elem, idx) => Object.is(a2[idx], elem));
-  };
-
-  /**
-   * Check a list of facet names against what's already been established for a
-   * kind.  If they don't match, it's an error.  If nothing has been established
-   * yet, establish it now.
+   * Record the names of the facets of a multi-faceted virtual object.
    *
    * @param {string} kindID  The kind we're talking about
    * @param {string[]|null} facetNames  A sorted array of facet names to be
-   *    checked or acquired, or null if the kind is unfaceted
+   *    recorded, or null if the kind is unfaceted
    */
-  function checkOrAcquireFacetNames(kindID, facetNames) {
+  function rememberFacetNames(kindID, facetNames) {
     const kindInfo = kindInfoTable.get(`${kindID}`);
     assert(kindInfo, `no kind info for ${kindID}`);
-    if (kindInfo.facetNames !== undefined) {
-      if (facetNames === null) {
-        assert(kindInfo.facetNames === null);
-      } else {
-        assert(
-          arrayEquals(facetNames, kindInfo.facetNames),
-          'all virtual objects of the same kind must have the same facet names',
-        );
-      }
-    } else {
-      kindInfo.facetNames = facetNames;
-    }
+    assert(kindInfo.facetNames === undefined);
+    kindInfo.facetNames = facetNames;
   }
 
   /**
@@ -303,19 +274,17 @@ export function makeVirtualReferenceManager(
    * persistent storage.  Used for deserializing.
    *
    * @param {string} baseRef  The baseRef of the object being reanimated
-   * @param {boolean} proForma  If true, representative creation is for formal
-   *   use only and result will be ignored.
    *
    * @returns {Object}  A representative of the object identified by `baseRef`
    */
-  function reanimate(baseRef, proForma) {
+  function reanimate(baseRef) {
     const { id } = parseVatSlot(baseRef);
     const kindID = `${id}`;
     const kindInfo = kindInfoTable.get(kindID);
     assert(kindInfo, `no kind info for ${kindID}, call defineDurableKind`);
     const { reanimator } = kindInfo;
     if (reanimator) {
-      return reanimator(baseRef, proForma);
+      return reanimator(baseRef);
     } else {
       assert.fail(X`unknown kind ${kindID}`);
     }
@@ -618,7 +587,7 @@ export function makeVirtualReferenceManager(
     droppedCollectionRegistry,
     isDurable,
     registerKind,
-    checkOrAcquireFacetNames,
+    rememberFacetNames,
     reanimate,
     addReachableVref,
     removeReachableVref,

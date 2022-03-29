@@ -690,16 +690,6 @@ function build(
     let val = getValForSlot(baseRef);
     if (val) {
       if (virtual) {
-        // If it's a virtual object for which we already have a representative,
-        // we are going to use that existing representative to preserve ===
-        // equality and WeakMap key usability, BUT we are going to ask the user
-        // code to make a new representative anyway (which we'll discard) so
-        // that as far as the user code is concerned we are making a new
-        // representative with each act of deserialization.  This way they can't
-        // detect reanimation by playing games inside their kind definition to
-        // try to observe when new representatives are created (e.g., by
-        // counting calls or squirreling things away in hidden WeakMaps).
-        vrm.reanimate(baseRef, true); // N.b.: throwing away the result
         if (facet !== undefined) {
           return val[facet];
         }
@@ -709,7 +699,7 @@ function build(
     let result;
     if (virtual) {
       assert.equal(type, 'object');
-      val = vrm.reanimate(baseRef, false);
+      val = vrm.reanimate(baseRef);
       if (facet !== undefined) {
         result = val[facet];
       }

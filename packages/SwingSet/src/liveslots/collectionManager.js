@@ -806,24 +806,20 @@ export function makeCollectionManager(
     );
   }
 
-  function reanimateScalarMapStore(vobjID, proForma) {
-    return proForma ? null : collectionToMapStore(reanimateCollection(vobjID));
+  function reanimateScalarMapStore(vobjID) {
+    return collectionToMapStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarWeakMapStore(vobjID, proForma) {
-    return proForma
-      ? null
-      : collectionToWeakMapStore(reanimateCollection(vobjID));
+  function reanimateScalarWeakMapStore(vobjID) {
+    return collectionToWeakMapStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarSetStore(vobjID, proForma) {
-    return proForma ? null : collectionToSetStore(reanimateCollection(vobjID));
+  function reanimateScalarSetStore(vobjID) {
+    return collectionToSetStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarWeakSetStore(vobjID, proForma) {
-    return proForma
-      ? null
-      : collectionToWeakSetStore(reanimateCollection(vobjID));
+  function reanimateScalarWeakSetStore(vobjID) {
+    return collectionToWeakSetStore(reanimateCollection(vobjID));
   }
 
   const testHooks = { obtainStoreKindID, storeSizeInternal, makeCollection };

@@ -5,13 +5,9 @@ import { defineKind } from '@agoric/vat-data';
 const things = [];
 
 export function buildRootObject(_vatPowers) {
-  const makeThing = defineKind(
-    'thing',
-    label => ({ label }),
-    state => ({
-      getLabel: () => state.label,
-    }),
-  );
+  const makeThing = defineKind('thing', label => ({ label }), {
+    getLabel: ({ state }) => state.label,
+  });
   let nextThingNumber = 0;
 
   return Far('root', {

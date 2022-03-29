@@ -6,20 +6,19 @@ const { defineDurableKind } = VatData;
 function initializeDurandal(arg) {
   return { arg };
 }
-function actualizeDurandal(state) {
-  return {
-    get() {
-      return `new ${state.arg}`;
-    },
-    set(arg) {
-      state.arg = arg;
-    },
-  };
-}
+
+const durandalBehavior = {
+  get({ state }) {
+    return `new ${state.arg}`;
+  },
+  set({ state }, arg) {
+    state.arg = arg;
+  },
+};
 
 export function buildRootObject(_vatPowers, vatParameters, baggage) {
   const durandalHandle = baggage.get('durandalHandle');
-  defineDurableKind(durandalHandle, initializeDurandal, actualizeDurandal);
+  defineDurableKind(durandalHandle, initializeDurandal, durandalBehavior);
 
   return Far('root', {
     getVersion() {

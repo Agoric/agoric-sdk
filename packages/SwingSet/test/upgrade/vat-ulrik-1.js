@@ -8,20 +8,20 @@ const durandalHandle = makeKindHandle('durandal');
 function initializeDurandal(arg) {
   return { arg };
 }
-function actualizeDurandal(state) {
-  return {
-    get() {
-      return state.arg;
-    },
-    set(arg) {
-      state.arg = arg;
-    },
-  };
-}
+
+const durandalBehavior = {
+  get({ state }) {
+    return state.arg;
+  },
+  set({ state }, arg) {
+    state.arg = arg;
+  },
+};
+
 const makeDurandal = defineDurableKind(
   durandalHandle,
   initializeDurandal,
-  actualizeDurandal,
+  durandalBehavior,
 );
 
 export function buildRootObject(_vatPowers, vatParameters, baggage) {

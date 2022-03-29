@@ -14,21 +14,13 @@ test('VOM tracks reachable vrefs', async t => {
   const weakStore = makeScalarBigWeakMapStore('test');
 
   // empty object, used as weap map store key
-  const makeKey = defineKind(
-    'key',
-    () => ({}),
-    _state => ({}),
-  );
-  const makeHolder = defineKind(
-    'holder',
-    held => ({ held }),
-    state => ({
-      setHeld: held => {
-        state.held = held;
-      },
-      getHeld: () => state.held,
-    }),
-  );
+  const makeKey = defineKind('key', () => ({}), {});
+  const makeHolder = defineKind('holder', held => ({ held }), {
+    setHeld: ({ state }, held) => {
+      state.held = held;
+    },
+    getHeld: ({ state }) => state.held,
+  });
 
   let count = 1001;
   function makePresence() {
