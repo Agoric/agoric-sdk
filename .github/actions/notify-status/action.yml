@@ -11,6 +11,9 @@ inputs:
   password:
     description: 'Sendgrid Password'
     required: true
+  webhook:
+    description: 'Slack webhook URL'
+    required: true
 
 runs:
   using: composite
@@ -47,5 +50,5 @@ runs:
             "username": "GitHub"
           }
       env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_URL: ${{ inputs.webhook }}
         SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
