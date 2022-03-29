@@ -1,6 +1,6 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
-import { handleParamGovernance } from '@agoric/governance';
+import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationFacets } from './attestation.js';
 import { makeRunStakeParamManager } from './params.js';
@@ -24,18 +24,12 @@ const { values } = Object;
  *   MintingRatio: ParamRecord<'ratio'>,
  *   InterestRate: ParamRecord<'ratio'>,
  *   LoanFee: ParamRecord<'ratio'>,
- * }} RunStakeParamTerms
- * @typedef {{
- *   electionManager: VoteOnParamChange,
- *   main: RunStakeParamTerms & {
- *     Electorate: ParamRecord<'invitation'>,
- *   },
- * }} RunStakeGovernanceTerms
+ * }} RunStakeParams
  *
  * As in vaultFactory, `timerService` provides the periodic signal to
  * charge interest according to `chargingPeriod` and `recordingPeriod`.
  *
- * @typedef { RunStakeGovernanceTerms & {
+ * @typedef { GovernanceTerms<RunStakeParams> & {
  *   timerService: TimerService,
  *   chargingPeriod: bigint,
  *   recordingPeriod: bigint,
@@ -86,7 +80,7 @@ export const start = async (
   { feeMintAccess, initialPoserInvitation, lienBridge },
 ) => {
   const {
-    main: initialValue,
+    governedParams: initialValue,
     brands: { Stake: stakeBrand },
     timerService,
     chargingPeriod,
@@ -112,12 +106,15 @@ export const start = async (
     initialPoserInvitation,
   );
 
-  const { wrapPublicFacet, wrapCreatorFacet } = handleParamGovernance(
+  const { augmentPublicFacet, makeGovernorFacet } = await handleParamGovernance(
     zcf,
-    paramManager,
+    initialPoserInvitation,
+    {
+      InterestRate: ParamTypes.RATIO,
+      LoanFee: ParamTypes.RATIO,
+      MintingRatio: ParamTypes.RATIO,
+    },
   );
-
-  // TODO: assertElectorateMatches(paramManager, otherGovernedTerms);
 
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
@@ -179,7 +176,7 @@ export const start = async (
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
 
-  const publicFacet = wrapPublicFacet(
+  const publicFacet = augmentPublicFacet(
     Far('runStake public', {
       makeLoanInvitation: () =>
         zcf.makeInvitation(
@@ -190,13 +187,13 @@ export const start = async (
     }),
   );
 
-  const creatorFacet = wrapCreatorFacet(
+  const creatorFacet = makeGovernorFacet(
     Far('runStake creator', {
       provideAttestationMaker: att.creatorFacet.provideAttestationTool,
     }),
   );
 
-  // @ts-expect-error wrapCreatorFacet loses type info
+  // @ts-expect-error makeGovernorFacet loses type info
   return { publicFacet, creatorFacet };
 };
 harden(start);

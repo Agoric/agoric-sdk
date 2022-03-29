@@ -67,7 +67,7 @@ export const makeRunStakeTerms = (
   timerService,
   chargingPeriod,
   recordingPeriod,
-  main: makeRunStakeParams({
+  governedParams: makeRunStakeParams({
     electorateInvitationAmount,
     mintingRatio,
     interestRate,
