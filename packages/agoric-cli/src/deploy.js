@@ -5,6 +5,7 @@ import { E, makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';
 import bundleSource from '@endo/bundle-source';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
+import url from 'url';
 import path from 'path';
 import inquirer from 'inquirer';
 import createEsmRequire from 'esm';
@@ -253,11 +254,12 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
 
           // Use Node.js ESM support if package.json of template says "type":
           // "module".
-          const read = async url => fs.readFile(new URL(url).pathname);
+          const read = async location =>
+            fs.readFile(url.fileURLToPath(location));
           const { packageDescriptorText } =
             await readContainingPackageDescriptor(
               read,
-              `file://${moduleFile}`,
+              url.pathToFileURL(moduleFile),
             ).catch(cause => {
               throw new Error(
                 `Expected a package.json beside deploy script ${moduleFile}, ${cause}`,
