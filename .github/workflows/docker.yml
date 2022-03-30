@@ -2,7 +2,7 @@ name: Build release Docker Images
 
 on:
   push:
-    branches: [master] # $default-branch
+    branches: [mergify/*] # $default-branch
     tags:
       - '@agoric/sdk@*'
 
