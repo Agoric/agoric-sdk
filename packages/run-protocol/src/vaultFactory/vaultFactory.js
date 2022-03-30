@@ -122,13 +122,15 @@ export const start = async (zcf, privateArgs) => {
   /** @type {Store<Brand,VaultManager>} */
   const collateralTypes = makeScalarMap('brand');
 
-  const zoe = zcf.getZoeService();
-
   /** @type { Store<Brand, import('./params.js').VaultParamManager> } */
   const vaultParamManagers = makeScalarMap('brand');
 
   /** @type {AddVaultType} */
-  const addVaultType = async (collateralIssuer, collateralKeyword, rates) => {
+  const addVaultType = async (
+    collateralIssuer,
+    collateralKeyword,
+    initialParamValues,
+  ) => {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     // We create only one vault per collateralType.
@@ -138,9 +140,10 @@ export const start = async (zcf, privateArgs) => {
     );
 
     /** a powerful object; can modify parameters */
-    const vaultParamManager = makeVaultParamManager(rates);
+    const vaultParamManager = makeVaultParamManager(initialParamValues);
     vaultParamManagers.init(collateralBrand, vaultParamManager);
 
+    const zoe = zcf.getZoeService();
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
       liquidationInstall,
       harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
@@ -219,6 +222,7 @@ export const start = async (zcf, privateArgs) => {
   // bookkeeping. It's needed in tests.
   const getRewardAllocation = () => rewardPoolSeat.getCurrentAllocation();
 
+  // TODO use named getters of TypedParamManager
   const getGovernedParams = paramDesc => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
@@ -268,6 +272,7 @@ export const start = async (zcf, privateArgs) => {
 
   /** @type {VaultFactory} */
   const vaultFactory = Far('vaultFactory machine', {
+    // TODO move this under governance #3972
     addVaultType,
     getCollaterals,
     getRewardAllocation,

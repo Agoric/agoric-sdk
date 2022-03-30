@@ -7,6 +7,7 @@ import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
+import { AmountMath } from '@agoric/ertp';
 import { makeGovernedTerms } from './vaultFactory/params.js';
 import { makeAmmTerms } from './vpool-xyk-amm/params.js';
 import { makeReserveTerms } from './reserve/params.js';
@@ -251,11 +252,17 @@ export const startVaultFactory = async (
 
   const centralBrand = await centralBrandP;
 
-  // declare governed params for the vaultFactory; addVaultType() sets actual rates
-  const rates = {
-    liquidationMargin: makeRatio(105n, centralBrand),
-    interestRate: makeRatio(250n, centralBrand, BASIS_POINTS),
-    loanFee: makeRatio(200n, centralBrand, BASIS_POINTS),
+  /**
+   * Types for the governed params for the vaultFactory; addVaultType() sets actual values
+   *
+   * @type {VaultManagerParamValues}
+   */
+  const vaultManagerParams = {
+    // XXX the values aren't used. May be addressed by https://github.com/Agoric/agoric-sdk/issues/4861
+    debtLimit: AmountMath.make(centralBrand, 0n),
+    liquidationMargin: makeRatio(0n, centralBrand),
+    interestRate: makeRatio(0n, centralBrand, BASIS_POINTS),
+    loanFee: makeRatio(0n, centralBrand, BASIS_POINTS),
   };
 
   const [ammInstance, electorateInstance, contractGovernorInstall] =
@@ -273,7 +280,7 @@ export const startVaultFactory = async (
     installations.liquidate,
     chainTimerService,
     invitationAmount,
-    rates,
+    vaultManagerParams,
     ammPublicFacet,
   );
   const governorTerms = harden({
