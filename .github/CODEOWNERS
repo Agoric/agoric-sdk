@@ -2,7 +2,7 @@
 # We prefer to explicitly specify owners for all subdirectories.
 *                                @warner @Chris-Hibbert @FUDCo @michaelfig
 
-/*                               @kriskowal @michaelfig @erights
+/*.*                             @kriskowal @michaelfig @erights
 /.github/                        @kriskowal @michaelfig @erights
 /docker/                         @kriskowal @michaelfig @erights
 /patches/                        @kriskowal @michaelfig @erights
