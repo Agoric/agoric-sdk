@@ -298,7 +298,7 @@ const constructFromState = state => {
     }
     const { phase } = state;
     const uiState = snapshotState(phase);
-    trace('updateUiState', uiState);
+    trace('updateUiState', idInManager, uiState);
 
     switch (phase) {
       case VaultPhase.ACTIVE:
@@ -482,7 +482,7 @@ const constructFromState = state => {
     // then mint, reallocate, and burn.
     const { newDebt, fee, toMint } = loanFee(debt, giveRUN, wantRUN);
 
-    trace('adjustBalancesHook', {
+    trace('adjustBalancesHook', idInManager, {
       newCollateralPre,
       newCollateral,
       fee,
@@ -526,7 +526,10 @@ const constructFromState = state => {
     // TODO should this be simplified to know that the oldDebt mut be empty?
     const debtPre = getCurrentDebt();
     const collateralPre = getCollateralAmount();
-    trace('initVaultKit start: collateral', { debtPre, collateralPre });
+    trace('initVaultKit start: collateral', idInManager, {
+      debtPre,
+      collateralPre,
+    });
 
     // get the payout to provide access to the collateral if the
     // contract abandons
@@ -546,8 +549,8 @@ const constructFromState = state => {
     );
     assert(AmountMath.isEqual(newDebtPre, toMint), X`fee mismatch for vault`);
     trace(
-      idInManager,
       'initVault',
+      idInManager,
       { wantedRun: wantRUN, fee },
       getCollateralAmount(),
     );

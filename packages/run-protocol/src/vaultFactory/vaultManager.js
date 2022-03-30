@@ -175,6 +175,7 @@ export const makeVaultManager = (
     const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
+      trace('no open vaults');
       return;
     }
 
@@ -198,6 +199,7 @@ export const makeVaultManager = (
         highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
+      trace('updating level for outstandingQuote');
       return;
     }
 
@@ -205,15 +207,15 @@ export const makeVaultManager = (
       return;
     }
 
+    // There are two awaits in a row here. The first gets a mutableQuote object
+    // relatively quickly from the PriceAuthority. The second schedules a
+    // callback that may not fire until much later.
+    // Callers shouldn't expect a response from this function.
     outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
       highestDebtRatio.denominator, // collateral
       triggerPoint,
     );
 
-    // There are two awaits in a row here. The first gets a mutableQuote object
-    // relatively quickly from the PriceAuthority. The second schedules a
-    // callback that may not fire until much later.
-    // Callers shouldn't expect a response from this function.
     const quote = await E(outstandingQuote).getPromise();
     // When we receive a quote, we liquidate all the vaults that don't have
     // sufficient collateral, (even if the trigger was set for a different
