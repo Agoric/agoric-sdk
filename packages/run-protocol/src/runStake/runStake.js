@@ -20,6 +20,7 @@ const { values } = Object;
  * and `electionManager` terms.
  *
  * @typedef {{
+ *   DebtLimit: ParamRecord<'amount'>,
  *   MintingRatio: ParamRecord<'ratio'>,
  *   InterestRate: ParamRecord<'ratio'>,
  *   LoanFee: ParamRecord<'ratio'>,
@@ -96,6 +97,7 @@ export const start = async (
 
   const { augmentPublicFacet, makeGovernorFacet, params } =
     await handleParamGovernance(zcf, initialPoserInvitation, {
+      DebtLimit: ParamTypes.AMOUNT,
       InterestRate: ParamTypes.RATIO,
       LoanFee: ParamTypes.RATIO,
       MintingRatio: ParamTypes.RATIO,

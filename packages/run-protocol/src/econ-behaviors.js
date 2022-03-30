@@ -525,6 +525,7 @@ harden(startRewardDistributor);
 /**
  * @param {RunStakeBootstrapPowers } powers
  * @param {Object} config
+ * @param {bigint} config.debtLimit count of RUN
  * @param {Rational} config.mintingRatio ratio of RUN minted to BLD
  * @param {bigint} config.interestRateBP
  * @param {bigint} config.loanFeeBP
@@ -565,6 +566,7 @@ export const startRunStake = async (
     },
   },
   config = {
+    debtLimit: 1_000_000n,
     mintingRatio: [1n, 4n],
     interestRateBP: 250n,
     loanFeeBP: 200n,
@@ -604,6 +606,7 @@ export const startRunStake = async (
       recordingPeriod: config.recordingPeriod,
     },
     {
+      debtLimit: AmountMath.make(runBrand, config.debtLimit),
       mintingRatio: makeRatio(
         config.mintingRatio[0],
         runBrand,
