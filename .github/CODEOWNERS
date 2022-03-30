@@ -1,6 +1,6 @@
 # Default code owners when not specified.
 # We prefer to explicitly specify owners for all subdirectories.
-*                                @warner @dckc @Chris-Hibbert @FUDCo @michaelfig
+*                                @warner @Chris-Hibbert @FUDCo @michaelfig
 
 /*                               @kriskowal @michaelfig @erights
 /.github/                        @kriskowal @michaelfig @erights
