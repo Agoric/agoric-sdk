@@ -177,7 +177,8 @@ export function insistVatSyscallObject(vso) {
     }
     case 'dropImports':
     case 'retireImports':
-    case 'retireExports': {
+    case 'retireExports':
+    case 'abandonExports': {
       const [slots] = rest;
       assert(Array.isArray(slots));
       for (const slot of slots) {

@@ -46,6 +46,8 @@ export function dumpKT(kernel) {
 export function buildDispatch(onDispatchCallback = undefined) {
   const log = [];
 
+  const GC = ['dropExports', 'retireExports', 'retireImports'];
+
   function dispatch(vatDeliverObject) {
     const [type, ...vdoargs] = vatDeliverObject;
     if (type === 'message') {
@@ -71,6 +73,9 @@ export function buildDispatch(onDispatchCallback = undefined) {
       }
     } else if (type === 'startVat') {
       // ignore
+    } else if (GC.includes(type)) {
+      const [vrefs] = vdoargs;
+      log.push({ type, vrefs });
     } else {
       throw Error(`unknown vatDeliverObject type ${type}`);
     }

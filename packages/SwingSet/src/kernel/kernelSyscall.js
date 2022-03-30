@@ -299,6 +299,14 @@ export function makeKernelSyscallHandler(tools) {
     return OKNULL;
   }
 
+  function abandonExports(vatID, koids) {
+    assert(Array.isArray(koids), X`abandonExports given non-Array ${koids}`);
+    for (const koid of koids) {
+      kernelKeeper.orphanKernelObject(koid, vatID);
+    }
+    return OKNULL;
+  }
+
   // callKernelHook is only available to devices
 
   function callKernelHook(deviceID, hookName, args) {
@@ -368,6 +376,10 @@ export function makeKernelSyscallHandler(tools) {
       case 'retireExports': {
         const [_, ...args] = ksc;
         return retireExports(...args);
+      }
+      case 'abandonExports': {
+        const [_, ...args] = ksc;
+        return abandonExports(...args);
       }
       case 'callKernelHook': {
         const [_, ...args] = ksc;

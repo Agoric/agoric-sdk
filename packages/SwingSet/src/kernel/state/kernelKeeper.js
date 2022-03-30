@@ -527,6 +527,13 @@ export default function makeKernelKeeper(
     return owner;
   }
 
+  function orphanKernelObject(kref, oldVat) {
+    const ownerKey = `${kref}.owner`;
+    const ownerVat = kvStore.get(ownerKey);
+    assert.equal(ownerVat, oldVat, `export ${kref} not owned by old vat`);
+    kvStore.delete(ownerKey);
+  }
+
   function deleteKernelObject(koid) {
     kvStore.delete(`${koid}.owner`);
     kvStore.delete(`${koid}.refCount`);
@@ -743,10 +750,7 @@ export default function makeKernelKeeper(
       // must also delete the corresponding kernel owner entry for the object,
       // since the object will no longer be accessible.
       const kref = kvStore.get(k);
-      const ownerKey = `${kref}.owner`;
-      const ownerVat = kvStore.get(ownerKey);
-      assert.equal(ownerVat, vatID, `export ${kref} not owned by late vat`);
-      kvStore.delete(ownerKey);
+      orphanKernelObject(kref, vatID);
     }
 
     // then scan for imported objects, which must be decrefed
@@ -1220,6 +1224,11 @@ export default function makeKernelKeeper(
                 // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
                 actions.add(`${ownerVatID} retireExport ${kref}`);
               }
+            } else if (recognizable === 0) {
+              // unreachable, unrecognizable, orphaned: delete the
+              // empty refcount here, since we can't send a GC
+              // action without an ownerVatID
+              deleteKernelObject(kref);
             }
           }
         }
@@ -1505,6 +1514,7 @@ export default function makeKernelKeeper(
     ownerOfKernelDevice,
     kernelObjectExists,
     getImporters,
+    orphanKernelObject,
     deleteKernelObject,
     pinObject,
 
