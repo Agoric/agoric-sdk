@@ -1,19 +1,21 @@
-# Default code owners when not specified.
-# We prefer to explicitly specify owners for all subdirectories.
+# Last match takes precedence.
+
+# Default code owners when none specified
 *                                @warner @Chris-Hibbert @FUDCo @michaelfig
 
-/*.*                             @kriskowal @michaelfig
+# Tooling and dependencies
+/*                               @kriskowal @michaelfig
 /.github/                        @kriskowal @michaelfig
 /docker/                         @kriskowal @michaelfig
 /patches/                        @kriskowal @michaelfig
 /scripts/                        @kriskowal @michaelfig
 /yarn.lock                       @mhofman
 
-# Golang parts of the repo.
+# Golang parts of the repo
 /go.*                            @JimLarson
 /golang/                         @JimLarson
 
-# Explicit owners for our packages
+# Each npm package
 /packages/ERTP/                  @erights @Chris-Hibbert
 /packages/SwingSet/              @warner @FUDCo
 /packages/access-token/          @kriskowal @michaelfig
