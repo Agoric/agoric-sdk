@@ -1528,6 +1528,35 @@ export function makeWallet({
     return offerResult.uiNotifier;
   }
 
+  /**
+   * Gets the public notifiers from an offer's result.
+   *
+   * @param {string} rawId - The offer's raw id.
+   * @param {string} dappOrigin - The origin of the dapp the offer came from.
+   * @throws if the offer result doesn't have notifiers.
+   */
+  async function getPublicNotifiers(rawId, dappOrigin = 'unknown') {
+    const id = makeId(dappOrigin, rawId);
+
+    const offerResult = await idToOfferResultPromiseKit.get(id).promise;
+    assert(
+      passStyleOf(offerResult) === 'copyRecord',
+      `offerResult ${offerResult} must be a record to have publicNotifiers`,
+    );
+
+    const { publicNotifiers } = offerResult;
+    assert(
+      publicNotifiers,
+      X`offerResult ${offerResult} does not have notifiers`,
+    );
+    assert(
+      passStyleOf(publicNotifiers) === 'copyRecord',
+      X`publicNotifiers ${publicNotifiers} must be a record`,
+    );
+
+    return publicNotifiers;
+  }
+
   // Create a map from the first "wallet" path element, to the next naming hub
   // (which supports at least "lookup").
   const createRootLookups = () => {
@@ -1595,6 +1624,7 @@ export function makeWallet({
   };
 
   const firstPathToLookup = createRootLookups();
+
   const wallet = Far('wallet', {
     lookup: (...path) => {
       // Provide an entrypoint to the wallet's naming hub.
@@ -1684,7 +1714,9 @@ export function makeWallet({
     getPaymentsNotifier() {
       return paymentsNotifier;
     },
+    /** @deprecated use `getPublicNotifiers` instead. */
     getUINotifier,
+    getPublicNotifiers,
     getZoe() {
       return zoe;
     },

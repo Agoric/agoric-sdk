@@ -13,6 +13,7 @@ import { defineKind } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
+import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 
 const { details: X, quote: q } = assert;
 
@@ -382,57 +383,6 @@ const constructFromState = state => {
     assertCloseable();
     return zcf.makeInvitation(closeHook, 'CloseVault');
   };
-
-  // The proposal is not allowed to include any keys other than these,
-  // usually 'Collateral' and 'RUN'.
-  const assertOnlyKeys = (proposal, keys) => {
-    const onlyKeys = clause =>
-      Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
-    assert(
-      onlyKeys(proposal.give),
-      X`extraneous terms in give: ${proposal.give}`,
-    );
-    assert(
-      onlyKeys(proposal.want),
-      X`extraneous terms in want: ${proposal.want}`,
-    );
-  };
-
-  /**
-   * Stage a transfer between `fromSeat` and `toSeat`, specified as the delta between
-   * the gain and a loss on the `fromSeat`. The gain/loss are typically from the
-   * give/want respectively of a proposal. The `key` is the allocation keyword.
-   *
-   * @param {ZCFSeat} fromSeat
-   * @param {ZCFSeat} toSeat
-   * @param {Amount} fromLoses
-   * @param {Amount} fromGains
-   * @param {Keyword} key
-   */
-  const stageDelta = (fromSeat, toSeat, fromLoses, fromGains, key) => {
-    // Must check `isEmpty`; can't subtract `empty` from a missing allocation.
-    if (!AmountMath.isEmpty(fromLoses)) {
-      toSeat.incrementBy(fromSeat.decrementBy(harden({ [key]: fromLoses })));
-    }
-    if (!AmountMath.isEmpty(fromGains)) {
-      fromSeat.incrementBy(toSeat.decrementBy(harden({ [key]: fromGains })));
-    }
-  };
-
-  /**
-   * Apply a delta to the `base` Amount, where the delta is represented as
-   * an amount to gain and an amount to lose. Typically one of those will
-   * be empty because gain/loss comes from the give/want for a specific asset
-   * on a proposal. We use two Amounts because an Amount cannot represent
-   * a negative number (so we use a "loss" that will be subtracted).
-   *
-   * @param {Amount} base
-   * @param {Amount} gain
-   * @param {Amount} loss
-   * @returns {Amount}
-   */
-  const addSubtract = (base, gain, loss) =>
-    AmountMath.subtract(AmountMath.add(base, gain), loss);
 
   /**
    * Calculate the fee, the amount to mint and the resulting debt.

@@ -295,6 +295,7 @@ test.serial('exercise cache', async t => {
   done();
 
   await hold(T8); // cache unchanged - [t1 t2 t3 t4]
+  ck('get', dataKey(8), thingVal('thing8'));
   ck('get', rcKey(4), undefined);
   ck('get', esKey(4), 'r');
   done();
@@ -306,7 +307,6 @@ test.serial('exercise cache', async t => {
   done();
 
   await writeHeld('thing8 updated'); // reanimate t8, evict t3 - [t8 t7 t1 t2]
-  ck('get', dataKey(8), thingVal('thing8'));
   ck('set', dataKey(8), thingVal('thing8 updated'));
   done();
 });

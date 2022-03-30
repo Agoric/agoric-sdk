@@ -498,7 +498,6 @@ export function makeVirtualObjectManager(
    */
   function defineKindInternal(kindID, tag, init, actualize, finish, durable) {
     let nextInstanceID = 1;
-    const propertyNames = new Set();
 
     function makeRepresentative(innerSelf, initializing, proForma) {
       if (!proForma) {
@@ -518,7 +517,10 @@ export function makeVirtualObjectManager(
       }
 
       const wrappedState = {};
-      for (const prop of propertyNames) {
+      if (!initializing) {
+        ensureState();
+      }
+      for (const prop of Object.getOwnPropertyNames(innerSelf.rawState)) {
         Object.defineProperty(wrappedState, prop, {
           get: () => {
             ensureState();
@@ -631,7 +633,6 @@ export function makeVirtualObjectManager(
         }
         data.slots.map(vrm.addReachableVref);
         rawState[prop] = data;
-        propertyNames.add(prop);
       }
       const innerSelf = { baseRef, rawState, repCount: 0 };
       const [toHold, toExpose, state] = makeRepresentative(

@@ -61,6 +61,7 @@ FLAGS may be:
   --forcegc        - run garbage collector after each block
   --batchsize N    - set BATCHSIZE to N cranks (default 200)
   --verbose        - output verbose debugging messages as it runs
+  --activityhash   - print out the current activity hash after each crank
   --audit          - audit kernel promise reference counts after each crank
   --dump           - dump a kernel state store snapshot after each crank
   --dumpdir DIR    - place kernel state dumps in directory DIR (default ".")
@@ -177,10 +178,14 @@ export async function main() {
   let dbSize = 0;
   let initOnly = false;
   let useXS = false;
+  let activityHash = false;
 
   while (argv[0] && argv[0].startsWith('-')) {
     const flag = argv.shift();
     switch (flag) {
+      case '--activityhash':
+        activityHash = true;
+        break;
       case '--init':
         forceReset = true;
         break;
@@ -609,6 +614,9 @@ export async function main() {
       if (doAudits) {
         auditRefCounts(swingStore.kvStore);
       }
+      if (activityHash) {
+        log(`activityHash: ${controller.getActivityhash()}`);
+      }
       if (verbose) {
         log(`===> end of crank ${crankNumber}`);
       }
@@ -645,6 +653,9 @@ export async function main() {
         data = data.concat(Object.values(controller.getStats()));
       }
       statLogger.log(data);
+    }
+    if (activityHash) {
+      log(`activityHash: ${controller.getActivityhash()}`);
     }
     return actualSteps;
   }

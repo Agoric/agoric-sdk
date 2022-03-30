@@ -576,17 +576,19 @@ function validateExport(v, rp, what, esp, second) {
   validateDone(v);
 }
 
-function validateImport(v, rp) {
+function validateImport(v, rp, what, whatValue) {
+  validate(v, matchVatstoreGet(stateKey(what), whatValue));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
 
-function validateLoad(v, rp, what) {
+function validateLoad(v, rp, what, whatValue) {
   validate(
     v,
     matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(what)),
   );
+  validate(v, matchVatstoreGet(stateKey(what), whatValue));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
@@ -655,6 +657,7 @@ async function voLifeCycleTest1(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -686,7 +689,7 @@ test.serial('VO lifecycle 1 faceted', async t => {
 //   lERV -> LERV -> lERV -> leRV -> LeRV -> leRV -> LeRV -> LerV
 async function voLifeCycleTest2(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -704,7 +707,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // lerV -> LerV  Read virtual reference, now there's an in-memory reference again too
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf);
+  validateLoad(v, rp, thingf, testObjValue);
 
   // LerV -> LERV  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
@@ -716,7 +719,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // lERV -> LERV  Reread from storage, all three legs again
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf);
+  validateLoad(v, rp, thingf, testObjValue);
 
   // LERV -> lERV  Drop in-memory reference (stepping stone to other states)
   rp = await dispatchMessage('dropHeld');
@@ -724,7 +727,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // lERV -> LERV  Reintroduce the in-memory reference via message
   rp = await dispatchMessage('importAndHold', thingArgs(thing, isf));
-  validateImport(v, rp);
+  validateImport(v, rp, thingf, testObjValue);
 
   // LERV -> lERV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
@@ -736,7 +739,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // leRV -> LeRV  Fetch from storage
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf);
+  validateLoad(v, rp, thingf, testObjValue);
 
   // LeRV -> leRV  Forget about it *again*
   rp = await dispatchMessage('dropHeld');
@@ -744,7 +747,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // leRV -> LeRV  Fetch from storage *again*
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf);
+  validateLoad(v, rp, thingf, testObjValue);
 
   // LeRV -> LerV  Retire the export
   await dispatchRetireExports(thingf);
@@ -760,7 +763,7 @@ test.serial('VO lifecycle 2 faceted', async t => {
 // test 3: lerv -> Lerv -> LerV -> LERV -> LeRV -> leRV -> lerV -> lerv
 async function voLifeCycleTest3(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -805,6 +808,7 @@ async function voLifeCycleTest4(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -835,7 +839,7 @@ test.serial('VO lifecycle 4 faceted', async t => {
 // test 5: lerv -> Lerv -> LERv -> LeRv -> Lerv -> lerv
 async function voLifeCycleTest5(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -872,6 +876,7 @@ async function voLifeCycleTest6(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -921,6 +926,7 @@ async function voLifeCycleTest7(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -939,7 +945,7 @@ async function voLifeCycleTest7(t, isf) {
 
   // lERv -> LERv  Reintroduce the in-memory reference via message
   rp = await dispatchMessage('importAndHold', thingArgs(thing, isf));
-  validateImport(v, rp);
+  validateImport(v, rp, thingf, testObjValue);
 
   // LERv -> lERv  Drop in-memory reference again, still no GC because exported
   rp = await dispatchMessage('dropHeld');
@@ -962,6 +968,7 @@ async function voLifeCycleTest8(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
