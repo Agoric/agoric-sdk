@@ -2,11 +2,11 @@
 # We prefer to explicitly specify owners for all subdirectories.
 *                                @warner @Chris-Hibbert @FUDCo @michaelfig
 
-/*.*                             @kriskowal @michaelfig @erights
-/.github/                        @kriskowal @michaelfig @erights
-/docker/                         @kriskowal @michaelfig @erights
-/patches/                        @kriskowal @michaelfig @erights
-/scripts/                        @kriskowal @michaelfig @erights
+/*.*                             @kriskowal @michaelfig
+/.github/                        @kriskowal @michaelfig
+/docker/                         @kriskowal @michaelfig
+/patches/                        @kriskowal @michaelfig
+/scripts/                        @kriskowal @michaelfig
 /yarn.lock                       @mhofman
 
 # Golang parts of the repo.
@@ -38,7 +38,7 @@
 /packages/swing-store/           @warner @FUDCo
 /packages/swingset-runner/       @FUDCo
 /packages/tame-metering/         @kriskowal @michaelfig
-/packages/telemetry              @kriskowal @michaelfig @erights
+/packages/telemetry              @kriskowal @michaelfig
 /packages/ui-components/         @michaelfig @samsiegart  @turadg
 /packages/vats/                  @michaelfig
 /packages/vat-data/              @turadg
