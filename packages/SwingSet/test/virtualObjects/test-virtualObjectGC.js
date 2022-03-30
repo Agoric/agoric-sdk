@@ -657,6 +657,7 @@ async function voLifeCycleTest1(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -688,7 +689,7 @@ test.serial('VO lifecycle 1 faceted', async t => {
 //   lERV -> LERV -> lERV -> leRV -> LeRV -> leRV -> LeRV -> LerV
 async function voLifeCycleTest2(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -762,7 +763,7 @@ test.serial('VO lifecycle 2 faceted', async t => {
 // test 3: lerv -> Lerv -> LerV -> LERV -> LeRV -> leRV -> lerV -> lerv
 async function voLifeCycleTest3(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -807,6 +808,7 @@ async function voLifeCycleTest4(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -837,7 +839,7 @@ test.serial('VO lifecycle 4 faceted', async t => {
 // test 5: lerv -> Lerv -> LERv -> LeRv -> Lerv -> lerv
 async function voLifeCycleTest5(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -874,6 +876,7 @@ async function voLifeCycleTest6(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -923,6 +926,7 @@ async function voLifeCycleTest7(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -964,6 +968,7 @@ async function voLifeCycleTest8(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
