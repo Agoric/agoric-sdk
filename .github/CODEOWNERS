@@ -9,11 +9,11 @@
 /scripts/                        @kriskowal @michaelfig @erights
 /yarn.lock                       @mhofman
 
-# Golang @parts @of @the @repo.
+# Golang parts of the repo.
 /go.*                            @JimLarson
 /golang/                         @JimLarson
 
-# Explicit @owners @for @our @packages
+# Explicit owners for our packages
 /packages/ERTP/                  @erights @Chris-Hibbert
 /packages/SwingSet/              @warner @FUDCo
 /packages/access-token/          @kriskowal @michaelfig
