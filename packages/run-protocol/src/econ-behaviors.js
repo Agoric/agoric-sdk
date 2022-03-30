@@ -566,7 +566,7 @@ export const startRunStake = async (
     },
   },
   config = {
-    debtLimit: 1_000_000n,
+    debtLimit: 1_000_000_000_000n,
     mintingRatio: [1n, 4n],
     interestRateBP: 250n,
     loanFeeBP: 200n,
