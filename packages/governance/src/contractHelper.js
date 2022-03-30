@@ -72,7 +72,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @template {{}} CF creator facet
    * @param {ERef<CF>} originalCreatorFacet
    * @param {Record<string, (...args: any[]) => any>} governedApis
-   * @returns { ERef<GovernedCreatorFacet<CF>> }
+   * @returns {ERef<GovernedCreatorFacet<CF>>}
    */
   const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
@@ -116,7 +116,7 @@ const facetHelpers = (zcf, paramManager) => {
  *
  * @template {import('./contractGovernance/typedParamManager').ParamTypesMap} M
  *   Map of types of custom governed terms
- * @template {Record<string, ParamRecord>} CGT Custom governed terms
+ * @template {Record<keyof M, ParamRecord>} CGT Custom governed terms
  * @param {ZCF<GovernanceTerms<CGT>>} zcf
  * @param {Invitation} initialPoserInvitation
  * @param {M} paramTypesMap
