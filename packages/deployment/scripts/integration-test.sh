@@ -37,6 +37,7 @@ DOCKER_VOLUMES="${AGORIC_SDK_PATH-$(cd "$thisdir/../../.." > /dev/null && pwd -P
 AG_COSMOS_START_ARGS="--log_level=info --trace-store=.ag-chain-cosmos/data/kvstore.trace" \
 VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
 CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
+XSNAP_TEST_RECORD=/home/ag-chain-cosmos/.ag-chain-cosmos/data/xsnap-record \
   "$thisdir/setup.sh" bootstrap ${1+"$@"}
 
 if [ -d /usr/src/testnet-load-generator ]
@@ -48,9 +49,8 @@ then
   SOLO_COINS=40000000000urun \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
   SDK_BUILD=0 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
-    --no-stage.save-storage --stages=3 --stage.duration=4 \
-    --stage.loadgen.vault.interval=12 --stage.loadgen.vault.limit=2 \
-    --stage.loadgen.amm.interval=12 --stage.loadgen.amm.wait=6 --stage.loadgen.amm.limit=2 \
+    --stages=3 --stage.duration=4 \
+    --stage.loadgen.vault.interval=300 \
     --profile=testnet "--testnet-origin=file://$RESULTSDIR" \
     --no-reset --custom-bootstrap
 fi
