@@ -94,6 +94,7 @@ export const makeNameHubKit = () => {
       // This delete may throw.  Reflect it to callers.
       keyToRecord.delete(key);
     },
+    readonly: () => nameHub,
   });
 
   const nameHubKit = harden({

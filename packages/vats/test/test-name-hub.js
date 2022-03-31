@@ -17,6 +17,10 @@ test('makeNameHubKit - lookup paths', async t => {
   t.deepEqual(nh3.values(), []);
   t.deepEqual(nh3.entries(), []);
 
+  t.is(na1.readonly(), nh1);
+  t.is(na2.readonly(), nh2);
+  t.is(na3.readonly(), nh3);
+
   na1.update('path1', nh2);
   t.is(await nh1.lookup('path1'), nh2);
   na2.update('path2', nh3);
@@ -45,6 +49,8 @@ test('makeNameHubKit - lookup paths', async t => {
 
 test('makeNameHubKit - reserve and update', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
+
+  t.is(nameAdmin.readonly(), nameHub);
 
   await t.throwsAsync(() => nameHub.lookup('hello'), {
     message: /"nameKey" not found: .*/,
@@ -80,6 +86,8 @@ test('makeNameHubKit - reserve and update', async t => {
 
 test('makeNameHubKit - reserve and delete', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
+
+  t.is(nameAdmin.readonly(), nameHub);
 
   await t.throwsAsync(() => nameHub.lookup('goodbye'), {
     message: /"nameKey" not found: .*/,

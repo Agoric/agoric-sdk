@@ -43,6 +43,8 @@
  * newValue.
  * @property {(key: string) => void} delete Delete a value and reject an
  * outstanding reserved promise (if any).
+ * @property {() => NameHub} readonly get a read-only view of the current
+ * NameAdmin
  */
 
 /**
