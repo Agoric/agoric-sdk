@@ -3,16 +3,6 @@ queue_rules:
   - name: main
     conditions:
       - base=master
-      - check-success=dev-canary
-      - check-success=coverage
-      - check-success=benchmark
-      - check-success=deployment-test
-      - check-success=golangci
-      - check-success=docker-deployment
-      - check-success=docker-sdk
-      - check-success=docker-ibc-alpha
-      - check-success=docker-solo
-      - check-success=docker-setup
 
 pull_request_rules:
   - name: merge to master
