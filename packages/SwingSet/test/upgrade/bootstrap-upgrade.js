@@ -61,5 +61,21 @@ export function buildRootObject() {
       resolve(`message for your predecessor, don't freak out`);
       return { version, data, ...parameters };
     },
+
+    async buildV1WithLostKind() {
+      const bcap = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const vatParameters = { youAre: 'v1', marker };
+      const options = { vatParameters };
+      const res = await E(vatAdmin).createVat(bcap, options);
+      ulrikRoot = res.root;
+      ulrikAdmin = res.adminNode;
+      await E(ulrikRoot).makeLostKind();
+    },
+
+    async upgradeV2WhichLosesKind() {
+      const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
+      const vatParameters = { youAre: 'v2', marker };
+      await E(ulrikAdmin).upgrade(bcap, vatParameters); // throws
+    },
   });
 }

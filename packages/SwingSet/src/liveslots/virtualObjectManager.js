@@ -658,6 +658,7 @@ export function makeVirtualObjectManager(
 
   let kindIDID;
   const kindDescriptors = new WeakMap();
+  const definedDurableKinds = new Set(); // kindID
 
   function initializeKindHandleKind() {
     kindIDID = syscall.vatstoreGet('kindIDID');
@@ -697,7 +698,34 @@ export function makeVirtualObjectManager(
     const durableKindDescriptor = kindDescriptors.get(kindHandle);
     assert(durableKindDescriptor);
     const { kindID, tag } = durableKindDescriptor;
-    return defineKindInternal(kindID, tag, init, actualize, finish, true);
+    const maker = defineKindInternal(
+      kindID,
+      tag,
+      init,
+      actualize,
+      finish,
+      true,
+    );
+    definedDurableKinds.add(kindID);
+    return maker;
+  }
+
+  function insistAllDurableKindsReconnected() {
+    // identify all user-defined durable kinds by iterating `vom.kind.*`
+    const missing = [];
+    const prefix = 'vom.kind.';
+    let [key, value] = syscall.vatstoreGetAfter('', prefix);
+    while (key) {
+      const descriptor = JSON.parse(value);
+      if (!definedDurableKinds.has(descriptor.kindID)) {
+        missing.push(descriptor.tag);
+      }
+      [key, value] = syscall.vatstoreGetAfter(key, prefix);
+    }
+    if (missing.length) {
+      const tags = missing.join(',');
+      throw Error(`defineDurableKind not called for tags: ${tags}`);
+    }
   }
 
   function countWeakKeysForCollection(collection) {
@@ -721,6 +749,7 @@ export function makeVirtualObjectManager(
     defineKind,
     defineDurableKind,
     makeKindHandle,
+    insistAllDurableKindsReconnected,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     flushCache: cache.flush,

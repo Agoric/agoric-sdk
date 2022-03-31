@@ -66,5 +66,9 @@ export function buildRootObject(_vatPowers, vatParameters, baggage) {
     returnEternalPromise() {
       return p2;
     },
+
+    makeLostKind() {
+      makeKindHandle('unhandled', []);
+    },
   });
 }
