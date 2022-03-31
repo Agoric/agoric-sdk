@@ -188,16 +188,16 @@ const start = async zcf => {
       );
     }
 
-    // if we aren't governing APIs, voteOnInvocation shouldn't be called
+    // if we aren't governing APIs, voteOnMethodInvocation shouldn't be called
     return {
-      voteOnInvocation: () => {
+      voteOnMethodInvocation: () => {
         throw Error('api governance not configured');
       },
       createdQuestion: () => false,
     };
   };
 
-  const { voteOnInvocation, createdQuestion: createdApiQuestion } =
+  const { voteOnMethodInvocation, createdQuestion: createdApiQuestion } =
     await initApiGovernance();
 
   const validateVoteCounter = async voteCounter => {
@@ -231,7 +231,7 @@ const start = async zcf => {
 
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChange,
-    voteOnInvocation,
+    voteOnMethodInvocation,
     getCreatorFacet: () => limitedCreatorFacet,
     getInstance: () => governedInstance,
     getPublicFacet: () => governedPF,

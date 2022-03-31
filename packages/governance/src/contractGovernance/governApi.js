@@ -49,8 +49,8 @@ const setupApiGovernance = async (
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
 
-  /** @type {VoteOnInvocation} */
-  const voteOnInvocation = async (
+  /** @type {VoteOnMethodInvocation} */
+  const voteOnMethodInvocation = async (
     apiMethodName,
     methodArgs,
     voteCounterInstallation,
@@ -122,7 +122,7 @@ const setupApiGovernance = async (
   };
 
   return Far('paramGovernor', {
-    voteOnInvocation,
+    voteOnMethodInvocation,
     createdQuestion: b => voteCounters.has(b),
   });
 };

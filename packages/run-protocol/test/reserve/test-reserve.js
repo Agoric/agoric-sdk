@@ -138,7 +138,7 @@ test('governance add Liquidity to the AMM', async t => {
   const params = harden([moola(90_000n), AmountMath.make(runBrand, 80_000n)]);
   const { details: detailsP } = await E(
     governor.governorCreatorFacet,
-  ).voteOnInvocation(
+  ).voteOnMethodInvocation(
     'addLiquidityToAmmPool',
     params,
     await space.installation.consume.binaryVoteCounter,
@@ -215,7 +215,7 @@ test('request more collateral than available', async t => {
   const params = harden([moola(90_000n), AmountMath.make(runBrand, 80_000n)]);
   const { details: detailsP, outcomeOfUpdate } = await E(
     governor.governorCreatorFacet,
-  ).voteOnInvocation(
+  ).voteOnMethodInvocation(
     'addLiquidityToAmmPool',
     params,
     space.installation.consume.binaryVoteCounter,
