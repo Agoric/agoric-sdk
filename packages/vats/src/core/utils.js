@@ -219,6 +219,7 @@ harden(extractPowers);
  *
  * @returns {{
  *   agoricNames: NameHub,
+ *   agoricNamesAdmin: NameAdmin,
  *   spaces: WellKnownSpaces,
  * }}
  *
@@ -249,6 +250,7 @@ export const makeAgoricNamesAccess = (
   );
   return {
     agoricNames,
+    agoricNamesAdmin,
     spaces: typedSpaces,
   };
 };

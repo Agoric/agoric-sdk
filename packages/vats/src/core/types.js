@@ -172,6 +172,7 @@
  * @typedef { WellKnownSpaces & {
  *   consume: {
  *     agoricNames: Promise<NameHub>,
+ *     agoricNamesAdmin: Promise<NameAdmin>,
  *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
  *     ammGovernorCreatorFacet: ERef<GovernedContractFacetAccess<unknown>>,
  *     chainTimerService: ERef<TimerService>,
@@ -198,6 +199,7 @@
  *   },
  *   produce: {
  *     agoricNames: Producer<NameHub>,
+ *     agoricNamesAdmin: Producer<NameAdmin>,
  *     ammCreatorFacet: Producer<unknown>,
  *     ammGovernorCreatorFacet: Producer<unknown>,
  *     chainTimerService: Producer<ERef<TimerService>>,
