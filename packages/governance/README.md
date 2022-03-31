@@ -189,7 +189,7 @@ yourself using 'addUnknown', let us know!)
 
 `ContractGovernor` has support for contracts that declare that some internal
 APIs should only be invoked under the control of governance. To opt in to this
-support, the contract should include `getGovernedApis` in its creator facet
+support, the contract should include `getGovernedMethods` in its creator facet
 (passed to `wrapCreatorFacet`). That method should return a `Far` object with
 the methods to be called.
 

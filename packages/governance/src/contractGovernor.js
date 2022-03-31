@@ -174,8 +174,8 @@ const start = async zcf => {
     // @ts-ignore `governedMethods` is present on contracts wiht API invocation.
 
     const [governedMethods, governedNames] = await Promise.all([
-      E(governedCF).getGovernedApis(),
-      E(governedCF).getGovernedApiNames(),
+      E(governedCF).getGovernedMethods(),
+      E(governedCF).getGovernedMethodNames(),
     ]);
     if (governedNames.length) {
       return setupApiGovernance(
