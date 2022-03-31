@@ -761,3 +761,21 @@ const makeTests = async () => {
 };
 
 makeTests();
+
+test('borrowing past the debt limit', async t => {
+  const driver = await makeWorld(t);
+
+  // provide ample BLD
+  await driver.buyBLD(100_000_000n);
+  await driver.stakeBLD(100_000_000n);
+  await driver.lienBLD(100_000_000n);
+
+  // XXX assumes debt limit of 1_000_000_000_000n
+  const threshold = 1_000_000_000_000n / micro.unit;
+
+  await t.throwsAsync(driver.borrowRUN(threshold), {
+    message:
+      // XXX brittle string to fail if numeric parameters change
+      'Minting {"brand":"[Alleged: RUN brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would exceed total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000000000n]"}',
+  });
+});

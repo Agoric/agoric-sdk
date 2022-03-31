@@ -3,7 +3,7 @@ on:
   push:
     tags:
       - v*
-    branches: [mergify/*]
+    branches: [mergify/merge-queue/master/*]
   pull_request:
 permissions:
   contents: read

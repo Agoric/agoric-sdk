@@ -9,7 +9,7 @@ import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
 import { KW } from './runStakeKit.js';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 const trace = makeTracer('RM'); // TODO: how to turn this off?
 
@@ -18,6 +18,7 @@ const trace = makeTracer('RM'); // TODO: how to turn this off?
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
  * @param {{
+ *  getDebtLimit: () => Amount<'nat'>,
  *  getInterestRate: () => Ratio,
  *  getMintingRatio: () => Ratio,
  *  getLoanFee: () => Ratio,
@@ -158,7 +159,27 @@ export const makeRunStakeManager = (
     totalDebt = AmountMath.make(brands.debt, totalDebt.value + delta);
   };
 
+  /**
+   * @param {Amount<'nat'>} toMint
+   * @throws if minting would exceed total debt
+   */
+  const checkDebtLimit = toMint => {
+    const debtPost = AmountMath.add(totalDebt, toMint);
+    const limit = paramManager.getDebtLimit();
+    if (AmountMath.isGTE(debtPost, limit)) {
+      assert.fail(
+        X`Minting ${q(toMint)} past ${q(
+          totalDebt,
+        )} would exceed total debt limit ${q(limit)}`,
+      );
+    }
+  };
+
+  /**
+   * @type {MintAndReallocate}
+   */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+    checkDebtLimit(toMint);
     mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
     totalDebt = AmountMath.add(totalDebt, toMint);
   };
