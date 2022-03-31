@@ -71,10 +71,10 @@ const facetHelpers = (zcf, paramManager) => {
   /**
    * @template {{}} CF creator facet
    * @param {ERef<CF>} originalCreatorFacet
-   * @param {Record<string, (...args: any[]) => any>} governedApis
+   * @param {Record<string, (...args: any[]) => any>} governedMethods
    * @returns { ERef<GovernedCreatorFacet<CF>> }
    */
-  const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
+  const makeGovernorFacet = (originalCreatorFacet, governedMethods = {}) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
@@ -87,11 +87,11 @@ const facetHelpers = (zcf, paramManager) => {
       getLimitedCreatorFacet: () => limitedCreatorFacet,
       // The contract provides a facet with the APIs that can be invoked by
       // governance
-      getGovernedApis: () => Far('governedAPIs', governedApis),
+      getGovernedApis: () => Far('governedAPIs', governedMethods),
       // The facet returned by getGovernedApis is Far, so we can't see what
       // methods it has. There's no clean way to have contracts specify the APIs
       // without also separately providing their names.
-      getGovernedApiNames: () => Object.keys(governedApis),
+      getGovernedApiNames: () => Object.keys(governedMethods),
     });
   };
 

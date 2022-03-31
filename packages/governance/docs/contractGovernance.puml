@@ -10,7 +10,7 @@ package "GovernedContract Vat" <<Rectangle>>  {
     }
 
     class GovernedContract {
-        <i>verifiable</i>: Governor, params, governedApis
+        <i>verifiable</i>: Governor, params, governedMethods
         --
         +terms: { electionManager, governedParams }
         +getState()

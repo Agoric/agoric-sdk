@@ -22,7 +22,7 @@ const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
  *
  * @param {ZCF<GovernanceTerms<{AmmInstance: ParamRecord<'instance'>}> &
  * {
- *   governedApis: ['addLiquidityToAmmPool'],
+ *   governedMethods: ['addLiquidityToAmmPool'],
  * }
  * >} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Payment}} privateArgs

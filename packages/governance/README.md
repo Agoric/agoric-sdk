@@ -228,7 +228,7 @@ Governed methods and parameters must be included in terms.
         value: invitationAmount,
       },
     },
-    governedApis: ['makeItSo'],
+    governedMethods: ['makeItSo'],
   },
 ```
 
