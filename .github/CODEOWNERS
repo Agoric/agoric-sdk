@@ -1,19 +1,21 @@
-# Default code owners when not specified.
-# We prefer to explicitly specify owners for all subdirectories.
+# Last match takes precedence.
+
+# Default code owners when none specified
 *                                @warner @Chris-Hibbert @FUDCo @michaelfig
 
-/*.*                             @kriskowal @michaelfig @erights
-/.github/                        @kriskowal @michaelfig @erights
-/docker/                         @kriskowal @michaelfig @erights
-/patches/                        @kriskowal @michaelfig @erights
-/scripts/                        @kriskowal @michaelfig @erights
+# Tooling and dependencies
+/*                               @kriskowal @michaelfig
+/.github/                        @kriskowal @michaelfig
+/docker/                         @kriskowal @michaelfig
+/patches/                        @kriskowal @michaelfig
+/scripts/                        @kriskowal @michaelfig
 /yarn.lock                       @mhofman
 
-# Golang parts of the repo.
+# Golang parts of the repo
 /go.*                            @JimLarson
 /golang/                         @JimLarson
 
-# Explicit owners for our packages
+# Each npm package
 /packages/ERTP/                  @erights @Chris-Hibbert
 /packages/SwingSet/              @warner @FUDCo
 /packages/access-token/          @kriskowal @michaelfig
@@ -38,7 +40,7 @@
 /packages/swing-store/           @warner @FUDCo
 /packages/swingset-runner/       @FUDCo
 /packages/tame-metering/         @kriskowal @michaelfig
-/packages/telemetry              @kriskowal @michaelfig @erights
+/packages/telemetry              @kriskowal @michaelfig
 /packages/ui-components/         @michaelfig @samsiegart  @turadg
 /packages/vats/                  @michaelfig
 /packages/vat-data/              @turadg

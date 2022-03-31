@@ -91,14 +91,19 @@ async function waitForPromisesToSettle() {
   return pk.promise;
 }
 
-function makeRates(runBrand) {
+/**
+ * @param {Brand} debtBrand
+ * @returns dL: 1M, lM: 105, iR: 100, lF: 500
+ */
+function defaultParamValues(debtBrand) {
   return harden({
+    debtLimit: AmountMath.make(debtBrand, 1_000_000n),
     // margin required to maintain a loan
-    liquidationMargin: makeRatio(105n, runBrand),
+    liquidationMargin: makeRatio(105n, debtBrand),
     // periodic interest rate (per charging period)
-    interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
+    interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
-    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
+    loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
   });
 }
 
@@ -348,7 +353,7 @@ test('first', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   // Add a vault that will lend on aeth collateral
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   const aethVaultManager = await E(vaultFactory).addVaultType(
     aethIssuer,
     'AEth',
@@ -496,7 +501,7 @@ test('price drop', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   // Add a vault that will lend on aeth collateral
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Create a loan for 270 RUN with 400 aeth collateral
@@ -644,7 +649,7 @@ test('price falls precipitously', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   // Add a vault that will lend on aeth collateral
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Create a loan for 370 RUN with 400 aeth collateral
@@ -804,8 +809,7 @@ test('vaultFactory display collateral', async t => {
   const { vaultFactory } = services.vaultFactory;
 
   const rates = harden({
-    liquidationMargin: makeRatio(105n, runBrand),
-    interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
+    ...defaultParamValues(runBrand),
     loanFee: makeRatio(530n, runBrand, BASIS_POINTS),
   });
 
@@ -859,12 +863,10 @@ test('interest on multiple vaults', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const interestRate = makeRatio(5n, runBrand);
-  const rates = harden({
-    liquidationMargin: makeRatio(105n, runBrand),
-    interestRate,
-    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
-  });
+  const rates = {
+    ...defaultParamValues(runBrand),
+    interestRate: makeRatio(5n, runBrand),
+  };
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Create a loan for Alice for 4700 RUN with 1100 aeth collateral
@@ -966,7 +968,7 @@ test('interest on multiple vaults', async t => {
     ),
     AmountMath.make(runBrand, 3200n + bobAddedDebt),
   );
-  t.deepEqual(bobUpdate.value.interestRate, interestRate);
+  t.deepEqual(bobUpdate.value.interestRate, rates.interestRate);
   t.deepEqual(
     bobUpdate.value.liquidationRatio,
     makeRatio(105n, runBrand, 100n),
@@ -988,7 +990,7 @@ test('interest on multiple vaults', async t => {
     debt: AmountMath.make(runBrand, 4935n),
     interest: makeRatio(100n, runBrand, 100n),
   });
-  t.deepEqual(aliceUpdate.value.interestRate, interestRate);
+  t.deepEqual(aliceUpdate.value.interestRate, rates.interestRate);
   t.deepEqual(aliceUpdate.value.liquidationRatio, makeRatio(105n, runBrand));
 
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
@@ -1086,7 +1088,7 @@ test('adjust balances', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // initial loan /////////////////////////////////////
@@ -1340,7 +1342,7 @@ test('transfer vault', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // initial loan /////////////////////////////////////
@@ -1508,7 +1510,7 @@ test('overdeposit', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Alice's loan /////////////////////////////////////
@@ -1669,10 +1671,9 @@ test('mutable liquidity triggers and interest', async t => {
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
-    liquidationMargin: makeRatio(105n, runBrand),
+    ...defaultParamValues(runBrand),
     // charge 5% interest
     interestRate: makeRatio(5n, runBrand),
-    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
   });
 
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
@@ -1872,7 +1873,7 @@ test('collect fees from loan and AMM', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   // Add a pool with 900 aeth collateral at a 201 aeth/RUN rate
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
 
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
@@ -1971,7 +1972,7 @@ test('close loan', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // initial loan /////////////////////////////////////
@@ -2108,7 +2109,7 @@ test('excessive loan', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Try to Create a loan for Alice for 5000 RUN with 100 aeth collateral
@@ -2127,6 +2128,69 @@ test('excessive loan', async t => {
   );
   await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
     message: /exceeds max/,
+  });
+});
+
+/**
+ * Each vaultManager manages one collateral type and has a governed parameter, `debtLimit`,
+ * that specifies a cap on the amount of debt the manager will allow.
+ *
+ * Attempts to adjust balances on vaults beyond the debt limit fail.
+ * In other words, minting for anything other than charging interest fails.
+ */
+test('excessive debt on collateral type', async t => {
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
+  const aethLiquidity = {
+    proposal: aethInitialLiquidity,
+    payment: aethMint.mintPayment(aethInitialLiquidity),
+  };
+  const loanTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 6n,
+  };
+  const services = await setupServices(
+    loanTiming,
+    [15n],
+    AmountMath.make(aethBrand, 1n),
+    aethBrand,
+    {
+      committeeName: 'Star Chamber',
+      committeeSize: 5,
+    },
+    buildManualTimer(console.log),
+    undefined,
+    aethLiquidity,
+    500n,
+    aethIssuer,
+  );
+  const {
+    zoe,
+    runKit: { brand: runBrand },
+  } = services;
+  const { vaultFactory, lender } = services.vaultFactory;
+
+  const rates = defaultParamValues(runBrand);
+  await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
+
+  const collateralAmount = AmountMath.make(aethBrand, 1_000_000n);
+  const centralAmount = AmountMath.make(runBrand, 1_000_000n);
+  /** @type {UserSeat<VaultKit>} */
+  const loanSeat = await E(zoe).offer(
+    E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: centralAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(collateralAmount),
+    }),
+  );
+  await t.throwsAsync(() => E(loanSeat).getOfferResult(), {
+    message:
+      'Minting would exceed total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000n]"}',
   });
 });
 
@@ -2178,9 +2242,8 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
-    liquidationMargin: makeRatio(105n, runBrand),
+    ...defaultParamValues(runBrand),
     // charge 5% interest
-    interestRate: makeRatio(5n, runBrand),
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
   });
 

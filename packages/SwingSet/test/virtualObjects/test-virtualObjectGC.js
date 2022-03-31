@@ -1018,6 +1018,7 @@ test.serial('VO multifacet export 1', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
 
@@ -1038,6 +1039,7 @@ test.serial('VO multifacet export 2a', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
   const thingA = `${thing}:0`;
@@ -1065,6 +1067,7 @@ test.serial('VO multifacet export 2b', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
   const thingB = `${thing}:1`;
@@ -1092,6 +1095,7 @@ test.serial('VO multifacet export 3abba', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
   const thingA = `${thing}:0`;
@@ -1128,6 +1132,7 @@ test.serial('VO multifacet export 3abab', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
   const thingA = `${thing}:0`;
@@ -1163,6 +1168,7 @@ test.serial('VO multifacet markers only', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = 'o+12/1';
   const thingCapdata = JSON.stringify({ unused: capdata('uncared for') });
@@ -1197,7 +1203,7 @@ function validatePrepareStore3(v, rp, isf) {
 
 // prettier-ignore
 async function voRefcountManagementTest1(t, isf) {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -1235,7 +1241,7 @@ test.serial('VO refcount management 1 faceted', async t => {
 
 // prettier-ignore
 async function voRefcountManagementTest2(t, isf) {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -1278,7 +1284,7 @@ test.serial('VO refcount management 2 faceted', async t => {
 
 // prettier-ignore
 async function voRefcountManagementTest3(t, isf) {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -1343,7 +1349,7 @@ test.serial('VO refcount management 3 faceted', async t => {
 
 // prettier-ignore
 test.serial('presence refcount management 1', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   let rp = await dispatchMessage('importAndHold', thingArgs('o-5'));
   validateSetup(v);
@@ -1391,7 +1397,7 @@ test.serial('presence refcount management 1', async t => {
 
 // prettier-ignore
 test.serial('presence refcount management 2', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   let rp = await dispatchMessage('importAndHold', thingArgs('o-5'));
   validateSetup(v);
@@ -1438,7 +1444,7 @@ test.serial('presence refcount management 2', async t => {
 
 // prettier-ignore
 test.serial('remotable refcount management 1', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const remotableID = 'o+13';
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
@@ -1471,7 +1477,7 @@ test.serial('remotable refcount management 1', async t => {
 
 // prettier-ignore
 test.serial('remotable refcount management 2', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const remotableID = 'o+13';
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
@@ -1503,7 +1509,7 @@ test.serial('remotable refcount management 2', async t => {
 
 // prettier-ignore
 async function voWeakKeyGCTest(t, isf) {
-  const { v, dispatchMessage, testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage, testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
 
   // Create VO and hold onto it weakly
@@ -1530,7 +1536,7 @@ test.serial('verify VO weak key GC faceted', async t => {
 // prettier-ignore
 test.serial('verify presence weak key GC', async t => {
   const { v, dispatchMessage, dispatchRetireImports, testHooks } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+        await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   let rp = await dispatchMessage('importAndHoldAndKey', thingArgs('o-5'));
   validateSetup(v);
@@ -1573,7 +1579,7 @@ test.serial('verify presence weak key GC', async t => {
 // prettier-ignore
 test.serial('VO holding non-VO', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+        await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const remotableID = 'o+13';
 
   // lerv -> Lerv  Create non-VO

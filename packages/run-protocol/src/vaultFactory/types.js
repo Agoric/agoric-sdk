@@ -22,19 +22,20 @@
  */
 
 /**
- * @typedef {Object} Rates
+ * @typedef {Object} VaultManagerParamValues
  * @property {Ratio} liquidationMargin - margin below which collateral will be
  * liquidated to satisfy the debt.
  * @property {Ratio} interestRate - annual interest rate charged on loans
  * @property {Ratio} loanFee - The fee (in BasisPoints) charged when opening
  * or increasing a loan.
+ * @property {Amount<'nat'>} debtLimit
  */
 
 /**
  * @callback AddVaultType
  * @param {Issuer} collateralIssuer
  * @param {Keyword} collateralKeyword
- * @param {Rates} rates
+ * @param {VaultManagerParamValues} params
  * @returns {Promise<VaultManager>}
  */
 
@@ -53,8 +54,6 @@
  * Mint new debt `toMint` and transfer the `fee` portion to the vaultFactory's reward
  * pool. Then reallocate over all the seat arguments and the rewardPoolSeat. Update
  * the `totalDebt` if the reallocate succeeds.
- *
- * TODO check limits.
  *
  * @param {Amount} toMint
  * @param {Amount} fee
