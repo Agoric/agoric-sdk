@@ -168,9 +168,11 @@ function stateKey(vref) {
   return `vom.${base(vref)}`;
 }
 
-const unfacetedThingKindID = 'o+9';
-const facetedThingKindID = 'o+10';
-const holderKindID = 'o+11';
+const unfacetedThingKindID = 'o+10';
+const facetedThingKindID = 'o+11';
+const holderKindID = 'o+12';
+
+const remotableID = 'o+14';
 
 function thingVref(isf, instance) {
   return `${isf ? facetedThingKindID : unfacetedThingKindID}/${instance}`;
@@ -454,19 +456,21 @@ function validateCreateBaggage(v, idx) {
   );
   validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
-  validate(v, matchVatstoreSet('baggageID', 'o+5/1'));
-  validate(v, matchVatstoreGet(rcKey('o+5/1'), NONE));
-  validate(v, matchVatstoreSet(rcKey('o+5/1'), '1'));
+  validate(v, matchVatstoreSet('baggageID', 'o+6/1'));
+  validate(v, matchVatstoreGet(rcKey('o+6/1'), NONE));
+  validate(v, matchVatstoreSet(rcKey('o+6/1'), '1'));
 }
 
 function validateSetup(v) {
   validate(v, matchVatstoreGet('idCounters', NONE));
+  validate(v, matchVatstoreGet('kindIDID', NONE));
+  validate(v, matchVatstoreSet('kindIDID', '1'));
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
     v,
     matchVatstoreSet(
       'storeKindIDTable',
-      '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
+      '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
     ),
   );
   validate(v, matchVatstoreGet('baggageID', NONE));
@@ -1170,7 +1174,7 @@ test.serial('VO multifacet markers only', async t => {
     'bob',
     true,
   );
-  const thing = 'o+12/1';
+  const thing = 'o+13/1';
   const thingCapdata = JSON.stringify({ unused: capdata('uncared for') });
 
   // lerv -> Lerv  Create facets
@@ -1303,18 +1307,13 @@ async function voRefcountManagementTest3(t, isf) {
   validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldHolderValue(`${holderKindID}/3`)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
-  if (isf) {
-    validate(v, matchVatstoreGet(rcKey(thing), '1'));
-    validate(v, matchVatstoreGet(esKey(thing), NONE));
-  }
+  validate(v, matchVatstoreGet(rcKey(thing), '1'));
+  validate(v, matchVatstoreGet(esKey(thing), NONE));
+
   validate(v, matchVatstoreGet(rcKey(`${holderKindID}/2`), '1'));
   validate(v, matchVatstoreGet(esKey(`${holderKindID}/2`), NONE));
   validate(v, matchVatstoreGet(rcKey(`${holderKindID}/3`), '1'));
   validate(v, matchVatstoreGet(esKey(`${holderKindID}/3`), NONE));
-  if (!isf) {
-    validate(v, matchVatstoreGet(rcKey(thing), '1'));
-    validate(v, matchVatstoreGet(esKey(thing), NONE));
-  }
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
@@ -1445,7 +1444,6 @@ test.serial('presence refcount management 2', async t => {
 // prettier-ignore
 test.serial('remotable refcount management 1', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const remotableID = 'o+13';
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateSetup(v);
@@ -1478,7 +1476,6 @@ test.serial('remotable refcount management 1', async t => {
 // prettier-ignore
 test.serial('remotable refcount management 2', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const remotableID = 'o+13';
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateSetup(v);
@@ -1580,7 +1577,6 @@ test.serial('verify presence weak key GC', async t => {
 test.serial('VO holding non-VO', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
         await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const remotableID = 'o+13';
 
   // lerv -> Lerv  Create non-VO
   let rp = await dispatchMessage('makeAndHoldRemotable');

@@ -3,9 +3,11 @@
 import anylogger from 'anylogger';
 import { test } from '../tools/prepare-test-env-ava.js';
 
+// eslint-disable-next-line import/order
+import { assert } from '@agoric/assert';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { createSHA256 } from '../src/lib-nodejs/hasher.js';
-
+import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import {
@@ -1019,6 +1021,25 @@ test('message to self', async t => {
   p.gcActionsAre([]);
 });
 
+function sortVrefs(vrefs) {
+  // returns ['o+8', 'o+9', 'o+10', 'o+11']
+  function num(vref) {
+    const p = parseVatSlot(vref);
+    assert.equal(p.type, 'object');
+    assert.equal(p.allocatedByVat, true);
+    assert.equal(p.virtual, false);
+    return p.id;
+  }
+  vrefs.sort((a, b) => Number(num(a) - num(b)));
+}
+
+test('sortVrefs', t => {
+  const v1 = ['o+11', 'o+9', 'o+10', 'o+8'];
+  const exp = ['o+8', 'o+9', 'o+10', 'o+11'];
+  sortVrefs(v1);
+  t.deepEqual(v1, exp);
+});
+
 test('terminated vat', async t => {
   // when a vat is terminated, anything it imported should be dropped, and
   // its exports should not cause problems when they are released
@@ -1082,9 +1103,9 @@ test('terminated vat', async t => {
 
   // find the highest export: doomedExport1 / doomedExport1Presence
   let exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
-  exports.sort();
+  sortVrefs(exports);
   const doomedExport1Vref = exports[exports.length - 1];
-  t.is(doomedExport1Vref, 'o+9'); // arbitrary
+  t.is(doomedExport1Vref, 'o+10'); // arbitrary
   const doomedExport1Kref = vrefs[doomedExport1Vref];
   // this should also be deleted
   // console.log(`doomedExport1Kref`, doomedExport1Kref);
@@ -1105,9 +1126,9 @@ test('terminated vat', async t => {
   // now find the vref/kref for doomedExport2
   vrefs = vrefsUsedByDoomed();
   exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
-  exports.sort();
+  sortVrefs(exports);
   const doomedExport2Vref = exports[exports.length - 1];
-  t.is(doomedExport2Vref, 'o+9'); // arbitrary
+  t.is(doomedExport2Vref, 'o+11'); // arbitrary
   const doomedExport2Kref = vrefs[doomedExport2Vref];
   [refcounts, owners] = getRefCountsAndOwners();
   t.deepEqual(refcounts[doomedExport2Kref], [1, 1]); // from promise queue
