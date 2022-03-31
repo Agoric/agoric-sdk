@@ -459,6 +459,9 @@ export async function main() {
     case 'step': {
       try {
         const steps = await controller.step();
+        if (activityHash) {
+          log(`activityHash: ${controller.getActivityhash()}`);
+        }
         swingStore.commit();
         swingStore.close();
         log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
