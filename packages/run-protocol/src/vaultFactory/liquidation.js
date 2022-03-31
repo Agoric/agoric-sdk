@@ -42,6 +42,7 @@ const liquidate = async (
     collateralBrand,
   );
 
+  // XXX problems with upgrade
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
     strategy.makeInvitation(debt),

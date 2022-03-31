@@ -1788,14 +1788,14 @@ test('mutable liquidity triggers and interest', async t => {
     ),
   );
 
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.
 
   // expect Alice to be liquidated because her collateral is too low.
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
 
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
@@ -1806,14 +1806,14 @@ test('mutable liquidity triggers and interest', async t => {
   }
   await waitForPromisesToSettle();
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
-  bobUpdate = await E(bobNotifier).getUpdateSince();
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
 
   for (let i = 0; i < 5; i += 1) {
     manualTimer.tick();
   }
   await waitForPromisesToSettle();
-  bobUpdate = await E(bobNotifier).getUpdateSince();
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
 
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
 });
@@ -2201,7 +2201,7 @@ test('excessive debt on collateral type', async t => {
 // prices drop. Bob will be charged interest (twice), which will trigger
 // liquidation. Alice's withdrawal is precisely gauged so the difference between
 // a floorDivideBy and a ceilingDivideBy will leave her unliquidated.
-test('mutable liquidity triggers and interest sensitivity', async t => {
+test('mutable liquidity sensitivity of triggers and interest', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
@@ -2357,14 +2357,12 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
     ),
   );
 
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.
-
-  // expect Alice to be liquidated because her collateral is too low.
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
 
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
@@ -2374,8 +2372,10 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
     manualTimer.tick();
   }
   await waitForPromisesToSettle();
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  bobUpdate = await E(bobNotifier).getUpdateSince();
-  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
+
+  // No change for Alice
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(); // can't use updateCount because there's no newer update
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 });

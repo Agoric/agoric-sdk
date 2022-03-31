@@ -18,7 +18,6 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
@@ -97,6 +96,7 @@ export const makeVaultManager = (
   };
 
   let vaultCounter = 0;
+  let liquidationInProgress = false;
 
   /**
    * A store for vaultKits prioritized by their collaterization ratio.
@@ -108,11 +108,6 @@ export const makeVaultManager = (
    */
   // XXX misleading mutability and confusing flow control; could be refactored with a listener
   let prioritizedVaults;
-
-  // Progress towards durability https://github.com/Agoric/agoric-sdk/issues/4568#issuecomment-1042346271
-  /** @type {MapStore<string, InnerVault>} */
-  const vaultsToLiquidate = makeScalarBigMapStore('vaultsToLiquidate');
-
   /** @type {MutableQuote=} */
   let outstandingQuote;
   /** @type {Amount<'nat'>} */
@@ -137,54 +132,51 @@ export const makeVaultManager = (
   );
 
   /**
-   * @param {Iterable<[key: string, vaultKit: InnerVault]>} vaultEntries
+   *
+   * @param {[key: string, vaultKit: InnerVault]} record
    */
-  const enqueueToLiquidate = vaultEntries => {
-    assert(prioritizedVaults);
-    for (const [k, v] of vaultEntries) {
-      vaultsToLiquidate.init(k, v);
-      prioritizedVaults.removeVault(k);
-    }
+  const liquidateAndRemove = ([key, vault]) => {
+    trace('liquidating', vault.getVaultSeat().getProposal());
+    liquidationInProgress = true;
+
+    // Start liquidation (vaultState: LIQUIDATING)
+    return liquidate(
+      zcf,
+      vault,
+      debtMint.burnLosses,
+      liquidationStrategy,
+      collateralBrand,
+    )
+      .then(() => {
+        assert(prioritizedVaults);
+        prioritizedVaults?.removeVault(key);
+        liquidationInProgress = false;
+      })
+      .catch(e => {
+        liquidationInProgress = false;
+        // XXX should notify interested parties
+        console.error('liquidateAndRemove failed with', e);
+      });
   };
 
-  const executeLiquidation = async () => {
-    // Start all promises in parallel
-    // XXX we should have a direct method to map over entries
-    const liquidations = Array.from(vaultsToLiquidate.entries()).map(
-      async ([key, vault]) => {
-        trace('liquidating', vault.getVaultSeat().getProposal());
-        try {
-          // Start liquidation (vaultState: LIQUIDATING)
-          await liquidate(
-            zcf,
-            vault,
-            debtMint.burnLosses,
-            liquidationStrategy,
-            collateralBrand,
-          );
-          vaultsToLiquidate.delete(key);
-        } catch (e) {
-          // XXX should notify interested parties
-          console.error('liquidateAndRemove failed with', e);
-        }
-      },
-    );
-    return Promise.all(liquidations);
-  };
-
-  // When any Vault's debt ratio is higher than the current high-water level,
-  // call reschedulePriceCheck() to request a fresh notification from the
-  // priceAuthority. There will be extra outstanding requests since we can't
-  // cancel them. (https://github.com/Agoric/agoric-sdk/issues/2713). When the
-  // vault with the current highest debt ratio is removed or reduces its ratio,
-  // we won't reschedule the priceAuthority requests to reduce churn. Instead,
-  // when a priceQuote is received, we'll only reschedule if the high-water
-  // level when the request was made matches the current high-water level.
+  /**
+   * When any Vault's debt ratio is higher than the current high-water level,
+   * call `reschedulePriceCheck()` to request a fresh notification from the
+   * priceAuthority. There will be extra outstanding requests since we can't
+   * cancel them. (https://github.com/Agoric/agoric-sdk/issues/2713).
+   *
+   * When the vault with the current highest debt ratio is removed or reduces
+   * its ratio, we won't reschedule the priceAuthority requests to reduce churn.
+   * Instead, when a priceQuote is received, we'll only reschedule if the
+   * high-water level when the request was made matches the current high-water
+   * level.
+   */
   const reschedulePriceCheck = async () => {
     assert(prioritizedVaults);
     const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
+      trace('no open vaults');
       return;
     }
 
@@ -208,18 +200,23 @@ export const makeVaultManager = (
         highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
+      trace('updating level for outstandingQuote');
       return;
     }
 
-    outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
-      highestDebtRatio.denominator, // collateral
-      triggerPoint,
-    );
+    if (liquidationInProgress) {
+      return;
+    }
 
     // There are two awaits in a row here. The first gets a mutableQuote object
     // relatively quickly from the PriceAuthority. The second schedules a
     // callback that may not fire until much later.
     // Callers shouldn't expect a response from this function.
+    outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
+      highestDebtRatio.denominator, // collateral
+      triggerPoint,
+    );
+
     const quote = await E(outstandingQuote).getPromise();
     // When we receive a quote, we liquidate all the vaults that don't have
     // sufficient collateral, (even if the trigger was set for a different
@@ -230,23 +227,27 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
-    enqueueToLiquidate(
-      prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin),
-    );
-
     outstandingQuote = undefined;
-    // Ensure all vaults complete
-    await executeLiquidation();
+
+    // Liquidate the head of the queue
+    const [next] =
+      prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
+    await (next ? liquidateAndRemove(next) : null);
 
     reschedulePriceCheck();
   };
   prioritizedVaults = makePrioritizedVaults(reschedulePriceCheck);
 
-  // In extreme situations, system health may require liquidating all vaults.
+  /**
+   * In extreme situations, system health may require liquidating all vaults.
+   * This starts the liquidations all in parallel.
+   */
   const liquidateAll = async () => {
     assert(prioritizedVaults);
-    enqueueToLiquidate(prioritizedVaults.entries());
-    await executeLiquidation();
+    const toLiquidate = Array.from(prioritizedVaults.entries()).map(
+      liquidateAndRemove,
+    );
+    await Promise.all(toLiquidate);
   };
 
   /**
