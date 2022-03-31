@@ -30,10 +30,10 @@ class "ContractGovernor\n(an ElectionManager)" as ContractGovernor {
     +validateTimer()
     --
     -voteOnParamChange()
-    -voteOnApiInvocation()
+    -voteOnInvocation()
     -getCreatorFacet() - The unrestricted part of the governed contract's creatorFacet
 }
-note left : ContractGovernor starts GovernedContract.\nvoteOnParamChange() and voteOnApiInvocation()\nshould be tightly held. getCreatorFacet()\nis for the contract's creator.
+note left : ContractGovernor starts GovernedContract.\nvoteOnParamChange() and voteOnInvocation()\nshould be tightly held. getCreatorFacet()\nis for the contract's creator.
 
 class Electorate {
     Questions

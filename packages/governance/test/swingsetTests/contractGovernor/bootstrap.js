@@ -166,7 +166,7 @@ const setupElectorateChange = async (
 const setupApiCall = async (zoe, log, governor, installations) => {
   const { details, instance, outcomeOfUpdate } = await E(
     governor,
-  ).voteOnApiInvocation(
+  ).voteOnInvocation(
     'governanceApi',
     [], // empty params
     installations.binaryVoteCounter,

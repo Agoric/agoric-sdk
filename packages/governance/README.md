@@ -129,8 +129,8 @@ capabilities. ContractGovernor starts the governed contract, so it gets the
 powerful creatorFacet. ContractGovernor needs access to the paramManager, but
 shouldn't share it. So the contractGovernor's `creatorFacet` provides access to
 the governed contract's `publicFacet`, `creatorFacet`, `instance`,
-`voteOnApiInvocation`, and `voteOnParamChange`. The contract's owner should
-treat `voteOnApiInvocation` and `voteOnParamChange` as particularly powerful.
+`voteOnInvocation`, and `voteOnParamChange`. The contract's owner should
+treat `voteOnInvocation` and `voteOnParamChange` as particularly powerful.
 
 ### Governing Electorates
 
