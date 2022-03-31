@@ -60,6 +60,7 @@ async function testUpgrade(t, defaultManagerType) {
   t.deepEqual(get(v1capdata, 'version'), 'v1');
   t.deepEqual(get(v1capdata, 'youAre'), 'v1');
   t.deepEqual(get(v1capdata, 'marker'), ['slot', markerKref]);
+  t.deepEqual(get(v1capdata, 'data'), ['some', 'data']);
   // grab the promises that should be rejected
   t.is(get(v1capdata, 'p1')[0], 'slot');
   const v1p1Kref = get(v1capdata, 'p1')[1];
@@ -72,6 +73,7 @@ async function testUpgrade(t, defaultManagerType) {
   t.deepEqual(get(v2capdata, 'version'), 'v2');
   t.deepEqual(get(v2capdata, 'youAre'), 'v2');
   t.deepEqual(get(v2capdata, 'marker'), ['slot', markerKref]);
+  t.deepEqual(get(v2capdata, 'data'), ['some', 'data']);
 
   // the old version's non-durable promises should be rejected
   t.is(c.kpStatus(v1p1Kref), 'rejected');
