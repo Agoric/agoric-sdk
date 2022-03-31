@@ -92,8 +92,9 @@ async function waitForPromisesToSettle() {
 }
 
 /**
+ * dL: 1M, lM: 105, iR: 100, lF: 500
+ *
  * @param {Brand} debtBrand
- * @returns dL: 1M, lM: 105, iR: 100, lF: 500
  */
 function defaultParamValues(debtBrand) {
   return harden({

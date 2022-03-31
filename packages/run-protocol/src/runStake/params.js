@@ -7,18 +7,27 @@ import { KW } from './runStakeKit.js';
 export { KW };
 
 const PKey = /** @type { const } */ ({
+  DebtLimit: 'DebtLimit',
   MintingRatio: 'MintingRatio',
   InterestRate: 'InterestRate',
   LoanFee: 'LoanFee',
 });
 
-const makeRunStakeParams = ({
-  electorateInvitationAmount,
-  mintingRatio,
-  interestRate,
-  loanFee,
-}) => {
-  return harden({
+export const makeRunStakeTerms = (
+  { timerService, chargingPeriod, recordingPeriod },
+  {
+    electorateInvitationAmount,
+    debtLimit,
+    mintingRatio,
+    interestRate,
+    loanFee,
+  },
+) => ({
+  timerService,
+  chargingPeriod,
+  recordingPeriod,
+  governedParams: harden({
+    [PKey.DebtLimit]: { type: ParamTypes.AMOUNT, value: debtLimit },
     [PKey.MintingRatio]: { type: ParamTypes.RATIO, value: mintingRatio },
     [PKey.InterestRate]: { type: ParamTypes.RATIO, value: interestRate },
     [PKey.LoanFee]: { type: ParamTypes.RATIO, value: loanFee },
@@ -26,22 +35,6 @@ const makeRunStakeParams = ({
       type: ParamTypes.INVITATION,
       value: electorateInvitationAmount,
     },
-  });
-};
-harden(makeRunStakeParams);
-
-export const makeRunStakeTerms = (
-  { timerService, chargingPeriod, recordingPeriod },
-  { electorateInvitationAmount, mintingRatio, interestRate, loanFee },
-) => ({
-  timerService,
-  chargingPeriod,
-  recordingPeriod,
-  governedParams: makeRunStakeParams({
-    electorateInvitationAmount,
-    mintingRatio,
-    interestRate,
-    loanFee,
   }),
 });
 harden(makeRunStakeTerms);
