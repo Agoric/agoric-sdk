@@ -342,4 +342,10 @@ function makeWorker(port) {
 // xsnap provides issueCommand global
 const port = managerPort(globalThis.issueCommand);
 const worker = makeWorker(port);
+
+// Send unexpected console messages to the manager port.
+globalThis.print = (...args) => {
+  port.send(['console', 'error', ...args]);
+};
+
 globalThis.handleCommand = port.handlerFrom(worker.handleItem);
