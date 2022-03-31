@@ -118,11 +118,12 @@ export {};
  * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
  * @typedef { [tag: 'retireImports', slots: string[] ]} VatSyscallRetireImports
  * @typedef { [tag: 'retireExports', slots: string[] ]} VatSyscallRetireExports
+ * @typedef { [tag: 'abandonExports', slots: string[] ]} VatSyscallAbandonExports
  *
  * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
  *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetAfter
  *    | VatSyscallVatstoreSet | VatSyscallVatstoreDelete | VatSyscallDropImports
- *    | VatSyscallRetireImports | VatSyscallRetireExports
+ *    | VatSyscallRetireImports | VatSyscallRetireExports | VatSyscallAbandonExports
  * } VatSyscallObject
  *
  * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | undefined[] | null ]} VatSyscallResultOk
@@ -156,12 +157,14 @@ export {};
  * @typedef { [tag: 'dropImports', krefs: string[] ]} KernelSyscallDropImports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelSyscallRetireImports
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelSyscallRetireExports
+ * @typedef { [tag: 'abandonExports', vatID: string, krefs: string[] ]} KernelSyscallAbandonExports
  * @typedef { [tag: 'callKernelHook', hookName: string, args: SwingSetCapData]} KernelSyscallCallKernelHook
  *
  * @typedef { KernelSyscallSend | KernelSyscallInvoke | KernelSyscallSubscribe
  *    | KernelSyscallResolve | KernelSyscallExit | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetAfter
  *    | KernelSyscallVatstoreSet | KernelSyscallVatstoreDelete | KernelSyscallDropImports
- *    | KernelSyscallRetireImports | KernelSyscallRetireExports | KernelSyscallCallKernelHook
+ *    | KernelSyscallRetireImports | KernelSyscallRetireExports | KernelSyscallAbandonExports
+ *    | KernelSyscallCallKernelHook
  * } KernelSyscallObject
  * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | undefined[] | null ]} KernelSyscallResultOk
  * @typedef { [tag: 'error', err: string ] } KernelSyscallResultError

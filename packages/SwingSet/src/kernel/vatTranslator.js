@@ -438,6 +438,27 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
 
   /**
    *
+   * @param { string[] } vrefs
+   * @returns { import('../types-external.js').KernelSyscallAbandonExports }
+   */
+  function translateAbandonExports(vrefs) {
+    assert(Array.isArray(vrefs), X`abandonExports() given non-Array ${vrefs}`);
+    const krefs = vrefs.map(vref => {
+      const { type, allocatedByVat } = parseVatSlot(vref);
+      assert.equal(type, 'object');
+      assert.equal(allocatedByVat, true); // abandon *exports*, not imports
+      // kref must already be in the clist
+      const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
+      vatKeeper.deleteCListEntry(kref, vref);
+      return kref;
+    });
+    kdebug(`syscall[${vatID}].abandonExports(${krefs.join(' ')})`);
+    // abandonExports still has work to do
+    return harden(['abandonExports', vatID, krefs]);
+  }
+
+  /**
+   *
    * @param { string } target
    * @param { string } method
    * @param { SwingSetCapData } args
@@ -560,6 +581,10 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       case 'retireExports': {
         const [_, ...args] = vsc;
         return translateRetireExports(...args);
+      }
+      case 'abandonExports': {
+        const [_, ...args] = vsc;
+        return translateAbandonExports(...args);
       }
       default:
         assert.fail(X`unknown vatSyscall type ${vsc[0]}`);
