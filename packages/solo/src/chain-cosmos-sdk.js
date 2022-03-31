@@ -1,6 +1,7 @@
 /* global setTimeout Buffer */
 import path from 'path';
 import fs from 'fs';
+import url from 'url';
 import { execFile } from 'child_process';
 import { open as tempOpen } from 'temp';
 
@@ -21,10 +22,10 @@ const console = anylogger('chain-cosmos-sdk');
 // the `agd` tool in our repo is built by 'cd golang/cosmos &&
 // make'. It lives in the build tree along with `bin/ag-solo`, in case there are
 // multiple checkouts of `agoric-sdk`.
-export const HELPER = new URL(
+export const HELPER = url.fileNameToURL(new URL(
   '../../../golang/cosmos/build/agd',
   import.meta.url,
-).pathname;
+));
 
 const FAUCET_ADDRESS =
   'the appropriate faucet channel on Discord (https://agoric.com/discord)';
