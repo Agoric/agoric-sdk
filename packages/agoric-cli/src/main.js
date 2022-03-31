@@ -197,6 +197,11 @@ const main = async (progname, rawArgs, powers) => {
   addRunOptions(
     program
       .command('deploy [script...]')
+      .option(
+        '--target <target>',
+        'One of agoric, local, cosmos, or sim',
+        'agoric',
+      )
       .description(
         'run multiple scripts with all your user privileges against the local Agoric VM',
       ),
