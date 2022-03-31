@@ -129,8 +129,8 @@ capabilities. ContractGovernor starts the governed contract, so it gets the
 powerful creatorFacet. ContractGovernor needs access to the paramManager, but
 shouldn't share it. So the contractGovernor's `creatorFacet` provides access to
 the governed contract's `publicFacet`, `creatorFacet`, `instance`,
-`voteOnApiInvocation`, and `voteOnParamChange`. The contract's owner should
-treat `voteOnApiInvocation` and `voteOnParamChange` as particularly powerful.
+`voteOnMethodInvocation`, and `voteOnParamChange`. The contract's owner should
+treat `voteOnMethodInvocation` and `voteOnParamChange` as particularly powerful.
 
 ### Governing Electorates
 
@@ -189,7 +189,7 @@ yourself using 'addUnknown', let us know!)
 
 `ContractGovernor` has support for contracts that declare that some internal
 APIs should only be invoked under the control of governance. To opt in to this
-support, the contract should include `getGovernedApis` in its creator facet
+support, the contract should include `getGovernedMethods` in its creator facet
 (passed to `wrapCreatorFacet`). That method should return a `Far` object with
 the methods to be called.
 
@@ -228,7 +228,7 @@ Governed methods and parameters must be included in terms.
         value: invitationAmount,
       },
     },
-    governedApis: ['makeItSo'],
+    governedMethods: ['makeItSo'],
   },
 ```
 

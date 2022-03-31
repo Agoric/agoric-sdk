@@ -171,33 +171,33 @@ const start = async zcf => {
   // this conditional was extracted so both sides are equally asynchronous
   /** @type {() => Promise<ApiGovernor>} */
   const initApiGovernance = async () => {
-    // @ts-ignore `governedApis` is present on contracts wiht API invocation.
+    // @ts-ignore `governedMethods` is present on contracts wiht API invocation.
 
-    const [governedApis, governedNames] = await Promise.all([
-      E(governedCF).getGovernedApis(),
-      E(governedCF).getGovernedApiNames(),
+    const [governedMethods, governedNames] = await Promise.all([
+      E(governedCF).getGovernedMethods(),
+      E(governedCF).getGovernedMethodNames(),
     ]);
     if (governedNames.length) {
       return setupApiGovernance(
         zoe,
         governedInstance,
-        governedApis,
+        governedMethods,
         governedNames,
         timer,
         getUpdatedPoserFacet,
       );
     }
 
-    // if we aren't governing APIs, voteOnApiInvocation shouldn't be called
+    // if we aren't governing APIs, voteOnMethodInvocation shouldn't be called
     return {
-      voteOnApiInvocation: () => {
+      voteOnMethodInvocation: () => {
         throw Error('api governance not configured');
       },
       createdQuestion: () => false,
     };
   };
 
-  const { voteOnApiInvocation, createdQuestion: createdApiQuestion } =
+  const { voteOnMethodInvocation, createdQuestion: createdApiQuestion } =
     await initApiGovernance();
 
   const validateVoteCounter = async voteCounter => {
@@ -231,7 +231,7 @@ const start = async zcf => {
 
   const creatorFacet = Far('governor creatorFacet', {
     voteOnParamChange,
-    voteOnApiInvocation,
+    voteOnMethodInvocation,
     getCreatorFacet: () => limitedCreatorFacet,
     getInstance: () => governedInstance,
     getPublicFacet: () => governedPF,

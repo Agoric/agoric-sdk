@@ -98,7 +98,7 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
         value: invitationAmount,
       },
     },
-    governedApis: ['governanceApi'],
+    governedMethods: ['governanceApi'],
   };
   const governorTerms = {
     timer,

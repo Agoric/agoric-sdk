@@ -504,7 +504,7 @@
  * @template {object} PF Public facet of governed contract
  * @typedef {Object} GovernedContractFacetAccess
  * @property {VoteOnParamChange} voteOnParamChange
- * @property {VoteOnApiInvocation} voteOnApiInvocation
+ * @property {VoteOnMethodInvocation} voteOnMethodInvocation
  * @property {() => Promise<LimitedCreatorFacet<any>>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
@@ -582,7 +582,7 @@
  */
 
 /**
- * @callback VoteOnApiInvocation
+ * @callback VoteOnMethodInvocation
  * @param {string} apiMethodName
  * @param {unknown[]} methodArgs
  * @param {Installation} voteCounterInstallation
@@ -598,7 +598,7 @@
 
 /**
  * @typedef {Object} ApiGovernor
- * @property {VoteOnApiInvocation} voteOnApiInvocation
+ * @property {VoteOnMethodInvocation} voteOnMethodInvocation
  * @property {CreatedQuestion} createdQuestion
  */
 

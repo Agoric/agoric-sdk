@@ -15,7 +15,7 @@ const { details: X } = assert;
 
 /**
  * Make a pair of positions for a question about whether to invoke an API. If
- * the vote passes, the method will be called on the governedApis facet with the
+ * the vote passes, the method will be called on the governedMethods facet with the
  * arguments that were provided.
  *
  * @param {string} apiMethodName
@@ -32,7 +32,7 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
  *
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} governedInstance
- * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedApis
+ * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedMethods
  * @param {string[]} governedNames names of the governed API methods
  * @param {ERef<TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
@@ -41,7 +41,7 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
 const setupApiGovernance = async (
   zoe,
   governedInstance,
-  governedApis,
+  governedMethods,
   governedNames,
   timer,
   getUpdatedPoserFacet,
@@ -49,8 +49,8 @@ const setupApiGovernance = async (
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
 
-  /** @type {VoteOnApiInvocation} */
-  const voteOnApiInvocation = async (
+  /** @type {VoteOnMethodInvocation} */
+  const voteOnMethodInvocation = async (
     apiMethodName,
     methodArgs,
     voteCounterInstallation,
@@ -104,7 +104,7 @@ const setupApiGovernance = async (
           );
 
           // E(remote)[name](args) invokes the method named 'name' on remote.
-          return E(governedApis)
+          return E(governedMethods)
             [apiMethodName](...methodArgs)
             .then(() => {
               return positive;
@@ -122,7 +122,7 @@ const setupApiGovernance = async (
   };
 
   return Far('paramGovernor', {
-    voteOnApiInvocation,
+    voteOnMethodInvocation,
     createdQuestion: b => voteCounters.has(b),
   });
 };
