@@ -91,14 +91,19 @@ async function waitForPromisesToSettle() {
   return pk.promise;
 }
 
-function makeRates(runBrand) {
+/**
+ * @param {Brand} debtBrand
+ * @returns dL: 1M, lM: 105, iR: 100, lF: 500
+ */
+function defaultParamValues(debtBrand) {
   return harden({
+    debtLimit: AmountMath.make(debtBrand, 1_000_000n),
     // margin required to maintain a loan
-    liquidationMargin: makeRatio(105n, runBrand),
+    liquidationMargin: makeRatio(105n, debtBrand),
     // periodic interest rate (per charging period)
-    interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
+    interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
-    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
+    loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
   });
 }
 
@@ -278,7 +283,7 @@ async function setupServices(
   });
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
-  /** @type {Promise<VaultFactory & LimitedCreatorFacet>} */
+  /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
   const vaultFactoryCreatorFacet = /** @type { any } */ (
     E(governorCreatorFacet).getCreatorFacet()
   );
@@ -348,7 +353,7 @@ test('first', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   // Add a vault that will lend on aeth collateral
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   const aethVaultManager = await E(vaultFactory).addVaultType(
     aethIssuer,
     'AEth',
@@ -370,7 +375,10 @@ test('first', async t => {
     }),
   );
 
-  const { vault, vaultNotifier } = await E(vaultSeat).getOfferResult();
+  const {
+    vault,
+    publicNotifiers: { vault: vaultNotifier },
+  } = await E(vaultSeat).getOfferResult();
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 470n), rates.loanFee);
   t.deepEqual(
@@ -493,7 +501,7 @@ test('price drop', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   // Add a vault that will lend on aeth collateral
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Create a loan for 270 RUN with 400 aeth collateral
@@ -512,7 +520,10 @@ test('price drop', async t => {
   );
   trace('loan made', loanAmount);
 
-  const { vault, vaultNotifier } = await E(vaultSeat).getOfferResult();
+  const {
+    vault,
+    publicNotifiers: { vault: vaultNotifier },
+  } = await E(vaultSeat).getOfferResult();
   trace('offer result', vault);
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(loanAmount, rates.loanFee);
@@ -527,7 +538,7 @@ test('price drop', async t => {
 
   t.is(notification.value.vaultState, Phase.ACTIVE);
   t.deepEqual((await notification.value).debtSnapshot, {
-    run: AmountMath.add(loanAmount, fee),
+    debt: AmountMath.add(loanAmount, fee),
     interest: makeRatio(100n, runBrand),
   });
   const { RUN: lentAmount } = await E(vaultSeat).getCurrentAllocation();
@@ -638,7 +649,7 @@ test('price falls precipitously', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   // Add a vault that will lend on aeth collateral
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Create a loan for 370 RUN with 400 aeth collateral
@@ -656,7 +667,10 @@ test('price falls precipitously', async t => {
     }),
   );
 
-  const { vault, vaultNotifier } = await E(userSeat).getOfferResult();
+  const {
+    vault,
+    publicNotifiers: { vault: vaultNotifier },
+  } = await E(userSeat).getOfferResult();
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(AmountMath.make(runBrand, 370n), rates.loanFee);
   t.deepEqual(
@@ -795,8 +809,7 @@ test('vaultFactory display collateral', async t => {
   const { vaultFactory } = services.vaultFactory;
 
   const rates = harden({
-    liquidationMargin: makeRatio(105n, runBrand),
-    interestRate: makeRatio(100n, runBrand, BASIS_POINTS),
+    ...defaultParamValues(runBrand),
     loanFee: makeRatio(530n, runBrand, BASIS_POINTS),
   });
 
@@ -850,12 +863,10 @@ test('interest on multiple vaults', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const interestRate = makeRatio(5n, runBrand);
-  const rates = harden({
-    liquidationMargin: makeRatio(105n, runBrand),
-    interestRate,
-    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
-  });
+  const rates = {
+    ...defaultParamValues(runBrand),
+    interestRate: makeRatio(5n, runBrand),
+  };
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Create a loan for Alice for 4700 RUN with 1100 aeth collateral
@@ -873,9 +884,8 @@ test('interest on multiple vaults', async t => {
     }),
   );
   const {
-    assetNotifier,
     vault: aliceVault,
-    vaultNotifier: aliceNotifier,
+    publicNotifiers: { vault: aliceNotifier, asset: assetNotifier },
   } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
@@ -912,9 +922,10 @@ test('interest on multiple vaults', async t => {
       Collateral: aethMint.mintPayment(bobCollateralAmount),
     }),
   );
-  const { vault: bobVault, vaultNotifier: bobNotifier } = await E(
-    bobLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: bobVault,
+    publicNotifiers: { vault: bobNotifier },
+  } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
@@ -947,17 +958,17 @@ test('interest on multiple vaults', async t => {
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
 
-  // 160 is initial fee. interest is 3n/week. compounding is in the noise.
+  // 160n is initial fee. interest is 3n/week. compounding is in the noise.
   const bobAddedDebt = 160n + 3n;
   t.deepEqual(
     calculateCurrentDebt(
-      bobUpdate.value.debtSnapshot.run,
+      bobUpdate.value.debtSnapshot.debt,
       bobUpdate.value.debtSnapshot.interest,
       assetUpdate.value.compoundedInterest,
     ),
     AmountMath.make(runBrand, 3200n + bobAddedDebt),
   );
-  t.deepEqual(bobUpdate.value.interestRate, interestRate);
+  t.deepEqual(bobUpdate.value.interestRate, rates.interestRate);
   t.deepEqual(
     bobUpdate.value.liquidationRatio,
     makeRatio(105n, runBrand, 100n),
@@ -967,7 +978,7 @@ test('interest on multiple vaults', async t => {
   const aliceAddedDebt = 236n + 3n;
   t.deepEqual(
     calculateCurrentDebt(
-      aliceUpdate.value.debtSnapshot.run,
+      aliceUpdate.value.debtSnapshot.debt,
       aliceUpdate.value.debtSnapshot.interest,
       assetUpdate.value.compoundedInterest,
     ),
@@ -976,10 +987,10 @@ test('interest on multiple vaults', async t => {
   );
   // but no change to the snapshot
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
-    run: AmountMath.make(runBrand, 4935n),
+    debt: AmountMath.make(runBrand, 4935n),
     interest: makeRatio(100n, runBrand, 100n),
   });
-  t.deepEqual(aliceUpdate.value.interestRate, interestRate);
+  t.deepEqual(aliceUpdate.value.interestRate, rates.interestRate);
   t.deepEqual(aliceUpdate.value.liquidationRatio, makeRatio(105n, runBrand));
 
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
@@ -1026,9 +1037,10 @@ test('interest on multiple vaults', async t => {
       Collateral: aethMint.mintPayment(AmountMath.make(aethBrand, 2_000n)),
     }),
   );
-  const { vault: danVault, vaultNotifier: danNotifier } = await E(
-    danLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: danVault,
+    publicNotifiers: { vault: danNotifier },
+  } = await E(danLoanSeat).getOfferResult();
   const danActualDebt = wantedRun + 50n; // includes fees
   t.is((await E(danVault).getCurrentDebt()).value, danActualDebt);
   const normalizedDebt = (await E(danVault).getNormalizedDebt()).value;
@@ -1040,7 +1052,7 @@ test('interest on multiple vaults', async t => {
   const danUpdate = await E(danNotifier).getUpdateSince();
   // snapshot should equal actual since no additional time has elapsed
   const { debtSnapshot: danSnap } = danUpdate.value;
-  t.is(danSnap.run.value, danActualDebt);
+  t.is(danSnap.debt.value, danActualDebt);
 });
 
 test('adjust balances', async t => {
@@ -1076,7 +1088,7 @@ test('adjust balances', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // initial loan /////////////////////////////////////
@@ -1095,9 +1107,10 @@ test('adjust balances', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -1118,9 +1131,9 @@ test('adjust balances', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
-    run: AmountMath.make(runBrand, 5250n),
+    debt: AmountMath.make(runBrand, 5250n),
     interest: makeRatio(100n, runBrand),
   });
 
@@ -1167,7 +1180,7 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
 
   // increase collateral 2 ////////////////////////////////// (want:s, give:c)
 
@@ -1214,9 +1227,9 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
   t.deepEqual(aliceUpdate.value.debtSnapshot, {
-    run: AmountMath.make(runBrand, 5253n),
+    debt: AmountMath.make(runBrand, 5253n),
     interest: makeRatio(100n, runBrand),
   });
 
@@ -1267,7 +1280,7 @@ test('adjust balances', async t => {
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
 
   // NSF  ///////////////////////////////////// (want too much of both)
 
@@ -1329,7 +1342,7 @@ test('transfer vault', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // initial loan /////////////////////////////////////
@@ -1348,9 +1361,10 @@ test('transfer vault', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
 
@@ -1366,9 +1380,10 @@ test('transfer vault', async t => {
   trace('TRANSFER INVITE', transferInvite, inviteProps);
   /** @type {UserSeat<VaultKit>} */
   const transferSeat = await E(zoe).offer(transferInvite);
-  const { vault: transferVault, vaultNotifier: transferNotifier } = await E(
-    transferSeat,
-  ).getOfferResult();
+  const {
+    vault: transferVault,
+    publicNotifiers: { vault: transferNotifier },
+  } = await E(transferSeat).getOfferResult();
   t.throwsAsync(() => E(aliceVault).getCurrentDebt());
   const debtAfter = await E(transferVault).getCurrentDebt();
   t.deepEqual(debtAfter, debtAmount, 'vault lent 5000 RUN + fees');
@@ -1427,9 +1442,10 @@ test('transfer vault', async t => {
   const t2Invite = await E(transferVault).makeTransferInvitation();
   /** @type {UserSeat<VaultKit>} */
   const t2Seat = await E(zoe).offer(t2Invite);
-  const { vault: t2Vault, vaultNotifier: t2Notifier } = await E(
-    t2Seat,
-  ).getOfferResult();
+  const {
+    vault: t2Vault,
+    publicNotifiers: { vault: t2Notifier },
+  } = await E(t2Seat).getOfferResult();
   t.throwsAsync(
     () => E(adjustSeatPromise).getOfferResult(),
     {
@@ -1494,7 +1510,7 @@ test('overdeposit', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Alice's loan /////////////////////////////////////
@@ -1513,9 +1529,10 @@ test('overdeposit', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -1535,7 +1552,7 @@ test('overdeposit', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebt);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebt);
   t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
   // Bob's loan /////////////////////////////////////
@@ -1593,7 +1610,7 @@ test('overdeposit', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(
-    aliceUpdate.value.debtSnapshot.run,
+    aliceUpdate.value.debtSnapshot.debt,
     AmountMath.makeEmpty(runBrand),
   );
 
@@ -1654,10 +1671,9 @@ test('mutable liquidity triggers and interest', async t => {
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
-    liquidationMargin: makeRatio(105n, runBrand),
+    ...defaultParamValues(runBrand),
     // charge 5% interest
     interestRate: makeRatio(5n, runBrand),
-    loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
   });
 
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
@@ -1678,9 +1694,10 @@ test('mutable liquidity triggers and interest', async t => {
       Collateral: aethMint.mintPayment(aliceCollateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -1702,7 +1719,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, aliceRunDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   // Create a loan for Bob for 740 RUN with 100 Aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
@@ -1718,9 +1735,10 @@ test('mutable liquidity triggers and interest', async t => {
       Collateral: aethMint.mintPayment(bobCollateralAmount),
     }),
   );
-  const { vault: bobVault, vaultNotifier: bobNotifier } = await E(
-    bobLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: bobVault,
+    publicNotifiers: { vault: bobNotifier },
+  } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
@@ -1740,7 +1758,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
 
   let bobUpdate = await E(bobNotifier).getUpdateSince();
-  t.deepEqual(bobUpdate.value.debtSnapshot.run, bobRunDebtLevel);
+  t.deepEqual(bobUpdate.value.debtSnapshot.debt, bobRunDebtLevel);
 
   // reduce collateral  /////////////////////////////////////
 
@@ -1770,14 +1788,14 @@ test('mutable liquidity triggers and interest', async t => {
     ),
   );
 
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, aliceRunDebtLevel);
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.
 
   // expect Alice to be liquidated because her collateral is too low.
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
 
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
@@ -1788,14 +1806,14 @@ test('mutable liquidity triggers and interest', async t => {
   }
   await waitForPromisesToSettle();
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
-  bobUpdate = await E(bobNotifier).getUpdateSince();
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
 
   for (let i = 0; i < 5; i += 1) {
     manualTimer.tick();
   }
   await waitForPromisesToSettle();
-  bobUpdate = await E(bobNotifier).getUpdateSince();
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
 
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
 });
@@ -1855,7 +1873,7 @@ test('collect fees from loan and AMM', async t => {
   const { vaultFactory, lender } = services.vaultFactory;
 
   // Add a pool with 900 aeth collateral at a 201 aeth/RUN rate
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
 
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
@@ -1954,7 +1972,7 @@ test('close loan', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // initial loan /////////////////////////////////////
@@ -1973,9 +1991,10 @@ test('close loan', async t => {
       Collateral: aethMint.mintPayment(collateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -1995,7 +2014,7 @@ test('close loan', async t => {
   );
 
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, runDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, runDebtLevel);
   t.deepEqual(aliceUpdate.value.locked, collateralAmount);
 
   // Create a loan for Bob for 1000 RUN with 200 aeth collateral
@@ -2090,7 +2109,7 @@ test('excessive loan', async t => {
   } = services;
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const rates = makeRates(runBrand);
+  const rates = defaultParamValues(runBrand);
   await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
 
   // Try to Create a loan for Alice for 5000 RUN with 100 aeth collateral
@@ -2112,6 +2131,69 @@ test('excessive loan', async t => {
   });
 });
 
+/**
+ * Each vaultManager manages one collateral type and has a governed parameter, `debtLimit`,
+ * that specifies a cap on the amount of debt the manager will allow.
+ *
+ * Attempts to adjust balances on vaults beyond the debt limit fail.
+ * In other words, minting for anything other than charging interest fails.
+ */
+test('excessive debt on collateral type', async t => {
+  const {
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+  } = setupAssets();
+  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
+  const aethLiquidity = {
+    proposal: aethInitialLiquidity,
+    payment: aethMint.mintPayment(aethInitialLiquidity),
+  };
+  const loanTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 6n,
+  };
+  const services = await setupServices(
+    loanTiming,
+    [15n],
+    AmountMath.make(aethBrand, 1n),
+    aethBrand,
+    {
+      committeeName: 'Star Chamber',
+      committeeSize: 5,
+    },
+    buildManualTimer(console.log),
+    undefined,
+    aethLiquidity,
+    500n,
+    aethIssuer,
+  );
+  const {
+    zoe,
+    runKit: { brand: runBrand },
+  } = services;
+  const { vaultFactory, lender } = services.vaultFactory;
+
+  const rates = defaultParamValues(runBrand);
+  await E(vaultFactory).addVaultType(aethIssuer, 'AEth', rates);
+
+  const collateralAmount = AmountMath.make(aethBrand, 1_000_000n);
+  const centralAmount = AmountMath.make(runBrand, 1_000_000n);
+  /** @type {UserSeat<VaultKit>} */
+  const loanSeat = await E(zoe).offer(
+    E(lender).makeVaultInvitation(),
+    harden({
+      give: { Collateral: collateralAmount },
+      want: { RUN: centralAmount },
+    }),
+    harden({
+      Collateral: aethMint.mintPayment(collateralAmount),
+    }),
+  );
+  await t.throwsAsync(() => E(loanSeat).getOfferResult(), {
+    message:
+      'Minting would exceed total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000n]"}',
+  });
+});
+
 // We'll make two loans, and trigger one via interest charges, and not trigger
 // liquidation of the other. The interest rate is 20%. The liquidation margin is
 // 105%. Both loans will initially be over collateralized 100%. Alice will
@@ -2119,7 +2201,7 @@ test('excessive loan', async t => {
 // prices drop. Bob will be charged interest (twice), which will trigger
 // liquidation. Alice's withdrawal is precisely gauged so the difference between
 // a floorDivideBy and a ceilingDivideBy will leave her unliquidated.
-test('mutable liquidity triggers and interest sensitivity', async t => {
+test('mutable liquidity sensitivity of triggers and interest', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
   } = setupAssets();
@@ -2160,9 +2242,8 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
-    liquidationMargin: makeRatio(105n, runBrand),
+    ...defaultParamValues(runBrand),
     // charge 5% interest
-    interestRate: makeRatio(5n, runBrand),
     loanFee: makeRatio(500n, runBrand, BASIS_POINTS),
   });
 
@@ -2184,9 +2265,10 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
       Collateral: aethMint.mintPayment(aliceCollateralAmount),
     }),
   );
-  const { vault: aliceVault, vaultNotifier: aliceNotifier } = await E(
-    aliceLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await E(aliceLoanSeat).getOfferResult();
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
   const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
@@ -2208,7 +2290,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, aliceRunDebtLevel);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   // Create a loan for Bob for 740 RUN with 100 Aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
@@ -2224,9 +2306,10 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
       Collateral: aethMint.mintPayment(bobCollateralAmount),
     }),
   );
-  const { vault: bobVault, vaultNotifier: bobNotifier } = await E(
-    bobLoanSeat,
-  ).getOfferResult();
+  const {
+    vault: bobVault,
+    publicNotifiers: { vault: bobNotifier },
+  } = await E(bobLoanSeat).getOfferResult();
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
@@ -2246,7 +2329,7 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
   );
 
   let bobUpdate = await E(bobNotifier).getUpdateSince();
-  t.deepEqual(bobUpdate.value.debtSnapshot.run, bobRunDebtLevel);
+  t.deepEqual(bobUpdate.value.debtSnapshot.debt, bobRunDebtLevel);
 
   // reduce collateral  /////////////////////////////////////
 
@@ -2274,14 +2357,12 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
     ),
   );
 
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  t.deepEqual(aliceUpdate.value.debtSnapshot.run, aliceRunDebtLevel);
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
   await manualTimer.tick();
   // price levels changed and interest was charged.
-
-  // expect Alice to be liquidated because her collateral is too low.
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
 
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
@@ -2291,8 +2372,10 @@ test('mutable liquidity triggers and interest sensitivity', async t => {
     manualTimer.tick();
   }
   await waitForPromisesToSettle();
-  aliceUpdate = await E(aliceNotifier).getUpdateSince();
-  bobUpdate = await E(bobNotifier).getUpdateSince();
-  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
+
+  // No change for Alice
+  aliceUpdate = await E(aliceNotifier).getUpdateSince(); // can't use updateCount because there's no newer update
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 });

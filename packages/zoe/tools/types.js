@@ -1,8 +1,8 @@
 /**
  * @typedef {Object} PriceQuote
- * @property {Amount} quoteAmount
+ * @property {Amount<'set'>} quoteAmount
  * Amount whose value is a PriceQuoteValue
- * @property {ERef<Payment> | null} quotePayment
+ * @property {ERef<Payment>} quotePayment
  * The `quoteAmount` wrapped as a payment
  */
 

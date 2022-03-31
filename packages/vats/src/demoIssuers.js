@@ -446,6 +446,7 @@ export const poolRates = (issuerName, record, kits, central) => {
    */
   const toRatio = ([n, d], b) => makeRatio(n, b, d);
   const rates = {
+    debtLimit: AmountMath.make(central.brand, 1_000_000n),
     initialPrice: makeRatio(
       initialPriceNumerator,
       central.brand,
@@ -593,22 +594,12 @@ export const fundAMM = async ({
   }
 
   /**
-   * @param {ERef<Issuer>} issuerIn
-   * @param {ERef<Issuer>} issuerOut
    * @param {ERef<Brand>} brandIn
    * @param {ERef<Brand>} brandOut
    * @param {Array<[bigint | number, bigint | number]>} tradeList
    */
-  const makeFakePriceAuthority = (
-    issuerIn,
-    issuerOut,
-    brandIn,
-    brandOut,
-    tradeList,
-  ) =>
+  const makeFakePriceAuthority = (brandIn, brandOut, tradeList) =>
     E(vats.priceAuthority).makeFakePriceAuthority({
-      issuerIn,
-      issuerOut,
       actualBrandIn: brandIn,
       actualBrandOut: brandOut,
       tradeList,
@@ -659,8 +650,6 @@ export const fundAMM = async ({
           );
         }
         fromCentral = makeFakePriceAuthority(
-          central.issuer,
-          issuer,
           central.brand,
           brand,
           tradesGivenCentral,
@@ -677,8 +666,6 @@ export const fundAMM = async ({
           ([valueCentral, valueOther]) => [valueOther, valueCentral],
         );
         toCentral = makeFakePriceAuthority(
-          issuer,
-          central.issuer,
           brand,
           central.brand,
           tradesGivenOther,

@@ -134,8 +134,8 @@ test('forward to fake zoe', async t => {
   console.log(`targetID: ${targetID}`);
 
   // confirm that zoe is exporting it
-  t.is(findClist(c, zoeID, invitation), 'o+9');
-  t.true(dumpClist(c).includes(`${invitation}/${zoeID}/o+9`));
+  t.is(findClist(c, zoeID, invitation), 'o+10');
+  t.true(dumpClist(c).includes(`${invitation}/${zoeID}/o+10`));
   // confirm that vat-target has not seen it yet
   t.is(findClist(c, targetID, invitation), undefined);
 

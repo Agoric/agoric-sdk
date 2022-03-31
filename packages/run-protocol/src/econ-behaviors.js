@@ -7,13 +7,15 @@ import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
+import { AmountMath } from '@agoric/ertp';
 import { makeGovernedTerms } from './vaultFactory/params.js';
+import { makeAmmTerms } from './vpool-xyk-amm/params.js';
+import { makeReserveTerms } from './reserve/params.js';
 
 import '../exported.js';
 
-import { makeAmmTerms } from './vpool-xyk-amm/params.js';
-
 import * as Collect from './collect.js';
+import { makeRunStakeTerms } from './runStake/params.js';
 
 const { details: X } = assert;
 const { entries } = Object;
@@ -132,27 +134,80 @@ export const setupAmm = async ({
   return ammInstallation.then(i => ammInstallationProducer.resolve(i));
 };
 
-/**
- * @param {BootstrapPowers & {
- *   consume: { loadVat: ERef<VatLoader<PriceAuthorityVat>>},
- * }} powers
- *
- * @typedef {ERef<ReturnType<import('../../vats/src/vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat
- */
-export const startPriceAuthority = async ({
-  consume: { loadVat },
-  produce,
+/** @param { EconomyBootstrapPowers } powers */
+export const setupReserve = async ({
+  consume: {
+    feeMintAccess: feeMintAccessP,
+    chainTimerService,
+    zoe,
+    economicCommitteeCreatorFacet: committeeCreator,
+    reserveBundle,
+  },
+  produce: {
+    reserveCreatorFacet,
+    reserveGovernorCreatorFacet,
+    reservePublicFacet,
+  },
+  issuer: {
+    consume: { [CENTRAL_ISSUER_NAME]: centralIssuer },
+  },
+  instance: {
+    consume: { economicCommittee: electorateInstance, amm: ammInstanceP },
+    produce: { reserve: reserveInstanceProducer, reserveGovernor },
+  },
+  installation: {
+    consume: { contractGovernor: governorInstallation },
+    produce: { reserve: reserveInstallationProducer },
+  },
 }) => {
-  const vats = { priceAuthority: E(loadVat)('priceAuthority') };
-  const { priceAuthority, adminFacet } = await E(
-    vats.priceAuthority,
-  ).makePriceAuthorityRegistry();
+  const bundle = await reserveBundle;
+  const reserveInstallation = E(zoe).install(bundle);
 
-  produce.priceAuthorityVat.resolve(vats.priceAuthority);
-  produce.priceAuthority.resolve(priceAuthority);
-  produce.priceAuthorityAdmin.resolve(adminFacet);
+  const poserInvitationP = E(committeeCreator).getPoserInvitation();
+  const [poserInvitation, poserInvitationAmount] = await Promise.all([
+    poserInvitationP,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+  ]);
+  const timer = await chainTimerService; // avoid promise for legibility
+
+  const ammInstance = await ammInstanceP;
+
+  const reserveTerms = makeReserveTerms(poserInvitationAmount, ammInstance);
+
+  const feeMintAccess = await feeMintAccessP;
+  const reserveGovernorTerms = {
+    timer,
+    electorateInstance,
+    governedContractInstallation: reserveInstallation,
+    governed: {
+      terms: reserveTerms,
+      issuerKeywordRecord: { Central: centralIssuer },
+      privateArgs: { feeMintAccess, initialPoserInvitation: poserInvitation },
+    },
+  };
+  const g = await E(zoe).startInstance(
+    governorInstallation,
+    {},
+    reserveGovernorTerms,
+    {
+      electorateCreatorFacet: committeeCreator,
+    },
+  );
+
+  const [creatorFacet, publicFacet, instance] = await Promise.all([
+    E(g.creatorFacet).getCreatorFacet(),
+    E(g.creatorFacet).getPublicFacet(),
+    E(g.publicFacet).getGovernedContract(),
+  ]);
+
+  reserveGovernorCreatorFacet.resolve(g.creatorFacet);
+  reserveCreatorFacet.resolve(creatorFacet);
+  reservePublicFacet.resolve(publicFacet);
+
+  reserveInstanceProducer.resolve(instance);
+  reserveGovernor.resolve(g.instance);
+  return reserveInstallation.then(i => reserveInstallationProducer.resolve(i));
 };
-harden(startPriceAuthority);
 
 /**
  * @param { EconomyBootstrapPowers } powers
@@ -197,11 +252,17 @@ export const startVaultFactory = async (
 
   const centralBrand = await centralBrandP;
 
-  // declare governed params for the vaultFactory; addVaultType() sets actual rates
-  const rates = {
-    liquidationMargin: makeRatio(105n, centralBrand),
-    interestRate: makeRatio(250n, centralBrand, BASIS_POINTS),
-    loanFee: makeRatio(200n, centralBrand, BASIS_POINTS),
+  /**
+   * Types for the governed params for the vaultFactory; addVaultType() sets actual values
+   *
+   * @type {VaultManagerParamValues}
+   */
+  const vaultManagerParams = {
+    // XXX the values aren't used. May be addressed by https://github.com/Agoric/agoric-sdk/issues/4861
+    debtLimit: AmountMath.make(centralBrand, 0n),
+    liquidationMargin: makeRatio(0n, centralBrand),
+    interestRate: makeRatio(0n, centralBrand, BASIS_POINTS),
+    loanFee: makeRatio(0n, centralBrand, BASIS_POINTS),
   };
 
   const [ammInstance, electorateInstance, contractGovernorInstall] =
@@ -219,7 +280,7 @@ export const startVaultFactory = async (
     installations.liquidate,
     chainTimerService,
     invitationAmount,
-    rates,
+    vaultManagerParams,
     ammPublicFacet,
   );
   const governorTerms = harden({
@@ -442,3 +503,156 @@ export const startRewardDistributor = async ({
   );
 };
 harden(startRewardDistributor);
+
+/**
+ * TODO: refactor vats/core/types.js like this
+ *
+ * @template T
+ * @typedef {{
+ *   consume: { [P in keyof T]: ERef<T[P]> },
+ *   produce: { [P in keyof T]: Producer<T[P]> },
+ * }} PromiseMarket
+ */
+
+/**
+ * @typedef {EconomyBootstrapPowers & WellKnownSpaces & PromiseMarket<{
+ *   runStakeBundle: SourceBundle,
+ *   client: ClientManager,
+ *   lienBridge: StakingAuthority,
+ * }>} RunStakeBootstrapPowers
+ */
+
+/**
+ * @param {RunStakeBootstrapPowers } powers
+ * @param {Object} config
+ * @param {Rational} config.mintingRatio ratio of RUN minted to BLD
+ * @param {bigint} config.interestRateBP
+ * @param {bigint} config.loanFeeBP
+ * @param {bigint} config.chargingPeriod
+ * @param {bigint} config.recordingPeriod
+ * @typedef {[bigint, bigint]} Rational
+ * @typedef {Awaited<ReturnType<typeof import('./runStake/runStake.js').start>>} StartRunStake
+ */
+export const startRunStake = async (
+  {
+    consume: {
+      zoe,
+      // ISSUE: is there some reason Zoe shouldn't await this???
+      feeMintAccess: feeMintAccessP,
+      runStakeBundle,
+      lienBridge,
+      client,
+      chainTimerService,
+      economicCommitteeCreatorFacet,
+    },
+    // @ts-ignore TODO: add to BootstrapPowers
+    produce: { runStakeCreatorFacet, runStakeGovernorCreatorFacet },
+    installation: {
+      consume: { contractGovernor },
+      produce: { runStake: runStakeinstallR },
+    },
+    instance: {
+      consume: { economicCommittee },
+      produce: { runStake: runStakeinstanceR },
+    },
+    brand: {
+      consume: { BLD: bldBrandP, RUN: runBrandP },
+      produce: { Attestation: attestationBrandR },
+    },
+    issuer: {
+      consume: { BLD: bldIssuer },
+      produce: { Attestation: attestationIssuerR },
+    },
+  },
+  config = {
+    mintingRatio: [1n, 4n],
+    interestRateBP: 250n,
+    loanFeeBP: 200n,
+    chargingPeriod: SECONDS_PER_HOUR,
+    recordingPeriod: SECONDS_PER_DAY,
+  },
+) => {
+  const bundle = await runStakeBundle;
+  const [feeMintAccess, bldBrand, runBrand, governor, installation, timer] =
+    await Promise.all([
+      feeMintAccessP,
+      bldBrandP,
+      runBrandP,
+      contractGovernor,
+      E(zoe).install(bundle),
+      chainTimerService,
+    ]);
+
+  const installations = {
+    governor,
+    getRUN: installation,
+  };
+
+  const poserInvitationP = E(
+    economicCommitteeCreatorFacet,
+  ).getPoserInvitation();
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
+
+  const runStakeTerms = makeRunStakeTerms(
+    {
+      timerService: timer,
+      chargingPeriod: config.chargingPeriod,
+      recordingPeriod: config.recordingPeriod,
+    },
+    {
+      mintingRatio: makeRatio(
+        config.mintingRatio[0],
+        runBrand,
+        config.mintingRatio[1],
+        bldBrand,
+      ),
+      interestRate: makeRatio(config.interestRateBP, runBrand, BASIS_POINTS),
+      loanFee: makeRatio(config.loanFeeBP, runBrand, BASIS_POINTS),
+      electorateInvitationAmount,
+    },
+  );
+
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<unknown>}} */
+  const governorFacets = await E(zoe).startInstance(
+    installations.governor,
+    {},
+    {
+      timer,
+      economicCommittee,
+      governedContractInstallation: installations.getRUN,
+      governed: harden({
+        terms: runStakeTerms,
+        issuerKeywordRecord: { Stake: bldIssuer },
+        privateArgs: { feeMintAccess, initialPoserInvitation, lienBridge },
+      }),
+    },
+    harden({ economicCommitteeCreatorFacet }),
+  );
+
+  const governedInstance = await E(governorFacets.creatorFacet).getInstance();
+  const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
+
+  const {
+    issuers: { Attestation: attIssuer },
+    brands: { Attestation: attBrand },
+  } = await E(zoe).getTerms(governedInstance);
+
+  runStakeCreatorFacet.resolve(creatorFacet);
+  runStakeGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
+  runStakeinstallR.resolve(installation);
+  runStakeinstanceR.resolve(governedInstance);
+  attestationBrandR.resolve(attBrand);
+  attestationIssuerR.resolve(attIssuer);
+  return Promise.all([
+    E(client).assignBundle([
+      address => ({
+        attMaker: E(creatorFacet).provideAttestationMaker(address),
+      }),
+    ]),
+  ]);
+};
+harden(startRunStake);

@@ -358,6 +358,14 @@ At this point, the kref is only referenced in the queued `retireImport` action a
 
 If the last importing vat had previously called `syscall.retireImport`, there will be no subscribers, but the kernel object data will still be present (a general invariant is that the exporting clist entry and the kernel object table entry are either both present or both missing). A `dispatch.retireExport` will be on the queue for the exporting vat, but it has not yet arrived (otherwise it would be illegal for the exporting vat to call `syscall.retireExport`). That `dispatch.retireExport` GC action will be nullified during `processOneGCAction` because its work was already performed by the exporter's `syscall.retireExport`.
 
+## syscall.abandonExport processing
+
+During vat upgrade, the last delivery made to the old version is a special `dispatch.stopVat()`. This instructs the soon-to-be-deleted worker to destroy anything that will not survive the upgrade. All Remotables will be abandoned here, because they live solely in RAM, and the RAM heap does not survive. All non-durable virtual objects will also be abandoned, since only durable ones survive. We may also drop otherwise-durable objects which were only referenced by abandoned non-durable objects.
+
+During this phase, the vat performs a `syscall.abandonExports()` with all the abandoned vrefs. The kernel reacts to this in roughly the same way it reacts to the entire vat being terminated (which it is, sort of, at least the heap is being terminated). Each vref is deleted from the exporting vat's c-list, because *that* vat isn't going to be referencing it any more. The kernel object table is updated to clear the `owner` field: while the kernel object retains its identity, it is now orphaned, and any messages sent to it will be rejected (by the kernel) with a "vat terminated" error.
+
+No other work needs to be done. Any importing vats will continue to hold their reference as before. They can only tell that the object has been abandoned if they try to send it a message. Eventually, if all the importing vats drop their reference, and nothing else in the kernel is holding one, the kernel object entry will be deleted. In this case, no `dispatch.retireExports` is sent to the old exporting vat, since it's already been removed from their c-list.
+
 ## Post-Decref Processing
 
 Those three syscalls may cause some krefs to become eligible for release. The "kernelKeeper" tracks these krefs in an ephemeral `Set` named `maybeFreeKrefs`. Every time a decrement causes the reachable count to transition from 1 to 0, or the recognizable count to transition from 1 to 0, the kref is added to this set.

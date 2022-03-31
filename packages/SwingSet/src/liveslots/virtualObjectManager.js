@@ -498,7 +498,6 @@ export function makeVirtualObjectManager(
    */
   function defineKindInternal(kindID, tag, init, actualize, finish, durable) {
     let nextInstanceID = 1;
-    const propertyNames = new Set();
 
     function makeRepresentative(innerSelf, initializing, proForma) {
       if (!proForma) {
@@ -518,7 +517,10 @@ export function makeVirtualObjectManager(
       }
 
       const wrappedState = {};
-      for (const prop of propertyNames) {
+      if (!initializing) {
+        ensureState();
+      }
+      for (const prop of Object.getOwnPropertyNames(innerSelf.rawState)) {
         Object.defineProperty(wrappedState, prop, {
           get: () => {
             ensureState();
@@ -631,7 +633,6 @@ export function makeVirtualObjectManager(
         }
         data.slots.map(vrm.addReachableVref);
         rawState[prop] = data;
-        propertyNames.add(prop);
       }
       const innerSelf = { baseRef, rawState, repCount: 0 };
       const [toHold, toExpose, state] = makeRepresentative(
@@ -658,6 +659,15 @@ export function makeVirtualObjectManager(
   let kindIDID;
   const kindDescriptors = new WeakMap();
 
+  function initializeKindHandleKind() {
+    kindIDID = syscall.vatstoreGet('kindIDID');
+    if (!kindIDID) {
+      kindIDID = `${allocateExportID()}`;
+      syscall.vatstoreSet('kindIDID', kindIDID);
+    }
+    vrm.registerKind(kindIDID, reanimateDurableKindID, () => null, true);
+  }
+
   function reanimateDurableKindID(vobjID, _proforma) {
     const { subid: kindID } = parseVatSlot(vobjID);
     const raw = syscall.vatstoreGet(`vom.kind.${kindID}`);
@@ -669,11 +679,7 @@ export function makeVirtualObjectManager(
   }
 
   const makeKindHandle = tag => {
-    if (!kindIDID) {
-      kindIDID = `${allocateExportID()}`;
-      syscall.vatstoreSet('kindIDID', kindIDID);
-      vrm.registerKind(kindIDID, reanimateDurableKindID, () => null, true);
-    }
+    assert(kindIDID, `initializeKindHandleKind not called yet`);
     const kindID = `${allocateExportID()}`;
     const kindIDvref = `o+${kindIDID}/${kindID}`;
     const durableKindDescriptor = harden({ kindID, tag });
@@ -711,6 +717,7 @@ export function makeVirtualObjectManager(
   };
 
   return harden({
+    initializeKindHandleKind,
     defineKind,
     defineDurableKind,
     makeKindHandle,

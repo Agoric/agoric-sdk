@@ -5,7 +5,7 @@ import { keyEQ } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Nat } from '@agoric/nat';
 
-import { makeAssertInstance } from './paramGovernance/assertions.js';
+import { makeAssertInstance } from './contractGovernance/assertions.js';
 
 const { details: X, quote: q } = assert;
 
@@ -18,57 +18,49 @@ const { details: X, quote: q } = assert;
 /**
  * "unranked" is more formally known as "approval" voting, but this is hard for
  * people to intuit when there are only two alternatives.
- *
- * @type {{
- *   UNRANKED: 'unranked',
- *   ORDER: 'order',
- * }}
  */
-const ChoiceMethod = {
+const ChoiceMethod = /** @type {const} */ ({
   UNRANKED: 'unranked',
   ORDER: 'order',
-};
+});
 
-/** @type {{
- *   PARAM_CHANGE: 'param_change',
- *   ELECTION: 'election',
- *   SURVEY: 'survey',
- * }}
- */
-const ElectionType = {
+const ElectionType = /** @type {const} */ ({
   // A parameter is named, and a new value proposed
   PARAM_CHANGE: 'param_change',
   // choose one or multiple winners, depending on ChoiceMethod
   ELECTION: 'election',
   SURVEY: 'survey',
-};
+  // whether or not to invoke an API method
+  API_INVOCATION: 'api_invocation',
+});
 
-/** @type {{
- *   MAJORITY: 'majority',
- *   NO_QUORUM: 'no_quorum',
- *   ALL: 'all',
- * }}
- */
-const QuorumRule = {
+const QuorumRule = /** @type {const} */ ({
   MAJORITY: 'majority',
   NO_QUORUM: 'no_quorum',
   // The election isn't valid unless all voters vote
   ALL: 'all',
-};
+});
 
-/** @type {LooksLikeSimpleIssue} */
-const looksLikeSimpleIssue = issue => {
+// eslint-disable-next-line jsdoc/require-returns-check
+/**
+ * @param {unknown} issue
+ * @returns { asserts issue is SimpleIssue }
+ */
+const assertSimpleIssue = issue => {
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert(
     issue && typeof issue.text === 'string',
     X`Issue ("${issue}") must be a record with text: aString`,
   );
-  return undefined;
 };
 
-/** @type {LooksLikeParamChangeIssue} */
-const looksLikeParamChangeIssue = issue => {
-  assert(issue, X`argument to looksLikeParamChangeIssue cannot be null`);
+// eslint-disable-next-line jsdoc/require-returns-check
+/**
+ * @param {unknown} issue
+ * @returns { asserts issue is ParamChangeIssue }
+ */
+const assertParamChangeIssue = issue => {
+  assert(issue, X`argument to assertParamChangeIssue cannot be null`);
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
   assert.typeof(
     issue && issue.paramSpec,
@@ -80,8 +72,26 @@ const looksLikeParamChangeIssue = issue => {
   assertInstance(issue.contract);
 };
 
-/** @type {LooksLikeIssueForType} */
-const looksLikeIssueForType = (electionType, issue) => {
+// eslint-disable-next-line jsdoc/require-returns-check
+/**
+ * @param {unknown} issue
+ * @returns {asserts issue is ApiInvocationIssue}
+ */
+const assertApiInvocation = issue => {
+  assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
+  assert(
+    issue && typeof issue.apiMethodName === 'string',
+    X`Issue ("${issue}") must be a record with apiMethodName: aString`,
+  );
+};
+
+// eslint-disable-next-line jsdoc/require-returns-check
+/**
+ * @param {ElectionType} electionType
+ * @param {unknown} issue
+ * @returns { asserts issue is Issue }
+ */
+const assertIssueForType = (electionType, issue) => {
   assert(
     passStyleOf(issue) === 'copyRecord',
     X`A question can only be a pass-by-copy record: ${issue}`,
@@ -90,10 +100,13 @@ const looksLikeIssueForType = (electionType, issue) => {
   switch (electionType) {
     case ElectionType.SURVEY:
     case ElectionType.ELECTION:
-      looksLikeSimpleIssue(/** @type {SimpleIssue} */ (issue));
+      assertSimpleIssue(issue);
       break;
     case ElectionType.PARAM_CHANGE:
-      looksLikeParamChangeIssue(/** @type {ParamChangeIssue} */ (issue));
+      assertParamChangeIssue(issue);
+      break;
+    case ElectionType.API_INVOCATION:
+      assertApiInvocation(issue);
       break;
     default:
       throw Error(`Election type unrecognized`);
@@ -104,9 +117,13 @@ const looksLikeIssueForType = (electionType, issue) => {
 const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
 
 // QuestionSpec contains the subset of QuestionDetails that can be specified before
-/** @type {LooksLikeClosingRule} */
-function looksLikeClosingRule(closingRule) {
-  assert(closingRule, X`argument to looksLikeClosingRule cannot be null`);
+/**
+ * @param {unknown} closingRule
+ * @returns { asserts closingRule is ClosingRule }
+ */
+
+function assertClosingRule(closingRule) {
+  assert(closingRule, X`argument to assertClosingRule cannot be null`);
   assert.typeof(
     closingRule,
     'object',
@@ -126,8 +143,11 @@ const assertEnumIncludes = (enumeration, value, name) => {
   );
 };
 
-/** @type {LooksLikeQuestionSpec} */
-const looksLikeQuestionSpec = ({
+/**
+ * @param {QuestionSpec} allegedQuestionSpec
+ * @returns {QuestionSpec}
+ */
+const coerceQuestionSpec = ({
   method,
   issue,
   positions,
@@ -137,7 +157,7 @@ const looksLikeQuestionSpec = ({
   quorumRule,
   tieOutcome,
 }) => {
-  looksLikeIssueForType(electionType, issue);
+  assertIssueForType(electionType, issue);
 
   assert(
     positions.every(
@@ -155,7 +175,7 @@ const looksLikeQuestionSpec = ({
   assert(maxChoices > 0, X`maxChoices must be positive: ${maxChoices}`);
   assert(maxChoices <= positions.length, X`Choices must not exceed length`);
 
-  looksLikeClosingRule(closingRule);
+  assertClosingRule(closingRule);
 
   return harden({
     method,
@@ -190,8 +210,8 @@ const buildUnrankedQuestion = (questionSpec, counterInstance) => {
 harden(buildUnrankedQuestion);
 harden(ChoiceMethod);
 harden(ElectionType);
-harden(looksLikeIssueForType);
-harden(looksLikeQuestionSpec);
+harden(assertIssueForType);
+harden(coerceQuestionSpec);
 harden(positionIncluded);
 harden(QuorumRule);
 
@@ -199,8 +219,8 @@ export {
   buildUnrankedQuestion,
   ChoiceMethod,
   ElectionType,
-  looksLikeIssueForType,
-  looksLikeQuestionSpec,
+  assertIssueForType,
+  coerceQuestionSpec,
   positionIncluded,
   QuorumRule,
 };

@@ -63,8 +63,13 @@ const start = async zcf => {
   // --- [begin] Chainlink specific values
   /** @type {bigint} */
   let reportingRoundId = 0n;
+  const { notifier: roundStartNotifier, updater: roundStartUpdater } =
+    makeNotifierKit(
+      // Start with the first round.
+      add(reportingRoundId, 1),
+    );
 
-  /** @type {LegacyMap<Instance, ReturnType<typeof makeOracleStatus>>} */
+  /** @type {LegacyMap<OracleKey, ReturnType<typeof makeOracleStatus>>} */
   const oracleStatuses = makeLegacyMap('oracleStatus');
 
   /** @type {LegacyMap<bigint, ReturnType<typeof makeRound>>} */
@@ -151,8 +156,8 @@ const start = async zcf => {
     return harden({ quoteAmount, quotePayment });
   };
 
+  // FIXME: We throw away the updater but shouldn't.
   const { notifier } = makeNotifierKit();
-  const zoe = zcf.getZoeService();
 
   /**
    * @typedef {Object} OracleRecord
@@ -160,8 +165,12 @@ const start = async zcf => {
    * @property {number} lastSample
    */
 
-  /** @type {LegacyMap<Instance, Set<OracleRecord>>} */
-  const instanceToRecords = makeLegacyMap('oracleInstance');
+  /**
+   * @typedef {{}} OracleKey
+   */
+
+  /** @type {LegacyMap<OracleKey, Set<OracleRecord>>} */
+  const keyToRecords = makeLegacyMap('oracleKey');
 
   /**
    * @param {Object} param0
@@ -295,6 +304,7 @@ const start = async zcf => {
     updateTimedOutRoundInfo(subtract(_roundId, 1), blockTimestamp);
 
     reportingRoundId = _roundId;
+    roundStartUpdater.updateState(reportingRoundId);
 
     details.init(
       _roundId,
@@ -316,7 +326,7 @@ const start = async zcf => {
 
   /**
    * @param {bigint} _roundId
-   * @param {Instance} _oracle
+   * @param {OracleKey} _oracle
    * @param {bigint} blockTimestamp
    */
   const oracleInitializeNewRound = (_roundId, _oracle, blockTimestamp) => {
@@ -339,7 +349,7 @@ const start = async zcf => {
   /**
    * @param {bigint} _submission
    * @param {bigint} _roundId
-   * @param {Instance} _oracle
+   * @param {OracleKey} _oracle
    */
   const recordSubmission = (_submission, _roundId, _oracle) => {
     if (!acceptingSubmissions(_roundId)) {
@@ -424,7 +434,7 @@ const start = async zcf => {
   };
 
   /**
-   * @param {Instance} _oracle
+   * @param {OracleKey} _oracle
    * @param {bigint} _roundId
    * @param {bigint} blockTimestamp
    */
@@ -434,7 +444,7 @@ const start = async zcf => {
     const rrId = reportingRoundId;
 
     let canSupersede = true;
-    if (_roundId !== 1n) {
+    if (_roundId > 1n) {
       canSupersede = supersedable(subtract(_roundId, 1), blockTimestamp);
     }
 
@@ -456,7 +466,7 @@ const start = async zcf => {
   };
 
   /**
-   * @param {Instance} _oracle
+   * @param {OracleKey} _oracle
    * @param {bigint} _roundId
    */
   const delayed = (_oracle, _roundId) => {
@@ -468,7 +478,7 @@ const start = async zcf => {
    * a method to provide all current info oracleStatuses need. Intended only
    * only to be callable by oracleStatuses. Not for use by contracts to read state.
    *
-   * @param {Instance} _oracle
+   * @param {OracleKey} _oracle
    * @param {bigint} blockTimestamp
    */
   const oracleRoundStateSuggestRound = (_oracle, blockTimestamp) => {
@@ -520,7 +530,7 @@ const start = async zcf => {
   };
 
   /**
-   * @param {Instance} _oracle
+   * @param {OracleKey} _oracle
    * @param {bigint} _queriedRoundId
    * @param {bigint} blockTimestamp
    */
@@ -538,7 +548,7 @@ const start = async zcf => {
   };
 
   /**
-   * @param {Instance} _oracle
+   * @param {OracleKey} _oracle
    */
   const getStartingRound = _oracle => {
     const currentRound = reportingRoundId;
@@ -578,26 +588,29 @@ const start = async zcf => {
     async initOracle(oracleInstance) {
       assert(quoteKit, X`Must initializeQuoteMint before adding an oracle`);
 
+      /** @type {OracleKey} */
+      const oracleKey = oracleInstance || Far('oracleKey', {});
+
       /** @type {OracleRecord} */
       const record = { querier: undefined, lastSample: 0 };
 
       /** @type {Set<OracleRecord>} */
       let records;
-      if (instanceToRecords.has(oracleInstance)) {
-        records = instanceToRecords.get(oracleInstance);
+      if (keyToRecords.has(oracleKey)) {
+        records = keyToRecords.get(oracleKey);
       } else {
         records = new Set();
-        instanceToRecords.init(oracleInstance, records);
+        keyToRecords.init(oracleKey, records);
 
         const oracleStatus = makeOracleStatus(
-          /* startingRound = */ getStartingRound(oracleInstance),
+          /* startingRound = */ getStartingRound(oracleKey),
           /* endingRound = */ ROUND_MAX,
           /* lastReportedRound = */ 0n,
           /* lastStartedRound = */ 0n,
           /* latestSubmission = */ 0n,
           /* index = */ oracleStatuses.getSize(),
         );
-        oracleStatuses.init(oracleInstance, oracleStatus);
+        oracleStatuses.init(oracleKey, oracleStatus);
       }
       records.add(record);
 
@@ -611,19 +624,17 @@ const start = async zcf => {
         let roundId;
         if (_roundIdRaw === undefined) {
           const suggestedRound = oracleRoundStateSuggestRound(
-            oracleInstance,
+            oracleKey,
             blockTimestamp,
           );
-          roundId = suggestedRound.queriedRoundId;
+          roundId = suggestedRound.eligibleForSpecificRound
+            ? suggestedRound.queriedRoundId
+            : add(suggestedRound.queriedRoundId, 1);
         } else {
           roundId = Nat(_roundIdRaw);
         }
 
-        const error = validateOracleRound(
-          oracleInstance,
-          roundId,
-          blockTimestamp,
-        );
+        const error = validateOracleRound(oracleKey, roundId, blockTimestamp);
         if (!(parsedSubmission >= minSubmissionValue)) {
           console.error('value below minSubmissionValue');
           return;
@@ -639,12 +650,8 @@ const start = async zcf => {
           return;
         }
 
-        oracleInitializeNewRound(roundId, oracleInstance, blockTimestamp);
-        const recorded = recordSubmission(
-          parsedSubmission,
-          roundId,
-          oracleInstance,
-        );
+        oracleInitializeNewRound(roundId, oracleKey, blockTimestamp);
+        const recorded = recordSubmission(parsedSubmission, roundId, oracleKey);
         if (!recorded) {
           return;
         }
@@ -654,7 +661,6 @@ const start = async zcf => {
       };
 
       // Obtain the oracle's publicFacet.
-      await E(zoe).getPublicFacet(oracleInstance);
       assert(records.has(record), X`Oracle record is already deleted`);
 
       /** @type {OracleAdmin} */
@@ -663,16 +669,16 @@ const start = async zcf => {
           assert(records.has(record), X`Oracle record is already deleted`);
 
           // The actual deletion is synchronous.
-          oracleStatuses.delete(oracleInstance);
+          oracleStatuses.delete(oracleKey);
           records.delete(record);
 
           if (
             records.size === 0 &&
-            instanceToRecords.has(oracleInstance) &&
-            instanceToRecords.get(oracleInstance) === records
+            keyToRecords.has(oracleKey) &&
+            keyToRecords.get(oracleKey) === records
           ) {
             // We should remove the entry entirely, as it is empty.
-            instanceToRecords.delete(oracleInstance);
+            keyToRecords.delete(oracleKey);
           }
         },
         async pushResult({
@@ -684,7 +690,7 @@ const start = async zcf => {
           pushResult({
             roundId: _roundIdRaw,
             data: _submissionRaw,
-          });
+          }).catch(console.error);
         },
       };
 
@@ -731,7 +737,7 @@ const start = async zcf => {
      * a method to provide all current info oracleStatuses need. Intended only
      * only to be callable by oracleStatuses. Not for use by contracts to read state.
      *
-     * @param {Instance} _oracle
+     * @param {OracleKey} _oracle
      * @param {bigint} _queriedRoundId
      */
     async oracleRoundState(_oracle, _queriedRoundId) {
@@ -760,6 +766,9 @@ const start = async zcf => {
   const publicFacet = Far('publicFacet', {
     getPriceAuthority() {
       return priceAuthority;
+    },
+    getRoundStartNotifier() {
+      return roundStartNotifier;
     },
   });
 

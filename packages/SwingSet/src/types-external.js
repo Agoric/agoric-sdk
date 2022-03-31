@@ -97,10 +97,11 @@ export {};
  * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
  * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
  * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} VatDeliveryStartVat
+ * @typedef { [tag: 'stopVat' ]} VatDeliveryStopVat
  * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
  * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
  *            | VatDeliveryRetireExports | VatDeliveryRetireImports
- *            | VatDeliveryStartVat | VatDeliveryBringOutYourDead
+ *            | VatDeliveryStartVat | VatDeliveryStopVat | VatDeliveryBringOutYourDead
  *          } VatDeliveryObject
  * @typedef { [tag: 'ok', message: null, usage: { compute: number } | null] |
  *            [tag: 'error', message: string, usage: unknown | null] } VatDeliveryResult
@@ -117,11 +118,12 @@ export {};
  * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
  * @typedef { [tag: 'retireImports', slots: string[] ]} VatSyscallRetireImports
  * @typedef { [tag: 'retireExports', slots: string[] ]} VatSyscallRetireExports
+ * @typedef { [tag: 'abandonExports', slots: string[] ]} VatSyscallAbandonExports
  *
  * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
  *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetAfter
  *    | VatSyscallVatstoreSet | VatSyscallVatstoreDelete | VatSyscallDropImports
- *    | VatSyscallRetireImports | VatSyscallRetireExports
+ *    | VatSyscallRetireImports | VatSyscallRetireExports | VatSyscallAbandonExports
  * } VatSyscallObject
  *
  * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | undefined[] | null ]} VatSyscallResultOk
@@ -136,10 +138,11 @@ export {};
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelDeliveryRetireExports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
  * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} KernelDeliveryStartVat
+ * @typedef { [tag: 'stopVat' ]} KernelDeliveryStopVat
  * @typedef { [tag: 'bringOutYourDead']} KernelDeliveryBringOutYourDead
  * @typedef { KernelDeliveryMessage | KernelDeliveryNotify | KernelDeliveryDropExports
  *            | KernelDeliveryRetireExports | KernelDeliveryRetireImports
- *            | KernelDeliveryStartVat | KernelDeliveryBringOutYourDead
+ *            | KernelDeliveryStartVat | KernelDeliveryStopVat | KernelDeliveryBringOutYourDead
  *          } KernelDeliveryObject
  * @typedef { [tag: 'send', target: string, msg: Message] } KernelSyscallSend
  * @typedef { [tag: 'invoke', target: string, method: string, args: SwingSetCapData]} KernelSyscallInvoke
@@ -154,12 +157,14 @@ export {};
  * @typedef { [tag: 'dropImports', krefs: string[] ]} KernelSyscallDropImports
  * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelSyscallRetireImports
  * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelSyscallRetireExports
+ * @typedef { [tag: 'abandonExports', vatID: string, krefs: string[] ]} KernelSyscallAbandonExports
  * @typedef { [tag: 'callKernelHook', hookName: string, args: SwingSetCapData]} KernelSyscallCallKernelHook
  *
  * @typedef { KernelSyscallSend | KernelSyscallInvoke | KernelSyscallSubscribe
  *    | KernelSyscallResolve | KernelSyscallExit | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetAfter
  *    | KernelSyscallVatstoreSet | KernelSyscallVatstoreDelete | KernelSyscallDropImports
- *    | KernelSyscallRetireImports | KernelSyscallRetireExports | KernelSyscallCallKernelHook
+ *    | KernelSyscallRetireImports | KernelSyscallRetireExports | KernelSyscallAbandonExports
+ *    | KernelSyscallCallKernelHook
  * } KernelSyscallObject
  * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | undefined[] | null ]} KernelSyscallResultOk
  * @typedef { [tag: 'error', err: string ] } KernelSyscallResultError

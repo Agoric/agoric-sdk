@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   # Otherwise, run on default branch.
   push:
-    branches: [master] # $default-branch
+    branches: [mergify/*] # $default-branch
 
 jobs:
   deployment-test:
@@ -92,3 +92,12 @@ jobs:
         with:
           name: deployment-test-results-${{ env.NOW }}
           path: chaintest/results
+
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}

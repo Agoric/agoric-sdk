@@ -240,7 +240,11 @@ export function matchVatstoreDelete(key) {
 }
 
 export function matchVatstoreSet(key, value) {
-  return { type: 'vatstoreSet', key, value };
+  if (value !== undefined) {
+    return { type: 'vatstoreSet', key, value };
+  } else {
+    return { type: 'vatstoreSet', key };
+  }
 }
 
 export function matchRetireExports(...slots) {
@@ -256,7 +260,7 @@ export function matchRetireImports(...slots) {
 }
 
 export function validate(v, match) {
-  v.t.deepEqual(v.log.shift(), match);
+  v.t.like(v.log.shift(), match);
 }
 
 export function validateDone(v) {

@@ -201,7 +201,7 @@ function thingRefValString(vref) {
 const nullValString = JSON.stringify({ body: 'null', slots: [] });
 
 function mapRef(idx) {
-  return `o+1/${idx}`;
+  return `o+2/${idx}`; // see 'assert known scalarMapStore ID' below
 }
 
 function mapRefArg(idx) {
@@ -237,9 +237,9 @@ function validateCreateBaggage(v, idx) {
   );
   validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
-  validate(v, matchVatstoreSet('baggageID', 'o+5/1'));
-  validate(v, matchVatstoreGet('vom.rc.o+5/1', NONE));
-  validate(v, matchVatstoreSet('vom.rc.o+5/1', '1'));
+  validate(v, matchVatstoreSet('baggageID', 'o+6/1'));
+  validate(v, matchVatstoreGet('vom.rc.o+6/1', NONE));
+  validate(v, matchVatstoreSet('vom.rc.o+6/1', '1'));
 }
 
 function validateCreate(v, idx, isWeak = false) {
@@ -263,6 +263,7 @@ function validateUpdate(v, key, before, after) {
 function validateMakeAndHold(v, rp) {
   validateCreateStore(v, mainHeldIdx);
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 }
 
@@ -442,6 +443,9 @@ function validateImportAndHold(v, rp, idx) {
     validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
   }
   validateReturned(v, rp);
+  if (idx === NONE) {
+    validate(v, matchVatstoreSet('idCounters'));
+  }
   validateDone(v);
 }
 
@@ -461,15 +465,18 @@ function validateCreateHolder(v, idx) {
 }
 
 function validateInit(v) {
-  validate(v, matchVatstoreGet('baggageID', NONE));
+  validate(v, matchVatstoreGet('idCounters', NONE));
+  validate(v, matchVatstoreGet('kindIDID', NONE));
+  validate(v, matchVatstoreSet('kindIDID', '1'));
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
     v,
     matchVatstoreSet(
       'storeKindIDTable',
-      '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
+      '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
     ),
   );
+  validate(v, matchVatstoreGet('baggageID', NONE));
   validateCreateBaggage(v, 1);
   validateCreateHolder(v, 2);
 }
@@ -515,6 +522,20 @@ function validateRetireExports(v, idx) {
 // NOTE: these tests must be run serially, since they share a heap and garbage
 // collection during one test can interfere with the deterministic behavior of a
 // different test.
+
+// prettier-ignore
+test.serial('assert known scalarMapStore ID', async t => {
+  // The KindID for scalarMapStore is referenced by many of these
+  // tests (it is baked into our `mapRef()` function), and it might
+  // change if new IDs are allocated before the collection types are
+  // registered. Check it explicity here. If this test fails, consider
+  // updating `mapRef()` to use the new value.
+
+  const { testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const id = testHooks.obtainStoreKindID('scalarMapStore');
+  t.is(id, 2);
+  t.is(mapRef('INDEX'), 'o+2/INDEX');
+});
 
 // test 1: lerv -> Lerv -> LerV -> Lerv -> lerv
 test.serial('store lifecycle 1', async t => {
@@ -858,6 +879,7 @@ function validatePrepareStore3(
   validate(v, matchVatstoreSet(`vc.${base + 2}.|entryCount`, '1'));
 
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   if (!nonVirtual) {
     validateRefCountCheck(v, contentRef, '3');
     if (checkES) {
@@ -971,6 +993,7 @@ test.serial('store refcount management 3', async t => {
   validate(v, matchVatstoreGet(`vc.${base + 2}.|entryCount`, '0'));
   validate(v, matchVatstoreSet(`vc.${base + 2}.|entryCount`, '1'));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateStatusCheck(v, mapRef(mainHeldIdx), '1', NONE);
   validateStatusCheck(v, mapRef(base), '1', NONE);
   validateStatusCheck(v, mapRef(base + 1), '1', NONE);
@@ -1073,11 +1096,12 @@ test.serial('remotable refcount management 1', async t => {
   );
 
   const base = mainHeldIdx;
-  const remotableRef = 'o+9';
+  const remotableRef = 'o+10';
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateInit(v);
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
@@ -1104,11 +1128,12 @@ test.serial('remotable refcount management 2', async t => {
   );
 
   const base = mainHeldIdx;
-  const remotableRef = 'o+9';
+  const remotableRef = 'o+10';
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateInit(v);
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
@@ -1163,6 +1188,7 @@ test.serial('verify store weak key GC', async t => {
   validate(v, matchVatstoreGet(`vc.${setID}.|${mapRef(keyID)}`, '1'));
   validate(v, matchVatstoreSet(`vc.${setID}.${ordinalKey}`, nullValString));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   t.is(testHooks.countCollectionsForWeakKey(mapRef(keyID)), 2);
@@ -1246,6 +1272,7 @@ test.serial('verify presence weak key GC', async t => {
   validate(v, matchVatstoreGet(`vc.${setID}.|${presenceRef}`, '1'));
   validate(v, matchVatstoreSet(`vc.${setID}.${ordinalKey}`, nullValString));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
 
   t.is(testHooks.countCollectionsForWeakKey(presenceRef), 2);
   t.is(testHooks.storeSizeInternal(mapRef(mapID)), 1);

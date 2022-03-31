@@ -265,6 +265,38 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
                 bundleSource(pathResolve(file), options),
               pathResolve,
               installUnsafePlugin,
+              /**
+               * Recursively look up names in the context of the bootstrap
+               * promise, such as:
+               *
+               * ['agoricNames', 'oracleBrand', 'USD']
+               * ['namesByAddress']
+               * ['namesByAddress', 'agoric1...']
+               * ['namesByAddress', 'agoric1...', 'depositFacet']
+               * ['wallet', 'issuer', 'RUN']
+               *
+               * @param  {...string[]} namePath
+               * @returns {Promise<any>}
+               */
+              lookup: (...namePath) => {
+                if (namePath.length === 1 && Array.isArray(namePath[0])) {
+                  // Convert single array argument to a path.
+                  namePath = namePath[0];
+                }
+                if (namePath.length === 0) {
+                  return bootP;
+                }
+                const [first, ...remaining] = namePath;
+
+                // The first part of the name path is a property on bootP.
+                const firstValue = E.get(bootP)[first];
+                if (remaining.length === 0) {
+                  return firstValue;
+                }
+                // Any remaining paths go through the lookup method of the found
+                // object.
+                return E(firstValue).lookup(...remaining);
+              },
               host,
               port,
               args: opts.scriptArgs,

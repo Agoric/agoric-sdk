@@ -3,33 +3,22 @@
 import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
 // eslint-disable-next-line -- https://github.com/Agoric/agoric-sdk/pull/4837
-import { CONTRACT_ELECTORATE } from './paramGovernance/governParam.js';
-import { assertElectorateMatches } from './paramGovernance/paramManager.js';
+import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
+import { assertElectorateMatches } from './contractGovernance/paramManager.js';
+import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
 const { details: X, quote: q } = assert;
 
 /**
- * Helper for the 90% of contracts that will have only a single set of
- * parameters. In order to support managed parameters, a contract only has to
- *   - define the parameter template, which includes name, type and value
- *   - call handleParamGovernance() to get wrapPublicFacet and wrapCreatorFacet
- *   - add any methods needed in the public and creator facets.
- *
- *  It's also crucial that the governed contract not interact with the product
- *  of wrapCreatorFacet(). The wrapped creatorFacet has the power to change
- *  parameter values, and the governance guarantees only hold if they're not
- *  used directly by the governed contract.
+ * Utility function for `makeParamGovernance`.
  *
  * @template T
- * @param {ZCF<{
- * electionManager: VoteOnParamChange,
- * main: Record<string, ParamRecord> & {[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}
- * }>} zcf
- * @param {import('./paramGovernance/typedParamManager').TypedParamManager<T>} paramManager
+ * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
+ * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
  */
-const handleParamGovernance = (zcf, paramManager) => {
+const facetHelpers = (zcf, paramManager) => {
   const terms = zcf.getTerms();
-  const governedParams = terms.main;
+  const { governedParams } = terms;
   assert(
     keyEQ(governedParams, paramManager.getParams()),
     X`Terms must include ${q(paramManager.getParams())}, but were ${q(
@@ -53,11 +42,11 @@ const handleParamGovernance = (zcf, paramManager) => {
   const { electionManager } = terms;
 
   /**
-   * @template PF
+   * @template {{}} PF public facet
    * @param {PF} originalPublicFacet
    * @returns {GovernedPublicFacet<PF>}
    */
-  const wrapPublicFacet = originalPublicFacet => {
+  const augmentPublicFacet = originalPublicFacet => {
     return Far('publicFacet', {
       ...originalPublicFacet,
       getSubscription: () => paramManager.getSubscription(),
@@ -68,9 +57,9 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @template CF
+   * @template {{}} CF creator facet
    * @param {CF} originalCreatorFacet
-   * @returns {CF & LimitedCreatorFacet}
+   * @returns {ERef<LimitedCreatorFacet<CF>>}
    */
   const makeLimitedCreatorFacet = originalCreatorFacet => {
     return Far('governedContract creator facet', {
@@ -80,29 +69,72 @@ const handleParamGovernance = (zcf, paramManager) => {
   };
 
   /**
-   * @template CF
-   * @param {CF} originalCreatorFacet
-   * @returns { GovernedCreatorFacet<CF> }
+   * @template {{}} CF creator facet
+   * @param {ERef<CF>} originalCreatorFacet
+   * @param {Record<string, (...args: any[]) => any>} governedApis
+   * @returns { ERef<GovernedCreatorFacet<CF>> }
    */
-  const wrapCreatorFacet = originalCreatorFacet => {
+  const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
-    return Far('creatorFacet', {
+    return Far('governorFacet', {
+      // @ts-expect-error special case
       getParamMgrRetriever: () => {
         return Far('paramRetriever', { get: () => paramManager });
       },
       getInvitation: name => paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: () => limitedCreatorFacet,
+      // The contract provides a facet with the APIs that can be invoked by
+      // governance
+      getGovernedApis: () => Far('governedAPIs', governedApis),
+      // The facet returned by getGovernedApis is Far, so we can't see what
+      // methods it has. There's no clean way to have contracts specify the APIs
+      // without also separately providing their names.
+      getGovernedApiNames: () => Object.keys(governedApis),
     });
   };
 
   return harden({
-    wrapPublicFacet,
-    wrapCreatorFacet,
-    ...paramManager.readonly(),
+    augmentPublicFacet,
+    makeGovernorFacet,
+    params: paramManager.readonly(),
   });
 };
+
+/**
+ * Helper for the 90% of contracts that will have only a single set of
+ * parameters. Using this for managed parameters, a contract only has to
+ *
+ * - Define the parameter template, which includes name, type and value
+ * - Add any methods needed in the public and creator facets.
+ *
+ * It's also crucial that the governed contract not interact with the product of
+ * makeGovernorFacet(). The wrapped creatorFacet has the power to change
+ * parameter values, and the governance guarantees only hold if they're not used
+ * directly by the governed contract.
+ *
+ * @template {import('./contractGovernance/typedParamManager').ParamTypesMap} M
+ *   Map of types of custom governed terms
+ * @template {Record<string, ParamRecord>} CGT Custom governed terms
+ * @param {ZCF<GovernanceTerms<CGT>>} zcf
+ * @param {Invitation} initialPoserInvitation
+ * @param {M} paramTypesMap
+ */
+const handleParamGovernance = async (
+  zcf,
+  initialPoserInvitation,
+  paramTypesMap,
+) => {
+  const paramManager = await makeParamManagerFromTerms(
+    zcf,
+    initialPoserInvitation,
+    paramTypesMap,
+  );
+
+  return facetHelpers(zcf, paramManager);
+};
+
 harden(handleParamGovernance);
 
 export { handleParamGovernance };

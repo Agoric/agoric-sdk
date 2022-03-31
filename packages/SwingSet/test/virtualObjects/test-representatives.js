@@ -133,13 +133,13 @@ test.serial('exercise cache', async t => {
     await doSimple('holdThing', what);
   }
   function dataKey(num) {
-    return `v1.vs.vom.o+9/${num}`;
+    return `v1.vs.vom.o+10/${num}`;
   }
   function esKey(num) {
-    return `v1.vs.vom.es.o+9/${num}`;
+    return `v1.vs.vom.es.o+10/${num}`;
   }
   function rcKey(num) {
-    return `v1.vs.vom.rc.o+9/${num}`;
+    return `v1.vs.vom.rc.o+10/${num}`;
   }
   function thingVal(name) {
     return JSON.stringify({
@@ -295,6 +295,7 @@ test.serial('exercise cache', async t => {
   done();
 
   await hold(T8); // cache unchanged - [t1 t2 t3 t4]
+  ck('get', dataKey(8), thingVal('thing8'));
   ck('get', rcKey(4), undefined);
   ck('get', esKey(4), 'r');
   done();
@@ -306,7 +307,6 @@ test.serial('exercise cache', async t => {
   done();
 
   await writeHeld('thing8 updated'); // reanimate t8, evict t3 - [t8 t7 t1 t2]
-  ck('get', dataKey(8), thingVal('thing8'));
   ck('set', dataKey(8), thingVal('thing8 updated'));
   done();
 });
@@ -381,20 +381,22 @@ test('virtual object gc', async t => {
     remainingVOs[key] = hostStorage.kvStore.get(key);
   }
   t.deepEqual(remainingVOs, {
-    'v1.vs.baggageID': 'o+5/1',
+    'v1.vs.baggageID': 'o+6/1',
+    'v1.vs.idCounters': '{"exportID":11,"collectionID":2,"promiseID":8}',
+    'v1.vs.kindIDID': '1',
     'v1.vs.storeKindIDTable':
-      '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
+      '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
     'v1.vs.vc.1.|entryCount': '0',
     'v1.vs.vc.1.|label': 'baggage',
     'v1.vs.vc.1.|nextOrdinal': '1',
     'v1.vs.vc.1.|schemata':
       '{"body":"[{\\"@qclass\\":\\"tagged\\",\\"tag\\":\\"match:kind\\",\\"payload\\":\\"string\\"}]","slots":[]}',
-    'v1.vs.vom.es.o+9/3': 'r',
-    'v1.vs.vom.o+9/2': '{"label":{"body":"\\"thing #2\\"","slots":[]}}',
-    'v1.vs.vom.o+9/3': '{"label":{"body":"\\"thing #3\\"","slots":[]}}',
-    'v1.vs.vom.o+9/8': '{"label":{"body":"\\"thing #8\\"","slots":[]}}',
-    'v1.vs.vom.o+9/9': '{"label":{"body":"\\"thing #9\\"","slots":[]}}',
-    'v1.vs.vom.rc.o+5/1': '1',
+    'v1.vs.vom.es.o+10/3': 'r',
+    'v1.vs.vom.o+10/2': '{"label":{"body":"\\"thing #2\\"","slots":[]}}',
+    'v1.vs.vom.o+10/3': '{"label":{"body":"\\"thing #3\\"","slots":[]}}',
+    'v1.vs.vom.o+10/8': '{"label":{"body":"\\"thing #8\\"","slots":[]}}',
+    'v1.vs.vom.o+10/9': '{"label":{"body":"\\"thing #9\\"","slots":[]}}',
+    'v1.vs.vom.rc.o+6/1': '1',
   });
 });
 

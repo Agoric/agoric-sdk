@@ -106,6 +106,7 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
     dropImports: vrefs => doSyscall(['dropImports', vrefs]),
     retireImports: vrefs => doSyscall(['retireImports', vrefs]),
     retireExports: vrefs => doSyscall(['retireExports', vrefs]),
+    abandonExports: vrefs => doSyscall(['abandonExports', vrefs]),
 
     // These syscalls should be omitted if the worker cannot get a
     // synchronous return value back from the kernel, such as when the worker

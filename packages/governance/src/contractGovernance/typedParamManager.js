@@ -1,24 +1,30 @@
 // @ts-check
 
+import { ParamTypes } from '../constants.js';
+import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
- * @template {Record<Keyword, ParamRecordTuple>} T
+ * @typedef {Record<Keyword, ParamType>} ParamTypesMap
+ */
+
+/**
+ * @template {ParamTypesMap} M
  * @typedef {{
- *   [Property in keyof T as `get${string & Property}`]: () => ParamValueForType<T[Property][0]>
+ *   [K in keyof M as `get${string & K}`]: () => ParamValueForType<M[K]>
  * }} Getters
  */
 
 /**
- * @template {Record<Keyword, ParamRecordTuple>} T
+ * @template {ParamTypesMap} T
  * @typedef {{
- *   [Property in keyof T as `update${string & Property}`]: (value: ParamValueForType<T[Property][0]>) => void
+ *   [K in keyof T as `update${string & K}`]: (value: ParamValueForType<T[K]>) => void
  * }} Updaters
  */
 
 /**
- * @template {Record<Keyword, ST<ParamType>>} T
- * @typedef {ParamManagerBase & Getters<T> & Updaters<T> & {readonly: () => Getters<T>}} TypedParamManager
+ * @template {ParamTypesMap} M
+ * @typedef {ParamManagerBase & Getters<M> & Updaters<M> & {readonly: () => Getters<M>}} TypedParamManager
  */
 
 /**
@@ -63,7 +69,7 @@ const isAsync = {
  * @template {Record<Keyword, AsyncSpecTuple | SyncSpecTuple>} T
  * @param {T} spec
  * @param {ERef<ZoeService>} zoe
- * @returns {Promise<TypedParamManager<T>>}
+ * @returns {Promise<TypedParamManager<{[K in keyof T]: T[K][0]}>>}
  */
 const makeParamManager = async (spec, zoe) => {
   const builder = makeParamManagerBuilder(zoe);
@@ -84,10 +90,13 @@ const makeParamManager = async (spec, zoe) => {
 };
 
 /**
+ * Used only when the contract has multiple param managers.
+ * Exactly one must manage the electorate, which requires the async version.
+ *
  * @see makeParamManager
  * @template {Record<Keyword, SyncSpecTuple>} T
  * @param {T} spec
- * @returns {TypedParamManager<T>}
+ * @returns {TypedParamManager<{[K in keyof T]: T[K][0]}>}
  */
 const makeParamManagerSync = spec => {
   const builder = makeParamManagerBuilder();
@@ -102,6 +111,41 @@ const makeParamManagerSync = spec => {
   return builder.build();
 };
 
+/**
+ * @template {ParamTypesMap} M Map of types of custom governed terms
+ * @template {Record<string, ParamRecord>} CGT Custom governed terms
+ * @param {ZCF<GovernanceTerms<CGT>>} zcf
+ * @param {Payment} initialPoserInvitation
+ * @param {M} paramTypesMap
+ * @returns {Promise<TypedParamManager<M & {Electorate: 'invitation'}>>}
+ */
+const makeParamManagerFromTerms = async (
+  zcf,
+  initialPoserInvitation,
+  paramTypesMap,
+) => {
+  const { governedParams } = zcf.getTerms();
+  /** @type {Array<[Keyword, [ParamType, unknown]]>} */
+  const makerSpecEntries = Object.entries(paramTypesMap).map(
+    ([paramKey, paramType]) => [
+      paramKey,
+      [paramType, governedParams[paramKey].value],
+    ],
+  );
+  // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
+  makerSpecEntries.push([
+    CONTRACT_ELECTORATE,
+    [ParamTypes.INVITATION, initialPoserInvitation],
+  ]);
+  // @ts-expect-error cast
+  return makeParamManager(
+    // @ts-expect-error cast
+    Object.fromEntries(makerSpecEntries),
+    zcf.getZoeService(),
+  );
+};
+
 harden(makeParamManager);
 harden(makeParamManagerSync);
-export { makeParamManager, makeParamManagerSync };
+harden(makeParamManagerFromTerms);
+export { makeParamManager, makeParamManagerSync, makeParamManagerFromTerms };

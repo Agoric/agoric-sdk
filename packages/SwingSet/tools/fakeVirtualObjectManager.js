@@ -15,6 +15,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
   const { cacheSize = 100 } = options;
 
   const {
+    initializeKindHandleKind,
     defineKind,
     defineDurableKind,
     makeKindHandle,
@@ -33,6 +34,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
   );
 
   const normalVOM = {
+    initializeKindHandleKind,
     defineKind,
     defineDurableKind,
     makeKindHandle,

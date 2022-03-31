@@ -12,6 +12,7 @@ import {
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
 export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
 
+export const DEBT_LIMIT_KEY = 'DebtLimit';
 export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
 export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
@@ -29,13 +30,14 @@ const makeElectorateParams = electorateInvitationAmount => {
 };
 
 /**
- * @param {Rates} rates
+ * @param {VaultManagerParamValues} initial
  */
-const makeVaultParamManager = rates =>
+const makeVaultParamManager = initial =>
   makeParamManagerSync({
-    [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, rates.liquidationMargin],
-    [INTEREST_RATE_KEY]: [ParamTypes.RATIO, rates.interestRate],
-    [LOAN_FEE_KEY]: [ParamTypes.RATIO, rates.loanFee],
+    [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, initial.debtLimit],
+    [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, initial.liquidationMargin],
+    [INTEREST_RATE_KEY]: [ParamTypes.RATIO, initial.interestRate],
+    [LOAN_FEE_KEY]: [ParamTypes.RATIO, initial.loanFee],
   });
 /** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
 
@@ -58,7 +60,7 @@ const makeElectorateParamManager = async (zoe, electorateInvitation) => {
  * @param {Installation} liquidationInstall
  * @param {ERef<TimerService>} timerService
  * @param {Amount} invitationAmount
- * @param {Rates} rates
+ * @param {VaultManagerParamValues} vaultManagerParams
  * @param {XYKAMMPublicFacet} ammPublicFacet
  * @param {bigint=} bootstrapPaymentValue
  */
@@ -68,7 +70,7 @@ const makeGovernedTerms = (
   liquidationInstall,
   timerService,
   invitationAmount,
-  rates,
+  vaultManagerParams,
   ammPublicFacet,
   bootstrapPaymentValue = 0n,
 ) => {
@@ -77,16 +79,16 @@ const makeGovernedTerms = (
     [RECORDING_PERIOD_KEY]: ['nat', loanTiming.recordingPeriod],
   });
 
-  const rateParamMgr = makeVaultParamManager(rates);
+  const vmParamMgr = makeVaultParamManager(vaultManagerParams);
 
   return harden({
     ammPublicFacet,
     priceAuthority,
-    loanParams: rateParamMgr.getParams(),
+    loanParams: vmParamMgr.getParams(),
     loanTimingParams: timingParamMgr.getParams(),
     timerService,
     liquidationInstall,
-    main: makeElectorateParams(invitationAmount),
+    governedParams: makeElectorateParams(invitationAmount),
     bootstrapPaymentValue,
   });
 };

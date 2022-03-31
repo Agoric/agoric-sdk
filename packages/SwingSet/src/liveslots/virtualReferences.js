@@ -311,7 +311,9 @@ export function makeVirtualReferenceManager(
   function reanimate(baseRef, proForma) {
     const { id } = parseVatSlot(baseRef);
     const kindID = `${id}`;
-    const { reanimator } = kindInfoTable.get(kindID);
+    const kindInfo = kindInfoTable.get(kindID);
+    assert(kindInfo, `no kind info for ${kindID}, call defineDurableKind`);
+    const { reanimator } = kindInfo;
     if (reanimator) {
       return reanimator(baseRef, proForma);
     } else {

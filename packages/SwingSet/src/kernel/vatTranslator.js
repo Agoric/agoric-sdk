@@ -10,9 +10,6 @@ import {
   legibilizeValue,
 } from '../lib/kdebug.js';
 
-/** @type { VatDeliveryBringOutYourDead } */
-const reapMessageVatDelivery = harden(['bringOutYourDead']);
-
 export function assertValidVatstoreKey(key) {
   assert.typeof(key, 'string');
 }
@@ -161,6 +158,16 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     return startVatMessageVatDelivery;
   }
 
+  /** @type { import('../types-external.js').VatDeliveryStopVat } */
+  const stopVatMessage = harden(['stopVat']);
+
+  function translateStopVat() {
+    return stopVatMessage;
+  }
+
+  /** @type { VatDeliveryBringOutYourDead } */
+  const reapMessageVatDelivery = harden(['bringOutYourDead']);
+
   function translateBringOutYourDead() {
     return reapMessageVatDelivery;
   }
@@ -196,6 +203,10 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
         const [_, ...args] = kd;
         return translateStartVat(...args);
       }
+      case 'stopVat': {
+        const [_, ...args] = kd;
+        return translateStopVat(...args);
+      }
       case 'bringOutYourDead': {
         const [_, ...args] = kd;
         return translateBringOutYourDead(...args);
@@ -210,6 +221,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     //  ['retireExports', vrefs]
     //  ['retireImports', vrefs]
     //  ['startVat']
+    //  ['stopVat']
     //  ['bringOutYourDead']
   }
 
@@ -426,6 +438,27 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
 
   /**
    *
+   * @param { string[] } vrefs
+   * @returns { import('../types-external.js').KernelSyscallAbandonExports }
+   */
+  function translateAbandonExports(vrefs) {
+    assert(Array.isArray(vrefs), X`abandonExports() given non-Array ${vrefs}`);
+    const krefs = vrefs.map(vref => {
+      const { type, allocatedByVat } = parseVatSlot(vref);
+      assert.equal(type, 'object');
+      assert.equal(allocatedByVat, true); // abandon *exports*, not imports
+      // kref must already be in the clist
+      const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
+      vatKeeper.deleteCListEntry(kref, vref);
+      return kref;
+    });
+    kdebug(`syscall[${vatID}].abandonExports(${krefs.join(' ')})`);
+    // abandonExports still has work to do
+    return harden(['abandonExports', vatID, krefs]);
+  }
+
+  /**
+   *
    * @param { string } target
    * @param { string } method
    * @param { SwingSetCapData } args
@@ -548,6 +581,10 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       case 'retireExports': {
         const [_, ...args] = vsc;
         return translateRetireExports(...args);
+      }
+      case 'abandonExports': {
+        const [_, ...args] = vsc;
+        return translateAbandonExports(...args);
       }
       default:
         assert.fail(X`unknown vatSyscall type ${vsc[0]}`);

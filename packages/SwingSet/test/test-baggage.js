@@ -40,21 +40,24 @@ function validateCreateBaggage(v, idx) {
   );
   validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
-  validate(v, matchVatstoreSet('baggageID', 'o+5/1'));
-  validate(v, matchVatstoreGet('vom.rc.o+5/1', NONE));
-  validate(v, matchVatstoreSet('vom.rc.o+5/1', '1'));
+  validate(v, matchVatstoreSet('baggageID', 'o+6/1'));
+  validate(v, matchVatstoreGet('vom.rc.o+6/1', NONE));
+  validate(v, matchVatstoreSet('vom.rc.o+6/1', '1'));
 }
 
 function validateSetup(v) {
-  validate(v, matchVatstoreGet('baggageID', NONE));
+  validate(v, matchVatstoreGet('idCounters', NONE));
+  validate(v, matchVatstoreGet('kindIDID', NONE));
+  validate(v, matchVatstoreSet('kindIDID', '1'));
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
     v,
     matchVatstoreSet(
       'storeKindIDTable',
-      '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
+      '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
     ),
   );
+  validate(v, matchVatstoreGet('baggageID', NONE));
   validateCreateBaggage(v, 1);
 }
 
@@ -80,5 +83,6 @@ test.serial('exercise baggage', async t => {
   validate(v, matchVatstoreGet('vc.1.|entryCount', '1'));
   validate(v, matchVatstoreSet('vc.1.|entryCount', '2'));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 });

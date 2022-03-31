@@ -123,17 +123,18 @@
 /**
  * @typedef {{
  *   issuer: |
- *     'RUN' | 'BLD',
+ *     'RUN' | 'BLD' | 'Attestation',
  *   installation: |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
- *     'amm' | 'VaultFactory' | 'liquidate' | 'getRUN' |
- *     'Pegasus',
+ *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
+ *     'Pegasus' | 'reserve',
  *   instance: |
  *     'economicCommittee' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' | 'liquidate' |
- *     'getRUN' | 'getRUNGovernor' |
- *     'Treasury' |
- *     'Pegasus',
+ *     'runStake' | 'runStakeGovernor' |
+ *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
+ *   oracleBrand:
+ *     'USD',
  *   uiConfig: |
  *     'VaultFactory' |
  *     'Treasury' // compat.
@@ -147,6 +148,10 @@
  *   brand: {
  *     produce: Record<WellKnownName['issuer'], Producer<Brand>>,
  *     consume: Record<WellKnownName['issuer'], Promise<Brand>>,
+ *   },
+ *   oracleBrand: {
+ *     produce: Record<WellKnownName['oracleBrand'], Producer<Brand>>,
+ *     consume: Record<WellKnownName['oracleBrand'], Promise<Brand>>,
  *   },
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
@@ -172,6 +177,9 @@
  *     chainTimerService: ERef<TimerService>,
  *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
  *     ammBundle: ERef<SourceBundle>,
+ *     reserveBundle: ERef<SourceBundle>,
+ *     reserveCreatorFacet: ERef<GovernedContractFacetAccess<any>>,
+ *     reserveGovernorCreatorFacet: ERef<GovernedContractFacetAccess<any>>,
  *     vaultBundles: ERef<Record<string, SourceBundle>>,
  *     centralSupplyBundle: ERef<SourceBundle>,
  *     mintHolderBundle: ERef<SourceBundle>,
@@ -194,8 +202,12 @@
  *     ammGovernorCreatorFacet: Producer<unknown>,
  *     chainTimerService: Producer<ERef<TimerService>>,
  *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
- *     getRUNBundle: Producer<{ moduleFormat: string }>,
+ *     runStakeBundle: Producer<{ moduleFormat: string }>,
  *     ammBundle: Producer<SourceBundle>,
+ *     reserveBundle: Producer<SourceBundle>,
+ *     reservePublicFacet: Producer<unknown>,
+ *     reserveCreatorFacet: Producer<unknown>,
+ *     reserveGovernorCreatorFacet: Producer<GovernedContractFacetAccess<any>>,
  *     vaultBundles: Producer<Record<string, SourceBundle>>,
  *     governanceBundles: Producer<Record<string, SourceBundle>>,
  *     initialSupply: Producer<Payment>,

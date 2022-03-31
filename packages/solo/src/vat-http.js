@@ -22,10 +22,33 @@ export function buildRootObject(vatPowers) {
       },
     });
 
+  const lookup = async (...path) => {
+    // Take a snapshot of the current home.
+    // eslint-disable-next-line no-use-before-define
+    const root = replObjects.home;
+
+    if (path.length === 1 && Array.isArray(path[0])) {
+      // Convert single array argument to a path.
+      path = path[0];
+    }
+    if (path.length === 0) {
+      return root;
+    }
+    const [first, ...remaining] = path;
+    const firstValue = root[first];
+    if (remaining.length === 0) {
+      return firstValue;
+    }
+    assert(firstValue, X`${first} not found in home`);
+    return E(firstValue).lookup(...remaining);
+  };
+  harden(lookup);
+
   const replObjects = {
     home: antifreeze({ LOADING }),
     agoric: antifreeze({}),
     local: antifreeze({}),
+    lookup,
   };
 
   function doneLoading(subsystems) {

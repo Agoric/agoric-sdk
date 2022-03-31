@@ -71,6 +71,10 @@ export function insistVatDeliveryObject(vdo) {
       insistCapData(vatParameters);
       break;
     }
+    case 'stopVat': {
+      assert(rest.length === 0);
+      break;
+    }
     case 'bringOutYourDead': {
       assert(rest.length === 0);
       break;
@@ -173,7 +177,8 @@ export function insistVatSyscallObject(vso) {
     }
     case 'dropImports':
     case 'retireImports':
-    case 'retireExports': {
+    case 'retireExports':
+    case 'abandonExports': {
       const [slots] = rest;
       assert(Array.isArray(slots));
       for (const slot of slots) {

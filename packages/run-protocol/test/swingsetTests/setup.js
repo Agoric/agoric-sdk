@@ -47,11 +47,18 @@ const installContracts = async (zoe, cb) => {
   return installations;
 };
 
-const makeRates = runBrand => {
+/**
+ * Provide initial values for governed vault manager params.
+ *
+ * @param {Brand} debtBrand
+ * @returns {VaultManagerParamValues}
+ */
+const makeRates = debtBrand => {
   return {
-    liquidationMargin: makeRatio(105n, runBrand),
-    interestRate: makeRatio(250n, runBrand, BASIS_POINTS),
-    loanFee: makeRatio(200n, runBrand, BASIS_POINTS),
+    debtLimit: AmountMath.make(debtBrand, 1_000_000n),
+    liquidationMargin: makeRatio(105n, debtBrand),
+    interestRate: makeRatio(250n, debtBrand, BASIS_POINTS),
+    loanFee: makeRatio(200n, debtBrand, BASIS_POINTS),
   };
 };
 
@@ -222,10 +229,6 @@ const buildOwner = async (
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();
   const governedPublicFacet = E(zoe).getPublicFacet(governedInstance);
 
-  const {
-    issuers: { RUN: runIssuer },
-  } = await E(zoe).getTerms(governedInstance);
-
   await E(E(governorFacets.creatorFacet).getCreatorFacet()).addVaultType(
     moolaIssuer,
     'Moola',
@@ -235,8 +238,6 @@ const buildOwner = async (
   const QUOTE_INTERVAL = 24n * 60n * 60n;
   const moolaPriceAuthority = await E(priceAuthorityVat).makeFakePriceAuthority(
     harden({
-      issuerIn: moolaIssuer,
-      issuerOut: runIssuer,
       actualBrandIn: moolaBrand,
       actualBrandOut: runBrand,
       priceList: [100000n, 120000n, 110000n, 80000n],

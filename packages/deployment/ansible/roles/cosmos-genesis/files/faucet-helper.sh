@@ -29,11 +29,11 @@ esac
 chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
 IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
 
-rpcAddrs=(${origRpcAddrs[@]})
+read -ra rpcAddrs <<<"${origRpcAddrs[@]}"
 while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
   r=$(( RANDOM % ${#rpcAddrs[@]} ))
   selected=${rpcAddrs[$r]}
-  rpcAddrs=( ${rpcAddrs[@]/$selected} )
+  read -ra rpcAddrs <<<"${rpcAddrs[@]/$selected}"
 
   # echo "Checking if $selected is alive"
   if [[ $(curl -s http://"$selected"/status | jq .result.sync_info.catching_up) == false ]]; then
@@ -66,19 +66,17 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
       txfile="/tmp/faucet.$$.json"
       trap 'rm -f "$txfile"' EXIT
       echo "$body0" | jq ".body.messages += $msg1" > "$txfile"
-      $TX sign "$txfile" | $TX broadcast "$BROADCAST_FLAGS" - | tee /dev/stderr | grep -q '^code: 0'
+      $TX sign "$txfile" | $TX broadcast --broadcast-mode=block - | tee /dev/stderr | grep -q '^code: 0'
       exit $? 
       ;;
     gift)
       ADDR=$1
-      if $QUERY bank balances -- "$ADDR" | grep urun; then
-        exit 0
-      fi
       echo sending "$GIFT" to "$ADDR"
-      exec "$TX" \
+      $TX \
         bank send \
         --broadcast-mode=block \
         -- faucet "$ADDR" "$GIFT"
+      exit $?
       ;;
     add-delegate)
       UNIQUE=yes

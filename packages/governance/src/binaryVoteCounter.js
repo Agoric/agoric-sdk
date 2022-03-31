@@ -8,7 +8,7 @@ import {
   ChoiceMethod,
   buildUnrankedQuestion,
   positionIncluded,
-  looksLikeQuestionSpec,
+  coerceQuestionSpec,
 } from './question.js';
 import { scheduleClose } from './closingRule.js';
 
@@ -27,7 +27,7 @@ const makeQuorumCounter = quorumThreshold => {
 };
 
 const validateBinaryQuestionSpec = questionSpec => {
-  looksLikeQuestionSpec(questionSpec);
+  coerceQuestionSpec(questionSpec);
 
   const positions = questionSpec.positions;
   assert(

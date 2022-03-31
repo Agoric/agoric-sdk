@@ -31,17 +31,19 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 import { assertElectorateMatches } from '@agoric/governance';
 
+import { AmountMath } from '@agoric/ertp';
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
-import { makeMakeCollectFeesInvitation } from './collectRewardFees.js';
+import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
 
 const { details: X } = assert;
 
 /**
- * @param {ZCF<Record<string, any> &
- *  {electionManager: Instance,
- *   main: {Electorate: ParamRecord<'invitation'>},
+ * @param {ZCF<GovernanceTerms<{}> & {
+ *   ammPublicFacet: unknown,
+ *   liquidationInstall: unknown,
+ *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>}>} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
@@ -53,7 +55,7 @@ export const start = async (zcf, privateArgs) => {
     timerService,
     liquidationInstall,
     electionManager,
-    main: governedTerms,
+    governedParams: governedTerms,
     loanTimingParams,
   } = zcf.getTerms();
 
@@ -61,10 +63,10 @@ export const start = async (zcf, privateArgs) => {
   const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
 
   const { feeMintAccess, initialPoserInvitation } = privateArgs;
-  const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
-  const { issuer: runIssuer, brand: runBrand } = runMint.getIssuerRecord();
+  const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  const { issuer: debtIssuer, brand: debtBrand } = debtMint.getIssuerRecord();
   zcf.setTestJig(() => ({
-    runIssuerRecord: runMint.getIssuerRecord(),
+    runIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
   /** a powerful object; can modify the invitation */
@@ -75,39 +77,60 @@ export const start = async (zcf, privateArgs) => {
 
   assertElectorateMatches(electorateParamManager, governedTerms);
 
+  /** For temporary staging of newly minted tokens */
+  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
    * We provide an easy way for the vaultManager to add rewards to
    * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
    *
-   * @type {ReallocateWithFee}
+   * @type {MintAndReallocate}
    */
-  const reallocateWithFee = (fee, fromSeat, otherSeat = undefined) => {
-    rewardPoolSeat.incrementBy(
-      fromSeat.decrementBy(
-        harden({
-          RUN: fee,
-        }),
-      ),
-    );
-    if (otherSeat !== undefined) {
-      zcf.reallocate(rewardPoolSeat, fromSeat, otherSeat);
-    } else {
-      zcf.reallocate(rewardPoolSeat, fromSeat);
+  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+    const kept = AmountMath.subtract(toMint, fee);
+    debtMint.mintGains(harden({ RUN: toMint }), mintSeat);
+    try {
+      rewardPoolSeat.incrementBy(mintSeat.decrementBy(harden({ RUN: fee })));
+      seat.incrementBy(mintSeat.decrementBy(harden({ RUN: kept })));
+      zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
+    } catch (e) {
+      mintSeat.clear();
+      rewardPoolSeat.clear();
+      // Make best efforts to burn the newly minted tokens, for hygiene.
+      // That only relies on the internal mint, so it cannot fail without
+      // there being much larger problems. There's no risk of tokens being
+      // stolen here because the staging for them was already cleared.
+      debtMint.burnLosses(harden({ RUN: toMint }), mintSeat);
+      throw e;
+    } finally {
+      assert(
+        Object.values(mintSeat.getCurrentAllocation()).every(a =>
+          AmountMath.isEmpty(a),
+        ),
+        X`Stage should be empty of RUN`,
+      );
     }
+    // TODO add aggregate debt tracking at the vaultFactory level #4482
+    // totalDebt = AmountMath.add(totalDebt, toMint);
+  };
+
+  const burnDebt = (toBurn, seat) => {
+    debtMint.burnLosses(harden({ RUN: toBurn }), seat);
   };
 
   /** @type {Store<Brand,VaultManager>} */
   const collateralTypes = makeScalarMap('brand');
 
-  const zoe = zcf.getZoeService();
-
   /** @type { Store<Brand, import('./params.js').VaultParamManager> } */
   const vaultParamManagers = makeScalarMap('brand');
 
   /** @type {AddVaultType} */
-  const addVaultType = async (collateralIssuer, collateralKeyword, rates) => {
+  const addVaultType = async (
+    collateralIssuer,
+    collateralKeyword,
+    initialParamValues,
+  ) => {
     await zcf.saveIssuer(collateralIssuer, collateralKeyword);
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     // We create only one vault per collateralType.
@@ -117,12 +140,13 @@ export const start = async (zcf, privateArgs) => {
     );
 
     /** a powerful object; can modify parameters */
-    const vaultParamManager = makeVaultParamManager(rates);
+    const vaultParamManager = makeVaultParamManager(initialParamValues);
     vaultParamManagers.init(collateralBrand, vaultParamManager);
 
+    const zoe = zcf.getZoeService();
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
       liquidationInstall,
-      harden({ RUN: runIssuer, Collateral: collateralIssuer }),
+      harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
       harden({ amm: ammPublicFacet }),
     );
     const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
@@ -131,12 +155,13 @@ export const start = async (zcf, privateArgs) => {
 
     const vm = makeVaultManager(
       zcf,
-      runMint,
+      debtMint,
       collateralBrand,
       priceAuthority,
       loanTimingParams,
       vaultParamManager.readonly(),
-      reallocateWithFee,
+      mintAndReallocate,
+      burnDebt,
       timerService,
       liquidationStrategy,
       startTimeStamp,
@@ -164,8 +189,10 @@ export const start = async (zcf, privateArgs) => {
     return mgr.makeVaultKit(seat);
   };
 
-  // TODO add a `collateralBrand` argument to makeVaultInvitation`
-  /** Make a loan in the vaultManager based on the collateral type. */
+  /** Make a loan in the vaultManager based on the collateral type.
+   *
+   * @deprecated
+   */
   const makeVaultInvitation = () => {
     return zcf.makeInvitation(makeVaultHook, 'MakeVault');
   };
@@ -195,16 +222,28 @@ export const start = async (zcf, privateArgs) => {
   // bookkeeping. It's needed in tests.
   const getRewardAllocation = () => rewardPoolSeat.getCurrentAllocation();
 
+  // TODO use named getters of TypedParamManager
   const getGovernedParams = paramDesc => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
   };
 
+  const getCollateralManager = brandIn => {
+    assert(
+      collateralTypes.has(brandIn),
+      X`Not a supported collateral type ${brandIn}`,
+    );
+    /** @type {VaultManager} */
+    return collateralTypes.get(brandIn).getPublicFacet();
+  };
+
   const publicFacet = Far('vaultFactory public facet', {
+    getCollateralManager,
     /** @deprecated use makeVaultInvitation instead */
     makeLoanInvitation: makeVaultInvitation,
+    /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
     makeVaultInvitation,
     getCollaterals,
-    getRunIssuer: () => runIssuer,
+    getRunIssuer: () => debtIssuer,
     getGovernedParams,
     getContractGovernor: () => governorPublic,
     getInvitationAmount: electorateParamManager.getInvitationAmount,
@@ -213,22 +252,27 @@ export const start = async (zcf, privateArgs) => {
   const { makeCollectFeesInvitation } = makeMakeCollectFeesInvitation(
     zcf,
     rewardPoolSeat,
-    runBrand,
+    debtBrand,
+    'RUN',
   );
 
   const getParamMgrRetriever = () =>
     Far('paramManagerRetriever', {
+      /** @param {{key?: 'governedParams', collateralBrand?: Brand}} paramDesc */
       get: paramDesc => {
-        if (paramDesc.key === 'main') {
+        if (paramDesc.key === 'governedParams') {
           return electorateParamManager;
-        } else {
+        } else if (paramDesc.collateralBrand) {
           return vaultParamManagers.get(paramDesc.collateralBrand);
+        } else {
+          assert.fail('Unsupported paramDesc');
         }
       },
     });
 
   /** @type {VaultFactory} */
   const vaultFactory = Far('vaultFactory machine', {
+    // TODO move this under governance #3972
     addVaultType,
     getCollaterals,
     getRewardAllocation,
@@ -240,6 +284,8 @@ export const start = async (zcf, privateArgs) => {
     getParamMgrRetriever,
     getInvitation: electorateParamManager.getInternalParamValue,
     getLimitedCreatorFacet: () => vaultFactory,
+    getGovernedApis: () => harden({}),
+    getGovernedApiNames: () => harden({}),
   });
 
   return harden({

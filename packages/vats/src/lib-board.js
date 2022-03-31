@@ -1,7 +1,7 @@
 // @ts-check
 
 import { assert, details as X, q } from '@agoric/assert';
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { makeStore } from '@agoric/store';
 import { crc6 } from './crc.js';
 
@@ -83,6 +83,18 @@ function makeBoard(
       );
       assert(idToVal.has(id), X`board does not have id: ${id}`);
       return idToVal.get(id);
+    },
+    // Adapter for lookup() protocol.
+    lookup: async (...path) => {
+      if (path.length === 0) {
+        return board;
+      }
+      const [first, ...rest] = path;
+      const firstValue = board.getValue(first);
+      if (rest.length === 0) {
+        return firstValue;
+      }
+      return E(firstValue).lookup(...rest);
     },
     has: valToId.has,
     ids: () => harden([...idToVal.keys()]),

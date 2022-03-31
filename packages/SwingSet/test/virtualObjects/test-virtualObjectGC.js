@@ -168,9 +168,11 @@ function stateKey(vref) {
   return `vom.${base(vref)}`;
 }
 
-const unfacetedThingKindID = 'o+9';
-const facetedThingKindID = 'o+10';
-const holderKindID = 'o+11';
+const unfacetedThingKindID = 'o+10';
+const facetedThingKindID = 'o+11';
+const holderKindID = 'o+12';
+
+const remotableID = 'o+14';
 
 function thingVref(isf, instance) {
   return `${isf ? facetedThingKindID : unfacetedThingKindID}/${instance}`;
@@ -439,6 +441,7 @@ function validateStatusCheck(v, vref, rc, es, value) {
 }
 
 function validateFauxCacheDisplacerDeletion(v) {
+  validate(v, matchVatstoreSet('idCounters'));
   validate(v, matchVatstoreGet(rcKey(fCacheDisplacerVref), NONE));
   validate(v, matchVatstoreGet(esKey(fCacheDisplacerVref), NONE));
   validate(v, matchVatstoreGet(stateKey(fCacheDisplacerVref), cacheObjValue));
@@ -453,21 +456,24 @@ function validateCreateBaggage(v, idx) {
   );
   validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
   validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
-  validate(v, matchVatstoreSet('baggageID', 'o+5/1'));
-  validate(v, matchVatstoreGet(rcKey('o+5/1'), NONE));
-  validate(v, matchVatstoreSet(rcKey('o+5/1'), '1'));
+  validate(v, matchVatstoreSet('baggageID', 'o+6/1'));
+  validate(v, matchVatstoreGet(rcKey('o+6/1'), NONE));
+  validate(v, matchVatstoreSet(rcKey('o+6/1'), '1'));
 }
 
 function validateSetup(v) {
-  validate(v, matchVatstoreGet('baggageID', NONE));
+  validate(v, matchVatstoreGet('idCounters', NONE));
+  validate(v, matchVatstoreGet('kindIDID', NONE));
+  validate(v, matchVatstoreSet('kindIDID', '1'));
   validate(v, matchVatstoreGet('storeKindIDTable', NONE));
   validate(
     v,
     matchVatstoreSet(
       'storeKindIDTable',
-      '{"scalarMapStore":1,"scalarWeakMapStore":2,"scalarSetStore":3,"scalarWeakSetStore":4,"scalarDurableMapStore":5,"scalarDurableWeakMapStore":6,"scalarDurableSetStore":7,"scalarDurableWeakSetStore":8}',
+      '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
     ),
   );
+  validate(v, matchVatstoreGet('baggageID', NONE));
   validateCreateBaggage(v, 1);
   validate(v, matchVatstoreSet(stateKey(cacheDisplacerVref), cacheObjValue));
   validate(v, matchVatstoreSet(stateKey(fCacheDisplacerVref), cacheObjValue));
@@ -574,17 +580,19 @@ function validateExport(v, rp, what, esp, second) {
   validateDone(v);
 }
 
-function validateImport(v, rp) {
+function validateImport(v, rp, what, whatValue) {
+  validate(v, matchVatstoreGet(stateKey(what), whatValue));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
 
-function validateLoad(v, rp, what) {
+function validateLoad(v, rp, what, whatValue) {
   validate(
     v,
     matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(what)),
   );
+  validate(v, matchVatstoreGet(stateKey(what), whatValue));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
@@ -653,6 +661,7 @@ async function voLifeCycleTest1(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -684,7 +693,7 @@ test.serial('VO lifecycle 1 faceted', async t => {
 //   lERV -> LERV -> lERV -> leRV -> LeRV -> leRV -> LeRV -> LerV
 async function voLifeCycleTest2(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -702,7 +711,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // lerV -> LerV  Read virtual reference, now there's an in-memory reference again too
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf);
+  validateLoad(v, rp, thingf, testObjValue);
 
   // LerV -> LERV  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
@@ -714,7 +723,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // lERV -> LERV  Reread from storage, all three legs again
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf);
+  validateLoad(v, rp, thingf, testObjValue);
 
   // LERV -> lERV  Drop in-memory reference (stepping stone to other states)
   rp = await dispatchMessage('dropHeld');
@@ -722,7 +731,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // lERV -> LERV  Reintroduce the in-memory reference via message
   rp = await dispatchMessage('importAndHold', thingArgs(thing, isf));
-  validateImport(v, rp);
+  validateImport(v, rp, thingf, testObjValue);
 
   // LERV -> lERV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
@@ -734,7 +743,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // leRV -> LeRV  Fetch from storage
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf);
+  validateLoad(v, rp, thingf, testObjValue);
 
   // LeRV -> leRV  Forget about it *again*
   rp = await dispatchMessage('dropHeld');
@@ -742,7 +751,7 @@ async function voLifeCycleTest2(t, isf) {
 
   // leRV -> LeRV  Fetch from storage *again*
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf);
+  validateLoad(v, rp, thingf, testObjValue);
 
   // LeRV -> LerV  Retire the export
   await dispatchRetireExports(thingf);
@@ -758,7 +767,7 @@ test.serial('VO lifecycle 2 faceted', async t => {
 // test 3: lerv -> Lerv -> LerV -> LERV -> LeRV -> leRV -> lerV -> lerv
 async function voLifeCycleTest3(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -803,6 +812,7 @@ async function voLifeCycleTest4(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -833,7 +843,7 @@ test.serial('VO lifecycle 4 faceted', async t => {
 // test 5: lerv -> Lerv -> LERv -> LeRv -> Lerv -> lerv
 async function voLifeCycleTest5(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+    await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -870,6 +880,7 @@ async function voLifeCycleTest6(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -919,6 +930,7 @@ async function voLifeCycleTest7(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -937,7 +949,7 @@ async function voLifeCycleTest7(t, isf) {
 
   // lERv -> LERv  Reintroduce the in-memory reference via message
   rp = await dispatchMessage('importAndHold', thingArgs(thing, isf));
-  validateImport(v, rp);
+  validateImport(v, rp, thingf, testObjValue);
 
   // LERv -> lERv  Drop in-memory reference again, still no GC because exported
   rp = await dispatchMessage('dropHeld');
@@ -960,6 +972,7 @@ async function voLifeCycleTest8(t, isf) {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
@@ -1009,6 +1022,7 @@ test.serial('VO multifacet export 1', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
 
@@ -1029,6 +1043,7 @@ test.serial('VO multifacet export 2a', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
   const thingA = `${thing}:0`;
@@ -1056,6 +1071,7 @@ test.serial('VO multifacet export 2b', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
   const thingB = `${thing}:1`;
@@ -1083,6 +1099,7 @@ test.serial('VO multifacet export 3abba', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
   const thingA = `${thing}:0`;
@@ -1119,6 +1136,7 @@ test.serial('VO multifacet export 3abab', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
   const thing = `${facetedThingKindID}/2`;
   const thingA = `${thing}:0`;
@@ -1154,8 +1172,9 @@ test.serial('VO multifacet markers only', async t => {
     t,
     buildRootObject,
     'bob',
+    true,
   );
-  const thing = 'o+12/1';
+  const thing = 'o+13/1';
   const thingCapdata = JSON.stringify({ unused: capdata('uncared for') });
 
   // lerv -> Lerv  Create facets
@@ -1188,7 +1207,7 @@ function validatePrepareStore3(v, rp, isf) {
 
 // prettier-ignore
 async function voRefcountManagementTest1(t, isf) {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -1226,7 +1245,7 @@ test.serial('VO refcount management 1 faceted', async t => {
 
 // prettier-ignore
 async function voRefcountManagementTest2(t, isf) {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -1269,7 +1288,7 @@ test.serial('VO refcount management 2 faceted', async t => {
 
 // prettier-ignore
 async function voRefcountManagementTest3(t, isf) {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
   const thingf = facetRef(isf, thing, '1');
 
@@ -1288,18 +1307,13 @@ async function voRefcountManagementTest3(t, isf) {
   validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldHolderValue(`${holderKindID}/3`)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
-  if (isf) {
-    validate(v, matchVatstoreGet(rcKey(thing), '1'));
-    validate(v, matchVatstoreGet(esKey(thing), NONE));
-  }
+  validate(v, matchVatstoreGet(rcKey(thing), '1'));
+  validate(v, matchVatstoreGet(esKey(thing), NONE));
+
   validate(v, matchVatstoreGet(rcKey(`${holderKindID}/2`), '1'));
   validate(v, matchVatstoreGet(esKey(`${holderKindID}/2`), NONE));
   validate(v, matchVatstoreGet(rcKey(`${holderKindID}/3`), '1'));
   validate(v, matchVatstoreGet(esKey(`${holderKindID}/3`), NONE));
-  if (!isf) {
-    validate(v, matchVatstoreGet(rcKey(thing), '1'));
-    validate(v, matchVatstoreGet(esKey(thing), NONE));
-  }
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
@@ -1334,7 +1348,7 @@ test.serial('VO refcount management 3 faceted', async t => {
 
 // prettier-ignore
 test.serial('presence refcount management 1', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   let rp = await dispatchMessage('importAndHold', thingArgs('o-5'));
   validateSetup(v);
@@ -1382,7 +1396,7 @@ test.serial('presence refcount management 1', async t => {
 
 // prettier-ignore
 test.serial('presence refcount management 2', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   let rp = await dispatchMessage('importAndHold', thingArgs('o-5'));
   validateSetup(v);
@@ -1429,8 +1443,7 @@ test.serial('presence refcount management 2', async t => {
 
 // prettier-ignore
 test.serial('remotable refcount management 1', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
-  const remotableID = 'o+13';
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateSetup(v);
@@ -1445,6 +1458,7 @@ test.serial('remotable refcount management 1', async t => {
   validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(remotableID)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('finishClearHolders');
@@ -1461,8 +1475,7 @@ test.serial('remotable refcount management 1', async t => {
 
 // prettier-ignore
 test.serial('remotable refcount management 2', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob');
-  const remotableID = 'o+13';
+  const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateSetup(v);
@@ -1477,6 +1490,7 @@ test.serial('remotable refcount management 2', async t => {
   validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(remotableID)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
@@ -1492,7 +1506,7 @@ test.serial('remotable refcount management 2', async t => {
 
 // prettier-ignore
 async function voWeakKeyGCTest(t, isf) {
-  const { v, dispatchMessage, testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob');
+  const { v, dispatchMessage, testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
 
   // Create VO and hold onto it weakly
@@ -1519,7 +1533,7 @@ test.serial('verify VO weak key GC faceted', async t => {
 // prettier-ignore
 test.serial('verify presence weak key GC', async t => {
   const { v, dispatchMessage, dispatchRetireImports, testHooks } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
+        await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   let rp = await dispatchMessage('importAndHoldAndKey', thingArgs('o-5'));
   validateSetup(v);
@@ -1562,8 +1576,7 @@ test.serial('verify presence weak key GC', async t => {
 // prettier-ignore
 test.serial('VO holding non-VO', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob');
-  const remotableID = 'o+13';
+        await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
   // lerv -> Lerv  Create non-VO
   let rp = await dispatchMessage('makeAndHoldRemotable');
@@ -1576,6 +1589,7 @@ test.serial('VO holding non-VO', async t => {
   // Lerv -> LERv  Export non-VO
   rp = await dispatchMessage('exportHeld');
   validate(v, matchResolveOne(rp, thingSer(remotableID)));
+  validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   // LERv -> LERV  Store non-VO reference virtually

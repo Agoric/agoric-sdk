@@ -82,15 +82,13 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
   const { creatorFacet: committeeCreator, instance: electorateInstance } =
     await E(zoe).startInstance(electorate, harden({}), electorateTerms);
 
-  // TODO (cth)   three awaits?
-
   const poserInvitation = await E(committeeCreator).getPoserInvitation();
   const invitationAmount = await E(E(zoe).getInvitationIssuer()).getAmountOf(
     poserInvitation,
   );
 
   const governedTerms = {
-    main: {
+    governedParams: {
       [MALLEABLE_NUMBER]: {
         type: ParamTypes.NAT,
         value: 602214090000000000000000n,
@@ -100,6 +98,7 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
         value: invitationAmount,
       },
     },
+    governedApis: ['governanceApi'],
   };
   const governorTerms = {
     timer,

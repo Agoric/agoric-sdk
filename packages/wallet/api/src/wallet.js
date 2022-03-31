@@ -238,8 +238,12 @@ export function buildRootObject(vatPowers) {
    * @type {WalletBridge}
    */
   const preapprovedBridge = Far('preapprovedBridge', {
-    addOffer(offer) {
-      return walletAdmin.addOffer(offer);
+    /**
+     * @param {unknown} offer
+     * @param {{}} [meta]
+     */
+    addOffer(offer, meta) {
+      return walletAdmin.addOffer(offer, meta);
     },
     getDepositFacetId(brandBoardId) {
       return walletAdmin.getDepositFacetId(brandBoardId);
@@ -316,6 +320,8 @@ export function buildRootObject(vatPowers) {
       getIssuers: walletAdmin.getIssuers,
       getPurse: walletAdmin.getPurse,
       getPurses: walletAdmin.getPurses,
+
+      lookup: walletAdmin.lookup,
     });
     return harden(wallet);
   }
