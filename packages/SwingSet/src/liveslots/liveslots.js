@@ -204,7 +204,9 @@ function build(
     // by a remaining pillar, or the pillar which was dropped might be back
     // (e.g., given a new in-memory manifestation).
 
-    const [importsToDrop, importsToRetire, exportsToRetire] = [[], [], []];
+    const importsToDrop = new Set();
+    const importsToRetire = new Set();
+    const exportsToRetire = new Set();
     let doMore;
     do {
       doMore = false;
@@ -234,7 +236,7 @@ function build(
           // i.e., always drop before retiring
           // eslint-disable-next-line no-use-before-define
           if (!vrm.isVrefRecognizable(vref)) {
-            importsToRetire.push(vref);
+            importsToRetire.add(vref);
           }
         }
       }
@@ -250,7 +252,7 @@ function build(
           // eslint-disable-next-line no-use-before-define
           const [gcAgain, retirees] = vrm.possibleVirtualObjectDeath(baseRef);
           if (retirees) {
-            retirees.map(retiree => exportsToRetire.push(retiree));
+            retirees.map(retiree => exportsToRetire.add(retiree));
           }
           doMore = doMore || gcAgain;
         } else if (allocatedByVat) {
@@ -258,34 +260,31 @@ function build(
           // for remotables, vref === baseRef
           if (kernelRecognizableRemotables.has(baseRef)) {
             kernelRecognizableRemotables.delete(baseRef);
-            exportsToRetire.push(baseRef);
+            exportsToRetire.add(baseRef);
           }
         } else {
           // Presence: send dropImport unless reachable by VOM
           // eslint-disable-next-line no-lonely-if, no-use-before-define
           if (!vrm.isPresenceReachable(baseRef)) {
-            importsToDrop.push(baseRef);
+            importsToDrop.add(baseRef);
             // eslint-disable-next-line no-use-before-define
             if (!vrm.isVrefRecognizable(baseRef)) {
               // for presences, baseRef === vref
-              importsToRetire.push(baseRef);
+              importsToRetire.add(baseRef);
             }
           }
         }
       }
     } while (possiblyDeadSet.size > 0 || possiblyRetiredSet.size > 0 || doMore);
 
-    if (importsToDrop.length) {
-      importsToDrop.sort();
-      syscall.dropImports(importsToDrop);
+    if (importsToDrop.size) {
+      syscall.dropImports(Array.from(importsToDrop).sort());
     }
-    if (importsToRetire.length) {
-      importsToRetire.sort();
-      syscall.retireImports(importsToRetire);
+    if (importsToRetire.size) {
+      syscall.retireImports(Array.from(importsToRetire).sort());
     }
-    if (exportsToRetire.length) {
-      exportsToRetire.sort();
-      syscall.retireExports(exportsToRetire);
+    if (exportsToRetire.size) {
+      syscall.retireExports(Array.from(exportsToRetire).sort());
     }
   }
 
