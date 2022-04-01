@@ -3,7 +3,7 @@ queue_rules:
   - name: main
     conditions:
       - base=master
-      - check-success=mergify-merge-queue-test
+      # - check-success=mergify-merge-queue-test
 
 pull_request_rules:
   - name: merge to master
