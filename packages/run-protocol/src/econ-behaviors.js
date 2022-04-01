@@ -28,6 +28,16 @@ const BASIS_POINTS = 10_000n;
 const CENTRAL_DENOM_NAME = 'urun';
 
 /**
+ * @file A collection of productions, each of which declares inputs and outputs.
+ * Each function is passed a set of powers for reading from and writing to the vat config.
+ *
+ * Each of the things they produce they're responsible for resolving or setting.
+ *
+ * In production called by @agoric/vats to bootstrap.
+ * In testing called by differenty.
+ */
+
+/**
  * @param {EconomyBootstrapPowers} powers
  * @param {{ committeeName: string, committeeSize: number }} electorateTerms
  */

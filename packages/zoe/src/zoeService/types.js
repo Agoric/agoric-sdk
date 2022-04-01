@@ -26,7 +26,7 @@
  *
  * @property {InstallBundle} install
  * @property {InstallBundleID} installBundleID
- * @property {import('./utils').StartInstance<I>} startInstance
+ * @property {import('./utils').StartInstance} startInstance
  * @property {Offer} offer
  * @property {GetPublicFacet} getPublicFacet
  * @property {GetIssuers} getIssuers

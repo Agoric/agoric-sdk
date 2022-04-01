@@ -41,8 +41,8 @@ const { details: X } = assert;
 
 /**
  * @param {ZCF<GovernanceTerms<{}> & {
- *   ammPublicFacet: unknown,
- *   liquidationInstall: unknown,
+ *   ammPublicFacet: AutoswapPublicFacet,
+ *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>}>} zcf

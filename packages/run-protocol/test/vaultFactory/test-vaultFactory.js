@@ -37,6 +37,7 @@ import { calculateCurrentDebt } from '../../src/interest-math.js';
 
 // #region Support
 
+// TODO path resolve these so refactors detect
 const contractRoots = {
   faucet: './faucet.js',
   liquidate: '../../src/vaultFactory/liquidateMinimum.js',
@@ -58,6 +59,11 @@ export const Phase = /** @type {const} */ ({
   TRANSFER: 'transfer',
 });
 
+/**
+ *
+ * @param {string} sourceRoot
+ * @returns {Promise<SourceBundle>}
+ */
 async function makeBundle(sourceRoot) {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
   const path = new URL(url).pathname;

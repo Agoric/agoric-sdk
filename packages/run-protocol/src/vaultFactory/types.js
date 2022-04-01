@@ -109,17 +109,6 @@
  */
 
 /**
- * @typedef {Object} LiquidationCreatorFacet
- * @property {(runDebt: Amount) => Promise<Invitation>} makeDebtorInvitation
- */
-
-/**
- * @callback MakeLiquidationStrategy
- * @param {LiquidationCreatorFacet} creatorFacet
- * @returns {LiquidationStrategy}
- */
-
-/**
  * @typedef {Object} DebtStatus
  * @property {Timestamp} latestInterestUpdate
  * @property {NatValue} interest interest accrued since latestInterestUpdate

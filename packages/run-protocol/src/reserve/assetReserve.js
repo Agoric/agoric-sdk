@@ -184,5 +184,4 @@ harden(start);
 
 export { start };
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
-/** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet */
+/** @typedef {ContractOf<typeof start>} AssetReserveContract */

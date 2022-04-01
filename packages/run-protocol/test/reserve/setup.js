@@ -61,8 +61,8 @@ const setupReserveBootstrap = async (
 
 /**
  * @typedef {{
- * reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveCreatorFacet,
- * reservePublicFacet: import('../../src/reserve/assetReserve').AssetReservePublicFacet,
+ * reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveContract['creatorFacet'],
+ * reservePublicFacet: import('../../src/reserve/assetReserve').AssetReserveContract['publicFacet'],
  * instance: Instance,
  * }} ReserveKit
  */

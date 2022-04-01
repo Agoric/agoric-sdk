@@ -192,7 +192,10 @@
  *   reservePublicFacet: unknown,
  *   reserveCreatorFacet: GovernedContractFacetAccess<any>,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<any>,
- *   vaultBundles: Record<string, SourceBundle>,
+ *   vaultBundles: {
+ *     VaultFactory: SourceBundle,
+ *     liquidate: SourceBundle,
+ *   },
  *   centralSupplyBundle: SourceBundle,
  *   mintHolderBundle: SourceBundle,
  *   feeMintAccess: FeeMintAccess,
