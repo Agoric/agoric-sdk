@@ -3,6 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
+import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { capargs, capdataOneSlot } from '../util.js';
@@ -88,4 +89,48 @@ test('vat upgrade - local', async t => {
 
 test('vat upgrade - xsnap', async t => {
   return testUpgrade(t, 'xs-worker');
+});
+
+test('failed upgrade - lost kind', async t => {
+  const config = {
+    defaultManagerType: 'xs-worker',
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+    },
+    bundles: {
+      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
+      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  await initializeSwingset(config, [], hostStorage);
+  const c = await makeSwingsetController(hostStorage);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+
+  async function run(name, args = []) {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
+    await c.run();
+    const status = c.kpStatus(kpid);
+    const capdata = c.kpResolution(kpid);
+    return [status, capdata];
+  }
+
+  // create initial version
+  const [v1status] = await run('buildV1WithLostKind', []);
+  t.is(v1status, 'fulfilled');
+
+  // upgrade should fail
+  const [v2status, v2capdata] = await run('upgradeV2WhichLosesKind', []);
+  t.is(v2status, 'rejected');
+  console.log(v2capdata);
+  const e = parse(v2capdata.body);
+  t.truthy(e instanceof Error);
+  t.regex(e.message, /vat-upgrade failure/);
+  // TODO: who should see the details of what v2 did wrong? calling
+  // vat? only the console?
 });

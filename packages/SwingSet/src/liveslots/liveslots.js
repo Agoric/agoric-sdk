@@ -1271,6 +1271,8 @@ function build(
     slotToVal.set(rootSlot, new WeakRef(rootObject));
     retainExportedVref(rootSlot);
     // we do not use vreffedObjectRegistry for root objects
+
+    vom.insistAllDurableKindsReconnected();
   }
 
   /**
