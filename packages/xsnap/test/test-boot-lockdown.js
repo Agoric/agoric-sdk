@@ -66,7 +66,7 @@ test('bootstrap to SES lockdown', async t => {
   const name = 'SES lockdown worker';
   const vat = await xsnap({ ...opts, name });
   await vat.evaluate(bootScript);
-  t.deepEqual([], opts.messages);
+  t.deepEqual(opts.messages, []);
 
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -76,7 +76,7 @@ test('bootstrap to SES lockdown', async t => {
     send([ typeof harden, typeof Compartment, typeof HandledPromise ]);
   `);
   await vat.close();
-  t.deepEqual(['["function","function","function"]'], opts.messages);
+  t.deepEqual(opts.messages, ['["function","function","function"]']);
 });
 
 test('child compartment cannot access start powers', async t => {
@@ -137,7 +137,7 @@ test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
 test('console - symbols', async t => {
   // our console-shim.js handles Symbol specially
   const { worker: vat, opts } = await bootSESWorker(t);
-  t.deepEqual([], opts.messages);
+  t.deepEqual(opts.messages, []);
   await vat.evaluate(`
     const encoder = new TextEncoder();
     globalThis.send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
@@ -146,7 +146,7 @@ test('console - symbols', async t => {
     console.log('console:', Symbol.for('registered'));
     send('ok');
   `);
-  t.deepEqual(['"ok"'], opts.messages);
+  t.deepEqual(opts.messages, ['"ok"']);
 });
 
 test('console - objects should include detail', async t => {

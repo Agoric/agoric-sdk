@@ -39,7 +39,7 @@ function weakKeyCheck(t, log, vref) {
   t.true(result === undefined || !result.startsWith(prefix), `ew:${result}`);
 }
 
-test('only enumerate virtual objects', async t => {
+test('only enumerate virtual objects', t => {
   const { log, vrm } = makeVRM();
 
   // retiring a plain Remotable does a is-it-a-weak-key chck

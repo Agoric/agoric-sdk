@@ -126,7 +126,7 @@ test('checkAndUpdateFacetiousness', t => {
   t.deepEqual(cauf({}, barfoo), barfoo);
 
   // a single Kind can only be redefined as another single
-  t.deepEqual(cauf(desc(), undefined), undefined);
+  t.is(cauf(desc(), undefined), undefined);
   t.throws(() => cauf(desc(), foo), {
     message: 'defineDurableKindMulti called for unfaceted KindHandle "tag"',
   });

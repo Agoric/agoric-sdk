@@ -41,7 +41,7 @@ test('record: evaluate and issueCommand', async t => {
     `issueCommand(new TextEncoder().encode("Hello, World!").buffer);`,
   );
   await vat.close();
-  t.deepEqual(['Hello, World!'], opts.messages);
+  t.deepEqual(opts.messages, ['Hello, World!']);
 
   t.deepEqual(
     transcript1,

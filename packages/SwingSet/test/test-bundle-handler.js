@@ -56,8 +56,8 @@ test('bundle handler', async t => {
   t.is(store.size, 2);
   t.deepEqual(ids, ['b0-lockdown.sha', 'b0-supervisor.sha']);
   // contents were fetched from bundleData
-  t.deepEqual(await handler.getBundle('b0-lockdown.sha'), 'lockdown');
-  t.deepEqual(await handler.getBundle('b0-supervisor.sha'), 'supervisor');
+  t.is(await handler.getBundle('b0-lockdown.sha'), 'lockdown');
+  t.is(await handler.getBundle('b0-supervisor.sha'), 'supervisor');
 
   // subsequent queries should check hashes/ids but not re-read bundles
   const ids2 = await handler.getCurrentBundleIDs();
@@ -67,7 +67,7 @@ test('bundle handler', async t => {
 
   // getBundle is served from bundleStore, not elsewhere
   store.set('b0-lockdown.sha', 'other');
-  t.deepEqual(await handler.getBundle('b0-lockdown.sha'), 'other');
+  t.is(await handler.getBundle('b0-lockdown.sha'), 'other');
 });
 
 test('bundle data', async t => {

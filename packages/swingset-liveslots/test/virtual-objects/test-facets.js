@@ -3,7 +3,7 @@ import '@endo/init/debug.js';
 
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
-test('facets', async t => {
+test('facets', t => {
   const vom = makeFakeVirtualObjectManager();
   const init = () => ({ value: 0 });
   const behavior = {

@@ -56,7 +56,7 @@ test('encode', t => {
   eq(emojiBuffer, expectedBuffer);
 });
 
-test('encode stream', async t => {
+test('encode stream', t => {
   const e = netstringEncoderStream();
   const chunks = [];
   e.on('data', data => chunks.push(data));
@@ -112,7 +112,7 @@ test('decode', t => {
   bad('26:x', /size .* exceeds limit of 25/);
 });
 
-test('decode stream', async t => {
+test('decode stream', t => {
   const d = netstringDecoderStream();
   function write(s) {
     d.write(Buffer.from(s));
