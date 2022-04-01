@@ -1,0 +1,12 @@
+on:
+  push:
+
+jobs:
+  mergify-merge-queue-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: wait for a while on this branch
+        shell: bash
+        run: |
+          echo "$GITHUB_REF"
+          sleep 120
