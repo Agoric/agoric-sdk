@@ -38,13 +38,18 @@
  * @property {(key: string) => void} reserve Mark a key as reserved; will
  * return a promise that is fulfilled when the key is updated (or rejected when
  * deleted).
- * @property {(key: string, newValue: unknown) => void} update Fulfill an
- * outstanding reserved promise (if any) to the newValue and set the key to the
- * newValue.
+ * @property {(
+ *   key: string, newValue: unknown, newAdmin?: unknown) => void
+ * } update Fulfill an outstanding reserved promise (if any) to the newValue and
+ * set the key to the newValue.  If newAdmin is provided, set that to return via
+ * lookupAdmin.
+ * @property {(...path: Array<string>) => Promise<any>} lookupAdmin Look up the
+ * `newAdmin` from the path of keys starting from the current NameAdmin.  Wait
+ * on any reserved promises.
  * @property {(key: string) => void} delete Delete a value and reject an
  * outstanding reserved promise (if any).
- * @property {() => NameHub} readonly get a read-only view of the current
- * NameAdmin
+ * @property {() => NameHub} readonly get the NameHub corresponding to the
+ * current NameAdmin
  */
 
 /**

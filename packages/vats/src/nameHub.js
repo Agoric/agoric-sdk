@@ -60,39 +60,71 @@ export const makeNameHubKit = () => {
     },
   });
 
+  /** @type {LegacyMap<string, NameRecord>} */
+  // Legacy because a promiseKit is not a passable
+  const keyToAdminRecord = makeLegacyMap('nameKey');
+
   /** @type {NameAdmin} */
   const nameAdmin = Far('nameAdmin', {
     reserve(key) {
       assert.typeof(key, 'string');
-      if (!keyToRecord.has(key)) {
-        keyToRecord.init(key, makePromiseKit());
+      for (const map of [keyToAdminRecord, keyToRecord]) {
+        if (!map.has(key)) {
+          map.init(key, makePromiseKit());
+        }
       }
     },
-    update(key, newValue) {
+    update(key, newValue, adminValue) {
       assert.typeof(key, 'string');
-      const record = harden({ value: newValue });
-      if (keyToRecord.has(key)) {
-        const old = keyToRecord.get(key);
-        if (old.resolve) {
-          old.resolve(newValue);
+      /** @type {[LegacyMap<string, NameRecord>, unknown][]} */
+      const valueMapEntries = [
+        [keyToAdminRecord, adminValue], // The optional admin goes in the admin record.
+        [keyToRecord, newValue], // The value goes in the normal record.
+      ];
+      for (const [map, value] of valueMapEntries) {
+        const record = harden({ value });
+        if (map.has(key)) {
+          const old = map.get(key);
+          if (old.resolve) {
+            old.resolve(value);
+          }
+          map.set(key, record);
+        } else {
+          map.init(key, record);
         }
-        keyToRecord.set(key, record);
-      } else {
-        keyToRecord.init(key, record);
       }
+    },
+    async lookupAdmin(...path) {
+      if (path.length === 0) {
+        return nameAdmin;
+      }
+      const [first, ...remaining] = path;
+      const record = keyToAdminRecord.get(first);
+      /** @type {any} */
+      const firstValue = record.promise || record.value;
+      if (remaining.length === 0) {
+        return firstValue;
+      }
+      return E(firstValue).lookupAdmin(...remaining);
     },
     delete(key) {
-      if (keyToRecord.has(key)) {
-        // Reject only if already exists.
-        const old = keyToRecord.get(key);
-        if (old.reject) {
-          old.reject(Error(`Value has been deleted`));
-          // Silence unhandled rejections.
-          old.promise && old.promise.catch(_ => {});
+      for (const map of [keyToAdminRecord, keyToRecord]) {
+        if (map.has(key)) {
+          // Reject only if already exists.
+          const old = map.get(key);
+          if (old.reject) {
+            old.reject(Error(`Value has been deleted`));
+            // Silence unhandled rejections.
+            old.promise && old.promise.catch(_ => {});
+          }
         }
       }
-      // This delete may throw.  Reflect it to callers.
-      keyToRecord.delete(key);
+      try {
+        // This delete may throw.  Reflect it to callers.
+        keyToRecord.delete(key);
+      } finally {
+        keyToAdminRecord.delete(key);
+      }
     },
     readonly: () => nameHub,
   });
