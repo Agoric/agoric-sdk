@@ -11,7 +11,7 @@ import { AMM_INSTANCE } from './params.js';
 const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
 
 /**
- * Collateral Reserve holds onto Collateral for the RUN protocol, and can
+ * Asset Reserve holds onto assets for the RUN protocol, and can
  * dispense it for various purposes under governance control. It currently
  * supports governance decisions to add liquidity to an AMM pool.
  *
@@ -184,5 +184,5 @@ harden(start);
 
 export { start };
 
-/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} CollateralReservePublicFacet */
-/** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} CollateralReserveCreatorFacet */
+/** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
+/** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet */

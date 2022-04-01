@@ -11,7 +11,7 @@ import { setupReserve } from '../../src/econ-behaviors.js';
 const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
 const committeeRoot = '@agoric/governance/src/committee.js';
 const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
-const reserveRoot = '../../../src/reserve/collateralReserve.js';
+const reserveRoot = '../../../src/reserve/assetReserve.js';
 
 const contractGovernorBundleP = makeBundle(contractGovernorRoot);
 const committeeBundleP = makeBundle(committeeRoot);
@@ -61,8 +61,8 @@ const setupReserveBootstrap = async (
 
 /**
  * @typedef {{
- * reserveCreatorFacet: import('../../src/reserve/collateralReserve').CollateralReserveCreatorFacet,
- * reservePublicFacet: import('../../src/reserve/collateralReserve').CollateralReservePublicFacet,
+ * reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveCreatorFacet,
+ * reservePublicFacet: import('../../src/reserve/assetReserve').AssetReservePublicFacet,
  * instance: Instance,
  * }} ReserveKit
  */
