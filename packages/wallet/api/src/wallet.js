@@ -273,6 +273,9 @@ export function buildRootObject(vatPowers) {
     getUINotifier(rawId) {
       return walletAdmin.getUINotifier(rawId);
     },
+    getPublicNotifiers(rawId) {
+      return walletAdmin.getPublicNotifiers(rawId);
+    },
     async getZoe() {
       return walletAdmin.getZoe();
     },
