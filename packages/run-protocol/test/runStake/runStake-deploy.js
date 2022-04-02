@@ -9,6 +9,7 @@ const CONTRACT_ROOTS = {
 };
 
 const config = {
+  maxBytesInFlight: 800_000,
   bundlerId: undefined, // '262188032',
 };
 
@@ -17,6 +18,7 @@ const exploreBundle = bundle => {
   const cmap = JSON.parse(
     new TextDecoder().decode(zip.files.get('compartment-map.json').content),
   );
+  cmap;
   const sizes = [...zip.files.entries()]
     .map(([name, entry]) => [entry.content.length, name])
     .sort((a, b) => a[0] - b[0])
@@ -34,11 +36,22 @@ export const installInPieces = async (bundle, tool) => {
   const { endoZipBase64, ...shell } = bundle;
   const zip = new ZipReader(decodeBase64(endoZipBase64));
 
+  let approxBytesInFlight = 0;
+  let inFlightTransactions = [];
   for await (const [name, entry] of zip.files.entries()) {
+    if (approxBytesInFlight >= config.maxBytesInFlight) {
+      await Promise.all(inFlightTransactions);
+      approxBytesInFlight = 0;
+      inFlightTransactions = [];
+    }
+
     console.log('adding', name, entry.content.length, '...');
     const encodedContent = encodeBase64(entry.content);
-    await E(bundler).add(name, encodedContent);
+    approxBytesInFlight += name.length + encodedContent.length;
+    inFlightTransactions.push(E(bundler).add(name, encodedContent));
   }
+  await Promise.all(inFlightTransactions);
+
   console.log('installing...');
   const installation = await E(bundler)
     .install(shell)

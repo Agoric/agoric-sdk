@@ -7,23 +7,23 @@ export const start = zcf => {
   const zoe = zcf.getZoeService();
 
   const makeBundler = () => {
-    const nameToContent = new Map();
+    let writer = new ZipWriter();
 
     return Far('Bundler', {
       add: (name, encodedContent) => {
-        nameToContent.set(name, decodeBase64(encodedContent));
+        const buf = decodeBase64(encodedContent);
+        // XS decodes a pure ArrayBuffer, but we need a Uint8Array.
+        const content = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+        writer.write(name, content);
       },
       install: bundleShell => {
-        const writer = new ZipWriter();
-        for (const [name, content] of nameToContent.entries()) {
-          writer.write(name, content);
-        }
-        const endoZipBase64 = encodeBase64(writer.snapshot());
+        const snapshot = writer.snapshot();
+        const endoZipBase64 = encodeBase64(snapshot);
         const bundle = harden({ ...bundleShell, endoZipBase64 });
         return E(zoe).install(bundle);
       },
       clear: () => {
-        nameToContent.clear();
+        writer = new ZipWriter();
       },
     });
   };
