@@ -63,12 +63,15 @@ const start = async zcf => {
   };
 
   const { notifier, updater } = makeNotifierKit();
+  const { notifier: roundCompleteNotifier, updater: roundCompleteUpdater } =
+    makeNotifierKit();
   const zoe = zcf.getZoeService();
 
   /**
    * @typedef {Object} OracleRecord
    * @property {(timestamp: Timestamp) => Promise<void>=} querier
    * @property {bigint} lastSample
+   * @property {OracleKey} oracleKey
    */
 
   /** @type {Set<OracleRecord>} */
@@ -87,18 +90,15 @@ const start = async zcf => {
     async wake(timestamp) {
       // Run all the queriers.
       const querierPs = [];
-      const samples = [];
-      oracleRecords.forEach(({ querier, lastSample }) => {
+      oracleRecords.forEach(({ querier }) => {
         if (querier) {
           querierPs.push(querier(timestamp));
         }
-        // Push result.
-        samples.push(lastSample);
       });
       if (!querierPs.length) {
         // Only have push results, so publish them.
         // eslint-disable-next-line no-use-before-define
-        querierPs.push(updateQuote(samples, timestamp));
+        querierPs.push(updateQuote(timestamp));
       }
       await Promise.all(querierPs).catch(console.error);
     },
@@ -176,12 +176,16 @@ const start = async zcf => {
     };
 
   /**
-   * @param {Array<bigint>} samples
    * @param {Timestamp} timestamp
    */
-  const updateQuote = async (samples, timestamp) => {
+  const updateQuote = async timestamp => {
+    const submitted = [...oracleRecords.values()].map(
+      ({ oracleKey, lastSample }) => [oracleKey, lastSample],
+    );
     const median = calculateMedian(
-      samples.filter(sample => isNat(sample) && sample > 0n),
+      submitted
+        .map(([_k, v]) => v)
+        .filter(sample => isNat(sample) && sample > 0n),
       { add, divide: floorDivide, isGTE },
     );
 
@@ -201,6 +205,7 @@ const start = async zcf => {
 
     // Authenticate the quote by minting it with our quote issuer, then publish.
     const authenticatedQuote = await authenticateQuote([quote]);
+    roundCompleteUpdater.updateState({ submitted, authenticatedQuote });
 
     // Fire any triggers now; we don't care if the timestamp is fully ordered,
     // only if the limit has ever been met.
@@ -248,8 +253,10 @@ const start = async zcf => {
      * The offer result from this invitation is a OracleAdmin, which can be used
      * directly to manage the price submissions as well as to terminate the
      * relationship.
+     *
+     * @param {Instance | string} [oracleKey]
      */
-    makeOracleInvitation: async () => {
+    makeOracleInvitation: async oracleKey => {
       /**
        * If custom arguments are supplied to the `zoe.offer` call, they can
        * indicate an OraclePriceSubmission notifier and a corresponding
@@ -266,7 +273,7 @@ const start = async zcf => {
         seat,
         { notifier: oracleNotifier, scaleValueOut = 1 } = {},
       ) => {
-        const admin = await creatorFacet.initOracle();
+        const admin = await creatorFacet.initOracle(oracleKey);
         seat.exit();
         if (!oracleNotifier) {
           // No notifier to track, just let them have the direct admin.
@@ -323,18 +330,26 @@ const start = async zcf => {
 
       return zcf.makeInvitation(offerHandler, 'oracle invitation');
     },
-    /**
-     * @param {Instance} [oracleInstance]
-     * @param {unknown} [query]
-     */
-    async initOracle(oracleInstance, query) {
+    deleteOracle: async oracleKey => {
+      for (const record of instanceToRecords.get(oracleKey)) {
+        oracleRecords.delete(record);
+      }
+
+      // We should remove the entry entirely, as it is empty.
+      instanceToRecords.delete(oracleKey);
+
+      // Delete complete, so try asynchronously updating the quote.
+      const deletedNow = await E(timer).getCurrentTimestamp();
+      await updateQuote(deletedNow);
+    },
+    initOracle: async (oracleInstance, query) => {
       assert(quoteKit, X`Must initializeQuoteMint before adding an oracle`);
 
       /** @type {OracleKey} */
       const oracleKey = oracleInstance || Far('fresh key', {});
 
       /** @type {OracleRecord} */
-      const record = { lastSample: 0n };
+      const record = { oracleKey, lastSample: 0n };
 
       /** @type {Set<OracleRecord>} */
       let records;
@@ -374,10 +389,7 @@ const start = async zcf => {
 
           // Delete complete, so try asynchronously updating the quote.
           const deletedNow = await E(timer).getCurrentTimestamp();
-          await updateQuote(
-            [...oracleRecords].map(({ lastSample }) => lastSample),
-            deletedNow,
-          );
+          await updateQuote(deletedNow);
         },
         async pushResult(result) {
           // Sample of NaN, 0, or negative numbers get culled in
@@ -386,7 +398,7 @@ const start = async zcf => {
         },
       });
 
-      if (query === undefined) {
+      if (query === undefined || typeof oracleInstance === 'string') {
         // They don't want to be polled.
         return oracleAdmin;
       }
@@ -411,10 +423,7 @@ const start = async zcf => {
         lastWakeTimestamp = timestamp;
 
         pushResult(result);
-        await updateQuote(
-          [...oracleRecords].map(({ lastSample }) => lastSample),
-          timestamp,
-        );
+        await updateQuote(timestamp);
       };
       const now = await E(timer).getCurrentTimestamp();
       await record.querier(now);
@@ -430,6 +439,9 @@ const start = async zcf => {
     },
     async getRoundStartNotifier() {
       return undefined;
+    },
+    async getRoundCompleteNotifier() {
+      return roundCompleteNotifier;
     },
   });
 
