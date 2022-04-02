@@ -1,6 +1,6 @@
 // @ts-check
 import '@agoric/zoe/exported.js';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 import { makeInstall } from './install.js';
 import { makeOfferAndFindInvitationAmount } from './offer.js';
