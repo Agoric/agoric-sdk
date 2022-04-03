@@ -58,19 +58,15 @@ export function makeDeliveryKit(
 
   // dispatch.deliver from kernel lands here (with message from local vat to
   // remote machine): translate to local, join with handleSend
-  function sendFromKernel(ktarget, method, kargs, kresult) {
+  function sendFromKernel(ktarget, kmethargs, kresult) {
     const target = getLocalForKernel(ktarget);
-    const args = mapDataFromKernel(kargs, null);
+    const methargs = mapDataFromKernel(kmethargs, null);
     assert(
       state.getObject(target) || state.getPromiseStatus(target),
       X`unknown message target ${target}/${ktarget}`,
     );
-    assert(
-      method.indexOf(':') === -1 && method.indexOf(';') === -1,
-      X`illegal method name ${method}`,
-    );
     const result = provideLocalForKernelResult(kresult);
-    const localDelivery = harden({ target, method, result, args });
+    const localDelivery = harden({ target, methargs, result });
     handleSend(localDelivery);
   }
 
@@ -179,23 +175,22 @@ export function makeDeliveryKit(
   }
 
   function sendFromRemote(remoteID, message) {
-    // deliver:$target:$method:[$result][:$slots..];body
+    // deliver:$target:[$result][:$slots..];body
     const sci = message.indexOf(';');
     assert(sci !== -1, X`missing semicolon in deliver ${message}`);
     const fields = message.slice(0, sci).split(':').slice(1);
-    // fields: [$target, $method, $result, $slots..]
+    // fields: [$target, $result, $slots..]
     const remoteTarget = fields[0];
     const target = getLocalForRemote(remoteID, remoteTarget);
-    const method = fields[1];
-    const remoteResult = fields[2]; // 'rp-NN' or empty string
+    const remoteResult = fields[1]; // 'rp-NN' or empty string
     let result;
     if (remoteResult.length) {
       result = provideLocalForRemoteResult(remoteID, remoteResult);
     }
-    const slots = fields.slice(3).map(s => provideLocalForRemote(remoteID, s));
+    const slots = fields.slice(2).map(s => provideLocalForRemote(remoteID, s));
     const body = message.slice(sci + 1);
-    const args = harden({ body, slots });
-    const localDelivery = harden({ target, method, result, args });
+    const methargs = harden({ body, slots });
+    const localDelivery = harden({ target, methargs, result });
     handleSend(localDelivery);
   }
 
@@ -249,7 +244,7 @@ export function makeDeliveryKit(
   // helper function for handleSend(): for each message, either figure out
   // the destination (remote machine or kernel), or reject the result because
   // the destination is a brick wall (undeliverable target)
-  function resolveTarget(target, method) {
+  function resolveTarget(target, methargs) {
     const { type } = parseLocalSlot(target);
 
     if (type === 'object') {
@@ -275,9 +270,9 @@ export function makeDeliveryKit(
       }
       const targetSlot = extractSingleSlot(data);
       if (targetSlot && parseLocalSlot(targetSlot).type === 'object') {
-        return resolveTarget(targetSlot, method);
+        return resolveTarget(targetSlot);
       } else {
-        return { reject: makeUndeliverableError(method) };
+        return { reject: makeUndeliverableError(methargs) };
       }
     }
 
@@ -328,13 +323,13 @@ export function makeDeliveryKit(
   }
 
   function handleSend(localDelivery) {
-    // { target, method, result, args }
+    // { target, methargs, result }
     // where does it go?
-    const where = resolveTarget(localDelivery.target, localDelivery.method);
+    const where = resolveTarget(localDelivery.target, localDelivery.methargs);
 
     if (where.send) {
       const auxResolutions = resolutionCollector().forSlots(
-        localDelivery.args.slots,
+        localDelivery.methargs.slots,
       );
       if (where.kernel) {
         sendToKernel(where.send, localDelivery);
@@ -363,11 +358,11 @@ export function makeDeliveryKit(
   }
 
   function sendToKernel(target, delivery) {
-    const { method, args: localArgs, result: localResult } = delivery;
+    const { methargs: localArgs, result: localResult } = delivery;
     const kernelTarget = getKernelForLocal(target);
     const kernelArgs = mapDataToKernel(localArgs);
     const kernelResult = provideKernelForLocalResult(localResult);
-    syscall.send(kernelTarget, method, kernelArgs, kernelResult);
+    syscall.send(kernelTarget, kernelArgs, kernelResult);
     if (kernelResult) {
       syscall.subscribe(kernelResult);
     }
@@ -375,11 +370,10 @@ export function makeDeliveryKit(
 
   function sendToRemote(target, remoteID, localDelivery) {
     assert(remoteID, X`oops ${target}`);
-    insistCapData(localDelivery.args);
+    insistCapData(localDelivery.methargs);
 
     const {
-      method,
-      args: { body, slots: localSlots },
+      methargs: { body, slots: localSlots },
       result: localResult,
     } = localDelivery;
 
@@ -395,9 +389,7 @@ export function makeDeliveryKit(
       ss = `:${ss}`;
     }
 
-    // now render the transmission. todo: 'method' lives in the transmission
-    // for now, but will be moved to 'data'
-    const msg = `deliver:${remoteTarget}:${method}:${remoteResult}${ss};${body}`;
+    const msg = `deliver:${remoteTarget}:${remoteResult}${ss};${body}`;
     transmit(remoteID, msg);
   }
 

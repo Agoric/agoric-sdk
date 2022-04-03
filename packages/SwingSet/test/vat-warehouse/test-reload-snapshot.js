@@ -5,7 +5,6 @@ import tmp from 'tmp';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { capargs } from '../util.js';
 
 test('vat reload from snapshot', async t => {
   const config = {
@@ -44,14 +43,14 @@ test('vat reload from snapshot', async t => {
   }
 
   const expected1 = [];
-  c1.queueToVatRoot('target', 'count', capargs([]));
+  c1.queueToVatRoot('target', 'count', []);
   expected1.push(`count = 0`);
   await c1.run();
   t.deepEqual(c1.dump().log, expected1);
   t.deepEqual(getPositions(), [0, 2]);
 
   for (let i = 1; i < 11; i += 1) {
-    c1.queueToVatRoot('target', 'count', capargs([]));
+    c1.queueToVatRoot('target', 'count', []);
     expected1.push(`count = ${i}`);
   }
   await c1.run();
@@ -62,7 +61,7 @@ test('vat reload from snapshot', async t => {
   const c2 = await makeSwingsetController(hostStorage);
   const expected2 = [`count = 7`, `count = 8`, `count = 9`, `count = 10`];
   t.deepEqual(c2.dump().log, expected2); // replayed 4 deliveries
-  c2.queueToVatRoot('target', 'count', capargs([]));
+  c2.queueToVatRoot('target', 'count', []);
   expected2.push(`count = 11`);
   await c2.run();
   t.deepEqual(c2.dump().log, expected2); // note: *not* 0-11

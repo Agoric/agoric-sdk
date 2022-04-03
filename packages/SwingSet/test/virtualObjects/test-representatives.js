@@ -89,18 +89,18 @@ test.serial('exercise cache', async t => {
   const nextLog = makeNextLog(c);
 
   async function doSimple(method, what, ...args) {
-    let sendArgs;
+    let sendArgs = args;
+    let slots = [];
     if (what) {
       const whatArg = {
         '@qclass': 'slot',
         iface: 'Alleged: thing',
         index: 0,
       };
-      sendArgs = capargs([whatArg, ...args], [what]);
-    } else {
-      sendArgs = capargs(args);
+      sendArgs = [whatArg, ...args];
+      slots = [what];
     }
-    const r = c.queueToVatRoot('bootstrap', method, sendArgs);
+    const r = c.queueToVatRoot('bootstrap', method, sendArgs, 'ignore', slots);
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), []);

@@ -19,9 +19,9 @@ function copy(data) {
   return JSON.parse(JSON.stringify(data));
 }
 
-async function run(c, name, args = []) {
+async function run(c, method, args = []) {
   assert(Array.isArray(args));
-  const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
+  const kpid = c.queueToVatRoot('bootstrap', method, args);
   await c.run();
   const status = c.kpStatus(kpid);
   const capdata = c.kpResolution(kpid);

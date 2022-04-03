@@ -223,7 +223,8 @@ test.serial('presence refcount management 1', async t => {
   const base = mainHeldIdx;
   const presenceRef = 'o-5';
 
-  let rp = await dispatchMessage('importAndHold', thingArg(presenceRef));
+  const [targ, tslot] = thingArg(presenceRef);
+  let rp = await dispatchMessage('importAndHold', [targ], [tslot]);
   validateInit(v);
   validateImportAndHold(v, rp);
 
@@ -264,7 +265,8 @@ test.serial('presence refcount management 2', async t => {
   const base = mainHeldIdx;
   const presenceRef = 'o-5';
 
-  let rp = await dispatchMessage('importAndHold', thingArg(presenceRef));
+  const [targ, tslot] = thingArg(presenceRef);
+  let rp = await dispatchMessage('importAndHold', [targ], [tslot]);
   validateInit(v);
   validateImportAndHold(v, rp);
 

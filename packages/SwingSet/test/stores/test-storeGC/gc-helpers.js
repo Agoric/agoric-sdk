@@ -197,17 +197,11 @@ export function refValString(vref, type) {
 }
 
 export function refArg(vref, type) {
-  return capargs(
-    [{ '@qclass': 'slot', iface: `Alleged: ${type}`, index: 0 }],
-    [vref],
-  );
+  return [{ '@qclass': 'slot', iface: `Alleged: ${type}`, index: 0 }, vref];
 }
 
 export function thingArg(vref) {
-  return capargs(
-    [{ '@qclass': 'slot', iface: 'Alleged: thing', index: 0 }],
-    [vref],
-  );
+  return refArg(vref, 'thing');
 }
 
 export function thingRefValString(vref) {

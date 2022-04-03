@@ -113,7 +113,7 @@ test('add hook', async t => {
   // basic test: callKernelHook() with static data, returns capdata(static)
   {
     setHookReturn({ y: 2 });
-    const kp = c.queueToVatRoot('bootstrap', 'doCapdata', capargs([{ x: 1 }]));
+    const kp = c.queueToVatRoot('bootstrap', 'doCapdata', [{ x: 1 }]);
     await c.run();
     t.deepEqual(hooklog.shift(), capargs([{ x: 1 }]));
     t.deepEqual(hooklog, []);
@@ -124,7 +124,7 @@ test('add hook', async t => {
   // which serializes the capdata
   {
     setHookReturn({ y: 4 });
-    const kp = c.queueToVatRoot('bootstrap', 'doActual', capargs([{ x: 3 }]));
+    const kp = c.queueToVatRoot('bootstrap', 'doActual', [{ x: 3 }]);
     await c.run();
     t.deepEqual(hooklog.shift(), capargs([{ x: 3 }]));
     t.deepEqual(hooklog, []);
@@ -135,7 +135,7 @@ test('add hook', async t => {
   let o1kref;
   let o2kref;
   {
-    const kp = c.queueToVatRoot('bootstrap', 'returnObjects', capargs([]));
+    const kp = c.queueToVatRoot('bootstrap', 'returnObjects', []);
     await c.run();
     const res3 = c.kpResolution(kp);
     t.is(res3.slots.length, 3);
@@ -151,7 +151,7 @@ test('add hook', async t => {
   // capdata emerge in the hooklog as krefs, not drefs
   {
     setHookReturn(0); // 'undefined' isn't handled by our lazy JSON marshaller
-    const kp = c.queueToVatRoot('bootstrap', 'doObjects', capargs([]));
+    const kp = c.queueToVatRoot('bootstrap', 'doObjects', []);
     await c.run();
     const exp = [capSlot(0, 'root'), capSlot(1, 'obj'), capSlot(2, 'obj')];
     t.deepEqual(hooklog.shift(), {
@@ -164,7 +164,7 @@ test('add hook', async t => {
 
   // do it again, to make sure they get serialized the same way twice
   {
-    const kp = c.queueToVatRoot('bootstrap', 'doObjects', capargs([]));
+    const kp = c.queueToVatRoot('bootstrap', 'doObjects', []);
     await c.run();
     const exp = [capSlot(0, 'root'), capSlot(1, 'obj'), capSlot(2, 'obj')];
     t.deepEqual(hooklog.shift(), {
@@ -182,7 +182,7 @@ test('add hook', async t => {
     const cargs = [capSlot(0, 'root'), capSlot(1, 'obj'), capSlot(2, 'root')];
     const kslots = [bootkref, o1kref, extra1kref];
     setHookReturn(cargs, kslots);
-    const kp = c.queueToVatRoot('bootstrap', 'doCapdata', capargs([0]));
+    const kp = c.queueToVatRoot('bootstrap', 'doCapdata', [0]);
     await c.run();
     t.deepEqual(hooklog.shift(), capargs([0]));
     t.deepEqual(hooklog, []);
@@ -201,7 +201,7 @@ test('add hook', async t => {
   {
     // return root
     setHookReturn(capSlot(0, 'root'), [bootkref]);
-    const kp = c.queueToVatRoot('bootstrap', 'checkObjects1', capargs([0]));
+    const kp = c.queueToVatRoot('bootstrap', 'checkObjects1', [0]);
     await c.run();
     t.deepEqual(hooklog.shift(), capargs([0]));
     t.deepEqual(hooklog, []);
@@ -212,7 +212,7 @@ test('add hook', async t => {
   {
     // return r2
     setHookReturn(capSlot(0, 'obj'), [o2kref]);
-    const kp = c.queueToVatRoot('bootstrap', 'checkObjects2', capargs([0]));
+    const kp = c.queueToVatRoot('bootstrap', 'checkObjects2', [0]);
     await c.run();
     t.deepEqual(hooklog.shift(), capargs([0]));
     t.deepEqual(hooklog, []);
@@ -223,7 +223,7 @@ test('add hook', async t => {
   {
     // return extra2
     setHookReturn(capSlot(0, 'root'), [extra2kref]);
-    const kp = c.queueToVatRoot('bootstrap', 'checkObjects3', capargs([0]));
+    const kp = c.queueToVatRoot('bootstrap', 'checkObjects3', [0]);
     await c.run();
     t.deepEqual(hooklog.shift(), capargs([0]));
     t.deepEqual(hooklog, []);
@@ -235,7 +235,7 @@ test('add hook', async t => {
   {
     // exercise passing device nodes into the hook
     setHookReturn(0);
-    const kp = c.queueToVatRoot('bootstrap', 'checkDevNodeIn', capargs([0]));
+    const kp = c.queueToVatRoot('bootstrap', 'checkDevNodeIn', [0]);
     await c.run();
     // hooklog should get kref for devnode d+1
     const got = hooklog.shift();
@@ -251,7 +251,7 @@ test('add hook', async t => {
   {
     // exercise returning device nodes from the hook
     setHookReturn(capSlot(0, 'device node'), [deviceKref]);
-    const kp = c.queueToVatRoot('bootstrap', 'checkDevNodeOut', capargs([0]));
+    const kp = c.queueToVatRoot('bootstrap', 'checkDevNodeOut', [0]);
     await c.run();
     t.deepEqual(hooklog.shift(), capargs([0]));
     t.deepEqual(hooklog, []);
@@ -270,7 +270,7 @@ test('add hook', async t => {
     setHookReturn(0);
     // writes "dm.invoke failed, informing calling vat" and "deliberate hook
     // error" to logs
-    const kp = c.queueToVatRoot('bootstrap', 'throwError', capargs([0]));
+    const kp = c.queueToVatRoot('bootstrap', 'throwError', [0]);
     await c.run();
     const exp = { worked: false, err };
     t.deepEqual(parse(c.kpResolution(kp).body), exp);
@@ -281,7 +281,7 @@ test('add hook', async t => {
     setHookReturn(0);
     // writes "dm.invoke failed, informing calling vat" and "device d7 has no
     // hook named missingHook" to logs
-    const kp = c.queueToVatRoot('bootstrap', 'missingHook', capargs([0]));
+    const kp = c.queueToVatRoot('bootstrap', 'missingHook', [0]);
     await c.run();
     const exp = { worked: false, err };
     t.deepEqual(parse(c.kpResolution(kp).body), exp);

@@ -98,8 +98,8 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
   // return immediate results or throw errors
   const syscallForVat = {
     /** @type {(target: string, method: string, args: SwingSetCapData, result?: string) => unknown } */
-    send: (target, method, args, result) =>
-      doSyscall(['send', target, { method, args, result }]),
+    send: (target, methargs, result) =>
+      doSyscall(['send', target, { methargs, result }]),
     subscribe: vpid => doSyscall(['subscribe', vpid]),
     resolve: resolutions => doSyscall(['resolve', resolutions]),
     exit: (isFailure, data) => doSyscall(['exit', isFailure, data]),

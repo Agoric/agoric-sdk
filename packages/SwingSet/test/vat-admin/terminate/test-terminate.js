@@ -138,12 +138,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       hostStorage: hostStorage2,
       kernelBundles: t.context.data.kernelBundles,
     });
-    const r2 = c2.queueToVatRoot(
-      'bootstrap',
-      'speakAgain',
-      capargs([]),
-      'panic',
-    );
+    const r2 = c2.queueToVatRoot('bootstrap', 'speakAgain', [], 'panic');
     await c2.run();
     t.is(c2.kpStatus(r2), 'fulfilled');
     t.deepEqual(c2.dump().log, [
@@ -176,7 +171,7 @@ test('dead vat state removed', async t => {
   t.is(kvStore.get('ko26.owner'), 'v6');
   t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 33);
 
-  controller.queueToVatRoot('bootstrap', 'phase2', capargs([]));
+  controller.queueToVatRoot('bootstrap', 'phase2', []);
   await controller.run();
   t.is(kvStore.get('vat.dynamicIDs'), '[]');
   t.is(kvStore.get('ko26.owner'), undefined);
