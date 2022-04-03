@@ -72,7 +72,7 @@ const PKey = /** @type { const } */ ({
   LoanFee: 'LoanFee',
 });
 
-export const makeRunStakeTerms = (
+const makeRunStakeTerms = (
   { timerService, chargingPeriod, recordingPeriod },
   {
     electorateInvitationAmount,
@@ -251,7 +251,7 @@ const XLien = /** @type { const } */ ({
 /**
  * @param {BootstrapSpace & {produce: { lienBridge: Producer<StakingAuthority> }}} powers
  */
-export const makeLienBridge = async ({
+const makeLienBridge = async ({
   consume: { bridgeManager: bridgeP },
   produce: { lienBridge },
   brand: {
