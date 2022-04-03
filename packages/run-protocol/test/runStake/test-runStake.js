@@ -34,7 +34,7 @@ import { KW } from '../../src/runStake/params.js';
 // 10	Partial repay - insufficient funds (FAIL) - Zoe prevents this
 // 12	Add collateral - lots of test harness for little gain
 // 13	Add collateral - CR increase ok
-import { CASES as TestData } from './runStake-test-steps.js';
+// import { CASES as TestData } from './runStake-test-steps.js';
 
 const contractRoots = {
   runStake: '../../src/runStake/runStake.js',
@@ -478,9 +478,9 @@ const approxEqual = (t, actual, expected, epsilon) => {
   }
 };
 
-const makeWorld = async t0 => {
-  const bundles = theBundles(t0);
-  const timer = buildManualTimer(t0.log, 0n, SECONDS_PER_DAY);
+const makeWorld = async t => {
+  const bundles = theBundles(t);
+  const timer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
   const { chain, space } = await bootstrapRunStake(bundles, timer);
   const { consume } = space;
 
@@ -566,7 +566,7 @@ const makeWorld = async t0 => {
       const attPmt = await E(bobWallet.attMaker).makeAttestation(delta);
       await E(attPurse).deposit(attPmt);
     },
-    checkBLDStaked: async (expected, t) => {
+    checkBLDStaked: async expected => {
       const actual = await E(lienBridge).getAccountState(
         bob.getAddress(),
         bldBrand,
@@ -576,7 +576,7 @@ const makeWorld = async t0 => {
         AmountMath.make(bldBrand, expected * micro.unit),
       );
     },
-    checkBLDLiened: async (expected, t) => {
+    checkBLDLiened: async expected => {
       const actual = await E(lienBridge).getAccountState(
         bob.getAddress(),
         bldBrand,
@@ -698,7 +698,7 @@ const makeWorld = async t0 => {
       await returnAttestation(attBack);
       await E(runPurse).deposit(runPmt);
     },
-    checkRUNBalance: async (target, t) => {
+    checkRUNBalance: async target => {
       const actual = await E(runPurse).getCurrentAmount();
       approxEqual(
         t,
@@ -707,7 +707,7 @@ const makeWorld = async t0 => {
         epsilon,
       );
     },
-    checkRUNDebt: async (expected, t) => {
+    checkRUNDebt: async expected => {
       const { vault } = offerResult;
       const debt = await E(vault).getCurrentDebt();
       approxEqual(
@@ -739,28 +739,28 @@ const makeWorld = async t0 => {
   return driver;
 };
 
-const makeTests = async () => {
-  for await (const [num, name, steps] of TestData) {
-    test(`Test Data ${num} ${name}`, async t => {
-      // TODO: use different accounts / addresses in the same world.
-      const driver = await makeWorld(t);
-      for await (const [tag, value, pass] of steps) {
-        t.log({ tag, value });
-        const fn = driver[tag];
-        if (!fn) {
-          throw Error(`bad tag: ${tag}`);
-        }
-        if (pass === false) {
-          await t.throwsAsync(async () => fn(value, t));
-        } else {
-          await fn(value, t);
-        }
-      }
-    });
-  }
-};
+// const makeTests = async () => {
+//   for await (const [num, name, steps] of TestData) {
+//     test(`Test Data ${num} ${name}`, async t => {
+//       // TODO: use different accounts / addresses in the same world.
+//       const driver = await makeWorld(t);
+//       for await (const [tag, value, pass] of steps) {
+//         t.log({ tag, value });
+//         const fn = driver[tag];
+//         if (!fn) {
+//           throw Error(`bad tag: ${tag}`);
+//         }
+//         if (pass === false) {
+//           await t.throwsAsync(async () => fn(value, t));
+//         } else {
+//           await fn(value, t);
+//         }
+//       }
+//     });
+//   }
+// };
 
-makeTests();
+// makeTests();
 
 test('borrowing past the debt limit', async t => {
   const driver = await makeWorld(t);
@@ -778,4 +778,180 @@ test('borrowing past the debt limit', async t => {
       // XXX brittle string to fail if numeric parameters change
       'Minting {"brand":"[Alleged: RUN brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would exceed total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000000000n]"}',
   });
+});
+
+test('Borrow, pay off', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(80000n);
+  await d.stakeBLD(80000n);
+  await d.lienBLD(8000n);
+  await d.borrowRUN(1000n);
+  await d.checkRUNBalance(1000n);
+  await d.earnRUNReward(25n);
+  await d.payoffRUN(1020n);
+  await d.checkRUNDebt(0n);
+  await d.checkBLDLiened(0n);
+  await d.checkRUNBalance(5n);
+});
+
+test('Starting LoC', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(9000n);
+  await d.stakeBLD(9000n);
+  await d.checkBLDLiened(0n);
+  await d.checkRUNBalance(0n);
+  await d.lienBLD(6000n);
+  await d.borrowRUN(100n);
+  await d.checkRUNDebt(102n);
+  await d.checkBLDLiened(6000n);
+  await d.checkRUNBalance(100n);
+  await d.borrowMoreRUN(100n);
+  await d.checkRUNBalance(200n);
+  await d.checkRUNDebt(204n);
+  await d.checkBLDLiened(6000n);
+  await d.stakeBLD(5000n);
+  await d.lienBLD(8000n);
+  await d.checkBLDLiened(8000n);
+  await d.borrowMoreRUN(1400n);
+  await d.checkRUNDebt(1632n);
+});
+
+test('Extending LoC - CR increases (FAIL)', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(80000n);
+  await d.stakeBLD(80000n);
+  await d.lienBLD(8000n);
+  await d.borrowRUN(1000n);
+  await d.setMintingRatio([16n, 100n]);
+  await t.throwsAsync(async () => d.borrowMoreRUN(500n));
+  await d.checkRUNBalance(1000n);
+  await d.checkBLDLiened(8000n);
+  await d.earnRUNReward(25n);
+  await d.payoffRUN(1021n);
+  await d.checkRUNDebt(0n);
+  await d.checkBLDLiened(0n);
+});
+
+test('Partial repayment - CR remains the same', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(10000n);
+  await d.stakeBLD(10000n);
+  await d.lienBLD(10000n);
+  await d.borrowRUN(1000n);
+  await d.payDownRUN(50n);
+  await d.checkRUNBalance(950n);
+  await d.checkRUNDebt(970n);
+});
+
+test('Partial repayment - CR increases*', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(10000n);
+  await d.stakeBLD(10000n);
+  await d.lienBLD(400n);
+  await d.borrowRUN(100n);
+  await d.setMintingRatio([16n, 100n]);
+  await d.payDownRUN(5n);
+  await d.checkRUNBalance(95n);
+  await d.checkBLDLiened(400n);
+});
+
+test('Partial repay - unbonded ok', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(1000n);
+  await d.stakeBLD(800n);
+  await d.lienBLD(800n);
+  await d.borrowRUN(100n);
+  await d.slash(700n);
+  await d.checkBLDLiened(800n);
+  await d.checkRUNBalance(100n);
+  await d.payDownRUN(50n);
+  await d.checkRUNBalance(50n);
+  await d.checkBLDLiened(800n);
+  await d.checkBLDStaked(100n);
+});
+
+test('Add collateral - more BLD required (FAIL)', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(1000n);
+  await d.stakeBLD(1000n);
+  await d.lienBLD(800n);
+  await d.borrowRUN(100n);
+  await t.throwsAsync(async () => d.borrowMoreRUN(200n));
+  await d.checkRUNBalance(100n);
+  await d.checkBLDLiened(800n);
+});
+
+test('Lower collateral', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(1000n);
+  await d.stakeBLD(1000n);
+  await d.lienBLD(800n);
+  await d.borrowRUN(100n);
+  await d.unlienBLD(350n);
+  await d.checkRUNBalance(100n);
+  await d.checkBLDLiened(450n);
+});
+
+test('Lower collateral - CR increase (FAIL)', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(1000n);
+  await d.stakeBLD(1000n);
+  await d.lienBLD(800n);
+  await d.borrowRUN(100n);
+  await d.setMintingRatio([16n, 100n]);
+  await t.throwsAsync(async () => d.unlienBLD(400n));
+  await d.checkBLDLiened(800n);
+});
+
+test('Lower collateral - unbonded ok', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(1000n);
+  await d.stakeBLD(1000n);
+  await d.earnRUNReward(5n);
+  await d.lienBLD(800n);
+  await d.borrowRUN(100n);
+  await d.slash(770n);
+  await d.checkBLDLiened(800n);
+  await d.unlienBLD(375n);
+  await d.checkRUNBalance(105n);
+  await d.checkBLDLiened(425n);
+  await d.setMintingRatio([16n, 100n]);
+  await d.payoffRUN(103n);
+  await d.checkRUNBalance(3n);
+  await d.checkBLDLiened(0n);
+});
+
+test('Lower collateral by paying off DEBT', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(1000n);
+  await d.stakeBLD(1000n);
+  await d.lienBLD(800n);
+  await d.borrowRUN(190n);
+  await d.payToUnlien([100n, 300n]);
+  await d.checkBLDLiened(500n);
+});
+
+test('Watch interest accrue', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(1000n);
+  await d.stakeBLD(1000n);
+  await d.lienBLD(800n);
+  await d.borrowRUN(190n);
+  await d.checkRUNDebt(194n);
+  await d.waitDays(90n);
+  await d.checkRUNDebt(195n);
+});
+
+test('payoff more than you owe', async t => {
+  const d = await makeWorld(t);
+  await d.buyBLD(1000n);
+  await d.stakeBLD(1000n);
+  await d.lienBLD(800n);
+  await d.borrowRUN(190n);
+  await d.checkRUNDebt(194n);
+  await d.earnRUNReward(20n);
+  await d.payoffRUN(200n);
+  await d.checkRUNDebt(0n);
+  await d.checkBLDLiened(0n);
+  await d.checkRUNBalance(16n);
 });
