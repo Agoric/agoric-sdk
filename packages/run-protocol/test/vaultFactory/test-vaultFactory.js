@@ -107,6 +107,8 @@ function defaultParamValues(debtBrand) {
     debtLimit: AmountMath.make(debtBrand, 1_000_000n),
     // margin required to maintain a loan
     liquidationMargin: makeRatio(105n, debtBrand),
+    // penalty upon liquidation as proportion of debt
+    liquidationPenalty: makeRatio(10n, debtBrand, 100n),
     // periodic interest rate (per charging period)
     interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance

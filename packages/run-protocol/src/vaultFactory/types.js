@@ -25,6 +25,7 @@
  * @typedef {Object} VaultManagerParamValues
  * @property {Ratio} liquidationMargin - margin below which collateral will be
  * liquidated to satisfy the debt.
+ * @property {Ratio} liquidationPenalty - penalty charged upon liquidation as proportion of debt
  * @property {Ratio} interestRate - annual interest rate charged on loans
  * @property {Ratio} loanFee - The fee (in BasisPoints) charged when opening
  * or increasing a loan.

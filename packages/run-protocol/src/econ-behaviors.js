@@ -271,6 +271,7 @@ export const startVaultFactory = async (
     // XXX the values aren't used. May be addressed by https://github.com/Agoric/agoric-sdk/issues/4861
     debtLimit: AmountMath.make(centralBrand, 0n),
     liquidationMargin: makeRatio(0n, centralBrand),
+    liquidationPenalty: makeRatio(10n, centralBrand, 100n),
     interestRate: makeRatio(0n, centralBrand, BASIS_POINTS),
     loanFee: makeRatio(0n, centralBrand, BASIS_POINTS),
   };

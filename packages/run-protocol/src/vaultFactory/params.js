@@ -14,6 +14,7 @@ export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
 
 export const DEBT_LIMIT_KEY = 'DebtLimit';
 export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
+export const LIQUIDATION_PENALTY_KEY = 'LiquidationPenalty';
 export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
 
@@ -36,6 +37,7 @@ const makeVaultParamManager = initial =>
   makeParamManagerSync({
     [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, initial.debtLimit],
     [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, initial.liquidationMargin],
+    [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, initial.liquidationPenalty],
     [INTEREST_RATE_KEY]: [ParamTypes.RATIO, initial.interestRate],
     [LOAN_FEE_KEY]: [ParamTypes.RATIO, initial.loanFee],
   });
