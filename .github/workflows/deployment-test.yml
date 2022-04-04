@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   # Otherwise, run on default branch.
   push:
-    branches: [mergify/merge-queue/main/*] # $default-branch
+    branches: [master] # $default-branch
 
 jobs:
   deployment-test:
