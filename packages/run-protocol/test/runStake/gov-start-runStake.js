@@ -244,7 +244,7 @@ const XLien = /** @type { const } */ ({
 });
 
 /**
- * @typedef { Record<AccountProperty, T> & { currentTime: bigint } } AccountState<T>
+ * @typedef { Record<AccountProperty, T> & { currentTime: bigint } } AccountStateG<T>
  * @template T
  */
 
@@ -284,7 +284,7 @@ const makeLienBridge = async ({
         wantedBrand === stake,
         X`Cannot getAccountState for ${wantedBrand}. Expected ${stake}.`,
       );
-      /** @type { AccountState<string> } */
+      /** @type { AccountStateG<string> } */
       const { currentTime, bonded, liened, locked, total, unbonding } = await E(
         bridgeManager,
       ).toBridge(XLien.name, {
