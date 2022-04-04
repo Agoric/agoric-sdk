@@ -3,7 +3,7 @@ on:
   push:
     tags:
       - v*
-    branches: [mergify/merge-queue/main/*]
+    branches: [master] # $default-branch
   pull_request:
 permissions:
   contents: read
