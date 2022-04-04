@@ -6,6 +6,7 @@ import {
   setupTestLiveslots,
   matchResolveOne,
   matchVatstoreGet,
+  matchVatstoreGetAfter,
   matchVatstoreDelete,
   matchVatstoreSet,
   matchRetireExports,
@@ -477,6 +478,7 @@ function validateSetup(v) {
   validateCreateBaggage(v, 1);
   validate(v, matchVatstoreSet(stateKey(cacheDisplacerVref), cacheObjValue));
   validate(v, matchVatstoreSet(stateKey(fCacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGetAfter('', 'vom.kind.', NONE, [NONE, NONE]));
   validate(
     v,
     matchVatstoreSet(stateKey(virtualHolderVref), heldThingValue(null)),

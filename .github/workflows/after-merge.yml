@@ -3,7 +3,7 @@
 #  Require branches to be up to date before merging
 on:
   push:
-    branches: [mergify/*]
+    branches: [mergify/merge-queue/main/*]
 
 jobs:
   build:

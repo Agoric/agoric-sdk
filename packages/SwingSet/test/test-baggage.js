@@ -5,6 +5,7 @@ import { Far } from '@endo/marshal';
 import {
   setupTestLiveslots,
   matchVatstoreGet,
+  matchVatstoreGetAfter,
   matchVatstoreSet,
   validate,
   validateDone,
@@ -74,6 +75,7 @@ test.serial('exercise baggage', async t => {
   validate(v, matchVatstoreSet('vc.1.soutside', stringVal('outer val')));
   validate(v, matchVatstoreGet('vc.1.|entryCount', '0'));
   validate(v, matchVatstoreSet('vc.1.|entryCount', '1'));
+  validate(v, matchVatstoreGetAfter('', 'vom.kind.', NONE, [NONE, NONE]));
   validateDone(v);
 
   const rp = await dispatchMessage('doSomething', capargs([]));

@@ -219,6 +219,7 @@ harden(extractPowers);
  *
  * @returns {{
  *   agoricNames: NameHub,
+ *   agoricNamesAdmin: NameAdmin,
  *   spaces: WellKnownSpaces,
  * }}
  *
@@ -229,9 +230,10 @@ export const makeAgoricNamesAccess = (
 ) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
+
   const hubs = mapEntries(reserved, (key, _d) => {
     const { nameHub, nameAdmin } = makeNameHubKit();
-    agoricNamesAdmin.update(key, nameHub);
+    agoricNamesAdmin.update(key, nameHub, nameAdmin);
     return [key, { nameHub, nameAdmin }];
   });
   const spaces = mapEntries(reserved, (key, detail) => {
@@ -249,6 +251,7 @@ export const makeAgoricNamesAccess = (
   );
   return {
     agoricNames,
+    agoricNamesAdmin,
     spaces: typedSpaces,
   };
 };

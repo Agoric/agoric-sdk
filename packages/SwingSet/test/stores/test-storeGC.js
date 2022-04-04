@@ -479,6 +479,7 @@ function validateInit(v) {
   validate(v, matchVatstoreGet('baggageID', NONE));
   validateCreateBaggage(v, 1);
   validateCreateHolder(v, 2);
+  validate(v, matchVatstoreGetAfter('', 'vom.kind.', NONE, [NONE, NONE]));
 }
 
 function validateDropHeld(v, rp, rc, es) {

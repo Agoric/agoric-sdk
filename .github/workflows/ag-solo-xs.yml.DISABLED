@@ -5,7 +5,7 @@ name: ag-solo on xs
 
 on:
   push:
-    branches: [ mergify/* ] # $default-branch
+    branches: [ mergify/merge-queue/main/* ] # $default-branch
 
 jobs:
   xs-build:

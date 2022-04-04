@@ -55,8 +55,9 @@ const buildRootObject = (vatPowers, vatParameters) => {
   // @ts-expect-error no TS defs for rickety test scaffolding
   const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
-  const { agoricNames, spaces } = makeAgoricNamesAccess(log);
+  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(log);
   produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const {
     argv: { ROLE },
