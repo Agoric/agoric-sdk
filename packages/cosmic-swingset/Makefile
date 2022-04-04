@@ -42,6 +42,23 @@ $(EVAL_CLEAN): $(EVAL_CODE)
 	node test/runStake/checkGov.js $< >$@.t
 	mv $@.t $@
 
+start-runStake: test/runStake/gov-start-runStake.js
+	make EVAL_CODE=test/runStake/gov-start-runStake.js \
+		EVAL_PERMIT=test/runStake/gov-start-runStake-permit.json \
+		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
+
+start-committee: test/runStake/gov-start-econCommittee.js
+	make EVAL_CODE=test/runStake/gov-start-econCommittee.js \
+		EVAL_PERMIT=test/runStake/gov-start-runStake-permit.json \
+		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
+
+gov-q:
+	../../golang/cosmos/build/agd query gov proposals --output json | \
+		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]'
+
+deploy-runStake: ../run-protocol/test/runStake/runStake-deploy.js
+	echo agoric deploy ../run-protocol/test/runStake/runStake-deploy.js
+
 # This probably shouldn't install, but that's what published instructions
 # expect.
 all: build-chain install-nobuild
