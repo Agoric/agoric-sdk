@@ -440,6 +440,12 @@ func TestVesting(t *testing.T) {
 	if err == nil {
 		t.Errorf("transferred liened coins!")
 	}
+
+	keeper.SetLien(ctx, addr2, types.Lien{Coins: ubld(3000)}) // deep underwater
+	err = bk.SendCoins(ctx, addr2, addr1, ubld(7))
+	if err == nil {
+		t.Errorf("transferred liened coins!")
+	}
 }
 
 func TestUpdateLien(t *testing.T) {
