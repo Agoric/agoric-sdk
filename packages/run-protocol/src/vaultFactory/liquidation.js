@@ -3,7 +3,10 @@
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  floorMultiplyBy,
+  offerTo,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('LIQ');
@@ -23,6 +26,8 @@ const trace = makeTracer('LIQ');
  *            ) => void} burnLosses
  * @param {LiquidationStrategy} strategy
  * @param {Brand} collateralBrand
+ * @param {ZCFSeat} penaltyPoolSeat
+ * @param {Ratio} penaltyRate
  * @returns {Promise<InnerVault>}
  */
 const liquidate = async (
@@ -31,10 +36,16 @@ const liquidate = async (
   burnLosses,
   strategy,
   collateralBrand,
+  penaltyPoolSeat,
+  penaltyRate,
 ) => {
   innerVault.liquidating();
-  const debt = innerVault.getCurrentDebt();
-  const { brand: runBrand } = debt;
+
+  const debtBeforePenalty = innerVault.getCurrentDebt();
+  const penalty = floorMultiplyBy(debtBeforePenalty, penaltyRate);
+
+  const debt = AmountMath.add(debtBeforePenalty, penalty);
+
   const vaultZcfSeat = innerVault.getVaultSeat();
 
   const collateralToSell = vaultZcfSeat.getAmountAllocated(
@@ -57,13 +68,27 @@ const liquidate = async (
 
   // Now we need to know how much was sold so we can pay off the debt.
   // We can use this because only liquidation adds RUN to the vaultSeat.
-  const proceeds = vaultZcfSeat.getAmountAllocated('RUN', runBrand);
+  const proceeds = vaultZcfSeat.getAmountAllocated('RUN', debt.brand);
 
   const isShortfall = !AmountMath.isGTE(proceeds, debt);
-  const runToBurn = isShortfall ? proceeds : debt;
-  trace({ debt, isShortfall, runToBurn });
+  const debtPaid = isShortfall ? proceeds : debt;
+
+  // Pay as much of the penalty as possible
+  const penaltyProceeds = AmountMath.min(penalty, debtPaid);
+  const runToBurn = AmountMath.subtract(debtPaid, penaltyProceeds);
+
+  trace({ debt, isShortfall, debtPaid, penaltyProceeds, runToBurn });
+
+  // Allocate penalty portion of proceeds to a seat that will be transferred to reserve
+  penaltyPoolSeat.incrementBy(
+    vaultZcfSeat.decrementBy(harden({ RUN: penaltyProceeds })),
+  );
+  zcf.reallocate(penaltyPoolSeat, vaultZcfSeat);
+
   burnLosses(harden({ RUN: runToBurn }), vaultZcfSeat);
-  innerVault.liquidated(AmountMath.subtract(debt, runToBurn));
+
+  // Accounting complete. Update the vault state.
+  innerVault.liquidated(AmountMath.subtract(debt, debtPaid));
 
   // remaining funds are left on the vault for the user to close and claim
   return innerVault;

@@ -55,12 +55,14 @@ const trace = makeTracer('VM');
  *  getDebtLimit: () => Amount<'nat'>,
  *  getInterestRate: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
+ *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
  * }} loanParamGetters
  * @param {MintAndReallocate} mintAndReallocateWithFee
  * @param {BurnDebt}  burnDebt
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
+ * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */
 export const makeVaultManager = (
@@ -74,6 +76,7 @@ export const makeVaultManager = (
   burnDebt,
   timerService,
   liquidationStrategy,
+  penaltyPoolSeat,
   startTimeStamp,
 ) => {
   /** @type {{brand: Brand<'nat'>}} */
@@ -143,6 +146,8 @@ export const makeVaultManager = (
       debtMint.burnLosses,
       liquidationStrategy,
       collateralBrand,
+      penaltyPoolSeat,
+      loanParamGetters.getLiquidationPenalty(),
     )
       .then(() => {
         prioritizedVaults?.removeVault(key);

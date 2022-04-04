@@ -98,7 +98,7 @@ async function waitForPromisesToSettle() {
 }
 
 /**
- * dL: 1M, lM: 105, iR: 100, lF: 500
+ * dL: 1M, lM: 105%, lP: 10%, iR: 100, lF: 500
  *
  * @param {Brand} debtBrand
  */
@@ -108,7 +108,7 @@ function defaultParamValues(debtBrand) {
     // margin required to maintain a loan
     liquidationMargin: makeRatio(105n, debtBrand),
     // penalty upon liquidation as proportion of debt
-    liquidationPenalty: makeRatio(10n, debtBrand, 100n),
+    liquidationPenalty: makeRatio(10n, debtBrand),
     // periodic interest rate (per charging period)
     interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
@@ -455,16 +455,16 @@ test('first', async t => {
   await E(aethVaultManager).liquidateAll();
   const { value: afterLiquidation } = await E(vaultNotifier).getUpdateSince();
   t.is(afterLiquidation.vaultState, Phase.LIQUIDATED);
-  t.truthy(
-    AmountMath.isEmpty(await E(vault).getCurrentDebt()),
-    'debt is paid off',
-  );
+  t.is((await E(vault).getCurrentDebt()).value, 0n, 'debt is paid off');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
-    AmountMath.make(aethBrand, 566n),
+    AmountMath.make(aethBrand, 445n),
     'unused collateral remains after liquidation',
   );
 
+  t.deepEqual(await E(vaultFactory).getPenaltyAllocation(), {
+    RUN: AmountMath.make(runBrand, 29n),
+  });
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 24n),
   });
@@ -591,8 +591,8 @@ test('price drop', async t => {
   const debtAmountAfter = await E(vault).getCurrentDebt();
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
-  t.deepEqual(finalNotification.value.locked, AmountMath.make(aethBrand, 1n));
-  t.truthy(AmountMath.isEmpty(debtAmountAfter));
+  t.deepEqual(finalNotification.value.locked, AmountMath.make(aethBrand, 2n));
+  t.is(debtAmountAfter.value, 29n);
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 14n),
@@ -609,7 +609,7 @@ test('price drop', async t => {
   );
 
   t.deepEqual(runProceeds, AmountMath.make(runBrand, 0n));
-  t.deepEqual(collProceeds, AmountMath.make(aethBrand, 1n));
+  t.deepEqual(collProceeds, AmountMath.make(aethBrand, 2n));
   t.deepEqual(
     await E(vault).getCollateralAmount(),
     AmountMath.makeEmpty(aethBrand),
@@ -735,9 +735,10 @@ test('price falls precipitously', async t => {
   await waitForPromisesToSettle();
   // An emergency liquidation got less than full value
   const debtAfterLiquidation = await E(vault).getCurrentDebt();
-  t.truthy(
-    AmountMath.isGTE(AmountMath.make(runBrand, 70n), debtAfterLiquidation),
-    `Expected ${debtAfterLiquidation.value} to be less than 70`,
+  t.is(
+    debtAfterLiquidation.value,
+    102n,
+    `Expected ${debtAfterLiquidation.value} to be less than 110`,
   );
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
