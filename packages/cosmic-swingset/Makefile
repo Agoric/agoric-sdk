@@ -36,6 +36,12 @@ AGC_START_ARGS =
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 
+EVAL_CLEAN=$(EVAL_CODE)-clean.js
+
+$(EVAL_CLEAN): $(EVAL_CODE)
+	node test/runStake/checkGov.js $< >$@.t
+	mv $@.t $@
+
 # This probably shouldn't install, but that's what published instructions
 # expect.
 all: build-chain install-nobuild
@@ -192,9 +198,9 @@ t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/co
 		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AG_SOLO) start
 
-scenario2-core-eval:
+scenario2-core-eval: $(EVAL_CLEAN)
 	$(AGCH) --home=t1/bootstrap tx gov submit-proposal swingset-core-eval \
-		$(EVAL_PERMIT) $(EVAL_CODE) \
+		$(EVAL_PERMIT) $(EVAL_CLEAN) \
 		--title="Swingset core eval" --description="Evaluate $(EVAL_CODE)" --deposit=$(EVAL_DEPOSIT) \
 		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) \
 		--yes --chain-id=$(CHAIN_ID) --keyring-backend=test --from=bootstrap -b block
