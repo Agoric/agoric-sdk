@@ -3,14 +3,13 @@ import { E } from '@endo/far';
 import { ZipReader } from '@endo/zip';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 
+const { entries } = Object;
+
+const BUNDLER_ROOT = './endoCAS.js';
 const CONTRACT_ROOTS = {
   runStake: './../../src/runStake/runStake.js',
-  endoCAS: './endoCAS.js',
-};
-
-const config = {
-  maxBytesInFlight: 800_000,
-  bundlerId: undefined, // '262188032',
+  contractGovernor: '../../../governance/src/contractGovernor.js',
+  committee: '../../../governance/src/committee.js',
 };
 
 const exploreBundle = bundle => {
@@ -30,7 +29,11 @@ const exploreBundle = bundle => {
   console.log(mdtable(sizes));
 };
 
-export const installInPieces = async (bundle, tool) => {
+export const installInPieces = async (
+  bundle,
+  tool,
+  opts = { maxBytesInFlight: 800_000 },
+) => {
   const bundler = E(tool).makeBundler();
 
   const { endoZipBase64, ...shell } = bundle;
@@ -39,7 +42,7 @@ export const installInPieces = async (bundle, tool) => {
   let approxBytesInFlight = 0;
   let inFlightTransactions = [];
   for await (const [name, entry] of zip.files.entries()) {
-    if (approxBytesInFlight >= config.maxBytesInFlight) {
+    if (approxBytesInFlight >= opts.maxBytesInFlight) {
       await Promise.all(inFlightTransactions);
       approxBytesInFlight = 0;
       inFlightTransactions = [];
@@ -63,39 +66,65 @@ export const installInPieces = async (bundle, tool) => {
 const installRunStake = async (homePromise, { bundleSource, pathResolve }) => {
   console.log('awaiting home promise...');
   const home = await homePromise;
-  console.log('bundling endoCAS contract...');
-  const bundles = {
-    runStake: await bundleSource(pathResolve(CONTRACT_ROOTS.runStake)),
-    endoCAS: await bundleSource(pathResolve(CONTRACT_ROOTS.endoCAS)),
-  };
-  //  exploreBundle(bundles.runStake);
-  exploreBundle(bundles.endoCAS);
-  console.log(
-    Object.entries(bundles).map(([p, b]) => [p, b.endoZipBase64.length]),
-  );
 
-  if (!config.bundlerId) {
-    console.log('installing endoCAS...');
-    const installation = await E(home.zoe).install(bundles.endoCAS);
-    console.log('publishing on board...');
-    const { publicFacet } = await E(home.zoe).startInstance(installation);
-    const boardStuff = {
-      bundler: {
+  const ensureContractInstalled = async (name, root, tool = undefined) => {
+    const found = await E(home.scratch).get(name);
+    if (found) {
+      console.log(name, 'already installed:', found);
+      return found;
+    }
+    console.log(name, ': bundling contract...');
+    const bundle = await bundleSource(pathResolve(root));
+    console.log({ root, length: bundle.endoZipBase64.length });
+
+    console.log(name, ': installing...');
+    const installation = await (tool
+      ? installInPieces(bundle, tool)
+      : E(home.zoe).install(bundle));
+    const result = {
+      installation,
+      boardId: {
         installation: await E(home.board).getId(installation),
+      },
+    };
+    console.log(name, ': saving to scratch...', result);
+    await E(home.scratch).set(name, result);
+    return result;
+  };
+
+  const ensureBundlerStarted = async () => {
+    const found = await ensureContractInstalled('bundler', BUNDLER_ROOT);
+    if (found && found.publicFacet) {
+      console.log('bundler already started:', found);
+      return found;
+    }
+    const { instance, publicFacet } = await E(home.zoe).startInstance(
+      found.installation,
+    );
+    console.log('publishing on board...');
+    const bundler = {
+      installation: found.installation,
+      instance,
+      publicFacet,
+      boardId: {
+        installation: found.boardId.installation,
         publicFacet: await E(home.board).getId(publicFacet),
       },
     };
-    console.log(boardStuff);
-    config.bundlerId = boardStuff.bundler.publicFacet;
-  }
-
-  const tool = E(home.board).getValue(config.bundlerId);
-
-  const installation = await installInPieces(bundles.runStake, tool);
-  const stuff = {
-    runStake: { installation: await E(home.board).getId(installation) },
+    console.log({ bundler });
+    console.log('saving bundler to scatch...');
+    await E(home.scratch).set('bundler', bundler);
+    return bundler;
   };
-  console.log(stuff);
+
+  const bundlerInfo = await ensureBundlerStarted();
+  const tool = bundlerInfo.publicFacet;
+
+  await Promise.all(
+    entries(CONTRACT_ROOTS).map(([name, root]) =>
+      ensureContractInstalled(name, root, tool),
+    ),
+  );
 };
 
 export default installRunStake;
