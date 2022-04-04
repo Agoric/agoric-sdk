@@ -68,24 +68,26 @@ export const bridgeCoreEval = async allPowers => {
           return Promise.all(
             evals.map(({ json_permits: jsonPermit, js_code: code }) =>
               // Run in a new turn to avoid crosstalk of the evaluations.
-              Promise.resolve().then(() => {
-                const permit = JSON.parse(jsonPermit);
-                const powers = extractPowers(permit, allPowers);
+              Promise.resolve()
+                .then(() => {
+                  const permit = JSON.parse(jsonPermit);
+                  const powers = extractPowers(permit, allPowers);
 
-                // Inspired by ../repl.js:
-                const globals = harden({
-                  ...allPowers.modules,
-                  ...farExports,
-                  assert,
-                  console,
-                });
+                  // Inspired by ../repl.js:
+                  const globals = harden({
+                    ...allPowers.modules,
+                    ...farExports,
+                    assert,
+                    console,
+                  });
 
-                // Evaluate the code in the context of the globals.
-                const compartment = new Compartment(globals);
-                harden(compartment.globalThis);
-                const behavior = compartment.evaluate(code);
-                return behavior(powers);
-              }),
+                  // Evaluate the code in the context of the globals.
+                  const compartment = new Compartment(globals);
+                  harden(compartment.globalThis);
+                  const behavior = compartment.evaluate(code);
+                  return behavior(powers);
+                })
+                .catch(err => console.error('CORE_EVAL failed:', err)),
             ),
           );
         }
