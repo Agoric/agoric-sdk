@@ -12,6 +12,22 @@ import { makeTracer } from '../makeTracer.js';
 const trace = makeTracer('LIQ');
 
 /**
+ * @param {Amount<'nat'>} proceeds
+ * @param {Amount<'nat'>} debt - after incurring penalty
+ * @param {Amount<'nat'>} penaltyPortion
+ */
+const partitionProceeds = (proceeds, debt, penaltyPortion) => {
+  const isShortfall = !AmountMath.isGTE(proceeds, debt);
+  const debtPaid = isShortfall ? proceeds : debt;
+
+  // Pay as much of the penalty as possible
+  const penaltyProceeds = AmountMath.min(penaltyPortion, debtPaid);
+  const runToBurn = AmountMath.subtract(debtPaid, penaltyProceeds);
+
+  return { debtPaid, penaltyProceeds, runToBurn };
+};
+
+/**
  * Liquidates a Vault, using the strategy to parameterize the particular
  * contract being used. The strategy provides a KeywordMapping and proposal
  * suitable for `offerTo()`, and an invitation.
@@ -68,16 +84,13 @@ const liquidate = async (
 
   // Now we need to know how much was sold so we can pay off the debt.
   // We can use this because only liquidation adds RUN to the vaultSeat.
-  const proceeds = vaultZcfSeat.getAmountAllocated('RUN', debt.brand);
+  const { debtPaid, penaltyProceeds, runToBurn } = partitionProceeds(
+    vaultZcfSeat.getAmountAllocated('RUN', debt.brand),
+    debt,
+    penalty,
+  );
 
-  const isShortfall = !AmountMath.isGTE(proceeds, debt);
-  const debtPaid = isShortfall ? proceeds : debt;
-
-  // Pay as much of the penalty as possible
-  const penaltyProceeds = AmountMath.min(penalty, debtPaid);
-  const runToBurn = AmountMath.subtract(debtPaid, penaltyProceeds);
-
-  trace({ debt, isShortfall, debtPaid, penaltyProceeds, runToBurn });
+  trace({ debt, debtPaid, penaltyProceeds, runToBurn });
 
   // Allocate penalty portion of proceeds to a seat that will be transferred to reserve
   penaltyPoolSeat.incrementBy(
@@ -124,5 +137,6 @@ const makeDefaultLiquidationStrategy = amm => {
 
 harden(makeDefaultLiquidationStrategy);
 harden(liquidate);
+harden(partitionProceeds);
 
-export { makeDefaultLiquidationStrategy, liquidate };
+export { makeDefaultLiquidationStrategy, liquidate, partitionProceeds };
