@@ -18,7 +18,7 @@ import contractGovernorBundle from '../../../bundles/bundle-contractGovernor.js'
 import binaryVoteCounterBundle from '../../../bundles/bundle-binaryVoteCounter.js';
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
-/** @type {any} */
+// @ts-expect-error cast
 const test = rawTest;
 
 /**
@@ -85,5 +85,10 @@ async function main(t, argv) {
 test.serial('vaultFactory', async t => {
   const startingValues = [[100], [1000]]; // [aliceValues, ownerValues]
   const dump = await main(t, ['oneLoanWithInterest', startingValues]);
-  t.snapshot(dump.log);
+  t.deepEqual(dump.log, [
+    '=> alice and the vaultFactory are set up',
+    '=> alice.oneLoanWithInterest called',
+    'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510000n]"} after borrowing',
+    'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510035n]"} after interest',
+  ]);
 });
