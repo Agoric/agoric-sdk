@@ -91,6 +91,13 @@ func (m *mockLienKeeper) BondDenom(ctx sdk.Context) string {
 	return "ubld"
 }
 
+func (m *mockLienKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	state := m.GetAccountState(ctx, addr)
+	delegated := state.Bonded.Add(state.Unbonding...)
+	bank := state.Total.Sub(state.Total.Min(delegated))
+	return bank
+}
+
 func (m *mockLienKeeper) GetValidator(ctx sdk.Context, valAddr sdk.ValAddress) (stakingTypes.Validator, bool) {
 	v, found := m.validators[valAddr.String()]
 	return v, found
