@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
-	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -23,6 +22,7 @@ type Keeper interface {
 	UpdateLien(ctx sdk.Context, addr sdk.AccAddress, newCoin sdk.Coin) error
 	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState
 	BondDenom(ctx sdk.Context) string
+	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	GetDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingTypes.Delegation
 	GetValidator(ctx sdk.Context, valAddr sdk.ValAddress) (stakingTypes.Validator, bool)
 }
@@ -214,9 +214,9 @@ func (lk keeperImpl) getLockedUnvested(ctx sdk.Context, addr sdk.AccAddress) (sd
 	}
 	if lienAccount, ok := account.(LienAccount); ok {
 		// unwrap the lien wrapper
-		account = lienAccount.omniVestingAccount
+		account = lienAccount.omniClawbackAccount
 	}
-	if clawbackAccount, ok := account.(*vestingtypes.ClawbackVestingAccount); ok {
+	if clawbackAccount, ok := account.(vestexported.ClawbackVestingAccountI); ok {
 		original := clawbackAccount.GetOriginalVesting()
 		unlocked := clawbackAccount.GetUnlockedOnly(ctx.BlockTime())
 		vested := clawbackAccount.GetVestedOnly(ctx.BlockTime())
@@ -233,6 +233,10 @@ func (lk keeperImpl) getLockedUnvested(ctx sdk.Context, addr sdk.AccAddress) (sd
 // BondDenom returns the denom used for staking.
 func (lk keeperImpl) BondDenom(ctx sdk.Context) string {
 	return lk.stakingKeeper.BondDenom(ctx)
+}
+
+func (lk keeperImpl) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	return lk.bankKeeper.GetAllBalances(ctx, addr)
 }
 
 // GetDelegatorDelegations returns the delegator's delegations.

@@ -46,8 +46,17 @@ export const currentDebtToCollateral = vault =>
  * @param {() => void} reschedulePriceCheck called when there is a new
  * least-collateralized vault
  */
-export const makePrioritizedVaults = reschedulePriceCheck => {
+export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   const vaults = makeOrderedVaultStore();
+
+  /**
+   * Set the callback for when there is a new least-collateralized vault
+   *
+   * @param {() => void} rescheduleFn
+   */
+  const setRescheduler = rescheduleFn => {
+    reschedulePriceCheck = rescheduleFn;
+  };
 
   // To deal with fluctuating prices and varying collateralization, we schedule a
   // new request to the priceAuthority when some vault's debtToCollateral ratio
@@ -180,5 +189,6 @@ export const makePrioritizedVaults = reschedulePriceCheck => {
     refreshVaultPriority,
     removeVault,
     removeVaultByAttributes,
+    setRescheduler,
   });
 };
