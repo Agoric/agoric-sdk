@@ -10,6 +10,8 @@ import {
   zeroPad,
   makeEncodePassable,
   makeDecodePassable,
+  makeCopySet,
+  makeCopyMap,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
@@ -348,6 +350,10 @@ export function makeCollectionManager(
       const end = prefix(coverEnd);
       const ignoreKeys = !needKeys && pattEq(keyPatt, M.any());
       const ignoreValues = !needValues && pattEq(valuePatt, M.any());
+      /**
+       * @yields {[any, any]}
+       * @returns {Generator<[any, any], void, unknown>}
+       */
       function* iter() {
         const generationAtStart = currentGenerationNumber;
         while (priorDBKey !== undefined) {
@@ -455,9 +461,10 @@ export function makeCollectionManager(
       return countEntries();
     }
 
-    function snapshot() {
-      assert.fail(X`snapshot not yet implemented`);
-    }
+    const snapshotSet = keyPatt => makeCopySet(keys(keyPatt));
+
+    const snapshotMap = (keyPatt, valuePatt) =>
+      makeCopyMap(entries(keyPatt, valuePatt));
 
     return {
       has,
@@ -469,7 +476,8 @@ export function makeCollectionManager(
       keys,
       values,
       entries,
-      snapshot,
+      snapshotSet,
+      snapshotMap,
       sizeInternal,
       clear,
       clearInternal,
@@ -507,8 +515,16 @@ export function makeCollectionManager(
     if (hasWeakKeys) {
       collection = weakMethods;
     } else {
-      const { keys, values, entries, sizeInternal, getSize, snapshot, clear } =
-        raw;
+      const {
+        keys,
+        values,
+        entries,
+        sizeInternal,
+        getSize,
+        snapshotSet,
+        snapshotMap,
+        clear,
+      } = raw;
       collection = {
         ...weakMethods,
         keys,
@@ -516,7 +532,8 @@ export function makeCollectionManager(
         entries,
         sizeInternal,
         getSize,
-        snapshot,
+        snapshotSet,
+        snapshotMap,
         clear,
       };
     }
@@ -587,7 +604,8 @@ export function makeCollectionManager(
   }
 
   function collectionToMapStore(collection) {
-    return Far('mapStore', collection);
+    const { snapshotSet: _, snapshotMap, ...rest } = collection;
+    return Far('mapStore', { snapshot: snapshotMap, ...rest });
   }
 
   function collectionToWeakMapStore(collection) {
@@ -602,7 +620,7 @@ export function makeCollectionManager(
       keys,
       sizeInternal,
       getSize,
-      snapshot,
+      snapshotSet,
       clear,
     } = collection;
     function* entries(patt) {
@@ -626,7 +644,7 @@ export function makeCollectionManager(
       entries,
       sizeInternal,
       getSize: patt => getSize(patt),
-      snapshot,
+      snapshot: snapshotSet,
       clear,
     };
     return Far('setStore', setStore);
