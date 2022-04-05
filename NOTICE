@@ -1,0 +1,21 @@
+Agoric SDK
+Copyright 2018-2022 Agoric Systems Operating Company.
+
+This product includes software developed at
+Agoric Systems Operating Company (https://agoric.com/).
+
+The code in golang/cosmos/third_party/proto/google/protobuf is licensed
+under a BSD style license, Copyright 2008 Google Inc.
+
+The code in golang/cosmos/third_party/proto/gogoproto/gogo.proto is licensed
+under a BSD style license, Copyright (c) 2013, The GoGo Authors.
+
+The code in packages/swingset-runner/demo/vatStore2/xorshift128.js is licensed
+under an MIT style license and Copyright (c) 2014 Andreas Madsen & Emil Bay.
+
+The code in packages/xsnap/lib/object-inspect.js is licensed
+under an MIT style license and Copyright (c) 2013 James Halliday.
+
+The code in packages/vats/src/crc.js is licensed
+under an MIT style license and Copyright (c) 2018 Vladimir Latyshev, and
+is itself forked npm polycrc@1.1.0.
