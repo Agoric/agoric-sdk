@@ -48,8 +48,36 @@ export const makePaymentLedger = (
     throw reason;
   };
 
-  /** @type {WeakStore<Payment, Amount>} */
+  /** @type {WeakMapStore<Payment, Amount>} */
   const paymentLedger = makeScalarBigWeakMapStore('payment');
+  /** @type {WeakMapStore<Payment, SetStore<Payment>>} */
+  const paymentRecoverySets = makeScalarBigWeakMapStore('payment-recovery');
+
+  /**
+   * @param {Payment} payment
+   * @param {Amount} amount
+   * @param {SetStore<Payment>} [optRecoverySet]
+   */
+  const initPayment = (payment, amount, optRecoverySet = undefined) => {
+    if (optRecoverySet !== undefined) {
+      if (!optRecoverySet.has(payment)) {
+        optRecoverySet.add(payment);
+      }
+      paymentRecoverySets.init(payment, optRecoverySet);
+    }
+    paymentLedger.init(payment, amount);
+  };
+
+  const deletePayment = payment => {
+    paymentLedger.delete(payment);
+    if (paymentRecoverySets.has(payment)) {
+      const recoverySet = paymentRecoverySets.get(payment);
+      paymentRecoverySets.delete(payment);
+      if (recoverySet.has(payment)) {
+        recoverySet.delete(payment);
+      }
+    }
+  };
 
   /** @type {(left: Amount, right: Amount) => Amount } */
   const add = (left, right) => AmountMath.add(left, right, brand);
@@ -103,9 +131,14 @@ export const makePaymentLedger = (
    *
    * @param {Payment[]} payments
    * @param {Amount[]} newPaymentBalances
+   * @param {SetStore<Payment>} [optRecoverySet]
    * @returns {Payment[]}
    */
-  const moveAssets = (payments, newPaymentBalances) => {
+  const moveAssets = (
+    payments,
+    newPaymentBalances,
+    optRecoverySet = undefined,
+  ) => {
     assertCopyArray(payments, 'payments');
     assertCopyArray(newPaymentBalances, 'newPaymentBalances');
 
@@ -141,11 +174,11 @@ export const makePaymentLedger = (
     let newPayments;
     try {
       // COMMIT POINT
-      payments.forEach(payment => paymentLedger.delete(payment));
+      payments.forEach(payment => deletePayment(payment));
 
       newPayments = newPaymentBalances.map(balance => {
         const newPayment = makePayment();
-        paymentLedger.init(newPayment, balance);
+        initPayment(newPayment, balance, optRecoverySet);
         return newPayment;
       });
     } catch (err) {
@@ -178,7 +211,7 @@ export const makePaymentLedger = (
       assertAmountConsistent(paymentBalance, optAmountShape);
       try {
         // COMMIT POINT.
-        paymentLedger.delete(payment);
+        deletePayment(payment);
       } catch (err) {
         shutdownLedgerWithFailure(err);
         throw err;
@@ -187,8 +220,11 @@ export const makePaymentLedger = (
     });
   };
 
-  /** @type {IssuerClaim} */
-  const claim = (paymentP, optAmountShape = undefined) => {
+  const claimInternal = (
+    paymentP,
+    optAmountShape = undefined,
+    optRecoverSet = undefined,
+  ) => {
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
@@ -197,10 +233,15 @@ export const makePaymentLedger = (
       const [payment] = moveAssets(
         harden([srcPayment]),
         harden([srcPaymentBalance]),
+        optRecoverSet,
       );
       return payment;
     });
   };
+
+  /** @type {IssuerClaim} */
+  const claim = (paymentP, optAmountShape = undefined) =>
+    claimInternal(paymentP, optAmountShape, undefined);
 
   /** @type {IssuerCombine} */
   const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
@@ -217,6 +258,7 @@ export const makePaymentLedger = (
       const [payment] = moveAssets(
         harden(fromPaymentsArray),
         harden([totalPaymentsBalance]),
+        undefined,
       );
       return payment;
     });
@@ -234,6 +276,7 @@ export const makePaymentLedger = (
       const newPayments = moveAssets(
         harden([srcPayment]),
         harden([paymentAmountA, paymentAmountB]),
+        undefined,
       );
       return newPayments;
     });
@@ -246,7 +289,11 @@ export const makePaymentLedger = (
       assertCopyArray(amounts, 'amounts');
       amounts = amounts.map(coerce);
       // Note COMMIT POINT within moveAssets.
-      const newPayments = moveAssets(harden([srcPayment]), harden(amounts));
+      const newPayments = moveAssets(
+        harden([srcPayment]),
+        harden(amounts),
+        undefined,
+      );
       return newPayments;
     });
   };
@@ -260,7 +307,7 @@ export const makePaymentLedger = (
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
     const payment = makePayment();
-    paymentLedger.init(payment, newAmount);
+    initPayment(payment, newAmount, undefined);
     return payment;
   };
 
@@ -275,7 +322,7 @@ export const makePaymentLedger = (
    * @param {Pattern=} optAmountShape
    * @returns {Amount}
    */
-  const deposit = (
+  const depositInternal = (
     currentBalance,
     updatePurseBalance,
     srcPayment,
@@ -294,7 +341,7 @@ export const makePaymentLedger = (
       // COMMIT POINT
       // Move the assets in `srcPayment` into this purse, using up the
       // source payment, such that total assets are conserved.
-      paymentLedger.delete(srcPayment);
+      deletePayment(srcPayment);
       updatePurseBalance(newPurseBalance);
     } catch (err) {
       shutdownLedgerWithFailure(err);
@@ -311,9 +358,15 @@ export const makePaymentLedger = (
    * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
    * commit the purse balance
    * @param {Amount} amount - the amount to be withdrawn
+   * @param {SetStore<Payment>} recoverySet
    * @returns {Payment}
    */
-  const withdraw = (currentBalance, updatePurseBalance, amount) => {
+  const withdrawInternal = (
+    currentBalance,
+    updatePurseBalance,
+    amount,
+    recoverySet,
+  ) => {
     amount = coerce(amount);
     assert(
       AmountMath.isGTE(currentBalance, amount),
@@ -326,7 +379,7 @@ export const makePaymentLedger = (
       // COMMIT POINT Move the withdrawn assets from this purse into
       // payment. Total assets must remain conserved.
       updatePurseBalance(newPurseBalance);
-      paymentLedger.init(payment, amount);
+      initPayment(payment, amount, recoverySet);
     } catch (err) {
       shutdownLedgerWithFailure(err);
       throw err;
@@ -335,8 +388,9 @@ export const makePaymentLedger = (
   };
 
   const purseMethods = {
-    deposit,
-    withdraw,
+    depositInternal,
+    withdrawInternal,
+    claimInternal,
   };
 
   const makeEmptyPurse = makePurseMaker(

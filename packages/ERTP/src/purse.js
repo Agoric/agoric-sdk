@@ -1,6 +1,8 @@
 import { makeNotifierKit } from '@agoric/notifier';
-import { defineKind } from '@agoric/vat-data';
+import { defineKind, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
+
+const { details: X } = assert;
 
 export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
   const updatePurseBalance = (state, newPurseBalance) => {
@@ -14,6 +16,7 @@ export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
   // - An alternative design considered was to have this return a Purse alone
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
+  const { depositInternal, withdrawInternal, claimInternal } = purseMethods;
   const makePurseKit = defineKind(
     allegedName,
     () => {
@@ -23,35 +26,59 @@ export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
       const { notifier: balanceNotifier, updater: balanceUpdater } =
         makeNotifierKit(currentBalance);
 
+      /** @type {SetStore<Payment>} */
+      const recoverySet = makeScalarBigSetStore('recovery set');
+
       return {
         currentBalance,
         balanceNotifier,
         balanceUpdater,
+        recoverySet,
       };
     },
     {
       purse: {
         deposit: ({ state }, srcPayment, optAmountShape = undefined) => {
           // Note COMMIT POINT within deposit.
-          return purseMethods.deposit(
+          return depositInternal(
             state.currentBalance,
             newPurseBalance => updatePurseBalance(state, newPurseBalance),
             srcPayment,
             optAmountShape,
+            state.recoverySet,
           );
         },
         withdraw: ({ state }, amount) =>
           // Note COMMIT POINT within withdraw.
-          purseMethods.withdraw(
+          withdrawInternal(
             state.currentBalance,
             newPurseBalance => updatePurseBalance(state, newPurseBalance),
             amount,
+            state.recoverySet,
           ),
         getCurrentAmount: ({ state }) => state.currentBalance,
         getCurrentAmountNotifier: ({ state }) => state.balanceNotifier,
         getAllegedBrand: () => brand,
         // eslint-disable-next-line no-use-before-define
         getDepositFacet: ({ facets }) => facets.depositFacet,
+
+        claim: ({ state }, paymentP, optAmountShape) =>
+          claimInternal(paymentP, optAmountShape, state.recoverySet),
+        getRecoverySet: ({ state }) => state.recoverySet.snapshot(),
+        recoverAll: ({ state, facets }) => {
+          let amount = AmountMath.makeEmpty(brand, assetKind);
+          for (const payment of state.recoverySet.keys()) {
+            // This does cause deletions from the set while iterating,
+            // but this special case is allowed.
+            const delta = facets.purse.deposit(payment);
+            amount = AmountMath.add(amount, delta, brand);
+          }
+          assert(
+            state.recoverySet.getSize() === 0,
+            X`internal: Remaining unrecovered payments: ${facets.purse.getRecoverySet()}`,
+          );
+          return amount;
+        },
       },
       depositFacet: {
         receive: ({ facets }, ...args) => facets.purse.deposit(...args),

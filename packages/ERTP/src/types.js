@@ -350,6 +350,24 @@
  *
  * @property {(amount: Amount) => Payment} withdraw
  * Withdraw amount from this purse into a new Payment.
+ *
+ * @property {IssuerClaim} claim
+ * Like `issuer.claim`, but also associates the new payment with this purse's
+ * recovery set, so the payment can be recovered in emergencies.
+ *
+ * @property {() => CopySet<Payment>} getRecoverySet
+ * The set of payments associated with this purse that are still live. These
+ * are the payments that can still be recovered in emergencies by, for example,
+ * depositing into this purse. Such a deposit action is like canceling an
+ * outstanding check because you're tired of waiting for it. Once your
+ * cancellation is acknowledged, ypu can spend the assets at stake on other
+ * things. Afterwards, if the recipient of the original check finally gets
+ * around to depositing it, their deposit fails.
+ *
+ * @property {() => Amount} recoverAll
+ * For use in emergencies, such as coming back from a traumatic crash and
+ * upgrade. This deposits all the payments in this purse's recovery set
+ * into the purse itself, returning the total amount of assets recovered.
  */
 
 /**

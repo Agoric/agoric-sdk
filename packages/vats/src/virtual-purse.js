@@ -6,6 +6,8 @@ import { isPromise } from '@endo/promise-kit';
 import '@agoric/ertp/exported.js';
 import '@agoric/notifier/exported.js';
 
+const { details: X } = assert;
+
 /**
  * @template T
  * @typedef {import('@endo/far').EOnly<T>} EOnly
@@ -142,6 +144,18 @@ function makeVirtualPurse(vpc, kit) {
         throw e;
       });
       return pmt;
+    },
+    claim: (_paymentP, _optAmountShape) => {
+      // TODO implement
+      assert.fail(X`virtual purses do not yet implement claim`);
+    },
+    getRecoverySet: () => {
+      // TODO implement
+      assert.fail(X`virtual purses do not yet implement getRecoverySet`);
+    },
+    recoverAll: () => {
+      // TODO implement
+      assert.fail(X`virtual purses do not yet implement recoverAll`);
     },
   });
   return purse;
