@@ -27,6 +27,11 @@
 /**
  * @typedef {Object} PriceAggregatorPublicFacet
  * @property {() => PriceAuthority} getPriceAuthority
+ * @property {() => Promise<Notifier<bigint> | undefined>} getRoundStartNotifier
+ * @property {() => Promise<Notifier<{
+ *   submitted: [OracleKey, bigint][],
+ *   authenticatedQuote: Payment<'set'>,
+ * }>>} getRoundCompleteNotifier
  */
 
 /**

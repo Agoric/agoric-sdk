@@ -433,6 +433,7 @@ const start = async zcf => {
     },
   });
 
+  /** @type {PriceAggregatorPublicFacet} */
   const publicFacet = Far('publicFacet', {
     getPriceAuthority() {
       return priceAuthority;
