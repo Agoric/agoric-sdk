@@ -979,7 +979,6 @@ test('interest on multiple vaults', async t => {
     ),
     run.make(3200n + bobAddedDebt),
   );
-  t.deepEqual(bobUpdate.value.interestRate, rates.interestRate);
 
   // 236 is the initial fee. Interest is ~4n/week
   const aliceAddedDebt = 236n + 4n;
@@ -997,7 +996,6 @@ test('interest on multiple vaults', async t => {
     debt: run.make(4935n),
     interest: makeRatio(100n, run.brand, 100n),
   });
-  t.deepEqual(aliceUpdate.value.interestRate, rates.interestRate);
 
   const rewardAllocation = await E(vaultFactory).getRewardAllocation();
   const rewardRunCount = aliceAddedDebt + bobAddedDebt;

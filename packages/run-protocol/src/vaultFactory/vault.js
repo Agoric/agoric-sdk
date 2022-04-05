@@ -70,7 +70,6 @@ const validTransitions = {
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{debt: Amount<'nat'>, interest: Ratio}} debtSnapshot 'debt' at the point the compounded interest was 'interest'
- * @property {Ratio} interestRate Annual interest rate charge
  * @property {HolderPhase} vaultState
  */
 
@@ -309,8 +308,6 @@ const helperBehavior = {
     const { debtSnapshot: debt, interestSnapshot: interest } = state;
     /** @type {VaultNotification} */
     return harden({
-      // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
-      interestRate: state.manager.getGovernedParams().getInterestRate(),
       debtSnapshot: { debt, interest },
       locked: facets.self.getCollateralAmount(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
