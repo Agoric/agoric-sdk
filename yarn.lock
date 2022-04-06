@@ -13479,10 +13479,10 @@ node-libs-browser@^2.2.1:
     util "^0.11.0"
     vm-browserify "^1.0.1"
 
-node-lmdb@^0.9.7:
-  version "0.9.7"
-  resolved "https://registry.yarnpkg.com/node-lmdb/-/node-lmdb-0.9.7.tgz#f518be2fd5922f445f9d11537753a5e938f1c5a1"
-  integrity sha512-RyYSB3kTByjp1yCKE474yuoBxi/+8kKvjYFOVuDBVoS31D6JvzjwMgNnQrMwoHSbZ6RwucW7jmF93Cm9ltziJQ==
+node-lmdb@^0.9.5:
+  version "0.9.5"
+  resolved "https://registry.yarnpkg.com/node-lmdb/-/node-lmdb-0.9.5.tgz#8360b90f288a4445d8f10dad202f61390b1db56c"
+  integrity sha512-NvRoe7nU0qNuKJuIiyJ38T2H2kj8nJumY36envJFwFEOIs4+uff21dtLJaR9ExuOVh03Xqdl0wvvuYfDwKjT5g==
   dependencies:
     nan "^2.14.1"
     node-gyp-build "^4.2.3"
@@ -18563,7 +18563,7 @@ v8-compile-cache@^2.0.3:
   resolved "https://registry.yarnpkg.com/v8-compile-cache/-/v8-compile-cache-2.1.0.tgz#e14de37b31a6d194f5690d67efc4e7f6fc6ab30e"
   integrity sha512-usZBT3PW+LOjM25wbqIlZwPeJV+3OSz3M1k1Ws8snlW39dZyYL9lOGC5FgPVHfk0jKmjiDV8Z0mIbVQPiwFs7g==
 
-v8-to-istanbul@^7.0.0:
+v8-to-istanbul@^7.0.0, v8-to-istanbul@^7.1.0:
   version "7.1.2"
   resolved "https://registry.yarnpkg.com/v8-to-istanbul/-/v8-to-istanbul-7.1.2.tgz#30898d1a7fa0c84d225a2c1434fb958f290883c1"
   integrity sha512-TxNb7YEUwkLXCQYeudi6lgQ/SZrzNO4kMdlqVxaZPUIUjCv6iSSypUQX70kNBSERpQ8fk48+d61FXk+tgqcWow==
