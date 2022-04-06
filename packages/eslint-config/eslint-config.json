@@ -1,8 +1,5 @@
 {
-  "extends": [
-    "@endo",
-    "plugin:@jessie.js/recommended"
-  ],
+  "extends": ["@endo", "plugin:@jessie.js/recommended"],
   "rules": {
     "jsdoc/no-multi-asterisks": "off",
     "jsdoc/multiline-blocks": "off",

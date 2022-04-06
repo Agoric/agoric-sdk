@@ -5,7 +5,7 @@
     "module": "esnext",
 
     "noEmit": true,
-/*
+    /*
     // The following flags are for creating .d.ts files:
     "noEmit": false,
     "declaration": true,
@@ -14,7 +14,7 @@
     "downlevelIteration": true,
     "strictNullChecks": true,
     "moduleResolution": "node",
-    "jsx": "react",
+    "jsx": "react"
   },
-  "include": ["src/**/*.js", "src/**/*.jsx", "test/**/*.js", "exported.js"],
+  "include": ["src/**/*.js", "src/**/*.jsx", "test/**/*.js", "exported.js"]
 }

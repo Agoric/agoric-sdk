@@ -5,7 +5,7 @@
     "module": "esnext",
 
     "noEmit": true,
-/*
+    /*
     // The following flags are for creating .d.ts files:
     "noEmit": false,
     "declaration": true,
@@ -13,9 +13,14 @@
 */
     "downlevelIteration": true,
     "strictNullChecks": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node"
   },
   // To include tests, change to:
-  //  "include": ["src/**/*.js", "exported.js", "tools/**/*.js", "test/**/*.js"], 
-  "include": ["src/**/*.js", "exported.js", "tools/**/*.js", "src/zoeService/types.d.ts"],
+  //  "include": ["src/**/*.js", "exported.js", "tools/**/*.js", "test/**/*.js"],
+  "include": [
+    "src/**/*.js",
+    "exported.js",
+    "tools/**/*.js",
+    "src/zoeService/types.d.ts"
+  ]
 }
