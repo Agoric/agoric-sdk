@@ -41,8 +41,8 @@ const { details: X } = assert;
 
 /**
  * @param {ZCF<GovernanceTerms<{}> & {
- *   ammPublicFacet: unknown,
- *   liquidationInstall: unknown,
+ *   ammPublicFacet: AutoswapPublicFacet,
+ *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>}>} zcf
@@ -80,6 +80,7 @@ export const start = async (zcf, privateArgs) => {
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
+  const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
    * We provide an easy way for the vaultManager to add rewards to
@@ -164,6 +165,7 @@ export const start = async (zcf, privateArgs) => {
       burnDebt,
       timerService,
       liquidationStrategy,
+      penaltyPoolSeat,
       startTimeStamp,
     );
     collateralTypes.init(collateralBrand, vm);
@@ -218,10 +220,6 @@ export const start = async (zcf, privateArgs) => {
     );
   };
 
-  // Eventually the reward pool will live elsewhere. For now it's here for
-  // bookkeeping. It's needed in tests.
-  const getRewardAllocation = () => rewardPoolSeat.getCurrentAllocation();
-
   // TODO use named getters of TypedParamManager
   const getGovernedParams = paramDesc => {
     return vaultParamManagers.get(paramDesc.collateralBrand).getParams();
@@ -275,9 +273,12 @@ export const start = async (zcf, privateArgs) => {
     // TODO move this under governance #3972
     addVaultType,
     getCollaterals,
-    getRewardAllocation,
     makeCollectFeesInvitation,
     getContractGovernor: () => electionManager,
+
+    // XXX accessors for tests
+    getRewardAllocation: rewardPoolSeat.getCurrentAllocation,
+    getPenaltyAllocation: penaltyPoolSeat.getCurrentAllocation,
   });
 
   const vaultFactoryWrapper = Far('powerful vaultFactory wrapper', {

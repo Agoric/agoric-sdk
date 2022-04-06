@@ -75,14 +75,24 @@ export const showAmount = ({ brand, value }) => {
   return `${decimal(value, DecimalPlaces[b])} ${b}`;
 };
 
+const defaultConfig = /** @type {const} */ ({
+  collateralValue: 1_000_000n,
+  initialMargin: [150n, PCT],
+  liquidationMargin: [125n, PCT],
+  liquidationPenalty: [10n, PCT],
+  interestRate: [250n, BASIS],
+  loanFee: [1n, BASIS],
+});
+
 /**
- * @typedef {[bigint, bigint]} Rational
+ * @typedef {readonly [bigint, bigint]} Rational
  *
  * @type { Record<string, {
  *   config?: {
  *     collateralValue: bigint,
  *     initialMargin: Rational,
  *     liquidationMargin: Rational,
+ *     liquidationPenalty: Rational,
  *     interestRate: Rational,
  *     loanFee: Rational,
  *   },
@@ -93,11 +103,8 @@ export const AMMDemoState = {
   // TODO: getRUN makes BLD obsolete here
   BLD: {
     config: {
+      ...defaultConfig,
       collateralValue: 20_000_000n,
-      initialMargin: [150n, PCT],
-      liquidationMargin: [125n, PCT],
-      interestRate: [250n, BASIS],
-      loanFee: [1n, BASIS],
     },
     trades: [
       { central: 1.23, collateral: 1n },
@@ -108,13 +115,7 @@ export const AMMDemoState = {
 
   /* We actually can IBC-transfer Atoms via Pegasus right now. */
   ATOM: {
-    config: {
-      collateralValue: 1_000_000n,
-      initialMargin: [150n, PCT],
-      liquidationMargin: [125n, PCT],
-      interestRate: [250n, BASIS],
-      loanFee: [1n, BASIS],
-    },
+    config: defaultConfig,
     trades: [
       { central: 33.28, collateral: 1n },
       { central: 34.61, collateral: 1n },
@@ -123,13 +124,7 @@ export const AMMDemoState = {
   },
 
   WETH: {
-    config: {
-      collateralValue: 1_000_000n,
-      initialMargin: [150n, PCT],
-      liquidationMargin: [125n, PCT],
-      interestRate: [250n, BASIS],
-      loanFee: [1n, BASIS],
-    },
+    config: defaultConfig,
     trades: [
       { central: 3286.01, collateral: 1n },
       { central: 3435.86, collateral: 1n },
@@ -138,13 +133,7 @@ export const AMMDemoState = {
   },
 
   LINK: {
-    config: {
-      collateralValue: 1_000_000n,
-      initialMargin: [150n, PCT],
-      liquidationMargin: [125n, PCT],
-      interestRate: [250n, BASIS],
-      loanFee: [1n, BASIS],
-    },
+    config: defaultConfig,
     trades: [
       { central: 26.9, collateral: 1n },
       { central: 30.59, collateral: 1n },
@@ -154,11 +143,8 @@ export const AMMDemoState = {
 
   USDC: {
     config: {
+      ...defaultConfig,
       collateralValue: 10_000_000n,
-      initialMargin: [150n, PCT],
-      liquidationMargin: [125n, PCT],
-      interestRate: [250n, BASIS],
-      loanFee: [1n, BASIS],
     },
     trades: [{ central: 1, collateral: 1n }],
   },
@@ -455,6 +441,7 @@ export const poolRates = (issuerName, record, kits, central) => {
     ),
     initialMargin: toRatio(config.initialMargin, central.brand),
     liquidationMargin: toRatio(config.liquidationMargin, central.brand),
+    liquidationPenalty: toRatio(config.liquidationPenalty, central.brand),
     interestRate: toRatio(config.interestRate, central.brand),
     loanFee: toRatio(config.loanFee, central.brand),
   };

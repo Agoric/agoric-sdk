@@ -57,6 +57,7 @@ const makeRates = debtBrand => {
   return {
     debtLimit: AmountMath.make(debtBrand, 1_000_000n),
     liquidationMargin: makeRatio(105n, debtBrand),
+    liquidationPenalty: makeRatio(10n, debtBrand, 100n, debtBrand),
     interestRate: makeRatio(250n, debtBrand, BASIS_POINTS),
     loanFee: makeRatio(200n, debtBrand, BASIS_POINTS),
   };
