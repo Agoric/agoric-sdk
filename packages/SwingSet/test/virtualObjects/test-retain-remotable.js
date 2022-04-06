@@ -60,21 +60,13 @@ test('remotables retained by virtualized data', async t => {
   const { makeScalarBigWeakMapStore } = cm;
   const weakStore = makeScalarBigWeakMapStore('ws');
   // empty object, used as weak map store key
-  const makeKey = defineKind(
-    'key',
-    () => ({}),
-    _state => ({}),
-  );
-  const makeHolder = defineKind(
-    'holder',
-    held => ({ held }),
-    state => ({
-      setHeld: held => {
-        state.held = held;
-      },
-      getHeld: () => state.held,
-    }),
-  );
+  const makeKey = defineKind('key', () => ({}), {});
+  const makeHolder = defineKind('holder', held => ({ held }), {
+    setHeld: ({ state }, held) => {
+      state.held = held;
+    },
+    getHeld: ({ state }) => state.held,
+  });
 
   // create a Remotable and assign it a vref, then drop it, to make sure the
   // fake VOM isn't holding onto a strong reference, which would cause a

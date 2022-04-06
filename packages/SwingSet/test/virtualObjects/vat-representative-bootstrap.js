@@ -6,12 +6,12 @@ const makeThing = defineKind(
   name => {
     return { name };
   },
-  state => ({
-    getName: () => state.name,
-    rename: newName => {
+  {
+    getName: ({ state }) => state.name,
+    rename: ({ state }, newName) => {
       state.name = newName;
     },
-  }),
+  },
 );
 
 export function buildRootObject() {

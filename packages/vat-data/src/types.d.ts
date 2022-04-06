@@ -5,14 +5,27 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
+import { Context } from 'vm';
+
+type Tail<T extends any[]> = T extends [head: any, ...tail: infer Tail_]
+  ? Tail_
+  : never;
+
+type MinusContext<
+  F extends (context, ...rest: any[]) => any,
+  P extends any[] = Parameters<F>, // P: are the parameters of F
+  R = ReturnType<F>, // R: the return type of F
+> = (...args: Tail<P>) => R;
+
+type FunctionsMinusContext<O> = { [K in keyof O]: MinusContext<O[K]> };
 
 interface KindDefiner {
-  <P, S, K>(
+  <P, S, B>(
     tag: string,
     init: (...args: P) => S,
-    actualize: (state: S) => K,
+    behavior: B,
     finish?: () => void,
-  ): (...args: P) => K;
+  ): (...args: P) => { [Facet in keyof B]: FunctionsMinusContext<B[Facet]> };
 }
 
 export type VatData = {

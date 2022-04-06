@@ -3,21 +3,13 @@ import { Far } from '@endo/marshal';
 import { defineKind } from '@agoric/vat-data';
 
 export function buildRootObject(_vatPowers) {
-  const makeThing = defineKind(
-    'thing',
-    label => ({ label }),
-    state => ({
-      getLabel: () => state.label,
-    }),
-  );
+  const makeThing = defineKind('thing', label => ({ label }), {
+    getLabel: ({ state }) => state.label,
+  });
 
-  const makeVirtualHolder = defineKind(
-    'holder',
-    value => ({ value }),
-    state => ({
-      getValue: () => state.value,
-    }),
-  );
+  const makeVirtualHolder = defineKind('holder', value => ({ value }), {
+    getValue: ({ state }) => state.value,
+  });
 
   const cacheDisplacer = makeThing('cacheDisplacer');
   let nextThingNumber = 0;

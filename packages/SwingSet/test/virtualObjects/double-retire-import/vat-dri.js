@@ -6,17 +6,15 @@ const { defineKind } = VatData;
 function initialize(arg) {
   return harden({ arg });
 }
-function actualize(state) {
-  return {
-    get() {
-      return state.arg;
-    },
-    set(arg) {
-      state.arg = harden(arg);
-    },
-  };
-}
-const makeVir = defineKind('virtual', initialize, actualize);
+const behavior = {
+  get({ state }) {
+    return state.arg;
+  },
+  set({ state }, arg) {
+    state.arg = harden(arg);
+  },
+};
+const makeVir = defineKind('virtual', initialize, behavior);
 
 function buildVirtuals(sensor0, sensor1) {
   // eslint-disable-next-line no-unused-vars

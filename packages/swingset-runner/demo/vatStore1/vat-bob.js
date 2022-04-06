@@ -9,29 +9,29 @@ const makeThing = defineKind(
     p(`@@@ thing.initialize(${label}, ${counter})`);
     return { counter, label, resetCounter: 0 };
   },
-  state => ({
-    inc() {
+  {
+    inc({ state }) {
       state.counter += 1;
       p(`#thing# ${state.label} inc() counter now ${state.counter}`);
     },
-    reset(newStart) {
+    reset({ state }, newStart) {
       p(`#thing# ${state.label} reset(${newStart})`);
       state.counter = newStart;
       state.resetCounter += 1;
     },
-    relabel(newLabel) {
+    relabel({ state }, newLabel) {
       p(`#thing# ${state.label} relabel(${newLabel})`);
       state.label = newLabel;
     },
-    get() {
+    get({ state }) {
       p(`#thing# ${state.label} get()=>${state.counter}`);
       return state.counter;
     },
-    describe() {
+    describe({ state }) {
       p(`#thing# ${state.label} describe()`);
       return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
     },
-  }),
+  },
 );
 
 const makeZot = defineKind(
@@ -40,22 +40,22 @@ const makeZot = defineKind(
     p(`@@@ zot.initialize(${arbitrary}, ${name}, ${tag})`);
     return { arbitrary, name, tag, count: 0 };
   },
-  state => ({
-    sayHello(msg) {
+  {
+    sayHello({ state }, msg) {
       p(`#zot# ${msg} ${state.name}`);
       state.count += 1;
     },
-    rename(newName) {
+    rename({ state }, newName) {
       p(`#zot# ${state.name} rename(${newName})`);
       state.name = newName;
       state.count += 1;
     },
-    printInfo() {
+    printInfo({ state }) {
       // prettier-ignore
       p(`#zot# ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`);
       state.count += 1;
     },
-  }),
+  },
 );
 
 export function buildRootObject(_vatPowers) {

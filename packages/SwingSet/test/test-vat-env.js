@@ -8,17 +8,17 @@ test('harden from SES is in the test environment', t => {
   t.pass();
 });
 
-const actualizeThing = _state => ({
+const thingBehavior = {
   ping: () => 4,
-});
+};
 
 test('kind makers are in the test environment', t => {
-  const makeVThing = VatData.defineKind('thing', null, actualizeThing);
+  const makeVThing = VatData.defineKind('thing', null, thingBehavior);
   const vthing = makeVThing('vthing');
   t.is(vthing.ping(), 4);
 
   const kind = VatData.makeKindHandle('thing');
-  const makeDThing = VatData.defineDurableKind(kind, null, actualizeThing);
+  const makeDThing = VatData.defineDurableKind(kind, null, thingBehavior);
   const dthing = makeDThing('dthing');
   t.is(dthing.ping(), 4);
 });
