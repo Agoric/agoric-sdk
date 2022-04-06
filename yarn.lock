@@ -5869,21 +5869,21 @@ bytes@3.1.0:
   resolved "https://registry.yarnpkg.com/bytes/-/bytes-3.1.0.tgz#f6cf7933a360e0588fa9fde85651cdc7f805d1f6"
   integrity sha512-zauLjrfCG+xvoyaqLoV8bLVXXNGC4JqlxFCutSDWA6fJrTo2ZuvLYTqZ7aHBLZSMOopbzwv8f+wZcVzfVTI2Dg==
 
-c8@^7.7.2:
-  version "7.7.2"
-  resolved "https://registry.yarnpkg.com/c8/-/c8-7.7.2.tgz#30ff37b8125d96cab3eb065895a0b68dbc495a0f"
-  integrity sha512-8AqNnUMxB3hsgYCYso2GJjlwnaNPlrEEbYbCQb7N76V1nrOgCKXiTcE3gXU18rIj0FeduPywROrIBMC7XAKApg==
+c8@^7.11.0, c8@^7.7.2:
+  version "7.11.0"
+  resolved "https://registry.yarnpkg.com/c8/-/c8-7.11.0.tgz#b3ab4e9e03295a102c47ce11d4ef6d735d9a9ac9"
+  integrity sha512-XqPyj1uvlHMr+Y1IeRndC2X5P7iJzJlEJwBpCdBbq2JocXOgJfr+JVfJkyNMGROke5LfKrhSFXGFXnwnRJAUJw==
   dependencies:
     "@bcoe/v8-coverage" "^0.2.3"
     "@istanbuljs/schema" "^0.1.2"
     find-up "^5.0.0"
     foreground-child "^2.0.0"
-    istanbul-lib-coverage "^3.0.0"
+    istanbul-lib-coverage "^3.0.1"
     istanbul-lib-report "^3.0.0"
     istanbul-reports "^3.0.2"
     rimraf "^3.0.0"
     test-exclude "^6.0.0"
-    v8-to-istanbul "^7.1.0"
+    v8-to-istanbul "^8.0.0"
     yargs "^16.2.0"
     yargs-parser "^20.2.7"
 
@@ -11071,7 +11071,7 @@ isstream@~0.1.2:
   resolved "https://registry.yarnpkg.com/isstream/-/isstream-0.1.2.tgz#47e63f7af55afa6f92e1500e690eb8b8529c099a"
   integrity sha1-R+Y/evVa+m+S4VAOaQ64uFKcCZo=
 
-istanbul-lib-coverage@^3.0.0, istanbul-lib-coverage@^3.2.0:
+istanbul-lib-coverage@^3.0.0, istanbul-lib-coverage@^3.0.1, istanbul-lib-coverage@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/istanbul-lib-coverage/-/istanbul-lib-coverage-3.2.0.tgz#189e7909d0a39fa5a3dfad5b03f71947770191d3"
   integrity sha512-eOeJ5BHCmHYvQK7xt9GkdHuzuCGS1Y6g9Gvnx3Ym33fz/HpLRYxiS0wHNr+m/MBC8B647Xt608vCDEvhl9c6Mw==
