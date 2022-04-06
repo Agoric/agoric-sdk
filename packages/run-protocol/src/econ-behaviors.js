@@ -34,7 +34,6 @@ const CENTRAL_DENOM_NAME = 'urun';
  * Each of the things they produce they're responsible for resolving or setting.
  *
  * In production called by @agoric/vats to bootstrap.
- * In testing called by differenty.
  */
 
 /**

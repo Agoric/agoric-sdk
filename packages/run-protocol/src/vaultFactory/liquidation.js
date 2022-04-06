@@ -4,7 +4,7 @@
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import {
-  floorMultiplyBy,
+  ceilMultiplyBy,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';
@@ -17,8 +17,7 @@ const trace = makeTracer('LIQ');
  * @param {Amount<'nat'>} penaltyPortion
  */
 const partitionProceeds = (proceeds, debt, penaltyPortion) => {
-  const isShortfall = !AmountMath.isGTE(proceeds, debt);
-  const debtPaid = isShortfall ? proceeds : debt;
+  const debtPaid = AmountMath.min(proceeds, debt);
 
   // Pay as much of the penalty as possible
   const penaltyProceeds = AmountMath.min(penaltyPortion, debtPaid);
@@ -58,7 +57,7 @@ const liquidate = async (
   innerVault.liquidating();
 
   const debtBeforePenalty = innerVault.getCurrentDebt();
-  const penalty = floorMultiplyBy(debtBeforePenalty, penaltyRate);
+  const penalty = ceilMultiplyBy(debtBeforePenalty, penaltyRate);
 
   const debt = AmountMath.add(debtBeforePenalty, penalty);
 

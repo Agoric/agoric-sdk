@@ -458,12 +458,12 @@ test('first', async t => {
   t.is((await E(vault).getCurrentDebt()).value, 0n, 'debt is paid off');
   t.deepEqual(
     await E(vault).getCollateralAmount(),
-    AmountMath.make(aethBrand, 445n),
+    AmountMath.make(aethBrand, 440n),
     'unused collateral remains after liquidation',
   );
 
   t.deepEqual(await E(vaultFactory).getPenaltyAllocation(), {
-    RUN: AmountMath.make(runBrand, 29n),
+    RUN: AmountMath.make(runBrand, 30n),
   });
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 24n),
@@ -592,7 +592,7 @@ test('price drop', async t => {
   const finalNotification = await E(vaultNotifier).getUpdateSince();
   t.is(finalNotification.value.vaultState, Phase.LIQUIDATED);
   t.deepEqual(finalNotification.value.locked, AmountMath.make(aethBrand, 2n));
-  t.is(debtAmountAfter.value, 29n);
+  t.is(debtAmountAfter.value, 30n);
 
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     RUN: AmountMath.make(runBrand, 14n),
@@ -737,7 +737,7 @@ test('price falls precipitously', async t => {
   const debtAfterLiquidation = await E(vault).getCurrentDebt();
   t.is(
     debtAfterLiquidation.value,
-    102n,
+    103n,
     `Expected ${debtAfterLiquidation.value} to be less than 110`,
   );
 
