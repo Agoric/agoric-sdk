@@ -38,6 +38,24 @@ const trace = makeTracer('VM');
  * }} AssetState */
 
 /**
+ * @typedef {Readonly<{
+ * debtBrand: Brand<'nat'>,
+ * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
+ * }>} ImmutableState
+ */
+
+/**
+ * @typedef {{
+ * vaultCounter: number,
+ * liquidationInProgress: boolean,
+ * outstandingQuote?: MutableQuote,
+ * totalDebt: Amount<'nat'>,
+ * compoundedInterest: Ratio,
+ * latestInterestUpdate: bigint,
+ * }} MutableState
+ */
+
+/**
  * Each VaultManager manages a single collateral type.
  *
  * It manages some number of outstanding loans, each called a Vault, for which
@@ -79,8 +97,23 @@ export const makeVaultManager = (
   penaltyPoolSeat,
   startTimeStamp,
 ) => {
-  /** @type {{brand: Brand<'nat'>}} */
-  const { brand: debtBrand } = debtMint.getIssuerRecord();
+  const { brand: debtBrandInit } = debtMint.getIssuerRecord();
+  /** @type {MutableState & ImmutableState} */
+  const state = {
+    debtBrand: debtBrandInit,
+    vaultCounter: 0,
+    liquidationInProgress: false,
+    /**
+     * A store for vaultKits prioritized by their collaterization ratio.
+     */
+    prioritizedVaults: makePrioritizedVaults(),
+    totalDebt: AmountMath.makeEmpty(debtBrandInit, 'nat'),
+    compoundedInterest: makeRatio(100n, debtBrandInit), // starts at 1.0, no interest
+    /**
+     * timestamp of most recent update to interest
+     */
+    latestInterestUpdate: startTimeStamp,
+  };
 
   /** @type {GetVaultParams} */
   const shared = {
@@ -88,6 +121,7 @@ export const makeVaultManager = (
     getChargingPeriod: () => timingParams[CHARGING_PERIOD_KEY].value,
     getRecordingPeriod: () => timingParams[RECORDING_PERIOD_KEY].value,
     async getCollateralQuote() {
+      const { debtBrand } = state;
       // get a quote for one unit of the collateral
       const displayInfo = await E(collateralBrand).getDisplayInfo();
       const decimalPlaces = displayInfo?.decimalPlaces || 0n;
@@ -98,36 +132,12 @@ export const makeVaultManager = (
     },
   };
 
-  let vaultCounter = 0;
-  let liquidationInProgress = false;
-
-  /**
-   * A store for vaultKits prioritized by their collaterization ratio.
-   *
-   * @type {ReturnType<typeof makePrioritizedVaults>}
-   */
-  const prioritizedVaults = makePrioritizedVaults();
-
-  /** @type {MutableQuote=} */
-  let outstandingQuote;
-  /** @type {Amount<'nat'>} */
-  let totalDebt = AmountMath.makeEmpty(debtBrand, 'nat');
-  /** @type {Ratio}} */
-  let compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
-
-  /**
-   * timestamp of most recent update to interest
-   *
-   * @type {bigint}
-   */
-  let latestInterestUpdate = startTimeStamp;
-
   const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
     harden({
-      compoundedInterest,
+      compoundedInterest: state.compoundedInterest,
       interestRate: shared.getInterestRate(),
-      latestInterestUpdate,
-      totalDebt,
+      latestInterestUpdate: state.latestInterestUpdate,
+      totalDebt: state.totalDebt,
     }),
   );
 
@@ -136,8 +146,9 @@ export const makeVaultManager = (
    * @param {[key: string, vaultKit: InnerVault]} record
    */
   const liquidateAndRemove = ([key, vault]) => {
+    const { prioritizedVaults } = state;
     trace('liquidating', vault.getVaultSeat().getProposal());
-    liquidationInProgress = true;
+    state.liquidationInProgress = true;
 
     // Start liquidation (vaultState: LIQUIDATING)
     return liquidate(
@@ -151,10 +162,10 @@ export const makeVaultManager = (
     )
       .then(() => {
         prioritizedVaults?.removeVault(key);
-        liquidationInProgress = false;
+        state.liquidationInProgress = false;
       })
       .catch(e => {
-        liquidationInProgress = false;
+        state.liquidationInProgress = false;
         // XXX should notify interested parties
         console.error('liquidateAndRemove failed with', e);
       });
@@ -173,6 +184,8 @@ export const makeVaultManager = (
    * level.
    */
   const reschedulePriceCheck = async () => {
+    const { outstandingQuote } = state;
+    const { liquidationInProgress, prioritizedVaults } = state;
     const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -212,12 +225,12 @@ export const makeVaultManager = (
     // relatively quickly from the PriceAuthority. The second schedules a
     // callback that may not fire until much later.
     // Callers shouldn't expect a response from this function.
-    outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
+    state.outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
       highestDebtRatio.denominator, // collateral
       triggerPoint,
     );
 
-    const quote = await E(outstandingQuote).getPromise();
+    const quote = await E(state.outstandingQuote).getPromise();
     // When we receive a quote, we liquidate all the vaults that don't have
     // sufficient collateral, (even if the trigger was set for a different
     // level) because we use the actual price ratio plus margin here. Use
@@ -227,7 +240,7 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
-    outstandingQuote = undefined;
+    state.outstandingQuote = undefined;
 
     // Liquidate the head of the queue
     const [next] =
@@ -236,13 +249,14 @@ export const makeVaultManager = (
 
     reschedulePriceCheck();
   };
-  prioritizedVaults.setRescheduler(reschedulePriceCheck);
+  state.prioritizedVaults.setRescheduler(reschedulePriceCheck);
 
   /**
    * In extreme situations, system health may require liquidating all vaults.
    * This starts the liquidations all in parallel.
    */
   const liquidateAll = async () => {
+    const { prioritizedVaults } = state;
     const toLiquidate = Array.from(prioritizedVaults.entries()).map(
       liquidateAndRemove,
     );
@@ -258,8 +272,9 @@ export const makeVaultManager = (
     trace('chargeAllVaults', { updateTime });
     const interestRate = shared.getInterestRate();
 
-    // Update local state with the results of charging interest
-    ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
+    // Update state with the results of charging interest
+
+    const stateUpdates = chargeInterest(
       {
         mint: debtMint,
         mintAndReallocateWithFee,
@@ -271,16 +286,22 @@ export const makeVaultManager = (
         chargingPeriod: shared.getChargingPeriod(),
         recordingPeriod: shared.getRecordingPeriod(),
       },
-      { latestInterestUpdate, compoundedInterest, totalDebt },
+      // TODO make something like _.pick
+      {
+        latestInterestUpdate: state.latestInterestUpdate,
+        compoundedInterest: state.compoundedInterest,
+        totalDebt: state.totalDebt,
+      },
       updateTime,
-    ));
+    );
+    Object.assign(state, stateUpdates);
 
     /** @type {AssetState} */
     const payload = harden({
-      compoundedInterest,
+      compoundedInterest: state.compoundedInterest,
       interestRate,
-      latestInterestUpdate,
-      totalDebt,
+      latestInterestUpdate: state.latestInterestUpdate,
+      totalDebt: state.totalDebt,
     });
     assetUpdater.updateState(payload);
 
@@ -294,6 +315,7 @@ export const makeVaultManager = (
    * @throws if minting would exceed total debt
    */
   const checkDebtLimit = toMint => {
+    const { totalDebt } = state;
     const debtPost = AmountMath.add(totalDebt, toMint);
     const limit = loanParamGetters.getDebtLimit();
     if (AmountMath.isGTE(debtPost, limit)) {
@@ -302,6 +324,7 @@ export const makeVaultManager = (
   };
 
   const maxDebtFor = async collateralAmount => {
+    const { debtBrand } = state;
     const quoteAmount = await E(priceAuthority).quoteGiven(
       collateralAmount,
       debtBrand,
@@ -319,6 +342,7 @@ export const makeVaultManager = (
    * @param {VaultId} vaultId
    */
   const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {
+    const { prioritizedVaults, totalDebt } = state;
     prioritizedVaults.refreshVaultPriority(oldDebt, oldCollateral, vaultId);
     trace('updateVaultPriority complete', { totalDebt });
   };
@@ -352,12 +376,12 @@ export const makeVaultManager = (
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
     checkDebtLimit(toMint);
     mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
-    totalDebt = AmountMath.add(totalDebt, toMint);
+    state.totalDebt = AmountMath.add(state.totalDebt, toMint);
   };
 
   const burnAndRecord = (toBurn, seat) => {
     burnDebt(toBurn, seat);
-    totalDebt = AmountMath.subtract(totalDebt, toBurn);
+    state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
     // TODO signal updater?
   };
 
@@ -369,20 +393,21 @@ export const makeVaultManager = (
     burnAndRecord,
     getNotifier: () => assetNotifer,
     getCollateralBrand: () => collateralBrand,
-    getDebtBrand: () => debtBrand,
-    getCompoundedInterest: () => compoundedInterest,
+    getDebtBrand: () => state.debtBrand,
+    getCompoundedInterest: () => state.compoundedInterest,
     updateVaultPriority,
   });
 
   /** @param {ZCFSeat} seat */
   const makeVaultKit = async seat => {
+    const { prioritizedVaults } = state;
     assertProposalShape(seat, {
       give: { Collateral: null },
       want: { RUN: null },
     });
 
-    vaultCounter += 1;
-    const vaultId = String(vaultCounter);
+    state.vaultCounter += 1;
+    const vaultId = String(state.vaultCounter);
 
     const innerVault = makeInnerVault(zcf, managerFacet, vaultId);
 
@@ -406,7 +431,7 @@ export const makeVaultManager = (
   const publicFacet = Far('collateral manager', {
     makeVaultInvitation: () => zcf.makeInvitation(makeVaultKit, 'MakeVault'),
     getNotifier: () => assetNotifer,
-    getCompoundedInterest: () => compoundedInterest,
+    getCompoundedInterest: () => state.compoundedInterest,
   });
 
   return Far('vault manager', {
