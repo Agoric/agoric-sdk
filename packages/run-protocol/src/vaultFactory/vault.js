@@ -314,7 +314,11 @@ const helperBehavior = {
     });
   },
 
-  // call this whenever anything changes!
+  /**
+   * call this whenever anything changes!
+   *
+   * @param {MethodContext} context
+   */
   updateUiState: ({ state, facets }) => {
     const { outerUpdater } = state;
     if (!outerUpdater) {
@@ -502,6 +506,9 @@ const helperBehavior = {
 };
 
 const selfBehavior = {
+  /**
+   * @param {MethodContext} context
+   */
   getVaultSeat: ({ state }) => state.vaultSeat,
 
   /**
@@ -584,6 +591,9 @@ const selfBehavior = {
     helper.updateUiState();
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   makeAdjustBalancesInvitation: ({ state, facets }) => {
     const { helper } = facets;
     helper.assertActive();
@@ -593,12 +603,18 @@ const selfBehavior = {
     );
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   makeCloseInvitation: ({ state, facets }) => {
     const { helper } = facets;
     helper.assertCloseable();
     return state.zcf.makeInvitation(helper.closeHook, 'CloseVault');
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   makeTransferInvitation: ({ state, facets }) => {
     const { self, helper } = facets;
     // Bring the debt snapshot current for the final report before transfer
@@ -691,9 +707,5 @@ const makeInnerVaultBase = defineKind('InnerVault', initState, {
  */
 export const makeInnerVault = (zcf, manager, idInManager) =>
   makeInnerVaultBase(zcf, manager, idInManager).self;
-
-// @ts-expect-error
-const v = makeInnerVault();
-v.liquidating();
 
 /** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
