@@ -7,7 +7,9 @@ import { makeOfferAndFindInvitationAmount } from './offer.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeDepositInvitation } from './depositInvitation.js';
 import { makeSaveIssuer } from './saveIssuer.js';
+import { makeGetBundlerMaker } from './getBundlerMaker.js';
 import { assertOfferResult } from './assertOfferResult.js';
+import { installInPieces } from './installInPieces.js';
 
 // These are also hard-coded in lib-wallet.js.
 // TODO: Add methods to the wallet to access these without hard-coding
@@ -15,7 +17,9 @@ import { assertOfferResult } from './assertOfferResult.js';
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
 export const makeHelpers = async (homePromise, endowments) => {
-  const { zoe, wallet, board } = E.get(homePromise);
+  const { zoe, wallet, scratch, board } = E.get(homePromise);
+
+  const { bundleSource, lookup } = endowments;
 
   const walletAdmin = E(wallet).getAdminFacet();
   const installationManager = E(walletAdmin).getInstallationManager();
@@ -28,12 +32,7 @@ export const makeHelpers = async (homePromise, endowments) => {
 
   // Create the methods
 
-  const install = makeInstall(
-    endowments.bundleSource,
-    zoe,
-    installationManager,
-    board,
-  );
+  const install = makeInstall(bundleSource, zoe, installationManager, board);
 
   const startInstance = makeStartInstance(
     issuerManager,
@@ -52,11 +51,18 @@ export const makeHelpers = async (homePromise, endowments) => {
 
   const depositInvitation = makeDepositInvitation(zoeInvitationPurse);
 
+  const getBundlerMaker = makeGetBundlerMaker(
+    { board, scratch, zoe },
+    { bundleSource, lookup },
+  );
+
   return {
     install,
     startInstance,
     offer,
     findInvitationAmount,
+    installInPieces,
+    getBundlerMaker,
     saveIssuer,
     depositInvitation,
     assertOfferResult,
