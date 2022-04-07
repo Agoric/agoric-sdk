@@ -56,6 +56,7 @@ const trace = makeTracer('VM');
  * governedParams: GovernedParamGetters,
  * liquidationStrategy: LiquidationStrategy,
  * penaltyPoolSeat: ZCFSeat,
+ * periodNotifier: ERef<Notifier<bigint>>,
  * priceAuthority: ERef<PriceAuthority>,
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
  * recordingPeriod: bigint,
@@ -75,6 +76,99 @@ const trace = makeTracer('VM');
  * vaultCounter: number,
  * }} MutableState
  */
+
+/**
+ * Create state for the Vault Manager kind
+ *
+ * @param {ZCF} zcf
+ * @param {ZCFMint<'nat'>} debtMint
+ * @param {Brand} collateralBrand
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {{
+ *  ChargingPeriod: ParamRecord<'nat'>
+ *  RecordingPeriod: ParamRecord<'nat'>
+ * }} timingParams
+ * @param {{
+ *  getDebtLimit: () => Amount<'nat'>,
+ *  getInterestRate: () => Ratio,
+ *  getLiquidationMargin: () => Ratio,
+ *  getLiquidationPenalty: () => Ratio,
+ *  getLoanFee: () => Ratio,
+ * }} loanParamGetters
+ * @param {MintAndReallocate} mintAndReallocateWithFee
+ * @param {BurnDebt}  burnDebt
+ * @param {ERef<TimerService>} timerService
+ * @param {LiquidationStrategy} liquidationStrategy
+ * @param {ZCFSeat} penaltyPoolSeat
+ * @param {Timestamp} startTimeStamp
+ */
+const initState = (
+  zcf,
+  debtMint,
+  collateralBrand,
+  priceAuthority,
+  timingParams,
+  loanParamGetters,
+  mintAndReallocateWithFee,
+  burnDebt,
+  timerService,
+  liquidationStrategy,
+  penaltyPoolSeat,
+  startTimeStamp,
+) => {
+  const periodNotifier = E(timerService).makeNotifier(
+    0n,
+    timingParams[RECORDING_PERIOD_KEY].value,
+  );
+
+  /** @type {ImmutableState} */
+  const fixed = {
+    collateralBrand,
+    chargingPeriod: timingParams[CHARGING_PERIOD_KEY].value,
+    debtBrand: debtMint.getIssuerRecord().brand,
+    debtMint,
+    governedParams: loanParamGetters,
+    liquidationStrategy,
+    penaltyPoolSeat,
+    periodNotifier,
+    priceAuthority,
+    recordingPeriod: timingParams[RECORDING_PERIOD_KEY].value,
+    /**
+     * A store for vaultKits prioritized by their collaterization ratio.
+     */
+    prioritizedVaults: makePrioritizedVaults(),
+    zcf,
+  };
+
+  const totalDebt = AmountMath.makeEmpty(fixed.debtBrand, 'nat');
+  const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
+  // timestamp of most recent update to interest
+  const latestInterestUpdate = startTimeStamp;
+
+  const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
+    harden({
+      compoundedInterest,
+      interestRate: fixed.governedParams.getInterestRate(),
+      latestInterestUpdate,
+      totalDebt,
+    }),
+  );
+
+  /** @type {MutableState & ImmutableState} */
+  const state = {
+    ...fixed,
+    assetNotifier,
+    assetUpdater,
+    debtBrand: fixed.debtBrand,
+    vaultCounter: 0,
+    liquidationInProgress: false,
+    totalDebt,
+    compoundedInterest,
+    latestInterestUpdate,
+  };
+
+  return state;
+};
 
 /**
  * Each VaultManager manages a single collateral type.
@@ -118,45 +212,26 @@ export const makeVaultManager = (
   penaltyPoolSeat,
   startTimeStamp,
 ) => {
-  /** @type {ImmutableState} */
-  const fixed = {
-    collateralBrand,
-    chargingPeriod: timingParams[CHARGING_PERIOD_KEY].value,
-    debtBrand: debtMint.getIssuerRecord().brand,
+  const state = initState(
+    zcf,
     debtMint,
-    governedParams: loanParamGetters,
+    collateralBrand,
+    priceAuthority,
+    timingParams,
+    loanParamGetters,
+    mintAndReallocateWithFee,
+    burnDebt,
+    timerService,
     liquidationStrategy,
     penaltyPoolSeat,
-    priceAuthority,
-    recordingPeriod: timingParams[RECORDING_PERIOD_KEY].value,
-    /**
-     * A store for vaultKits prioritized by their collaterization ratio.
-     */
-    prioritizedVaults: makePrioritizedVaults(),
-    zcf,
-  };
-
-  /** @type {MutableState & ImmutableState} */
-  const state = {
-    ...fixed,
-    // @ts-expect-error made later XXX
-    assetNotifier: null,
-    // @ts-expect-error made later XXX
-    assetUpdater: null,
-    debtBrand: fixed.debtBrand,
-    vaultCounter: 0,
-    liquidationInProgress: false,
-    totalDebt: AmountMath.makeEmpty(fixed.debtBrand, 'nat'),
-    compoundedInterest: makeRatio(100n, fixed.debtBrand), // starts at 1.0, no interest
-    // timestamp of most recent update to interest
-    latestInterestUpdate: startTimeStamp,
-  };
+    startTimeStamp,
+  );
 
   /** @type {GetVaultParams} */
   const shared = {
     ...loanParamGetters,
-    getChargingPeriod: () => fixed.chargingPeriod,
-    getRecordingPeriod: () => fixed.recordingPeriod,
+    getChargingPeriod: () => state.chargingPeriod,
+    getRecordingPeriod: () => state.recordingPeriod,
     async getCollateralQuote() {
       const { debtBrand } = state;
       // get a quote for one unit of the collateral
@@ -168,18 +243,6 @@ export const makeVaultManager = (
       );
     },
   };
-
-  const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
-    harden({
-      compoundedInterest: state.compoundedInterest,
-      interestRate: shared.getInterestRate(),
-      latestInterestUpdate: state.latestInterestUpdate,
-      totalDebt: state.totalDebt,
-    }),
-  );
-  // XXX not mutable after initState
-  state.assetUpdater = assetUpdater;
-  state.assetNotifier = assetNotifier;
 
   /**
    *
@@ -343,7 +406,7 @@ export const makeVaultManager = (
       latestInterestUpdate: state.latestInterestUpdate,
       totalDebt: state.totalDebt,
     });
-    assetUpdater.updateState(payload);
+    state.assetUpdater.updateState(payload);
 
     trace('chargeAllVaults complete', payload);
 
@@ -387,11 +450,6 @@ export const makeVaultManager = (
     trace('updateVaultPriority complete', { totalDebt });
   };
 
-  const periodNotifier = E(timerService).makeNotifier(
-    0n,
-    timingParams[RECORDING_PERIOD_KEY].value,
-  );
-
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
   const timeObserver = {
@@ -411,7 +469,7 @@ export const makeVaultManager = (
     },
   };
 
-  observeNotifier(periodNotifier, timeObserver);
+  observeNotifier(state.periodNotifier, timeObserver);
 
   /** @type {MintAndReallocate} */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
