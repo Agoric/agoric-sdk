@@ -224,8 +224,8 @@ export const makeVaultManager = (
     startTimeStamp,
   );
 
-  /** @type {GetVaultParams} */
-  const shared = {
+  /** @returns {GetVaultParams} */
+  const getShared = () => ({
     ...loanParamGetters,
     getChargingPeriod: () => state.chargingPeriod,
     getRecordingPeriod: () => state.recordingPeriod,
@@ -239,7 +239,7 @@ export const makeVaultManager = (
         debtBrand,
       );
     },
-  };
+  });
 
   /**
    *
@@ -293,7 +293,7 @@ export const makeVaultManager = (
       return;
     }
 
-    const liquidationMargin = shared.getLiquidationMargin();
+    const liquidationMargin = getShared().getLiquidationMargin();
 
     // ask to be alerted when the price level falls enough that the vault
     // with the highest debt to collateral ratio will no longer be valued at the
@@ -370,7 +370,7 @@ export const makeVaultManager = (
    */
   const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
     trace('chargeAllVaults', { updateTime });
-    const interestRate = shared.getInterestRate();
+    const interestRate = getShared().getInterestRate();
 
     // Update state with the results of charging interest
 
@@ -383,8 +383,8 @@ export const makeVaultManager = (
       },
       {
         interestRate,
-        chargingPeriod: shared.getChargingPeriod(),
-        recordingPeriod: shared.getRecordingPeriod(),
+        chargingPeriod: getShared().getChargingPeriod(),
+        recordingPeriod: getShared().getRecordingPeriod(),
       },
       // TODO make something like _.pick
       {
@@ -432,7 +432,7 @@ export const makeVaultManager = (
     // floorDivide because we want the debt ceiling lower
     return floorDivideBy(
       getAmountOut(quoteAmount),
-      shared.getLiquidationMargin(),
+      getShared().getLiquidationMargin(),
     );
   };
 
@@ -484,7 +484,7 @@ export const makeVaultManager = (
 
   /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerFacet = Far('managerFacet', {
-    ...shared,
+    ...getShared(),
     maxDebtFor,
     mintAndReallocate,
     burnAndRecord,
@@ -532,7 +532,7 @@ export const makeVaultManager = (
   });
 
   return Far('vault manager', {
-    ...shared,
+    ...getShared(),
     makeVaultKit,
     liquidateAll,
     getPublicFacet: () => publicFacet,
