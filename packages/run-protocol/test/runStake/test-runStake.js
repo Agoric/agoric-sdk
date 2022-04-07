@@ -34,7 +34,6 @@ import { KW } from '../../src/runStake/params.js';
 // 10	Partial repay - insufficient funds (FAIL) - Zoe prevents this
 // 12	Add collateral - lots of test harness for little gain
 // 13	Add collateral - CR increase ok
-// import { CASES as TestData } from './runStake-test-steps.js';
 
 const contractRoots = {
   runStake: '../../src/runStake/runStake.js',
@@ -738,29 +737,6 @@ const makeWorld = async t => {
 
   return driver;
 };
-
-// const makeTests = async () => {
-//   for await (const [num, name, steps] of TestData) {
-//     test(`Test Data ${num} ${name}`, async t => {
-//       // TODO: use different accounts / addresses in the same world.
-//       const driver = await makeWorld(t);
-//       for await (const [tag, value, pass] of steps) {
-//         t.log({ tag, value });
-//         const fn = driver[tag];
-//         if (!fn) {
-//           throw Error(`bad tag: ${tag}`);
-//         }
-//         if (pass === false) {
-//           await t.throwsAsync(async () => fn(value, t));
-//         } else {
-//           await fn(value, t);
-//         }
-//       }
-//     });
-//   }
-// };
-
-// makeTests();
 
 test('borrowing past the debt limit', async t => {
   const driver = await makeWorld(t);
