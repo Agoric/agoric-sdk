@@ -38,20 +38,41 @@ const trace = makeTracer('VM');
  * }} AssetState */
 
 /**
+ * @typedef {{
+ *  getDebtLimit: () => Amount<'nat'>,
+ *  getInterestRate: () => Ratio,
+ *  getLiquidationMargin: () => Ratio,
+ *  getLiquidationPenalty: () => Ratio,
+ *  getLoanFee: () => Ratio,
+ * }} GovernedParamGetters
+ */
+
+/**
  * @typedef {Readonly<{
+ * chargingPeriod: bigint,
+ * collateralBrand: Brand<'nat'>,
  * debtBrand: Brand<'nat'>,
+ * debtMint: ZCFMint<'nat'>,
+ * governedParams: GovernedParamGetters,
+ * liquidationStrategy: LiquidationStrategy,
+ * penaltyPoolSeat: ZCFSeat,
+ * priceAuthority: ERef<PriceAuthority>,
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
+ * recordingPeriod: bigint,
+ * zcf: ZCF,
  * }>} ImmutableState
  */
 
 /**
  * @typedef {{
- * vaultCounter: number,
+ * assetNotifier: Notifier<AssetState>,
+ * assetUpdater: IterationObserver<AssetState>,
+ * compoundedInterest: Ratio,
+ * latestInterestUpdate: bigint,
  * liquidationInProgress: boolean,
  * outstandingQuote?: MutableQuote,
  * totalDebt: Amount<'nat'>,
- * compoundedInterest: Ratio,
- * latestInterestUpdate: bigint,
+ * vaultCounter: number,
  * }} MutableState
  */
 
@@ -97,29 +118,45 @@ export const makeVaultManager = (
   penaltyPoolSeat,
   startTimeStamp,
 ) => {
-  const { brand: debtBrandInit } = debtMint.getIssuerRecord();
-  /** @type {MutableState & ImmutableState} */
-  const state = {
-    debtBrand: debtBrandInit,
-    vaultCounter: 0,
-    liquidationInProgress: false,
+  /** @type {ImmutableState} */
+  const fixed = {
+    collateralBrand,
+    chargingPeriod: timingParams[CHARGING_PERIOD_KEY].value,
+    debtBrand: debtMint.getIssuerRecord().brand,
+    debtMint,
+    governedParams: loanParamGetters,
+    liquidationStrategy,
+    penaltyPoolSeat,
+    priceAuthority,
+    recordingPeriod: timingParams[RECORDING_PERIOD_KEY].value,
     /**
      * A store for vaultKits prioritized by their collaterization ratio.
      */
     prioritizedVaults: makePrioritizedVaults(),
-    totalDebt: AmountMath.makeEmpty(debtBrandInit, 'nat'),
-    compoundedInterest: makeRatio(100n, debtBrandInit), // starts at 1.0, no interest
-    /**
-     * timestamp of most recent update to interest
-     */
+    zcf,
+  };
+
+  /** @type {MutableState & ImmutableState} */
+  const state = {
+    ...fixed,
+    // @ts-expect-error made later XXX
+    assetNotifier: null,
+    // @ts-expect-error made later XXX
+    assetUpdater: null,
+    debtBrand: fixed.debtBrand,
+    vaultCounter: 0,
+    liquidationInProgress: false,
+    totalDebt: AmountMath.makeEmpty(fixed.debtBrand, 'nat'),
+    compoundedInterest: makeRatio(100n, fixed.debtBrand), // starts at 1.0, no interest
+    // timestamp of most recent update to interest
     latestInterestUpdate: startTimeStamp,
   };
 
   /** @type {GetVaultParams} */
   const shared = {
     ...loanParamGetters,
-    getChargingPeriod: () => timingParams[CHARGING_PERIOD_KEY].value,
-    getRecordingPeriod: () => timingParams[RECORDING_PERIOD_KEY].value,
+    getChargingPeriod: () => fixed.chargingPeriod,
+    getRecordingPeriod: () => fixed.recordingPeriod,
     async getCollateralQuote() {
       const { debtBrand } = state;
       // get a quote for one unit of the collateral
@@ -132,7 +169,7 @@ export const makeVaultManager = (
     },
   };
 
-  const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
+  const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
     harden({
       compoundedInterest: state.compoundedInterest,
       interestRate: shared.getInterestRate(),
@@ -140,6 +177,9 @@ export const makeVaultManager = (
       totalDebt: state.totalDebt,
     }),
   );
+  // XXX not mutable after initState
+  state.assetUpdater = assetUpdater;
+  state.assetNotifier = assetNotifier;
 
   /**
    *
@@ -155,8 +195,8 @@ export const makeVaultManager = (
       zcf,
       vault,
       debtMint.burnLosses,
-      liquidationStrategy,
-      collateralBrand,
+      state.liquidationStrategy,
+      state.collateralBrand,
       penaltyPoolSeat,
       loanParamGetters.getLiquidationPenalty(),
     )
@@ -351,6 +391,7 @@ export const makeVaultManager = (
     0n,
     timingParams[RECORDING_PERIOD_KEY].value,
   );
+
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
   const timeObserver = {
@@ -391,7 +432,7 @@ export const makeVaultManager = (
     maxDebtFor,
     mintAndReallocate,
     burnAndRecord,
-    getNotifier: () => assetNotifer,
+    getNotifier: () => state.assetNotifier,
     getCollateralBrand: () => collateralBrand,
     getDebtBrand: () => state.debtBrand,
     getCompoundedInterest: () => state.compoundedInterest,
@@ -430,7 +471,7 @@ export const makeVaultManager = (
 
   const publicFacet = Far('collateral manager', {
     makeVaultInvitation: () => zcf.makeInvitation(makeVaultKit, 'MakeVault'),
-    getNotifier: () => assetNotifer,
+    getNotifier: () => state.assetNotifier,
     getCompoundedInterest: () => state.compoundedInterest,
   });
 
