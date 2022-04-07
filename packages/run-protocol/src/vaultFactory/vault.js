@@ -109,7 +109,10 @@ const validTransitions = {
 /**
  * @typedef {{
  *   state: ImmutableState & MutableState,
- *   facets: *,
+ *   facets: {
+ *     self: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof selfBehavior>,
+ *     helper: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof helperBehavior>,
+ *   },
  * }} MethodContext
  */
 
@@ -255,6 +258,11 @@ const helperBehavior = {
     );
   },
 
+  /**
+   *
+   * @param {MethodContext} context
+   * @param {ZCFSeat} seat
+   */
   getCollateralAllocated: ({ facets }, seat) =>
     seat.getAmountAllocated('Collateral', facets.helper.collateralBrand()),
   getRunAllocated: ({ facets }, seat) =>
@@ -268,6 +276,12 @@ const helperBehavior = {
     );
   },
 
+  /**
+   *
+   * @param {MethodContext} context
+   * @param {Amount<'nat'>} collateralAmount
+   * @param {Amount<'nat'>} proposedRunDebt
+   */
   assertSufficientCollateral: async (
     { state, facets },
     collateralAmount,
@@ -326,7 +340,10 @@ const helperBehavior = {
     }
   },
 
-  /* * @type {OfferHandler} XXX needs a proper type def; this one won't do */
+  /**
+   * @param {MethodContext} context
+   * @param {ZCFSeat} seat
+   */
   closeHook: async ({ state, facets }, seat) => {
     const { self, helper } = facets;
     helper.assertCloseable();
@@ -544,6 +561,9 @@ const selfBehavior = {
     return vaultKit;
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   liquidating: ({ facets }) => {
     const { helper } = facets;
     helper.assignPhase(VaultPhase.LIQUIDATING);
@@ -671,5 +691,9 @@ const makeInnerVaultBase = defineKind('InnerVault', initState, {
  */
 export const makeInnerVault = (zcf, manager, idInManager) =>
   makeInnerVaultBase(zcf, manager, idInManager).self;
+
+// @ts-expect-error
+const v = makeInnerVault();
+v.liquidating();
 
 /** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
