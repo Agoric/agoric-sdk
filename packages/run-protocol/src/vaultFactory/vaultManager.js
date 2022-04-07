@@ -53,6 +53,7 @@ const trace = makeTracer('VM');
  * collateralBrand: Brand<'nat'>,
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
+ * factoryPowers: import('./vaultFactory.js').FactoryPowersFacet,
  * governedParams: GovernedParamGetters,
  * liquidationStrategy: LiquidationStrategy,
  * penaltyPoolSeat: ZCFSeat,
@@ -95,8 +96,7 @@ const trace = makeTracer('VM');
  *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
  * }} loanParamGetters
- * @param {MintAndReallocate} mintAndReallocateWithFee
- * @param {BurnDebt}  burnDebt
+ * @param {import('./vaultFactory.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat
@@ -109,8 +109,7 @@ const initState = (
   priceAuthority,
   timingParams,
   loanParamGetters,
-  mintAndReallocateWithFee,
-  burnDebt,
+  factoryPowers,
   timerService,
   liquidationStrategy,
   penaltyPoolSeat,
@@ -127,6 +126,7 @@ const initState = (
     chargingPeriod: timingParams[CHARGING_PERIOD_KEY].value,
     debtBrand: debtMint.getIssuerRecord().brand,
     debtMint,
+    factoryPowers,
     governedParams: loanParamGetters,
     liquidationStrategy,
     penaltyPoolSeat,
@@ -191,8 +191,7 @@ const initState = (
  *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
  * }} loanParamGetters
- * @param {MintAndReallocate} mintAndReallocateWithFee
- * @param {BurnDebt}  burnDebt
+ * @param {import('./vaultFactory.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat
@@ -205,8 +204,7 @@ export const makeVaultManager = (
   priceAuthority,
   timingParams,
   loanParamGetters,
-  mintAndReallocateWithFee,
-  burnDebt,
+  factoryPowers,
   timerService,
   liquidationStrategy,
   penaltyPoolSeat,
@@ -219,8 +217,7 @@ export const makeVaultManager = (
     priceAuthority,
     timingParams,
     loanParamGetters,
-    mintAndReallocateWithFee,
-    burnDebt,
+    factoryPowers,
     timerService,
     liquidationStrategy,
     penaltyPoolSeat,
@@ -380,7 +377,7 @@ export const makeVaultManager = (
     const stateUpdates = chargeInterest(
       {
         mint: debtMint,
-        mintAndReallocateWithFee,
+        mintAndReallocateWithFee: state.factoryPowers.mintAndReallocate,
         poolIncrementSeat,
         seatAllocationKeyword: 'RUN',
       },
@@ -474,11 +471,12 @@ export const makeVaultManager = (
   /** @type {MintAndReallocate} */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
     checkDebtLimit(toMint);
-    mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
+    state.factoryPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
     state.totalDebt = AmountMath.add(state.totalDebt, toMint);
   };
 
   const burnAndRecord = (toBurn, seat) => {
+    const { burnDebt } = state.factoryPowers;
     burnDebt(toBurn, seat);
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
     // TODO signal updater?

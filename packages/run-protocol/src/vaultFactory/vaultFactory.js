@@ -154,6 +154,11 @@ export const start = async (zcf, privateArgs) => {
 
     const startTimeStamp = await E(timerService).getCurrentTimestamp();
 
+    const factoryPowers = {
+      mintAndReallocate,
+      burnDebt,
+    };
+
     const vm = makeVaultManager(
       zcf,
       debtMint,
@@ -161,8 +166,7 @@ export const start = async (zcf, privateArgs) => {
       priceAuthority,
       loanTimingParams,
       vaultParamManager.readonly(),
-      mintAndReallocate,
-      burnDebt,
+      factoryPowers,
       timerService,
       liquidationStrategy,
       penaltyPoolSeat,
@@ -294,5 +298,7 @@ export const start = async (zcf, privateArgs) => {
     publicFacet,
   });
 };
+
+/** @typedef {{ burnDebt: BurnDebt, mintAndReallocate: MintAndReallocate }} FactoryPowersFacet */
 
 /** @typedef {ContractOf<typeof start>} VaultFactoryContract */
