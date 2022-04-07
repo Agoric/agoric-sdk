@@ -109,7 +109,10 @@ const validTransitions = {
 /**
  * @typedef {{
  *   state: ImmutableState & MutableState,
- *   facets: *,
+ *   facets: {
+ *     self: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof selfBehavior>,
+ *     helper: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof helperBehavior>,
+ *   },
  * }} MethodContext
  */
 
@@ -255,6 +258,11 @@ const helperBehavior = {
     );
   },
 
+  /**
+   *
+   * @param {MethodContext} context
+   * @param {ZCFSeat} seat
+   */
   getCollateralAllocated: ({ facets }, seat) =>
     seat.getAmountAllocated('Collateral', facets.helper.collateralBrand()),
   getRunAllocated: ({ facets }, seat) =>
@@ -268,6 +276,12 @@ const helperBehavior = {
     );
   },
 
+  /**
+   *
+   * @param {MethodContext} context
+   * @param {Amount<'nat'>} collateralAmount
+   * @param {Amount<'nat'>} proposedRunDebt
+   */
   assertSufficientCollateral: async (
     { state, facets },
     collateralAmount,
@@ -300,7 +314,11 @@ const helperBehavior = {
     });
   },
 
-  // call this whenever anything changes!
+  /**
+   * call this whenever anything changes!
+   *
+   * @param {MethodContext} context
+   */
   updateUiState: ({ state, facets }) => {
     const { outerUpdater } = state;
     if (!outerUpdater) {
@@ -326,7 +344,10 @@ const helperBehavior = {
     }
   },
 
-  /* * @type {OfferHandler} XXX needs a proper type def; this one won't do */
+  /**
+   * @param {MethodContext} context
+   * @param {ZCFSeat} seat
+   */
   closeHook: async ({ state, facets }, seat) => {
     const { self, helper } = facets;
     helper.assertCloseable();
@@ -485,6 +506,9 @@ const helperBehavior = {
 };
 
 const selfBehavior = {
+  /**
+   * @param {MethodContext} context
+   */
   getVaultSeat: ({ state }) => state.vaultSeat,
 
   /**
@@ -544,6 +568,9 @@ const selfBehavior = {
     return vaultKit;
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   liquidating: ({ facets }) => {
     const { helper } = facets;
     helper.assignPhase(VaultPhase.LIQUIDATING);
@@ -564,6 +591,9 @@ const selfBehavior = {
     helper.updateUiState();
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   makeAdjustBalancesInvitation: ({ state, facets }) => {
     const { helper } = facets;
     helper.assertActive();
@@ -573,12 +603,18 @@ const selfBehavior = {
     );
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   makeCloseInvitation: ({ state, facets }) => {
     const { helper } = facets;
     helper.assertCloseable();
     return state.zcf.makeInvitation(helper.closeHook, 'CloseVault');
   },
 
+  /**
+   * @param {MethodContext} context
+   */
   makeTransferInvitation: ({ state, facets }) => {
     const { self, helper } = facets;
     // Bring the debt snapshot current for the final report before transfer
