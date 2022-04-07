@@ -1,11 +1,31 @@
 # Network API
+<!--
+  content should remain synchronized with
+  https://github.com/Agoric/documentation/blob/HEAD/main/repl/networking.md
+-->
 
-Suitably-empowered code inside a vat can access a "network API" that works vaguely like the BSD socket API. This code can open a listening port on various networking stacks, initiate connections to remote ports, send and receive data over these connections, and finally close the connection and/or ports.
+Suitably-empowered code inside a vat can access a "network API" that works
+vaguely like the BSD socket API. This code can:
+- Open a listening port on various networking stacks.
+- Initiate connections to remote ports.
+- Send and receive data over these connections
+- Close the connection and/or ports.
 
 The type of connection is limited by the host in which the vat is running. Chain-based machines must operate in a platonic realm of replicated consensus, so their network options are limited to protocols like IBC, which allow one gestalt chain to talk to other chain-like entities. Each such entity is defined by an evolving set of consensus rules, which typically include a current set of validator public keys and a particular history of hashed block identifiers.
 
-[**CAVEAT:** IBC uses "Connection" to mean a chain-to-chain "hop", and "Channel" to mean a Port-to-Port pathway through a series of hops.  https://github.com/cosmos/ics/blob/master/ibc/1_IBC_TERMINOLOGY.md#connection . This is unfortunate, because IBC "Channels" correspond most precisely to TCP "connections", and most discussions of network APIs (including this one, below) will talk about "connections" extensively. 
-For now, our IBC implementation can only use pre-established hops, and provides no means for user-level code to create new hops (IBC Connections) at runtime. But user-level code can create new IBC Channels at any time. The terminology confusion will be most obvious in the section on "Accepting an Inbound Connection", where the user code is really accepting an inbound *IBC Channel*.]
+**CAVEAT:** IBC uses
+[Connection](https://github.com/cosmos/ibc/tree/HEAD/spec/core/ics-003-connection-semantics/README.md)
+to mean a chain-to-chain hop, and
+[Channel](https://github.com/cosmos/ibc/tree/HEAD/spec/core/ics-004-channel-and-packet-semantics/README.md)
+to mean a Port-to-Port pathway through a series of hops.
+This is unfortunate, because IBC "Channels" correspond most precisely to
+TCP "connections", and most discussions of network APIs (including this one,
+below) will talk about "connections" extensively.
+For now, our IBC implementation can only use pre-established hops, and provides
+no means for user-level code to create new hops (IBC Connections) at runtime.
+But user-level code can create new IBC Channels at any time. The terminology
+confusion will be most obvious in the section on "Accepting an Inbound Connection",
+where the user code is really accepting an inbound IBC *Channel*.
 
 A channel via these IBC hops will terminate in IBC-aware code on either end. These endpoints might be traditional (static) IBC handlers (such as an ICS-20 token transfer module), or dynamic IBC handlers (e.g. running in a SwingSet vat). SwingSet vat code that wants to speak to vat code in a different SwingSet machine would not use the IBC connection directly: instead it would simply perform normal eventual-send operations (`E(target).foo(args)`) and let the "CapTP" promise-pipelining layer handle the details. But vat code which wants to speak to an ICS-20 handler in some other chain would need to use this layer.
 
@@ -85,7 +105,7 @@ Once you have a `Connection` object, you send data by calling its `send()` metho
 connection.send('data');
 ```
 
-`send()` actually returns a Promise (for more `Bytes`), which contains the ACK data for this message.  NOTE: The type of this data and ACK is currently a string.  Ideally we would also accept Node.js `Buffer` objects, or Javascript `ArrayBuffer` and `TypedArray` objects, but unfortunately neither can be serialized by our current inter-vat marshalling code.
+`send()` returns a Promise for the ACK data sent by the other side of the connection, which is represented in the same way as inbound data for `onReceive()`.
 
 ## Receiving Data
 
@@ -97,9 +117,11 @@ You can omit any of the methods and those events will simply be ignored. All the
 * `onReceive(connection, packetBytes, handler)`: this is called each time the remote end sends a packet of data
 * `onClose(connection, reason, handler)`: this is called when the connection is closed, either because one side wanted it to close, or because an error occurred. `reason` may be `undefined`.
 
-`onReceive()` is the most important method. Each time the remote end sends a packet, your `onReceive()` method will be called with the data inside that packet (currently as a String, but ideally as an ArrayBuffer with a custom `toString(encoding='latin1')` method so that it can contain arbitrary bytes).
+`onReceive()` is the most important method. Each time the remote end sends a packet, your `onReceive()` method will be called with the data inside that packet (currently as a String due to inter-vat marshalling limitations, but ideally as an ArrayBuffer with a custom `toString(encoding='latin1')` method so that it can contain arbitrary bytes).
 
-The return value of `onReceive()` is nominally a Promise for the ACK data of the message (and should thus appear as the eventual resolution of the Promise returned by `connection.send()` on the other side). If the promise does not resolve to an ACK or resolves to an empty ACK, the implementation will automatically send a trivial `'\x01'` ACK, since empty (`''`) ACKs are not supported by Cosmos ibc-go.
+The return value of `onReceive()` is nominally a Promise for ACK data of the message (that will eventually appear on the other side as resolution of the Promise returned by `connection.send()`).
+For IBC, this Promise must be resolved within the same block as receiving the message, and if it does not resolve (or resolves to an empty value `''`, which is not supported by [Cosmos ibc-go](https://github.com/cosmos/ibc-go)) then the implementation will automatically send a trivial `'\x01'` ACK. This behavior may be different for other network implementations.
+It is recommended to avoid ACK data where possible.
 
 ## Closing the Connection
 
