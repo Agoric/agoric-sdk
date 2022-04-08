@@ -8,7 +8,7 @@ import { Far } from '@endo/marshal';
 import { makeDefaultLiquidationStrategy } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 
-const trace = makeTracer('LM');
+const trace = makeTracer('LiqMin');
 
 /**
  * This contract liquidates the minimum amount of vault's collateral necessary
@@ -24,15 +24,18 @@ const trace = makeTracer('LM');
 const start = async zcf => {
   const { amm } = zcf.getTerms();
 
-  /**
-   * @param {Amount<'nat'>} runDebt
-   */
-  const makeDebtorHook = runDebt => {
-    const runBrand = runDebt.brand;
-    return async debtorSeat => {
+  const makeDebtorHook = _runDebt => {
+    /**
+     * @param {ZCFSeat} debtorSeat
+     * @param {object} root0
+     * @param {Amount<'nat'>} root0.debt
+     */
+    return async (debtorSeat, { debt: runDebt }) => {
+      const runBrand = runDebt.brand;
       const {
         give: { In: amountIn },
       } = debtorSeat.getProposal();
+      // TODO XXX isn't `inBefore === aboutIn`?
       const inBefore = debtorSeat.getAmountAllocated('In');
 
       const swapInvitation = E(amm).makeSwapOutInvitation();
@@ -40,8 +43,7 @@ const start = async zcf => {
         give: { In: amountIn },
         want: { Out: runDebt },
       });
-      trace(`OFFER TO DEBT: `, runDebt.value);
-
+      trace(`OFFER TO DEBT: `, { runDebt, amountIn });
       const { deposited, userSeatPromise: liqSeat } = await offerTo(
         zcf,
         swapInvitation,
@@ -55,14 +57,20 @@ const start = async zcf => {
       // check whether swapIn liquidated assets until getOfferResult() returns.
       // Of course, we also can't exit the seat until one or the other
       // liquidation takes place.
-      await deposited;
-      await E(liqSeat).getOfferResult();
+      const [offerResult, amounts, _] = await Promise.all([
+        E(liqSeat).getOfferResult(),
+        E(liqSeat).getCurrentAllocation(),
+        deposited,
+      ]);
+      trace('offerResult', { offerResult, amounts });
 
       // if swapOut failed to make the trade, we'll sell it all
       const sellAllIfUnsold = async () => {
-        if (
-          !AmountMath.isEqual(inBefore, debtorSeat.getAmountAllocated('In'))
-        ) {
+        const unsold = debtorSeat.getAmountAllocated('In');
+        // TODO XXX This could be true if it gave me more collateral. This
+        // should check that we actually got the debt amount
+        if (!AmountMath.isEqual(inBefore, unsold)) {
+          trace('Changed', { inBefore, unsold });
           return;
         }
 
@@ -85,7 +93,11 @@ const start = async zcf => {
         });
       };
       await sellAllIfUnsold();
-
+      const proceeds = debtorSeat.getAmountAllocated('RUN', runBrand);
+      trace(`Liq results`, {
+        runDebt,
+        proceeds,
+      });
       debtorSeat.exit();
     };
   };

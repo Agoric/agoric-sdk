@@ -17,7 +17,7 @@ import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('IV');
+const trace = makeTracer('IV', false);
 
 /**
  * @file This has most of the logic for a Vault, to borrow RUN against collateral.

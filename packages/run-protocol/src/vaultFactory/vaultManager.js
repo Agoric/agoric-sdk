@@ -27,7 +27,7 @@ import { chargeInterest } from '../interest.js';
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('VM');
+const trace = makeTracer('VM', false);
 
 /**
  * @typedef {{
@@ -157,6 +157,7 @@ export const makeVaultManager = (
         liquidationInProgress = false;
         // XXX should notify interested parties
         console.error('liquidateAndRemove failed with', e);
+        throw e;
       });
   };
 
@@ -297,7 +298,9 @@ export const makeVaultManager = (
     const debtPost = AmountMath.add(totalDebt, toMint);
     const limit = loanParamGetters.getDebtLimit();
     if (AmountMath.isGTE(debtPost, limit)) {
-      assert.fail(X`Minting would exceed total debt limit ${q(limit)}`);
+      assert.fail(
+        X`Minting ${toMint} would exceed total debt limit ${q(limit)}`,
+      );
     }
   };
 

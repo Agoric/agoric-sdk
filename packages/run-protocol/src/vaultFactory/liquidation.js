@@ -75,6 +75,8 @@ const liquidate = async (
     strategy.keywordMapping(),
     strategy.makeProposal(collateralToSell, debt),
     vaultZcfSeat,
+    undefined,
+    harden({ debt }),
   );
   trace(` offeredTo`, collateralToSell, debt);
 
@@ -128,7 +130,7 @@ const makeDefaultLiquidationStrategy = amm => {
   trace(`return from makeDefault`);
 
   return {
-    makeInvitation: () => E(amm).makeSwapInInvitation(),
+    makeInvitation: _runDebt => E(amm).makeSwapInInvitation(),
     keywordMapping,
     makeProposal,
   };
