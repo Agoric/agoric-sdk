@@ -83,6 +83,9 @@ const trace = makeTracer('VM');
  * @typedef {{
  *   state: ImmutableState & MutableState,
  *   facets: {
+ *     helper: *,
+ *     self: *,
+ *     manager: *,
  *   },
  * }} MethodContext
  */
@@ -178,6 +181,30 @@ const initState = (
   };
 
   return state;
+};
+
+/** @param {MethodContext} context */
+const finish = ({ state, facets: { helper } }) => {
+  state.prioritizedVaults.setRescheduler(helper.reschedulePriceCheck);
+
+  observeNotifier(state.periodNotifier, {
+    updateState: updateTime =>
+      helper
+        .chargeAllVaults(updateTime, state.poolIncrementSeat)
+        .catch(e =>
+          console.error('🚨 vaultManager failed to charge interest', e),
+        ),
+    fail: reason => {
+      state.zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${reason}`),
+      );
+    },
+    finish: done => {
+      state.zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${done}`),
+      );
+    },
+  });
 };
 
 /**
@@ -421,29 +448,6 @@ export const makeVaultManager = (
     },
   };
 
-  //  FINISH
-  state.prioritizedVaults.setRescheduler(helper.reschedulePriceCheck);
-
-  // TODO move to 'finish'
-  observeNotifier(state.periodNotifier, {
-    updateState: updateTime =>
-      helper
-        .chargeAllVaults(updateTime, state.poolIncrementSeat)
-        .catch(e =>
-          console.error('🚨 vaultManager failed to charge interest', e),
-        ),
-    fail: reason => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${reason}`),
-      );
-    },
-    finish: done => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${done}`),
-      );
-    },
-  });
-
   /** @type {Parameters<typeof makeInnerVault>[1]} */
   const manager = Far('managerFacet', {
     ...helper.getShared(),
@@ -530,6 +534,8 @@ export const makeVaultManager = (
       }
     },
   };
+
+  finish({ state, facets: { helper, manager, self } });
 
   const collateralFacet = {
     makeVaultInvitation: () =>
