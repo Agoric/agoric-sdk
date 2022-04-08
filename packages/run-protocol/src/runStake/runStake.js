@@ -34,6 +34,7 @@ const { values } = Object;
  *   chargingPeriod: bigint,
  *   recordingPeriod: bigint,
  *   lienAttestationName?: string,
+ *   brands: Record<keyof KW, Brand>,
  * }} RunStakeTerms
  *
  * The public facet provides access to invitations to get a loan

@@ -16,6 +16,7 @@ const trace = makeTracer('R1');
 
 export const KW = /** @type { const } */ ({
   [AttKW.Attestation]: AttKW.Attestation,
+  Stake: 'Stake', // how does this get into getTerms()??
   Debt: 'Debt',
 });
 
