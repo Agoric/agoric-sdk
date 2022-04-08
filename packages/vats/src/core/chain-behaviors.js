@@ -84,7 +84,7 @@ export const bridgeCoreEval = async allPowers => {
                 return behavior(powers);
               }),
             ),
-          );
+          ).catch(e => console.error('CORE_EVAL', e));
         }
         default:
           assert.fail(X`Unrecognized request ${obj.type}`);
