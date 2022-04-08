@@ -29,7 +29,7 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
 
   const pspawn = makePspawn({ log, chalk, spawn });
 
-  let dappBranch = [];
+  let dappBranch = ['-b', 'beta'];
   if (opts.dappBranch) {
     dappBranch = ['-b', opts.dappBranch];
   }
