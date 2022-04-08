@@ -687,9 +687,9 @@ export function makeVirtualObjectManager(
       const rawState = fetch(baseRef);
       if (rawState) {
         for (const propValue of Object.values(rawState)) {
-          propValue.slots.map(
-            vref => (doMoreGC = doMoreGC || vrm.removeReachableVref(vref)),
-          );
+          propValue.slots.forEach(vref => {
+            doMoreGC = vrm.removeReachableVref(vref) || doMoreGC;
+          });
         }
       }
       syscall.vatstoreDelete(`vom.${baseRef}`);
