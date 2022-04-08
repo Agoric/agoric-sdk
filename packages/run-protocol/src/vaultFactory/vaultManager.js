@@ -22,7 +22,6 @@ import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
-import { RECORDING_PERIOD_KEY, CHARGING_PERIOD_KEY } from './params.js';
 import { chargeInterest } from '../interest.js';
 
 const { details: X, quote: q } = assert;
@@ -55,7 +54,6 @@ const trace = makeTracer('VM');
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultFactory.js').FactoryPowersFacet,
- * governedParams: GovernedParamGetters,
  * liquidationStrategy: LiquidationStrategy,
  * penaltyPoolSeat: ZCFSeat,
  * periodNotifier: ERef<Notifier<bigint>>,
@@ -98,17 +96,6 @@ const trace = makeTracer('VM');
  * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {{
- *  ChargingPeriod: ParamRecord<'nat'>
- *  RecordingPeriod: ParamRecord<'nat'>
- * }} timingParams
- * @param {{
- *  getDebtLimit: () => Amount<'nat'>,
- *  getInterestRate: () => Ratio,
- *  getLiquidationMargin: () => Ratio,
- *  getLiquidationPenalty: () => Ratio,
- *  getLoanFee: () => Ratio,
- * }} loanParamGetters
  * @param {import('./vaultFactory.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
@@ -120,8 +107,6 @@ const initState = (
   debtMint,
   collateralBrand,
   priceAuthority,
-  timingParams,
-  loanParamGetters,
   factoryPowers,
   timerService,
   liquidationStrategy,
@@ -130,7 +115,7 @@ const initState = (
 ) => {
   const periodNotifier = E(timerService).makeNotifier(
     0n,
-    timingParams[RECORDING_PERIOD_KEY].value,
+    factoryPowers.getGovernedParams().getChargingPeriod(),
   );
 
   /** @type {ImmutableState} */
@@ -139,11 +124,6 @@ const initState = (
     debtBrand: debtMint.getIssuerRecord().brand,
     debtMint,
     factoryPowers,
-    governedParams: {
-      ...loanParamGetters,
-      getChargingPeriod: () => timingParams[CHARGING_PERIOD_KEY].value,
-      getRecordingPeriod: () => timingParams[RECORDING_PERIOD_KEY].value,
-    },
     liquidationStrategy,
     penaltyPoolSeat,
     periodNotifier,
@@ -164,7 +144,7 @@ const initState = (
   const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
     harden({
       compoundedInterest,
-      interestRate: fixed.governedParams.getInterestRate(),
+      interestRate: fixed.factoryPowers.getGovernedParams().getInterestRate(),
       latestInterestUpdate,
       totalDebt,
     }),
@@ -194,9 +174,9 @@ const helperBehavior = {
    * @throws if minting would exceed total debt
    */
   checkDebtLimit: ({ state }, toMint) => {
-    const { governedParams, totalDebt } = state;
+    const { factoryPowers, totalDebt } = state;
     const debtPost = AmountMath.add(totalDebt, toMint);
-    const limit = governedParams.getDebtLimit();
+    const limit = factoryPowers.getGovernedParams().getDebtLimit();
     if (AmountMath.isGTE(debtPost, limit)) {
       assert.fail(X`Minting would exceed total debt limit ${q(limit)}`);
     }
@@ -347,13 +327,8 @@ const helperBehavior = {
    * @param {[key: string, vaultKit: InnerVault]} record
    */
   liquidateAndRemove: ({ state }, [key, vault]) => {
-    const {
-      debtMint,
-      governedParams,
-      penaltyPoolSeat,
-      prioritizedVaults,
-      zcf,
-    } = state;
+    const { debtMint, factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } =
+      state;
     trace('liquidating', vault.getVaultSeat().getProposal());
     state.liquidationInProgress = true;
 
@@ -365,7 +340,7 @@ const helperBehavior = {
       state.liquidationStrategy,
       state.collateralBrand,
       penaltyPoolSeat,
-      governedParams.getLiquidationPenalty(),
+      factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(() => {
         prioritizedVaults?.removeVault(key);
@@ -381,7 +356,7 @@ const helperBehavior = {
 
 const managerBehavior = {
   /** @param {MethodContext} context */
-  getGovernedParams: ({ state }) => state.governedParams,
+  getGovernedParams: ({ state }) => state.factoryPowers.getGovernedParams(),
 
   /**
    * @param {MethodContext} context
@@ -396,7 +371,7 @@ const managerBehavior = {
     // floorDivide because we want the debt ceiling lower
     return floorDivideBy(
       getAmountOut(quoteAmount),
-      state.governedParams.getLiquidationMargin(),
+      state.factoryPowers.getGovernedParams().getLiquidationMargin(),
     );
   },
   /**
@@ -468,6 +443,9 @@ const collateralBehavior = {
 };
 
 const selfBehavior = {
+  /** @param {MethodContext} context */
+  getGovernedParams: ({ state }) => state.factoryPowers.getGovernedParams(),
+
   /**
    * In extreme situations, system health may require liquidating all vaults.
    * This starts the liquidations all in parallel.
@@ -576,17 +554,6 @@ const makeVaultManagerKit = defineKind('VaultManagerKit', initState, behavior, {
  * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {{
- *  ChargingPeriod: ParamRecord<'nat'>
- *  RecordingPeriod: ParamRecord<'nat'>
- * }} timingParams
- * @param {{
- *  getDebtLimit: () => Amount<'nat'>,
- *  getInterestRate: () => Ratio,
- *  getLiquidationMargin: () => Ratio,
- *  getLiquidationPenalty: () => Ratio,
- *  getLoanFee: () => Ratio,
- * }} loanParamGetters
  * @param {import('./vaultFactory.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
@@ -598,8 +565,6 @@ export const makeVaultManager = (
   debtMint,
   collateralBrand,
   priceAuthority,
-  timingParams,
-  loanParamGetters,
   factoryPowers,
   timerService,
   liquidationStrategy,
@@ -611,8 +576,6 @@ export const makeVaultManager = (
     debtMint,
     collateralBrand,
     priceAuthority,
-    timingParams,
-    loanParamGetters,
     factoryPowers,
     timerService,
     liquidationStrategy,
