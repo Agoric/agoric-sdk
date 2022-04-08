@@ -60,9 +60,7 @@ export const makePaymentLedger = (
    */
   const initPayment = (payment, amount, optRecoverySet = undefined) => {
     if (optRecoverySet !== undefined) {
-      if (!optRecoverySet.has(payment)) {
-        optRecoverySet.add(payment);
-      }
+      optRecoverySet.add(payment);
       paymentRecoverySets.init(payment, optRecoverySet);
     }
     paymentLedger.init(payment, amount);
@@ -73,9 +71,7 @@ export const makePaymentLedger = (
     if (paymentRecoverySets.has(payment)) {
       const recoverySet = paymentRecoverySets.get(payment);
       paymentRecoverySets.delete(payment);
-      if (recoverySet.has(payment)) {
-        recoverySet.delete(payment);
-      }
+      recoverySet.delete(payment);
     }
   };
 

@@ -17,9 +17,11 @@ test('payment recovery', async t => {
   const bobPurse = issuer.makeEmptyPurse();
 
   t.assert(keyEQ(alicePurse.getRecoverySet(), emptySet));
+  t.assert(keyEQ(bobPurse.getRecoverySet(), emptySet));
   alicePurse.deposit(payment1);
   bobPurse.deposit(payment2);
   t.assert(keyEQ(alicePurse.getRecoverySet(), emptySet));
+  t.assert(keyEQ(bobPurse.getRecoverySet(), emptySet));
 
   const payment3 = alicePurse.withdraw(precious(5n));
   t.assert(issuer.isLive(payment3));

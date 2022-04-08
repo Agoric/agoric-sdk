@@ -360,7 +360,7 @@
  * are the payments that can still be recovered in emergencies by, for example,
  * depositing into this purse. Such a deposit action is like canceling an
  * outstanding check because you're tired of waiting for it. Once your
- * cancellation is acknowledged, ypu can spend the assets at stake on other
+ * cancellation is acknowledged, you can spend the assets at stake on other
  * things. Afterwards, if the recipient of the original check finally gets
  * around to depositing it, their deposit fails.
  *
