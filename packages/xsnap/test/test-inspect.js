@@ -10,10 +10,18 @@ import { options } from './message-tools.js';
 import unconfinedInspect from '../src/object-inspect.js';
 
 const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
-
 const testCases = [
   '1',
   '1n',
+  '12n',
+  '123n',
+  '1_234n',
+  '12_345n',
+  '123_456n',
+  '1_234_567n',
+  '12_345_678n',
+  '123_456_789n',
+  '-123_456_789n',
   '1.1',
   'true',
   'false',

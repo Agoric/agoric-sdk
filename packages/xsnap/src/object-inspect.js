@@ -55,6 +55,23 @@ const dateToISOString = Date.prototype.toISOString;
 const gPO = Reflect.getPrototypeOf;
 const hasOwn = Object.prototype.hasOwnProperty;
 
+// Separate every three rightmost digits.
+const separateDigits = (
+  digits,
+  separator = '_',
+  separationRegExp = /^-?\d+(\d{3})$/,
+) => {
+  const separations = [];
+  let match;
+  // eslint-disable-next-line no-cond-assign
+  while ((match = digits.match(separationRegExp))) {
+    separations.unshift(match[1]);
+    digits = digits.slice(0, -match[1].length);
+  }
+  separations.unshift(digits);
+  return $join.call(separations, separator);
+};
+
 function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
   const typeofObj = typeof obj;
   if (typeofObj === 'undefined') {
@@ -77,7 +94,8 @@ function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
     return String(obj);
   }
   if (typeofObj === 'bigint') {
-    return `${obj}n`;
+    // Separate the digits to help visualise, terminate with `n`.
+    return `${separateDigits(String(obj))}n`;
   }
 
   const maxDepth = typeof opts.depth === 'undefined' ? 5 : opts.depth;
