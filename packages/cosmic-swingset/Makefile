@@ -18,8 +18,12 @@ VOTE_OPTION = yes
 GOSRC = ../../golang/cosmos
 DEBUG ?= SwingSet:ls,SwingSet:vat
 AG_SOLO = DEBUG=$(DEBUG) $(shell cd ../solo/bin && pwd)/ag-solo
+AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
+AGCH = $(GOSRC)/build/agd
 
 SHELL = bash
+
+default: all
 
 # By default, make the fake chain in scenario3 produce
 # "blocks" as soon as they come in.
@@ -39,7 +43,7 @@ BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 EVAL_CLEAN=$(EVAL_CODE)-clean.js
 
 $(EVAL_CLEAN): $(EVAL_CODE)
-	node test/runStake/checkGov.js $< >$@.t
+	./scripts/clean-core-eval.js $< >$@.t || { rm -f $@.t; exit 1; }
 	mv $@.t $@
 
 start-runStake: test/runStake/gov-start-runStake.js
@@ -53,7 +57,7 @@ start-committee: test/runStake/gov-start-econCommittee.js
 		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
 
 gov-q:
-	../../golang/cosmos/build/agd query gov proposals --output json | \
+	$(AGCH) query gov proposals --output json | \
 		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]'
 
 deploy-runStake: ../run-protocol/test/runStake/runStake-deploy.js
@@ -87,8 +91,6 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
-AGCH = $(GOSRC)/build/agd
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
 	rm -rf t1
