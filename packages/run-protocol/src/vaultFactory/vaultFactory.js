@@ -159,7 +159,7 @@ export const start = async (zcf, privateArgs) => {
 
     const startTimeStamp = await E(timerService).getCurrentTimestamp();
 
-    const factoryPowers = harden({
+    const factoryPowers = Far('vault factory powers', {
       getGovernedParams: () => ({
         ...vaultParamManager.readonly(),
         getChargingPeriod: () => loanTimingParams[CHARGING_PERIOD_KEY].value,
@@ -176,6 +176,7 @@ export const start = async (zcf, privateArgs) => {
       priceAuthority,
       factoryPowers,
       timerService,
+      // @ts-expect-error FIXME
       liquidationStrategy,
       penaltyPoolSeat,
       startTimeStamp,
