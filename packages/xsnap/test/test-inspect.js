@@ -30,6 +30,7 @@ const testCases = [
   ['new Set(["foo"])', `Set (1) {'foo'}`],
   ['new WeakMap([[{}, "foo"]])', `WeakMap { ? }`],
   ['new WeakSet([{}])', `WeakSet { ? }`],
+  ['Promise.resolve()', `Promise [Promise] {}`],
   [
     '(() => { const circ = {}; circ.ref = circ; return circ; })()',
     '{ ref: [Circular] }',

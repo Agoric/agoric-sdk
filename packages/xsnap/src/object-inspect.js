@@ -1,7 +1,7 @@
-/* eslint-disable no-empty */
-/* eslint-disable no-nested-ternary,no-use-before-define */
-// Adapted from object-inspect@1.12.0
-/* global WeakRef */
+/* eslint-disable no-empty,no-nested-ternary,no-use-before-define */
+/* eslint-enable @endo/no-polymorphic-call */
+/* global globalThis */
+// Adapted from object-inspect@1.12.0 https://github.com/inspect-js/object-inspect
 /*
 MIT License
 
@@ -31,7 +31,7 @@ const setSize = Object.getOwnPropertyDescriptor(Set.prototype, 'size').get;
 const setForEach = Set.prototype.forEach;
 const weakMapHas = WeakMap.prototype.has;
 const weakSetHas = WeakSet.prototype.has;
-const weakRefDeref = WeakRef && WeakRef.prototype.deref;
+const weakRefDeref = globalThis.WeakRef && globalThis.WeakRef.prototype.deref;
 const booleanValueOf = Boolean.prototype.valueOf;
 const objectToString = Object.prototype.toString;
 const functionToString = Function.prototype.toString;
@@ -43,8 +43,10 @@ const $test = RegExp.prototype.test;
 const $concat = Array.prototype.concat;
 const $join = Array.prototype.join;
 const bigIntValueOf = BigInt.prototype.valueOf;
+const getOwnPropertyNames = Object.getOwnPropertyNames;
 const getOwnPropertySymbols = Object.getOwnPropertySymbols;
 const symToString = Symbol.prototype.toString;
+const symKeyFor = Symbol.keyFor;
 // ie, `has-tostringtag/shams
 const toStringTag = Symbol.toStringTag;
 const isEnumerable = Object.prototype.propertyIsEnumerable;
@@ -53,48 +55,47 @@ const dateToISOString = Date.prototype.toISOString;
 const gPO = Reflect.getPrototypeOf;
 const hasOwn = Object.prototype.hasOwnProperty;
 
-function inspect0(obj, opts = {}, depth = 0, seen = new Set()) {
-  if (typeof obj === 'undefined') {
+function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
+  const typeofObj = typeof obj;
+  if (typeofObj === 'undefined') {
     return 'undefined';
   }
   if (obj === null) {
     return 'null';
   }
-  if (typeof obj === 'boolean') {
+  if (typeofObj === 'boolean') {
     return obj ? 'true' : 'false';
   }
 
-  if (typeof obj === 'string') {
+  if (typeofObj === 'string') {
     return inspectString(obj, opts);
   }
-  if (typeof obj === 'number') {
+  if (typeofObj === 'number') {
     if (obj === 0) {
       return Infinity / obj > 0 ? '0' : '-0';
     }
     return String(obj);
   }
-  if (typeof obj === 'bigint') {
+  if (typeofObj === 'bigint') {
     return `${obj}n`;
   }
 
   const maxDepth = typeof opts.depth === 'undefined' ? 5 : opts.depth;
-  if (typeof depth === 'undefined') {
-    depth = 0;
-  }
-  if (depth >= maxDepth && maxDepth > 0 && typeof obj === 'object') {
+  if (depth >= maxDepth && maxDepth > 0 && typeofObj === 'object') {
     return isArray(obj) ? '[Array]' : '[Object]';
   }
 
   const indent = getIndent(opts, depth);
 
-  if (seen.has(obj)) {
+  if (circular.has(obj)) {
     return '[Circular]';
   }
 
   function inspect(value, from, noIndent) {
     if (from) {
-      seen.add(from);
+      circular.add(from);
     }
+    let ret;
     if (noIndent) {
       const newOpts = {
         depth: opts.depth,
@@ -102,12 +103,17 @@ function inspect0(obj, opts = {}, depth = 0, seen = new Set()) {
       if (has(opts, 'quoteStyle')) {
         newOpts.quoteStyle = opts.quoteStyle;
       }
-      return inspect0(value, newOpts, depth + 1, seen);
+      ret = inspect0(value, newOpts, depth + 1, circular);
+    } else {
+      ret = inspect0(value, opts, depth + 1, circular);
     }
-    return inspect0(value, opts, depth + 1, seen);
+    if (from) {
+      circular.delete(from);
+    }
+    return ret;
   }
 
-  if (typeof obj === 'function') {
+  if (typeofObj === 'function') {
     const name = nameOf(obj);
     const keys = arrObjKeys(obj, inspect);
     return `[Function${name ? `: ${name}` : ' (anonymous)'}]${
@@ -115,26 +121,27 @@ function inspect0(obj, opts = {}, depth = 0, seen = new Set()) {
     }`;
   }
   if (isSymbol(obj)) {
-    const symString = symToString.call(obj);
-    return typeof obj === 'object' ? markBoxed(symString) : symString;
+    const registered = symKeyFor(obj);
+    if (registered !== undefined) {
+      // Registered symbol.
+      return `Symbol.for(${registered})`;
+    }
+    return symToString.call(obj);
   }
   if (isArray(obj)) {
     if (obj.length === 0) {
       return '[]';
     }
-    const xs = arrObjKeys(obj, inspect);
-    if (indent && !singleLineValues(xs)) {
-      return `[${indentedJoin(xs, indent)}]`;
+    const elems = arrObjKeys(obj, inspect);
+    if (indent && !singleLineValues(elems)) {
+      return `[${indentedJoin(elems, indent)}]`;
     }
-    return `[ ${$join.call(xs, ', ')} ]`;
+    return `[ ${$join.call(elems, ', ')} ]`;
   }
   if (isError(obj)) {
     const parts = arrObjKeys(obj, inspect);
     if ('cause' in obj && !isEnumerable.call(obj, 'cause')) {
-      return `{ [${String(obj)}] ${$join.call(
-        $concat.call(`[cause]: ${inspect(obj.cause)}`, parts),
-        ', ',
-      )} }`;
+      parts.unshift(`[cause]: ${inspect(obj.cause)}`);
     }
     if (parts.length === 0) {
       return `[${String(obj)}]`;
@@ -156,13 +163,13 @@ function inspect0(obj, opts = {}, depth = 0, seen = new Set()) {
     return collectionOf('Set', setSize.call(obj), setParts, indent);
   }
   if (isWeakMap(obj)) {
-    return weakCollectionOf('WeakMap');
+    return weakContainerOf('WeakMap');
   }
   if (isWeakSet(obj)) {
-    return weakCollectionOf('WeakSet');
+    return weakContainerOf('WeakSet');
   }
   if (isWeakRef(obj)) {
-    return weakCollectionOf('WeakRef');
+    return weakContainerOf('WeakRef');
   }
   if (isNumber(obj)) {
     return markBoxed(inspect(Number(obj)));
@@ -179,41 +186,43 @@ function inspect0(obj, opts = {}, depth = 0, seen = new Set()) {
   if (isDate(obj)) {
     return dateToISOString.call(obj);
   }
-  if (!isDate(obj) && !isRegExp(obj)) {
-    const ys = arrObjKeys(obj, inspect);
-    const isPlainObject = gPO
-      ? gPO(obj) === Object.prototype
-      : obj instanceof Object || obj.constructor === Object;
-    const protoTag = obj instanceof Object ? '' : 'null prototype';
-    const stringTag =
-      !isPlainObject && toStringTag && Object(obj) === obj && toStringTag in obj
-        ? $slice.call(toStr(obj), 8, -1)
-        : protoTag
-        ? 'Object'
-        : '';
-    const constructorTag =
-      isPlainObject || typeof obj.constructor !== 'function'
-        ? ''
-        : obj.constructor.name
-        ? `${obj.constructor.name} `
-        : '';
-    const tag =
-      constructorTag +
-      (stringTag || protoTag
-        ? `[${$join.call(
-            $concat.call([], stringTag || [], protoTag || []),
-            ': ',
-          )}] `
-        : '');
-    if (ys.length === 0) {
-      return `${tag}{}`;
-    }
-    if (indent) {
-      return `${tag}{${indentedJoin(ys, indent)}}`;
-    }
-    return `${tag}{ ${$join.call(ys, ', ')} }`;
+  if (isRegExp(obj)) {
+    return String(obj);
   }
-  return String(obj);
+
+  const elems = arrObjKeys(obj, inspect);
+  const isPlainObject = gPO
+    ? gPO(obj) === Object.prototype
+    : obj instanceof Object || obj.constructor === Object;
+  const protoTag = obj instanceof Object ? '' : 'null prototype';
+  const stringTag =
+    !isPlainObject && toStringTag && Object(obj) === obj && toStringTag in obj
+      ? $slice.call(toStr(obj), 8, -1)
+      : protoTag
+      ? 'Object'
+      : '';
+  const protoConstructor = gPO(obj)?.constructor;
+  const constructorTag =
+    isPlainObject || typeof protoConstructor !== 'function'
+      ? ''
+      : protoConstructor.name
+      ? `${protoConstructor.name} `
+      : '';
+  const tag =
+    constructorTag +
+    (stringTag || protoTag
+      ? `[${$join.call(
+          $concat.call([], stringTag || [], protoTag || []),
+          ': ',
+        )}] `
+      : '');
+  if (elems.length === 0) {
+    return `${tag}{}`;
+  }
+  if (indent) {
+    return `${tag}{${indentedJoin(elems, indent)}}`;
+  }
+  return `${tag}{ ${$join.call(elems, ', ')} }`;
 }
 
 function wrapQuotes(s, defaultStyle, opts) {
@@ -383,8 +392,8 @@ function inspectString(str, opts) {
       inspectString($slice.call(str, 0, opts.maxStringLength), opts) + trailer
     );
   }
-  // eslint-disable-next-line no-control-regex
   const s = $replace.call(
+    // Replace ' with \' and \ with \\.
     $replace.call(str, /(['\\])/g, '\\$1'),
     // eslint-disable-next-line no-control-regex
     /[\x00-\x1f]/g,
@@ -393,6 +402,8 @@ function inspectString(str, opts) {
   return wrapQuotes(s, 'single', opts);
 }
 
+// Replace control characters with `\b`, `\t`, `\n`, `\f`, `\r`, `\x0B` or
+// `\xAB` escaped versions.
 function lowbyte(c) {
   const n = c.charCodeAt(0);
   const x = {
@@ -412,7 +423,7 @@ function markBoxed(str) {
   return `Object(${str})`;
 }
 
-function weakCollectionOf(type) {
+function weakContainerOf(type) {
   return `${type} { ? }`;
 }
 
@@ -457,16 +468,16 @@ function indentedJoin(xs, indent) {
 
 function arrObjKeys(obj, inspect) {
   const isArr = isArray(obj);
-  const xs = [];
+  const elems = [];
   if (isArr) {
-    xs.length = obj.length;
+    elems.length = obj.length;
     for (let i = 0; i < obj.length; i += 1) {
-      xs[i] = has(obj, i) ? inspect(obj[i], obj) : '';
+      elems[i] = has(obj, i) ? inspect(obj[i], obj) : '';
     }
   }
   const syms = getOwnPropertySymbols(obj);
-  for (const key in obj) {
-    if (!has(obj, key)) {
+  for (const key of getOwnPropertyNames(obj)) {
+    if (!isEnumerable.call(obj, key)) {
       // eslint-disable-next-line no-continue
       continue;
     }
@@ -475,17 +486,21 @@ function arrObjKeys(obj, inspect) {
       continue;
     }
     if ($test.call(/[^\w$]/, key)) {
-      xs.push(`${inspect(key, obj)}: ${inspect(obj[key], obj)}`);
+      elems.push(`${inspect(key, obj)}: ${inspect(obj[key], obj)}`);
     } else {
-      xs.push(`${key}: ${inspect(obj[key], obj)}`);
+      elems.push(`${key}: ${inspect(obj[key], obj)}`);
     }
   }
   for (let j = 0; j < syms.length; j += 1) {
     if (isEnumerable.call(obj, syms[j])) {
-      xs.push(`[${inspect(syms[j])}]: ${inspect(obj[syms[j]], obj)}`);
+      elems.push(`[${inspect(syms[j])}]: ${inspect(obj[syms[j]], obj)}`);
     }
   }
-  return xs;
+  return elems;
 }
 
+// This must be the only import/export statement, and occur last in the file, so
+// that ../lib/confined-object-inspect.js can comment out the `export default`
+// and evaluate this entire file's source code to obtain the inspector as the
+// completion value.
 export default harden(inspect0);
