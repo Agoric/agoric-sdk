@@ -43,6 +43,10 @@ const testCases = [
     '(() => { const circ = {}; circ.ref = circ; return circ; })()',
     '{ ref: [Circular] }',
   ],
+  [
+    '(() => { const circ = {}; circ.ref = circ; return [circ, circ, { again: circ }]; })()',
+    '[ { ref: [Circular] }, { ref: [Circular] }, { again: { ref: [Circular] } } ]',
+  ],
   ['new Error("foo")', '[Error: foo]'],
   ['new TypeError("foo2")', '[TypeError: foo2]'],
   ['new Function("bar", 1)', '[Function: anonymous]'],
