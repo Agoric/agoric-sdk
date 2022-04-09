@@ -117,7 +117,7 @@ test('error=true', t => {
   t.is(input.attr('aria-invalid'), 'true');
 });
 
-test('can simulate input - just calls onChange', async t => {
+test('can simulate input - just calls onChange', t => {
   let receivedValue;
   const onChange = newValue => {
     receivedValue = newValue;
@@ -187,7 +187,20 @@ test('displays 3 eth correctly', t => {
   );
 });
 
-test.todo('negative values error');
+test('discards negative values', t => {
+  let receivedValue;
+  const onChange = newValue => {
+    receivedValue = newValue;
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    wrapper.setProps({ value: receivedValue });
+  };
+  const wrapper = makeShallowNatAmountInput({ onChange });
+
+  wrapper.simulate('change', { target: { value: '-5' } });
+  t.is(receivedValue, 5n);
+  t.is(wrapper.prop('value'), '5');
+});
+
 test.todo(
   `you can click on the input and change the value, which changes the prop 'value'`,
 );
