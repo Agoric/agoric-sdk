@@ -50,10 +50,34 @@ export const makePaymentLedger = (
 
   /** @type {WeakMapStore<Payment, Amount>} */
   const paymentLedger = makeScalarBigWeakMapStore('payment');
-  /** @type {WeakMapStore<Payment, SetStore<Payment>>} */
+
+  /**
+   * A withdrawn live payment is associated with the recovery set of
+   * the purse it was withdrawn from. Let's call these "recoverable"
+   * payments. All recoverable payments are live, but not all live
+   * payments are recoverable. We do the bookkeeping for payment recovery
+   * with this weakmap from recoverable payments to the recovery set they are
+   * in.
+   * A bunch of interesting invariants here:
+   *    * Every payment that is a key in the outer `paymentRecoverySets`
+   *      weakMap is also in the recovery set indexed by that payment.
+   *    * Implied by the above but worth stating: the payment is only
+   *      in at most one recovery set.
+   *    * A recovery set only contains such payments.
+   *    * Every purse is associated with exactly one recovery set unique to
+   *      it.
+   *    * A purse's recovery set only contains payments withdrawn from
+   *      that purse and not yet consumed.
+   *
+   * @type {WeakMapStore<Payment, SetStore<Payment>>}
+   */
   const paymentRecoverySets = makeScalarBigWeakMapStore('payment-recovery');
 
   /**
+   * To maintain the invariants listed in the `paymentRecoverySets` comment,
+   * `initPayment` should contain the only
+   * call to `paymentLedger.init`.
+   *
    * @param {Payment} payment
    * @param {Amount} amount
    * @param {SetStore<Payment>} [optRecoverySet]
@@ -66,6 +90,13 @@ export const makePaymentLedger = (
     paymentLedger.init(payment, amount);
   };
 
+  /**
+   * To maintain the invariants listed in the `paymentRecoverySets` comment,
+   * `deletePayment` should contain the only
+   * call to `paymentLedger.delete`.
+   *
+   * @param {Payment} payment
+   */
   const deletePayment = payment => {
     paymentLedger.delete(payment);
     if (paymentRecoverySets.has(payment)) {
