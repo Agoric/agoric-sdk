@@ -216,11 +216,8 @@ export const makePaymentLedger = (
     });
   };
 
-  const claimInternal = (
-    paymentP,
-    optAmountShape = undefined,
-    optRecoverSet = undefined,
-  ) => {
+  /** @type {IssuerClaim} */
+  const claim = (paymentP, optAmountShape = undefined) => {
     return E.when(paymentP, srcPayment => {
       assertLivePayment(srcPayment);
       const srcPaymentBalance = paymentLedger.get(srcPayment);
@@ -229,15 +226,11 @@ export const makePaymentLedger = (
       const [payment] = moveAssets(
         harden([srcPayment]),
         harden([srcPaymentBalance]),
-        optRecoverSet,
+        undefined,
       );
       return payment;
     });
   };
-
-  /** @type {IssuerClaim} */
-  const claim = (paymentP, optAmountShape = undefined) =>
-    claimInternal(paymentP, optAmountShape, undefined);
 
   /** @type {IssuerCombine} */
   const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
@@ -386,7 +379,6 @@ export const makePaymentLedger = (
   const purseMethods = {
     depositInternal,
     withdrawInternal,
-    claimInternal,
   };
 
   const makeEmptyPurse = makePurseMaker(

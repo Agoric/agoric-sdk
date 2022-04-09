@@ -351,10 +351,6 @@
  * @property {(amount: Amount) => Payment} withdraw
  * Withdraw amount from this purse into a new Payment.
  *
- * @property {IssuerClaim} claim
- * Like `issuer.claim`, but also associates the new payment with this purse's
- * recovery set, so the payment can be recovered in emergencies.
- *
  * @property {() => CopySet<Payment>} getRecoverySet
  * The set of payments associated with this purse that are still live. These
  * are the payments that can still be recovered in emergencies by, for example,

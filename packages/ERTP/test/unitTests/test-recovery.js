@@ -28,17 +28,16 @@ test('payment recovery', async t => {
   t.assert(keyEQ(alicePurse.getRecoverySet(), makeCopySet([payment3])));
   t.assert(issuer.isLive(payment3));
 
-  const payment4 = await bobPurse.claim(payment3);
+  bobPurse.deposit(payment3);
   t.assert(keyEQ(alicePurse.getRecoverySet(), emptySet));
-  t.assert(keyEQ(bobPurse.getRecoverySet(), makeCopySet([payment4])));
 
   const aliceRecovered = alicePurse.recoverAll();
   t.assert(isEmpty(aliceRecovered));
   t.assert(isEqual(alicePurse.getCurrentAmount(), precious(32n)));
 
-  t.assert(isEqual(bobPurse.getCurrentAmount(), precious(41n)));
+  t.assert(isEqual(bobPurse.getCurrentAmount(), precious(46n)));
   const bobRecovered = bobPurse.recoverAll();
-  t.assert(isEqual(bobRecovered, precious(5n)));
+  t.assert(isEqual(bobRecovered, precious(0n)));
   t.assert(isEqual(bobPurse.getCurrentAmount(), precious(46n)));
   t.assert(keyEQ(bobPurse.getRecoverySet(), emptySet));
 });

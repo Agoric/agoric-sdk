@@ -16,7 +16,7 @@ export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
   // - An alternative design considered was to have this return a Purse alone
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
-  const { depositInternal, withdrawInternal, claimInternal } = purseMethods;
+  const { depositInternal, withdrawInternal } = purseMethods;
   const makePurseKit = defineKind(
     allegedName,
     () => {
@@ -62,8 +62,6 @@ export const makePurseMaker = (allegedName, assetKind, brand, purseMethods) => {
         // eslint-disable-next-line no-use-before-define
         getDepositFacet: ({ facets }) => facets.depositFacet,
 
-        claim: ({ state }, paymentP, optAmountShape) =>
-          claimInternal(paymentP, optAmountShape, state.recoverySet),
         getRecoverySet: ({ state }) => state.recoverySet.snapshot(),
         recoverAll: ({ state, facets }) => {
           let amount = AmountMath.makeEmpty(brand, assetKind);

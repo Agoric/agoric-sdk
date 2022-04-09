@@ -145,10 +145,6 @@ function makeVirtualPurse(vpc, kit) {
       });
       return pmt;
     },
-    claim: (_paymentP, _optAmountShape) => {
-      // TODO implement
-      assert.fail(X`virtual purses do not yet implement claim`);
-    },
     getRecoverySet: () => {
       // TODO implement
       assert.fail(X`virtual purses do not yet implement getRecoverySet`);
