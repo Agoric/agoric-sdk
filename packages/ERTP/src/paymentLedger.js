@@ -158,14 +158,9 @@ export const makePaymentLedger = (
    *
    * @param {Payment[]} payments
    * @param {Amount[]} newPaymentBalances
-   * @param {SetStore<Payment>} [optRecoverySet]
    * @returns {Payment[]}
    */
-  const moveAssets = (
-    payments,
-    newPaymentBalances,
-    optRecoverySet = undefined,
-  ) => {
+  const moveAssets = (payments, newPaymentBalances) => {
     assertCopyArray(payments, 'payments');
     assertCopyArray(newPaymentBalances, 'newPaymentBalances');
 
@@ -205,7 +200,7 @@ export const makePaymentLedger = (
 
       newPayments = newPaymentBalances.map(balance => {
         const newPayment = makePayment();
-        initPayment(newPayment, balance, optRecoverySet);
+        initPayment(newPayment, balance, undefined);
         return newPayment;
       });
     } catch (err) {
@@ -257,7 +252,6 @@ export const makePaymentLedger = (
       const [payment] = moveAssets(
         harden([srcPayment]),
         harden([srcPaymentBalance]),
-        undefined,
       );
       return payment;
     });
@@ -278,7 +272,6 @@ export const makePaymentLedger = (
       const [payment] = moveAssets(
         harden(fromPaymentsArray),
         harden([totalPaymentsBalance]),
-        undefined,
       );
       return payment;
     });
@@ -296,7 +289,6 @@ export const makePaymentLedger = (
       const newPayments = moveAssets(
         harden([srcPayment]),
         harden([paymentAmountA, paymentAmountB]),
-        undefined,
       );
       return newPayments;
     });
@@ -309,11 +301,7 @@ export const makePaymentLedger = (
       assertCopyArray(amounts, 'amounts');
       amounts = amounts.map(coerce);
       // Note COMMIT POINT within moveAssets.
-      const newPayments = moveAssets(
-        harden([srcPayment]),
-        harden(amounts),
-        undefined,
-      );
+      const newPayments = moveAssets(harden([srcPayment]), harden(amounts));
       return newPayments;
     });
   };
