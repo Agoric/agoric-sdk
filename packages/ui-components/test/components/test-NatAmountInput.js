@@ -197,8 +197,8 @@ test('discards negative values', t => {
   const wrapper = makeShallowNatAmountInput({ onChange });
 
   wrapper.simulate('change', { target: { value: '-5' } });
-  t.is(receivedValue, 0n);
-  t.is(wrapper.prop('value'), '');
+  t.is(receivedValue, 5n);
+  t.is(wrapper.prop('value'), '5');
 });
 
 test.todo(

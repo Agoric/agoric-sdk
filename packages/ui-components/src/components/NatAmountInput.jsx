@@ -50,9 +50,7 @@ const makeNatAmountInput =
     const handleOnChange = ev => {
       /** @type {string} */
       let str = ev.target.value;
-      if (str.includes('-')) {
-        str = '';
-      }
+      str = str.replace(/-/g, '');
       setFieldString(str);
       const parsed = parseAsNat(str, decimalPlaces);
       onChange(parsed);
