@@ -32,7 +32,7 @@
     "@opentelemetry/sdk-trace-base": "^1.0.1",
     "@opentelemetry/semantic-conventions": "^1.0.1",
     "anylogger": "^0.21.0",
-    "better-sqlite3": "^7.4.1",
+    "better-sqlite3": "^7.5.0",
     "bufferfromfile": "agoric-labs/BufferFromFile#Agoric-built",
     "tmp": "^0.2.1"
   },
@@ -40,7 +40,7 @@
     "@endo/lockdown": "^0.1.9",
     "@endo/ses-ava": "^0.2.21",
     "ava": "^3.12.1",
-    "c8": "^7.7.2",
+    "c8": "^7.11.0",
     "tmp": "^0.2.1"
   },
   "eslintConfig": {
