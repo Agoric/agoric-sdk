@@ -429,12 +429,18 @@ function validateStatusCheck(v, vref, rc, es, value) {
   validate(v, matchVatstoreGet(stateKey(vref), value));
 }
 
+function validateCheckNoWeakKeys(v, ref) {
+  validate(v, matchVatstoreGetAfter('', `vom.ir.${ref}|`, NONE, [NONE, NONE]));
+}
+
 function validateFauxCacheDisplacerDeletion(v) {
   validate(v, matchVatstoreSet('idCounters'));
   validate(v, matchVatstoreGet(rcKey(fCacheDisplacerVref), NONE));
   validate(v, matchVatstoreGet(esKey(fCacheDisplacerVref), NONE));
   validate(v, matchVatstoreGet(stateKey(fCacheDisplacerVref), cacheObjValue));
   validateDelete(v, fCacheDisplacerVref);
+  validateCheckNoWeakKeys(v, `${fCacheDisplacerVref}:0`);
+  validateCheckNoWeakKeys(v, `${fCacheDisplacerVref}:1`);
 }
 
 function validateCreateBaggage(v, idx) {
@@ -537,6 +543,7 @@ function validateDropStoredAndRetire(v, rp, what) {
   validateReturned(v, rp);
   validateStatusCheck(v, what, '0', NONE, testObjValue);
   validateDelete(v, what);
+  validateWeakCheck(v, what);
   validateDone(v);
 }
 
@@ -555,6 +562,7 @@ function validateDropStoredWithGCAndRetire(v, rp, what, esp) {
   validateReturned(v, rp);
   validateStatusCheck(v, what, '0', esVal('s', esp), testObjValue);
   validateDelete(v, what);
+  validateWeakCheck(v, what);
   validate(v, matchRetireExports(what));
   validateDone(v);
 }
@@ -595,10 +603,21 @@ function validateDropHeld(v, rp, what, esp, rc, es) {
   validateDone(v);
 }
 
+function validateWeakCheck(v, what) {
+  const whatb = base(what);
+  if (whatb !== what) {
+    validateCheckNoWeakKeys(v, `${whatb}:0`);
+    validateCheckNoWeakKeys(v, `${whatb}:1`);
+  } else {
+    validateCheckNoWeakKeys(v, what);
+  }
+}
+
 function validateDropHeldWithGC(v, rp, what, rc, heldValue = testObjValue) {
   validateReturned(v, rp);
   validateStatusCheck(v, what, rc, NONE, heldValue);
   validateDelete(v, what);
+  validateWeakCheck(v, what);
   validateDone(v);
 }
 
@@ -606,6 +625,7 @@ function validateDropHeldWithGCAndRetire(v, rp, what, esp) {
   validateReturned(v, rp);
   validateStatusCheck(v, what, NONE, esVal('s', esp), testObjValue);
   validateDelete(v, what);
+  validateWeakCheck(v, what);
   validate(v, matchRetireExports(what));
   validateDone(v);
 }
@@ -614,6 +634,7 @@ function validateDropHeldWithGCAndRetireFacets(v, rp, what, esp) {
   validateReturned(v, rp);
   validateStatusCheck(v, what, NONE, esp, testObjValue);
   validateDelete(v, what);
+  validateWeakCheck(v, `${what}:0`);
   validate(v, matchRetireExports(`${what}:0`, `${what}:1`));
   validateDone(v);
 }
@@ -631,6 +652,7 @@ function validateDropExportWithGCAndRetire(v, what, esp, rc) {
   validate(v, matchVatstoreGet(rcKey(what), rc));
   validateStatusCheck(v, what, rc, esVal('s', esp), testObjValue);
   validateDelete(v, what);
+  validateWeakCheck(v, what);
   validate(v, matchRetireExports(what));
   validateDone(v);
 }
@@ -670,7 +692,7 @@ async function voLifeCycleTest1(t, isf) {
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thing, '0');
+  validateDropHeldWithGC(v, rp, thingf, '0');
 }
 test.serial('VO lifecycle 1 unfaceted', async t => {
   await voLifeCycleTest1(t, false);
@@ -855,7 +877,7 @@ async function voLifeCycleTest5(t, isf) {
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thing, NONE);
+  validateDropHeldWithGC(v, rp, thingf, NONE);
 }
 test.serial('VO lifecycle 5 unfaceted', async t => {
   await voLifeCycleTest5(t, false);
@@ -1015,6 +1037,7 @@ test.serial('VO multifacet export 1', async t => {
     true,
   );
   const thing = `${facetedThingKindID}/2`;
+  const thingf = `${thing}:0`;
 
   // lerv -> Lerv  Create facets
   let rp = await dispatchMessage('makeAndHoldFacets');
@@ -1022,7 +1045,7 @@ test.serial('VO multifacet export 1', async t => {
 
   // Lerv -> lerv  Drop in-memory reference to both facets, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thing, NONE);
+  validateDropHeldWithGC(v, rp, thingf, NONE);
 
   validateDone(v);
 });
@@ -1165,6 +1188,7 @@ test.serial('VO multifacet markers only', async t => {
     true,
   );
   const thing = 'o+13/1';
+  const thingf = 'o+13/1:0';
   const thingCapdata = JSON.stringify({ unused: capdata('uncared for') });
 
   // lerv -> Lerv  Create facets
@@ -1173,7 +1197,7 @@ test.serial('VO multifacet markers only', async t => {
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thing, NONE, thingCapdata);
+  validateDropHeldWithGC(v, rp, thingf, NONE, thingCapdata);
 });
 
 // prettier-ignore
@@ -1224,6 +1248,7 @@ async function voRefcountManagementTest1(t, isf) {
   validateReturned(v, rp);
   validateStatusCheck(v, thing, '0', NONE, testObjValue);
   validateDelete(v, thing);
+  validateWeakCheck(v, thingf);
   validateDone(v);
 }
 test.serial('VO refcount management 1 unfaceted', async t => {
@@ -1248,24 +1273,30 @@ async function voRefcountManagementTest2(t, isf) {
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
 
-  validateStatusCheck(v, `${holderKindID}/2`, NONE, NONE, heldThingValue(thingf));
+  const holder2 = `${holderKindID}/2`;
+  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(thingf));
   validate(v, matchVatstoreGet(rcKey(thing), '3'));
   validate(v, matchVatstoreSet(rcKey(thing), '2'));
-  validateDelete(v, `${holderKindID}/2`);
+  validateDelete(v, holder2);
+  validateWeakCheck(v, holder2);
 
-  validateStatusCheck(v, `${holderKindID}/3`, NONE, NONE, heldThingValue(thingf));
+  const holder3 = `${holderKindID}/3`;
+  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(thingf));
   validate(v, matchVatstoreGet(rcKey(thing), '2'));
   validate(v, matchVatstoreSet(rcKey(thing), '1'));
-  validateDelete(v, `${holderKindID}/3`);
+  validateDelete(v, holder3);
+  validateWeakCheck(v, holder3);
 
-  validateStatusCheck(v, `${holderKindID}/4`, NONE, NONE, heldThingValue(thingf));
+  const holder4 = `${holderKindID}/4`;
+  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(thingf));
   validate(v, matchVatstoreGet(rcKey(thing), '1'));
   validate(v, matchVatstoreSet(rcKey(thing), '0'));
-
-  validateDelete(v, `${holderKindID}/4`);
+  validateDelete(v, holder4);
+  validateWeakCheck(v, holder4);
 
   validateStatusCheck(v, thing, '0', NONE, testObjValue);
   validateDelete(v, thing);
+  validateWeakCheck(v, thingf);
 
   validateDone(v);
 }
@@ -1288,44 +1319,51 @@ async function voRefcountManagementTest3(t, isf) {
   rp = await dispatchMessage('prepareStoreLinked');
   validate(v, matchVatstoreGet(rcKey(thing)));
   validate(v, matchVatstoreSet(rcKey(thing), '1'));
-  validate(v, matchVatstoreGet(rcKey(`${holderKindID}/2`)));
-  validate(v, matchVatstoreSet(rcKey(`${holderKindID}/2`), '1'));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/2`), heldThingValue(thingf)));
-  validate(v, matchVatstoreGet(rcKey(`${holderKindID}/3`)));
-  validate(v, matchVatstoreSet(rcKey(`${holderKindID}/3`), '1'));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/3`), heldHolderValue(`${holderKindID}/2`)));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldHolderValue(`${holderKindID}/3`)));
+  const holder2 = `${holderKindID}/2`;
+  validate(v, matchVatstoreGet(rcKey(holder2)));
+  validate(v, matchVatstoreSet(rcKey(holder2), '1'));
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(thingf)));
+  const holder3 = `${holderKindID}/3`;
+  validate(v, matchVatstoreGet(rcKey(holder3)));
+  validate(v, matchVatstoreSet(rcKey(holder3), '1'));
+  validate(v, matchVatstoreSet(stateKey(holder3), heldHolderValue(holder2)));
+  const holder4 = `${holderKindID}/4`;
+  validate(v, matchVatstoreSet(stateKey(holder4), heldHolderValue(holder3)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
   validate(v, matchVatstoreGet(rcKey(thing), '1'));
   validate(v, matchVatstoreGet(esKey(thing), NONE));
 
-  validate(v, matchVatstoreGet(rcKey(`${holderKindID}/2`), '1'));
-  validate(v, matchVatstoreGet(esKey(`${holderKindID}/2`), NONE));
-  validate(v, matchVatstoreGet(rcKey(`${holderKindID}/3`), '1'));
-  validate(v, matchVatstoreGet(esKey(`${holderKindID}/3`), NONE));
+  validate(v, matchVatstoreGet(rcKey(holder2), '1'));
+  validate(v, matchVatstoreGet(esKey(holder2), NONE));
+  validate(v, matchVatstoreGet(rcKey(holder3), '1'));
+  validate(v, matchVatstoreGet(esKey(holder3), NONE));
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateStatusCheck(v, `${holderKindID}/4`, NONE, NONE, heldHolderValue(`${holderKindID}/3`));
-  validate(v, matchVatstoreGet(rcKey(`${holderKindID}/3`), '1'));
-  validate(v, matchVatstoreSet(rcKey(`${holderKindID}/3`), '0'));
+  validateStatusCheck(v, holder4, NONE, NONE, heldHolderValue(holder3));
+  validate(v, matchVatstoreGet(rcKey(holder3), '1'));
+  validate(v, matchVatstoreSet(rcKey(holder3), '0'));
 
-  validateDelete(v, `${holderKindID}/4`);
+  validateDelete(v, holder4);
+  validateWeakCheck(v, holder4);
 
-  validateStatusCheck(v, `${holderKindID}/3`, '0', NONE, heldHolderValue(`${holderKindID}/2`));
-  validate(v, matchVatstoreGet(rcKey(`${holderKindID}/2`), '1'));
-  validate(v, matchVatstoreSet(rcKey(`${holderKindID}/2`), '0'));
-  validateDelete(v, `${holderKindID}/3`);
+  validateStatusCheck(v, holder3, '0', NONE, heldHolderValue(holder2));
+  validate(v, matchVatstoreGet(rcKey(holder2), '1'));
+  validate(v, matchVatstoreSet(rcKey(holder2), '0'));
+  validateDelete(v, holder3);
+  validateWeakCheck(v, holder3);
 
-  validateStatusCheck(v, `${holderKindID}/2`, '0', NONE, heldThingValue(thingf));
+  validateStatusCheck(v, holder2, '0', NONE, heldThingValue(thingf));
   validate(v, matchVatstoreGet(rcKey(thing), '1'));
   validate(v, matchVatstoreSet(rcKey(thing), '0'));
-  validateDelete(v, `${holderKindID}/2`);
+  validateDelete(v, holder2);
+  validateWeakCheck(v, holder2);
 
   validateStatusCheck(v, thing, '0', NONE, testObjValue);
   validateDelete(v, thing);
+  validateWeakCheck(v, thingf);
 
   validateDone(v);
 }
@@ -1340,7 +1378,8 @@ test.serial('VO refcount management 3 faceted', async t => {
 test.serial('presence refcount management 1', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
-  let rp = await dispatchMessage('importAndHold', thingArgs('o-5'));
+  const presRef = 'o-5';
+  let rp = await dispatchMessage('importAndHold', thingArgs(presRef));
   validateSetup(v);
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
@@ -1348,39 +1387,42 @@ test.serial('presence refcount management 1', async t => {
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  validate(v, matchVatstoreGet(rcKey('o-5')));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '1'));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '1'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '2'));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/2`), heldThingValue('o-5')));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '2'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '3'));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/3`), heldThingValue('o-5')));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue('o-5')));
+  validate(v, matchVatstoreGet(rcKey(presRef)));
+  validate(v, matchVatstoreSet(rcKey(presRef), '1'));
+  validate(v, matchVatstoreGet(rcKey(presRef), '1'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '2'));
+  const holder2 = `${holderKindID}/2`;
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(presRef)));
+  validate(v, matchVatstoreGet(rcKey(presRef), '2'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '3'));
+  const holder3 = `${holderKindID}/3`;
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(presRef)));
+  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(presRef)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet(rcKey('o-5'), '3'));
+  validate(v, matchVatstoreGet(rcKey(presRef), '3'));
   validateDone(v);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(stateKey(`${holderKindID}/2`), heldThingValue('o-5')));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '3'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '2'));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/2`), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(`${holderKindID}/3`), heldThingValue('o-5')));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '2'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '1'));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/3`), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(`${holderKindID}/4`), heldThingValue('o-5')));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '1'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '0'));
-  validate(v, matchVatstoreDelete(rcKey('o-5')));
+  validate(v, matchVatstoreGet(stateKey(holder2), heldThingValue(presRef)));
+  validate(v, matchVatstoreGet(rcKey(presRef), '3'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '2'));
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(holder3), heldThingValue(presRef)));
+  validate(v, matchVatstoreGet(rcKey(presRef), '2'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '1'));
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(`${holderKindID}/4`), heldThingValue(presRef)));
+  validate(v, matchVatstoreGet(rcKey(presRef), '1'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '0'));
+  validate(v, matchVatstoreDelete(rcKey(presRef)));
   validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(null)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet(rcKey('o-5')));
-  validate(v, matchDropImports('o-5'));
-  validate(v, matchRetireImports('o-5'));
+  validate(v, matchVatstoreGet(rcKey(presRef)));
+  validateWeakCheck(v, presRef);
+  validate(v, matchDropImports(presRef));
+  validate(v, matchRetireImports(presRef));
   validateDone(v);
 });
 
@@ -1388,7 +1430,8 @@ test.serial('presence refcount management 1', async t => {
 test.serial('presence refcount management 2', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
-  let rp = await dispatchMessage('importAndHold', thingArgs('o-5'));
+  const presRef = 'o-5';
+  let rp = await dispatchMessage('importAndHold', thingArgs(presRef));
   validateSetup(v);
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
@@ -1396,38 +1439,45 @@ test.serial('presence refcount management 2', async t => {
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  validate(v, matchVatstoreGet(rcKey('o-5')));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '1'));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '1'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '2'));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/2`), heldThingValue('o-5')));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '2'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '3'));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/3`), heldThingValue('o-5')));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue('o-5')));
+  validate(v, matchVatstoreGet(rcKey(presRef)));
+  validate(v, matchVatstoreSet(rcKey(presRef), '1'));
+  validate(v, matchVatstoreGet(rcKey(presRef), '1'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '2'));
+  const holder2 = `${holderKindID}/2`;
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(presRef)));
+  validate(v, matchVatstoreGet(rcKey(presRef), '2'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '3'));
+  const holder3 = `${holderKindID}/3`;
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(presRef)));
+  const holder4 = `${holderKindID}/4`;
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(presRef)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet(rcKey('o-5'), '3'));
+  validate(v, matchVatstoreGet(rcKey(presRef), '3'));
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateStatusCheck(v, `${holderKindID}/2`, NONE, NONE, heldThingValue('o-5'));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '3'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '2'));
-  validateDelete(v, `${holderKindID}/2`);
-  validateStatusCheck(v, `${holderKindID}/3`, NONE, NONE, heldThingValue('o-5'));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '2'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '1'));
-  validateDelete(v, `${holderKindID}/3`);
-  validateStatusCheck(v, `${holderKindID}/4`, NONE, NONE, heldThingValue('o-5'));
-  validate(v, matchVatstoreGet(rcKey('o-5'), '1'));
-  validate(v, matchVatstoreSet(rcKey('o-5'), '0'));
-  validate(v, matchVatstoreDelete(rcKey('o-5')));
-  validateDelete(v, `${holderKindID}/4`);
-  validate(v, matchVatstoreGet(rcKey('o-5')));
-  validate(v, matchDropImports('o-5'));
-  validate(v, matchRetireImports('o-5'));
+  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(presRef));
+  validate(v, matchVatstoreGet(rcKey(presRef), '3'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '2'));
+  validateDelete(v, holder2);
+  validateWeakCheck(v, holder2);
+  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(presRef));
+  validate(v, matchVatstoreGet(rcKey(presRef), '2'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '1'));
+  validateDelete(v, holder3);
+  validateWeakCheck(v, holder3);
+  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(presRef));
+  validate(v, matchVatstoreGet(rcKey(presRef), '1'));
+  validate(v, matchVatstoreSet(rcKey(presRef), '0'));
+  validate(v, matchVatstoreDelete(rcKey(presRef)));
+  validateDelete(v, holder4);
+  validateWeakCheck(v, holder4);
+  validate(v, matchVatstoreGet(rcKey(presRef)));
+  validateWeakCheck(v, presRef);
+  validate(v, matchDropImports(presRef));
+  validate(v, matchRetireImports(presRef));
   validateDone(v);
 });
 
@@ -1443,21 +1493,24 @@ test.serial('remotable refcount management 1', async t => {
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/2`), heldThingValue(remotableID)));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/3`), heldThingValue(remotableID)));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(remotableID)));
+  const holder2 = `${holderKindID}/2`;
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(remotableID)));
+  const holder3 = `${holderKindID}/3`;
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(remotableID)));
+  const holder4 = `${holderKindID}/4`;
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(remotableID)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
   validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(stateKey(`${holderKindID}/2`), heldThingValue(remotableID)));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/2`), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(`${holderKindID}/3`), heldThingValue(remotableID)));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/3`), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(`${holderKindID}/4`), heldThingValue(remotableID)));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(holder2), heldThingValue(remotableID)));
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(holder3), heldThingValue(remotableID)));
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(holder4), heldThingValue(remotableID)));
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(null)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
@@ -1475,9 +1528,12 @@ test.serial('remotable refcount management 2', async t => {
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/2`), heldThingValue(remotableID)));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/3`), heldThingValue(remotableID)));
-  validate(v, matchVatstoreSet(stateKey(`${holderKindID}/4`), heldThingValue(remotableID)));
+  const holder2 = `${holderKindID}/2`;
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(remotableID)));
+  const holder3 = `${holderKindID}/3`;
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(remotableID)));
+  const holder4 = `${holderKindID}/4`;
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(remotableID)));
   validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
   validateReturned(v, rp);
   validate(v, matchVatstoreSet('idCounters'));
@@ -1485,12 +1541,15 @@ test.serial('remotable refcount management 2', async t => {
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateStatusCheck(v, `${holderKindID}/2`, NONE, NONE, heldThingValue(remotableID));
-  validateDelete(v, `${holderKindID}/2`);
-  validateStatusCheck(v, `${holderKindID}/3`, NONE, NONE, heldThingValue(remotableID));
-  validateDelete(v, `${holderKindID}/3`);
-  validateStatusCheck(v, `${holderKindID}/4`, NONE, NONE, heldThingValue(remotableID));
-  validateDelete(v, `${holderKindID}/4`);
+  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(remotableID));
+  validateDelete(v, holder2);
+  validateWeakCheck(v, holder2);
+  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(remotableID));
+  validateDelete(v, holder3);
+  validateWeakCheck(v, holder3);
+  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(remotableID));
+  validateDelete(v, holder4);
+  validateWeakCheck(v, holder4);
   validateDone(v);
 });
 
@@ -1498,6 +1557,7 @@ test.serial('remotable refcount management 2', async t => {
 async function voWeakKeyGCTest(t, isf) {
   const { v, dispatchMessage, testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const thing = thingVref(isf, 2);
+  const thingf = facetRef(isf, thing, '1');
 
   // Create VO and hold onto it weakly
   let rp = await dispatchMessage('makeAndHoldAndKey', boolArgs(isf));
@@ -1508,7 +1568,8 @@ async function voWeakKeyGCTest(t, isf) {
 
   // Drop in-memory reference, GC should cause weak entries to disappear
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thing, NONE);
+  validateCheckNoWeakKeys(v, thingf);
+  validateDropHeldWithGC(v, rp, thingf, NONE);
   t.is(testHooks.countCollectionsForWeakKey(facetRef(isf, thing, '1')), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
@@ -1536,6 +1597,7 @@ test.serial('verify presence weak key GC', async t => {
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 1);
 
   rp = await dispatchMessage('dropHeld');
+  validateWeakCheck(v, 'o-5');
   validateReturned(v, rp);
   validate(v, matchVatstoreGet(rcKey('o-5')));
   validate(v, matchDropImports('o-5'));
@@ -1545,6 +1607,8 @@ test.serial('verify presence weak key GC', async t => {
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 1);
 
   await dispatchRetireImports('o-5');
+  validateWeakCheck(v, 'o-5'); // XXX this is weird: why two?
+  validateWeakCheck(v, 'o-5');
   validateDone(v);
   t.is(testHooks.countCollectionsForWeakKey('o-5'), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);

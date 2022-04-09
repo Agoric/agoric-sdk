@@ -466,41 +466,54 @@ export function makeVirtualReferenceManager(
   /** @type {Map<string, Set<Recognizer>>} */
   const vrefRecognizers = new Map();
 
-  function addRecognizableValue(value, recognizer) {
+  function addRecognizableValue(value, recognizer, recognizerIsVirtual) {
     const vref = getSlotForVal(value);
     if (vref) {
       const { type, allocatedByVat, virtual } = parseVatSlot(vref);
       if (type === 'object' && (!allocatedByVat || virtual)) {
-        let recognizerSet = vrefRecognizers.get(vref);
-        if (!recognizerSet) {
-          recognizerSet = new Set();
-          vrefRecognizers.set(vref, recognizerSet);
+        if (recognizerIsVirtual) {
+          syscall.vatstoreSet(`vom.ir.${vref}|${recognizer}`, '1');
+        } else {
+          let recognizerSet = vrefRecognizers.get(vref);
+          if (!recognizerSet) {
+            recognizerSet = new Set();
+            vrefRecognizers.set(vref, recognizerSet);
+          }
+          recognizerSet.add(recognizer);
         }
-        recognizerSet.add(recognizer);
       }
     }
   }
 
-  function removeRecognizableVref(vref, recognizer) {
+  function removeRecognizableVref(vref, recognizer, recognizerIsVirtual) {
     const { type, allocatedByVat, virtual } = parseVatSlot(vref);
     if (type === 'object' && (!allocatedByVat || virtual)) {
-      const recognizerSet = vrefRecognizers.get(vref);
-      assert(recognizerSet && recognizerSet.has(recognizer));
-      recognizerSet.delete(recognizer);
-      if (recognizerSet.size === 0) {
-        vrefRecognizers.delete(vref);
-        if (!allocatedByVat) {
-          addToPossiblyRetiredSet(vref);
+      if (recognizerIsVirtual) {
+        syscall.vatstoreDelete(`vom.ir.${vref}|${recognizer}`);
+      } else {
+        const recognizerSet = vrefRecognizers.get(vref);
+        assert(recognizerSet && recognizerSet.has(recognizer));
+        recognizerSet.delete(recognizer);
+        if (recognizerSet.size === 0) {
+          vrefRecognizers.delete(vref);
+          if (!allocatedByVat) {
+            addToPossiblyRetiredSet(vref);
+          }
         }
       }
     }
   }
 
-  function removeRecognizableValue(value, recognizer) {
+  function removeRecognizableValue(value, recognizer, recognizerIsVirtual) {
     const vref = getSlotForVal(value);
     if (vref) {
-      removeRecognizableVref(vref, recognizer);
+      removeRecognizableVref(vref, recognizer, recognizerIsVirtual);
     }
+  }
+
+  let deleteCollectionEntry;
+  function setDeleteCollectionEntry(fn) {
+    deleteCollectionEntry = fn;
   }
 
   /**
@@ -546,16 +559,30 @@ export function makeVirtualReferenceManager(
           doMoreGC = true;
         } else if (recognizer instanceof Set) {
           recognizer.delete(vref);
-        } else if (typeof recognizer === 'function') {
-          recognizer(vref);
+        } else {
+          assert.fail(`unknown recognizer type ${typeof recognizer}`);
         }
       }
+    }
+    const prefix = `vom.ir.${vref}|`;
+    let [key] = syscall.vatstoreGetAfter('', prefix);
+    while (key) {
+      syscall.vatstoreDelete(key);
+      const parts = key.split('|');
+      const more = deleteCollectionEntry(parts[1], vref);
+      doMoreGC = doMoreGC || more;
+      [key] = syscall.vatstoreGetAfter(key, prefix);
     }
     return doMoreGC;
   }
 
   function isVrefRecognizable(vref) {
-    return vrefRecognizers.has(vref);
+    if (vrefRecognizers.has(vref)) {
+      return true;
+    } else {
+      const [key] = syscall.vatstoreGetAfter('', `vom.ir.${vref}|`);
+      return !!key;
+    }
   }
 
   function finalizeDroppedCollection(descriptor) {
@@ -575,7 +602,14 @@ export function makeVirtualReferenceManager(
 
   function countCollectionsForWeakKey(vref) {
     const recognizerSet = vrefRecognizers.get(vref);
-    return recognizerSet ? recognizerSet.size : 0;
+    let size = recognizerSet ? recognizerSet.size : 0;
+    const prefix = `vom.ir.${vref}|`;
+    let [key] = syscall.vatstoreGetAfter('', prefix);
+    while (key) {
+      size += 1;
+      [key] = syscall.vatstoreGetAfter(key, prefix);
+    }
+    return size;
   }
 
   const testHooks = {
@@ -601,6 +635,7 @@ export function makeVirtualReferenceManager(
     setExportStatus,
     possibleVirtualObjectDeath,
     ceaseRecognition,
+    setDeleteCollectionEntry,
     testHooks,
   });
 }
