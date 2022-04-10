@@ -134,7 +134,13 @@ export function makeCollectionManager(
     const ordinalString = syscall.vatstoreGet(ordinalKey);
     syscall.vatstoreDelete(ordinalKey);
     const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
-    syscall.vatstoreDelete(prefixc(collectionID, `r${ordinalTag}:${vobjID}`));
+    const recordKey = prefixc(collectionID, `r${ordinalTag}:${vobjID}`);
+    const rawValue = syscall.vatstoreGet(recordKey);
+    if (rawValue !== undefined) {
+      const value = JSON.parse(rawValue);
+      value.slots.map(vrm.removeReachableVref);
+      syscall.vatstoreDelete(recordKey);
+    }
   }
   vrm.setDeleteCollectionEntry(deleteCollectionEntry);
 

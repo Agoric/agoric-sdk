@@ -528,6 +528,16 @@ function validateDropStored(v, rp, what, esp, postCheck) {
   validateDone(v);
 }
 
+function validateWeakCheck(v, what) {
+  const whatb = base(what);
+  if (whatb !== what) {
+    validateCheckNoWeakKeys(v, `${whatb}:0`);
+    validateCheckNoWeakKeys(v, `${whatb}:1`);
+  } else {
+    validateCheckNoWeakKeys(v, what);
+  }
+}
+
 function validateDropStoredAndRetire(v, rp, what) {
   validate(
     v,
@@ -601,16 +611,6 @@ function validateDropHeld(v, rp, what, esp, rc, es) {
   validate(v, matchVatstoreGet(rcKey(what), rc));
   validate(v, matchVatstoreGet(esKey(what), esVal(es, esp)));
   validateDone(v);
-}
-
-function validateWeakCheck(v, what) {
-  const whatb = base(what);
-  if (whatb !== what) {
-    validateCheckNoWeakKeys(v, `${whatb}:0`);
-    validateCheckNoWeakKeys(v, `${whatb}:1`);
-  } else {
-    validateCheckNoWeakKeys(v, what);
-  }
 }
 
 function validateDropHeldWithGC(v, rp, what, rc, heldValue = testObjValue) {

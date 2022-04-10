@@ -84,6 +84,12 @@ function buildRootObject(vatPowers) {
       aWeakMapStore.init(heldStore, 'arbitrary');
       aWeakSetStore.add(heldStore);
     },
+    makeAndHoldWeakly() {
+      aWeakMapStore = makeWeakMapStore();
+      heldStore = makeMapStore();
+      const indirValue = makeMapStore();
+      aWeakMapStore.init(heldStore, indirValue);
+    },
     makeAndHoldRemotable() {
       heldStore = Far('thing', {});
     },
@@ -362,6 +368,10 @@ function validateDeleteMetadataOnly(
   validate(v, matchVatstoreDelete(`vom.es.${mapRef(idx)}`));
 }
 
+function validateWeakCheckEmpty(v, ref) {
+  validate(v, matchVatstoreGetAfter('', `vom.ir.${ref}|`, NONE, [NONE, NONE]));
+}
+
 function validateDeleteMetadata(
   v,
   es,
@@ -383,10 +393,6 @@ function validateDeleteMetadata(
     nonVirtual,
   );
   validateWeakCheckEmpty(v, mapRef(idx));
-}
-
-function validateWeakCheckEmpty(v, ref) {
-  validate(v, matchVatstoreGetAfter('', `vom.ir.${ref}|`, NONE, [NONE, NONE]));
 }
 
 function validateDropStored(v, rp, postCheck, rc, es, deleteMetadata) {
@@ -1241,11 +1247,13 @@ test.serial('verify store weak key GC', async t => {
   validate(v, matchVatstoreDelete(`${prefix}${mapID}`));
   validate(v, matchVatstoreGet(`vc.${mapID}.|${mapRef(keyID)}`, '1'));
   validate(v, matchVatstoreDelete(`vc.${mapID}.|${mapRef(keyID)}`));
+  validate(v, matchVatstoreGet(`vc.${mapID}.${ordinalKey}`, stringValString('arbitrary')));
   validate(v, matchVatstoreDelete(`vc.${mapID}.${ordinalKey}`));
   validate(v, matchVatstoreGetAfter(`${prefix}${mapID}`, prefix, NONE, [`${prefix}${setID}`, '1']));
   validate(v, matchVatstoreDelete(`${prefix}${setID}`));
   validate(v, matchVatstoreGet(`vc.${setID}.|${mapRef(keyID)}`, '1'));
   validate(v, matchVatstoreDelete(`vc.${setID}.|${mapRef(keyID)}`));
+  validate(v, matchVatstoreGet(`vc.${setID}.${ordinalKey}`, nullValString));
   validate(v, matchVatstoreDelete(`vc.${setID}.${ordinalKey}`));
   validate(v, matchVatstoreGetAfter(`${prefix}${setID}`, prefix, NONE, [NONE, NONE]));
 
@@ -1255,6 +1263,61 @@ test.serial('verify store weak key GC', async t => {
   validate(v, matchVatstoreGetAfter('', `vc.${mapID}.`, `vc.${mapID}.{`, DONE));
   t.is(testHooks.storeSizeInternal(mapRef(setID)), 0);
   validate(v, matchVatstoreGetAfter('', `vc.${setID}.`, `vc.${setID}.{`, DONE));
+  validateDone(v);
+});
+
+// prettier-ignore
+test.serial('verify weakly held value GC', async t => {
+  const { v, dispatchMessage } = await setupTestLiveslots(
+    t,
+    buildRootObject,
+    'bob',
+    true,
+  );
+
+  // Create a weak store, and put a weakly held object into it
+  let rp = await dispatchMessage('makeAndHoldWeakly');
+  validateInit(v);
+  const mapID = 3;
+  validateCreateStore(v, mapID, true); // weak map
+  const keyID = 4;
+  validateCreateStore(v, keyID); // key
+  const valueID = 5;
+  validateCreateStore(v, valueID); // indirect value
+
+  const ordinalKey = `r0000000001:${mapRef(keyID)}`;
+
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${mapRef(keyID)}`, NONE));
+  validate(v, matchVatstoreGet(`vc.${mapID}.|nextOrdinal`, '1'));
+  validate(v, matchVatstoreSet(`vc.${mapID}.|${mapRef(keyID)}`, '1'));
+  validate(v, matchVatstoreSet(`vc.${mapID}.|nextOrdinal`, '2'));
+  validate(v, matchVatstoreSet(`vom.ir.${mapRef(keyID)}|${mapID}`, '1'));
+  validateUpdate(v, `vom.rc.${mapRef(valueID)}`, NONE, '1');
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${mapRef(keyID)}`, '1'));
+  validate(v, matchVatstoreSet(`vc.${mapID}.${ordinalKey}`, refValString(mapRef(valueID), 'mapStore')));
+  validateReturned(v, rp);
+  validate(v, matchVatstoreSet('idCounters'));
+  validateStatusCheck(v, mapRef(valueID), '1', NONE);
+  validateDone(v);
+
+  // Drop in-memory reference to holder, GC should cause held entry to disappear
+  rp = await dispatchMessage('dropHeld');
+  validateReturned(v, rp);
+  validateStatusCheck(v, mapRef(keyID), NONE, NONE);
+  validateDeleteMetadataOnly(v, keyID, 0, NONE, NONE, 0, false);
+  const prefix = `vom.ir.${mapRef(keyID)}|`;
+  validate(v, matchVatstoreGetAfter('', prefix, NONE, [`${prefix}${mapID}`, '1']));
+  validate(v, matchVatstoreDelete(`${prefix}${mapID}`));
+  validate(v, matchVatstoreGet(`vc.${mapID}.|${mapRef(keyID)}`, '1'));
+  validate(v, matchVatstoreDelete(`vc.${mapID}.|${mapRef(keyID)}`));
+
+  validate(v, matchVatstoreGet(`vc.${mapID}.${ordinalKey}`, refValString(mapRef(valueID), 'mapStore')));
+  validateUpdate(v, `vom.rc.${mapRef(valueID)}`, `1`, `0`);
+  validate(v, matchVatstoreDelete(`vc.${mapID}.${ordinalKey}`));
+  validate(v, matchVatstoreGetAfter(`${prefix}${mapID}`, prefix, NONE, [NONE, NONE]));
+  validateStatusCheck(v, mapRef(valueID), '0', NONE);
+  validateDeleteMetadataOnly(v, valueID, 0, NONE, NONE, 0, false);
+  validateWeakCheckEmpty(v, mapRef(valueID));
   validateDone(v);
 });
 
@@ -1367,11 +1430,13 @@ test.serial('verify presence weak key GC', async t => {
   validate(v, matchVatstoreDelete(`${prefix}${mapID}`));
   validate(v, matchVatstoreGet(`vc.${mapID}.|${presenceRef}`, '1'));
   validate(v, matchVatstoreDelete(`vc.${mapID}.|${presenceRef}`));
+  validate(v, matchVatstoreGet(`vc.${mapID}.${ordinalKey}`, stringValString('arbitrary')));
   validate(v, matchVatstoreDelete(`vc.${mapID}.${ordinalKey}`));
   validate(v, matchVatstoreGetAfter(`${prefix}${mapID}`, prefix, NONE, [`${prefix}${setID}`, '1']));
   validate(v, matchVatstoreDelete(`${prefix}${setID}`));
   validate(v, matchVatstoreGet(`vc.${setID}.|${presenceRef}`, '1'));
   validate(v, matchVatstoreDelete(`vc.${setID}.|${presenceRef}`));
+  validate(v, matchVatstoreGet(`vc.${setID}.${ordinalKey}`, nullValString));
   validate(v, matchVatstoreDelete(`vc.${setID}.${ordinalKey}`));
   validate(v, matchVatstoreGetAfter(`${prefix}${setID}`, prefix, NONE, [NONE, NONE]));
   validateRefCountCheck(v, presenceRef, NONE);
