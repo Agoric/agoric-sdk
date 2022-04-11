@@ -66,8 +66,8 @@ In `packages/run-protocol/src/psm/psm.js`:
 
 | Governance Key     | Type                | WP? |
 | ------------------ | :------------------ | --- |
-| WantStableFeeBP    | BASIS_POINTS        | N/A |
-| GiveStableFeeBP    | BASIS_POINTS        | N/A |
+| WantStableFeeBP    | NatValue        | N/A |
+| GiveStableFeeBP    | NatValue        | N/A |
 | MintLimit          | Amount              | N/A |
 
 The RUN Protocol Whitepaper v0.8 does not describe the governance parameters
