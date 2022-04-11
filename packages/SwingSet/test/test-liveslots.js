@@ -761,17 +761,26 @@ test('GC syscall.dropImports', async t => {
     result: undefined,
   });
 
-  // since nothing else is holding onto it, the vat should emit a dropImports
   const l3 = log.shift();
   t.deepEqual(l3, {
+    type: 'vatstoreGetAfter',
+    priorKey: '',
+    start: 'vom.ir.o-1|',
+    end: undefined,
+    result: [undefined, undefined],
+  });
+
+  // since nothing else is holding onto it, the vat should emit a dropImports
+  const l4 = log.shift();
+  t.deepEqual(l4, {
     type: 'dropImports',
     slots: [arg],
   });
 
   // and since the vat never used the Presence in a WeakMap/WeakSet, they
   // cannot recognize it either, and will emit retireImports
-  const l4 = log.shift();
-  t.deepEqual(l4, {
+  const l5 = log.shift();
+  t.deepEqual(l5, {
     type: 'retireImports',
     slots: [arg],
   });
@@ -805,6 +814,7 @@ test('GC dispatch.retireImports', async t => {
   await dispatch(makeRetireImports(arg));
   // for now, we only care that it doesn't crash
   matchIDCounterSet(t, log);
+  t.like(log.shift(), { type: 'vatstoreGetAfter' });
   t.deepEqual(log, []);
 
   // when we implement VOM.vrefIsRecognizable, this test might do more

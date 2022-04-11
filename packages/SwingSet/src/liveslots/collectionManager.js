@@ -129,6 +129,31 @@ export function makeCollectionManager(
   // TODO Should we be using the new encodeBigInt scheme instead, anyway?
   const BIGINT_TAG_LEN = 10;
 
+  /**
+   * Delete an entry from a collection as part of garbage collecting the entry's key.
+   *
+   * @param {string} collectionID - the collection from which the entry is to be deleted
+   * @param {string} vobjID - the entry key being removed
+   *
+   * @returns {boolean} true if this removal possibly introduces a further GC opportunity
+   */
+  function deleteCollectionEntry(collectionID, vobjID) {
+    const ordinalKey = prefixc(collectionID, `|${vobjID}`);
+    const ordinalString = syscall.vatstoreGet(ordinalKey);
+    syscall.vatstoreDelete(ordinalKey);
+    const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
+    const recordKey = prefixc(collectionID, `r${ordinalTag}:${vobjID}`);
+    const rawValue = syscall.vatstoreGet(recordKey);
+    let doMoreGC = false;
+    if (rawValue !== undefined) {
+      const value = JSON.parse(rawValue);
+      doMoreGC = value.slots.map(vrm.removeReachableVref).some(b => b);
+      syscall.vatstoreDelete(recordKey);
+    }
+    return doMoreGC;
+  }
+  vrm.setDeleteCollectionEntry(deleteCollectionEntry);
+
   function summonCollectionInternal(
     _initial,
     label,
@@ -235,14 +260,6 @@ export function makeCollectionManager(
       }
     }
 
-    function entryDeleter(vobjID) {
-      const ordinalKey = prefix(`|${vobjID}`);
-      const ordinalString = syscall.vatstoreGet(ordinalKey);
-      syscall.vatstoreDelete(ordinalKey);
-      const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
-      syscall.vatstoreDelete(prefix(`r${ordinalTag}:${vobjID}`));
-    }
-
     function init(key, value) {
       assert(
         matches(key, keySchema),
@@ -272,7 +289,7 @@ export function makeCollectionManager(
         }
         generateOrdinal(key);
         if (hasWeakKeys) {
-          vrm.addRecognizableValue(key, entryDeleter);
+          vrm.addRecognizableValue(key, `${collectionID}`, true);
         } else {
           vrm.addReachableVref(vref);
         }
@@ -322,7 +339,7 @@ export function makeCollectionManager(
       if (passStyleOf(key) === 'remotable') {
         deleteOrdinal(key);
         if (hasWeakKeys) {
-          vrm.removeRecognizableValue(key, entryDeleter);
+          vrm.removeRecognizableValue(key, `${collectionID}`, true);
         } else {
           doMoreGC = vrm.removeReachableVref(convertValToSlot(key));
         }
