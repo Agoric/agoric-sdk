@@ -1,6 +1,7 @@
+/* eslint-disable no-use-before-define, import/no-extraneous-dependencies */
+import { expectType } from 'tsd';
 import { defineKind } from '.';
-
-import type { MinusContext } from './types';
+import { ActualBehavior, FunctionsMinusContext } from './types.js';
 
 /*
 export const makePaymentMaker = (allegedName: string, brand: unknown) => {
@@ -29,25 +30,28 @@ makeFlorg('notnumber');
 
 // From virtual-objects.md
 type CounterContext = {
-  state: {
-    counter: number;
-  };
+  state: ReturnType<typeof initFacetedCounter>;
+  facets: ActualBehavior<typeof facetedCounterBehavior>;
 };
 const initFacetedCounter = () => ({ counter: 0 });
 const getCount = ({ state }: CounterContext) => state.counter;
 const facetedCounterBehavior = {
   incr: {
-    step: ({ state }) => {
+    step: ({ state }: CounterContext) => {
       state.counter += 1;
     },
     getCount,
+    emptyFn: () => null,
   },
   decr: {
-    step: ({ state }) => {
+    step: (context: CounterContext) => {
+      const { state, facets } = context;
+      const { decr } = facets;
+      decr.echo('hi');
       state.counter -= 1;
     },
     getCount,
-    echo: (context, toEcho) => toEcho,
+    echo: (context: CounterContext, toEcho: string) => toEcho,
   },
 };
 
@@ -58,11 +62,12 @@ const makeFacetedCounter = defineKind(
 );
 
 const fc = makeFacetedCounter();
-fc.incr.step();
-fc.decr.step();
-fc.decr.getCount();
+expectType<void>(fc.incr.step());
+expectType<void>(fc.decr.step());
+expectType<number>(fc.decr.getCount());
 // @ts-expect-error missing argument
 fc.decr.echo();
-fc.decr.echo('foo');
+expectType<string>(fc.decr.echo('foo'));
 // @ts-expect-error missing method
 fc.incr.echo('foo');
+expectType<null>(fc.incr.emptyFn());
