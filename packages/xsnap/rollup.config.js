@@ -1,7 +1,16 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import { string } from 'rollup-plugin-string';
 
 export default [
+  {
+    input: 'src/object-inspect.js',
+    output: {
+      file: 'dist/src-object-inspect.js',
+      format: 'esm',
+    },
+    plugins: [string({ include: 'src/object-inspect.js' })],
+  },
   {
     input: 'lib/ses-boot.js',
     output: {
