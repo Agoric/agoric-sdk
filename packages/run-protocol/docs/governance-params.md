@@ -12,13 +12,13 @@ In `packages/run-protocol/src/vaultFactory/params.js`:
 
 | Governance Key     | Type              | WP? |
 | ------------------ | :---------------- | --- |
-| DebtLimit          | ParamTypes.AMOUNT | Yes |
-| LiquidationMargin  | ParamTypes.RATIO  | Yes |
-| LiquidationPenalty | ParamTypes.RATIO  | Yes |
-| InterestRate       | ParamTypes.RATIO  |     |
-| LoanFee            | ParamTypes.RATIO  |     |
-| ChargingPeriod     | 'nat'             |     |
-| RecordingPeriod    | 'nat'             |     |
+| DebtLimit          | Amount | Yes |
+| LiquidationMargin  | Ratio  | Yes |
+| LiquidationPenalty | Ratio  | Yes |
+| InterestRate       | Ratio  |     |
+| LoanFee            | Ratio  |     |
+| ChargingPeriod     | NatValue             |     |
+| RecordingPeriod    | NatValue             |     |
 
 From RUN Protocol Whitepaper, v0.8:  
 >Governance determines the approved collateral types: the crypto assets that can be used as collateral in vaults. In addition, it sets and manages the parameters associated with each collateral type based on the risk of the asset. These include the total debt limit, the collateralization ratio, the stability fee, and the liquidation penalty. 
