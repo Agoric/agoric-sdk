@@ -12,16 +12,18 @@ In `packages/run-protocol/src/vaultFactory/params.js`:
 
 | Governance Key     | Type              | WP? |
 | ------------------ | :---------------- | --- |
-| DebtLimit          | Amount | Yes |
-| LiquidationMargin  | Ratio  | Yes |
-| LiquidationPenalty | Ratio  | Yes |
-| InterestRate       | Ratio  |     |
-| LoanFee            | Ratio  |     |
-| ChargingPeriod     | NatValue             |     |
-| RecordingPeriod    | NatValue             |     |
+| DebtLimit          | Amount            | Yes |
+| LiquidationMargin  | Ratio             | Yes |
+| LiquidationPenalty | Ratio             | Yes |
+| InterestRate       | Ratio             | Yes |
+| LoanFee            | Ratio             | Yes |
+| ChargingPeriod     | NatValue          |     |
+| RecordingPeriod    | NatValue          |     |
 
 From RUN Protocol Whitepaper, v0.8:  
 >Governance determines the approved collateral types: the crypto assets that can be used as collateral in vaults. In addition, it sets and manages the parameters associated with each collateral type based on the risk of the asset. These include the total debt limit, the collateralization ratio, the stability fee, and the liquidation penalty. 
+
+Note that the "stability fee" described in the Whitepaper comprises both InterestRate and LoanFee.
 
 ### Automated Market Maker (AMM)
 
@@ -66,9 +68,9 @@ In `packages/run-protocol/src/psm/psm.js`:
 
 | Governance Key     | Type                | WP? |
 | ------------------ | :------------------ | --- |
-| WantStableFeeBP    | NatValue        | N/A |
-| GiveStableFeeBP    | NatValue        | N/A |
+| WantStableFeeBP    | NatValue            | N/A |
+| GiveStableFeeBP    | NatValue            | N/A |
 | MintLimit          | Amount              | N/A |
 
 The RUN Protocol Whitepaper v0.8 does not describe the governance parameters
-for this contract.  
+for this contract.
