@@ -547,6 +547,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.${tbase}/1`);
   t.is(log.shift(), `delete vom.rc.${tbase}/1`);
   t.is(log.shift(), `delete vom.es.${tbase}/1`);
+  t.is(log.shift(), `getAfter  vom.ir.${tbase}/1| undefined => ,`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
@@ -586,6 +587,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.${tbase}/2`);
   t.is(log.shift(), `delete vom.rc.${tbase}/2`);
   t.is(log.shift(), `delete vom.es.${tbase}/2`);
+  t.is(log.shift(), `getAfter  vom.ir.${tbase}/2| undefined => ,`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
@@ -604,6 +606,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.${tbase}/3`);
   t.is(log.shift(), `delete vom.rc.${tbase}/3`);
   t.is(log.shift(), `delete vom.es.${tbase}/3`);
+  t.is(log.shift(), `getAfter  vom.ir.${tbase}/3| undefined => ,`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
