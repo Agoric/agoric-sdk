@@ -1,18 +1,17 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
+import { Far, deeplyFulfilled } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
 
 import {
   ChoiceMethod,
-  QuorumRule,
-  ElectionType,
   coerceQuestionSpec,
+  ElectionType,
+  QuorumRule,
 } from '../question.js';
 
-const { details: X, quote: q } = assert;
+const { details: X } = assert;
 
 /**
  * The electorate that governs changes to the contract's parameters. It must be
@@ -21,10 +20,15 @@ const { details: X, quote: q } = assert;
 const CONTRACT_ELECTORATE = 'Electorate';
 
 /** @type {MakeParamChangePositions} */
-const makeParamChangePositions = (paramSpec, proposedValue) => {
-  const positive = harden({ changeParam: paramSpec, proposedValue });
-  const negative = harden({ noChange: paramSpec });
-  return { positive, negative };
+const makeParamChangePositions = changes => {
+  const dense = changes.map(c => {
+    return { [c.parameterName]: c.proposedValue };
+  });
+  const positive = { changes: dense };
+  const sparse = changes.map(c => c.parameterName);
+  const negative = { noChange: sparse };
+  // @ts-ignore
+  return harden({ positive, negative });
 };
 
 /** @type {ValidateParamChangeQuestion} */
@@ -51,13 +55,22 @@ const validateParamChangeQuestion = details => {
   );
 };
 
-/** @type {AssertBallotConcernsQuestion} */
-const assertBallotConcernsQuestion = (paramName, questionDetails) => {
+/** @type {AssertBallotConcernsParam} */
+const assertBallotConcernsParam = (paramSpec, questionDetails) => {
+  const { key, parameterName } = paramSpec;
+  /** @type {ParamChangeIssue} */
+  // @ts-ignore cast
+  const issue = questionDetails.issue;
+  assert(issue, X`must be a param change issue`);
+
+  const foundName = issue.changes.find(c => c.parameterName === parameterName);
   assert(
-    // @ts-ignore typescript isn't sure the question is a paramChangeIssue
-    // if it isn't, the assertion will fail.
-    questionDetails.issue.paramSpec.parameterName === paramName,
-    X`expected ${q(paramName)} to be included`,
+    foundName,
+    X`Question (${issue.changes}) does not concern ${parameterName}`,
+  );
+  assert(
+    issue.key === key,
+    X`Question key (${issue.key}) doesn't match key (${key})`,
   );
 };
 
@@ -72,29 +85,32 @@ const setupParamGovernance = async (
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
 
-  /** @type {VoteOnParamChange} */
-  const voteOnParamChange = async (
-    paramSpec,
-    proposedValue,
+  /** @type {VoteOnParamChanges} */
+  const voteOnParamChanges = async (
     voteCounterInstallation,
     deadline,
+    paramChanges,
   ) => {
-    const paramMgr = E(paramManagerRetriever).get(paramSpec);
-    const outcomeOfUpdateP = makePromiseKit();
-    const visibleValue = await E(paramMgr).getVisibleValue(
-      paramSpec.parameterName,
-      proposedValue,
-    );
+    const changePs = [];
 
-    const { positive, negative } = makeParamChangePositions(
-      paramSpec,
-      visibleValue,
-    );
+    const paramMgr = await E(paramManagerRetriever).get(paramChanges);
+    for (const spec of paramChanges.changes) {
+      const proposedValue = E(paramMgr).getVisibleValue(
+        spec.parameterName,
+        spec.proposedValue,
+      );
+      changePs.push({ parameterName: spec.parameterName, proposedValue });
+    }
+    const changes = await deeplyFulfilled(harden(changePs));
+
+    const { positive, negative } = makeParamChangePositions(changes);
+
     const issue = harden({
-      paramSpec,
+      key: paramChanges.key,
+      changes,
       contract: contractInstance,
-      proposedValue: visibleValue,
     });
+
     const questionSpec = coerceQuestionSpec({
       method: ChoiceMethod.UNRANKED,
       issue,
@@ -120,33 +136,27 @@ const setupParamGovernance = async (
     // * If we update the value, say so
     // * If the update fails, reject the promise
     // * if the vote outcome failed, reject the promise.
-    E(counterPublicFacet)
+    const outcomeOfUpdate = E(counterPublicFacet)
       .getOutcome()
-      .then(outcome => {
+      .then(async outcome => {
         if (keyEQ(positive, outcome)) {
-          E(paramMgr)
-            [`update${paramSpec.parameterName}`](proposedValue)
-            .then(newValue => outcomeOfUpdateP.resolve(newValue))
-            .catch(e => {
-              outcomeOfUpdateP.reject(e);
-            });
-        } else {
-          outcomeOfUpdateP.resolve(negative);
+          return E.when(
+            E(paramMgr).updateParams(paramChanges.changes),
+            () => positive,
+          );
         }
-      })
-      .catch(e => {
-        outcomeOfUpdateP.reject(e);
+        return negative;
       });
 
     return {
-      outcomeOfUpdate: outcomeOfUpdateP.promise,
+      outcomeOfUpdate,
       instance: voteCounter,
       details: E(counterPublicFacet).getDetails(),
     };
   };
 
   return Far('paramGovernor', {
-    voteOnParamChange,
+    voteOnParamChanges,
     createdQuestion: b => voteCounters.has(b),
   });
 };
@@ -154,11 +164,11 @@ const setupParamGovernance = async (
 harden(setupParamGovernance);
 harden(makeParamChangePositions);
 harden(validateParamChangeQuestion);
-harden(assertBallotConcernsQuestion);
+harden(assertBallotConcernsParam);
 export {
   setupParamGovernance,
   makeParamChangePositions,
   validateParamChangeQuestion,
-  assertBallotConcernsQuestion,
+  assertBallotConcernsParam,
   CONTRACT_ELECTORATE,
 };

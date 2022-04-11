@@ -117,7 +117,15 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
     governorTerms,
   );
 
-  return { governorFacets, installs, invitationAmount };
+  return { governorFacets, installs, invitationAmount, committeeCreator };
+};
+
+const setUpVoterAndVote = async (committeeCreator, zoe, qHandle, choice) => {
+  const invitations = await E(committeeCreator).getVoterInvitations();
+
+  const seat = E(zoe).offer(invitations[0]);
+  const voteFacet = E(seat).getOfferResult();
+  return E(voteFacet).castBallotFor(qHandle, [choice]);
 };
 
 test('governParam no votes', async t => {
@@ -130,11 +138,19 @@ test('governParam no votes', async t => {
       timer,
     );
 
-  const paramSpec = { key: 'contractParams', parameterName: MALLEABLE_NUMBER };
+  const paramChangeSpec = harden({
+    key: 'governedParams',
+    changes: [
+      {
+        parameterName: MALLEABLE_NUMBER,
+        proposedValue: 25n,
+      },
+    ],
+  });
 
   const { outcomeOfUpdate } = await E(
     governorFacets.creatorFacet,
-  ).voteOnParamChange(paramSpec, 25n, installs.counter, 2n);
+  ).voteOnParamChanges(installs.counter, 2n, paramChangeSpec);
 
   await E(timer).tick();
   await E(timer).tick();
@@ -158,4 +174,162 @@ test('governParam no votes', async t => {
       },
     },
   );
+});
+
+test('multiple params bad change', async t => {
+  const { zoe } = await setUpZoeForTest(() => {});
+  const timer = buildManualTimer(console.log);
+  const { governorFacets, installs } = await setUpGovernedContract(
+    zoe,
+    { committeeName: 'Demos', committeeSize: 1 },
+    timer,
+  );
+
+  const paramChangesSpec = harden({
+    key: 'governedParams',
+    changes: [
+      {
+        parameterName: CONTRACT_ELECTORATE,
+        proposedValue: 13n,
+      },
+      {
+        parameterName: MALLEABLE_NUMBER,
+        proposedValue: 42n,
+      },
+    ],
+  });
+
+  await t.throwsAsync(
+    () =>
+      E(governorFacets.creatorFacet).voteOnParamChanges(
+        installs.counter,
+        2n,
+        paramChangesSpec,
+      ),
+    { message: /".13n." was not a live payment for brand/ },
+  );
+});
+
+test('change multiple params', async t => {
+  const { zoe } = await setUpZoeForTest(() => {});
+  const timer = buildManualTimer(console.log);
+  const { governorFacets, installs, invitationAmount, committeeCreator } =
+    await setUpGovernedContract(
+      zoe,
+      { committeeName: 'Demos', committeeSize: 1 },
+      timer,
+    );
+
+  // This is the wrong kind of invitation, but governance can't tell
+  const wrongInvitation = await E(committeeCreator).getPoserInvitation();
+
+  const paramChangesSpec = harden({
+    key: 'governedParams',
+    changes: [
+      {
+        parameterName: CONTRACT_ELECTORATE,
+        proposedValue: wrongInvitation,
+      },
+      {
+        parameterName: MALLEABLE_NUMBER,
+        proposedValue: 42n,
+      },
+    ],
+  });
+
+  const { outcomeOfUpdate, details: detailsP } = await E(
+    governorFacets.creatorFacet,
+  ).voteOnParamChanges(installs.counter, 2n, paramChangesSpec);
+
+  const details = await detailsP;
+  const positive = details.positions[0];
+  await setUpVoterAndVote(
+    committeeCreator,
+    zoe,
+    details.questionHandle,
+    positive,
+  );
+
+  await E(timer).tick();
+  await E(timer).tick();
+
+  await E.when(outcomeOfUpdate, async outcomes => {
+    t.deepEqual(outcomes, {
+      changes: [
+        { [CONTRACT_ELECTORATE]: invitationAmount },
+        { [MALLEABLE_NUMBER]: 42n },
+      ],
+    });
+  }).catch(e => {
+    t.fail(`expected success, got ${e}`);
+  });
+
+  const paramsAfter = await E(
+    E(governorFacets.creatorFacet).getPublicFacet(),
+  ).getGovernedParams();
+  t.deepEqual(paramsAfter.Electorate.value, invitationAmount);
+  t.is(paramsAfter.MalleableNumber.value, 42n);
+});
+
+test('change multiple params used invitation', async t => {
+  const { zoe } = await setUpZoeForTest(() => {});
+  const timer = buildManualTimer(console.log);
+  const { governorFacets, installs, invitationAmount, committeeCreator } =
+    await setUpGovernedContract(
+      zoe,
+      { committeeName: 'Demos', committeeSize: 1 },
+      timer,
+    );
+
+  // This is the wrong kind of invitation, but governance can't tell
+  const wrongInvitation = await E(committeeCreator).getPoserInvitation();
+
+  const paramChangesSpec = harden({
+    key: 'governedParams',
+    changes: [
+      {
+        parameterName: CONTRACT_ELECTORATE,
+        proposedValue: wrongInvitation,
+      },
+      {
+        parameterName: MALLEABLE_NUMBER,
+        proposedValue: 42n,
+      },
+    ],
+  });
+
+  const { outcomeOfUpdate, details: detailsP } = await E(
+    governorFacets.creatorFacet,
+  ).voteOnParamChanges(installs.counter, 2n, paramChangesSpec);
+
+  outcomeOfUpdate
+    .then(o => t.fail(`update should break, ${o}`))
+    .catch(e =>
+      t.regex(
+        e.message,
+        /was not a live payment for brand/,
+        'Invitatation was burned and should not be usable',
+      ),
+    );
+
+  const details = await detailsP;
+  const positive = details.positions[0];
+  await setUpVoterAndVote(
+    committeeCreator,
+    zoe,
+    details.questionHandle,
+    positive,
+  );
+
+  await E(E(zoe).getInvitationIssuer()).burn(wrongInvitation);
+
+  await E(timer).tick();
+  await E(timer).tick();
+
+  const paramsAfter = await E(
+    E(governorFacets.creatorFacet).getPublicFacet(),
+  ).getGovernedParams();
+  t.deepEqual(paramsAfter.Electorate.value, invitationAmount);
+  // original value
+  t.is(paramsAfter.MalleableNumber.value, 602214090000000000000000n);
 });

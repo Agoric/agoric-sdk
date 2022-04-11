@@ -5,7 +5,7 @@ import { Far } from '@endo/marshal';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { observeIteration } from '@agoric/notifier';
 
-import { makeTerms } from './governedContract.js';
+import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 import { CONTRACT_ELECTORATE, assertContractElectorate } from '../../../src';
 
 const { quote: q } = assert;
@@ -25,13 +25,22 @@ const voteToChangeParameter = async (
   contractFacetAccess,
   deadline,
 ) => {
+  const paramChangeSpec = harden({
+    key: 'governedParams',
+    changes: [
+      {
+        parameterName: MALLEABLE_NUMBER,
+        proposedValue: 299792458n,
+      },
+    ],
+  });
+
   const { details, instance, outcomeOfUpdate } = await E(
     contractFacetAccess,
-  ).voteOnParamChange(
-    { key: 'main', parameterName: 'MalleableNumber' },
-    299792458n,
+  ).voteOnParamChanges(
     installations.binaryVoteCounter,
     deadline,
+    paramChangeSpec,
   );
 
   E(E(zoe).getPublicFacet(instance))
@@ -125,7 +134,7 @@ const checkContractState = async (zoe, contractInstanceP, log) => {
   const subscription = await E(contractPublic).getSubscription();
   const paramChangeObserver = Far('param observer', {
     updateState: update =>
-      log(`${update.name} was changed to ${q(update.value)}`),
+      log(`${update.name} was ${q(update.value)} after the vote.`),
   });
   observeIteration(subscription, paramChangeObserver);
 
@@ -136,29 +145,34 @@ const checkContractState = async (zoe, contractInstanceP, log) => {
   log(`current value of MalleableNumber is ${malleableNumber.value}`);
 };
 
-const setupElectorateChange = async (
+const setupParameterChanges = async (
   zoe,
   log,
   governor,
   installations,
   invitation,
+  changes = [
+    {
+      parameterName: CONTRACT_ELECTORATE,
+      proposedValue: invitation,
+    },
+  ],
 ) => {
+  const paramChangeSpec = harden({
+    key: 'governedParams',
+    changes,
+  });
   const { details, instance, outcomeOfUpdate } = await E(
     governor,
-  ).voteOnParamChange(
-    { key: 'main', parameterName: CONTRACT_ELECTORATE },
-    invitation,
-    installations.binaryVoteCounter,
-    2n,
-  );
+  ).voteOnParamChanges(installations.binaryVoteCounter, 2n, paramChangeSpec);
 
   E(E(zoe).getPublicFacet(instance))
     .getOutcome()
     .then(outcome => log(`vote outcome: ${q(outcome)}`))
     .catch(e => log(`vote failed ${e}`));
 
-  E.when(outcomeOfUpdate, outcome => log(`updated to ${q(outcome)}`)).catch(e =>
-    log(`update failed: ${e}`),
+  E.when(outcomeOfUpdate, outcome => log(`updated to (${q(outcome)})`)).catch(
+    e => log(`update failed: ${e}`),
   );
   return { details, outcomeOfUpdate };
 };
@@ -304,7 +318,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       const [newPoserInvitation] = await Promise.all([newPoserInvitationP]);
 
       const { details: details1, outcomeOfUpdate: electorateOutcome } =
-        await setupElectorateChange(
+        await setupParameterChanges(
           zoe,
           log,
           governor,
@@ -333,6 +347,68 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       await E(timer).tick();
       await E(timer).tick();
       await outcome2;
+
+      await checkContractState(zoe, governedInstance, log);
+
+      break;
+    }
+    case 'brokenUpdateStart': {
+      const voters1 = createVoters(firstElectorateCreatorFacet, voterCreator);
+
+      const secondElectorateTerms = {
+        committeeName: 'ThirtyCommittee',
+        committeeSize: 5,
+      };
+      const { electorateCreatorFacet: secondElectorateCreatorFacet } =
+        await startElectorate(zoe, installations, secondElectorateTerms);
+
+      const newPoserInvitationP = E(
+        secondElectorateCreatorFacet,
+      ).getPoserInvitation();
+      const [newPoserInvitation] = await Promise.all([newPoserInvitationP]);
+
+      const changes = [
+        {
+          parameterName: MALLEABLE_NUMBER,
+          proposedValue: 42n,
+        },
+        {
+          parameterName: CONTRACT_ELECTORATE,
+          proposedValue: newPoserInvitation,
+        },
+      ];
+      const { details: details1, outcomeOfUpdate: electorateOutcome } =
+        await setupParameterChanges(
+          zoe,
+          log,
+          governor,
+          installations,
+          newPoserInvitation,
+          changes,
+        );
+      await votersVote(details1, voters1, [1, 0, 0, 0, 1]);
+
+      // The update will fail.
+      await E(E(zoe).getInvitationIssuer()).burn(newPoserInvitation);
+
+      await E(timer).tick();
+      await E(timer).tick();
+      E.when(
+        electorateOutcome,
+        o => log(`vote (unexpected) successful outcome: ${o} `),
+        e => log(`vote rejected outcome: ${e}`),
+      );
+
+      await validateElectorateChange(
+        zoe,
+        log,
+        voters1,
+        details1,
+        governorInstance,
+        // The electorate didn't change
+        firstElectorateInstance,
+        E(zoe).getPublicFacet(governorInstance),
+      );
 
       await checkContractState(zoe, governedInstance, log);
 

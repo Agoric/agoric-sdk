@@ -20,7 +20,7 @@ export {
 export { handleParamGovernance } from './contractHelper.js';
 
 export {
-  assertBallotConcernsQuestion,
+  assertBallotConcernsParam,
   makeParamChangePositions,
   setupParamGovernance,
   validateParamChangeQuestion,

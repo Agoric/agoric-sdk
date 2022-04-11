@@ -313,6 +313,11 @@ const makeVaultDirector = (zcf, electorateParamManager, debtMint) => {
     makeVaultInvitation,
     getCollaterals,
     getRunIssuer: () => debtMint.getIssuerRecord().issuer,
+    /** subscription for the paramManager for a particular vaultManager */
+    getSubscription: () => paramDesc =>
+      vaultParamManagers.get(paramDesc.collateralBrand).getSubscription(),
+    /** subscription for the paramManager for the vaultFactory's electorate */
+    getElectorateSubscription: () => electorateParamManager.getSubscription(),
     getGovernedParams: ({ collateralBrand }) =>
       // TODO use named getters of TypedParamManager
       vaultParamManagers.get(collateralBrand).getParams(),

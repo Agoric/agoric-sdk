@@ -58,11 +58,20 @@ test('amm change param via Governance', async t => {
 
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
-  const { details } = await E(governorCreatorFacet).voteOnParamChange(
-    { key: 'governedParams', parameterName: PROTOCOL_FEE_KEY },
-    20n,
+  const paramChangeSpec = harden({
+    key: 'governedParams',
+    changes: [
+      {
+        parameterName: PROTOCOL_FEE_KEY,
+        proposedValue: 20n,
+      },
+    ],
+  });
+
+  const { details } = await E(governorCreatorFacet).voteOnParamChanges(
     installs.counter,
     2n,
+    paramChangeSpec,
   );
   const { positions, questionHandle } = await details;
 
@@ -157,11 +166,19 @@ test('price check after Governance param change', async t => {
 
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
-  const { details } = await E(governorCreatorFacet).voteOnParamChange(
-    { key: 'governedParams', parameterName: PROTOCOL_FEE_KEY },
-    20n,
+  const paramChangeSpec = harden({
+    key: 'governedParams',
+    changes: [
+      {
+        parameterName: PROTOCOL_FEE_KEY,
+        proposedValue: 20n,
+      },
+    ],
+  });
+  const { details } = await E(governorCreatorFacet).voteOnParamChanges(
     installs.counter,
     2n,
+    paramChangeSpec,
   );
   const { positions, questionHandle } = await details;
 

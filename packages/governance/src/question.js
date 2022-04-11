@@ -62,12 +62,25 @@ const assertSimpleIssue = issue => {
 const assertParamChangeIssue = issue => {
   assert(issue, X`argument to assertParamChangeIssue cannot be null`);
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert.typeof(
-    issue && issue.paramSpec,
-    'object',
-    X`Issue ("${issue}") must be a record with paramSpec: anObject`,
+  assert(issue && issue.key, X`Issue ("${issue}") must have a key`);
+  assert(issue && issue.changes, X`Issue ("${issue}") must have changes`);
+
+  assert(
+    Array.isArray(issue.changes),
+    X`changes ("${issue.changes}") must be an Array`,
   );
-  assert(issue && issue.proposedValue);
+
+  for (const change of issue.changes) {
+    assert.typeof(
+      change.parameterName,
+      'string',
+      X`Each change ("${change}") must be a record with a string parameterName`,
+    );
+    assert(
+      change.proposedValue,
+      X`Each change ("${change}") must be a record with a proposedValue`,
+    );
+  }
   const assertInstance = makeAssertInstance('contract');
   assertInstance(issue.contract);
 };
