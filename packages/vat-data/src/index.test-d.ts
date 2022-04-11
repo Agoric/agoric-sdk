@@ -41,16 +41,19 @@ const facetedCounterBehavior = {
       state.counter += 1;
     },
     getCount,
-    emptyFn: () => null,
   },
   decr: {
     step: (context: CounterContext) => {
+      // Destructure within method because doing so in params creates a circular reference
       const { state, facets } = context;
-      const { decr } = facets;
-      decr.echo('hi');
+      const { other } = facets;
+      other.echo('hi');
       state.counter -= 1;
     },
     getCount,
+  },
+  other: {
+    emptyFn: () => null,
     echo: (context: CounterContext, toEcho: string) => toEcho,
   },
 };
@@ -67,7 +70,7 @@ expectType<void>(fc.decr.step());
 expectType<number>(fc.decr.getCount());
 // @ts-expect-error missing argument
 fc.decr.echo();
-expectType<string>(fc.decr.echo('foo'));
+expectType<string>(fc.other.echo('foo'));
 // @ts-expect-error missing method
 fc.incr.echo('foo');
-expectType<null>(fc.incr.emptyFn());
+expectType<null>(fc.other.emptyFn());
