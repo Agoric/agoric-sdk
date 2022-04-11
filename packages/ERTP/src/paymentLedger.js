@@ -48,8 +48,63 @@ export const makePaymentLedger = (
     throw reason;
   };
 
-  /** @type {WeakStore<Payment, Amount>} */
+  /** @type {WeakMapStore<Payment, Amount>} */
   const paymentLedger = makeScalarBigWeakMapStore('payment');
+
+  /**
+   * A withdrawn live payment is associated with the recovery set of
+   * the purse it was withdrawn from. Let's call these "recoverable"
+   * payments. All recoverable payments are live, but not all live
+   * payments are recoverable. We do the bookkeeping for payment recovery
+   * with this weakmap from recoverable payments to the recovery set they are
+   * in.
+   * A bunch of interesting invariants here:
+   *    * Every payment that is a key in the outer `paymentRecoverySets`
+   *      weakMap is also in the recovery set indexed by that payment.
+   *    * Implied by the above but worth stating: the payment is only
+   *      in at most one recovery set.
+   *    * A recovery set only contains such payments.
+   *    * Every purse is associated with exactly one recovery set unique to
+   *      it.
+   *    * A purse's recovery set only contains payments withdrawn from
+   *      that purse and not yet consumed.
+   *
+   * @type {WeakMapStore<Payment, SetStore<Payment>>}
+   */
+  const paymentRecoverySets = makeScalarBigWeakMapStore('payment-recovery');
+
+  /**
+   * To maintain the invariants listed in the `paymentRecoverySets` comment,
+   * `initPayment` should contain the only
+   * call to `paymentLedger.init`.
+   *
+   * @param {Payment} payment
+   * @param {Amount} amount
+   * @param {SetStore<Payment>} [optRecoverySet]
+   */
+  const initPayment = (payment, amount, optRecoverySet = undefined) => {
+    if (optRecoverySet !== undefined) {
+      optRecoverySet.add(payment);
+      paymentRecoverySets.init(payment, optRecoverySet);
+    }
+    paymentLedger.init(payment, amount);
+  };
+
+  /**
+   * To maintain the invariants listed in the `paymentRecoverySets` comment,
+   * `deletePayment` should contain the only
+   * call to `paymentLedger.delete`.
+   *
+   * @param {Payment} payment
+   */
+  const deletePayment = payment => {
+    paymentLedger.delete(payment);
+    if (paymentRecoverySets.has(payment)) {
+      const recoverySet = paymentRecoverySets.get(payment);
+      paymentRecoverySets.delete(payment);
+      recoverySet.delete(payment);
+    }
+  };
 
   /** @type {(left: Amount, right: Amount) => Amount } */
   const add = (left, right) => AmountMath.add(left, right, brand);
@@ -141,11 +196,11 @@ export const makePaymentLedger = (
     let newPayments;
     try {
       // COMMIT POINT
-      payments.forEach(payment => paymentLedger.delete(payment));
+      payments.forEach(payment => deletePayment(payment));
 
       newPayments = newPaymentBalances.map(balance => {
         const newPayment = makePayment();
-        paymentLedger.init(newPayment, balance);
+        initPayment(newPayment, balance, undefined);
         return newPayment;
       });
     } catch (err) {
@@ -178,7 +233,7 @@ export const makePaymentLedger = (
       assertAmountConsistent(paymentBalance, optAmountShape);
       try {
         // COMMIT POINT.
-        paymentLedger.delete(payment);
+        deletePayment(payment);
       } catch (err) {
         shutdownLedgerWithFailure(err);
         throw err;
@@ -260,7 +315,7 @@ export const makePaymentLedger = (
   const mintPayment = newAmount => {
     newAmount = coerce(newAmount);
     const payment = makePayment();
-    paymentLedger.init(payment, newAmount);
+    initPayment(payment, newAmount, undefined);
     return payment;
   };
 
@@ -275,7 +330,7 @@ export const makePaymentLedger = (
    * @param {Pattern=} optAmountShape
    * @returns {Amount}
    */
-  const deposit = (
+  const depositInternal = (
     currentBalance,
     updatePurseBalance,
     srcPayment,
@@ -294,7 +349,7 @@ export const makePaymentLedger = (
       // COMMIT POINT
       // Move the assets in `srcPayment` into this purse, using up the
       // source payment, such that total assets are conserved.
-      paymentLedger.delete(srcPayment);
+      deletePayment(srcPayment);
       updatePurseBalance(newPurseBalance);
     } catch (err) {
       shutdownLedgerWithFailure(err);
@@ -311,9 +366,15 @@ export const makePaymentLedger = (
    * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
    * commit the purse balance
    * @param {Amount} amount - the amount to be withdrawn
+   * @param {SetStore<Payment>} recoverySet
    * @returns {Payment}
    */
-  const withdraw = (currentBalance, updatePurseBalance, amount) => {
+  const withdrawInternal = (
+    currentBalance,
+    updatePurseBalance,
+    amount,
+    recoverySet,
+  ) => {
     amount = coerce(amount);
     assert(
       AmountMath.isGTE(currentBalance, amount),
@@ -326,7 +387,7 @@ export const makePaymentLedger = (
       // COMMIT POINT Move the withdrawn assets from this purse into
       // payment. Total assets must remain conserved.
       updatePurseBalance(newPurseBalance);
-      paymentLedger.init(payment, amount);
+      initPayment(payment, amount, recoverySet);
     } catch (err) {
       shutdownLedgerWithFailure(err);
       throw err;
@@ -335,8 +396,8 @@ export const makePaymentLedger = (
   };
 
   const purseMethods = {
-    deposit,
-    withdraw,
+    depositInternal,
+    withdrawInternal,
   };
 
   const makeEmptyPurse = makePurseMaker(

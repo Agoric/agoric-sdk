@@ -11,28 +11,28 @@ function build(name) {
       p(`${name}'s thing ${label}: initialize ${companionName}`);
       return { label, companion, companionName, count: 0 };
     },
-    state => ({
-      echo(message) {
+    {
+      echo({ state }, message) {
         state.count += 1;
         E(state.companion).say(message);
       },
-      async changePartner(newCompanion) {
+      async changePartner({ state }, newCompanion) {
         state.count += 1;
         state.companion = newCompanion;
         const companionName = await E(newCompanion).getName();
         state.companionName = companionName;
         p(`${name}'s thing ${state.label}: changePartner ${companionName}`);
       },
-      getLabel() {
+      getLabel({ state }) {
         const label = state.label;
         p(`${name}'s thing ${label}: getLabel`);
         state.count += 1;
         return label;
       },
-      report() {
+      report({ state }) {
         p(`${name}'s thing ${state.label} invoked ${state.count} times`);
       },
-    }),
+    },
   );
   let nextThingNumber = 0;
 

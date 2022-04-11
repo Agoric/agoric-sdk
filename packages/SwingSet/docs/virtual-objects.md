@@ -19,9 +19,9 @@ A VDO has a "kind", which defines what sort of behavior and state it will posses
 
 A vat can define new kinds of VDOs by calling the `defineKind` or `defineDurableKind` functions:
 
-  `maker = defineKind(descriptionTag, init, actualize, finish)`
+  `maker = defineKind(descriptionTag, init, behavior, options)`
 or
-  `maker = defineDurableKind(kindHandle, init, actual, finish)`
+  `maker = defineDurableKind(kindHandle, init, behavior, options)`
 
 The return value from `defineKind` or `defineDurableKind` is a maker function which the vat can use to create instances of the newly defined VDO kind.
 
@@ -31,50 +31,56 @@ A `kindHandle` is a type of durable object that can be used to identify the kind
 
   `kindHandle = makeKindHandle(descriptionTag)`
 
-where `descriptionTag` is exactly the same as the same named parameter of `defineKind`.  The difference is that a kind handle is itself that a durable object that may be stored for later retrieval, and used in a future call to `defineDurableKind` to associate new behavior with the kind in question.
+where `descriptionTag` is exactly the same as the same named parameter of `defineKind`.  The difference is that a kind handle is itself a durable object that may be stored for later retrieval, and used in a future call to `defineDurableKind` to associate new behavior with the kind in question.
 
 The `init` parameter is a function that will be called when new instances are first created. It is expected to return a simple JavaScript object that represents the initialized state for the new VDO instance.  Any parameters passed to the maker function returned by `defineKind`/`defineDurableKind` are passed directly to the `init` function.
 
-The `actualize` parameter is a function that binds an in-memory instance (the "Representative") of the VDO with the VDO's state, associating such instances with the VDO's behavior.  It is passed the VDO's state as a parameter and is expected to return either:
+The `behavior` parameter is an object that describes the VDO's behavior.  It must take one of two forms:
 
-1. A new JavaScript object with methods that close over the given state.  This returned object will become the body of the new instance.  This object can be empty; in such a case it can serve as a powerless but unforgeable "marker" handle.
+1. An object whose named properties are all functions that will become methods of the virtual objects returned by the maker function.  The behavior object can be empty; in such a case the resulting VDO can serve as a powerless but unforgeable "marker" handle.
 
-2. A new JavaScript object populated with objects as described in (1).  These will become facets of the new instance.  The returned object will be an object mapping to the facets by name.
+2. An object whose named properties are objects as described in (1).  These will become facets of new instances of the VDO.  The return value from the maker function object will be an object mapping to the facets by name.
 
-The `actualize` function is called whenever a new VDO instance is created, whenever such an instance is swapped in from secondary storage, and whenever a reference to a VDO is received as a parameter of a message and deserialized.  Note that for any given VDO kind, the shape of the value returned by the `actualize` function may not vary over successive calls.  That is, if it's a single facet, it must always be a single facet, and if it's multiple facets it must always be the same set of multiple facets.
+In either case, the individual behavior functions must have the signature:
 
-The `finish` parameter is optional. It is a function that, if present, will be called exactly once as part of instance initialization.  It will be invoked _immediately_ after the `actualize` function for that instance is called for the very first time.  In other words, it will be called after the instance per se exists but before that instance is returned from the maker function to whoever requested its creation.  `finish` is passed two parameters: the VDO's state (exactly as passed to the `actualize` function) and the VDO itself. The `finish` function can modify the object's state in the context of knowing the object's identity, and thus can be used in cases where a validly initialized instance requires it to participate in some kind of cyclical object graph with other VDOs.  It can also be used, for example, to register the object with outside tracking data structures, or do whatever other post-creation setup is needed for the object to do its job.  In particular, if one or more of the object's methods need to refer to the object itself (for example, so it can pass itself to other objects), the `finish` function provides a way to capture that identity as part of the object's state.
+  `methodname(context, ...args) { ...`
+
+where `context` describes the invocation context of the method and `...args` are whatever arguments were passed to the method when it was invoked.  In the case of a single facet VDO, `context` will take the form `{ state, self }`, where `state` is the VDO state and `self` is a reference to the VDO itself.  In the case of a multi-facet VDO, `context` will instead be `{ state, facets }`, where `facets` is an object whose named properties are the facets of the VDO.
+
+The `options` parameter is optional. It provides additional parameters to characterize the VDO.  Currently there is only one supported option, `finish`, though we anticipate more options may be added in future versions of the API.
+
+The `finish` option is a function that, if present, will be called at the end of instance initialization.  It will be invoked after the VDO is created but before it is returned from the maker function.  `finish` is passed one parameters, a `context` object identical to that passed to method behaviors.  The `finish` function can modify the object's state at a time when the object's identity is known (or its facets' identies are known), and thus can be used in cases where a validly initialized instance requires it to participate in some kind of cyclical object graph with other VDOs.  It can also be used, for example, to register the object with outside tracking data structures, or do whatever other post-creation setup is needed for the object to do its job.
 
 For example:
 
 ```javascript
   const initCounter = (name) => ({ counter: 0, name });
 
-  const actualizeCounter = (state) => ({
-    inc: () => {
+  const counterBehavior = {
+    inc: ({state}) => {
       state.counter += 1;
     },
-    dec: () => {
+    dec: ({state}) => {
       state.counter -= 1;
     },
-    reset: () => {
+    reset: ({state}) => {
       state.counter = 0;
     },
-    rename: (newName) => {
+    rename: ({state}, newName) => {
       state.name = newName;
     },
-    getCount: () => state.counter,
-    getName: () => state.name,
-  });
+    getCount: ({state}) => state.counter,
+    getName: ({state}) => state.name,
+  };
 
   const finishCounter = (state, counter) => {
     addToCounterRegistry(counter, state.name);
   };
 
-  const makeCounter = defineKind('counter', initCounter, actualizeCounter, finishCounter);
+  const makeCounter = defineKind('counter', initCounter, counterBehavior, { finish: finishCounter });
 ```
 
-This defines a simple virtual counter object with two properties in its state, a count and a name.  You'd use it like this:
+This defines a simple virtual counter object with two properties in its state: a count and a name.  Note that none of the methods bother to declare the `self` context parameter because none of them need to refer to it.  You'd use it like this:
 
 ```javascript
   const fooCounter = makeCounter('foo');
@@ -93,33 +99,33 @@ Suppose you instead wanted to provide a version with the increment and decrement
 ```javascript
   const initFacetedCounter = () => ({ counter: 0 });
 
-  const actualizeFacetedCounter = (state) => {
-    const getCount = () => state.counter;
-    return {
-      incr: {
-        step: () => {
-          state.counter += 1;
-        },
-        getCount,
-      },
-      decr: {
-        step: () => {
-          state.counter -= 1;
-        },
-        getCount,
-      },
-    };
-  }
+  const getCount = ({state}) => state.counter,
 
-  const makeFacetedCounter = defineKind('counter', initCounter, actualizeCounter);
+  const facetedCounterBehavior = {
+    incr: {
+      step: ({ state }) => {
+        state.counter += 1;
+      },
+      getCount,
+    },
+    decr: {
+      step: ({ state }) => {
+        state.counter -= 1;
+      },
+      getCount,
+    },
+  };
+
+  const makeFacetedCounter = defineKind('counter', initFacetedCounter, facetedCounterBehavior);
 ```
 
-If you wanted to also make this durable, instead of the last line you'd generate
-the kind with something more like:
+Note how the `getCount` method is declared once and then used in two different facets.
+
+If you wanted to also make this durable, instead of the last line you'd generate the kind with something more like:
 
 ```javascript
   const facetedCounterKind = makeKindHandle('durable counter');
-  const makeFacetedCounter = defineDurableKind(facetedCounterKind, initCounter, actualizeCounter);
+  const makeFacetedCounter = defineDurableKind(facetedCounterKind, initCounter, facetedCounterBehavior);
 ```
 
 In either case you'd use it like:
@@ -134,23 +140,23 @@ In either case you'd use it like:
   console.log(`count is ${incr.getCount()`); // "count is 1"
 ```
 
-Note that the `init`, `actualize`, and `finish` functions are defined explicitly in the above examples for clarity of exposition, but in practice you'd usually declare them inline in the parameters of the `defineKind` call:
+Note that the `init` and `finish` functions, as well as the behavior, are defined explicitly in the above examples for clarity of exposition, but in practice you'd usually declare them inline in the parameters of the `defineKind` call:
 
 ```javascript
+  const getCount = ({state}) => state.counter;
   const makeFacetedCounter = defineKind(
     'counter',
     () => ({ counter: 0 }),
     (state) => {
-      const getCount = () => state.counter;
       return {
         incr: {
-          step: () => {
+          step: ({state}) => {
             state.counter += 1;
           },
           getCount,
         },
         decr: {
-          step: () => {
+          step: ({state}) => {
             state.counter -= 1;
           },
           getCount,
@@ -162,7 +168,7 @@ Note that the `init`, `actualize`, and `finish` functions are defined explicitly
 
 Additional important details:
 
-- The set of state properties of an instance is fully determined by the `init` function.  That is, the set of properties that exist on in instance's `state` is completely determined by the enumerable properties of the object that `init` returns.  State properties cannot thereafter be added or removed.  Currently there is no requirement that all instances of a given kind have the same set of properties, but code authors should not rely on this as such enforcement may be added in the future.
+- The set of state properties of an instance is fully determined by the `init` function.  That is, the set of properties present in instance's `state` is completely determined by the named enumerable properties of the object that `init` returns.  State properties cannot thereafter be added or removed from the instance.  Currently there is no requirement that all instances of a given kind have the same set of properties, but code authors should not rely on this as such enforcement may be added in the future.
 
 - The values a state property may take are limited to things that are serializable and which may be hardened (and, in fact, _are_ hardened and serialized the moment they are assigned).  That is, you can replace what value a state property _has_, but you cannot modify a state property's value in situ.  In other words, you can do things like:
 

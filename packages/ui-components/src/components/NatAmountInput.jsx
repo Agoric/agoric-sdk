@@ -39,13 +39,6 @@ const makeNatAmountInput =
       value === null ? '0' : valueString,
     );
 
-    const preventSubtractChar = e => {
-      if (e.key === 'Subtract') {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-
     // Display the rendered version of the value when
     // the user stops editing the component.
     const handleOnBlur = _ => {
@@ -55,8 +48,9 @@ const makeNatAmountInput =
     // We want to delay the input validation so that the user can type
     // freely, and then it gets formatted appropriately after the user stops.
     const handleOnChange = ev => {
-      const str = ev.target.value;
-      // Show the user exactly what they are typing
+      /** @type {string} */
+      let str = ev.target.value;
+      str = str.replace(/-/g, '');
       setFieldString(str);
       const parsed = parseAsNat(str, decimalPlaces);
       onChange(parsed);
@@ -78,7 +72,6 @@ const makeNatAmountInput =
         InputProps={inputProps}
         onChange={handleOnChange}
         onBlur={handleOnBlur}
-        onKeyPress={preventSubtractChar}
         value={displayString}
         disabled={disabled}
         error={error}

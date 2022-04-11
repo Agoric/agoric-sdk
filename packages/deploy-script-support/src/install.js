@@ -3,7 +3,7 @@
 import './externalTypes.js';
 import './internalTypes.js';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 /** @type {MakeInstallSaveAndPublish} */
 export const makeInstall = (bundleSource, zoe, installationManager, board) => {

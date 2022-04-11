@@ -24,6 +24,9 @@ const trace = makeTracer('LM');
 const start = async zcf => {
   const { amm } = zcf.getTerms();
 
+  /**
+   * @param {Amount<'nat'>} runDebt
+   */
   const makeDebtorHook = runDebt => {
     const runBrand = runDebt.brand;
     return async debtorSeat => {
@@ -95,8 +98,10 @@ const start = async zcf => {
   return harden({ creatorFacet });
 };
 
+/** @typedef {ContractOf<typeof start>} LiquidationContract */
+
 /**
- * @param {LiquidationCreatorFacet} creatorFacet
+ * @param {LiquidationContract['creatorFacet']} creatorFacet
  */
 const makeLiquidationStrategy = creatorFacet => {
   const makeInvitation = async runDebt =>

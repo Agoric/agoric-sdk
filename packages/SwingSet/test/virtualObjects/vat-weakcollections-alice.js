@@ -1,16 +1,12 @@
 import { Far } from '@endo/marshal';
 import { defineKind } from '@agoric/vat-data';
 
-const makeHolder = defineKind(
-  'holder-vo',
-  value => ({ value }),
-  state => ({
-    getValue: () => state.value,
-    setValue: newValue => {
-      state.value = newValue;
-    },
-  }),
-);
+const makeHolder = defineKind('holder-vo', value => ({ value }), {
+  getValue: ({ state }) => state.value,
+  setValue: ({ state }, newValue) => {
+    state.value = newValue;
+  },
+});
 
 export function buildRootObject() {
   const testWeakMap = new WeakMap();

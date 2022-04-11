@@ -100,16 +100,22 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     metered,
     snapshotHash = undefined,
   ) {
+    const meterOpts = metered ? {} : { meteringLimit: 0 };
     if (snapStore && snapshotHash) {
       // console.log('startXSnap from', { snapshotHash });
       return snapStore.load(snapshotHash, async snapshot => {
-        const xs = doXSnap({ snapshot, name, handleCommand, ...xsnapOpts });
+        const xs = doXSnap({
+          snapshot,
+          name,
+          handleCommand,
+          ...meterOpts,
+          ...xsnapOpts,
+        });
         await xs.isReady();
         return xs;
       });
     }
     // console.log('fresh xsnap', { snapStore: snapStore });
-    const meterOpts = metered ? {} : { meteringLimit: 0 };
     const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
     for (const bundle of bundles) {

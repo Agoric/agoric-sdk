@@ -72,7 +72,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   }
 
   const olddir = process.cwd();
-  const { name, removeCallback } = tmp.dirSync({
+  const { name } = tmp.dirSync({
     unsafeCleanup: true,
     prefix: 'agoric-cli-test-',
   });
@@ -261,6 +261,5 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     runFinalizers();
     process.off('SIGINT', runFinalizers);
     process.chdir(olddir);
-    removeCallback();
   }
 };
