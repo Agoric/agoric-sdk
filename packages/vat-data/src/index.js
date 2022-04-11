@@ -46,3 +46,11 @@ export const {
   makeScalarBigSetStore,
   makeScalarBigWeakSetStore,
 } = VatDataGlobal;
+
+/**
+ * @type {import('./types').PickFacet}
+ */
+export const pickFacet =
+  (maker, facetName) =>
+  (...args) =>
+    maker(...args)[facetName];

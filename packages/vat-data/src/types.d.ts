@@ -58,3 +58,10 @@ export type VatData = {
     options?: StoreOptions,
   ) => WeakSetStore<K>;
 };
+
+interface PickFacet {
+  <M extends (...args: any[]) => any, F extends keyof ReturnType<M>>(
+    maker: M,
+    facetName: F,
+  ): (...args: Parameters<M>) => ReturnType<M>[F];
+}
