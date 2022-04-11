@@ -65,8 +65,7 @@ export function makeVirtualReferenceManager(
       let doMoreGC = deleteStoredRepresentation(baseRef);
       syscall.vatstoreDelete(`vom.rc.${baseRef}`);
       syscall.vatstoreDelete(`vom.es.${baseRef}`);
-      const more = ceaseRecognition(baseRef);
-      doMoreGC = doMoreGC || more;
+      doMoreGC = ceaseRecognition(baseRef) || doMoreGC;
       return [doMoreGC, retirees];
     }
     return [false, []];
@@ -461,7 +460,7 @@ export function makeVirtualReferenceManager(
    * TODO: concoct a better type def than Set<any>
    */
   /**
-   * @typedef { Map<string, *> | Set<string> | ((string) => void) } Recognizer
+   * @typedef { Map<string, *> | Set<string> } Recognizer
    */
   /** @type {Map<string, Set<Recognizer>>} */
   const vrefRecognizers = new Map();
@@ -543,8 +542,7 @@ export function makeVirtualReferenceManager(
         const { facetNames } = kindInfo;
         if (facetNames) {
           for (let i = 0; i < facetNames.length; i += 1) {
-            const more = ceaseRecognition(`${vref}:${i}`);
-            doMoreGC = doMoreGC || more;
+            doMoreGC = ceaseRecognition(`${vref}:${i}`) || doMoreGC;
           }
           return doMoreGC;
         }
@@ -569,8 +567,7 @@ export function makeVirtualReferenceManager(
     while (key) {
       syscall.vatstoreDelete(key);
       const parts = key.split('|');
-      const more = deleteCollectionEntry(parts[1], vref);
-      doMoreGC = doMoreGC || more;
+      doMoreGC = deleteCollectionEntry(parts[1], vref) || doMoreGC;
       [key] = syscall.vatstoreGetAfter(key, prefix);
     }
     return doMoreGC;

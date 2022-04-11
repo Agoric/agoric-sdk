@@ -129,6 +129,14 @@ export function makeCollectionManager(
   // TODO Should we be using the new encodeBigInt scheme instead, anyway?
   const BIGINT_TAG_LEN = 10;
 
+  /**
+   * Delete an entry from a collection as part of garbage collecting the entry's key.
+   *
+   * @param {string} collectionID - the collection from which the entry is to be deleted
+   * @param {string} vobjID - the entry key being removed
+   *
+   * @returns {boolean} true if this removal possibly introduces a further GC opportunity
+   */
   function deleteCollectionEntry(collectionID, vobjID) {
     const ordinalKey = prefixc(collectionID, `|${vobjID}`);
     const ordinalString = syscall.vatstoreGet(ordinalKey);
@@ -136,11 +144,13 @@ export function makeCollectionManager(
     const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
     const recordKey = prefixc(collectionID, `r${ordinalTag}:${vobjID}`);
     const rawValue = syscall.vatstoreGet(recordKey);
+    let doMoreGC = false;
     if (rawValue !== undefined) {
       const value = JSON.parse(rawValue);
-      value.slots.map(vrm.removeReachableVref);
+      doMoreGC = value.slots.map(vrm.removeReachableVref).some(b => b);
       syscall.vatstoreDelete(recordKey);
     }
+    return doMoreGC;
   }
   vrm.setDeleteCollectionEntry(deleteCollectionEntry);
 
