@@ -77,6 +77,12 @@ import { assert, details as X } from '@agoric/assert';
  *
  * XXX TODO: The previous comment suggests some renaming is warranted:
  *
+ * In the current implementation, a vref string may only include decimal digits,
+ * the letters 'd', 'o', and 'p', and the punctuation characters '+', '-', '/',
+ * and ':'.  Future evolution of the vref syntax might add more characters to
+ * this set, but the character '|' is permanently excluded because of its use by
+ * the collection manager as delimiter in vatstore keys that include vrefs.
+ *
  * `slotToVal` maps a baseRef to a base object (actually to a weakRef that
  *    points to a base object)
  * `getValForSlot` maps a baseRef to a base object, or to undefined if it is not

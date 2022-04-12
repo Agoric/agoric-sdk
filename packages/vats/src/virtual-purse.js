@@ -46,22 +46,47 @@ import '@agoric/notifier/exported.js';
 function makeVirtualPurse(vpc, kit) {
   const { brand, issuer, mint, escrowPurse } = kit;
 
-  /** @type {(amt: Amount) => Promise<Payment>} */
-  let redeem;
-  /** @type {(pmt: Payment, optAmountShape?: Pattern) => Promise<Amount>} */
-  let retain;
+  const recoveryPurse = E(issuer).makeEmptyPurse();
 
-  if (mint) {
-    retain = (payment, optAmountShape) =>
-      E(issuer).burn(payment, optAmountShape);
-    redeem = amount => E(mint).mintPayment(amount);
-  } else {
+  /**
+   * Claim a payment for recovery via our `recoveryPurse`.  No need for this on
+   * the `retain` operations (since we are just burning the payment or
+   * depositing it directly in the `escrowPurse`).
+   *
+   * @param {ERef<Payment>} payment
+   * @param {Amount} [optAmountShape]
+   */
+  const recoverableClaim = async (payment, optAmountShape) => {
+    const pmt = await payment;
+    const amt = await E(recoveryPurse).deposit(pmt, optAmountShape);
+    return E(recoveryPurse).withdraw(optAmountShape || amt);
+  };
+
+  /**
+   * @returns {{
+   *   retain: (pmt: Payment, optAmountShape?: Pattern) => Promise<Amount>,
+   *   redeem: (amt: Amount) => Promise<Payment>,
+   * }}
+   */
+  const makeRetainRedeem = () => {
+    if (mint) {
+      const retain = (payment, optAmountShape = undefined) =>
+        E(issuer).burn(payment, optAmountShape);
+      const redeem = amount => recoverableClaim(E(mint).mintPayment(amount));
+      return { retain, redeem };
+    }
+
     // If we can't mint, then we need to escrow.
     const myEscrowPurse = escrowPurse || E(issuer).makeEmptyPurse();
-    retain = (payment, optAmountShape) =>
+    const retain = async (payment, optAmountShape = undefined) =>
       E(myEscrowPurse).deposit(payment, optAmountShape);
-    redeem = amount => E(myEscrowPurse).withdraw(amount);
-  }
+    const redeem = amount =>
+      recoverableClaim(E(myEscrowPurse).withdraw(amount));
+
+    return { retain, redeem };
+  };
+
+  const { retain, redeem } = makeRetainRedeem();
 
   /** @type {NotifierRecord<Amount>} */
   const { notifier: balanceNotifier, updater: balanceUpdater } =
@@ -98,6 +123,7 @@ function makeVirtualPurse(vpc, kit) {
           `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
         );
       }
+
       const amt = await retain(payment, optAmountShape);
 
       // The push must always succeed.
@@ -143,6 +169,8 @@ function makeVirtualPurse(vpc, kit) {
       });
       return pmt;
     },
+    getRecoverySet: () => E(recoveryPurse).getRecoverySet(),
+    recoverAll: () => E(recoveryPurse).recoverAll(),
   });
   return purse;
 }

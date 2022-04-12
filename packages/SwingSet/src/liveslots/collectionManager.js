@@ -31,6 +31,12 @@ export function makeCollectionManager(
   serialize,
   unserialize,
 ) {
+  // TODO(#5058): we hold a list of all collections (both virtual and
+  // durable) in RAM, so we can delete the virtual ones during
+  // stopVat(), and tolerate subsequent GC-triggered duplication
+  // deletion without crashing. This needs to move to the DB to avoid
+  // the RAM consumption of a large number of collections.
+  const allCollectionObjIDs = new Set();
   const storeKindIDToName = new Map();
 
   const storeKindInfo = {
@@ -128,6 +134,31 @@ export function makeCollectionManager(
   // Not that it's only used for this purpose, what should it be called?
   // TODO Should we be using the new encodeBigInt scheme instead, anyway?
   const BIGINT_TAG_LEN = 10;
+
+  /**
+   * Delete an entry from a collection as part of garbage collecting the entry's key.
+   *
+   * @param {string} collectionID - the collection from which the entry is to be deleted
+   * @param {string} vobjID - the entry key being removed
+   *
+   * @returns {boolean} true if this removal possibly introduces a further GC opportunity
+   */
+  function deleteCollectionEntry(collectionID, vobjID) {
+    const ordinalKey = prefixc(collectionID, `|${vobjID}`);
+    const ordinalString = syscall.vatstoreGet(ordinalKey);
+    syscall.vatstoreDelete(ordinalKey);
+    const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
+    const recordKey = prefixc(collectionID, `r${ordinalTag}:${vobjID}`);
+    const rawValue = syscall.vatstoreGet(recordKey);
+    let doMoreGC = false;
+    if (rawValue !== undefined) {
+      const value = JSON.parse(rawValue);
+      doMoreGC = value.slots.map(vrm.removeReachableVref).some(b => b);
+      syscall.vatstoreDelete(recordKey);
+    }
+    return doMoreGC;
+  }
+  vrm.setDeleteCollectionEntry(deleteCollectionEntry);
 
   function summonCollectionInternal(
     _initial,
@@ -235,14 +266,6 @@ export function makeCollectionManager(
       }
     }
 
-    function entryDeleter(vobjID) {
-      const ordinalKey = prefix(`|${vobjID}`);
-      const ordinalString = syscall.vatstoreGet(ordinalKey);
-      syscall.vatstoreDelete(ordinalKey);
-      const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
-      syscall.vatstoreDelete(prefix(`r${ordinalTag}:${vobjID}`));
-    }
-
     function init(key, value) {
       assert(
         matches(key, keySchema),
@@ -272,7 +295,7 @@ export function makeCollectionManager(
         }
         generateOrdinal(key);
         if (hasWeakKeys) {
-          vrm.addRecognizableValue(key, entryDeleter);
+          vrm.addRecognizableValue(key, `${collectionID}`, true);
         } else {
           vrm.addReachableVref(vref);
         }
@@ -316,18 +339,18 @@ export function makeCollectionManager(
       const rawValue = syscall.vatstoreGet(dbKey);
       assert(rawValue, X`key ${key} not found in collection ${q(label)}`);
       const value = JSON.parse(rawValue);
-      value.slots.map(vrm.removeReachableVref);
+      const doMoreGC1 = value.slots.map(vrm.removeReachableVref).some(b => b);
       syscall.vatstoreDelete(dbKey);
-      let doMoreGC = false;
+      let doMoreGC2 = false;
       if (passStyleOf(key) === 'remotable') {
         deleteOrdinal(key);
         if (hasWeakKeys) {
-          vrm.removeRecognizableValue(key, entryDeleter);
+          vrm.removeRecognizableValue(key, `${collectionID}`, true);
         } else {
-          doMoreGC = vrm.removeReachableVref(convertValToSlot(key));
+          doMoreGC2 = vrm.removeReachableVref(convertValToSlot(key));
         }
       }
-      return doMoreGC;
+      return doMoreGC1 || doMoreGC2;
     }
 
     function del(key) {
@@ -549,9 +572,13 @@ export function makeCollectionManager(
   }
 
   function deleteCollection(vobjID) {
+    if (!allCollectionObjIDs.has(vobjID)) {
+      return false; // already deleted
+    }
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
     const collection = summonCollectionInternal(false, 'GC', subid, kindName);
+    allCollectionObjIDs.delete(vobjID);
 
     const doMoreGC = collection.clearInternal(true);
     let priorKey = '';
@@ -564,6 +591,18 @@ export function makeCollectionManager(
       syscall.vatstoreDelete(priorKey);
     }
     return doMoreGC;
+  }
+
+  function deleteAllVirtualCollections() {
+    const vobjIDs = Array.from(allCollectionObjIDs).sort();
+    for (const vobjID of vobjIDs) {
+      const { id } = parseVatSlot(vobjID);
+      const kindName = storeKindIDToName.get(`${id}`);
+      const { durable } = storeKindInfo[kindName];
+      if (!durable) {
+        deleteCollection(vobjID);
+      }
+    }
   }
 
   function makeCollection(label, kindName, keySchema, valueSchema) {
@@ -589,6 +628,7 @@ export function makeCollectionManager(
       JSON.stringify(serialize(harden(schemata))),
     );
     syscall.vatstoreSet(prefixc(collectionID, '|label'), label);
+    allCollectionObjIDs.add(vobjID);
 
     return [
       vobjID,
@@ -826,6 +866,7 @@ export function makeCollectionManager(
 
   return harden({
     initializeStoreKindInfo,
+    deleteAllVirtualCollections,
     makeScalarBigMapStore,
     makeScalarBigWeakMapStore,
     makeScalarBigSetStore,

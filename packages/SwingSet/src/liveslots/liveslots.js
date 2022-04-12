@@ -16,6 +16,7 @@ import { insistMessage } from '../lib/message.js';
 import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
 import { makeCollectionManager } from './collectionManager.js';
+import { releaseOldState } from './stop-vat.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -1266,32 +1267,6 @@ function build(
   }
 
   /**
-   * @returns { Promise<void> }
-   */
-  async function stopVat() {
-    assert(didStartVat);
-    assert(!didStopVat);
-    didStopVat = true;
-
-    // Pretend that userspace rejected all non-durable promises. We
-    // basically do the same thing that `thenReject(p,
-    // vpid)(rejection)` would have done, but we skip ahead to the
-    // syscall.resolve part. The real `thenReject` also does
-    // pRec.reject(), which would give control to userspace (who might
-    // have re-imported the promise and attached a .then to it), and
-    // stopVat() must not allow userspace to gain agency.
-
-    const rejectCapData = m.serialize('vat upgraded');
-    const vpids = Array.from(deciderVPIDs.keys()).sort();
-    const rejections = vpids.map(vpid => [vpid, true, rejectCapData]);
-    if (rejections.length) {
-      syscall.resolve(rejections);
-    }
-    // eslint-disable-next-line no-use-before-define
-    await bringOutYourDead();
-  }
-
-  /**
    * @param { VatDeliveryObject } delivery
    * @returns { void | Promise<void> }
    */
@@ -1330,10 +1305,6 @@ function build(
         result = startVat(vpCapData);
         break;
       }
-      case 'stopVat': {
-        result = stopVat();
-        break;
-      }
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }
@@ -1352,6 +1323,37 @@ function build(
       return bringOutYourDead();
     }
     return undefined;
+  }
+
+  /**
+   * @returns { Promise<void> }
+   */
+  async function stopVat() {
+    assert(didStartVat);
+    assert(!didStopVat);
+    didStopVat = true;
+
+    try {
+      await releaseOldState({
+        m,
+        deciderVPIDs,
+        syscall,
+        exportedRemotables,
+        addToPossiblyDeadSet,
+        slotToVal,
+        valToSlot,
+        dropExports,
+        retireExports,
+        vrm,
+        collectionManager,
+        bringOutYourDead,
+        vreffedObjectRegistry,
+      });
+    } catch (e) {
+      console.log(`-- error during stopVat()`);
+      console.log(e);
+      throw e;
+    }
   }
 
   /**
@@ -1402,9 +1404,11 @@ function build(
    */
   async function dispatch(delivery) {
     // We must short-circuit dispatch to bringOutYourDead here because it has to
-    // be async
+    // be async, same for stopVat
     if (delivery[0] === 'bringOutYourDead') {
       return meterControl.runWithoutMeteringAsync(bringOutYourDead);
+    } else if (delivery[0] === 'stopVat') {
+      return meterControl.runWithoutMeteringAsync(stopVat);
     } else {
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for

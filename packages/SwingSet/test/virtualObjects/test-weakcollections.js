@@ -17,6 +17,7 @@ function capargs(args, slots = []) {
 
 test('weakMap in vat', async t => {
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {

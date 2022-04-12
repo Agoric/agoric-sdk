@@ -8,7 +8,7 @@ export const start = () => {
 
     return Far('Bundler', {
       add: (name, encodedContent) => {
-        nameToContent.set(name, decodeBase64(encodedContent));
+        nameToContent.set(name, new Uint8Array(decodeBase64(encodedContent)));
       },
       install: bundleShell => {
         const writer = new ZipWriter();

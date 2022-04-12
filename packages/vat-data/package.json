@@ -23,8 +23,9 @@
     "@agoric/store": "^0.6.10"
   },
   "devDependencies": {
+    "@agoric/swingset-vat": "*",
     "ava": "^3.12.1",
-    "@agoric/swingset-vat": "*"
+    "tsd": "^0.20.0"
   },
   "eslintConfig": {
     "extends": [

@@ -7,9 +7,9 @@ import type {
 } from '@agoric/store';
 import { Context } from 'vm';
 
-type Tail<T extends any[]> = T extends [head: any, ...tail: infer Tail_]
-  ? Tail_
-  : never;
+type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
+  ? Rest
+  : [];
 
 type MinusContext<
   F extends (context, ...rest: any[]) => any,
@@ -19,13 +19,19 @@ type MinusContext<
 
 type FunctionsMinusContext<O> = { [K in keyof O]: MinusContext<O[K]> };
 
+type ActualBehavior<B> = {
+  [Facet in keyof B]: FunctionsMinusContext<B[Facet]>;
+};
+
+type KindContext<S, B> = { state: S; facets: ActualBehavior<B> };
+
 interface KindDefiner {
   <P, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
-    finish?: () => void,
-  ): (...args: P) => { [Facet in keyof B]: FunctionsMinusContext<B[Facet]> };
+    options?: { finish?: (context: KindContext<S, B>) => void },
+  ): (...args: P) => ActualBehavior<B>;
 }
 
 export type VatData = {
