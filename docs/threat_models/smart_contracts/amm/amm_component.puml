@@ -2,12 +2,12 @@
 'https://plantuml.com/component-diagram
 header Agoric Systems Operating Company.
 footer v0.0.1
-title Multiswap Auto Pool Component Diagram
+title AMM Component Diagram
 
 skinparam componentStyle rectangle
 skinparam defaultTextAlignment center
 
-actor "Multipool Autoswap Contract creator" as cc1
+actor "AMM Contract creator" as cc1
 actor "Random Pool Creator" as cc2
 actor "Person wanting to swap" as cc3
 interface "startInstance()" as si0
@@ -15,7 +15,7 @@ package "zoe" as zoe {
     interface "offer()" as offer
 }
 
-package "Multipool Autoswap" {
+package "AMM" {
     [creatorFacet] as cf0
     node contractFacet <<zcf>> as conf1 {
         package "poolSeatA" as pa1 {
