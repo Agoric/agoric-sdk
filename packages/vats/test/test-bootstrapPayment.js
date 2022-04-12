@@ -152,3 +152,13 @@ test('bootstrap payment - default value is 0n', async (/** @type {CentralSupplyT
 
   t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(runBrand, 0n)));
 });
+
+test('bootstrap payment - contract exits', async (/** @type {CentralSupplyTestContext} */ t) => {
+  const { adminFacet, creatorFacet } = await startContract(t, 0n);
+
+  const pmt = await E(creatorFacet).getBootstrapPayment();
+  t.log({ pmt });
+  const completion = await E(adminFacet).getVatShutdownPromise();
+  t.log({ completion });
+  t.pass();
+});
