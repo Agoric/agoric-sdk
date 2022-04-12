@@ -250,8 +250,7 @@ const helperBehavior = {
    * @param {MethodContext} context
    */
   reschedulePriceCheck: async ({ state, facets }) => {
-    const { outstandingQuote, priceAuthority } = state;
-    const { liquidationInProgress, prioritizedVaults } = state;
+    const { prioritizedVaults } = state;
     const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -275,9 +274,9 @@ const helperBehavior = {
     // quote (because this is the first loan, or because a quote just resolved)
     // then make a new request to the priceAuthority, and when it resolves,
     // liquidate anything that's above the price level.
-    if (outstandingQuote) {
+    if (state.outstandingQuote) {
       // Safe to call extraneously (lightweight and idempotent)
-      E(outstandingQuote).updateLevel(
+      E(state.outstandingQuote).updateLevel(
         highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
@@ -285,7 +284,7 @@ const helperBehavior = {
       return;
     }
 
-    if (liquidationInProgress) {
+    if (state.liquidationInProgress) {
       return;
     }
 
@@ -293,6 +292,7 @@ const helperBehavior = {
     // relatively quickly from the PriceAuthority. The second schedules a
     // callback that may not fire until much later.
     // Callers shouldn't expect a response from this function.
+    const { priceAuthority } = state;
     state.outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
       highestDebtRatio.denominator, // collateral
       triggerPoint,
