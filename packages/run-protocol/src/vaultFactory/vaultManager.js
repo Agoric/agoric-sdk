@@ -183,15 +183,11 @@ const helperBehavior = {
   },
 
   /**
-   * @param {{ state: ImmutableState & MutableState, facets: * }} context FIXME
+   * @param {MethodContext} context
    * @param {bigint} updateTime
    * @param {ZCFSeat} poolIncrementSeat
    */
-  chargeAllVaults: async (
-    { state, facets: { helper } },
-    updateTime,
-    poolIncrementSeat,
-  ) => {
+  chargeAllVaults: async ({ state, facets }, updateTime, poolIncrementSeat) => {
     trace('chargeAllVaults', { updateTime });
     const interestRate = state.factoryPowers
       .getGovernedParams()
@@ -236,7 +232,7 @@ const helperBehavior = {
 
     trace('chargeAllVaults complete', payload);
 
-    helper.reschedulePriceCheck();
+    facets.helper.reschedulePriceCheck();
   },
 
   /**
@@ -251,9 +247,9 @@ const helperBehavior = {
    * high-water level when the request was made matches the current high-water
    * level.
    *
-   * @param {{ state: ImmutableState & MutableState, facets: * }} context FIXME
+   * @param {MethodContext} context
    */
-  reschedulePriceCheck: async ({ state, facets: { helper } }) => {
+  reschedulePriceCheck: async ({ state, facets }) => {
     const { outstandingQuote, priceAuthority } = state;
     const { liquidationInProgress, prioritizedVaults } = state;
     const highestDebtRatio = prioritizedVaults.highestRatio();
@@ -317,9 +313,9 @@ const helperBehavior = {
     // Liquidate the head of the queue
     const [next] =
       prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
-    await (next ? helper.liquidateAndRemove(next) : null);
+    await (next ? facets.helper.liquidateAndRemove(next) : null);
 
-    helper.reschedulePriceCheck();
+    facets.helper.reschedulePriceCheck();
   },
 
   /**
@@ -398,8 +394,8 @@ const managerBehavior = {
   },
   /**
    * @param {MethodContext} context
-   * @param {*} toBurn
-   * @param {*} seat
+   * @param {Amount<'nat'>} toBurn
+   * @param {ZCFSeat} seat
    */
   burnAndRecord: ({ state }, toBurn, seat) => {
     const { burnDebt } = state.factoryPowers;
