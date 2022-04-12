@@ -75,21 +75,22 @@ const validTransitions = {
  */
 
 /**
- * @typedef {Object} InnerVaultManagerBase
+ * @typedef {Object} InnerVaultManager
  * @property {() => Notifier<import('./vaultManager').AssetState>} getNotifier
  * @property {(collateralAmount: Amount) => ERef<Amount>} maxDebtFor
  * @property {() => Brand} getCollateralBrand
  * @property {() => Brand} getDebtBrand
  * @property {MintAndReallocate} mintAndReallocate
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
- * @property {() => Ratio} getCompoundedInterest - coefficient on existing debt to calculate new debt
+ * @property {() => Ratio} getCompoundedInterest
  * @property {(oldDebt: Amount, oldCollateral: Amount, vaultId: VaultId) => void} updateVaultPriority
+ * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
  */
 
 /**
  * @typedef {Readonly<{
  * idInManager: VaultId,
- * manager: InnerVaultManagerBase & GetVaultParams,
+ * manager: InnerVaultManager,
  * vaultSeat: ZCFSeat,
  * zcf: ZCF,
  * }>} ImmutableState
@@ -118,7 +119,7 @@ const validTransitions = {
 
 /**
  * @param {ZCF} zcf
- * @param {InnerVaultManagerBase & GetVaultParams} manager
+ * @param {InnerVaultManager} manager
  * @param {VaultId} idInManager
  */
 const initState = (zcf, manager, idInManager) => {
@@ -304,8 +305,10 @@ const helperBehavior = {
     /** @type {VaultUIState} */
     return harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
-      interestRate: state.manager.getInterestRate(),
-      liquidationRatio: state.manager.getLiquidationMargin(),
+      interestRate: state.manager.getGovernedParams().getInterestRate(),
+      liquidationRatio: state.manager
+        .getGovernedParams()
+        .getLiquidationMargin(),
       debtSnapshot: { debt, interest },
       locked: facets.self.getCollateralAmount(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
@@ -408,7 +411,10 @@ const helperBehavior = {
    * @param {Amount} wantAmount
    */
   loanFee: ({ state }, currentDebt, giveAmount, wantAmount) => {
-    const fee = ceilMultiplyBy(wantAmount, state.manager.getLoanFee());
+    const fee = ceilMultiplyBy(
+      wantAmount,
+      state.manager.getGovernedParams().getLoanFee(),
+    );
     const toMint = AmountMath.add(wantAmount, fee);
     const newDebt = addSubtract(currentDebt, toMint, giveAmount);
     return { newDebt, toMint, fee };
@@ -702,7 +708,7 @@ const makeInnerVaultBase = defineKind('InnerVault', initState, {
 
 /**
  * @param {ZCF} zcf
- * @param {InnerVaultManagerBase & GetVaultParams} manager
+ * @param {InnerVaultManager} manager
  * @param {VaultId} idInManager
  */
 export const makeInnerVault = pickFacet(makeInnerVaultBase, 'self');
