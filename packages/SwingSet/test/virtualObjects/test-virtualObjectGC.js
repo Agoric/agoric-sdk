@@ -190,12 +190,12 @@ const virtualHolderVref = `${holderKindID}/1`;
 function buildRootObject(vatPowers) {
   const { VatData, WeakMap, WeakSet } = vatPowers;
 
-  const { defineKind } = VatData;
+  const { defineKind, defineKindMulti } = VatData;
 
   const makeThing = defineKind('thing', label => ({ label }), {
     getLabel: ({ state }) => state.label,
   });
-  const makeFacetedThing = defineKind('thing', label => ({ label }), {
+  const makeFacetedThing = defineKindMulti('thing', label => ({ label }), {
     facetA: {
       getLabelA: ({ state }) => state.label,
     },
@@ -220,7 +220,7 @@ function buildRootObject(vatPowers) {
   });
   const virtualHolder = makeVirtualHolder();
 
-  const makeDualMarkerThing = defineKind(
+  const makeDualMarkerThing = defineKindMulti(
     'thing',
     () => ({ unused: 'uncared for' }),
     {

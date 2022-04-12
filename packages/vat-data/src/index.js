@@ -28,7 +28,9 @@ if ('VatData' in globalThis) {
   const unvailable = () => assert.fail('VatData unavailable');
   VatDataGlobal = {
     defineKind: unvailable,
+    defineKindMulti: unvailable,
     defineDurableKind: unvailable,
+    defineDurableKindMulti: unvailable,
     makeKindHandle: unvailable,
     makeScalarBigMapStore: unvailable,
     makeScalarBigWeakMapStore: unvailable,
@@ -39,7 +41,9 @@ if ('VatData' in globalThis) {
 
 export const {
   defineKind,
+  defineKindMulti,
   defineDurableKind,
+  defineDurableKindMulti,
   makeKindHandle,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
