@@ -59,7 +59,18 @@ export type VatData = {
   ) => WeakSetStore<K>;
 };
 
+// The JSDoc is repeated here and at the function definition so it appears
+// in IDEs where it's used, regardless of type resolution.
 interface PickFacet {
+  /**
+   * When making a multi-facet kind, it's common to pick one facet to expose. E.g.,
+   *
+   *     const makeFoo = (a, b, c, d) => makeFooBase(a, b, c, d).self;
+   *
+   * This helper reduces the duplication:
+   *
+   *     const makeFoo = pickFacet(makeFooBase, 'self');
+   */
   <M extends (...args: any[]) => any, F extends keyof ReturnType<M>>(
     maker: M,
     facetName: F,
