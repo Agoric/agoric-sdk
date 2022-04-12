@@ -1,3 +1,4 @@
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 export default function makeScratchPad() {
@@ -8,7 +9,7 @@ export default function makeScratchPad() {
     return harden(keyList.sort());
   };
 
-  return Far('scratchPad', {
+  const scratch = Far('scratchPad', {
     delete: async keyP => {
       const key = await keyP;
       map.delete(key);
@@ -16,6 +17,17 @@ export default function makeScratchPad() {
     get: async keyP => {
       const key = await keyP;
       return map.get(key);
+    },
+    lookup: (...path) => {
+      if (path.length === 0) {
+        return scratch;
+      }
+      const [first, ...rest] = path;
+      const firstValue = E(scratch).get(first);
+      if (rest.length === 0) {
+        return firstValue;
+      }
+      return E(firstValue).lookup(...rest);
     },
     // Initialize a key only if it doesn't already exist.  Needed for atomicity
     // between multiple invocations.
@@ -36,4 +48,5 @@ export default function makeScratchPad() {
       return key;
     },
   });
+  return scratch;
 }
