@@ -25,6 +25,7 @@ import {
   economyBundles,
 } from '../../src/importedBundles.js';
 import * as Collect from '../../src/collect.js';
+import { setUpZoeForTest } from '../supports.js';
 import { KW } from '../../src/runStake/params.js';
 
 // 8	Partial repayment from reward stream - TODO
@@ -68,29 +69,13 @@ test.before(async t => {
  */
 const theBundles = t => /** @type { any } */ (t.context).bundles;
 
-export const setUpZoeForTest = async () => {
-  const { makeFar } = makeLoopback('zoeTest');
-
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(() => {}).admin,
-  );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
-  return {
-    zoe,
-    feeMintAccess,
-  };
-};
-harden(setUpZoeForTest);
-
 export const setupBootstrap = async (
   bundles,
   timer = buildManualTimer(console.log),
   zoe,
 ) => {
   if (!zoe) {
-    ({ zoe } = await setUpZoeForTest());
+    zoe = await setUpZoeForTest().zoe;
   }
 
   const space = /** @type {any} */ (makePromiseSpace());
