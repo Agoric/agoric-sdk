@@ -26,6 +26,7 @@ function getImportSensorKref(impcapdata, i) {
 
 test('VO property deletion is not short-circuited', async t => {
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,

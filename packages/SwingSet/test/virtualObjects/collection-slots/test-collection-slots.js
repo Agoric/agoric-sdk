@@ -26,6 +26,7 @@ function getImportSensorKref(impcapdata, i) {
 
 test('collection entry slots trigger doMoreGC', async t => {
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,
