@@ -339,7 +339,7 @@ const helperBehavior = {
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
     )
       .then(() => {
-        prioritizedVaults?.removeVault(key);
+        prioritizedVaults.removeVault(key);
         state.liquidationInProgress = false;
       })
       .catch(e => {
@@ -494,7 +494,7 @@ const selfBehavior = {
     const { debtBrand } = state;
     // get a quote for one unit of the collateral
     const displayInfo = await E(state.collateralBrand).getDisplayInfo();
-    const decimalPlaces = displayInfo?.decimalPlaces || 0n;
+    const decimalPlaces = displayInfo.decimalPlaces || 0n;
     return E(state.priceAuthority).quoteGiven(
       AmountMath.make(state.collateralBrand, 10n ** Nat(decimalPlaces)),
       debtBrand,
