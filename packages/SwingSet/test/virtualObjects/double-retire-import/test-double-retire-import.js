@@ -15,6 +15,7 @@ function bfile(name) {
 
 async function testUpgrade(t, defaultManagerType) {
   const config = {
+    includeDevDependencies: true, // for vat-data
     defaultManagerType,
     bootstrap: 'bootstrap',
     vats: {

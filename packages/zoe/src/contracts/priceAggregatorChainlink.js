@@ -561,7 +561,12 @@ const start = async zcf => {
     return add(currentRound, 1);
   };
 
-  /** @type {PriceAggregatorCreatorFacet} */
+  /**
+   * @type {PriceAggregatorCreatorFacet & {
+   *   getRoundData(_roundId: BigInt): Promise<any>,
+   *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
+   * }}
+   */
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
     async initializeQuoteMint(quoteMint) {
       const quoteIssuerRecord = await zcf.saveIssuer(
@@ -582,6 +587,18 @@ const start = async zcf => {
         actualBrandOut: brandOut,
       });
       ({ priceAuthority } = paKit);
+    },
+
+    deleteOracle: async oracleKey => {
+      const records = keyToRecords.get(oracleKey);
+      for (const record of records) {
+        records.delete(record);
+      }
+
+      oracleStatuses.delete(oracleKey);
+
+      // We should remove the entry entirely, as it is empty.
+      keyToRecords.delete(oracleKey);
     },
 
     // unlike the median case, no query argument is passed, since polling behavior is undesired

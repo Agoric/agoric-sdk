@@ -617,6 +617,7 @@ export function makeVirtualReferenceManager(
   return harden({
     droppedCollectionRegistry,
     isDurable,
+    isDurableKind,
     registerKind,
     rememberFacetNames,
     reanimate,

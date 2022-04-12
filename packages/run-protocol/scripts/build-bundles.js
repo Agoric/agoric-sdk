@@ -45,7 +45,7 @@ async function main() {
       `${dirname}/../bundles/bundle-amm.js`,
     ],
     [
-      `${srcDir}/reserve/collateralReserve.js`,
+      `${srcDir}/reserve/assetReserve.js`,
       `${dirname}/../bundles/bundle-reserve.js`,
     ],
     [
