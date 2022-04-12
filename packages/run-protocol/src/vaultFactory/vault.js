@@ -9,7 +9,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { defineKind } from '@agoric/vat-data';
+import { defineKind, pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
@@ -711,7 +711,6 @@ const makeInnerVaultBase = defineKind('InnerVault', initState, {
  * @param {InnerVaultManager} manager
  * @param {VaultId} idInManager
  */
-export const makeInnerVault = (zcf, manager, idInManager) =>
-  makeInnerVaultBase(zcf, manager, idInManager).self;
+export const makeInnerVault = pickFacet(makeInnerVaultBase, 'self');
 
 /** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
