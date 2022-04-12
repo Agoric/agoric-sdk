@@ -3,6 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { makeLoopback } from '@endo/captp';
+import { deeplyFulfilled } from '@endo/marshal';
 
 import '@agoric/zoe/exported.js';
 
@@ -10,8 +11,6 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { AmountMath } from '@agoric/ertp';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
-
-const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
 
 const setUpZoeForTest = setJig => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -27,34 +26,71 @@ const setUpZoeForTest = setJig => {
   };
 };
 
-const startContract = async bootstrapPaymentValue => {
-  const { zoe, feeMintAccess: feeMintAccessP } = setUpZoeForTest();
-  const runIssuer = E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
-  const feeMintAccess = await feeMintAccessP;
+/** @template T @typedef {import('@agoric/zoe/src/zoeService/utils').Installation<T>} Installation<T> */
+/**
+ * @typedef {import('ava').ExecutionContext<{
+ *   zoe: ZoeService,
+ *   feeMintAccess: FeeMintAccess,
+ *   issuer: Record<'run', Issuer>,
+ *   brand: Record<'run', Brand>,
+ *   installation: Record<'centralSupply', Installation<import('../src/centralSupply.js').CentralSupplyContract>>,
+ * }>} CentralSupplyTestContext
+ */
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils').Installation<import('@agoric/vats/src/centralSupply.js').CentralSupplyContract>} */
-  const centralSupplyInstall = await installBundle(zoe, centralSupplyBundle);
+test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
+  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+  const issuer = {
+    run: E(zoe).getFeeIssuer(),
+  };
+  const brand = {
+    run: E(issuer.run).getBrand(),
+  };
+
+  const installation = {
+    centralSupply: E(zoe).install(centralSupplyBundle),
+  };
+
+  t.context = await deeplyFulfilled(
+    harden({
+      zoe,
+      feeMintAccess,
+      issuer,
+      brand,
+      installation,
+    }),
+  );
+});
+
+/**
+ * @param {CentralSupplyTestContext} t
+ * @param {bigint} bootstrapPaymentValue
+ */
+const startContract = (t, bootstrapPaymentValue) => {
+  const {
+    zoe,
+    feeMintAccess,
+    installation: { centralSupply: centralSupplyInstall },
+  } = t.context;
 
   const terms = {
     bootstrapPaymentValue,
   };
-
-  const { creatorFacet } = await E(zoe).startInstance(
+  return E(zoe).startInstance(
     centralSupplyInstall,
     harden({}),
     terms,
     harden({ feeMintAccess }),
   );
-
-  return { runIssuer, creatorFacet, runBrand };
 };
 
-test('bootstrap payment', async t => {
+test('bootstrap payment', async (/** @type {CentralSupplyTestContext} */ t) => {
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
-  const { runIssuer, creatorFacet, runBrand } = await startContract(
-    bootstrapPaymentValue,
-  );
+  const {
+    issuer: { run: runIssuer },
+    brand: { run: runBrand },
+  } = t.context;
+
+  const { creatorFacet } = await startContract(t, bootstrapPaymentValue);
 
   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
@@ -68,15 +104,16 @@ test('bootstrap payment', async t => {
   );
 });
 
-test('bootstrap payment - only minted once', async t => {
+test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTestContext} */ t) => {
   // This test value is not a statement about the actual value to
   // be minted
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
 
-  const { runIssuer, creatorFacet, runBrand } = await startContract(
-    bootstrapPaymentValue,
-  );
-
+  const {
+    issuer: { run: runIssuer },
+    brand: { run: runBrand },
+  } = t.context;
+  const { creatorFacet } = await startContract(t, bootstrapPaymentValue);
   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
   const issuers = { RUN: runIssuer };
@@ -100,8 +137,12 @@ test('bootstrap payment - only minted once', async t => {
   });
 });
 
-test('bootstrap payment - default value is 0n', async t => {
-  const { runIssuer, creatorFacet, runBrand } = await startContract(0n);
+test('bootstrap payment - default value is 0n', async (/** @type {CentralSupplyTestContext} */ t) => {
+  const {
+    issuer: { run: runIssuer },
+    brand: { run: runBrand },
+  } = t.context;
+  const { creatorFacet } = await startContract(t, 0n);
 
   const issuers = { RUN: runIssuer };
 
