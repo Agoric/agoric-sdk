@@ -320,7 +320,7 @@ export const offerTo = async (
   // @ts-expect-error A required parameter cannot follow an optional parameter.
   fromSeat,
   toSeat,
-  offerArgs = undefined,
+  offerArgs,
 ) => {
   const definedToSeat = toSeat !== undefined ? toSeat : fromSeat;
 
