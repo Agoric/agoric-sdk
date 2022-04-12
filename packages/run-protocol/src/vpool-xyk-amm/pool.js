@@ -57,7 +57,6 @@ export const makeAddPool = (
         secondary: pool.getSecondaryAmount(),
       });
 
-    /** @type {AddLiquidityActual} */
     const addLiquidityActual = (
       pool,
       zcfSeat,
@@ -70,7 +69,6 @@ export const makeAddPool = (
 
       const liquidityValueOut = calcLiqValueToMint(
         liqTokenSupply,
-        // @ts-expect-error could be non-scalar
         zcfSeat.getStagedAllocation().Central.value,
         poolCentralAmount.value,
       );

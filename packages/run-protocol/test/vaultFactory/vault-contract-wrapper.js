@@ -102,36 +102,26 @@ export async function start(zcf, privateArgs) {
 
   /** @type {Parameters<typeof makeInnerVault>[1]} */
   const managerMock = Far('vault manager mock', {
-    getGovernedParams() {
-      return {
-        getDebtLimit() {
-          throw Error('not implemented');
-        },
-        getLiquidationMargin() {
-          return LIQUIDATION_MARGIN;
-        },
-        getLiquidationPenalty() {
-          throw Error('not implemented');
-        },
-        getLoanFee() {
-          return makeRatio(500n, runBrand, BASIS_POINTS);
-        },
-        getInterestRate() {
-          return currentInterest;
-        },
-        getChargingPeriod() {
-          return DAY;
-        },
-        getRecordingPeriod() {
-          return DAY;
-        },
-      };
+    getLiquidationMargin() {
+      return LIQUIDATION_MARGIN;
+    },
+    getLoanFee() {
+      return makeRatio(500n, runBrand, BASIS_POINTS);
+    },
+    getInterestRate() {
+      return currentInterest;
     },
     getCollateralBrand() {
       return collateralBrand;
     },
     getDebtBrand: () => runBrand,
 
+    getChargingPeriod() {
+      return DAY;
+    },
+    getRecordingPeriod() {
+      return DAY;
+    },
     getNotifier: () => managerNotifier,
     maxDebtFor,
     mintAndReallocate,
