@@ -46,3 +46,19 @@ export const {
   makeScalarBigSetStore,
   makeScalarBigWeakSetStore,
 } = VatDataGlobal;
+
+/**
+ * When making a multi-facet kind, it's common to pick one facet to expose. E.g.,
+ *
+ *     const makeFoo = (a, b, c, d) => makeFooBase(a, b, c, d).self;
+ *
+ * This helper reduces the duplication:
+ *
+ *     const makeFoo = pickFacet(makeFooBase, 'self');
+ *
+ * @type {import('./types').PickFacet}
+ */
+export const pickFacet =
+  (maker, facetName) =>
+  (...args) =>
+    maker(...args)[facetName];
