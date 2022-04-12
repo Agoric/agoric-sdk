@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define, import/no-extraneous-dependencies */
 import { expectType } from 'tsd';
-import { defineKind } from '.';
+import { defineKindMulti } from '.';
 import { ActualBehavior, FunctionsMinusContext } from './types.js';
 
 /*
@@ -58,7 +58,7 @@ const facetedCounterBehavior = {
   },
 };
 
-const makeFacetedCounter = defineKind(
+const makeFacetedCounter = defineKindMulti(
   'counter',
   initFacetedCounter,
   facetedCounterBehavior,
