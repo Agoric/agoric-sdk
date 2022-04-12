@@ -53,12 +53,9 @@ const start = async zcf => {
     // check whether swapIn liquidated assets until getOfferResult() returns.
     // Of course, we also can't exit the seat until one or the other
     // liquidation takes place.
-    const [offerResult, amounts, _deposited] = await Promise.all([
-      E(liqSeat).getOfferResult(),
-      E(liqSeat).getCurrentAllocation(),
-      deposited,
-    ]);
-    trace('offerResult', offerResult, amounts);
+    const amounts = await deposited;
+    await E(liqSeat).getOfferResult();
+    trace('exact sell result', amounts);
 
     // if swapOut failed to make the trade, we'll sell it all
     const sellAllIfUnsold = async () => {
