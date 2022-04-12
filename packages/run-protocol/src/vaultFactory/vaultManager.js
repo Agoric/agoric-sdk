@@ -17,7 +17,7 @@ import {
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
-import { defineKind } from '@agoric/vat-data';
+import { defineKind, pickFacet } from '@agoric/vat-data';
 import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
@@ -555,28 +555,7 @@ const makeVaultManagerKit = defineKind('VaultManagerKit', initState, behavior, {
  * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */
-export const makeVaultManager = (
-  zcf,
-  debtMint,
-  collateralBrand,
-  priceAuthority,
-  factoryPowers,
-  timerService,
-  liquidationStrategy,
-  penaltyPoolSeat,
-  startTimeStamp,
-) =>
-  makeVaultManagerKit(
-    zcf,
-    debtMint,
-    collateralBrand,
-    priceAuthority,
-    factoryPowers,
-    timerService,
-    liquidationStrategy,
-    penaltyPoolSeat,
-    startTimeStamp,
-  ).self;
+export const makeVaultManager = pickFacet(makeVaultManagerKit, 'self');
 
 /** @typedef {ReturnType<typeof makeVaultManager>} VaultManager */
 /** @typedef {ReturnType<VaultManager['getPublicFacet']>} CollateralManager */
