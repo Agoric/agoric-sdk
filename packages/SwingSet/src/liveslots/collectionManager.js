@@ -333,18 +333,18 @@ export function makeCollectionManager(
       const rawValue = syscall.vatstoreGet(dbKey);
       assert(rawValue, X`key ${key} not found in collection ${q(label)}`);
       const value = JSON.parse(rawValue);
-      value.slots.map(vrm.removeReachableVref);
+      const doMoreGC1 = value.slots.map(vrm.removeReachableVref).some(b => b);
       syscall.vatstoreDelete(dbKey);
-      let doMoreGC = false;
+      let doMoreGC2 = false;
       if (passStyleOf(key) === 'remotable') {
         deleteOrdinal(key);
         if (hasWeakKeys) {
           vrm.removeRecognizableValue(key, `${collectionID}`, true);
         } else {
-          doMoreGC = vrm.removeReachableVref(convertValToSlot(key));
+          doMoreGC2 = vrm.removeReachableVref(convertValToSlot(key));
         }
       }
-      return doMoreGC;
+      return doMoreGC1 || doMoreGC2;
     }
 
     function del(key) {
