@@ -148,7 +148,12 @@ export const makeAddPool = (
           'insufficient Secondary deposited',
         );
 
-        return addLiquidityActual(pool, zcfSeat, secondaryRequired, centralIn);
+        return addLiquidityActual(
+          pool,
+          zcfSeat,
+          secondaryRequired,
+          centralPoolAmount,
+        );
       },
       removeLiquidity: userSeat => {
         const liquidityIn = userSeat.getAmountAllocated(
