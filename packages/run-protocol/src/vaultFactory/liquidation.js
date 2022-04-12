@@ -68,13 +68,14 @@ const liquidate = async (
     collateralBrand,
   );
 
-  // XXX problems with upgrade
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
     strategy.makeInvitation(debt),
     strategy.keywordMapping(),
     strategy.makeProposal(collateralToSell, debt),
     vaultZcfSeat,
+    vaultZcfSeat,
+    harden({ debt }),
   );
   trace(` offeredTo`, collateralToSell, debt);
 

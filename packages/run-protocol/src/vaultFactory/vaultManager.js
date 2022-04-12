@@ -27,7 +27,7 @@ import { chargeInterest } from '../interest.js';
 
 const { details: X, quote: q } = assert;
 
-const trace = makeTracer('VM');
+const trace = makeTracer('VM', false);
 
 /**
  * @typedef {{
@@ -157,6 +157,7 @@ export const makeVaultManager = (
         liquidationInProgress = false;
         // XXX should notify interested parties
         console.error('liquidateAndRemove failed with', e);
+        throw e;
       });
   };
 
