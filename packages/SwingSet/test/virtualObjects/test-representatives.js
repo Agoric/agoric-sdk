@@ -26,6 +26,7 @@ function slot0(iface, kid) {
 
 test.serial('exercise cache', async t => {
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
@@ -350,6 +351,7 @@ test('virtual object gc', async t => {
   */
 
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker',
     vats: {
@@ -403,6 +405,7 @@ test('virtual object gc', async t => {
 // Check that facets which don't reference their state still kill their cohort alive
 async function orphanTest(t, mode) {
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     vats: {
       bob: {

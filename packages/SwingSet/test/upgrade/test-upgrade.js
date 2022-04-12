@@ -23,6 +23,7 @@ function get(capdata, propname) {
 
 async function testUpgrade(t, defaultManagerType) {
   const config = {
+    includeDevDependencies: true, // for vat-data
     defaultManagerType,
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
@@ -93,6 +94,7 @@ test('vat upgrade - xsnap', async t => {
 
 test('failed upgrade - lost kind', async t => {
   const config = {
+    includeDevDependencies: true, // for vat-data
     defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
