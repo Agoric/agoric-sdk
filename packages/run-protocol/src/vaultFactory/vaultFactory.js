@@ -176,6 +176,7 @@ export const start = async (zcf, privateArgs) => {
       priceAuthority,
       factoryPowers,
       timerService,
+      // @ts-expect-error
       liquidationStrategy,
       penaltyPoolSeat,
       startTimeStamp,

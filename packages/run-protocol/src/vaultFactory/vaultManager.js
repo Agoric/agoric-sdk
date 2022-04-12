@@ -211,7 +211,6 @@ const helperBehavior = {
           .getGovernedParams()
           .getRecordingPeriod(),
       },
-      // TODO make something like _.pick
       {
         latestInterestUpdate: state.latestInterestUpdate,
         compoundedInterest: state.compoundedInterest,
