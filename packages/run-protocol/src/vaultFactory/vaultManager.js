@@ -401,7 +401,6 @@ const managerBehavior = {
     const { burnDebt } = state.factoryPowers;
     burnDebt(toBurn, seat);
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
-    // TODO signal updater?
   },
   /** @param {MethodContext} context */
   getNotifier: ({ state }) => state.assetNotifier,
