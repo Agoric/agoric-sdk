@@ -31,6 +31,12 @@ export function makeCollectionManager(
   serialize,
   unserialize,
 ) {
+  // TODO(#5058): we hold a list of all collections (both virtual and
+  // durable) in RAM, so we can delete the virtual ones during
+  // stopVat(), and tolerate subsequent GC-triggered duplication
+  // deletion without crashing. This needs to move to the DB to avoid
+  // the RAM consumption of a large number of collections.
+  const allCollectionObjIDs = new Set();
   const storeKindIDToName = new Map();
 
   const storeKindInfo = {
@@ -566,9 +572,13 @@ export function makeCollectionManager(
   }
 
   function deleteCollection(vobjID) {
+    if (!allCollectionObjIDs.has(vobjID)) {
+      return false; // already deleted
+    }
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
     const collection = summonCollectionInternal(false, 'GC', subid, kindName);
+    allCollectionObjIDs.delete(vobjID);
 
     const doMoreGC = collection.clearInternal(true);
     let priorKey = '';
@@ -581,6 +591,18 @@ export function makeCollectionManager(
       syscall.vatstoreDelete(priorKey);
     }
     return doMoreGC;
+  }
+
+  function deleteAllVirtualCollections() {
+    const vobjIDs = Array.from(allCollectionObjIDs).sort();
+    for (const vobjID of vobjIDs) {
+      const { id } = parseVatSlot(vobjID);
+      const kindName = storeKindIDToName.get(`${id}`);
+      const { durable } = storeKindInfo[kindName];
+      if (!durable) {
+        deleteCollection(vobjID);
+      }
+    }
   }
 
   function makeCollection(label, kindName, keySchema, valueSchema) {
@@ -606,6 +628,7 @@ export function makeCollectionManager(
       JSON.stringify(serialize(harden(schemata))),
     );
     syscall.vatstoreSet(prefixc(collectionID, '|label'), label);
+    allCollectionObjIDs.add(vobjID);
 
     return [
       vobjID,
@@ -843,6 +866,7 @@ export function makeCollectionManager(
 
   return harden({
     initializeStoreKindInfo,
+    deleteAllVirtualCollections,
     makeScalarBigMapStore,
     makeScalarBigWeakMapStore,
     makeScalarBigSetStore,
