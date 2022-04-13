@@ -5,6 +5,7 @@ import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
+import { defineKind } from '@agoric/vat-data';
 import { makeDefaultLiquidationStrategy } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 
@@ -104,27 +105,29 @@ const start = async zcf => {
 /**
  * @param {LiquidationContract['creatorFacet']} creatorFacet
  */
-const makeLiquidationStrategy = creatorFacet => {
-  const makeInvitation = () => E(creatorFacet).makeDebtorInvitation();
+const makeLiquidationStrategy = defineKind(
+  'liquidation strategy',
+  /**
+   * @param {LiquidationContract['creatorFacet']} creatorFacet
+   */
+  creatorFacet => ({ creatorFacet }),
+  {
+    makeInvitation: async ({ state }) =>
+      E(state.creatorFacet).makeDebtorInvitation(),
 
-  const keywordMapping = () =>
-    harden({
-      Collateral: 'In',
-      RUN: 'Out',
-    });
+    keywordMapping: () =>
+      harden({
+        Collateral: 'In',
+        RUN: 'Out',
+      }),
 
-  const makeProposal = (collateral, run) =>
-    harden({
-      give: { In: collateral },
-      want: { Out: AmountMath.makeEmptyFromAmount(run) },
-    });
-
-  return {
-    makeInvitation,
-    keywordMapping,
-    makeProposal,
-  };
-};
+    makeProposal: (_context, collateral, run) =>
+      harden({
+        give: { In: collateral },
+        want: { Out: AmountMath.makeEmptyFromAmount(run) },
+      }),
+  },
+);
 
 harden(start);
 harden(makeLiquidationStrategy);
