@@ -21,7 +21,7 @@ import { governanceBundles, economyBundles } from '../src/importedBundles.js';
  * @param {VaultId} vaultId
  * @param {Amount} initDebt
  * @param {Amount} initCollateral
- * @returns {InnerVault & {setDebt: (Amount) => void}}
+ * @returns {Partial<InnerVault> & {setDebt: (Amount) => void}}
  */
 export const makeFakeInnerVault = (
   vaultId,
