@@ -64,9 +64,9 @@ export const waitForPromisesToSettle = async () =>
 harden(waitForPromisesToSettle);
 
 /**
+ * Returns promises for `zoe` and the `feeMintAccess`.
  *
- * @param setJig
- * @returns Returns promises for `zoe` and the `feeMintAccess`
+ * @param {() => void} setJig
  */
 export const setUpZoeForTest = (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');

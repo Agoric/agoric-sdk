@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
-import { Far, deeplyFulfilled } from '@endo/marshal';
+import { deeplyFulfilled } from '@endo/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -208,22 +208,6 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
   return runPayment;
 };
 
-const startSimple = async t => {
-  const {
-    loanTiming,
-    bundles: { VaultFactory, liquidate },
-  } = t.context;
-  const space = setupBootstrap(t);
-  const { produce, brand, issuer } = space;
-  const amm = Far('stub AMM', {});
-  produce.ammCreatorFacet.resolve(amm);
-  produce.ammPublicFacet.resolve(amm);
-
-  produce.vaultBundles.resolve({ VaultFactory, liquidate });
-
-  startVaultFactory(space, { loanParams: loanTiming });
-};
-
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
@@ -339,46 +323,6 @@ async function setupServices(
     priceAuthority,
   };
 }
-// #endregion
-
-// #region driver
-
-const makeDriver = t => {
-  const {
-    zoe,
-    vaultFactory,
-    aethKit: { mint: aethMint },
-    runKit: { issuer: runIssuer, brand: runBrand },
-  } = t.context;
-  let offerResults;
-  let vaultSeat;
-  const driver = {
-    makeVault: async (collateral, debt) => {
-      vaultSeat = await E(zoe).offer(
-        await E(vaultFactory).makeVaultInvitation(),
-        harden({
-          give: { Collateral: collateral },
-          want: { RUN: debt },
-        }),
-        harden({
-          Collateral: aethMint.mintPayment(collateral),
-        }),
-      );
-      offerResults = await E(vaultSeat).getOfferResult();
-    },
-    // checkBLDLiened: async expected => {
-    //   const actual = await E(lienBridge).getAccountState(
-    //     bob.getAddress(),
-    //     bldBrand,
-    //   );
-    //   t.deepEqual(
-    //     actual.liened,
-    //     AmountMath.make(bldBrand, expected * micro.unit),
-    //   );
-    // },
-  };
-  return driver;
-};
 // #endregion
 
 test('first', async t => {
@@ -516,7 +460,7 @@ test('price drop', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     zoe,
-    runKit: { issuer: runIssuer, brand: runBrand },
+    runKit: { brand: runBrand },
     rates,
   } = t.context;
 
@@ -654,7 +598,7 @@ test('price falls precipitously', async t => {
   const {
     aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     zoe,
-    runKit: { issuer: runIssuer, brand: runBrand },
+    runKit: { brand: runBrand },
     rates,
   } = t.context;
   t.context.loanTiming = {
@@ -1319,10 +1263,9 @@ test('adjust balances', async t => {
 
 test('transfer vault', async t => {
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+    aethKit: { mint: aethMint, brand: aethBrand },
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
-    rates,
   } = t.context;
   const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
   const aethLiquidity = {
@@ -1475,7 +1418,7 @@ test('transfer vault', async t => {
 // Bob will also take out a loan and will give her the proceeds.
 test('overdeposit', async t => {
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+    aethKit: { mint: aethMint, brand: aethBrand },
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
     rates,
@@ -2027,9 +1970,9 @@ test('close loan', async t => {
 
 test('excessive loan', async t => {
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
+    aethKit: { mint: aethMint, brand: aethBrand },
     zoe,
-    runKit: { issuer: runIssuer, brand: runBrand },
+    runKit: { brand: runBrand },
   } = t.context;
   const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
   const aethLiquidity = {
