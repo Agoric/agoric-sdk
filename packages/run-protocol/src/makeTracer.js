@@ -17,8 +17,12 @@ const makeTracer = (name, enable = true) => {
       return infoTick;
     }
     default: {
-      const debugTick = (...args) => {
-        console.log(key, (debugCount += 1), ...args);
+      const debugTick = (optLog, ...args) => {
+        if (optLog.log) {
+          optLog.log(key, (debugCount += 1), ...args);
+        } else {
+          console.info(key, (debugCount += 1), optLog, ...args);
+        }
       };
       return debugTick;
     }

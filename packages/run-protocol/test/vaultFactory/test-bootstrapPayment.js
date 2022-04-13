@@ -7,24 +7,13 @@ import '../../src/vaultFactory/types.js';
 
 import path from 'path';
 import { E } from '@endo/eventual-send';
-import bundleSource from '@endo/bundle-source';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKit } from '@agoric/zoe';
 import { AmountMath } from '@agoric/ertp';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeLoopback } from '@endo/captp';
+import { makeBundle, setUpZoeForTest } from '../supports.js';
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
 const centralSupplyRoot = `${dirname}/../../src/centralSupply.js`;
-
-const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const contractBundle = await bundleSource(new URL(url).pathname);
-  console.log(`makeBundle ${sourceRoot}`);
-  return contractBundle;
-};
 
 // makeBundle is slow, so we bundle each contract once and reuse in all tests.
 const [centralSupplyBundle] = await Promise.all([
@@ -33,24 +22,11 @@ const [centralSupplyBundle] = await Promise.all([
 
 const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
 
-const setUpZoeForTest = async setJig => {
-  const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(setJig).admin,
-  );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
-  return {
-    zoe,
-    feeMintAccess,
-  };
-};
-
 const startContract = async bootstrapPaymentValue => {
-  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+  const { zoe, feeMintAccess: feeMintAccessP } = setUpZoeForTest();
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
+  const feeMintAccess = await feeMintAccessP;
 
   /** @type {import('@agoric/zoe/src/zoeService/utils').Installation<import('../../src/centralSupply.js').CentralSupplyContract>} */
   const centralSupplyInstall = await installBundle(zoe, centralSupplyBundle);

@@ -122,9 +122,7 @@ export const setupAmm = async ({
     governorInstallation,
     {},
     ammGovernorTerms,
-    {
-      electorateCreatorFacet: committeeCreator,
-    },
+    { electorateCreatorFacet: committeeCreator },
   );
 
   const [creatorFacet, ammPublicFacet, instance] = await Promise.all([
@@ -525,7 +523,7 @@ harden(startRewardDistributor);
  */
 
 /**
- * @typedef {EconomyBootstrapPowers & WellKnownSpaces & PromiseMarket<{
+ * @typedef {EconomyBootstrapPowers & PromiseMarket<{
  *   runStakeBundle: SourceBundle,
  *   client: ClientManager,
  *   lienBridge: StakingAuthority,
