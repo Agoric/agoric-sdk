@@ -17,31 +17,33 @@ A virtual or durable object (which we'll abbreviate VDO to save breath) is an ob
 
 A VDO has a "kind", which defines what sort of behavior and state it will possess.  A kind is not exactly a data type, since it comes with a concrete implementation, but it indicates a family of objects that share a set of common behaviors and a common state template.
 
-A vat can define new kinds of VDOs by calling the `defineKind` or `defineDurableKind` functions:
+A vat can define new kinds of VDOs by calling one of the `defineKind` functions:
 
   `maker = defineKind(descriptionTag, init, behavior, options)`
 or
+  `maker = defineKindMulti(descriptionTag, init, facets, options)`
+or
   `maker = defineDurableKind(kindHandle, init, behavior, options)`
+or
+  `maker = defineDurableKindMulti(kindHandle, init, facets, options)`
 
-The return value from `defineKind` or `defineDurableKind` is a maker function which the vat can use to create instances of the newly defined VDO kind.
+The return value from any of these is a maker function which the vat can use to create instances of the newly defined VDO kind.
 
 The `descriptionTag` parameter is a short description string for the kind.  This is the same kind of tag string you would use in a call to `Far`.  It will appear on `.toString()` representations of corresponding `Presence` objects that are exported to remote vats.  Note that this string should only be used for diagnostics and debugging, as it is not safe from substitution by adversarial intermediaries.
 
-A `kindHandle` is a type of durable object that can be used to identify the kind in a later incarnation of the vat.  The usage of a kind handle rather than a simple tag string is the main thing that distinguished the two kind definition functions.  You obtain a kind handle for use in `defineDurableKind` by calling
+A `kindHandle` is a type of durable object that can be used to identify the kind in a later incarnation of the vat.  The usage of a kind handle rather than a simple tag string is the main thing that distinguished the durable from the non-durable kind definition functions.  You obtain a kind handle for use in `defineDurableKind` by calling
 
   `kindHandle = makeKindHandle(descriptionTag)`
 
-where `descriptionTag` is exactly the same as the same named parameter of `defineKind`.  The difference is that a kind handle is itself a durable object that may be stored for later retrieval, and used in a future call to `defineDurableKind` to associate new behavior with the kind in question.
+where `descriptionTag` is exactly the same as the same named parameter of `defineKind`.  The difference is that a kind handle is itself a durable object that may be stored for later retrieval, and used in a future call to `defineDurableKind` or `defineDurableKindMulti` to associate new behavior with the kind in question.
 
 The `init` parameter is a function that will be called when new instances are first created. It is expected to return a simple JavaScript object that represents the initialized state for the new VDO instance.  Any parameters passed to the maker function returned by `defineKind`/`defineDurableKind` are passed directly to the `init` function.
 
-The `behavior` parameter is an object that describes the VDO's behavior.  It must take one of two forms:
+The single-faceted VDO definition functions, `defineKind` and `defineDurableKind`, take a `behavior` parameter.  This is an object whose named properties are all functions that will become methods of the virtual objects returned by the maker function.  The behavior object can be empty; in such a case the resulting VDO can serve as a powerless but unforgeable "marker" handle.
 
-1. An object whose named properties are all functions that will become methods of the virtual objects returned by the maker function.  The behavior object can be empty; in such a case the resulting VDO can serve as a powerless but unforgeable "marker" handle.
+The multi-faceted VDO definition functions, `defineKindMulti` and `defineDurableKindMulti`, take a `facets` parameter.  This is an object whose named properties are descriptors as would be passed to the `behavior` parameter described in the previous paragraph.  These will become facets of new instances of the VDO.  The return value from the maker function will be an object mapping to the facets by name.
 
-2. An object whose named properties are objects as described in (1).  These will become facets of new instances of the VDO.  The return value from the maker function object will be an object mapping to the facets by name.
-
-In either case, the individual behavior functions must have the signature:
+In either the single- or multi-faceted case, the individual behavior functions must have the signature:
 
   `methodname(context, ...args) { ...`
 
@@ -116,7 +118,7 @@ Suppose you instead wanted to provide a version with the increment and decrement
     },
   };
 
-  const makeFacetedCounter = defineKind('counter', initFacetedCounter, facetedCounterBehavior);
+  const makeFacetedCounter = defineKindMulti('counter', initFacetedCounter, facetedCounterBehavior);
 ```
 
 Note how the `getCount` method is declared once and then used in two different facets.
@@ -125,7 +127,7 @@ If you wanted to also make this durable, instead of the last line you'd generate
 
 ```javascript
   const facetedCounterKind = makeKindHandle('durable counter');
-  const makeFacetedCounter = defineDurableKind(facetedCounterKind, initCounter, facetedCounterBehavior);
+  const makeFacetedCounter = defineDurableKindMulti(facetedCounterKind, initCounter, facetedCounterBehavior);
 ```
 
 In either case you'd use it like:
@@ -144,7 +146,7 @@ Note that the `init` and `finish` functions, as well as the behavior, are define
 
 ```javascript
   const getCount = ({state}) => state.counter;
-  const makeFacetedCounter = defineKind(
+  const makeFacetedCounter = defineKindMulti(
     'counter',
     () => ({ counter: 0 }),
     (state) => {

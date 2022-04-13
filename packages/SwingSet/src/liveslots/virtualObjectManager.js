@@ -156,8 +156,9 @@ export function makeCache(size, fetch, store) {
  * not need to occupy memory when they are not in use.  It provides five
  * functions:
  *
- * - `defineKind` and `defineDurableKind` enable users to define new types of
- *    virtual object by providing an implementation of the new kind of object's
+ * - `defineKind`, `defineKindMulti`, `defineDurableKind`, and
+ *    `defineDurableKindMulti` enable users to define new types of virtual
+ *    object by providing an implementation of the new kind of object's
  *    behavior.  The result is a maker function that will produce new
  *    virtualized instances of the defined object type on demand.
  *
@@ -175,8 +176,8 @@ export function makeCache(size, fetch, store) {
  *    actually is prior to a controlled shutdown; normal code should not use
  *    this.
  *
- * `defineKind` and `defineDurableKind` are made available to user vat code in
- * the `VatData` global (along with various other storage functions defined
+ * The `defineKind` functions are made available to user vat code in the
+ * `VatData` global (along with various other storage functions defined
  * elsewhere).
  */
 export function makeVirtualObjectManager(
@@ -479,6 +480,9 @@ export function makeVirtualObjectManager(
    * @param {*} init  An initialization function that will return the initial
    *    state of a new instance of the kind of virtual object being defined.
    *
+   * @param {boolean} multifaceted True if this should be a multi-faceted
+   *    virtual object, false if it should be single-faceted.
+   *
    * @param {*} behavior A bag of functions (in the case of a single-faceted
    *    object) or a bag of bags of functions (in the case of a multi-faceted
    *    object) that will become the methods of the object or its facets.
@@ -555,7 +559,15 @@ export function makeVirtualObjectManager(
    * reference to the state is nulled out and the object holding the state
    * becomes garbage collectable.
    */
-  function defineKindInternal(kindID, tag, init, behavior, options, durable) {
+  function defineKindInternal(
+    kindID,
+    tag,
+    init,
+    multifaceted,
+    behavior,
+    options,
+    durable,
+  ) {
     const finish = options ? options.finish : undefined;
     let nextInstanceID = 1;
     let facetNames;
@@ -564,11 +576,13 @@ export function makeVirtualObjectManager(
     const facetiousness = assessFacetiousness(behavior);
     switch (facetiousness) {
       case 'one': {
+        assert(!multifaceted);
         facetNames = null;
         behaviorTemplate = copyMethods(behavior);
         break;
       }
       case 'many': {
+        assert(multifaceted);
         facetNames = Object.getOwnPropertyNames(behavior).sort();
         assert(
           facetNames.length > 1,
@@ -687,9 +701,9 @@ export function makeVirtualObjectManager(
       const rawState = fetch(baseRef);
       if (rawState) {
         for (const propValue of Object.values(rawState)) {
-          propValue.slots.map(
-            vref => (doMoreGC = doMoreGC || vrm.removeReachableVref(vref)),
-          );
+          propValue.slots.forEach(vref => {
+            doMoreGC = vrm.removeReachableVref(vref) || doMoreGC;
+          });
         }
       }
       syscall.vatstoreDelete(`vom.${baseRef}`);
@@ -732,7 +746,28 @@ export function makeVirtualObjectManager(
 
   function defineKind(tag, init, behavior, options) {
     const kindID = `${allocateExportID()}`;
-    return defineKindInternal(kindID, tag, init, behavior, options, false);
+    return defineKindInternal(
+      kindID,
+      tag,
+      init,
+      false,
+      behavior,
+      options,
+      false,
+    );
+  }
+
+  function defineKindMulti(tag, init, behavior, options) {
+    const kindID = `${allocateExportID()}`;
+    return defineKindInternal(
+      kindID,
+      tag,
+      init,
+      true,
+      behavior,
+      options,
+      false,
+    );
   }
 
   let kindIDID;
@@ -785,6 +820,24 @@ export function makeVirtualObjectManager(
       kindID,
       tag,
       init,
+      false,
+      behavior,
+      options,
+      true,
+    );
+    definedDurableKinds.add(kindID);
+    return maker;
+  }
+
+  function defineDurableKindMulti(kindHandle, init, behavior, options) {
+    const durableKindDescriptor = kindDescriptors.get(kindHandle);
+    assert(durableKindDescriptor);
+    const { kindID, tag } = durableKindDescriptor;
+    const maker = defineKindInternal(
+      kindID,
+      tag,
+      init,
+      true,
       behavior,
       options,
       true,
@@ -830,7 +883,9 @@ export function makeVirtualObjectManager(
   return harden({
     initializeKindHandleKind,
     defineKind,
+    defineKindMulti,
     defineDurableKind,
+    defineDurableKindMulti,
     makeKindHandle,
     insistAllDurableKindsReconnected,
     VirtualObjectAwareWeakMap,

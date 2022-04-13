@@ -9,7 +9,7 @@ export const installInPieces = async (
   { maxBytesInFlight = 800_000, log = console.log } = {},
 ) => {
   const { endoZipBase64, ...bundleShell } = bundle;
-  const zip = new ZipReader(decodeBase64(endoZipBase64));
+  const zip = new ZipReader(new Uint8Array(decodeBase64(endoZipBase64)));
 
   let approxBytesInFlight = 0;
   let inFlightAdditions = [];

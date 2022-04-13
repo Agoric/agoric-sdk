@@ -82,11 +82,14 @@ function zotVal(arbitrary, name, tag, count) {
 
 test('multifaceted virtual objects', t => {
   const log = [];
-  const { defineKind } = makeFakeVirtualObjectManager({ cacheSize: 0, log });
+  const { defineKindMulti } = makeFakeVirtualObjectManager({
+    cacheSize: 0,
+    log,
+  });
 
   const getName = ({ state }) => state.name;
   const getCount = ({ state }) => state.count;
-  const makeMultiThing = defineKind(
+  const makeMultiThing = defineKindMulti(
     'multithing',
     name => ({
       name,
@@ -136,6 +139,24 @@ test('multifaceted virtual objects', t => {
   t.is(log.shift(), `set vom.${kid}/2 ${multiThingVal('other', -1)}`);
   t.is(log.shift(), `get vom.${kid}/1 => ${multiThingVal('foo', 2)}`);
   t.deepEqual(log, []);
+});
+
+test('single-faceted object definition fails with faceted behavior', t => {
+  const { defineKind } = makeFakeVirtualObjectManager();
+  // prettier-ignore
+  t.throws(
+    () => defineKind('multithing', null, { facetA: {}, facetB: {} }),
+    { message: 'Check failed' },
+  );
+});
+
+test('multi-faceted object definition fails with unfaceted behavior', t => {
+  const { defineKindMulti } = makeFakeVirtualObjectManager();
+  // prettier-ignore
+  t.throws(
+    () => defineKindMulti('singlething', null, { op: () => {} }),
+    { message: 'Check failed' },
+  );
 });
 
 // prettier-ignore

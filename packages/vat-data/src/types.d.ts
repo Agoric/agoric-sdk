@@ -7,9 +7,9 @@ import type {
 } from '@agoric/store';
 import { Context } from 'vm';
 
-type Tail<T extends any[]> = T extends [head: any, ...tail: infer Tail_]
-  ? Tail_
-  : never;
+type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
+  ? Rest
+  : [];
 
 type MinusContext<
   F extends (context, ...rest: any[]) => any,
@@ -19,18 +19,26 @@ type MinusContext<
 
 type FunctionsMinusContext<O> = { [K in keyof O]: MinusContext<O[K]> };
 
+type ActualBehavior<B> = {
+  [Facet in keyof B]: FunctionsMinusContext<B[Facet]>;
+};
+
+type KindContext<S, B> = { state: S; facets: ActualBehavior<B> };
+
 interface KindDefiner {
   <P, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
-    finish?: () => void,
-  ): (...args: P) => { [Facet in keyof B]: FunctionsMinusContext<B[Facet]> };
+    options?: { finish?: (context: KindContext<S, B>) => void },
+  ): (...args: P) => ActualBehavior<B>;
 }
 
 export type VatData = {
   defineKind: KindDefiner;
+  defineKindMulti: KindDefiner;
   defineDurableKind: KindDefiner;
+  defineDurableKindMulti: KindDefiner;
 
   makeKindHandle: (descriptionTag: string) => unknown;
 
@@ -52,3 +60,21 @@ export type VatData = {
     options?: StoreOptions,
   ) => WeakSetStore<K>;
 };
+
+// The JSDoc is repeated here and at the function definition so it appears
+// in IDEs where it's used, regardless of type resolution.
+interface PickFacet {
+  /**
+   * When making a multi-facet kind, it's common to pick one facet to expose. E.g.,
+   *
+   *     const makeFoo = (a, b, c, d) => makeFooBase(a, b, c, d).self;
+   *
+   * This helper reduces the duplication:
+   *
+   *     const makeFoo = pickFacet(makeFooBase, 'self');
+   */
+  <M extends (...args: any[]) => any, F extends keyof ReturnType<M>>(
+    maker: M,
+    facetName: F,
+  ): (...args: Parameters<M>) => ReturnType<M>[F];
+}

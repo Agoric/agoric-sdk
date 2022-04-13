@@ -304,6 +304,9 @@ const reverse = (keywordRecord = {}) => {
  *   The seat in contractA to deposit the payout of the offer to.
  *   If `toSeat` is not provided, this defaults to the `fromSeat`.
  *
+ * @param {Object=} offerArgs
+ *   Aditional contract-specific optional arguments in a record.
+ *
  * @returns {Promise<{userSeatPromise: Promise<UserSeat>, deposited: Promise<AmountKeywordRecord>}>}
  *   A promise for the userSeat for the offer to the other contract, and a
  *   promise (`deposited`) which resolves when the payout for the offer has been
@@ -317,6 +320,7 @@ export const offerTo = async (
   // @ts-expect-error A required parameter cannot follow an optional parameter.
   fromSeat,
   toSeat,
+  offerArgs,
 ) => {
   const definedToSeat = toSeat !== undefined ? toSeat : fromSeat;
 
@@ -339,6 +343,7 @@ export const offerTo = async (
     invitation,
     proposal,
     paymentsForOtherContract,
+    offerArgs,
   );
 
   const depositedPromiseKit = makePromiseKit();

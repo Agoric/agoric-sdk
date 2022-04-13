@@ -35,7 +35,12 @@ import { AmountMath } from '@agoric/ertp';
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
-import { makeVaultParamManager, makeElectorateParamManager } from './params.js';
+import {
+  makeVaultParamManager,
+  makeElectorateParamManager,
+  RECORDING_PERIOD_KEY,
+  CHARGING_PERIOD_KEY,
+} from './params.js';
 
 const { details: X } = assert;
 
@@ -148,22 +153,35 @@ export const start = async (zcf, privateArgs) => {
     const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
       liquidationInstall,
       harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
-      harden({ amm: ammPublicFacet }),
+      harden({
+        amm: ammPublicFacet,
+        priceAuthority,
+        timerService,
+        debtBrand,
+      }),
     );
     const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
 
     const startTimeStamp = await E(timerService).getCurrentTimestamp();
+
+    const factoryPowers = Far('vault factory powers', {
+      getGovernedParams: () => ({
+        ...vaultParamManager.readonly(),
+        getChargingPeriod: () => loanTimingParams[CHARGING_PERIOD_KEY].value,
+        getRecordingPeriod: () => loanTimingParams[RECORDING_PERIOD_KEY].value,
+      }),
+      mintAndReallocate,
+      burnDebt,
+    });
 
     const vm = makeVaultManager(
       zcf,
       debtMint,
       collateralBrand,
       priceAuthority,
-      loanTimingParams,
-      vaultParamManager.readonly(),
-      mintAndReallocate,
-      burnDebt,
+      factoryPowers,
       timerService,
+      // @ts-expect-error
       liquidationStrategy,
       penaltyPoolSeat,
       startTimeStamp,
@@ -207,9 +225,9 @@ export const start = async (zcf, privateArgs) => {
           const priceQuote = await vm.getCollateralQuote();
           return {
             brand,
-            interestRate: vm.getInterestRate(),
-            liquidationMargin: vm.getLiquidationMargin(),
-            stabilityFee: vm.getLoanFee(),
+            interestRate: vm.getGovernedParams().getInterestRate(),
+            liquidationMargin: vm.getGovernedParams().getLiquidationMargin(),
+            stabilityFee: vm.getGovernedParams().getLoanFee(),
             marketPrice: makeRatioFromAmounts(
               getAmountOut(priceQuote),
               getAmountIn(priceQuote),
@@ -294,5 +312,12 @@ export const start = async (zcf, privateArgs) => {
     publicFacet,
   });
 };
+
+/** @typedef {{
+ *  burnDebt: BurnDebt,
+ *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
+ *  mintAndReallocate: MintAndReallocate,
+ * }} FactoryPowersFacet
+ */
 
 /** @typedef {ContractOf<typeof start>} VaultFactoryContract */
