@@ -60,12 +60,7 @@ test('amm change param via Governance', async t => {
   const { governorCreatorFacet } = governor;
   const paramChangeSpec = harden({
     key: 'governedParams',
-    changes: [
-      {
-        parameterName: PROTOCOL_FEE_KEY,
-        proposedValue: 20n,
-      },
-    ],
+    changes: { [PROTOCOL_FEE_KEY]: 20n },
   });
 
   const { details } = await E(governorCreatorFacet).voteOnParamChanges(
@@ -168,12 +163,9 @@ test('price check after Governance param change', async t => {
   const { governorCreatorFacet } = governor;
   const paramChangeSpec = harden({
     key: 'governedParams',
-    changes: [
-      {
-        parameterName: PROTOCOL_FEE_KEY,
-        proposedValue: 20n,
-      },
-    ],
+    changes: {
+      [PROTOCOL_FEE_KEY]: 20n,
+    },
   });
   const { details } = await E(governorCreatorFacet).voteOnParamChanges(
     installs.counter,

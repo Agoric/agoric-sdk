@@ -120,12 +120,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
   const paramChanges = {
     key: { collateralBrand },
-    changes: [
-      {
-        parameterName: INTEREST_RATE_KEY,
-        proposedValue: makeRatio(4321n, runBrand, BASIS_POINTS),
-      },
-    ],
+    changes: {
+      [INTEREST_RATE_KEY]: makeRatio(4321n, runBrand, BASIS_POINTS),
+    },
   };
 
   const counter = await setUpVote(
@@ -147,7 +144,11 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         vaultFactory.publicFacet,
       ).getGovernedParams(interestRateParam);
       log(
-        `after vote on (${paramChanges.changes[0].parameterName}), InterestRate numerator is ${feeParamsStatePost.InterestRate.value.numerator.value}`,
+        `after vote on (${
+          Object.keys(paramChanges.changes)[0]
+        }), InterestRate numerator is ${
+          feeParamsStatePost.InterestRate.value.numerator.value
+        }`,
       );
     })
     .catch(e => log(`BOOT fail: ${e}`));

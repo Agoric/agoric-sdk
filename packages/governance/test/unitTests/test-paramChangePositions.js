@@ -9,7 +9,7 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { makeParamChangePositions } from '../../src/index.js';
 
 const positive = (name, val) => {
-  return { changes: [{ [name]: val }] };
+  return { changes: { [name]: val } };
 };
 
 const negative = name => {
@@ -17,12 +17,7 @@ const negative = name => {
 };
 
 const makeOneParamChangeDesc = (name, value) => {
-  return harden([
-    {
-      parameterName: name,
-      proposedValue: value,
-    },
-  ]);
+  return harden({ [name]: value });
 };
 
 test('positions amount', t => {

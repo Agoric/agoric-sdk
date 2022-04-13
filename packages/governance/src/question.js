@@ -65,22 +65,12 @@ const assertParamChangeIssue = issue => {
   assert(issue && issue.key, X`Issue ("${issue}") must have a key`);
   assert(issue && issue.changes, X`Issue ("${issue}") must have changes`);
 
-  assert(
-    Array.isArray(issue.changes),
-    X`changes ("${issue.changes}") must be an Array`,
+  assert.typeof(
+    issue.changes,
+    'object',
+    X`changes ("${issue.changes}") must be a record`,
   );
 
-  for (const change of issue.changes) {
-    assert.typeof(
-      change.parameterName,
-      'string',
-      X`Each change ("${change}") must be a record with a string parameterName`,
-    );
-    assert(
-      change.proposedValue,
-      X`Each change ("${change}") must be a record with a proposedValue`,
-    );
-  }
   const assertInstance = makeAssertInstance('contract');
   assertInstance(issue.contract);
 };
@@ -149,7 +139,7 @@ function assertClosingRule(closingRule) {
 
 const assertEnumIncludes = (enumeration, value, name) => {
   assert(
-    Object.getOwnPropertyNames(enumeration)
+    Object.keys(enumeration)
       .map(k => enumeration[k])
       .includes(value),
     X`Illegal ${name}: ${value}`,

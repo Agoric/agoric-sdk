@@ -101,7 +101,7 @@ const makeParamManagerBuilder = zoe => {
     // to our caller. They must handle them carefully to ensure that they end up
     // in appropriate hands.
     setters[`update${name}`] = setParamValue;
-    setters[`prepareToUpdate${name}`] = () => {};
+    setters[`prepareToUpdate${name}`] = () => undefined;
     namesToParams.init(name, publicMethods);
   };
 
@@ -283,26 +283,21 @@ const makeParamManagerBuilder = zoe => {
 
   /** @type {UpdateParams} */
   const updateParams = async paramChanges => {
-    const asynchResults = [];
-    for (const changeSpec of paramChanges) {
-      asynchResults.push(
-        setters[`prepareToUpdate${changeSpec.parameterName}`](
-          changeSpec.proposedValue,
-        ),
+    const asyncResults = [];
+    const paramNames = Object.keys(paramChanges);
+    for (const paramName of paramNames) {
+      asyncResults.push(
+        setters[`prepareToUpdate${paramName}`](paramChanges[paramName]),
       );
     }
-    // if all updates didn't succeed, fail the request
-    const results = await Promise.all(asynchResults);
+    // if any update doesn't succeed, fail the request
+    const results = await Promise.all(asyncResults);
 
-    const newValues = [];
-    for (let i = 0; i < paramChanges.length; i += 1) {
-      const changeSpec = paramChanges[i];
-      newValues.push(
-        setters[`update${changeSpec.parameterName}`](
-          changeSpec.proposedValue,
-          results[i],
-        ),
-      );
+    const newValues = {};
+    for (let i = 0; i < paramNames.length; i += 1) {
+      const paramName = paramNames[i];
+      const setFn = setters[`update${paramName}`];
+      newValues[paramName] = setFn(paramChanges[paramName], results[i]);
     }
 
     return deeplyFulfilled(harden(newValues));

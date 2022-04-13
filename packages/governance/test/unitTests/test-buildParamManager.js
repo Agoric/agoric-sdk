@@ -79,12 +79,7 @@ test('Amount', async t => {
     AmountMath.make(floorBrand, 2n),
   );
 
-  await paramManager.updateParams([
-    {
-      parameterName: 'Shimmer',
-      proposedValue: AmountMath.make(floorBrand, 5n),
-    },
-  ]);
+  await paramManager.updateParams({ Shimmer: AmountMath.make(floorBrand, 5n) });
   t.deepEqual(
     paramManager.getAmount('Shimmer'),
     AmountMath.make(floorBrand, 5n),
@@ -92,12 +87,9 @@ test('Amount', async t => {
 
   await t.throwsAsync(
     () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'Shimmer',
-          proposedValue: AmountMath.make(dessertBrand, 20n),
-        },
-      ]),
+      paramManager.updateParams({
+        Shimmer: AmountMath.make(dessertBrand, 20n),
+      }),
     {
       message:
         'The brand in the allegedAmount {"brand":"[Alleged: dessertTopping brand]","value":"[20n]"} in \'coerce\' didn\'t match the specified brand "[Alleged: floor wax brand]".',
@@ -105,13 +97,7 @@ test('Amount', async t => {
   );
 
   await t.throwsAsync(
-    () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'Shimmer',
-          proposedValue: 'fear,loathing',
-        },
-      ]),
+    () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
     {
       message: 'Expected an Amount for Shimmer, got "fear,loathing"',
     },
@@ -137,13 +123,7 @@ test('params one installation', async t => {
 
   t.deepEqual(paramManager.getInstallation('PName'), installationHandle);
   await t.throwsAsync(
-    () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'PName',
-          proposedValue: 18.1,
-        },
-      ]),
+    () => paramManager.updateParams({ PName: 18.1 }),
     {
       message: 'value for "PName" must be an Installation, was 18.1',
     },
@@ -154,12 +134,7 @@ test('params one installation', async t => {
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
-  await paramManager.updateParams([
-    {
-      parameterName: 'PName',
-      proposedValue: handle2,
-    },
-  ]);
+  await paramManager.updateParams({ PName: handle2 });
   t.deepEqual(paramManager.getInstallation('PName'), handle2);
 
   t.throws(() => paramManager.getNat('PName'), {
@@ -189,25 +164,14 @@ test('params one instance', async t => {
 
   t.deepEqual(paramManager.getInstance('PName'), instanceHandle);
   await t.throwsAsync(
-    () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'PName',
-          proposedValue: 18.1,
-        },
-      ]),
+    () => paramManager.updateParams({ PName: 18.1 }),
     {
       message: 'value for "PName" must be an Instance, was 18.1',
     },
     'value should be an instance',
   );
   const handle2 = makeHandle(handleType);
-  await paramManager.updateParams([
-    {
-      parameterName: 'PName',
-      proposedValue: handle2,
-    },
-  ]);
+  await paramManager.updateParams({ PName: handle2 });
   t.deepEqual(paramManager.getInstance('PName'), handle2);
 
   t.deepEqual(
@@ -288,30 +252,15 @@ test('two Nats', async t => {
   t.is(paramManager.getNat('SpeedLimit'), 299_792_458n);
 
   await t.throwsAsync(
-    () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'SpeedLimit',
-          proposedValue: 300000000,
-        },
-      ]),
+    () => paramManager.updateParams({ SpeedLimit: 300000000 }),
     {
       message: '300000000 must be a bigint',
     },
   );
 
-  await t.throwsAsync(
-    () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'SpeedLimit',
-          proposedValue: -37n,
-        },
-      ]),
-    {
-      message: '-37 is negative',
-    },
-  );
+  await t.throwsAsync(() => paramManager.updateParams({ SpeedLimit: -37n }), {
+    message: '-37 is negative',
+  });
 });
 
 test('Ratio', async t => {
@@ -324,24 +273,13 @@ test('Ratio', async t => {
   t.is(paramManager.getRatio('GoldenRatio'), ratio);
 
   const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
-  await paramManager.updateParams([
-    {
-      parameterName: 'GoldenRatio',
-      proposedValue: morePrecise,
-    },
-  ]);
+  await paramManager.updateParams({ GoldenRatio: morePrecise });
   t.is(paramManager.getRatio('GoldenRatio'), morePrecise);
 
   const anotherBrand = makeIssuerKit('arbitrary').brand;
 
   await t.throwsAsync(
-    () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'GoldenRatio',
-          proposedValue: 300000000,
-        },
-      ]),
+    () => paramManager.updateParams({ GoldenRatio: 300000000 }),
     {
       message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
     },
@@ -349,12 +287,9 @@ test('Ratio', async t => {
 
   await t.throwsAsync(
     () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'GoldenRatio',
-          proposedValue: makeRatio(16180n, anotherBrand, 10_000n),
-        },
-      ]),
+      paramManager.updateParams({
+        GoldenRatio: makeRatio(16180n, anotherBrand, 10_000n),
+      }),
     {
       message:
         'Numerator brand for "GoldenRatio" must be "[Alleged: unitless brand]"',
@@ -370,22 +305,14 @@ test('Strings', async t => {
   t.is(paramManager.getString('OurWeapons'), 'fear');
 
   // @ts-ignore updateOurWeapons is a generated name
-  await paramManager.updateParams([
-    {
-      parameterName: 'OurWeapons',
-      proposedValue: 'fear,surprise',
-    },
-  ]);
+  await paramManager.updateParams({ OurWeapons: 'fear,surprise' });
   t.is(paramManager.getString('OurWeapons'), 'fear,surprise');
   // @ts-ignore updateOurWeapons is a generated name
   await t.throwsAsync(
     () =>
-      paramManager.updateParams([
-        {
-          parameterName: 'OurWeapons',
-          proposedValue: 300000000,
-        },
-      ]),
+      paramManager.updateParams({
+        OurWeapons: 300000000,
+      }),
     {
       message: '300000000 must be a string',
     },
@@ -404,18 +331,8 @@ test('Unknown', async t => {
   t.is(paramManager.getUnknown('Surprise'), 'party');
 
   // @ts-ignore updateSurprise is a generated name
-  await paramManager.updateParams([
-    {
-      parameterName: 'Surprise',
-      proposedValue: 'gift',
-    },
-  ]);
+  await paramManager.updateParams({ Surprise: 'gift' });
   t.is(paramManager.getUnknown('Surprise'), 'gift');
-  await paramManager.updateParams([
-    {
-      parameterName: 'Surprise',
-      proposedValue: ['gift', 'party'],
-    },
-  ]);
+  await paramManager.updateParams({ Surprise: ['gift', 'party'] });
   t.deepEqual(paramManager.getUnknown('Surprise'), ['gift', 'party']);
 });

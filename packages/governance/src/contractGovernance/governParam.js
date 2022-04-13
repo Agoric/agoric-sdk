@@ -21,12 +21,9 @@ const CONTRACT_ELECTORATE = 'Electorate';
 
 /** @type {MakeParamChangePositions} */
 const makeParamChangePositions = changes => {
-  const dense = changes.map(c => {
-    return { [c.parameterName]: c.proposedValue };
-  });
-  const positive = { changes: dense };
-  const sparse = changes.map(c => c.parameterName);
-  const negative = { noChange: sparse };
+  const positive = { changes };
+  const namesOnly = Object.keys(changes);
+  const negative = { noChange: namesOnly };
   // @ts-ignore
   return harden({ positive, negative });
 };
@@ -61,11 +58,10 @@ const assertBallotConcernsParam = (paramSpec, questionDetails) => {
   /** @type {ParamChangeIssue} */
   // @ts-ignore cast
   const issue = questionDetails.issue;
-  assert(issue, X`must be a param change issue`);
+  assert(issue, 'must be a param change issue');
 
-  const foundName = issue.changes.find(c => c.parameterName === parameterName);
   assert(
-    foundName,
+    issue.changes[parameterName],
     X`Question (${issue.changes}) does not concern ${parameterName}`,
   );
   assert(
@@ -91,15 +87,14 @@ const setupParamGovernance = async (
     deadline,
     paramChanges,
   ) => {
-    const changePs = [];
-
     const paramMgr = await E(paramManagerRetriever).get(paramChanges);
-    for (const spec of paramChanges.changes) {
+    const changePs = {};
+    for (const name of Object.keys(paramChanges.changes)) {
       const proposedValue = E(paramMgr).getVisibleValue(
-        spec.parameterName,
-        spec.proposedValue,
+        name,
+        paramChanges.changes[name],
       );
-      changePs.push({ parameterName: spec.parameterName, proposedValue });
+      changePs[name] = proposedValue;
     }
     const changes = await deeplyFulfilled(harden(changePs));
 

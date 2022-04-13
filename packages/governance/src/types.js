@@ -322,7 +322,7 @@
 /**
  * @typedef {Object} ParamChangeIssue
  * @property {string} key
- * @property {ParamChangeSpec[]} changes
+ * @property {ParamChangesSpec} changes
  * @property {Instance} contract
  */
 
@@ -344,7 +344,7 @@
  * Return a record containing the positive and negative positions for a
  * question on changing the param to the proposedValue.
  *
- * @param {ParamChangeSpec[]} paramSpec
+ * @param {ParamChangesSpec} paramSpec
  * @returns {ParamChangePositions}
  */
 
@@ -389,10 +389,8 @@
  */
 
 /**
- * @typedef {{parameterName: string, proposedValue: ParamValue}} ParamChange
- *
  * @callback UpdateParams
- * @param {ParamChange[]} paramChanges
+ * @param {Record<string,ParamValue>} paramChanges
  * @returns {Promise<ParamValue[]>}
  */
 
@@ -434,7 +432,7 @@
 
 /**
  * @typedef {Object} ChangeParamsPosition
- * @property {ParamChangeSpec[]} changes
+ * @property {ParamChangesSpec} changes
  */
 
 /**
@@ -450,7 +448,8 @@
 
 /**
  * @typedef {Object} NoChangeParamsPosition
- * @property {ParamChangeSpec[]} noChange
+ * @property {string[]} noChange Parameters in the proposal that this position
+ *   is opposed to
  */
 
 /**
@@ -477,15 +476,7 @@
  *
  * @typedef {Object} ParamChangesSpec
  * @property {string} key Identifies the paramManager within the contract
- * @property {ParamChangeSpec[]} changes one or more changes to parameters
- */
-
-/**
- * Description of a single parameter change
- *
- * @typedef {Object} ParamChangeSpec
- * @property {string} parameterName
- * @property {ParamValue} proposedValue
+ * @property {Record<string,ParamValue>} changes one or more changes to parameters
  */
 
 /**

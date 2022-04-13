@@ -437,12 +437,7 @@ const makeC1 = async (
     setMintingRatio: async (newValue, deadline) => {
       const paramsSpec = harden({
         key: 'governedParams',
-        changes: [
-          {
-            parameterName: 'MintingRatio',
-            proposedValue: newValue,
-          },
-        ],
+        changes: { MintingRatio: newValue },
       });
       /** @type { ContractGovernanceVoteResult } */
       const { details, instance } = await E(

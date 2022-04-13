@@ -19,15 +19,10 @@ const ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
 const BAIT = harden({ text: 'Cut Bait' });
 
-const { positive, negative } = makeParamChangePositions([
-  {
-    parameterName: 'Arbitrary',
-    proposedValue: 37,
-  },
-]);
+const { positive, negative } = makeParamChangePositions({ Arbitrary: 37 });
 const PARAM_CHANGE_ISSUE = harden({
   key: 'governedParam',
-  changes: [{ parameterName: 'whatever', proposedValue: 37 }],
+  changes: { Whatever: 37 },
   contract: makeHandle('Instance'),
 });
 

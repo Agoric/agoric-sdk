@@ -140,12 +140,7 @@ test('governParam no votes', async t => {
 
   const paramChangeSpec = harden({
     key: 'governedParams',
-    changes: [
-      {
-        parameterName: MALLEABLE_NUMBER,
-        proposedValue: 25n,
-      },
-    ],
+    changes: { [MALLEABLE_NUMBER]: 25n },
   });
 
   const { outcomeOfUpdate } = await E(
@@ -187,16 +182,10 @@ test('multiple params bad change', async t => {
 
   const paramChangesSpec = harden({
     key: 'governedParams',
-    changes: [
-      {
-        parameterName: CONTRACT_ELECTORATE,
-        proposedValue: 13n,
-      },
-      {
-        parameterName: MALLEABLE_NUMBER,
-        proposedValue: 42n,
-      },
-    ],
+    changes: {
+      [CONTRACT_ELECTORATE]: 13n,
+      [MALLEABLE_NUMBER]: 42n,
+    },
   });
 
   await t.throwsAsync(
@@ -225,16 +214,10 @@ test('change multiple params', async t => {
 
   const paramChangesSpec = harden({
     key: 'governedParams',
-    changes: [
-      {
-        parameterName: CONTRACT_ELECTORATE,
-        proposedValue: wrongInvitation,
-      },
-      {
-        parameterName: MALLEABLE_NUMBER,
-        proposedValue: 42n,
-      },
-    ],
+    changes: {
+      [CONTRACT_ELECTORATE]: wrongInvitation,
+      [MALLEABLE_NUMBER]: 42n,
+    },
   });
 
   const { outcomeOfUpdate, details: detailsP } = await E(
@@ -255,10 +238,10 @@ test('change multiple params', async t => {
 
   await E.when(outcomeOfUpdate, async outcomes => {
     t.deepEqual(outcomes, {
-      changes: [
-        { [CONTRACT_ELECTORATE]: invitationAmount },
-        { [MALLEABLE_NUMBER]: 42n },
-      ],
+      changes: {
+        [CONTRACT_ELECTORATE]: invitationAmount,
+        [MALLEABLE_NUMBER]: 42n,
+      },
     });
   }).catch(e => {
     t.fail(`expected success, got ${e}`);
@@ -286,16 +269,10 @@ test('change multiple params used invitation', async t => {
 
   const paramChangesSpec = harden({
     key: 'governedParams',
-    changes: [
-      {
-        parameterName: CONTRACT_ELECTORATE,
-        proposedValue: wrongInvitation,
-      },
-      {
-        parameterName: MALLEABLE_NUMBER,
-        proposedValue: 42n,
-      },
-    ],
+    changes: {
+      [CONTRACT_ELECTORATE]: wrongInvitation,
+      [MALLEABLE_NUMBER]: 42n,
+    },
   });
 
   const { outcomeOfUpdate, details: detailsP } = await E(

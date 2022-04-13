@@ -27,12 +27,7 @@ const voteToChangeParameter = async (
 ) => {
   const paramChangeSpec = harden({
     key: 'governedParams',
-    changes: [
-      {
-        parameterName: MALLEABLE_NUMBER,
-        proposedValue: 299792458n,
-      },
-    ],
+    changes: { [MALLEABLE_NUMBER]: 299792458n },
   });
 
   const { details, instance, outcomeOfUpdate } = await E(
@@ -151,12 +146,7 @@ const setupParameterChanges = async (
   governor,
   installations,
   invitation,
-  changes = [
-    {
-      parameterName: CONTRACT_ELECTORATE,
-      proposedValue: invitation,
-    },
-  ],
+  changes = { [CONTRACT_ELECTORATE]: invitation },
 ) => {
   const paramChangeSpec = harden({
     key: 'governedParams',
@@ -367,16 +357,10 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
       ).getPoserInvitation();
       const [newPoserInvitation] = await Promise.all([newPoserInvitationP]);
 
-      const changes = [
-        {
-          parameterName: MALLEABLE_NUMBER,
-          proposedValue: 42n,
-        },
-        {
-          parameterName: CONTRACT_ELECTORATE,
-          proposedValue: newPoserInvitation,
-        },
-      ];
+      const changes = {
+        [MALLEABLE_NUMBER]: 42n,
+        [CONTRACT_ELECTORATE]: newPoserInvitation,
+      };
       const { details: details1, outcomeOfUpdate: electorateOutcome } =
         await setupParameterChanges(
           zoe,
