@@ -101,7 +101,7 @@ const makeParamManagerBuilder = zoe => {
     // to our caller. They must handle them carefully to ensure that they end up
     // in appropriate hands.
     setters[`update${name}`] = setParamValue;
-    setters[`prepareToUpdate${name}`] = () => undefined;
+    setters[`prepareToUpdate${name}`] = proposedValue => proposedValue;
     namesToParams.init(name, publicMethods);
   };
 
@@ -191,20 +191,22 @@ const makeParamManagerBuilder = zoe => {
     assert(zoe, `zoe must be provided for governed Invitations ${zoe}`);
     let currentInvitation;
     let currentAmount;
+    let preparedAmount;
 
     // Separate async phase from synchronous setting
     const prepareToSetInvitation = async invite => {
-      [currentAmount] = await Promise.all([
+      [preparedAmount] = await Promise.all([
         E(E(zoe).getInvitationIssuer()).getAmountOf(invite),
         assertInvitation(invite),
       ]);
-      return currentAmount;
+
+      return [invite, preparedAmount];
     };
 
     // synchronous phase of value setting
-    const setInvitation = async (i, amount) => {
+    const setInvitation = async ([newInvitation, amount]) => {
       currentAmount = amount;
-      currentInvitation = i;
+      currentInvitation = newInvitation;
       publication.updateState({
         name,
         type: ParamTypes.INVITATION,
@@ -212,8 +214,9 @@ const makeParamManagerBuilder = zoe => {
       });
       return harden({ [name]: currentAmount });
     };
-    const amount = await prepareToSetInvitation(invitation);
-    setInvitation(invitation, amount);
+    const inviteAndAmount = await prepareToSetInvitation(invitation);
+    // @ts-ignore types
+    setInvitation(inviteAndAmount);
 
     const makeDescription = () => {
       return { type: ParamTypes.INVITATION, value: currentAmount };
@@ -293,9 +296,8 @@ const makeParamManagerBuilder = zoe => {
 
     const tuples = paramNames.map((name, i) => {
       const setFn = setters[`update${name}`];
-      return { [name]: setFn(paramChanges[name], results[i]) };
+      return [name, setFn(results[i])];
     });
-    // @ts-ignore cast
     const newValues = Object.fromEntries(tuples);
 
     return deeplyFulfilled(harden(newValues));
