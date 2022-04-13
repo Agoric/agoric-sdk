@@ -1,3 +1,4 @@
+/* global globalThis */
 // @ts-check
 import { E, Far } from '@endo/far';
 import * as farExports from '@endo/far';
@@ -20,6 +21,7 @@ import {
   makeEchoConnectionHandler,
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
+import { importBundle } from '@endo/import-bundle';
 
 import * as Collect from '@agoric/run-protocol/src/collect.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
@@ -54,6 +56,19 @@ export const bridgeCoreEval = async allPowers => {
     return;
   }
 
+  const endowments = {
+    console,
+    assert,
+    Base64: globalThis.Base64, // Present only on XSnap
+    URL: globalThis.URL, // Absent only on XSnap
+  };
+  /** @param { Installation } installation */
+  const evaluateInstallation = async installation => {
+    const bundle = await E(installation).getBundle();
+    return importBundle(bundle, { endowments });
+  };
+  harden(evaluateInstallation);
+
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
     async fromBridge(_srcID, obj) {
@@ -71,7 +86,10 @@ export const bridgeCoreEval = async allPowers => {
               Promise.resolve()
                 .then(() => {
                   const permit = JSON.parse(jsonPermit);
-                  const powers = extractPowers(permit, allPowers);
+                  const powers = {
+                    ...extractPowers(permit, allPowers),
+                    evaluateInstallation,
+                  };
 
                   // Inspired by ../repl.js:
                   const globals = harden({
