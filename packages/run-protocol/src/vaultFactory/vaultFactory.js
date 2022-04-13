@@ -163,7 +163,7 @@ export const start = async (zcf, privateArgs) => {
   };
 
   /** @type {VaultFactory} */
-  const machineFacet = Far('vaultFactory machine', {
+  const machineBehavior = {
     // TODO move this under governance #3972
     /** @type {AddVaultType} */
     addVaultType: async (
@@ -288,53 +288,59 @@ export const start = async (zcf, privateArgs) => {
     // XXX accessors for tests
     getRewardAllocation: rewardPoolSeat.getCurrentAllocation,
     getPenaltyAllocation: penaltyPoolSeat.getCurrentAllocation,
-  });
+  };
+
+  const machineFacet = Far('vaultFactory machine', machineBehavior);
+
+  const creatorBehavior = {
+    getParamMgrRetriever: () =>
+      Far('paramManagerRetriever', {
+        /** @param {{key?: 'governedParams', collateralBrand?: Brand}} paramDesc */
+        get: paramDesc => {
+          if (paramDesc.key === 'governedParams') {
+            return electorateParamManager;
+          } else if (paramDesc.collateralBrand) {
+            return vaultParamManagers.get(paramDesc.collateralBrand);
+          } else {
+            assert.fail('Unsupported paramDesc');
+          }
+        },
+      }),
+    getInvitation: electorateParamManager.getInternalParamValue,
+    getLimitedCreatorFacet: () => machineFacet,
+    getGovernedApis: () => harden({}),
+    getGovernedApiNames: () => harden({}),
+  };
+
+  const publicBehavior = {
+    /** @param {Brand} brandIn */
+    getCollateralManager: brandIn => {
+      assert(
+        collateralTypes.has(brandIn),
+        X`Not a supported collateral type ${brandIn}`,
+      );
+      /** @type {VaultManager} */
+      return collateralTypes.get(brandIn).getPublicFacet();
+    },
+    /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
+    makeLoanInvitation: makeVaultInvitation,
+    /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
+    makeVaultInvitation,
+    getCollaterals,
+    getRunIssuer: () => debtIssuer,
+    getGovernedParams: ({ collateralBrand }) =>
+      // TODO use named getters of TypedParamManager
+      vaultParamManagers.get(collateralBrand).getParams(),
+    /** @returns {Promise<GovernorPublic>} */
+    getContractGovernor: () =>
+      // ??? does this need to be cached?
+      E(zcf.getZoeService()).getPublicFacet(zcf.getTerms().electionManager),
+    getInvitationAmount: electorateParamManager.getInvitationAmount,
+  };
 
   return harden({
-    creatorFacet: Far('powerful vaultFactory wrapper', {
-      getParamMgrRetriever: () =>
-        Far('paramManagerRetriever', {
-          /** @param {{key?: 'governedParams', collateralBrand?: Brand}} paramDesc */
-          get: paramDesc => {
-            if (paramDesc.key === 'governedParams') {
-              return electorateParamManager;
-            } else if (paramDesc.collateralBrand) {
-              return vaultParamManagers.get(paramDesc.collateralBrand);
-            } else {
-              assert.fail('Unsupported paramDesc');
-            }
-          },
-        }),
-      getInvitation: electorateParamManager.getInternalParamValue,
-      getLimitedCreatorFacet: () => machineFacet,
-      getGovernedApis: () => harden({}),
-      getGovernedApiNames: () => harden({}),
-    }),
-    publicFacet: Far('vaultFactory public facet', {
-      /** @param {Brand} brandIn */
-      getCollateralManager: brandIn => {
-        assert(
-          collateralTypes.has(brandIn),
-          X`Not a supported collateral type ${brandIn}`,
-        );
-        /** @type {VaultManager} */
-        return collateralTypes.get(brandIn).getPublicFacet();
-      },
-      /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
-      makeLoanInvitation: makeVaultInvitation,
-      /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
-      makeVaultInvitation,
-      getCollaterals,
-      getRunIssuer: () => debtIssuer,
-      getGovernedParams: ({ collateralBrand }) =>
-        // TODO use named getters of TypedParamManager
-        vaultParamManagers.get(collateralBrand).getParams(),
-      /** @returns {Promise<GovernorPublic>} */
-      getContractGovernor: () =>
-        // ??? does this need to be cached?
-        E(zcf.getZoeService()).getPublicFacet(zcf.getTerms().electionManager),
-      getInvitationAmount: electorateParamManager.getInvitationAmount,
-    }),
+    creatorFacet: Far('powerful vaultFactory wrapper', creatorBehavior),
+    publicFacet: Far('vaultFactory public facet', publicBehavior),
   });
 };
 
