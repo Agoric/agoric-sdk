@@ -17,7 +17,7 @@ import {
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
-import { defineKind, defineKindMulti, pickFacet } from '@agoric/vat-data';
+import { defineKindMulti, pickFacet } from '@agoric/vat-data';
 import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
