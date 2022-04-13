@@ -31,18 +31,18 @@
   "dependencies": {
     "@agoric/assert": "^0.3.16",
     "@agoric/ertp": "^0.13.3",
-    "@endo/eventual-send": "^0.14.8",
+    "@endo/eventual-send": "^0.15.2",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.35",
     "@agoric/store": "^0.6.10",
     "@agoric/swingset-vat": "^0.25.1",
     "@agoric/vats": "^0.7.0",
     "@agoric/zoe": "^0.21.3",
-    "@endo/bundle-source": "^2.1.1",
-    "@endo/captp": "^2.0.3",
-    "@endo/init": "^0.5.37",
-    "@endo/marshal": "^0.6.3",
-    "@endo/promise-kit": "^0.2.37"
+    "@endo/bundle-source": "^2.1.4",
+    "@endo/captp": "^2.0.6",
+    "@endo/init": "^0.5.40",
+    "@endo/marshal": "^0.6.6",
+    "@endo/promise-kit": "^0.2.40"
   },
   "devDependencies": {
     "ava": "^3.12.1",
