@@ -16,13 +16,12 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
 
+import { defineKindMulti, pickFacet } from '@agoric/vat-data';
 import { makeInnerVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
-import { RECORDING_PERIOD_KEY, CHARGING_PERIOD_KEY } from './params.js';
 import { chargeInterest } from '../interest.js';
 
 const { details: X, quote: q } = assert;
@@ -38,128 +37,202 @@ const trace = makeTracer('VM', false);
  * }} AssetState */
 
 /**
- * Each VaultManager manages a single collateral type.
- *
- * It manages some number of outstanding loans, each called a Vault, for which
- * the collateral is provided in exchange for borrowed RUN.
- *
- * @param {ZCF} zcf
- * @param {ZCFMint<'nat'>} debtMint
- * @param {Brand} collateralBrand
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {{
- *  ChargingPeriod: ParamRecord<'nat'>
- *  RecordingPeriod: ParamRecord<'nat'>
- * }} timingParams
- * @param {{
+ * @typedef {{
+ *  getChargingPeriod: () => bigint,
+ *  getRecordingPeriod: () => bigint,
  *  getDebtLimit: () => Amount<'nat'>,
  *  getInterestRate: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
  *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
- * }} loanParamGetters
- * @param {MintAndReallocate} mintAndReallocateWithFee
- * @param {BurnDebt}  burnDebt
+ * }} GovernedParamGetters
+ */
+
+/**
+ * @typedef {Readonly<{
+ * collateralBrand: Brand<'nat'>,
+ * debtBrand: Brand<'nat'>,
+ * debtMint: ZCFMint<'nat'>,
+ * factoryPowers: import('./vaultFactory.js').FactoryPowersFacet,
+ * liquidationStrategy: LiquidationStrategy,
+ * penaltyPoolSeat: ZCFSeat,
+ * periodNotifier: ERef<Notifier<bigint>>,
+ * poolIncrementSeat: ZCFSeat,
+ * priceAuthority: ERef<PriceAuthority>,
+ * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
+ * zcf: ZCF,
+ * }>} ImmutableState
+ */
+
+/**
+ * @typedef {{
+ * assetNotifier: Notifier<AssetState>,
+ * assetUpdater: IterationObserver<AssetState>,
+ * compoundedInterest: Ratio,
+ * latestInterestUpdate: bigint,
+ * liquidationInProgress: boolean,
+ * outstandingQuote: MutableQuote| null,
+ * totalDebt: Amount<'nat'>,
+ * vaultCounter: number,
+ * }} MutableState
+ */
+
+/**
+ * @typedef {{
+ *   state: ImmutableState & MutableState,
+ *   facets: {
+ *     collateral: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof collateralBehavior>,
+ *     helper: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof helperBehavior>,
+ *     manager: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof managerBehavior>,
+ *     self: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof selfBehavior>,
+ *   }
+ * }} MethodContext
+ */
+
+/**
+ * Create state for the Vault Manager kind
+ *
+ * @param {ZCF} zcf
+ * @param {ZCFMint<'nat'>} debtMint
+ * @param {Brand} collateralBrand
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {import('./vaultFactory.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */
-export const makeVaultManager = (
+const initState = (
   zcf,
   debtMint,
   collateralBrand,
   priceAuthority,
-  timingParams,
-  loanParamGetters,
-  mintAndReallocateWithFee,
-  burnDebt,
+  factoryPowers,
   timerService,
   liquidationStrategy,
   penaltyPoolSeat,
   startTimeStamp,
 ) => {
-  /** @type {{brand: Brand<'nat'>}} */
-  const { brand: debtBrand } = debtMint.getIssuerRecord();
+  const periodNotifier = E(timerService).makeNotifier(
+    0n,
+    factoryPowers.getGovernedParams().getChargingPeriod(),
+  );
 
-  /** @type {GetVaultParams} */
-  const shared = {
-    ...loanParamGetters,
-    getChargingPeriod: () => timingParams[CHARGING_PERIOD_KEY].value,
-    getRecordingPeriod: () => timingParams[RECORDING_PERIOD_KEY].value,
-    async getCollateralQuote() {
-      // get a quote for one unit of the collateral
-      const displayInfo = await E(collateralBrand).getDisplayInfo();
-      const decimalPlaces = displayInfo?.decimalPlaces || 0n;
-      return E(priceAuthority).quoteGiven(
-        AmountMath.make(collateralBrand, 10n ** Nat(decimalPlaces)),
-        debtBrand,
-      );
-    },
+  /** @type {ImmutableState} */
+  const fixed = {
+    collateralBrand,
+    debtBrand: debtMint.getIssuerRecord().brand,
+    debtMint,
+    factoryPowers,
+    liquidationStrategy,
+    penaltyPoolSeat,
+    periodNotifier,
+    poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
+    priceAuthority,
+    /**
+     * A store for vaultKits prioritized by their collaterization ratio.
+     */
+    prioritizedVaults: makePrioritizedVaults(),
+    zcf,
   };
 
-  let vaultCounter = 0;
-  let liquidationInProgress = false;
+  const totalDebt = AmountMath.makeEmpty(fixed.debtBrand, 'nat');
+  const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
+  // timestamp of most recent update to interest
+  const latestInterestUpdate = startTimeStamp;
 
-  /**
-   * A store for vaultKits prioritized by their collaterization ratio.
-   *
-   * @type {ReturnType<typeof makePrioritizedVaults>}
-   */
-  const prioritizedVaults = makePrioritizedVaults();
-
-  /** @type {MutableQuote=} */
-  let outstandingQuote;
-  /** @type {Amount<'nat'>} */
-  let totalDebt = AmountMath.makeEmpty(debtBrand, 'nat');
-  /** @type {Ratio}} */
-  let compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
-
-  /**
-   * timestamp of most recent update to interest
-   *
-   * @type {bigint}
-   */
-  let latestInterestUpdate = startTimeStamp;
-
-  const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
+  const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
     harden({
       compoundedInterest,
-      interestRate: shared.getInterestRate(),
+      interestRate: fixed.factoryPowers.getGovernedParams().getInterestRate(),
       latestInterestUpdate,
       totalDebt,
     }),
   );
 
-  /**
-   *
-   * @param {[key: string, vaultKit: InnerVault]} record
-   */
-  const liquidateAndRemove = ([key, vault]) => {
-    trace('liquidating', vault.getVaultSeat().getProposal());
-    liquidationInProgress = true;
-
-    // Start liquidation (vaultState: LIQUIDATING)
-    return liquidate(
-      zcf,
-      vault,
-      debtMint.burnLosses,
-      liquidationStrategy,
-      collateralBrand,
-      penaltyPoolSeat,
-      loanParamGetters.getLiquidationPenalty(),
-    )
-      .then(() => {
-        prioritizedVaults?.removeVault(key);
-        liquidationInProgress = false;
-      })
-      .catch(e => {
-        liquidationInProgress = false;
-        // XXX should notify interested parties
-        console.error('liquidateAndRemove failed with', e);
-        throw e;
-      });
+  /** @type {MutableState & ImmutableState} */
+  const state = {
+    ...fixed,
+    assetNotifier,
+    assetUpdater,
+    debtBrand: fixed.debtBrand,
+    vaultCounter: 0,
+    liquidationInProgress: false,
+    totalDebt,
+    compoundedInterest,
+    latestInterestUpdate,
+    outstandingQuote: null,
   };
+
+  return state;
+};
+
+const helperBehavior = {
+  /**
+   * @param {MethodContext} context
+   * @param {Amount<'nat'>} toMint
+   * @throws if minting would exceed total debt
+   */
+  checkDebtLimit: ({ state }, toMint) => {
+    const { factoryPowers, totalDebt } = state;
+    const debtPost = AmountMath.add(totalDebt, toMint);
+    const limit = factoryPowers.getGovernedParams().getDebtLimit();
+    if (AmountMath.isGTE(debtPost, limit)) {
+      assert.fail(X`Minting would exceed total debt limit ${q(limit)}`);
+    }
+  },
+
+  /**
+   * @param {MethodContext} context
+   * @param {bigint} updateTime
+   * @param {ZCFSeat} poolIncrementSeat
+   */
+  chargeAllVaults: async ({ state, facets }, updateTime, poolIncrementSeat) => {
+    trace('chargeAllVaults', { updateTime });
+    const interestRate = state.factoryPowers
+      .getGovernedParams()
+      .getInterestRate();
+
+    // Update state with the results of charging interest
+
+    const stateUpdates = chargeInterest(
+      {
+        mint: state.debtMint,
+        mintAndReallocateWithFee: state.factoryPowers.mintAndReallocate,
+        poolIncrementSeat,
+        seatAllocationKeyword: 'RUN',
+      },
+      {
+        interestRate,
+        chargingPeriod: state.factoryPowers
+          .getGovernedParams()
+          .getChargingPeriod(),
+        recordingPeriod: state.factoryPowers
+          .getGovernedParams()
+          .getRecordingPeriod(),
+      },
+      {
+        latestInterestUpdate: state.latestInterestUpdate,
+        compoundedInterest: state.compoundedInterest,
+        totalDebt: state.totalDebt,
+      },
+      updateTime,
+    );
+    Object.assign(state, stateUpdates);
+
+    /** @type {AssetState} */
+    const payload = harden({
+      compoundedInterest: state.compoundedInterest,
+      interestRate,
+      latestInterestUpdate: state.latestInterestUpdate,
+      totalDebt: state.totalDebt,
+    });
+    state.assetUpdater.updateState(payload);
+
+    trace('chargeAllVaults complete', payload);
+
+    facets.helper.reschedulePriceCheck();
+  },
 
   /**
    * When any Vault's debt ratio is higher than the current high-water level,
@@ -172,8 +245,11 @@ export const makeVaultManager = (
    * Instead, when a priceQuote is received, we'll only reschedule if the
    * high-water level when the request was made matches the current high-water
    * level.
+   *
+   * @param {MethodContext} context
    */
-  const reschedulePriceCheck = async () => {
+  reschedulePriceCheck: async ({ state, facets }) => {
+    const { prioritizedVaults } = state;
     const highestDebtRatio = prioritizedVaults.highestRatio();
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
@@ -181,7 +257,9 @@ export const makeVaultManager = (
       return;
     }
 
-    const liquidationMargin = shared.getLiquidationMargin();
+    const liquidationMargin = state.factoryPowers
+      .getGovernedParams()
+      .getLiquidationMargin();
 
     // ask to be alerted when the price level falls enough that the vault
     // with the highest debt to collateral ratio will no longer be valued at the
@@ -195,9 +273,9 @@ export const makeVaultManager = (
     // quote (because this is the first loan, or because a quote just resolved)
     // then make a new request to the priceAuthority, and when it resolves,
     // liquidate anything that's above the price level.
-    if (outstandingQuote) {
+    if (state.outstandingQuote) {
       // Safe to call extraneously (lightweight and idempotent)
-      E(outstandingQuote).updateLevel(
+      E(state.outstandingQuote).updateLevel(
         highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
@@ -205,7 +283,7 @@ export const makeVaultManager = (
       return;
     }
 
-    if (liquidationInProgress) {
+    if (state.liquidationInProgress) {
       return;
     }
 
@@ -213,12 +291,13 @@ export const makeVaultManager = (
     // relatively quickly from the PriceAuthority. The second schedules a
     // callback that may not fire until much later.
     // Callers shouldn't expect a response from this function.
-    outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
+    const { priceAuthority } = state;
+    state.outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
       highestDebtRatio.denominator, // collateral
       triggerPoint,
     );
 
-    const quote = await E(outstandingQuote).getPromise();
+    const quote = await E(state.outstandingQuote).getPromise();
     // When we receive a quote, we liquidate all the vaults that don't have
     // sufficient collateral, (even if the trigger was set for a different
     // level) because we use the actual price ratio plus margin here. Use
@@ -228,81 +307,59 @@ export const makeVaultManager = (
       getAmountIn(quote),
     );
 
-    outstandingQuote = undefined;
+    state.outstandingQuote = null;
 
     // Liquidate the head of the queue
     const [next] =
       prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
-    await (next ? liquidateAndRemove(next) : null);
+    await (next ? facets.helper.liquidateAndRemove(next) : null);
 
-    reschedulePriceCheck();
-  };
-  prioritizedVaults.setRescheduler(reschedulePriceCheck);
-
-  /**
-   * In extreme situations, system health may require liquidating all vaults.
-   * This starts the liquidations all in parallel.
-   */
-  const liquidateAll = async () => {
-    const toLiquidate = Array.from(prioritizedVaults.entries()).map(
-      liquidateAndRemove,
-    );
-    await Promise.all(toLiquidate);
-  };
+    facets.helper.reschedulePriceCheck();
+  },
 
   /**
-   *
-   * @param {bigint} updateTime
-   * @param {ZCFSeat} poolIncrementSeat
+   * @param {MethodContext} context
+   * @param {[key: string, vaultKit: InnerVault]} record
    */
-  const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
-    trace('chargeAllVaults', { updateTime });
-    const interestRate = shared.getInterestRate();
+  liquidateAndRemove: ({ state }, [key, vault]) => {
+    const { debtMint, factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } =
+      state;
+    trace('liquidating', vault.getVaultSeat().getProposal());
+    state.liquidationInProgress = true;
 
-    // Update local state with the results of charging interest
-    ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
-      {
-        mint: debtMint,
-        mintAndReallocateWithFee,
-        poolIncrementSeat,
-        seatAllocationKeyword: 'RUN',
-      },
-      {
-        interestRate,
-        chargingPeriod: shared.getChargingPeriod(),
-        recordingPeriod: shared.getRecordingPeriod(),
-      },
-      { latestInterestUpdate, compoundedInterest, totalDebt },
-      updateTime,
-    ));
+    // Start liquidation (vaultState: LIQUIDATING)
+    return liquidate(
+      zcf,
+      vault,
+      debtMint.burnLosses,
+      state.liquidationStrategy,
+      state.collateralBrand,
+      penaltyPoolSeat,
+      factoryPowers.getGovernedParams().getLiquidationPenalty(),
+    )
+      .then(() => {
+        prioritizedVaults.removeVault(key);
+        state.liquidationInProgress = false;
+      })
+      .catch(e => {
+        state.liquidationInProgress = false;
+        // XXX should notify interested parties
+        console.error('liquidateAndRemove failed with', e);
+        throw e;
+      });
+  },
+};
 
-    /** @type {AssetState} */
-    const payload = harden({
-      compoundedInterest,
-      interestRate,
-      latestInterestUpdate,
-      totalDebt,
-    });
-    assetUpdater.updateState(payload);
-
-    trace('chargeAllVaults complete', payload);
-
-    reschedulePriceCheck();
-  };
+const managerBehavior = {
+  /** @param {MethodContext} context */
+  getGovernedParams: ({ state }) => state.factoryPowers.getGovernedParams(),
 
   /**
-   * @param {Amount<'nat'>} toMint
-   * @throws if minting would exceed total debt
+   * @param {MethodContext} context
+   * @param {Amount<'nat'>} collateralAmount
    */
-  const checkDebtLimit = toMint => {
-    const debtPost = AmountMath.add(totalDebt, toMint);
-    const limit = loanParamGetters.getDebtLimit();
-    if (AmountMath.isGTE(debtPost, limit)) {
-      assert.fail(X`Minting would exceed total debt limit ${q(limit)}`);
-    }
-  };
-
-  const maxDebtFor = async collateralAmount => {
+  maxDebtFor: async ({ state }, collateralAmount) => {
+    const { debtBrand, priceAuthority } = state;
     const quoteAmount = await E(priceAuthority).quoteGiven(
       collateralAmount,
       debtBrand,
@@ -310,82 +367,109 @@ export const makeVaultManager = (
     // floorDivide because we want the debt ceiling lower
     return floorDivideBy(
       getAmountOut(quoteAmount),
-      shared.getLiquidationMargin(),
+      state.factoryPowers.getGovernedParams().getLiquidationMargin(),
     );
-  };
-
+  },
   /**
+   * TODO utility method to turn a callback into non-actual one
+   * was type {MintAndReallocate}
+   *
+   * @param {MethodContext} context
+   * @param {Amount} toMint
+   * @param {Amount} fee
+   * @param {ZCFSeat} seat
+   * @param {...ZCFSeat} otherSeats
+   * @returns {void}
+   */
+  mintAndReallocate: (
+    { state, facets: { helper } },
+    toMint,
+    fee,
+    seat,
+    ...otherSeats
+  ) => {
+    helper.checkDebtLimit(toMint);
+    state.factoryPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
+    state.totalDebt = AmountMath.add(state.totalDebt, toMint);
+  },
+  /**
+   * @param {MethodContext} context
+   * @param {Amount<'nat'>} toBurn
+   * @param {ZCFSeat} seat
+   */
+  burnAndRecord: ({ state }, toBurn, seat) => {
+    const { burnDebt } = state.factoryPowers;
+    burnDebt(toBurn, seat);
+    state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
+  },
+  /** @param {MethodContext} context */
+  getNotifier: ({ state }) => state.assetNotifier,
+  /** @param {MethodContext} context */
+  getCollateralBrand: ({ state }) => state.collateralBrand,
+  /** @param {MethodContext} context */
+  getDebtBrand: ({ state }) => state.debtBrand,
+  /**
+   * coefficient on existing debt to calculate new debt
+   *
+   * @param {MethodContext} context
+   */
+  getCompoundedInterest: ({ state }) => state.compoundedInterest,
+  /**
+   * @param {MethodContext} context
    * @param {Amount<'nat'>} oldDebt
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    */
-  const updateVaultPriority = (oldDebt, oldCollateral, vaultId) => {
+  updateVaultPriority: ({ state }, oldDebt, oldCollateral, vaultId) => {
+    const { prioritizedVaults, totalDebt } = state;
     prioritizedVaults.refreshVaultPriority(oldDebt, oldCollateral, vaultId);
     trace('updateVaultPriority complete', { totalDebt });
-  };
+  },
+};
 
-  const periodNotifier = E(timerService).makeNotifier(
-    0n,
-    timingParams[RECORDING_PERIOD_KEY].value,
-  );
-  const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
+const collateralBehavior = {
+  /** @param {MethodContext} context */
+  makeVaultInvitation: ({ state: { zcf }, facets: { self } }) =>
+    zcf.makeInvitation(self.makeVaultKit, 'MakeVault'),
+  /** @param {MethodContext} context */
+  getNotifier: ({ state }) => state.assetNotifier,
+  /** @param {MethodContext} context */
+  getCompoundedInterest: ({ state }) => state.compoundedInterest,
+};
 
-  const timeObserver = {
-    updateState: updateTime =>
-      chargeAllVaults(updateTime, poolIncrementSeat).catch(e =>
-        console.error('🚨 vaultManager failed to charge interest', e),
-      ),
-    fail: reason => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${reason}`),
-      );
-    },
-    finish: done => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${done}`),
-      );
-    },
-  };
+const selfBehavior = {
+  /** @param {MethodContext} context */
+  getGovernedParams: ({ state }) => state.factoryPowers.getGovernedParams(),
 
-  observeNotifier(periodNotifier, timeObserver);
+  /**
+   * In extreme situations, system health may require liquidating all vaults.
+   * This starts the liquidations all in parallel.
+   *
+   * @param {MethodContext} context
+   */
+  liquidateAll: async ({ state, facets: { helper } }) => {
+    const { prioritizedVaults } = state;
+    const toLiquidate = Array.from(prioritizedVaults.entries()).map(
+      helper.liquidateAndRemove,
+    );
+    await Promise.all(toLiquidate);
+  },
 
-  /** @type {MintAndReallocate} */
-  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
-    checkDebtLimit(toMint);
-    mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
-    totalDebt = AmountMath.add(totalDebt, toMint);
-  };
-
-  const burnAndRecord = (toBurn, seat) => {
-    burnDebt(toBurn, seat);
-    totalDebt = AmountMath.subtract(totalDebt, toBurn);
-    // TODO signal updater?
-  };
-
-  /** @type {Parameters<typeof makeInnerVault>[1]} */
-  const managerFacet = Far('managerFacet', {
-    ...shared,
-    maxDebtFor,
-    mintAndReallocate,
-    burnAndRecord,
-    getNotifier: () => assetNotifer,
-    getCollateralBrand: () => collateralBrand,
-    getDebtBrand: () => debtBrand,
-    getCompoundedInterest: () => compoundedInterest,
-    updateVaultPriority,
-  });
-
-  /** @param {ZCFSeat} seat */
-  const makeVaultKit = async seat => {
+  /**
+   * @param {MethodContext} context
+   * @param {ZCFSeat} seat
+   */
+  makeVaultKit: async ({ state, facets: { manager } }, seat) => {
+    const { prioritizedVaults, zcf } = state;
     assertProposalShape(seat, {
       give: { Collateral: null },
       want: { RUN: null },
     });
 
-    vaultCounter += 1;
-    const vaultId = String(vaultCounter);
+    state.vaultCounter += 1;
+    const vaultId = String(state.vaultCounter);
 
-    const innerVault = makeInnerVault(zcf, managerFacet, vaultId);
+    const innerVault = makeInnerVault(zcf, manager, vaultId);
 
     // TODO Don't record the vault until it gets opened
     const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
@@ -402,21 +486,81 @@ export const makeVaultManager = (
       prioritizedVaults.removeVault(addedVaultKey);
       throw err;
     }
-  };
+  },
 
-  const publicFacet = Far('collateral manager', {
-    makeVaultInvitation: () => zcf.makeInvitation(makeVaultKit, 'MakeVault'),
-    getNotifier: () => assetNotifer,
-    getCompoundedInterest: () => compoundedInterest,
-  });
+  /** @param {MethodContext} context */
+  getCollateralQuote: async ({ state }) => {
+    const { debtBrand } = state;
+    // get a quote for one unit of the collateral
+    const displayInfo = await E(state.collateralBrand).getDisplayInfo();
+    const decimalPlaces = displayInfo.decimalPlaces || 0n;
+    return E(state.priceAuthority).quoteGiven(
+      AmountMath.make(state.collateralBrand, 10n ** Nat(decimalPlaces)),
+      debtBrand,
+    );
+  },
 
-  return Far('vault manager', {
-    ...shared,
-    makeVaultKit,
-    liquidateAll,
-    getPublicFacet: () => publicFacet,
+  /** @param {MethodContext} context */
+  getPublicFacet: ({ facets }) => facets.collateral,
+};
+
+/** @param {MethodContext} context */
+const finish = ({ state, facets: { helper } }) => {
+  state.prioritizedVaults.setRescheduler(helper.reschedulePriceCheck);
+
+  observeNotifier(state.periodNotifier, {
+    updateState: updateTime =>
+      helper
+        .chargeAllVaults(updateTime, state.poolIncrementSeat)
+        .catch(e =>
+          console.error('🚨 vaultManager failed to charge interest', e),
+        ),
+    fail: reason => {
+      state.zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${reason}`),
+      );
+    },
+    finish: done => {
+      state.zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${done}`),
+      );
+    },
   });
 };
+
+const behavior = {
+  collateral: collateralBehavior,
+  helper: helperBehavior,
+  manager: managerBehavior,
+  self: selfBehavior,
+};
+
+const makeVaultManagerKit = defineKindMulti(
+  'VaultManagerKit',
+  initState,
+  behavior,
+  {
+    finish,
+  },
+);
+
+/**
+ * Each VaultManager manages a single collateral type.
+ *
+ * It manages some number of outstanding loans, each called a Vault, for which
+ * the collateral is provided in exchange for borrowed RUN.
+ *
+ * @param {ZCF} zcf
+ * @param {ZCFMint<'nat'>} debtMint
+ * @param {Brand} collateralBrand
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {import('./vaultFactory.js').FactoryPowersFacet} factoryPowers
+ * @param {ERef<TimerService>} timerService
+ * @param {LiquidationStrategy} liquidationStrategy
+ * @param {ZCFSeat} penaltyPoolSeat
+ * @param {Timestamp} startTimeStamp
+ */
+export const makeVaultManager = pickFacet(makeVaultManagerKit, 'self');
 
 /** @typedef {ReturnType<typeof makeVaultManager>} VaultManager */
 /** @typedef {ReturnType<VaultManager['getPublicFacet']>} CollateralManager */

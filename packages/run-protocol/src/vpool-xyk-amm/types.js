@@ -49,9 +49,9 @@
  * @callback AddLiquidityActual
  * @param {XYKPool} pool
  * @param {ZCFSeat} zcfSeat
- * @param {Amount} secondaryAmount
- * @param {Amount} poolCentralAmount
- * @param {ZCFSeat} feeSeat
+ * @param {Amount<'nat'>} secondaryAmount
+ * @param {Amount<'nat'>} poolCentralAmount
+ * @param {ZCFSeat} [feeSeat]
  * @returns {string}
  */
 
