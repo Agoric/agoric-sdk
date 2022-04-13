@@ -45,6 +45,40 @@ import {
 const { details: X } = assert;
 
 /**
+ * @typedef {Readonly<{
+ * collateralTypes: Store<Brand,VaultManager>,
+ * electionManager: Instance,
+ * mintSeat: ZCFSeat,
+ * penaltyPoolSeat: ZCFSeat,
+ * rewardPoolSeat: ZCFSeat,
+ * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
+ * zcf: ZCF,
+ * }>} ImmutableState
+ */
+
+/**
+ * @param {ZCF} zcf
+ */
+const initState = zcf => {
+  /** For temporary staging of newly minted tokens */
+  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
+  const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
+  const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
+
+  const collateralTypes = makeScalarMap('brand');
+
+  const vaultParamManagers = makeScalarMap('brand');
+
+  return {
+    collateralTypes,
+    mintSeat,
+    rewardPoolSeat,
+    penaltyPoolSeat,
+    vaultParamManagers,
+  };
+};
+
+/**
  * @param {ZCF<GovernanceTerms<{}> & {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
@@ -54,19 +88,6 @@ const { details: X } = assert;
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  const {
-    ammPublicFacet,
-    priceAuthority,
-    timerService,
-    liquidationInstall,
-    electionManager,
-    governedParams: governedTerms,
-    loanTimingParams,
-  } = zcf.getTerms();
-
-  /** @type {Promise<GovernorPublic>} */
-  const governorPublic = E(zcf.getZoeService()).getPublicFacet(electionManager);
-
   const { feeMintAccess, initialPoserInvitation } = privateArgs;
   const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
   const { issuer: debtIssuer, brand: debtBrand } = debtMint.getIssuerRecord();
@@ -80,18 +101,18 @@ export const start = async (zcf, privateArgs) => {
     initialPoserInvitation,
   );
 
-  assertElectorateMatches(electorateParamManager, governedTerms);
+  assertElectorateMatches(
+    electorateParamManager,
+    zcf.getTerms().governedParams,
+  );
 
-  /** For temporary staging of newly minted tokens */
-  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
-  const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
-  const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
-
-  /** @type {Store<Brand,VaultManager>} */
-  const collateralTypes = makeScalarMap('brand');
-
-  /** @type { Store<Brand, import('./params.js').VaultParamManager> } */
-  const vaultParamManagers = makeScalarMap('brand');
+  const {
+    collateralTypes,
+    mintSeat,
+    rewardPoolSeat,
+    penaltyPoolSeat,
+    vaultParamManagers,
+  } = initState(zcf);
 
   /** Make a loan in the vaultManager based on the collateral type.
    *
@@ -163,6 +184,12 @@ export const start = async (zcf, privateArgs) => {
       vaultParamManagers.init(collateralBrand, vaultParamManager);
 
       const zoe = zcf.getZoeService();
+      const {
+        liquidationInstall,
+        ammPublicFacet,
+        priceAuthority,
+        timerService,
+      } = zcf.getTerms();
       const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
         liquidationInstall,
         harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
@@ -221,6 +248,8 @@ export const start = async (zcf, privateArgs) => {
         debtMint.burnLosses(harden({ RUN: toBurn }), seat);
       };
 
+      const { loanTimingParams } = zcf.getTerms();
+
       const factoryPowers = Far('vault factory powers', {
         getGovernedParams: () => ({
           ...vaultParamManager.readonly(),
@@ -236,7 +265,7 @@ export const start = async (zcf, privateArgs) => {
         zcf,
         debtMint,
         collateralBrand,
-        priceAuthority,
+        zcf.getTerms().priceAuthority,
         factoryPowers,
         timerService,
         // @ts-expect-error
@@ -254,7 +283,7 @@ export const start = async (zcf, privateArgs) => {
       debtBrand,
       'RUN',
     ).makeCollectFeesInvitation,
-    getContractGovernor: () => electionManager,
+    getContractGovernor: () => zcf.getTerms().electionManager,
 
     // XXX accessors for tests
     getRewardAllocation: rewardPoolSeat.getCurrentAllocation,
@@ -300,7 +329,10 @@ export const start = async (zcf, privateArgs) => {
       getGovernedParams: ({ collateralBrand }) =>
         // TODO use named getters of TypedParamManager
         vaultParamManagers.get(collateralBrand).getParams(),
-      getContractGovernor: () => governorPublic,
+      /** @returns {Promise<GovernorPublic>} */
+      getContractGovernor: () =>
+        // ??? does this need to be cached?
+        E(zcf.getZoeService()).getPublicFacet(zcf.getTerms().electionManager),
       getInvitationAmount: electorateParamManager.getInvitationAmount,
     }),
   });
