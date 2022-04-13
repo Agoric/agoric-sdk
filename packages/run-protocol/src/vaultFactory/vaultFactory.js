@@ -58,8 +58,10 @@ const { details: X } = assert;
 
 /**
  * @param {ZCF} zcf
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} electorateParamManager
+ * @param {ZCFMint<"nat">} debtMint
  */
-const initState = zcf => {
+const initState = (zcf, electorateParamManager, debtMint) => {
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
@@ -71,10 +73,13 @@ const initState = zcf => {
 
   return {
     collateralTypes,
+    debtMint,
+    electorateParamManager,
     mintSeat,
     rewardPoolSeat,
     penaltyPoolSeat,
     vaultParamManagers,
+    zcf,
   };
 };
 
@@ -84,35 +89,21 @@ const initState = zcf => {
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
  *   timerService: TimerService,
- *   priceAuthority: ERef<PriceAuthority>}>} zcf
- * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
+ *   priceAuthority: ERef<PriceAuthority>
+ * }>} zcf
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} electorateParamManager
+ * @param {ZCFMint<"nat">} debtMint
  */
-export const start = async (zcf, privateArgs) => {
-  const { feeMintAccess, initialPoserInvitation } = privateArgs;
-  const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
-  const { issuer: debtIssuer, brand: debtBrand } = debtMint.getIssuerRecord();
-  zcf.setTestJig(() => ({
-    runIssuerRecord: debtMint.getIssuerRecord(),
-  }));
-
-  /** a powerful object; can modify the invitation */
-  const electorateParamManager = await makeElectorateParamManager(
-    zcf.getZoeService(),
-    initialPoserInvitation,
-  );
-
-  assertElectorateMatches(
-    electorateParamManager,
-    zcf.getTerms().governedParams,
-  );
-
+const makeVaultFactory = (zcf, electorateParamManager, debtMint) => {
   const {
     collateralTypes,
+    // electorateParamManager,
     mintSeat,
     rewardPoolSeat,
     penaltyPoolSeat,
     vaultParamManagers,
-  } = initState(zcf);
+    // zcf,
+  } = initState(zcf, electorateParamManager, debtMint);
 
   /** Make a loan in the vaultManager based on the collateral type.
    *
@@ -190,6 +181,8 @@ export const start = async (zcf, privateArgs) => {
         priceAuthority,
         timerService,
       } = zcf.getTerms();
+      const { issuer: debtIssuer, brand: debtBrand } =
+        debtMint.getIssuerRecord();
       const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
         liquidationInstall,
         harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
@@ -280,7 +273,7 @@ export const start = async (zcf, privateArgs) => {
     makeCollectFeesInvitation: makeMakeCollectFeesInvitation(
       zcf,
       rewardPoolSeat,
-      debtBrand,
+      debtMint.getIssuerRecord().brand,
       'RUN',
     ).makeCollectFeesInvitation,
     getContractGovernor: () => zcf.getTerms().electionManager,
@@ -327,7 +320,7 @@ export const start = async (zcf, privateArgs) => {
     /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
     makeVaultInvitation,
     getCollaterals,
-    getRunIssuer: () => debtIssuer,
+    getRunIssuer: () => debtMint.getIssuerRecord().issuer,
     getGovernedParams: ({ collateralBrand }) =>
       // TODO use named getters of TypedParamManager
       vaultParamManagers.get(collateralBrand).getParams(),
@@ -341,6 +334,41 @@ export const start = async (zcf, privateArgs) => {
   return harden({
     creatorFacet: Far('powerful vaultFactory wrapper', creatorBehavior),
     publicFacet: Far('vaultFactory public facet', publicBehavior),
+  });
+};
+
+/**
+ * @param {ZCF<GovernanceTerms<{}> & {
+ *   ammPublicFacet: AutoswapPublicFacet,
+ *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
+ *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
+ *   timerService: TimerService,
+ *   priceAuthority: ERef<PriceAuthority>}>} zcf
+ * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
+ */
+export const start = async (zcf, privateArgs) => {
+  const { feeMintAccess, initialPoserInvitation } = privateArgs;
+  const debtMint = await zcf.registerFeeMint('RUN', feeMintAccess);
+  zcf.setTestJig(() => ({
+    runIssuerRecord: debtMint.getIssuerRecord(),
+  }));
+
+  /** a powerful object; can modify the invitation */
+  const electorateParamManager = await makeElectorateParamManager(
+    zcf.getZoeService(),
+    initialPoserInvitation,
+  );
+
+  assertElectorateMatches(
+    electorateParamManager,
+    zcf.getTerms().governedParams,
+  );
+
+  const factory = makeVaultFactory(zcf, electorateParamManager, debtMint);
+
+  return harden({
+    creatorFacet: factory.creatorFacet,
+    publicFacet: factory.publicFacet,
   });
 };
 
