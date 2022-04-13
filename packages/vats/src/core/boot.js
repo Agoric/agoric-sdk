@@ -83,8 +83,11 @@ const buildRootObject = (vatPowers, vatParameters) => {
       D(devices.mailbox).registerInboundHandler(vats.vattp);
       await E(vats.vattp).registerMailboxDevice(devices.mailbox);
 
-      /** @param { Record<string, Record<string, unknown>> } manifest */
-      const runBehaviors = manifest => {
+      /**
+       * @param { Record<string, Record<string, unknown>> } manifest
+       * @param { Record<string, unknown>} [options]
+       */
+      const runBehaviors = (manifest, options) => {
         // TODO: Aspires to be BootstrapPowers, but it's too specific.
         const allPowers = harden({
           vatPowers,
@@ -107,7 +110,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
           entries(manifest).map(([name, permit]) =>
             Promise.resolve().then(() => {
               const powers = extractPowers(permit, allPowers);
-              const config = vatParameters[name];
+              const config = { options, ...vatParameters[name] };
               log(`bootstrap: ${name}(${q(permit)})`);
               assert(
                 name in bootBehaviors,
