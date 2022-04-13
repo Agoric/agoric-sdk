@@ -283,22 +283,20 @@ const makeParamManagerBuilder = zoe => {
 
   /** @type {UpdateParams} */
   const updateParams = async paramChanges => {
-    const asyncResults = [];
     const paramNames = Object.keys(paramChanges);
-    for (const paramName of paramNames) {
-      asyncResults.push(
-        setters[`prepareToUpdate${paramName}`](paramChanges[paramName]),
-      );
-    }
+
+    const asyncResults = paramNames.map(name =>
+      setters[`prepareToUpdate${name}`](paramChanges[name]),
+    );
     // if any update doesn't succeed, fail the request
     const results = await Promise.all(asyncResults);
 
-    const newValues = {};
-    for (let i = 0; i < paramNames.length; i += 1) {
-      const paramName = paramNames[i];
-      const setFn = setters[`update${paramName}`];
-      newValues[paramName] = setFn(paramChanges[paramName], results[i]);
-    }
+    const tuples = paramNames.map((name, i) => {
+      const setFn = setters[`update${name}`];
+      return { [name]: setFn(paramChanges[name], results[i]) };
+    });
+    // @ts-ignore cast
+    const newValues = Object.fromEntries(tuples);
 
     return deeplyFulfilled(harden(newValues));
   };
