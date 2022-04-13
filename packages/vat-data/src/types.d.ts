@@ -36,7 +36,9 @@ interface KindDefiner {
 
 export type VatData = {
   defineKind: KindDefiner;
+  defineKindMulti: KindDefiner;
   defineDurableKind: KindDefiner;
+  defineDurableKindMulti: KindDefiner;
 
   makeKindHandle: (descriptionTag: string) => unknown;
 

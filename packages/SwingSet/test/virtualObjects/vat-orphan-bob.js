@@ -1,12 +1,12 @@
 import { Far } from '@endo/marshal';
-import { defineKind } from '@agoric/vat-data';
+import { defineKindMulti } from '@agoric/vat-data';
 
 export function buildRootObject(vatPowers) {
   const { testLog } = vatPowers;
 
   let extracted;
 
-  const makeThing = defineKind('thing', () => ({}), {
+  const makeThing = defineKindMulti('thing', () => ({}), {
     regularFacet: {
       statelessMethod: () => 0,
       extractState: ({ state }) => {

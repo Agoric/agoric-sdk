@@ -13,7 +13,13 @@ import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
 const { vom, cm } = makeFakeVirtualStuff({ cacheSize: 3 });
 
-const { defineKind, defineDurableKind, makeKindHandle } = vom;
+const {
+  defineKind,
+  defineKindMulti,
+  defineDurableKind,
+  defineDurableKindMulti,
+  makeKindHandle,
+} = vom;
 
 const {
   makeScalarBigMapStore,
@@ -24,7 +30,9 @@ const {
 
 const VatData = harden({
   defineKind,
+  defineKindMulti,
   defineDurableKind,
+  defineDurableKindMulti,
   makeKindHandle,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,

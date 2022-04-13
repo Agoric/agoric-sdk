@@ -74,11 +74,7 @@ async function testUpgrade(t, defaultManagerType) {
   const hostStorage = provideHostStorage();
   const { kvStore } = hostStorage;
   await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(
-    hostStorage,
-    {},
-    { slogFile: 's.slog' },
-  );
+  const c = await makeSwingsetController(hostStorage);
   c.pinVatRoot('bootstrap');
   await c.run();
 
