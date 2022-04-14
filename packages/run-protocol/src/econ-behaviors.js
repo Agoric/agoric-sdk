@@ -219,7 +219,7 @@ export const setupReserve = async ({
 /**
  * @param { EconomyBootstrapPowers } powers
  * @param { Object } config
- * @param { LoanTiming } config.loanParams
+ * @param { LoanTiming } [config.loanParams]
  */
 export const startVaultFactory = async (
   {
@@ -238,12 +238,12 @@ export const startVaultFactory = async (
     instance,
     installation,
   },
-  { loanParams } = {
-    loanParams: {
+  {
+    loanParams = {
       chargingPeriod: SECONDS_PER_HOUR,
       recordingPeriod: SECONDS_PER_DAY,
     },
-  },
+  } = {},
 ) => {
   const bundles = await vaultBundles;
   const installations = await Collect.allValues({

@@ -173,12 +173,12 @@ const missingKeys = (pattern, specimen) =>
 
 /**
  * @param {BootstrapSpace} powers
- * @param {{ template: Record<string, unknown> }} config
+ * @param {{ template?: Record<string, unknown> }} config
  */
 export const makeClientManager = async (
   { produce: { client, clientCreator: clientCreatorP } },
-  { template } = {
-    template: {
+  {
+    template = {
       agoricNames: true,
       bank: true,
       namesByAddress: true,
@@ -187,7 +187,7 @@ export const makeClientManager = async (
       faucet: true,
       zoe: true,
     },
-  },
+  } = {},
 ) => {
   // Create a subscription of chain configurations.
   /** @type {SubscriptionRecord<PropertyMakers>} */
