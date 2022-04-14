@@ -322,7 +322,7 @@
 /**
  * @typedef {Object} ParamChangeIssue
  * @property {string} key
- * @property {ParamChangesSpec} changes
+ * @property {Record<string,ParamValue>} changes
  * @property {Instance} contract
  */
 
@@ -344,7 +344,7 @@
  * Return a record containing the positive and negative positions for a
  * question on changing the param to the proposedValue.
  *
- * @param {ParamChangesSpec} paramSpec
+ * @param {Record<string,ParamValue>} paramSpec
  * @returns {ParamChangePositions}
  */
 
