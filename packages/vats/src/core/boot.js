@@ -2,9 +2,9 @@
 import { E, Far } from '@endo/far';
 
 import {
-  extractPowers,
   makeAgoricNamesAccess,
   makePromiseSpace,
+  runModuleBehaviors,
 } from './utils.js';
 import {
   CLIENT_BOOTSTRAP_MANIFEST,
@@ -19,7 +19,6 @@ import * as simBehaviors from './sim-behaviors.js';
 import * as clientBehaviors from './client-behaviors.js';
 import * as utils from './utils.js';
 
-const { entries } = Object;
 const { details: X, quote: q } = assert;
 
 // Choose a manifest based on runtime configured argv.ROLE.
@@ -82,44 +81,37 @@ const buildRootObject = (vatPowers, vatParameters) => {
     D(devices.mailbox).registerInboundHandler(vats.vattp);
     await E(vats.vattp).registerMailboxDevice(devices.mailbox);
 
-    /**
-     * @param { Record<string, Record<string, unknown>> } manifest
-     * @param { Record<string, unknown>} [options]
-     */
-    const runBehaviors = (manifest, options) => {
-      // TODO: Aspires to be BootstrapPowers, but it's too specific.
-      const allPowers = harden({
-        vatPowers,
-        vatParameters,
-        vats,
-        devices,
-        produce,
-        consume,
-        ...spaces,
-        runBehaviors,
-        // These module namespaces might be useful for core eval governance.
-        modules: {
-          clientBehaviors: { ...clientBehaviors },
-          simBehaviors: { ...simBehaviors },
-          behaviors: { ...behaviors },
-          utils: { ...utils },
+    const runBehaviors = manifest => {
+      return runModuleBehaviors({
+        // eslint-disable-next-line no-use-before-define
+        allPowers,
+        behaviors: bootBehaviors,
+        manifest,
+        makeConfig: (name, permit) => {
+          log(`bootstrap: ${name}(${q(permit)}`);
+          return vatParameters[name];
         },
       });
-      return Promise.all(
-        entries(manifest).map(([name, permit]) =>
-          Promise.resolve().then(() => {
-            const powers = extractPowers(permit, allPowers);
-            const config = { options, ...vatParameters[name] };
-            log(`bootstrap: ${name}(${q(permit)})`);
-            assert(
-              name in bootBehaviors,
-              `${name} not in ${Object.keys(bootBehaviors).join(',')}`,
-            );
-            return bootBehaviors[name](powers, config);
-          }),
-        ),
-      );
     };
+
+    // TODO: Aspires to be BootstrapPowers, but it's too specific.
+    const allPowers = harden({
+      vatPowers,
+      vatParameters,
+      vats,
+      devices,
+      produce,
+      consume,
+      ...spaces,
+      runBehaviors,
+      // These module namespaces might be useful for core eval governance.
+      modules: {
+        clientBehaviors: { ...clientBehaviors },
+        simBehaviors: { ...simBehaviors },
+        behaviors: { ...behaviors },
+        utils: { ...utils },
+      },
+    });
 
     await runBehaviors(bootManifest);
     if (vatParameters.governanceActions) {
