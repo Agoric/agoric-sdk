@@ -88,10 +88,11 @@
  */
 
 /**
+ * @template {Issue} [I=Issue]
  * @typedef {Object} QuestionSpec
  *   Specification when requesting creation of a Question
  * @property {ChoiceMethod} method
- * @property {Issue} issue
+ * @property {I} issue
  * @property {Position[]} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
@@ -339,16 +340,6 @@
  */
 
 /**
- * @callback MakeParamChangePositions
- *
- * Return a record containing the positive and negative positions for a
- * question on changing the param to the proposedValue.
- *
- * @param {Record<string,ParamValue>} paramSpec
- * @returns {ParamChangePositions}
- */
-
-/**
  * @typedef {Object} ParamChangeIssueDetails
  *    details for a question that can change a contract parameter
  * @property {ChoiceMethod} method
@@ -432,7 +423,7 @@
 
 /**
  * @typedef {Object} ChangeParamsPosition
- * @property {ParamChangesSpec} changes
+ * @property {Record<string,ParamValue>} changes one or more changes to parameters
  */
 
 /**
@@ -476,7 +467,7 @@
  *
  * @typedef {Object} ParamChangesSpec
  * @property {string} key Identifies the paramManager within the contract
- * @property {Record<string,ParamValue>} changes one or more changes to parameters
+ * @property {Record<string, ParamValue>} changes one or more changes to parameters
  */
 
 /**
@@ -571,7 +562,7 @@
 /**
  * @callback AssertBallotConcernsParam
  * @param {{key: string, parameterName: string}} paramSpec
- * @param {QuestionDetails} questionDetails
+ * @param {QuestionSpec<ParamChangeIssue>} questionSpec
  */
 
 /**

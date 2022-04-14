@@ -19,12 +19,18 @@ const { details: X } = assert;
  */
 const CONTRACT_ELECTORATE = 'Electorate';
 
-/** @type {MakeParamChangePositions} */
+/**
+ * Return a record containing the positive and negative positions for a
+ * question on changing the param to the proposedValue.
+ *
+ * @param {Record<string, ParamValue>} changes
+ * @returns {ParamChangePositions}
+ */
 const makeParamChangePositions = changes => {
+  /** @type {ChangeParamsPosition} */
   const positive = { changes };
   const namesOnly = Object.keys(changes);
   const negative = { noChange: namesOnly };
-  // @ts-ignore
   return harden({ positive, negative });
 };
 
@@ -53,11 +59,10 @@ const validateParamChangeQuestion = details => {
 };
 
 /** @type {AssertBallotConcernsParam} */
-const assertBallotConcernsParam = (paramSpec, questionDetails) => {
+const assertBallotConcernsParam = (paramSpec, questionSpec) => {
   const { key, parameterName } = paramSpec;
-  /** @type {ParamChangeIssue} */
-  // @ts-ignore cast
-  const issue = questionDetails.issue;
+  const issue = questionSpec.issue;
+  // XXX doesn't fully test this requirement
   assert(issue, 'must be a param change issue');
 
   assert(
