@@ -21,7 +21,7 @@ import { governanceBundles, economyBundles } from '../src/importedBundles.js';
  * @param {VaultId} vaultId
  * @param {Amount} initDebt
  * @param {Amount} initCollateral
- * @returns {Partial<InnerVault> & {setDebt: (Amount) => void}}
+ * @returns {InnerVault & {setDebt: (Amount) => void}}
  */
 export const makeFakeInnerVault = (
   vaultId,
@@ -39,6 +39,7 @@ export const makeFakeInnerVault = (
     getIdInManager: () => vaultId,
     liquidate: () => {},
   });
+  // @ts-expect-error cast
   return vault;
 };
 
