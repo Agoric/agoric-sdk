@@ -49,20 +49,13 @@ const oneVoterValidate = async (
   );
 };
 
-const setUpVote = async (
-  newValue,
-  deadline,
-  votersP,
-  votes,
-  paramDesc,
-  contracts,
-) => {
+const setUpVote = async (deadline, votersP, votes, contracts, paramChanges) => {
   const { vaultFactory, installations, electorateInstance, governor } =
     contracts;
 
   const { details: feeDetails } = await E(
-    vaultFactory.voteCreator,
-  ).voteOnParamChange(paramDesc, newValue, installations.counter, deadline);
+    governor.creatorFacet,
+  ).voteOnParamChanges(installations.counter, deadline, paramChanges);
   await votersVote(feeDetails, votersP, votes);
 
   await oneVoterValidate(
@@ -125,27 +118,37 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   };
   const votes = [0, 1, 1, 0, 0];
 
+  const paramChanges = {
+    key: { collateralBrand },
+    changes: {
+      [INTEREST_RATE_KEY]: makeRatio(4321n, runBrand, BASIS_POINTS),
+    },
+  };
+
+  const counter = await setUpVote(
+    BigInt(daysForVoting) * ONE_DAY,
+    votersP,
+    votes,
+    contracts,
+    paramChanges,
+  );
+
   const interestRateParam = {
     parameterName: INTEREST_RATE_KEY,
     collateralBrand,
   };
-  const counter = await setUpVote(
-    makeRatio(4321n, runBrand, BASIS_POINTS),
-    BigInt(daysForVoting) * ONE_DAY,
-    votersP,
-    votes,
-    interestRateParam,
-    contracts,
-  );
-
   E(E(zoe).getPublicFacet(counter))
     .getOutcome()
-    .then(async outcome => {
+    .then(async () => {
       const feeParamsStatePost = await E(
         vaultFactory.publicFacet,
       ).getGovernedParams(interestRateParam);
       log(
-        `after vote on (${outcome.changeParam.parameterName}), InterestRate numerator is ${feeParamsStatePost.InterestRate.value.numerator.value}`,
+        `after vote on (${
+          Object.keys(paramChanges.changes)[0]
+        }), InterestRate numerator is ${
+          feeParamsStatePost.InterestRate.value.numerator.value
+        }`,
       );
     })
     .catch(e => log(`BOOT fail: ${e}`));

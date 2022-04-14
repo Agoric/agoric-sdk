@@ -71,11 +71,11 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * only one) and the parameterName. The interpretation of ParamSpecification is
  * up to the contract.
  *
- * The contractGovernor creatorFacet includes voteOnParamChange(),
+ * The contractGovernor creatorFacet includes voteOnParamChanges(),
  * which is used to create questions that will automatically update
  * contract parameters if passed. This facet will usually be closely held. The
  * creatorFacet can also be used to retrieve the governed instance, publicFacet,
- * and it's creatorFacet with voteOnParamChange() omitted.
+ * and its creatorFacet with voteOnParamChanges() omitted.
  *
  * The governed contract's terms include the instance of this (governing)
  * contract (as electionManager) so clients will be able to look up the state
@@ -159,7 +159,7 @@ const start = async zcf => {
   assert(poserFacet, X`question poser facet must be initialized`);
 
   // All governed contracts have at least a governed electorate
-  const { voteOnParamChange, createdQuestion: createdParamQuestion } =
+  const { voteOnParamChanges, createdQuestion: createdParamQuestion } =
     await setupParamGovernance(
       zoe,
       E(governedCF).getParamMgrRetriever(),
@@ -230,7 +230,7 @@ const start = async zcf => {
   };
 
   const creatorFacet = Far('governor creatorFacet', {
-    voteOnParamChange,
+    voteOnParamChanges,
     voteOnApiInvocation,
     getCreatorFacet: () => limitedCreatorFacet,
     getInstance: () => governedInstance,

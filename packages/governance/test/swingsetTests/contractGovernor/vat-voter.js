@@ -8,7 +8,7 @@ import {
   assertContractGovernance,
   validateQuestionFromCounter,
   validateQuestionDetails,
-  assertBallotConcernsQuestion,
+  assertBallotConcernsParam,
 } from '../../../src/index.js';
 import { MALLEABLE_NUMBER } from './governedContract.js';
 
@@ -63,7 +63,10 @@ const build = async (log, zoe) => {
             contractGovernanceP,
           ]);
 
-          assertBallotConcernsQuestion(MALLEABLE_NUMBER, questionDetails);
+          assertBallotConcernsParam(
+            { key: 'governedParams', parameterName: MALLEABLE_NUMBER },
+            questionDetails,
+          );
           assert(installations.binaryVoteCounter === voteCounterInstallation);
           assert(installations.governedContract === governedInstallation);
           assert(installations.contractGovernor === governorInstallation);

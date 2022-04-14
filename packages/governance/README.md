@@ -234,8 +234,9 @@ Governed methods and parameters must be included in terms.
 
 When a contract is written without benefit of `contractHelper`, it is
 responsible for adding `getSubscription`, `getContractGovernor`, and
-`getGovernedParams` to its `PublicFacet`, and `getParamMgrRetriever`,
-`getInvitation` and `getLimitedCreatorFacet` to the `CreatorFacet`.
+`getGovernedParams` to its `PublicFacet`, and for adding
+`getParamMgrRetriever`, `getInvitation` and `getLimitedCreatorFacet` to its 
+`CreatorFacet`.
 
 ## Scenarios
 

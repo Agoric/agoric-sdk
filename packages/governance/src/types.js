@@ -84,14 +84,15 @@
  */
 
 /**
- * @typedef { TextPosition | ChangeParamPosition | NoChangeParamPosition | InvokeApiPosition | DontInvokeApiPosition } Position
+ * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition } Position
  */
 
 /**
+ * @template {Issue} [I=Issue]
  * @typedef {Object} QuestionSpec
  *   Specification when requesting creation of a Question
  * @property {ChoiceMethod} method
- * @property {Issue} issue
+ * @property {I} issue
  * @property {Position[]} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
@@ -321,9 +322,9 @@
 
 /**
  * @typedef {Object} ParamChangeIssue
- * @property {ParamSpecification} paramSpec
+ * @property {string} key
+ * @property {Record<string,ParamValue>} changes
  * @property {Instance} contract
- * @property {ParamValue} proposedValue
  */
 
 /**
@@ -334,19 +335,8 @@
 
 /**
  * @typedef {Object} ParamChangePositions
- * @property {ChangeParamPosition} positive
- * @property {NoChangeParamPosition} negative
- */
-
-/**
- * @callback MakeParamChangePositions
- *
- * Return a record containing the positive and negative positions for a
- * question on changing the param to the proposedValue.
- *
- * @param {ParamSpecification} paramSpec
- * @param {ParamValue} proposedValue
- * @returns {ParamChangePositions}
+ * @property {ChangeParamsPosition} positive
+ * @property {NoChangeParamsPosition} negative
  */
 
 /**
@@ -359,7 +349,7 @@
  * @property {number} maxChoices
  * @property {ClosingRule} closingRule
  * @property {QuorumRule} quorumRule
- * @property {NoChangeParamPosition} tieOutcome
+ * @property {NoChangeParamsPosition} tieOutcome
  * @property {Instance} counterInstance - instance of the VoteCounter
  * @property {Handle<'Question'>} questionHandle
  */
@@ -371,7 +361,7 @@
  */
 
 /**
- * @typedef {Object} ParamManagerBase
+ * @typedef {Object} ParamManagerBase The base paramManager with typed getters
  * @property {() => Record<Keyword, ParamRecord>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
@@ -390,13 +380,19 @@
  */
 
 /**
+ * @callback UpdateParams
+ * @param {Record<string,ParamValue>} paramChanges
+ * @returns {Promise<ParamValue[]>}
+ */
+
+/**
  * These are typed `any` because the builder pattern of paramManager makes it very
  * complicated for the type system to know the set of param-specific functions
  * returned by `.build()`. Instead we let paramManager create the desired methods
  * and use typedParamManager to create a version that includes the static types.
  *
- * @typedef { Record<string, any>} ParamManagerGettersAndUpdaters
- * @typedef {ParamManagerBase & ParamManagerGettersAndUpdaters} AnyParamManager
+ * @typedef {Record<string, any>} ParamManagerGettersAndUpdaters
+ * @typedef {ParamManagerBase & ParamManagerGettersAndUpdaters & {updateParams: UpdateParams}} AnyParamManager
  */
 
 /**
@@ -426,9 +422,8 @@
  */
 
 /**
- * @typedef {Object} ChangeParamPosition
- * @property {ParamSpecification} changeParam
- * @property {ParamValue} proposedValue
+ * @typedef {Object} ChangeParamsPosition
+ * @property {Record<string,ParamValue>} changes one or more changes to parameters
  */
 
 /**
@@ -443,8 +438,9 @@
  */
 
 /**
- * @typedef {Object} NoChangeParamPosition
- * @property {ParamSpecification} noChange
+ * @typedef {Object} NoChangeParamsPosition
+ * @property {string[]} noChange Parameters in the proposal that this position
+ *   is opposed to
  */
 
 /**
@@ -462,14 +458,16 @@
  */
 
 /**
- * @typedef {Object} ParamKey
+ * @typedef {Object} ParamKey identifier for a paramManager within a contract
  * @property {string} key
  */
 
 /**
- * @typedef {Object} ParamSpecification
- * @property {string} key
- * @property {string} parameterName
+ * Description of a set of coordinated changes for a ParamManager
+ *
+ * @typedef {Object} ParamChangesSpec
+ * @property {string} key Identifies the paramManager within the contract
+ * @property {Record<string, ParamValue>} changes one or more changes to parameters
  */
 
 /**
@@ -503,7 +501,7 @@
 /**
  * @template {object} PF Public facet of governed contract
  * @typedef {Object} GovernedContractFacetAccess
- * @property {VoteOnParamChange} voteOnParamChange
+ * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {() => Promise<LimitedCreatorFacet<any>>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
@@ -562,9 +560,9 @@
  */
 
 /**
- * @callback AssertBallotConcernsQuestion
- * @param {string} paramName
- * @param {QuestionDetails} questionDetails
+ * @callback AssertBallotConcernsParam
+ * @param {{key: string, parameterName: string}} paramSpec
+ * @param {QuestionSpec<ParamChangeIssue>} questionSpec
  */
 
 /**
@@ -573,11 +571,10 @@
  */
 
 /**
- * @callback VoteOnParamChange
- * @param {ParamSpecification} paramSpec
- * @param {ParamValue} proposedValue
+ * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
+ * @param {ParamChangesSpec} paramSpec
  * @returns {ContractGovernanceVoteResult}
  */
 
@@ -592,7 +589,7 @@
 
 /**
  * @typedef {Object} ParamGovernor
- * @property {VoteOnParamChange} voteOnParamChange
+ * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {CreatedQuestion} createdQuestion
  */
 

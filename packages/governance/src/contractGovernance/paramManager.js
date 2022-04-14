@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@endo/marshal';
+import { deeplyFulfilled, Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
@@ -10,18 +10,17 @@ import { E } from '@endo/eventual-send';
 import { ParamTypes } from '../constants.js';
 
 import {
-  makeLooksLikeBrand,
+  makeAssertBrandedRatio,
   makeAssertInstallation,
   makeAssertInstance,
-  makeAssertBrandedRatio,
+  makeLooksLikeBrand,
 } from './assertions.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 
 const { details: X } = assert;
 
 /**
- *
- * @param {AnyParamManager} paramManager
+ * @param {ParamManagerBase} paramManager
  * @param {{[CONTRACT_ELECTORATE]: ParamRecord<'invitation'>}} governedParams
  */
 const assertElectorateMatches = (paramManager, governedParams) => {
@@ -77,7 +76,7 @@ const makeParamManagerBuilder = zoe => {
       assertion(newValue);
       current = newValue;
       publication.updateState({ name, type, value: current });
-      return newValue;
+      return harden({ [name]: newValue });
     };
     setParamValue(value);
 
@@ -102,6 +101,7 @@ const makeParamManagerBuilder = zoe => {
     // to our caller. They must handle them carefully to ensure that they end up
     // in appropriate hands.
     setters[`update${name}`] = setParamValue;
+    setters[`prepareToUpdate${name}`] = proposedValue => proposedValue;
     namesToParams.init(name, publicMethods);
   };
 
@@ -192,21 +192,42 @@ const makeParamManagerBuilder = zoe => {
     let currentInvitation;
     let currentAmount;
 
-    const setInvitation = async i => {
-      [currentAmount] = await Promise.all([
-        E(E(zoe).getInvitationIssuer()).getAmountOf(i),
-        assertInvitation(i),
+    /**
+     * @typedef {[Invitation, Amount]} SetInvitationParam
+     */
+
+    /**
+     * Async phase to prepare for synchronous setting
+     *
+     * @param {Invitation} invite
+     * @returns {Promise<SetInvitationParam>}
+     */
+    const prepareToSetInvitation = async invite => {
+      const [preparedAmount] = await Promise.all([
+        E(E(zoe).getInvitationIssuer()).getAmountOf(invite),
+        assertInvitation(invite),
       ]);
 
-      currentInvitation = i;
+      return [invite, preparedAmount];
+    };
+
+    /**
+     * Synchronous phase of value setting
+     *
+     * @param {SetInvitationParam} param0
+     */
+    const setInvitation = async ([newInvitation, amount]) => {
+      currentAmount = amount;
+      currentInvitation = newInvitation;
       publication.updateState({
         name,
         type: ParamTypes.INVITATION,
         value: currentAmount,
       });
-      return currentAmount;
+      return harden({ [name]: currentAmount });
     };
-    await setInvitation(invitation);
+    const inviteAndAmount = await prepareToSetInvitation(invitation);
+    setInvitation(inviteAndAmount);
 
     const makeDescription = () => {
       return { type: ParamTypes.INVITATION, value: currentAmount };
@@ -227,9 +248,10 @@ const makeParamManagerBuilder = zoe => {
     // eslint-disable-next-line no-use-before-define
     getters[`get${name}`] = () => getTypedParam(ParamTypes.INVITATION, name);
     // CRUCIAL: here we're creating the update functions that can change the
-    // values of the governed contract's parameters. We'll return the updateFns
-    // to our caller. They must handle them carefully to ensure that they end up
-    // in appropriate hands.
+    // values of the governed contract's parameters. We'll return updateParams
+    // (which can invoke all of them) to our caller. They must handle it
+    // carefully to ensure that they end up in appropriate hands.
+    setters[`prepareToUpdate${name}`] = prepareToSetInvitation;
     setters[`update${name}`] = setInvitation;
     namesToParams.init(name, publicMethods);
     return name;
@@ -273,6 +295,25 @@ const makeParamManagerBuilder = zoe => {
     return harden(descriptions);
   };
 
+  /** @type {UpdateParams} */
+  const updateParams = async paramChanges => {
+    const paramNames = Object.keys(paramChanges);
+
+    const asyncResults = paramNames.map(name =>
+      setters[`prepareToUpdate${name}`](paramChanges[name]),
+    );
+    // if any update doesn't succeed, fail the request
+    const results = await Promise.all(asyncResults);
+
+    const tuples = paramNames.map((name, i) => {
+      const setFn = setters[`update${name}`];
+      return [name, setFn(results[i])];
+    });
+    const newValues = Object.fromEntries(tuples);
+
+    return deeplyFulfilled(harden(newValues));
+  };
+
   const makeParamManager = () => {
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by
@@ -293,7 +334,7 @@ const makeParamManagerBuilder = zoe => {
       getInternalParamValue,
       // Getters and setters for each param value
       ...getters,
-      ...setters,
+      updateParams,
       // Collection of all getters for passing to read-only contexts
       readonly: () => harden(getters),
     });
