@@ -70,64 +70,70 @@ const buildRootObject = (vatPowers, vatParameters) => {
   assert(bootManifest, X`no configured bootstrapManifest for role ${ROLE}`);
   assert(bootBehaviors, X`no configured bootstrapBehaviors for role ${ROLE}`);
 
-  return Far('bootstrap', {
+  /**
+   * Bootstrap vats and devices.
+   *
+   * @param {SwingsetVats} vats
+   * @param {SoloDevices | ChainDevices} devices
+   */
+  const rawBootstrap = async (vats, devices) => {
+    // Complete SwingSet wiring.
+    const { D } = vatPowers;
+    D(devices.mailbox).registerInboundHandler(vats.vattp);
+    await E(vats.vattp).registerMailboxDevice(devices.mailbox);
+
     /**
-     * Bootstrap vats and devices.
-     *
-     * @param {SwingsetVats} vats
-     * @param {SoloDevices | ChainDevices} devices
+     * @param { Record<string, Record<string, unknown>> } manifest
+     * @param { Record<string, unknown>} [options]
      */
-    bootstrap: async (vats, devices) => {
-      // Complete SwingSet wiring.
-      const { D } = vatPowers;
-      D(devices.mailbox).registerInboundHandler(vats.vattp);
-      await E(vats.vattp).registerMailboxDevice(devices.mailbox);
+    const runBehaviors = (manifest, options) => {
+      // TODO: Aspires to be BootstrapPowers, but it's too specific.
+      const allPowers = harden({
+        vatPowers,
+        vatParameters,
+        vats,
+        devices,
+        produce,
+        consume,
+        ...spaces,
+        runBehaviors,
+        // These module namespaces might be useful for core eval governance.
+        modules: {
+          clientBehaviors: { ...clientBehaviors },
+          simBehaviors: { ...simBehaviors },
+          behaviors: { ...behaviors },
+          utils: { ...utils },
+        },
+      });
+      return Promise.all(
+        entries(manifest).map(([name, permit]) =>
+          Promise.resolve().then(() => {
+            const powers = extractPowers(permit, allPowers);
+            const config = { options, ...vatParameters[name] };
+            log(`bootstrap: ${name}(${q(permit)})`);
+            assert(
+              name in bootBehaviors,
+              `${name} not in ${Object.keys(bootBehaviors).join(',')}`,
+            );
+            return bootBehaviors[name](powers, config);
+          }),
+        ),
+      );
+    };
 
-      /**
-       * @param { Record<string, Record<string, unknown>> } manifest
-       * @param { Record<string, unknown>} [options]
-       */
-      const runBehaviors = (manifest, options) => {
-        // TODO: Aspires to be BootstrapPowers, but it's too specific.
-        const allPowers = harden({
-          vatPowers,
-          vatParameters,
-          vats,
-          devices,
-          produce,
-          consume,
-          ...spaces,
-          runBehaviors,
-          // These module namespaces might be useful for core eval governance.
-          modules: {
-            clientBehaviors: { ...clientBehaviors },
-            simBehaviors: { ...simBehaviors },
-            behaviors: { ...behaviors },
-            utils: { ...utils },
-          },
-        });
-        return Promise.all(
-          entries(manifest).map(([name, permit]) =>
-            Promise.resolve().then(() => {
-              const powers = extractPowers(permit, allPowers);
-              const config = { options, ...vatParameters[name] };
-              log(`bootstrap: ${name}(${q(permit)})`);
-              assert(
-                name in bootBehaviors,
-                `${name} not in ${Object.keys(bootBehaviors).join(',')}`,
-              );
-              return bootBehaviors[name](powers, config);
-            }),
-          ),
-        );
-      };
+    await runBehaviors(bootManifest);
+    if (vatParameters.governanceActions) {
+      const actions = roleToGovernanceActions[ROLE];
+      await runBehaviors(actions);
+    }
+  };
 
-      await runBehaviors(bootManifest);
-      if (vatParameters.governanceActions) {
-        const actions = roleToGovernanceActions[ROLE];
-        await runBehaviors(actions);
-      }
-    },
+  return Far('bootstrap', {
+    bootstrap: (vats, devices) =>
+      rawBootstrap(vats, devices).catch(e => {
+        console.error('BOOTSTRAP FAILED:', e);
+        throw e;
+      }),
   });
 };
 
