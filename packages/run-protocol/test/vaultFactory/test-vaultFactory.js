@@ -13,6 +13,7 @@ import {
   ceilMultiplyBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeParamManagerBuilder } from '@agoric/governance';
 
@@ -89,6 +90,7 @@ test.before(async t => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = E(runIssuer).getBrand();
+  const aethKit = makeIssuerKit('aEth');
   const contextPs = {
     bundles: {
       faucet: makeBundle(contractRoots.faucet),
@@ -103,13 +105,14 @@ test.before(async t => {
     //   committeeName: 'Star Chamber',
     //   committeeSize: 3,
     // },
-    aethKit: makeIssuerKit('aEth'),
+    aethKit,
     runKit: { issuer: runIssuer, brand: runBrand },
     loanTiming: {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
     rates: runBrand.then(r => defaultParamValues(r)),
+    aethInitialLiquidity: AmountMath.make(aethKit.brand, 300n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
   t.context = { ...frozenCtx };
@@ -212,29 +215,28 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
  * @param {ExecutionContext} t
- * @param {unknown} priceList
+ * @param {Array<nat> | Ratio} priceOrList
  * @param {Amount} unitAmountIn
  * @param {TimerService} timer
  * @param {unknown} quoteInterval
- * @param {unknown} aethLiquidity
  * @param {bigint} runInitialLiquidity
  */
 async function setupServices(
   t,
-  priceList,
+  priceOrList,
   unitAmountIn,
   timer = buildManualTimer(t.log),
   quoteInterval,
-  aethLiquidity,
   runInitialLiquidity,
 ) {
   const {
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
-    aethKit: { brand: aethBrand, issuer: aethIssuer },
+    aethKit: { brand: aethBrand, issuer: aethIssuer, mint: aethMint },
     bundles: { VaultFactory, liquidate },
     loanTiming,
     rates,
+    aethInitialLiquidity,
   } = t.context;
   t.context.timer = timer;
 
@@ -246,6 +248,10 @@ async function setupServices(
     payment: runPayment,
   };
 
+  const aethLiquidity = {
+    proposal: aethInitialLiquidity,
+    payment: aethMint.mintPayment(aethInitialLiquidity),
+  };
   const { amm: ammFacets, space } = await setupAmmAndElectorate(
     t,
     aethLiquidity,
@@ -255,17 +261,25 @@ async function setupServices(
   trace(t, 'amm', { ammFacets });
 
   const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
-  const priceAuthority = makeScriptedPriceAuthority({
-    actualBrandIn: aethBrand,
-    actualBrandOut: runBrand,
-    priceList,
-    timer,
-    quoteMint,
-    unitAmountIn,
-    quoteInterval,
-  });
-  produce.priceAuthority.resolve(priceAuthority);
-  trace(t, 'pa', { priceAuthority });
+  // Cheesy hack for easy use of manual price authority
+  const pa = Array.isArray(priceOrList)
+    ? makeScriptedPriceAuthority({
+        actualBrandIn: aethBrand,
+        actualBrandOut: runBrand,
+        priceList: priceOrList,
+        timer,
+        quoteMint,
+        unitAmountIn,
+        quoteInterval,
+      })
+    : makeManualPriceAuthority({
+        actualBrandIn: aethBrand,
+        actualBrandOut: runBrand,
+        initialPrice: priceOrList,
+        timer,
+        quoteMint,
+      });
+  produce.priceAuthority.resolve(pa);
 
   produce.vaultBundles.resolve({ VaultFactory, liquidate });
   await startVaultFactory(space, { loanParams: loanTiming });
@@ -291,14 +305,20 @@ async function setupServices(
 
   /** @type {[any, VaultFactory, VFC['publicFacet']]} */
   // @ts-expect-error cast
-  const [governorInstance, vaultFactory, lender, aethVaultManager] =
-    await Promise.all([
-      E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
-      vaultFactoryCreatorFacet,
-      E(governorCreatorFacet).getPublicFacet(),
-      aethVaultManagerP,
-    ]);
-  trace(t, 'pa', { governorInstance, vaultFactory, lender });
+  const [
+    governorInstance,
+    vaultFactory,
+    lender,
+    aethVaultManager,
+    priceAuthority,
+  ] = await Promise.all([
+    E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
+    vaultFactoryCreatorFacet,
+    E(governorCreatorFacet).getPublicFacet(),
+    aethVaultManagerP,
+    pa,
+  ]);
+  trace(t, 'pa', { governorInstance, vaultFactory, lender, priceAuthority });
 
   const { g, v } = {
     g: {
@@ -336,12 +356,6 @@ test('first', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
-  trace(t, 'basics');
 
   const services = await setupServices(
     t,
@@ -349,7 +363,6 @@ test('first', async t => {
     AmountMath.make(aethBrand, 900n),
     undefined,
     undefined,
-    aethLiquidity,
     500n,
   );
   const { vaultFactory, lender, aethVaultManager } = services.vaultFactory;
@@ -458,8 +471,8 @@ test('first', async t => {
 
 test('price drop', async t => {
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     zoe,
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     runKit: { brand: runBrand },
     rates,
   } = t.context;
@@ -472,24 +485,21 @@ test('price drop', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
 
   const services = await setupServices(
     t,
-    [1000n, 677n, 636n],
+    makeRatio(1000n, runBrand, 900n, aethBrand),
     AmountMath.make(aethBrand, 900n),
     manualTimer,
     undefined,
-    aethLiquidity,
     500n,
   );
   trace(t, 'setup');
 
-  const { vaultFactory, lender } = services.vaultFactory;
+  const {
+    vaultFactory: { vaultFactory, lender },
+    priceAuthority,
+  } = services;
 
   // Create a loan for 270 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
@@ -535,11 +545,17 @@ test('price drop', async t => {
     AmountMath.make(aethBrand, 400n),
     'vault holds 11 Collateral',
   );
-  await manualTimer.tick();
+  trace(t, 'pa2', priceAuthority);
+
+  priceAuthority.setPrice(makeRatio(677n, runBrand, 900n, aethBrand));
+  trace(t, 'price dropped a little');
+  // await manualTimer.tick();
+
   notification = await E(vaultNotifier).getUpdateSince();
   t.is(notification.value.vaultState, Phase.ACTIVE);
 
-  await manualTimer.tick();
+  await E(priceAuthority).setPrice(makeRatio(636n, runBrand, 900n, aethBrand));
+  // await manualTimer.tick();
   notification = await E(vaultNotifier).getUpdateSince(
     notification.updateCount,
   );
@@ -556,8 +572,11 @@ test('price drop', async t => {
     AmountMath.make(runBrand, 284n),
     'Debt remains while liquidating',
   );
+  trace(t, 'debt remains', AmountMath.make(runBrand, 284n));
+  await E(priceAuthority).setPrice(makeRatio(1000n, runBrand, 900n, aethBrand));
+  // await manualTimer.tick();
+  trace(t, 'debt gone');
 
-  await manualTimer.tick();
   notification = await E(vaultNotifier).getUpdateSince(
     notification.updateCount,
   );
@@ -596,8 +615,8 @@ test('price drop', async t => {
 
 test('price falls precipitously', async t => {
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     zoe,
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     runKit: { brand: runBrand },
     rates,
   } = t.context;
@@ -605,6 +624,7 @@ test('price falls precipitously', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
+  t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 900n);
 
   // The borrower will deposit 4 Aeth, and ask to borrow 470 RUN. The
   // PriceAuthority's initial quote is 180. The max loan on 4 Aeth would be 600
@@ -615,18 +635,12 @@ test('price falls precipitously', async t => {
   // gets 41 back
 
   const manualTimer = buildManualTimer(t.log);
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 900n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
   const services = await setupServices(
     t,
     [2200n, 19180n, 1650n, 150n],
     AmountMath.make(aethBrand, 900n),
     manualTimer,
     undefined,
-    aethLiquidity,
     1500n,
   );
   const { vaultFactory, lender } = services.vaultFactory;
@@ -758,21 +772,15 @@ test('price falls precipitously', async t => {
 
 test('vaultFactory display collateral', async t => {
   const {
-    aethKit: { mint: aethMint, brand: aethBrand },
+    aethKit: { brand: aethBrand },
     runKit: { brand: runBrand },
     rates: defaultRates,
   } = t.context;
-
+  t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 900n);
   t.context.rates = harden({
     ...defaultRates,
     loanFee: makeRatio(530n, runBrand, BASIS_POINTS),
   });
-
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 900n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
 
   const services = await setupServices(
     t,
@@ -780,7 +788,6 @@ test('vaultFactory display collateral', async t => {
     AmountMath.make(aethBrand, 90n),
     buildManualTimer(t.log),
     undefined,
-    aethLiquidity,
     500n,
   );
 
@@ -815,20 +822,12 @@ test('interest on multiple vaults', async t => {
 
   // Clock ticks by days
   const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
-
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
-
   const services = await setupServices(
     t,
     [500n, 1500n],
     AmountMath.make(aethBrand, 90n),
     manualTimer,
     SECONDS_PER_DAY,
-    aethLiquidity,
     500n,
   );
   const { vaultFactory, lender } = services.vaultFactory;
@@ -1021,16 +1020,11 @@ test('interest on multiple vaults', async t => {
 
 test('adjust balances', async t => {
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     zoe,
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     runKit: { issuer: runIssuer, brand: runBrand },
     rates,
   } = t.context;
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
 
   const services = await setupServices(
     t,
@@ -1038,7 +1032,6 @@ test('adjust balances', async t => {
     AmountMath.make(aethBrand, 1n),
     buildManualTimer(t.log),
     undefined,
-    aethLiquidity,
     500n,
   );
   const { lender } = services.vaultFactory;
@@ -1267,11 +1260,6 @@ test('transfer vault', async t => {
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
   } = t.context;
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
 
   const services = await setupServices(
     t,
@@ -1279,7 +1267,6 @@ test('transfer vault', async t => {
     AmountMath.make(aethBrand, 1n),
     buildManualTimer(t.log),
     undefined,
-    aethLiquidity,
     500n,
   );
   const { lender } = services.vaultFactory;
@@ -1423,11 +1410,6 @@ test('overdeposit', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
     rates,
   } = t.context;
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
 
   const services = await setupServices(
     t,
@@ -1435,7 +1417,6 @@ test('overdeposit', async t => {
     AmountMath.make(aethBrand, 1n),
     buildManualTimer(t.log),
     undefined,
-    aethLiquidity,
     500n,
   );
   const { vaultFactory, lender } = services.vaultFactory;
@@ -1559,8 +1540,8 @@ test('overdeposit', async t => {
 // charged interest (twice), which will trigger liquidation.
 test('mutable liquidity triggers and interest', async t => {
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     zoe,
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     runKit: { issuer: runIssuer, brand: runBrand },
     rates: defaultRates,
   } = t.context;
@@ -1572,12 +1553,6 @@ test('mutable liquidity triggers and interest', async t => {
     interestRate: makeRatio(5n, runBrand),
   });
   t.context.rates = rates;
-
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
 
   t.context.loanTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
@@ -1591,7 +1566,6 @@ test('mutable liquidity triggers and interest', async t => {
     AmountMath.make(aethBrand, 1n),
     manualTimer,
     SECONDS_PER_WEEK,
-    aethLiquidity,
     500n,
   );
 
@@ -1756,19 +1730,14 @@ test('bad chargingPeriod', async t => {
 
 test('collect fees from loan and AMM', async t => {
   const {
-    aethKit: { mint: aethMint, brand: aethBrand },
     zoe,
+    aethKit: { mint: aethMint, brand: aethBrand },
     runKit: { brand: runBrand },
     rates,
   } = t.context;
   const priceList = [500n, 15n];
   const unitAmountIn = AmountMath.make(aethBrand, 900n);
   const manualTimer = buildManualTimer(t.log);
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
 
   // Add a pool with 900 aeth collateral at a 201 aeth/RUN rate
 
@@ -1778,7 +1747,6 @@ test('collect fees from loan and AMM', async t => {
     unitAmountIn,
     manualTimer,
     undefined,
-    aethLiquidity,
     500n,
   );
   const { vaultFactory, lender } = services.vaultFactory;
@@ -1846,23 +1814,18 @@ test('collect fees from loan and AMM', async t => {
 
 test('close loan', async t => {
   const {
-    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     zoe,
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     runKit: { issuer: runIssuer, brand: runBrand },
     rates,
   } = t.context;
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
+
   const services = await setupServices(
     t,
     [15n],
     AmountMath.make(aethBrand, 1n),
     buildManualTimer(t.log),
     undefined,
-    aethLiquidity,
     500n,
   );
 
@@ -1970,22 +1933,17 @@ test('close loan', async t => {
 
 test('excessive loan', async t => {
   const {
-    aethKit: { mint: aethMint, brand: aethBrand },
     zoe,
+    aethKit: { mint: aethMint, brand: aethBrand },
     runKit: { brand: runBrand },
   } = t.context;
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
+
   const services = await setupServices(
     t,
     [15n],
     AmountMath.make(aethBrand, 1n),
     buildManualTimer(t.log),
     undefined,
-    aethLiquidity,
     500n,
   );
   const { lender } = services.vaultFactory;
@@ -2018,22 +1976,17 @@ test('excessive loan', async t => {
  */
 test('excessive debt on collateral type', async t => {
   const {
-    aethKit: { mint: aethMint, brand: aethBrand },
     zoe,
+    aethKit: { mint: aethMint, brand: aethBrand },
     runKit: { brand: runBrand },
   } = t.context;
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
+
   const services = await setupServices(
     t,
     [15n],
     AmountMath.make(aethBrand, 1n),
     buildManualTimer(t.log),
     undefined,
-    aethLiquidity,
     500n,
   );
   const { lender } = services.vaultFactory;
@@ -2070,11 +2023,6 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
     rates: defaultRates,
   } = t.context;
-  const aethInitialLiquidity = AmountMath.make(aethBrand, 300n);
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aethMint.mintPayment(aethInitialLiquidity),
-  };
 
   t.context.loanTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
@@ -2097,7 +2045,6 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
     AmountMath.make(aethBrand, 1n),
     manualTimer,
     SECONDS_PER_WEEK,
-    aethLiquidity,
     500n,
   );
 
