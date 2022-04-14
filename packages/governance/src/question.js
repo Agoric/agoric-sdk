@@ -62,8 +62,8 @@ const assertSimpleIssue = issue => {
 const assertParamChangeIssue = issue => {
   assert(issue, X`argument to assertParamChangeIssue cannot be null`);
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert(issue && issue.key, X`Issue ("${issue}") must have a key`);
-  assert(issue && issue.changes, X`Issue ("${issue}") must have changes`);
+  assert(issue?.key, X`Issue ("${issue}") must have a key`);
+  assert(issue?.changes, X`Issue ("${issue}") must have changes`);
 
   assert.typeof(
     issue.changes,
