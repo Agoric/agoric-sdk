@@ -147,7 +147,7 @@ const makeVaultDirector = (zcf, electorateParamManager, debtMint) => {
 
   /** @type {VaultFactory} */
   const machineBehavior = {
-    // TODO move this under governance #3972
+    // TODO move this under governance #3924
     /** @type {AddVaultType} */
     addVaultType: async (
       collateralIssuer,
@@ -318,7 +318,7 @@ const makeVaultDirector = (zcf, electorateParamManager, debtMint) => {
       vaultParamManagers.get(collateralBrand).getParams(),
     /** @returns {Promise<GovernorPublic>} */
     getContractGovernor: () =>
-      // ??? does this need to be cached?
+      // PERF consider caching
       E(zcf.getZoeService()).getPublicFacet(zcf.getTerms().electionManager),
     getInvitationAmount: electorateParamManager.getInvitationAmount,
   };
