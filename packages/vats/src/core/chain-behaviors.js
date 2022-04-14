@@ -86,10 +86,10 @@ export const bridgeCoreEval = async allPowers => {
               Promise.resolve()
                 .then(() => {
                   const permit = JSON.parse(jsonPermit);
-                  const powers = {
-                    ...extractPowers(permit, allPowers),
+                  const powers = extractPowers(permit, {
                     evaluateInstallation,
-                  };
+                    ...allPowers,
+                  });
 
                   // Inspired by ../repl.js:
                   const globals = harden({
