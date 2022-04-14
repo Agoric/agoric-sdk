@@ -178,7 +178,9 @@ const helperBehavior = {
     const debtPost = AmountMath.add(totalDebt, toMint);
     const limit = factoryPowers.getGovernedParams().getDebtLimit();
     if (AmountMath.isGTE(debtPost, limit)) {
-      assert.fail(X`Minting would exceed total debt limit ${q(limit)}`);
+      assert.fail(
+        X`Minting ${q(toMint)} would exceed total debt limit ${q(limit)}`,
+      );
     }
   },
 

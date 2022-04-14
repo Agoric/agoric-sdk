@@ -1,6 +1,10 @@
 // @ts-check
 
 /**
+ * @typedef {( {zcf: ZCF} ) => void} TestJigSetter
+ */
+
+/**
  * @callback MakeZCFZygote
  *
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
@@ -10,7 +14,7 @@
  * @param {VatPowers} powers
  * @param {ERef<ZoeService>} zoeService
  * @param {Issuer} invitationIssuer
- * @param {Function | undefined} testJigSetter
+ * @param {TestJigSetter} testJigSetter
  * @returns {ZCFZygote}
  */
 
