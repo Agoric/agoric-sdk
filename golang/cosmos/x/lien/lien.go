@@ -24,9 +24,15 @@ type portMessage struct {
 	Type       string   `json:"type"`
 	Address    string   `json:"address"`
 	Denom      string   `json:"denom"`
-	Amount     sdk.Int  `json:"amount"`
+	Delta      sdk.Int  `json:"delta"`
 	Validators []string `json:"validators"`
 	Delegators []string `json:"delegators"`
+}
+
+// msgChangeReply is the reply to a LIEN_CHANGE_LIENED message
+type msgChangeReply struct {
+	Success bool    `json:"success"`
+	Lien    sdk.Int `json:"lien"`
 }
 
 // msgAccountState marshals into the AccountState message for the lien bridge.
@@ -63,7 +69,7 @@ func NewPortHandler(k Keeper) vm.PortHandler {
 const (
 	LIEN_GET_ACCOUNT_STATE = "LIEN_GET_ACCOUNT_STATE"
 	LIEN_GET_STAKING       = "LIEN_GET_STAKING"
-	LIEN_SET_LIENED        = "LIEN_SET_LIENED"
+	LIEN_CHANGE_LIENED     = "LIEN_CHANGE_LIENED"
 )
 
 // Receive implements the vm.PortHandler method.
@@ -83,8 +89,8 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (string, er
 	case LIEN_GET_STAKING:
 		return ch.handleGetStaking(ctx.Context, msg)
 
-	case LIEN_SET_LIENED:
-		return ch.handleSetLiened(ctx.Context, msg)
+	case LIEN_CHANGE_LIENED:
+		return ch.handleChangeLiened(ctx.Context, msg)
 	}
 	return "", fmt.Errorf("unrecognized type %s", msg.Type)
 }
@@ -179,9 +185,9 @@ func (ch portHandler) handleGetAccountState(ctx sdk.Context, msg portMessage) (s
 	return string(bz), nil
 }
 
-// handleSetLiened processes a LIEN_SET_LIENED message.
+// handleChangeLiened processes a LIEN_SET_LIENED message.
 // See spec/02_messages.md for the messages and responses.
-func (ch portHandler) handleSetLiened(ctx sdk.Context, msg portMessage) (string, error) {
+func (ch portHandler) handleChangeLiened(ctx sdk.Context, msg portMessage) (string, error) {
 	addr, err := sdk.AccAddressFromBech32(msg.Address)
 	if err != nil {
 		return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
@@ -190,10 +196,14 @@ func (ch portHandler) handleSetLiened(ctx sdk.Context, msg portMessage) (string,
 	if err = sdk.ValidateDenom(denom); err != nil {
 		return "", fmt.Errorf("invalid denom %s: %w", denom, err)
 	}
-	newCoin := sdk.NewCoin(denom, msg.Amount)
 
-	if err := ch.keeper.UpdateLien(ctx, addr, newCoin); err != nil {
-		return "false", nil
+	newAmt, err := ch.keeper.ChangeLien(ctx, addr, denom, msg.Delta)
+	if err != nil {
+		return "", err
 	}
-	return "true", nil
+	bz, err := json.Marshal(&newAmt)
+	if err != nil {
+		return "", fmt.Errorf("cannot marshal %v: %w", newAmt, err)
+	}
+	return string(bz), nil
 }
