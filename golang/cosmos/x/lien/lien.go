@@ -29,12 +29,6 @@ type portMessage struct {
 	Delegators []string `json:"delegators"`
 }
 
-// msgChangeReply is the reply to a LIEN_CHANGE_LIENED message
-type msgChangeReply struct {
-	Success bool    `json:"success"`
-	Lien    sdk.Int `json:"lien"`
-}
-
 // msgAccountState marshals into the AccountState message for the lien bridge.
 type msgAccountState struct {
 	CurrentTime int64   `json:"currentTime"`
