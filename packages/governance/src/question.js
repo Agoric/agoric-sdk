@@ -132,8 +132,8 @@ function assertClosingRule(closingRule) {
     'object',
     X`ClosingRule ("${closingRule}") must be a record`,
   );
-  Nat(closingRule && closingRule.deadline);
-  const timer = closingRule && closingRule.timer;
+  Nat(closingRule?.deadline);
+  const timer = closingRule?.timer;
   assert(passStyleOf(timer) === 'remotable', X`Timer must be a timer ${timer}`);
 }
 
