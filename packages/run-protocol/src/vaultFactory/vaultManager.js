@@ -53,7 +53,7 @@ const trace = makeTracer('VM', false);
  * collateralBrand: Brand<'nat'>,
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
- * factoryPowers: import('./vaultFactory.js').FactoryPowersFacet,
+ * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
  * liquidationStrategy: LiquidationStrategy,
  * penaltyPoolSeat: ZCFSeat,
  * periodNotifier: ERef<Notifier<bigint>>,
@@ -96,7 +96,7 @@ const trace = makeTracer('VM', false);
  * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {import('./vaultFactory.js').FactoryPowersFacet} factoryPowers
+ * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat
@@ -556,7 +556,7 @@ const makeVaultManagerKit = defineKindMulti(
  * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
- * @param {import('./vaultFactory.js').FactoryPowersFacet} factoryPowers
+ * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
  * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat

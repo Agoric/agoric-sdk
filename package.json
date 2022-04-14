@@ -10,7 +10,7 @@
   ],
   "type": "module",
   "devDependencies": {
-    "@endo/eslint-config": "^0.4.6",
+    "@endo/eslint-config": "^0.4.9",
     "@jessie.js/eslint-plugin": "^0.1.3",
     "@types/node": "^16.7.10",
     "@typescript-eslint/parser": "^5.15.0",
