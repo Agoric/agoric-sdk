@@ -191,11 +191,19 @@ const makeParamManagerBuilder = zoe => {
     assert(zoe, `zoe must be provided for governed Invitations ${zoe}`);
     let currentInvitation;
     let currentAmount;
-    let preparedAmount;
 
-    // Separate async phase from synchronous setting
+    /**
+     * @typedef {[Invitation, Amount]} SetInvitationParam
+     */
+
+    /**
+     * Async phase to prepare for synchronous setting
+     *
+     * @param {Invitation} invite
+     * @returns {Promise<SetInvitationParam>}
+     */
     const prepareToSetInvitation = async invite => {
-      [preparedAmount] = await Promise.all([
+      const [preparedAmount] = await Promise.all([
         E(E(zoe).getInvitationIssuer()).getAmountOf(invite),
         assertInvitation(invite),
       ]);
@@ -203,7 +211,11 @@ const makeParamManagerBuilder = zoe => {
       return [invite, preparedAmount];
     };
 
-    // synchronous phase of value setting
+    /**
+     * Synchronous phase of value setting
+     *
+     * @param {SetInvitationParam} param0
+     */
     const setInvitation = async ([newInvitation, amount]) => {
       currentAmount = amount;
       currentInvitation = newInvitation;
@@ -215,7 +227,6 @@ const makeParamManagerBuilder = zoe => {
       return harden({ [name]: currentAmount });
     };
     const inviteAndAmount = await prepareToSetInvitation(invitation);
-    // @ts-ignore types
     setInvitation(inviteAndAmount);
 
     const makeDescription = () => {
