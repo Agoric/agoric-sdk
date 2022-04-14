@@ -29,17 +29,17 @@ const { details: X } = assert;
 
 /**
  * @typedef {Readonly<{
+ * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
  * mintSeat: ZCFSeat,
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
- * zcf: ZCF,
+ * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }>} ImmutableState
- */
-
-/** @typedef {{
+ *
+ * @typedef {{
  *  burnDebt: BurnDebt,
  *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
  *  mintAndReallocate: MintAndReallocate,
@@ -47,7 +47,7 @@ const { details: X } = assert;
  */
 
 /**
- * @param {ZCF} zcf
+ * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} electorateParamManager
  * @param {ZCFMint<"nat">} debtMint
  */

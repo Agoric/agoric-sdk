@@ -24,12 +24,16 @@ import { makeElectorateParamManager } from './params.js';
 import { makeVaultDirector } from './vaultDirector.js';
 
 /**
- * @param {ZCF<GovernanceTerms<{}> & {
+ * @typedef {ZCF<GovernanceTerms<{}> & {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
  *   timerService: TimerService,
- *   priceAuthority: ERef<PriceAuthority>}>} zcf
+ *   priceAuthority: ERef<PriceAuthority>}>} VaultFactoryZCF
+ */
+
+/**
+ * @param {VaultFactoryZCF} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
