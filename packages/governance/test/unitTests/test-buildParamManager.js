@@ -79,27 +79,29 @@ test('Amount', async t => {
     AmountMath.make(floorBrand, 2n),
   );
 
-  // @ts-ignore updateShimmer is a generated name
-  paramManager.updateShimmer(AmountMath.make(floorBrand, 5n));
+  await paramManager.updateParams({ Shimmer: AmountMath.make(floorBrand, 5n) });
   t.deepEqual(
     paramManager.getAmount('Shimmer'),
     AmountMath.make(floorBrand, 5n),
   );
 
-  // @ts-ignore updateShimmer is a generated name
-  t.throws(
-    // @ts-ignore updateShimmer is a generated name
-    () => paramManager.updateShimmer(AmountMath.make(dessertBrand, 20n)),
+  await t.throwsAsync(
+    () =>
+      paramManager.updateParams({
+        Shimmer: AmountMath.make(dessertBrand, 20n),
+      }),
     {
       message:
         'The brand in the allegedAmount {"brand":"[Alleged: dessertTopping brand]","value":"[20n]"} in \'coerce\' didn\'t match the specified brand "[Alleged: floor wax brand]".',
     },
   );
 
-  // @ts-ignore updateCandle is a generated name
-  t.throws(() => paramManager.updateShimmer('fear,loathing'), {
-    message: 'Expected an Amount for Shimmer, got "fear,loathing"',
-  });
+  await t.throwsAsync(
+    () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
+    {
+      message: 'Expected an Amount for Shimmer, got "fear,loathing"',
+    },
+  );
 
   t.throws(() => paramManager.getString('Shimmer'), {
     message: '"Shimmer" is not "string"',
@@ -120,8 +122,8 @@ test('params one installation', async t => {
     .build();
 
   t.deepEqual(paramManager.getInstallation('PName'), installationHandle);
-  t.throws(
-    () => paramManager.updatePName(18.1),
+  await t.throwsAsync(
+    () => paramManager.updateParams({ PName: 18.1 }),
     {
       message: 'value for "PName" must be an Installation, was 18.1',
     },
@@ -132,7 +134,7 @@ test('params one installation', async t => {
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
-  paramManager.updatePName(handle2);
+  await paramManager.updateParams({ PName: handle2 });
   t.deepEqual(paramManager.getInstallation('PName'), handle2);
 
   t.throws(() => paramManager.getNat('PName'), {
@@ -161,15 +163,15 @@ test('params one instance', async t => {
     .build();
 
   t.deepEqual(paramManager.getInstance('PName'), instanceHandle);
-  t.throws(
-    () => paramManager.updatePName(18.1),
+  await t.throwsAsync(
+    () => paramManager.updateParams({ PName: 18.1 }),
     {
       message: 'value for "PName" must be an Instance, was 18.1',
     },
     'value should be an instance',
   );
   const handle2 = makeHandle(handleType);
-  paramManager.updatePName(handle2);
+  await paramManager.updateParams({ PName: handle2 });
   t.deepEqual(paramManager.getInstance('PName'), handle2);
 
   t.deepEqual(
@@ -249,13 +251,14 @@ test('two Nats', async t => {
   t.is(paramManager.getNat('Acres'), 50n);
   t.is(paramManager.getNat('SpeedLimit'), 299_792_458n);
 
-  // @ts-ignore updateSpeedLimit is a generated name
-  t.throws(() => paramManager.updateSpeedLimit(300000000), {
-    message: '300000000 must be a bigint',
-  });
+  await t.throwsAsync(
+    () => paramManager.updateParams({ SpeedLimit: 300000000 }),
+    {
+      message: '300000000 must be a bigint',
+    },
+  );
 
-  // @ts-ignore updateSpeedLimit is a generated name
-  t.throws(() => paramManager.updateSpeedLimit(-37n), {
+  await t.throwsAsync(() => paramManager.updateParams({ SpeedLimit: -37n }), {
     message: '-37 is negative',
   });
 });
@@ -270,22 +273,23 @@ test('Ratio', async t => {
   t.is(paramManager.getRatio('GoldenRatio'), ratio);
 
   const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
-  // @ts-ignore updateGoldenRatio is a generated name
-  paramManager.updateGoldenRatio(morePrecise);
+  await paramManager.updateParams({ GoldenRatio: morePrecise });
   t.is(paramManager.getRatio('GoldenRatio'), morePrecise);
 
   const anotherBrand = makeIssuerKit('arbitrary').brand;
 
-  // @ts-ignore updateGoldenRatio is a generated name
-  t.throws(() => paramManager.updateGoldenRatio(300000000), {
-    message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
-  });
+  await t.throwsAsync(
+    () => paramManager.updateParams({ GoldenRatio: 300000000 }),
+    {
+      message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
+    },
+  );
 
-  // @ts-ignore updateGoldenRatio is a generated name
-  t.throws(
+  await t.throwsAsync(
     () =>
-      // @ts-ignore updateGoldenRatio is a generated name
-      paramManager.updateGoldenRatio(makeRatio(16180n, anotherBrand, 10_000n)),
+      paramManager.updateParams({
+        GoldenRatio: makeRatio(16180n, anotherBrand, 10_000n),
+      }),
     {
       message:
         'Numerator brand for "GoldenRatio" must be "[Alleged: unitless brand]"',
@@ -301,12 +305,18 @@ test('Strings', async t => {
   t.is(paramManager.getString('OurWeapons'), 'fear');
 
   // @ts-ignore updateOurWeapons is a generated name
-  paramManager.updateOurWeapons('fear,surprise');
+  await paramManager.updateParams({ OurWeapons: 'fear,surprise' });
   t.is(paramManager.getString('OurWeapons'), 'fear,surprise');
   // @ts-ignore updateOurWeapons is a generated name
-  t.throws(() => paramManager.updateOurWeapons(300000000), {
-    message: '300000000 must be a string',
-  });
+  await t.throwsAsync(
+    () =>
+      paramManager.updateParams({
+        OurWeapons: 300000000,
+      }),
+    {
+      message: '300000000 must be a string',
+    },
+  );
 
   t.throws(() => paramManager.getNat('OurWeapons'), {
     message: '"OurWeapons" is not "nat"',
@@ -321,9 +331,8 @@ test('Unknown', async t => {
   t.is(paramManager.getUnknown('Surprise'), 'party');
 
   // @ts-ignore updateSurprise is a generated name
-  paramManager.updateSurprise('gift');
+  await paramManager.updateParams({ Surprise: 'gift' });
   t.is(paramManager.getUnknown('Surprise'), 'gift');
-  // @ts-ignore updateSurprise is a generated name
-  paramManager.updateSurprise(['gift', 'party']);
+  await paramManager.updateParams({ Surprise: ['gift', 'party'] });
   t.deepEqual(paramManager.getUnknown('Surprise'), ['gift', 'party']);
 });

@@ -435,15 +435,14 @@ const makeC1 = async (
   const voteFacet = E(seat).getOfferResult();
   return harden({
     setMintingRatio: async (newValue, deadline) => {
-      const paramSpec = {
+      const paramsSpec = harden({
         key: 'governedParams',
-        parameterName: 'MintingRatio',
-      };
-
+        changes: { MintingRatio: newValue },
+      });
       /** @type { ContractGovernanceVoteResult } */
       const { details, instance } = await E(
         runStakeGovernorCreatorFacet,
-      ).voteOnParamChange(paramSpec, newValue, counter, deadline);
+      ).voteOnParamChanges(counter, deadline, paramsSpec);
       const { questionHandle, positions } = await details;
       const cast = E(voteFacet).castBallotFor(questionHandle, [positions[0]]);
       const count = E(zoe).getPublicFacet(instance);

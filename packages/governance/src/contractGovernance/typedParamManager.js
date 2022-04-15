@@ -24,7 +24,7 @@ import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
  * @template {ParamTypesMap} M
- * @typedef {ParamManagerBase & Getters<M> & Updaters<M> & {readonly: () => Getters<M>}} TypedParamManager
+ * @typedef {ParamManagerBase & Getters<M> & Updaters<M> & {readonly: () => Getters<M>} & {updateParams: UpdateParams}} TypedParamManager
  */
 
 /**

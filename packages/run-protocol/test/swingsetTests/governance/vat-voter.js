@@ -2,15 +2,13 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { q } from '@agoric/assert';
-import { keyEQ } from '@agoric/store';
 import {
   validateQuestionFromCounter,
   assertContractElectorate,
-  assertBallotConcernsQuestion,
+  assertBallotConcernsParam,
 } from '@agoric/governance';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 const build = async (log, zoe) => {
   return Far('voter', {
@@ -55,20 +53,7 @@ const build = async (log, zoe) => {
             } governor instance`,
           );
 
-          const included = keyEQ(
-            ballotDetails.issue.paramSpec,
-            issue.paramSpec,
-          );
-          log(
-            `Param "${issue.paramSpec.parameterName}" ${
-              included ? 'is' : 'is not'
-            } in the question`,
-          );
-
-          assertBallotConcernsQuestion(
-            issue.paramSpec.parameterName,
-            ballotDetails,
-          );
+          assertBallotConcernsParam(issue.paramSpec, ballotDetails);
 
           await assertContractElectorate(
             zoe,

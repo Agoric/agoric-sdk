@@ -62,12 +62,15 @@ const assertSimpleIssue = issue => {
 const assertParamChangeIssue = issue => {
   assert(issue, X`argument to assertParamChangeIssue cannot be null`);
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
+  assert(issue?.key, X`Issue ("${issue}") must have a key`);
+  assert(issue?.changes, X`Issue ("${issue}") must have changes`);
+
   assert.typeof(
-    issue && issue.paramSpec,
+    issue.changes,
     'object',
-    X`Issue ("${issue}") must be a record with paramSpec: anObject`,
+    X`changes ("${issue.changes}") must be a record`,
   );
-  assert(issue && issue.proposedValue);
+
   const assertInstance = makeAssertInstance('contract');
   assertInstance(issue.contract);
 };
@@ -129,14 +132,14 @@ function assertClosingRule(closingRule) {
     'object',
     X`ClosingRule ("${closingRule}") must be a record`,
   );
-  Nat(closingRule && closingRule.deadline);
-  const timer = closingRule && closingRule.timer;
+  Nat(closingRule?.deadline);
+  const timer = closingRule?.timer;
   assert(passStyleOf(timer) === 'remotable', X`Timer must be a timer ${timer}`);
 }
 
 const assertEnumIncludes = (enumeration, value, name) => {
   assert(
-    Object.getOwnPropertyNames(enumeration)
+    Object.keys(enumeration)
       .map(k => enumeration[k])
       .includes(value),
     X`Illegal ${name}: ${value}`,
