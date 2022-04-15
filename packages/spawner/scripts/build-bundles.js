@@ -5,6 +5,8 @@ import url from 'url';
 
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-const sourceToBundle = [[`../src/pegasus.js`, `../bundles/bundle-pegasus.js`]];
+const sourceToBundle = [
+  [`../src/vat-spawned.js`, `../bundles/bundle-spawn.js`],
+];
 
 createBundles(sourceToBundle, dirname);
