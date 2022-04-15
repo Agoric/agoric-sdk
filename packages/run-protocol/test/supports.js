@@ -1,12 +1,11 @@
 // @ts-check
 /* global setImmediate */
 
+import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import bundleSource from '@endo/bundle-source';
 import { makeLoopback } from '@endo/captp';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import {
@@ -14,7 +13,9 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { unsafeMakeBundleCache } from './bundleTool.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 
 /**
  *
@@ -110,4 +111,10 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   issuer.produce.RUN.resolve(runIssuer);
 
   return { produce, consume, ...spaces };
+};
+
+export const installGovernance = (zoe, produce) => {
+  produce.committee.resolve(E(zoe).install(committeeBundle));
+  produce.contractGovernor.resolve(E(zoe).install(contractGovernorBundle));
+  produce.binaryVoteCounter.resolve(E(zoe).install(binaryVoteCounterBundle));
 };

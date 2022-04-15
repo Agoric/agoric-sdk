@@ -10,16 +10,13 @@ import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 
 import * as Collect from '../../../src/collect.js';
 import {
   setupAmm,
   startEconomicCommittee,
 } from '../../../src/econ-behaviors.js';
-import { provideBundle } from '../../supports.js';
+import { installGovernance, provideBundle } from '../../supports.js';
 
 const ammRoot = './src/vpool-xyk-amm/multipoolMarketMaker.js'; // package relative
 
@@ -47,7 +44,7 @@ export const setupAMMBootstrap = async (
     ({ zoe } = await setUpZoeForTest());
   }
 
-  const space = /** @type {any} */ (makePromiseSpace());
+  const space = /** @type {any} */ (makePromiseSpace(console.log)); // @@t.log
   const { produce, consume } = /** @type { EconomyBootstrapPowers } */ (space);
 
   produce.chainTimerService.resolve(timer);
@@ -56,12 +53,7 @@ export const setupAMMBootstrap = async (
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const {
-    installation: { produce: instP },
-  } = spaces;
-  instP.committee.resolve(E(zoe).install(committeeBundle));
-  instP.contractGovernor.resolve(E(zoe).install(contractGovernorBundle));
-  instP.binaryVoteCounter.resolve(E(zoe).install(binaryVoteCounterBundle));
+  installGovernance(zoe, spaces.installation.produce);
 
   return { produce, consume, ...spaces };
 };

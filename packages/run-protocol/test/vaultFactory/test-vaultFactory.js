@@ -33,20 +33,21 @@ import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 
 import {
-  provideBundle,
   waitForPromisesToSettle,
   setUpZoeForTest,
   setupBootstrap,
+  installGovernance,
 } from '../supports.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // #region Support
 
 // TODO path resolve these so refactors detect
 const contractRoots = {
-  faucet: '../test/vaultFactory/faucet.js',
-  liquidate: '../src/vaultFactory/liquidateMinimum.js',
-  VaultFactory: '../src/vaultFactory/vaultFactory.js',
-  amm: '../src/vpool-xyk-amm/multipoolMarketMaker.js',
+  faucet: './test/vaultFactory/faucet.js',
+  liquidate: './src/vaultFactory/liquidateMinimum.js',
+  VaultFactory: './src/vaultFactory/vaultFactory.js',
+  amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
 };
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
@@ -90,19 +91,26 @@ test.before(async t => {
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = E(runIssuer).getBrand();
   const aethKit = makeIssuerKit('aEth');
+  const loader = await unsafeMakeBundleCache('./bundles/'); // package-relative
+
+  const bundles = {
+    faucet: await loader.load(contractRoots.faucet, 'faucet'),
+    liquidate: await loader.load(contractRoots.liquidate, 'liquidateMinimum'),
+    VaultFactory: await loader.load(contractRoots.VaultFactory, 'VaultFactory'),
+    amm: await loader.load(contractRoots.amm, 'amm'),
+  };
+  const installation = {
+    faucet: E(zoe).install(bundles.faucet),
+    liquidate: E(zoe).install(bundles.liquidate),
+    VaultFactory: E(zoe).install(bundles.VaultFactory),
+    amm: E(zoe).install(bundles.amm),
+  };
+
   const contextPs = {
-    bundles: {
-      faucet: provideBundle(t, contractRoots.faucet, 'faucet'),
-      liquidate: provideBundle(t, contractRoots.liquidate, 'liquidateMinimum'),
-      VaultFactory: provideBundle(
-        t,
-        contractRoots.VaultFactory,
-        'VaultFactory',
-      ),
-      amm: provideBundle(t, contractRoots.amm, 'amm'),
-    },
     zoe,
     feeMintAccess,
+    bundles,
+    installation,
     electorateTerms: undefined,
     // {
     //   committeeName: 'Star Chamber',
@@ -132,8 +140,10 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
-  startEconomicCommittee(space, electorateTerms);
-  setupAmm(space);
+  installGovernance(zoe, space.installation.produce);
+  space.installation.produce.amm.resolve(t.context.installation.amm);
+  await startEconomicCommittee(space, electorateTerms);
+  await setupAmm(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -183,14 +193,12 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
  */
 const getRunFromFaucet = async (t, runInitialLiquidity) => {
   const {
-    bundles: { faucet: bundle },
+    installation: { faucet: installation },
     zoe,
     feeMintAccess,
     runKit: { brand: runBrand },
   } = t.context;
   /** @type {Promise<Installation<import('./faucet.js').start>>} */
-  // @ts-expect-error cast
-  const installation = E(zoe).install(bundle);
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     installation,
@@ -205,7 +213,6 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
       want: { RUN: AmountMath.make(runBrand, runInitialLiquidity) },
     }),
     harden({}),
-    { feeMintAccess },
   );
 
   const runPayment = await E(faucetSeat).getPayout('RUN');
@@ -234,7 +241,6 @@ async function setupServices(
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
     aethKit: { brand: aethBrand, issuer: aethIssuer, mint: aethMint },
-    bundles: { VaultFactory, liquidate },
     loanTiming,
     rates,
     aethInitialLiquidity,
@@ -282,7 +288,11 @@ async function setupServices(
       });
   produce.priceAuthority.resolve(pa);
 
-  produce.vaultBundles.resolve({ VaultFactory, liquidate });
+  const {
+    installation: { produce: instProd },
+  } = space;
+  instProd.VaultFactory.resolve(t.context.installation.VaultFactory);
+  instProd.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming });
 
   const agoricNames = consume.agoricNames;
