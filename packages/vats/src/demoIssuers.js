@@ -545,7 +545,6 @@ export const fundAMM = async ({
 
         assert(kit.issuer, `No issuer for ${issuerName}`);
         const liquidityIssuer = E(ammPublicFacet).addPool(
-          // @ts-expect-error TODO: addPool should take ERef<Issuer>
           kit.issuer,
           issuerName,
         );
