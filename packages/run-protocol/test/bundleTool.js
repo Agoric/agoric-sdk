@@ -1,8 +1,8 @@
-#!/usr/bin/env node
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeReadPowers } from '@endo/compartment-mapper/node-powers.js';
 
 import bundleSource from '@endo/bundle-source';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const { details: X, quote: q } = assert;
 
@@ -166,12 +166,23 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
     return meta;
   };
 
-  const load = (rootPath, targetName, log = console.debug) =>
-    validateOrAdd(rootPath, targetName, log)
+  const loaded = new Map();
+  const load = async (rootPath, targetName, log = console.debug) => {
+    const found = loaded.get(targetName);
+    // console.log('load', { targetName, found: !!found, rootPath });
+    if (found && found.rootPath === rootPath) {
+      return found.bundle;
+    }
+    const todo = makePromiseKit();
+    loaded.set(targetName, { rootPath, bundle: todo.promise });
+    const bundle = await validateOrAdd(rootPath, targetName, log)
       .then(({ bundleFileName }) =>
         import(`${wr.readOnly().neighbor(bundleFileName)}`),
       )
       .then(m => m.default);
+    todo.resolve(bundle);
+    return bundle;
+  };
 
   return harden({
     add,
