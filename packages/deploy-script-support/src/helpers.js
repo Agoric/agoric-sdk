@@ -12,6 +12,8 @@ import { assertOfferResult } from './assertOfferResult.js';
 import { installInPieces } from './installInPieces.js';
 import { makeWriteCoreProposal } from './writeCoreProposal.js';
 
+export * from './createBundles.js';
+
 // These are also hard-coded in lib-wallet.js.
 // TODO: Add methods to the wallet to access these without hard-coding
 // on this end.

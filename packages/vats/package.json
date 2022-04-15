@@ -7,7 +7,7 @@
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "yarn build:bundles",
-    "build:bundles": "bundle-source --to bundles/ src/centralSupply.js centralSupply src/mintHolder.js mintHolder",
+    "build:bundles": "node scripts/bundle-source.js",
     "build:docs": "yarn build:boot-viz && yarn build:boot-viz-gov && yarn build:boot-viz-sim && yarn build:boot-viz-sim-gov",
     "build:boot-viz": "node src/authorityViz.js >docs/boot.dot && dot -Tsvg docs/boot.dot >docs/boot.dot.svg",
     "build:boot-viz-gov": "node src/authorityViz.js --gov>docs/boot-gov.dot && dot -Tsvg docs/boot-gov.dot >docs/boot-gov.dot.svg",
@@ -48,7 +48,8 @@
     "@agoric/babel-parser": "^7.6.4",
     "@endo/bundle-source": "^2.1.1",
     "ava": "^3.12.1",
-    "c8": "^7.7.2"
+    "c8": "^7.7.2",
+    "import-meta-resolve": "^1.1.1"
   },
   "eslintConfig": {
     "extends": [
