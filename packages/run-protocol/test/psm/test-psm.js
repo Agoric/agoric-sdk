@@ -15,7 +15,8 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../../src/makeTracer.js';
-import { provideBundle, setUpZoeForTest } from '../supports.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { setUpZoeForTest } from '../supports.js';
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
@@ -74,7 +75,8 @@ const setJig = _jig => {
  * @param {ExecuteContract} t
  */
 test.before(async t => {
-  const psmBundle = await provideBundle(t, psmRoot, 'psm');
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const psmBundle = await bundleCache.load(psmRoot, 'psm');
   t.context.bundles = { psmBundle };
   const { zoe, feeMintAccess } = setUpZoeForTest(setJig);
   t.context.zoe = await zoe;
