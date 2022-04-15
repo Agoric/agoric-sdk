@@ -1,14 +1,10 @@
 #!/usr/bin/env node
-import '@endo/init';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { makeReadPowers } from '@endo/compartment-mapper/node-powers.js';
 
-import { isEntrypoint } from './is-entrypoint.js';
-import bundleSource from './index.js';
+import bundleSource from '@endo/bundle-source';
 
 const { details: X, quote: q } = assert;
-
-const USAGE =
-  'bundle-source --to dest/ module1.js bundleName1 module2.js bundleName2 ...';
 
 export const makeFileReader = (fileName, { fs, path }) => {
   const make = there => makeFileReader(there, { fs, path });
@@ -170,38 +166,31 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
     return meta;
   };
 
+  const load = (rootPath, targetName, log = console.debug) =>
+    validateOrAdd(rootPath, targetName, log)
+      .then(({ bundleFileName }) =>
+        import(`${wr.readOnly().neighbor(bundleFileName)}`),
+      )
+      .then(m => m.default);
+
   return harden({
     add,
     validate,
     validateOrAdd,
+    load,
   });
 };
 
-export const main = async (args, { fs, url, crypto, path }) => {
-  const [to, dest, ...pairs] = args;
-  if (!(to === '--to' && dest && pairs.length > 0 && pairs.length % 2 === 0)) {
-    throw Error(USAGE);
-  }
+export const unsafeMakeBundleCache = async dest => {
+  const [fs, path, url, crypto] = await Promise.all([
+    await import('fs'),
+    await import('path'),
+    await import('url'),
+    await import('crypto'),
+  ]);
 
   const readPowers = makeReadPowers({ fs, url, crypto });
   const cwd = makeFileReader('', { fs, path });
   const destWr = makeFileWriter(dest, { fs, path });
-  const cache = makeBundleCache(destWr, cwd, readPowers);
-
-  for (let ix = 0; ix < pairs.length; ix += 2) {
-    const [bundleRoot, bundleName] = pairs.slice(ix, ix + 2);
-
-    // eslint-disable-next-line no-await-in-loop
-    await cache.validateOrAdd(bundleRoot, bundleName, console.log);
-  }
+  return makeBundleCache(destWr, cwd, readPowers);
 };
-
-if (isEntrypoint(import.meta.url)) {
-  /* global process */
-  main(process.argv.slice(2), {
-    fs: await import('fs'),
-    path: await import('path'),
-    url: await import('url'),
-    crypto: await import('crypto'),
-  }).catch(console.error);
-}
