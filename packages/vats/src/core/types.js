@@ -133,6 +133,7 @@
  *   issuer: |
  *     'RUN' | 'BLD' | 'Attestation',
  *   installation: |
+ *     'centralSupply' | 'mintHolder' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
  *     'Pegasus' | 'reserve',
@@ -186,22 +187,11 @@
  *   ammGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
  *   chainTimerService: TimerService,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
- *   getRUNBundle: { moduleFormat: string },
- *   ammBundle: SourceBundle,
- *   reserveBundle: SourceBundle,
  *   reservePublicFacet: unknown,
  *   reserveCreatorFacet: GovernedContractFacetAccess<any>,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<any>,
- *   vaultBundles: {
- *     VaultFactory: SourceBundle,
- *     liquidate: SourceBundle,
- *   },
- *   centralSupplyBundle: SourceBundle,
- *   mintHolderBundle: SourceBundle,
  *   feeMintAccess: FeeMintAccess,
- *   governanceBundles: Record<string, SourceBundle>,
  *   initialSupply: Payment,
- *   pegasusBundle: SourceBundle,
  *   pegasusConnections: NameHub,
  *   pegasusConnectionsAdmin: NameAdmin,
  *   priceAuthorityVat: Awaited<PriceAuthorityVat>,

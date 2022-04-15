@@ -4,7 +4,6 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
-import centralSupplyBundle from '@agoric/run-protocol/bundles/bundle-centralSupply.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 
@@ -13,7 +12,10 @@ import { makeClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 import { connectFaucet, showAmount } from '../src/demoIssuers.js';
 import { buildRootObject as bldMintRoot } from '../src/vat-mints.js';
-import { makeClientBanks } from '../src/core/basic-behaviors.js';
+import {
+  installBootContracts,
+  makeClientBanks,
+} from '../src/core/basic-behaviors.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -31,7 +33,7 @@ const setUpZoeForTest = async () => {
 harden(setUpZoeForTest);
 
 test('connectFaucet produces payments', async t => {
-  const space = /** @type {any} */ (makePromiseSpace());
+  const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { consume, produce } =
     /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat }} } */ (
       space
@@ -42,7 +44,6 @@ test('connectFaucet produces payments', async t => {
   const { zoe, feeMintAccess } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
-  produce.centralSupplyBundle.resolve(centralSupplyBundle);
 
   produce.loadVat.resolve(name => {
     assert.equal(name, 'mints');
@@ -89,6 +90,7 @@ test('connectFaucet produces payments', async t => {
   };
 
   await Promise.all([
+    installBootContracts({ consume, produce, ...spaces }),
     makeClientManager({ consume, produce, ...spaces }),
     connectFaucet({ consume, produce, ...spaces }),
     makeClientBanks({ consume, produce, ...spaces }),

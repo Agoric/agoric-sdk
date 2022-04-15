@@ -176,7 +176,7 @@ const run2places = f =>
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupplyBundle: ERef<SourceBundle>,
+ *   centralSupplyInstall: ERef<Installation>,
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers
@@ -184,16 +184,12 @@ const run2places = f =>
  */
 const mintRunPayment = async (
   value,
-  { centralSupplyBundle: centralP, feeMintAccess: feeMintAccessP, zoe },
+  { centralSupplyInstall, feeMintAccess: feeMintAccessP, zoe },
 ) => {
-  /** @type {[SourceBundle, FeeMintAccess]} */
-  const [centralSupplyBundle, feeMintAccess] = await Promise.all([
-    centralP,
-    feeMintAccessP,
-  ]);
+  const feeMintAccess = await feeMintAccessP;
 
   const { creatorFacet: ammSupplier } = await E(zoe).startInstance(
-    E(zoe).install(centralSupplyBundle),
+    centralSupplyInstall,
     {},
     { bootstrapPaymentValue: value },
     { feeMintAccess },
@@ -230,11 +226,13 @@ export const connectFaucet = async ({
   consume: {
     bankManager,
     bldIssuerKit: bldP,
-    centralSupplyBundle,
     client,
     feeMintAccess,
     loadVat,
     zoe,
+  },
+  installation: {
+    consume: { centralSupply },
   },
   produce: { mints },
 }) => {
@@ -246,7 +244,7 @@ export const connectFaucet = async ({
   const bldIssuerKit = await bldP;
   const LOTS = 1_000_000_000_000n; // TODO: design this.
   let faucetRunSupply = await mintRunPayment(LOTS, {
-    centralSupplyBundle,
+    centralSupplyInstall: centralSupply,
     feeMintAccess,
     zoe,
   });

@@ -8,13 +8,6 @@ import {
   makeSubscriptionKit,
   observeIteration,
 } from '@agoric/notifier';
-import {
-  governanceBundles,
-  economyBundles,
-  ammBundle,
-  reserveBundle,
-} from '@agoric/run-protocol/src/importedBundles.js';
-import pegasusBundle from '@agoric/pegasus/bundles/bundle-pegasus.js';
 import { CONTRACT_NAME as PEGASUS_NAME } from '@agoric/pegasus/src/install-on-chain.js';
 import {
   makeLoopbackProtocolHandler,
@@ -297,39 +290,6 @@ export const connectChainFaucet = async ({ consume: { client } }) => {
   return E(client).assignBundle([_addr => ({ faucet })]);
 };
 harden(connectChainFaucet);
-
-// XXX: move shareBootContractBundles belongs in basic-behaviors.js
-/** @param {BootstrapPowers} powers */
-export const shareBootContractBundles = async ({
-  produce: {
-    centralSupplyBundle: centralP,
-    pegasusBundle: pegasusP,
-    mintHolderBundle,
-  },
-}) => {
-  centralP.resolve(economyBundles.centralSupply);
-  mintHolderBundle.resolve(economyBundles.mintHolder);
-  pegasusP.resolve(pegasusBundle);
-};
-
-/** @param {BootstrapPowers} powers */
-export const shareEconomyBundles = async ({
-  produce: {
-    ammBundle: ammP,
-    vaultBundles,
-    governanceBundles: govP,
-    reserveBundle: reserveP,
-  },
-}) => {
-  govP.resolve(governanceBundles);
-  ammP.resolve(ammBundle);
-  vaultBundles.resolve({
-    VaultFactory: economyBundles.VaultFactory,
-    liquidate: economyBundles.liquidate,
-  });
-  reserveP.resolve(reserveBundle);
-};
-harden(shareEconomyBundles);
 
 /**
  * @param {SoloVats | NetVats} vats
