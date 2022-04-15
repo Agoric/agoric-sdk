@@ -10,8 +10,6 @@ import {
   CLIENT_BOOTSTRAP_MANIFEST,
   CHAIN_BOOTSTRAP_MANIFEST,
   SIM_CHAIN_BOOTSTRAP_MANIFEST,
-  CHAIN_POST_BOOT_MANIFEST,
-  SIM_CHAIN_POST_BOOT_MANIFEST,
 } from './manifest.js';
 
 import * as behaviors from './behaviors.js';
@@ -31,11 +29,6 @@ const roleToBehaviors = harden({
   'sim-chain': { ...behaviors, ...simBehaviors },
   // copy to avoid trying to harden a module namespace
   client: { ...clientBehaviors },
-});
-const roleToGovernanceActions = harden({
-  chain: CHAIN_POST_BOOT_MANIFEST,
-  'sim-chain': SIM_CHAIN_POST_BOOT_MANIFEST,
-  client: {},
 });
 
 /**
@@ -114,10 +107,6 @@ const buildRootObject = (vatPowers, vatParameters) => {
     });
 
     await runBehaviors(bootManifest);
-    if (vatParameters.governanceActions) {
-      const actions = roleToGovernanceActions[ROLE];
-      await runBehaviors(actions);
-    }
   };
 
   return Far('bootstrap', {
