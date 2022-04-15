@@ -7,7 +7,7 @@
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "yarn build:bundles",
-    "build:bundles": "node scripts/bundle-source.js",
+    "build:bundles": "node scripts/build-bundles.js",
     "build:docs": "yarn build:boot-viz && yarn build:boot-viz-gov && yarn build:boot-viz-sim && yarn build:boot-viz-sim-gov",
     "build:boot-viz": "node src/authorityViz.js >docs/boot.dot && dot -Tsvg docs/boot.dot >docs/boot.dot.svg",
     "build:boot-viz-gov": "node src/authorityViz.js --gov>docs/boot-gov.dot && dot -Tsvg docs/boot-gov.dot >docs/boot-gov.dot.svg",
@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@agoric/babel-parser": "^7.6.4",
+    "@agoric/deploy-script-support": "^0.6.3",
     "@endo/bundle-source": "^2.1.1",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
