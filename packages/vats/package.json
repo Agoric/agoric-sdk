@@ -6,7 +6,8 @@
   "main": "./src/core/boot.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
-    "build": "exit 0",
+    "build": "yarn build:bundles",
+    "build:bundles": "bundle-source --to bundles/ src/centralSupply.js centralSupply src/mintHolder.js mintHolder",
     "build:docs": "yarn build:boot-viz && yarn build:boot-viz-gov && yarn build:boot-viz-sim && yarn build:boot-viz-sim-gov",
     "build:boot-viz": "node src/authorityViz.js >docs/boot.dot && dot -Tsvg docs/boot.dot >docs/boot.dot.svg",
     "build:boot-viz-gov": "node src/authorityViz.js --gov>docs/boot-gov.dot && dot -Tsvg docs/boot-gov.dot >docs/boot-gov.dot.svg",
