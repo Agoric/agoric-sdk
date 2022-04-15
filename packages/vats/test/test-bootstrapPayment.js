@@ -1,26 +1,31 @@
 // @ts-check
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { E } from '@endo/far';
+import { makeLoopback } from '@endo/captp';
 
 import '@agoric/zoe/exported.js';
-import '../../src/vaultFactory/types.js';
 
-import path from 'path';
-import { E } from '@endo/eventual-send';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeZoeKit } from '@agoric/zoe';
 import { AmountMath } from '@agoric/ertp';
-import { makeBundle, setUpZoeForTest } from '../supports.js';
-
-const pathname = new URL(import.meta.url).pathname;
-const dirname = path.dirname(pathname);
-
-const centralSupplyRoot = `${dirname}/../../src/centralSupply.js`;
-
-// makeBundle is slow, so we bundle each contract once and reuse in all tests.
-const [centralSupplyBundle] = await Promise.all([
-  makeBundle(centralSupplyRoot),
-]);
+import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 
 const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
+
+const setUpZoeForTest = setJig => {
+  const { makeFar } = makeLoopback('zoeTest');
+  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+    makeFakeVatAdmin(setJig).admin,
+  );
+  /** @type {ERef<ZoeService>} */
+  const zoe = makeFar(zoeService);
+  const feeMintAccess = makeFar(nonFarFeeMintAccess);
+  return {
+    zoe,
+    feeMintAccess,
+  };
+};
 
 const startContract = async bootstrapPaymentValue => {
   const { zoe, feeMintAccess: feeMintAccessP } = setUpZoeForTest();
@@ -28,7 +33,7 @@ const startContract = async bootstrapPaymentValue => {
   const runBrand = await E(runIssuer).getBrand();
   const feeMintAccess = await feeMintAccessP;
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils').Installation<import('../../src/centralSupply.js').CentralSupplyContract>} */
+  /** @type {import('@agoric/zoe/src/zoeService/utils').Installation<import('@agoric/vats/src/centralSupply.js').CentralSupplyContract>} */
   const centralSupplyInstall = await installBundle(zoe, centralSupplyBundle);
 
   const terms = {
