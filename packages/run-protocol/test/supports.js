@@ -14,7 +14,6 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { governanceBundles, economyBundles } from '../src/importedBundles.js';
 
 /**
  *
@@ -106,9 +105,6 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   const { brand, issuer } = spaces;
   brand.produce.RUN.resolve(runBrand);
   issuer.produce.RUN.resolve(runIssuer);
-
-  produce.governanceBundles.resolve(governanceBundles);
-  produce.centralSupplyBundle.resolve(economyBundles.centralSupply);
 
   return { produce, consume, ...spaces };
 };

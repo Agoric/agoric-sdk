@@ -42,9 +42,11 @@ const CENTRAL_DENOM_NAME = 'urun';
  */
 export const startEconomicCommittee = async (
   {
-    consume: { zoe, governanceBundles },
+    consume: { zoe },
     produce: { economicCommitteeCreatorFacet },
-    installation,
+    installation: {
+      consume: { committee },
+    },
     instance: {
       produce: { economicCommittee },
     },
@@ -54,23 +56,14 @@ export const startEconomicCommittee = async (
     committeeSize: 1,
   },
 ) => {
-  const bundles = await governanceBundles;
-
-  const installations = await Collect.allValues(
-    Collect.mapValues(bundles, bundle => E(zoe).install(bundle)),
-  );
-
   const { creatorFacet, instance } = await E(zoe).startInstance(
-    installations.committee,
+    committee,
     {},
     electorateTerms,
   );
 
   economicCommitteeCreatorFacet.resolve(creatorFacet);
   economicCommittee.resolve(instance);
-  entries(installations).forEach(([key, inst]) =>
-    installation.produce[key].resolve(inst),
-  );
 };
 harden(startEconomicCommittee);
 
@@ -524,7 +517,6 @@ harden(startRewardDistributor);
 
 /**
  * @typedef {EconomyBootstrapPowers & PromiseMarket<{
- *   runStakeBundle: SourceBundle,
  *   client: ClientManager,
  *   lienBridge: StakingAuthority,
  * }>} RunStakeBootstrapPowers
@@ -548,7 +540,6 @@ export const startRunStake = async (
       zoe,
       // ISSUE: is there some reason Zoe shouldn't await this???
       feeMintAccess: feeMintAccessP,
-      runStakeBundle,
       lienBridge,
       client,
       chainTimerService,
@@ -557,11 +548,11 @@ export const startRunStake = async (
     // @ts-ignore TODO: add to BootstrapPowers
     produce: { runStakeCreatorFacet, runStakeGovernorCreatorFacet },
     installation: {
-      consume: { contractGovernor },
+      consume: { contractGovernor, runStake: installationP },
       produce: { runStake: runStakeinstallR },
     },
     instance: {
-      consume: { economicCommittee },
+      consume: { economicCommittee: electorateInstance },
       produce: { runStake: runStakeinstanceR },
     },
     brand: {
@@ -582,20 +573,19 @@ export const startRunStake = async (
     recordingPeriod: SECONDS_PER_DAY,
   },
 ) => {
-  const bundle = await runStakeBundle;
   const [feeMintAccess, bldBrand, runBrand, governor, installation, timer] =
     await Promise.all([
       feeMintAccessP,
       bldBrandP,
       runBrandP,
       contractGovernor,
-      E(zoe).install(bundle),
+      installationP,
       chainTimerService,
     ]);
 
   const installations = {
     governor,
-    getRUN: installation,
+    runStake: installation,
   };
 
   const poserInvitationP = E(
@@ -633,17 +623,15 @@ export const startRunStake = async (
     {},
     {
       timer,
-      economicCommittee,
-      governedContractInstallation: installations.getRUN,
+      electorateInstance,
+      governedContractInstallation: installations.runStake,
       governed: harden({
         terms: runStakeTerms,
         issuerKeywordRecord: { Stake: bldIssuer },
         privateArgs: { feeMintAccess, initialPoserInvitation, lienBridge },
       }),
     },
-    harden({ economicCommitteeCreatorFacet }),
   );
-
   const governedInstance = await E(governorFacets.creatorFacet).getInstance();
   const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
 
