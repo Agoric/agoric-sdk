@@ -91,7 +91,7 @@
  */
 /**
  * @typedef {Object} XYKAMMPublicFacet
- * @property {(issuer: Issuer, keyword: Keyword) => Promise<Issuer>} addPool
+ * @property {(issuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addPool
  * add a new liquidity pool
  * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation

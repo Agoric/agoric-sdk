@@ -259,7 +259,7 @@ export const makeAddPool = (
    * Allows users to add new liquidity pools. `secondaryIssuer` and
    * its keyword must not have been already used
    *
-   * @param {Issuer} secondaryIssuer
+   * @param {ERef<Issuer>} secondaryIssuer
    * @param {Keyword} keyword - will be used in the
    * terms.issuers for the contract, but not used otherwise
    */

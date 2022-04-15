@@ -1168,8 +1168,9 @@ test('amm adding liquidity', async t => {
   const timer = buildManualTimer(console.log, 30n);
 
   const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  // verify that addPool works with ERef<Issuer>.
   const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
-    moolaR.issuer,
+    Promise.resolve(moolaR.issuer),
     'Moola',
   );
   const liquidityBrand = await E(moolaLiquidityIssuer).getBrand();
