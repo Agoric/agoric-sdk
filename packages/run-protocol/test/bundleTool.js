@@ -179,7 +179,8 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
       .then(({ bundleFileName }) =>
         import(`${wr.readOnly().neighbor(bundleFileName)}`),
       )
-      .then(m => m.default);
+      .then(m => harden(m.default));
+    assert.equal(bundle.moduleFormat, 'endoZipBase64');
     todo.resolve(bundle);
     return bundle;
   };
