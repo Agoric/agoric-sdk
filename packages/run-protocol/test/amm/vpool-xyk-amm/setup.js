@@ -1,10 +1,7 @@
 // @ts-check
-
-import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { makeLoopback } from '@endo/captp';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 
 import { makeZoeKit } from '@agoric/zoe';
@@ -13,32 +10,18 @@ import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+
 import * as Collect from '../../../src/collect.js';
 import {
   setupAmm,
   startEconomicCommittee,
 } from '../../../src/econ-behaviors.js';
+import { provideBundle } from '../../supports.js';
 
-const ammRoot = '../../../src/vpool-xyk-amm/multipoolMarketMaker.js';
-
-const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
-const committeeRoot = '@agoric/governance/src/committee.js';
-const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
-
-export const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  console.log(`makeBundle ${sourceRoot}`);
-  return contractBundle;
-};
-harden(makeBundle);
-
-// makeBundle is a slow step, so we do it once for all the tests.
-const ammBundleP = makeBundle(ammRoot);
-const contractGovernorBundleP = makeBundle(contractGovernorRoot);
-const committeeBundleP = makeBundle(committeeRoot);
-const voteCounterBundleP = makeBundle(voteCounterRoot);
+const ammRoot = './src/vpool-xyk-amm/multipoolMarketMaker.js'; // package relative
 
 export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -73,14 +56,12 @@ export const setupAMMBootstrap = async (
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  /** @type {Record<string, Promise<{moduleFormat: string}>>} */
-  const governanceBundlePs = {
-    contractGovernor: contractGovernorBundleP,
-    committee: committeeBundleP,
-    binaryVoteCounter: voteCounterBundleP,
-  };
-  const bundles = await Collect.allValues(governanceBundlePs);
-  produce.governanceBundles.resolve(bundles);
+  const {
+    installation: { produce: instP },
+  } = spaces;
+  instP.committee.resolve(E(zoe).install(committeeBundle));
+  instP.contractGovernor.resolve(E(zoe).install(contractGovernorBundle));
+  instP.binaryVoteCounter.resolve(E(zoe).install(binaryVoteCounterBundle));
 
   return { produce, consume, ...spaces };
 };
@@ -88,12 +69,14 @@ export const setupAMMBootstrap = async (
 /**
  * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
  *
+ * @param {*} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {{ brand: Brand, issuer: Issuer }} centralR
  * @param {ManualTimer | undefined=} timer
  * @param {ERef<ZoeService> | undefined=} zoe
  */
 export const setupAmmServices = async (
+  t,
   electorateTerms,
   centralR,
   timer = buildManualTimer(console.log),
@@ -102,12 +85,11 @@ export const setupAmmServices = async (
   if (!zoe) {
     ({ zoe } = await setUpZoeForTest());
   }
-  // XS doesn't like top-level await, so do it here. this should be quick
-  const ammBundle = await ammBundleP;
   const space = await setupAMMBootstrap(timer, zoe);
-  const { produce, consume, brand, issuer, installation, instance } = space;
+  const { consume, brand, issuer, installation, instance } = space;
+  const ammBundle = await provideBundle(t, ammRoot, 'amm');
+  installation.produce.amm.resolve(E(zoe).install(ammBundle));
 
-  produce.ammBundle.resolve(ammBundle);
   brand.produce.RUN.resolve(centralR.brand);
   issuer.produce.RUN.resolve(centralR.issuer);
 

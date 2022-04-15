@@ -10,6 +10,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { setupReserveServices } from './setup.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
@@ -20,6 +21,11 @@ async function waitForPromisesToSettle() {
   return pk.promise;
 }
 
+test.before(async t => {
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  t.context = { bundleCache };
+});
+
 test('reserve add collateral', async t => {
   /** @param {NatValue} value */
   const moolaR = makeIssuerKit('moola');
@@ -29,6 +35,7 @@ test('reserve add collateral', async t => {
   const timer = buildManualTimer(console.log);
 
   const { reserve, zoe, space } = await setupReserveServices(
+    t,
     electorateTerms,
     timer,
   );
@@ -67,6 +74,7 @@ test('reserve unregistered', async t => {
   const timer = buildManualTimer(console.log);
 
   const { reserve, zoe, space } = await setupReserveServices(
+    t,
     electorateTerms,
     timer,
   );
@@ -101,6 +109,7 @@ test('governance add Liquidity to the AMM', async t => {
   const timer = buildManualTimer(console.log);
 
   const { reserve, zoe, space, governor } = await setupReserveServices(
+    t,
     electorateTerms,
     timer,
   );
@@ -182,6 +191,7 @@ test('request more collateral than available', async t => {
   const timer = buildManualTimer(console.log);
 
   const { reserve, zoe, space, governor } = await setupReserveServices(
+    t,
     electorateTerms,
     timer,
   );

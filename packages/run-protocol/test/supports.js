@@ -14,6 +14,7 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { unsafeMakeBundleCache } from './bundleTool.js';
 
 /**
  *
@@ -43,18 +44,20 @@ export const makeFakeInnerVault = (
 };
 
 /**
- *
+ * @param {*} t
  * @param {string} sourceRoot
+ * @param {string} bundleName
  * @returns {Promise<SourceBundle>}
  */
-export const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  console.log(`makeBundle ${sourceRoot}`);
-  return contractBundle;
+export const provideBundle = (t, sourceRoot, bundleName) => {
+  assert(
+    t.context && t.context.bundleCache,
+    'must set t.context.bundleCache in test.before()',
+  );
+  const { bundleCache } = t.context;
+  return bundleCache.load(sourceRoot, bundleName);
 };
-harden(makeBundle);
+harden(provideBundle);
 
 // Some notifier updates aren't propagating sufficiently quickly for
 // the tests. This invocation waits for all promises that can fire to

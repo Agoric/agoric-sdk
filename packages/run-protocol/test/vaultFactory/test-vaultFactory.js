@@ -33,7 +33,7 @@ import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 
 import {
-  makeBundle,
+  provideBundle,
   waitForPromisesToSettle,
   setUpZoeForTest,
   setupBootstrap,
@@ -85,7 +85,6 @@ function defaultParamValues(debtBrand) {
   });
 }
 
-// makeBundle is a slow step, so we do it once for all the tests.
 test.before(async t => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
   const runIssuer = E(zoe).getFeeIssuer();
@@ -93,10 +92,14 @@ test.before(async t => {
   const aethKit = makeIssuerKit('aEth');
   const contextPs = {
     bundles: {
-      faucet: makeBundle(contractRoots.faucet),
-      liquidate: makeBundle(contractRoots.liquidate),
-      VaultFactory: makeBundle(contractRoots.VaultFactory),
-      amm: makeBundle(contractRoots.amm),
+      faucet: provideBundle(t, contractRoots.faucet, 'faucet'),
+      liquidate: provideBundle(t, contractRoots.liquidate, 'liquidateMinimum'),
+      VaultFactory: provideBundle(
+        t,
+        contractRoots.VaultFactory,
+        'VaultFactory',
+      ),
+      amm: provideBundle(t, contractRoots.amm, 'amm'),
     },
     zoe,
     feeMintAccess,
@@ -124,13 +127,11 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
     zoe,
     aethKit: { issuer: aethIssuer },
     electorateTerms,
-    bundles: { amm },
     timer,
   } = t.context;
 
   const space = setupBootstrap(t, timer);
-  const { produce, consume, instance } = space;
-  produce.ammBundle.resolve(amm);
+  const { consume, instance } = space;
   startEconomicCommittee(space, electorateTerms);
   setupAmm(space);
 

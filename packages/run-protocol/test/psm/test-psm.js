@@ -15,7 +15,7 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../../src/makeTracer.js';
-import { makeBundle, setUpZoeForTest } from '../supports.js';
+import { provideBundle, setUpZoeForTest } from '../supports.js';
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
@@ -74,8 +74,7 @@ const setJig = _jig => {
  * @param {ExecuteContract} t
  */
 test.before(async t => {
-  // makeBundle is slow, so we bundle each contract once and reuse in all tests.
-  const psmBundle = await makeBundle(psmRoot);
+  const psmBundle = await provideBundle(t, psmRoot, 'psm');
   t.context.bundles = { psmBundle };
   const { zoe, feeMintAccess } = setUpZoeForTest(setJig);
   t.context.zoe = await zoe;

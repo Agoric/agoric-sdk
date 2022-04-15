@@ -91,14 +91,17 @@ test.before(async (/** @type {RunStakeTestContext} */ t) => {
     RUN: E(issuer.RUN).getBrand(),
     BLD: bld.brand,
   };
+  const govInstalls = {
+    committee: E(zoe).install(committeeBundle),
+    contractGovernor: E(zoe).install(contractGovernorBundle),
+    binaryVoteCounter: E(zoe).install(binaryVoteCounterBundle),
+  };
   const installation = {
     runStake: E(zoe).install(bundles.runStake),
     faker: E(zoe).install(bundles.faker),
     centralSupply: E(zoe).install(centralSupplyBundle),
     mintHolder: E(zoe).install(mintHolderBundle),
-    committee: E(zoe).install(committeeBundle),
-    contractGovernor: E(zoe).install(contractGovernorBundle),
-    binaryVoteCounter: E(zoe).install(binaryVoteCounterBundle),
+    ...govInstalls,
   };
 
   t.context = await deeplyFulfilled(

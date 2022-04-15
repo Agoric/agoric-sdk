@@ -73,7 +73,6 @@ export const setupAmm = async ({
     chainTimerService,
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
-    ammBundle,
   },
   produce: { ammCreatorFacet, ammGovernorCreatorFacet },
   issuer: {
@@ -84,13 +83,10 @@ export const setupAmm = async ({
     produce: { amm: ammInstanceProducer, ammGovernor },
   },
   installation: {
-    consume: { contractGovernor: governorInstallation },
+    consume: { contractGovernor: governorInstallation, amm: ammInstallation },
     produce: { amm: ammInstallationProducer },
   },
 }) => {
-  const bundle = await ammBundle;
-  const ammInstallation = E(zoe).install(bundle);
-
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
     poserInvitationP,
@@ -141,7 +137,6 @@ export const setupReserve = async ({
     chainTimerService,
     zoe,
     economicCommitteeCreatorFacet: committeeCreator,
-    reserveBundle,
   },
   produce: {
     reserveCreatorFacet,
@@ -156,13 +151,13 @@ export const setupReserve = async ({
     produce: { reserve: reserveInstanceProducer, reserveGovernor },
   },
   installation: {
-    consume: { contractGovernor: governorInstallation },
+    consume: {
+      contractGovernor: governorInstallation,
+      reserve: reserveInstallation,
+    },
     produce: { reserve: reserveInstallationProducer },
   },
 }) => {
-  const bundle = await reserveBundle;
-  const reserveInstallation = E(zoe).install(bundle);
-
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const [poserInvitation, poserInvitationAmount] = await Promise.all([
     poserInvitationP,
@@ -217,7 +212,6 @@ export const setupReserve = async ({
 export const startVaultFactory = async (
   {
     consume: {
-      vaultBundles,
       chainTimerService,
       priceAuthority,
       zoe,
@@ -238,10 +232,9 @@ export const startVaultFactory = async (
     },
   } = {},
 ) => {
-  const bundles = await vaultBundles;
   const installations = await Collect.allValues({
-    VaultFactory: E(zoe).install(bundles.VaultFactory),
-    liquidate: E(zoe).install(bundles.liquidate),
+    VaultFactory: installation.consume.VaultFactory,
+    liquidate: installation.consume.liquidate,
   });
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
