@@ -117,7 +117,6 @@ const oneVoterValidate = async (
   electorateInstance,
   governorInstanceP,
   installations,
-  timer,
 ) => {
   const [voters, details, governedInstance, governorInstance] =
     await Promise.all([
@@ -134,7 +133,6 @@ const oneVoterValidate = async (
     electorateInstance,
     governorInstance,
     installations,
-    timer,
   );
 };
 
@@ -290,7 +288,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         firstElectorateInstance,
         governorInstance,
         installations,
-        timer,
       );
 
       await E(timer).tick();
