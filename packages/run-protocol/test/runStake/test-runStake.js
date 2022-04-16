@@ -737,7 +737,7 @@ const makeWorld = async (/** @type {RunStakeTestContext} */ t) => {
   return driver;
 };
 
-test('borrowing past the debt limit', async t => {
+test('borrowing past the debt limit', async (/** @type {RunStakeTestContext} */ t) => {
   const driver = await makeWorld(t);
 
   // provide ample BLD
@@ -755,7 +755,7 @@ test('borrowing past the debt limit', async t => {
   });
 });
 
-test('Borrow, pay off', async t => {
+test('Borrow, pay off', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
@@ -769,7 +769,7 @@ test('Borrow, pay off', async t => {
   await d.checkRUNBalance(5n);
 });
 
-test('Starting LoC', async t => {
+test('Starting LoC', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(9000n);
   await d.stakeBLD(9000n);
@@ -791,7 +791,7 @@ test('Starting LoC', async t => {
   await d.checkRUNDebt(1632n);
 });
 
-test('Extending LoC - CR increases (FAIL)', async t => {
+test('Extending LoC - CR increases (FAIL)', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
@@ -807,7 +807,7 @@ test('Extending LoC - CR increases (FAIL)', async t => {
   await d.checkBLDLiened(0n);
 });
 
-test('Partial repayment - CR remains the same', async t => {
+test('Partial repayment - CR remains the same', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(10000n);
   await d.stakeBLD(10000n);
@@ -818,7 +818,7 @@ test('Partial repayment - CR remains the same', async t => {
   await d.checkRUNDebt(970n);
 });
 
-test('Partial repayment - CR increases*', async t => {
+test('Partial repayment - CR increases*', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(10000n);
   await d.stakeBLD(10000n);
@@ -830,7 +830,7 @@ test('Partial repayment - CR increases*', async t => {
   await d.checkBLDLiened(400n);
 });
 
-test('Partial repay - unbonded ok', async t => {
+test('Partial repay - unbonded ok', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(800n);
@@ -845,7 +845,7 @@ test('Partial repay - unbonded ok', async t => {
   await d.checkBLDStaked(100n);
 });
 
-test('Add collateral - more BLD required (FAIL)', async t => {
+test('Add collateral - more BLD required (FAIL)', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -856,7 +856,7 @@ test('Add collateral - more BLD required (FAIL)', async t => {
   await d.checkBLDLiened(800n);
 });
 
-test('Lower collateral', async t => {
+test('Lower collateral', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -867,7 +867,7 @@ test('Lower collateral', async t => {
   await d.checkBLDLiened(450n);
 });
 
-test('Lower collateral - CR increase (FAIL)', async t => {
+test('Lower collateral - CR increase (FAIL)', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -878,7 +878,7 @@ test('Lower collateral - CR increase (FAIL)', async t => {
   await d.checkBLDLiened(800n);
 });
 
-test('Lower collateral - unbonded ok', async t => {
+test('Lower collateral - unbonded ok', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -896,7 +896,7 @@ test('Lower collateral - unbonded ok', async t => {
   await d.checkBLDLiened(0n);
 });
 
-test('Lower collateral by paying off DEBT', async t => {
+test('Lower collateral by paying off DEBT', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -906,7 +906,7 @@ test('Lower collateral by paying off DEBT', async t => {
   await d.checkBLDLiened(500n);
 });
 
-test('Watch interest accrue', async t => {
+test('Watch interest accrue', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -917,7 +917,7 @@ test('Watch interest accrue', async t => {
   await d.checkRUNDebt(195n);
 });
 
-test('payoff more than you owe', async t => {
+test('payoff more than you owe', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
