@@ -127,11 +127,6 @@ export const makeDoublePool = (
     return publicPrices(getPriceForInput(amountIn, amountOut));
   };
 
-  const swapIn = (seat, amountIn, amountOut) => {
-    const prices = getPriceForInput(amountIn, amountOut);
-    return allocateGainsAndLosses(seat, prices);
-  };
-
   const getPriceForOutput = (amountIn, amountOut) => {
     const protocolFeeRatio = makeFeeRatio(getProtocolFeeBP(), centralBrand);
     const poolFeeRatioCentral = makeFeeRatio(getPoolFeeBP(), centralBrand);
@@ -187,21 +182,16 @@ export const makeDoublePool = (
   const getOutputPrice = (amountIn, amountOut) => {
     return publicPrices(getPriceForOutput(amountIn, amountOut));
   };
-  const swapOut = (seat, amountIn, amountOut) => {
-    const prices = getPriceForOutput(amountIn, amountOut);
-    return allocateGainsAndLosses(seat, prices);
-  };
 
   const externalFacet = Far('double pool', {
     getInputPrice,
     getOutputPrice,
-    swapIn,
-    swapOut,
   });
 
   const internalFacet = Far('single pool', {
     getPriceForInput,
     getPriceForOutput,
+    allocateGainsAndLosses,
   });
 
   return { externalFacet, internalFacet };

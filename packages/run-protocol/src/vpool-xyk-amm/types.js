@@ -10,8 +10,6 @@
  * @typedef {Object} VPool - virtual pool for price quotes and trading
  * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getInputPrice
  * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getOutputPrice
- * @property {(seat: ZCFSeat, amountIn: Amount, amountOut: Amount) => string} swapIn
- * @property {(seat: ZCFSeat, amountIn: Amount, amountOut: Amount) => string} swapOut
  */
 
 /**
@@ -43,6 +41,7 @@
  * @typedef {Object} VPoolInternalFacet - virtual pool for price quotes and trading
  * @property {GetDoublePoolSwapQuote} getPriceForInput
  * @property {GetDoublePoolSwapQuote} getPriceForOutput
+ * @property {(ZCFSeat, DoublePoolSwapResult) => string} allocateGainsAndLosses
  */
 
 /**

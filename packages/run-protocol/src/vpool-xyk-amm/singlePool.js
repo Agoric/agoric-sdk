@@ -35,12 +35,13 @@ export const makeSinglePool = (
     amountOut: prices.swapperGets,
   });
 
-  const allocateGainsAndLosses = (inBrand, prices, seat) => {
+  const allocateGainsAndLosses = (seat, prices) => {
     const poolSeat = pool.getPoolSeat();
     seat.decrementBy(harden({ In: prices.swapperGives }));
     seat.incrementBy(harden({ Out: prices.swapperGets }));
     feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
 
+    const inBrand = prices.swapperGives.brand;
     if (inBrand === secondaryBrand) {
       poolSeat.decrementBy(harden({ Central: prices.yDecrement }));
       poolSeat.incrementBy(harden({ Secondary: prices.xIncrement }));
@@ -65,11 +66,6 @@ export const makeSinglePool = (
     );
   };
 
-  const swapIn = (seat, amountIn, amountOut) => {
-    const prices = getPriceForInput(amountIn, amountOut);
-    return allocateGainsAndLosses(amountIn.brand, prices, seat);
-  };
-
   const getPriceForOutput = (amountIn, amountOut) => {
     return pricesForStatedOutput(
       amountIn,
@@ -79,10 +75,6 @@ export const makeSinglePool = (
       makeFeeRatio(getPoolFeeBP(), amountIn.brand),
     );
   };
-  const swapOut = (seat, amountIn, amountOut) => {
-    const prices = getPriceForOutput(amountIn, amountOut);
-    return allocateGainsAndLosses(amountIn.brand, prices, seat);
-  };
 
   /** @type {VPool} */
   const externalFacet = Far('single pool', {
@@ -90,14 +82,13 @@ export const makeSinglePool = (
       publicPrices(getPriceForInput(amountIn, amountOut)),
     getOutputPrice: (amountIn, amountOut) =>
       publicPrices(getPriceForOutput(amountIn, amountOut)),
-    swapIn,
-    swapOut,
   });
 
   const internalFacet = Far('single pool', {
     getPriceForInput,
     getPriceForOutput,
     addLiquidityActual,
+    allocateGainsAndLosses,
   });
 
   return { externalFacet, internalFacet };
