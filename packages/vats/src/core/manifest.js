@@ -155,23 +155,6 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       clientCreator: true,
     },
   },
-  installPegasusOnChain: {
-    consume: {
-      namesByAddress: true,
-      board: 'board',
-      zoe: 'zoe',
-    },
-    installation: {
-      produce: {
-        Pegasus: 'zoe',
-      },
-    },
-    instance: {
-      produce: {
-        Pegasus: 'Pegasus',
-      },
-    },
-  },
   setupNetworkProtocols: {
     consume: {
       client: true,
@@ -181,10 +164,8 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       provisioning: true,
     },
     produce: {
-      pegasusConnections: true,
-      pegasusConnectionsAdmin: true,
+      networkVat: true,
     },
-    instance: { consume: { Pegasus: 'Pegasus' } },
   },
 });
 
