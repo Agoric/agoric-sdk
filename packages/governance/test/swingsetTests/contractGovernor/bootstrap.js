@@ -127,7 +127,7 @@ const oneVoterValidate = async (
     ]);
   const { counterInstance } = details;
 
-  E(voters[0]).validate(
+  return E(voters[0]).validate(
     counterInstance,
     governedInstance,
     electorateInstance,
