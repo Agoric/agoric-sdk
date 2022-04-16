@@ -49,6 +49,7 @@ export const makeWriteCoreProposal = (
   };
 
   const writeCoreProposal = async (filePrefix, proposalBuilder) => {
+    let mutex = Promise.resolve();
     // Install an entrypoint.
     const install = async (entrypoint, bundlePath) => {
       const bundler = getBundler();
@@ -61,7 +62,10 @@ export const makeWriteCoreProposal = (
       } else {
         bundle = await bundleSource(pathResolve(entrypoint));
       }
-      return installInPieces(bundle, bundler);
+
+      // Serialise the installations.
+      mutex = mutex.then(() => installInPieces(bundle, bundler));
+      return mutex;
     };
 
     // Await a reference then publish to the board.
