@@ -135,18 +135,39 @@ export const makePromiseSpace = (log = (..._args) => {}) => {
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
-        const { resolve, promise } = findOrCreateKit(name);
+        const {
+          reject: rawReject,
+          resolve: rawResolve,
+          promise,
+        } = findOrCreateKit(name);
         promise.finally(() => {
           remaining.delete(name);
           log(name, 'settled; remaining:', [...remaining.keys()].sort());
         });
-        const reset = () => {
-          // Try republishing the promise.
+
+        let isSettling = false;
+        const resolve = value => {
+          isSettling = true;
+          rawResolve(value);
+        };
+        const reject = reason => {
+          isSettling = true;
+          rawReject(reason);
+        };
+
+        const reset = (reason = undefined) => {
+          if (!isSettling) {
+            if (!reason) {
+              // Reuse the old promise; don't reject it.
+              return;
+            }
+            reject(reason);
+          }
+          // Now publish a new promise.
           state.delete(name);
           remaining.delete(name);
-          log(`${name}: reset`);
         };
-        return harden({ resolve, reset });
+        return harden({ reject, resolve, reset });
       },
     },
   );
