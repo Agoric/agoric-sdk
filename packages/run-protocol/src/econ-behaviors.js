@@ -283,18 +283,19 @@ export const startVaultFactory = async (
     ]);
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
   const feeMintAccess = await feeMintAccessP;
-
+  const pa = await priceAuthority;
+  const timer = await chainTimerService;
   const vaultFactoryTerms = makeGovernedTerms(
-    priceAuthority,
+    pa,
     loanParams,
     installations.liquidate,
-    chainTimerService,
+    timer,
     invitationAmount,
     vaultManagerParams,
     ammPublicFacet,
   );
   const governorTerms = harden({
-    timer: chainTimerService,
+    timer,
     electorateInstance,
     governedContractInstallation: installations.VaultFactory,
     governed: {
