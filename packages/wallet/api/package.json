@@ -14,6 +14,7 @@
     "lint:eslint": "eslint '**/*.js'"
   },
   "devDependencies": {
+    "@agoric/deploy-script-support": "^0.6.3",
     "@agoric/vats": "^0.7.0",
     "@endo/bundle-source": "^2.2.0",
     "@endo/init": "^0.5.41",

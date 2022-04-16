@@ -1,32 +1,31 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { resolve as metaResolve } from 'import-meta-resolve';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKit } from '@agoric/zoe';
-import { E } from '@endo/far';
-import { Far, makeLoopback } from '@endo/captp';
-import bundleSource from '@endo/bundle-source';
+import { E, Far } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-
 import { makeCopyBag } from '@agoric/store';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
+
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
+import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
+
 import {
   startEconomicCommittee,
   startRunStake,
 } from '../../src/econ-behaviors.js';
-import {
-  governanceBundles,
-  economyBundles,
-} from '../../src/importedBundles.js';
 import * as Collect from '../../src/collect.js';
 import { setUpZoeForTest } from '../supports.js';
 import { KW } from '../../src/runStake/params.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // 8	Partial repayment from reward stream - TODO
 // TODO: #4728 case 9: Extending LoC - unbonded (FAIL)
@@ -37,48 +36,92 @@ import { KW } from '../../src/runStake/params.js';
 // 13	Add collateral - CR increase ok
 
 const contractRoots = {
-  runStake: '../../src/runStake/runStake.js',
-  faker: './attestationFaker.js',
+  runStake: './src/runStake/runStake.js',
+  faker: './test/runStake/attestationFaker.js',
 };
 
-const { assign, entries } = Object;
+const { entries } = Object;
 const { details: X } = assert;
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
-test.before(async t => {
-  /** @param { string } ref */
-  const asset = async ref =>
-    new URL(await metaResolve(ref, import.meta.url)).pathname;
+const micro = harden({
+  unit: 1_000_000n,
+  displayInfo: { decimalPlaces: 6 },
+});
 
-  t.log('bundling...', contractRoots);
-  const bundles = await Collect.allValues(
-    Collect.mapValues(contractRoots, spec => asset(spec).then(bundleSource)),
-  );
+/**
+ * @typedef {import('ava').ExecutionContext<{
+ *   zoe: ZoeService,
+ *   feeMintAccess: FeeMintAccess,
+ *   issuer: Record<'RUN' | 'BLD', Issuer<'nat'>>,
+ *   brand: Record<'RUN' | 'BLD', Brand<'nat'>>,
+ *   installation: {
+ *     runStake: Installation<typeof import('../../src/runStake/runStake.js').start>,
+ *     faker: Installation,
+ *     committee: Installation,
+ *     contractGovernor: Installation,
+ *     binaryVoteCounter: Installation,
+ *     centralSupply: Installation,
+ *   },
+ * }>} RunStakeTestContext
+ */
+test.before(async (/** @type {RunStakeTestContext} */ t) => {
+  // ava sets cwd to package root
+  console.time('bundling');
+  const bc = await unsafeMakeBundleCache('bundles/');
+  const bundles = {
+    runStake: await bc.load(contractRoots.runStake, 'runStake'),
+    faker: await bc.load(contractRoots.faker, 'faker'),
+  };
   t.log(
     'bundled:',
     Collect.mapValues(bundles, b => b.endoZipBase64.length),
   );
-  assign(t.context, { bundles });
+  console.timeEnd('bundling');
+
+  const { zoe, feeMintAccess } = await setUpZoeForTest(() => {});
+  const bld = makeIssuerKit('BLD', AssetKind.NAT, micro.displayInfo);
+  const issuer = {
+    RUN: await E(zoe).getFeeIssuer(),
+    BLD: bld.issuer,
+  };
+  const brand = {
+    RUN: E(issuer.RUN).getBrand(),
+    BLD: bld.brand,
+  };
+  const govInstalls = {
+    committee: E(zoe).install(committeeBundle),
+    contractGovernor: E(zoe).install(contractGovernorBundle),
+    binaryVoteCounter: E(zoe).install(binaryVoteCounterBundle),
+  };
+  const installation = {
+    runStake: E(zoe).install(bundles.runStake),
+    faker: E(zoe).install(bundles.faker),
+    centralSupply: E(zoe).install(centralSupplyBundle),
+    mintHolder: E(zoe).install(mintHolderBundle),
+    ...govInstalls,
+  };
+
+  t.context = await deeplyFulfilled(
+    harden({
+      zoe,
+      feeMintAccess,
+      issuer,
+      brand,
+      installation,
+    }),
+  );
 });
 
-/**
- * @param {{ context: unknown }} t
- * @returns { Record<string, Bundle> }
- */
-const theBundles = t => /** @type { any } */ (t.context).bundles;
-
 export const setupBootstrap = async (
-  bundles,
+  /** @type {RunStakeTestContext} */ t,
   timer = buildManualTimer(console.log),
-  zoe,
 ) => {
-  if (!zoe) {
-    zoe = await setUpZoeForTest().zoe;
-  }
+  const { zoe, installation } = t.context;
 
-  const space = /** @type {any} */ (makePromiseSpace());
+  const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { produce, consume } =
     /** @type { import('../../src/econ-behaviors.js').RunStakeBootstrapPowers } */ (
       space
@@ -90,8 +133,14 @@ export const setupBootstrap = async (
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  produce.governanceBundles.resolve(governanceBundles);
-  produce.centralSupplyBundle.resolve(economyBundles.centralSupply);
+  for (const contract of [
+    'centralSupply',
+    'contractGovernor',
+    'committee',
+    'binaryVoteCounter',
+  ]) {
+    spaces.installation.produce[contract].resolve(installation[contract]);
+  }
 
   return { produce, consume, ...spaces };
 };
@@ -173,53 +222,25 @@ const mockChain = genesisData => {
   return it;
 };
 
-const micro = harden({
-  unit: 1_000_000n,
-  displayInfo: { decimalPlaces: 6 },
-});
-
-const bootstrapZoeAndRun = async () => {
-  let testJig;
-  const setJig = jig => {
-    testJig = jig;
-  };
-
-  const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
-
-  const { zoeService: nonFarZoeService, feeMintAccess: nonFarFeeMintAccess } =
-    makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin);
-  const feePurse = E(nonFarZoeService).makeFeePurse();
-  const { brand: runBrandThere } = await E(feePurse).getCurrentAmount();
-  const [runBrand, zoeService, feeMintAccess] = await Promise.all([
-    makeFar(runBrandThere),
-    E(nonFarZoeService).bindDefaultFeePurse(feePurse),
-    makeFar(nonFarFeeMintAccess),
-  ]);
-  const zoe = makeFar(zoeService);
-
-  const bld = makeIssuerKit('BLD', AssetKind.NAT, micro.displayInfo);
-
-  return { zoe, feeMintAccess, runBrand, getJig: () => testJig, bld };
-};
-
-const bootstrapRunStake = async (bundles, timer) => {
-  const { zoe, feeMintAccess, runBrand, bld } = await bootstrapZoeAndRun();
-  const runIssuer = E(zoe).getFeeIssuer();
+const bootstrapRunStake = async (
+  /** @type {RunStakeTestContext} */ t,
+  timer,
+) => {
+  const { feeMintAccess, brand, issuer, installation } = t.context;
 
   const chain = mockChain({ addr1a: 1_000_000_000n * micro.unit });
-  const lienBridge = chain.makeLienBridge(bld.brand);
+  const lienBridge = chain.makeLienBridge(brand.BLD);
 
-  const space = await setupBootstrap(bundles, timer, zoe);
-  const { produce, brand, issuer } = space;
-  produce.zoe.resolve(zoe);
+  const space = await setupBootstrap(t, timer);
+  const { produce, brand: brandS, issuer: issuerS } = space;
   produce.feeMintAccess.resolve(feeMintAccess);
-  produce.runStakeBundle.resolve(bundles.runStake);
   produce.lienBridge.resolve(lienBridge);
   produce.chainTimerService.resolve(timer);
-  brand.produce.BLD.resolve(bld.brand);
-  brand.produce.RUN.resolve(runBrand);
-  issuer.produce.BLD.resolve(bld.issuer);
-  issuer.produce.RUN.resolve(runIssuer);
+  brandS.produce.BLD.resolve(brand.BLD);
+  brandS.produce.RUN.resolve(brand.RUN);
+  issuerS.produce.BLD.resolve(issuer.BLD);
+  issuerS.produce.RUN.resolve(issuer.RUN);
+  space.installation.produce.runStake.resolve(installation.runStake);
 
   const mockClient = harden({
     assignBundle: _fns => {
@@ -243,7 +264,7 @@ const makeWalletMaker = creatorFacet => {
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupplyBundle: ERef<SourceBundle>,
+ *   centralSupply: ERef<Installation>,
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers
@@ -251,16 +272,12 @@ const makeWalletMaker = creatorFacet => {
  */
 const mintRunPayment = async (
   value,
-  { centralSupplyBundle: centralP, feeMintAccess: feeMintAccessP, zoe },
+  { centralSupply, feeMintAccess: feeMintAccessP, zoe },
 ) => {
-  /** @type {[SourceBundle, FeeMintAccess]} */
-  const [centralSupplyBundle, feeMintAccess] = await Promise.all([
-    centralP,
-    feeMintAccessP,
-  ]);
+  const feeMintAccess = await feeMintAccessP;
 
   const { creatorFacet: ammSupplier } = await E(zoe).startInstance(
-    E(zoe).install(centralSupplyBundle),
+    centralSupply,
     {},
     { bootstrapPaymentValue: value },
     { feeMintAccess },
@@ -269,11 +286,10 @@ const mintRunPayment = async (
   return E(ammSupplier).getBootstrapPayment();
 };
 
-test('runStake API usage', async t => {
-  const bundles = theBundles(t);
+test('runStake API usage', async (/** @type {RunStakeTestContext} */ t) => {
   const timer = buildManualTimer(t.log, 0n, 1n);
 
-  const { chain, space } = await bootstrapRunStake(bundles, timer);
+  const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
   // @ts-expect-error TODO: add runStakeCreatorFacet to EconomyBootstrapPowers
   const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
@@ -318,11 +334,10 @@ test('runStake API usage', async t => {
   t.deepEqual(actual, proposal.want[KW.Debt]);
 });
 
-test('extra offer keywords are rejected', async t => {
-  const bundles = theBundles(t);
+test('extra offer keywords are rejected', async (/** @type {RunStakeTestContext} */ t) => {
   const timer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
 
-  const { chain, space } = await bootstrapRunStake(bundles, timer);
+  const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
   // @ts-expect-error TODO: add runStakeCreatorFacet to EconomyBootstrapPowers
   const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
@@ -377,18 +392,19 @@ test('extra offer keywords are rejected', async t => {
  * @typedef {ReturnType<typeof import('./attestationFaker.js').start>} StartFaker
  * @typedef { [bigint, bigint] } Rational
  */
-test('forged Attestation fails', async t => {
-  const bundles = theBundles(t);
+test('forged Attestation fails', async (/** @type {RunStakeTestContext} */ t) => {
   const timer = buildManualTimer(t.log, 0n, 1n);
 
-  const { chain, space } = await bootstrapRunStake(bundles, timer);
+  const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
   const { zoe } = consume;
   const runBrand = await space.brand.consume.RUN;
   const bldBrand = await space.brand.consume.BLD;
   const publicFacet = E(zoe).getPublicFacet(space.instance.consume.runStake);
 
-  const fakerInstallation = E(zoe).install(bundles.faker);
+  const {
+    installation: { faker: fakerInstallation },
+  } = t.context;
   const faker = E.get(E(zoe).startInstance(fakerInstallation)).publicFacet;
 
   const founder = chain.provisionAccount('Alice', 'addr1a');
@@ -461,10 +477,9 @@ const approxEqual = (t, actual, expected, epsilon) => {
   }
 };
 
-const makeWorld = async t => {
-  const bundles = theBundles(t);
+const makeWorld = async (/** @type {RunStakeTestContext} */ t) => {
   const timer = buildManualTimer(t.log, 0n, SECONDS_PER_DAY);
-  const { chain, space } = await bootstrapRunStake(bundles, timer);
+  const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
 
   // @ts-ignore TODO: runStakeCreatorFacet type in vats
@@ -520,7 +535,7 @@ const makeWorld = async t => {
 
   await E(rewardPurse).deposit(
     await mintRunPayment(500n * micro.unit, {
-      centralSupplyBundle: consume.centralSupplyBundle,
+      centralSupply: E(zoe).install(centralSupplyBundle),
       feeMintAccess: consume.feeMintAccess,
       zoe,
     }),
@@ -722,7 +737,7 @@ const makeWorld = async t => {
   return driver;
 };
 
-test('borrowing past the debt limit', async t => {
+test('borrowing past the debt limit', async (/** @type {RunStakeTestContext} */ t) => {
   const driver = await makeWorld(t);
 
   // provide ample BLD
@@ -740,7 +755,7 @@ test('borrowing past the debt limit', async t => {
   });
 });
 
-test('Borrow, pay off', async t => {
+test('Borrow, pay off', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
@@ -754,7 +769,7 @@ test('Borrow, pay off', async t => {
   await d.checkRUNBalance(5n);
 });
 
-test('Starting LoC', async t => {
+test('Starting LoC', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(9000n);
   await d.stakeBLD(9000n);
@@ -776,7 +791,7 @@ test('Starting LoC', async t => {
   await d.checkRUNDebt(1632n);
 });
 
-test('Extending LoC - CR increases (FAIL)', async t => {
+test('Extending LoC - CR increases (FAIL)', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
@@ -792,7 +807,7 @@ test('Extending LoC - CR increases (FAIL)', async t => {
   await d.checkBLDLiened(0n);
 });
 
-test('Partial repayment - CR remains the same', async t => {
+test('Partial repayment - CR remains the same', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(10000n);
   await d.stakeBLD(10000n);
@@ -803,7 +818,7 @@ test('Partial repayment - CR remains the same', async t => {
   await d.checkRUNDebt(970n);
 });
 
-test('Partial repayment - CR increases*', async t => {
+test('Partial repayment - CR increases*', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(10000n);
   await d.stakeBLD(10000n);
@@ -815,7 +830,7 @@ test('Partial repayment - CR increases*', async t => {
   await d.checkBLDLiened(400n);
 });
 
-test('Partial repay - unbonded ok', async t => {
+test('Partial repay - unbonded ok', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(800n);
@@ -830,7 +845,7 @@ test('Partial repay - unbonded ok', async t => {
   await d.checkBLDStaked(100n);
 });
 
-test('Add collateral - more BLD required (FAIL)', async t => {
+test('Add collateral - more BLD required (FAIL)', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -841,7 +856,7 @@ test('Add collateral - more BLD required (FAIL)', async t => {
   await d.checkBLDLiened(800n);
 });
 
-test('Lower collateral', async t => {
+test('Lower collateral', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -852,7 +867,7 @@ test('Lower collateral', async t => {
   await d.checkBLDLiened(450n);
 });
 
-test('Lower collateral - CR increase (FAIL)', async t => {
+test('Lower collateral - CR increase (FAIL)', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -863,7 +878,7 @@ test('Lower collateral - CR increase (FAIL)', async t => {
   await d.checkBLDLiened(800n);
 });
 
-test('Lower collateral - unbonded ok', async t => {
+test('Lower collateral - unbonded ok', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -881,7 +896,7 @@ test('Lower collateral - unbonded ok', async t => {
   await d.checkBLDLiened(0n);
 });
 
-test('Lower collateral by paying off DEBT', async t => {
+test('Lower collateral by paying off DEBT', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -891,7 +906,7 @@ test('Lower collateral by paying off DEBT', async t => {
   await d.checkBLDLiened(500n);
 });
 
-test('Watch interest accrue', async t => {
+test('Watch interest accrue', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
@@ -902,7 +917,7 @@ test('Watch interest accrue', async t => {
   await d.checkRUNDebt(195n);
 });
 
-test('payoff more than you owe', async t => {
+test('payoff more than you owe', async (/** @type {RunStakeTestContext} */ t) => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);

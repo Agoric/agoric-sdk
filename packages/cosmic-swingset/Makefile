@@ -150,7 +150,7 @@ scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 AGORIC_POWERS = agoric.ALL_THE_POWERS
-SOLO_COINS = 13000000ubld,50000000urun
+SOLO_COINS = 13000000ubld,1234000000urun
 COSMOS_RPC_HOST = localhost
 COSMOS_RPC_PORT = 26657
 wait-for-cosmos:

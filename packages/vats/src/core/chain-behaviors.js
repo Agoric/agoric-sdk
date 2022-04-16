@@ -1,3 +1,4 @@
+/* global globalThis */
 // @ts-check
 import { E, Far } from '@endo/far';
 import * as farExports from '@endo/far';
@@ -7,19 +8,13 @@ import {
   makeSubscriptionKit,
   observeIteration,
 } from '@agoric/notifier';
-import {
-  governanceBundles,
-  economyBundles,
-  ammBundle,
-  reserveBundle,
-} from '@agoric/run-protocol/src/importedBundles.js';
-import pegasusBundle from '@agoric/pegasus/bundles/bundle-pegasus.js';
 import { CONTRACT_NAME as PEGASUS_NAME } from '@agoric/pegasus/src/install-on-chain.js';
 import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
+import { importBundle } from '@endo/import-bundle';
 
 import * as Collect from '@agoric/run-protocol/src/collect.js';
 import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
@@ -54,6 +49,19 @@ export const bridgeCoreEval = async allPowers => {
     return;
   }
 
+  const endowments = {
+    console,
+    assert,
+    Base64: globalThis.Base64, // Present only on XSnap
+    URL: globalThis.URL, // Absent only on XSnap
+  };
+  /** @param { Installation } installation */
+  const evaluateInstallation = async installation => {
+    const bundle = await E(installation).getBundle();
+    return importBundle(bundle, { endowments });
+  };
+  harden(evaluateInstallation);
+
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
     async fromBridge(_srcID, obj) {
@@ -71,7 +79,10 @@ export const bridgeCoreEval = async allPowers => {
               Promise.resolve()
                 .then(() => {
                   const permit = JSON.parse(jsonPermit);
-                  const powers = extractPowers(permit, allPowers);
+                  const powers = extractPowers(permit, {
+                    evaluateInstallation,
+                    ...allPowers,
+                  });
 
                   // Inspired by ../repl.js:
                   const globals = harden({
@@ -155,12 +166,12 @@ const missingKeys = (pattern, specimen) =>
 
 /**
  * @param {BootstrapSpace} powers
- * @param {{ template: Record<string, unknown> }} config
+ * @param {{ template?: Record<string, unknown> }} config
  */
 export const makeClientManager = async (
   { produce: { client, clientCreator: clientCreatorP } },
-  { template } = {
-    template: {
+  {
+    template = {
       agoricNames: true,
       bank: true,
       namesByAddress: true,
@@ -169,7 +180,7 @@ export const makeClientManager = async (
       faucet: true,
       zoe: true,
     },
-  },
+  } = {},
 ) => {
   // Create a subscription of chain configurations.
   /** @type {SubscriptionRecord<PropertyMakers>} */
@@ -279,39 +290,6 @@ export const connectChainFaucet = async ({ consume: { client } }) => {
   return E(client).assignBundle([_addr => ({ faucet })]);
 };
 harden(connectChainFaucet);
-
-// XXX: move shareBootContractBundles belongs in basic-behaviors.js
-/** @param {BootstrapPowers} powers */
-export const shareBootContractBundles = async ({
-  produce: {
-    centralSupplyBundle: centralP,
-    pegasusBundle: pegasusP,
-    mintHolderBundle,
-  },
-}) => {
-  centralP.resolve(economyBundles.centralSupply);
-  mintHolderBundle.resolve(economyBundles.mintHolder);
-  pegasusP.resolve(pegasusBundle);
-};
-
-/** @param {BootstrapPowers} powers */
-export const shareEconomyBundles = async ({
-  produce: {
-    ammBundle: ammP,
-    vaultBundles,
-    governanceBundles: govP,
-    reserveBundle: reserveP,
-  },
-}) => {
-  govP.resolve(governanceBundles);
-  ammP.resolve(ammBundle);
-  vaultBundles.resolve({
-    VaultFactory: economyBundles.VaultFactory,
-    liquidate: economyBundles.liquidate,
-  });
-  reserveP.resolve(reserveBundle);
-};
-harden(shareEconomyBundles);
 
 /**
  * @param {SoloVats | NetVats} vats

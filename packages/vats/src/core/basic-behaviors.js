@@ -212,6 +212,25 @@ export const makeClientBanks = async ({ consume: { client, bankManager } }) => {
 };
 harden(makeClientBanks);
 
+/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+export const installBootContracts = async ({
+  vatPowers: { D },
+  devices: { vatAdmin },
+  consume: { zoe },
+  installation: {
+    produce: { centralSupply, mintHolder },
+  },
+}) => {
+  for (const [name, producer] of Object.entries({
+    centralSupply,
+    mintHolder,
+  })) {
+    const bundleCap = D(vatAdmin).getNamedBundleCap(name);
+    const bundle = D(bundleCap).getBundle();
+    producer.resolve(E(zoe).install(bundle));
+  }
+};
+
 /**
  * Mint RUN genesis supply.
  *
@@ -223,13 +242,13 @@ export const mintInitialSupply = async ({
   vatParameters: {
     argv: { bootMsg },
   },
-  consume: { centralSupplyBundle: bundleP, feeMintAccess: feeMintAccessP, zoe },
+  consume: { feeMintAccess: feeMintAccessP, zoe },
   produce: { initialSupply },
+  installation: {
+    consume: { centralSupply },
+  },
 }) => {
-  const [centralSupplyBundle, feeMintAccess] = await Promise.all([
-    bundleP,
-    feeMintAccessP,
-  ]);
+  const feeMintAccess = await feeMintAccessP;
 
   const { supplyCoins = [] } = bootMsg || {};
   const centralBootstrapSupply = supplyCoins.find(
@@ -237,11 +256,9 @@ export const mintInitialSupply = async ({
   ) || { amount: '0' };
   const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
 
-  /** @type {Installation<import('../../../run-protocol/src/centralSupply.js').CentralSupplyContract>} */
-  // @ts-expect-error bundle types are borked
-  const installation = E(zoe).install(centralSupplyBundle);
+  /** @type {Awaited<ReturnType<typeof import('../centralSupply.js').start>>} */
   const { creatorFacet } = await E(zoe).startInstance(
-    installation,
+    centralSupply,
     {},
     { bootstrapPaymentValue },
     { feeMintAccess },
@@ -260,8 +277,11 @@ harden(mintInitialSupply);
  * }} powers
  */
 export const addBankAssets = async ({
-  consume: { initialSupply, bridgeManager, loadVat, zoe, mintHolderBundle },
+  consume: { initialSupply, bridgeManager, loadVat, zoe },
   produce: { bankManager, bldIssuerKit },
+  installation: {
+    consume: { mintHolder },
+  },
   issuer: { produce: produceIssuer },
   brand: { produce: produceBrand },
 }) => {
@@ -272,14 +292,11 @@ export const addBankAssets = async ({
   ]);
   const runKit = { issuer: runIssuer, brand: runBrand, payment };
 
-  const bundle = await mintHolderBundle;
-  const installation = E(zoe).install(bundle);
-
   /** @type {{ creatorFacet: ERef<Mint>, publicFacet: ERef<Issuer> }} */
   // @ts-expect-error cast
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
     E(zoe).startInstance(
-      installation,
+      mintHolder,
       harden({}),
       harden({
         keyword: Tokens.BLD.name,

@@ -31,6 +31,8 @@ export const agoricNamesReserved = harden({
     Attestation: 'Agoric lien attestation',
   },
   installation: {
+    centralSupply: 'central supply',
+    mintHolder: 'mint holder',
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
     noActionElectorate: 'no action electorate',
@@ -138,7 +140,13 @@ export const makePromiseSpace = (log = (..._args) => {}) => {
           remaining.delete(name);
           log(name, 'settled; remaining:', [...remaining.keys()].sort());
         });
-        return harden({ resolve });
+        const reset = () => {
+          // Try republishing the promise.
+          state.delete(name);
+          remaining.delete(name);
+          log(`${name}: reset`);
+        };
+        return harden({ resolve, reset });
       },
     },
   );
@@ -203,6 +211,38 @@ export const extractPowers = (permit, allPowers) => {
   return extract(permit, allPowers);
 };
 harden(extractPowers);
+
+/**
+ * @param {object} opts
+ * @param {unknown} opts.allPowers
+ * @param {Record<string, unknown>} opts.behaviors
+ * @param { Record<string, Record<string, unknown>> } opts.manifest
+ * @param { (name: string, permit: Record<string, unknown>) => unknown} opts.makeConfig
+ */
+export const runModuleBehaviors = ({
+  allPowers,
+  behaviors,
+  manifest,
+  makeConfig,
+}) => {
+  return Promise.all(
+    entries(manifest).map(([name, permit]) =>
+      Promise.resolve().then(() => {
+        const behavior = behaviors[name];
+        assert(behavior, `${name} not in ${Object.keys(behaviors).join(',')}`);
+        assert.typeof(
+          behavior,
+          'function',
+          `behaviors[${name}] is not a function; got ${behavior}`,
+        );
+        const powers = extractPowers(permit, allPowers);
+        const config = harden(makeConfig(name, permit));
+        return behavior.call(behaviors, powers, config);
+      }),
+    ),
+  );
+};
+harden(runModuleBehaviors);
 
 /**
  * Make the well-known agoricNames namespace so that we can

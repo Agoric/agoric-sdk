@@ -9,6 +9,12 @@ import { E } from '@endo/eventual-send';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { setupAmmServices } from './setup.js';
+import { unsafeMakeBundleCache } from '../../bundleTool.js';
+
+test.before(async t => {
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  t.context = { bundleCache };
+});
 
 const makeLiquidityInvitations = async (
   t,
@@ -141,7 +147,12 @@ test('amm add and remove liquidity', async t => {
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log, 30n);
 
-  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
   const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
     moolaR.issuer,
     'Moola',

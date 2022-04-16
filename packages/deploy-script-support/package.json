@@ -45,6 +45,7 @@
     "@endo/base64": "^0.2.25",
     "@endo/bundle-source": "^2.2.0",
     "@endo/far": "^0.2.3",
+    "@endo/marshal": "^0.6.7",
     "@endo/promise-kit": "^0.2.41",
     "@endo/zip": "^0.2.25"
   },

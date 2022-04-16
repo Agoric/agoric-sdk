@@ -4,7 +4,7 @@ import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
 import { E } from '@endo/eventual-send';
-import '@agoric/governance/src/exported';
+import '@agoric/governance/src/exported.js';
 
 import { makeScalarMap } from '@agoric/store';
 import {

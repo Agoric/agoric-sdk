@@ -1,12 +1,11 @@
 // @ts-check
 /* global setImmediate */
 
+import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import bundleSource from '@endo/bundle-source';
 import { makeLoopback } from '@endo/captp';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import {
@@ -14,7 +13,9 @@ import {
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { governanceBundles, economyBundles } from '../src/importedBundles.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 
 /**
  *
@@ -44,18 +45,20 @@ export const makeFakeInnerVault = (
 };
 
 /**
- *
+ * @param {*} t
  * @param {string} sourceRoot
+ * @param {string} bundleName
  * @returns {Promise<SourceBundle>}
  */
-export const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  console.log(`makeBundle ${sourceRoot}`);
-  return contractBundle;
+export const provideBundle = (t, sourceRoot, bundleName) => {
+  assert(
+    t.context && t.context.bundleCache,
+    'must set t.context.bundleCache in test.before()',
+  );
+  const { bundleCache } = t.context;
+  return bundleCache.load(sourceRoot, bundleName);
 };
-harden(makeBundle);
+harden(provideBundle);
 
 // Some notifier updates aren't propagating sufficiently quickly for
 // the tests. This invocation waits for all promises that can fire to
@@ -87,7 +90,10 @@ harden(setUpZoeForTest);
 
 export const setupBootstrap = (t, optTimer = undefined) => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
-  const { produce, consume } = /** @type {EconomyBootstrapPowers} */ (space);
+  const { produce, consume } =
+    /** @type { import('../src/econ-behaviors.js').EconomyBootstrapPowers } */ (
+      space
+    );
 
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
@@ -107,8 +113,11 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   brand.produce.RUN.resolve(runBrand);
   issuer.produce.RUN.resolve(runIssuer);
 
-  produce.governanceBundles.resolve(governanceBundles);
-  produce.centralSupplyBundle.resolve(economyBundles.centralSupply);
-
   return { produce, consume, ...spaces };
+};
+
+export const installGovernance = (zoe, produce) => {
+  produce.committee.resolve(E(zoe).install(committeeBundle));
+  produce.contractGovernor.resolve(E(zoe).install(contractGovernorBundle));
+  produce.binaryVoteCounter.resolve(E(zoe).install(binaryVoteCounterBundle));
 };

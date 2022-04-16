@@ -8,8 +8,8 @@
     "node": ">=14.15.0"
   },
   "scripts": {
-    "build": "yarn build-bundle-spawn",
-    "build-bundle-spawn": "node scripts/build-bundle-spawn.js",
+    "build": "yarn build:bundles",
+    "build:bundles": "node scripts/build-bundles.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
@@ -36,6 +36,7 @@
     "@endo/marshal": "^0.6.7"
   },
   "devDependencies": {
+    "@agoric/deploy-script-support": "^0.6.3",
     "@agoric/swingset-vat": "^0.25.1",
     "@endo/bundle-source": "^2.2.0",
     "@endo/init": "^0.5.41",

@@ -8,7 +8,8 @@
     "node": ">=14.15.0"
   },
   "scripts": {
-    "build": "yarn build-zcfBundle",
+    "build": "yarn build:bundles",
+    "build:bundles": "node scripts/build-bundles.js",
     "test": "ava --verbose",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:unit": "ava 'test/unitTests/**/test-*.js' -T 1m --verbose",
@@ -16,7 +17,7 @@
     "test:xs": "yarn test:xs-unit",
     "test:xs-unit": "ava-xs --verbose",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
-    "build-zcfBundle": "node scripts/build-zcfBundle.js",
+    "build-zcfBundle": "yarn build:bundles",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint '**/*.js'",
@@ -55,6 +56,7 @@
     "@endo/promise-kit": "^0.2.41"
   },
   "devDependencies": {
+    "@agoric/deploy-script-support": "^0.6.3",
     "@endo/captp": "^2.0.7",
     "@endo/init": "^0.5.41",
     "ava": "^3.12.1",

@@ -25,9 +25,15 @@ import {
 } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { BASIS_POINTS } from '../../../src/vpool-xyk-amm/constantProduct/defaults.js';
 import { setupAmmServices } from './setup.js';
+import { unsafeMakeBundleCache } from '../../bundleTool.js';
 
 const { quote: q } = assert;
 const { ceilDivide } = natSafeMath;
+
+test.before(async t => {
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  t.context = { bundleCache };
+});
 
 test('amm with non-fungible central token', async t => {
   // Set up central token
@@ -36,7 +42,7 @@ test('amm with non-fungible central token', async t => {
   const timer = buildManualTimer(console.log, 30n);
 
   await t.throwsAsync(
-    () => setupAmmServices(electorateTerms, centralR, timer),
+    () => setupAmmServices(t, electorateTerms, centralR, timer),
     {
       message: `Central must be of kind ${q(AssetKind.NAT)}, not ${q(
         AssetKind.SET,
@@ -62,6 +68,7 @@ test('amm with valid offers', async t => {
   const protocolFeeRatio = makeRatio(6n, centralR.brand, BASIS_POINTS);
 
   const { zoe, amm, installs } = await setupAmmServices(
+    t,
     electorateTerms,
     centralR,
     timer,
@@ -419,7 +426,12 @@ test('amm doubleSwap', async t => {
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log, 30n);
 
-  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
@@ -636,7 +648,12 @@ test('amm with some invalid offers', async t => {
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log);
 
-  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 
   // Setup Bob
@@ -703,7 +720,12 @@ test('amm jig - swapOut uneven', async t => {
 
   const timer = buildManualTimer(console.log);
 
-  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
 
   // set up purses
   const centralPayment = centralR.mint.mintPayment(centralTokens(30000000n));
@@ -939,7 +961,12 @@ test('amm jig - breaking scenario', async t => {
 
   const timer = buildManualTimer(console.log);
 
-  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
 
   const publicFacet = amm.ammPublicFacet;
 
@@ -1044,7 +1071,12 @@ test('zoe allow empty reallocations', async t => {
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log, 30n);
 
-  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
 
   const collectFeesInvitation2 = E(
     amm.ammCreatorFacet,
@@ -1167,7 +1199,12 @@ test('amm adding liquidity', async t => {
   // This timer is only used to build quotes. Let's make it non-zero
   const timer = buildManualTimer(console.log, 30n);
 
-  const { zoe, amm } = await setupAmmServices(electorateTerms, centralR, timer);
+  const { zoe, amm } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
   const moolaLiquidityIssuer = await E(amm.ammPublicFacet).addPool(
     // verify that addPool works with ERef<Issuer>.
     Promise.resolve(moolaR.issuer),
