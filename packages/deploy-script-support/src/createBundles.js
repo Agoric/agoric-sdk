@@ -34,10 +34,9 @@ export const createBundlesFromAbsolute = async sourceBundles => {
 };
 
 export const createBundles = async (sourceBundles, dirname = '.') => {
-  const resolve = fileName => require.resolve(fileName, { paths: [dirname] });
   const absBundleSources = sourceBundles.map(([srcPath, bundlePath]) => [
-    resolve(srcPath),
-    resolve(bundlePath),
+    require.resolve(srcPath, { paths: [dirname] }),
+    path.resolve(dirname, bundlePath),
   ]);
   return createBundlesFromAbsolute(absBundleSources);
 };
@@ -47,18 +46,15 @@ export const extractProposalBundles = async (
   dirname = '.',
 ) => {
   const toBundle = new Map();
-  const resolve = fileName => require.resolve(fileName, { paths: [dirname] });
 
   await Promise.all(
     dirProposalBuilder.map(async ([dir, proposalBuilder]) => {
-      const home = resolve(dirname, dir);
-      const homeResolve = fileName =>
-        require.resolve(fileName, { paths: [home] });
+      const home = path.resolve(dirname, dir);
       const publishRef = x => x;
       const install = async (src, bundleName) => {
         if (bundleName) {
-          const bundlePath = homeResolve(bundleName);
-          const srcPath = homeResolve(src);
+          const bundlePath = path.resolve(home, bundleName);
+          const srcPath = require.resolve(src, { paths: [home] });
           if (toBundle.has(bundlePath)) {
             const oldSrc = toBundle.get(bundlePath);
             assert.equal(

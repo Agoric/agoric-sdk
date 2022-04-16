@@ -4,6 +4,7 @@ import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
 import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 
 import { makeCoreProposalBehavior } from './coreProposalBehavior.js';
+import { createBundles } from './createBundles.js';
 
 const { serialize } = makeMarshal();
 const stringify = (x, pretty = undefined) =>
@@ -49,9 +50,17 @@ export const makeWriteCoreProposal = (
 
   const writeCoreProposal = async (filePrefix, proposalBuilder) => {
     // Install an entrypoint.
-    const install = async entrypoint => {
+    const install = async (entrypoint, bundlePath) => {
       const bundler = getBundler();
-      const bundle = await bundleSource(pathResolve(entrypoint));
+      let bundle;
+      if (bundlePath) {
+        const bundleCache = pathResolve(bundlePath);
+        await createBundles([[pathResolve(entrypoint), bundleCache]]);
+        const ns = await import(bundleCache);
+        bundle = ns.default;
+      } else {
+        bundle = await bundleSource(pathResolve(entrypoint));
+      }
       return installInPieces(bundle, bundler);
     };
 
