@@ -33,7 +33,7 @@ export const makeFileWriter = (fileName, { fs, path }) => {
 export const makeBundleCache = (wr, cwd, readPowers, opts) => {
   const {
     toBundleName = n => `bundle-${n}.js`,
-    toBundleMeta = n => `bundle-${n}-meta.js`,
+    toBundleMeta = n => `bundle-${n}-meta.json`,
   } = opts || {};
 
   const add = async (rootPath, targetName) => {

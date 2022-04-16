@@ -60,6 +60,7 @@
   "files": [
     "CHANGELOG.md",
     "src/",
+    "bundles/bundle-*.js",
     "*.json",
     "globals.d.ts",
     "exported.js"
