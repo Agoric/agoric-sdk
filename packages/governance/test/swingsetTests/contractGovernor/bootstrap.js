@@ -16,7 +16,6 @@ const { quote: q } = assert;
  * @param {Record<string,Installation>} installations
  * @param {ERef<GovernedContractFacetAccess<unknown>>} contractFacetAccess
  * @param {bigint} deadline
- * @returns {Promise<*>}
  */
 const voteToChangeParameter = async (
   zoe,
@@ -67,6 +66,12 @@ const installContracts = async (zoe, cb) => {
   return installations;
 };
 
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {Record<string, Installation>} installations
+ * @param {Record<string, unknown>} electorateTerms
+ * @returns {Promise<{electorateCreatorFacet: *, electorateInstance: Instance}>}
+ */
 const startElectorate = async (zoe, installations, electorateTerms) => {
   const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
     await E(zoe).startInstance(installations.committee, {}, electorateTerms);
@@ -95,6 +100,16 @@ const votersVote = async (detailsP, votersP, selections) => {
   );
 };
 
+/**
+ *
+ * @param {ERef<import('./vat-voter.js').EVatVoter[]>} votersP
+ * @param {ERef<QuestionDetails>} detailsP
+ * @param {Instance} governedInstanceP
+ * @param {Instance} electorateInstance
+ * @param {Instance} governorInstanceP
+ * @param {Record<string, Installation>} installations
+ * @returns {Promise<void>}
+ */
 const oneVoterValidate = async (
   votersP,
   detailsP,

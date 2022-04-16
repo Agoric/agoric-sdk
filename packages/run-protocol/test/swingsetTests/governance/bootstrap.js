@@ -33,6 +33,7 @@ const oneVoterValidate = async (
   installations,
   parameterName,
 ) => {
+  /** @type {[import('./vat-voter').EVatVoter[], Instance, Instance]} */
   const [voters, governedInstance, governorInstance] = await Promise.all([
     votersP,
     governedInstanceP,

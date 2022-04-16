@@ -455,7 +455,7 @@
  * @property {() => Instance} getGovernedContract
  * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
  * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
- * @property {(details: QuestionDetails) => boolean} validateTimer
+ * @property {(details: ParamChangeIssueDetails) => boolean} validateTimer
  */
 
 /**
@@ -649,32 +649,6 @@
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedElectorate
- */
-
-/**
- * @callback ValidateQuestionDetails
- *
- * Validate that the question details correspond to a parameter change question
- * that the electorate hosts, and that the voteCounter and other details are
- * consistent with it.
- *
- * @param {ERef<ZoeService>} zoe
- * @param {Instance} electorate
- * @param {ParamChangeIssueDetails} details
- * @returns {Promise<*>}
- */
-
-/**
- * @callback ValidateQuestionFromCounter
- *
- * Validate that the questions counted by the voteCounter correspond to a
- * parameter change question that the electorate hosts, and that the
- * voteCounter and other details are consistent.
- *
- * @param {ERef<ZoeService>} zoe
- * @param {Instance} electorate
- * @param {Instance} voteCounter
- * @returns {Promise<*>}
  */
 
 /**

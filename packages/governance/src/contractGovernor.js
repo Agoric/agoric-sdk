@@ -12,7 +12,15 @@ import { setupApiGovernance } from './contractGovernance/governApi.js';
 
 const { details: X } = assert;
 
-/** @type {ValidateQuestionDetails} */
+/**
+ * Validate that the question details correspond to a parameter change question
+ * that the electorate hosts, and that the voteCounter and other details are
+ * consistent with it.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Instance} electorate
+ * @param {ParamChangeIssueDetails} details
+ */
 const validateQuestionDetails = async (zoe, electorate, details) => {
   const {
     counterInstance,
@@ -22,6 +30,7 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
 
   const governorInstance = await E.get(E(zoe).getTerms(governedInstance))
     .electionManager;
+  /** @type {Promise<GovernorPublic>} */
   const governorPublic = E(zoe).getPublicFacet(governorInstance);
 
   return Promise.all([
@@ -31,7 +40,15 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
   ]);
 };
 
-/** @type {ValidateQuestionFromCounter} */
+/**
+ * Validate that the questions counted by the voteCounter correspond to a
+ * parameter change question that the electorate hosts, and that the
+ * voteCounter and other details are consistent.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Instance} electorate
+ * @param {Instance} voteCounter
+ */
 const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
   const counterPublicP = E(zoe).getPublicFacet(voteCounter);
   const questionDetails = await E(counterPublicP).getDetails();
