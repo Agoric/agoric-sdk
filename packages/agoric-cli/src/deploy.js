@@ -7,11 +7,14 @@ import bundleSource from '@endo/bundle-source';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
 import path from 'path';
 import inquirer from 'inquirer';
-import createRequire from 'esm';
+import createEsmRequire from 'esm';
+
+import { createRequire } from 'module';
 
 import { getAccessToken } from '@agoric/access-token';
 
-const esmRequire = createRequire({});
+const require = createRequire(import.meta.url);
+const esmRequire = createEsmRequire({});
 
 // note: CapTP has its own HandledPromise instantiation, and the contract
 // must use the same one that CapTP uses. We achieve this by not bundling
@@ -181,8 +184,16 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
 
         for (const arg of args) {
           const moduleFile = path.resolve(process.cwd(), arg);
-          const pathResolve = (...resArgs) =>
-            path.resolve(path.dirname(moduleFile), ...resArgs);
+          const pathResolve = (...paths) => {
+            const fileName = paths.pop();
+            try {
+              return require.resolve(fileName, {
+                paths: [...paths, path.dirname(moduleFile)],
+              });
+            } catch (e) {
+              return path.resolve(...paths, fileName);
+            }
+          };
           console.warn('running', moduleFile);
 
           let installUnsafePlugin;
