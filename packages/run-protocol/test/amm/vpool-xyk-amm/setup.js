@@ -44,7 +44,7 @@ export const setupAMMBootstrap = async (
     ({ zoe } = await setUpZoeForTest());
   }
 
-  const space = /** @type {any} */ (makePromiseSpace(console.log)); // @@t.log
+  const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } = /** @type { EconomyBootstrapPowers } */ (space);
 
   produce.chainTimerService.resolve(timer);

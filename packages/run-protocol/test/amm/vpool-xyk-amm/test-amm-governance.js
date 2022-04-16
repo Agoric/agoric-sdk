@@ -17,6 +17,12 @@ import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js
 import { startEconomicCommittee } from '../../../src/econ-behaviors.js';
 
 import { setupAmmServices, setupAMMBootstrap } from './setup.js';
+import { unsafeMakeBundleCache } from '../../bundleTool.js';
+
+test.before(async t => {
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  t.context = { bundleCache };
+});
 
 test('start Economic Committee', async t => {
   const space = await setupAMMBootstrap();

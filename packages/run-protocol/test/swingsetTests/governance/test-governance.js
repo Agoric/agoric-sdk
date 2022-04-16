@@ -7,15 +7,15 @@ import rawTest from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import path from 'path';
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
-import {
-  governanceBundles,
-  economyBundles,
-} from '../../../src/importedBundles.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import { unsafeMakeBundleCache } from '../../bundleTool.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+// import '../../../src/vaultFactory/vaultFactory.js';
+
+const dirname = new URL('.', import.meta.url).pathname;
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
 // @ts-expect-error cast
@@ -23,14 +23,24 @@ const test = rawTest;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
 
   const contractBundles = {
-    liquidateMinimum: economyBundles.liquidate,
-    amm: economyBundles.amm,
-    vaultFactory: economyBundles.VaultFactory,
-    committee: governanceBundles.committee,
-    contractGovernor: governanceBundles.contractGovernor,
-    binaryVoteCounter: governanceBundles.binaryVoteCounter,
+    liquidateMinimum: await bundleCache.load(
+      './src/vaultFactory/liquidateMinimum.js',
+      'liquidateMinimum',
+    ),
+    amm: await bundleCache.load(
+      './src/vpool-xyk-amm/multipoolMarketMaker.js',
+      'amm',
+    ),
+    vaultFactory: await bundleCache.load(
+      './src/vaultFactory/vaultFactory.js',
+      'VaultFactory',
+    ),
+    committee: committeeBundle,
+    contractGovernor: contractGovernorBundle,
+    binaryVoteCounter: binaryVoteCounterBundle,
   };
 
   const vatNames = ['alice', 'owner', 'priceAuthority', 'voter', 'zoe'];
