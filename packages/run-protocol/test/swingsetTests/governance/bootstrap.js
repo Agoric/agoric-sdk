@@ -24,9 +24,19 @@ const votersVote = async (detailsP, votersP, selections) => {
   );
 };
 
+/**
+ *
+ * @param {ERef<import('./vat-voter.js').EVatVoter[]>} votersP
+ * @param {ERef<QuestionSpec<ParamChangeIssue> & QuestionDetailsExtraProperties>} detailsP
+ * @param {Instance} governedInstanceP
+ * @param {Instance} electorateInstance
+ * @param {Instance} governorInstanceP
+ * @param {Record<string, Installation>} installations
+ * @returns {Promise<void>}
+ */
 const oneVoterValidate = async (
   votersP,
-  details,
+  detailsP,
   governedInstanceP,
   electorateInstance,
   governorInstanceP,
@@ -39,7 +49,7 @@ const oneVoterValidate = async (
     governedInstanceP,
     governorInstanceP,
   ]);
-  const { counterInstance, issue } = await details;
+  const { counterInstance, issue } = await detailsP;
 
   return E(voters[0]).validate(
     counterInstance,

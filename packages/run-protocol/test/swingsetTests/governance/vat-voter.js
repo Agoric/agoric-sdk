@@ -27,8 +27,9 @@ const build = async (log, zoe) => {
          * @param {Instance} governedInstance
          * @param {Instance} electorateInstance
          * @param {Instance} governorInstance
-         * @param {*} issue
-         * @param {*} installations
+         * @param {ParamChangeIssue} issue
+         * @param {Record<string, Installation>} installations
+         * @returns {Promise<void>}
          */
         validate: async (
           counterInstance,
