@@ -27,7 +27,7 @@ const publicPrices = prices => {
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
- * @returns {VPoolWrapper<VPoolInternalFacet>}
+ * @returns {VPoolWrapper<DoublePoolInternalFacet>}
  */
 export const makeDoublePool = (
   zcf,

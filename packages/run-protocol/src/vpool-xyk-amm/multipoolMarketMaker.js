@@ -178,7 +178,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {Brand} brandIn
    * @param {Brand} brandOut
-   * @returns {VPoolWrapper<unknown>}
+   * @returns {VPoolWrapper<DoublePoolInternalFacet>}
    */
   const provideVPool = (brandIn, brandOut) => {
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
@@ -193,6 +193,7 @@ const start = async (zcf, privateArgs) => {
     }
 
     const pool = isSecondary(brandOut) ? getPool(brandOut) : getPool(brandIn);
+    // @ts-expect-error cast
     return pool.getVPool();
   };
 
