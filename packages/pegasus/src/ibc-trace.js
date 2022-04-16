@@ -1,5 +1,5 @@
 // @ts-check
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
 
 import { parse } from '@agoric/swingset-vat/src/vats/network/multiaddr.js';
