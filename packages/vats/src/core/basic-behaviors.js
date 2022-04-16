@@ -4,8 +4,6 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { Nat } from '@agoric/nat';
 import { makeNameHubKit } from '../nameHub.js';
-import centralSupplyBundle from '../../bundles/bundle-centralSupply.js';
-import mintHolderBundle from '../../bundles/bundle-mintHolder.js';
 
 import { feeIssuerConfig } from './utils.js';
 
@@ -214,15 +212,23 @@ export const makeClientBanks = async ({ consume: { client, bankManager } }) => {
 };
 harden(makeClientBanks);
 
-/** @param {BootstrapSpace} powers */
+/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
 export const installBootContracts = async ({
+  vatPowers: { D },
+  devices: { vatAdmin },
   consume: { zoe },
   installation: {
     produce: { centralSupply, mintHolder },
   },
 }) => {
-  centralSupply.resolve(E(zoe).install(centralSupplyBundle));
-  mintHolder.resolve(E(zoe).install(mintHolderBundle));
+  for (const [name, producer] of Object.entries({
+    centralSupply,
+    mintHolder,
+  })) {
+    const bundleCap = D(vatAdmin).getNamedBundleCap(name);
+    const bundle = D(bundleCap).getBundle();
+    producer.resolve(E(zoe).install(bundle));
+  }
 };
 
 /**

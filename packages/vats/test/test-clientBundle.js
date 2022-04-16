@@ -20,6 +20,8 @@ import {
   makeClientBanks,
 } from '../src/core/basic-behaviors.js';
 
+import { devices } from './devices.js';
+
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
   const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
@@ -92,8 +94,12 @@ test('connectFaucet produces payments', async t => {
     E(client).assignBundle([_a => stub]);
   };
 
+  const vatPowers = {
+    D: x => x,
+  };
+
   await Promise.all([
-    installBootContracts({ consume, produce, ...spaces }),
+    installBootContracts({ vatPowers, devices, consume, produce, ...spaces }),
     makeClientManager({ consume, produce, ...spaces }),
     connectFaucet({ consume, produce, ...spaces }),
     makeClientBanks({ consume, produce, ...spaces }),

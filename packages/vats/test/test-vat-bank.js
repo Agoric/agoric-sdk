@@ -16,6 +16,8 @@ import {
 } from '../src/core/basic-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 
+import { devices } from './devices.js';
+
 test('communication', async t => {
   t.plan(38);
   const bankVat = E(buildRootObject)();
@@ -210,7 +212,16 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   );
   produce.zoe.resolve(zoeService);
   produce.feeMintAccess.resolve(feeMintAccess);
-  await installBootContracts({ consume, produce, ...spaces });
+  const vatPowers = {
+    D: x => x,
+  };
+  await installBootContracts({
+    vatPowers,
+    devices,
+    consume,
+    produce,
+    ...spaces,
+  });
 
   // Genesis RUN supply: 50
   const bootMsg = {

@@ -21,6 +21,8 @@ import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
 
+import { devices } from './devices.js';
+
 const vatRoots = {
   bank: bankRoot,
   board: boardRoot,
@@ -39,9 +41,9 @@ const mock = {
     mailbox: /** @type { any } */ ({
       registerInboundHandler: noop,
     }),
-    vatAdmin: /** @type { any } */ ({}),
     timer: /** @type { any } */ ({}),
     plugin: /** @type { any } */ ({ registerReceiver: noop }),
+    ...devices,
   },
   vats: {
     vattp: /** @type { any } */ (

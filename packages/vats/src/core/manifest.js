@@ -87,6 +87,8 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
     home: { produce: { bank: 'bank' } },
   },
   installBootContracts: {
+    vatPowers: { D: true },
+    devices: { vatAdmin: true },
     consume: { zoe: 'zoe' },
     installation: {
       produce: {

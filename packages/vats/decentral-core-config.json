@@ -6,6 +6,12 @@
     }
   },
   "bundles": {
+    "centralSupply": {
+      "sourceSpec": "./src/centralSupply.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "./src/mintHolder.js"
+    },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"
     },
