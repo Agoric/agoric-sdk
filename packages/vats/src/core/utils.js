@@ -31,6 +31,8 @@ export const agoricNamesReserved = harden({
     Attestation: 'Agoric lien attestation',
   },
   installation: {
+    centralSupply: 'central supply',
+    mintHolder: 'mint holder',
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
     noActionElectorate: 'no action electorate',
