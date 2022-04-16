@@ -27,7 +27,7 @@ const build = async (log, zoe) => {
          * @param {Instance} governedInstance
          * @param {Instance} electorateInstance
          * @param {Instance} governorInstance
-         * @param {ParamChangeIssue} issue
+         * @param {{ parameterName: string, paramPath: unknown}} paramSpec
          * @param {Record<string, Installation>} installations
          * @returns {Promise<void>}
          */
@@ -43,6 +43,7 @@ const build = async (log, zoe) => {
           const electionManagerP = E.get(governedTermsP).electionManager;
 
           const counterPublicP = E(zoe).getPublicFacet(counterInstance);
+          /** @type {Promise<QuestionSpec<ParamChangeIssue>>} */
           const ballotDetailsP = E(counterPublicP).getDetails();
 
           const [electionManager, ballotDetails] = await Promise.all([
