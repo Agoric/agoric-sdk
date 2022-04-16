@@ -8,9 +8,12 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 
 import { makeIssuerKit } from '@agoric/ertp';
+import {
+  connectFaucet,
+  showAmount,
+} from '@agoric/run-protocol/src/demoIssuers.js';
 import { makeClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
-import { connectFaucet, showAmount } from '../src/demoIssuers.js';
 import { buildRootObject as bldMintRoot } from '../src/vat-mints.js';
 import {
   installBootContracts,
@@ -107,7 +110,7 @@ test('connectFaucet produces payments', async t => {
 
   // t.deepEqual(Object.keys(userBundle), '@@todo');
 
-  /** @type { import('../src/demoIssuers.js').UserPaymentRecord[] } */
+  /** @type { import('@agoric/run-protocol/src/demoIssuers.js').UserPaymentRecord[] } */
   const pmts = await E(userBundle.faucet).tapFaucet();
 
   const detail = await Promise.all(

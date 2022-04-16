@@ -90,7 +90,10 @@ harden(setUpZoeForTest);
 
 export const setupBootstrap = (t, optTimer = undefined) => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
-  const { produce, consume } = /** @type {EconomyBootstrapPowers} */ (space);
+  const { produce, consume } =
+    /** @type { import('../src/econ-behaviors.js').EconomyBootstrapPowers } */ (
+      space
+    );
 
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);

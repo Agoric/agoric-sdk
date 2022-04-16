@@ -28,6 +28,22 @@ const BASIS_POINTS = 10_000n;
 const CENTRAL_DENOM_NAME = 'urun';
 
 /**
+ * @typedef { WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace
+ * } EconomyBootstrapPowers
+ * @typedef {PromiseSpaceOf<{
+ *   ammCreatorFacet: XYKAMMCreatorFacet,
+ *   ammGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
+ *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
+ *   reservePublicFacet: unknown,
+ *   reserveCreatorFacet: GovernedContractFacetAccess<any>,
+ *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<any>,
+ *   vaultFactoryCreator: VaultFactory,
+ *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
+ *   vaultFactoryVoteCreator: unknown,
+ * }>} EconomyBootstrapSpace
+ */
+
+/**
  * @file A collection of productions, each of which declares inputs and outputs.
  * Each function is passed a set of powers for reading from and writing to the vat config.
  *
@@ -322,7 +338,7 @@ export const startVaultFactory = async (
  * Grant access to the VaultFactory creatorFacet
  * to up to one user based on address.
  *
- * @param { BootstrapSpace & {
+ * @param { EconomyBootstrapPowers & {
  *   vatParameters: { argv: { vaultFactoryControllerAddress?: string } }
  * }} powers
  */
@@ -437,7 +453,7 @@ harden(configureVaultFactoryUI);
 /**
  * Start the reward distributor.
  *
- * @param {BootstrapPowers & {
+ * @param {EconomyBootstrapPowers & {
  *   consume: { loadVat: ERef<VatLoader<DistributeFeesVat>>},
  * }} powers
  *

@@ -1,13 +1,13 @@
 // @ts-check
 import { assert } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import * as Collect from '@agoric/run-protocol/src/collect.js';
 import {
   natSafeMath,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Nat } from '@endo/nat';
 import { E, Far } from '@endo/far';
+import * as Collect from './collect.js';
 
 const { details: X, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
@@ -232,7 +232,7 @@ export const connectFaucet = async ({
     zoe,
   },
   installation: {
-    consume: { centralSupply },
+    consume: { centralSupply: centralSupplyInstall },
   },
   produce: { mints },
 }) => {
@@ -244,7 +244,7 @@ export const connectFaucet = async ({
   const bldIssuerKit = await bldP;
   const LOTS = 1_000_000_000_000n; // TODO: design this.
   let faucetRunSupply = await mintRunPayment(LOTS, {
-    centralSupplyInstall: centralSupply,
+    centralSupplyInstall,
     feeMintAccess,
     zoe,
   });
@@ -447,14 +447,13 @@ export const poolRates = (issuerName, record, kits, central) => {
 };
 
 /**
- * @param { BootstrapPowers & {
+ * @param { import('./econ-behaviors.js').EconomyBootstrapPowers & {
  *   consume: { mints }
  * }} powers
  */
 export const fundAMM = async ({
   consume: {
     bldIssuerKit,
-    centralSupplyBundle,
     chainTimerService,
     feeMintAccess,
     mints,
@@ -462,6 +461,9 @@ export const fundAMM = async ({
     priceAuthorityAdmin,
     vaultFactoryCreator,
     zoe,
+  },
+  installation: {
+    consume: { centralSupply: centralSupplyInstall },
   },
   issuer: {
     consume: { RUN: centralIssuer },
@@ -502,14 +504,14 @@ export const fundAMM = async ({
   );
   const central = kits[CENTRAL_ISSUER_NAME];
 
-  /** @type {[XYKAMMPublicFacet, TimerService]} */
+  /** @type {[ XYKAMMPublicFacet, TimerService]} */
   const [ammPublicFacet, timer] = await Promise.all([
     E(zoe).getPublicFacet(ammInstance),
     chainTimerService,
   ]);
 
   const ammBootstrapPayment = await mintRunPayment(ammDepositValue, {
-    centralSupplyBundle,
+    centralSupplyInstall,
     feeMintAccess,
     zoe,
   });

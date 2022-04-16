@@ -45,7 +45,10 @@ export const setupAMMBootstrap = async (
   }
 
   const space = /** @type {any} */ (makePromiseSpace());
-  const { produce, consume } = /** @type { EconomyBootstrapPowers } */ (space);
+  const { produce, consume } =
+    /** @type { import('../../../src/econ-behaviors.js').EconomyBootstrapPowers } */ (
+      space
+    );
 
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);

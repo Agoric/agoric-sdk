@@ -1,4 +1,5 @@
 export * from './econ-behaviors.js';
+export * from './sim-behaviors.js';
 
 const SHARED_POST_BOOT_MANIFEST = harden({
   shareEconomyBundles: {

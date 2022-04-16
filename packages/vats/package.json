@@ -41,13 +41,13 @@
     "@endo/import-bundle": "^0.2.45",
     "@endo/init": "^0.5.41",
     "@endo/marshal": "^0.6.7",
-    "@endo/nat": "^4.1.12",
     "@endo/promise-kit": "^0.2.41"
   },
   "devDependencies": {
     "@agoric/babel-parser": "^7.6.4",
     "@agoric/deploy-script-support": "^0.6.3",
     "@endo/bundle-source": "^2.1.1",
+    "@endo/captp": "^2.0.7",
     "ava": "^3.12.1",
     "c8": "^7.7.2",
     "import-meta-resolve": "^1.1.1"

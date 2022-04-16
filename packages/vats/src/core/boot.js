@@ -1,6 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 
+import * as simBehaviors from '@agoric/run-protocol/src/sim-behaviors.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
@@ -13,7 +14,6 @@ import {
 } from './manifest.js';
 
 import * as behaviors from './behaviors.js';
-import * as simBehaviors from './sim-behaviors.js';
 import * as clientBehaviors from './client-behaviors.js';
 import * as utils from './utils.js';
 
