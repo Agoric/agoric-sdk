@@ -10,8 +10,13 @@ import { AmountMath } from '@agoric/ertp';
  * @param {(brandIn: Brand, brandOut: Brand) => VPoolWrapper<unknown>} provideVPool
  */
 export const makeMakeSwapInvitation = (zcf, provideVPool) => {
-  // trade with a stated amountIn.
-  const swapIn = (seat, { maxOut } = {}) => {
+  /**
+   * trade with a stated amountIn.
+   *
+   * @param {ZCFSeat} seat
+   * @param {{ maxOut: Amount }} args
+   */
+  const swapIn = (seat, args) => {
     assertProposalShape(seat, {
       give: { In: null },
       want: { Out: null },
@@ -20,22 +25,17 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    // const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
-    // return pool.swapIn(seat, amountIn, amountOut);
-    console.log('start trade', { amountIn, amountOut, maxOut });
     const pool = provideVPool(amountIn.brand, amountOut.brand).internalFacet;
     let prices;
+    const maxOut = args.maxOut;
     if (maxOut) {
       AmountMath.coerce(amountOut.brand, maxOut);
       prices = pool.getPriceForOutput(amountIn, maxOut);
-      console.log('had maxOut', maxOut, prices);
     }
     if (!prices || !AmountMath.isGTE(prices.swapperGets, maxOut)) {
       // `amountIn` is not enough to sell for maxOut so just sell it all
       prices = pool.getPriceForInput(amountIn, amountOut);
-      console.log('just swap in', prices);
     }
-    console.log('HELP', prices);
     assert(amountIn.brand === prices.swapperGives.brand);
     return pool.allocateGainsAndLosses(seat, prices);
   };
