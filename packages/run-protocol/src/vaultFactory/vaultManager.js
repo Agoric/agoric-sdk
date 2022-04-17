@@ -27,7 +27,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM', true);
 
 /**
  * @typedef {{
@@ -72,7 +72,7 @@ const trace = makeTracer('VM', false);
  * compoundedInterest: Ratio,
  * latestInterestUpdate: bigint,
  * liquidationInProgress: boolean,
- * outstandingQuote: MutableQuote| null,
+ * outstandingQuote: Promise<MutableQuote>| null,
  * totalDebt: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
@@ -267,7 +267,7 @@ const helperBehavior = {
         highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
-      trace('updating level for outstandingQuote');
+      trace('updating level for outstandingQuote', triggerPoint);
       return;
     }
 
@@ -280,11 +280,15 @@ const helperBehavior = {
     // callback that may not fire until much later.
     // Callers shouldn't expect a response from this function.
     const { priceAuthority } = state;
-    state.outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
+    trace('posting quote request', triggerPoint);
+
+    state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
       highestDebtRatio.denominator, // collateral
       triggerPoint,
     );
+    trace('posted quote request');
 
+    // The rest of this method will not happen until after a quote is received.
     const quote = await E(state.outstandingQuote).getPromise();
     // When we receive a quote, we liquidate all the vaults that don't have
     // sufficient collateral, (even if the trigger was set for a different
@@ -294,6 +298,7 @@ const helperBehavior = {
       ceilDivideBy(getAmountOut(quote), liquidationMargin),
       getAmountIn(quote),
     );
+    trace('quote', quote, quoteRatioPlusMargin);
 
     state.outstandingQuote = null;
 
@@ -302,7 +307,9 @@ const helperBehavior = {
       prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
     await (next ? facets.helper.liquidateAndRemove(next) : null);
 
-    facets.helper.reschedulePriceCheck();
+    trace('price check liq', next);
+
+    await facets.helper.reschedulePriceCheck();
   },
 
   /**
@@ -328,6 +335,7 @@ const helperBehavior = {
       .then(() => {
         prioritizedVaults.removeVault(key);
         state.liquidationInProgress = false;
+        trace('liquidated');
       })
       .catch(e => {
         state.liquidationInProgress = false;

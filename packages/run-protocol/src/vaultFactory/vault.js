@@ -300,7 +300,7 @@ const helperBehavior = {
    * @param {MethodContext} context
    * @param {OuterPhase} newPhase
    */
-  snapshotState: ({ state, facets }, newPhase) => {
+  getStateSnapshot: ({ state, facets }, newPhase) => {
     const { debtSnapshot: debt, interestSnapshot: interest } = state;
     /** @type {VaultUIState} */
     return harden({
@@ -325,20 +325,20 @@ const helperBehavior = {
   updateUiState: ({ state, facets }) => {
     const { outerUpdater } = state;
     if (!outerUpdater) {
-      console.warn('updateUiState called after outerUpdater removed');
+      // It's not an error to change to liquidating during transfer
       return;
     }
     const { phase } = state;
-    const uiState = facets.helper.snapshotState(phase);
+    const uiState = facets.helper.getStateSnapshot(phase);
     trace('updateUiState', state.idInManager, uiState);
 
     switch (phase) {
       case VaultPhase.ACTIVE:
       case VaultPhase.LIQUIDATING:
+      case VaultPhase.LIQUIDATED:
         outerUpdater.updateState(uiState);
         break;
       case VaultPhase.CLOSED:
-      case VaultPhase.LIQUIDATED:
         outerUpdater.finish(uiState);
         state.outerUpdater = null;
         break;
@@ -633,7 +633,7 @@ const selfBehavior = {
       phase,
     } = state;
     if (outerUpdater) {
-      outerUpdater.finish(helper.snapshotState(VaultPhase.TRANSFER));
+      outerUpdater.finish(helper.getStateSnapshot(VaultPhase.TRANSFER));
       state.outerUpdater = null;
     }
     const transferState = {
