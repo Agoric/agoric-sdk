@@ -719,7 +719,10 @@ export default function buildKernel(
       return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
     } else if (message.type === 'create-vat') {
       // prettier-ignore
-      return `create-vat ${message.vatID} opts: ${JSON.stringify(message.dynamicOptions)}`;
+      return `create-vat ${message.vatID} opts: ${JSON.stringify(message.dynamicOptions)} vatParameters: ${JSON.stringify(message.vatParameters)}`;
+    } else if (message.type === 'upgrade-vat') {
+      // prettier-ignore
+      return `upgrade-vat ${message.vatID} upgradeID: ${message.upgradeID} vatParameters: ${JSON.stringify(message.vatParameters)}`;
       // eslint-disable-next-line no-use-before-define
     } else if (gcMessages.includes(message.type)) {
       // prettier-ignore

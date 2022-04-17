@@ -25,8 +25,8 @@ import { capargs } from '../util.js';
 let aWeakMapStore;
 let aWeakSetStore;
 
-const mainHolderIdx = 2;
-const mainHeldIdx = 3;
+const mainHolderIdx = 4;
+const mainHeldIdx = 5;
 
 function buildRootObject(vatPowers) {
   const { VatData } = vatPowers;
@@ -36,7 +36,7 @@ function buildRootObject(vatPowers) {
     makeScalarBigWeakSetStore,
   } = VatData;
 
-  let nextStoreNumber = 2;
+  let nextStoreNumber = 4;
   let heldStore = null;
 
   const holders = [];
@@ -160,6 +160,20 @@ const anySchema = JSON.stringify(
   ]),
 );
 
+const stringSchema = JSON.stringify(
+  capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
+);
+
+const anyScalarSchema = JSON.stringify(
+  capargs([
+    {
+      '@qclass': 'tagged',
+      tag: 'match:scalar',
+      payload: { '@qclass': 'undefined' },
+    },
+  ]),
+);
+
 function stringVal(str) {
   return {
     body: JSON.stringify(str),
@@ -235,17 +249,45 @@ function validateStatusCheck(v, vref, rc, es) {
   validateExportStatusCheck(v, vref, es);
 }
 
-function validateCreateBaggage(v, idx) {
+function validateCreateBuiltInTable(v, idx, idKey, schema, label) {
+  validate(v, matchVatstoreGet(idKey, NONE));
   validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
   validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
-  const baggageSchema = JSON.stringify(
-    capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
+  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, schema));
+  validate(v, matchVatstoreSet(`vc.${idx}.|label`, label));
+  validate(v, matchVatstoreSet(idKey, `o+6/${idx}`));
+  validate(v, matchVatstoreGet(`vom.rc.o+6/${idx}`, NONE));
+  validate(v, matchVatstoreSet(`vom.rc.o+6/${idx}`, '1'));
+}
+
+function validateCreatePromiseWatcherKindTable(v, idx) {
+  validateCreateBuiltInTable(
+    v,
+    idx,
+    'watcherTableID',
+    anyScalarSchema,
+    'promiseWatcherByKind',
   );
-  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
-  validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
-  validate(v, matchVatstoreSet('baggageID', 'o+6/1'));
-  validate(v, matchVatstoreGet('vom.rc.o+6/1', NONE));
-  validate(v, matchVatstoreSet('vom.rc.o+6/1', '1'));
+}
+
+function validateCreateWatchedPromiseTable(v, idx) {
+  validateCreateBuiltInTable(
+    v,
+    idx,
+    'watchedPromiseTableID',
+    stringSchema,
+    'watchedPromises',
+  );
+}
+
+function validateCreateBaggage(v, idx) {
+  validateCreateBuiltInTable(v, idx, 'baggageID', stringSchema, 'baggage');
+}
+
+function validateCreateBuiltInTables(v) {
+  validateCreateBaggage(v, 1);
+  validateCreatePromiseWatcherKindTable(v, 2);
+  validateCreateWatchedPromiseTable(v, 3);
 }
 
 function validateCreate(v, idx, isWeak = false) {
@@ -487,9 +529,11 @@ function validateInit(v) {
       '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
     ),
   );
-  validate(v, matchVatstoreGet('baggageID', NONE));
-  validateCreateBaggage(v, 1);
-  validateCreateHolder(v, 2);
+  validateCreateBuiltInTables(v);
+  validateCreateHolder(v, 4);
+  validate(v, matchVatstoreGet('deadPromises', NONE));
+  validate(v, matchVatstoreDelete('deadPromises'));
+  validate(v, matchVatstoreGetAfter('', 'vc.3.', 'vc.3.{', [NONE, NONE]));
   validate(v, matchVatstoreGetAfter('', 'vom.kind.', NONE, [NONE, NONE]));
 }
 
@@ -988,8 +1032,8 @@ test.serial('store refcount management 3', async t => {
   const base = mainHeldIdx + 1;
   validateCreate(v, base);
   validate(v, matchVatstoreGet(`vc.${base}.sfoo`, NONE));
-  validateUpdate(v, `vom.rc.${mapRef(3)}`, NONE, '1');
-  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, mapRefValString(3)));
+  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, NONE, '1');
+  validate(v, matchVatstoreSet(`vc.${base}.sfoo`, mapRefValString(mainHeldIdx)));
   validate(v, matchVatstoreGet(`vc.${base}.|entryCount`, '0'));
   validate(v, matchVatstoreSet(`vc.${base}.|entryCount`, '1'));
   validateCreate(v, base + 1);
@@ -1082,7 +1126,7 @@ test.serial('presence refcount management 2', async t => {
   validateImportAndHold(v, rp);
 
   rp = await dispatchMessage('prepareStore3');
-  validatePrepareStore3(v, rp, 3, presenceRef, thingRefValString(presenceRef), false);
+  validatePrepareStore3(v, rp, mainHeldIdx, presenceRef, thingRefValString(presenceRef), false);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
@@ -1176,11 +1220,11 @@ test.serial('verify store weak key GC', async t => {
   // Create a store to use as a key and hold onto it weakly
   let rp = await dispatchMessage('makeAndHoldAndKey');
   validateInit(v);
-  const mapID = 3;
+  const mapID = mainHeldIdx;
   validateCreateStore(v, mapID, true); // map
-  const setID = 4;
+  const setID = mainHeldIdx + 1;
   validateCreateStore(v, setID, true); // set
-  const keyID = 5;
+  const keyID = mainHeldIdx + 2;
   validateCreateStore(v, keyID); // key
 
   const ordinalKey = `r0000000001:${mapRef(keyID)}`;
@@ -1278,11 +1322,11 @@ test.serial('verify weakly held value GC', async t => {
   // Create a weak store, and put a weakly held object into it
   let rp = await dispatchMessage('makeAndHoldWeakly');
   validateInit(v);
-  const mapID = 3;
+  const mapID = mainHeldIdx;
   validateCreateStore(v, mapID, true); // weak map
-  const keyID = 4;
+  const keyID = mainHeldIdx + 1;
   validateCreateStore(v, keyID); // key
-  const valueID = 5;
+  const valueID = mainHeldIdx + 2;
   validateCreateStore(v, valueID); // indirect value
 
   const ordinalKey = `r0000000001:${mapRef(keyID)}`;
@@ -1331,9 +1375,9 @@ test.serial('verify presence weak key GC', async t => {
   // Import a presence to use as a key and hold onto it weakly
   let rp = await dispatchMessage('importAndHoldAndKey', thingArg(presenceRef));
   validateInit(v);
-  const mapID = 3;
+  const mapID = mainHeldIdx;
   validateCreateStore(v, mapID, true); // map
-  const setID = 4;
+  const setID = mainHeldIdx + 1;
   validateCreateStore(v, setID, true); // set
 
   const ordinalKey = `r0000000001:${presenceRef}`;
