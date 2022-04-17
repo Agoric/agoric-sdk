@@ -10,9 +10,13 @@ const makeTracer = (name, enable = true) => {
       const logDisabled = (..._args) => {};
       return logDisabled;
     }
-    case 'info': {
-      const infoTick = (...args) => {
-        console.info(key, (debugCount += 1), ...args);
+    case 'verbose': {
+      const infoTick = (optLog, ...args) => {
+        if (optLog.log) {
+          console.info(key, (debugCount += 1), ...args);
+        } else {
+          console.info(key, (debugCount += 1), optLog, ...args);
+        }
       };
       return infoTick;
     }
