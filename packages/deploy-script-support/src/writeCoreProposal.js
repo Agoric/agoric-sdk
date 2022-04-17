@@ -6,14 +6,59 @@ import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 import { makeCoreProposalBehavior } from './coreProposalBehavior.js';
 import { createBundles } from './createBundles.js';
 
+const { keys, values, fromEntries } = Object;
+
 const { serialize } = makeMarshal();
 const stringify = (x, pretty = undefined) =>
   decodeToJustin(JSON.parse(serialize(harden(x)).body), pretty);
 
+export const htmlStartCommentPattern = new RegExp(`(${'<'})(!--)`, 'g');
+export const htmlEndCommentPattern = new RegExp(`(--)(${'>'})`, 'g');
+export const importPattern = new RegExp(
+  '(^|[^.])\\bimport(\\s*(?:\\(|/[/*]))',
+  'g',
+);
+
+const makeSet = (...args) => new Set(...args);
+
+export const mergePermits = m => {
+  const isObj = o => o !== null && typeof o === 'object';
+  const merge = (left, right) => {
+    if (left === undefined) {
+      return right;
+    }
+    if (right === undefined) return left;
+    if (isObj(left)) {
+      if (isObj(right)) {
+        const k12 = [...makeSet([...keys(left), ...keys(right)])];
+        const e12 = k12.map(k => [k, merge(left[k], right[k])]);
+        return fromEntries(e12);
+      } else {
+        return left;
+      }
+    } else {
+      return typeof left === 'string' ? left : right;
+    }
+  };
+  return values(m).reduce(merge);
+};
+
+// Neutralize HTML comments and import expressions.
+export const defangEvaluableCode = code =>
+  code
+    .replace(importPattern, '$1import\\$2') // avoid SES_IMPORT_REJECTED
+    .replace(htmlStartCommentPattern, '$1\\$2') // avoid SES_HTML_COMMENT_REJECTED
+    .replace(htmlEndCommentPattern, '$1\\$2'); // avoid SES_HTML_COMMENT_REJECTED
+
 export const makeWriteCoreProposal = (
   homeP,
   endowments,
-  { getBundlerMaker, installInPieces },
+  {
+    getBundlerMaker,
+    installInPieces,
+    log = console.log,
+    writeFile = fs.promises.writeFile,
+  },
 ) => {
   const { board, zoe } = E.get(homeP);
   const { bundleSource, pathResolve } = endowments;
@@ -28,7 +73,7 @@ export const makeWriteCoreProposal = (
     return bundlerCache;
   };
 
-  const mergeProposalPermit = async (proposal, additionalManifest) => {
+  const mergeProposalPermit = async (proposal, additionalPermits) => {
     const {
       sourceSpec,
       getManifestCall: [exportedGetManifest, ...manifestArgs],
@@ -42,10 +87,8 @@ export const makeWriteCoreProposal = (
       ...manifestArgs,
     );
 
-    // FIXME: later actually merge the manifest with additionalManifest for
-    // minimalistic permit.
-    console.log('TODO: would merge', { manifest, additionalManifest });
-    return true;
+    const mergedPermits = mergePermits(manifest);
+    return mergePermits({ mergedPermits, additionalPermits });
   };
 
   const writeCoreProposal = async (filePrefix, proposalBuilder) => {
@@ -83,12 +126,10 @@ export const makeWriteCoreProposal = (
     // Extract the top-level permit.
     const t = 'writeCoreProposal';
     const proposalPermit = await mergeProposalPermit(proposal, {
-      $writeCoreProposal: {
-        consume: { board: t },
-        evaluateInstallation: t,
-        installation: { produce: t },
-        modules: { utils: { runModuleBehaviors: t } },
-      },
+      consume: { board: t },
+      evaluateInstallation: t,
+      installation: { produce: t },
+      modules: { utils: { runModuleBehaviors: t } },
     });
 
     // Get an install
@@ -105,18 +146,24 @@ const getManifestCall = harden(${stringify(getManifestCall, true)});
 (${makeCoreProposalBehavior})({ manifestInstallRef, getManifestCall, E });
 `;
 
+    // Remove SES evaluation hazards.
+    const defanged = defangEvaluableCode(code);
+
     // end-of-line whitespace disrupts YAML formatting
-    const trimmed = code.replace(/[\r\t ]+$/gm, '');
+    const trimmed = defanged.replace(/[\r\t ]+$/gm, '');
 
     const proposalPermitJsonFile = `${filePrefix}-permit.json`;
-    console.log(`creating ${proposalPermitJsonFile}`);
-    fs.writeFileSync(proposalPermitJsonFile, JSON.stringify(proposalPermit));
+    log(`creating ${proposalPermitJsonFile}`);
+    await writeFile(
+      proposalPermitJsonFile,
+      JSON.stringify(proposalPermit, null, 2),
+    );
 
     const proposalJsFile = `${filePrefix}.js`;
-    console.log(`creating ${proposalJsFile}`);
-    fs.writeFileSync(proposalJsFile, trimmed);
+    log(`creating ${proposalJsFile}`);
+    await writeFile(proposalJsFile, trimmed);
 
-    console.log(`\
+    log(`\
 You can now run a governance submission command like:
   agd tx gov submit-proposal swingset-core-eval ${proposalPermitJsonFile} ${proposalJsFile} \\
     --title="Enable <something>" --description="Evaluate ${proposalJsFile}" --deposit=1000000ubld \\
