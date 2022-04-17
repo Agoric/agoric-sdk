@@ -252,6 +252,10 @@ export function makeNetworkProtocol(protocolHandler) {
       }
     }
 
+    if (boundPorts.has(localAddr)) {
+      return boundPorts.get(localAddr);
+    }
+
     /**
      * @enum {number}
      */
