@@ -79,7 +79,7 @@ const trace = makeTracer('VM', false);
  */
 
 /**
- * @typedef {{
+ * @typedef {Readonly<{
  *   state: ImmutableState & MutableState,
  *   facets: {
  *     collateral: import('@agoric/vat-data/src/types').KindFacet<typeof collateralBehavior>,
@@ -87,7 +87,7 @@ const trace = makeTracer('VM', false);
  *     manager: import('@agoric/vat-data/src/types').KindFacet<typeof managerBehavior>,
  *     self: import('@agoric/vat-data/src/types').KindFacet<typeof selfBehavior>,
  *   }
- * }} MethodContext
+ * }>} MethodContext
  */
 
 /**

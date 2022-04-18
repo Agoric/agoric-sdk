@@ -153,14 +153,18 @@ export const start = async (
     debtMint.burnLosses(harden({ [KW.Debt]: toBurn }), seat);
   };
 
+  const mintPowers = Far('mintPowers', {
+    burnDebt,
+    getGovernedParams: () => params, // XXX until governance support is durable
+    mintAndReallocate,
+  });
+
   const startTimeStamp = await E(timerService).getCurrentTimestamp();
   const manager = makeRunStakeManager(
     zcf,
     debtMint,
-    { Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand },
-    params,
-    mintAndReallocate,
-    burnDebt,
+    harden({ Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand }),
+    mintPowers,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
 

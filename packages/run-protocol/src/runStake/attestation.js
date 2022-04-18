@@ -211,7 +211,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
  * Authorize each account holder to lien some of their staked assets
  * and get an attestation that the lien is in place.
  *
- * @param {ZCF<import('./runStake').RunStakeTerms>} zcf
+ * @param {ZCF} zcf
  * @param {Brand<'nat'>} stakeBrand
  * @param {ERef<StakingAuthority>} lienBridge
  *

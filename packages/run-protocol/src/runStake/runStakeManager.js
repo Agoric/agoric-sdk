@@ -6,6 +6,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { fit, getCopyBagEntries, M } from '@agoric/store';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { E } from '@endo/far';
+import { defineKind, partialAssign } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
 import { KW } from './runStakeKit.js';
@@ -17,44 +18,42 @@ const trace = makeTracer('RSM', false);
 
 /**
  * @typedef {{
- *  getDebtLimit: () => Amount<'nat'>,
- *  getInterestRate: () => Ratio,
- *  getMintingRatio: () => Ratio,
- *  getLoanFee: () => Ratio,
+ *   getDebtLimit: () => Amount<'nat'>,
+ *   getInterestRate: () => Ratio,
+ *   getMintingRatio: () => Ratio,
+ *   getLoanFee: () => Ratio,
  * }} ParamManager
  * @typedef {{
- * compoundedInterest: Ratio,
- * latestInterestUpdate: NatValue,
- * totalDebt: Amount<'nat'>,
+ *   compoundedInterest: Ratio,
+ *   latestInterestUpdate: NatValue,
+ *   totalDebt: Amount<'nat'>,
  * }} AssetState
+ * @typedef {Readonly<{
+ *   assetNotifier: Notifier<AssetState>,
+ *   assetUpdater: IterationObserver<AssetState>,
+ *   brands: { debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> },
+ *   mintPowers: { burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndReallocate: MintAndReallocate },
+ *   chargingPeriod: bigint,
+ *   debtMint: ZCFMint<'nat'>,
+ *   periodNotifier: Promise<Notifier<bigint>>,
+ *   poolIncrementSeat: ZCFSeat,
+ *   recordingPeriod: bigint,
+ *   startTimeStamp: bigint,
+ *   zcf: ZCF,
+ * }>} ImmutableState
  * @typedef {AssetState & {
- * assetNotifier: Notifier<AssetState>,
- * assetUpdater: IterationObserver<AssetState>,
- * chargingPeriod: bigint,
- * debtMint: ZCFMint<'nat'>,
- * mintAndReallocateWithFee: MintAndReallocate,
- * paramManager: ParamManager,
- * periodNotifier: Promise<Notifier<bigint>>,
- * poolIncrementSeat: ZCFSeat,
- * recordingPeriod: bigint,
- * startTimeStamp: bigint,
- * zcf: ZCF,
- * }} ImmutableState
- * @typedef {{
  * }} MutableState
  * @typedef {ImmutableState & MutableState} State
- * @typedef {{
- * state: State
- * }} MethodContext
+ * @typedef {Readonly<{
+ *   state: State
+ * }>} MethodContext
  */
 
 /**
  * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
- * @param {ParamManager} paramManager
- * @param {MintAndReallocate} mintAndReallocateWithFee
- * @param {BurnDebt} burnDebt
+ * @param {{ burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndReallocate: MintAndReallocate }} mintPowers
  * @param {Object} timing
  * @param {ERef<TimerService>} timing.timerService
  * @param {bigint} timing.chargingPeriod
@@ -67,9 +66,7 @@ const initState = (
   zcf,
   debtMint,
   brands,
-  paramManager,
-  mintAndReallocateWithFee, // XXX can't serialize function
-  burnDebt,
+  mintPowers,
   { chargingPeriod, recordingPeriod, startTimeStamp, timerService },
 ) => {
   const totalDebt = AmountMath.makeEmpty(brands.debt, 'nat');
@@ -79,7 +76,7 @@ const initState = (
   const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
     harden({
       compoundedInterest,
-      interestRate: paramManager.getInterestRate(),
+      interestRate: mintPowers.getGovernedParams().getInterestRate(),
       latestInterestUpdate,
       totalDebt,
     }),
@@ -92,12 +89,12 @@ const initState = (
   return {
     assetNotifier,
     assetUpdater,
+    brands,
     chargingPeriod,
     compoundedInterest,
     debtMint,
     latestInterestUpdate,
-    mintAndReallocateWithFee,
-    paramManager,
+    mintPowers,
     periodNotifier,
     poolIncrementSeat,
     recordingPeriod,
@@ -112,14 +109,8 @@ const initState = (
  * @param {MethodContext} context
  */
 const finish = ({ state }) => {
-  const {
-    debtMint,
-    mintAndReallocateWithFee,
-    paramManager,
-    periodNotifier,
-    poolIncrementSeat,
-    zcf,
-  } = state;
+  const { debtMint, mintPowers, periodNotifier, poolIncrementSeat, zcf } =
+    state;
 
   /**
    *
@@ -127,12 +118,12 @@ const finish = ({ state }) => {
    */
   const chargeAllVaults = async updateTime => {
     trace('chargeAllVaults', { updateTime });
-    const interestRate = paramManager.getInterestRate();
+    const interestRate = mintPowers.getGovernedParams().getInterestRate();
 
     const changes = chargeInterest(
       {
         mint: debtMint,
-        mintAndReallocateWithFee,
+        mintAndReallocateWithFee: mintPowers.mintAndReallocate,
         poolIncrementSeat,
         seatAllocationKeyword: KW.Debt,
       },
@@ -148,7 +139,7 @@ const finish = ({ state }) => {
       },
       updateTime,
     );
-    Object.assign(state, changes);
+    partialAssign(state, changes);
 
     const payload = harden({
       compoundedInterest: state.compoundedInterest,
@@ -180,38 +171,14 @@ const finish = ({ state }) => {
   });
 };
 
-/**
- * @param {ZCF} zcf
- * @param {ZCFMint<'nat'>} debtMint
- * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
- * @param {{
- *  getDebtLimit: () => Amount<'nat'>,
- *  getInterestRate: () => Ratio,
- *  getMintingRatio: () => Ratio,
- *  getLoanFee: () => Ratio,
- * }} paramManager
- * @param {MintAndReallocate} mintAndReallocateWithFee
- * @param {BurnDebt} burnDebt
- * @param {Object} timing
- * @param {ERef<TimerService>} timing.timerService
- * @param {bigint} timing.chargingPeriod
- * @param {bigint} timing.recordingPeriod
- * @param {bigint} timing.startTimeStamp
- *
- * @typedef {ReturnType<typeof makeRunStakeManager>} RunStakeManager
- */
-export const makeRunStakeManager = (
-  zcf,
-  debtMint,
-  brands,
-  paramManager,
-  mintAndReallocateWithFee,
-  burnDebt,
-  timing,
-) => {
-  /** @param { Amount<'copyBag'>} attestationGiven */
-  const maxDebtForLien = attestationGiven => {
-    const mintingRatio = paramManager.getMintingRatio();
+const behavior = {
+  /**
+   * @param {MethodContext} context
+   * @param { Amount<'copyBag'>} attestationGiven
+   * */
+  maxDebtForLien: ({ state }, attestationGiven) => {
+    const { brands, mintPowers } = state;
+    const mintingRatio = mintPowers.getGovernedParams().getMintingRatio();
     assert.equal(
       mintingRatio.numerator.brand,
       brands.debt,
@@ -232,29 +199,18 @@ export const makeRunStakeManager = (
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
     const maxDebt = floorMultiplyBy(amountLiened, mintingRatio);
     return { maxDebt, amountLiened };
-  };
-
-  const state = initState(
-    zcf,
-    debtMint,
-    brands,
-    paramManager,
-    mintAndReallocateWithFee,
-    burnDebt,
-    timing,
-  );
-
-  finish({ state });
+  },
 
   /**
    * Update total debt of this manager given the change in debt on a vault
    *
+   * @param {MethodContext} context
    * @param {Amount<'nat'>} oldDebtOnVault
    * @param {Amount<'nat'>} newDebtOnVault
    */
   // TODO: Add limits for amounts between vault and vault manager
   // https://github.com/Agoric/agoric-sdk/issues/4599
-  const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
+  applyDebtDelta: ({ state }, oldDebtOnVault, newDebtOnVault) => {
     // This does not use AmountMath because it could be validly negative
     const delta = newDebtOnVault.value - oldDebtOnVault.value;
     trace(`updating total debt ${state.totalDebt} by ${delta}`);
@@ -263,35 +219,66 @@ export const makeRunStakeManager = (
       return;
     }
 
+    const { brands } = state;
     // totalDebt += delta (Amount type ensures natural value)
     state.totalDebt = AmountMath.make(
       brands.debt,
       state.totalDebt.value + delta,
     );
-  };
+  },
 
   /**
-   * @type {MintAndReallocate}
+   * @param {MethodContext} context
+   * @param {Amount} toMint
+   * @param {Amount} fee
+   * @param {ZCFSeat} seat
+   * @param {...ZCFSeat} otherSeats
+   * @returns {void}
    */
-  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
-    checkDebtLimit(paramManager.getDebtLimit(), state.totalDebt, toMint);
-    mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
+  mintAndReallocate: ({ state }, toMint, fee, seat, ...otherSeats) => {
+    const { mintPowers } = state;
+    checkDebtLimit(
+      mintPowers.getGovernedParams().getDebtLimit(),
+      state.totalDebt,
+      toMint,
+    );
+    mintPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
     state.totalDebt = AmountMath.add(state.totalDebt, toMint);
-  };
+  },
 
-  return harden({
-    getMintingRatio: paramManager.getMintingRatio,
-    getInterestRate: paramManager.getInterestRate,
-    getLoanFee: paramManager.getLoanFee,
-    maxDebtForLien,
-    mintAndReallocate,
-    burnDebt,
+  /** @param {MethodContext} context */
+  getMintingRatio: ({ state }) =>
+    state.mintPowers.getGovernedParams().getMintingRatio(),
+  /** @param {MethodContext} context */
+  getInterestRate: ({ state }) =>
+    state.mintPowers.getGovernedParams().getInterestRate(),
+  /** @param {MethodContext} context */
+  getLoanFee: ({ state }) => state.mintPowers.getGovernedParams().getLoanFee(),
+  /**
+   * @param {MethodContext} context
+   * @param {Amount} toBurn
+   * @param {ZCFSeat} seat
+   */
+  burnDebt: ({ state }, toBurn, seat) =>
+    state.mintPowers.burnDebt(toBurn, seat),
 
-    getDebtBrand: () => brands.debt,
-    getCollateralBrand: () => brands.Attestation,
-    applyDebtDelta,
+  /** @param {MethodContext} context */
+  getDebtBrand: ({ state }) => state.brands.debt,
+  /** @param {MethodContext} context */
+  getCollateralBrand: ({ state }) => state.brands.Attestation,
 
-    getCompoundedInterest: () => state.compoundedInterest,
-    getAssetNotifier: () => state.assetNotifier,
-  });
+  /** @param {MethodContext} context */
+  getCompoundedInterest: ({ state }) => state.compoundedInterest,
+  /** @param {MethodContext} context */
+  getAssetNotifier: ({ state }) => state.assetNotifier,
 };
+
+export const makeRunStakeManager = defineKind(
+  'RunStakeManager',
+  initState,
+  behavior,
+  { finish },
+);
+/**
+ * @typedef {ReturnType<typeof makeRunStakeManager>} RunStakeManager
+ */
