@@ -19,12 +19,12 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "better-sqlite3": "^7.4.1",
+    "better-sqlite3": "^7.5.0",
     "node-lmdb": "^0.9.5",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.37",
+    "@endo/init": "^0.5.41",
     "ava": "^3.12.1",
     "c8": "^7.7.2"
   },

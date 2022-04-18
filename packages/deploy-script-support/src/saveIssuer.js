@@ -1,6 +1,6 @@
 // @ts-check
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 
 /** @type {MakeSaveIssuerHelper} */
 export const makeSaveIssuer = (walletAdmin, issuerManager) => {

@@ -18,8 +18,12 @@ VOTE_OPTION = yes
 GOSRC = ../../golang/cosmos
 DEBUG ?= SwingSet:ls,SwingSet:vat
 AG_SOLO = DEBUG=$(DEBUG) $(shell cd ../solo/bin && pwd)/ag-solo
+AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
+AGCH = $(GOSRC)/build/agd
 
 SHELL = bash
+
+default: all
 
 # By default, make the fake chain in scenario3 produce
 # "blocks" as soon as they come in.
@@ -35,6 +39,29 @@ GAS_ADJUSTMENT = 1.2
 AGC_START_ARGS =
 
 BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
+
+EVAL_CLEAN=$(EVAL_CODE)-clean.js
+
+$(EVAL_CLEAN): $(EVAL_CODE)
+	./scripts/clean-core-eval.js $< >$@.t || { rm -f $@.t; exit 1; }
+	mv $@.t $@
+
+start-runStake: test/runStake/gov-start-runStake.js
+	make EVAL_CODE=test/runStake/gov-start-runStake.js \
+		EVAL_PERMIT=test/runStake/gov-start-runStake-permit.json \
+		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
+
+start-committee: test/runStake/gov-start-econCommittee.js
+	make EVAL_CODE=test/runStake/gov-start-econCommittee.js \
+		EVAL_PERMIT=test/runStake/gov-start-runStake-permit.json \
+		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
+
+gov-q:
+	$(AGCH) query gov proposals --output json | \
+		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]'
+
+deploy-runStake: ../run-protocol/test/runStake/runStake-deploy.js
+	echo agoric deploy ../run-protocol/test/runStake/runStake-deploy.js
 
 # This probably shouldn't install, but that's what published instructions
 # expect.
@@ -64,8 +91,6 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
-AGCH = $(GOSRC)/build/agd
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
 	rm -rf t1
@@ -125,7 +150,7 @@ scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 AGORIC_POWERS = agoric.ALL_THE_POWERS
-SOLO_COINS = 13000000ubld,50000000urun
+SOLO_COINS = 13000000ubld,1234000000urun
 COSMOS_RPC_HOST = localhost
 COSMOS_RPC_PORT = 26657
 wait-for-cosmos:
@@ -192,9 +217,9 @@ t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/co
 		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AG_SOLO) start
 
-scenario2-core-eval:
+scenario2-core-eval: $(EVAL_CLEAN)
 	$(AGCH) --home=t1/bootstrap tx gov submit-proposal swingset-core-eval \
-		$(EVAL_PERMIT) $(EVAL_CODE) \
+		$(EVAL_PERMIT) $(EVAL_CLEAN) \
 		--title="Swingset core eval" --description="Evaluate $(EVAL_CODE)" --deposit=$(EVAL_DEPOSIT) \
 		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) \
 		--yes --chain-id=$(CHAIN_ID) --keyring-backend=test --from=bootstrap -b block

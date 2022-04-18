@@ -23,7 +23,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/store": "^0.6.10",
-    "@endo/init": "^0.5.37",
+    "@endo/init": "^0.5.41",
     "@opentelemetry/api": "^1.0.0",
     "@opentelemetry/exporter-prometheus": "^0.27.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.27.0",
@@ -32,15 +32,15 @@
     "@opentelemetry/sdk-trace-base": "^1.0.1",
     "@opentelemetry/semantic-conventions": "^1.0.1",
     "anylogger": "^0.21.0",
-    "better-sqlite3": "^7.4.1",
+    "better-sqlite3": "^7.5.0",
     "bufferfromfile": "agoric-labs/BufferFromFile#Agoric-built",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@endo/lockdown": "^0.1.9",
-    "@endo/ses-ava": "^0.2.21",
+    "@endo/lockdown": "^0.1.13",
+    "@endo/ses-ava": "^0.2.25",
     "ava": "^3.12.1",
-    "c8": "^7.7.2",
+    "c8": "^7.11.0",
     "tmp": "^0.2.1"
   },
   "eslintConfig": {

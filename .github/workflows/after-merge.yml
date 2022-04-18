@@ -3,7 +3,7 @@
 #  Require branches to be up to date before merging
 on:
   push:
-    branches: [mergify/merge-queue/main/*]
+    branches: [master] # $default-branch
 
 jobs:
   build:
@@ -25,6 +25,7 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   dev-canary:
     needs: build
@@ -102,6 +103,7 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   benchmark:
     needs: build
@@ -132,3 +134,4 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}

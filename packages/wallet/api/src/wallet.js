@@ -206,6 +206,10 @@ export function buildRootObject(vatPowers) {
         await approve();
         return walletAdmin.getUINotifier(rawId, dappOrigin);
       },
+      async getPublicNotifiers(rawId) {
+        await approve();
+        return walletAdmin.getPublicNotifiers(rawId, dappOrigin);
+      },
       async getZoe() {
         await approve();
         return walletAdmin.getZoe();
@@ -268,6 +272,9 @@ export function buildRootObject(vatPowers) {
     },
     getUINotifier(rawId) {
       return walletAdmin.getUINotifier(rawId);
+    },
+    getPublicNotifiers(rawId) {
+      return walletAdmin.getPublicNotifiers(rawId);
     },
     async getZoe() {
       return walletAdmin.getZoe();

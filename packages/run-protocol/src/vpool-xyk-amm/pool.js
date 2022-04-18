@@ -57,6 +57,7 @@ export const makeAddPool = (
         secondary: pool.getSecondaryAmount(),
       });
 
+    /** @type {AddLiquidityActual} */
     const addLiquidityActual = (
       pool,
       zcfSeat,
@@ -69,6 +70,7 @@ export const makeAddPool = (
 
       const liquidityValueOut = calcLiqValueToMint(
         liqTokenSupply,
+        // @ts-expect-error could be non-scalar
         zcfSeat.getStagedAllocation().Central.value,
         poolCentralAmount.value,
       );
@@ -148,7 +150,12 @@ export const makeAddPool = (
           'insufficient Secondary deposited',
         );
 
-        return addLiquidityActual(pool, zcfSeat, secondaryRequired, centralIn);
+        return addLiquidityActual(
+          pool,
+          zcfSeat,
+          secondaryRequired,
+          centralPoolAmount,
+        );
       },
       removeLiquidity: userSeat => {
         const liquidityIn = userSeat.getAmountAllocated(
@@ -252,7 +259,7 @@ export const makeAddPool = (
    * Allows users to add new liquidity pools. `secondaryIssuer` and
    * its keyword must not have been already used
    *
-   * @param {Issuer} secondaryIssuer
+   * @param {ERef<Issuer>} secondaryIssuer
    * @param {Keyword} keyword - will be used in the
    * terms.issuers for the contract, but not used otherwise
    */

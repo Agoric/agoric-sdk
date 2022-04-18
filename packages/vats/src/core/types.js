@@ -99,6 +99,14 @@
  */
 
 /**
+ * @template T
+ * @typedef {{
+ *   consume: { [P in keyof T]: ERef<T[P]> },
+ *   produce: { [P in keyof T]: Producer<T[P]> },
+ * }} PromiseSpaceOf
+ */
+
+/**
  * @callback CreateUserBundle
  * @param {string} nickname
  * @param {string} clientAddress
@@ -125,6 +133,7 @@
  *   issuer: |
  *     'RUN' | 'BLD' | 'Attestation',
  *   installation: |
+ *     'centralSupply' | 'mintHolder' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
  *     'Pegasus' | 'reserve',
@@ -169,63 +178,29 @@
  */
 
 /**
- * @typedef { WellKnownSpaces & {
- *   consume: {
- *     agoricNames: Promise<NameHub>,
- *     ammCreatorFacet: ERef<XYKAMMCreatorFacet>,
- *     ammGovernorCreatorFacet: ERef<GovernedContractFacetAccess<unknown>>,
- *     chainTimerService: ERef<TimerService>,
- *     economicCommitteeCreatorFacet: ERef<CommitteeElectorateCreatorFacet>,
- *     ammBundle: ERef<SourceBundle>,
- *     reserveBundle: ERef<SourceBundle>,
- *     reserveCreatorFacet: ERef<GovernedContractFacetAccess<any>>,
- *     reserveGovernorCreatorFacet: ERef<GovernedContractFacetAccess<any>>,
- *     vaultBundles: ERef<Record<string, SourceBundle>>,
- *     centralSupplyBundle: ERef<SourceBundle>,
- *     mintHolderBundle: ERef<SourceBundle>,
- *     feeMintAccess: ERef<FeeMintAccess>,
- *     governanceBundles: ERef<Record<string, SourceBundle>>,
- *     initialSupply: ERef<Payment>,
- *     pegasusBundle: Promise<SourceBundle>,
- *     pegasusConnections: Promise<NameHub>,
- *     pegasusConnectionsAdmin: Promise<NameAdmin>,
- *     priceAuthorityVat: PriceAuthorityVat,
- *     priceAuthority: ERef<PriceAuthority>,
- *     priceAuthorityAdmin: ERef<PriceAuthorityRegistryAdmin>,
- *     vaultFactoryCreator: ERef<VaultFactory>,
- *     vaultFactoryGovernorCreator: ERef<GovernedContractFacetAccess<unknown>>,
- *     zoe: ERef<ZoeService>,
- *   },
- *   produce: {
- *     agoricNames: Producer<NameHub>,
- *     ammCreatorFacet: Producer<unknown>,
- *     ammGovernorCreatorFacet: Producer<unknown>,
- *     chainTimerService: Producer<ERef<TimerService>>,
- *     economicCommitteeCreatorFacet: Producer<CommitteeElectorateCreatorFacet>,
- *     runStakeBundle: Producer<{ moduleFormat: string }>,
- *     ammBundle: Producer<SourceBundle>,
- *     reserveBundle: Producer<SourceBundle>,
- *     reservePublicFacet: Producer<unknown>,
- *     reserveCreatorFacet: Producer<unknown>,
- *     reserveGovernorCreatorFacet: Producer<GovernedContractFacetAccess<any>>,
- *     vaultBundles: Producer<Record<string, SourceBundle>>,
- *     governanceBundles: Producer<Record<string, SourceBundle>>,
- *     initialSupply: Producer<Payment>,
- *     centralSupplyBundle: Producer<SourceBundle>,
- *     mintHolderBundle: Producer<SourceBundle>,
- *     feeMintAccess: Producer<FeeMintAccess>,
- *     priceAuthorityVat: Producer<PriceAuthorityVat>,
- *     priceAuthority: Producer<PriceAuthority>,
- *     priceAuthorityAdmin: Producer<PriceAuthorityRegistryAdmin>,
- *     pegasusBundle: Producer<SourceBundle>,
- *     pegasusConnections: Producer<NameHub>,
- *     pegasusConnectionsAdmin: Producer<NameAdmin>,
- *     vaultFactoryCreator: Producer<{ makeCollectFeesInvitation: () => Promise<Invitation> }>,
- *     vaultFactoryGovernorCreator: Producer<unknown>,
- *     vaultFactoryVoteCreator: Producer<unknown>,
- *     zoe: Producer<ERef<ZoeService>>,
- *   },
- * }} EconomyBootstrapPowers
+ * @typedef {PromiseSpaceOf<{
+ *   agoricNames: NameHub,
+ *   agoricNamesAdmin: NameAdmin,
+ *   bankManager: Awaited<BankManager>,
+ *   bldIssuerKit: RemoteIssuerKit,
+ *   board: Board,
+ *   bridgeManager: OptionalBridgeManager,
+ *   chainTimerService: TimerService,
+ *   client: ClientManager,
+ *   clientCreator: ClientCreator,
+ *   feeMintAccess: FeeMintAccess,
+ *   initialSupply: Payment,
+ *   mints: MintsVat,
+ *   namesByAddress: NameHub,
+ *   namesByAddressAdmin: NameAdmin,
+ *   pegasusConnections: NameHub,
+ *   pegasusConnectionsAdmin: NameAdmin,
+ *   priceAuthorityVat: Awaited<PriceAuthorityVat>,
+ *   priceAuthority: PriceAuthority,
+ *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
+ *   provisioning: Awaited<ProvisioningVat>,
+ *   zoe: ZoeService,
+ * }>} ChainBootstrapSpace
  *
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
@@ -247,35 +222,12 @@
  *   runBehaviors: (manifest: unknown) => Promise<unknown>,
  *   modules: Record<string, Record<string, any>>,
  * }} BootstrapPowers
- * @typedef { WellKnownSpaces & {
- *   consume: EconomyBootstrapPowers['consume'] & {
- *     bankManager: BankManager,
- *     board: ERef<Board>,
- *     bldIssuerKit: ERef<RemoteIssuerKit>,
- *     bridgeManager: ERef<OptionalBridgeManager>,
- *     client: ERef<ClientManager>,
- *     clientCreator: ERef<ClientCreator>,
- *     mints: ERef<MintsVat>,
- *     provisioning: ProvisioningVat,
- *     vatAdminSvc: ERef<VatAdminSvc>,
- *     namesByAddress: ERef<NameHub>,
- *     namesByAddressAdmin: ERef<NameAdmin>,
- *   },
- *   produce: EconomyBootstrapPowers['produce'] & {
- *     bankManager: Producer<BankManager>,
- *     bldIssuerKit: Producer<RemoteIssuerKit>,
- *     board: Producer<ERef<Board>>,
- *     bridgeManager: Producer<OptionalBridgeManager>,
- *     client: Producer<ClientManager>,
- *     clientCreator: Producer<ClientCreator>,
+ * @typedef { WellKnownSpaces & ChainBootstrapSpace & PromiseSpaceOf<{
+ *     vatAdminSvc: VatAdminSvc,
+ *   }> & { produce: {
  *     loadVat: Producer<VatLoader<unknown>>,
- *     mints: Producer<MintsVat>,
- *     provisioning: Producer<unknown>,
- *     vatAdminSvc: Producer<ERef<VatAdminSvc>>,
- *     namesByAddress: Producer<NameHub>,
- *     namesByAddressAdmin: Producer<NameAdmin>,
- *   },
- * }} BootstrapSpace
+ *   }}
+ * } BootstrapSpace
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
  * @typedef {ReturnType<Awaited<BankVat>['makeBankManager']>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat

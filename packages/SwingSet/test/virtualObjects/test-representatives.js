@@ -26,6 +26,7 @@ function slot0(iface, kid) {
 
 test.serial('exercise cache', async t => {
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
@@ -350,6 +351,7 @@ test('virtual object gc', async t => {
   */
 
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker',
     vats: {
@@ -401,8 +403,9 @@ test('virtual object gc', async t => {
 });
 
 // Check that facets which don't reference their state still kill their cohort alive
-test('empty facets are not orphaned', async t => {
+async function orphanTest(t, mode) {
   const config = {
+    includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     vats: {
       bob: {
@@ -420,7 +423,7 @@ test('empty facets are not orphaned', async t => {
 
   const hostStorage = provideHostStorage();
 
-  const c = await buildVatController(config, [], { hostStorage });
+  const c = await buildVatController(config, [mode], { hostStorage });
   c.pinVatRoot('bootstrap');
 
   await c.run();
@@ -428,5 +431,53 @@ test('empty facets are not orphaned', async t => {
     c.kpResolution(c.bootstrapResult),
     capargs({ '@qclass': 'undefined' }),
   );
-  t.deepEqual(c.dump().log, ['compare originalFacet === thing : true']);
+  t.deepEqual(c.dump().log, ['compare old === new : true']);
+}
+
+test('strongly held facet retains representative', async t => {
+  await orphanTest(t, 'facet');
+});
+
+test('weakly held facet retains representative', async t => {
+  await orphanTest(t, 'wfacet');
+});
+
+test('strongly held empty facet retains representative', async t => {
+  await orphanTest(t, 'empty');
+});
+
+test('weakly held empty facet retains representative', async t => {
+  await orphanTest(t, 'wempty');
+});
+
+test('strongly held method retains representative', async t => {
+  await orphanTest(t, 'method');
+});
+
+test('weakly held method retains representative', async t => {
+  await orphanTest(t, 'wmethod');
+});
+
+test('strongly held proto retains representative', async t => {
+  await orphanTest(t, 'proto');
+});
+
+test('weakly held proto retains representative', async t => {
+  await orphanTest(t, 'wproto');
+});
+
+test('strongly held cohort retains representative', async t => {
+  await orphanTest(t, 'cohort');
+});
+
+test('weakly held cohort retains representative', async t => {
+  await orphanTest(t, 'wcohort');
+});
+
+test('strongly held state retains representative', async t => {
+  await orphanTest(t, 'state');
+});
+
+test('weakly held state retains representative', async t => {
+  await orphanTest(t, 'wstate');
 });

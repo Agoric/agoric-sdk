@@ -289,13 +289,27 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
                 const [first, ...remaining] = namePath;
 
                 // The first part of the name path is a property on bootP.
-                const firstValue = E.get(bootP)[first];
+                let nextValue = E.get(bootP)[first];
                 if (remaining.length === 0) {
-                  return firstValue;
+                  return nextValue;
                 }
+
+                // Compatibility for agoricdev-8; use `.get` for the next part.
+                // TODO: remove when agoricdev-9 is released.
+                if (first === 'scratch') {
+                  const second = remaining.shift();
+                  const secondValue = E(nextValue).get(second);
+                  if (remaining.length === 0) {
+                    return secondValue;
+                  }
+
+                  // Fall through to the lookup below.
+                  nextValue = secondValue;
+                }
+
                 // Any remaining paths go through the lookup method of the found
                 // object.
-                return E(firstValue).lookup(...remaining);
+                return E(nextValue).lookup(...remaining);
               },
               host,
               port,

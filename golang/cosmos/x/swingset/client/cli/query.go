@@ -130,7 +130,10 @@ func GetCmdGetKeys(queryRoute string) *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			path := strings.Split(args[0], ".")
+			path := []string{""}
+			if len(args) > 0 {
+				path = strings.Split(args[0], ".")
+			}
 
 			res, err := queryClient.Keys(cmd.Context(), &types.QueryKeysRequest{
 				Path: path,

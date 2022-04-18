@@ -8,19 +8,37 @@ test('harden from SES is in the test environment', t => {
   t.pass();
 });
 
-const actualizeThing = _state => ({
+const thingBehavior = {
   ping: () => 4,
-});
+};
+
+const multiThingBehavior = { thing: thingBehavior, other: thingBehavior };
 
 test('kind makers are in the test environment', t => {
-  const makeVThing = VatData.defineKind('thing', null, actualizeThing);
+  const makeVThing = VatData.defineKind('thing', null, thingBehavior);
   const vthing = makeVThing('vthing');
   t.is(vthing.ping(), 4);
 
+  const makeVMThing = VatData.defineKindMulti(
+    'thing',
+    null,
+    multiThingBehavior,
+  );
+  const vmthing = makeVMThing('vthing');
+  t.is(vmthing.thing.ping(), 4);
+
   const kind = VatData.makeKindHandle('thing');
-  const makeDThing = VatData.defineDurableKind(kind, null, actualizeThing);
+  const makeDThing = VatData.defineDurableKind(kind, null, thingBehavior);
   const dthing = makeDThing('dthing');
   t.is(dthing.ping(), 4);
+
+  const makeDMThing = VatData.defineDurableKindMulti(
+    kind,
+    null,
+    multiThingBehavior,
+  );
+  const dmthing = makeDMThing('dthing');
+  t.is(dmthing.thing.ping(), 4);
 });
 
 test('store makers are in the test environment', t => {
@@ -63,7 +81,9 @@ async function testForExpectedGlobals(t, workerType) {
     'harden: function',
     'VatData: object',
     'VatData.defineKind: function',
+    'VatData.defineKindMulti: function',
     'VatData.defineDurableKind: function',
+    'VatData.defineDurableKindMulti: function',
     'VatData.makeKindHandle: function',
     'VatData.makeScalarBigMapStore: function',
     'VatData.makeScalarBigWeakMapStore: function',

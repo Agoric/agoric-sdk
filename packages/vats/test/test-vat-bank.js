@@ -5,7 +5,6 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { economyBundles } from '@agoric/run-protocol/src/importedBundles.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { observeIteration } from '@agoric/notifier';
@@ -13,8 +12,11 @@ import { buildRootObject } from '../src/vat-bank.js';
 import {
   mintInitialSupply,
   addBankAssets,
+  installBootContracts,
 } from '../src/core/basic-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
+
+import { devices } from './devices.js';
 
 test('communication', async t => {
   t.plan(38);
@@ -205,14 +207,21 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  produce.centralSupplyBundle.resolve(economyBundles.centralSupply);
-  produce.mintHolderBundle.resolve(economyBundles.mintHolder);
-
   const { zoeService, feeMintAccess } = makeZoeKit(
     makeFakeVatAdmin(() => {}).admin,
   );
   produce.zoe.resolve(zoeService);
   produce.feeMintAccess.resolve(feeMintAccess);
+  const vatPowers = {
+    D: x => x,
+  };
+  await installBootContracts({
+    vatPowers,
+    devices,
+    consume,
+    produce,
+    ...spaces,
+  });
 
   // Genesis RUN supply: 50
   const bootMsg = {

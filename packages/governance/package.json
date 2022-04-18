@@ -8,7 +8,8 @@
     "node": ">=14.15.0"
   },
   "scripts": {
-    "build": "exit 0",
+    "build": "yarn build:bundles",
+    "build:bundles": "bundle-source --to bundles/ ./src/contractGovernor.js contractGovernor ./src/committee.js committee ./src/noActionElectorate.js noActionElectorate ./src/binaryVoteCounter.js binaryVoteCounter",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
@@ -30,24 +31,24 @@
   "dependencies": {
     "@agoric/assert": "^0.3.16",
     "@agoric/ertp": "^0.13.3",
-    "@endo/eventual-send": "^0.14.8",
-    "@endo/far": "^0.1.9",
+    "@endo/eventual-send": "^0.15.3",
+    "@endo/far": "^0.2.3",
     "@agoric/nat": "^4.1.0",
     "@agoric/notifier": "^0.3.35",
     "@agoric/store": "^0.6.10",
     "@agoric/zoe": "^0.21.3",
-    "@endo/captp": "^2.0.3",
-    "@endo/marshal": "^0.6.3",
-    "@endo/promise-kit": "^0.2.37"
+    "@endo/captp": "^2.0.7",
+    "@endo/marshal": "^0.6.7",
+    "@endo/promise-kit": "^0.2.41"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.25.1",
-    "@endo/bundle-source": "^2.1.1",
-    "@endo/init": "^0.5.37",
+    "@endo/bundle-source": "^2.2.0",
+    "@endo/init": "^0.5.41",
     "ava": "^3.12.1",
-    "c8": "^7.7.2",
+    "c8": "^7.11.0",
     "import-meta-resolve": "^1.1.1",
-    "ses": "^0.15.11"
+    "ses": "^0.15.15"
   },
   "files": [
     "README.md",

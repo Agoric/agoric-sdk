@@ -17,6 +17,12 @@ import { amountGT } from '../../../src/vpool-xyk-amm/constantProduct/calcFees.js
 import { startEconomicCommittee } from '../../../src/econ-behaviors.js';
 
 import { setupAmmServices, setupAMMBootstrap } from './setup.js';
+import { unsafeMakeBundleCache } from '../../bundleTool.js';
+
+test.before(async t => {
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  t.context = { bundleCache };
+});
 
 test('start Economic Committee', async t => {
   const space = await setupAMMBootstrap();
@@ -35,7 +41,7 @@ test('amm change param via Governance', async t => {
   const timer = buildManualTimer(console.log);
 
   const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
-    await setupAmmServices(electorateTerms, centralR, timer);
+    await setupAmmServices(t, electorateTerms, centralR, timer);
 
   t.deepEqual(
     await E(amm.ammPublicFacet).getGovernedParams(),
@@ -58,11 +64,15 @@ test('amm change param via Governance', async t => {
 
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
-  const { details } = await E(governorCreatorFacet).voteOnParamChange(
-    { key: 'governedParams', parameterName: PROTOCOL_FEE_KEY },
-    20n,
+  const paramChangeSpec = harden({
+    key: 'governedParams',
+    changes: { [PROTOCOL_FEE_KEY]: 20n },
+  });
+
+  const { details } = await E(governorCreatorFacet).voteOnParamChanges(
     installs.counter,
     2n,
+    paramChangeSpec,
   );
   const { positions, questionHandle } = await details;
 
@@ -91,7 +101,7 @@ test('price check after Governance param change', async t => {
   const timer = buildManualTimer(console.log);
 
   const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
-    await setupAmmServices(electorateTerms, centralR, timer);
+    await setupAmmServices(t, electorateTerms, centralR, timer);
 
   // Setup Alice
   const aliceMoolaPayment = moolaR.mint.mintPayment(moola(100000n));
@@ -157,11 +167,16 @@ test('price check after Governance param change', async t => {
 
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
-  const { details } = await E(governorCreatorFacet).voteOnParamChange(
-    { key: 'governedParams', parameterName: PROTOCOL_FEE_KEY },
-    20n,
+  const paramChangeSpec = harden({
+    key: 'governedParams',
+    changes: {
+      [PROTOCOL_FEE_KEY]: 20n,
+    },
+  });
+  const { details } = await E(governorCreatorFacet).voteOnParamChanges(
     installs.counter,
     2n,
+    paramChangeSpec,
   );
   const { positions, questionHandle } = await details;
 

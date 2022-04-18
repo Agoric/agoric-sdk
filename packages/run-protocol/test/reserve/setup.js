@@ -1,24 +1,16 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import {
-  makeBundle,
   setUpZoeForTest,
   setupAmmServices,
 } from '../amm/vpool-xyk-amm/setup.js';
-import * as Collect from '../../src/collect.js';
 import { setupReserve } from '../../src/econ-behaviors.js';
+import { provideBundle } from '../supports.js';
 
-const contractGovernorRoot = '@agoric/governance/src/contractGovernor.js';
-const committeeRoot = '@agoric/governance/src/committee.js';
-const voteCounterRoot = '@agoric/governance/src/binaryVoteCounter.js';
-const reserveRoot = '../../../src/reserve/collateralReserve.js';
-
-const contractGovernorBundleP = makeBundle(contractGovernorRoot);
-const committeeBundleP = makeBundle(committeeRoot);
-const voteCounterBundleP = makeBundle(voteCounterRoot);
-const reserveBundleP = makeBundle(reserveRoot);
+const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 
 const setupReserveBootstrap = async (
+  t,
   timer,
   zoe,
   runIssuer,
@@ -28,6 +20,7 @@ const setupReserveBootstrap = async (
   const centralR = { issuer: runIssuer, brand: runBrand };
 
   const ammSpaces = await setupAmmServices(
+    t,
     electorateTerms,
     centralR,
     timer,
@@ -37,15 +30,6 @@ const setupReserveBootstrap = async (
 
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
-
-  /** @type {Record<string, Promise<{moduleFormat: string}>>} */
-  const governanceBundlePs = {
-    contractGovernor: contractGovernorBundleP,
-    committee: committeeBundleP,
-    binaryVoteCounter: voteCounterBundleP,
-  };
-  const bundles = await Collect.allValues(governanceBundlePs);
-  produce.governanceBundles.resolve(bundles);
 
   const newAmm = {
     ammCreatorFacet: ammSpaces.amm.ammCreatorFacet,
@@ -61,8 +45,8 @@ const setupReserveBootstrap = async (
 
 /**
  * @typedef {{
- * reserveCreatorFacet: import('../../src/reserve/collateralReserve').CollateralReserveCreatorFacet,
- * reservePublicFacet: import('../../src/reserve/collateralReserve').CollateralReservePublicFacet,
+ * reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveCreatorFacet,
+ * reservePublicFacet: import('../../src/reserve/assetReserve').AssetReservePublicFacet,
  * instance: Instance,
  * }} ReserveKit
  */
@@ -70,6 +54,7 @@ const setupReserveBootstrap = async (
 /**
  * NOTE: called separately by each test so contracts don't interfere
  *
+ * @param {*} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {ManualTimer | undefined=} timer
  * @returns {{
@@ -85,6 +70,7 @@ const setupReserveBootstrap = async (
  * }}
  */
 export const setupReserveServices = async (
+  t,
   electorateTerms,
   timer = buildManualTimer(console.log),
 ) => {
@@ -93,9 +79,8 @@ export const setupReserveServices = async (
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
 
-  // XS doesn't like top-level await, so do it here. this should be quick
-  const reserveBundle = await reserveBundleP;
   const spaces = await setupReserveBootstrap(
+    t,
     timer,
     zoe,
     runIssuer,
@@ -103,7 +88,8 @@ export const setupReserveServices = async (
   );
   const { produce, consume, brand, issuer, installation, instance } = spaces;
 
-  produce.reserveBundle.resolve(reserveBundle);
+  const reserveBundle = await provideBundle(t, reserveRoot, 'reserve');
+  installation.produce.reserve.resolve(E(zoe).install(reserveBundle));
   brand.produce.RUN.resolve(runBrand);
   issuer.produce.RUN.resolve(runIssuer);
   produce.feeMintAccess.resolve(feeMintAccess);

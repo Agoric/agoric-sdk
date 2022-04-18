@@ -65,8 +65,7 @@ export function makeVirtualReferenceManager(
       let doMoreGC = deleteStoredRepresentation(baseRef);
       syscall.vatstoreDelete(`vom.rc.${baseRef}`);
       syscall.vatstoreDelete(`vom.es.${baseRef}`);
-      const more = ceaseRecognition(baseRef);
-      doMoreGC = doMoreGC || more;
+      doMoreGC = ceaseRecognition(baseRef) || doMoreGC;
       return [doMoreGC, retirees];
     }
     return [false, []];
@@ -219,46 +218,17 @@ export function makeVirtualReferenceManager(
   }
 
   /**
-   * Compare two arrays (shallowly) for equality.
-   *
-   * @template T
-   * @param {T[]} a1
-   * @param {T[]} a2
-   * @returns {boolean}
-   */
-  const arrayEquals = (a1, a2) => {
-    assert(Array.isArray(a1));
-    assert(Array.isArray(a2));
-    if (a1.length !== a2.length) {
-      return false;
-    }
-    return a1.every((elem, idx) => Object.is(a2[idx], elem));
-  };
-
-  /**
-   * Check a list of facet names against what's already been established for a
-   * kind.  If they don't match, it's an error.  If nothing has been established
-   * yet, establish it now.
+   * Record the names of the facets of a multi-faceted virtual object.
    *
    * @param {string} kindID  The kind we're talking about
    * @param {string[]|null} facetNames  A sorted array of facet names to be
-   *    checked or acquired, or null if the kind is unfaceted
+   *    recorded, or null if the kind is unfaceted
    */
-  function checkOrAcquireFacetNames(kindID, facetNames) {
+  function rememberFacetNames(kindID, facetNames) {
     const kindInfo = kindInfoTable.get(`${kindID}`);
     assert(kindInfo, `no kind info for ${kindID}`);
-    if (kindInfo.facetNames !== undefined) {
-      if (facetNames === null) {
-        assert(kindInfo.facetNames === null);
-      } else {
-        assert(
-          arrayEquals(facetNames, kindInfo.facetNames),
-          'all virtual objects of the same kind must have the same facet names',
-        );
-      }
-    } else {
-      kindInfo.facetNames = facetNames;
-    }
+    assert(kindInfo.facetNames === undefined);
+    kindInfo.facetNames = facetNames;
   }
 
   /**
@@ -303,19 +273,17 @@ export function makeVirtualReferenceManager(
    * persistent storage.  Used for deserializing.
    *
    * @param {string} baseRef  The baseRef of the object being reanimated
-   * @param {boolean} proForma  If true, representative creation is for formal
-   *   use only and result will be ignored.
    *
    * @returns {Object}  A representative of the object identified by `baseRef`
    */
-  function reanimate(baseRef, proForma) {
+  function reanimate(baseRef) {
     const { id } = parseVatSlot(baseRef);
     const kindID = `${id}`;
     const kindInfo = kindInfoTable.get(kindID);
     assert(kindInfo, `no kind info for ${kindID}, call defineDurableKind`);
     const { reanimator } = kindInfo;
     if (reanimator) {
-      return reanimator(baseRef, proForma);
+      return reanimator(baseRef);
     } else {
       assert.fail(X`unknown kind ${kindID}`);
     }
@@ -492,46 +460,59 @@ export function makeVirtualReferenceManager(
    * TODO: concoct a better type def than Set<any>
    */
   /**
-   * @typedef { Map<string, *> | Set<string> | ((string) => void) } Recognizer
+   * @typedef { Map<string, *> | Set<string> } Recognizer
    */
   /** @type {Map<string, Set<Recognizer>>} */
   const vrefRecognizers = new Map();
 
-  function addRecognizableValue(value, recognizer) {
+  function addRecognizableValue(value, recognizer, recognizerIsVirtual) {
     const vref = getSlotForVal(value);
     if (vref) {
       const { type, allocatedByVat, virtual } = parseVatSlot(vref);
       if (type === 'object' && (!allocatedByVat || virtual)) {
-        let recognizerSet = vrefRecognizers.get(vref);
-        if (!recognizerSet) {
-          recognizerSet = new Set();
-          vrefRecognizers.set(vref, recognizerSet);
+        if (recognizerIsVirtual) {
+          syscall.vatstoreSet(`vom.ir.${vref}|${recognizer}`, '1');
+        } else {
+          let recognizerSet = vrefRecognizers.get(vref);
+          if (!recognizerSet) {
+            recognizerSet = new Set();
+            vrefRecognizers.set(vref, recognizerSet);
+          }
+          recognizerSet.add(recognizer);
         }
-        recognizerSet.add(recognizer);
       }
     }
   }
 
-  function removeRecognizableVref(vref, recognizer) {
+  function removeRecognizableVref(vref, recognizer, recognizerIsVirtual) {
     const { type, allocatedByVat, virtual } = parseVatSlot(vref);
     if (type === 'object' && (!allocatedByVat || virtual)) {
-      const recognizerSet = vrefRecognizers.get(vref);
-      assert(recognizerSet && recognizerSet.has(recognizer));
-      recognizerSet.delete(recognizer);
-      if (recognizerSet.size === 0) {
-        vrefRecognizers.delete(vref);
-        if (!allocatedByVat) {
-          addToPossiblyRetiredSet(vref);
+      if (recognizerIsVirtual) {
+        syscall.vatstoreDelete(`vom.ir.${vref}|${recognizer}`);
+      } else {
+        const recognizerSet = vrefRecognizers.get(vref);
+        assert(recognizerSet && recognizerSet.has(recognizer));
+        recognizerSet.delete(recognizer);
+        if (recognizerSet.size === 0) {
+          vrefRecognizers.delete(vref);
+          if (!allocatedByVat) {
+            addToPossiblyRetiredSet(vref);
+          }
         }
       }
     }
   }
 
-  function removeRecognizableValue(value, recognizer) {
+  function removeRecognizableValue(value, recognizer, recognizerIsVirtual) {
     const vref = getSlotForVal(value);
     if (vref) {
-      removeRecognizableVref(vref, recognizer);
+      removeRecognizableVref(vref, recognizer, recognizerIsVirtual);
     }
+  }
+
+  let deleteCollectionEntry;
+  function setDeleteCollectionEntry(fn) {
+    deleteCollectionEntry = fn;
   }
 
   /**
@@ -544,15 +525,15 @@ export function makeVirtualReferenceManager(
    */
   function ceaseRecognition(vref) {
     let doMoreGC = false;
-    const { id, facet } = parseVatSlot(vref);
-    if (facet === undefined) {
+    const p = parseVatSlot(vref);
+    if (p.allocatedByVat && p.virtual && p.facet === undefined) {
       // If `vref` identifies a multi-faceted object that should no longer be
       // "recognized", what that really means that all references to its
       // individual facets should no longer be recognized -- nobody actually
       // references the object itself except internal data structures.  So in
       // this case we need individually to stop recognizing the facets
       // themselves.
-      const kindInfo = kindInfoTable.get(`${id}`);
+      const kindInfo = kindInfoTable.get(`${p.id}`);
       // This function can be called either from `dispatch.retireImports` or
       // from `possibleVirtualObjectDeath`.  In the latter case the vref is
       // actually a baseRef and so needs to be expanded to cease recognition of
@@ -561,8 +542,7 @@ export function makeVirtualReferenceManager(
         const { facetNames } = kindInfo;
         if (facetNames) {
           for (let i = 0; i < facetNames.length; i += 1) {
-            const more = ceaseRecognition(`${vref}:${i}`);
-            doMoreGC = doMoreGC || more;
+            doMoreGC = ceaseRecognition(`${vref}:${i}`) || doMoreGC;
           }
           return doMoreGC;
         }
@@ -577,16 +557,29 @@ export function makeVirtualReferenceManager(
           doMoreGC = true;
         } else if (recognizer instanceof Set) {
           recognizer.delete(vref);
-        } else if (typeof recognizer === 'function') {
-          recognizer(vref);
+        } else {
+          assert.fail(`unknown recognizer type ${typeof recognizer}`);
         }
       }
+    }
+    const prefix = `vom.ir.${vref}|`;
+    let [key] = syscall.vatstoreGetAfter('', prefix);
+    while (key) {
+      syscall.vatstoreDelete(key);
+      const parts = key.split('|');
+      doMoreGC = deleteCollectionEntry(parts[1], vref) || doMoreGC;
+      [key] = syscall.vatstoreGetAfter(key, prefix);
     }
     return doMoreGC;
   }
 
   function isVrefRecognizable(vref) {
-    return vrefRecognizers.has(vref);
+    if (vrefRecognizers.has(vref)) {
+      return true;
+    } else {
+      const [key] = syscall.vatstoreGetAfter('', `vom.ir.${vref}|`);
+      return !!key;
+    }
   }
 
   function finalizeDroppedCollection(descriptor) {
@@ -606,7 +599,14 @@ export function makeVirtualReferenceManager(
 
   function countCollectionsForWeakKey(vref) {
     const recognizerSet = vrefRecognizers.get(vref);
-    return recognizerSet ? recognizerSet.size : 0;
+    let size = recognizerSet ? recognizerSet.size : 0;
+    const prefix = `vom.ir.${vref}|`;
+    let [key] = syscall.vatstoreGetAfter('', prefix);
+    while (key) {
+      size += 1;
+      [key] = syscall.vatstoreGetAfter(key, prefix);
+    }
+    return size;
   }
 
   const testHooks = {
@@ -617,8 +617,9 @@ export function makeVirtualReferenceManager(
   return harden({
     droppedCollectionRegistry,
     isDurable,
+    isDurableKind,
     registerKind,
-    checkOrAcquireFacetNames,
+    rememberFacetNames,
     reanimate,
     addReachableVref,
     removeReachableVref,
@@ -632,6 +633,7 @@ export function makeVirtualReferenceManager(
     setExportStatus,
     possibleVirtualObjectDeath,
     ceaseRecognition,
+    setDeleteCollectionEntry,
     testHooks,
   });
 }

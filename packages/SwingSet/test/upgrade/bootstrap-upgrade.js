@@ -3,13 +3,38 @@ import { Far } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 
+import { NUM_SENSORS } from './num-sensors.js';
+
+function insistMissing(ref, isCollection = false) {
+  let p;
+  if (isCollection) {
+    p = E(ref).set(1, 2);
+  } else {
+    p = E(ref).get();
+  }
+  return p.then(
+    () => {
+      throw Error('ref should be missing');
+    },
+    err => {
+      assert.equal(err.message, 'vat terminated');
+    },
+  );
+}
+
 export function buildRootObject() {
   let vatAdmin;
   let ulrikRoot;
   let ulrikAdmin;
   const marker = Far('marker', {});
+  // sensors are numbered from '1' to match the vobj o+N/1.. vrefs
+  const importSensors = ['skip0'];
+  for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
+    importSensors.push(Far(`import-${i}`, {}));
+  }
   const { promise, resolve } = makePromiseKit();
   let dur;
+  let retain;
 
   return Far('root', {
     async bootstrap(vats, devices) {
@@ -18,6 +43,10 @@ export function buildRootObject() {
 
     getMarker() {
       return marker;
+    },
+
+    getImportSensors() {
+      return importSensors;
     },
 
     async buildV1() {
@@ -34,17 +63,21 @@ export function buildRootObject() {
       const m2 = await E(ulrikRoot).getPresence();
       assert.equal(m2, marker);
       const data = await E(ulrikRoot).getData();
-      dur = await E(ulrikRoot).getDurandal('d1');
-      const d1arg = await E(dur).get();
-      assert.equal(d1arg, 'd1');
 
-      // give v1 a promise that won't be resolved until v2
+      retain = await E(ulrikRoot).getExports(importSensors);
+
+      dur = await E(ulrikRoot).getDurandal({ d1: 'd1' });
+      const d1arg = await E(dur).get();
+      assert.equal(d1arg.d1, 'd1');
+
+      // give ver1 a promise that won't be resolved until ver2
       await E(ulrikRoot).acceptPromise(promise);
       const { p1 } = await E(ulrikRoot).getEternalPromise();
       p1.catch(() => 'hush');
       const p2 = E(ulrikRoot).returnEternalPromise(); // never resolves
       p2.catch(() => 'hush');
-      return { version, data, p1, p2, ...parameters };
+
+      return { version, data, p1, p2, retain, ...parameters };
     },
 
     async upgradeV2() {
@@ -56,10 +89,55 @@ export function buildRootObject() {
       const m2 = await E(ulrikRoot).getPresence();
       assert.equal(m2, marker);
       const data = await E(ulrikRoot).getData();
+
+      // marshal splats a bunch of log messages when it serializes
+      // 'remoerr' at the end of this function, warn the human
+      console.log(`note: expect one 'vat terminated' error logged below`);
+      let remoerr; // = Error('foo');
+      await E(retain.rem1)
+        .get()
+        .catch(err => (remoerr = err));
+
       const d1arg = await E(dur).get();
-      assert.equal(d1arg, 'new d1'); // durable object still works, in new way
+      assert.equal(d1arg.d1, 'd1'); // durable object still works
+      assert.equal(d1arg.new, 'new'); // in the new way
+
+      // the durables we retained should still be viable
+      const doget = obj =>
+        E(obj)
+          .get()
+          .then(res => res.name);
+      assert.equal(await doget(retain.dur1), 'd1', 'retain.dur1 broken');
+
+      const dc4entries = await E(ulrikRoot).getEntries(retain.dc4);
+      assert.equal(dc4entries.length, 2);
+      const dur28 = await E(retain.dc4).get(importSensors[28]);
+      const imp28 = await E(dur28).getImport();
+      assert.equal(imp28, importSensors[28], 'retain.dc4 broken');
+
+      // the durables retained by the vat in baggage should still be viable
+      const baggageImps = await E(ulrikRoot).checkBaggage(
+        importSensors[32],
+        importSensors[36],
+      );
+      const { imp33, imp35, imp37, imp38 } = baggageImps;
+      assert.equal(imp33, importSensors[33]);
+      assert.equal(imp35, importSensors[35]);
+      assert.equal(imp37, importSensors[37]);
+      assert.equal(imp38, importSensors[38]);
+
+      // all Remotable and merely-virtual objects are gone
+      await insistMissing(retain.vir2);
+      await insistMissing(retain.vir5);
+      await insistMissing(retain.vir7);
+      await insistMissing(retain.vc1, true);
+      await insistMissing(retain.vc3, true);
+      await insistMissing(retain.rem1);
+      await insistMissing(retain.rem2);
+      await insistMissing(retain.rem3);
+
       resolve(`message for your predecessor, don't freak out`);
-      return { version, data, ...parameters };
+      return { version, data, remoerr, ...parameters };
     },
 
     async buildV1WithLostKind() {

@@ -10,6 +10,8 @@ import {
   zeroPad,
   makeEncodePassable,
   makeDecodePassable,
+  makeCopySet,
+  makeCopyMap,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
@@ -29,6 +31,12 @@ export function makeCollectionManager(
   serialize,
   unserialize,
 ) {
+  // TODO(#5058): we hold a list of all collections (both virtual and
+  // durable) in RAM, so we can delete the virtual ones during
+  // stopVat(), and tolerate subsequent GC-triggered duplication
+  // deletion without crashing. This needs to move to the DB to avoid
+  // the RAM consumption of a large number of collections.
+  const allCollectionObjIDs = new Set();
   const storeKindIDToName = new Map();
 
   const storeKindInfo = {
@@ -126,6 +134,31 @@ export function makeCollectionManager(
   // Not that it's only used for this purpose, what should it be called?
   // TODO Should we be using the new encodeBigInt scheme instead, anyway?
   const BIGINT_TAG_LEN = 10;
+
+  /**
+   * Delete an entry from a collection as part of garbage collecting the entry's key.
+   *
+   * @param {string} collectionID - the collection from which the entry is to be deleted
+   * @param {string} vobjID - the entry key being removed
+   *
+   * @returns {boolean} true if this removal possibly introduces a further GC opportunity
+   */
+  function deleteCollectionEntry(collectionID, vobjID) {
+    const ordinalKey = prefixc(collectionID, `|${vobjID}`);
+    const ordinalString = syscall.vatstoreGet(ordinalKey);
+    syscall.vatstoreDelete(ordinalKey);
+    const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
+    const recordKey = prefixc(collectionID, `r${ordinalTag}:${vobjID}`);
+    const rawValue = syscall.vatstoreGet(recordKey);
+    let doMoreGC = false;
+    if (rawValue !== undefined) {
+      const value = JSON.parse(rawValue);
+      doMoreGC = value.slots.map(vrm.removeReachableVref).some(b => b);
+      syscall.vatstoreDelete(recordKey);
+    }
+    return doMoreGC;
+  }
+  vrm.setDeleteCollectionEntry(deleteCollectionEntry);
 
   function summonCollectionInternal(
     _initial,
@@ -233,14 +266,6 @@ export function makeCollectionManager(
       }
     }
 
-    function entryDeleter(vobjID) {
-      const ordinalKey = prefix(`|${vobjID}`);
-      const ordinalString = syscall.vatstoreGet(ordinalKey);
-      syscall.vatstoreDelete(ordinalKey);
-      const ordinalTag = zeroPad(ordinalString, BIGINT_TAG_LEN);
-      syscall.vatstoreDelete(prefix(`r${ordinalTag}:${vobjID}`));
-    }
-
     function init(key, value) {
       assert(
         matches(key, keySchema),
@@ -270,7 +295,7 @@ export function makeCollectionManager(
         }
         generateOrdinal(key);
         if (hasWeakKeys) {
-          vrm.addRecognizableValue(key, entryDeleter);
+          vrm.addRecognizableValue(key, `${collectionID}`, true);
         } else {
           vrm.addReachableVref(vref);
         }
@@ -314,18 +339,18 @@ export function makeCollectionManager(
       const rawValue = syscall.vatstoreGet(dbKey);
       assert(rawValue, X`key ${key} not found in collection ${q(label)}`);
       const value = JSON.parse(rawValue);
-      value.slots.map(vrm.removeReachableVref);
+      const doMoreGC1 = value.slots.map(vrm.removeReachableVref).some(b => b);
       syscall.vatstoreDelete(dbKey);
-      let doMoreGC = false;
+      let doMoreGC2 = false;
       if (passStyleOf(key) === 'remotable') {
         deleteOrdinal(key);
         if (hasWeakKeys) {
-          vrm.removeRecognizableValue(key, entryDeleter);
+          vrm.removeRecognizableValue(key, `${collectionID}`, true);
         } else {
-          doMoreGC = vrm.removeReachableVref(convertValToSlot(key));
+          doMoreGC2 = vrm.removeReachableVref(convertValToSlot(key));
         }
       }
-      return doMoreGC;
+      return doMoreGC1 || doMoreGC2;
     }
 
     function del(key) {
@@ -348,6 +373,10 @@ export function makeCollectionManager(
       const end = prefix(coverEnd);
       const ignoreKeys = !needKeys && pattEq(keyPatt, M.any());
       const ignoreValues = !needValues && pattEq(valuePatt, M.any());
+      /**
+       * @yields {[any, any]}
+       * @returns {Generator<[any, any], void, unknown>}
+       */
       function* iter() {
         const generationAtStart = currentGenerationNumber;
         while (priorDBKey !== undefined) {
@@ -455,9 +484,10 @@ export function makeCollectionManager(
       return countEntries();
     }
 
-    function snapshot() {
-      assert.fail(X`snapshot not yet implemented`);
-    }
+    const snapshotSet = keyPatt => makeCopySet(keys(keyPatt));
+
+    const snapshotMap = (keyPatt, valuePatt) =>
+      makeCopyMap(entries(keyPatt, valuePatt));
 
     return {
       has,
@@ -469,7 +499,8 @@ export function makeCollectionManager(
       keys,
       values,
       entries,
-      snapshot,
+      snapshotSet,
+      snapshotMap,
       sizeInternal,
       clear,
       clearInternal,
@@ -507,8 +538,16 @@ export function makeCollectionManager(
     if (hasWeakKeys) {
       collection = weakMethods;
     } else {
-      const { keys, values, entries, sizeInternal, getSize, snapshot, clear } =
-        raw;
+      const {
+        keys,
+        values,
+        entries,
+        sizeInternal,
+        getSize,
+        snapshotSet,
+        snapshotMap,
+        clear,
+      } = raw;
       collection = {
         ...weakMethods,
         keys,
@@ -516,7 +555,8 @@ export function makeCollectionManager(
         entries,
         sizeInternal,
         getSize,
-        snapshot,
+        snapshotSet,
+        snapshotMap,
         clear,
       };
     }
@@ -532,9 +572,13 @@ export function makeCollectionManager(
   }
 
   function deleteCollection(vobjID) {
+    if (!allCollectionObjIDs.has(vobjID)) {
+      return false; // already deleted
+    }
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
     const collection = summonCollectionInternal(false, 'GC', subid, kindName);
+    allCollectionObjIDs.delete(vobjID);
 
     const doMoreGC = collection.clearInternal(true);
     let priorKey = '';
@@ -547,6 +591,18 @@ export function makeCollectionManager(
       syscall.vatstoreDelete(priorKey);
     }
     return doMoreGC;
+  }
+
+  function deleteAllVirtualCollections() {
+    const vobjIDs = Array.from(allCollectionObjIDs).sort();
+    for (const vobjID of vobjIDs) {
+      const { id } = parseVatSlot(vobjID);
+      const kindName = storeKindIDToName.get(`${id}`);
+      const { durable } = storeKindInfo[kindName];
+      if (!durable) {
+        deleteCollection(vobjID);
+      }
+    }
   }
 
   function makeCollection(label, kindName, keySchema, valueSchema) {
@@ -572,6 +628,7 @@ export function makeCollectionManager(
       JSON.stringify(serialize(harden(schemata))),
     );
     syscall.vatstoreSet(prefixc(collectionID, '|label'), label);
+    allCollectionObjIDs.add(vobjID);
 
     return [
       vobjID,
@@ -587,7 +644,8 @@ export function makeCollectionManager(
   }
 
   function collectionToMapStore(collection) {
-    return Far('mapStore', collection);
+    const { snapshotSet: _, snapshotMap, ...rest } = collection;
+    return Far('mapStore', { snapshot: snapshotMap, ...rest });
   }
 
   function collectionToWeakMapStore(collection) {
@@ -602,7 +660,7 @@ export function makeCollectionManager(
       keys,
       sizeInternal,
       getSize,
-      snapshot,
+      snapshotSet,
       clear,
     } = collection;
     function* entries(patt) {
@@ -626,7 +684,7 @@ export function makeCollectionManager(
       entries,
       sizeInternal,
       getSize: patt => getSize(patt),
-      snapshot,
+      snapshot: snapshotSet,
       clear,
     };
     return Far('setStore', setStore);
@@ -788,30 +846,27 @@ export function makeCollectionManager(
     );
   }
 
-  function reanimateScalarMapStore(vobjID, proForma) {
-    return proForma ? null : collectionToMapStore(reanimateCollection(vobjID));
+  function reanimateScalarMapStore(vobjID) {
+    return collectionToMapStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarWeakMapStore(vobjID, proForma) {
-    return proForma
-      ? null
-      : collectionToWeakMapStore(reanimateCollection(vobjID));
+  function reanimateScalarWeakMapStore(vobjID) {
+    return collectionToWeakMapStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarSetStore(vobjID, proForma) {
-    return proForma ? null : collectionToSetStore(reanimateCollection(vobjID));
+  function reanimateScalarSetStore(vobjID) {
+    return collectionToSetStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarWeakSetStore(vobjID, proForma) {
-    return proForma
-      ? null
-      : collectionToWeakSetStore(reanimateCollection(vobjID));
+  function reanimateScalarWeakSetStore(vobjID) {
+    return collectionToWeakSetStore(reanimateCollection(vobjID));
   }
 
   const testHooks = { obtainStoreKindID, storeSizeInternal, makeCollection };
 
   return harden({
     initializeStoreKindInfo,
+    deleteAllVirtualCollections,
     makeScalarBigMapStore,
     makeScalarBigWeakMapStore,
     makeScalarBigSetStore,

@@ -16,6 +16,7 @@ import { insistMessage } from '../lib/message.js';
 import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
 import { makeCollectionManager } from './collectionManager.js';
+import { releaseOldState } from './stop-vat.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -690,16 +691,6 @@ function build(
     let val = getValForSlot(baseRef);
     if (val) {
       if (virtual) {
-        // If it's a virtual object for which we already have a representative,
-        // we are going to use that existing representative to preserve ===
-        // equality and WeakMap key usability, BUT we are going to ask the user
-        // code to make a new representative anyway (which we'll discard) so
-        // that as far as the user code is concerned we are making a new
-        // representative with each act of deserialization.  This way they can't
-        // detect reanimation by playing games inside their kind definition to
-        // try to observe when new representatives are created (e.g., by
-        // counting calls or squirreling things away in hidden WeakMaps).
-        vrm.reanimate(baseRef, true); // N.b.: throwing away the result
         if (facet !== undefined) {
           return val[facet];
         }
@@ -709,7 +700,7 @@ function build(
     let result;
     if (virtual) {
       assert.equal(type, 'object');
-      val = vrm.reanimate(baseRef, false);
+      val = vrm.reanimate(baseRef);
       if (facet !== undefined) {
         result = val[facet];
       }
@@ -1133,7 +1124,9 @@ function build(
   const vatGlobals = harden({
     VatData: {
       defineKind: vom.defineKind,
+      defineKindMulti: vom.defineKindMulti,
       defineDurableKind: vom.defineDurableKind,
+      defineDurableKindMulti: vom.defineDurableKindMulti,
       makeKindHandle: vom.makeKindHandle,
       makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,
       makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
@@ -1276,32 +1269,6 @@ function build(
   }
 
   /**
-   * @returns { Promise<void> }
-   */
-  async function stopVat() {
-    assert(didStartVat);
-    assert(!didStopVat);
-    didStopVat = true;
-
-    // Pretend that userspace rejected all non-durable promises. We
-    // basically do the same thing that `thenReject(p,
-    // vpid)(rejection)` would have done, but we skip ahead to the
-    // syscall.resolve part. The real `thenReject` also does
-    // pRec.reject(), which would give control to userspace (who might
-    // have re-imported the promise and attached a .then to it), and
-    // stopVat() must not allow userspace to gain agency.
-
-    const rejectCapData = m.serialize('vat upgraded');
-    const vpids = Array.from(deciderVPIDs.keys()).sort();
-    const rejections = vpids.map(vpid => [vpid, true, rejectCapData]);
-    if (rejections.length) {
-      syscall.resolve(rejections);
-    }
-    // eslint-disable-next-line no-use-before-define
-    await bringOutYourDead();
-  }
-
-  /**
    * @param { VatDeliveryObject } delivery
    * @returns { void | Promise<void> }
    */
@@ -1340,10 +1307,6 @@ function build(
         result = startVat(vpCapData);
         break;
       }
-      case 'stopVat': {
-        result = stopVat();
-        break;
-      }
       default:
         assert.fail(X`unknown delivery type ${type}`);
     }
@@ -1362,6 +1325,37 @@ function build(
       return bringOutYourDead();
     }
     return undefined;
+  }
+
+  /**
+   * @returns { Promise<void> }
+   */
+  async function stopVat() {
+    assert(didStartVat);
+    assert(!didStopVat);
+    didStopVat = true;
+
+    try {
+      await releaseOldState({
+        m,
+        deciderVPIDs,
+        syscall,
+        exportedRemotables,
+        addToPossiblyDeadSet,
+        slotToVal,
+        valToSlot,
+        dropExports,
+        retireExports,
+        vrm,
+        collectionManager,
+        bringOutYourDead,
+        vreffedObjectRegistry,
+      });
+    } catch (e) {
+      console.log(`-- error during stopVat()`);
+      console.log(e);
+      throw e;
+    }
   }
 
   /**
@@ -1412,9 +1406,11 @@ function build(
    */
   async function dispatch(delivery) {
     // We must short-circuit dispatch to bringOutYourDead here because it has to
-    // be async
+    // be async, same for stopVat
     if (delivery[0] === 'bringOutYourDead') {
       return meterControl.runWithoutMeteringAsync(bringOutYourDead);
+    } else if (delivery[0] === 'stopVat') {
+      return meterControl.runWithoutMeteringAsync(stopVat);
     } else {
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for

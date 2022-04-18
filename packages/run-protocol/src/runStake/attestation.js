@@ -192,6 +192,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     returnAttestation,
     getLiened,
     getAccountState,
+    wrapLienedAmount,
     /**
      * @param { Amount<'copyBag'> } attAmt
      * @throws if `attAmt` payload length is not 1
@@ -241,6 +242,8 @@ export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
       makeReturnAttInvitation: () =>
         zcf.makeInvitation(lienMint.returnAttestation, 'returnAttestation'),
       unwrapLienedAmount: lienMint.unwrapLienedAmount,
+      wrapLienedAmount: lienedAmount =>
+        lienMint.wrapLienedAmount(address, lienedAmount),
     });
 
   return harden({

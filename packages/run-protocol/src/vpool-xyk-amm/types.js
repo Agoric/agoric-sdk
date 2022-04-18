@@ -49,9 +49,9 @@
  * @callback AddLiquidityActual
  * @param {XYKPool} pool
  * @param {ZCFSeat} zcfSeat
- * @param {Amount} secondaryAmount
- * @param {Amount} poolCentralAmount
- * @param {ZCFSeat} feeSeat
+ * @param {Amount<'nat'>} secondaryAmount
+ * @param {Amount<'nat'>} poolCentralAmount
+ * @param {ZCFSeat} [feeSeat]
  * @returns {string}
  */
 
@@ -91,7 +91,7 @@
  */
 /**
  * @typedef {Object} XYKAMMPublicFacet
- * @property {(issuer: Issuer, keyword: Keyword) => Promise<Issuer>} addPool
+ * @property {(issuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addPool
  * add a new liquidity pool
  * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation

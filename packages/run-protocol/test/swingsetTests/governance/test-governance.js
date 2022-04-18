@@ -7,30 +7,40 @@ import rawTest from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import path from 'path';
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
-import {
-  governanceBundles,
-  economyBundles,
-} from '../../../src/importedBundles.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import { unsafeMakeBundleCache } from '../../bundleTool.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+// import '../../../src/vaultFactory/vaultFactory.js';
+
+const dirname = new URL('.', import.meta.url).pathname;
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
-/** @type {any} */
+// @ts-expect-error cast
 const test = rawTest;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
 
   const contractBundles = {
-    liquidateMinimum: economyBundles.liquidate,
-    amm: economyBundles.amm,
-    vaultFactory: economyBundles.VaultFactory,
-    committee: governanceBundles.committee,
-    contractGovernor: governanceBundles.contractGovernor,
-    binaryVoteCounter: governanceBundles.binaryVoteCounter,
+    liquidateMinimum: await bundleCache.load(
+      './src/vaultFactory/liquidateMinimum.js',
+      'liquidateMinimum',
+    ),
+    amm: await bundleCache.load(
+      './src/vpool-xyk-amm/multipoolMarketMaker.js',
+      'amm',
+    ),
+    vaultFactory: await bundleCache.load(
+      './src/vaultFactory/vaultFactory.js',
+      'VaultFactory',
+    ),
+    committee: committeeBundle,
+    contractGovernor: contractGovernorBundle,
+    binaryVoteCounter: binaryVoteCounterBundle,
   };
 
   const vatNames = ['alice', 'owner', 'priceAuthority', 'voter', 'zoe'];
@@ -69,5 +79,25 @@ async function main(t, argv) {
 test.serial('vaultFactory', async t => {
   const startingValues = [[100], [1000]]; // [aliceValues, ownerValues]
   const dump = await main(t, ['oneLoanWithInterest', startingValues]);
-  t.snapshot(dump.log);
+  t.deepEqual(dump.log, [
+    '=> alice and the vaultFactory are set up',
+    '=> voter and electorate vats are set up',
+    'before vote, InterestRate numerator is 250',
+    'Voter Bob cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
+    'Voter Carol cast a ballot for {"noChange":["InterestRate"]}',
+    'Voter Dave cast a ballot for {"noChange":["InterestRate"]}',
+    'Voter Emma cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
+    'Voter Flora cast a ballot for {"changes":{"InterestRate":{"denominator":{"brand":"[Alleged: RUN brand]","value":"[10000n]"},"numerator":{"brand":"[Seen]","value":"[4321n]"}}}}',
+    '=> alice.oneLoanWithInterest called',
+    'governor from governed matches governor instance',
+    'at 0 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510000n]"}',
+    'at 1 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510035n]"}',
+    'at 2 days: vote ready to close',
+    'at 2 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510070n]"}',
+    'after vote on (InterestRate), InterestRate numerator is 4321',
+    'at 3 days: vote closed',
+    'at 3 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510105n]"}',
+    'at 3 days: 1 day after votes cast, assetNotifier update #6 has interestRate.numerator 250',
+    'at 4 days: 2 days after votes cast, assetNotifier update #7 has interestRate.numerator 4321',
+  ]);
 });

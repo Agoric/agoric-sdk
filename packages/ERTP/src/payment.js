@@ -9,13 +9,11 @@ import { defineKind } from '@agoric/vat-data';
  * @returns {() => Payment<K>}
  */
 export const makePaymentMaker = (allegedName, brand) => {
-  const makePayment = defineKind(
-    `${allegedName} payment`,
-    () => ({}),
-    () => ({
-      getAllegedBrand: () => brand,
-    }),
-  );
-  return makePayment;
+  const makePayment = defineKind(`${allegedName} payment`, () => ({}), {
+    getAllegedBrand: () => brand,
+  });
+  // XXX the following type cast is meatball surgery to make tsc shut up
+  // somebody who understands this should do it properly
+  return /** @type {() => Payment<K>} */ (makePayment);
 };
 harden(makePaymentMaker);

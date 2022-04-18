@@ -3,7 +3,6 @@
 import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { Far } from '@endo/marshal';
 
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { makeGovernedTerms } from '../../src/vaultFactory/params';
@@ -57,6 +56,7 @@ const makeRates = debtBrand => {
   return {
     debtLimit: AmountMath.make(debtBrand, 1_000_000n),
     liquidationMargin: makeRatio(105n, debtBrand),
+    liquidationPenalty: makeRatio(10n, debtBrand, 100n, debtBrand),
     interestRate: makeRatio(250n, debtBrand, BASIS_POINTS),
     loanFee: makeRatio(200n, debtBrand, BASIS_POINTS),
   };
@@ -252,15 +252,10 @@ const buildOwner = async (
     runBrand,
   );
 
-  const voteCreator = Far('vaultFactory vote creator', {
-    voteOnParamChange: E(governorFacets.creatorFacet).voteOnParamChange,
-  });
-
   const governed = {
     instance: governedInstance,
     creatorFacet: E(governorFacets.creatorFacet).getCreatorFacet(),
     publicFacet: governedPublicFacet,
-    voteCreator,
   };
 
   return { governor: governorFacets, governed, runBrand };

@@ -28,7 +28,9 @@ if ('VatData' in globalThis) {
   const unvailable = () => assert.fail('VatData unavailable');
   VatDataGlobal = {
     defineKind: unvailable,
+    defineKindMulti: unvailable,
     defineDurableKind: unvailable,
+    defineDurableKindMulti: unvailable,
     makeKindHandle: unvailable,
     makeScalarBigMapStore: unvailable,
     makeScalarBigWeakMapStore: unvailable,
@@ -39,10 +41,28 @@ if ('VatData' in globalThis) {
 
 export const {
   defineKind,
+  defineKindMulti,
   defineDurableKind,
+  defineDurableKindMulti,
   makeKindHandle,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
   makeScalarBigSetStore,
   makeScalarBigWeakSetStore,
 } = VatDataGlobal;
+
+/**
+ * When making a multi-facet kind, it's common to pick one facet to expose. E.g.,
+ *
+ *     const makeFoo = (a, b, c, d) => makeFooBase(a, b, c, d).self;
+ *
+ * This helper reduces the duplication:
+ *
+ *     const makeFoo = pickFacet(makeFooBase, 'self');
+ *
+ * @type {import('./types').PickFacet}
+ */
+export const pickFacet =
+  (maker, facetName) =>
+  (...args) =>
+    maker(...args)[facetName];

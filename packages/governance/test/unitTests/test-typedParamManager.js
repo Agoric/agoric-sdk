@@ -18,7 +18,7 @@ import {
 const drachmaKit = makeIssuerKit('drachma');
 const drachmaBrand = drachmaKit.brand;
 
-test('types', t => {
+test('types', async t => {
   t.throws(() =>
     makeParamManagerSync({
       // @ts-expect-error invalid value for the declared type
@@ -35,10 +35,7 @@ test('types', t => {
     Working: [ParamTypes.NAT, 0n],
   });
   mgr.getWorking().valueOf();
-  t.throws(() =>
-    // @ts-expect-error should break
-    mgr.updateWorking('not a bigint'),
-  );
+  await t.throwsAsync(() => mgr.updateParams({ Working: 'not a bigint' }));
 });
 
 test('makeParamManagerFromTerms', async t => {
@@ -107,26 +104,33 @@ test('Amount', async t => {
   });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 2n));
 
-  paramManager.updateShimmer(AmountMath.make(floorBrand, 5n));
+  await paramManager.updateParams({ Shimmer: AmountMath.make(floorBrand, 5n) });
   t.deepEqual(paramManager.getShimmer(), AmountMath.make(floorBrand, 5n));
 
-  // @ts-expect-error
-  t.throws(() => paramManager.updateShimmer('fear,loathing'), {
-    message: 'Expected an Amount for Shimmer, got "fear,loathing"',
-  });
+  await t.throwsAsync(
+    () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
+    {
+      message: 'Expected an Amount for Shimmer, got "fear,loathing"',
+    },
+  );
 
-  t.throws(
-    () => paramManager.updateShimmer(AmountMath.make(dessertBrand, 20n)),
+  await t.throwsAsync(
+    () =>
+      paramManager.updateParams({
+        Shimmer: AmountMath.make(dessertBrand, 20n),
+      }),
     {
       message:
         'The brand in the allegedAmount {"brand":"[Alleged: dessertTopping brand]","value":"[20n]"} in \'coerce\' didn\'t match the specified brand "[Alleged: floor wax brand]".',
     },
   );
 
-  // @ts-expect-error
-  t.throws(() => paramManager.updateShimmer('fear,loathing'), {
-    message: 'Expected an Amount for Shimmer, got "fear,loathing"',
-  });
+  await t.throwsAsync(
+    () => paramManager.updateParams({ Shimmer: 'fear,loathing' }),
+    {
+      message: 'Expected an Amount for Shimmer, got "fear,loathing"',
+    },
+  );
 });
 
 test('params one installation', async t => {
@@ -152,9 +156,8 @@ test('params one installation', async t => {
   );
 
   t.deepEqual(paramManager.getPName(), installationHandle);
-  t.throws(
-    // @ts-expect-error throw test
-    () => paramManager.updatePName(18.1),
+  await t.throwsAsync(
+    () => paramManager.updateParams({ PName: 18.1 }),
     {
       message: 'value for "PName" must be an Installation, was 18.1',
     },
@@ -165,7 +168,7 @@ test('params one installation', async t => {
   const handle2 = Far('another fake Installation', {
     getBundle: () => ({ condensed: '() => {})' }),
   });
-  paramManager.updatePName(handle2);
+  await paramManager.updateParams({ PName: handle2 });
   t.deepEqual(paramManager.getPName(), handle2);
 
   t.deepEqual(
@@ -190,16 +193,15 @@ test('params one instance', async t => {
   });
 
   t.deepEqual(paramManager.getPName(), instanceHandle);
-  t.throws(
-    // @ts-expect-error
-    () => paramManager.updatePName(18.1),
+  await t.throwsAsync(
+    () => paramManager.updateParams({ PName: 18.1 }),
     {
       message: 'value for "PName" must be an Instance, was 18.1',
     },
     'value should be an instance',
   );
   const handle2 = makeHandle(instanceKey);
-  paramManager.updatePName(handle2);
+  await paramManager.updateParams({ PName: handle2 });
   t.deepEqual(paramManager.getPName(), handle2);
 
   t.deepEqual(
@@ -276,12 +278,14 @@ test('two Nats', async t => {
   t.is(paramManager.getAcres(), 50n);
   t.is(paramManager.getSpeedLimit(), 299_792_458n);
 
-  // @ts-expect-error
-  t.throws(() => paramManager.updateSpeedLimit(300000000), {
-    message: '300000000 must be a bigint',
-  });
+  await t.throwsAsync(
+    () => paramManager.updateParams({ SpeedLimit: 300000000 }),
+    {
+      message: '300000000 must be a bigint',
+    },
+  );
 
-  t.throws(() => paramManager.updateSpeedLimit(-37n), {
+  await t.throwsAsync(() => paramManager.updateParams({ SpeedLimit: -37n }), {
     message: '-37 is negative',
   });
 });
@@ -297,19 +301,23 @@ test('Ratio', async t => {
   t.is(paramManager.getGoldenRatio(), ratio);
 
   const morePrecise = makeRatio(1618033n, unitlessBrand, 1_000_000n);
-  paramManager.updateGoldenRatio(morePrecise);
+  await paramManager.updateParams({ GoldenRatio: morePrecise });
   t.is(paramManager.getGoldenRatio(), morePrecise);
 
-  // @ts-expect-error throws
-  t.throws(() => paramManager.updateGoldenRatio(300000000), {
-    message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
-  });
+  await t.throwsAsync(
+    () => paramManager.updateParams({ GoldenRatio: 300000000 }),
+    {
+      message: '"ratio" 300000000 must be a pass-by-copy record, not "number"',
+    },
+  );
 
   const anotherBrand = makeIssuerKit('arbitrary').brand;
 
-  t.throws(
+  await t.throwsAsync(
     () =>
-      paramManager.updateGoldenRatio(makeRatio(16180n, anotherBrand, 10_000n)),
+      paramManager.updateParams({
+        GoldenRatio: makeRatio(16180n, anotherBrand, 10_000n),
+      }),
     {
       message:
         'Numerator brand for "GoldenRatio" must be "[Alleged: unitless brand]"',
@@ -324,12 +332,14 @@ test('Strings', async t => {
   });
   t.is(paramManager.getOurWeapons(), 'fear');
 
-  paramManager.updateOurWeapons('fear,surprise');
+  await paramManager.updateParams({ OurWeapons: 'fear,surprise' });
   t.is(paramManager.getOurWeapons(), 'fear,surprise');
-  // @ts-expect-error
-  t.throws(() => paramManager.updateOurWeapons(300000000), {
-    message: '300000000 must be a string',
-  });
+  await t.throwsAsync(
+    () => paramManager.updateParams({ OurWeapons: 300000000 }),
+    {
+      message: '300000000 must be a string',
+    },
+  );
 });
 
 test('Unknown', async t => {
@@ -339,8 +349,8 @@ test('Unknown', async t => {
   });
   t.is(paramManager.getSurprise(), 'party');
 
-  paramManager.updateSurprise('gift');
+  await paramManager.updateParams({ Surprise: 'gift' });
   t.is(paramManager.getSurprise(), 'gift');
-  paramManager.updateSurprise(['gift', 'party']);
+  await paramManager.updateParams({ Surprise: ['gift', 'party'] });
   t.deepEqual(paramManager.getSurprise(), ['gift', 'party']);
 });

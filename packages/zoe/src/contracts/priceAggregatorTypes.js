@@ -7,13 +7,13 @@
  */
 
 /**
- * @typedef {{}} OracleKey
+ * @typedef {{} | string} OracleKey
  */
 
 /**
  * @callback PriceAggregatorCreatorFacetInitOracle
- * @param {Instance=} oracleInstance
- * @param {unknown=} query
+ * @param {Instance | string} [oracleInstance]
+ * @param {unknown} [query]
  * @returns {Promise<OracleAdmin>}
  */
 
@@ -21,11 +21,17 @@
  * @typedef {Object} PriceAggregatorCreatorFacet
  * @property {(quoteMint: Mint) => Promise<void>} initializeQuoteMint
  * @property {PriceAggregatorCreatorFacetInitOracle} initOracle
+ * @property {(oracleKey: OracleKey) => Promise<void>} deleteOracle
  */
 
 /**
  * @typedef {Object} PriceAggregatorPublicFacet
  * @property {() => PriceAuthority} getPriceAuthority
+ * @property {() => Promise<Notifier<bigint> | undefined>} getRoundStartNotifier
+ * @property {() => Promise<Notifier<{
+ *   submitted: [OracleKey, bigint][],
+ *   authenticatedQuote: Payment<'set'>,
+ * }>>} getRoundCompleteNotifier
  */
 
 /**

@@ -1,8 +1,7 @@
 // @ts-check
 
 import { assert } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/marshal';
+import { E, passStyleOf } from '@endo/far';
 
 /**
  * @template T

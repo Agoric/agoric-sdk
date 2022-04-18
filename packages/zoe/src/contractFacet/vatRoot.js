@@ -15,7 +15,7 @@ import '../internal-types.js';
 import { makeZCFZygote } from './zcfZygote.js';
 
 /**
- * @param {VatPowers} powers
+ * @param {VatPowers & { testJigSetter: TestJigSetter }} powers
  * @returns {{ executeContract: ExecuteContract}}
  */
 export function buildRootObject(powers) {
@@ -24,7 +24,6 @@ export function buildRootObject(powers) {
   // zygote vats (essentially freezing and then creating copies of
   // vats), `makeZCFZygote`, `zcfZygote.evaluateContract` and
   // `zcfZygote.startContract` should exposed separately.
-  // @ts-expect-error no TS defs for rickety test scaffolding
   const { testJigSetter } = powers;
 
   /** @type {ExecuteContract} */

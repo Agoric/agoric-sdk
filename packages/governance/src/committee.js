@@ -6,7 +6,7 @@ import { makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { makeHandle } from '@agoric/zoe/src/makeHandle';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { QuorumRule } from './question.js';
 import {
   startCounter,

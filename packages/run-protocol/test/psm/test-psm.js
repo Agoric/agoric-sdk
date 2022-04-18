@@ -7,12 +7,7 @@ import '../../src/vaultFactory/types.js';
 
 import path from 'path';
 import { E } from '@endo/eventual-send';
-import bundleSource from '@endo/bundle-source';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKit } from '@agoric/zoe';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeLoopback } from '@endo/captp';
 import {
   makeRatio,
   floorDivideBy,
@@ -20,19 +15,14 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../../src/makeTracer.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
+import { setUpZoeForTest } from '../supports.js';
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
 const psmRoot = `${dirname}/../../src/psm/psm.js`;
 const trace = makeTracer('TestPSM', false);
-
-const makeBundle = async sourceRoot => {
-  const url = await importMetaResolve(sourceRoot, import.meta.url);
-  const contractBundle = await bundleSource(new URL(url).pathname);
-  console.log(`makeBundle ${sourceRoot}`);
-  return contractBundle;
-};
 
 const BASIS_POINTS = 10000n;
 const WantStableFeeBP = 1n;
@@ -85,19 +75,12 @@ const setJig = _jig => {
  * @param {ExecuteContract} t
  */
 test.before(async t => {
-  // makeBundle is slow, so we bundle each contract once and reuse in all tests.
-  const psmBundle = await makeBundle(psmRoot);
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const psmBundle = await bundleCache.load(psmRoot, 'psm');
   t.context.bundles = { psmBundle };
-  const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(setJig, makeRemote).admin,
-  );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  t.context.zoe = zoe;
-  trace('makeZoe');
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
-  t.context.feeMintAccess = feeMintAccess;
+  const { zoe, feeMintAccess } = setUpZoeForTest(setJig);
+  t.context.zoe = await zoe;
+  t.context.feeMintAccess = await feeMintAccess;
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();

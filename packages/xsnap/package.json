@@ -28,20 +28,21 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.3.16",
-    "@endo/eventual-send": "^0.14.8",
-    "@endo/bundle-source": "^2.1.1",
-    "@endo/init": "^0.5.37",
-    "@endo/netstring": "^0.3.7",
-    "@endo/stream": "^0.3.6",
-    "@endo/stream-node": "^0.2.7",
-    "glob": "^7.1.6"
+    "@endo/eventual-send": "^0.15.3",
+    "@endo/bundle-source": "^2.2.0",
+    "@endo/init": "^0.5.41",
+    "@endo/netstring": "^0.3.11",
+    "@endo/stream": "^0.3.10",
+    "@endo/stream-node": "^0.2.11",
+    "glob": "^7.1.6",
+    "rollup-plugin-string": "^3.0.0"
   },
   "devDependencies": {
-    "@endo/base64": "^0.2.21",
+    "@endo/base64": "^0.2.25",
     "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-node-resolve": "^6.1.0",
     "ava": "^3.12.1",
-    "c8": "^7.7.2",
+    "c8": "^7.11.0",
     "object-inspect": "^1.12.0",
     "rollup-plugin-terser": "^5.1.3"
   },

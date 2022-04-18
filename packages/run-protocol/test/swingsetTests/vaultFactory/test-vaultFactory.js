@@ -9,16 +9,16 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 
 import liquidateMinimumBundle from '../../../bundles/bundle-liquidateMinimum.js';
 import ammBundle from '../../../bundles/bundle-amm.js';
 import vaultFactoryBundle from '../../../bundles/bundle-vaultFactory.js';
-import committeeBundle from '../../../bundles/bundle-committee.js';
-import contractGovernorBundle from '../../../bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '../../../bundles/bundle-binaryVoteCounter.js';
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
-/** @type {any} */
+// @ts-expect-error cast
 const test = rawTest;
 
 /**
@@ -85,5 +85,10 @@ async function main(t, argv) {
 test.serial('vaultFactory', async t => {
   const startingValues = [[100], [1000]]; // [aliceValues, ownerValues]
   const dump = await main(t, ['oneLoanWithInterest', startingValues]);
-  t.snapshot(dump.log);
+  t.deepEqual(dump.log, [
+    '=> alice and the vaultFactory are set up',
+    '=> alice.oneLoanWithInterest called',
+    'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510000n]"} after borrowing',
+    'Alice owes {"brand":"[Alleged: RUN brand]","value":"[510035n]"} after interest',
+  ]);
 });

@@ -86,11 +86,15 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
     },
     home: { produce: { bank: 'bank' } },
   },
-  shareBootContractBundles: {
-    produce: {
-      centralSupplyBundle: true,
-      mintHolderBundle: true,
-      pegasusBundle: true,
+  installBootContracts: {
+    vatPowers: { D: true },
+    devices: { vatAdmin: true },
+    consume: { zoe: 'zoe' },
+    installation: {
+      produce: {
+        centralSupply: 'zoe',
+        mintHolder: 'zoe',
+      },
     },
   },
   mintInitialSupply: {
@@ -98,12 +102,14 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       argv: { bootMsg: true },
     },
     consume: {
-      centralSupplyBundle: true,
       feeMintAccess: true,
       zoe: true,
     },
     produce: {
       initialSupply: true,
+    },
+    installation: {
+      consume: { centralSupply: 'zoe' },
     },
   },
   addBankAssets: {
@@ -113,11 +119,13 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       // TODO: re-org loadVat to be subject to permits
       loadVat: true,
       zoe: true,
-      mintHolderBundle: true,
     },
     produce: {
       bankManager: 'bank',
       bldIssuerKit: true,
+    },
+    installation: {
+      consume: { centralSupply: 'zoe', mintHolder: 'zoe' },
     },
     issuer: { produce: { BLD: 'BLD', RUN: 'zoe' } },
     brand: { produce: { BLD: 'BLD', RUN: 'zoe' } },
@@ -151,7 +159,6 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
     consume: {
       namesByAddress: true,
       board: 'board',
-      pegasusBundle: true,
       zoe: 'zoe',
     },
     installation: {
@@ -238,11 +245,13 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
     consume: {
       bankManager: true,
       bldIssuerKit: true,
-      centralSupplyBundle: true,
       client: true,
       feeMintAccess: true,
       loadVat: true,
       zoe: true,
+    },
+    installation: {
+      consume: { centralSupply: 'zoe' },
     },
     produce: { mints: true },
     home: { produce: { faucet: true } },
@@ -251,193 +260,5 @@ export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
     runBehaviors: true,
     consume: { client: true },
     home: { produce: { runBehaviors: true, governanceActions: true } },
-  },
-});
-
-const SHARED_POST_BOOT_MANIFEST = harden({
-  shareEconomyBundles: {
-    produce: {
-      ammBundle: true,
-      vaultBundles: true,
-      governanceBundles: true,
-      reserveBundle: true,
-    },
-  },
-  startEconomicCommittee: {
-    consume: {
-      zoe: true,
-      governanceBundles: true,
-    },
-    produce: { economicCommitteeCreatorFacet: 'economicCommittee' },
-    installation: {
-      produce: {
-        committee: 'zoe',
-        noActionElectorate: 'zoe',
-        contractGovernor: 'zoe',
-        binaryVoteCounter: 'zoe',
-      },
-    },
-    instance: {
-      produce: { economicCommittee: 'economicCommittee' },
-    },
-  },
-  setupAmm: {
-    consume: {
-      chainTimerService: 'timer',
-      zoe: 'zoe',
-      economicCommitteeCreatorFacet: 'economicCommittee',
-      ammBundle: true,
-    },
-    produce: {
-      ammCreatorFacet: 'amm',
-      ammGovernorCreatorFacet: 'amm',
-    },
-    issuer: { consume: { RUN: 'zoe' } },
-    installation: {
-      consume: { contractGovernor: 'zoe' },
-      produce: { amm: 'zoe' },
-    },
-    instance: {
-      consume: { economicCommittee: 'economicCommittee' },
-      produce: { amm: 'amm', ammGovernor: 'ammGovernor' },
-    },
-  },
-  startVaultFactory: {
-    consume: {
-      feeMintAccess: 'zoe',
-      vaultBundles: true,
-      chainTimerService: 'timer',
-      zoe: 'zoe',
-      priceAuthority: 'priceAuthority',
-      economicCommitteeCreatorFacet: 'economicCommittee',
-    },
-    produce: {
-      vaultFactoryCreator: 'VaultFactory',
-      vaultFactoryGovernorCreator: 'VaultFactory',
-      vaultFactoryVoteCreator: 'VaultFactory',
-    },
-    brand: { consume: { RUN: 'zoe' } },
-    oracleBrand: { consume: { USD: true } },
-    installation: {
-      consume: { contractGovernor: 'zoe' },
-      produce: { VaultFactory: 'zoe', liquidate: 'zoe' },
-    },
-    instance: {
-      consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
-      produce: {
-        VaultFactory: 'VaultFactory',
-        Treasury: 'VaultFactory',
-        VaultFactoryGovernor: 'VaultFactoryGovernor',
-      },
-    },
-  },
-  grantVaultFactoryControl: {
-    vatParameters: {
-      argv: { vaultFactoryControllerAddress: true },
-    },
-    consume: {
-      client: 'provisioning',
-      priceAuthorityAdmin: 'priceAuthority',
-      vaultFactoryCreator: 'VaultFactory',
-    },
-  },
-
-  setupReserve: {
-    consume: {
-      feeMintAccess: 'zoe',
-      vaultBundles: true,
-      chainTimerService: 'timer',
-      zoe: 'zoe',
-      economicCommitteeCreatorFacet: 'economicCommittee',
-      reserveBundle: true,
-    },
-    issuer: { consume: { RUN: 'zoe' } },
-    produce: {
-      reserveCreatorFacet: 'reserve',
-      reserveGovernorCreatorFacet: 'reserve',
-      reservePublicFacet: 'reserve',
-    },
-    brand: { consume: { RUN: 'zoe' } },
-    installation: {
-      consume: { contractGovernor: 'zoe' },
-      produce: { reserve: 'zoe' },
-    },
-    instance: {
-      consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
-      produce: {
-        reserve: 'reserve',
-        reserveGovernor: 'ReserveGovernor',
-      },
-    },
-  },
-
-  configureVaultFactoryUI: {
-    consume: {
-      board: true,
-      zoe: true,
-    },
-    issuer: { consume: { RUN: 'zoe' } },
-    brand: { consume: { RUN: 'zoe' } },
-    installation: {
-      consume: {
-        amm: 'zoe',
-        VaultFactory: 'zoe',
-        contractGovernor: 'zoe',
-        noActionElectorate: 'zoe',
-        binaryVoteCounter: 'zoe',
-        liquidate: 'zoe',
-      },
-    },
-    instance: {
-      consume: { amm: 'amm', VaultFactory: 'VaultFactory' },
-    },
-    uiConfig: { produce: { Treasury: true, VaultFactory: true } },
-  },
-});
-
-export const CHAIN_POST_BOOT_MANIFEST = harden({
-  ...SHARED_POST_BOOT_MANIFEST,
-  startRewardDistributor: {
-    consume: {
-      chainTimerService: true,
-      bankManager: true,
-      loadVat: true,
-      vaultFactoryCreator: true,
-      ammCreatorFacet: true,
-      zoe: true,
-    },
-    produce: {
-      distributor: 'distributeFees',
-    },
-    issuer: { consume: { RUN: 'zoe' } },
-    brand: { consume: { RUN: 'zoe' } },
-  },
-});
-
-export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
-  ...SHARED_POST_BOOT_MANIFEST,
-  fundAMM: {
-    consume: {
-      centralSupplyBundle: true,
-      mintHolderBundle: true,
-      chainTimerService: 'timer',
-      bldIssuerKit: true,
-      feeMintAccess: true,
-      loadVat: true,
-      mints: 'mints',
-      priceAuthorityVat: 'priceAuthority',
-      priceAuthorityAdmin: 'priceAuthority',
-      vaultFactoryCreator: 'VaultFactory',
-      zoe: true,
-    },
-    issuer: {
-      consume: { RUN: 'zoe' },
-    },
-    brand: {
-      consume: { RUN: 'zoe' },
-    },
-    instance: {
-      consume: { amm: 'amm' },
-    },
   },
 });

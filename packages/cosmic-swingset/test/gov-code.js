@@ -15,5 +15,7 @@ const behavior = ({ consume: { client } }) => {
   E(client).assignBundle([addr => ({ youAreGoverned: addr })]);
 };
 
+`import('foo')`;
+
 // "export" our behavior by way of the completion value of this script.
 behavior;

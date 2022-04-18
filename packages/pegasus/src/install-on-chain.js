@@ -1,5 +1,7 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
+import pegasusBundle from '../bundles/bundle-pegasus.js';
+
 // TODO: TECHDEBT: ambient types don't work here.
 // import '@agoric/vats/src/core/types.js';
 
@@ -7,7 +9,7 @@ export const CONTRACT_NAME = 'Pegasus';
 
 /* @param { BootstrapPowers } powers */
 export async function installOnChain({
-  consume: { board, namesByAddress, pegasusBundle: bundleP, zoe },
+  consume: { board, namesByAddress, zoe },
   installation: {
     produce: { [CONTRACT_NAME]: produceInstall },
   },
@@ -15,7 +17,6 @@ export async function installOnChain({
     produce: { [CONTRACT_NAME]: produceInstance },
   },
 }) {
-  const pegasusBundle = await bundleP;
   const pegasusInstall = await E(zoe).install(pegasusBundle);
 
   const terms = harden({

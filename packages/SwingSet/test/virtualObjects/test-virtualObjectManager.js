@@ -12,28 +12,26 @@ function capdata(body, slots = []) {
 function initThing(label = 'thing', counter = 0) {
   return { counter, label, resetCounter: 0 };
 }
-function actualizeThing(state) {
-  return {
-    inc() {
-      state.counter += 1;
-      return state.counter;
-    },
-    reset(newStart) {
-      state.counter = newStart;
-      state.resetCounter += 1;
-      return state.resetCounter;
-    },
-    relabel(newLabel) {
-      state.label = newLabel;
-    },
-    get() {
-      return state.counter;
-    },
-    describe() {
-      return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
-    },
-  };
-}
+const thingBehavior = {
+  inc({ state }) {
+    state.counter += 1;
+    return state.counter;
+  },
+  reset({ state }, newStart) {
+    state.counter = newStart;
+    state.resetCounter += 1;
+    return state.resetCounter;
+  },
+  relabel({ state }, newLabel) {
+    state.label = newLabel;
+  },
+  get({ state }) {
+    return state.counter;
+  },
+  describe({ state }) {
+    return `${state.label} counter has been reset ${state.resetCounter} times and is now ${state.counter}`;
+  },
+};
 
 function thingVal(counter, label, resetCounter) {
   return JSON.stringify({
@@ -57,23 +55,21 @@ function minThing(label) {
 function initZot(arbitrary = 47, name = 'Bob', tag = 'say what?') {
   return { arbitrary, name, tag, count: 0 };
 }
-function actualizeZot(state) {
-  return {
-    sayHello(msg) {
-      state.count += 1;
-      return `${msg} ${state.name}`;
-    },
-    rename(newName) {
-      state.name = newName;
-      state.count += 1;
-      return state.name;
-    },
-    getInfo() {
-      state.count += 1;
-      return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
-    },
-  };
-}
+const zotBehavior = {
+  sayHello({ state }, msg) {
+    state.count += 1;
+    return `${msg} ${state.name}`;
+  },
+  rename({ state }, newName) {
+    state.name = newName;
+    state.count += 1;
+    return state.name;
+  },
+  getInfo({ state }) {
+    state.count += 1;
+    return `zot ${state.name} tag=${state.tag} count=${state.count} arbitrary=${state.arbitrary}`;
+  },
+};
 
 function zotVal(arbitrary, name, tag, count) {
   return JSON.stringify({
@@ -86,33 +82,34 @@ function zotVal(arbitrary, name, tag, count) {
 
 test('multifaceted virtual objects', t => {
   const log = [];
-  const { defineKind } = makeFakeVirtualObjectManager({ cacheSize: 0, log });
+  const { defineKindMulti } = makeFakeVirtualObjectManager({
+    cacheSize: 0,
+    log,
+  });
 
-  const makeMultiThing = defineKind(
+  const getName = ({ state }) => state.name;
+  const getCount = ({ state }) => state.count;
+  const makeMultiThing = defineKindMulti(
     'multithing',
     name => ({
       name,
       count: 0,
     }),
-    state => {
-      const getName = () => state.name;
-      const getCount = () => state.count;
-      return {
-        incr: {
-          inc: () => {
-            state.count += 1;
-          },
-          getName,
-          getCount,
+    {
+      incr: {
+        inc: ({ state }) => {
+          state.count += 1;
         },
-        decr: {
-          dec: () => {
-            state.count -= 1;
-          },
-          getName,
-          getCount,
+        getName,
+        getCount,
+      },
+      decr: {
+        dec: ({ state }) => {
+          state.count -= 1;
         },
-      };
+        getName,
+        getCount,
+      },
     },
   );
   const kid = 'o+2';
@@ -144,14 +141,32 @@ test('multifaceted virtual objects', t => {
   t.deepEqual(log, []);
 });
 
+test('single-faceted object definition fails with faceted behavior', t => {
+  const { defineKind } = makeFakeVirtualObjectManager();
+  // prettier-ignore
+  t.throws(
+    () => defineKind('multithing', null, { facetA: {}, facetB: {} }),
+    { message: 'Check failed' },
+  );
+});
+
+test('multi-faceted object definition fails with unfaceted behavior', t => {
+  const { defineKindMulti } = makeFakeVirtualObjectManager();
+  // prettier-ignore
+  t.throws(
+    () => defineKindMulti('singlething', null, { op: () => {} }),
+    { message: 'Check failed' },
+  );
+});
+
 // prettier-ignore
 test('virtual object operations', t => {
   const log = [];
   const { defineKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
-  const makeThing = defineKind('thing', initThing, actualizeThing);
+  const makeThing = defineKind('thing', initThing, thingBehavior);
   const tid = 'o+2';
-  const makeZot = defineKind('zot', initZot, actualizeZot);
+  const makeZot = defineKind('zot', initZot, zotBehavior);
   const zid = 'o+3';
 
   // phase 0: start
@@ -375,10 +390,10 @@ test('virtual object cycles using the finish function', t => {
   const makeOtherThing = defineKind(
     'otherThing',
     (name, firstThing) => ({ name, firstThing }),
-    state => ({
-      getName: () => state.name,
-      getFirstThing: () => state.firstThing,
-    }),
+    {
+      getName: ({ state }) => state.name,
+      getFirstThing: ({ state }) => state.firstThing,
+    },
   );
   const makeFirstThing = defineKind(
     'firstThing',
@@ -386,12 +401,14 @@ test('virtual object cycles using the finish function', t => {
       name,
       otherThing: undefined,
     }),
-    state => ({
-      getName: () => state.name,
-      getOtherThing: () => state.otherThing,
-    }),
-    (state, self) => {
-      state.otherThing = makeOtherThing(`${state.name}'s other thing`, self);
+    {
+      getName: ({ state }) => state.name,
+      getOtherThing: ({ state }) => state.otherThing,
+    },
+    {
+      finish: ({ state, self }) => {
+        state.otherThing = makeOtherThing(`${state.name}'s other thing`, self);
+      },
     },
   );
 
@@ -451,7 +468,7 @@ test('durable kind IDs can be reanimated', t => {
   t.deepEqual(log, []);
 
   // Use it now, to define a durable kind
-  const makeThing = defineDurableKind(fetchedKindID, initThing, actualizeThing);
+  const makeThing = defineDurableKind(fetchedKindID, initThing, thingBehavior);
   t.deepEqual(log, []);
 
   // Make an instance of the new kind, just to be sure it's there
@@ -471,17 +488,13 @@ test('virtual object gc', t => {
   const { setExportStatus, possibleVirtualObjectDeath } = vrm;
   const { deleteEntry, dumpStore } = fakeStuff;
 
-  const makeThing = defineKind('thing', initThing, actualizeThing);
+  const makeThing = defineKind('thing', initThing, thingBehavior);
   const tbase = 'o+10';
-  const makeRef = defineKind(
-    'ref',
-    value => ({ value }),
-    state => ({
-      setVal: value => {
-        state.value = value;
-      },
-    }),
-  );
+  const makeRef = defineKind('ref', value => ({ value }), {
+    setVal: ({ state }, value) => {
+      state.value = value;
+    },
+  });
 
   t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `set kindIDID 1`);
@@ -555,6 +568,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.${tbase}/1`);
   t.is(log.shift(), `delete vom.rc.${tbase}/1`);
   t.is(log.shift(), `delete vom.es.${tbase}/1`);
+  t.is(log.shift(), `getAfter  vom.ir.${tbase}/1| undefined => ,`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
@@ -594,6 +608,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.${tbase}/2`);
   t.is(log.shift(), `delete vom.rc.${tbase}/2`);
   t.is(log.shift(), `delete vom.es.${tbase}/2`);
+  t.is(log.shift(), `getAfter  vom.ir.${tbase}/2| undefined => ,`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
@@ -612,6 +627,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `delete vom.${tbase}/3`);
   t.is(log.shift(), `delete vom.rc.${tbase}/3`);
   t.is(log.shift(), `delete vom.es.${tbase}/3`);
+  t.is(log.shift(), `getAfter  vom.ir.${tbase}/3| undefined => ,`);
   t.deepEqual(log, []);
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
@@ -738,8 +754,8 @@ test('weak store operations', t => {
   const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;
 
-  const makeThing = defineKind('thing', initThing, actualizeThing);
-  const makeZot = defineKind('zot', initZot, actualizeZot);
+  const makeThing = defineKind('thing', initThing, thingBehavior);
+  const makeZot = defineKind('zot', initZot, zotBehavior);
 
   const thing1 = makeThing('t1');
   const thing2 = makeThing('t2');
@@ -783,8 +799,8 @@ test('virtualized weak collection operations', t => {
   const { VirtualObjectAwareWeakMap, VirtualObjectAwareWeakSet, defineKind } =
     makeFakeVirtualObjectManager({ cacheSize: 3 });
 
-  const makeThing = defineKind('thing', initThing, actualizeThing);
-  const makeZot = defineKind('zot', initZot, actualizeZot);
+  const makeThing = defineKind('thing', initThing, thingBehavior);
+  const makeZot = defineKind('zot', initZot, zotBehavior);
 
   const thing1 = makeThing('t1');
   const thing2 = makeThing('t2');
