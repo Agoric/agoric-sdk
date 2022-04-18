@@ -5,16 +5,29 @@ on:
     branches: [master] # $default-branch
     tags:
       - '@agoric/sdk@*'
+    workflow_dispatch:
 
 jobs:
-  docker-deployment:
+  docker-sdk:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64/v8
     outputs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }},${{ steps.snapshot-tag.outputs.tag }}'
       snapshot-tag: '${{ steps.snapshot-tag.outputs.tag }}'
     steps:
       - uses: actions/checkout@v2
+      - name: Save GIT_REVISION
+        run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
+      - name: Save GIT_COMMIT
+        run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Save commit hash, url of submodules to environment
+        run: |
+          node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
       - name: Compute docker-tags
         id: docker-tags
         run: |
@@ -54,63 +67,20 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and Push
+      - name: Build and Push deployment
         uses: docker/build-push-action@v2
         with:
           file: packages/deployment/Dockerfile.deployment
           context: packages/deployment/docker
-          platforms: linux/amd64,linux/arm64/v8
+          platforms: ${{ matrix.platform }}
           push: true
           tags: '${{ steps.prefix-tags.outputs.tags }}'
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-
-  docker-sdk:
-    runs-on: ubuntu-latest
-    needs: docker-deployment
-    outputs:
-      tag: '${{ needs.docker-deployment.outputs.tag }}'
-      tags: '${{ needs.docker-deployment.outputs.tags }}'
-      snapshot-tag: '${{ needs.docker-deployment.outputs.snapshot-tag }}'
-    steps:
-      - uses: actions/checkout@v2
-      - name: Save GIT_REVISION
-        run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
-      - name: Save GIT_COMMIT
-        run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Save commit hash, url of submodules to environment
-        run: |
-          node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
-      - name: Prefix tags
-        id: prefix-tags
-        run: |
-          IMAGE="agoric/agoric-sdk"
-          TAGS="${{ needs.docker-deployment.outputs.tags }}"
-          # prefix with image tags
-          PREFIXED=$(echo "$TAGS" | awk "NR==1{gsub(/^|,/,\"&$IMAGE:\")} 1")
-          echo "::set-output name=tags::$PREFIXED"
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and Push
-        id: build-sdk
+      - name: Build and Push sdk
         uses: docker/build-push-action@v2
         with:
           file: packages/deployment/Dockerfile.sdk
           context: ./
-          platforms: linux/amd64,linux/arm64/v8
+          platforms: ${{ matrix.platform }}
           push: true
           tags: '${{ steps.prefix-tags.outputs.tags }}'
           # When changing/adding entries here, make sure to search the whole
@@ -122,6 +92,14 @@ jobs:
             XSNAP_NATIVE_COMMIT_HASH=${{env.XSNAP_NATIVE_COMMIT_HASH}}
             XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
             GIT_REVISION=${{env.GIT_REVISION}}
+      - name: Build and Push setup
+        uses: docker/build-push-action@v2
+        with:
+          file: packages/deployment/Dockerfile
+          context: packages/deployment
+          platforms: ${{ matrix.platform }}
+          tags: '${{ steps.prefix-tags.outputs.tags }}'
+          push: true
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -159,7 +137,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Push
-        id: build-sdk
         uses: docker/build-push-action@v2
         with:
           file: packages/deployment/Dockerfile.ibc-alpha
@@ -201,7 +178,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and Push
-        id: build-sdk
         uses: docker/build-push-action@v2
         with:
           file: packages/solo/Dockerfile
@@ -209,46 +185,6 @@ jobs:
           platforms: linux/amd64,linux/arm64/v8
           push: true
           tags: '${{ steps.prefix-tags.outputs.tags }}'
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-
-  docker-setup:
-    needs: docker-sdk
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Prefix tags
-        id: prefix-tags
-        run: |
-          IMAGE="agoric/cosmic-swingset-setup"
-          TAGS="${{ needs.docker-sdk.outputs.tags }}"
-          # prefix with image tags
-          PREFIXED=$(echo "$TAGS" | awk "NR==1{gsub(/^|,/,\"&$IMAGE:\")} 1")
-          echo "::set-output name=tags::$PREFIXED"
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and Push
-        id: build-sdk
-        uses: docker/build-push-action@v2
-        with:
-          file: packages/deployment/Dockerfile
-          context: packages/deployment
-          platforms: linux/amd64,linux/arm64/v8
-          tags: '${{ steps.prefix-tags.outputs.tags }}'
-          push: true
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
