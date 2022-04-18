@@ -1,6 +1,7 @@
 // @ts-check
 
-const SHARED_BOOTSTRAP_MANIFEST = harden({
+const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
+  bridgeCoreEval: true, // Needs all the powers.
   makeOracleBrands: {
     oracleBrand: {
       produce: {
@@ -155,23 +156,6 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       clientCreator: true,
     },
   },
-  installPegasusOnChain: {
-    consume: {
-      namesByAddress: true,
-      board: 'board',
-      zoe: 'zoe',
-    },
-    installation: {
-      produce: {
-        Pegasus: 'zoe',
-      },
-    },
-    instance: {
-      produce: {
-        Pegasus: 'Pegasus',
-      },
-    },
-  },
   setupNetworkProtocols: {
     consume: {
       client: true,
@@ -181,16 +165,13 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
       provisioning: true,
     },
     produce: {
-      pegasusConnections: true,
-      pegasusConnectionsAdmin: true,
+      networkVat: true,
     },
-    instance: { consume: { Pegasus: 'Pegasus' } },
   },
 });
 
 export const CHAIN_BOOTSTRAP_MANIFEST = harden({
-  ...SHARED_BOOTSTRAP_MANIFEST,
-  bridgeCoreEval: true,
+  ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
   connectChainFaucet: {
     consume: {
       client: true,
@@ -232,7 +213,7 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
 });
 
 export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
-  ...SHARED_BOOTSTRAP_MANIFEST,
+  ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
   installSimEgress: {
     vatParameters: { argv: { hardcodedClientAddresses: true } },
     vats: {

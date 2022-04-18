@@ -8,7 +8,6 @@ import {
   makeSubscriptionKit,
   observeIteration,
 } from '@agoric/notifier';
-import { CONTRACT_NAME as PEGASUS_NAME } from '@agoric/pegasus/src/install-on-chain.js';
 import {
   makeLoopbackProtocolHandler,
   makeEchoConnectionHandler,
@@ -21,9 +20,6 @@ import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as BRIDGE_ID from '../bridge-ids.js';
 
 import { callProperties, extractPowers } from './utils.js';
-import { makeNameHubKit } from '../nameHub.js';
-
-export { installOnChain as installPegasusOnChain } from '@agoric/pegasus/src/install-on-chain.js';
 
 const { details: X } = assert;
 const { keys } = Object;
@@ -42,12 +38,8 @@ export const bridgeCoreEval = async allPowers => {
   // need the bridgeManager to install our handler.
   const {
     consume: { bridgeManager: bridgeManagerP },
+    produce: { coreEvalBridgeHandler },
   } = allPowers;
-  const bridgeManager = await bridgeManagerP;
-  if (!bridgeManager) {
-    // Not running with a bridge.
-    return;
-  }
 
   const endowments = {
     console,
@@ -58,7 +50,8 @@ export const bridgeCoreEval = async allPowers => {
   /** @param { Installation } installation */
   const evaluateInstallation = async installation => {
     const bundle = await E(installation).getBundle();
-    return importBundle(bundle, { endowments });
+    const imported = await importBundle(bundle, { endowments });
+    return imported;
   };
   harden(evaluateInstallation);
 
@@ -98,7 +91,10 @@ export const bridgeCoreEval = async allPowers => {
                   const behavior = compartment.evaluate(code);
                   return behavior(powers);
                 })
-                .catch(err => console.error('CORE_EVAL failed:', err)),
+                .catch(err => {
+                  console.error('CORE_EVAL failed:', err);
+                  throw err;
+                }),
             ),
           );
         }
@@ -107,6 +103,13 @@ export const bridgeCoreEval = async allPowers => {
       }
     },
   });
+  coreEvalBridgeHandler.resolve(handler);
+
+  const bridgeManager = await bridgeManagerP;
+  if (!bridgeManager) {
+    // Not running with a bridge.
+    return;
+  }
   await E(bridgeManager).register(BRIDGE_ID.CORE, handler);
 };
 harden(bridgeCoreEval);
@@ -348,45 +351,9 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
 };
 
 /**
- * @param {NetVats} vats
- * @param {*} pegasus
- * @param {NameAdmin} pegasusConnectionsAdmin
- */
-const addPegasusTransferPort = async (
-  vats,
-  pegasus,
-  pegasusConnectionsAdmin,
-) => {
-  const port = await E(vats.network).bind('/ibc-port/pegasus');
-
-  const { handler, subscription } = await E(pegasus).makePegasusConnectionKit();
-  observeIteration(subscription, {
-    updateState(connectionState) {
-      const { localAddr, actions } = connectionState;
-      if (actions) {
-        // We're open and ready for business.
-        pegasusConnectionsAdmin.update(localAddr, connectionState);
-      } else {
-        // We're closed.
-        pegasusConnectionsAdmin.delete(localAddr);
-      }
-    },
-  });
-  return E(port).addListener(
-    Far('listener', {
-      async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-        return handler;
-      },
-      async onListen(p, _listenHandler) {
-        console.debug(`Listening on Pegasus transfer port: ${p}`);
-      },
-    }),
-  );
-};
-
-/**
  * @param { BootstrapPowers & {
  *   consume: { loadVat: VatLoader<any> }
+ *   produce: { networkVat: Producer<any> }
  * }} powers
  *
  * // TODO: why doesn't overloading VatLoader work???
@@ -396,11 +363,8 @@ const addPegasusTransferPort = async (
  * @typedef {{ network: NetworkVat, ibc: IBCVat, provisioning: ProvisioningVat}} NetVats
  */
 export const setupNetworkProtocols = async ({
-  consume: { client, loadVat, bridgeManager, zoe, provisioning },
-  produce: { pegasusConnections, pegasusConnectionsAdmin },
-  instance: {
-    consume: { [PEGASUS_NAME]: pegasusInstance },
-  },
+  consume: { client, loadVat, bridgeManager, provisioning },
+  produce: { networkVat },
 }) => {
   /** @type { NetVats } */
   const vats = {
@@ -409,13 +373,9 @@ export const setupNetworkProtocols = async ({
     provisioning,
   };
 
-  const { nameHub, nameAdmin } = makeNameHubKit();
-  pegasusConnections.resolve(nameHub);
-  pegasusConnectionsAdmin.resolve(nameAdmin);
-  const [dibcBridgeManager, pegasus] = await Promise.all([
-    bridgeManager,
-    E(zoe).getPublicFacet(pegasusInstance),
-  ]);
+  networkVat.reset();
+  networkVat.resolve(vats.network);
+  const dibcBridgeManager = await bridgeManager;
 
   const makePorts = async () => {
     // Bind to some fresh ports (unspecified name) on the IBC implementation
@@ -432,8 +392,5 @@ export const setupNetworkProtocols = async ({
   // we need to finish registering handlers for
   // ibc-port etc.
   await registerNetworkProtocols(vats, dibcBridgeManager);
-  return Promise.all([
-    addPegasusTransferPort(vats, pegasus, nameAdmin),
-    E(client).assignBundle([_a => ({ ibcport: makePorts() })]),
-  ]);
+  return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
 };

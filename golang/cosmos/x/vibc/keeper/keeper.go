@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -152,6 +154,10 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 // BindPort defines a wrapper function for the port Keeper's function in
 // order to expose it to the vibc IBC handler.
 func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
+	_, ok := k.scopedKeeper.GetCapability(ctx, host.PortPath(portID))
+	if ok {
+		return fmt.Errorf("port %s is already bound", portID)
+	}
 	cap := k.portKeeper.BindPort(ctx, portID)
 	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
 }

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "yarn build:bundles",
-    "build:bundles": "bundle-source --to bundles/ ./src/vaultFactory/vaultFactory.js vaultFactory ./src/vaultFactory/liquidateMinimum.js liquidateMinimum ./src/vpool-xyk-amm/multipoolMarketMaker.js amm ./src/reserve/assetReserve.js reserve ./src/runStake/runStake.js runStake",
+    "build:bundles": "node ./scripts/build-bundles.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
@@ -48,6 +48,7 @@
     "@endo/promise-kit": "^0.2.41"
   },
   "devDependencies": {
+    "@agoric/deploy-script-support": "^0.6.3",
     "@endo/init": "^0.5.41",
     "ava": "^3.12.1",
     "c8": "^7.11.0",
@@ -56,6 +57,7 @@
   },
   "files": [
     "bundles/",
+    "scripts/",
     "src/",
     "exported.js",
     "NEWS.md"

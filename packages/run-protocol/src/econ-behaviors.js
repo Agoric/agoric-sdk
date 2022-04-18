@@ -18,7 +18,6 @@ import * as Collect from './collect.js';
 import { makeRunStakeTerms } from './runStake/params.js';
 
 const { details: X } = assert;
-const { entries } = Object;
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -100,7 +99,6 @@ export const setupAmm = async ({
   },
   installation: {
     consume: { contractGovernor: governorInstallation, amm: ammInstallation },
-    produce: { amm: ammInstallationProducer },
   },
 }) => {
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
@@ -143,7 +141,7 @@ export const setupAmm = async ({
 
   ammInstanceProducer.resolve(instance);
   ammGovernor.resolve(g.instance);
-  return ammInstallation.then(i => ammInstallationProducer.resolve(i));
+  return ammInstallation;
 };
 
 /** @param { EconomyBootstrapPowers } powers */
@@ -171,7 +169,6 @@ export const setupReserve = async ({
       contractGovernor: governorInstallation,
       reserve: reserveInstallation,
     },
-    produce: { reserve: reserveInstallationProducer },
   },
 }) => {
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
@@ -217,7 +214,7 @@ export const setupReserve = async ({
 
   reserveInstanceProducer.resolve(instance);
   reserveGovernor.resolve(g.instance);
-  return reserveInstallation.then(i => reserveInstallationProducer.resolve(i));
+  return reserveInstallation;
 };
 
 /**
@@ -239,7 +236,9 @@ export const startVaultFactory = async (
       consume: { [CENTRAL_ISSUER_NAME]: centralBrandP },
     },
     instance,
-    installation,
+    installation: {
+      consume: { VaultFactory, liquidate, contractGovernor },
+    },
   },
   {
     loanParams = {
@@ -249,8 +248,8 @@ export const startVaultFactory = async (
   } = {},
 ) => {
   const installations = await Collect.allValues({
-    VaultFactory: installation.consume.VaultFactory,
-    liquidate: installation.consume.liquidate,
+    VaultFactory,
+    liquidate,
   });
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
@@ -279,7 +278,7 @@ export const startVaultFactory = async (
     await Promise.all([
       instance.consume.amm,
       instance.consume.economicCommittee,
-      installation.consume.contractGovernor,
+      contractGovernor,
     ]);
   const ammPublicFacet = await E(zoe).getPublicFacet(ammInstance);
   const feeMintAccess = await feeMintAccessP;
@@ -330,25 +329,21 @@ export const startVaultFactory = async (
   instance.produce.VaultFactory.resolve(vaultFactoryInstance);
   instance.produce.Treasury.resolve(vaultFactoryInstance);
   instance.produce.VaultFactoryGovernor.resolve(governorInstance);
-  entries(installations).forEach(([name, install]) =>
-    installation.produce[name].resolve(install),
-  );
 };
 
 /**
  * Grant access to the VaultFactory creatorFacet
  * to up to one user based on address.
  *
- * @param { EconomyBootstrapPowers & {
- *   vatParameters: { argv: { vaultFactoryControllerAddress?: string } }
- * }} powers
+ * @param { EconomyBootstrapPowers } powers
+ * @param {object} [root0]
+ * @param {object} [root0.options]
+ * @param {string} [root0.options.vaultFactoryControllerAddress]
  */
-export const grantVaultFactoryControl = async ({
-  vatParameters: {
-    argv: { vaultFactoryControllerAddress },
-  },
-  consume: { client, priceAuthorityAdmin, vaultFactoryCreator },
-}) => {
+export const grantVaultFactoryControl = async (
+  { consume: { client, priceAuthorityAdmin, vaultFactoryCreator } },
+  { options: { vaultFactoryControllerAddress } = {} } = {},
+) => {
   E(client).assignBundle([
     addr => ({
       vaultFactoryCreatorFacet:
@@ -535,12 +530,12 @@ harden(startRewardDistributor);
 /**
  * @param {RunStakeBootstrapPowers } powers
  * @param {Object} config
- * @param {bigint} config.debtLimit count of RUN
- * @param {Rational} config.mintingRatio ratio of RUN minted to BLD
- * @param {bigint} config.interestRateBP
- * @param {bigint} config.loanFeeBP
- * @param {bigint} config.chargingPeriod
- * @param {bigint} config.recordingPeriod
+ * @param {bigint} [config.debtLimit] count of RUN
+ * @param {Rational} [config.mintingRatio] ratio of RUN minted to BLD
+ * @param {bigint} [config.interestRateBP]
+ * @param {bigint} [config.loanFeeBP]
+ * @param {bigint} [config.chargingPeriod]
+ * @param {bigint} [config.recordingPeriod]
  * @typedef {[bigint, bigint]} Rational
  * @typedef {Awaited<ReturnType<typeof import('./runStake/runStake.js').start>>} StartRunStake
  */
@@ -559,7 +554,6 @@ export const startRunStake = async (
     produce: { runStakeCreatorFacet, runStakeGovernorCreatorFacet },
     installation: {
       consume: { contractGovernor, runStake: installationP },
-      produce: { runStake: runStakeinstallR },
     },
     instance: {
       consume: { economicCommittee: electorateInstance },
@@ -574,14 +568,14 @@ export const startRunStake = async (
       produce: { Attestation: attestationIssuerR },
     },
   },
-  config = {
-    debtLimit: 1_000_000_000_000n,
-    mintingRatio: [1n, 4n],
-    interestRateBP: 250n,
-    loanFeeBP: 200n,
-    chargingPeriod: SECONDS_PER_HOUR,
-    recordingPeriod: SECONDS_PER_DAY,
-  },
+  {
+    debtLimit = 1_000_000_000_000n,
+    mintingRatio = [1n, 4n],
+    interestRateBP = 250n,
+    loanFeeBP = 200n,
+    chargingPeriod = SECONDS_PER_HOUR,
+    recordingPeriod = SECONDS_PER_DAY,
+  } = {},
 ) => {
   const [feeMintAccess, bldBrand, runBrand, governor, installation, timer] =
     await Promise.all([
@@ -610,19 +604,19 @@ export const startRunStake = async (
   const runStakeTerms = makeRunStakeTerms(
     {
       timerService: timer,
-      chargingPeriod: config.chargingPeriod,
-      recordingPeriod: config.recordingPeriod,
+      chargingPeriod,
+      recordingPeriod,
     },
     {
-      debtLimit: AmountMath.make(runBrand, config.debtLimit),
+      debtLimit: AmountMath.make(runBrand, debtLimit),
       mintingRatio: makeRatio(
-        config.mintingRatio[0],
+        mintingRatio[0],
         runBrand,
-        config.mintingRatio[1],
+        mintingRatio[1],
         bldBrand,
       ),
-      interestRate: makeRatio(config.interestRateBP, runBrand, BASIS_POINTS),
-      loanFee: makeRatio(config.loanFeeBP, runBrand, BASIS_POINTS),
+      interestRate: makeRatio(interestRateBP, runBrand, BASIS_POINTS),
+      loanFee: makeRatio(loanFeeBP, runBrand, BASIS_POINTS),
       electorateInvitationAmount,
     },
   );
@@ -652,7 +646,6 @@ export const startRunStake = async (
 
   runStakeCreatorFacet.resolve(creatorFacet);
   runStakeGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
-  runStakeinstallR.resolve(installation);
   runStakeinstanceR.resolve(governedInstance);
   attestationBrandR.resolve(attBrand);
   attestationIssuerR.resolve(attIssuer);

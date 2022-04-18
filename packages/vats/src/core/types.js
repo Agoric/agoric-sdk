@@ -78,7 +78,7 @@
  */
 
 /**
- * @typedef {{ resolve: (v: ERef<T>) => void }} Producer<T>
+ * @typedef {{ resolve: (v: ERef<T>) => void, reset: () => void}} Producer<T>
  * @template T
  */
 /**
@@ -139,7 +139,7 @@
  *     'Pegasus' | 'reserve',
  *   instance: |
  *     'economicCommittee' |
- *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' | 'liquidate' |
+ *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
  *     'runStake' | 'runStakeGovernor' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
@@ -188,6 +188,7 @@
  *   chainTimerService: TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
+ *   coreEvalBridgeHandler: unknown,
  *   feeMintAccess: FeeMintAccess,
  *   initialSupply: Payment,
  *   mints: MintsVat,
@@ -207,7 +208,6 @@
  *   argv: {
  *     ROLE: string,
  *     hardcodedClientAddresses: string[],
- *     noFakeCurrencies: boolean,
  *     FIXME_GCI: string,
  *     PROVISIONER_INDEX: number,
  *   },

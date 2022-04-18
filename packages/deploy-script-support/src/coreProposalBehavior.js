@@ -10,6 +10,7 @@
  * @param {[string, ...unknown[]]} opts.getManifestCall
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
+ * @param {(ref: string) => Promise<unknown>} [opts.restoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
@@ -17,6 +18,7 @@ export const makeCoreProposalBehavior = ({
   getManifestCall,
   E,
   log = console.info,
+  restoreRef: overrideRestoreRef,
 }) => {
   const { entries, fromEntries } = Object;
 
@@ -45,11 +47,12 @@ export const makeCoreProposalBehavior = ({
     } = allPowers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
+    const restoreRef = overrideRestoreRef || (x => E(board).getValue(x));
+
     // Get the on-chain installation containing the manifest and behaviors.
-    const manifestInstallation = await E(board).getValue(manifestInstallRef);
+    const manifestInstallation = await restoreRef(manifestInstallRef);
     const behaviors = await evaluateInstallation(manifestInstallation);
 
-    const restoreRef = x => E(board).getValue(x);
     const {
       manifest,
       options: rawOptions,
@@ -84,3 +87,32 @@ export const makeCoreProposalBehavior = ({
   // Make the behavior the completion value.
   return behavior;
 };
+
+export const makeEnactCoreProposals =
+  ({ makeCoreProposalArgs, E }) =>
+  allPowers => {
+    const {
+      vatPowers: { D },
+      devices: { vatAdmin },
+      consume: { zoe },
+    } = allPowers;
+    const restoreRef = async ref => {
+      const { bundleID } = ref;
+      const bundleCap = D(vatAdmin).getNamedBundleCap(bundleID);
+      const bundle = D(bundleCap).getBundle();
+      const install = await E(zoe).install(bundle);
+      return install;
+    };
+
+    return Promise.all(
+      makeCoreProposalArgs.map(async ({ ref, call }) => {
+        const subBehavior = makeCoreProposalBehavior({
+          manifestInstallRef: ref,
+          getManifestCall: call,
+          E,
+          restoreRef,
+        });
+        return subBehavior(allPowers);
+      }),
+    );
+  };

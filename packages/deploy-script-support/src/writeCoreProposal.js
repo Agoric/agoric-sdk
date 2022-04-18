@@ -1,19 +1,25 @@
+// @ts-check
 import fs from 'fs';
 import { E } from '@endo/far';
-import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
-import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 
+import {
+  deeplyFulfilled,
+  defangAndTrim,
+  mergePermits,
+  stringify,
+} from './code-gen.js';
 import { makeCoreProposalBehavior } from './coreProposalBehavior.js';
 import { createBundles } from './createBundles.js';
-
-const { serialize } = makeMarshal();
-const stringify = (x, pretty = undefined) =>
-  decodeToJustin(JSON.parse(serialize(harden(x)).body), pretty);
 
 export const makeWriteCoreProposal = (
   homeP,
   endowments,
-  { getBundlerMaker, installInPieces },
+  {
+    getBundlerMaker,
+    installInPieces,
+    log = console.log,
+    writeFile = fs.promises.writeFile,
+  },
 ) => {
   const { board, zoe } = E.get(homeP);
   const { bundleSource, pathResolve } = endowments;
@@ -28,7 +34,7 @@ export const makeWriteCoreProposal = (
     return bundlerCache;
   };
 
-  const mergeProposalPermit = async (proposal, additionalManifest) => {
+  const mergeProposalPermit = async (proposal, additionalPermits) => {
     const {
       sourceSpec,
       getManifestCall: [exportedGetManifest, ...manifestArgs],
@@ -42,13 +48,12 @@ export const makeWriteCoreProposal = (
       ...manifestArgs,
     );
 
-    // FIXME: later actually merge the manifest with additionalManifest for
-    // minimalistic permit.
-    console.log('TODO: would merge', { manifest, additionalManifest });
-    return true;
+    const mergedPermits = mergePermits(manifest);
+    return mergePermits({ mergedPermits, additionalPermits });
   };
 
   const writeCoreProposal = async (filePrefix, proposalBuilder) => {
+    let mutex = Promise.resolve();
     // Install an entrypoint.
     const install = async (entrypoint, bundlePath) => {
       const bundler = getBundler();
@@ -61,7 +66,10 @@ export const makeWriteCoreProposal = (
       } else {
         bundle = await bundleSource(pathResolve(entrypoint));
       }
-      return installInPieces(bundle, bundler);
+
+      // Serialise the installations.
+      mutex = mutex.then(() => installInPieces(bundle, bundler));
+      return mutex;
     };
 
     // Await a reference then publish to the board.
@@ -79,12 +87,10 @@ export const makeWriteCoreProposal = (
     // Extract the top-level permit.
     const t = 'writeCoreProposal';
     const proposalPermit = await mergeProposalPermit(proposal, {
-      $writeCoreProposal: {
-        consume: { board: t },
-        evaluateInstallation: t,
-        installation: { produce: t },
-        modules: { utils: { runModuleBehaviors: t } },
-      },
+      consume: { board: t },
+      evaluateInstallation: t,
+      installation: { produce: t },
+      modules: { utils: { runModuleBehaviors: t } },
     });
 
     // Get an install
@@ -101,18 +107,20 @@ const getManifestCall = harden(${stringify(getManifestCall, true)});
 (${makeCoreProposalBehavior})({ manifestInstallRef, getManifestCall, E });
 `;
 
-    // end-of-line whitespace disrupts YAML formatting
-    const trimmed = code.replace(/[\r\t ]+$/gm, '');
+    const trimmed = defangAndTrim(code);
 
     const proposalPermitJsonFile = `${filePrefix}-permit.json`;
-    console.log(`creating ${proposalPermitJsonFile}`);
-    fs.writeFileSync(proposalPermitJsonFile, JSON.stringify(proposalPermit));
+    log(`creating ${proposalPermitJsonFile}`);
+    await writeFile(
+      proposalPermitJsonFile,
+      JSON.stringify(proposalPermit, null, 2),
+    );
 
     const proposalJsFile = `${filePrefix}.js`;
-    console.log(`creating ${proposalJsFile}`);
-    fs.writeFileSync(proposalJsFile, trimmed);
+    log(`creating ${proposalJsFile}`);
+    await writeFile(proposalJsFile, trimmed);
 
-    console.log(`\
+    log(`\
 You can now run a governance submission command like:
   agd tx gov submit-proposal swingset-core-eval ${proposalPermitJsonFile} ${proposalJsFile} \\
     --title="Enable <something>" --description="Evaluate ${proposalJsFile}" --deposit=1000000ubld \\

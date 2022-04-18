@@ -2,14 +2,6 @@ export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
 
 const SHARED_POST_BOOT_MANIFEST = harden({
-  shareEconomyBundles: {
-    produce: {
-      ammBundle: true,
-      vaultBundles: true,
-      governanceBundles: true,
-      reserveBundle: true,
-    },
-  },
   startEconomicCommittee: {
     consume: {
       zoe: true,
@@ -17,12 +9,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
     },
     produce: { economicCommitteeCreatorFacet: 'economicCommittee' },
     installation: {
-      produce: {
-        committee: 'zoe',
-        noActionElectorate: 'zoe',
-        contractGovernor: 'zoe',
-        binaryVoteCounter: 'zoe',
-      },
+      consume: { committee: 'zoe' },
     },
     instance: {
       produce: { economicCommittee: 'economicCommittee' },
@@ -33,7 +20,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       chainTimerService: 'timer',
       zoe: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
-      ammBundle: true,
     },
     produce: {
       ammCreatorFacet: 'amm',
@@ -41,8 +27,7 @@ const SHARED_POST_BOOT_MANIFEST = harden({
     },
     issuer: { consume: { RUN: 'zoe' } },
     installation: {
-      consume: { contractGovernor: 'zoe' },
-      produce: { amm: 'zoe' },
+      consume: { contractGovernor: 'zoe', amm: 'zoe' },
     },
     instance: {
       consume: { economicCommittee: 'economicCommittee' },
@@ -52,7 +37,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
   startVaultFactory: {
     consume: {
       feeMintAccess: 'zoe',
-      vaultBundles: true,
       chainTimerService: 'timer',
       zoe: 'zoe',
       priceAuthority: 'priceAuthority',
@@ -66,8 +50,11 @@ const SHARED_POST_BOOT_MANIFEST = harden({
     brand: { consume: { RUN: 'zoe' } },
     oracleBrand: { consume: { USD: true } },
     installation: {
-      consume: { contractGovernor: 'zoe' },
-      produce: { VaultFactory: 'zoe', liquidate: 'zoe' },
+      consume: {
+        contractGovernor: 'zoe',
+        VaultFactory: 'zoe',
+        liquidate: 'zoe',
+      },
     },
     instance: {
       consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
@@ -79,9 +66,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
     },
   },
   grantVaultFactoryControl: {
-    vatParameters: {
-      argv: { vaultFactoryControllerAddress: true },
-    },
     consume: {
       client: 'provisioning',
       priceAuthorityAdmin: 'priceAuthority',
@@ -92,22 +76,19 @@ const SHARED_POST_BOOT_MANIFEST = harden({
   setupReserve: {
     consume: {
       feeMintAccess: 'zoe',
-      vaultBundles: true,
       chainTimerService: 'timer',
       zoe: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
-      reserveBundle: true,
     },
-    issuer: { consume: { RUN: 'zoe' } },
     produce: {
       reserveCreatorFacet: 'reserve',
       reserveGovernorCreatorFacet: 'reserve',
       reservePublicFacet: 'reserve',
     },
+    issuer: { consume: { RUN: 'zoe' } },
     brand: { consume: { RUN: 'zoe' } },
     installation: {
-      consume: { contractGovernor: 'zoe' },
-      produce: { reserve: 'zoe' },
+      consume: { contractGovernor: 'zoe', reserve: 'zoe' },
     },
     instance: {
       consume: { amm: 'amm', economicCommittee: 'economicCommittee' },
@@ -177,6 +158,9 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
       vaultFactoryCreator: 'VaultFactory',
       zoe: true,
     },
+    installation: {
+      consume: { centralSupply: 'zoe' },
+    },
     issuer: {
       consume: { RUN: 'zoe' },
     },
@@ -195,20 +179,25 @@ const roleToGovernanceActions = harden({
   client: {},
 });
 
-export const getRunProtocolManifest = (
+export const getManifestForRunProtocol = (
   { restoreRef },
-  { ROLE = 'chain', installKeys },
+  { ROLE = 'chain', installKeys, vaultFactoryControllerAddress },
 ) => {
   return {
     manifest: roleToGovernanceActions[ROLE],
     installations: {
       runStake: restoreRef(installKeys.runStake),
       amm: restoreRef(installKeys.amm),
-      vaultFactory: restoreRef(installKeys.vaultFactory),
+      VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
+      reserve: restoreRef(installKeys.reserve),
+      psm: restoreRef(installKeys.psm),
       contractGovernor: restoreRef(installKeys.contractGovernor),
       committee: restoreRef(installKeys.committee),
       binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
+    },
+    options: {
+      vaultFactoryControllerAddress,
     },
   };
 };

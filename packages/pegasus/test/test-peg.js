@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
-import { E } from '@endo/eventual-send';
+import { E, Far } from '@endo/far';
 import {
   makeNetworkProtocol,
   makeLoopbackProtocolHandler,
@@ -12,7 +12,6 @@ import { AmountMath } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
 
 import fakeVatAdmin from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { Far } from '@endo/marshal';
 import { makeSubscription } from '@agoric/notifier';
 
 import '@agoric/ertp/exported.js';

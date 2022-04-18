@@ -240,7 +240,6 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
         bootMsg,
         ROLE: 'x',
         hardcodedClientAddresses: [],
-        noFakeCurrencies: true,
         FIXME_GCI: '',
         PROVISIONER_INDEX: 1,
       },
