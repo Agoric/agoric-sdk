@@ -104,9 +104,9 @@ const votersVote = async (detailsP, votersP, selections) => {
  *
  * @param {ERef<import('./vat-voter.js').EVatVoter[]>} votersP
  * @param {ERef<QuestionDetails>} detailsP
- * @param {Instance} governedInstanceP
+ * @param {ERef<Instance>} governedInstanceP
  * @param {Instance} electorateInstance
- * @param {Instance} governorInstanceP
+ * @param {ERef<Instance>} governorInstanceP
  * @param {Record<string, Installation>} installations
  * @returns {Promise<void>}
  */
