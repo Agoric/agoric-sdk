@@ -751,7 +751,7 @@ test('borrowing past the debt limit', async (/** @type {RunStakeTestContext} */ 
   await t.throwsAsync(driver.borrowRUN(threshold), {
     message:
       // XXX brittle string to fail if numeric parameters change
-      'Minting {"brand":"[Alleged: RUN brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would exceed total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000000000n]"}',
+      'Minting {"brand":"[Alleged: RUN brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000000000n]"}',
   });
 });
 

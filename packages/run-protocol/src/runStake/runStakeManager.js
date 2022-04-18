@@ -9,8 +9,9 @@ import { E } from '@endo/far';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
 import { KW } from './runStakeKit.js';
+import { checkDebtLimit } from '../contractSupport.js';
 
-const { details: X, quote: q } = assert;
+const { details: X } = assert;
 
 const trace = makeTracer('RM'); // TODO: how to turn this off?
 
@@ -161,26 +162,10 @@ export const makeRunStakeManager = (
   };
 
   /**
-   * @param {Amount<'nat'>} toMint
-   * @throws if minting would exceed total debt
-   */
-  const checkDebtLimit = toMint => {
-    const debtPost = AmountMath.add(totalDebt, toMint);
-    const limit = paramManager.getDebtLimit();
-    if (AmountMath.isGTE(debtPost, limit)) {
-      assert.fail(
-        X`Minting ${q(toMint)} past ${q(
-          totalDebt,
-        )} would exceed total debt limit ${q(limit)}`,
-      );
-    }
-  };
-
-  /**
    * @type {MintAndReallocate}
    */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
-    checkDebtLimit(toMint);
+    checkDebtLimit(paramManager.getDebtLimit(), totalDebt, toMint);
     mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
     totalDebt = AmountMath.add(totalDebt, toMint);
   };
