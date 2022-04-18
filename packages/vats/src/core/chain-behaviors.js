@@ -58,7 +58,6 @@ export const bridgeCoreEval = async allPowers => {
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
     async fromBridge(_srcID, obj) {
-      console.error('fromBridge', { obj });
       switch (obj.type) {
         case 'CORE_EVAL': {
           /**

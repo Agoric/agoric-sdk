@@ -51,7 +51,7 @@ export const agoricNamesReserved = harden({
     VaultFactory: 'vault factory',
     Treasury: 'Treasury', // for compatibility
     VaultFactoryGovernor: 'vault factory governor',
-    liquidate: 'liquidate',
+    // liquidate: 'liquidate', // instantitated by the vault factory, not put in spaces.
     runStake: 'runStake',
     runStakeGovernor: 'runStake governor',
     Pegasus: 'remote peg',

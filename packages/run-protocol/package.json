@@ -57,6 +57,7 @@
   },
   "files": [
     "bundles/",
+    "scripts/",
     "src/",
     "exported.js",
     "NEWS.md"
