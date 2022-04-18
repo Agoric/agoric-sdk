@@ -6,7 +6,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { E } from '@endo/eventual-send';
 import '@agoric/governance/src/exported.js';
 
-import { makeScalarMap } from '@agoric/store';
+import { fit, M, makeScalarMap } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountOut,
@@ -16,6 +16,7 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 
 import { AmountMath } from '@agoric/ertp';
+import { assertKeywordName } from '@agoric/zoe/src/cleanProposal';
 import { makeVaultManager } from './vaultManager.js';
 import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
@@ -23,6 +24,7 @@ import {
   makeVaultParamManager,
   RECORDING_PERIOD_KEY,
   CHARGING_PERIOD_KEY,
+  vaultParamPattern,
 } from './params.js';
 
 const { details: X } = assert;
@@ -154,6 +156,9 @@ const makeVaultDirector = (zcf, electorateParamManager, debtMint) => {
       collateralKeyword,
       initialParamValues,
     ) => {
+      fit(collateralIssuer, M.remotable());
+      assertKeywordName(collateralKeyword);
+      fit(initialParamValues, vaultParamPattern);
       await zcf.saveIssuer(collateralIssuer, collateralKeyword);
       const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
       // We create only one vault per collateralType.
