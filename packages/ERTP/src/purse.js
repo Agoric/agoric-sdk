@@ -1,19 +1,15 @@
-import {
-  defineDurableKindMulti,
-  makeScalarBigSetStore,
-  provideKindHandle,
-} from '@agoric/vat-data';
+import { vivifyFarClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 
 const { details: X } = assert;
 
-//  `getBrand` must not be called before the issuerKit is created
 export const vivifyPurseKind = (
   issuerBaggage,
   name,
   assetKind,
-  getBrand,
+  brand,
+  PurseIKit,
   purseMethods,
 ) => {
   // Note: Virtual for high cardinality, but *not* durable, and so
@@ -32,11 +28,12 @@ export const vivifyPurseKind = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const purseKitKindHandle = provideKindHandle(issuerBaggage, `${name} Purse`);
-  const makePurseKit = defineDurableKindMulti(
-    purseKitKindHandle,
+  const makePurseKit = vivifyFarClassKit(
+    issuerBaggage,
+    `${name} Purse`,
+    PurseIKit,
     () => {
-      const currentBalance = AmountMath.makeEmpty(getBrand(), assetKind);
+      const currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
       /** @type {SetStore<Payment>} */
       const recoverySet = makeScalarBigSetStore('recovery set', {
@@ -50,40 +47,50 @@ export const vivifyPurseKind = (
     },
     {
       purse: {
-        deposit: (
-          { state, facets: { purse } },
-          srcPayment,
-          optAmountShape = undefined,
-        ) => {
+        deposit(srcPayment, optAmountShape = undefined) {
+          // PurseI does *not* delay `deposit` until `srcPayment` is fulfulled.
+          // See the comments on PurseI.deposit in typeGuards.js
+          const { state } = this;
           // Note COMMIT POINT within deposit.
           return depositInternal(
             state.currentBalance,
             newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, purse),
+              updatePurseBalance(state, newPurseBalance, this.facets.purse),
             srcPayment,
             optAmountShape,
             state.recoverySet,
           );
         },
-        withdraw: ({ state, facets: { purse } }, amount) =>
+        withdraw(amount) {
+          const { state } = this;
           // Note COMMIT POINT within withdraw.
-          withdrawInternal(
+          return withdrawInternal(
             state.currentBalance,
             newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, purse),
+              updatePurseBalance(state, newPurseBalance, this.facets.purse),
             amount,
             state.recoverySet,
-          ),
-        getCurrentAmount: ({ state }) => state.currentBalance,
-        getCurrentAmountNotifier: ({ facets: { purse } }) =>
-          provideNotifier(purse),
-        getAllegedBrand: _context => getBrand(),
+          );
+        },
+        getCurrentAmount() {
+          return this.state.currentBalance;
+        },
+        getCurrentAmountNotifier() {
+          return provideNotifier(this.facets.purse);
+        },
+        getAllegedBrand() {
+          return brand;
+        },
         // eslint-disable-next-line no-use-before-define
-        getDepositFacet: ({ facets }) => facets.depositFacet,
+        getDepositFacet() {
+          return this.facets.depositFacet;
+        },
 
-        getRecoverySet: ({ state }) => state.recoverySet.snapshot(),
-        recoverAll: ({ state, facets }) => {
-          const brand = getBrand();
+        getRecoverySet() {
+          return this.state.recoverySet.snapshot();
+        },
+        recoverAll() {
+          const { state, facets } = this;
           let amount = AmountMath.makeEmpty(brand, assetKind);
           for (const payment of state.recoverySet.keys()) {
             // This does cause deletions from the set while iterating,
@@ -99,7 +106,9 @@ export const vivifyPurseKind = (
         },
       },
       depositFacet: {
-        receive: ({ facets }, ...args) => facets.purse.deposit(...args),
+        receive(...args) {
+          return this.facets.purse.deposit(...args);
+        },
       },
     },
   );

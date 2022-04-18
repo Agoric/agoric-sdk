@@ -1,16 +1,19 @@
 /* eslint-disable no-use-before-define */
 // @ts-check
 
-import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
 import { fit, M } from '@agoric/store';
-import { vivifySingleton, provideDurableWeakMapStore } from '@agoric/vat-data';
+import {
+  provideDurableWeakMapStore,
+  vivifyFarInstance,
+} from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { vivifyPaymentKind } from './payment.js';
 import { vivifyPurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
+import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -70,11 +73,11 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @template {AssetKind} [K=AssetKind]
  * @param {Baggage} issuerBaggage
  * @param {string} name
- * @param {AssetKind} assetKind
+ * @param {K} assetKind
  * @param {DisplayInfo} displayInfo
  * @param {Pattern} elementShape
  * @param {ShutdownWithFailure=} optShutdownWithFailure
- * @returns {{ issuer: Issuer<K>, mint: Mint<K>, brand: Brand<K> }}
+ * @returns {PaymentLedger}
  */
 export const vivifyPaymentLedger = (
   issuerBaggage,
@@ -84,9 +87,38 @@ export const vivifyPaymentLedger = (
   elementShape,
   optShutdownWithFailure = undefined,
 ) => {
-  const getBrand = () => brand;
+  /** @type {Brand} */
+  const brand = vivifyFarInstance(issuerBaggage, `${name} brand`, BrandI, {
+    isMyIssuer(allegedIssuer) {
+      // BrandI delays calling this method until `allegedIssuer` is a Remotable
+      return allegedIssuer === issuer;
+    },
+    getAllegedName() {
+      return name;
+    },
+    // Give information to UI on how to display the amount.
+    getDisplayInfo() {
+      return displayInfo;
+    },
+    getAmountShape() {
+      return amountShape;
+    },
+  });
 
-  const makePayment = vivifyPaymentKind(issuerBaggage, name, getBrand);
+  const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
+  const amountShape = amountShapeFromElementShape(
+    brand,
+    assetKind,
+    elementShape,
+  );
+
+  const { IssuerI, MintI, PaymentI, PurseIKit } = makeIssuerInterfaces(
+    brand,
+    assetKind,
+    amountShape,
+  );
+
+  const makePayment = vivifyPaymentKind(issuerBaggage, name, brand, PaymentI);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -268,116 +300,6 @@ export const vivifyPaymentLedger = (
     return harden(newPayments);
   };
 
-  /** @type {IssuerIsLive} */
-  const isLive = paymentP => {
-    return E.when(paymentP, payment => {
-      return paymentLedger.has(payment);
-    });
-  };
-
-  /** @type {IssuerGetAmountOf} */
-  const getAmountOf = paymentP => {
-    return E.when(paymentP, payment => {
-      assertLivePayment(payment);
-      return paymentLedger.get(payment);
-    });
-  };
-
-  /** @type {IssuerBurn} */
-  const burn = (paymentP, optAmountShape = undefined) => {
-    return E.when(paymentP, payment => {
-      assertLivePayment(payment);
-      const paymentBalance = paymentLedger.get(payment);
-      assertAmountConsistent(paymentBalance, optAmountShape);
-      try {
-        // COMMIT POINT.
-        deletePayment(payment);
-      } catch (err) {
-        shutdownLedgerWithFailure(err);
-        throw err;
-      }
-      return paymentBalance;
-    });
-  };
-
-  /** @type {IssuerClaim} */
-  const claim = (paymentP, optAmountShape = undefined) => {
-    return E.when(paymentP, srcPayment => {
-      assertLivePayment(srcPayment);
-      const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertAmountConsistent(srcPaymentBalance, optAmountShape);
-      // Note COMMIT POINT within moveAssets.
-      const [payment] = moveAssets(
-        harden([srcPayment]),
-        harden([srcPaymentBalance]),
-      );
-      return payment;
-    });
-  };
-
-  /** @type {IssuerCombine} */
-  const combine = (fromPaymentsPArray, optTotalAmount = undefined) => {
-    assertCopyArray(fromPaymentsPArray, 'fromPaymentsArray');
-    // Payments in `fromPaymentsPArray` must be distinct. Alias
-    // checking is delegated to the `moveAssets` function.
-    return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
-      fromPaymentsArray.every(assertLivePayment);
-      const totalPaymentsBalance = fromPaymentsArray
-        .map(paymentLedger.get)
-        .reduce(add, emptyAmount);
-      assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
-      // Note COMMIT POINT within moveAssets.
-      const [payment] = moveAssets(
-        harden(fromPaymentsArray),
-        harden([totalPaymentsBalance]),
-      );
-      return payment;
-    });
-  };
-
-  /** @type {IssuerSplit} */
-  // payment to two payments, A and B
-  const split = (paymentP, paymentAmountA) => {
-    return E.when(paymentP, srcPayment => {
-      paymentAmountA = coerce(paymentAmountA);
-      assertLivePayment(srcPayment);
-      const srcPaymentBalance = paymentLedger.get(srcPayment);
-      const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
-      // Note COMMIT POINT within moveAssets.
-      const newPayments = moveAssets(
-        harden([srcPayment]),
-        harden([paymentAmountA, paymentAmountB]),
-      );
-      return newPayments;
-    });
-  };
-
-  /** @type {IssuerSplitMany} */
-  const splitMany = (paymentP, amounts) => {
-    return E.when(paymentP, srcPayment => {
-      assertLivePayment(srcPayment);
-      assertCopyArray(amounts, 'amounts');
-      amounts = amounts.map(coerce);
-      // Note COMMIT POINT within moveAssets.
-      const newPayments = moveAssets(harden([srcPayment]), harden(amounts));
-      return newPayments;
-    });
-  };
-
-  /**
-   * Creates a new Payment containing newly minted amount.
-   *
-   * @param {Amount<K>} newAmount
-   * @returns {Payment<K>}
-   */
-  const mintPayment = newAmount => {
-    newAmount = coerce(newAmount);
-    fit(newAmount, amountShape, 'minted amount');
-    const payment = makePayment();
-    initPayment(payment, newAmount, undefined);
-    return payment;
-  };
-
   /**
    * Used by the purse code to implement purse.deposit
    *
@@ -458,56 +380,127 @@ export const vivifyPaymentLedger = (
     issuerBaggage,
     name,
     assetKind,
-    getBrand,
+    brand,
+    PurseIKit,
     harden({
       depositInternal,
       withdrawInternal,
     }),
   );
 
-  const issuer = vivifySingleton(issuerBaggage, `${name} issuer`, {
-    getBrand: () => brand,
-    getAllegedName: () => name,
-    getAssetKind: () => assetKind,
-    getDisplayInfo: () => displayInfo,
-    makeEmptyPurse,
+  /** @type {Issuer} */
+  const issuer = vivifyFarInstance(issuerBaggage, `${name} issuer`, IssuerI, {
+    getBrand() {
+      return brand;
+    },
+    getAllegedName() {
+      return name;
+    },
+    getAssetKind() {
+      return assetKind;
+    },
+    getDisplayInfo() {
+      return displayInfo;
+    },
+    makeEmptyPurse() {
+      return makeEmptyPurse();
+    },
+    isLive(payment) {
+      // IssuerI delays calling this method until `payment` is a Remotable
+      return paymentLedger.has(payment);
+    },
+    getAmountOf(payment) {
+      // IssuerI delays calling this method until `payment` is a Remotable
+      assertLivePayment(payment);
+      return paymentLedger.get(payment);
+    },
 
-    isLive,
-    getAmountOf,
-    burn,
-    claim,
-    combine,
-    split,
-    splitMany,
+    burn(payment, optAmountShape = undefined) {
+      // IssuerI delays calling this method until `payment` is a Remotable
+      assertLivePayment(payment);
+      const paymentBalance = paymentLedger.get(payment);
+      assertAmountConsistent(paymentBalance, optAmountShape);
+      try {
+        // COMMIT POINT.
+        deletePayment(payment);
+      } catch (err) {
+        shutdownLedgerWithFailure(err);
+        throw err;
+      }
+      return paymentBalance;
+    },
+    claim(srcPayment, optAmountShape = undefined) {
+      // IssuerI delays calling this method until `srcPayment` is a Remotable
+      assertLivePayment(srcPayment);
+      const srcPaymentBalance = paymentLedger.get(srcPayment);
+      assertAmountConsistent(srcPaymentBalance, optAmountShape);
+      // Note COMMIT POINT within moveAssets.
+      const [payment] = moveAssets(
+        harden([srcPayment]),
+        harden([srcPaymentBalance]),
+      );
+      return payment;
+    },
+    combine(fromPaymentsPArray, optTotalAmount = undefined) {
+      // IssuerI does *not* delay calling `combine`, but rather leaves it
+      // to `combine` to delay further processing until all the elements of
+      // `fromPaymentsPArray` have fulfilled.
+
+      // Payments in `fromPaymentsPArray` must be distinct. Alias
+      // checking is delegated to the `moveAssets` function.
+      return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
+        fromPaymentsArray.every(assertLivePayment);
+        const totalPaymentsBalance = fromPaymentsArray
+          .map(paymentLedger.get)
+          .reduce(add, emptyAmount);
+        assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
+        // Note COMMIT POINT within moveAssets.
+        const [payment] = moveAssets(
+          harden(fromPaymentsArray),
+          harden([totalPaymentsBalance]),
+        );
+        return payment;
+      });
+    },
+    split(srcPayment, paymentAmountA) {
+      // IssuerI delays calling this method until `srcPayment` is a Remotable
+      paymentAmountA = coerce(paymentAmountA);
+      assertLivePayment(srcPayment);
+      const srcPaymentBalance = paymentLedger.get(srcPayment);
+      const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
+      // Note COMMIT POINT within moveAssets.
+      const newPayments = moveAssets(
+        harden([srcPayment]),
+        harden([paymentAmountA, paymentAmountB]),
+      );
+      return newPayments;
+    },
+    splitMany(srcPayment, amounts) {
+      // IssuerI delays calling this method until `srcPayment` is a Remotable
+      assertLivePayment(srcPayment);
+      assertCopyArray(amounts, 'amounts');
+      amounts = amounts.map(coerce);
+      // Note COMMIT POINT within moveAssets.
+      const newPayments = moveAssets(harden([srcPayment]), harden(amounts));
+      return newPayments;
+    },
   });
 
-  const mint = vivifySingleton(issuerBaggage, `${name} mint`, {
-    getIssuer: () => issuer,
-    mintPayment,
+  /** @type {Mint} */
+  const mint = vivifyFarInstance(issuerBaggage, `${name} mint`, MintI, {
+    getIssuer() {
+      return issuer;
+    },
+    mintPayment(newAmount) {
+      newAmount = coerce(newAmount);
+      fit(newAmount, amountShape, 'minted amount');
+      const payment = makePayment();
+      initPayment(payment, newAmount, undefined);
+      return payment;
+    },
   });
-
-  const brand = /** @type {Brand} */ (
-    vivifySingleton(issuerBaggage, `${name} brand`, {
-      isMyIssuer: allegedIssuerP =>
-        E.when(allegedIssuerP, allegedIssuer => allegedIssuer === issuer),
-
-      getAllegedName: () => name,
-      // Give information to UI on how to display the amount.
-      getDisplayInfo: () => displayInfo,
-      getAmountShape: () => amountShape,
-    })
-  );
 
   const issuerKit = harden({ issuer, mint, brand });
-
-  const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
-  const amountShape = amountShapeFromElementShape(
-    brand,
-    assetKind,
-    elementShape,
-  );
   return issuerKit;
 };
 harden(vivifyPaymentLedger);
-
-/** @typedef {ReturnType<typeof vivifyPaymentLedger>} PaymentLedger */

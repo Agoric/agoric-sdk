@@ -79,16 +79,18 @@ export const checkPayouts = async (
   message = '',
 ) => {
   const payouts = await E(seat).getPayouts();
-  Object.entries(payouts).forEach(async ([keyword, paymentP]) => {
-    const kit = kitKeywordRecord[keyword];
-    const amount = await kit.issuer.getAmountOf(paymentP);
-    const expected = expectedKeywordRecord[keyword];
-    assertAmountsEqual(t, amount, expected);
-    t.truthy(
-      AmountMath.isEqual(amount, expected),
-      `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
-    );
-  });
+  await Promise.all(
+    Object.entries(payouts).map(async ([keyword, paymentP]) => {
+      const kit = kitKeywordRecord[keyword];
+      const amount = await kit.issuer.getAmountOf(paymentP);
+      const expected = expectedKeywordRecord[keyword];
+      assertAmountsEqual(t, amount, expected);
+      t.truthy(
+        AmountMath.isEqual(amount, expected),
+        `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
+      );
+    }),
+  );
   t.truthy(seat.hasExited());
 };
 
