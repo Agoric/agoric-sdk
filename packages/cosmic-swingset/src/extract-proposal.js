@@ -107,6 +107,6 @@ const makeCoreProposalBehavior = ${makeCoreProposalBehavior};
 (${makeEnactCoreProposals})({ makeCoreProposalArgs, E });
 `;
 
-  console.error('@@@ BUNDLES', bundles);
+  console.debug('created bundles from proposals:', coreProposals, bundles);
   return { bundles, code: defangAndTrim(code) };
 };
