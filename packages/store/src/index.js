@@ -55,6 +55,7 @@ export {
   matches,
   fit,
 } from './patterns/patternMatchers.js';
+export { I } from './patterns/interface-tools.js';
 export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
 export {
   makeDecodePassable,

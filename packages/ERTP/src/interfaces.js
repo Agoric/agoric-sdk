@@ -1,6 +1,5 @@
 /* eslint-disable no-use-before-define */
-/* global foo */
-const M = foo();
+import { M, I } from '@agoric/store';
 
 export const MatchDisplayInfo = M.rest(
   {
@@ -10,10 +9,10 @@ export const MatchDisplayInfo = M.rest(
   }),
 );
 
-export const BrandI = M.interface({
-  isMyIssuer: M.callWhen(M.await(IssuerI)).returns(M.boolean()),
-  getAllegedName: M.call().returns(M.string()),
-  getDisplayInfo: M.call().returns(MatchDisplayInfo),
+export const BrandI = I.interface('Brand', {
+  isMyIssuer: I.callWhen(I.await(IssuerI)).returns(M.boolean()),
+  getAllegedName: I.call().returns(M.string()),
+  getDisplayInfo: I.call().returns(MatchDisplayInfo),
 });
 
 export const MatchAmount = {
@@ -21,25 +20,25 @@ export const MatchAmount = {
   value: M.or(M.bigint(), M.array()),
 };
 
-export const IssuerI = M.interface({
-  getBrand: M.call().returns(BrandI),
-  getAllegedName: M.call().returns(M.string()),
-  getAssetKind: M.call().returns(M.or('nat', 'set')),
-  getDisplayInfo: M.call().returns(MatchDisplayInfo),
-  makeEmptyPurse: M.call().returns(PurseI),
+export const IssuerI = I.interface('Issuer', {
+  getBrand: I.call().returns(BrandI),
+  getAllegedName: I.call().returns(M.string()),
+  getAssetKind: I.call().returns(M.or('nat', 'set')),
+  getDisplayInfo: I.call().returns(MatchDisplayInfo),
+  makeEmptyPurse: I.call().returns(PurseI),
 
-  isLive: M.callWhen(M.await(PaymentI)).returns(M.boolean()),
-  getAmountOf: M.callWhen(M.await(PaymentI)).returns(MatchAmount),
+  isLive: I.callWhen(I.await(PaymentI)).returns(M.boolean()),
+  getAmountOf: I.callWhen(I.await(PaymentI)).returns(MatchAmount),
 });
 
-export const PaymentI = M.interface({
-  getAllegedBrand: M.call().returns(BrandI),
+export const PaymentI = I.interface('Payment', {
+  getAllegedBrand: I.call().returns(BrandI),
 });
 
-export const PurseI = M.interface({
-  getAllegedBrand: M.call().returns(BrandI),
-  deposit: M.apply(M.rest([PaymentI]).optionals([MatchAmount])).returns(
+export const PurseI = I.interface('Purse', {
+  getAllegedBrand: I.call().returns(BrandI),
+  deposit: I.apply(M.rest([PaymentI], M.partial([MatchAmount]))).returns(
     MatchAmount,
   ),
-  withdraw: M.call(MatchAmount).returns(PaymentI),
+  withdraw: I.call(MatchAmount).returns(PaymentI),
 });
