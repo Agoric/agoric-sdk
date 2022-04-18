@@ -38,12 +38,8 @@ export const bridgeCoreEval = async allPowers => {
   // need the bridgeManager to install our handler.
   const {
     consume: { bridgeManager: bridgeManagerP },
+    produce: { coreEvalBridgeHandler },
   } = allPowers;
-  const bridgeManager = await bridgeManagerP;
-  if (!bridgeManager) {
-    // Not running with a bridge.
-    return;
-  }
 
   const endowments = {
     console,
@@ -54,13 +50,15 @@ export const bridgeCoreEval = async allPowers => {
   /** @param { Installation } installation */
   const evaluateInstallation = async installation => {
     const bundle = await E(installation).getBundle();
-    return importBundle(bundle, { endowments });
+    const imported = await importBundle(bundle, { endowments });
+    return imported;
   };
   harden(evaluateInstallation);
 
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
     async fromBridge(_srcID, obj) {
+      console.error('fromBridge', { obj });
       switch (obj.type) {
         case 'CORE_EVAL': {
           /**
@@ -94,7 +92,10 @@ export const bridgeCoreEval = async allPowers => {
                   const behavior = compartment.evaluate(code);
                   return behavior(powers);
                 })
-                .catch(err => console.error('CORE_EVAL failed:', err)),
+                .catch(err => {
+                  console.error('CORE_EVAL failed:', err);
+                  throw err;
+                }),
             ),
           );
         }
@@ -103,6 +104,13 @@ export const bridgeCoreEval = async allPowers => {
       }
     },
   });
+  coreEvalBridgeHandler.resolve(handler);
+
+  const bridgeManager = await bridgeManagerP;
+  if (!bridgeManager) {
+    // Not running with a bridge.
+    return;
+  }
   await E(bridgeManager).register(BRIDGE_ID.CORE, handler);
 };
 harden(bridgeCoreEval);

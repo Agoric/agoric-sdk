@@ -1,6 +1,7 @@
 // @ts-check
 
-const SHARED_BOOTSTRAP_MANIFEST = harden({
+const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
+  bridgeCoreEval: true, // Needs all the powers.
   makeOracleBrands: {
     oracleBrand: {
       produce: {
@@ -170,8 +171,7 @@ const SHARED_BOOTSTRAP_MANIFEST = harden({
 });
 
 export const CHAIN_BOOTSTRAP_MANIFEST = harden({
-  ...SHARED_BOOTSTRAP_MANIFEST,
-  bridgeCoreEval: true,
+  ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
   connectChainFaucet: {
     consume: {
       client: true,
@@ -213,7 +213,7 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
 });
 
 export const SIM_CHAIN_BOOTSTRAP_MANIFEST = harden({
-  ...SHARED_BOOTSTRAP_MANIFEST,
+  ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
   installSimEgress: {
     vatParameters: { argv: { hardcodedClientAddresses: true } },
     vats: {

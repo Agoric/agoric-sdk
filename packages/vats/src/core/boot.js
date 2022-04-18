@@ -40,7 +40,7 @@ const roleToBehaviors = harden({
  * @param {{
  *   argv: { ROLE: string },
  *   bootstrapManifest?: Record<string, Record<string, unknown>>,
- *   governanceActions?: boolean,
+ *   coreProposalCode?: string,
  * }} vatParameters
  */
 const buildRootObject = (vatPowers, vatParameters) => {
@@ -107,6 +107,28 @@ const buildRootObject = (vatPowers, vatParameters) => {
     });
 
     await runBehaviors(bootManifest);
+
+    const { coreProposalCode } = vatParameters;
+    if (!coreProposalCode) {
+      return;
+    }
+
+    // Start the governance from the core proposals.
+    const coreEvalMessage = {
+      type: 'CORE_EVAL',
+      evals: [
+        {
+          json_permits: 'true',
+          js_code: coreProposalCode,
+        },
+      ],
+    };
+    /** @type {any} */
+    const { coreEvalBridgeHandler } = consume;
+    await E(coreEvalBridgeHandler).fromBridge(
+      'arbitrary srcID',
+      coreEvalMessage,
+    );
   };
 
   return Far('bootstrap', {
