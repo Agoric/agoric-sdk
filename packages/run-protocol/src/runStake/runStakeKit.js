@@ -325,8 +325,10 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
   updateUiState();
 
   return harden({
-    assetNotifier: manager.getAssetNotifier(),
-    vaultNotifier: state.ui.notifier,
+    publicNotifiers: {
+      asset: manager.getAssetNotifier(),
+      vault: state.ui.notifier,
+    },
     invitationMakers: Far('invitation makers', {
       AdjustBalances: () =>
         zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances'),
