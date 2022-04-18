@@ -1,5 +1,5 @@
 import {
-  defineDurableKindMulti,
+  defineDurableThisfulKindMulti,
   makeScalarBigSetStore,
   provideKindHandle,
 } from '@agoric/vat-data';
@@ -33,7 +33,7 @@ export const vivifyPurseKind = (
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
   const purseKitKindHandle = provideKindHandle(issuerBaggage, `${name} Purse`);
-  const makePurseKit = defineDurableKindMulti(
+  const makePurseKit = defineDurableThisfulKindMulti(
     purseKitKindHandle,
     () => {
       const currentBalance = AmountMath.makeEmpty(getBrand(), assetKind);
@@ -50,39 +50,48 @@ export const vivifyPurseKind = (
     },
     {
       purse: {
-        deposit: (
-          { state, facets: { purse } },
-          srcPayment,
-          optAmountShape = undefined,
-        ) => {
+        deposit(srcPayment, optAmountShape = undefined) {
+          const { state } = this;
           // Note COMMIT POINT within deposit.
           return depositInternal(
             state.currentBalance,
             newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, purse),
+              updatePurseBalance(state, newPurseBalance, this.facets.purse),
             srcPayment,
             optAmountShape,
             state.recoverySet,
           );
         },
-        withdraw: ({ state, facets: { purse } }, amount) =>
+        withdraw(amount) {
+          const { state } = this;
           // Note COMMIT POINT within withdraw.
-          withdrawInternal(
+          return withdrawInternal(
             state.currentBalance,
             newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, purse),
+              updatePurseBalance(state, newPurseBalance, this.facets.purse),
             amount,
             state.recoverySet,
-          ),
-        getCurrentAmount: ({ state }) => state.currentBalance,
-        getCurrentAmountNotifier: ({ facets: { purse } }) =>
-          provideNotifier(purse),
-        getAllegedBrand: _context => getBrand(),
+          );
+        },
+        getCurrentAmount() {
+          return this.state.currentBalance;
+        },
+        getCurrentAmountNotifier() {
+          return provideNotifier(this.facets.purse);
+        },
+        getAllegedBrand() {
+          return getBrand();
+        },
         // eslint-disable-next-line no-use-before-define
-        getDepositFacet: ({ facets }) => facets.depositFacet,
+        getDepositFacet() {
+          return this.facets.depositFacet;
+        },
 
-        getRecoverySet: ({ state }) => state.recoverySet.snapshot(),
-        recoverAll: ({ state, facets }) => {
+        getRecoverySet() {
+          return this.state.recoverySet.snapshot();
+        },
+        recoverAll() {
+          const { state, facets } = this;
           const brand = getBrand();
           let amount = AmountMath.makeEmpty(brand, assetKind);
           for (const payment of state.recoverySet.keys()) {
@@ -99,7 +108,9 @@ export const vivifyPurseKind = (
         },
       },
       depositFacet: {
-        receive: ({ facets }, ...args) => facets.purse.deposit(...args),
+        receive(...args) {
+          return this.facets.purse.deposit(...args);
+        },
       },
     },
   );

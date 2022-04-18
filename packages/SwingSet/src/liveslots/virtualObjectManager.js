@@ -148,7 +148,7 @@ export function makeCache(size, fetch, store) {
  *   of virtual references.
  * @param {() => number} allocateExportID  Function to allocate the next object
  *   export ID for the enclosing vat.
- * @param {(val: object) => string} getSlotForVal  A function that returns the
+ * @param {(val: object) => string} _getSlotForVal  A function that returns the
  *   object ID (vref) for a given object, if any.  their corresponding export
  *   IDs
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
@@ -194,7 +194,7 @@ export function makeVirtualObjectManager(
   syscall,
   vrm,
   allocateExportID,
-  getSlotForVal,
+  _getSlotForVal,
   registerValue,
   serialize,
   unserialize,
@@ -468,23 +468,28 @@ export function makeVirtualObjectManager(
     }
   }
 
-  function copyMethods(behavior) {
-    const obj = {};
-    for (const prop of Reflect.ownKeys(behavior)) {
-      const func = behavior[prop];
-      assert.typeof(func, 'function');
-      obj[prop] = func;
-    }
-    return obj;
-  }
-
-  function bindMethods(tag, contextMap, behaviorMethods) {
+  function bindMethods(
+    tag,
+    contextMap,
+    behaviorMethods,
+    thisfulMethods = false,
+  ) {
     const prototype = {};
     for (const prop of Reflect.ownKeys(behaviorMethods)) {
+      const methodTag = `${tag}).${String(prop)}`;
       const func = behaviorMethods[prop];
       assert.typeof(func, 'function');
 
-      // Violating all Jessie rules to create representative that inherit
+      const getContext = self => {
+        const context = contextMap.get(self);
+        assert(
+          context,
+          X`${q(methodTag)} may only be applied to a valid instance: ${this}`,
+        );
+        return context;
+      };
+
+      // Violating all Jessie rules to create representatives that inherit
       // methods from a shared prototype. The bound method therefore needs
       // to mention `this`. We define it using concise menthod syntax
       // so that it will be `this` sensitive but not constructable.
@@ -494,18 +499,23 @@ export function makeVirtualObjectManager(
       // another abstraction. To prevent that attack, the bound method
       // checks that it's `this` is in the map in which its representatives
       // are registered.
-      const { method } = {
-        method(...args) {
-          const context = contextMap.get(this);
-          assert(
-            context,
-            X`${q(
-              `${tag}).${String(prop)}`,
-            )} may only be applied to a valid instance: ${this}`,
-          );
-          return Reflect.apply(func, null, [context, ...args]);
-        },
-      };
+      const { method } = thisfulMethods
+        ? {
+            method(...args) {
+              const context = getContext(this);
+              return Reflect.apply(func, context, args);
+            },
+          }
+        : {
+            method(...args) {
+              const context = getContext(this);
+              return Reflect.apply(func, null, [context, ...args]);
+            },
+          };
+      Object.defineProperties(method, {
+        name: { value: methodTag },
+        length: { value: thisfulMethods ? func.length : func.length - 1 },
+      });
       prototype[prop] = method;
     }
     return Far(tag, prototype);
@@ -623,9 +633,8 @@ export function makeVirtualObjectManager(
     isDurable,
     durableKindDescriptor,
   ) {
-    const { finish } = options;
+    const { finish, thisfulMethods = false } = options;
     let facetNames;
-    let behaviorTemplate;
     let contextMapTemplate;
     let prototypeTemplate;
 
@@ -634,12 +643,12 @@ export function makeVirtualObjectManager(
       case 'one': {
         assert(!multifaceted);
         facetNames = undefined;
-        behaviorTemplate = copyMethods(behavior);
         contextMapTemplate = new WeakMap();
         prototypeTemplate = bindMethods(
           tag,
           contextMapTemplate,
-          behaviorTemplate,
+          behavior,
+          thisfulMethods,
         );
         break;
       }
@@ -650,18 +659,17 @@ export function makeVirtualObjectManager(
           facetNames.length > 1,
           'a multi-facet object must have multiple facets',
         );
-        behaviorTemplate = {};
         contextMapTemplate = {};
         prototypeTemplate = {};
         for (const name of facetNames) {
-          const behaviorMethods = copyMethods(behavior[name]);
-          behaviorTemplate[name] = behaviorMethods;
+          const behaviorMethods = behavior[name];
           const contextMap = new WeakMap();
           contextMapTemplate[name] = contextMap;
           const prototype = bindMethods(
             `${tag} ${name}`,
             contextMap,
             behaviorMethods,
+            thisfulMethods,
           );
           prototypeTemplate[name] = prototype;
         }
@@ -707,7 +715,6 @@ export function makeVirtualObjectManager(
 
     vrm.registerKind(kindID, reanimate, deleteStoredVO, isDurable);
     vrm.rememberFacetNames(kindID, facetNames);
-    harden(behaviorTemplate);
     harden(contextMapTemplate);
     harden(prototypeTemplate);
 

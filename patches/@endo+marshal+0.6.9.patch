@@ -28,7 +28,7 @@ index c19adca..645bf10 100644
 @@ -95,8 +111,6 @@ const checkRemotableProtoOf = (original, check = x => x) => {
      return false;
    }
-
+ 
 -  const protoProto = getPrototypeOf(proto);
 -
    if (typeof original === 'object') {

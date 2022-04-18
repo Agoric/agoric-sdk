@@ -27,7 +27,7 @@ import {
   checkCopyMap,
   copyMapKeySet,
 } from '../keys/checkKey.js';
-import { applyLabelingError } from '../utils.js';
+import { applyLabelingError, listDifference } from '../utils.js';
 
 /// <reference types="ses"/>
 
@@ -307,29 +307,23 @@ const makePatternKit = () => {
         }
         const [specNames, specValues] = recordParts(specimen);
         const [pattNames, pattValues] = recordParts(patt);
-        if (!keyEQ(specNames, pattNames)) {
-          const specNameSet = new Set(specNames);
-          const missing = pattNames.filter(name => !specNameSet.has(name));
+        {
+          const missing = listDifference(pattNames, specNames);
           if (missing.length >= 1) {
             return check(
               false,
               X`${specimen} - Must have missing properties ${q(missing)}`,
             );
           }
-          const passNameSet = new Set(pattNames);
-          const unexpected = specNames.filter(name => !passNameSet.has(name));
-          assert(
-            unexpected.length >= 1,
-            X`Internal: must have either missing or extra: ${q(
-              specNames,
-            )} vs ${q(pattNames)}`,
-          );
-          return check(
-            false,
-            X`${specimen} - Must not have unexpected properties: ${q(
-              unexpected,
-            )}`,
-          );
+          const unexpected = listDifference(specNames, pattNames);
+          if (unexpected.length >= 1) {
+            return check(
+              false,
+              X`${specimen} - Must not have unexpected properties: ${q(
+                unexpected,
+              )}`,
+            );
+          }
         }
         return pattNames.every((label, i) =>
           checkMatches(specValues[i], pattValues[i], check, label),
