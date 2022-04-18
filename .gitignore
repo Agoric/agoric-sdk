@@ -51,6 +51,7 @@ typings/
 _agstate
 .next
 build
+bundles
 bundle-*.js
 compiled
 dist
