@@ -143,11 +143,14 @@ test('makeIssuerKit bad optShutdownWithFailure', async t => {
 test('brand.isMyIssuer bad issuer', async t => {
   const { brand } = makeIssuerKit('myTokens');
   // @ts-expect-error Intentional wrong type for testing
-  // but for some reason it is no longer complaining about the string
-  // being the wrong type. Hovering over `isMyIssuer` in vscode does
-  // show the correct type for the parameter.
-  // TODO(MSM): ask a typing person
-  const result = await brand.isMyIssuer('not an issuer');
+  t.throwsAsync(() => brand.isMyIssuer('not an issuer'), {
+    message:
+      'In "isMyIssuer" method of (myTokens brand) arg 0: string "not an issuer" - Must be a remotable (Issuer)',
+  });
+  const fakeIssuer = /** @type {Issuer} */ (
+    /** @type {unknown} */ (Far('myTokens issuer', {}))
+  );
+  const result = await brand.isMyIssuer(fakeIssuer);
   t.false(result);
 });
 
@@ -185,7 +188,7 @@ test('issuer.combine bad payments array', async t => {
   // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => E(issuer).combine(notAnArray), {
     message:
-      'cannot serialize Remotables with non-methods like "length" in {"length":2,"split":"[Function split]"}',
+      'In "combine" method of (fungible issuer) arg 0: cannot serialize Remotables with non-methods like "length" in {"length":2,"split":"[Function split]"}',
   });
 
   const notAnArray2 = Far('notAnArray2', {
@@ -195,7 +198,7 @@ test('issuer.combine bad payments array', async t => {
   // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => E(issuer).combine(notAnArray2), {
     message:
-      '"fromPaymentsArray" "[Alleged: notAnArray2]" must be a pass-by-copy array, not "remotable"',
+      'In "combine" method of (fungible issuer) arg 0: remotable "[Alleged: notAnArray2]" - Must be a copyArray',
   });
 });
 

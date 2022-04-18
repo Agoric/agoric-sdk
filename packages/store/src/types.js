@@ -500,7 +500,10 @@
  * @property {() => Matcher} set A CopySet
  * @property {() => Matcher} bag A CopyBag
  * @property {() => Matcher} map A CopyMap
- * @property {() => Matcher} remotable A far object or its remote presence
+ * @property {(label?: string) => Matcher} remotable
+ * A far object or its remote presence. The optional `label` is purely for
+ * diagnostic purpose. It does not enforce any constraint beyond the
+ * must-be-a-remotable constraint.
  * @property {() => Matcher} error
  * Error objects are passable, but are neither keys nor symbols.
  * They do not have a useful identity.
@@ -555,7 +558,24 @@
  * rest pattern if present.
  * Unlike `M.split`, `M.partial` ignores properties on the base
  * pattern that are not present on the specimen.
+ *
+ * @property {(t: Pattern) => Pattern} eref
+ * @property {(t: Pattern) => Pattern} opt
+ *
+ * @property {(interfaceName: string,
+ *             methodGuards: Record<string|symbol,MethodGuard>,
+ *             options?: {sloppy?: boolean}
+ * ) => InterfaceGuard} interface
+ * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} call
+ * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} callWhen
+ *
+ * @property {(argGuard: ArgGuard) => ArgGuard} await
  */
+
+/** @typedef {any} InterfaceGuard */
+/** @typedef {any} MethodGuardMaker */
+/** @typedef {any} MethodGuard */
+/** @typedef {any} ArgGuard */
 
 /**
  * @typedef {object} PatternKit

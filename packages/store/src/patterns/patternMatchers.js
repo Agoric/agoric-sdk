@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 // @ts-check
 
 import {
@@ -8,7 +9,7 @@ import {
   passStyleOf,
   hasOwnPropertyOf,
 } from '@endo/marshal';
-import { applyLabelingError } from '@agoric/internal';
+import { applyLabelingError, listDifference } from '@agoric/internal';
 import {
   compareRank,
   getPassStyleCover,
@@ -24,14 +25,15 @@ import {
   checkScalarKey,
   isScalarKey,
   checkCopySet,
-  checkCopyBag,
   checkCopyMap,
   copyMapKeySet,
+  checkCopyBag,
 } from '../keys/checkKey.js';
 
 /// <reference types="ses"/>
 
 const { quote: q, details: X } = assert;
+const { entries, values } = Object;
 
 /** @type WeakSet<Pattern> */
 const patternMemo = new WeakSet();
@@ -86,7 +88,7 @@ const makePatternKit = () => {
       case 'copyRecord': {
         // A copyRecord is a pattern iff all its children are
         // patterns
-        return Object.values(patt).every(checkIt);
+        return values(patt).every(checkIt);
       }
       case 'copyArray': {
         // A copyArray is a pattern iff all its children are
@@ -102,35 +104,16 @@ const makePatternKit = () => {
           return matchHelper.checkIsMatcherPayload(patt.payload, check);
         }
         switch (tag) {
-          case 'copySet': {
-            if (!checkCopySet(patt, check)) {
-              return false;
-            }
-            // For a copySet to be a pattern, all its elements must be patterns.
-            // If all the elements are keys, then the copySet pattern is also
-            // a key and is already taken of. For the case where some elements
-            // are non-key patterns, general support is both hard and not
-            // currently needed. Currently, we only need a copySet of a single
-            // non-key pattern element.
-            assert(
-              patt.payload.length === 1,
-              X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
-            );
-            return checkPattern(patt.payload[0], check);
-          }
+          case 'copySet':
           case 'copyBag': {
-            if (!checkCopyBag(patt, check)) {
-              return false;
-            }
-            // If it is a CopyBag, then it must also be a key and we
-            // should never get here.
-            if (isKey(patt)) {
-              assert.fail(
-                X`internal: The key case should have been dealt with earlier: ${patt}`,
-              );
-            } else {
-              assert.fail(X`A CopyMap must be a Key but was not: ${patt}`);
-            }
+            assert(
+              !isKey(patt),
+              X`internal: The key case should have been dealt with earlier: ${patt}`,
+            );
+            return check(
+              false,
+              X`A ${q(tag)} must be a Key but was not: ${patt}`,
+            );
           }
           case 'copyMap': {
             return (
@@ -307,29 +290,23 @@ const makePatternKit = () => {
         }
         const [specNames, specValues] = recordParts(specimen);
         const [pattNames, pattValues] = recordParts(patt);
-        if (!keyEQ(specNames, pattNames)) {
-          const specNameSet = new Set(specNames);
-          const missing = pattNames.filter(name => !specNameSet.has(name));
+        {
+          const missing = listDifference(pattNames, specNames);
           if (missing.length >= 1) {
             return check(
               false,
               X`${specimen} - Must have missing properties ${q(missing)}`,
             );
           }
-          const passNameSet = new Set(pattNames);
-          const unexpected = specNames.filter(name => !passNameSet.has(name));
-          assert(
-            unexpected.length >= 1,
-            X`Internal: must have either missing or extra: ${q(
-              specNames,
-            )} vs ${q(pattNames)}`,
-          );
-          return check(
-            false,
-            X`${specimen} - Must not have unexpected properties: ${q(
-              unexpected,
-            )}`,
-          );
+          const unexpected = listDifference(specNames, pattNames);
+          if (unexpected.length >= 1) {
+            return check(
+              false,
+              X`${specimen} - Must not have unexpected properties: ${q(
+                unexpected,
+              )}`,
+            );
+          }
         }
         return pattNames.every((label, i) =>
           checkMatches(specValues[i], pattValues[i], check, label),
@@ -341,37 +318,26 @@ const makePatternKit = () => {
         if (matchHelper) {
           return matchHelper.checkMatches(specimen, patt.payload, check);
         }
-        const msg = X`${specimen} - Only a ${q(pattTag)} matches a ${q(
-          pattTag,
-        )} pattern: ${patt}`;
-        if (specStyle !== 'tagged') {
-          return check(false, msg);
-        }
-        const specTag = getTag(specimen);
-        if (pattTag !== specTag) {
-          return check(false, msg);
+        if (specStyle !== 'tagged' || getTag(specimen) !== pattTag) {
+          return check(
+            false,
+            X`${specimen} - Only a ${q(pattTag)} matches a ${q(
+              pattTag,
+            )} pattern: ${patt}`,
+          );
         }
         const { payload: pattPayload } = patt;
         const { payload: specPayload } = specimen;
         switch (pattTag) {
-          case 'copySet': {
-            if (!checkCopySet(specimen, check)) {
-              return false;
-            }
-            if (pattPayload.length !== specPayload.length) {
-              return check(
-                false,
-                X`copySet ${specimen} - Must have as many elements as copySet pattern: ${patt}`,
-              );
-            }
-            // Should already be validated by checkPattern. But because this
-            // is a check that may loosen over time, we also assert everywhere
-            // we still rely on the restriction.
+          case 'copySet':
+          case 'copyBag': {
             assert(
-              patt.payload.length === 1,
-              X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
+              !isKey(patt),
+              X`internal: The key case should have been dealt with earlier: ${patt}`,
             );
-            return checkMatches(specPayload[0], pattPayload[0], check, 0);
+            assert.fail(
+              X`internal: A ${q(pattTag)} must be a Key but was not: ${patt}`,
+            );
           }
           case 'copyMap': {
             if (!checkCopySet(specimen, check)) {
@@ -589,18 +555,15 @@ const makePatternKit = () => {
         }
       }
     }
-    const details = X(
-      // quoting without quotes
-      [`${specimenKind} `, ` - Must be a ${kind}`],
-      specimen,
-    );
+    // quoting without quotes
+    const details = X([`${specimenKind} `, ` - Must be a ${kind}`], specimen);
     return check(false, details);
   };
 
   // /////////////////////// Match Helpers /////////////////////////////////////
 
   /** @type {MatchHelper} */
-  const matchAnyHelper = Far('M.any helper', {
+  const matchAnyHelper = Far('match.any helper', {
     checkMatches: (_specimen, _matcherPayload, _check) => true,
 
     checkIsMatcherPayload: (matcherPayload, check) =>
@@ -769,6 +732,41 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
+  const matchRemotableHelper = Far('match:remotable helper', {
+    checkMatches: (specimen, remotableDesc, check) => {
+      // Unfortunate duplication of checkKind logic, but no better choices.
+      if (checkKind(specimen, 'remotable', x => x)) {
+        return true;
+      }
+      let specimenKind = passStyleOf(specimen);
+      if (specimenKind === 'tagged') {
+        specimenKind = getTag(specimen);
+      }
+      const { label } = remotableDesc;
+
+      // quoting without quotes
+      const details = X(
+        [`${specimenKind} `, ` - Must be a remotable (${label})`],
+        specimen,
+      );
+      return check(false, details);
+    },
+
+    checkIsMatcherPayload: (allegedRemotableDesc, check) =>
+      checkMatches(
+        allegedRemotableDesc,
+        harden({ label: M.string() }),
+        check,
+        'match:remotable payload',
+      ),
+
+    getRankCover: (_remotableDesc, _encodePassable) =>
+      getPassStyleCover('remotable'),
+
+    checkKeyPattern: (_remotableDesc, _check = x => x) => true,
+  });
+
+  /** @type {MatchHelper} */
   const matchLTEHelper = Far('match:lte helper', {
     checkMatches: (specimen, rightOperand, check) =>
       check(
@@ -855,12 +853,32 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
+  const matchRecordOfHelper = Far('match:recordOf helper', {
+    checkMatches: (specimen, entryPatt, check) =>
+      checkKind(specimen, 'copyRecord', check) &&
+      entries(specimen).every(el =>
+        checkMatches(harden(el), entryPatt, check, el[0]),
+      ),
+
+    checkIsMatcherPayload: (entryPatt, check) =>
+      checkMatches(
+        entryPatt,
+        harden([M.pattern(), M.pattern()]),
+        check,
+        'match:recordOf payload',
+      ),
+
+    getRankCover: _entryPatt => getPassStyleCover('copyRecord'),
+
+    checkKeyPattern: (_entryPatt, check) =>
+      check(false, X`Records not yet supported as keys`),
+  });
+
+  /** @type {MatchHelper} */
   const matchArrayOfHelper = Far('match:arrayOf helper', {
     checkMatches: (specimen, subPatt, check) =>
-      check(
-        passStyleOf(specimen) === 'copyArray',
-        X`${specimen} - Must be an array`,
-      ) && specimen.every((el, i) => checkMatches(el, subPatt, check, i)),
+      checkKind(specimen, 'copyArray', check) &&
+      specimen.every((el, i) => checkMatches(el, subPatt, check, i)),
 
     checkIsMatcherPayload: checkPattern,
 
@@ -871,35 +889,9 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
-  const matchRecordOfHelper = Far('match:recordOf helper', {
-    checkMatches: (specimen, entryPatt, check) =>
-      check(
-        passStyleOf(specimen) === 'copyRecord',
-        X`${specimen} - Must be a record`,
-      ) &&
-      Object.entries(specimen).every(el =>
-        checkMatches(harden(el), entryPatt, check, el[0]),
-      ),
-
-    checkIsMatcherPayload: (entryPatt, check) =>
-      check(
-        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
-        X`${entryPatt} - Must be an pair of patterns`,
-      ) && checkPattern(entryPatt, check),
-
-    getRankCover: _entryPatt => getPassStyleCover('copyRecord'),
-
-    checkKeyPattern: (_entryPatt, check) =>
-      check(false, X`Records not yet supported as keys`),
-  });
-
-  /** @type {MatchHelper} */
   const matchSetOfHelper = Far('match:setOf helper', {
     checkMatches: (specimen, keyPatt, check) =>
-      check(
-        passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copySet',
-        X`${specimen} - Must be a a CopySet`,
-      ) &&
+      checkKind(specimen, 'copySet', check) &&
       specimen.payload.every((el, i) => checkMatches(el, keyPatt, check, i)),
 
     checkIsMatcherPayload: checkPattern,
@@ -913,10 +905,7 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchBagOfHelper = Far('match:bagOf helper', {
     checkMatches: (specimen, [keyPatt, countPatt], check) =>
-      check(
-        passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyBag',
-        X`${specimen} - Must be a a CopyBag`,
-      ) &&
+      checkKind(specimen, 'copyBag', check) &&
       specimen.payload.every(
         ([key, count], i) =>
           checkMatches(key, keyPatt, check, `keys[${i}]`) &&
@@ -924,10 +913,12 @@ const makePatternKit = () => {
       ),
 
     checkIsMatcherPayload: (entryPatt, check) =>
-      check(
-        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
-        X`${entryPatt} - Must be an pair of patterns`,
-      ) && checkPattern(entryPatt, check),
+      checkMatches(
+        entryPatt,
+        harden([M.pattern(), M.pattern()]),
+        check,
+        'match:bagOf payload',
+      ),
 
     getRankCover: () => getPassStyleCover('tagged'),
 
@@ -938,10 +929,7 @@ const makePatternKit = () => {
   /** @type {MatchHelper} */
   const matchMapOfHelper = Far('match:mapOf helper', {
     checkMatches: (specimen, [keyPatt, valuePatt], check) =>
-      check(
-        passStyleOf(specimen) === 'tagged' && getTag(specimen) === 'copyMap',
-        X`${specimen} - Must be a CopyMap`,
-      ) &&
+      checkKind(specimen, 'copyMap', check) &&
       specimen.payload.keys.every((k, i) =>
         checkMatches(k, keyPatt, check, `keys[${i}]`),
       ) &&
@@ -950,10 +938,12 @@ const makePatternKit = () => {
       ),
 
     checkIsMatcherPayload: (entryPatt, check) =>
-      check(
-        passStyleOf(entryPatt) === 'copyArray' && entryPatt.length === 2,
-        X`${entryPatt} - Must be an pair of patterns`,
-      ) && checkPattern(entryPatt, check),
+      checkMatches(
+        entryPatt,
+        harden([M.pattern(), M.pattern()]),
+        check,
+        'match:mapOf payload',
+      ),
 
     getRankCover: _entryPatt => getPassStyleCover('tagged'),
 
@@ -980,7 +970,7 @@ const makePatternKit = () => {
         // Not yet frozen! Mutated in place
         specB = {};
         specR = {};
-        for (const [name, value] of Object.entries(specimen)) {
+        for (const [name, value] of entries(specimen)) {
           if (hasOwnPropertyOf(base, name)) {
             specB[name] = value;
           } else {
@@ -1033,26 +1023,42 @@ const makePatternKit = () => {
       }
       let specB;
       let specR;
-      let newBase = base;
+      let newBase;
       if (baseStyle === 'copyArray') {
         const { length: specLen } = specimen;
         const { length: baseLen } = base;
         if (specLen < baseLen) {
           newBase = harden(base.slice(0, specLen));
+          specB = specimen;
+          // eslint-disable-next-line no-use-before-define
+          specR = [];
+        } else {
+          newBase = [...base];
+          specB = specimen.slice(0, baseLen);
+          specR = specimen.slice(baseLen);
         }
-        // Frozen below
-        specB = specimen.slice(0, baseLen);
-        specR = specimen.slice(baseLen);
+        for (let i = 0; i < newBase.length; i += 1) {
+          // For the optional base array parts, an undefined specimen element
+          // matches unconditionally.
+          if (specB[i] === undefined) {
+            // eslint-disable-next-line no-use-before-define
+            newBase[i] = M.any();
+          }
+        }
       } else {
         assert(baseStyle === 'copyRecord');
         // Not yet frozen! Mutated in place
         specB = {};
         specR = {};
         newBase = {};
-        for (const [name, value] of Object.entries(specimen)) {
+        for (const [name, value] of entries(specimen)) {
           if (hasOwnPropertyOf(base, name)) {
-            specB[name] = value;
-            newBase[name] = base[name];
+            // For the optional base record parts, an undefined specimen value
+            // matches unconditionally.
+            if (value !== undefined) {
+              specB[name] = value;
+              newBase[name] = base[name];
+            }
           } else {
             specR[name] = value;
           }
@@ -1085,6 +1091,7 @@ const makePatternKit = () => {
     'match:key': matchKeyHelper,
     'match:pattern': matchPatternHelper,
     'match:kind': matchKindHelper,
+    'match:remotable': matchRemotableHelper,
 
     'match:lt': matchLTHelper,
     'match:lte': matchLTEHelper,
@@ -1128,6 +1135,64 @@ const makePatternKit = () => {
   const PromiseShape = makeKindMatcher('promise');
   const UndefinedShape = makeKindMatcher('undefined');
 
+  const makeRemotableMatcher = (label = undefined) =>
+    label === undefined
+      ? RemotableShape
+      : makeMatcher('match:remotable', harden({ label }));
+
+  /**
+   * @param {'sync'|'async'} callKind
+   * @param {ArgGuard[]} argGuards
+   * @param {ArgGuard[]} [optionalArgGuards]
+   * @param {ArgGuard} [restArgGuard]
+   * @returns {MethodGuard}
+   */
+  const makeMethodGuardMaker = (
+    callKind,
+    argGuards,
+    optionalArgGuards = undefined,
+    restArgGuard = undefined,
+  ) =>
+    harden({
+      optional: (...optArgGuards) => {
+        assert(
+          optionalArgGuards === undefined,
+          X`Can only have one set of optional guards`,
+        );
+        assert(
+          restArgGuard === undefined,
+          X`optional arg guards must come before rest arg`,
+        );
+        return makeMethodGuardMaker(callKind, argGuards, optArgGuards);
+      },
+      rest: rArgGuard => {
+        assert(restArgGuard === undefined, X`Can only have one rest arg`);
+        return makeMethodGuardMaker(
+          callKind,
+          argGuards,
+          optionalArgGuards,
+          rArgGuard,
+        );
+      },
+      returns: (returnGuard = UndefinedShape) =>
+        harden({
+          klass: 'methodGuard',
+          callKind,
+          argGuards,
+          optionalArgGuards,
+          restArgGuard,
+          returnGuard,
+        }),
+    });
+
+  const makeAwaitArgGuard = argGuard =>
+    harden({
+      klass: 'awaitArg',
+      argGuard,
+    });
+
+  // //////////////////
+
   /** @type {MatcherNamespace} */
   const M = harden({
     any: () => AnyShape,
@@ -1150,7 +1215,7 @@ const makePatternKit = () => {
     set: () => SetShape,
     bag: () => BagShape,
     map: () => MapShape,
-    remotable: () => RemotableShape,
+    remotable: makeRemotableMatcher,
     error: () => ErrorShape,
     promise: () => PromiseShape,
     undefined: () => UndefinedShape,
@@ -1178,6 +1243,28 @@ const makePatternKit = () => {
       makeMatcher('match:split', rest === undefined ? [base] : [base, rest]),
     partial: (base, rest = undefined) =>
       makeMatcher('match:partial', rest === undefined ? [base] : [base, rest]),
+
+    eref: t => M.or(t, M.promise()),
+    opt: t => M.or(t, M.undefined()),
+
+    interface: (interfaceName, methodGuards, { sloppy = false } = {}) => {
+      for (const [_, methodGuard] of entries(methodGuards)) {
+        assert(
+          methodGuard.klass === 'methodGuard',
+          X`unrecognize method guard ${methodGuard}`,
+        );
+      }
+      return harden({
+        klass: 'Interface',
+        interfaceName,
+        methodGuards,
+        sloppy,
+      });
+    },
+    call: (...argGuards) => makeMethodGuardMaker('sync', argGuards),
+    callWhen: (...argGuards) => makeMethodGuardMaker('async', argGuards),
+
+    await: argGuard => makeAwaitArgGuard(argGuard),
   });
 
   return harden({
