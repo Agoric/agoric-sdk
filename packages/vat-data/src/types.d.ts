@@ -23,22 +23,41 @@ type ActualBehavior<B> = {
   [Facet in keyof B]: FunctionsMinusContext<B[Facet]>;
 };
 
-type KindContext<S, B> = { state: S; facets: ActualBehavior<B> };
-
 interface KindDefiner {
+  <P, S, F>(
+    tag: string,
+    init: (...args: P) => S,
+    facet: F,
+    options?: {
+      finish?: (context: { state: S }, kind: FunctionsMinusContext<F>) => void;
+    },
+  ): (...args: P) => FunctionsMinusContext<F>;
+}
+
+type MultiKindContext<S, B> = { state: S; facets: ActualBehavior<B> };
+interface KindMultiDefiner {
   <P, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
-    options?: { finish?: (context: KindContext<S, B>) => void },
+    options?: { finish?: (context: MultiKindContext<S, B>) => void },
+  ): (...args: P) => ActualBehavior<B>;
+}
+
+interface KindDurableMultiDefiner {
+  <P, S, B>(
+    kindHandle: unknown, // TODO RemotableBrand
+    init: (...args: P) => S,
+    behavior: B,
+    options?: { finish?: (context: MultiKindContext<S, B>) => void },
   ): (...args: P) => ActualBehavior<B>;
 }
 
 export type VatData = {
   defineKind: KindDefiner;
-  defineKindMulti: KindDefiner;
+  defineKindMulti: KindMultiDefiner;
   defineDurableKind: KindDefiner;
-  defineDurableKindMulti: KindDefiner;
+  defineDurableKindMulti: KindDurableMultiDefiner;
 
   makeKindHandle: (descriptionTag: string) => unknown;
 
