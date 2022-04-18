@@ -16,9 +16,6 @@ coverage
 # Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
 
-# Bower dependency directory (https://bower.io/)
-bower_components
-
 # node-waf configuration
 .lock-wscript
 
@@ -50,16 +47,19 @@ typings/
 # dotenv environment variables file
 .env
 
-# next.js build output
+# build output
+_agstate
 .next
-
-# bundles
+build
+bundles
 bundle-*.js
+compiled
+dist
+
+# misc
 /.vagrant
 .DS_Store
 .vscode/
 .idea/
 
 /packages.png
-packages/ui-components/compiled
-packages/ui-components/dist
