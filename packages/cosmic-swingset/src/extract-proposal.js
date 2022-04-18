@@ -17,8 +17,14 @@ const { details: X } = assert;
 
 const require = createRequire(import.meta.url);
 
+/**
+ * @param {(ModuleSpecifier | FilePath)[]} paths
+ * @typedef {string} ModuleSpecifier
+ * @typedef {string} FilePath
+ */
 const pathResolve = (...paths) => {
   const fileName = paths.pop();
+  assert(fileName, '>=1 paths required');
   try {
     return require.resolve(fileName, {
       paths,
@@ -28,6 +34,21 @@ const pathResolve = (...paths) => {
   }
 };
 
+/**
+ * Format core proposals to be run at bootstrap:
+ * SwingSet `bundles` configuration
+ * and `code` to execute them, interpolating functions
+ * such as `makeCoreProposalBehavior`.
+ *
+ * Core proposals are proposals for use with swingset-core-eval.
+ * In production, they are triggered by BLD holder governance decisions,
+ * but for sim-chain and such, they can be declared statically in
+ * the chain configuration, in which case they are run at bootstrap.
+ *
+ * @param {(ModuleSpecifier | FilePath)[]} coreProposals - governance
+ * proposals to run at chain bootstrap for scenarios such as sim-chain.
+ * @param {FilePath} [dirname]
+ */
 export const extractCoreProposalBundles = async (
   coreProposals,
   dirname = '.',
