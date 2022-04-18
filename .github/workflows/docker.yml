@@ -50,14 +50,6 @@ jobs:
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-6)
           SNAPSHOT_TAG="${TIMESTAMP}${SHORT_SHA}"
           echo "::set-output name=tag::$SNAPSHOT_TAG"
-      - name: Prefix tags
-        id: prefix-tags
-        run: |
-          IMAGE="agoric/deployment"
-          TAGS="${{ steps.docker-tags.outputs.tags }},${{ steps.snapshot-tag.outputs.tag }}"
-          # prefix with image tags
-          PREFIXED=$(echo "$TAGS" | awk "NR==1{gsub(/^|,/,\"&$IMAGE:\")} 1")
-          echo "::set-output name=tags::$PREFIXED"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -67,6 +59,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Prefix tags deployment
+        id: prefix-tags-deployment
+        run: |
+          IMAGE="agoric/deployment"
+          TAGS="${{ steps.docker-tags.outputs.tags }},${{ steps.snapshot-tag.outputs.tag }}"
+          # prefix with image tags
+          PREFIXED=$(echo "$TAGS" | awk "NR==1{gsub(/^|,/,\"&$IMAGE:\")} 1")
+          echo "::set-output name=tags::$PREFIXED"
       - name: Build and Push deployment
         uses: docker/build-push-action@v2
         with:
@@ -74,7 +74,15 @@ jobs:
           context: packages/deployment/docker
           platforms: ${{ matrix.platform }}
           push: true
-          tags: '${{ steps.prefix-tags.outputs.tags }}'
+          tags: '${{ steps.prefix-tags-deployment.outputs.tags }}'
+      - name: Prefix tags sdk
+        id: prefix-tags-sdk
+        run: |
+          IMAGE="agoric/agoric-sdk"
+          TAGS="${{ steps.docker-tags.outputs.tags }},${{ steps.snapshot-tag.outputs.tag }}"
+          # prefix with image tags
+          PREFIXED=$(echo "$TAGS" | awk "NR==1{gsub(/^|,/,\"&$IMAGE:\")} 1")
+          echo "::set-output name=tags::$PREFIXED"
       - name: Build and Push sdk
         uses: docker/build-push-action@v2
         with:
@@ -82,7 +90,7 @@ jobs:
           context: ./
           platforms: ${{ matrix.platform }}
           push: true
-          tags: '${{ steps.prefix-tags.outputs.tags }}'
+          tags: '${{ steps.prefix-tags-sdk.outputs.tags }}'
           # When changing/adding entries here, make sure to search the whole
           # project for `@@AGORIC_DOCKER_SUBMODULES@@`
           build-args: |
@@ -92,14 +100,24 @@ jobs:
             XSNAP_NATIVE_COMMIT_HASH=${{env.XSNAP_NATIVE_COMMIT_HASH}}
             XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
             GIT_REVISION=${{env.GIT_REVISION}}
+      - name: Prefix tags setup
+        id: prefix-tags-setup
+        run: |
+          IMAGE="agoric/cosmic-swingset-setup"
+          TAGS="${{ steps.docker-tags.outputs.tags }},${{ steps.snapshot-tag.outputs.tag }}"
+          # prefix with image tags
+          PREFIXED=$(echo "$TAGS" | awk "NR==1{gsub(/^|,/,\"&$IMAGE:\")} 1")
+          echo "::set-output name=tags::$PREFIXED"
       - name: Build and Push setup
         uses: docker/build-push-action@v2
         with:
           file: packages/deployment/Dockerfile
           context: packages/deployment
           platforms: ${{ matrix.platform }}
-          tags: '${{ steps.prefix-tags.outputs.tags }}'
+          tags: '${{ steps.prefix-tags-setup.outputs.tags }}'
           push: true
+          build-args: |
+            TAG=${{ steps.snapshot-tag.outputs.tag }}
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status

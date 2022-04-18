@@ -13,6 +13,7 @@ esac
 uname_m=$(uname -m)
 case $uname_m in
 x86_64) TERRAFORM_ARCH=amd64 ;;
+aarch64 | arm64) TERRAFORM_ARCH=arm ;;
 *) TERRAFORM_ARCH=$uname_m ;;
 esac
 
