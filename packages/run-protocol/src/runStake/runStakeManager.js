@@ -16,6 +16,86 @@ const { details: X } = assert;
 const trace = makeTracer('RM'); // TODO: how to turn this off?
 
 /**
+ * @typedef {{
+ * compoundedInterest: Ratio,
+ * latestInterestUpdate: NatValue,
+ * totalDebt: Amount<'nat'>,
+ * }} AssetState
+ * @typedef {AssetState & {
+ * assetNotifier: Notifier<AssetState>,
+ * assetUpdater: IterationObserver<AssetState>,
+ * chargingPeriod: bigint,
+ * periodNotifier: Promise<Notifier<bigint>>,
+ * poolIncrementSeat: ZCFSeat,
+ * recordingPeriod: bigint,
+ * startTimeStamp: bigint,
+ * }} ImmutableState
+ * @typedef {{
+ * }} MutableState
+ * @typedef {ImmutableState & MutableState} State
+ */
+
+/**
+ * @param {ZCF} zcf
+ * @param {ZCFMint<'nat'>} debtMint
+ * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
+ * @param {{
+ *  getDebtLimit: () => Amount<'nat'>,
+ *  getInterestRate: () => Ratio,
+ *  getMintingRatio: () => Ratio,
+ *  getLoanFee: () => Ratio,
+ * }} paramManager
+ * @param {MintAndReallocate} mintAndReallocateWithFee
+ * @param {BurnDebt} burnDebt
+ * @param {Object} timing
+ * @param {ERef<TimerService>} timing.timerService
+ * @param {bigint} timing.chargingPeriod
+ * @param {bigint} timing.recordingPeriod
+ * @param {bigint} timing.startTimeStamp
+ *
+ * @returns {State}
+ */
+const initState = (
+  zcf,
+  debtMint,
+  brands,
+  paramManager,
+  mintAndReallocateWithFee,
+  burnDebt,
+  { chargingPeriod, recordingPeriod, startTimeStamp, timerService },
+) => {
+  const totalDebt = AmountMath.makeEmpty(brands.debt, 'nat');
+  const compoundedInterest = makeRatio(100n, brands.debt); // starts at 1.0, no interest
+  const latestInterestUpdate = startTimeStamp;
+
+  const { updater: assetUpdater, notifier: assetNotifier } = makeNotifierKit(
+    harden({
+      compoundedInterest,
+      interestRate: paramManager.getInterestRate(),
+      latestInterestUpdate,
+      totalDebt,
+    }),
+  );
+
+  // ??? does this promise need to be a presence?
+  const periodNotifier = E(timerService).makeNotifier(0n, recordingPeriod);
+  const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
+
+  return {
+    assetNotifier,
+    assetUpdater,
+    chargingPeriod,
+    compoundedInterest,
+    latestInterestUpdate,
+    periodNotifier,
+    poolIncrementSeat,
+    recordingPeriod,
+    startTimeStamp,
+    totalDebt,
+  };
+};
+
+/**
  * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
@@ -42,7 +122,7 @@ export const makeRunStakeManager = (
   paramManager,
   mintAndReallocateWithFee,
   burnDebt,
-  { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
+  timing,
 ) => {
   /** @param { Amount<'copyBag'>} attestationGiven */
   const maxDebtForLien = attestationGiven => {
@@ -69,16 +149,14 @@ export const makeRunStakeManager = (
     return { maxDebt, amountLiened };
   };
 
-  let totalDebt = AmountMath.makeEmpty(brands.debt, 'nat');
-  let compoundedInterest = makeRatio(100n, brands.debt); // starts at 1.0, no interest
-  let latestInterestUpdate = startTimeStamp;
-  const { updater: assetUpdater, notifier: assetNotifer } = makeNotifierKit(
-    harden({
-      compoundedInterest,
-      interestRate: paramManager.getInterestRate(),
-      latestInterestUpdate,
-      totalDebt,
-    }),
+  const state = initState(
+    zcf,
+    debtMint,
+    brands,
+    paramManager,
+    mintAndReallocateWithFee,
+    burnDebt,
+    timing,
   );
 
   /**
@@ -90,8 +168,7 @@ export const makeRunStakeManager = (
     trace('chargeAllVaults', { updateTime });
     const interestRate = paramManager.getInterestRate();
 
-    // Update local state with the results of charging interest
-    ({ compoundedInterest, latestInterestUpdate, totalDebt } = chargeInterest(
+    const changes = chargeInterest(
       {
         mint: debtMint,
         mintAndReallocateWithFee,
@@ -100,27 +177,31 @@ export const makeRunStakeManager = (
       },
       {
         interestRate,
-        chargingPeriod,
-        recordingPeriod,
+        chargingPeriod: state.chargingPeriod,
+        recordingPeriod: state.recordingPeriod,
       },
-      { latestInterestUpdate, compoundedInterest, totalDebt },
+      {
+        latestInterestUpdate: state.latestInterestUpdate,
+        compoundedInterest: state.compoundedInterest,
+        totalDebt: state.totalDebt,
+      },
       updateTime,
-    ));
+    );
+    Object.assign(state, changes);
 
     const payload = harden({
-      compoundedInterest,
+      compoundedInterest: state.compoundedInterest,
       interestRate,
-      latestInterestUpdate,
-      totalDebt,
+      latestInterestUpdate: state.latestInterestUpdate,
+      totalDebt: state.totalDebt,
     });
+    const { assetUpdater } = state;
     assetUpdater.updateState(payload);
 
     trace('chargeAllVaults complete', payload);
   };
 
-  const periodNotifier = E(timerService).makeNotifier(0n, recordingPeriod);
-  const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
-
+  const { poolIncrementSeat } = state;
   const timeObserver = {
     updateState: updateTime =>
       chargeAllVaults(updateTime, poolIncrementSeat).catch(e =>
@@ -138,6 +219,7 @@ export const makeRunStakeManager = (
     },
   };
 
+  const { periodNotifier } = state;
   observeNotifier(periodNotifier, timeObserver);
 
   /**
@@ -151,23 +233,26 @@ export const makeRunStakeManager = (
   const applyDebtDelta = (oldDebtOnVault, newDebtOnVault) => {
     // This does not use AmountMath because it could be validly negative
     const delta = newDebtOnVault.value - oldDebtOnVault.value;
-    trace(`updating total debt ${totalDebt} by ${delta}`);
+    trace(`updating total debt ${state.totalDebt} by ${delta}`);
     if (delta === 0n) {
       // nothing to do
       return;
     }
 
     // totalDebt += delta (Amount type ensures natural value)
-    totalDebt = AmountMath.make(brands.debt, totalDebt.value + delta);
+    state.totalDebt = AmountMath.make(
+      brands.debt,
+      state.totalDebt.value + delta,
+    );
   };
 
   /**
    * @type {MintAndReallocate}
    */
   const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
-    checkDebtLimit(paramManager.getDebtLimit(), totalDebt, toMint);
+    checkDebtLimit(paramManager.getDebtLimit(), state.totalDebt, toMint);
     mintAndReallocateWithFee(toMint, fee, seat, ...otherSeats);
-    totalDebt = AmountMath.add(totalDebt, toMint);
+    state.totalDebt = AmountMath.add(state.totalDebt, toMint);
   };
 
   return harden({
@@ -182,7 +267,7 @@ export const makeRunStakeManager = (
     getCollateralBrand: () => brands.Attestation,
     applyDebtDelta,
 
-    getCompoundedInterest: () => compoundedInterest,
-    getAssetNotifier: () => assetNotifer,
+    getCompoundedInterest: () => state.compoundedInterest,
+    getAssetNotifier: () => state.assetNotifier,
   });
 };
