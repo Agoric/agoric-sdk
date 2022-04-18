@@ -66,9 +66,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
     },
   },
   grantVaultFactoryControl: {
-    vatParameters: {
-      argv: { vaultFactoryControllerAddress: true },
-    },
     consume: {
       client: 'provisioning',
       priceAuthorityAdmin: 'priceAuthority',
@@ -161,6 +158,9 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
       vaultFactoryCreator: 'VaultFactory',
       zoe: true,
     },
+    installation: {
+      consume: { centralSupply: 'zoe' },
+    },
     issuer: {
       consume: { RUN: 'zoe' },
     },
@@ -181,7 +181,7 @@ const roleToGovernanceActions = harden({
 
 export const getManifestForRunProtocol = (
   { restoreRef },
-  { ROLE = 'chain', installKeys },
+  { ROLE = 'chain', installKeys, vaultFactoryControllerAddress },
 ) => {
   return {
     manifest: roleToGovernanceActions[ROLE],
@@ -195,6 +195,9 @@ export const getManifestForRunProtocol = (
       contractGovernor: restoreRef(installKeys.contractGovernor),
       committee: restoreRef(installKeys.committee),
       binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
+    },
+    options: {
+      vaultFactoryControllerAddress,
     },
   };
 };

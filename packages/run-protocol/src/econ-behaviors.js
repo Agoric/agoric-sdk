@@ -18,7 +18,6 @@ import * as Collect from './collect.js';
 import { makeRunStakeTerms } from './runStake/params.js';
 
 const { details: X } = assert;
-const { entries } = Object;
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -336,16 +335,15 @@ export const startVaultFactory = async (
  * Grant access to the VaultFactory creatorFacet
  * to up to one user based on address.
  *
- * @param { EconomyBootstrapPowers & {
- *   vatParameters: { argv: { vaultFactoryControllerAddress?: string } }
- * }} powers
+ * @param { EconomyBootstrapPowers } powers
+ * @param {object} [root0]
+ * @param {object} [root0.options]
+ * @param {string} [root0.options.vaultFactoryControllerAddress]
  */
-export const grantVaultFactoryControl = async ({
-  vatParameters: {
-    argv: { vaultFactoryControllerAddress },
-  },
-  consume: { client, priceAuthorityAdmin, vaultFactoryCreator },
-}) => {
+export const grantVaultFactoryControl = async (
+  { consume: { client, priceAuthorityAdmin, vaultFactoryCreator } },
+  { options: { vaultFactoryControllerAddress } = {} } = {},
+) => {
   E(client).assignBundle([
     addr => ({
       vaultFactoryCreatorFacet:
