@@ -47,7 +47,7 @@ test('bundles', async t => {
   // We save this vat bundle (with 'disk()') to disk, to exercise
   // config.bundles.NAME.bundleSpec
   const diskBundle = await bundleSource(bfile('vat-disk.js'));
-  const diskBundleFilename = bfile('disk-bundle'); // in .gitignore
+  const diskBundleFilename = bfile('bundle-disk.js');
   fs.writeFileSync(diskBundleFilename, JSON.stringify(diskBundle));
 
   // We install this vat bundle at runtime, it provides 'runtime()'
