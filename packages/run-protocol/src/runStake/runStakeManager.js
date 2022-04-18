@@ -17,6 +17,12 @@ const trace = makeTracer('RSM', false);
 
 /**
  * @typedef {{
+ *  getDebtLimit: () => Amount<'nat'>,
+ *  getInterestRate: () => Ratio,
+ *  getMintingRatio: () => Ratio,
+ *  getLoanFee: () => Ratio,
+ * }} ParamManager
+ * @typedef {{
  * compoundedInterest: Ratio,
  * latestInterestUpdate: NatValue,
  * totalDebt: Amount<'nat'>,
@@ -25,26 +31,28 @@ const trace = makeTracer('RSM', false);
  * assetNotifier: Notifier<AssetState>,
  * assetUpdater: IterationObserver<AssetState>,
  * chargingPeriod: bigint,
+ * debtMint: ZCFMint<'nat'>,
+ * mintAndReallocateWithFee: MintAndReallocate,
+ * paramManager: ParamManager,
  * periodNotifier: Promise<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
  * recordingPeriod: bigint,
  * startTimeStamp: bigint,
+ * zcf: ZCF,
  * }} ImmutableState
  * @typedef {{
  * }} MutableState
  * @typedef {ImmutableState & MutableState} State
+ * @typedef {{
+ * state: State
+ * }} MethodContext
  */
 
 /**
  * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
- * @param {{
- *  getDebtLimit: () => Amount<'nat'>,
- *  getInterestRate: () => Ratio,
- *  getMintingRatio: () => Ratio,
- *  getLoanFee: () => Ratio,
- * }} paramManager
+ * @param {ParamManager} paramManager
  * @param {MintAndReallocate} mintAndReallocateWithFee
  * @param {BurnDebt} burnDebt
  * @param {Object} timing
@@ -60,7 +68,7 @@ const initState = (
   debtMint,
   brands,
   paramManager,
-  mintAndReallocateWithFee,
+  mintAndReallocateWithFee, // XXX can't serialize function
   burnDebt,
   { chargingPeriod, recordingPeriod, startTimeStamp, timerService },
 ) => {
@@ -86,13 +94,90 @@ const initState = (
     assetUpdater,
     chargingPeriod,
     compoundedInterest,
+    debtMint,
     latestInterestUpdate,
+    mintAndReallocateWithFee,
+    paramManager,
     periodNotifier,
     poolIncrementSeat,
     recordingPeriod,
     startTimeStamp,
     totalDebt,
+    zcf,
   };
+};
+
+/**
+ *
+ * @param {MethodContext} context
+ */
+const finish = ({ state }) => {
+  const {
+    debtMint,
+    mintAndReallocateWithFee,
+    paramManager,
+    periodNotifier,
+    poolIncrementSeat,
+    zcf,
+  } = state;
+
+  /**
+   *
+   * @param {bigint} updateTime
+   */
+  const chargeAllVaults = async updateTime => {
+    trace('chargeAllVaults', { updateTime });
+    const interestRate = paramManager.getInterestRate();
+
+    const changes = chargeInterest(
+      {
+        mint: debtMint,
+        mintAndReallocateWithFee,
+        poolIncrementSeat,
+        seatAllocationKeyword: KW.Debt,
+      },
+      {
+        interestRate,
+        chargingPeriod: state.chargingPeriod,
+        recordingPeriod: state.recordingPeriod,
+      },
+      {
+        latestInterestUpdate: state.latestInterestUpdate,
+        compoundedInterest: state.compoundedInterest,
+        totalDebt: state.totalDebt,
+      },
+      updateTime,
+    );
+    Object.assign(state, changes);
+
+    const payload = harden({
+      compoundedInterest: state.compoundedInterest,
+      interestRate,
+      latestInterestUpdate: state.latestInterestUpdate,
+      totalDebt: state.totalDebt,
+    });
+    const { assetUpdater } = state;
+    assetUpdater.updateState(payload);
+
+    trace('chargeAllVaults complete', payload);
+  };
+
+  observeNotifier(periodNotifier, {
+    updateState: updateTime =>
+      chargeAllVaults(updateTime).catch(e =>
+        console.error('🚨 runStakeManager failed to charge interest', e),
+      ),
+    fail: reason => {
+      zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${reason}`),
+      );
+    },
+    finish: done => {
+      zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${done}`),
+      );
+    },
+  });
 };
 
 /**
@@ -159,68 +244,7 @@ export const makeRunStakeManager = (
     timing,
   );
 
-  /**
-   *
-   * @param {bigint} updateTime
-   * @param {ZCFSeat} poolIncrementSeat
-   */
-  const chargeAllVaults = async (updateTime, poolIncrementSeat) => {
-    trace('chargeAllVaults', { updateTime });
-    const interestRate = paramManager.getInterestRate();
-
-    const changes = chargeInterest(
-      {
-        mint: debtMint,
-        mintAndReallocateWithFee,
-        poolIncrementSeat,
-        seatAllocationKeyword: KW.Debt,
-      },
-      {
-        interestRate,
-        chargingPeriod: state.chargingPeriod,
-        recordingPeriod: state.recordingPeriod,
-      },
-      {
-        latestInterestUpdate: state.latestInterestUpdate,
-        compoundedInterest: state.compoundedInterest,
-        totalDebt: state.totalDebt,
-      },
-      updateTime,
-    );
-    Object.assign(state, changes);
-
-    const payload = harden({
-      compoundedInterest: state.compoundedInterest,
-      interestRate,
-      latestInterestUpdate: state.latestInterestUpdate,
-      totalDebt: state.totalDebt,
-    });
-    const { assetUpdater } = state;
-    assetUpdater.updateState(payload);
-
-    trace('chargeAllVaults complete', payload);
-  };
-
-  const { poolIncrementSeat } = state;
-  const timeObserver = {
-    updateState: updateTime =>
-      chargeAllVaults(updateTime, poolIncrementSeat).catch(e =>
-        console.error('🚨 runStakeManager failed to charge interest', e),
-      ),
-    fail: reason => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${reason}`),
-      );
-    },
-    finish: done => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${done}`),
-      );
-    },
-  };
-
-  const { periodNotifier } = state;
-  observeNotifier(periodNotifier, timeObserver);
+  finish({ state });
 
   /**
    * Update total debt of this manager given the change in debt on a vault
