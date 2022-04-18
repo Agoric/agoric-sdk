@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.4.3...@agoric/governance@0.5.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* atomically update multiple parameters via governance (#5063)
+* add the ability to invoke an API to contract governance (#4869)
+
+### Features
+
+* **run-protocol:** charge penalty for liquidation ([#4996](https://github.com/Agoric/agoric-sdk/issues/4996)) ([5467be4](https://github.com/Agoric/agoric-sdk/commit/5467be4fb5c4cc47f34736eb669e207b26eb711d))
+* add the ability to invoke an API to contract governance ([#4869](https://github.com/Agoric/agoric-sdk/issues/4869)) ([3123665](https://github.com/Agoric/agoric-sdk/commit/312366518471238430c79313f79e57aee1c551cd)), closes [#4188](https://github.com/Agoric/agoric-sdk/issues/4188)
+
+
+### Bug Fixes
+
+* virtualize payments, purses, ledger ([#4618](https://github.com/Agoric/agoric-sdk/issues/4618)) ([dfeda1b](https://github.com/Agoric/agoric-sdk/commit/dfeda1bd7d8ca954b139d8dedda0624b924b8d81))
+
+
+### Code Refactoring
+
+* atomically update multiple parameters via governance ([#5063](https://github.com/Agoric/agoric-sdk/issues/5063)) ([8921f59](https://github.com/Agoric/agoric-sdk/commit/8921f59bcdf217b311670c509b8500074eafd77a))
+
+
+
 ### [0.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.4.2...@agoric/governance@0.4.3) (2022-02-24)
 
 **Note:** Version bump only for package @agoric/governance

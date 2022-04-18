@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [2.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.2.0...@agoric/deployment@2.2.1) (2022-04-18)
+
+
+### Bug Fixes
+
+* **deployment:** correct `cosmos-delegates.txt` discrepency ([e402593](https://github.com/Agoric/agoric-sdk/commit/e40259330bbde2efd74af55f1830e27fea02dd12))
+* **deployment:** correct quoting in `faucet-helper.sh` ([7d58ad8](https://github.com/Agoric/agoric-sdk/commit/7d58ad831652baff4ca35f0694279da0330a29ad))
+* **deployment:** faucet-helper add-egress ([27aca53](https://github.com/Agoric/agoric-sdk/commit/27aca53509ba6b88911e2c1d2de6e9b1a5a305fd))
+* **docker:** increase network timeout ([57d6504](https://github.com/Agoric/agoric-sdk/commit/57d6504ba19815442832ed16d1fdfe3a6bd5ba14))
+* **dockerfile:** add terrible retry logic for yarn install on failure ([9e8e9c4](https://github.com/Agoric/agoric-sdk/commit/9e8e9c49f868ed9a414a0b1fc4e9709c31763c31))
+
+
+
 ## [2.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.1.0...@agoric/deployment@2.2.0) (2022-02-24)
 
 

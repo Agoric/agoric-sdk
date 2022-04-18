@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.6...@agoric/cosmic-swingset@0.35.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **cosmic-swingset:** `extractCoreProposalBundles` for bootstrap ([4e30195](https://github.com/Agoric/agoric-sdk/commit/4e30195fabf38600522eaa6ea8ec9a7ff8eaa457))
+* **cosmic-swingset:** grant addVaultType based on addr ([#4641](https://github.com/Agoric/agoric-sdk/issues/4641)) ([e439024](https://github.com/Agoric/agoric-sdk/commit/e439024788f27ea668b2ff0c5e486ab901807eb0))
+* **cosmic-swingset:** new `scripts/clean-core-eval.js` ([b2b0b5a](https://github.com/Agoric/agoric-sdk/commit/b2b0b5aecfcccd23121b04b72ec396f4533a46ed))
+* **deploy-script-suppport:** e2e `writeCoreProposal` ([88a0cf7](https://github.com/Agoric/agoric-sdk/commit/88a0cf70c9078f0e9e2c46a6cc30bcb736e6e379))
+* **runStake:** checkGov to find, e.g. SES_IMPORT_REJECTED ([f20addf](https://github.com/Agoric/agoric-sdk/commit/f20addf2269e63bcdeddae9e5d8caa27eb859d9e))
+* **SOLO_OTEL_EXPORTER_PROMETHEUS_PORT:** new env var ([46f0a31](https://github.com/Agoric/agoric-sdk/commit/46f0a3188149b32dccec14a5c5d02b8b35ca2494))
+* **SwingSet:** report empty cranks to run policy ([5b7a694](https://github.com/Agoric/agoric-sdk/commit/5b7a694c6291c45e24ec1bc8f8e5eeacca0ef8c5))
+* **telemetry:** upgrade to latest `[@opentelemetry](https://github.com/opentelemetry)` ([de82224](https://github.com/Agoric/agoric-sdk/commit/de82224eb08a40e139f20e74d6f1038e50fbfa40))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** give much more RUN to the local-solo ([f1e3fda](https://github.com/Agoric/agoric-sdk/commit/f1e3fdafb5d137b1b06f6e1394b2e9794d235e29))
+* rip out the remainder of consensusMode ([744b561](https://github.com/Agoric/agoric-sdk/commit/744b561016567a1c6a82392bcb8a86e02f35b7b1))
+* **cosmic-swingset:** update deep-import paths ([9c6d902](https://github.com/Agoric/agoric-sdk/commit/9c6d902c86ccbeca4ee77d43746ea0b196b1e8f7))
+* **telemetry:** rework Prometheus metrics ([38a1922](https://github.com/Agoric/agoric-sdk/commit/38a1922ce2c21e4f31b4a1bedd634bbe627990f9))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
 ### [0.34.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.34.5...@agoric/cosmic-swingset@0.34.6) (2022-02-24)
 
 

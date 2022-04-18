@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.13.3...@agoric/ertp@0.14.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+* split single- and multi-faceted VO definitions into their own functions ([fcf293a](https://github.com/Agoric/agoric-sdk/commit/fcf293a4fcdf64bf30b377c7b3fb8b728efbb4af)), closes [#5093](https://github.com/Agoric/agoric-sdk/issues/5093)
+* yet another overhaul of the `defineKind` API ([3e02d42](https://github.com/Agoric/agoric-sdk/commit/3e02d42312b2963c165623c8cd559b431e5ecdce)), closes [#4905](https://github.com/Agoric/agoric-sdk/issues/4905)
+* **ertp:** support min/max for AmountMath ([#4474](https://github.com/Agoric/agoric-sdk/issues/4474)) ([05c3060](https://github.com/Agoric/agoric-sdk/commit/05c3060c6f589dc6d7ba209e27d3300e9ad4b05c))
+
+
+### Bug Fixes
+
+* document invariants ([9a7ac04](https://github.com/Agoric/agoric-sdk/commit/9a7ac04093a79df4092907c245c2242599c98bc7))
+* recover stuck payments ([2e366cb](https://github.com/Agoric/agoric-sdk/commit/2e366cbbd447c0117f66bb740b05d2a1b4e82f33))
+* remove purse.claim per review comment ([e68ce40](https://github.com/Agoric/agoric-sdk/commit/e68ce40cb019f82b21ec623761a1df3cd68c27f2))
+* revert moveAssets changes ([58a61bb](https://github.com/Agoric/agoric-sdk/commit/58a61bb6f842357bd4cbc9628204fc8a1e8c7b53))
+* review comments ([f35ec10](https://github.com/Agoric/agoric-sdk/commit/f35ec103e7a8efe16baa42ffad32055142fde1c1))
+* typo ([#4871](https://github.com/Agoric/agoric-sdk/issues/4871)) ([3d36314](https://github.com/Agoric/agoric-sdk/commit/3d36314559b65a01287b89c74c4ad96dfd632027))
+* virtualize payments, purses, ledger ([#4618](https://github.com/Agoric/agoric-sdk/issues/4618)) ([dfeda1b](https://github.com/Agoric/agoric-sdk/commit/dfeda1bd7d8ca954b139d8dedda0624b924b8d81))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
 ### [0.13.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.13.2...@agoric/ertp@0.13.3) (2022-02-24)
 
 

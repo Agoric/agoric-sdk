@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.11.9...@agoric/wallet@0.12.0) (2022-04-18)
+
+
+### Features
+
+* **wallet:** support reading notifiers from offer result ([934ed3c](https://github.com/Agoric/agoric-sdk/commit/934ed3c93b587ad7501fb6c122e8ef7be84ef940))
+* **wallet-api:** allow preapproved bridge to set offer meta ([adbbaaf](https://github.com/Agoric/agoric-sdk/commit/adbbaaff21c7223f840bc0b409c07be8fda7d5c4))
+* **wallet-api:** expose `E(wallet).lookup()` to traverse names ([5ef561d](https://github.com/Agoric/agoric-sdk/commit/5ef561d4f0cb96c743642d8e1713239f5cfe4721))
+* **wallet-api:** send `proposalTemplate.arguments` as offer args ([9c769f1](https://github.com/Agoric/agoric-sdk/commit/9c769f11cc9d04fbd8ab1898f983774b60393544))
+* **wallet-ui:** cheap rendering of offer arguments ([192500d](https://github.com/Agoric/agoric-sdk/commit/192500d019bc482437ed5224a12a76b2488cb23b))
+
+
+### Bug Fixes
+
+* **wallet:** change notifiers to publicNotifiers ([2fe5492](https://github.com/Agoric/agoric-sdk/commit/2fe5492821826f31bee4f99347aeea5abbd626ab))
+* **wallet-api:** don't drop unused invitations on the floor ([f63ed7e](https://github.com/Agoric/agoric-sdk/commit/f63ed7ef8f576d9f4807798c6befb46d4df517dd))
+* **wallet-ui:** don't add or strip `board:` prefix ([55d0a0a](https://github.com/Agoric/agoric-sdk/commit/55d0a0a79057a735076630a7c972ea1dbd327f71))
+
+
+
 ### [0.11.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.11.8...@agoric/wallet@0.11.9) (2022-02-24)
 
 

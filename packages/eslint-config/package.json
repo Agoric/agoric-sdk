@@ -1,6 +1,6 @@
 {
   "name": "@agoric/eslint-config",
-  "version": "0.3.23",
+  "version": "0.3.24",
   "description": "Agoric style rules",
   "main": "./eslint-config.json",
   "repository": {
