@@ -1,54 +1,15 @@
+// @ts-check
 import fs from 'fs';
 import { E } from '@endo/far';
-import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
-import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 
+import {
+  deeplyFulfilled,
+  defangAndTrim,
+  mergePermits,
+  stringify,
+} from './code-gen.js';
 import { makeCoreProposalBehavior } from './coreProposalBehavior.js';
 import { createBundles } from './createBundles.js';
-
-const { keys, values, fromEntries } = Object;
-
-const { serialize } = makeMarshal();
-const stringify = (x, pretty = undefined) =>
-  decodeToJustin(JSON.parse(serialize(harden(x)).body), pretty);
-
-export const htmlStartCommentPattern = new RegExp(`(${'<'})(!--)`, 'g');
-export const htmlEndCommentPattern = new RegExp(`(--)(${'>'})`, 'g');
-export const importPattern = new RegExp(
-  '(^|[^.])\\bimport(\\s*(?:\\(|/[/*]))',
-  'g',
-);
-
-const makeSet = (...args) => new Set(...args);
-
-export const mergePermits = m => {
-  const isObj = o => o !== null && typeof o === 'object';
-  const merge = (left, right) => {
-    if (left === undefined) {
-      return right;
-    }
-    if (right === undefined) return left;
-    if (isObj(left)) {
-      if (isObj(right)) {
-        const k12 = [...makeSet([...keys(left), ...keys(right)])];
-        const e12 = k12.map(k => [k, merge(left[k], right[k])]);
-        return fromEntries(e12);
-      } else {
-        return left;
-      }
-    } else {
-      return typeof left === 'string' ? left : right;
-    }
-  };
-  return values(m).reduce(merge);
-};
-
-// Neutralize HTML comments and import expressions.
-export const defangEvaluableCode = code =>
-  code
-    .replace(importPattern, '$1import\\$2') // avoid SES_IMPORT_REJECTED
-    .replace(htmlStartCommentPattern, '$1\\$2') // avoid SES_HTML_COMMENT_REJECTED
-    .replace(htmlEndCommentPattern, '$1\\$2'); // avoid SES_HTML_COMMENT_REJECTED
 
 export const makeWriteCoreProposal = (
   homeP,
@@ -146,11 +107,7 @@ const getManifestCall = harden(${stringify(getManifestCall, true)});
 (${makeCoreProposalBehavior})({ manifestInstallRef, getManifestCall, E });
 `;
 
-    // Remove SES evaluation hazards.
-    const defanged = defangEvaluableCode(code);
-
-    // end-of-line whitespace disrupts YAML formatting
-    const trimmed = defanged.replace(/[\r\t ]+$/gm, '');
+    const trimmed = defangAndTrim(code);
 
     const proposalPermitJsonFile = `${filePrefix}-permit.json`;
     log(`creating ${proposalPermitJsonFile}`);
