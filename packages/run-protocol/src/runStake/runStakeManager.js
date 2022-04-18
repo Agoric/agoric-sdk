@@ -13,7 +13,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('RM'); // TODO: how to turn this off?
+const trace = makeTracer('RSM', false);
 
 /**
  * @typedef {{
