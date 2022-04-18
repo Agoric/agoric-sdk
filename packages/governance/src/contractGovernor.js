@@ -36,7 +36,7 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
   return Promise.all([
     E(governorPublic).validateVoteCounter(counterInstance),
     E(governorPublic).validateElectorate(electorate),
-    E(governorPublic).validateTimer(details),
+    E(governorPublic).validateTimer(details.closingRule),
   ]);
 };
 
@@ -227,11 +227,9 @@ const start = async zcf => {
     return true;
   };
 
-  const validateTimer = details => {
-    assert(
-      details.closingRule.timer === timer,
-      X`closing rule must use my timer`,
-    );
+  /** @param {ClosingRule} closingRule */
+  const validateTimer = closingRule => {
+    assert(closingRule.timer === timer, X`closing rule must use my timer`);
     return true;
   };
 

@@ -455,7 +455,7 @@
  * @property {() => Instance} getGovernedContract
  * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
  * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
- * @property {(details: ParamChangeIssueDetails) => boolean} validateTimer
+ * @property {(closingRule: ClosingRule) => boolean} validateTimer
  */
 
 /**
