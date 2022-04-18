@@ -8,7 +8,7 @@ import {
   passStyleOf,
   hasOwnPropertyOf,
 } from '@endo/marshal';
-import { applyLabelingError } from '@agoric/internal';
+import { applyLabelingError, listDifference } from '@agoric/internal';
 import {
   compareRank,
   getPassStyleCover,
@@ -32,6 +32,8 @@ import {
 /// <reference types="ses"/>
 
 const { quote: q, details: X } = assert;
+const { entries, values } = Object;
+const { ownKeys } = Reflect;
 
 /** @type WeakSet<Pattern> */
 const patternMemo = new WeakSet();
@@ -86,7 +88,7 @@ const makePatternKit = () => {
       case 'copyRecord': {
         // A copyRecord is a pattern iff all its children are
         // patterns
-        return Object.values(patt).every(checkIt);
+        return values(patt).every(checkIt);
       }
       case 'copyArray': {
         // A copyArray is a pattern iff all its children are
@@ -307,29 +309,23 @@ const makePatternKit = () => {
         }
         const [specNames, specValues] = recordParts(specimen);
         const [pattNames, pattValues] = recordParts(patt);
-        if (!keyEQ(specNames, pattNames)) {
-          const specNameSet = new Set(specNames);
-          const missing = pattNames.filter(name => !specNameSet.has(name));
+        {
+          const missing = listDifference(pattNames, specNames);
           if (missing.length >= 1) {
             return check(
               false,
               X`${specimen} - Must have missing properties ${q(missing)}`,
             );
           }
-          const passNameSet = new Set(pattNames);
-          const unexpected = specNames.filter(name => !passNameSet.has(name));
-          assert(
-            unexpected.length >= 1,
-            X`Internal: must have either missing or extra: ${q(
-              specNames,
-            )} vs ${q(pattNames)}`,
-          );
-          return check(
-            false,
-            X`${specimen} - Must not have unexpected properties: ${q(
-              unexpected,
-            )}`,
-          );
+          const unexpected = listDifference(specNames, pattNames);
+          if (unexpected.length >= 1) {
+            return check(
+              false,
+              X`${specimen} - Must not have unexpected properties: ${q(
+                unexpected,
+              )}`,
+            );
+          }
         }
         return pattNames.every((label, i) =>
           checkMatches(specValues[i], pattValues[i], check, label),
@@ -741,6 +737,42 @@ const makePatternKit = () => {
   });
 
   /** @type {MatchHelper} */
+  const matchRemotableHelper = Far('M.remotable helper', {
+    checkMatches: (specimen, remotableDesc, check = x => x) => {
+      const specimenKind = passStyleOf(specimen);
+      if (specimenKind === 'remotable') {
+        return true;
+      }
+      const { label } = remotableDesc;
+      const details = X(
+        // quoting without quotes
+        [`${specimenKind} `, ` - Must be a remotable (${label})`],
+        specimen,
+      );
+      return check(false, details);
+    },
+
+    checkIsMatcherPayload: (allegedRemotableDesc, check = x => x) =>
+      check(
+        passStyleOf(allegedRemotableDesc) === 'copyRecord',
+        X`A remotableDesc must be a copyRecord: ${allegedRemotableDesc}`,
+      ) &&
+      check(
+        typeof allegedRemotableDesc.label === 'string',
+        X`A remotableDesc must have a string label: ${allegedRemotableDesc}`,
+      ) &&
+      check(
+        ownKeys(allegedRemotableDesc).length === 1,
+        X`Additional properties on remotableDesc not yet recognized: ${allegedRemotableDesc}`,
+      ),
+
+    getRankCover: (_remotableDesc, _encodePassable) =>
+      getPassStyleCover('remotable'),
+
+    checkKeyPattern: (_remotableDesc, _check = x => x) => true,
+  });
+
+  /** @type {MatchHelper} */
   const matchLTEHelper = Far('match:lte helper', {
     checkMatches: (specimen, rightOperand, check = x => x) =>
       check(
@@ -849,7 +881,7 @@ const makePatternKit = () => {
         passStyleOf(specimen) === 'copyRecord',
         X`${specimen} - Must be a record`,
       ) &&
-      Object.entries(specimen).every(el =>
+      entries(specimen).every(el =>
         checkMatches(harden(el), entryPatt, check, el[0]),
       ),
 
@@ -952,7 +984,7 @@ const makePatternKit = () => {
         // Not yet frozen! Mutated in place
         specB = {};
         specR = {};
-        for (const [name, value] of Object.entries(specimen)) {
+        for (const [name, value] of entries(specimen)) {
           if (hasOwnPropertyOf(base, name)) {
             specB[name] = value;
           } else {
@@ -1005,26 +1037,42 @@ const makePatternKit = () => {
       }
       let specB;
       let specR;
-      let newBase = base;
+      let newBase;
       if (baseStyle === 'copyArray') {
         const { length: specLen } = specimen;
         const { length: baseLen } = base;
         if (specLen < baseLen) {
           newBase = harden(base.slice(0, specLen));
+          specB = specimen;
+          // eslint-disable-next-line no-use-before-define
+          specR = [];
+        } else {
+          newBase = [...base];
+          specB = specimen.slice(0, baseLen);
+          specR = specimen.slice(baseLen);
         }
-        // Frozen below
-        specB = specimen.slice(0, baseLen);
-        specR = specimen.slice(baseLen);
+        for (let i = 0; i < newBase.length; i += 1) {
+          // For the optional base array parts, an undefined specimen element
+          // matches unconditionally.
+          if (specB[i] === undefined) {
+            // eslint-disable-next-line no-use-before-define
+            newBase[i] = M.any();
+          }
+        }
       } else {
         assert(baseStyle === 'copyRecord');
         // Not yet frozen! Mutated in place
         specB = {};
         specR = {};
         newBase = {};
-        for (const [name, value] of Object.entries(specimen)) {
+        for (const [name, value] of entries(specimen)) {
           if (hasOwnPropertyOf(base, name)) {
-            specB[name] = value;
-            newBase[name] = base[name];
+            // For the optional base record parts, an undefined specimen value
+            // matches unconditionally.
+            if (value !== undefined) {
+              specB[name] = value;
+              newBase[name] = base[name];
+            }
           } else {
             specR[name] = value;
           }
@@ -1057,6 +1105,7 @@ const makePatternKit = () => {
     'match:key': matchKeyHelper,
     'match:pattern': matchPatternHelper,
     'match:kind': matchKindHelper,
+    'match:remotable': matchRemotableHelper,
 
     'match:lt': matchLTHelper,
     'match:lte': matchLTEHelper,
@@ -1100,6 +1149,59 @@ const makePatternKit = () => {
   const PromiseShape = makeKindMatcher('promise');
   const UndefinedShape = makeKindMatcher('undefined');
 
+  /**
+   * @param {'sync'|'async'} callKind
+   * @param {ArgGuard[]} argGuards
+   * @param {ArgGuard[]} [optionalArgGuards]
+   * @param {ArgGuard} [restArgGuard]
+   * @returns {MethodGuard}
+   */
+  const makeMethodGuardMaker = (
+    callKind,
+    argGuards,
+    optionalArgGuards = undefined,
+    restArgGuard = undefined,
+  ) =>
+    harden({
+      optional: (...optArgGuards) => {
+        assert(
+          optionalArgGuards === undefined,
+          X`Can only have one set of optional guards`,
+        );
+        assert(
+          restArgGuard === undefined,
+          X`optional arg guards must come before rest arg`,
+        );
+        return makeMethodGuardMaker(callKind, argGuards, optArgGuards);
+      },
+      rest: rArgGuard => {
+        assert(restArgGuard === undefined, X`Can only have one rest arg`);
+        return makeMethodGuardMaker(
+          callKind,
+          argGuards,
+          optionalArgGuards,
+          rArgGuard,
+        );
+      },
+      returns: (returnGuard = UndefinedShape) =>
+        harden({
+          klass: 'methodGuard',
+          callKind,
+          argGuards,
+          optionalArgGuards,
+          restArgGuard,
+          returnGuard,
+        }),
+    });
+
+  const makeAwaitArgGuard = argGuard =>
+    harden({
+      klass: 'awaitArg',
+      argGuard,
+    });
+
+  // //////////////////
+
   /** @type {MatcherNamespace} */
   const M = harden({
     any: () => AnyShape,
@@ -1122,7 +1224,10 @@ const makePatternKit = () => {
     set: () => SetShape,
     bag: () => BagShape,
     map: () => MapShape,
-    remotable: () => RemotableShape,
+    remotable: (label = undefined) =>
+      label === undefined
+        ? RemotableShape
+        : makeMatcher('match:remotable', harden({ label })),
     error: () => ErrorShape,
     promise: () => PromiseShape,
     undefined: () => UndefinedShape,
@@ -1150,6 +1255,28 @@ const makePatternKit = () => {
       makeMatcher('match:split', rest === undefined ? [base] : [base, rest]),
     partial: (base, rest = undefined) =>
       makeMatcher('match:partial', rest === undefined ? [base] : [base, rest]),
+
+    eref: t => M.or(t, M.promise()),
+    opt: t => M.or(t, M.undefined()),
+
+    interface: (interfaceName, methodGuards, { sloppy = false } = {}) => {
+      for (const [_, methodGuard] of entries(methodGuards)) {
+        assert(
+          methodGuard.klass === 'methodGuard',
+          X`unrecognize method guard ${methodGuard}`,
+        );
+      }
+      return harden({
+        klass: 'Interface',
+        interfaceName,
+        methodGuards,
+        sloppy,
+      });
+    },
+    call: (...argGuards) => makeMethodGuardMaker('sync', argGuards),
+    callWhen: (...argGuards) => makeMethodGuardMaker('async', argGuards),
+
+    await: argGuard => makeAwaitArgGuard(argGuard),
   });
 
   return harden({

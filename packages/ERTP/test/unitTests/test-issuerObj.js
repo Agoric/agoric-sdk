@@ -198,7 +198,10 @@ test('purse.deposit promise', async t => {
   await t.throwsAsync(
     // @ts-expect-error deliberate invalid arguments for testing
     () => E(purse).deposit(exclusivePaymentP, fungible25),
-    { message: /deposit does not accept promises/ },
+    {
+      message:
+        'In "deposit" method of (fungible Purse purse) arg 0: promise "[Promise]" - Must be a remotable (Payment)',
+    },
     'failed to reject a promise for a payment',
   );
 });
@@ -332,7 +335,7 @@ test('issuer.split bad amount', async t => {
     _ => E(issuer).split(payment, AmountMath.make(otherBrand, 10n)),
     {
       message:
-        /The brand in the allegedAmount .* in 'coerce' didn't match the specified brand/,
+        'In "split" method of (fungible issuer) arg 1: brand: "[Alleged: other fungible brand]" - Must be: "[Alleged: fungible brand]"',
     },
     'throws for bad amount',
   );
@@ -409,11 +412,10 @@ test('issuer.combine array of promises', async t => {
   }
   harden(paymentsP);
 
-  const checkCombinedResult = paymentP => {
+  const checkCombinedResult = paymentP =>
     issuer.getAmountOf(paymentP).then(pAmount => {
       t.is(pAmount.value, 100n);
     });
-  };
 
   await E(issuer).combine(paymentsP).then(checkCombinedResult);
 });

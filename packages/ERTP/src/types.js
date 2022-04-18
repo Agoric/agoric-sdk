@@ -256,6 +256,14 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @typedef {object} PaymentLedger
+ * @property {Mint<K>} mint
+ * @property {Issuer<K>} issuer
+ * @property {Brand<K>} brand
+ */
+
+/**
+ * @template {AssetKind} [K=AssetKind]
  * @typedef {object} IssuerKit
  * @property {Mint<K>} mint
  * @property {Issuer<K>} issuer
@@ -293,10 +301,6 @@
  */
 
 /**
- * @typedef {import('./issuerKit').IssuerKit} IssuerKit
- */
-
-/**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} Mint
  * Holding a Mint carries the right to issue new digital assets. These
@@ -304,6 +308,7 @@
  *
  * @property {() => Issuer<K>} getIssuer Gets the Issuer for this mint.
  * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment
+ * Creates a new Payment containing newly minted amount.
  */
 
 /**

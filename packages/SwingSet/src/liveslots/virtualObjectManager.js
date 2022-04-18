@@ -2,6 +2,7 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { assert, details as X, q } from '@agoric/assert';
+import { defendPrototype } from '@agoric/store';
 import { Far } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
@@ -148,7 +149,7 @@ export function makeCache(size, fetch, store) {
  *   of virtual references.
  * @param {() => number} allocateExportID  Function to allocate the next object
  *   export ID for the enclosing vat.
- * @param {(val: object) => string} getSlotForVal  A function that returns the
+ * @param {(val: object) => string} _getSlotForVal  A function that returns the
  *   object ID (vref) for a given object, if any.  their corresponding export
  *   IDs
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
@@ -194,7 +195,7 @@ export function makeVirtualObjectManager(
   syscall,
   vrm,
   allocateExportID,
-  getSlotForVal,
+  _getSlotForVal,
   registerValue,
   serialize,
   unserialize,
@@ -468,49 +469,6 @@ export function makeVirtualObjectManager(
     }
   }
 
-  function copyMethods(behavior) {
-    const obj = {};
-    for (const prop of Reflect.ownKeys(behavior)) {
-      const func = behavior[prop];
-      assert.typeof(func, 'function');
-      obj[prop] = func;
-    }
-    return obj;
-  }
-
-  function bindMethods(tag, contextMap, behaviorMethods) {
-    const prototype = {};
-    for (const prop of Reflect.ownKeys(behaviorMethods)) {
-      const func = behaviorMethods[prop];
-      assert.typeof(func, 'function');
-
-      // Violating all Jessie rules to create representative that inherit
-      // methods from a shared prototype. The bound method therefore needs
-      // to mention `this`. We define it using concise method syntax
-      // so that it will be `this` sensitive but not constructable.
-      //
-      // We normally consider `this` unsafe because of the hazard of a
-      // method of one abstraction being applied to an instance of
-      // another abstraction. To prevent that attack, the bound method
-      // checks that its `this` is in the map in which its representatives
-      // are registered.
-      const { method } = {
-        method(...args) {
-          const context = contextMap.get(this);
-          assert(
-            context,
-            X`${q(
-              `${tag}).${String(prop)}`,
-            )} may only be applied to a valid instance: ${this}`,
-          );
-          return Reflect.apply(func, null, [context, ...args]);
-        },
-      };
-      prototype[prop] = method;
-    }
-    return Far(tag, prototype);
-  }
-
   /**
    * @typedef {{
    *  kindID: string,
@@ -623,9 +581,12 @@ export function makeVirtualObjectManager(
     isDurable,
     durableKindDescriptor,
   ) {
-    const { finish } = options;
+    const {
+      finish,
+      thisfulMethods = false,
+      interfaceGuard = undefined,
+    } = options;
     let facetNames;
-    let behaviorTemplate;
     let contextMapTemplate;
     let prototypeTemplate;
 
@@ -634,12 +595,13 @@ export function makeVirtualObjectManager(
       case 'one': {
         assert(!multifaceted);
         facetNames = undefined;
-        behaviorTemplate = copyMethods(behavior);
         contextMapTemplate = new WeakMap();
-        prototypeTemplate = bindMethods(
+        prototypeTemplate = defendPrototype(
           tag,
           contextMapTemplate,
-          behaviorTemplate,
+          behavior,
+          thisfulMethods,
+          interfaceGuard,
         );
         break;
       }
@@ -650,18 +612,18 @@ export function makeVirtualObjectManager(
           facetNames.length > 1,
           'a multi-facet object must have multiple facets',
         );
-        behaviorTemplate = {};
         contextMapTemplate = {};
         prototypeTemplate = {};
         for (const name of facetNames) {
-          const behaviorMethods = copyMethods(behavior[name]);
-          behaviorTemplate[name] = behaviorMethods;
           const contextMap = new WeakMap();
           contextMapTemplate[name] = contextMap;
-          const prototype = bindMethods(
+          const prototype = defendPrototype(
             `${tag} ${name}`,
             contextMap,
-            behaviorMethods,
+            behavior[name],
+            thisfulMethods,
+            // TODO some tool does not yet understand the `?.[` syntax
+            interfaceGuard && interfaceGuard[name],
           );
           prototypeTemplate[name] = prototype;
         }
@@ -707,7 +669,6 @@ export function makeVirtualObjectManager(
 
     vrm.registerKind(kindID, reanimate, deleteStoredVO, isDurable);
     vrm.rememberFacetNames(kindID, facetNames);
-    harden(behaviorTemplate);
     harden(contextMapTemplate);
     harden(prototypeTemplate);
 

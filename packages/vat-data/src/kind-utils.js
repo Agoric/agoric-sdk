@@ -1,4 +1,3 @@
-import { objectMap } from '@agoric/internal';
 import { provide } from '@agoric/store';
 import {
   defineDurableKind,
@@ -14,13 +13,14 @@ import {
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
 
 /**
- * Make a version of the argument function that takes a kind context but ignores it.
+ * Make a version of the argument function that takes a kind context but
+ * ignores it.
  *
  * @type {<T extends Function>(fn: T) => import('./types.js').PlusContext<never, T>}
  */
 export const ignoreContext =
   fn =>
-  (context, ...args) =>
+  (_context, ...args) =>
     fn(...args);
 // @ts-expect-error TODO statically recognize harden
 harden(ignoreContext);
@@ -68,31 +68,3 @@ export const vivifyKindMulti = (
   );
 // @ts-expect-error TODO statically recognize harden
 harden(vivifyKindMulti);
-
-/**
- * @template T
- * @param {Baggage} baggage
- * @param {string} kindName
- * @param {T} methods
- * @param {DefineKindOptions<unknown>} [options]
- * @returns {T & RemotableBrand<{}, T>}
- */
-export const vivifySingleton = (
-  baggage,
-  kindName,
-  methods,
-  options = undefined,
-) => {
-  const behavior = objectMap(methods, ignoreContext);
-  const makeSingleton = vivifyKind(
-    baggage,
-    kindName,
-    () => ({}),
-    behavior,
-    options,
-  );
-
-  return provide(baggage, `the_${kindName}`, () => makeSingleton());
-};
-// @ts-expect-error TODO statically recognize harden
-harden(vivifySingleton);
