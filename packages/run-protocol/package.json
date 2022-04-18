@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "yarn build:bundles",
-    "build:bundles": "bundle-source --to bundles/ ./src/vaultFactory/vaultFactory.js vaultFactory ./src/vaultFactory/liquidateMinimum.js liquidateMinimum ./src/vpool-xyk-amm/multipoolMarketMaker.js amm ./src/reserve/assetReserve.js reserve ./src/runStake/runStake.js runStake",
+    "build:bundles": "node ./scripts/build-bundles.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
