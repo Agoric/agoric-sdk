@@ -149,7 +149,7 @@ const optionalBrandCheck = (allegedBrand, brand) => {
  * @param {Brand<K> | undefined} brand
  * @returns {MathHelpers<*>}
  */
-const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
+const checkLRAndGetHelpers = (leftAmount, rightAmount, brand) => {
   assertRecord(leftAmount, 'leftAmount');
   assertRecord(rightAmount, 'rightAmount');
   const { value: leftValue, brand: leftBrand } = leftAmount;
@@ -282,7 +282,7 @@ const AmountMath = {
    * @param {Brand=} brand
    * @returns {boolean}
    */
-  isEmpty: (amount, brand = undefined) => {
+  isEmpty: (amount, brand) => {
     assertRecord(amount, 'amount');
     const { brand: allegedBrand, value } = amount;
     assertRemotable(allegedBrand, 'brand');
@@ -302,10 +302,10 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {boolean}
    */
-  isGT: (leftAmount, rightAmount, brand = undefined) => {
+  isGT: (leftAmount, rightAmount, brand) => {
     return !AmountMath.isGTE(rightAmount, leftAmount, brand);
   },
   /**
@@ -320,10 +320,10 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {boolean}
    */
-  isGTE: (leftAmount, rightAmount, brand = undefined) => {
+  isGTE: (leftAmount, rightAmount, brand) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
   },
@@ -339,10 +339,10 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {boolean}
    */
-  isLT: (leftAmount, rightAmount, brand = undefined) => {
+  isLT: (leftAmount, rightAmount, brand) => {
     return !AmountMath.isGTE(leftAmount, rightAmount, brand);
   },
   /**
@@ -370,10 +370,10 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {boolean}
    */
-  isEqual: (leftAmount, rightAmount, brand = undefined) => {
+  isEqual: (leftAmount, rightAmount, brand) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     return h.doIsEqual(...coerceLR(h, leftAmount, rightAmount));
   },
@@ -387,10 +387,10 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {Amount<K>}
    */
-  add: (leftAmount, rightAmount, brand = undefined) => {
+  add: (leftAmount, rightAmount, brand) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     const value = h.doAdd(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
@@ -406,10 +406,10 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {Amount<K>}
    */
-  subtract: (leftAmount, rightAmount, brand = undefined) => {
+  subtract: (leftAmount, rightAmount, brand) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     const value = h.doSubtract(...coerceLR(h, leftAmount, rightAmount));
     return harden({ brand: leftAmount.brand, value });
@@ -420,20 +420,20 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} x
    * @param {Amount<K>} y
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {Amount<K>}
    */
-  min: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? y : x),
+  min: (x, y, brand) => (AmountMath.isGTE(x, y, brand) ? y : x),
   /**
    * Returns the max value between x and y using isGTE
    *
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} x
    * @param {Amount<K>} y
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {Amount<K>}
    */
-  max: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? x : y),
+  max: (x, y, brand) => (AmountMath.isGTE(x, y, brand) ? x : y),
 };
 harden(AmountMath);
 
