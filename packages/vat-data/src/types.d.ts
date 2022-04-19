@@ -5,7 +5,6 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
-import { Context } from 'vm';
 
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
@@ -23,43 +22,44 @@ type ActualBehavior<B> = {
   [Facet in keyof B]: FunctionsMinusContext<B[Facet]>;
 };
 
-interface KindDefiner {
-  <P, S, F>(
+type MultiKindContext<S, B> = { state: S; facets: ActualBehavior<B> };
+
+declare const kindHandleMarker: unique symbol;
+export type DurableKindHandle = { readonly [kindHandleMarker]: string };
+
+export type VatData = {
+  // virtual kinds
+  defineKind: <P, S, F>(
     tag: string,
     init: (...args: P) => S,
     facet: F,
     options?: {
       finish?: (context: { state: S }, kind: FunctionsMinusContext<F>) => void;
     },
-  ): (...args: P) => FunctionsMinusContext<F>;
-}
-
-type MultiKindContext<S, B> = { state: S; facets: ActualBehavior<B> };
-interface KindMultiDefiner {
-  <P, S, B>(
+  ) => (...args: P) => FunctionsMinusContext<F>;
+  defineKindMulti: <P, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
     options?: { finish?: (context: MultiKindContext<S, B>) => void },
-  ): (...args: P) => ActualBehavior<B>;
-}
+  ) => (...args: P) => ActualBehavior<B>;
 
-interface KindDurableMultiDefiner {
-  <P, S, B>(
-    kindHandle: unknown, // TODO RemotableBrand
+  // durable kinds
+  makeKindHandle: (descriptionTag: string) => DurableKindHandle;
+  defineDurableKind: <P, S, F>(
+    kindHandle: DurableKindHandle,
+    init: (...args: P) => S,
+    facet: F,
+    options?: {
+      finish?: (context: { state: S }, kind: FunctionsMinusContext<F>) => void;
+    },
+  ) => (...args: P) => FunctionsMinusContext<F>;
+  defineDurableKindMulti: <P, S, B>(
+    kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     behavior: B,
     options?: { finish?: (context: MultiKindContext<S, B>) => void },
-  ): (...args: P) => ActualBehavior<B>;
-}
-
-export type VatData = {
-  defineKind: KindDefiner;
-  defineKindMulti: KindMultiDefiner;
-  defineDurableKind: KindDefiner;
-  defineDurableKindMulti: KindDurableMultiDefiner;
-
-  makeKindHandle: (descriptionTag: string) => unknown;
+  ) => (...args: P) => ActualBehavior<B>;
 
   makeScalarBigMapStore: <K, V>(
     label: string,

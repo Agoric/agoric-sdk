@@ -1,7 +1,16 @@
 /* eslint-disable no-use-before-define, import/no-extraneous-dependencies */
 import { expectType } from 'tsd';
-import { defineKind, defineKindMulti } from '.';
-import { ActualBehavior, FunctionsMinusContext } from './types.js';
+import {
+  defineKind,
+  defineKindMulti,
+  makeKindHandle,
+  defineDurableKind,
+} from '.';
+import {
+  ActualBehavior,
+  DurableKindHandle,
+  FunctionsMinusContext,
+} from './types.js';
 
 /*
 export const makePaymentMaker = (allegedName: string, brand: unknown) => {
@@ -113,3 +122,16 @@ expectType<string>(fc.other.echo('foo'));
 // @ts-expect-error missing method
 fc.incr.echo('foo');
 expectType<null>(fc.other.emptyFn());
+
+// durable kind
+const fooHandle = makeKindHandle('foo');
+expectType<DurableKindHandle>(fooHandle);
+const fooInit = (name: string) => ({ name });
+const fooBehavior = {
+  sayHi: ({ state }: { state: { name: string } }) => `Howdy, ${state.name}`,
+};
+const makeFoo = defineDurableKind(fooHandle, fooInit, fooBehavior);
+const foo = makeFoo('Doody');
+expectType<string>(foo.sayHi());
+// @ts-expect-error missing method
+foo.sayBye();
