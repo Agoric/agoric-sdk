@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -91,6 +92,13 @@ func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Submitter}
 }
 
+func NewMsgWalletAction(owner sdk.AccAddress, action string) *MsgWalletAction {
+	return &MsgWalletAction{
+		Owner:  owner,
+		Action: action,
+	}
+}
+
 func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
 }
@@ -103,7 +111,17 @@ func (msg MsgWalletAction) ValidateBasic() error {
 	if len(strings.TrimSpace(msg.Action)) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Action cannot be empty")
 	}
+	if !json.Valid([]byte(msg.Action)) {
+		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet action must be valid JSON")
+	}
 	return nil
+}
+
+func NewMsgWalletSpendAction(owner sdk.AccAddress, spendAction string) *MsgWalletSpendAction {
+	return &MsgWalletSpendAction{
+		Owner:       owner,
+		SpendAction: spendAction,
+	}
 }
 
 func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
@@ -117,6 +135,9 @@ func (msg MsgWalletSpendAction) ValidateBasic() error {
 	}
 	if len(strings.TrimSpace(msg.SpendAction)) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Spend action cannot be empty")
+	}
+	if !json.Valid([]byte(msg.SpendAction)) {
+		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet spend action must be valid JSON")
 	}
 	return nil
 }
