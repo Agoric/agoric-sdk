@@ -88,6 +88,7 @@ const expectedcontractGovernorStartLog = [
   'Voter Carol voted for {"noChange":["MalleableNumber"]}',
   'Voter Dave voted for {"changes":{"MalleableNumber":"[299792458n]"}}',
   'Voter Emma voted for {"changes":{"MalleableNumber":"[299792458n]"}}',
+  'Voter Alice validated all the things',
   '@@ tick:1 @@',
   '@@ tick:2 @@',
   '@@ tick:3 @@',
@@ -99,7 +100,6 @@ const expectedcontractGovernorStartLog = [
   'Electorate was {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]} after the vote.',
   'Number after: 299792458',
   'MalleableNumber was "[299792458n]" after the vote.',
-  'Voter Alice validated all the things',
 ];
 
 test.serial('contract governance', async t => {
