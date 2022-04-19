@@ -12,6 +12,24 @@ ARG GIT_COMMIT
 RUN make GIT_COMMIT="$GIT_COMMIT" MOD_READONLY= compile-go
 
 ###############################
+# OTEL fetch
+# from https://github.com/open-telemetry/opentelemetry-collector-releases/releases
+
+FROM node:14-buster AS otel
+
+ARG OTEL_VERSION=0.48.0
+ARG OTEL_HASH_arm64=846852f4c34f6e494abe202402fdf1d17e2ec3c7a7f96985b6011126ae553249
+ARG OTEL_HASH_amd64=7c6923ecbc045e6d8825479d836d3e8b8a2b3c20185e9dda531b3aa2b973459c
+
+RUN set -eux; \
+  pkgArch="$(dpkg --print-architecture)"; \
+  eval "otelHash=\$OTEL_HASH_${pkgArch}"; \
+  wget -O otel.tgz "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${OTEL_VERSION}/otelcol-contrib_${OTEL_VERSION}_linux_${pkgArch}.tar.gz"; \
+  echo "${otelHash} otel.tgz" | sha256sum -c -; \
+  tar -C / -xzf otel.tgz
+
+
+###############################
 # The js build container
 FROM node:14-buster AS build-js
 
@@ -61,6 +79,7 @@ WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
 COPY --from=build-js /root/go/bin/agd /usr/local/bin/
 COPY --from=build-js /root/go/bin/ag-cosmos-helper /usr/local/bin/
+COPY --from=otel /otelcol-contrib /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/solo/bin/ag-solo /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/agoric-cli/bin/agoric /usr/local/bin/
