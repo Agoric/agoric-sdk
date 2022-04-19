@@ -47,7 +47,7 @@ const start = async zcf => {
       liqProposal,
       debtorSeat,
       debtorSeat,
-      { maxOut: debt },
+      { stopAfter: debt },
     );
     const amounts = await deposited;
     trace(`Liq results`, {

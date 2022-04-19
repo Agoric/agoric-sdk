@@ -16,7 +16,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
    * trade with a stated amountIn.
    *
    * @param {ZCFSeat} seat
-   * @param {{ maxOut: Amount }} args
+   * @param {{ stopAfter: Amount }} args
    */
   const swapIn = (seat, args) => {
     assertProposalShape(seat, {
@@ -28,20 +28,20 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       want: { Out: amountOut },
     } = seat.getProposal();
     if (args) {
-      AmountMath.coerce(amountOut.brand, args.maxOut);
+      AmountMath.coerce(amountOut.brand, args.stopAfter);
       // TODO check that there are no other keys
     }
 
     const pool = provideVPool(amountIn.brand, amountOut.brand).internalFacet;
     let prices;
-    const maxOut = args && args.maxOut;
-    if (maxOut) {
-      AmountMath.coerce(amountOut.brand, maxOut);
+    const stopAfter = args && args.stopAfter;
+    if (stopAfter) {
+      AmountMath.coerce(amountOut.brand, stopAfter);
       // @ts-ignore
-      prices = pool.getPriceForOutput(amountIn, maxOut);
+      prices = pool.getPriceForOutput(amountIn, stopAfter);
     }
-    if (!prices || !AmountMath.isGTE(prices.swapperGets, maxOut)) {
-      // `amountIn` is not enough to sell for maxOut so just sell it all
+    if (!prices || !AmountMath.isGTE(prices.swapperGets, stopAfter)) {
+      // `amountIn` is not enough to sell for stopAfter so just sell it all
       // @ts-ignore
       prices = pool.getPriceForInput(amountIn, amountOut);
     }
@@ -54,9 +54,9 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
   const swapOut = seat => {
     // The offer's amountOut is a minimum; the offeredAmountIn is a max.
     const {
-      want: { Out: maxOut },
+      want: { Out: stopAfter },
     } = seat.getProposal();
-    return swapIn(seat, { maxOut });
+    return swapIn(seat, { stopAfter });
   };
 
   const makeSwapInInvitation = () =>
