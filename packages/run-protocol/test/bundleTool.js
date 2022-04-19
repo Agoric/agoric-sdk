@@ -90,7 +90,7 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
     return meta;
   };
 
-  const validate = async targetName => {
+  const validate = async (targetName, rootOpt) => {
     const metaRd = wr.readOnly().neighbor(toBundleMeta(targetName));
     let txt;
     try {
@@ -108,6 +108,13 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
       moduleSource: { absolute: moduleSource },
     } = meta;
     assert.equal(bundleFileName, toBundleName(targetName));
+    if (rootOpt) {
+      assert.equal(
+        moduleSource,
+        cwd.neighbor(rootOpt).absolute(),
+        X`bundle ${targetName} was for ${moduleSource}, not ${rootOpt}`,
+      );
+    }
     const { mtime: actualBundleTime } = await wr
       .readOnly()
       .neighbor(bundleFileName)
@@ -135,7 +142,7 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
     let meta;
     if (wr.readOnly().neighbor(toBundleMeta(targetName)).exists()) {
       try {
-        meta = await validate(targetName);
+        meta = await validate(targetName, rootPath);
         const { bundleTime, contents } = meta;
         log(
           `${wr}`,
