@@ -291,11 +291,31 @@ const AmountMath = {
     return h.doIsEmpty(h.doCoerce(value));
   },
   /**
+   * Returns true if the leftAmount is greater than (and not equal to) the
+   * rightAmount.
+   *
+   * For non-scalars, "greater than or equal to" depends on the kind of amount,
+   * as defined by the MathHelpers. For example, whether rectangle A is greater
+   * than rectangle B depends on whether rectangle A includes rectangle B as
+   * defined by the logic in MathHelpers.
+   *
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Amount<K>} leftAmount
+   * @param {Amount<K>} rightAmount
+   * @param {Brand<K>=} brand
+   * @returns {boolean}
+   */
+  isGT: (leftAmount, rightAmount, brand = undefined) => {
+    return !AmountMath.isGTE(rightAmount, leftAmount, brand);
+  },
+  /**
    * Returns true if the leftAmount is greater than or equal to the
-   * rightAmount. For non-scalars, "greater than or equal to" depends
-   * on the kind of amount, as defined by the MathHelpers. For example,
-   * whether rectangle A is greater than rectangle B depends on whether rectangle
-   * A includes rectangle B as defined by the logic in MathHelpers.
+   * rightAmount.
+   *
+   * For non-scalars, "greater than or equal to" depends on the kind of amount,
+   * as defined by the MathHelpers. For example, whether rectangle A is greater
+   * than rectangle B depends on whether rectangle A includes rectangle B as
+   * defined by the logic in MathHelpers.
    *
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
@@ -306,6 +326,24 @@ const AmountMath = {
   isGTE: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
+  },
+  /**
+   * Returns true if the leftAmount is less than (not equal to) the
+   * rightAmount.
+   *
+   * For non-scalars, "greater than or equal to" depends on the kind of amount,
+   * as defined by the MathHelpers. For example, whether rectangle A is greater
+   * than rectangle B depends on whether rectangle A includes rectangle B as
+   * defined by the logic in MathHelpers.
+   *
+   * @template {AssetKind} [K=AssetKind]
+   * @param {Amount<K>} leftAmount
+   * @param {Amount<K>} rightAmount
+   * @param {Brand<K>=} brand
+   * @returns {boolean}
+   */
+  isLT: (leftAmount, rightAmount, brand = undefined) => {
+    return !AmountMath.isGTE(leftAmount, rightAmount, brand);
   },
   /**
    * Returns true if the leftAmount equals the rightAmount. We assume
