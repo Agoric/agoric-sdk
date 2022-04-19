@@ -31,8 +31,10 @@ type KindFacets<B> = {
 
 type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
-declare const kindHandleMarker: unique symbol;
-export type DurableKindHandle = { readonly [kindHandleMarker]: string };
+declare class DurableKindHandleClass {
+  private descriptionTag: string;
+}
+export type DurableKindHandle = DurableKindHandleClass;
 
 export type VatData = {
   // virtual kinds
