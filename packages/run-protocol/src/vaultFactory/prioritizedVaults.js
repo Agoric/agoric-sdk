@@ -31,13 +31,22 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
  * @param {InnerVault} vault
  * @returns {Ratio}
  */
+export const currentDebtToCollateral = vault =>
+  calculateDebtToCollateral(
+    vault.getCurrentDebt(),
+    vault.getCollateralAmount(),
+  );
+
+/**
+ *
+ * @param {InnerVault} vault
+ * @returns {Ratio}
+ */
 export const normalizedDebtToCollateral = vault =>
   calculateDebtToCollateral(
     vault.getNormalizedDebt(),
     vault.getCollateralAmount(),
   );
-
-/** @typedef {{debtToCollateral: Ratio, vault: InnerVault}} VaultRecord */
 
 /**
  * InnerVaults, ordered by their liquidation ratio so that all the
@@ -95,11 +104,11 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     const [vault] = vaults.values();
     const collateralAmount = vault.getCollateralAmount();
     if (AmountMath.isEmpty(collateralAmount)) {
+      // ??? can currentDebtToCollateral() handle this?
       // Would be an infinite ratio
       return undefined;
     }
-    const actualDebtAmount = vault.getCurrentDebt();
-    return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
+    return currentDebtToCollateral(vault);
   };
 
   /**
@@ -108,7 +117,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const removeVault = key => {
     const vault = vaults.removeByKey(key);
-    const debtToCollateral = normalizedDebtToCollateral(vault);
+    const debtToCollateral = currentDebtToCollateral(vault);
     if (
       !oracleQueryThreshold ||
       ratioGTE(debtToCollateral, oracleQueryThreshold)
@@ -139,7 +148,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);
 
-    const debtToCollateral = normalizedDebtToCollateral(vault);
+    const debtToCollateral = currentDebtToCollateral(vault);
     rescheduleIfHighest(debtToCollateral);
     return key;
   };
@@ -161,7 +170,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   function* entriesPrioritizedGTE(ratio) {
     // TODO use a Pattern to limit the query https://github.com/Agoric/agoric-sdk/issues/4550
     for (const [key, vault] of vaults.entries()) {
-      const debtToCollateral = normalizedDebtToCollateral(vault);
+      const debtToCollateral = currentDebtToCollateral(vault);
       if (ratioGTE(debtToCollateral, ratio)) {
         yield [key, vault];
       } else {

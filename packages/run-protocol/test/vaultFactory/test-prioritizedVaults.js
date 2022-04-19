@@ -21,34 +21,48 @@ import { reverseInterest } from '../../src/interest-math.js';
 
 const { brand } = makeIssuerKit('ducats');
 const percent = n => makeRatio(BigInt(n), brand);
-let compoundedInterest = makeRatio(100n, brand);
 
-const chargeHundredPercentInterest = () => {
-  compoundedInterest = makeRatio(
-    compoundedInterest.numerator.value * 2n,
-    brand,
-  );
+const makeFakeManager = () => {
+  let compoundedInterest = makeRatio(100n, brand);
+  return {
+    getCompoundedInterest: () => compoundedInterest,
+    chargeHundredPercentInterest: () => {
+      compoundedInterest = makeRatio(
+        compoundedInterest.numerator.value * 2n,
+        brand,
+      );
+    },
+  };
 };
 
 /**
  * @param {VaultId} vaultId
  * @param {Amount<'nat'>} initDebt
- * @param {Amount<'nat'>} initCollateral
+ * @param {Amount<'nat'>} [initCollateral]
+ * @param {*} [manager]
  * @returns {InnerVault & {setDebt: (Amount) => void}}
  */
 export const makeFakeInnerVault = (
   vaultId,
   initDebt,
   initCollateral = AmountMath.make(initDebt.brand, 100n),
+  manager = makeFakeManager(),
 ) => {
-  let normalizedDebt = reverseInterest(initDebt, compoundedInterest);
+  let normalizedDebt = reverseInterest(
+    initDebt,
+    manager.getCompoundedInterest(),
+  );
   let collateral = initCollateral;
   const vault = Far('Vault', {
     getCollateralAmount: () => collateral,
     getNormalizedDebt: () => normalizedDebt,
-    getCurrentDebt: () => floorMultiplyBy(normalizedDebt, compoundedInterest),
+    getCurrentDebt: () =>
+      floorMultiplyBy(normalizedDebt, manager.getCompoundedInterest()),
     setDebt: newDebt =>
-      (normalizedDebt = reverseInterest(newDebt, compoundedInterest)),
+      (normalizedDebt = reverseInterest(
+        newDebt,
+        manager.getCompoundedInterest(),
+      )),
     setCollateral: newCollateral => (collateral = newCollateral),
     getIdInManager: () => vaultId,
     liquidate: () => {},
@@ -284,12 +298,24 @@ test('stable ordering as interest accrues', async t => {
   const reschedulePriceCheck = makeRescheduler();
   const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
 
+  const m = makeFakeManager();
+
   // ACTUAL DEBTS AFTER 100% DAILY INTEREST
   // day 0
   // v1: 10 / 100
   // v2: 20 / 100 HIGHEST
-  const v1 = makeFakeInnerVault('id-fakeVault1', AmountMath.make(brand, 10n));
-  const v2 = makeFakeInnerVault('id-fakeVault2', AmountMath.make(brand, 20n));
+  const v1 = makeFakeInnerVault(
+    'id-fakeVault1',
+    AmountMath.make(brand, 10n),
+    undefined,
+    m,
+  );
+  const v2 = makeFakeInnerVault(
+    'id-fakeVault2',
+    AmountMath.make(brand, 20n),
+    undefined,
+    m,
+  );
   vaults.addVault('id-fakeVault1', v1);
   vaults.addVault('id-fakeVault2', v2);
   // ordering
@@ -303,8 +329,13 @@ test('stable ordering as interest accrues', async t => {
   // v1: 20 / 100 (third)
   // v2: 40 / 100 (first)
   // v3: 30 / 100 (second)
-  chargeHundredPercentInterest();
-  const v3 = makeFakeInnerVault('id-fakeVault3', AmountMath.make(brand, 30n));
+  m.chargeHundredPercentInterest();
+  const v3 = makeFakeInnerVault(
+    'id-fakeVault3',
+    AmountMath.make(brand, 30n),
+    undefined,
+    m,
+  );
   vaults.addVault('id-fakeVault3', v3);
   t.is(v1.getCurrentDebt().value, 20n);
   t.is(v2.getCurrentDebt().value, 40n);
