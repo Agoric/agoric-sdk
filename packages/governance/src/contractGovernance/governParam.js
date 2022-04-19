@@ -63,7 +63,7 @@ const validateParamChangeQuestion = details => {
  * the question described by questionSpec.
  *
  * @param {any} paramSpec
- * @param {QuestionSpec<ParamChangeIssue<any>>} questionSpec
+ * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
   const { parameterName, paramPath } = paramSpec;
@@ -113,7 +113,7 @@ const setupParamGovernance = async (
 
     const { positive, negative } = makeParamChangePositions(changes);
 
-    /** @type {ParamChangeIssue<any>} */
+    /** @type {ParamChangeIssue<unknown>} */
     const issue = harden({
       spec: {
         paramPath: paramSpec.paramPath,

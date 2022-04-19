@@ -66,7 +66,7 @@
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue<any> | ApiInvocationIssue } Issue
+ * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue } Issue
  */
 
 /**
@@ -322,7 +322,7 @@
  */
 
 /**
- * @template P path for a paramManagerRetriever
+ * @template [P=StandardParamPath] path for a paramManagerRetriever
  * @typedef {Object} ParamChangeIssue
  * @property {ParamChangesSpec<P>} spec
  * @property {Instance} contract
@@ -344,7 +344,7 @@
  * @typedef {Object} ParamChangeIssueDetails
  *    details for a question that can change a contract parameter
  * @property {ChoiceMethod} method
- * @property {ParamChangeIssue<any>} issue
+ * @property {ParamChangeIssue<unknown>} issue
  * @property {ParamChangePositions} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices

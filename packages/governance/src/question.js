@@ -57,7 +57,7 @@ const assertSimpleIssue = issue => {
 // eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} issue
- * @returns { asserts issue is ParamChangeIssue<any> }
+ * @returns { asserts issue is ParamChangeIssue<unknown> }
  */
 const assertParamChangeIssue = issue => {
   assert(issue, X`argument to assertParamChangeIssue cannot be null`);
@@ -91,7 +91,7 @@ const assertApiInvocation = issue => {
 // eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {ElectionType} electionType
- * @param {any} issue
+ * @param {unknown} issue
  * @returns { asserts issue is Issue }
  */
 const assertIssueForType = (electionType, issue) => {
