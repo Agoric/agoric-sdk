@@ -31,8 +31,24 @@ test('installInPieces', async t => {
   const installation = await installInPieces(endoPieces, bundler, {
     log: t.log,
     maxBytesInFlight: 200_000,
+    persist: true,
   });
 
   t.is(installation, 'INSTALLATION!');
+  t.deepEqual(installedBundle, endoPieces);
+
+  // preload from persisted entries
+  installedBundle = undefined;
+  const logged = [];
+  const install2 = await installInPieces(endoPieces, bundler, {
+    log: (...args) => {
+      logged.push(`${args[0]}`);
+      t.log(...args);
+    },
+    maxBytesInFlight: 200_000,
+  });
+  t.is(install2, 'INSTALLATION!');
+  const preloaded = logged.filter(s => s.match(/preloaded/));
+  t.true(preloaded.length >= 30);
   t.deepEqual(installedBundle, endoPieces);
 });
