@@ -562,7 +562,7 @@
  */
 
 /**
- * @typedef {{key: string, parameterName: string}} StandardParamPath
+ * @typedef {{key: string}} StandardParamPath
  */
 
 /**
@@ -571,10 +571,12 @@
  */
 
 /**
+ * @template [P=StandardParamPath]
+ *
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
- * @param {ParamChangesSpec<any>} paramSpec
+ * @param {ParamChangesSpec<P>} paramSpec
  * @returns {ContractGovernanceVoteResult}
  */
 
