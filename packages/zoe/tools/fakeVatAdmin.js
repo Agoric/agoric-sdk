@@ -35,11 +35,6 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   /** @type {Store<BundleCap, EndoZipBase64Bundle>} */
   const bundleCapToBundle = makeStore('bundleCapToBundle');
   const fakeVatPowers = {
-    exitVat: completion => {
-      exitMessage = completion;
-      hasExited = true;
-      exitWithFailure = false;
-    },
     exitVatWithFailure: reason => {
       exitMessage = reason;
       hasExited = true;
@@ -68,16 +63,25 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     createVat: bundleCap => {
       assert.equal(bundleCap, zcfBundleCap, 'fakeVatAdmin only knows ZCF');
       const bundle = zcfContractBundle;
+      const exitKit = makePromiseKit();
+      handlePKitWarning(exitKit);
+      const exitVat = completion => {
+        exitMessage = completion;
+        hasExited = true;
+        exitWithFailure = false;
+        exitKit.resolve(completion);
+      };
       return Promise.resolve(
         harden({
           root: makeRemote(
-            E(evalContractBundle(bundle)).buildRootObject(fakeVatPowers),
+            E(evalContractBundle(bundle)).buildRootObject({
+              ...fakeVatPowers,
+              exitVat,
+            }),
           ),
           adminNode: Far('adminNode', {
             done: () => {
-              const kit = makePromiseKit();
-              handlePKitWarning(kit);
-              return kit.promise;
+              return exitKit.promise;
             },
             terminateWithFailure: () => {},
           }),
