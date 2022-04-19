@@ -86,7 +86,7 @@ test.before(async t => {
   // Collect.mapValues(contractRoots, (root, k) => loader.load(root, k)),
   const bundles = await Collect.allValues({
     faucet: loader.load(contractRoots.faucet, 'faucet'),
-    liquidate: loader.load(contractRoots.liquidate, 'liquidateMinimum'),
+    liquidate: loader.load(contractRoots.liquidate, 'liquidateIncrementally'),
     VaultFactory: loader.load(contractRoots.VaultFactory, 'VaultFactory'),
     amm: loader.load(contractRoots.amm, 'amm'),
   });
