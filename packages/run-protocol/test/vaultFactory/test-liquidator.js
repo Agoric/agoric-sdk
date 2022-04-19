@@ -35,10 +35,10 @@ import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // TODO path resolve these so refactors detect
 const contractRoots = {
-  faucet: '../test/vaultFactory/faucet.js',
-  liquidate: '../src/vaultFactory/liquidateIncrementally.js',
-  VaultFactory: '../src/vaultFactory/vaultFactory.js',
-  amm: '../src/vpool-xyk-amm/multipoolMarketMaker.js',
+  faucet: './test/vaultFactory/faucet.js',
+  liquidate: './src/vaultFactory/liquidateIncrementally.js',
+  VaultFactory: './src/vaultFactory/vaultFactory.js',
+  amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
 };
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
@@ -480,8 +480,7 @@ test('price drop', async t => {
 
   await d.setPrice(AmountMath.make(runBrand, 636n));
   trace(t, 'price dropped enough to liquidate');
-  await d.tick();
-  await d.checkNotify(Phase.LIQUIDATING);
+  await d.awaitNotify(Phase.LIQUIDATING);
 
   // Collateral consumed while liquidating
   // Debt remains while liquidating
@@ -558,9 +557,7 @@ test('price falls precipitously', async t => {
 
   // Drop price a lot
   await d.setPrice(AmountMath.make(runBrand, 150n));
-  await d.tick();
-  await d.tick();
-  await d.checkNotify(Phase.LIQUIDATING);
+  await d.awaitNotify(Phase.LIQUIDATING);
   await d.checkVault(debtAmount, AmountMath.makeEmpty(aethBrand));
   // was AmountMath.make(runBrand, 103n)
 
