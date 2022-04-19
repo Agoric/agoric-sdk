@@ -135,3 +135,5 @@
  */
 
 /** @typedef {import('./vault').InnerVault} InnerVault */
+
+/** @typedef {{key: 'governedParams' | {collateralBrand: Brand}}} VaultFactoryParamPath */

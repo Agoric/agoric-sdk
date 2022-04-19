@@ -284,14 +284,14 @@ const makeVaultDirector = (zcf, electorateParamManager, debtMint) => {
   const creatorBehavior = {
     getParamMgrRetriever: () =>
       Far('paramManagerRetriever', {
-        /** @param {{key: 'governedParams' | {collateralBrand: Brand}}} paramDesc */
-        get: paramDesc => {
-          if (paramDesc.key === 'governedParams') {
+        /** @param {VaultFactoryParamPath} paramPath */
+        get: paramPath => {
+          if (paramPath.key === 'governedParams') {
             return electorateParamManager;
-          } else if (paramDesc.key.collateralBrand) {
-            return vaultParamManagers.get(paramDesc.key.collateralBrand);
+          } else if (paramPath.key.collateralBrand) {
+            return vaultParamManagers.get(paramPath.key.collateralBrand);
           } else {
-            assert.fail('Unsupported paramDesc');
+            assert.fail('Unsupported paramPath');
           }
         },
       }),
