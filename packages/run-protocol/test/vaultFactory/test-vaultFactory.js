@@ -1541,6 +1541,7 @@ test('mutable liquidity triggers and interest', async t => {
     runKit: { issuer: runIssuer, brand: runBrand },
     rates: defaultRates,
   } = t.context;
+  t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 90_000_000n);
 
   // Add a vaultManager with 10000 aeth collateral at a 200 aeth/RUN rate
   const rates = harden({
@@ -1562,7 +1563,7 @@ test('mutable liquidity triggers and interest', async t => {
     AmountMath.make(aethBrand, 1n),
     manualTimer,
     SECONDS_PER_WEEK,
-    500n,
+    500_000_000n,
   );
 
   const {
@@ -1573,8 +1574,9 @@ test('mutable liquidity triggers and interest', async t => {
   // initial loans /////////////////////////////////////
 
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
+  // ratio is 4:1
   const aliceCollateralAmount = AmountMath.make(aethBrand, 1000n);
-  const aliceLoanAmount = AmountMath.make(runBrand, 4000n);
+  const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
     E(lender).makeVaultInvitation(),
@@ -1601,7 +1603,7 @@ test('mutable liquidity triggers and interest', async t => {
   ).getCurrentAllocation();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 RUN');
-  trace(t);
+  trace(t, 'alice vault');
 
   const aliceRunLent = await aliceLoanProceeds.RUN;
   t.truthy(
@@ -1613,10 +1615,11 @@ test('mutable liquidity triggers and interest', async t => {
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
-  trace(t);
-  // Create a loan for Bob for 740 RUN with 100 Aeth collateral
+
+  // Create a loan for Bob for 650 RUN with 100 Aeth collateral
+  // 7.4
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
-  const bobLoanAmount = AmountMath.make(runBrand, 400n);
+  const bobLoanAmount = AmountMath.make(runBrand, 650n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
     E(lender).makeVaultInvitation(),
@@ -1632,7 +1635,6 @@ test('mutable liquidity triggers and interest', async t => {
     vault: bobVault,
     publicNotifiers: { vault: bobNotifier },
   } = await E(bobLoanSeat).getOfferResult();
-  trace(t);
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
@@ -1642,7 +1644,7 @@ test('mutable liquidity triggers and interest', async t => {
   const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
   t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 RUN');
-  trace(t);
+  trace(t, 'bob vault');
 
   const bobRunLent = await bobLoanProceeds.RUN;
   t.truthy(
@@ -1666,8 +1668,6 @@ test('mutable liquidity triggers and interest', async t => {
       want: { Collateral: collateralDecrement },
     }),
   );
-  trace(t);
-
   await E(aliceReduceCollateralSeat).getOfferResult();
 
   const { Collateral: aliceWithdrawnAeth } = await E(
@@ -1686,19 +1686,22 @@ test('mutable liquidity triggers and interest', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
+  trace(t, 'alice reduce collateral');
 
-  trace('change price to 7');
   await E(priceAuthority).setPrice(makeRatio(7n, runBrand, 1n, aethBrand));
+  trace(t, 'changed price to 7');
 
   // await manualTimer.tick();
   // price levels changed and interest was charged.
 
   // expect Alice to be liquidated because her collateral is too low.
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
-  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
-  trace('phases', aliceUpdate.value.vaultState, bobUpdate.value.vaultState);
-
+  trace(t, 'alice liquidating?', aliceUpdate.value.vaultState);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
+
+  bobUpdate = await E(bobNotifier).getUpdateSince();
+  trace(t, 'bob not liquidating?', bobUpdate.value.vaultState);
+  t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
 
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
@@ -1707,33 +1710,42 @@ test('mutable liquidity triggers and interest', async t => {
   for (let i = 0; i < 8; i += 1) {
     manualTimer.tick();
   }
+  t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
   trace(
+    t,
     'bob active 2?',
     bobUpdate.value.vaultState,
     await E(bobVault).getCurrentDebt(),
   );
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
-  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'alice liquidated');
 
+  bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(
+    t,
     'bob state?',
     bobUpdate.value.vaultState,
     await E(bobVault).getCurrentDebt(),
   );
+  // 5 days pass
+  manualTimer.tick();
+  manualTimer.tick();
+  manualTimer.tick();
+  manualTimer.tick();
+  await manualTimer.tick();
 
-  for (let i = 0; i < 5; i += 1) {
-    manualTimer.tick();
-  }
-
+  bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(
+    t,
     'bob 2 state?',
     bobUpdate.value.vaultState,
     await E(bobVault).getCurrentDebt(),
   );
 
+  await waitForPromisesToSettle();
+  bobUpdate = await E(bobNotifier).getUpdateSince();
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
   trace(t, 'bob liquidated');
 });
