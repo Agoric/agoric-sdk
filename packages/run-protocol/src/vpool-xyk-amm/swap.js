@@ -1,8 +1,10 @@
 // @ts-check
 
+// @ts-ignore
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';
+// @ts-ignore
 import { AmountMath } from '@agoric/ertp';
 
 /**
@@ -25,18 +27,26 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
+    if (args) {
+      AmountMath.coerce(amountOut.brand, args.maxOut);
+      // TODO check that there are no other keys
+    }
+
     const pool = provideVPool(amountIn.brand, amountOut.brand).internalFacet;
     let prices;
-    const maxOut = args.maxOut;
+    const maxOut = args && args.maxOut;
     if (maxOut) {
       AmountMath.coerce(amountOut.brand, maxOut);
+      // @ts-ignore
       prices = pool.getPriceForOutput(amountIn, maxOut);
     }
     if (!prices || !AmountMath.isGTE(prices.swapperGets, maxOut)) {
       // `amountIn` is not enough to sell for maxOut so just sell it all
+      // @ts-ignore
       prices = pool.getPriceForInput(amountIn, amountOut);
     }
     assert(amountIn.brand === prices.swapperGives.brand);
+    // @ts-ignore
     return pool.allocateGainsAndLosses(seat, prices);
   };
 

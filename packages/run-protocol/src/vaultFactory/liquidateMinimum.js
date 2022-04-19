@@ -49,19 +49,13 @@ const start = async zcf => {
       debtorSeat,
       { maxOut: debt },
     );
-
-    // Multiple awaits coming here. We can't use Promise.all because
-    // offerTo() can return before getOfferResult() is valid, and we can't
-    // check whether swapIn liquidated assets until getOfferResult() returns.
-    // Of course, we also can't exit the seat until one or the other
-    // liquidation takes place.
     const amounts = await deposited;
-    trace(
-      `Liq results`,
+    trace(`Liq results`, {
       debt,
-      debtorSeat.getAmountAllocated('RUN', debtBrand),
+      amountIn,
+      paid: debtorSeat.getCurrentAllocation(),
       amounts,
-    );
+    });
     debtorSeat.exit();
   };
 

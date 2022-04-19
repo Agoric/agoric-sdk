@@ -41,7 +41,7 @@
  * @typedef {Object} DoublePoolInternalFacet - virtual pool for price quotes and trading
  * @property {GetDoublePoolSwapQuote} getPriceForInput
  * @property {GetDoublePoolSwapQuote} getPriceForOutput
- * @property {(seat: ZCFSeat, result: DoublePoolSwapResult) => string} allocateGainsAndLosses
+ * @property {(ZCFSeat, DoublePoolSwapResult) => string} allocateGainsAndLosses
  */
 
 /**
