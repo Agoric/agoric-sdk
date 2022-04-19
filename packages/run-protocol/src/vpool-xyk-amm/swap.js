@@ -47,11 +47,17 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
 
   // trade with a stated amount out.
   const swapOut = seat => {
-    // The offer's amountOut is a minimum; the offeredAmountIn is a max.
+    assertProposalShape(seat, {
+      give: { In: null },
+      want: { Out: null },
+    });
     const {
-      want: { Out: stopAfter },
+      give: { In: amountIn },
+      want: { Out: amountOut },
     } = seat.getProposal();
-    return swapIn(seat, { stopAfter });
+    const pool = provideVPool(amountIn.brand, amountOut.brand).internalFacet;
+    const prices = pool.getPriceForOutput(amountIn, amountOut);
+    return pool.allocateGainsAndLosses(seat, prices);
   };
 
   const makeSwapInInvitation = () =>
