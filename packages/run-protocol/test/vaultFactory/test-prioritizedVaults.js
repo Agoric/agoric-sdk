@@ -4,72 +4,22 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import {
-  floorMultiplyBy,
-  makeRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
-import { Far } from '@endo/marshal';
 import {
-  normalizedDebtToCollateral,
+  currentDebtToCollateral,
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
 import { waitForPromisesToSettle } from '../supports.js';
-import { reverseInterest } from '../../src/interest-math.js';
+import {
+  makeFakeInnerVault,
+  makeCompoundedInterestProvider,
+} from './interestSupport.js';
 
 /** @typedef {import('../../src/vaultFactory/vault.js').InnerVault} InnerVault */
 
 const { brand } = makeIssuerKit('ducats');
 const percent = n => makeRatio(BigInt(n), brand);
-
-const makeFakeManager = () => {
-  let compoundedInterest = makeRatio(100n, brand);
-  return {
-    getCompoundedInterest: () => compoundedInterest,
-    chargeHundredPercentInterest: () => {
-      compoundedInterest = makeRatio(
-        compoundedInterest.numerator.value * 2n,
-        brand,
-      );
-    },
-  };
-};
-
-/**
- * @param {VaultId} vaultId
- * @param {Amount<'nat'>} initDebt
- * @param {Amount<'nat'>} [initCollateral]
- * @param {*} [manager]
- * @returns {InnerVault & {setDebt: (Amount) => void}}
- */
-export const makeFakeInnerVault = (
-  vaultId,
-  initDebt,
-  initCollateral = AmountMath.make(initDebt.brand, 100n),
-  manager = makeFakeManager(),
-) => {
-  let normalizedDebt = reverseInterest(
-    initDebt,
-    manager.getCompoundedInterest(),
-  );
-  let collateral = initCollateral;
-  const vault = Far('Vault', {
-    getCollateralAmount: () => collateral,
-    getNormalizedDebt: () => normalizedDebt,
-    getCurrentDebt: () =>
-      floorMultiplyBy(normalizedDebt, manager.getCompoundedInterest()),
-    setDebt: newDebt =>
-      (normalizedDebt = reverseInterest(
-        newDebt,
-        manager.getCompoundedInterest(),
-      )),
-    setCollateral: newCollateral => (collateral = newCollateral),
-    getIdInManager: () => vaultId,
-    liquidate: () => {},
-  });
-  // @ts-expect-error cast
-  return vault;
-};
 
 function makeCollector() {
   /** @type {Ratio[]} */
@@ -80,7 +30,7 @@ function makeCollector() {
    * @param {[string, InnerVault]} record
    */
   function lookForRatio([_, vault]) {
-    ratios.push(normalizedDebtToCollateral(vault));
+    ratios.push(currentDebtToCollateral(vault));
   }
 
   return {
@@ -298,7 +248,7 @@ test('stable ordering as interest accrues', async t => {
   const reschedulePriceCheck = makeRescheduler();
   const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
 
-  const m = makeFakeManager();
+  const m = makeCompoundedInterestProvider(brand);
 
   // ACTUAL DEBTS AFTER 100% DAILY INTEREST
   // day 0

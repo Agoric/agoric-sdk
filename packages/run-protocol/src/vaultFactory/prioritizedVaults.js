@@ -38,17 +38,6 @@ export const currentDebtToCollateral = vault =>
   );
 
 /**
- *
- * @param {InnerVault} vault
- * @returns {Ratio}
- */
-export const normalizedDebtToCollateral = vault =>
-  calculateDebtToCollateral(
-    vault.getNormalizedDebt(),
-    vault.getCollateralAmount(),
-  );
-
-/**
  * InnerVaults, ordered by their liquidation ratio so that all the
  * vaults below a threshold can be quickly found and liquidated.
  *
