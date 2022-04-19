@@ -1,48 +1,18 @@
 // @ts-check
 /* global setImmediate */
 
-import { E } from '@endo/far';
-import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
-import { makeLoopback } from '@endo/captp';
-
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKit } from '@agoric/zoe';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
+import { makeZoeKit } from '@agoric/zoe';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-
-/**
- *
- * @param {VaultId} vaultId
- * @param {Amount} initDebt
- * @param {Amount} initCollateral
- * @returns {InnerVault & {setDebt: (Amount) => void}}
- */
-export const makeFakeInnerVault = (
-  vaultId,
-  initDebt,
-  initCollateral = AmountMath.make(initDebt.brand, 100n),
-) => {
-  let debt = initDebt;
-  let collateral = initCollateral;
-  const vault = Far('Vault', {
-    getCollateralAmount: () => collateral,
-    getNormalizedDebt: () => debt,
-    getCurrentDebt: () => debt,
-    setDebt: newDebt => (debt = newDebt),
-    setCollateral: newCollateral => (collateral = newCollateral),
-    getIdInManager: () => vaultId,
-    liquidate: () => {},
-  });
-  // @ts-expect-error cast
-  return vault;
-};
+import { makeLoopback } from '@endo/captp';
+import { E } from '@endo/far';
 
 /**
  * @param {*} t

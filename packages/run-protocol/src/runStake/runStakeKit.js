@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 import { Far } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -212,8 +213,8 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     const debt = getCurrentDebt();
     const collateral = getCollateralAllocated(vaultSeat);
 
-    const giveColl = proposal.give[KW.Attestation] || emptyCollateral;
-    const wantColl = proposal.want[KW.Attestation] || emptyCollateral;
+    const giveColl = proposal.give.Attestation || emptyCollateral;
+    const wantColl = proposal.want.Attestation || emptyCollateral;
 
     // new = after the transaction gets applied
     const newCollateral = addSubtract(collateral, giveColl, wantColl);
@@ -221,8 +222,8 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     const { amountLiened, maxDebt: newMaxDebt } =
       manager.maxDebtForLien(newCollateral);
 
-    const giveRUN = AmountMath.min(proposal.give[KW.Debt] || emptyDebt, debt);
-    const wantRUN = proposal.want[KW.Debt] || emptyDebt;
+    const giveRUN = AmountMath.min(proposal.give.Debt || emptyDebt, debt);
+    const wantRUN = proposal.want.Debt || emptyDebt;
     const giveRUNonly = matches(
       proposal,
       harden({ give: { [KW.Debt]: M.record() }, want: {}, exit: M.any() }),

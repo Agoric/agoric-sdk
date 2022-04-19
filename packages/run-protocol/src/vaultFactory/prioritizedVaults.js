@@ -37,8 +37,6 @@ export const currentDebtToCollateral = vault =>
     vault.getCollateralAmount(),
   );
 
-/** @typedef {{debtToCollateral: Ratio, vault: InnerVault}} VaultRecord */
-
 /**
  * InnerVaults, ordered by their liquidation ratio so that all the
  * vaults below a threshold can be quickly found and liquidated.
@@ -95,11 +93,11 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     const [vault] = vaults.values();
     const collateralAmount = vault.getCollateralAmount();
     if (AmountMath.isEmpty(collateralAmount)) {
+      // ??? can currentDebtToCollateral() handle this?
       // Would be an infinite ratio
       return undefined;
     }
-    const actualDebtAmount = vault.getCurrentDebt();
-    return makeRatioFromAmounts(actualDebtAmount, vault.getCollateralAmount());
+    return currentDebtToCollateral(vault);
   };
 
   /**

@@ -6,17 +6,15 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeOrderedVaultStore } from '../../src/vaultFactory/orderedVaultStore.js';
 import { fromVaultKey } from '../../src/vaultFactory/storeUtils.js';
+import { makeFakeInnerVault } from './interestSupport.js';
 
 const brand = Far('brand');
 
-const mockVault = (runCount, collateralCount) => {
+const mockVault = (vaultId, runCount, collateralCount) => {
   const debtAmount = AmountMath.make(brand, runCount);
   const collateralAmount = AmountMath.make(brand, collateralCount);
 
-  return Far('vault', {
-    getCurrentDebt: () => debtAmount,
-    getCollateralAmount: () => collateralAmount,
-  });
+  return makeFakeInnerVault(vaultId, debtAmount, collateralAmount);
 };
 
 const BIGGER_INT = BigInt(Number.MAX_VALUE) + 1n;
@@ -44,8 +42,7 @@ test('ordering', t => {
   const vaults = makeOrderedVaultStore();
 
   for (const [vaultId, runCount, collateralCount] of fixture) {
-    const vault = mockVault(runCount, collateralCount);
-    // @ts-expect-error mock
+    const vault = mockVault(vaultId, runCount, collateralCount);
     vaults.addVault(vaultId, vault);
   }
   const contents = Array.from(vaults.entries());
@@ -58,8 +55,7 @@ test('uniqueness', t => {
   const vaults = makeOrderedVaultStore();
 
   for (const [vaultId, runCount, collateralCount] of fixture) {
-    const vault = mockVault(runCount, collateralCount);
-    // @ts-expect-error mock
+    const vault = mockVault(vaultId, runCount, collateralCount);
     vaults.addVault(vaultId, vault);
   }
   const numberParts = Array.from(vaults.entries()).map(
