@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.14.1...agoric@0.15.0) (2022-04-18)
+
+
+### Features
+
+* **deploy:** add a `lookup(...path)` deploy power ([7a277c3](https://github.com/Agoric/agoric-sdk/commit/7a277c32ccbffe6f0f9e102e44fa807f181629c2))
+
+
+### Bug Fixes
+
+* **agoric:** `pathResolve` also resolves module specifiers ([d83dc64](https://github.com/Agoric/agoric-sdk/commit/d83dc644d91c50b2ab5bbcb45c547956db9fec3f))
+* **agoric-cli:** default voting period of 36h ([4e9dac6](https://github.com/Agoric/agoric-sdk/commit/4e9dac69d830f7db934e2b5aeccc89d648f0a85e))
+* **agoric-cli:** honour `local-chain --no-restart` ([f2a0115](https://github.com/Agoric/agoric-sdk/commit/f2a011537d9d44489d6ad705f45b6c392537f985))
+* **agoric-cli:** increase max mempool transaction size ([2859856](https://github.com/Agoric/agoric-sdk/commit/2859856189f9eca24ef353fde543db0f6e7221d6))
+* **deploy:** make `lookup` compatible with `agoricdev-8` ([3aee329](https://github.com/Agoric/agoric-sdk/commit/3aee3295bba3085f6b03ccb0a97f56b610f8528b))
+
+
+
 ### [0.14.1](https://github.com/Agoric/agoric-sdk/compare/agoric@0.14.0...agoric@0.14.1) (2022-02-24)
 
 **Note:** Version bump only for package agoric

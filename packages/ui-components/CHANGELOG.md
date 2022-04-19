@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.2.31](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.30...@agoric/ui-components@0.2.31) (2022-04-18)
+
+
+### Bug Fixes
+
+* **ui-components:** dont throw on negative nat input ([#5050](https://github.com/Agoric/agoric-sdk/issues/5050)) ([f31c8bd](https://github.com/Agoric/agoric-sdk/commit/f31c8bd6f98c344a373d6c27489199fabe20347b))
+
+
+
 ### [0.2.30](https://github.com/Agoric/agoric-sdk/compare/@agoric/ui-components@0.2.29...@agoric/ui-components@0.2.30) (2022-02-24)
 
 **Note:** Version bump only for package @agoric/ui-components

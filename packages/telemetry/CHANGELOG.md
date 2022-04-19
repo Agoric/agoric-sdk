@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.1.1...@agoric/telemetry@0.2.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **telemetry:** `echo 2022-02-18T12:00:00Z | ./ingest.sh f.slog` ([bede363](https://github.com/Agoric/agoric-sdk/commit/bede363018656bad32b6764a5216acaaf2ca19bc))
+* **telemetry:** upgrade to latest `[@opentelemetry](https://github.com/opentelemetry)` ([de82224](https://github.com/Agoric/agoric-sdk/commit/de82224eb08a40e139f20e74d6f1038e50fbfa40))
+
+
+### Bug Fixes
+
+* **telemetry:** clean up scripts and leave pointers ([1830c55](https://github.com/Agoric/agoric-sdk/commit/1830c55edeb814b79f25f9fbacdbebbac7c2a26f))
+* **telemetry:** count work duration per block, not between blocks ([b95a124](https://github.com/Agoric/agoric-sdk/commit/b95a124d17fca6edf04232f8e3a7eeef196e5b43))
+* **telemetry:** ingest rate limiting ([fd164c8](https://github.com/Agoric/agoric-sdk/commit/fd164c82d56f416309071b85c60da1af34af7821))
+* **telemetry:** rework Prometheus metrics ([38a1922](https://github.com/Agoric/agoric-sdk/commit/38a1922ce2c21e4f31b4a1bedd634bbe627990f9))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
 ### 0.1.1 (2022-02-21)
 
 
