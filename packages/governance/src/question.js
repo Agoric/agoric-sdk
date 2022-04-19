@@ -57,16 +57,16 @@ const assertSimpleIssue = issue => {
 // eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} issue
- * @returns { asserts issue is ParamChangeIssue }
+ * @returns { asserts issue is ParamChangeIssue<any> }
  */
 const assertParamChangeIssue = issue => {
   assert(issue, X`argument to assertParamChangeIssue cannot be null`);
   assert.typeof(issue, 'object', X`Issue ("${issue}") must be a record`);
-  assert(issue?.key, X`Issue ("${issue}") must have a key`);
-  assert(issue?.changes, X`Issue ("${issue}") must have changes`);
+  assert(issue?.spec?.paramPath, X`Issue ("${issue}") must have a paramPath`);
+  assert(issue?.spec?.changes, X`Issue ("${issue}") must have changes`);
 
   assert.typeof(
-    issue.changes,
+    issue.spec.changes,
     'object',
     X`changes ("${issue.changes}") must be a record`,
   );
@@ -91,7 +91,7 @@ const assertApiInvocation = issue => {
 // eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {ElectionType} electionType
- * @param {unknown} issue
+ * @param {any} issue
  * @returns { asserts issue is Issue }
  */
 const assertIssueForType = (electionType, issue) => {

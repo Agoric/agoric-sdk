@@ -26,7 +26,7 @@ const voteToChangeParameter = async (
   deadline,
 ) => {
   const paramChangeSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes: { [MALLEABLE_NUMBER]: 299792458n },
   });
 
@@ -149,7 +149,7 @@ const setupParameterChanges = async (
   changes = { [CONTRACT_ELECTORATE]: invitation },
 ) => {
   const paramChangeSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes,
   });
   const { details, instance, outcomeOfUpdate } = await E(

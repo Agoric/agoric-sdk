@@ -21,8 +21,7 @@ const BAIT = harden({ text: 'Cut Bait' });
 
 const { positive, negative } = makeParamChangePositions({ Arbitrary: 37 });
 const PARAM_CHANGE_ISSUE = harden({
-  key: 'governedParam',
-  changes: { Whatever: 37 },
+  spec: { paramPath: { key: 'governedParam' }, changes: { Whatever: 37 } },
   contract: makeHandle('Instance'),
 });
 
