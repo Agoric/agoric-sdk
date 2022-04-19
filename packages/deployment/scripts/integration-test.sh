@@ -4,6 +4,7 @@ set -ueo pipefail
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
 
+VAT_CONFIG=${VAT_CONFIG-}
 export NETWORK_NAME=${NETWORK_NAME-localtest}
 
 RESULTSDIR=${RESULTSDIR-"$NETWORK_NAME/results"}
@@ -19,7 +20,7 @@ export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
 
 if [ -d /usr/src/testnet-load-generator ]
 then
-  $thisdir/../../solo/bin/ag-solo init \
+  "$thisdir/../../solo/bin/ag-solo" init \
     /usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000 \
     --webport=8000
   SOLO_ADDR=$(cat /usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000/ag-cosmos-helper-address)

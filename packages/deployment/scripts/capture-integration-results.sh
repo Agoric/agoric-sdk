@@ -12,6 +12,7 @@ mkdir -p "$RESULTSDIR"
 
 for node in validator{0,1}; do
   home=/home/ag-chain-cosmos/.ag-chain-cosmos
+  docker logs "ag-chaintest-docker1-$node" > "$RESULTSDIR/$node-docker.log" || true
   "$thisdir/setup.sh" ssh "$node" cat "$home/config/genesis.json" > "$RESULTSDIR/$node-genesis.json" || true
   "$thisdir/setup.sh" ssh "$node" cat "$home/data/chain.slog" > "$RESULTSDIR/$node.slog" || true
   "$thisdir/setup.sh" ssh "$node" cat "$home/data/ag-cosmos-chain-state/flight-recorder.bin" > "$RESULTSDIR/$node-flight-recorder.bin" || true
