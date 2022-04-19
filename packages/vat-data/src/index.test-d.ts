@@ -1,7 +1,12 @@
 /* eslint-disable no-use-before-define, import/no-extraneous-dependencies */
 import { expectType } from 'tsd';
-import { defineKindMulti } from '.';
-import { ActualBehavior, FunctionsMinusContext } from './types.js';
+import {
+  defineKind,
+  defineKindMulti,
+  makeKindHandle,
+  defineDurableKind,
+} from '.';
+import { KindFacets, DurableKindHandle, KindFacet } from './types.js';
 
 /*
 export const makePaymentMaker = (allegedName: string, brand: unknown) => {
@@ -28,22 +33,61 @@ f.concat; // string
 makeFlorg('notnumber');
 */
 
-// From virtual-objects.md
-type CounterContext = {
+// Single-faceted example from virtual-objects.md
+type SingleCounterState = { counter: number; name: string };
+type SingleCounterContext = {
+  state: SingleCounterState;
+};
+const initCounter = (name: string, str: string): SingleCounterState => ({
+  counter: 0,
+  name,
+});
+
+const counterBehavior = {
+  inc: ({ state }: SingleCounterContext) => {
+    state.counter += 1;
+  },
+  dec: ({ state }: SingleCounterContext) => {
+    state.counter -= 1;
+  },
+  reset: ({ state }: SingleCounterContext) => {
+    state.counter = 0;
+  },
+  rename: ({ state }: SingleCounterContext, newName: string) => {
+    state.name = newName;
+  },
+  getCount: ({ state }: SingleCounterContext) => state.counter,
+  getName: ({ state }: SingleCounterContext) => state.name,
+};
+
+const finishCounter = (
+  { state }: SingleCounterContext,
+  counter: KindFacet<typeof counterBehavior>,
+) => {
+  expectType<string>(state.name);
+  expectType<number>(counter.getCount());
+};
+
+const makeCounter = defineKind('counter', initCounter, counterBehavior, {
+  finish: finishCounter,
+});
+
+// Multi-faceted example from virtual-objects.md
+type MultiCounterContext = {
   state: ReturnType<typeof initFacetedCounter>;
-  facets: ActualBehavior<typeof facetedCounterBehavior>;
+  facets: KindFacets<typeof facetedCounterBehavior>;
 };
 const initFacetedCounter = () => ({ counter: 0 });
-const getCount = ({ state }: CounterContext) => state.counter;
+const getCount = ({ state }: MultiCounterContext) => state.counter;
 const facetedCounterBehavior = {
   incr: {
-    step: ({ state }: CounterContext) => {
+    step: ({ state }: MultiCounterContext) => {
       state.counter += 1;
     },
     getCount,
   },
   decr: {
-    step: (context: CounterContext) => {
+    step: (context: MultiCounterContext) => {
       // Destructure within method because doing so in params creates a circular reference
       const { state, facets } = context;
       const { other } = facets;
@@ -54,7 +98,7 @@ const facetedCounterBehavior = {
   },
   other: {
     emptyFn: () => null,
-    echo: (context: CounterContext, toEcho: string) => toEcho,
+    echo: (context: MultiCounterContext, toEcho: string) => toEcho,
   },
 };
 
@@ -74,3 +118,16 @@ expectType<string>(fc.other.echo('foo'));
 // @ts-expect-error missing method
 fc.incr.echo('foo');
 expectType<null>(fc.other.emptyFn());
+
+// durable kind
+const fooHandle = makeKindHandle('foo');
+expectType<DurableKindHandle>(fooHandle);
+const fooInit = (name: string) => ({ name });
+const fooBehavior = {
+  sayHi: ({ state }: { state: { name: string } }) => `Howdy, ${state.name}`,
+};
+const makeFoo = defineDurableKind(fooHandle, fooInit, fooBehavior);
+const foo = makeFoo('Doody');
+expectType<string>(foo.sayHi());
+// @ts-expect-error missing method
+foo.sayBye();

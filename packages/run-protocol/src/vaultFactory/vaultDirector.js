@@ -258,7 +258,6 @@ const makeVaultDirector = (zcf, electorateParamManager, debtMint) => {
         zcf.getTerms().priceAuthority,
         factoryPowers,
         timerService,
-        // @ts-expect-error
         liquidationStrategy,
         penaltyPoolSeat,
         startTimeStamp,
