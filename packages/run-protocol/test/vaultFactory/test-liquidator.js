@@ -24,7 +24,12 @@ import {
 import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
 
-import { makeBundle, setUpZoeForTest, setupBootstrap } from '../supports.js';
+import {
+  setUpZoeForTest,
+  setupBootstrap,
+  installGovernance,
+} from '../supports.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // #region Support
 
@@ -70,19 +75,27 @@ function defaultParamValues(debtBrand) {
   });
 }
 
-// makeBundle is a slow step, so we do it once for all the tests.
 test.before(async t => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   const aethKit = makeIssuerKit('aEth');
+  const loader = await unsafeMakeBundleCache('./bundles/'); // package-relative
+
+  // note that the liquidation might be a different bundle name
+  // Collect.mapValues(contractRoots, (root, k) => loader.load(root, k)),
+  const bundles = await Collect.allValues({
+    faucet: loader.load(contractRoots.faucet, 'faucet'),
+    liquidate: loader.load(contractRoots.liquidate, 'liquidateMinimum'),
+    VaultFactory: loader.load(contractRoots.VaultFactory, 'VaultFactory'),
+    amm: loader.load(contractRoots.amm, 'amm'),
+  });
+  const installation = Collect.mapValues(bundles, bundle =>
+    E(zoe).install(bundle),
+  );
   const contextPs = {
-    bundles: {
-      faucet: makeBundle(contractRoots.faucet),
-      liquidate: makeBundle(contractRoots.liquidate),
-      VaultFactory: makeBundle(contractRoots.VaultFactory),
-      amm: makeBundle(contractRoots.amm),
-    },
+    bundles,
+    installation,
     zoe,
     feeMintAccess,
     aethKit,
@@ -92,8 +105,8 @@ test.before(async t => {
       recordingPeriod: 6n,
     },
     rates: defaultParamValues(runBrand),
-    aethInitialLiquidity: AmountMath.make(aethKit.brand, 300_000_000n),
-    runInitialLiquidity: AmountMath.make(runBrand, 500_000_000n),
+    aethInitialLiquidity: AmountMath.make(aethKit.brand, 900_000_000n),
+    runInitialLiquidity: AmountMath.make(runBrand, 1_500_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
   t.context = { ...frozenCtx };
@@ -105,13 +118,13 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
     zoe,
     aethKit: { issuer: aethIssuer },
     electorateTerms,
-    bundles: { amm },
     timer,
   } = t.context;
 
   const space = setupBootstrap(t, timer);
-  const { produce, consume, instance } = space;
-  produce.ammBundle.resolve(amm);
+  const { consume, instance } = space;
+  installGovernance(zoe, space.installation.produce);
+  space.installation.produce.amm.resolve(t.context.installation.amm);
   startEconomicCommittee(space, electorateTerms);
   setupAmm(space);
 
@@ -163,13 +176,12 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
  */
 const getRunFromFaucet = async (t, runInitialLiquidity) => {
   const {
-    bundles: { faucet: bundle },
+    installation: { faucet: installation },
     zoe,
     feeMintAccess,
   } = t.context;
   /** @type {Promise<Installation<import('./faucet.js').start>>} */
   // @ts-expect-error cast
-  const installation = E(zoe).install(bundle);
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     installation,
@@ -207,7 +219,6 @@ async function setupServices(
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
     aethKit: { brand: aethBrand, issuer: aethIssuer, mint: aethMint },
-    bundles: { VaultFactory, liquidate },
     loanTiming,
     rates,
     aethInitialLiquidity,
@@ -235,23 +246,21 @@ async function setupServices(
 
   const quoteMint = makeIssuerKit('quote', AssetKind.SET).mint;
   // Cheesy hack for easy use of manual price authority
-  const pa = makeManualPriceAuthority({
+  const priceAuthority = makeManualPriceAuthority({
     actualBrandIn: aethBrand,
     actualBrandOut: runBrand,
     initialPrice: makeRatioFromAmounts(initialPrice, priceBase),
     timer,
     quoteMint,
   });
-  produce.priceAuthority.resolve(pa);
+  produce.priceAuthority.resolve(priceAuthority);
 
-  produce.vaultBundles.resolve({ VaultFactory, liquidate });
+  const {
+    installation: { produce: iProduce },
+  } = space;
+  iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
+  iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming });
-
-  const agoricNames = consume.agoricNames;
-  const installs = await Collect.allValues({
-    vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
-    liquidate: E(agoricNames).lookup('installation', 'liquidate'),
-  });
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
@@ -268,19 +277,13 @@ async function setupServices(
 
   /** @type {[any, VaultFactory, VFC['publicFacet']]} */
   // @ts-expect-error cast
-  const [
-    governorInstance,
-    vaultFactory,
-    lender,
-    aethVaultManager,
-    priceAuthority,
-  ] = await Promise.all([
-    E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
-    vaultFactoryCreatorFacet,
-    E(governorCreatorFacet).getPublicFacet(),
-    aethVaultManagerP,
-    pa,
-  ]);
+  const [governorInstance, vaultFactory, lender, aethVaultManager] =
+    await Promise.all([
+      E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
+      vaultFactoryCreatorFacet,
+      E(governorCreatorFacet).getPublicFacet(),
+      aethVaultManagerP,
+    ]);
   trace(t, 'pa', { governorInstance, vaultFactory, lender, priceAuthority });
 
   const { g, v } = {
@@ -298,13 +301,12 @@ async function setupServices(
 
   return {
     zoe,
-    installs,
+    // installs,
     governor: g,
     vaultFactory: v,
     ammFacets,
     runKit: { issuer: runIssuer, brand: runBrand },
     priceAuthority,
-    setPrice: p => pa.setPrice(makeRatioFromAmounts(p, priceBase)),
   };
 }
 // #endregion
@@ -317,14 +319,16 @@ async function setupServices(
 // stall then trade the amm back to the price
 
 // #region driver
-const makeDriver = (t, services) => {
+const makeDriver = async (t, initialPrice, priceBase) => {
+  const services = await setupServices(t, initialPrice, priceBase);
   const {
     zoe,
     aethKit: { mint: aethMint, issuer: aethIssuer },
     runKit: { issuer: runIssuer },
   } = t.context;
   const {
-    vaultFactory: { lender },
+    vaultFactory: { lender, vaultFactory },
+    priceAuthority,
   } = services;
   /** @type {UserSeat<VaultKit>} */
   let vaultSeat;
@@ -334,10 +338,20 @@ const makeDriver = (t, services) => {
   let lastSeat;
   let notifier;
   let notification = {};
+  let lastOfferResult;
   const driver = {
     vault: () => vault,
     vaultSeat: () => vaultSeat,
     notification: () => notification,
+    lastSeat: () => lastSeat,
+    lastOfferResult: () => lastOfferResult,
+    timer: () => t.context.timer,
+    tick: (ticks = 1) => {
+      for (let i = 0; i < ticks; i += 1) {
+        t.context.timer.tick();
+      }
+    },
+
     makeVault: async (collateral, debt) => {
       vaultSeat = await E(zoe).offer(
         await E(lender).makeVaultInvitation(),
@@ -360,8 +374,8 @@ const makeDriver = (t, services) => {
     },
     close: async () => {
       lastSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
-      const res = await E(lastSeat).getOfferResult();
-      t.is(res, 'your loan is closed, thank you for your business');
+      lastOfferResult = await E(lastSeat).getOfferResult();
+      t.is(lastOfferResult, 'your loan is closed, thank you for your business');
       t.truthy(await E(vaultSeat).hasExited());
     },
     checkNotify: async (phase, expected) => {
@@ -387,17 +401,31 @@ const makeDriver = (t, services) => {
       t.deepEqual(await E(vault).getCurrentDebt(), expectedDebt);
       t.deepEqual(await E(vault).getCollateralAmount(), expectedAEth);
     },
-    sellOnAMM: async (give, want) => {
+    checkRewards: async expectedRUN => {
+      t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
+        RUN: expectedRUN,
+      });
+    },
+    sellOnAMM: async (give, want, optMaxOut, expected) => {
       const swapInvitation = E(
         services.ammFacets.ammPublicFacet,
       ).makeSwapInvitation();
-      const proposal = harden({ give: { In: give }, want: { Out: want } });
-      await E(zoe).offer(
+      trace(t, 'AMM sell', { give, want, optMaxOut });
+      const offerArgs = optMaxOut ? harden({ maxOut: optMaxOut }) : undefined;
+      lastSeat = await E(zoe).offer(
         await swapInvitation,
-        proposal,
+        harden({ give: { In: give }, want: { Out: want } }),
         harden({ In: aethMint.mintPayment(give) }),
+        offerArgs,
       );
+      lastOfferResult = await E(lastSeat).getOfferResult();
+      if (expected) {
+        const payouts = await E(lastSeat).getCurrentAllocation();
+        trace(t, 'AMM payouts', payouts);
+        t.like(payouts, expected);
+      }
     },
+    setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
   };
   return driver;
 };
@@ -409,7 +437,6 @@ test('price drop', async t => {
     runKit: { brand: runBrand },
     rates,
   } = t.context;
-
   // When the price falls to 636, the loan will get liquidated. 636 for 900
   // Aeth is 1.4 each. The loan is 270 RUN. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.
@@ -418,20 +445,11 @@ test('price drop', async t => {
     recordingPeriod: 10n,
   };
 
-  const manualTimer = buildManualTimer(t.log);
-  const services = await setupServices(
+  const d = await makeDriver(
     t,
     AmountMath.make(runBrand, 1000n),
     AmountMath.make(aethBrand, 900n),
-    manualTimer,
   );
-  trace(t, 'setup');
-  const {
-    vaultFactory: { vaultFactory },
-    setPrice,
-  } = services;
-  const d = makeDriver(t, services);
-
   // Create a loan for 270 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
   const loanAmount = AmountMath.make(runBrand, 270n);
@@ -455,14 +473,14 @@ test('price drop', async t => {
   await d.checkVault(debtAmount, collateralAmount);
 
   // small change doesn't cause liquidation
-  await setPrice(AmountMath.make(runBrand, 677n));
+  await d.setPrice(AmountMath.make(runBrand, 677n));
   trace(t, 'price dropped a little');
-  await manualTimer.tick();
+  await d.tick();
   await d.checkNotify(Phase.ACTIVE);
 
-  await setPrice(AmountMath.make(runBrand, 636n));
+  await d.setPrice(AmountMath.make(runBrand, 636n));
   trace(t, 'price dropped enough to liquidate');
-  await manualTimer.tick();
+  await d.tick();
   await d.checkNotify(Phase.LIQUIDATING);
 
   // Collateral consumed while liquidating
@@ -473,9 +491,7 @@ test('price drop', async t => {
   await d.awaitNotify(Phase.LIQUIDATED, { locked: collateralExpected });
   await d.checkVault(debtExpected, collateralExpected);
 
-  t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-    RUN: AmountMath.make(runBrand, 14n),
-  });
+  await d.checkRewards(AmountMath.make(runBrand, 14n));
 
   await d.close();
   await d.checkNotify(Phase.CLOSED, {
@@ -496,30 +512,11 @@ test('price falls precipitously', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 900_000_000n);
-  t.context.runInitialLiquidity = AmountMath.make(runBrand, 1_500_000_000n);
-
-  // The borrower will deposit 4 Aeth, and ask to borrow 470 RUN. The
-  // PriceAuthority's initial quote is 180. The max loan on 4 Aeth would be 600
-  // (to make the margin 20%).
-  // When the price falls to 123, the loan will get liquidated. At that point, 4
-  // Aeth is worth 492, with a 5% margin, 493 is required.
-  // The Autowap provides 534 RUN for the 4 Aeth collateral, so the borrower
-  // gets 41 back
-
-  const manualTimer = buildManualTimer(t.log);
-  const services = await setupServices(
+  const d = await makeDriver(
     t,
     AmountMath.make(runBrand, 2200n),
     AmountMath.make(aethBrand, 900n),
-    manualTimer,
   );
-  const {
-    vaultFactory: { vaultFactory },
-    setPrice,
-  } = services;
-  const d = makeDriver(t, services);
-
   // Create a loan for 370 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
   const loanAmount = AmountMath.make(runBrand, 370n);
@@ -549,20 +546,20 @@ test('price falls precipitously', async t => {
   );
 
   // [2200n, 19180n, 1650n, 150n],
-  await setPrice(AmountMath.make(runBrand, 19180n));
+  await d.setPrice(AmountMath.make(runBrand, 19180n));
   await d.checkVault(debtAmount, collateralAmount);
-  await manualTimer.tick();
+  await d.tick();
   await d.checkNotify(Phase.ACTIVE);
 
-  await setPrice(AmountMath.make(runBrand, 1650n));
-  await manualTimer.tick();
+  await d.setPrice(AmountMath.make(runBrand, 1650n));
+  await d.tick();
   await d.checkVault(debtAmount, collateralAmount);
   await d.checkNotify(Phase.ACTIVE);
 
   // Drop price a lot
-  await setPrice(AmountMath.make(runBrand, 150n));
-  await manualTimer.tick();
-  await manualTimer.tick();
+  await d.setPrice(AmountMath.make(runBrand, 150n));
+  await d.tick();
+  await d.tick();
   await d.checkNotify(Phase.LIQUIDATING);
   await d.checkVault(debtAmount, AmountMath.makeEmpty(aethBrand));
   // was AmountMath.make(runBrand, 103n)
@@ -575,9 +572,7 @@ test('price falls precipitously', async t => {
   await d.awaitNotify(Phase.LIQUIDATED, { locked: collateralExpected });
   await d.checkVault(debtExpected, collateralExpected);
 
-  t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
-    RUN: AmountMath.make(runBrand, 19n),
-  });
+  await d.checkRewards(AmountMath.make(runBrand, 19n));
 
   await d.close();
   await d.checkNotify(Phase.CLOSED, {
@@ -586,4 +581,65 @@ test('price falls precipitously', async t => {
   });
   await d.checkPayouts(debtExpected, collateralExpected);
   await d.checkVault(debtExpected, AmountMath.makeEmpty(aethBrand));
+});
+
+// 1) `give` sells for more than `maxOut`, and got some of the input back
+test('amm maxOut - input back', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+    runKit: { brand: runBrand },
+  } = t.context;
+  const d = await makeDriver(
+    t,
+    AmountMath.make(runBrand, 2_199n),
+    AmountMath.make(aethBrand, 999n),
+  );
+  const give = AmountMath.make(aethBrand, 100n);
+  const want = AmountMath.make(runBrand, 80n);
+  const maxOut = AmountMath.make(runBrand, 100n);
+  const expectedAeth = AmountMath.make(aethBrand, 38n);
+  const expectedRUN = maxOut;
+  await d.sellOnAMM(give, want, maxOut, { In: expectedAeth, Out: expectedRUN });
+});
+
+// 2) `give` wouldn't have sold for `maxOut`, so sell it all
+test('amm maxOut - shortfall', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+    runKit: { brand: runBrand },
+  } = t.context;
+  // uses off-by-one amounts to force rounding errors
+  const d = await makeDriver(
+    t,
+    AmountMath.make(runBrand, 2_199n),
+    AmountMath.make(aethBrand, 999n),
+  );
+  const give = AmountMath.make(aethBrand, 100n);
+  const want = AmountMath.make(runBrand, 80n);
+  // 164 is the most I could get
+  const maxOut = AmountMath.make(runBrand, 180n);
+  const expectedAeth = AmountMath.makeEmpty(aethBrand);
+  const expectedRUN = AmountMath.make(runBrand, 164n);
+  await d.sellOnAMM(give, want, maxOut, { In: expectedAeth, Out: expectedRUN });
+});
+
+// 3) wouldn't have sold for enough, so sold everything,
+//    and that still wasn't enough for `want.Out`
+test('amm maxOut - want too much', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+    runKit: { brand: runBrand },
+  } = t.context;
+  // uses off-by-one amounts to force rounding errors
+  const d = await makeDriver(
+    t,
+    AmountMath.make(runBrand, 2_199n),
+    AmountMath.make(aethBrand, 999n),
+  );
+  const give = AmountMath.make(aethBrand, 100n);
+  const want = AmountMath.make(runBrand, 170n);
+  const maxOut = AmountMath.make(runBrand, 180n);
+  const expectedAeth = give;
+  const expectedRUN = AmountMath.makeEmpty(runBrand);
+  await d.sellOnAMM(give, want, maxOut, { In: expectedAeth, Out: expectedRUN });
 });

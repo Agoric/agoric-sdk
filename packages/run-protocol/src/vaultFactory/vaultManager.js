@@ -307,7 +307,7 @@ const helperBehavior = {
       prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
     await (next ? facets.helper.liquidateAndRemove(next) : null);
 
-    trace('price check liq', next);
+    trace('price check liq', next && next[0]);
 
     await facets.helper.reschedulePriceCheck();
   },

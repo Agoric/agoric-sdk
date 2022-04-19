@@ -5,7 +5,7 @@ const { entries, fromEntries, keys, values } = Object;
 /** @type { <K extends string, T, U>(obj: Record<K, T>, f: (t: T) => U) => Record<K, U>} */
 export const mapValues = (obj, f) =>
   // @ts-ignore entries() loses the K type
-  harden(fromEntries(entries(obj).map(([p, v]) => [p, f(v)])));
+  harden(fromEntries(entries(obj).map(([p, v]) => [p, f(v, p)])));
 
 /** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 export const zip = (xs, ys) => harden(xs.map((x, i) => [x, ys[+i]]));
