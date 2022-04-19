@@ -93,19 +93,16 @@ test.before(async t => {
   const runBrand = E(runIssuer).getBrand();
   const aethKit = makeIssuerKit('aEth');
   const loader = await unsafeMakeBundleCache('./bundles/'); // package-relative
-
-  const bundles = {
-    faucet: await loader.load(contractRoots.faucet, 'faucet'),
-    liquidate: await loader.load(contractRoots.liquidate, 'liquidateMinimum'),
-    VaultFactory: await loader.load(contractRoots.VaultFactory, 'VaultFactory'),
-    amm: await loader.load(contractRoots.amm, 'amm'),
-  };
-  const installation = {
-    faucet: E(zoe).install(bundles.faucet),
-    liquidate: E(zoe).install(bundles.liquidate),
-    VaultFactory: E(zoe).install(bundles.VaultFactory),
-    amm: E(zoe).install(bundles.amm),
-  };
+  // note that the liquidation might be a different bundle name
+  const bundles = await Collect.allValues({
+    faucet: loader.load(contractRoots.faucet, 'faucet'),
+    liquidate: loader.load(contractRoots.liquidate, 'liquidateMinimum'),
+    VaultFactory: loader.load(contractRoots.VaultFactory, 'VaultFactory'),
+    amm: loader.load(contractRoots.amm, 'amm'),
+  });
+  const installation = Collect.mapValues(bundles, bundle =>
+    E(zoe).install(bundle),
+  );
 
   const contextPs = {
     zoe,
@@ -113,10 +110,6 @@ test.before(async t => {
     bundles,
     installation,
     electorateTerms: undefined,
-    // {
-    //   committeeName: 'Star Chamber',
-    //   committeeSize: 3,
-    // },
     aethKit,
     runKit: { issuer: runIssuer, brand: runBrand },
     loanTiming: {
@@ -272,35 +265,29 @@ async function setupServices(
   // Cheesy hack for easy use of manual price authority
   const pa = Array.isArray(priceOrList)
     ? makeScriptedPriceAuthority({
-        actualBrandIn: aethBrand,
-        actualBrandOut: runBrand,
-        priceList: priceOrList,
-        timer,
-        quoteMint,
-        unitAmountIn,
-        quoteInterval,
-      })
+      actualBrandIn: aethBrand,
+      actualBrandOut: runBrand,
+      priceList: priceOrList,
+      timer,
+      quoteMint,
+      unitAmountIn,
+      quoteInterval,
+    })
     : makeManualPriceAuthority({
-        actualBrandIn: aethBrand,
-        actualBrandOut: runBrand,
-        initialPrice: priceOrList,
-        timer,
-        quoteMint,
-      });
+      actualBrandIn: aethBrand,
+      actualBrandOut: runBrand,
+      initialPrice: priceOrList,
+      timer,
+      quoteMint,
+    });
   produce.priceAuthority.resolve(pa);
 
   const {
-    installation: { produce: instProd },
+    installation: { produce: iProduce },
   } = space;
-  instProd.VaultFactory.resolve(t.context.installation.VaultFactory);
-  instProd.liquidate.resolve(t.context.installation.liquidate);
+  iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
+  iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming });
-
-  const agoricNames = consume.agoricNames;
-  const installs = await Collect.allValues({
-    vaultFactory: E(agoricNames).lookup('installation', 'VaultFactory'),
-    liquidate: E(agoricNames).lookup('installation', 'liquidate'),
-  });
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
@@ -314,7 +301,6 @@ async function setupServices(
     'AEth',
     rates,
   );
-
   /** @type {[any, VaultFactory, VFC['publicFacet']]} */
   // @ts-expect-error cast
   const [
@@ -324,7 +310,7 @@ async function setupServices(
     aethVaultManager,
     priceAuthority,
   ] = await Promise.all([
-    E(agoricNames).lookup('instance', 'VaultFactoryGovernor'),
+    E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
     vaultFactoryCreatorFacet,
     E(governorCreatorFacet).getPublicFacet(),
     aethVaultManagerP,
@@ -347,7 +333,6 @@ async function setupServices(
 
   return {
     zoe,
-    installs,
     governor: g,
     vaultFactory: v,
     ammFacets,
@@ -592,7 +577,6 @@ test('price drop', async t => {
   notification = await E(vaultNotifier).getUpdateSince(
     notification.updateCount,
   );
-  t.falsy(notification.updateCount);
   t.is(notification.value.vaultState, Phase.LIQUIDATED);
 
   t.truthy(await E(vaultSeat).hasExited());
@@ -731,9 +715,9 @@ test('price falls precipitously', async t => {
   await waitForPromisesToSettle();
   // An emergency liquidation got less than full value
   const debtAfterLiquidation = await E(vault).getCurrentDebt();
-  t.is(
-    debtAfterLiquidation.value,
-    103n,
+  t.deepEqual(
+    debtAfterLiquidation,
+    AmountMath.make(runBrand, 103n),
     `Expected ${debtAfterLiquidation.value} to be less than 110`,
   );
 
@@ -1574,20 +1558,23 @@ test('mutable liquidity triggers and interest', async t => {
   const manualTimer = buildManualTimer(t.log, 0n, SECONDS_PER_WEEK);
   const services = await setupServices(
     t,
-    [10n, 7n],
+    makeRatio(10n, runBrand, 1n, aethBrand),
     AmountMath.make(aethBrand, 1n),
     manualTimer,
     SECONDS_PER_WEEK,
     500n,
   );
 
-  const { lender } = services.vaultFactory;
+  const {
+    vaultFactory: { lender },
+    priceAuthority,
+  } = services;
 
   // initial loans /////////////////////////////////////
 
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
   const aliceCollateralAmount = AmountMath.make(aethBrand, 1000n);
-  const aliceLoanAmount = AmountMath.make(runBrand, 5000n);
+  const aliceLoanAmount = AmountMath.make(runBrand, 4000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
     E(lender).makeVaultInvitation(),
@@ -1614,21 +1601,22 @@ test('mutable liquidity triggers and interest', async t => {
   ).getCurrentAllocation();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
   t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 RUN');
+  trace(t);
 
   const aliceRunLent = await aliceLoanProceeds.RUN;
   t.truthy(
     AmountMath.isEqual(
       await E(runIssuer).getAmountOf(aliceRunLent),
-      AmountMath.make(runBrand, 5000n),
+      aliceLoanAmount,
     ),
   );
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
-
+  trace(t);
   // Create a loan for Bob for 740 RUN with 100 Aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
-  const bobLoanAmount = AmountMath.make(runBrand, 740n);
+  const bobLoanAmount = AmountMath.make(runBrand, 400n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
     E(lender).makeVaultInvitation(),
@@ -1644,6 +1632,7 @@ test('mutable liquidity triggers and interest', async t => {
     vault: bobVault,
     publicNotifiers: { vault: bobNotifier },
   } = await E(bobLoanSeat).getOfferResult();
+  trace(t);
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
   const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
@@ -1653,12 +1642,13 @@ test('mutable liquidity triggers and interest', async t => {
   const { RUN: bobLentAmount } = await E(bobLoanSeat).getCurrentAllocation();
   const bobLoanProceeds = await E(bobLoanSeat).getPayouts();
   t.deepEqual(bobLentAmount, bobLoanAmount, 'received 5000 RUN');
+  trace(t);
 
   const bobRunLent = await bobLoanProceeds.RUN;
   t.truthy(
     AmountMath.isEqual(
       await E(runIssuer).getAmountOf(bobRunLent),
-      AmountMath.make(runBrand, 740n),
+      bobLoanAmount,
     ),
   );
 
@@ -1676,6 +1666,7 @@ test('mutable liquidity triggers and interest', async t => {
       want: { Collateral: collateralDecrement },
     }),
   );
+  trace(t);
 
   await E(aliceReduceCollateralSeat).getOfferResult();
 
@@ -1696,11 +1687,18 @@ test('mutable liquidity triggers and interest', async t => {
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
-  await manualTimer.tick();
+  trace('change price to 7');
+  await E(priceAuthority).setPrice(makeRatio(7n, runBrand, 1n, aethBrand));
+
+  // await manualTimer.tick();
   // price levels changed and interest was charged.
 
   // expect Alice to be liquidated because her collateral is too low.
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
+  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
+  trace('phases', aliceUpdate.value.vaultState, bobUpdate.value.vaultState);
+
+  t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
 
   // Bob's loan is now 777 RUN (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
@@ -1709,18 +1707,35 @@ test('mutable liquidity triggers and interest', async t => {
   for (let i = 0; i < 8; i += 1) {
     manualTimer.tick();
   }
-  await waitForPromisesToSettle();
+  trace(
+    'bob active 2?',
+    bobUpdate.value.vaultState,
+    await E(bobVault).getCurrentDebt(),
+  );
+
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
+  trace(t, 'alice liquidated');
+
+  trace(
+    'bob state?',
+    bobUpdate.value.vaultState,
+    await E(bobVault).getCurrentDebt(),
+  );
 
   for (let i = 0; i < 5; i += 1) {
     manualTimer.tick();
   }
-  await waitForPromisesToSettle();
-  bobUpdate = await E(bobNotifier).getUpdateSince(bobUpdate.updateCount);
+
+  trace(
+    'bob 2 state?',
+    bobUpdate.value.vaultState,
+    await E(bobVault).getCurrentDebt(),
+  );
 
   t.is(bobUpdate.value.vaultState, Phase.LIQUIDATED);
+  trace(t, 'bob liquidated');
 });
 
 test('bad chargingPeriod', async t => {
@@ -1821,6 +1836,7 @@ test('collect fees from loan and AMM', async t => {
   await E(collectFeesSeat).getOfferResult();
   const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
     .RUN;
+  trace(t, 'Fee', feePoolBalance, feePayoutAmount);
   t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.RUN));
 });
 
