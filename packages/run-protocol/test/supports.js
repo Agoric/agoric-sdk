@@ -1,60 +1,18 @@
 // @ts-check
 /* global setImmediate */
 
-import { E } from '@endo/far';
-import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
-import { makeLoopback } from '@endo/captp';
-
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKit } from '@agoric/zoe';
+import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
+import { makeZoeKit } from '@agoric/zoe';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import {
-  floorMultiplyBy,
-  makeRatio,
-} from '@agoric/zoe/src/contractSupport/ratio.js';
-import { reverseInterest } from '../src/interest-math.js';
-
-/**
- * @param {VaultId} vaultId
- * @param {Amount<'nat'>} initDebt
- * @param {Amount<'nat'>} initCollateral
- * @returns {InnerVault & {chargeHundredPercentInterest: () => void, setDebt: (Amount) => void}}
- */
-export const makeFakeInnerVault = (
-  vaultId,
-  initDebt,
-  initCollateral = AmountMath.make(initDebt.brand, 100n),
-) => {
-  let compoundedInterest = makeRatio(100n, initDebt.brand);
-  let normalizedDebt = initDebt;
-  let collateral = initCollateral;
-  const vault = Far('Vault', {
-    chargeHundredPercentInterest: () => {
-      compoundedInterest = makeRatio(
-        compoundedInterest.numerator.value * 2n,
-        initDebt.brand,
-      );
-    },
-    getCollateralAmount: () => collateral,
-    getNormalizedDebt: () => normalizedDebt,
-    getCurrentDebt: () => floorMultiplyBy(normalizedDebt, compoundedInterest),
-    setDebt: newDebt =>
-      (normalizedDebt = reverseInterest(newDebt, compoundedInterest)),
-    setCollateral: newCollateral => (collateral = newCollateral),
-    getIdInManager: () => vaultId,
-    liquidate: () => {},
-  });
-  // @ts-expect-error cast
-  return vault;
-};
+import { makeLoopback } from '@endo/captp';
+import { E } from '@endo/far';
 
 /**
  * @param {*} t

@@ -4,15 +4,58 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  floorMultiplyBy,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 
+import { Far } from '@endo/marshal';
 import {
   normalizedDebtToCollateral,
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
-import { makeFakeInnerVault, waitForPromisesToSettle } from '../supports.js';
+import { waitForPromisesToSettle } from '../supports.js';
+import { reverseInterest } from '../../src/interest-math.js';
 
 /** @typedef {import('../../src/vaultFactory/vault.js').InnerVault} InnerVault */
+
+const { brand } = makeIssuerKit('ducats');
+const percent = n => makeRatio(BigInt(n), brand);
+let compoundedInterest = makeRatio(100n, brand);
+
+const chargeHundredPercentInterest = () => {
+  compoundedInterest = makeRatio(
+    compoundedInterest.numerator.value * 2n,
+    brand,
+  );
+};
+
+/**
+ * @param {VaultId} vaultId
+ * @param {Amount<'nat'>} initDebt
+ * @param {Amount<'nat'>} initCollateral
+ * @returns {InnerVault & {setDebt: (Amount) => void}}
+ */
+export const makeFakeInnerVault = (
+  vaultId,
+  initDebt,
+  initCollateral = AmountMath.make(initDebt.brand, 100n),
+) => {
+  let normalizedDebt = reverseInterest(initDebt, compoundedInterest);
+  let collateral = initCollateral;
+  const vault = Far('Vault', {
+    getCollateralAmount: () => collateral,
+    getNormalizedDebt: () => normalizedDebt,
+    getCurrentDebt: () => floorMultiplyBy(normalizedDebt, compoundedInterest),
+    setDebt: newDebt =>
+      (normalizedDebt = reverseInterest(newDebt, compoundedInterest)),
+    setCollateral: newCollateral => (collateral = newCollateral),
+    getIdInManager: () => vaultId,
+    liquidate: () => {},
+  });
+  // @ts-expect-error cast
+  return vault;
+};
 
 function makeCollector() {
   /** @type {Ratio[]} */
@@ -46,9 +89,6 @@ function makeRescheduler() {
     fakeReschedule,
   };
 }
-
-const { brand } = makeIssuerKit('ducats');
-const percent = n => makeRatio(BigInt(n), brand);
 
 test('add to vault', async t => {
   const rescheduler = makeRescheduler();
@@ -260,28 +300,22 @@ test('stable ordering as interest accrues', async t => {
   t.deepEqual(vaults.highestRatio(), percent(20));
 
   // day 1, interest doubled
-  // v1: 20 / 100
-  // v2: 40 / 100 SHOULD BE HIGHEST
-  // v3: 30 / 100 BUG HAS THIS AS HIGHEST
-  v1.chargeHundredPercentInterest();
-  t.is(v1.getCurrentDebt().value, 20n);
-  v2.chargeHundredPercentInterest();
-  t.is(v2.getCurrentDebt().value, 40n);
-  const v3normal = 30n / 2n; // 15n to normalize to day 0
-  const v3 = makeFakeInnerVault(
-    'id-fakeVault3',
-    AmountMath.make(brand, v3normal),
-  );
+  // v1: 20 / 100 (third)
+  // v2: 40 / 100 (first)
+  // v3: 30 / 100 (second)
+  chargeHundredPercentInterest();
+  const v3 = makeFakeInnerVault('id-fakeVault3', AmountMath.make(brand, 30n));
   vaults.addVault('id-fakeVault3', v3);
-  t.deepEqual(
-    Array.from(vaults.entries()).map(([k, _v]) => k),
-    [
-      'fc014000000000000:id-fakeVault2',
-      'fc01aaaaaaaaaaaab:id-fakeVault3',
-      'fc024000000000000:id-fakeVault1',
-    ],
-  );
-  // BUG
-  // t.deepEqual(vaults.highestRatio(), percent(40));
-  t.deepEqual(vaults.highestRatio(), percent(30));
+  t.is(v1.getCurrentDebt().value, 20n);
+  t.is(v2.getCurrentDebt().value, 40n);
+  t.is(v3.getCurrentDebt().value, 30n);
+  t.is(v1.getNormalizedDebt().value, 10n);
+  t.is(v2.getNormalizedDebt().value, 20n);
+  t.is(v3.getNormalizedDebt().value, 15n);
+  const actualOrder = Array.from(vaults.entries()).map(([k, _v]) => k);
+  t.deepEqual(actualOrder, [
+    'fc014000000000000:id-fakeVault2',
+    'fc01aaaaaaaaaaaab:id-fakeVault3',
+    'fc024000000000000:id-fakeVault1',
+  ]);
 });
