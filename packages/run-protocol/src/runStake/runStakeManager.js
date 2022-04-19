@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 import { AmountMath } from '@agoric/ertp';
 import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
