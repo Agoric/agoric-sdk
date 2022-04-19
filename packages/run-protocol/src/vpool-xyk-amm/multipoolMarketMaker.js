@@ -178,7 +178,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {Brand} brandIn
    * @param {Brand} brandOut
-   * @returns {VPoolWrapper<DoublePoolInternalFacet>}
+   * @returns {VPoolWrapper<SinglePoolInternalFacet> | VPoolWrapper<DoublePoolInternalFacet>}
    */
   const provideVPool = (brandIn, brandOut) => {
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
@@ -193,7 +193,6 @@ const start = async (zcf, privateArgs) => {
     }
 
     const pool = isSecondary(brandOut) ? getPool(brandOut) : getPool(brandIn);
-    // @ts-expect-error cast
     return pool.getVPool();
   };
 
@@ -207,6 +206,7 @@ const start = async (zcf, privateArgs) => {
   };
 
   const { makeSwapInInvitation, makeSwapOutInvitation } =
+    // @ts-expect-error we know this is the Double variety
     makeMakeSwapInvitation(zcf, provideVPool);
   const makeAddLiquidityInvitation = makeMakeAddLiquidityInvitation(
     zcf,

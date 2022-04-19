@@ -1,10 +1,8 @@
 // @ts-check
 
-// @ts-ignore
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';
-// @ts-ignore
 import { AmountMath } from '@agoric/ertp';
 
 /**
@@ -37,16 +35,13 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
     const stopAfter = args && args.stopAfter;
     if (stopAfter) {
       AmountMath.coerce(amountOut.brand, stopAfter);
-      // @ts-ignore
       prices = pool.getPriceForOutput(amountIn, stopAfter);
     }
     if (!prices || !AmountMath.isGTE(prices.swapperGets, stopAfter)) {
       // `amountIn` is not enough to sell for stopAfter so just sell it all
-      // @ts-ignore
       prices = pool.getPriceForInput(amountIn, amountOut);
     }
     assert(amountIn.brand === prices.swapperGives.brand);
-    // @ts-ignore
     return pool.allocateGainsAndLosses(seat, prices);
   };
 
