@@ -174,6 +174,10 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     const {
       give: { [KW.Attestation]: attestationAmount },
     } = seat.getProposal();
+    if (AmountMath.isEmpty(attestationAmount)) {
+      seat.exit();
+      return;
+    }
     const { address, lienedAmount: amountReturned } =
       unwrapLienedAmount(attestationAmount);
 
