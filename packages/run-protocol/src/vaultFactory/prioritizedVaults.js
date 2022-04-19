@@ -31,9 +31,9 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
  * @param {InnerVault} vault
  * @returns {Ratio}
  */
-export const currentDebtToCollateral = vault =>
+export const normalizedDebtToCollateral = vault =>
   calculateDebtToCollateral(
-    vault.getCurrentDebt(),
+    vault.getNormalizedDebt(),
     vault.getCollateralAmount(),
   );
 
@@ -108,7 +108,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const removeVault = key => {
     const vault = vaults.removeByKey(key);
-    const debtToCollateral = currentDebtToCollateral(vault);
+    const debtToCollateral = normalizedDebtToCollateral(vault);
     if (
       !oracleQueryThreshold ||
       ratioGTE(debtToCollateral, oracleQueryThreshold)
@@ -139,7 +139,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);
 
-    const debtToCollateral = currentDebtToCollateral(vault);
+    const debtToCollateral = normalizedDebtToCollateral(vault);
     rescheduleIfHighest(debtToCollateral);
     return key;
   };
@@ -161,7 +161,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   function* entriesPrioritizedGTE(ratio) {
     // TODO use a Pattern to limit the query https://github.com/Agoric/agoric-sdk/issues/4550
     for (const [key, vault] of vaults.entries()) {
-      const debtToCollateral = currentDebtToCollateral(vault);
+      const debtToCollateral = normalizedDebtToCollateral(vault);
       if (ratioGTE(debtToCollateral, ratio)) {
         yield [key, vault];
       } else {

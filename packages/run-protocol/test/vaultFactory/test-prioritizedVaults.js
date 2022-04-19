@@ -7,7 +7,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 import {
-  currentDebtToCollateral,
+  normalizedDebtToCollateral,
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
 import { makeFakeInnerVault, waitForPromisesToSettle } from '../supports.js';
@@ -23,7 +23,7 @@ function makeCollector() {
    * @param {[string, InnerVault]} record
    */
   function lookForRatio([_, vault]) {
-    ratios.push(currentDebtToCollateral(vault));
+    ratios.push(normalizedDebtToCollateral(vault));
   }
 
   return {
@@ -259,19 +259,25 @@ test('stable ordering as interest accrues', async t => {
   );
   t.deepEqual(vaults.highestRatio(), percent(20));
 
-  // day 1
+  // day 1, interest doubled
   // v1: 20 / 100
   // v2: 40 / 100 SHOULD BE HIGHEST
   // v3: 30 / 100 BUG HAS THIS AS HIGHEST
   v1.chargeHundredPercentInterest();
+  t.is(v1.getCurrentDebt().value, 20n);
   v2.chargeHundredPercentInterest();
-  const v3 = makeFakeInnerVault('id-fakeVault3', AmountMath.make(brand, 30n));
+  t.is(v2.getCurrentDebt().value, 40n);
+  const v3normal = 30n / 2n; // 15n to normalize to day 0
+  const v3 = makeFakeInnerVault(
+    'id-fakeVault3',
+    AmountMath.make(brand, v3normal),
+  );
   vaults.addVault('id-fakeVault3', v3);
   t.deepEqual(
     Array.from(vaults.entries()).map(([k, _v]) => k),
     [
-      'fc00aaaaaaaaaaaab:id-fakeVault3',
       'fc014000000000000:id-fakeVault2',
+      'fc01aaaaaaaaaaaab:id-fakeVault3',
       'fc024000000000000:id-fakeVault1',
     ],
   );
