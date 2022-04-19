@@ -62,7 +62,7 @@ const validateParamChangeQuestion = details => {
  * assert that the parameter described by paramSpec is proposed to be changed in
  * the question described by questionSpec.
  *
- * @param {any} paramSpec
+ * @param {{ parameterName: string, paramPath: unknown}} paramSpec
  * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
