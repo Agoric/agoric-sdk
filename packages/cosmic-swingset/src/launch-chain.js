@@ -1,3 +1,4 @@
+/* global process */
 import anylogger from 'anylogger';
 
 import {
@@ -25,6 +26,8 @@ import {
   BeansPerXsnapComputron,
 } from './sim-params.js';
 
+import { extractCoreProposalBundles } from './extract-proposal.js';
+
 const console = anylogger('launch-chain');
 
 const SWING_STORE_META_KEY = 'cosmos/meta';
@@ -42,6 +45,22 @@ async function buildSwingset(
   if (config === null) {
     config = loadBasedir(vatconfig);
   }
+
+  // Find the entrypoints for all the core proposals.
+  if (config.coreProposals) {
+    // FIXME: Find a better way to propagate the role.
+    process.env.ROLE = argv.ROLE;
+    const { bundles, code } = await extractCoreProposalBundles(
+      config.coreProposals,
+      vatconfig,
+    );
+    const bootVat = config.vats[config.bootstrap || 'bootstrap'];
+    config.bundles = { ...config.bundles, ...bundles };
+
+    // Tell the bootstrap code how to run the core proposals.
+    bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
+  }
+
   const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
   const mb = buildMailbox(mbs);

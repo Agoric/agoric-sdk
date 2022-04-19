@@ -1,85 +1,9 @@
-import '@endo/init/pre-bundle-source.js';
+#! /usr/bin/env node
 import '@endo/init';
-import fs from 'fs';
-import path from 'path';
-import process from 'process';
-import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { extractProposalBundles } from '@agoric/deploy-script-support';
+import url from 'url';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+import { defaultProposalBuilder } from './init-core.js';
 
-const srcDir = `${dirname}/../src`;
-const bundlesDir = `${dirname}/../bundles`;
-
-async function writeSourceBundle(contractFilename, outputPath) {
-  const contractUrl = await importMetaResolve(
-    contractFilename,
-    import.meta.url,
-  );
-  const contractPath = new URL(contractUrl).pathname;
-  await bundleSource(contractPath).then(bundle => {
-    // TODO: fix
-    // @ts-ignore mkdirSync believes it only accepts 2 arguments.
-    fs.mkdirSync(bundlesDir, { recursive: true }, err => {
-      if (err) throw err;
-    });
-    fs.writeFileSync(outputPath, `export default ${JSON.stringify(bundle)};`);
-  });
-}
-
-async function main() {
-  const contractOutputs = [
-    [
-      `${srcDir}/vaultFactory/vaultFactory.js`,
-      `${bundlesDir}/bundle-vaultFactory.js`,
-    ],
-    [`${srcDir}/centralSupply.js`, `${bundlesDir}/bundle-centralSupply.js`],
-    [`${srcDir}/mintHolder.js`, `${bundlesDir}/bundle-mintHolder.js`],
-    [
-      `${srcDir}/vaultFactory/liquidateMinimum.js`,
-      `${bundlesDir}/bundle-liquidateMinimum.js`,
-    ],
-    [
-      `${srcDir}/vpool-xyk-amm/multipoolMarketMaker.js`,
-      `${dirname}/../bundles/bundle-amm.js`,
-    ],
-    [
-      `${srcDir}/reserve/assetReserve.js`,
-      `${dirname}/../bundles/bundle-reserve.js`,
-    ],
-    [
-      `${srcDir}/runStake/runStake.js`,
-      `${dirname}/../bundles/bundle-runStake.js`,
-    ],
-    [
-      '@agoric/governance/src/contractGovernor.js',
-      `${dirname}/../bundles/bundle-contractGovernor.js`,
-    ],
-    [
-      '@agoric/governance/src/committee.js',
-      `${dirname}/../bundles/bundle-committee.js`,
-    ],
-    [
-      '@agoric/governance/src/noActionElectorate.js',
-      `${dirname}/../bundles/bundle-noActionElectorate.js`,
-    ],
-    [
-      '@agoric/governance/src/binaryVoteCounter.js',
-      `${dirname}/../bundles/bundle-binaryVoteCounter.js`,
-    ],
-  ];
-  for (const [contractFilename, outputPath] of contractOutputs) {
-    // eslint-disable-next-line no-await-in-loop
-    await writeSourceBundle(contractFilename, outputPath);
-  }
-}
-
-main().then(
-  _ => process.exit(0),
-  err => {
-    console.log('error creating contract bundles:');
-    console.log(err);
-    process.exit(1);
-  },
-);
+const dirname = url.fileURLToPath(new URL('.', import.meta.url));
+extractProposalBundles([['.', defaultProposalBuilder]], dirname);

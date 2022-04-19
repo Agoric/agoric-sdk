@@ -1,7 +1,14 @@
 // @ts-check
 import { AmountMath } from '@agoric/ertp';
+import { M } from '@agoric/store';
 
 const { details: X } = assert;
+
+export const amountPattern = harden({ brand: M.remotable(), value: M.any() });
+export const ratioPattern = harden({
+  numerator: amountPattern,
+  denominator: amountPattern,
+});
 
 /**
  * Apply a delta to the `base` Amount, where the delta is represented as

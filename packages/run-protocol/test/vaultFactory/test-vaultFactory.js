@@ -15,6 +15,7 @@ import {
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { M, matches } from '@agoric/store';
 import { makeParamManagerBuilder } from '@agoric/governance';
 
 import { makeTracer } from '../../src/makeTracer.js';
@@ -33,20 +34,21 @@ import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 
 import {
-  makeBundle,
   waitForPromisesToSettle,
   setUpZoeForTest,
   setupBootstrap,
+  installGovernance,
 } from '../supports.js';
+import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // #region Support
 
 // TODO path resolve these so refactors detect
 const contractRoots = {
-  faucet: '../test/vaultFactory/faucet.js',
-  liquidate: '../src/vaultFactory/liquidateMinimum.js',
-  VaultFactory: '../src/vaultFactory/vaultFactory.js',
-  amm: '../src/vpool-xyk-amm/multipoolMarketMaker.js',
+  faucet: './test/vaultFactory/faucet.js',
+  liquidate: './src/vaultFactory/liquidateMinimum.js',
+  VaultFactory: './src/vaultFactory/vaultFactory.js',
+  amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
 };
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
@@ -85,21 +87,31 @@ function defaultParamValues(debtBrand) {
   });
 }
 
-// makeBundle is a slow step, so we do it once for all the tests.
 test.before(async t => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
   const runIssuer = E(zoe).getFeeIssuer();
   const runBrand = E(runIssuer).getBrand();
   const aethKit = makeIssuerKit('aEth');
+  const loader = await unsafeMakeBundleCache('./bundles/'); // package-relative
+
+  const bundles = {
+    faucet: await loader.load(contractRoots.faucet, 'faucet'),
+    liquidate: await loader.load(contractRoots.liquidate, 'liquidateMinimum'),
+    VaultFactory: await loader.load(contractRoots.VaultFactory, 'VaultFactory'),
+    amm: await loader.load(contractRoots.amm, 'amm'),
+  };
+  const installation = {
+    faucet: E(zoe).install(bundles.faucet),
+    liquidate: E(zoe).install(bundles.liquidate),
+    VaultFactory: E(zoe).install(bundles.VaultFactory),
+    amm: E(zoe).install(bundles.amm),
+  };
+
   const contextPs = {
-    bundles: {
-      faucet: makeBundle(contractRoots.faucet),
-      liquidate: makeBundle(contractRoots.liquidate),
-      VaultFactory: makeBundle(contractRoots.VaultFactory),
-      amm: makeBundle(contractRoots.amm),
-    },
     zoe,
     feeMintAccess,
+    bundles,
+    installation,
     electorateTerms: undefined,
     // {
     //   committeeName: 'Star Chamber',
@@ -124,15 +136,15 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
     zoe,
     aethKit: { issuer: aethIssuer },
     electorateTerms,
-    bundles: { amm },
     timer,
   } = t.context;
 
   const space = setupBootstrap(t, timer);
-  const { produce, consume, instance } = space;
-  produce.ammBundle.resolve(amm);
-  startEconomicCommittee(space, electorateTerms);
-  setupAmm(space);
+  const { consume, instance } = space;
+  installGovernance(zoe, space.installation.produce);
+  space.installation.produce.amm.resolve(t.context.installation.amm);
+  await startEconomicCommittee(space, electorateTerms);
+  await setupAmm(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -182,14 +194,12 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
  */
 const getRunFromFaucet = async (t, runInitialLiquidity) => {
   const {
-    bundles: { faucet: bundle },
+    installation: { faucet: installation },
     zoe,
     feeMintAccess,
     runKit: { brand: runBrand },
   } = t.context;
   /** @type {Promise<Installation<import('./faucet.js').start>>} */
-  // @ts-expect-error cast
-  const installation = E(zoe).install(bundle);
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     installation,
@@ -204,7 +214,6 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
       want: { RUN: AmountMath.make(runBrand, runInitialLiquidity) },
     }),
     harden({}),
-    { feeMintAccess },
   );
 
   const runPayment = await E(faucetSeat).getPayout('RUN');
@@ -233,7 +242,6 @@ async function setupServices(
     zoe,
     runKit: { issuer: runIssuer, brand: runBrand },
     aethKit: { brand: aethBrand, issuer: aethIssuer, mint: aethMint },
-    bundles: { VaultFactory, liquidate },
     loanTiming,
     rates,
     aethInitialLiquidity,
@@ -281,7 +289,11 @@ async function setupServices(
       });
   produce.priceAuthority.resolve(pa);
 
-  produce.vaultBundles.resolve({ VaultFactory, liquidate });
+  const {
+    installation: { produce: instProd },
+  } = space;
+  instProd.VaultFactory.resolve(t.context.installation.VaultFactory);
+  instProd.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming });
 
   const agoricNames = consume.agoricNames;
@@ -2178,4 +2190,80 @@ test('mutable liquidity sensitivity of triggers and interest', async t => {
   // No change for Alice
   aliceUpdate = await E(aliceNotifier).getUpdateSince(); // can't use updateCount because there's no newer update
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+});
+
+test('addVaultType: invalid args do not modify state', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+  } = t.context;
+  const kw = 'Chit';
+  const chit = makeIssuerKit(kw);
+  const params = defaultParamValues(chit.brand);
+
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    AmountMath.make(aethBrand, 900n),
+    undefined,
+    undefined,
+    500n,
+  );
+
+  const { vaultFactory } = services.vaultFactory;
+
+  const failsForSameReason = async p =>
+    p
+      .then(oops => t.fail(`${oops}`))
+      .catch(reason1 => t.throwsAsync(p, { message: reason1.message }));
+  await failsForSameReason(
+    E(vaultFactory)
+      // @ts-ignore bad args on purpose for test
+      .addVaultType(chit.issuer, kw, null),
+  );
+  await failsForSameReason(
+    E(vaultFactory)
+      // @ts-ignore bad args on purpose for test
+      .addVaultType(chit.issuer, 'bogus kw', params),
+  );
+
+  // The keyword in the vault manager is not "stuck"; it's still available:
+  const actual = await E(vaultFactory).addVaultType(chit.issuer, kw, params);
+  t.true(matches(actual, M.remotable()));
+});
+
+test('addVaultType: extra, unexpected params', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+  } = t.context;
+  const chit = makeIssuerKit('chit');
+
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    AmountMath.make(aethBrand, 900n),
+    undefined,
+    undefined,
+    500n,
+  );
+
+  const { vaultFactory } = services.vaultFactory;
+
+  const params = { ...defaultParamValues(aethBrand), shoeSize: 10 };
+  const extraParams = { ...params, shoeSize: 10 };
+  const { interestRate: _1, ...missingParams } = {
+    ...defaultParamValues(aethBrand),
+    shoeSize: 10,
+  };
+
+  await t.throwsAsync(
+    E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
+    { message: /Must have same property names/ },
+  );
+
+  const actual = await E(vaultFactory).addVaultType(
+    chit.issuer,
+    'Chit',
+    extraParams,
+  );
+  t.true(matches(actual, M.remotable()), 'unexpected params are ignored');
 });

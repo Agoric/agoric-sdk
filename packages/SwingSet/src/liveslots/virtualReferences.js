@@ -525,15 +525,15 @@ export function makeVirtualReferenceManager(
    */
   function ceaseRecognition(vref) {
     let doMoreGC = false;
-    const { id, facet } = parseVatSlot(vref);
-    if (facet === undefined) {
+    const p = parseVatSlot(vref);
+    if (p.allocatedByVat && p.virtual && p.facet === undefined) {
       // If `vref` identifies a multi-faceted object that should no longer be
       // "recognized", what that really means that all references to its
       // individual facets should no longer be recognized -- nobody actually
       // references the object itself except internal data structures.  So in
       // this case we need individually to stop recognizing the facets
       // themselves.
-      const kindInfo = kindInfoTable.get(`${id}`);
+      const kindInfo = kindInfoTable.get(`${p.id}`);
       // This function can be called either from `dispatch.retireImports` or
       // from `possibleVirtualObjectDeath`.  In the latter case the vref is
       // actually a baseRef and so needs to be expanded to cease recognition of

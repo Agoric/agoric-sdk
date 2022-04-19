@@ -3,6 +3,69 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.7.0...@agoric/vats@0.8.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* add collateral Reserve to hold collateral and add to AMM under governance control (#4635)
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **boot:** keep ahold of `agoricNamesAdmin` ([ed34cdb](https://github.com/Agoric/agoric-sdk/commit/ed34cdb0dda0bd0059f5f8659d680fc4b81c9a45))
+* **build-bundles:** create source bundles with helper ([732292a](https://github.com/Agoric/agoric-sdk/commit/732292acf817ab774dea3d15209c0b5a2b2e326d))
+* **cosmic-swingset:** grant addVaultType based on addr ([#4641](https://github.com/Agoric/agoric-sdk/issues/4641)) ([e439024](https://github.com/Agoric/agoric-sdk/commit/e439024788f27ea668b2ff0c5e486ab901807eb0))
+* **deploy-script-support:** shell out to `bundle-source` ([18e8c88](https://github.com/Agoric/agoric-sdk/commit/18e8c88223da0f4ef6998e0bc0e39a7979dd317b))
+* **deploy-script-suppport:** e2e `writeCoreProposal` ([88a0cf7](https://github.com/Agoric/agoric-sdk/commit/88a0cf70c9078f0e9e2c46a6cc30bcb736e6e379))
+* **run-protocol:** charge penalty for liquidation ([#4996](https://github.com/Agoric/agoric-sdk/issues/4996)) ([5467be4](https://github.com/Agoric/agoric-sdk/commit/5467be4fb5c4cc47f34736eb669e207b26eb711d))
+* **run-protocol:** debtLimit governed param ([#4948](https://github.com/Agoric/agoric-sdk/issues/4948)) ([161e968](https://github.com/Agoric/agoric-sdk/commit/161e9689ea13fae8559a8915a87a5ec031969d5f))
+* **run-protocol:** RUNstake contract only, without payoff from rewards ([#4741](https://github.com/Agoric/agoric-sdk/issues/4741)) ([52f60eb](https://github.com/Agoric/agoric-sdk/commit/52f60eb192217ff3e4cf84a5a2ff8ada19fb5dcc))
+* **vats:** add `lookup(...path)` to board ([df8fee0](https://github.com/Agoric/agoric-sdk/commit/df8fee0d31b09febbf6279cf5ea022e25d8310d4))
+* **vats:** add evaluateInstallation to bootstrap powers ([4306ac9](https://github.com/Agoric/agoric-sdk/commit/4306ac90193a71651ff767021512e09fb20770bf))
+* **vats:** allow `nameAdmin.update` to specify a subadmin ([fb9c51b](https://github.com/Agoric/agoric-sdk/commit/fb9c51b25effbc2e3bb5ef7f0b5376daa4da71bb))
+* **vats:** control whether `producer.reset` rejects the consumer promise ([611f75c](https://github.com/Agoric/agoric-sdk/commit/611f75c4c73ecbdb812a34020d92e648f899b8d2))
+* **vats:** introduce `'oracleBrand'` ([4f3f5e0](https://github.com/Agoric/agoric-sdk/commit/4f3f5e00da0fafde76b0fe49c0444c0f863ea3a2))
+* **vats:** make `NameHub` accessible via `NameAdmin.readonly()` ([67fc609](https://github.com/Agoric/agoric-sdk/commit/67fc60952139704220af830485a52b6cadc328dc))
+* **vats:** make default board IDs be `board0{crc}${sequence}` ([2d2de8c](https://github.com/Agoric/agoric-sdk/commit/2d2de8c1c5e9c946417f7e01a66272ed39e19d23))
+* **vats:** move BLD mint, issuer to its own vat ([0acce28](https://github.com/Agoric/agoric-sdk/commit/0acce288f9222fa602f634214fa59b673ce7f64a)), closes [#4578](https://github.com/Agoric/agoric-sdk/issues/4578)
+* **vats:** pass options thru runBehaviors ([72d1f8d](https://github.com/Agoric/agoric-sdk/commit/72d1f8d6c565ca889b25f04d562a0a12c0f51754))
+* **vats:** remove pegasus from bootstrap ([c384a41](https://github.com/Agoric/agoric-sdk/commit/c384a41c6e494059beb28c09a94e5625faa5f87e))
+* **vats:** support `coreProposals` ([b45e5c6](https://github.com/Agoric/agoric-sdk/commit/b45e5c609dc2e861ab1ed32508917f7c97d8ad9f))
+* **virtual-purse:** use a `recoveryPurse` to track payments ([959ed31](https://github.com/Agoric/agoric-sdk/commit/959ed31ff7e7f9b868fd4ebfca7743fa2b8496af))
+* add collateral Reserve to hold collateral and add to AMM under governance control ([#4635](https://github.com/Agoric/agoric-sdk/issues/4635)) ([3e3f55f](https://github.com/Agoric/agoric-sdk/commit/3e3f55f48365d614c2215d8f311f973ff54b6cd0)), closes [#4188](https://github.com/Agoric/agoric-sdk/issues/4188) [#4188](https://github.com/Agoric/agoric-sdk/issues/4188)
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+
+
+### Bug Fixes
+
+* **core-boot:** complain louder if bootstrap fails ([b6dd4fc](https://github.com/Agoric/agoric-sdk/commit/b6dd4fc9a83bc5d73801443c62c153fed1c35af8))
+* **core-boot:** only endow evaluateInstallation` if permitted ([50a1156](https://github.com/Agoric/agoric-sdk/commit/50a11561b1f7bcd1c8be452b93aee363e267a4a0))
+* **eventual-send:** correct types for ERef ([d23c425](https://github.com/Agoric/agoric-sdk/commit/d23c42536044b1b6aa7113d21014661f1b22ccb5))
+* **run-protocol:** shuffle around to fix types ([1c06bbd](https://github.com/Agoric/agoric-sdk/commit/1c06bbd71c39b09bb0e8007b0a96febf3bfbd771))
+* **vats:** core eval: evaluation errors were not logged ([9288e55](https://github.com/Agoric/agoric-sdk/commit/9288e556d335594c6b7c51135adb738d3e995816))
+* **vats:** make tests work with new bundlecaps ([fc55adc](https://github.com/Agoric/agoric-sdk/commit/fc55adc627d4356f4b12dd423543516a3c1050f5))
+* **vats:** move `startPriceAuthority` earlier in the boot sequence ([bf93171](https://github.com/Agoric/agoric-sdk/commit/bf93171c69eb1a19b04c24c9283e0d433ca9d411))
+* **vats:** provide proper zcfSpec.name when building zoe ([1a8a54d](https://github.com/Agoric/agoric-sdk/commit/1a8a54dcbc86df4134d4f7419751b719884828a5))
+* **vats:** reimplement and test `PromiseSpace.reset` ([e196144](https://github.com/Agoric/agoric-sdk/commit/e1961446c1e903384ef3bc392fcd728f6d7aa934))
+* **vats:** reserve `centralSupply` and `mintHolder` installs ([5873d41](https://github.com/Agoric/agoric-sdk/commit/5873d4167c0b4d508697ffcdd372eb385e58ff29))
+* **vats:** update swingset deep-import paths ([a1f88c9](https://github.com/Agoric/agoric-sdk/commit/a1f88c9138fdcdb1f512971fd9b8fd8fbc2d972c))
+* **vats:** use `decentral-*-config.json` to bundle Zoe contracts ([125e9ba](https://github.com/Agoric/agoric-sdk/commit/125e9ba1721a503ba4314f45858737c0e273fc8f))
+* correct bugs due to weird & mistaken buildRootObject usage ([990e7d8](https://github.com/Agoric/agoric-sdk/commit/990e7d88a5c24bb077f349517139c8aa2d5f536a))
+* freeze globalThis in coreEval to enforce OCap discipline ([02f401f](https://github.com/Agoric/agoric-sdk/commit/02f401f7eb338d8467464a4b021c01f77518a22d)), closes [#4642](https://github.com/Agoric/agoric-sdk/issues/4642) [#4352](https://github.com/Agoric/agoric-sdk/issues/4352)
+* recover stuck payments ([2e366cb](https://github.com/Agoric/agoric-sdk/commit/2e366cbbd447c0117f66bb740b05d2a1b4e82f33))
+* remove purse.claim per review comment ([e68ce40](https://github.com/Agoric/agoric-sdk/commit/e68ce40cb019f82b21ec623761a1df3cd68c27f2))
+* two isolated cases where a missing argument did not default ([531d367](https://github.com/Agoric/agoric-sdk/commit/531d367600e97652babff1ee8ffa4e4665f50baa))
+* **vats:** second argument to `makeBoard` is `opts` ([e4ac8d4](https://github.com/Agoric/agoric-sdk/commit/e4ac8d4de7e8ead7047c204bfa51ed431955e828))
+* **zoe:** pass brands (not issuers) to priceAggregator ([5800711](https://github.com/Agoric/agoric-sdk/commit/580071189bb60d83ceaa806bf85035173ae9563c))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.6.0...@agoric/vats@0.7.0) (2022-02-24)
 
 

@@ -1,14 +1,18 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { E, Far } from '@endo/far';
+import bundleSource from '@endo/bundle-source';
 import {
   makeFakeVatAdmin,
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E, Far } from '@endo/far';
 
+import { makeZoeKit } from '@agoric/zoe';
 import { buildRootObject } from '../src/core/boot.js';
+import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
+import { makePromiseSpace } from '../src/core/utils.js';
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
@@ -16,6 +20,8 @@ import { buildRootObject as networkRoot } from '../src/vat-network.js';
 import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
+
+import { devices } from './devices.js';
 
 const vatRoots = {
   bank: bankRoot,
@@ -35,9 +41,9 @@ const mock = {
     mailbox: /** @type { any } */ ({
       registerInboundHandler: noop,
     }),
-    vatAdmin: /** @type { any } */ ({}),
     timer: /** @type { any } */ ({}),
     plugin: /** @type { any } */ ({ registerReceiver: noop }),
+    ...devices,
   },
   vats: {
     vattp: /** @type { any } */ (
@@ -140,3 +146,65 @@ testRole('chain', false);
 testRole('chain', true);
 testRole('sim-chain', false);
 testRole('sim-chain', true);
+
+test('evaluateInstallation is available to core eval', async t => {
+  let handler;
+  const modulePath = new URL('../src/core/utils.js', import.meta.url).pathname;
+  const { produce, consume } = makePromiseSpace(t.log);
+
+  const prepare = async () => {
+    const bridgeManager = {
+      register: (name, fn) => {
+        handler = fn;
+      },
+    };
+
+    const { zoeService } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
+
+    const theBoard = boardRoot().getBoard();
+    const bundle = await bundleSource(modulePath);
+
+    const installation = await E(zoeService).install(bundle);
+    const instId = await E(theBoard).getId(installation);
+
+    produce.zoe.resolve(zoeService);
+    produce.board.resolve(theBoard);
+    produce.bridgeManager.resolve(bridgeManager);
+    return instId;
+  };
+
+  const instId = await prepare();
+
+  // @ts-ignore
+  await bridgeCoreEval({ produce, consume });
+  t.truthy(handler);
+
+  const produceThing = async ({
+    consume: { board },
+    produce: { thing },
+    evaluateInstallation,
+  }) => {
+    const id = 'REPLACE_WITH_BOARD_ID';
+    const inst = await E(board).getValue(id);
+    const ns = await evaluateInstallation(inst);
+    thing.resolve(ns);
+  };
+
+  const bridgeMessage = {
+    type: 'CORE_EVAL',
+    evals: [
+      {
+        json_permits: 'true',
+        js_code: `${produceThing}`.replace('REPLACE_WITH_BOARD_ID', instId),
+      },
+    ],
+  };
+  t.log({ bridgeMessage });
+
+  // @ts-ignore
+  await E(handler).fromBridge('arbitrary srcID', bridgeMessage);
+  const actual = await consume.thing;
+
+  // @ts-ignore
+  t.deepEqual(typeof actual.extract, 'function');
+});

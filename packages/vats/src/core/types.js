@@ -78,7 +78,7 @@
  */
 
 /**
- * @typedef {{ resolve: (v: ERef<T>) => void }} Producer<T>
+ * @typedef {{ resolve: (v: ERef<T>) => void, reset: () => void}} Producer<T>
  * @template T
  */
 /**
@@ -133,12 +133,13 @@
  *   issuer: |
  *     'RUN' | 'BLD' | 'Attestation',
  *   installation: |
+ *     'centralSupply' | 'mintHolder' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
  *     'Pegasus' | 'reserve',
  *   instance: |
  *     'economicCommittee' |
- *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' | 'liquidate' |
+ *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
  *     'runStake' | 'runStakeGovernor' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
@@ -177,48 +178,36 @@
  */
 
 /**
- * @typedef { WellKnownSpaces & EconomyBootstrapSpace
- * } EconomyBootstrapPowers
  * @typedef {PromiseSpaceOf<{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: NameAdmin,
- *   ammCreatorFacet: XYKAMMCreatorFacet,
- *   ammGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
+ *   bankManager: Awaited<BankManager>,
+ *   bldIssuerKit: RemoteIssuerKit,
+ *   board: Board,
+ *   bridgeManager: OptionalBridgeManager,
  *   chainTimerService: TimerService,
- *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
- *   getRUNBundle: { moduleFormat: string },
- *   ammBundle: SourceBundle,
- *   reserveBundle: SourceBundle,
- *   reservePublicFacet: unknown,
- *   reserveCreatorFacet: GovernedContractFacetAccess<any>,
- *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<any>,
- *   vaultBundles: {
- *     VaultFactory: SourceBundle,
- *     liquidate: SourceBundle,
- *   },
- *   centralSupplyBundle: SourceBundle,
- *   mintHolderBundle: SourceBundle,
+ *   client: ClientManager,
+ *   clientCreator: ClientCreator,
+ *   coreEvalBridgeHandler: unknown,
  *   feeMintAccess: FeeMintAccess,
- *   governanceBundles: Record<string, SourceBundle>,
  *   initialSupply: Payment,
- *   pegasusBundle: SourceBundle,
+ *   mints: MintsVat,
+ *   namesByAddress: NameHub,
+ *   namesByAddressAdmin: NameAdmin,
  *   pegasusConnections: NameHub,
  *   pegasusConnectionsAdmin: NameAdmin,
  *   priceAuthorityVat: Awaited<PriceAuthorityVat>,
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
- *   vaultFactoryCreator: VaultFactory,
- *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
- *   vaultFactoryVoteCreator: unknown,
+ *   provisioning: Awaited<ProvisioningVat>,
  *   zoe: ZoeService,
- * }>} EconomyBootstrapSpace
+ * }>} ChainBootstrapSpace
  *
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {
  *     ROLE: string,
  *     hardcodedClientAddresses: string[],
- *     noFakeCurrencies: boolean,
  *     FIXME_GCI: string,
  *     PROVISIONER_INDEX: number,
  *   },
@@ -233,18 +222,8 @@
  *   runBehaviors: (manifest: unknown) => Promise<unknown>,
  *   modules: Record<string, Record<string, any>>,
  * }} BootstrapPowers
- * @typedef { WellKnownSpaces & EconomyBootstrapSpace & PromiseSpaceOf<{
- *     bankManager: Awaited<BankManager>,
- *     board: Board,
- *     bldIssuerKit: RemoteIssuerKit,
- *     bridgeManager: OptionalBridgeManager,
- *     client: ClientManager,
- *     clientCreator: ClientCreator,
- *     mints: MintsVat,
- *     provisioning: Awaited<ProvisioningVat>,
+ * @typedef { WellKnownSpaces & ChainBootstrapSpace & PromiseSpaceOf<{
  *     vatAdminSvc: VatAdminSvc,
- *     namesByAddress: NameHub,
- *     namesByAddressAdmin: NameAdmin,
  *   }> & { produce: {
  *     loadVat: Producer<VatLoader<unknown>>,
  *   }}

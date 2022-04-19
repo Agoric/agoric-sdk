@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.3...@agoric/deploy-script-support@0.7.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **build-bundles:** create source bundles with helper ([732292a](https://github.com/Agoric/agoric-sdk/commit/732292acf817ab774dea3d15209c0b5a2b2e326d))
+* **deploy-script-support:** `getBundlerMaker` helper ([542786d](https://github.com/Agoric/agoric-sdk/commit/542786dfc7ef67ed718d8f1548d13dd45dbfc34f))
+* **deploy-script-support:** `installInPieces` interim implementation ([3db8233](https://github.com/Agoric/agoric-sdk/commit/3db823391f39d23e4dc42d8ca256bf9fa28466e7))
+* **deploy-script-support:** first cut at `writeCoreProposal` ([6129b38](https://github.com/Agoric/agoric-sdk/commit/6129b38201f80a4e195d4675981e693c06c8c547))
+* **deploy-script-support:** more `createBundles` work ([009b49f](https://github.com/Agoric/agoric-sdk/commit/009b49fc133ca9f6740bdebaec9baf7c549aec1f))
+* **deploy-script-support:** shell out to `bundle-source` ([18e8c88](https://github.com/Agoric/agoric-sdk/commit/18e8c88223da0f4ef6998e0bc0e39a7979dd317b))
+* **deploy-script-suppport:** e2e `writeCoreProposal` ([88a0cf7](https://github.com/Agoric/agoric-sdk/commit/88a0cf70c9078f0e9e2c46a6cc30bcb736e6e379))
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+
+
+### Bug Fixes
+
+* **deploy-script-support:** `makeEnactCoreProposals` for bootstrap ([cbff644](https://github.com/Agoric/agoric-sdk/commit/cbff644eb379fd61f38a64cd09140439551a6e80))
+* **writeCoreProposal:** linearize the `installInPieces` calls ([a92a22a](https://github.com/Agoric/agoric-sdk/commit/a92a22a124e5cf18b677b3067bc59aa508e9d5f1))
+* **writeCoreProposal:** merge permits and less ambient authority ([f34f7b7](https://github.com/Agoric/agoric-sdk/commit/f34f7b72aa2827e0f12ba46a8500d3b259c910f9))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
 ### [0.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.6.2...@agoric/deploy-script-support@0.6.3) (2022-02-24)
 
 

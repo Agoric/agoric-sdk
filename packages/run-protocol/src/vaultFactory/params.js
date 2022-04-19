@@ -8,6 +8,8 @@ import {
   makeParamManager,
   ParamTypes,
 } from '@agoric/governance';
+import { M } from '@agoric/store';
+import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
 export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
@@ -42,6 +44,17 @@ const makeVaultParamManager = initial =>
     [LOAN_FEE_KEY]: [ParamTypes.RATIO, initial.loanFee],
   });
 /** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
+
+export const vaultParamPattern = M.split(
+  {
+    liquidationMargin: ratioPattern,
+    liquidationPenalty: ratioPattern,
+    interestRate: ratioPattern,
+    loanFee: ratioPattern,
+    debtLimit: amountPattern,
+  },
+  M.any(),
+);
 
 /**
  * @param {ERef<ZoeService>} zoe

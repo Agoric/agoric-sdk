@@ -10,6 +10,9 @@ import { makeSaveIssuer } from './saveIssuer.js';
 import { makeGetBundlerMaker } from './getBundlerMaker.js';
 import { assertOfferResult } from './assertOfferResult.js';
 import { installInPieces } from './installInPieces.js';
+import { makeWriteCoreProposal } from './writeCoreProposal.js';
+
+export * from './createBundles.js';
 
 // These are also hard-coded in lib-wallet.js.
 // TODO: Add methods to the wallet to access these without hard-coding
@@ -56,6 +59,11 @@ export const makeHelpers = async (homePromise, endowments) => {
     { bundleSource, lookup },
   );
 
+  const writeCoreProposal = makeWriteCoreProposal(homePromise, endowments, {
+    installInPieces,
+    getBundlerMaker,
+  });
+
   return {
     install,
     startInstance,
@@ -66,5 +74,6 @@ export const makeHelpers = async (homePromise, endowments) => {
     saveIssuer,
     depositInvitation,
     assertOfferResult,
+    writeCoreProposal,
   };
 };

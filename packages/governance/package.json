@@ -1,6 +1,6 @@
 {
   "name": "@agoric/governance",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "Core governance support",
   "type": "module",
   "main": "src/index.js",
@@ -8,7 +8,8 @@
     "node": ">=14.15.0"
   },
   "scripts": {
-    "build": "exit 0",
+    "build": "yarn build:bundles",
+    "build:bundles": "node ./scripts/build-bundles.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
@@ -28,20 +29,21 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.16",
-    "@agoric/ertp": "^0.13.3",
+    "@agoric/assert": "^0.4.0",
+    "@agoric/ertp": "^0.14.0",
+    "@agoric/nat": "^4.1.0",
+    "@agoric/notifier": "^0.4.0",
+    "@agoric/store": "^0.7.0",
+    "@agoric/zoe": "^0.22.0",
+    "@endo/captp": "^2.0.7",
     "@endo/eventual-send": "^0.15.3",
     "@endo/far": "^0.2.3",
-    "@agoric/nat": "^4.1.0",
-    "@agoric/notifier": "^0.3.35",
-    "@agoric/store": "^0.6.10",
-    "@agoric/zoe": "^0.21.3",
-    "@endo/captp": "^2.0.7",
     "@endo/marshal": "^0.6.7",
     "@endo/promise-kit": "^0.2.41"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.25.1",
+    "@agoric/deploy-script-support": "^0.7.0",
+    "@agoric/swingset-vat": "^0.26.0",
     "@endo/bundle-source": "^2.2.0",
     "@endo/init": "^0.5.41",
     "ava": "^3.12.1",

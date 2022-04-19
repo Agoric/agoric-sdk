@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.6...@agoric/solo@0.6.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **repl:** add `lookup(...path)` for recursive names ([b942638](https://github.com/Agoric/agoric-sdk/commit/b9426387ae2ce9428082157f205ac79489616dbd))
+* **scratch:** add `lookup` method ([4757afa](https://github.com/Agoric/agoric-sdk/commit/4757afa10aac797a7ea72eaaaa0b584a7e9fad8d))
+* **SOLO_OTEL_EXPORTER_PROMETHEUS_PORT:** new env var ([46f0a31](https://github.com/Agoric/agoric-sdk/commit/46f0a3188149b32dccec14a5c5d02b8b35ca2494))
+* **telemetry:** `echo 2022-02-18T12:00:00Z | ./ingest.sh f.slog` ([bede363](https://github.com/Agoric/agoric-sdk/commit/bede363018656bad32b6764a5216acaaf2ca19bc))
+
+
+### Bug Fixes
+
+* **solo:** remove `SOLO_*` environment variables after extraction ([19444dc](https://github.com/Agoric/agoric-sdk/commit/19444dc7b7195c8273fe930c21a3b6dcd7f927af))
+* **telemetry:** rework Prometheus metrics ([38a1922](https://github.com/Agoric/agoric-sdk/commit/38a1922ce2c21e4f31b4a1bedd634bbe627990f9))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
 ### [0.5.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.5.5...@agoric/solo@0.5.6) (2022-02-24)
 
 

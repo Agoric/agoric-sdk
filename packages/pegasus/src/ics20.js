@@ -1,6 +1,6 @@
 // @ts-check
 import { Nat } from '@agoric/nat';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { assert, details as X } from '@agoric/assert';
 
 /**

@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.3...@agoric/zoe@0.22.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* add the ability to invoke an API to contract governance (#4869)
+* **run-protocol:** vaults hold liquidation proceeds until closed
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* split single- and multi-faceted VO definitions into their own functions ([fcf293a](https://github.com/Agoric/agoric-sdk/commit/fcf293a4fcdf64bf30b377c7b3fb8b728efbb4af)), closes [#5093](https://github.com/Agoric/agoric-sdk/issues/5093)
+* **oracle:** add `getRoundStartNotifier` to aggregators ([e97a2d9](https://github.com/Agoric/agoric-sdk/commit/e97a2d9946ff426c0efa474979fdd4e917cb7f0a))
+* **priceAggregator:** `deleteOracle` and `getRoundCompleteNotifier` ([881b7d6](https://github.com/Agoric/agoric-sdk/commit/881b7d6c8cfdfc3a840d8f3e2e6e3550394fa52b))
+* add the ability to invoke an API to contract governance ([#4869](https://github.com/Agoric/agoric-sdk/issues/4869)) ([3123665](https://github.com/Agoric/agoric-sdk/commit/312366518471238430c79313f79e57aee1c551cd)), closes [#4188](https://github.com/Agoric/agoric-sdk/issues/4188)
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+* yet another overhaul of the `defineKind` API ([3e02d42](https://github.com/Agoric/agoric-sdk/commit/3e02d42312b2963c165623c8cd559b431e5ecdce)), closes [#4905](https://github.com/Agoric/agoric-sdk/issues/4905)
+* **priceAggregator:** implement `makeOracleInvitation` ([35354bb](https://github.com/Agoric/agoric-sdk/commit/35354bbb6d5de1441919fc07281625d51f21f198))
+* **run-protocol:** charge penalty for liquidation ([#4996](https://github.com/Agoric/agoric-sdk/issues/4996)) ([5467be4](https://github.com/Agoric/agoric-sdk/commit/5467be4fb5c4cc47f34736eb669e207b26eb711d))
+* **run-protocol:** RUNstake contract only, without payoff from rewards ([#4741](https://github.com/Agoric/agoric-sdk/issues/4741)) ([52f60eb](https://github.com/Agoric/agoric-sdk/commit/52f60eb192217ff3e4cf84a5a2ff8ada19fb5dcc))
+
+
+### Bug Fixes
+
+* **chainlinkAggregator:** implement oracleKeys for mapping ([76605ce](https://github.com/Agoric/agoric-sdk/commit/76605ce18801e0a7b834d1de469136206494b348))
+* **oracle:** wake up to update priceAggregator push-only oracles ([c9a59fe](https://github.com/Agoric/agoric-sdk/commit/c9a59fed9f247332f93f56432c97c2bd756eff6e))
+* **zoe:** add zoe.installBundleID ([0fad95f](https://github.com/Agoric/agoric-sdk/commit/0fad95fa1f7541bc2b790cde70a20273d11a12c4)), closes [#4563](https://github.com/Agoric/agoric-sdk/issues/4563)
+* **zoe:** pass brands (not issuers) to priceAggregator ([5800711](https://github.com/Agoric/agoric-sdk/commit/580071189bb60d83ceaa806bf85035173ae9563c))
+* correct bugs due to weird & mistaken buildRootObject usage ([990e7d8](https://github.com/Agoric/agoric-sdk/commit/990e7d88a5c24bb077f349517139c8aa2d5f536a))
+* **zoe:** get ZCF bundlecap from vatAdminService ([872a11a](https://github.com/Agoric/agoric-sdk/commit/872a11a63db1062a9097ac9271f0bba6a727391b)), closes [#4487](https://github.com/Agoric/agoric-sdk/issues/4487)
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+### Code Refactoring
+
+* **run-protocol:** vaults hold liquidation proceeds until closed ([de32be9](https://github.com/Agoric/agoric-sdk/commit/de32be9b27780e75b70f06780872994fce7da02a))
+
+
+
 ### [0.21.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.21.2...@agoric/zoe@0.21.3) (2022-02-24)
 
 

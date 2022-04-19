@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.6.1...@agoric/pegasus@0.7.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* **pegasus:** prepare for governance ([4c921b5](https://github.com/Agoric/agoric-sdk/commit/4c921b501e425e861479c9197bc24d1d09f4a2ac))
+* **vats:** remove pegasus from bootstrap ([c384a41](https://github.com/Agoric/agoric-sdk/commit/c384a41c6e494059beb28c09a94e5625faa5f87e))
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
 ### [0.6.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/pegasus@0.6.0...@agoric/pegasus@0.6.1) (2022-02-24)
 
 

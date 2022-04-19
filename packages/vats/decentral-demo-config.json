@@ -1,5 +1,9 @@
 {
   "bootstrap": "bootstrap",
+  "coreProposals": [
+    "@agoric/run-protocol/scripts/init-core.js",
+    "@agoric/pegasus/scripts/init-core.js"
+  ],
   "vats": {
     "bootstrap": {
       "sourceSpec": "./src/core/boot.js",
@@ -9,6 +13,12 @@
     }
   },
   "bundles": {
+    "centralSupply": {
+      "sourceSpec": "./src/centralSupply.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "./src/mintHolder.js"
+    },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"
     },

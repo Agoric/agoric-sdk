@@ -31,6 +31,8 @@ export const agoricNamesReserved = harden({
     Attestation: 'Agoric lien attestation',
   },
   installation: {
+    centralSupply: 'central supply',
+    mintHolder: 'mint holder',
     contractGovernor: 'contract governor',
     committee: 'committee electorate',
     noActionElectorate: 'no action electorate',
@@ -49,7 +51,6 @@ export const agoricNamesReserved = harden({
     VaultFactory: 'vault factory',
     Treasury: 'Treasury', // for compatibility
     VaultFactoryGovernor: 'vault factory governor',
-    liquidate: 'liquidate',
     runStake: 'runStake',
     runStakeGovernor: 'runStake governor',
     Pegasus: 'remote peg',
@@ -102,19 +103,72 @@ export const callProperties = (builders, ...args) =>
  * @returns {PromiseSpace}
  */
 export const makePromiseSpace = (log = (..._args) => {}) => {
-  /** @type {Map<string, PromiseRecord<unknown>>} */
-  const state = new Map();
+  /**
+   * @typedef {PromiseRecord<unknown> & {
+   *   reset: (reason?: unknown) => void,
+   *   isSettling: boolean,
+   * }} PromiseState
+   */
+  /** @type {Map<string, PromiseState>} */
+  const nameToState = new Map();
   const remaining = new Set();
 
-  const findOrCreateKit = name => {
-    let kit = state.get(name);
-    if (!kit) {
+  const findOrCreateState = name => {
+    /** @type {PromiseState} */
+    let state;
+    const currentState = nameToState.get(name);
+    if (currentState) {
+      state = currentState;
+    } else {
       log(`${name}: new Promise`);
-      kit = makePromiseKit();
-      state.set(name, kit);
+      const pk = makePromiseKit();
+
+      pk.promise
+        .finally(() => {
+          remaining.delete(name);
+          log(name, 'settled; remaining:', [...remaining.keys()].sort());
+        })
+        .catch(() => {});
+
+      const settling = () => {
+        assert(state);
+        state = harden({ ...state, isSettling: true });
+        nameToState.set(name, state);
+      };
+
+      const resolve = value => {
+        settling();
+        pk.resolve(value);
+      };
+      const reject = reason => {
+        settling();
+        pk.reject(reason);
+      };
+
+      const reset = (reason = undefined) => {
+        if (!state.isSettling) {
+          if (!reason) {
+            // Reuse the old promise; don't reject it.
+            return;
+          }
+          reject(reason);
+        }
+        // Now publish a new promise.
+        nameToState.delete(name);
+        remaining.delete(name);
+      };
+
+      state = harden({
+        isSettling: false,
+        resolve,
+        reject,
+        reset,
+        promise: pk.promise,
+      });
+      nameToState.set(name, state);
       remaining.add(name);
     }
-    return kit;
+    return state;
   };
 
   const consume = new Proxy(
@@ -122,7 +176,7 @@ export const makePromiseSpace = (log = (..._args) => {}) => {
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
-        const kit = findOrCreateKit(name);
+        const kit = findOrCreateState(name);
         return kit.promise;
       },
     },
@@ -133,12 +187,8 @@ export const makePromiseSpace = (log = (..._args) => {}) => {
     {
       get: (_target, name) => {
         assert.typeof(name, 'string');
-        const { resolve, promise } = findOrCreateKit(name);
-        promise.finally(() => {
-          remaining.delete(name);
-          log(name, 'settled; remaining:', [...remaining.keys()].sort());
-        });
-        return harden({ resolve });
+        const { reject, resolve, reset } = findOrCreateState(name);
+        return harden({ reject, resolve, reset });
       },
     },
   );
@@ -203,6 +253,38 @@ export const extractPowers = (permit, allPowers) => {
   return extract(permit, allPowers);
 };
 harden(extractPowers);
+
+/**
+ * @param {object} opts
+ * @param {unknown} opts.allPowers
+ * @param {Record<string, unknown>} opts.behaviors
+ * @param { Record<string, Record<string, unknown>> } opts.manifest
+ * @param { (name: string, permit: Record<string, unknown>) => unknown} opts.makeConfig
+ */
+export const runModuleBehaviors = ({
+  allPowers,
+  behaviors,
+  manifest,
+  makeConfig,
+}) => {
+  return Promise.all(
+    entries(manifest).map(([name, permit]) =>
+      Promise.resolve().then(() => {
+        const behavior = behaviors[name];
+        assert(behavior, `${name} not in ${Object.keys(behaviors).join(',')}`);
+        assert.typeof(
+          behavior,
+          'function',
+          `behaviors[${name}] is not a function; got ${behavior}`,
+        );
+        const powers = extractPowers(permit, allPowers);
+        const config = harden(makeConfig(name, permit));
+        return behavior.call(behaviors, powers, config);
+      }),
+    ),
+  );
+};
+harden(runModuleBehaviors);
 
 /**
  * Make the well-known agoricNames namespace so that we can
