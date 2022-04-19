@@ -26,7 +26,7 @@ const build = async (log, zoe) => {
           governedInstance,
           electorateInstance,
           governorInstance,
-          issue,
+          paramSpec,
           installations,
         ) => {
           const governedTermsP = E(zoe).getTerms(governedInstance);
@@ -53,7 +53,7 @@ const build = async (log, zoe) => {
             } governor instance`,
           );
 
-          assertBallotConcernsParam(issue.paramSpec, ballotDetails);
+          assertBallotConcernsParam(paramSpec, ballotDetails);
 
           await assertContractElectorate(
             zoe,

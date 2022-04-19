@@ -66,7 +66,7 @@
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue | ApiInvocationIssue } Issue
+ * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue } Issue
  */
 
 /**
@@ -88,9 +88,10 @@
  */
 
 /**
+ * Specification when requesting creation of a Question
+ *
  * @template {Issue} [I=Issue]
  * @typedef {Object} QuestionSpec
- *   Specification when requesting creation of a Question
  * @property {ChoiceMethod} method
  * @property {I} issue
  * @property {Position[]} positions
@@ -321,9 +322,9 @@
  */
 
 /**
+ * @template [P=StandardParamPath] path for a paramManagerRetriever
  * @typedef {Object} ParamChangeIssue
- * @property {string} key
- * @property {Record<string,ParamValue>} changes
+ * @property {ParamChangesSpec<P>} spec
  * @property {Instance} contract
  */
 
@@ -343,7 +344,7 @@
  * @typedef {Object} ParamChangeIssueDetails
  *    details for a question that can change a contract parameter
  * @property {ChoiceMethod} method
- * @property {ParamChangeIssue} issue
+ * @property {ParamChangeIssue<unknown>} issue
  * @property {ParamChangePositions} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
@@ -465,8 +466,9 @@
 /**
  * Description of a set of coordinated changes for a ParamManager
  *
- * @typedef {Object} ParamChangesSpec
- * @property {string} key Identifies the paramManager within the contract
+ * @template P path for a paramManagerRetriever
+ * @typedef {object} ParamChangesSpec<P>
+ * @property {P} paramPath
  * @property {Record<string, ParamValue>} changes one or more changes to parameters
  */
 
@@ -560,9 +562,7 @@
  */
 
 /**
- * @callback AssertBallotConcernsParam
- * @param {{key: string, parameterName: string}} paramSpec
- * @param {QuestionSpec<ParamChangeIssue>} questionSpec
+ * @typedef {{key: string, parameterName: string}} StandardParamPath
  */
 
 /**
@@ -574,7 +574,7 @@
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
- * @param {ParamChangesSpec} paramSpec
+ * @param {ParamChangesSpec<any>} paramSpec
  * @returns {ContractGovernanceVoteResult}
  */
 

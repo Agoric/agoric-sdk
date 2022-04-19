@@ -139,7 +139,7 @@ test('governParam no votes', async t => {
     );
 
   const paramChangeSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes: { [MALLEABLE_NUMBER]: 25n },
   });
 
@@ -181,7 +181,7 @@ test('multiple params bad change', async t => {
   );
 
   const paramChangesSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes: {
       [CONTRACT_ELECTORATE]: 13n,
       [MALLEABLE_NUMBER]: 42n,
@@ -213,7 +213,7 @@ test('change multiple params', async t => {
   const wrongInvitation = await E(committeeCreator).getPoserInvitation();
 
   const paramChangesSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes: {
       [CONTRACT_ELECTORATE]: wrongInvitation,
       [MALLEABLE_NUMBER]: 42n,
@@ -268,7 +268,7 @@ test('change multiple params used invitation', async t => {
   const wrongInvitation = await E(committeeCreator).getPoserInvitation();
 
   const paramChangesSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes: {
       [CONTRACT_ELECTORATE]: wrongInvitation,
       [MALLEABLE_NUMBER]: 42n,

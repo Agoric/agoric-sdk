@@ -5,7 +5,7 @@ import { Far } from '@endo/marshal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { INTEREST_RATE_KEY } from '../../../src/vaultFactory/params';
-import { ONE_DAY, createCommittee, installContracts, makeVats } from '../setup';
+import { createCommittee, installContracts, makeVats, ONE_DAY } from '../setup';
 
 const BASIS_POINTS = 10000n;
 
@@ -31,6 +31,7 @@ const oneVoterValidate = async (
   electorateInstance,
   governorInstanceP,
   installations,
+  parameterName,
 ) => {
   const [voters, governedInstance, governorInstance] = await Promise.all([
     votersP,
@@ -39,12 +40,12 @@ const oneVoterValidate = async (
   ]);
   const { counterInstance, issue } = await details;
 
-  E(voters[0]).validate(
+  return E(voters[0]).validate(
     counterInstance,
     governedInstance,
     electorateInstance,
     governorInstance,
-    issue,
+    harden({ paramPath: issue.spec.paramPath, parameterName }),
     installations,
   );
 };
@@ -65,6 +66,7 @@ const setUpVote = async (deadline, votersP, votes, contracts, paramChanges) => {
     electorateInstance,
     governor.instance,
     installations,
+    Object.keys(paramChanges.changes)[0],
   );
   return E.get(feeDetails).counterInstance;
 };
@@ -118,12 +120,12 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   };
   const votes = [0, 1, 1, 0, 0];
 
-  const paramChanges = {
-    key: { collateralBrand },
+  const paramChanges = harden({
+    paramPath: { key: { collateralBrand } },
     changes: {
       [INTEREST_RATE_KEY]: makeRatio(4321n, runBrand, BASIS_POINTS),
     },
-  };
+  });
 
   const counter = await setUpVote(
     BigInt(daysForVoting) * ONE_DAY,

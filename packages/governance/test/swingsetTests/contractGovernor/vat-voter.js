@@ -64,7 +64,10 @@ const build = async (log, zoe) => {
           ]);
 
           assertBallotConcernsParam(
-            { key: 'governedParams', parameterName: MALLEABLE_NUMBER },
+            harden({
+              paramPath: { key: 'governedParams' },
+              parameterName: MALLEABLE_NUMBER,
+            }),
             questionDetails,
           );
           assert(installations.binaryVoteCounter === voteCounterInstallation);

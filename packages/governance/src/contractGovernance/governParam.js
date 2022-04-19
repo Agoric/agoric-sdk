@@ -58,20 +58,28 @@ const validateParamChangeQuestion = details => {
   );
 };
 
-/** @type {AssertBallotConcernsParam} */
+/**
+ * assert that the parameter described by paramSpec is proposed to be changed in
+ * the question described by questionSpec.
+ *
+ * @param {any} paramSpec
+ * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
+ */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
-  const { key, parameterName } = paramSpec;
-  const issue = questionSpec.issue;
+  const { parameterName, paramPath } = paramSpec;
+  const { issue } = questionSpec;
+
   // XXX doesn't fully test this requirement
   assert(issue, 'must be a param change issue');
 
   assert(
-    issue.changes[parameterName],
-    X`Question (${issue.changes}) does not concern ${parameterName}`,
+    issue.spec.changes[parameterName],
+    X`Question (${issue.spec.changes}) does not concern ${parameterName}`,
   );
+
   assert(
-    issue.key === key,
-    X`Question key (${issue.key}) doesn't match key (${key})`,
+    keyEQ(issue.spec.paramPath, paramPath),
+    X`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`,
   );
 };
 
@@ -90,14 +98,14 @@ const setupParamGovernance = async (
   const voteOnParamChanges = async (
     voteCounterInstallation,
     deadline,
-    paramChanges,
+    paramSpec,
   ) => {
-    const paramMgr = await E(paramManagerRetriever).get(paramChanges);
+    const paramMgr = await E(paramManagerRetriever).get(paramSpec.paramPath);
     const changePs = {};
-    for (const name of Object.keys(paramChanges.changes)) {
+    for (const name of Object.keys(paramSpec.changes)) {
       const proposedValue = E(paramMgr).getVisibleValue(
         name,
-        paramChanges.changes[name],
+        paramSpec.changes[name],
       );
       changePs[name] = proposedValue;
     }
@@ -105,9 +113,12 @@ const setupParamGovernance = async (
 
     const { positive, negative } = makeParamChangePositions(changes);
 
+    /** @type {ParamChangeIssue<unknown>} */
     const issue = harden({
-      key: paramChanges.key,
-      changes,
+      spec: {
+        paramPath: paramSpec.paramPath,
+        changes,
+      },
       contract: contractInstance,
     });
 
@@ -141,7 +152,7 @@ const setupParamGovernance = async (
       .then(async outcome => {
         if (keyEQ(positive, outcome)) {
           return E.when(
-            E(paramMgr).updateParams(paramChanges.changes),
+            E(paramMgr).updateParams(paramSpec.changes),
             () => positive,
           );
         }
