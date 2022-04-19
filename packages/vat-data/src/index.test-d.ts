@@ -6,11 +6,7 @@ import {
   makeKindHandle,
   defineDurableKind,
 } from '.';
-import {
-  ActualBehavior,
-  DurableKindHandle,
-  FunctionsMinusContext,
-} from './types.js';
+import { KindFacets, DurableKindHandle, KindFacet } from './types.js';
 
 /*
 export const makePaymentMaker = (allegedName: string, brand: unknown) => {
@@ -66,7 +62,7 @@ const counterBehavior = {
 
 const finishCounter = (
   { state }: SingleCounterContext,
-  counter: FunctionsMinusContext<typeof counterBehavior>,
+  counter: KindFacet<typeof counterBehavior>,
 ) => {
   expectType<string>(state.name);
   expectType<number>(counter.getCount());
@@ -79,7 +75,7 @@ const makeCounter = defineKind('counter', initCounter, counterBehavior, {
 // Multi-faceted example from virtual-objects.md
 type MultiCounterContext = {
   state: ReturnType<typeof initFacetedCounter>;
-  facets: ActualBehavior<typeof facetedCounterBehavior>;
+  facets: KindFacets<typeof facetedCounterBehavior>;
 };
 const initFacetedCounter = () => ({ counter: 0 });
 const getCount = ({ state }: MultiCounterContext) => state.counter;

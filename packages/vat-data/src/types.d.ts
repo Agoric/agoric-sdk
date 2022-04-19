@@ -1,3 +1,10 @@
+/**
+ * @file Types for vat-data
+ *
+ * Facet is a single object with methods.
+ * Behavior is a description when defining a kind of what facets it will have.
+ * For the non-multi defineKind, there is just one facet so it doesn't have a key.
+ */
 import type {
   MapStore,
   SetStore,
@@ -16,13 +23,13 @@ type MinusContext<
   R = ReturnType<F>, // R: the return type of F
 > = (...args: Tail<P>) => R;
 
-type FunctionsMinusContext<O> = { [K in keyof O]: MinusContext<O[K]> };
+type KindFacet<O> = { [K in keyof O]: MinusContext<O[K]> };
 
-type ActualBehavior<B> = {
-  [Facet in keyof B]: FunctionsMinusContext<B[Facet]>;
+type KindFacets<B> = {
+  [FacetKey in keyof B]: KindFacet<B[FacetKey]>;
 };
 
-type MultiKindContext<S, B> = { state: S; facets: ActualBehavior<B> };
+type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
 declare const kindHandleMarker: unique symbol;
 export type DurableKindHandle = { readonly [kindHandleMarker]: string };
@@ -34,15 +41,15 @@ export type VatData = {
     init: (...args: P) => S,
     facet: F,
     options?: {
-      finish?: (context: { state: S }, kind: FunctionsMinusContext<F>) => void;
+      finish?: (context: { state: S }, kind: KindFacet<F>) => void;
     },
-  ) => (...args: P) => FunctionsMinusContext<F>;
+  ) => (...args: P) => KindFacet<F>;
   defineKindMulti: <P, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
     options?: { finish?: (context: MultiKindContext<S, B>) => void },
-  ) => (...args: P) => ActualBehavior<B>;
+  ) => (...args: P) => KindFacets<B>;
 
   // durable kinds
   makeKindHandle: (descriptionTag: string) => DurableKindHandle;
@@ -51,15 +58,15 @@ export type VatData = {
     init: (...args: P) => S,
     facet: F,
     options?: {
-      finish?: (context: { state: S }, kind: FunctionsMinusContext<F>) => void;
+      finish?: (context: { state: S }, kind: KindFacet<F>) => void;
     },
-  ) => (...args: P) => FunctionsMinusContext<F>;
+  ) => (...args: P) => KindFacet<F>;
   defineDurableKindMulti: <P, S, B>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     behavior: B,
     options?: { finish?: (context: MultiKindContext<S, B>) => void },
-  ) => (...args: P) => ActualBehavior<B>;
+  ) => (...args: P) => KindFacets<B>;
 
   makeScalarBigMapStore: <K, V>(
     label: string,
