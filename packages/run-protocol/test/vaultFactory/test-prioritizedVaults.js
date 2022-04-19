@@ -1,4 +1,3 @@
-/* global setImmediate */
 // @ts-check
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -6,24 +5,14 @@ import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makePromiseKit } from '@endo/promise-kit';
 
 import {
   currentDebtToCollateral,
   makePrioritizedVaults,
 } from '../../src/vaultFactory/prioritizedVaults.js';
-import { makeFakeInnerVault } from '../supports.js';
+import { makeFakeInnerVault, waitForPromisesToSettle } from '../supports.js';
 
 /** @typedef {import('../../src/vaultFactory/vault.js').InnerVault} InnerVault */
-
-// Some notifier updates aren't propogating sufficiently quickly for the tests.
-// This invocation (thanks to Warner) waits for all promises that can fire to
-// have all their callbacks run
-async function waitForPromisesToSettle() {
-  const pk = makePromiseKit();
-  setImmediate(pk.resolve);
-  return pk.promise;
-}
 
 function makeCollector() {
   /** @type {Ratio[]} */
@@ -249,4 +238,44 @@ test('highestRatio', async t => {
     [fakeVault6.getCurrentDebt(), fakeVault6.getCollateralAmount()],
   ]);
   t.deepEqual(vaults.highestRatio(), percent(50), 'expected 50% to be highest');
+});
+
+test('stable ordering as interest accrues', async t => {
+  const reschedulePriceCheck = makeRescheduler();
+  const vaults = makePrioritizedVaults(reschedulePriceCheck.fakeReschedule);
+
+  // ACTUAL DEBTS AFTER 100% DAILY INTEREST
+  // day 0
+  // v1: 10 / 100
+  // v2: 20 / 100 HIGHEST
+  const v1 = makeFakeInnerVault('id-fakeVault1', AmountMath.make(brand, 10n));
+  const v2 = makeFakeInnerVault('id-fakeVault2', AmountMath.make(brand, 20n));
+  vaults.addVault('id-fakeVault1', v1);
+  vaults.addVault('id-fakeVault2', v2);
+  // ordering
+  t.deepEqual(
+    Array.from(vaults.entries()).map(([k, _v]) => k),
+    ['fc014000000000000:id-fakeVault2', 'fc024000000000000:id-fakeVault1'],
+  );
+  t.deepEqual(vaults.highestRatio(), percent(20));
+
+  // day 1
+  // v1: 20 / 100
+  // v2: 40 / 100 SHOULD BE HIGHEST
+  // v3: 30 / 100 BUG HAS THIS AS HIGHEST
+  v1.chargeHundredPercentInterest();
+  v2.chargeHundredPercentInterest();
+  const v3 = makeFakeInnerVault('id-fakeVault3', AmountMath.make(brand, 30n));
+  vaults.addVault('id-fakeVault3', v3);
+  t.deepEqual(
+    Array.from(vaults.entries()).map(([k, _v]) => k),
+    [
+      'fc00aaaaaaaaaaaab:id-fakeVault3',
+      'fc014000000000000:id-fakeVault2',
+      'fc024000000000000:id-fakeVault1',
+    ],
+  );
+  // BUG
+  // t.deepEqual(vaults.highestRatio(), percent(40));
+  t.deepEqual(vaults.highestRatio(), percent(30));
 });
