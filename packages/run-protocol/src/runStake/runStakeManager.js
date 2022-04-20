@@ -6,7 +6,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { fit, getCopyBagEntries, M } from '@agoric/store';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { E } from '@endo/far';
-import { defineKind, partialAssign } from '@agoric/vat-data';
+import { defineKindMulti, partialAssign } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
 import { KW } from './runStakeKit.js';
@@ -45,7 +45,8 @@ const trace = makeTracer('RSM', false);
  * }} MutableState
  * @typedef {ImmutableState & MutableState} State
  * @typedef {Readonly<{
- *   state: State
+ *   state: State,
+ *   facets: import('@agoric/vat-data/src/types').KindFacets<typeof behavior>,
  * }>} MethodContext
  */
 
@@ -108,15 +109,37 @@ const initState = (
  *
  * @param {MethodContext} context
  */
-const finish = ({ state }) => {
-  const { debtMint, mintPowers, periodNotifier, poolIncrementSeat, zcf } =
-    state;
+const finish = ({ state, facets }) => {
+  const { periodNotifier, zcf } = state;
+  const { helper } = facets;
 
+  observeNotifier(periodNotifier, {
+    updateState: updateTime =>
+      helper
+        .chargeAllVaults(updateTime)
+        .catch(e =>
+          console.error('🚨 runStakeManager failed to charge interest', e),
+        ),
+    fail: reason => {
+      zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${reason}`),
+      );
+    },
+    finish: done => {
+      zcf.shutdownWithFailure(
+        assert.error(X`Unable to continue without a timer: ${done}`),
+      );
+    },
+  });
+};
+
+const helper = {
   /**
-   *
+   * @param {MethodContext} context
    * @param {bigint} updateTime
    */
-  const chargeAllVaults = async updateTime => {
+  chargeAllVaults: async ({ state }, updateTime) => {
+    const { debtMint, mintPowers, poolIncrementSeat } = state;
     trace('chargeAllVaults', { updateTime });
     const interestRate = mintPowers.getGovernedParams().getInterestRate();
 
@@ -151,27 +174,10 @@ const finish = ({ state }) => {
     assetUpdater.updateState(payload);
 
     trace('chargeAllVaults complete', payload);
-  };
-
-  observeNotifier(periodNotifier, {
-    updateState: updateTime =>
-      chargeAllVaults(updateTime).catch(e =>
-        console.error('🚨 runStakeManager failed to charge interest', e),
-      ),
-    fail: reason => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${reason}`),
-      );
-    },
-    finish: done => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${done}`),
-      );
-    },
-  });
+  },
 };
 
-const behavior = {
+const manager = {
   /**
    * @param {MethodContext} context
    * @param { Amount<'copyBag'>} attestationGiven
@@ -273,12 +279,14 @@ const behavior = {
   getAssetNotifier: ({ state }) => state.assetNotifier,
 };
 
-export const makeRunStakeManager = defineKind(
+const behavior = { helper, manager };
+
+export const makeRunStakeManager = defineKindMulti(
   'RunStakeManager',
   initState,
   behavior,
   { finish },
 );
 /**
- * @typedef {ReturnType<typeof makeRunStakeManager>} RunStakeManager
+ * @typedef {ReturnType<typeof makeRunStakeManager>['manager']} RunStakeManager
  */

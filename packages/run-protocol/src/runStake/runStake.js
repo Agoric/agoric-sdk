@@ -160,7 +160,7 @@ export const start = async (
   });
 
   const startTimeStamp = await E(timerService).getCurrentTimestamp();
-  const manager = makeRunStakeManager(
+  const { manager } = makeRunStakeManager(
     zcf,
     debtMint,
     harden({ Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand }),
