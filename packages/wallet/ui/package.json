@@ -47,7 +47,7 @@
     "build:ses": "cp ../../../node_modules/ses/dist/lockdown.umd.js public/",
     "build:react": "react-scripts build",
     "lint": "eslint '**/*.{js,jsx}'",
-    "lint-fix": "eslint --fix '**/*.{js,jsx}'",
+    "lint-fix": "yarn lint:eslint --fix",
     "test": "CI=true react-scripts test",
     "test:watch": "react-scripts test",
     "test:xs": "exit 0",
