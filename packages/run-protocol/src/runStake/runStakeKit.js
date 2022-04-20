@@ -38,8 +38,6 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  * @typedef {Readonly<{
  *   collateralBrand: Brand,
  *   debtBrand: Brand,
- *   emptyCollateral: Amount<'copyBag'>,
- *   emptyDebt: Amount<'nat'>,
  *   manager: import('./runStakeManager.js').RunStakeManager,
  *   notifier: NotifierRecord<unknown>['notifier'],
  *   vaultSeat: ZCFSeat,
@@ -65,11 +63,6 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
 const initState = (zcf, startSeat, manager) => {
   const collateralBrand = manager.getCollateralBrand();
   const debtBrand = manager.getDebtBrand();
-
-  const emptyCollateral = AmountMath.makeEmpty(
-    collateralBrand,
-    AssetKind.COPY_BAG,
-  );
 
   const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
 
@@ -118,18 +111,16 @@ const initState = (zcf, startSeat, manager) => {
   const { notifier, updater } = makeNotifierKit();
 
   /** @type {ImmutableState} */
-  const fixed = {
+  const immutable = {
     collateralBrand,
     debtBrand,
-    emptyCollateral, // XXX not worth keeping on disk
-    emptyDebt, // XXX not worth keeping on disk
     manager,
     notifier,
     vaultSeat,
     zcf,
   };
   return {
-    ...fixed,
+    ...immutable,
     open: true,
     // Two values from the same moment
     interestSnapshot: manager.getCompoundedInterest(),
@@ -148,14 +139,17 @@ const initState = (zcf, startSeat, manager) => {
  */
 export const makeRunStakeKit = (zcf, startSeat, manager) => {
   const state = initState(zcf, startSeat, manager);
-  const { collateralBrand, debtBrand, emptyCollateral, emptyDebt, vaultSeat } =
-    state;
+  const { collateralBrand, debtBrand, vaultSeat } = state;
 
   const helper = {
     getCollateralAllocated: seat =>
       seat.getAmountAllocated(KW.Attestation, collateralBrand),
     getRunAllocated: seat => seat.getAmountAllocated(KW.Debt, debtBrand),
     getCollateralAmount: () => {
+      const emptyCollateral = AmountMath.makeEmpty(
+        collateralBrand,
+        AssetKind.COPY_BAG,
+      );
       // getCollateralAllocated would return final allocations
       return vaultSeat.hasExited()
         ? emptyCollateral
@@ -244,6 +238,10 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
       const debt = pot.getCurrentDebt();
       const collateral = helper.getCollateralAllocated(vaultSeat);
 
+      const emptyCollateral = AmountMath.makeEmpty(
+        collateralBrand,
+        AssetKind.COPY_BAG,
+      );
       const giveColl = proposal.give.Attestation || emptyCollateral;
       const wantColl = proposal.want.Attestation || emptyCollateral;
 
@@ -253,6 +251,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
       const { amountLiened, maxDebt: newMaxDebt } =
         manager.maxDebtForLien(newCollateral);
 
+      const emptyDebt = AmountMath.makeEmpty(debtBrand);
       const giveRUN = AmountMath.min(proposal.give.Debt || emptyDebt, debt);
       const wantRUN = proposal.want.Debt || emptyDebt;
       const giveRUNonly = matches(
@@ -335,7 +334,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
 
       manager.burnDebt(currentDebt, vaultSeat);
       state.open = false;
-      helper.updateDebtSnapshot(emptyDebt);
+      helper.updateDebtSnapshot(AmountMath.makeEmpty(debtBrand));
       helper.updateUiState();
       helper.assertVaultHoldsNoRun();
       seat.exit();
