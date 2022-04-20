@@ -1,5 +1,3 @@
-// @ts-check
-
 // @ts-ignore
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 

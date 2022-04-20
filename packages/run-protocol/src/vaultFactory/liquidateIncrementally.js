@@ -1,5 +1,5 @@
 /* eslint-disable no-await-in-loop */
-// no @ts-check
+// @ts-check
 
 import { E } from '@endo/eventual-send';
 import {
@@ -12,7 +12,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio';
+import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeTracer } from '../makeTracer.js';
 // import { quote } from '@agoric/assert';
 
@@ -20,29 +20,29 @@ const { details: X } = assert;
 const trace = makeTracer('LiqI');
 
 /**
+ * @file
  * This contract liquidates a payment in multiple tranches to limit the
- * price impact an the AMM of any one sale. Each block it will compute
+ * price impact on the AMM of any one sale. Each block it will compute
  * a tranche of collateral to sell, where the size is a function of
  * the amount of that collateral in the AMM pool and the desired price impact.
  * It then gets 3 prices for the current tranche:
- * - AMM quote - compute xYK locally based on the pool sizes
+ * - AMM quote - compute XYK locally based on the pool sizes
  * - Reserve quote - based on a low price at which the Reserve will purchase
- * - Oracle quote - provide by the oracle that triggered liquidation
+ * - Oracle quote - provided by the oracle that triggered liquidation
  * - Oracle limit - a limit that is DIVERGENCE_TOLERANCE below the
  *   Oracle quote.
- * These sell based on the following:
+ * Then sell based on the following:
  * - If the AMM quote is *below* the oracle limit, skip this block
  *   to wait for oracle and AMM prices to converge.
- *    - should it still sell to teh Reserve here?
  * - If the Reserve quote is higher than the AMM quote, sell to the
  *   Reserve with a `want` of the Oracle limit
  * - Otherwise, sell to the AMM with a `want` of the Oracle limit
- * If selling a tranche for the minimum would pay off the debt (`isLast`),
- * then use sell using`swapOut` with a minimum of the debt. If that fails
- * this is not the last tranche, tehn sell with the `swapIn` operation,
- * using the oracle price reference as the minimum.
  *
- * TODO integrate the reserve
+ * Selling uses the `oracleLimit as the `want` as the limit to allowed
+ * slippage, and provides the remaining `debt` as the `stopAfter` so
+ * that we sell no more than is needed to pay off the debt.
+ *
+ * TODO integrate the reserve, including the above Reserve strategies.
  */
 
 /** @type {ContractStartFn} */
@@ -98,20 +98,15 @@ const start = async zcf => {
     BP2,
   });
 
-  // the maximum number fo failure sina  row before we stop liquidating.
-  // TODO make this larger andmake it reset on success
-  const MAX_FAILURES = 4;
-  let failures = 0;
-
-  const computeAMMProceeds = (poolCentral, poolCollateral, tranche, debt) => {
+  const estimateAMMProceeds = (poolCentral, poolCollateral, tranche, debt) => {
     const k = NatMath.multiply(poolCentral.value, poolCollateral.value);
     const postSaleCollateral = AmountMath.add(tranche, poolCollateral);
-    const quoteValue = NatMath.subtract(
+    const estimateCentral = NatMath.subtract(
       poolCentral.value,
       NatMath.floorDivide(k, postSaleCollateral.value),
     );
-    const ammQuote = AmountMath.make(debt.brand, quoteValue);
-    const minAmmProceeds = ceilMultiplyBy(ammQuote, MAX_SLIPPED);
+    const estimateAmount = AmountMath.make(debt.brand, estimateCentral);
+    const minAmmProceeds = ceilMultiplyBy(estimateAmount, MAX_SLIPPED);
     trace('AMM estimate', {
       tranche,
       minAmmProceeds,
@@ -159,14 +154,12 @@ const start = async zcf => {
       trace('TRANCHE', asFloat(maxAllowedTranche.value, 100000n));
       const tranche = AmountMath.min(maxAllowedTranche, toSell);
       // compute the expected proceeds from the AMM for tranche
-      const minAmmProceeds = computeAMMProceeds(
+      const minAmmProceeds = estimateAMMProceeds(
         poolCentral,
         poolCollateral,
         tranche,
         debt,
       );
-      // true if the minimum proceeds will pay off the debt
-      const isLast = AmountMath.isGTE(minAmmProceeds, debt);
 
       // this could use a unit rather than the tranche size to run concurrently
       /** @type PriceQuote */
@@ -185,7 +178,6 @@ const start = async zcf => {
         tranche,
         minAmmProceeds,
         oracleLimit,
-        isLast,
         poolCentral,
         poolCollateral,
       });
@@ -195,7 +187,6 @@ const start = async zcf => {
           ammProceeds: minAmmProceeds,
           debt,
           oracleLimit,
-          isLast,
         };
       } else {
         trace('SKIP');
@@ -253,13 +244,12 @@ const start = async zcf => {
     // 3. we stop selling assets so we have both assets and remaining debt (reserve purchase)
 
     for await (const t of processTranches(debtorSeat, originalDebt)) {
-      const { collateral, oracleLimit, ammProceeds, debt, isLast } = t;
+      const { collateral, oracleLimit, ammProceeds, debt } = t;
       trace(`OFFER TO DEBT: `, {
         collateral,
         ammProceeds,
         oracleLimit,
         debt,
-        isLast,
       });
       const collateralBefore = debtorSeat.getAmountAllocated('In');
       const proceedsBefore = debtorSeat.getAmountAllocated('Out');
@@ -268,6 +258,7 @@ const start = async zcf => {
 
       const proceedsAfter = debtorSeat.getAmountAllocated('Out');
       if (AmountMath.isEqual(proceedsBefore, proceedsAfter)) {
+        // nothing got sold
         const collateralAfter = debtorSeat.getAmountAllocated('In');
         trace('NOSELL', {
           proceedsBefore,
@@ -275,11 +266,6 @@ const start = async zcf => {
           collateralBefore,
           collateralAfter,
         });
-        // nothing got sold
-        failures += 1;
-        if (failures > MAX_FAILURES) {
-          throw Error(`Too many sequential failures ${failures}`);
-        }
       }
     }
     debtorSeat.exit();
@@ -290,10 +276,10 @@ const start = async zcf => {
     makeDebtorInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
   });
 
+  // @ts-ignore
   return harden({ creatorFacet });
 };
 
-/** @type {MakeLiquidationStrategy} */
 const makeLiquidationStrategy = creatorFacet => {
   const makeInvitation = () => E(creatorFacet).makeDebtorInvitation();
 

@@ -546,13 +546,10 @@ test('price drop', async t => {
 
   priceAuthority.setPrice(makeRatio(677n, runBrand, 900n, aethBrand));
   trace(t, 'price dropped a little');
-  // await manualTimer.tick();
-
   notification = await E(vaultNotifier).getUpdateSince();
   t.is(notification.value.vaultState, Phase.ACTIVE);
 
   await E(priceAuthority).setPrice(makeRatio(636n, runBrand, 900n, aethBrand));
-  // await manualTimer.tick();
   notification = await E(vaultNotifier).getUpdateSince(
     notification.updateCount,
   );
@@ -570,15 +567,13 @@ test('price drop', async t => {
     'Debt remains while liquidating',
   );
   trace(t, 'debt remains', AmountMath.make(runBrand, 284n));
-  await E(priceAuthority).setPrice(makeRatio(1000n, runBrand, 900n, aethBrand));
-  // await manualTimer.tick();
-  trace(t, 'debt gone');
 
+  await E(priceAuthority).setPrice(makeRatio(1000n, runBrand, 900n, aethBrand));
+  trace(t, 'debt gone');
   notification = await E(vaultNotifier).getUpdateSince(
     notification.updateCount,
   );
   t.is(notification.value.vaultState, Phase.LIQUIDATED);
-
   t.truthy(await E(vaultSeat).hasExited());
 
   const debtAmountAfter = await E(vault).getCurrentDebt();
@@ -1617,7 +1612,6 @@ test('mutable liquidity triggers and interest', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
   // Create a loan for Bob for 650 RUN with 100 Aeth collateral
-  // 7.4
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
   const bobLoanAmount = AmountMath.make(runBrand, 650n);
   /** @type {UserSeat<VaultKit>} */
@@ -1690,9 +1684,6 @@ test('mutable liquidity triggers and interest', async t => {
 
   await E(priceAuthority).setPrice(makeRatio(7n, runBrand, 1n, aethBrand));
   trace(t, 'changed price to 7');
-
-  // await manualTimer.tick();
-  // price levels changed and interest was charged.
 
   // expect Alice to be liquidated because her collateral is too low.
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);

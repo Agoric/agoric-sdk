@@ -106,6 +106,9 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const removeVault = key => {
     const vault = vaults.removeByKey(key);
+    // don't call reschedulePriceCheck, but do reset the highest.
+    // This could be expensive if we delete individual entries in
+    // order. Will know once we have perf data.
     oracleQueryThreshold = firstDebtRatio();
     return vault;
   };

@@ -27,7 +27,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', true);
+const trace = makeTracer('VM', false);
 
 /**
  * @typedef {{
@@ -257,10 +257,15 @@ const helperBehavior = {
       liquidationMargin,
     );
 
-    // if there's an outstanding quote, reset the level. If there's no current
-    // quote (because this is the first loan, or because a quote just resolved)
-    // then make a new request to the priceAuthority, and when it resolves,
-    // liquidate anything that's above the price level.
+    // INTERLOCK NOTE:
+    // The presence of an `outstandingQuote` is used to ensure there's only
+    // one thread of control waiting for a quote from the price authority.
+    // All later callers will just update the threshold for the `outstandingQuote`.
+    // The first invocation will skip the next block and continue to below where
+    // the `outstandingQuote` is assigned. So, if there's an outstanding quote,
+    // reset the level. If there's no current quote (because this is the first
+    // vault, or because a quote just resolved), then make a new request to the
+    // priceAuthority, and when it resolves, liquidate the first vault.
     if (state.outstandingQuote) {
       // Safe to call extraneously (lightweight and idempotent)
       E(state.outstandingQuote).updateLevel(
@@ -275,25 +280,24 @@ const helperBehavior = {
       return;
     }
 
-    // There are two awaits in a row here. The first gets a mutableQuote object
-    // relatively quickly from the PriceAuthority. The second schedules a
-    // callback that may not fire until much later.
-    // Callers shouldn't expect a response from this function.
+    // INTERLOCK NOTE:
+    // Sets the interlock test above. This MUST NOT `await` the quote or
+    // else multiple threads of control could get through the interlock test
+    // above.
     const { priceAuthority } = state;
-    trace('posting quote request', triggerPoint);
-
     state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
       highestDebtRatio.denominator, // collateral
       triggerPoint,
     );
-    trace('posted quote request');
+    trace('posted quote request', triggerPoint);
 
     // The rest of this method will not happen until after a quote is received.
+    // This may not happen until much later, when themarket changes.
     const quote = await E(state.outstandingQuote).getPromise();
-    // When we receive a quote, we liquidate all the vaults that don't have
-    // sufficient collateral, (even if the trigger was set for a different
-    // level) because we use the actual price ratio plus margin here. Use
-    // ceilDivide to round up because ratios above this will be liquidated.
+    // When we receive a quote, we check whether the vault with the highest
+    // ratio of debt to collateral is below the liquidationMargin, and if so,
+    // we liquidate it. We use ceilDivide to round up because ratios above
+    // this will be liquidated.
     const quoteRatioPlusMargin = makeRatioFromAmounts(
       ceilDivideBy(getAmountOut(quote), liquidationMargin),
       getAmountIn(quote),

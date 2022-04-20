@@ -311,13 +311,6 @@ async function setupServices(
 }
 // #endregion
 
-// sell in a single tranche
-//   - no shortfall
-//   - with shortfall
-// sell in multiple tranches
-// stall then oracle correct
-// stall then trade the amm back to the price
-
 // #region driver
 const makeDriver = async (t, initialPrice, priceBase) => {
   const services = await setupServices(t, initialPrice, priceBase);
