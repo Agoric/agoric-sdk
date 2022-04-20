@@ -21,16 +21,32 @@ export const KW = /** @type { const } */ ({
 });
 
 /**
- * Make RUNstake kit, subject to runStake terms.
+ * @typedef {Readonly<{
+ *   collateralBrand: Brand,
+ *   debtBrand: Brand,
+ *   emptyCollateral: Amount<'copyBag'>,
+ *   emptyDebt: Amount<'nat'>,
+ *   notifier: NotifierRecord<unknown>['notifier'],
+ *   vaultSeat: ZCFSeat,
+ * }>} ImmutableState
+ * @typedef {{
+ *   open: boolean,
+ *   debtSnapshot: Amount<'nat'>,
+ *   interestSnapshot: Ratio,
+ *   updater: NotifierRecord<unknown>['updater'] | null,
+ * }} MutableState
+ * @typedef {MutableState & ImmutableState} State
+ */
+
+/**
+ * Make RUNstake kit state
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
  * @param {import('./runStakeManager.js').RunStakeManager} manager
- * return value follows the wallet invitationMakers pattern
- * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
+ * @returns {State}
  */
-export const makeRunStakeKit = (zcf, startSeat, manager) => {
-  // CONSTANTS
+const initState = (zcf, startSeat, manager) => {
   const collateralBrand = manager.getCollateralBrand();
   const debtBrand = manager.getDebtBrand();
 
@@ -41,6 +57,40 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
   const emptyDebt = AmountMath.makeEmpty(debtBrand);
 
   const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
+  const { notifier, updater } = makeNotifierKit();
+
+  /** @type {ImmutableState} */
+  const fixed = {
+    collateralBrand,
+    debtBrand,
+    emptyCollateral,
+    emptyDebt,
+    notifier,
+    vaultSeat,
+  };
+  return {
+    ...fixed,
+    open: true,
+    // Two values from the same moment
+    interestSnapshot: manager.getCompoundedInterest(),
+    debtSnapshot: emptyDebt,
+    updater,
+  };
+};
+
+/**
+ * Make RUNstake kit, subject to runStake terms.
+ *
+ * @param {ZCF} zcf
+ * @param {ZCFSeat} startSeat
+ * @param {import('./runStakeManager.js').RunStakeManager} manager
+ * return value follows the wallet invitationMakers pattern
+ * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
+ */
+export const makeRunStakeKit = (zcf, startSeat, manager) => {
+  const state = initState(zcf, startSeat, manager);
+  const { collateralBrand, debtBrand, emptyCollateral, emptyDebt, vaultSeat } =
+    state;
 
   /**
    * Calculate the fee, the amount to mint and the resulting debt.
@@ -90,18 +140,6 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     return newDebt;
   };
 
-  // NOTE: this record is mutable by design, anticipating
-  // the durable objects API.
-  const state = {
-    open: true,
-    vaultSeat,
-    /** @type {NotifierRecord<VaultUIState> | { updater: undefined, notifier: * }} */
-    ui: makeNotifierKit(),
-    // Two values from the same moment
-    interestSnapshot: manager.getCompoundedInterest(),
-    debtSnapshot: emptyDebt,
-  };
-
   const getCollateralAllocated = seat =>
     seat.getAmountAllocated(KW.Attestation, collateralBrand);
   const getRunAllocated = seat => seat.getAmountAllocated(KW.Debt, debtBrand);
@@ -131,8 +169,8 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
 
   /** call this whenever anything changes! */
   const updateUiState = async () => {
-    const { open: active, ui } = state;
-    if (!ui.updater) {
+    const { open: active, updater } = state;
+    if (!updater) {
       console.warn('updateUiState called after ui.updater removed');
       return;
     }
@@ -140,10 +178,10 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     trace('updateUiState', uiState);
 
     if (active) {
-      ui.updater.updateState(uiState);
+      updater.updateState(uiState);
     } else {
-      ui.updater.finish(uiState);
-      state.ui = { updater: undefined, notifier: state.ui.notifier };
+      updater.finish(uiState);
+      state.updater = null;
     }
   };
 
@@ -314,7 +352,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
   };
 
   const vault = Far('RUNstake', {
-    getNotifier: () => state.ui.notifier,
+    getNotifier: () => state.notifier,
     makeAdjustBalancesInvitation,
     makeCloseInvitation,
     getCurrentDebt,
@@ -328,7 +366,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
   return harden({
     publicNotifiers: {
       asset: manager.getAssetNotifier(),
-      vault: state.ui.notifier,
+      vault: state.notifier,
     },
     invitationMakers: Far('invitation makers', {
       AdjustBalances: () =>
