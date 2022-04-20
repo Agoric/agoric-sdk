@@ -35,10 +35,10 @@ const trace = makeTracer('RSM', false);
  *   mintPowers: { burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndReallocate: MintAndReallocate },
  *   chargingPeriod: bigint,
  *   debtMint: ZCFMint<'nat'>,
- *   periodNotifier: Promise<Notifier<bigint>>,
  *   poolIncrementSeat: ZCFSeat,
  *   recordingPeriod: bigint,
  *   startTimeStamp: bigint,
+ *   timerService: ERef<TimerService>,
  *   zcf: ZCF,
  * }>} ImmutableState
  * @typedef {AssetState & {
@@ -83,8 +83,6 @@ const initState = (
     }),
   );
 
-  // ??? does this promise need to be a presence?
-  const periodNotifier = E(timerService).makeNotifier(0n, recordingPeriod);
   const { zcfSeat: poolIncrementSeat } = zcf.makeEmptySeatKit();
 
   return {
@@ -96,10 +94,10 @@ const initState = (
     debtMint,
     latestInterestUpdate,
     mintPowers,
-    periodNotifier,
     poolIncrementSeat,
     recordingPeriod,
     startTimeStamp,
+    timerService,
     totalDebt,
     zcf,
   };
@@ -110,8 +108,10 @@ const initState = (
  * @param {MethodContext} context
  */
 const finish = ({ state, facets }) => {
-  const { periodNotifier, zcf } = state;
+  const { recordingPeriod, timerService, zcf } = state;
   const { helper } = facets;
+
+  const periodNotifier = E(timerService).makeNotifier(0n, recordingPeriod);
 
   observeNotifier(periodNotifier, {
     updateState: updateTime =>
