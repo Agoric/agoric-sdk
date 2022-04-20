@@ -7,7 +7,7 @@ REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
-VOTING_PERIOD = 2m
+VOTING_PERIOD = 45s
 
 EVAL_PERMIT = test/gov-permit.json
 EVAL_CODE = test/gov-code.js
