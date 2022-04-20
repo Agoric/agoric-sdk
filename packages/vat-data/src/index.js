@@ -66,3 +66,15 @@ export const pickFacet =
   (maker, facetName) =>
   (...args) =>
     maker(...args)[facetName];
+
+/**
+ * Assign the values of all of the enumerable own properties from the source
+ * object to their keys in the target object.
+ *
+ * @template T
+ * @param {T} target
+ * @param {Partial<T>} source
+ */
+export const partialAssign = (target, source) => {
+  Object.assign(target, source);
+};

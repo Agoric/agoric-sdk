@@ -5,6 +5,7 @@ import {
   defineKindMulti,
   makeKindHandle,
   defineDurableKind,
+  partialAssign,
 } from '.';
 import { KindFacets, DurableKindHandle, KindFacet } from './types.js';
 
@@ -131,3 +132,11 @@ const foo = makeFoo('Doody');
 expectType<string>(foo.sayHi());
 // @ts-expect-error missing method
 foo.sayBye();
+
+// partialAssign
+const state = { name: 'ted', color: 'red' };
+partialAssign(state, { name: 'ed' });
+// @ts-expect-error
+partialAssign(state, { key: 'ted' });
+// @ts-expect-error
+partialAssign(state, { name: 3 });
