@@ -1,3 +1,5 @@
+// FIXME fix lint before merge
+/* eslint-disable no-use-before-define */
 // @ts-check
 // @jessie-check
 import { Far } from '@endo/far';
@@ -19,6 +21,21 @@ export const KW = /** @type { const } */ ({
   [AttKW.Attestation]: AttKW.Attestation,
   Debt: 'Debt',
 });
+
+/**
+ * Calculate the fee, the amount to mint and the resulting debt.
+ *
+ * @param {Ratio} feeCoeff fee coefficient
+ * @param {Amount} currentDebt
+ * @param {Amount} giveAmount
+ * @param {Amount} wantAmount
+ */
+const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
+  const fee = ceilMultiplyBy(wantAmount, feeCoeff);
+  const toMint = AmountMath.add(wantAmount, fee);
+  const newDebt = addSubtract(currentDebt, toMint, giveAmount);
+  return { newDebt, toMint, fee };
+};
 
 /**
  * @typedef {Readonly<{
@@ -92,20 +109,6 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
   const { collateralBrand, debtBrand, emptyCollateral, emptyDebt, vaultSeat } =
     state;
 
-  /**
-   * Calculate the fee, the amount to mint and the resulting debt.
-   *
-   * @param {Amount} currentDebt
-   * @param {Amount} giveAmount
-   * @param {Amount} wantAmount
-   */
-  const loanFee = (currentDebt, giveAmount, wantAmount) => {
-    const fee = ceilMultiplyBy(wantAmount, manager.getLoanFee());
-    const toMint = AmountMath.add(wantAmount, fee);
-    const newDebt = addSubtract(currentDebt, toMint, giveAmount);
-    return { newDebt, toMint, fee };
-  };
-
   const init = () => {
     assertProposalShape(startSeat, {
       give: { [KW.Attestation]: null },
@@ -122,7 +125,12 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
       X`wanted ${runWanted}, more than max debt (${maxDebt}) for ${attestationGiven}`,
     );
 
-    const { newDebt, fee, toMint } = loanFee(emptyDebt, emptyDebt, runWanted);
+    const { newDebt, fee, toMint } = calculateFee(
+      manager.getLoanFee(),
+      emptyDebt,
+      emptyDebt,
+      runWanted,
+    );
     assert(
       !AmountMath.isEmpty(fee),
       X`loan requested (${runWanted}) is too small; cannot accrue interest`,
@@ -186,26 +194,6 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
   };
 
   /**
-   * The actual current debt, including accrued interest.
-   *
-   * This looks like a simple getter but it does a lot of the heavy lifting for
-   * interest accrual. Rather than updating all records when interest accrues,
-   * the vault manager updates just its rolling compounded interest. Here we
-   * calculate what the current debt is given what's recorded in this vault and
-   * what interest has compounded since this vault record was written.
-   *
-   * @see getNormalizedDebt
-   * @returns {Amount<'nat'>}
-   */
-  const getCurrentDebt = () => {
-    return calculateCurrentDebt(
-      state.debtSnapshot,
-      state.interestSnapshot,
-      manager.getCompoundedInterest(),
-    );
-  };
-
-  /**
    * Called whenever the debt is paid or created through a transaction,
    * but not for interest accrual.
    *
@@ -248,7 +236,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     const proposal = clientSeat.getProposal();
     assertOnlyKeys(proposal, [KW.Attestation, KW.Debt]);
 
-    const debt = getCurrentDebt();
+    const debt = vault.getCurrentDebt();
     const collateral = getCollateralAllocated(vaultSeat);
 
     const giveColl = proposal.give.Attestation || emptyCollateral;
@@ -270,7 +258,12 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     // Calculate the fee, the amount to mint and the resulting debt. We'll
     // verify that the target debt doesn't violate the collateralization ratio,
     // then mint, reallocate, and burn.
-    const { newDebt, fee, toMint } = loanFee(debt, giveRUN, wantRUN);
+    const { newDebt, fee, toMint } = calculateFee(
+      manager.getLoanFee(),
+      debt,
+      giveRUN,
+      wantRUN,
+    );
     assert(
       giveRUNonly || AmountMath.isGTE(newMaxDebt, newDebt),
       `cannot borrow ${q(newDebt)} against ${q(amountLiened)}; max is ${q(
@@ -315,7 +308,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
       want: { [KW.Attestation]: null },
     });
 
-    const currentDebt = getCurrentDebt();
+    const currentDebt = vault.getCurrentDebt();
     const {
       give: { [KW.Debt]: runOffered },
     } = seat.getProposal();
@@ -342,20 +335,35 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     return 'Your RUNstake is closed; thank you for your business.';
   };
 
-  const makeAdjustBalancesInvitation = () => {
-    assert(state.open);
-    return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
-  };
-  const makeCloseInvitation = () => {
-    assert(state.open);
-    return zcf.makeInvitation(closeHook, 'CloseVault');
-  };
-
   const vault = Far('RUNstake', {
     getNotifier: () => state.notifier,
-    makeAdjustBalancesInvitation,
-    makeCloseInvitation,
-    getCurrentDebt,
+    makeAdjustBalancesInvitation: () => {
+      assert(state.open);
+      return zcf.makeInvitation(adjustBalancesHook, 'AdjustBalances');
+    },
+    makeCloseInvitation: () => {
+      assert(state.open);
+      return zcf.makeInvitation(closeHook, 'CloseVault');
+    },
+    /**
+     * The actual current debt, including accrued interest.
+     *
+     * This looks like a simple getter but it does a lot of the heavy lifting for
+     * interest accrual. Rather than updating all records when interest accrues,
+     * the vault manager updates just its rolling compounded interest. Here we
+     * calculate what the current debt is given what's recorded in this vault and
+     * what interest has compounded since this vault record was written.
+     *
+     * @see getNormalizedDebt
+     * @returns {Amount<'nat'>}
+     */
+    getCurrentDebt: () => {
+      return calculateCurrentDebt(
+        state.debtSnapshot,
+        state.interestSnapshot,
+        manager.getCompoundedInterest(),
+      );
+    },
     getNormalizedDebt: () =>
       reverseInterest(state.debtSnapshot, state.interestSnapshot),
   });
