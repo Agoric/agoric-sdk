@@ -164,13 +164,30 @@ export const start = async (
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
 
+  /**
+   * @param {ZCFSeat} seat
+   */
+  const offerHandler = seat => {
+    const { helper, pot } = makeRunStakeKit(zcf, seat, manager);
+
+    return harden({
+      publicNotifiers: {
+        asset: manager.getAssetNotifier(),
+        vault: pot.getNotifier(),
+      },
+      invitationMakers: Far('invitation makers', {
+        AdjustBalances: () =>
+          zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances'),
+        CloseVault: () => zcf.makeInvitation(helper.closeHook, 'CloseVault'),
+      }),
+      vault: Far('RUNstake pot', pot),
+    });
+  };
+
   const publicFacet = augmentPublicFacet(
     Far('runStake public', {
       makeLoanInvitation: () =>
-        zcf.makeInvitation(
-          seat => makeRunStakeKit(zcf, seat, manager),
-          'make RUNstake',
-        ),
+        zcf.makeInvitation(offerHandler, 'make RUNstake'),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
     }),
   );

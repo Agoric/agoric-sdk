@@ -1,8 +1,6 @@
-// FIXME fix lint before merge
 /* eslint-disable no-use-before-define */
 // @ts-check
 // @jessie-check
-import { Far } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -377,16 +375,5 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
 
   helper.updateUiState();
 
-  return harden({
-    publicNotifiers: {
-      asset: manager.getAssetNotifier(),
-      vault: pot.getNotifier(),
-    },
-    invitationMakers: Far('invitation makers', {
-      AdjustBalances: () =>
-        zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances'),
-      CloseVault: () => zcf.makeInvitation(helper.closeHook, 'CloseVault'),
-    }),
-    vault: Far('RUNstake pot', pot),
-  });
+  return { helper, pot };
 };
