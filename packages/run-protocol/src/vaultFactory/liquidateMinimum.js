@@ -6,7 +6,6 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
 import { defineKind } from '@agoric/vat-data';
-import { makeDefaultLiquidationStrategy } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('LiqMin');
@@ -34,59 +33,29 @@ const start = async zcf => {
     const {
       give: { In: amountIn },
     } = debtorSeat.getProposal();
-    const swapInvitation = E(amm).makeSwapOutInvitation();
+
+    const swapInvitation = E(amm).makeSwapInvitation();
     const liqProposal = harden({
       give: { In: amountIn },
-      want: { Out: debt },
+      want: { Out: AmountMath.makeEmpty(debtBrand) },
     });
     trace(`OFFER TO DEBT: `, debt, amountIn);
-    const { deposited, userSeatPromise: liqSeat } = await offerTo(
+    const { deposited } = await offerTo(
       zcf,
       swapInvitation,
       undefined, // The keywords were mapped already
       liqProposal,
       debtorSeat,
+      debtorSeat,
+      { stopAfter: debt },
     );
-
-    // Three (!) awaits coming here. We can't use Promise.all because
-    // offerTo() can return before getOfferResult() is valid, and we can't
-    // check whether swapIn liquidated assets until getOfferResult() returns.
-    // Of course, we also can't exit the seat until one or the other
-    // liquidation takes place.
     const amounts = await deposited;
-    await E(liqSeat).getOfferResult();
-    trace('exact sell result', amounts);
-
-    // if swapOut failed to make the trade, we'll sell it all
-    const sellAllIfUnsold = async () => {
-      const unsold = debtorSeat.getAmountAllocated('In');
-      // We cannot easily directly check that the `offerTo` succeeded, so we
-      // check that amotun unsold is not what we started with.
-      if (!AmountMath.isEqual(amountIn, unsold)) {
-        trace('Changed', { inBefore: amountIn, unsold });
-        return;
-      }
-
-      trace('liquidating all collateral because swapIn did not succeed');
-      const strategy = makeDefaultLiquidationStrategy(amm);
-      const { deposited: sellAllDeposited, userSeatPromise: sellAllSeat } =
-        await offerTo(
-          zcf,
-          strategy.makeInvitation(debt),
-          undefined, // The keywords were mapped already
-          strategy.makeProposal(amountIn, AmountMath.makeEmpty(debtBrand)),
-          debtorSeat,
-        );
-      // await sellAllDeposited, but don't need the value
-      await Promise.all([
-        E(sellAllSeat).getOfferResult(),
-        sellAllDeposited,
-      ]).catch(sellAllError => {
-        throw Error(`Unable to liquidate ${sellAllError}`);
-      });
-    };
-    await sellAllIfUnsold();
-    trace(`Liq results`, debt, debtorSeat.getAmountAllocated('RUN', debtBrand));
+    trace(`Liq results`, {
+      debt,
+      amountIn,
+      paid: debtorSeat.getCurrentAllocation(),
+      amounts,
+    });
     debtorSeat.exit();
   };
 

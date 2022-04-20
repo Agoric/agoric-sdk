@@ -3,14 +3,20 @@
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';
+import { AmountMath } from '@agoric/ertp';
 
 /**
  * @param {ZCF} zcf
- * @param {(brandIn: Brand, brandOut: Brand) => VPoolWrapper<unknown>} provideVPool
+ * @param {(brandIn: Brand, brandOut: Brand) => VPoolWrapper<DoublePoolInternalFacet>} provideVPool
  */
 export const makeMakeSwapInvitation = (zcf, provideVPool) => {
-  // trade with a stated amountIn.
-  const swapIn = seat => {
+  /**
+   * trade with a stated amountIn.
+   *
+   * @param {ZCFSeat} seat
+   * @param {{ stopAfter: Amount }} args
+   */
+  const swapIn = (seat, args) => {
     assertProposalShape(seat, {
       give: { In: null },
       want: { Out: null },
@@ -19,8 +25,24 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
-    return pool.swapIn(seat, amountIn, amountOut);
+    if (args) {
+      AmountMath.coerce(amountOut.brand, args.stopAfter);
+      // TODO check that there are no other keys
+    }
+
+    const pool = provideVPool(amountIn.brand, amountOut.brand).internalFacet;
+    let prices;
+    const stopAfter = args && args.stopAfter;
+    if (stopAfter) {
+      AmountMath.coerce(amountOut.brand, stopAfter);
+      prices = pool.getPriceForOutput(amountIn, stopAfter);
+    }
+    if (!prices || !AmountMath.isGTE(prices.swapperGets, stopAfter)) {
+      // `amountIn` is not enough to sell for stopAfter so just sell it all
+      prices = pool.getPriceForInput(amountIn, amountOut);
+    }
+    assert(amountIn.brand === prices.swapperGives.brand);
+    return pool.allocateGainsAndLosses(seat, prices);
   };
 
   // trade with a stated amount out.
@@ -29,13 +51,13 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       give: { In: null },
       want: { Out: null },
     });
-    // The offer's amountOut is a minimum; the offeredAmountIn is a max.
     const {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
-    return pool.swapOut(seat, amountIn, amountOut);
+    const pool = provideVPool(amountIn.brand, amountOut.brand).internalFacet;
+    const prices = pool.getPriceForOutput(amountIn, amountOut);
+    return pool.allocateGainsAndLosses(seat, prices);
   };
 
   const makeSwapInInvitation = () =>

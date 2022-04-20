@@ -27,7 +27,7 @@ const publicPrices = prices => {
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
- * @returns {VPoolWrapper<VPoolInternalFacet>}
+ * @returns {VPoolWrapper<DoublePoolInternalFacet>}
  */
 export const makeDoublePool = (
   zcf,
@@ -127,11 +127,6 @@ export const makeDoublePool = (
     return publicPrices(getPriceForInput(amountIn, amountOut));
   };
 
-  const swapIn = (seat, amountIn, amountOut) => {
-    const prices = getPriceForInput(amountIn, amountOut);
-    return allocateGainsAndLosses(seat, prices);
-  };
-
   const getPriceForOutput = (amountIn, amountOut) => {
     const protocolFeeRatio = makeFeeRatio(getProtocolFeeBP(), centralBrand);
     const poolFeeRatioCentral = makeFeeRatio(getPoolFeeBP(), centralBrand);
@@ -187,21 +182,16 @@ export const makeDoublePool = (
   const getOutputPrice = (amountIn, amountOut) => {
     return publicPrices(getPriceForOutput(amountIn, amountOut));
   };
-  const swapOut = (seat, amountIn, amountOut) => {
-    const prices = getPriceForOutput(amountIn, amountOut);
-    return allocateGainsAndLosses(seat, prices);
-  };
 
   const externalFacet = Far('double pool', {
     getInputPrice,
     getOutputPrice,
-    swapIn,
-    swapOut,
   });
 
   const internalFacet = Far('single pool', {
     getPriceForInput,
     getPriceForOutput,
+    allocateGainsAndLosses,
   });
 
   return { externalFacet, internalFacet };
