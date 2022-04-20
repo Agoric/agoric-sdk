@@ -229,7 +229,7 @@ const start = async zcf => {
       proposal,
       debtorSeat,
       debtorSeat,
-      { maxOut: debt },
+      { stopAfter: debt },
     );
     await Promise.all([E(liqSeat).getOfferResult(), deposited]);
     const amounts = await E(liqSeat).getCurrentAllocation();
