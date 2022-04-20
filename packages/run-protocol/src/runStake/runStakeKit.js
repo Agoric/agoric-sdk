@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 // @ts-check
 // @jessie-check
 import { AmountMath, AssetKind } from '@agoric/ertp';
@@ -241,6 +240,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
       const proposal = clientSeat.getProposal();
       assertOnlyKeys(proposal, [KW.Attestation, KW.Debt]);
 
+      // eslint-disable-next-line no-use-before-define
       const debt = pot.getCurrentDebt();
       const collateral = helper.getCollateralAllocated(vaultSeat);
 
@@ -313,6 +313,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
         want: { [KW.Attestation]: null },
       });
 
+      // eslint-disable-next-line no-use-before-define
       const currentDebt = pot.getCurrentDebt();
       const {
         give: { [KW.Debt]: runOffered },
