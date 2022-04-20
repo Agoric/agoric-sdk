@@ -8,11 +8,11 @@ import {
   assertProposalShape,
   offerTo,
   natSafeMath as NatMath,
+  ceilMultiplyBy,
+  oneMinus,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-
-import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeTracer } from '../makeTracer.js';
 // import { quote } from '@agoric/assert';
 
@@ -55,50 +55,76 @@ const start = async zcf => {
   const SCALE = 1_000_000n;
   const BASIS_POINTS = 10_000n * SCALE;
   const BP2 = BASIS_POINTS * BASIS_POINTS;
-
-  const AMM_FEE_BP = 30n * SCALE;
-  const MAX_IMPACT_BP = 50n * SCALE;
-  // sqrt(impact + 1) - 1
-  // Since we take SQRT but want to be BP, multiply in BP
-  const IMPACT_FACTOR_BP =
-    BigInt(
-      Math.ceil(
-        Math.sqrt(Number((MAX_IMPACT_BP + BASIS_POINTS) * BASIS_POINTS)),
-      ),
-    ) - BASIS_POINTS;
-  const IMPACT_FACTOR_BP2 = IMPACT_FACTOR_BP * (BASIS_POINTS - AMM_FEE_BP);
+  const ONE = BASIS_POINTS;
 
   const asFloat = (numerator, denominator) =>
     Number(numerator) / Number(denominator);
-  trace(
-    'FACTORS',
-    asFloat(AMM_FEE_BP, BASIS_POINTS),
-    asFloat(MAX_IMPACT_BP, BASIS_POINTS),
-    Math.sqrt(Number(MAX_IMPACT_BP + BASIS_POINTS)),
-    asFloat(IMPACT_FACTOR_BP, BASIS_POINTS),
-    asFloat(IMPACT_FACTOR_BP2, BP2),
-  );
 
-  // How close the sale price on the AMM must be to the expected price from the oracle
-  // quote must be at least 70% 0f what the oracle says
-  const ORACLE_TOLERANCE = 3000n * SCALE;
-  const ORACLE_LIMIT_BP = makeRatio(
-    BASIS_POINTS - ORACLE_TOLERANCE,
-    debtBrand,
-    BASIS_POINTS,
-  );
+  const getGovernance = _ => {
+    const {
+      governedParams: {
+        MaxImpactBP,
+        OracleTolerance,
+        AMMFeeBP,
+        AMMMaxSlippage,
+      } = {
+        MaxImpactBP: 50n,
+        OracleTolerance: makeRatio(30n, debtBrand),
+        AMMFeeBP: 30n,
+        AMMMaxSlippage: makeRatio(30n, debtBrand),
+      },
+    } = zcf.getTerms();
+    return {
+      getMaxImpactBP: () => MaxImpactBP,
+      /**
+       * How close the sale price on the AMM must be to the expected price
+       *  from the oracle quote must be at least 70% of what the oracle says
+       */
+      getOracleTolerance: () => OracleTolerance,
+      getAMMFeeBP: () => AMMFeeBP,
+      getAMMMaxSlippage: () => AMMMaxSlippage,
+    };
+  };
+  const governance = getGovernance(zcf);
 
-  // 3% max slippage = 97% min
-  const MAX_SLIPPED = makeRatio(9700n * SCALE, debtBrand, BASIS_POINTS);
+  /**
+   * Compute the tranche size whose sale on the AMM would have
+   * a price impact of MAX_IMPACT_BP.
+   * This doesn't use ratios so that it is usable for any brand
+   *
+   * @param {Amount} poolSize
+   * @param {bigint} maxImpactBP
+   * @param {bigint} feeBP
+   * @returns {Amount}
+   */
+  const maxTrancheWithFees = (poolSize, maxImpactBP, feeBP) => {
+    const ammFeeScaled = maxImpactBP * SCALE;
+    const maxImpactScaled = feeBP * SCALE;
+    // sqrt(impact + 1) - 1
+    // Since we take SQRT but want to be BP, multiply in BP
+    const impactFactor =
+      BigInt(
+        Math.ceil(Math.sqrt(Number((maxImpactScaled + ONE) * BASIS_POINTS))),
+      ) - ONE;
+    const impactWithFee = impactFactor * (ONE - ammFeeScaled);
+    return AmountMath.make(
+      poolSize.brand,
+      NatMath.ceilDivide(NatMath.multiply(poolSize.value, impactWithFee), BP2),
+    );
+  };
 
-  trace('CONSTANTS', {
-    IMPACT_FACTOR_BP,
-    BASIS_POINTS,
-    IMPACT_FACTOR_BP2,
-    BP2,
-  });
+  function computeOracleLimit(oracleQuote, gov) {
+    const oracleTolerance = gov.getOracleTolerance();
+    return ceilMultiplyBy(getAmountOut(oracleQuote), oneMinus(oracleTolerance));
+  }
 
-  const estimateAMMProceeds = (poolCentral, poolCollateral, tranche, debt) => {
+  const estimateAMMProceeds = (
+    poolCentral,
+    poolCollateral,
+    tranche,
+    debt,
+    maxSlip,
+  ) => {
     const k = NatMath.multiply(poolCentral.value, poolCollateral.value);
     const postSaleCollateral = AmountMath.add(tranche, poolCollateral);
     const estimateCentral = NatMath.subtract(
@@ -106,7 +132,7 @@ const start = async zcf => {
       NatMath.floorDivide(k, postSaleCollateral.value),
     );
     const estimateAmount = AmountMath.make(debt.brand, estimateCentral);
-    const minAmmProceeds = ceilMultiplyBy(estimateAmount, MAX_SLIPPED);
+    const minAmmProceeds = ceilMultiplyBy(estimateAmount, oneMinus(maxSlip));
     trace('AMM estimate', {
       tranche,
       minAmmProceeds,
@@ -115,23 +141,6 @@ const start = async zcf => {
     });
     return minAmmProceeds;
   };
-
-  /**
-   * Compute the tranche size whose sale on the AMM would have
-   * a price impact of MAX_IMPACT_BP.
-   * This doesn't use ratios so that it is usable for any brand
-   *
-   * @param {Amount} poolSize
-   * @returns {Amount}
-   */
-  const maxTrancheWithFees = poolSize =>
-    AmountMath.make(
-      poolSize.brand,
-      NatMath.ceilDivide(
-        NatMath.multiply(poolSize.value, IMPACT_FACTOR_BP2),
-        BP2,
-      ),
-    );
 
   /**
    *
@@ -150,15 +159,21 @@ const start = async zcf => {
       const { Secondary: poolCollateral, Central: poolCentral } = await E(
         amm,
       ).getPoolAllocation(toSell.brand);
-      const maxAllowedTranche = maxTrancheWithFees(poolCollateral);
+      const maxAllowedTranche = maxTrancheWithFees(
+        poolCollateral,
+        governance.getMaxImpactBP(),
+        governance.getAMMFeeBP(),
+      );
       trace('TRANCHE', asFloat(maxAllowedTranche.value, 100000n));
       const tranche = AmountMath.min(maxAllowedTranche, toSell);
       // compute the expected proceeds from the AMM for tranche
+      const maxSlip = governance.getAMMMaxSlippage();
       const minAmmProceeds = estimateAMMProceeds(
         poolCentral,
         poolCollateral,
         tranche,
         debt,
+        maxSlip,
       );
 
       // this could use a unit rather than the tranche size to run concurrently
@@ -167,11 +182,7 @@ const start = async zcf => {
         tranche,
         debtBrand,
       );
-      // TODO Make a governance parameter
-      const oracleLimit = ceilMultiplyBy(
-        getAmountOut(oracleQuote),
-        ORACLE_LIMIT_BP,
-      );
+      const oracleLimit = computeOracleLimit(oracleQuote, governance);
 
       trace('TRANCHE', {
         debt,
