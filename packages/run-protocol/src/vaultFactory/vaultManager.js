@@ -167,6 +167,29 @@ const initState = (
   return state;
 };
 
+/**
+ *
+ * @param {ImmutableState & MutableState} state
+ * @param {Amount<'nat'>} collateralDenominator
+ * @param {Amount<'nat'>} triggerPoint
+ */
+function updatedQuote(state, collateralDenominator, triggerPoint) {
+  const { priceAuthority } = state;
+  // There are two awaits in a row here. The first gets a mutableQuote object
+  // relatively quickly from the PriceAuthority. The second schedules a
+  // callback that may not fire until much later.
+  // Callers shouldn't expect a response from this function.
+  trace('posting quote request', triggerPoint);
+
+  state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
+    collateralDenominator,
+    triggerPoint,
+  );
+  trace('posted quote request');
+
+  return E(state.outstandingQuote).getPromise();
+}
+
 const helperBehavior = {
   /**
    * @param {MethodContext} context
@@ -289,21 +312,13 @@ const helperBehavior = {
       return;
     }
 
-    // There are two awaits in a row here. The first gets a mutableQuote object
-    // relatively quickly from the PriceAuthority. The second schedules a
-    // callback that may not fire until much later.
-    // Callers shouldn't expect a response from this function.
-    const { priceAuthority } = state;
-    trace('posting quote request', triggerPoint);
-
-    state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
-      highestDebtRatio.denominator, // collateral
+    // The rest of this method will not happen until after a quote is received.
+    const quote = await updatedQuote(
+      state,
+      highestDebtRatio.denominator,
       triggerPoint,
     );
-    trace('posted quote request');
 
-    // The rest of this method will not happen until after a quote is received.
-    const quote = await E(state.outstandingQuote).getPromise();
     // When we receive a quote, we liquidate all the vaults that don't have
     // sufficient collateral, (even if the trigger was set for a different
     // level) because we use the actual price ratio plus margin here. Use
