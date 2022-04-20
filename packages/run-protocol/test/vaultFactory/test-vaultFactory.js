@@ -2017,7 +2017,7 @@ test('excessive debt on collateral type', async t => {
   );
   await t.throwsAsync(() => E(loanSeat).getOfferResult(), {
     message:
-      'Minting {"brand":"[Alleged: RUN brand]","value":"[1050000n]"} would exceed total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000n]"}',
+      'Minting {"brand":"[Alleged: RUN brand]","value":"[1050000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000n]"}',
   });
 });
 

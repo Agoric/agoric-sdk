@@ -104,9 +104,9 @@ const votersVote = async (detailsP, votersP, selections) => {
  *
  * @param {ERef<import('./vat-voter.js').EVatVoter[]>} votersP
  * @param {ERef<QuestionDetails>} detailsP
- * @param {Instance} governedInstanceP
+ * @param {ERef<Instance>} governedInstanceP
  * @param {Instance} electorateInstance
- * @param {Instance} governorInstanceP
+ * @param {ERef<Instance>} governorInstanceP
  * @param {Record<string, Installation>} installations
  * @returns {Promise<void>}
  */
@@ -166,6 +166,7 @@ const setupParameterChanges = async (
     paramPath: { key: 'governedParams' },
     changes,
   });
+  /** @type {ContractGovernanceVoteResult} */
   const { details, instance, outcomeOfUpdate } = await E(
     governor,
   ).voteOnParamChanges(installations.binaryVoteCounter, 2n, paramChangeSpec);
@@ -213,7 +214,7 @@ const validateElectorateChange = async (
 ) => {
   const electorateValid = E(publicFacet).validateElectorate(electorateInstance);
   const details = await detailsP;
-  const timerValid = E(publicFacet).validateTimer(details);
+  const timerValid = E(publicFacet).validateTimer(details.closingRule);
 
   await assertContractElectorate(zoe, governorInstance, electorateInstance);
 

@@ -108,13 +108,13 @@ const validTransitions = {
  */
 
 /**
- * @typedef {{
+ * @typedef {Readonly<{
  *   state: ImmutableState & MutableState,
  *   facets: {
  *     self: import('@agoric/vat-data/src/types').KindFacet<typeof selfBehavior>,
  *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
  *   },
- * }} MethodContext
+ * }>} MethodContext
  */
 
 /**

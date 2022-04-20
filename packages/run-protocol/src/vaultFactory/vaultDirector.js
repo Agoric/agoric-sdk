@@ -49,10 +49,10 @@ const { details: X } = assert;
  *  mintAndReallocate: MintAndReallocate,
  * }} FactoryPowersFacet
  *
- * @typedef {{
+ * @typedef {Readonly<{
  *   state: ImmutableState;
  *   facets: import('@agoric/vat-data/src/types').KindFacets<typeof behavior>;
- * }} MethodContext
+ * }>} MethodContext
  */
 
 /**
