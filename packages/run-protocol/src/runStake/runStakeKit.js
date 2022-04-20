@@ -141,7 +141,6 @@ const initState = (zcf, startSeat, manager) => {
  * @param {ZCF} zcf
  * @param {ZCFSeat} startSeat
  * @param {import('./runStakeManager.js').RunStakeManager} manager
- * return value follows the wallet invitationMakers pattern
  * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
  */
 export const makeRunStakeKit = (zcf, startSeat, manager) => {
