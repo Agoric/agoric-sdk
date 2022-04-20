@@ -71,45 +71,12 @@ const initState = (zcf, startSeat, manager) => {
     collateralBrand,
     AssetKind.COPY_BAG,
   );
-  const emptyDebt = AmountMath.makeEmpty(debtBrand);
 
   const { zcfSeat: vaultSeat } = zcf.makeEmptySeatKit();
-  const { notifier, updater } = makeNotifierKit();
 
-  /** @type {ImmutableState} */
-  const fixed = {
-    collateralBrand,
-    debtBrand,
-    emptyCollateral,
-    emptyDebt,
-    notifier,
-    vaultSeat,
-  };
-  return {
-    ...fixed,
-    open: true,
-    // Two values from the same moment
-    interestSnapshot: manager.getCompoundedInterest(),
-    debtSnapshot: emptyDebt,
-    updater,
-  };
-};
+  const emptyDebt = AmountMath.makeEmpty(debtBrand);
 
-/**
- * Make RUNstake kit, subject to runStake terms.
- *
- * @param {ZCF} zcf
- * @param {ZCFSeat} startSeat
- * @param {import('./runStakeManager.js').RunStakeManager} manager
- * return value follows the wallet invitationMakers pattern
- * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
- */
-export const makeRunStakeKit = (zcf, startSeat, manager) => {
-  const state = initState(zcf, startSeat, manager);
-  const { collateralBrand, debtBrand, emptyCollateral, emptyDebt, vaultSeat } =
-    state;
-
-  const init = () => {
+  const initialDebt = (() => {
     assertProposalShape(startSeat, {
       give: { [KW.Attestation]: null },
       want: { [KW.Debt]: null },
@@ -146,7 +113,43 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
 
     startSeat.exit();
     return newDebt;
+  })();
+  manager.applyDebtDelta(emptyDebt, initialDebt);
+
+  const { notifier, updater } = makeNotifierKit();
+
+  /** @type {ImmutableState} */
+  const fixed = {
+    collateralBrand,
+    debtBrand,
+    emptyCollateral, // XXX not worth keeping on disk
+    emptyDebt, // XXX not worth keeping on disk
+    notifier,
+    vaultSeat,
   };
+  return {
+    ...fixed,
+    open: true,
+    // Two values from the same moment
+    interestSnapshot: manager.getCompoundedInterest(),
+    debtSnapshot: initialDebt,
+    updater,
+  };
+};
+
+/**
+ * Make RUNstake kit, subject to runStake terms.
+ *
+ * @param {ZCF} zcf
+ * @param {ZCFSeat} startSeat
+ * @param {import('./runStakeManager.js').RunStakeManager} manager
+ * return value follows the wallet invitationMakers pattern
+ * @throws {Error} if startSeat proposal is not consistent with governance parameters in manager
+ */
+export const makeRunStakeKit = (zcf, startSeat, manager) => {
+  const state = initState(zcf, startSeat, manager);
+  const { collateralBrand, debtBrand, emptyCollateral, emptyDebt, vaultSeat } =
+    state;
 
   const getCollateralAllocated = seat =>
     seat.getAmountAllocated(KW.Attestation, collateralBrand);
@@ -368,7 +371,6 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
       reverseInterest(state.debtSnapshot, state.interestSnapshot),
   });
 
-  updateDebtAccounting(emptyDebt, init());
   updateUiState();
 
   return harden({
