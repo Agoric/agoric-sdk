@@ -11,7 +11,7 @@
     "lint": "run-s --continue-on-error lint:*",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json",
-    "lint:eslint": "eslint '**/*.js'"
+    "lint:eslint": "eslint --ext .js,.ts ."
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.7.0",

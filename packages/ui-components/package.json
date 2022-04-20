@@ -25,9 +25,9 @@
     "build:tests": "rm -rf compiled && BABEL_ENV='test' ./node_modules/.bin/babel test/components --out-dir compiled/test/components",
     "build:src": "rm -rf dist && BABEL_ENV='test' ./node_modules/.bin/babel src --out-dir dist",
     "build": "yarn build:src && yarn build:tests",
-    "lint-fix": "yarn lint --fix",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:eslint": "eslint '**/*.js'",
+    "lint:eslint": "eslint --ext .js,.ts .",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json"
   },
   "eslintConfig": {
