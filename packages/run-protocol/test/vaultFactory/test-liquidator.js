@@ -406,12 +406,12 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         RUN: expectedRUN,
       });
     },
-    sellOnAMM: async (give, want, optMaxOut, expected) => {
+    sellOnAMM: async (give, want, optStopAfter, expected) => {
       const swapInvitation = E(
         services.ammFacets.ammPublicFacet,
       ).makeSwapInvitation();
-      trace(t, 'AMM sell', { give, want, optMaxOut });
-      const offerArgs = optMaxOut ? harden({ maxOut: optMaxOut }) : undefined;
+      trace(t, 'AMM sell', { give, want, optStopAfter });
+      const offerArgs = optStopAfter ? harden({ stopAfter: optStopAfter }) : undefined;
       lastSeat = await E(zoe).offer(
         await swapInvitation,
         harden({ give: { In: give }, want: { Out: want } }),
@@ -580,8 +580,8 @@ test('price falls precipitously', async t => {
   await d.checkVault(debtExpected, AmountMath.makeEmpty(aethBrand));
 });
 
-// 1) `give` sells for more than `maxOut`, and got some of the input back
-test('amm maxOut - input back', async t => {
+// 1) `give` sells for more than `stopAfter`, and got some of the input back
+test('amm stopAfter - input back', async t => {
   const {
     aethKit: { brand: aethBrand },
     runKit: { brand: runBrand },
@@ -593,14 +593,14 @@ test('amm maxOut - input back', async t => {
   );
   const give = AmountMath.make(aethBrand, 100n);
   const want = AmountMath.make(runBrand, 80n);
-  const maxOut = AmountMath.make(runBrand, 100n);
+  const stopAfter = AmountMath.make(runBrand, 100n);
   const expectedAeth = AmountMath.make(aethBrand, 38n);
-  const expectedRUN = maxOut;
-  await d.sellOnAMM(give, want, maxOut, { In: expectedAeth, Out: expectedRUN });
+  const expectedRUN = stopAfter;
+  await d.sellOnAMM(give, want, stopAfter, { In: expectedAeth, Out: expectedRUN });
 });
 
-// 2) `give` wouldn't have sold for `maxOut`, so sell it all
-test('amm maxOut - shortfall', async t => {
+// 2) `give` wouldn't have sold for `stopAfter`, so sell it all
+test('amm stopAfter - shortfall', async t => {
   const {
     aethKit: { brand: aethBrand },
     runKit: { brand: runBrand },
@@ -614,15 +614,15 @@ test('amm maxOut - shortfall', async t => {
   const give = AmountMath.make(aethBrand, 100n);
   const want = AmountMath.make(runBrand, 80n);
   // 164 is the most I could get
-  const maxOut = AmountMath.make(runBrand, 180n);
+  const stopAfter = AmountMath.make(runBrand, 180n);
   const expectedAeth = AmountMath.makeEmpty(aethBrand);
   const expectedRUN = AmountMath.make(runBrand, 164n);
-  await d.sellOnAMM(give, want, maxOut, { In: expectedAeth, Out: expectedRUN });
+  await d.sellOnAMM(give, want, stopAfter, { In: expectedAeth, Out: expectedRUN });
 });
 
 // 3) wouldn't have sold for enough, so sold everything,
 //    and that still wasn't enough for `want.Out`
-test('amm maxOut - want too much', async t => {
+test('amm stopAfter - want too much', async t => {
   const {
     aethKit: { brand: aethBrand },
     runKit: { brand: runBrand },
@@ -635,8 +635,8 @@ test('amm maxOut - want too much', async t => {
   );
   const give = AmountMath.make(aethBrand, 100n);
   const want = AmountMath.make(runBrand, 170n);
-  const maxOut = AmountMath.make(runBrand, 180n);
+  const stopAfter = AmountMath.make(runBrand, 180n);
   const expectedAeth = give;
   const expectedRUN = AmountMath.makeEmpty(runBrand);
-  await d.sellOnAMM(give, want, maxOut, { In: expectedAeth, Out: expectedRUN });
+  await d.sellOnAMM(give, want, stopAfter, { In: expectedAeth, Out: expectedRUN });
 });
