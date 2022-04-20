@@ -569,7 +569,7 @@ test('amm doubleSwap', async t => {
     simsForMoolaPayments,
   );
   const bobMoolaPayout = await E(bobSeat1).getPayout('Out');
-
+  console.log('payout', await moolaR.issuer.getAmountOf(bobMoolaPayout));
   t.deepEqual(
     await moolaR.issuer.getAmountOf(bobMoolaPayout),
     moola(7234n),

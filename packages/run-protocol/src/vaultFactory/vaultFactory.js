@@ -57,8 +57,8 @@ export const start = async (zcf, privateArgs) => {
   const factory = makeVaultDirector(zcf, electorateParamManager, debtMint);
 
   return harden({
-    creatorFacet: factory.creatorFacet,
-    publicFacet: factory.publicFacet,
+    creatorFacet: factory.creator,
+    publicFacet: factory.public,
   });
 };
 

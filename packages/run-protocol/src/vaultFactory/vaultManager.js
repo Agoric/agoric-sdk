@@ -23,8 +23,9 @@ import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
+import { checkDebtLimit } from '../contractSupport.js';
 
-const { details: X, quote: q } = assert;
+const { details: X } = assert;
 
 const trace = makeTracer('VM', false);
 
@@ -81,10 +82,10 @@ const trace = makeTracer('VM', false);
  * @typedef {{
  *   state: ImmutableState & MutableState,
  *   facets: {
- *     collateral: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof collateralBehavior>,
- *     helper: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof helperBehavior>,
- *     manager: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof managerBehavior>,
- *     self: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof selfBehavior>,
+ *     collateral: import('@agoric/vat-data/src/types').KindFacet<typeof collateralBehavior>,
+ *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
+ *     manager: import('@agoric/vat-data/src/types').KindFacet<typeof managerBehavior>,
+ *     self: import('@agoric/vat-data/src/types').KindFacet<typeof selfBehavior>,
  *   }
  * }} MethodContext
  */
@@ -167,23 +168,8 @@ const initState = (
   return state;
 };
 
+// Some of these could go in closures but are kept on a facet anticipating future durability options.
 const helperBehavior = {
-  /**
-   * @param {MethodContext} context
-   * @param {Amount<'nat'>} toMint
-   * @throws if minting would exceed total debt
-   */
-  checkDebtLimit: ({ state }, toMint) => {
-    const { factoryPowers, totalDebt } = state;
-    const debtPost = AmountMath.add(totalDebt, toMint);
-    const limit = factoryPowers.getGovernedParams().getDebtLimit();
-    if (AmountMath.isGTE(debtPost, limit)) {
-      assert.fail(
-        X`Minting ${q(toMint)} would exceed total debt limit ${q(limit)}`,
-      );
-    }
-  },
-
   /**
    * @param {MethodContext} context
    * @param {bigint} updateTime
@@ -383,14 +369,14 @@ const managerBehavior = {
    * @param {...ZCFSeat} otherSeats
    * @returns {void}
    */
-  mintAndReallocate: (
-    { state, facets: { helper } },
-    toMint,
-    fee,
-    seat,
-    ...otherSeats
-  ) => {
-    helper.checkDebtLimit(toMint);
+  mintAndReallocate: ({ state }, toMint, fee, seat, ...otherSeats) => {
+    const { factoryPowers, totalDebt } = state;
+
+    checkDebtLimit(
+      factoryPowers.getGovernedParams().getDebtLimit(),
+      totalDebt,
+      toMint,
+    );
     state.factoryPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
     state.totalDebt = AmountMath.add(state.totalDebt, toMint);
   },

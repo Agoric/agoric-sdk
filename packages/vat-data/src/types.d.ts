@@ -1,3 +1,10 @@
+/**
+ * @file Types for vat-data
+ *
+ * Facet is a single object with methods.
+ * Behavior is a description when defining a kind of what facets it will have.
+ * For the non-multi defineKind, there is just one facet so it doesn't have a key.
+ */
 import type {
   MapStore,
   SetStore,
@@ -5,7 +12,6 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
-import { Context } from 'vm';
 
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
@@ -17,30 +23,55 @@ type MinusContext<
   R = ReturnType<F>, // R: the return type of F
 > = (...args: Tail<P>) => R;
 
-type FunctionsMinusContext<O> = { [K in keyof O]: MinusContext<O[K]> };
+type KindFacet<O> = { [K in keyof O]: MinusContext<O[K]> };
 
-type ActualBehavior<B> = {
-  [Facet in keyof B]: FunctionsMinusContext<B[Facet]>;
+type KindFacets<B> = {
+  [FacetKey in keyof B]: KindFacet<B[FacetKey]>;
 };
 
-type KindContext<S, B> = { state: S; facets: ActualBehavior<B> };
+type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
-interface KindDefiner {
-  <P, S, B>(
+type PlusContext<C, M> = (c: any, ...args: Parameters<M>) => ReturnType<M>;
+type FunctionsPlusContext<O> = { [K in keyof O]: PlusContext<O[K]> };
+
+declare class DurableKindHandleClass {
+  private descriptionTag: string;
+}
+export type DurableKindHandle = DurableKindHandleClass;
+
+export type VatData = {
+  // virtual kinds
+  defineKind: <P, S, F>(
+    tag: string,
+    init: (...args: P) => S,
+    facet: F,
+    options?: {
+      finish?: (context: { state: S }, kind: KindFacet<F>) => void;
+    },
+  ) => (...args: P) => KindFacet<F>;
+  defineKindMulti: <P, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
-    options?: { finish?: (context: KindContext<S, B>) => void },
-  ): (...args: P) => ActualBehavior<B>;
-}
+    options?: { finish?: (context: MultiKindContext<S, B>) => void },
+  ) => (...args: P) => KindFacets<B>;
 
-export type VatData = {
-  defineKind: KindDefiner;
-  defineKindMulti: KindDefiner;
-  defineDurableKind: KindDefiner;
-  defineDurableKindMulti: KindDefiner;
-
-  makeKindHandle: (descriptionTag: string) => unknown;
+  // durable kinds
+  makeKindHandle: (descriptionTag: string) => DurableKindHandle;
+  defineDurableKind: <P, S, F>(
+    kindHandle: DurableKindHandle,
+    init: (...args: P) => S,
+    facet: F,
+    options?: {
+      finish?: (context: { state: S }, kind: KindFacet<F>) => void;
+    },
+  ) => (...args: P) => KindFacet<F>;
+  defineDurableKindMulti: <P, S, B>(
+    kindHandle: DurableKindHandle,
+    init: (...args: P) => S,
+    behavior: B,
+    options?: { finish?: (context: MultiKindContext<S, B>) => void },
+  ) => (...args: P) => KindFacets<B>;
 
   makeScalarBigMapStore: <K, V>(
     label: string,

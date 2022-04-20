@@ -2,7 +2,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { M } from '@agoric/store';
 
-const { details: X } = assert;
+const { details: X, quote: q } = assert;
 
 export const amountPattern = harden({ brand: M.remotable(), value: M.any() });
 export const ratioPattern = harden({
@@ -62,4 +62,20 @@ export const stageDelta = (fromSeat, toSeat, fromLoses, fromGains, key) => {
   if (!AmountMath.isEmpty(fromGains)) {
     fromSeat.incrementBy(toSeat.decrementBy(harden({ [key]: fromGains })));
   }
+};
+
+/**
+ * @param {Amount<'nat'>} debtLimit
+ * @param {Amount<'nat'>} totalDebt
+ * @param {Amount<'nat'>} toMint
+ * @throws if minting would exceed total debt
+ */
+export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
+  const debtPost = AmountMath.add(totalDebt, toMint);
+  assert(
+    !AmountMath.isGTE(debtPost, debtLimit),
+    X`Minting ${q(toMint)} past ${q(totalDebt)} would hit total debt limit ${q(
+      debtLimit,
+    )}`,
+  );
 };
