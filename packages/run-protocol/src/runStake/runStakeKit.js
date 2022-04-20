@@ -240,7 +240,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
       const proposal = clientSeat.getProposal();
       assertOnlyKeys(proposal, [KW.Attestation, KW.Debt]);
 
-      const debt = vault.getCurrentDebt();
+      const debt = pot.getCurrentDebt();
       const collateral = helper.getCollateralAllocated(vaultSeat);
 
       const giveColl = proposal.give.Attestation || emptyCollateral;
@@ -312,7 +312,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
         want: { [KW.Attestation]: null },
       });
 
-      const currentDebt = vault.getCurrentDebt();
+      const currentDebt = pot.getCurrentDebt();
       const {
         give: { [KW.Debt]: runOffered },
       } = seat.getProposal();
@@ -342,7 +342,7 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     },
   };
 
-  const vault = Far('RUNstake', {
+  const pot = {
     getNotifier: () => state.notifier,
     makeAdjustBalancesInvitation: () => {
       assert(state.open);
@@ -373,20 +373,20 @@ export const makeRunStakeKit = (zcf, startSeat, manager) => {
     },
     getNormalizedDebt: () =>
       reverseInterest(state.debtSnapshot, state.interestSnapshot),
-  });
+  };
 
   helper.updateUiState();
 
   return harden({
     publicNotifiers: {
       asset: manager.getAssetNotifier(),
-      vault: state.notifier,
+      vault: pot.getNotifier(),
     },
     invitationMakers: Far('invitation makers', {
       AdjustBalances: () =>
         zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances'),
       CloseVault: () => zcf.makeInvitation(helper.closeHook, 'CloseVault'),
     }),
-    vault,
+    vault: Far('RUNstake pot', pot),
   });
 };
