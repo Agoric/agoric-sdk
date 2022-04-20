@@ -12,7 +12,7 @@
     "test": "exit 0",
     "test:xs": "exit 0",
     "build": "exit 0",
-    "lint-fix": "eslint --fix '**/*.js'",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "eslint --ext .js,.ts ."
   },
   "repository": "https://github.com/Agoric/agoric-sdk",
