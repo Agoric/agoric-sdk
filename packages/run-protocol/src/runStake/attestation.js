@@ -212,7 +212,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
  * and get an attestation that the lien is in place.
  *
  * @param {ZCF} zcf
- * @param {Brand} stakeBrand
+ * @param {Brand<'nat'>} stakeBrand
  * @param {ERef<StakingAuthority>} lienBridge
  *
  * NOTE: the liened amount is kept both here in JS and on the
