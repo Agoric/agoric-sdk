@@ -168,7 +168,7 @@ const initState = (
   return state;
 };
 
-// XXX these methods don't need a facet and can go into finish() scope
+// Some of these could go in closures but are kept on a facet anticipating future durability options.
 const helperBehavior = {
   /**
    * @param {MethodContext} context
