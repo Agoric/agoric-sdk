@@ -18,7 +18,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
-    "lint:eslint": "eslint '**/*.js'"
+    "lint:eslint": "eslint --ext .js,.ts ."
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.26.0",

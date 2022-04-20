@@ -12,7 +12,7 @@
     "test": "exit 0",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint:eslint": "eslint --ext .js,.ts ."
   },
   "repository": {
     "type": "git",

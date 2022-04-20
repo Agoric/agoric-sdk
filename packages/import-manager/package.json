@@ -13,7 +13,7 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint:eslint": "eslint --ext .js,.ts ."
   },
   "repository": {
     "type": "git",
