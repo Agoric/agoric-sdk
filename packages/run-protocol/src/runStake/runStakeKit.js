@@ -41,8 +41,10 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
  *   debtBrand: Brand,
  *   emptyCollateral: Amount<'copyBag'>,
  *   emptyDebt: Amount<'nat'>,
+ *   manager: import('./runStakeManager.js').RunStakeManager,
  *   notifier: NotifierRecord<unknown>['notifier'],
  *   vaultSeat: ZCFSeat,
+ *   zcf: ZCF,
  * }>} ImmutableState
  * @typedef {{
  *   open: boolean,
@@ -122,8 +124,10 @@ const initState = (zcf, startSeat, manager) => {
     debtBrand,
     emptyCollateral, // XXX not worth keeping on disk
     emptyDebt, // XXX not worth keeping on disk
+    manager,
     notifier,
     vaultSeat,
+    zcf,
   };
   return {
     ...fixed,
