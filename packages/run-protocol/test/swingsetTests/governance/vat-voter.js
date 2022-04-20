@@ -43,6 +43,7 @@ const build = async (log, zoe) => {
           const electionManagerP = E.get(governedTermsP).electionManager;
 
           const counterPublicP = E(zoe).getPublicFacet(counterInstance);
+          /** @type {Promise<QuestionSpec<ParamChangeIssue>>} */
           const ballotDetailsP = E(counterPublicP).getDetails();
 
           const [electionManager, ballotDetails] = await Promise.all([
