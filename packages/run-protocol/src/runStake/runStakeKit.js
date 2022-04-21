@@ -154,6 +154,7 @@ const helperBehavior = {
    */
   getCollateralAmount: ({ state, facets }) => {
     const { collateralBrand, vaultSeat } = state;
+    const { helper } = facets;
     const emptyCollateral = AmountMath.makeEmpty(
       collateralBrand,
       AssetKind.COPY_BAG,
@@ -161,7 +162,7 @@ const helperBehavior = {
     // getCollateralAllocated would return final allocations
     return vaultSeat.hasExited()
       ? emptyCollateral
-      : facets.helper.getCollateralAllocated(vaultSeat);
+      : helper.getCollateralAllocated(vaultSeat);
   },
 
   /**
@@ -169,13 +170,14 @@ const helperBehavior = {
    *  @param {boolean} newActive */
   snapshotState: ({ state, facets }, newActive) => {
     const { debtSnapshot: debt, interestSnapshot: interest, manager } = state;
+    const { helper } = facets;
     /** @type {VaultUIState} */
     const result = harden({
       // TODO move manager state to a separate notifer https://github.com/Agoric/agoric-sdk/issues/4540
       interestRate: manager.getInterestRate(),
       liquidationRatio: manager.getMintingRatio(),
       debtSnapshot: { debt, interest },
-      locked: facets.helper.getCollateralAmount(),
+      locked: helper.getCollateralAmount(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
       // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
       vaultState: newActive ? 'active' : 'closed',
