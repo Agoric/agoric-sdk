@@ -184,7 +184,7 @@ export const start = async (
           zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances'),
         CloseVault: () => zcf.makeInvitation(helper.closeHook, 'CloseVault'),
       }),
-      vault: Far('RUNstake pot', pot),
+      vault: pot,
     });
   };
 
