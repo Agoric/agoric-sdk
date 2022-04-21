@@ -44,7 +44,7 @@ const trace = makeTracer('IV', false);
  * CLOSED       - vault was closed by the user and all assets have been paid out
  * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
  */
-export const VaultPhase = /** @type {const} */ ({
+export const Phase = /** @type {const} */ ({
   ACTIVE: 'active',
   LIQUIDATING: 'liquidating',
   CLOSED: 'closed',
@@ -53,25 +53,25 @@ export const VaultPhase = /** @type {const} */ ({
 });
 
 /**
- * @typedef {VaultPhase[keyof Omit<typeof VaultPhase, 'TRANSFER'>]} InnerPhase
- * @type {{[K in InnerPhase]: Array<InnerPhase>}}
+ * @typedef {Phase[keyof Omit<typeof Phase, 'TRANSFER'>]} VaultPhase
+ * @type {{[K in VaultPhase]: Array<VaultPhase>}}
  */
 const validTransitions = {
-  [VaultPhase.ACTIVE]: [VaultPhase.LIQUIDATING, VaultPhase.CLOSED],
-  [VaultPhase.LIQUIDATING]: [VaultPhase.LIQUIDATED],
-  [VaultPhase.LIQUIDATED]: [VaultPhase.CLOSED],
-  [VaultPhase.CLOSED]: [],
+  [Phase.ACTIVE]: [Phase.LIQUIDATING, Phase.CLOSED],
+  [Phase.LIQUIDATING]: [Phase.LIQUIDATED],
+  [Phase.LIQUIDATED]: [Phase.CLOSED],
+  [Phase.CLOSED]: [],
 };
 
 /**
- * @typedef {VaultPhase[keyof typeof VaultPhase]} OuterPhase
+ * @typedef {Phase[keyof typeof Phase]} TitlePhase
  *
  * @typedef {Object} VaultUIState
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{debt: Amount<'nat'>, interest: Ratio}} debtSnapshot 'debt' at the point the compounded interest was 'interest'
  * @property {Ratio} interestRate Annual interest rate charge
  * @property {Ratio} liquidationRatio
- * @property {OuterPhase} vaultState
+ * @property {TitlePhase} vaultState
  */
 
 /**
@@ -102,7 +102,7 @@ const validTransitions = {
  * @typedef {{
  *   interestSnapshot: Ratio,
  *   outerUpdater: IterationObserver<VaultUIState> | null,
- *   phase: InnerPhase,
+ *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
  * }} MutableState
  */
@@ -130,7 +130,7 @@ const initState = (zcf, manager, idInManager) => {
     idInManager,
     manager,
     outerUpdater: null,
-    phase: VaultPhase.ACTIVE,
+    phase: Phase.ACTIVE,
     zcf,
 
     // vaultSeat will hold the collateral until the loan is retired. The
@@ -195,7 +195,7 @@ const helperBehavior = {
   // #region Phase logic
   /**
    * @param {MethodContext} context
-   * @param {InnerPhase} newPhase
+   * @param {VaultPhase} newPhase
    */
   assignPhase: ({ state }, newPhase) => {
     const { phase } = state;
@@ -209,13 +209,13 @@ const helperBehavior = {
 
   assertActive: ({ state }) => {
     const { phase } = state;
-    assert(phase === VaultPhase.ACTIVE);
+    assert(phase === Phase.ACTIVE);
   },
 
   assertCloseable: ({ state }) => {
     const { phase } = state;
     assert(
-      phase === VaultPhase.ACTIVE || phase === VaultPhase.LIQUIDATED,
+      phase === Phase.ACTIVE || phase === Phase.LIQUIDATED,
       X`to be closed a vault must be active or liquidated, not ${phase}`,
     );
   },
@@ -298,7 +298,7 @@ const helperBehavior = {
   /**
    *
    * @param {MethodContext} context
-   * @param {OuterPhase} newPhase
+   * @param {TitlePhase} newPhase
    */
   getStateSnapshot: ({ state, facets }, newPhase) => {
     const { debtSnapshot: debt, interestSnapshot: interest } = state;
@@ -333,12 +333,12 @@ const helperBehavior = {
     trace('updateUiState', state.idInManager, uiState);
 
     switch (phase) {
-      case VaultPhase.ACTIVE:
-      case VaultPhase.LIQUIDATING:
-      case VaultPhase.LIQUIDATED:
+      case Phase.ACTIVE:
+      case Phase.LIQUIDATING:
+      case Phase.LIQUIDATED:
         outerUpdater.updateState(uiState);
         break;
-      case VaultPhase.CLOSED:
+      case Phase.CLOSED:
         outerUpdater.finish(uiState);
         state.outerUpdater = null;
         break;
@@ -355,7 +355,7 @@ const helperBehavior = {
     const { self, helper } = facets;
     helper.assertCloseable();
     const { phase, vaultSeat } = state;
-    if (phase === VaultPhase.ACTIVE) {
+    if (phase === Phase.ACTIVE) {
       assertProposalShape(seat, {
         give: { RUN: null },
       });
@@ -377,7 +377,7 @@ const helperBehavior = {
       seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
       state.zcf.reallocate(seat, vaultSeat);
       state.manager.burnAndRecord(debt, seat);
-    } else if (phase === VaultPhase.LIQUIDATED) {
+    } else if (phase === Phase.LIQUIDATED) {
       // Simply reallocate vault assets to the offer seat.
       // Don't take anything from the offer, even if vault is underwater.
       // TODO verify that returning RUN here doesn't mess up debt limits
@@ -388,7 +388,7 @@ const helperBehavior = {
     }
 
     seat.exit();
-    helper.assignPhase(VaultPhase.CLOSED);
+    helper.assignPhase(Phase.CLOSED);
     helper.updateDebtSnapshot(helper.emptyDebt());
     helper.updateUiState();
 
@@ -579,7 +579,7 @@ const selfBehavior = {
    */
   liquidating: ({ facets }) => {
     const { helper } = facets;
-    helper.assignPhase(VaultPhase.LIQUIDATING);
+    helper.assignPhase(Phase.LIQUIDATING);
     helper.updateUiState();
   },
 
@@ -593,7 +593,7 @@ const selfBehavior = {
     const { helper } = facets;
     helper.updateDebtSnapshot(newDebt);
 
-    helper.assignPhase(VaultPhase.LIQUIDATED);
+    helper.assignPhase(Phase.LIQUIDATED);
     helper.updateUiState();
   },
 
@@ -633,7 +633,7 @@ const selfBehavior = {
       phase,
     } = state;
     if (outerUpdater) {
-      outerUpdater.finish(helper.getStateSnapshot(VaultPhase.TRANSFER));
+      outerUpdater.finish(helper.getStateSnapshot(Phase.TRANSFER));
       state.outerUpdater = null;
     }
     const transferState = {
