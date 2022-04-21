@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	FlagSpend = "spend"
+	FlagAllowSpend = "allow-spend"
 )
 
 func GetTxCmd(storeKey string) *cobra.Command {
@@ -136,7 +136,7 @@ func GetCmdWalletAction() *cobra.Command {
 			owner := clientCtx.GetFromAddress()
 			action := args[0]
 
-			spend, err := cmd.Flags().GetBool(FlagSpend)
+			spend, err := cmd.Flags().GetBool(FlagAllowSpend)
 			if err != nil {
 				return err
 			}
@@ -154,7 +154,7 @@ func GetCmdWalletAction() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Bool(FlagSpend, false, "Send a WalletSpendAction transaction if true")
+	cmd.Flags().Bool(FlagAllowSpend, false, "Allow the WalletAction to spend assets")
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }
