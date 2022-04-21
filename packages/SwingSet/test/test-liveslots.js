@@ -752,7 +752,7 @@ test('GC syscall.dropImports', async t => {
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
     key: 'idCounters',
-    value: '{"exportID":10,"collectionID":2,"promiseID":5}',
+    value: '{"exportID":10,"collectionID":4,"promiseID":5}',
   });
   const l2 = log.shift();
   t.deepEqual(l2, {
@@ -1163,7 +1163,7 @@ test('GC dispatch.dropExports', async t => {
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
     key: 'idCounters',
-    value: '{"exportID":11,"collectionID":2,"promiseID":5}',
+    value: '{"exportID":11,"collectionID":4,"promiseID":5}',
   });
   t.deepEqual(log, []);
 
@@ -1230,7 +1230,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
   t.deepEqual(log.shift(), {
     type: 'vatstoreSet',
     key: 'idCounters',
-    value: '{"exportID":11,"collectionID":2,"promiseID":5}',
+    value: '{"exportID":11,"collectionID":4,"promiseID":5}',
   });
   t.deepEqual(log, []);
 

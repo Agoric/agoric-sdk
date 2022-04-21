@@ -73,6 +73,9 @@ export type VatData = {
     options?: { finish?: (context: MultiKindContext<S, B>) => void },
   ) => (...args: P) => KindFacets<B>;
 
+  providePromiseWatcher: unknown;
+  watchPromise: unknown;
+
   makeScalarBigMapStore: <K, V>(
     label: string,
     options?: StoreOptions,
