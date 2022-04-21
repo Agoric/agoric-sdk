@@ -191,7 +191,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
                 paths: [...paths, path.dirname(moduleFile)],
               });
             } catch (e) {
-              return path.resolve(...paths, fileName);
+              return path.resolve(path.dirname(moduleFile), ...paths, fileName);
             }
           };
           console.warn('running', moduleFile);
