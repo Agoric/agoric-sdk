@@ -1,7 +1,9 @@
 #! /bin/bash
 set -e
 
-thisdir=$(dirname -- "$0")
+real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
+thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
+
 FAUCET_HOME=$thisdir/../faucet
 DELEGATES="$thisdir/cosmos-delegates.txt"
 
@@ -26,8 +28,10 @@ show-faucet-address)
   ;;
 esac
 
-chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
-IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
+networkName=$(basename "$thisdir")
+netconfig=$(curl "https://$networkName.agoric.net/network-config")
+chainName=$(echo "$netconfig" | jq -r .chainName)
+read -r -a origRpcAddrs <<<"$(echo "$netconfig" | jq -r .rpcAddrs[])"
 
 read -ra rpcAddrs <<<"${origRpcAddrs[@]}"
 while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
@@ -35,10 +39,15 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
   selected=${rpcAddrs[$r]}
   read -ra rpcAddrs <<<"${rpcAddrs[@]/$selected}"
 
+  case $selected in
+  *://*) node="$selected"; status="$selected/status" ;;
+  *) node="tcp://$selected"; status="http://$selected/status" ;;
+  esac
+
   # echo "Checking if $selected is alive"
-  if [[ $(curl -s http://"$selected"/status | jq .result.sync_info.catching_up) == false ]]; then
-    QUERY="$ACH query --node=tcp://$selected"
-    TX="$ACH tx --node=tcp://$selected --chain-id=$chainName --keyring-backend=test --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=sync --from=$FAUCET_ADDR"
+  if [[ $(curl -s "$status" | jq .result.sync_info.catching_up) == false ]]; then
+    QUERY="$ACH query --node=$node"
+    TX="$ACH tx --node=$node --chain-id=$chainName --keyring-backend=test --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=sync --from=$FAUCET_ADDR"
     case $OP in
     debug)
       echo "would try $selected"
