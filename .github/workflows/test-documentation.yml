@@ -22,9 +22,9 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-v2-yarn-${{ hashFiles('yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-v2-yarn-
 
       # Select a branch on dapp to test against by adding text to the body of the
       # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0

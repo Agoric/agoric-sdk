@@ -179,9 +179,9 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
+          key: ${{ runner.os }}-v2-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-v2-go-
       - name: yarn test (cosmic-swingset)
         run: cd packages/cosmic-swingset && yarn test
 

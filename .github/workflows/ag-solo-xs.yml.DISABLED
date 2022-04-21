@@ -21,9 +21,9 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/yarn
-        key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+        key: ${{ runner.os }}-v2-yarn-${{ hashFiles('yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-yarn-
+          ${{ runner.os }}-v2-yarn-
     - name: yarn install --frozen-lockfile
       run: yarn install --frozen-lockfile
     - name: yarn build

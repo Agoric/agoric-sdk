@@ -24,7 +24,7 @@ runs:
       uses: actions/cache@v1
       with:
         path: .
-        key: ${{ runner.os }}-${{ inputs.node-version }}-built-${{ github.sha }}
+        key: ${{ runner.os }}-v2-${{ inputs.node-version }}-built-${{ github.sha }}
     - name: yarn install --frozen-lockfile
       run: yarn install --frozen-lockfile
       shell: bash
