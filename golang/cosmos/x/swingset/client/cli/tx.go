@@ -18,6 +18,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	FlagAllowSpend = "allow-spend"
+)
+
 func GetTxCmd(storeKey string) *cobra.Command {
 	swingsetTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
@@ -113,6 +117,44 @@ func GetCmdProvisionOne() *cobra.Command {
 		},
 	}
 
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+// GetCmdWalletAction is the CLI command for sending a WalletAction or WalletSpendAction transaction
+func GetCmdWalletAction() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "wallet-action [json string]",
+		Short: "perform a wallet action",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			owner := clientCtx.GetFromAddress()
+			action := args[0]
+
+			spend, err := cmd.Flags().GetBool(FlagAllowSpend)
+			if err != nil {
+				return err
+			}
+			var msg sdk.Msg
+			if spend {
+				msg = types.NewMsgWalletSpendAction(owner, action)
+			} else {
+				msg = types.NewMsgWalletAction(owner, action)
+			}
+			err = msg.ValidateBasic()
+			if err != nil {
+				return err
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	cmd.Flags().Bool(FlagAllowSpend, false, "Allow the WalletAction to spend assets")
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }
