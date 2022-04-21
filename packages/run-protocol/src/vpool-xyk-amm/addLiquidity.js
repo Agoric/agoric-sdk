@@ -107,6 +107,7 @@ const makeMakeAddLiquidityAtRateInvitation = (
   getPool,
   provideVPool,
   feeSeat,
+  getPoolHelper,
 ) => {
   const addLiquidityAtRate = seat => {
     assertProposalShape(seat, {
@@ -183,7 +184,7 @@ const makeMakeAddLiquidityAtRateInvitation = (
       ),
     );
 
-    return vPool.addLiquidityActual(
+    return getPoolHelper(secondaryBrand).addLiquidityActual(
       pool,
       seat,
       secondaryRequired,

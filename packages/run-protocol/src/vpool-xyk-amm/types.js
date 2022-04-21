@@ -58,7 +58,6 @@
  * @typedef {Object} SinglePoolInternalFacet
  * @property {GetSinglePoolSwapQuote} getPriceForInput
  * @property {GetSinglePoolSwapQuote} getPriceForOutput
- * @property {AddLiquidityActual} addLiquidityActual
  */
 
 /**
@@ -82,6 +81,14 @@
  * @property {() => PriceAuthority} getToCentralPriceAuthority
  * @property {() => PriceAuthority} getFromCentralPriceAuthority
  * @property {() => VPoolWrapper<SinglePoolInternalFacet>} getVPool
+ */
+
+/**
+ * @typedef {Object} PoolFacets
+ * @property {XYKPool} pool
+ * @property {{addLiquidityActual: AddLiquidityActual}} helper
+ * @property {SinglePoolInternalFacet} vPoolInner
+ * @property {VPool} vPoolOuter
  */
 
 /**

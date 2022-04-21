@@ -9,40 +9,37 @@ import {
 
 /**
  * @param {ZCF} zcf
- * @param {XYKPool} pool
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
- * @param {AddLiquidityActual} addLiquidityActual
- * @returns {VPoolWrapper<SinglePoolInternalFacet>}
  */
 export const makeSinglePool = (
   zcf,
-  pool,
   getProtocolFeeBP,
   getPoolFeeBP,
   feeSeat,
-  addLiquidityActual,
 ) => {
-  const secondaryBrand = pool.getSecondaryAmount().brand;
-  const centralBrand = pool.getCentralAmount().brand;
-  const getPools = () => ({
+  const getSecondaryBrand = pool => pool.getSecondaryAmount().brand;
+  const getCentralBrand = pool => pool.getCentralAmount().brand;
+
+  const getPools = pool => ({
     Central: pool.getCentralAmount(),
     Secondary: pool.getSecondaryAmount(),
   });
+
   const publicPrices = prices => ({
     amountIn: prices.swapperGives,
     amountOut: prices.swapperGets,
   });
 
-  const allocateGainsAndLosses = (seat, prices) => {
+  const allocateGainsAndLosses = (pool, prices, seat) => {
     const poolSeat = pool.getPoolSeat();
     seat.decrementBy(harden({ In: prices.swapperGives }));
     seat.incrementBy(harden({ Out: prices.swapperGets }));
     feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
 
     const inBrand = prices.swapperGives.brand;
-    if (inBrand === secondaryBrand) {
+    if (inBrand === getSecondaryBrand(pool)) {
       poolSeat.decrementBy(harden({ Central: prices.yDecrement }));
       poolSeat.incrementBy(harden({ Secondary: prices.xIncrement }));
     } else {
@@ -56,38 +53,70 @@ export const makeSinglePool = (
     return `Swap successfully completed.`;
   };
 
-  const getPriceForInput = (amountIn, amountOut) => {
+  /**
+   * @param {import('./pool').MethodContext} context
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
+  const getPriceForInput = (context, amountIn, amountOut) => {
     return pricesForStatedInput(
       amountIn,
-      getPools(),
+      getPools(context.facets.pool),
       amountOut,
-      makeFeeRatio(getProtocolFeeBP(), centralBrand),
+      makeFeeRatio(getProtocolFeeBP(), getCentralBrand(context.facets.pool)),
       makeFeeRatio(getPoolFeeBP(), amountOut.brand),
     );
   };
 
-  const getPriceForOutput = (amountIn, amountOut) => {
+  /**
+   * @param {import('./pool').MethodContext} context
+   * @param {ZCFSeat} seat
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
+  const swapIn = (context, seat, amountIn, amountOut) => {
+    const prices = getPriceForInput(context, amountIn, amountOut);
+    return allocateGainsAndLosses(context.facets.pool, prices, seat);
+  };
+
+  /**
+   * @param {import('./pool').MethodContext} context
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
+  const getPriceForOutput = (context, amountIn, amountOut) => {
     return pricesForStatedOutput(
       amountIn,
-      getPools(),
+      getPools(context.facets.pool),
       amountOut,
-      makeFeeRatio(getProtocolFeeBP(), centralBrand),
+      makeFeeRatio(getProtocolFeeBP(), getCentralBrand(context.facets.pool)),
       makeFeeRatio(getPoolFeeBP(), amountIn.brand),
     );
   };
 
-  /** @type {VPool} */
+  /**
+   * @param {import('./pool').MethodContext} context
+   * @param {ZCFSeat} seat
+   * @param {Amount} amountIn
+   * @param {Amount} amountOut
+   */
+  const swapOut = (context, seat, amountIn, amountOut) => {
+    const prices = getPriceForOutput(context, amountIn, amountOut);
+    return allocateGainsAndLosses(context.facets.pool, prices, seat);
+  };
+
   const externalFacet = Far('single pool', {
-    getInputPrice: (amountIn, amountOut) =>
-      publicPrices(getPriceForInput(amountIn, amountOut)),
-    getOutputPrice: (amountIn, amountOut) =>
-      publicPrices(getPriceForOutput(amountIn, amountOut)),
+    getInputPrice: (context, amountIn, amountOut) =>
+      publicPrices(getPriceForInput(context, amountIn, amountOut)),
+    getOutputPrice: (context, amountIn, amountOut) =>
+      publicPrices(getPriceForOutput(context, amountIn, amountOut)),
+    swapIn,
+    swapOut,
   });
 
   const internalFacet = Far('single pool', {
     getPriceForInput,
     getPriceForOutput,
-    addLiquidityActual,
     allocateGainsAndLosses,
   });
 

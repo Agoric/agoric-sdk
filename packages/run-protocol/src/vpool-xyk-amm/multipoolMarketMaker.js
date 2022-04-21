@@ -8,7 +8,7 @@ import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { makeAddPool } from './pool.js';
+import { makeAddPool } from './addPool.js';
 import {
   makeMakeAddLiquidityInvitation,
   makeMakeAddLiquidityAtRateInvitation,
@@ -138,9 +138,10 @@ const start = async (zcf, privateArgs) => {
     )}`,
   );
 
-  /** @type {WeakStore<Brand,XYKPool>} */
+  /** @type {WeakStore<Brand,PoolFacets>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');
-  const getPool = secondaryBrandToPool.get;
+  const getPool = brand => secondaryBrandToPool.get(brand).pool;
+  const getPoolHelper = brand => secondaryBrandToPool.get(brand).helper;
   const initPool = secondaryBrandToPool.init;
   const isSecondary = secondaryBrandToPool.has;
 
@@ -163,9 +164,8 @@ const start = async (zcf, privateArgs) => {
     params.getPoolFee,
     protocolSeat,
   );
-  const getPoolAllocation = brand => {
-    return getPool(brand).getPoolSeat().getCurrentAllocation();
-  };
+  const getPoolAllocation = brand =>
+    getPool(brand).getPoolSeat().getCurrentAllocation();
 
   const getPriceAuthorities = brand => {
     const pool = getPool(brand);
@@ -217,6 +217,7 @@ const start = async (zcf, privateArgs) => {
     getPool,
     provideVPool,
     protocolSeat,
+    getPoolHelper,
   );
 
   const makeRemoveLiquidityInvitation = makeMakeRemoveLiquidityInvitation(
