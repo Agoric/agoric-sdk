@@ -1,16 +1,15 @@
 // @ts-check
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
-import '@agoric/governance/src/exported';
+import '@agoric/governance/src/exported.js';
 import {
   assertProposalShape,
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
-  makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
-// import { CONTRACT_ELECTORATE } from '@agoric/governance';
+import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 
 import { AmountMath } from '@agoric/ertp';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
@@ -25,8 +24,6 @@ const { details: X } = assert;
  * token are specified separately.
  *
  */
-
-const BASIS_POINTS = 10_000n;
 
 /**
  * Stage a transfer of a single asset from one seat to another, with an optional
@@ -44,20 +41,19 @@ function stageTransfer(from, to, txFrom, txTo = txFrom) {
 }
 
 /**
- * @param {ZCF<{
+ * @param {ZCF<GovernanceTerms<{
+ *    GiveStableFee: ParamRecord<'ratio'>,
+ *    WantStableFee: ParamRecord<'ratio'>,
+ *    MintLimit: ParamRecord<'amount'>,
+ *   }> & {
  *    anchorBrand: Brand,
  *    anchorPerStable: Ratio,
- *    governedParams: {
- *      WantStableFeeBP: bigint,
- *      GiveStableFeeBP: bigint,
- *      MintLimit: Amount } }>
- * } zcf
- * @param {{feeMintAccess: FeeMintAccess}} privateArgs
+ * }>} zcf
+ * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation}} privateArgs
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async (zcf, { feeMintAccess, initialPoserInvitation }) => {
   const { anchorBrand, anchorPerStable } = zcf.getTerms();
 
-  const { feeMintAccess } = privateArgs;
   // TODO should this know that the name is 'Stable'
   // TODO get the RUN magic out of here so the contract is more reusable
   const stableMint = await zcf.registerFeeMint('Stable', feeMintAccess);
@@ -74,42 +70,38 @@ export const start = async (zcf, privateArgs) => {
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  // Mock simple goverannce API for parameters that will be controlled by governance
-  const getGovernance = _ => {
-    const {
-      governedParams: { WantStableFeeBP, GiveStableFeeBP, MintLimit },
-    } = zcf.getTerms();
-    assert(
-      AmountMath.isGTE(MintLimit, emptyAnchor),
-      X`MintLimit ${MintLimit} must specify a limit in ${anchorBrand}`,
-    );
-    return {
-      getWantStableRate: () =>
-        makeRatio(WantStableFeeBP, stableBrand, BASIS_POINTS),
-      getGiveStableRate: () =>
-        makeRatio(GiveStableFeeBP, stableBrand, BASIS_POINTS),
-      getMintLimit: () => MintLimit,
-    };
-  };
-  const gov = getGovernance(zcf);
+  const { augmentPublicFacet, makeGovernorFacet, params } =
+    await handleParamGovernance(zcf, initialPoserInvitation, {
+      GiveStableFee: ParamTypes.RATIO,
+      MintLimit: ParamTypes.AMOUNT,
+      WantStableFee: ParamTypes.RATIO,
+    });
 
   const { zcfSeat: anchorPool } = zcf.makeEmptySeatKit();
   const { zcfSeat: feePool } = zcf.makeEmptySeatKit();
   const { zcfSeat: stage } = zcf.makeEmptySeatKit();
 
+  /**
+   * @param {Amount<'nat'>} given
+   */
   const assertUnderLimit = given => {
     const anchorAfterTrade = AmountMath.add(
       anchorPool.getAmountAllocated('Anchor', anchorBrand),
       given,
     );
     assert(
-      AmountMath.isGTE(gov.getMintLimit(), anchorAfterTrade),
+      AmountMath.isGTE(params.getMintLimit(), anchorAfterTrade),
       X`Request would exceed mint limit`,
     );
   };
 
+  /**
+   * @param {ZCFSeat} seat
+   * @param {Amount<'nat'>} given
+   * @param {Amount<'nat'>} [wanted]
+   */
   const giveStable = (seat, given, wanted = emptyAnchor) => {
-    const fee = ceilMultiplyBy(given, gov.getGiveStableRate());
+    const fee = ceilMultiplyBy(given, params.getGiveStableFee());
     const afterFee = AmountMath.subtract(given, fee);
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerStable);
     // TODO this prevents the reallocate from failing. Can this be tested otherwise?
@@ -124,10 +116,15 @@ export const start = async (zcf, privateArgs) => {
     stableMint.burnLosses({ Stable: afterFee }, stage);
   };
 
+  /**
+   * @param {ZCFSeat} seat
+   * @param {Amount<'nat'>} given
+   * @param {Amount<'nat'>} [wanted]
+   */
   const wantStable = (seat, given, wanted = emptyStable) => {
     assertUnderLimit(given);
     const asStable = floorDivideBy(given, anchorPerStable);
-    const fee = ceilMultiplyBy(asStable, gov.getWantStableRate());
+    const fee = ceilMultiplyBy(asStable, params.getWantStableFee());
     const afterFee = AmountMath.subtract(asStable, fee);
     assert(
       AmountMath.isGTE(afterFee, wanted),
@@ -146,6 +143,9 @@ export const start = async (zcf, privateArgs) => {
     }
   };
 
+  /**
+   * @param {ZCFSeat} seat
+   */
   const swapHook = seat => {
     assertProposalShape(seat, {
       give: { In: null },
@@ -182,5 +182,8 @@ export const start = async (zcf, privateArgs) => {
     makeCollectFeesInvitation,
   });
 
-  return { creatorFacet, publicFacet };
+  return {
+    creatorFacet: makeGovernorFacet(creatorFacet),
+    publicFacet: augmentPublicFacet(publicFacet),
+  };
 };

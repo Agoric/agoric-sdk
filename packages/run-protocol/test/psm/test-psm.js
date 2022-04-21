@@ -14,6 +14,8 @@ import {
   floorMultiplyBy,
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeTracer } from '../../src/makeTracer.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import { setUpZoeForTest } from '../supports.js';
@@ -84,23 +86,52 @@ const makeTestContext = async () => {
   const anchorKit = makeIssuerKit('aUSD');
 
   const { brand: anchorBrand } = anchorKit;
+  const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
+
+  const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
+    committeeInstall,
+    harden({}),
+    {
+      committeeName: 'Demos',
+      committeeSize: 1,
+    },
+  );
+
+  const initialPoserInvitation = await E(committeeCreator).getPoserInvitation();
+  const invitationAmount = await E(E(zoe).getInvitationIssuer()).getAmountOf(
+    initialPoserInvitation,
+  );
+
   return {
     bundles: { psmBundle },
     zoe: await zoe,
-    feeMintAccess: await feeMintAccess,
+    privateArgs: harden({
+      feeMintAccess: await feeMintAccess,
+      initialPoserInvitation,
+    }),
     runKit: { runIssuer, runBrand },
     anchorKit,
-    installs: { psmInstall },
+    installs: { committeeInstall, psmInstall },
     mintLimit,
     terms: {
       anchorBrand,
       anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
       governedParams: {
-        WantStableFeeBP,
-        GiveStableFeeBP,
-        MintLimit: mintLimit,
+        [CONTRACT_ELECTORATE]: {
+          type: ParamTypes.INVITATION,
+          value: invitationAmount,
+        },
+        GiveStableFee: {
+          type: ParamTypes.RATIO,
+          value: makeRatio(GiveStableFeeBP, runBrand, BASIS_POINTS),
+        },
+        MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
+        WantStableFee: {
+          type: ParamTypes.RATIO,
+          value: makeRatio(WantStableFeeBP, runBrand, BASIS_POINTS),
+        },
       },
     },
   };
@@ -113,7 +144,7 @@ test.before(async t => {
 test('simple trades', async t => {
   const {
     zoe,
-    feeMintAccess,
+    privateArgs,
     terms,
     installs: { psmInstall },
     runKit: { runIssuer, runBrand },
@@ -123,7 +154,7 @@ test('simple trades', async t => {
     psmInstall,
     harden({ AUSD: anchorIssuer }),
     terms,
-    harden({ feeMintAccess }),
+    privateArgs,
   );
   const giveAnchor = AmountMath.make(anchorBrand, 200n * 1_000_000n);
   const seat1 = await E(zoe).offer(
@@ -158,8 +189,9 @@ test('simple trades', async t => {
 
   // Check the fees
   // 1BP per anchor = 30000n plus 3BP per stable = 20000n
+  const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
   const collectFeesSeat = await E(zoe).offer(
-    E(creatorFacet).makeCollectFeesInvitation(),
+    E(limitedCreatorFacet).makeCollectFeesInvitation(),
   );
   await E(collectFeesSeat).getOfferResult();
   const feePayoutAmount = await E.get(E(collectFeesSeat).getCurrentAllocation())
@@ -172,17 +204,18 @@ test('simple trades', async t => {
 test('limit', async t => {
   const {
     zoe,
-    feeMintAccess,
+    privateArgs,
     terms,
     mintLimit,
     installs: { psmInstall },
     anchorKit: { brand: anchorBrand, issuer: anchorIssuer, mint: anchorMint },
   } = t.context;
+
   const { publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchorIssuer }),
     terms,
-    harden({ feeMintAccess }),
+    privateArgs,
   );
   const initialPool = AmountMath.make(anchorBrand, 1n);
   await E(zoe).offer(
@@ -222,7 +255,7 @@ test('limit', async t => {
 test('anchor is 2x stable', async t => {
   const {
     zoe,
-    feeMintAccess,
+    privateArgs,
     terms,
     installs: { psmInstall },
     runKit: { runIssuer, runBrand },
@@ -233,7 +266,7 @@ test('anchor is 2x stable', async t => {
     psmInstall,
     harden({ AUSD: anchorIssuer }),
     { ...terms, anchorPerStable },
-    harden({ feeMintAccess }),
+    privateArgs,
   );
   const giveAnchor = AmountMath.make(anchorBrand, 400n * 1_000_000n);
   const seat1 = await E(zoe).offer(
