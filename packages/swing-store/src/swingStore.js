@@ -130,7 +130,25 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const { mapSize = DEFAULT_LMDB_MAP_SIZE } = options;
+  const { mapSize = DEFAULT_LMDB_MAP_SIZE, enableTrace } = options;
+
+  let debugOutput = enableTrace
+    ? fs.createWriteStream(path.resolve(dirPath, 'store-trace.log'), {
+        flags: 'a',
+      })
+    : null;
+
+  function trace(...args) {
+    if (!debugOutput) return;
+
+    debugOutput.write(args.join(' '));
+    debugOutput.write('\n');
+  }
+  function stopTrace() {
+    debugOutput && debugOutput.end();
+    debugOutput = null;
+  }
+
   let lmdbEnv = new lmdb.Env();
 
   // Use the new mapSize, persisting if it's bigger than before and there's a
@@ -156,6 +174,7 @@ function makeSwingStore(dirPath, forceReset, options) {
 
   function ensureTxn() {
     if (!txn) {
+      trace('begin-tx');
       txn = lmdbEnv.beginTxn();
     }
   }
@@ -242,6 +261,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert.typeof(value, 'string');
     ensureTxn();
     txn.putString(dbi, key, value);
+    trace('set', key, value);
   }
 
   /**
@@ -257,6 +277,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     if (has(key)) {
       ensureTxn();
       txn.del(dbi, key);
+      trace('del', key);
     }
   }
 
@@ -279,6 +300,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   function commit() {
     if (txn) {
       txn.commit();
+      trace(`commit-tx`);
       txn = null;
     }
 
@@ -297,12 +319,14 @@ function makeSwingStore(dirPath, forceReset, options) {
   function close() {
     if (txn) {
       txn.abort();
+      trace(`abort-tx`);
       txn = null;
     }
     dbi.close();
     dbi = null;
     lmdbEnv.close();
     lmdbEnv = null;
+    stopTrace();
   }
 
   return harden({ kvStore, streamStore, snapStore, commit, close, diskUsage });
