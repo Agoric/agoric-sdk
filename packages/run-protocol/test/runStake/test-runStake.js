@@ -24,7 +24,7 @@ import {
 } from '../../src/econ-behaviors.js';
 import * as Collect from '../../src/collect.js';
 import { setUpZoeForTest } from '../supports.js';
-import { KW } from '../../src/runStake/params.js';
+import { ManagerKW as KW } from '../../src/runStake/constants.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // 8	Partial repayment from reward stream - TODO

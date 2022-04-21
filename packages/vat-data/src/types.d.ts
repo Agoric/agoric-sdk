@@ -31,7 +31,7 @@ type KindFacets<B> = {
 
 type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
-type PlusContext<C, M> = (c: any, ...args: Parameters<M>) => ReturnType<M>;
+type PlusContext<C, M> = (c: C, ...args: Parameters<M>) => ReturnType<M>;
 type FunctionsPlusContext<O> = { [K in keyof O]: PlusContext<O[K]> };
 
 declare class DurableKindHandleClass {
