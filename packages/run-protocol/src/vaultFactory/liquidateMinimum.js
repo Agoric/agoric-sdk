@@ -24,44 +24,47 @@ const trace = makeTracer('LiqMin');
 const start = async zcf => {
   const { amm } = zcf.getTerms();
 
-  /**
-   * @param {ZCFSeat} debtorSeat
-   * @param {{ debt: Amount<'nat'> }} options
-   */
-  const handleDebtorOffer = async (debtorSeat, { debt }) => {
-    const debtBrand = debt.brand;
-    const {
-      give: { In: amountIn },
-    } = debtorSeat.getProposal();
+  const makeDebtorInvitation = () =>
+    zcf.makeInvitation(
+      /**
+       * @param {ZCFSeat} debtorSeat
+       * @param {{ debt: Amount<'nat'> }} options
+       */
+      async (debtorSeat, { debt }) => {
+        const debtBrand = debt.brand;
+        const {
+          give: { In: amountIn },
+        } = debtorSeat.getProposal();
 
-    const swapInvitation = E(amm).makeSwapInvitation();
-    const liqProposal = harden({
-      give: { In: amountIn },
-      want: { Out: AmountMath.makeEmpty(debtBrand) },
-    });
-    trace(`OFFER TO DEBT: `, debt, amountIn);
-    const { deposited } = await offerTo(
-      zcf,
-      swapInvitation,
-      undefined, // The keywords were mapped already
-      liqProposal,
-      debtorSeat,
-      debtorSeat,
-      { stopAfter: debt },
+        const swapInvitation = E(amm).makeSwapInvitation();
+        const liqProposal = harden({
+          give: { In: amountIn },
+          want: { Out: AmountMath.makeEmpty(debtBrand) },
+        });
+        trace(`OFFER TO DEBT: `, debt, amountIn);
+        const { deposited } = await offerTo(
+          zcf,
+          swapInvitation,
+          undefined, // The keywords were mapped already
+          liqProposal,
+          debtorSeat,
+          debtorSeat,
+          { stopAfter: debt },
+        );
+        const amounts = await deposited;
+        trace(`Liq results`, {
+          debt,
+          amountIn,
+          paid: debtorSeat.getCurrentAllocation(),
+          amounts,
+        });
+        debtorSeat.exit();
+      },
+      'Liquidate',
     );
-    const amounts = await deposited;
-    trace(`Liq results`, {
-      debt,
-      amountIn,
-      paid: debtorSeat.getCurrentAllocation(),
-      amounts,
-    });
-    debtorSeat.exit();
-  };
 
   const creatorFacet = Far('debtorInvitationCreator', {
-    makeDebtorInvitation: () =>
-      zcf.makeInvitation(handleDebtorOffer, 'Liquidate'),
+    makeDebtorInvitation,
   });
 
   return harden({ creatorFacet });
