@@ -9,16 +9,11 @@ import { defineKindMulti } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
-import { KW as AttKW } from './attestation.js';
+import { KW } from './params.js';
 
 const { details: X, quote: q } = assert;
 
 const trace = makeTracer('R1');
-
-export const KW = /** @type { const } */ ({
-  [AttKW.Attestation]: AttKW.Attestation,
-  Debt: 'Debt',
-});
 
 /**
  * Calculate the fee, the amount to mint and the resulting debt.

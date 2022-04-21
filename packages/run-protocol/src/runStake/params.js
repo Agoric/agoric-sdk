@@ -2,10 +2,12 @@
 // @jessie-check
 
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { KW as AttKW } from './attestation.js';
 
-import { KW } from './runStakeKit.js';
-
-export { KW };
+export const KW = /** @type { const } */ ({
+  [AttKW.Attestation]: AttKW.Attestation,
+  Debt: 'Debt',
+});
 
 const PKey = /** @type { const } */ ({
   DebtLimit: 'DebtLimit',
