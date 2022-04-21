@@ -177,10 +177,14 @@ const start = async (zcf, privateArgs) => {
 
   /**
    * @param {Brand} brandIn
-   * @param {Brand} brandOut
-   * @returns {VPoolWrapper<SinglePoolInternalFacet> | VPoolWrapper<DoublePoolInternalFacet>}
+   * @param {Brand} [brandOut]
+   * @returns {VPoolWrapper<SinglePoolInternalFacet | DoublePoolInternalFacet>}
    */
   const provideVPool = (brandIn, brandOut) => {
+    if (!brandOut) {
+      return getPool(brandIn).getVPool();
+    }
+
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
       return makeDoublePool(
         zcf,
