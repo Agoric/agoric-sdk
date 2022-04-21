@@ -40,18 +40,11 @@ const behavior = {
       state.lienMint.returnAttestation,
       'returnAttestation',
     ),
-
-  /** @param {MethodContext} context */
-  unwrapLienedAmount: ({ state }) => state.lienMint.unwrapLienedAmount,
-
-  /**
-   * @param {MethodContext} context
-   * @param { Amount<'nat'> } lienedAmount
-   */
-  wrapLienedAmount: ({ state }, lienedAmount) =>
-    state.lienMint.wrapLienedAmount(state.address, lienedAmount),
 };
 
+/**
+ * @returns {AttestationTool}
+ */
 export const makeAttestationTool = defineKind(
   'AttestationTool',
   initState,

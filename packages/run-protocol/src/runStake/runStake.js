@@ -70,7 +70,7 @@ const { values } = Object;
  * The creator facet can make an `AttestationMaker` for each account, which
  * authorizes placing a lien some of the staked assets in that account.
  * @typedef {{
- *   provideAttestationMaker: (addr: string) => AttestationMaker,
+ *   provideAttestationMaker: (addr: string) => AttestationTool,
  *   getLiened: (address: string, brand: Brand<'nat'>) => Amount<'nat'>,
  * }} RunStakeCreator
  *

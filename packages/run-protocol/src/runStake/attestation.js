@@ -14,7 +14,7 @@ const { details: X } = assert;
  * @typedef {{
  *   mintAttestation: unknown,
  *   returnAttestation: OfferHandler,
- *   getLiened: unknown,
+ *   getLiened: (address: Address, brand: Brand<'nat'>) => Amount<'nat'>,
  *   getAccountState: unknown,
  *   wrapLienedAmount: unknown,
  *   unwrapLienedAmount: unknown,
@@ -237,7 +237,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
  * The keyword for use in returnAttestation offers is `Attestation`.
  */
 export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
-  /** @type {Store<Address, AttestationMaker>} */
+  /** @type {Store<Address, AttestationTool>} */
   const attMakerByAddress = makeStore('address');
 
   const { issuer, brand, lienMint } = await makeAttestationIssuerKit(
