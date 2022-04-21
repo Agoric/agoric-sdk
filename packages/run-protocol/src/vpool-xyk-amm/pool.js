@@ -22,68 +22,41 @@ import { makeSinglePool } from './singlePool.js';
  * @typedef {Readonly<{
  * liquidityBrand: Brand<'nat'>,
  * secondaryBrand: Brand<'nat'>,
- * liquidityZcfMint: Mint<any>,
+ * liquidityZcfMint: ZCFMint,
  * liquidityIssuer: Issuer<any>,
  * toCentralPriceAuthority: PriceAuthority,
  * fromCentralPriceAuthority: PriceAuthority,
  * zcf: ZCF,
  * }>} ImmutableState
- */
-
-/**
+ *
  * @typedef {{
  * updater: IterationObserver<any>,
  * notifier: Notifier<any>,
  * poolSeat: ZCFSeat,
  * liqTokenSupply: bigint,
  * }} MutableState
- */
-
-// TODO (turadg) what are the right declaration here?
-/**
+ *
  * @typedef {{
  *   state: ImmutableState & MutableState,
  *   facets: {
- *     pool, helper, vPoolInner, vPoolOuter,
- // *     helper: import('@agoric/vat-data/src/types').FunctionsMinusContext<AddLiquidityActual>,
- // *     pool: import('@agoric/vat-data/src/types').FunctionsMinusContext<typeof poolBehavior>,
- // *     vPoolInner: import('@agoric/vat-data/src/types').FunctionsMinusContext<SinglePoolInternalFacet>,
- // *     vPoolOuter: import('@agoric/vat-data/src/types').FunctionsMinusContext<VPool>,
+ *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
+ *     pool: import('@agoric/vat-data/src/types').KindFacet<any>, // FIXME typeof poolBehavior
+ *     vPoolInner: import('@agoric/vat-data/src/types').KindFacet<SinglePoolInternalFacet>,
+ *     vPoolOuter: import('@agoric/vat-data/src/types').KindFacet<VPool>,
  *   },
  * }} MethodContext
  */
 
-/**
- * @param {ZCF} zcf
- * @param {(brand: Brand) => boolean} isInSecondaries true if brand is known secondary
- * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
- * @param {Brand} centralBrand
- * @param {ERef<Timer>} timer
- * @param {IssuerKit} quoteIssuerKit
- * @param {() => bigint} getProtocolFeeBP retrieve governed protocol fee value
- * @param {() => bigint} getPoolFeeBP retrieve governed pool fee value
- * @param {ZCFSeat} protocolSeat seat that holds collected fees
- */
-export const makePoolMaker = (
-  zcf,
-  isInSecondaries,
-  initPool,
-  centralBrand,
-  timer,
-  quoteIssuerKit,
-  getProtocolFeeBP,
-  getPoolFeeBP,
-  protocolSeat,
-) => {
-  const updateUpdaterState = (updater, pool) =>
-    // TODO: when governance can change the interest rate, include it here
-    updater.updateState({
-      central: pool.getCentralAmount(),
-      secondary: pool.getSecondaryAmount(),
-    });
+const updateUpdaterState = (updater, pool) =>
+  // TODO: when governance can change the interest rate, include it here
+  updater.updateState({
+    central: pool.getCentralAmount(),
+    secondary: pool.getSecondaryAmount(),
+  });
 
-  // /** @type {AddLiquidityActual} */
-  const addLiquidityActual = (
+const helperBehavior = {
+  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
+  addLiquidityActual: (
     { state },
     pool,
     zcfSeat,
@@ -91,13 +64,14 @@ export const makePoolMaker = (
     poolCentralAmount,
     feeSeat,
   ) => {
-    const { poolSeat, liquidityBrand, liquidityZcfMint, updater } = state;
+    const { poolSeat, liquidityBrand, liquidityZcfMint, updater, zcf } = state;
 
     // addLiquidity can't be called until the pool has been created. We verify
     // that the asset is NAT before creating a pool.
 
     const liquidityValueOut = calcLiqValueToMint(
       state.liqTokenSupply,
+      // @ts-expect-error NatValue cast
       zcfSeat.getStagedAllocation().Central.value,
       poolCentralAmount.value,
     );
@@ -132,8 +106,31 @@ export const makePoolMaker = (
     zcfSeat.exit();
     updateUpdaterState(updater, pool);
     return 'Added liquidity.';
-  };
+  },
+};
 
+/**
+ * @param {ZCF} zcf
+ * @param {(brand: Brand) => boolean} isInSecondaries true if brand is known secondary
+ * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
+ * @param {Brand} centralBrand
+ * @param {ERef<Timer>} timer
+ * @param {IssuerKit} quoteIssuerKit
+ * @param {() => bigint} getProtocolFeeBP retrieve governed protocol fee value
+ * @param {() => bigint} getPoolFeeBP retrieve governed pool fee value
+ * @param {ZCFSeat} protocolSeat seat that holds collected fees
+ */
+export const makePoolMaker = (
+  zcf,
+  isInSecondaries,
+  initPool,
+  centralBrand,
+  timer,
+  quoteIssuerKit,
+  getProtocolFeeBP,
+  getPoolFeeBP,
+  protocolSeat,
+) => {
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     const { brand: liquidityBrand, issuer: liquidityIssuer } =
       liquidityZcfMint.getIssuerRecord();
@@ -269,7 +266,7 @@ export const makePoolMaker = (
   );
 
   const facets = {
-    helper: { addLiquidityActual },
+    helper: helperBehavior,
     pool: poolBehavior,
     vPoolInner: vPool.internalFacet,
     vPoolOuter: vPool.externalFacet,
