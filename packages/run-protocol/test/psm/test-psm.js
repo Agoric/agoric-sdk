@@ -1,6 +1,6 @@
-/// no @ts-check because AVA context is hard to type
+// @ts-check
 
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import '@agoric/zoe/exported.js';
 import '../../src/vaultFactory/types.js';
@@ -17,6 +17,10 @@ import {
 import { makeTracer } from '../../src/makeTracer.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 import { setUpZoeForTest } from '../supports.js';
+
+/** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
+// @ts-expect-error cast
+const test = anyTest;
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
@@ -62,7 +66,6 @@ const minusAnchorFee = (anchor, anchorPerStable) => {
       NatMath.multiply(stable.value, NatMath.subtract(BASIS_POINTS, feeBP)),
       BASIS_POINTS,
     ),
-    BigInt((stable.value * (BASIS_POINTS - feeBP)) / BASIS_POINTS),
   );
 };
 
@@ -71,33 +74,40 @@ const setJig = _jig => {
   // testJig = jig;
 };
 
-/**
- * @param {ExecuteContract} t
- */
-test.before(async t => {
+const makeTestContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const psmBundle = await bundleCache.load(psmRoot, 'psm');
-  t.context.bundles = { psmBundle };
   const { zoe, feeMintAccess } = setUpZoeForTest(setJig);
-  t.context.zoe = await zoe;
-  t.context.feeMintAccess = await feeMintAccess;
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
-  t.context.runKit = { runIssuer, runBrand };
   const anchorKit = makeIssuerKit('aUSD');
-  t.context.anchorKit = anchorKit;
 
   const { brand: anchorBrand } = anchorKit;
   const psmInstall = await E(zoe).install(psmBundle);
-  t.context.installs = { psmInstall };
   const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
-  t.context.mintLimit = mintLimit;
-  t.context.terms = {
-    anchorBrand,
-    anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
-    governedParams: { WantStableFeeBP, GiveStableFeeBP, MintLimit: mintLimit },
+  return {
+    bundles: { psmBundle },
+    zoe: await zoe,
+    feeMintAccess: await feeMintAccess,
+    runKit: { runIssuer, runBrand },
+    anchorKit,
+    installs: { psmInstall },
+    mintLimit,
+    terms: {
+      anchorBrand,
+      anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
+      governedParams: {
+        WantStableFeeBP,
+        GiveStableFeeBP,
+        MintLimit: mintLimit,
+      },
+    },
   };
+};
+
+test.before(async t => {
+  t.context = await makeTestContext();
 });
 
 test('simple trades', async t => {
@@ -195,7 +205,7 @@ test('limit', async t => {
   const paymentPs = await E(seat1).getPayouts();
   // We should get 0 RUN and all our anchor back
   // TODO should this be expecteed to be an empty Out?
-  t.falsy(t.Out);
+  t.falsy(paymentPs.Out);
   // const actualRun = await E(runIssuer).getAmountOf(runPayout);
   // t.deepEqual(actualRun, AmountMath.makeEmpty(runBrand));
   const anchorReturn = await paymentPs.In;
