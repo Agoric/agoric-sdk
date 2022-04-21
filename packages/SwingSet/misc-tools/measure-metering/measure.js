@@ -1,7 +1,7 @@
 // run as `node tools/measure-metering/measure.js`
 
 // eslint-disable-next-line import/order
-import '../prepare-test-env.js';
+import '../../tools/prepare-test-env.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
