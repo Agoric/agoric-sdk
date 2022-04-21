@@ -111,7 +111,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
         amm: 'zoe',
         VaultFactory: 'zoe',
         contractGovernor: 'zoe',
-        noActionElectorate: 'zoe',
         binaryVoteCounter: 'zoe',
         liquidate: 'zoe',
       },
