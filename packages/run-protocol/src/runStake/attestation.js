@@ -5,13 +5,9 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { fit, M, makeCopyBag, makeStore } from '@agoric/store';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
+import { AttKW as KW } from './constants.js';
 
 const { details: X } = assert;
-
-export const KW = /** @type { const } */ ({
-  /** seat keyword for use in offers to return an attestation. */
-  Attestation: 'Attestation',
-});
 
 /**
  * Find-or-create value in store.

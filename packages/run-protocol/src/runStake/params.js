@@ -2,19 +2,7 @@
 // @jessie-check
 
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { KW as AttKW } from './attestation.js';
-
-export const KW = /** @type { const } */ ({
-  [AttKW.Attestation]: AttKW.Attestation,
-  Debt: 'Debt',
-});
-
-const PKey = /** @type { const } */ ({
-  DebtLimit: 'DebtLimit',
-  MintingRatio: 'MintingRatio',
-  InterestRate: 'InterestRate',
-  LoanFee: 'LoanFee',
-});
+import { ParamKW as PKey } from './constants.js';
 
 export const makeRunStakeTerms = (
   { timerService, chargingPeriod, recordingPeriod },

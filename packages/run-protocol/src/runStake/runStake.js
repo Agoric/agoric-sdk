@@ -4,7 +4,8 @@ import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationFacets } from './attestation.js';
-import { makeRunStakeKit, KW } from './runStakeKit.js';
+import { ManagerKW as KW } from './constants.js';
+import { makeRunStakeKit } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager.js';
 
 const { details: X } = assert;

@@ -9,7 +9,7 @@ import { defineKindMulti } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
-import { KW } from './params.js';
+import { ManagerKW as KW } from './constants.js';
 
 const { details: X, quote: q } = assert;
 
