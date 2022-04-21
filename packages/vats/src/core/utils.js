@@ -24,11 +24,13 @@ export const agoricNamesReserved = harden({
     BLD: 'Agoric staking token',
     RUN: 'Agoric RUN currency',
     Attestation: 'Agoric lien attestation',
+    AUSD: 'Agoric bridged USDC',
   },
   brand: {
     BLD: 'Agoric staking token',
     RUN: 'Agoric RUN currency',
     Attestation: 'Agoric lien attestation',
+    AUSD: 'Agoric bridged USDC',
   },
   installation: {
     centralSupply: 'central supply',
@@ -43,6 +45,7 @@ export const agoricNamesReserved = harden({
     runStake: 'runStake',
     Pegasus: 'pegasus',
     reserve: 'collateral reserve',
+    psm: 'Parity Stability Module',
   },
   instance: {
     economicCommittee: 'Economic Committee',
@@ -56,6 +59,8 @@ export const agoricNamesReserved = harden({
     Pegasus: 'remote peg',
     reserve: 'collateal reserve',
     reserveGovernor: 'ReserveGovernor',
+    psm: 'Parity Stability Module',
+    psmGovernor: 'PSM Governor',
   },
   oracleBrand: {
     USD: 'US Dollar',
