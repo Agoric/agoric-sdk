@@ -1,8 +1,8 @@
 // @ts-check
 
 /** @typedef {import('./vault').VaultUIState} VaultUIState */
+/** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./vaultKit').VaultKit} VaultKit */
-/** @typedef {VaultKit['vault']} Vault */
 /** @typedef {import('./vaultManager').VaultManager} VaultManager */
 /** @typedef {import('./vaultManager').CollateralManager} CollateralManager */
 
@@ -138,7 +138,5 @@
  * that don't constitute whole reporting periods, the time is not updated past
  * them and interest is not accumulated for them.
  */
-
-/** @typedef {import('./vault').InnerVault} InnerVault */
 
 /** @typedef {{key: 'governedParams' | {collateralBrand: Brand}}} VaultFactoryParamPath */

@@ -22,7 +22,7 @@ const trace = makeTracer('IV', false);
 /**
  * @file This has most of the logic for a Vault, to borrow RUN against collateral.
  *
- * The logic here is for InnerVault which is the majority of logic of vaults but
+ * The logic here is for Vault which is the majority of logic of vaults but
  * the user view is the `vault` value contained in VaultKit.
  *
  * A note on naming convention:
@@ -75,7 +75,7 @@ const validTransitions = {
  */
 
 /**
- * @typedef {Object} InnerVaultManager
+ * @typedef {Object} VaultManager
  * @property {() => Notifier<import('./vaultManager').AssetState>} getNotifier
  * @property {(collateralAmount: Amount) => ERef<Amount>} maxDebtFor
  * @property {() => Brand} getCollateralBrand
@@ -90,7 +90,7 @@ const validTransitions = {
 /**
  * @typedef {Readonly<{
  * idInManager: VaultId,
- * manager: InnerVaultManager,
+ * manager: VaultManager,
  * vaultSeat: ZCFSeat,
  * zcf: ZCF,
  * }>} ImmutableState
@@ -119,7 +119,7 @@ const validTransitions = {
 
 /**
  * @param {ZCF} zcf
- * @param {InnerVaultManager} manager
+ * @param {VaultManager} manager
  * @param {VaultId} idInManager
  */
 const initState = (zcf, manager, idInManager) => {
@@ -702,16 +702,16 @@ const selfBehavior = {
   },
 };
 
-const makeInnerVaultBase = defineKindMulti('InnerVault', initState, {
+const makeVaultBase = defineKindMulti('Vault', initState, {
   self: selfBehavior,
   helper: helperBehavior,
 });
 
 /**
  * @param {ZCF} zcf
- * @param {InnerVaultManager} manager
+ * @param {VaultManager} manager
  * @param {VaultId} idInManager
  */
-export const makeInnerVault = pickFacet(makeInnerVaultBase, 'self');
+export const makeVault = pickFacet(makeVaultBase, 'self');
 
-/** @typedef {ReturnType<typeof makeInnerVault>} InnerVault */
+/** @typedef {ReturnType<typeof makeVault>} Vault */
