@@ -3,6 +3,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
 import { parse } from '@endo/marshal';
@@ -12,6 +14,10 @@ import { capargs } from '../util.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
+}
+
+function tmpfile(name) {
+  return path.join(os.tmpdir(), name);
 }
 
 // bundle IDs are hex SHA512, so this must be 128 characters long (plus the
@@ -47,7 +53,7 @@ test('bundles', async t => {
   // We save this vat bundle (with 'disk()') to disk, to exercise
   // config.bundles.NAME.bundleSpec
   const diskBundle = await bundleSource(bfile('vat-disk.js'));
-  const diskBundleFilename = bfile('bundle-disk.js');
+  const diskBundleFilename = tmpfile('bundle-disk.js');
   fs.writeFileSync(diskBundleFilename, JSON.stringify(diskBundle));
 
   // We install this vat bundle at runtime, it provides 'runtime()'
