@@ -6,8 +6,20 @@ import { E, Far } from '@endo/far';
 import { fit, M, makeCopyBag, makeStore } from '@agoric/store';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { AttKW as KW } from './constants.js';
+import { makeAttestationTool } from './attestationTool.js';
 
 const { details: X } = assert;
+
+/**
+ * @typedef {{
+ *   mintAttestation: unknown,
+ *   returnAttestation: OfferHandler,
+ *   getLiened: unknown,
+ *   getAccountState: unknown,
+ *   wrapLienedAmount: unknown,
+ *   unwrapLienedAmount: unknown,
+ * }} LienMint
+ */
 
 /**
  * Find-or-create value in store.
@@ -188,7 +200,8 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     seat.exit();
   };
 
-  const lienMint = harden({
+  /** @type {ERef<LienMint>} */
+  const lienMint = Far('LienMint', {
     mintAttestation,
     returnAttestation,
     getLiened,
@@ -233,20 +246,6 @@ export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
     lienBridge,
   );
 
-  /** @param { Address } address */
-  const makeAttestationTool = address =>
-    Far('attestationTool', {
-      /** @param { Amount<'nat'> } lienedDelta */
-      makeAttestation: lienedDelta =>
-        lienMint.mintAttestation(address, lienedDelta),
-      getAccountState: () => lienMint.getAccountState(address, stakeBrand),
-      makeReturnAttInvitation: () =>
-        zcf.makeInvitation(lienMint.returnAttestation, 'returnAttestation'),
-      unwrapLienedAmount: lienMint.unwrapLienedAmount,
-      wrapLienedAmount: lienedAmount =>
-        lienMint.wrapLienedAmount(address, lienedAmount),
-    });
-
   return harden({
     publicFacet: Far('attestation publicFacet', {
       getIssuer: () => issuer,
@@ -265,7 +264,7 @@ export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
       provideAttestationTool: address => {
         assert.typeof(address, 'string');
         return getOrElse(attMakerByAddress, address, () =>
-          makeAttestationTool(address),
+          makeAttestationTool(address, lienMint, stakeBrand, zcf),
         );
       },
       getLiened: lienMint.getLiened,
