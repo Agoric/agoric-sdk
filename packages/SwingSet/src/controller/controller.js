@@ -318,7 +318,7 @@ export async function makeSwingsetController(
    * Validate and install a code bundle.
    *
    * @param { EndoZipBase64Bundle } bundle
-   * @param { BundleID? } allegedBundleID
+   * @param { BundleID } [allegedBundleID]
    * @returns { Promise<BundleID> }
    */
   async function validateAndInstallBundle(bundle, allegedBundleID) {
@@ -335,7 +335,7 @@ export async function makeSwingsetController(
       ),
       `Bundle with alleged ID ${allegedBundleID} must be a frozen object with only string value properties, no accessors`,
     );
-    await checkBundle(bundle, computeSha512);
+    await checkBundle(bundle, computeSha512, allegedBundleID);
     const { endoZipBase64Sha512 } = bundle;
     assert.typeof(endoZipBase64Sha512, 'string');
     const bundleID = `b1-${endoZipBase64Sha512}`;
