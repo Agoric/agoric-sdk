@@ -1,5 +1,5 @@
 /**
- * @typedef AttestationMaker
+ * @typedef AttestationTool
  * @property {(amountToLien: Amount<'nat'>) => Promise<Payment>} makeAttestation
  * @property {() => Promise<AccountState>} getAccountState
  * @property {() => Promise<Invitation>} makeReturnAttInvitation Make an invitation for returning an attestation.
