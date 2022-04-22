@@ -15,7 +15,7 @@ import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVot
 
 import liquidateMinimumBundle from '../../../bundles/bundle-liquidateMinimum.js';
 import ammBundle from '../../../bundles/bundle-amm.js';
-import vaultFactoryBundle from '../../../bundles/bundle-vaultFactory.js';
+import vaultFactoryBundle from '../../../bundles/bundle-VaultFactory.js';
 
 /** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
 // @ts-expect-error cast

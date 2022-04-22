@@ -24,8 +24,8 @@ export const LIQUIDATION_TERMS_KEY = 'LiquidationTerms';
 
 /**
  * @param {Amount} electorateInvitationAmount
- * @param liquidationInstall
- * @param liquidationTerms
+ * @param {Installation} liquidationInstall
+ * @param {Object} liquidationTerms
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
