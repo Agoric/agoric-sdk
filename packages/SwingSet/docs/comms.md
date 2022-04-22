@@ -175,7 +175,8 @@ A send-with-result of two slots, `p = E(target).foo(1,2,bar,baz)`, would be
 
 Promises that resolve to data, or which are rejected, will have a `body` and
 possibly `slots`. Each slot can hold any kind of reference: `ro+NN`, `ro-NN`,
-`rp+NN`, or `rp-NN`.
+`rp+NN`, or `rp-NN`. A promise cannot currently be resolved directly to another
+promise, unless the promise value is nested in data, or it's a rejection.
 
 Promises that resolve to a callable object have a single `resolutionRef`,
 which always resolves to `ro+NN` or `ro-NN`.

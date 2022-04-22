@@ -322,7 +322,7 @@ Vat) unless the `result` ID falls into one of these categories:
   present in the C-List, and the Decider will point at this Vat.
 * The Promise was received from the kernel earlier as the result slot of an
   incoming message. The ID will be a negative integer, and the Decider will
-  point at this Vat.
+  point at this Vat. This is currently only allowed for a pipelining vat.
 
 In all cases, the kernel promise table winds up with a Promise for which the
 Decider is cleared, as the resolution authority now resides in the queued
@@ -339,6 +339,10 @@ ID in a `syscall.resolve()`. The only way to acquire resolution authority is
 to either create a new Promise (by passing the kernel a new positive
 `PromiseID`, inside a `CapData` slot), or to receive it in the result slot of
 an inbound message.
+
+Once promise redirection is introduced, the effective decider of a promise
+would change to the Decider of its redirection. However the Decider of record
+may stay with the Kernel.
 
 ### Pipelining
 
@@ -372,6 +376,19 @@ run-queue, the Decider is examined. If the deciding vat has opted in to
 pipelined deliveries, `dispatch.deliver()` is invoked and the message is sent
 into the deciding Vat, which (in the case of the comms Vat) can transmit the
 message to the remote machine where the target will be resolved.
+
+There is currently a limitation that a message queued to the promise queue is
+not moved back to the run-queue until resolution, even if the Decider changes
+to a pipelining vat.
+
+Once we implement per-vat or per-object queues, we may want to update the
+Decider of a result promise as soon as the send is queued onto the vat. At that
+point we would also queue pipeline eligible messages onto the target vat.
+However such messages will need to be checked again before actual delivery in
+case the target promise resolves, or the Decider changes before the message can
+be delivered. This also implies that not all messages on a vat's queue are
+doomed immediately when the vat is terminated, as there may have been
+resolutions before termination that are still pending.
 
 If a non-comms Vat enables pipelining, it is obligated to queue the pipelined
 messages inside the Vat until the target is resolved. When that resolution
@@ -511,7 +528,7 @@ There are a few restrictions on the API:
 * The `Message.result` in a `syscall.send()` must either be a new vat-allocated
   (positive) PromiseID, or a previously-allocated PromiseID for which the
   calling Vat is the Decider, or a PromiseID that was previously received as
-  the result of an inbound message.
+  the result of an inbound message (for pipelining vats).
 
 Some invocation patterns are valid, but unlikely to be useful:
 
@@ -520,7 +537,7 @@ Some invocation patterns are valid, but unlikely to be useful:
   which the local Vat is the Decider. In both cases, the Vat could have
   delivered the message directly, instead of taking the time and effort of going
   through the kernel's run-queue. On the other hand, this may achieve certain
-  ordering properties better.
+  ordering properties better, or allow the vat to split up work in multiple cranks.
 
 In some places, `dispatch.deliver()` is named `message`: we're still in the
 process of refactoring and unifying the codebase.
@@ -621,8 +638,9 @@ immediately after translation).
 The subject of a `syscall.resolve()` must either be a new Promise ID, or a
 pre-existing one for which the calling Vat is the Decider. The
 `KernelPromise` must be in the `Unresolved` state. If any of these conditions
-are not met, the Vat calling `resolve` will be terminated. It doesn't matter
-whether the Promise was allocated by this Vat or a different one.
+are not met, the Vat calling `resolve` will be terminated. Furthermore, only
+pipelining-enabled vats are allowed to resolve promise IDs that they did not
+allocate.
 
 | Vat Object         | action if missing      |
 | ---                | ---                    |
@@ -632,7 +650,8 @@ whether the Promise was allocated by this Vat or a different one.
 The `resolution` has several forms, and we assign a different name to each.
 
 * `Fulfill(CapData)`: the Promise is "fulfilled" to a callable Object or other
-  data. It is an error to send messages to data.
+  data. It is an error to send messages to data. The CapData cannot be a single
+  promise as that would be a Forward.
 * `Reject(CapData)`: the Promise is "rejected" to data which we call the
   "error object". Sending a message to a Rejected Promise causes the result
   of that message to be Rejected too, known as "rejection contagion".
