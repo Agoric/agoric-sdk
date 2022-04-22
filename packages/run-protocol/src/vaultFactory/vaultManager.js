@@ -235,6 +235,7 @@ const helperBehavior = {
    * level.
    *
    * @param {MethodContext} context
+   * @returns {Promise<void>}
    */
   reschedulePriceCheck: async ({ state, facets }) => {
     const { prioritizedVaults } = state;
@@ -310,10 +311,10 @@ const helperBehavior = {
     const [next] =
       prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
     await (next ? facets.helper.liquidateAndRemove(next) : null);
-
     trace('price check liq', next && next[0]);
 
-    await facets.helper.reschedulePriceCheck();
+    // eslint-disable-next-line consistent-return
+    return facets.helper.reschedulePriceCheck();
   },
 
   /**

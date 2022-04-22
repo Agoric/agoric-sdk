@@ -1690,6 +1690,8 @@ test('mutable liquidity triggers and interest', async t => {
   trace(t, 'alice liquidating?', aliceUpdate.value.vaultState);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
 
+  // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
+  // await waitForPromisesToSettle();
   bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(t, 'bob not liquidating?', bobUpdate.value.vaultState);
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
