@@ -1,0 +1,8 @@
+diff --git a/node_modules/ava/index.js b/node_modules/ava/index.js
+new file mode 100644
+index 0000000..bee62d8
+--- /dev/null
++++ b/node_modules/ava/index.js
+@@ -0,0 +1,2 @@
++// XXX work around https://github.com/import-js/eslint-plugin-import/issues/1810
++export {default} from './lib/worker/main.cjs';
