@@ -98,7 +98,8 @@ export function finishCosmosApp({
   app['pruning-keep-every'] = '50000';
   app['pruning-interval'] = '1000';
 
-  const apiPort = DEFAULT_API_PORT + (rpcPort - DEFAULT_RPC_PORT) / 100;
+  const apiPort =
+    DEFAULT_API_PORT + Math.ceil((rpcPort - DEFAULT_RPC_PORT) / 100);
   if (exportMetrics) {
     app.api.laddr = `tcp://0.0.0.0:${apiPort}`;
     app.api.enable = true;
