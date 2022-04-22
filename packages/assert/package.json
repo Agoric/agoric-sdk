@@ -31,17 +31,14 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
-  "devDependencies": {
-    "ava": "^3.12.1"
-  },
   "files": [
     "src/",
     "exported.js",
     "NEWS.md"
   ],
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
     ]
   },
   "eslintIgnore": [
