@@ -38,7 +38,7 @@
  */
 
 /**
- * @typedef {Object} DoublePoolInternalFacet - virtual pool for price quotes and trading
+ * @typedef {Object} VirtualPool - virtual pool for price quotes and trading
  * @property {GetDoublePoolSwapQuote} getPriceForInput
  * @property {GetDoublePoolSwapQuote} getPriceForOutput
  * @property {(seat: ZCFSeat, swapResult: DoublePoolSwapResult) => string} allocateGainsAndLosses
@@ -55,20 +55,6 @@
  */
 
 /**
- * @typedef {Object} SinglePoolInternalFacet
- * @property {GetSinglePoolSwapQuote} getPriceForInput
- * @property {GetSinglePoolSwapQuote} getPriceForOutput
- * @property {AddLiquidityActual} addLiquidityActual
- */
-
-/**
- * @template T
- * @typedef {Object} VPoolWrapper - wrapper holding external and internal facets
- * @property {VPool} externalFacet
- * @property {T} internalFacet
- */
-
-/**
  * @typedef {Object} XYKPool
  * @property {() => bigint} getLiquiditySupply
  * @property {() => Issuer} getLiquidityIssuer
@@ -81,7 +67,14 @@
  * @property {() => void} updateState
  * @property {() => PriceAuthority} getToCentralPriceAuthority
  * @property {() => PriceAuthority} getFromCentralPriceAuthority
- * @property {() => VPoolWrapper<SinglePoolInternalFacet>} getVPool
+ * @property {() => VirtualPool} getVPool
+ */
+
+/**
+ * @typedef {Object} PoolFacets
+ * @property {XYKPool} pool
+ * @property {{addLiquidityActual: AddLiquidityActual}} helper
+ * @property {VirtualPool} singlePool
  */
 
 /**

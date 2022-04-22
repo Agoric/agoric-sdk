@@ -8,7 +8,8 @@ import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 
 import { assertIssuerKeywords } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { makeAddPool } from './pool.js';
+import { makeAddPool } from './addPool.js';
+import { publicPrices } from './pool.js';
 import {
   makeMakeAddLiquidityInvitation,
   makeMakeAddLiquidityAtRateInvitation,
@@ -22,6 +23,7 @@ import { makeDoublePool } from './doublePool.js';
 import { POOL_FEE_KEY, PROTOCOL_FEE_KEY } from './params.js';
 
 const { quote: q, details: X } = assert;
+
 /**
  * Multipool AMM is a rewrite of Uniswap that supports multiple liquidity pools,
  * and direct exchanges across pools. Please see the documentation for more:
@@ -138,9 +140,10 @@ const start = async (zcf, privateArgs) => {
     )}`,
   );
 
-  /** @type {WeakStore<Brand,XYKPool>} */
+  /** @type {WeakStore<Brand,PoolFacets>} */
   const secondaryBrandToPool = makeWeakStore('secondaryBrand');
-  const getPool = secondaryBrandToPool.get;
+  const getPool = brand => secondaryBrandToPool.get(brand).pool;
+  const getPoolHelper = brand => secondaryBrandToPool.get(brand).helper;
   const initPool = secondaryBrandToPool.init;
   const isSecondary = secondaryBrandToPool.has;
 
@@ -159,13 +162,11 @@ const start = async (zcf, privateArgs) => {
     centralBrand,
     timer,
     quoteIssuerKit,
-    params.getProtocolFee,
-    params.getPoolFee,
+    params,
     protocolSeat,
   );
-  const getPoolAllocation = brand => {
-    return getPool(brand).getPoolSeat().getCurrentAllocation();
-  };
+  const getPoolAllocation = brand =>
+    getPool(brand).getPoolSeat().getCurrentAllocation();
 
   const getPriceAuthorities = brand => {
     const pool = getPool(brand);
@@ -177,10 +178,14 @@ const start = async (zcf, privateArgs) => {
 
   /**
    * @param {Brand} brandIn
-   * @param {Brand} brandOut
-   * @returns {VPoolWrapper<SinglePoolInternalFacet> | VPoolWrapper<DoublePoolInternalFacet>}
+   * @param {Brand} [brandOut]
+   * @returns {VirtualPool}
    */
   const provideVPool = (brandIn, brandOut) => {
+    if (!brandOut) {
+      return getPool(brandIn).getVPool();
+    }
+
     if (isSecondary(brandIn) && isSecondary(brandOut)) {
       return makeDoublePool(
         zcf,
@@ -197,16 +202,16 @@ const start = async (zcf, privateArgs) => {
   };
 
   const getInputPrice = (amountIn, amountOut) => {
-    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
-    return pool.getInputPrice(amountIn, amountOut);
+    const pool = provideVPool(amountIn.brand, amountOut.brand);
+    return publicPrices(pool.getPriceForInput(amountIn, amountOut));
   };
+
   const getOutputPrice = (amountIn, amountOut) => {
-    const pool = provideVPool(amountIn.brand, amountOut.brand).externalFacet;
-    return pool.getOutputPrice(amountIn, amountOut);
+    const pool = provideVPool(amountIn.brand, amountOut.brand);
+    return publicPrices(pool.getPriceForOutput(amountIn, amountOut));
   };
 
   const { makeSwapInInvitation, makeSwapOutInvitation } =
-    // @ts-expect-error we know this is the Double variety
     makeMakeSwapInvitation(zcf, provideVPool);
   const makeAddLiquidityInvitation = makeMakeAddLiquidityInvitation(
     zcf,
@@ -217,6 +222,7 @@ const start = async (zcf, privateArgs) => {
     getPool,
     provideVPool,
     protocolSeat,
+    getPoolHelper,
   );
 
   const makeRemoveLiquidityInvitation = makeMakeRemoveLiquidityInvitation(
@@ -265,3 +271,10 @@ const start = async (zcf, privateArgs) => {
 
 harden(start);
 export { start };
+
+/**
+ * @typedef {object} AMMParamGetters
+ * @property {() => NatValue} getPoolFee
+ * @property {() => NatValue} getProtocolFee
+ * @property {() => Amount} getElectorate
+ */
