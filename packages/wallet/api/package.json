@@ -50,7 +50,8 @@
     "files": [
       "test/**/test-*.js"
     ],
-    "timeout": "2m"
+    "timeout": "2m",
+    "workerThreads": false
   },
   "publishConfig": {
     "access": "public"
