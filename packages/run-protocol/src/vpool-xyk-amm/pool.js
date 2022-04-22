@@ -49,7 +49,7 @@ export const publicPrices = prices => {
  *   state: ImmutableState & MutableState,
  *   facets: {
  *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
- *     pool: import('@agoric/vat-data/src/types').KindFacet<any>, // FIXME typeof poolBehavior
+ *     pool: import('@agoric/vat-data/src/types').KindFacet<XYKPool>,
  *     singlePool: import('@agoric/vat-data/src/types').KindFacet<VirtualPool>,
  *   },
  * }} MethodContext

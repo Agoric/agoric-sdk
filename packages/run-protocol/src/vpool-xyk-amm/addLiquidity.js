@@ -104,7 +104,7 @@ export const balancesToReachRatio = (poolX, poolY, giveX, giveY) => {
 
 /**
  * @param {ZCF} zcf
- * @param {(b: Brand) => PoolFacets['pool']} getPool
+ * @param {(b: Brand) => XYKPool} getPool
  * @param {(i: Brand) => VirtualPool} provideVPool
  * @param {ZCFSeat} feeSeat
  * @param {(b: Brand) => PoolFacets['helper']} getPoolHelper
