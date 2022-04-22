@@ -19,17 +19,8 @@
     "vega": "^5.10.0",
     "vega-canvas": "^1.2.1"
   },
-  "devDependencies": {
-    "ava": "^4.2.0"
-  },
   "publishConfig": {
     "access": "public"
-  },
-  "ava": {
-    "files": [
-      "test/**/test-*.js"
-    ],
-    "timeout": "2m"
   },
   "eslintConfig": {
     "extends": [
