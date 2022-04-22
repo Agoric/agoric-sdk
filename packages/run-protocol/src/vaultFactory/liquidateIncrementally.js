@@ -14,7 +14,6 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
-// import { quote } from '@agoric/assert';
 
 const { details: X } = assert;
 const trace = makeTracer('LiqI');
@@ -47,11 +46,19 @@ const trace = makeTracer('LiqI');
 
 /** @type {ContractStartFn} */
 const start = async zcf => {
-  const { amm, priceAuthority, timerService, debtBrand } =
-    /** @type {LiquidationContractTerms} */ zcf.getTerms();
+  const {
+    amm,
+    priceAuthority,
+    timerService,
+    debtBrand,
+    MaxImpactBP,
+    OracleTolerance,
+    AMMMaxSlippage,
+  } = /** @type {LiquidationContractTerms} */ zcf.getTerms();
+
+  trace('terms', zcf.getTerms());
   const nextBlock = async () => E(timerService).delay(1n);
 
-  // TODO make subject to governance
   const SCALE = 1_000_000n;
   const BASIS_POINTS = 10_000n * SCALE;
   const BP2 = BASIS_POINTS * BASIS_POINTS;
@@ -59,33 +66,6 @@ const start = async zcf => {
 
   const asFloat = (numerator, denominator) =>
     Number(numerator) / Number(denominator);
-
-  const getGovernance = _ => {
-    const {
-      governedParams: {
-        MaxImpactBP,
-        OracleTolerance,
-        AMMFeeBP,
-        AMMMaxSlippage,
-      } = {
-        MaxImpactBP: 50n,
-        OracleTolerance: makeRatio(30n, debtBrand),
-        AMMFeeBP: 30n,
-        AMMMaxSlippage: makeRatio(30n, debtBrand),
-      },
-    } = zcf.getTerms();
-    return {
-      getMaxImpactBP: () => MaxImpactBP,
-      /**
-       * How close the sale price on the AMM must be to the expected price
-       *  from the oracle quote must be at least 70% of what the oracle says
-       */
-      getOracleTolerance: () => OracleTolerance,
-      getAMMFeeBP: () => AMMFeeBP,
-      getAMMMaxSlippage: () => AMMMaxSlippage,
-    };
-  };
-  const governance = getGovernance(zcf);
 
   /**
    * Compute the tranche size whose sale on the AMM would have
@@ -98,8 +78,9 @@ const start = async zcf => {
    * @returns {Amount}
    */
   const maxTrancheWithFees = (poolSize, maxImpactBP, feeBP) => {
-    const ammFeeScaled = maxImpactBP * SCALE;
-    const maxImpactScaled = feeBP * SCALE;
+    trace('maxTrancheWithFees', poolSize, maxImpactBP, feeBP);
+    const maxImpactScaled = maxImpactBP * SCALE;
+    const ammFeeScaled = feeBP * SCALE;
     // sqrt(impact + 1) - 1
     // Since we take SQRT but want to be BP, multiply in BP
     const impactFactor =
@@ -113,10 +94,20 @@ const start = async zcf => {
     );
   };
 
-  function computeOracleLimit(oracleQuote, gov) {
-    const oracleTolerance = gov.getOracleTolerance();
+  function computeOracleLimit(oracleQuote, oracleTolerance) {
     return ceilMultiplyBy(getAmountOut(oracleQuote), oneMinus(oracleTolerance));
   }
+
+  const getAMMFeeBP = async () => {
+    const zoe = zcf.getZoeService();
+    const instance = await E(zoe).getInstance(E(amm).makeSwapInvitation());
+    const terms = await E(zoe).getTerms(instance);
+    // trace('amm terms', terms);
+    const { poolFeeBP, protocolFeeBP } = terms;
+    return poolFeeBP + protocolFeeBP;
+  };
+
+  const AMMFeeBP = await getAMMFeeBP();
 
   const estimateAMMProceeds = (
     poolCentral,
@@ -161,19 +152,18 @@ const start = async zcf => {
       ).getPoolAllocation(toSell.brand);
       const maxAllowedTranche = maxTrancheWithFees(
         poolCollateral,
-        governance.getMaxImpactBP(),
-        governance.getAMMFeeBP(),
+        MaxImpactBP,
+        AMMFeeBP,
       );
       trace('TRANCHE', asFloat(maxAllowedTranche.value, 100000n));
       const tranche = AmountMath.min(maxAllowedTranche, toSell);
       // compute the expected proceeds from the AMM for tranche
-      const maxSlip = governance.getAMMMaxSlippage();
       const minAmmProceeds = estimateAMMProceeds(
         poolCentral,
         poolCollateral,
         tranche,
         debt,
-        maxSlip,
+        AMMMaxSlippage,
       );
 
       // this could use a unit rather than the tranche size to run concurrently
@@ -182,7 +172,7 @@ const start = async zcf => {
         tranche,
         debtBrand,
       );
-      const oracleLimit = computeOracleLimit(oracleQuote, governance);
+      const oracleLimit = computeOracleLimit(oracleQuote, OracleTolerance);
 
       trace('TRANCHE', {
         debt,
@@ -247,13 +237,6 @@ const start = async zcf => {
       originalDebt.brand === debtBrand,
       X`Cannot liquidate to ${originalDebt.brand}`,
     );
-
-    // Just do the incremental liquidation for the debtorSeat
-    // Three outcomes of total liquidation:
-    // 1. the assets sell for more than the debt - covered
-    // 2. the assets sell for less than the debt - shortfall
-    // 3. we stop selling assets so we have both assets and remaining debt (reserve purchase)
-
     for await (const t of processTranches(debtorSeat, originalDebt)) {
       const { collateral, oracleLimit, ammProceeds, debt } = t;
       trace(`OFFER TO DEBT: `, {

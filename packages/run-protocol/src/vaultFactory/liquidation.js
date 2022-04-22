@@ -5,6 +5,7 @@ import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import {
   ceilMultiplyBy,
+  makeRatio,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';
@@ -135,8 +136,21 @@ const makeDefaultLiquidationStrategy = amm => {
   };
 };
 
+const liquidationDetailTerms = debtBrand =>
+  harden({
+    MaxImpactBP: 50n,
+    OracleTolerance: makeRatio(30n, debtBrand),
+    AMMMaxSlippage: makeRatio(30n, debtBrand),
+  });
+
 harden(makeDefaultLiquidationStrategy);
 harden(liquidate);
 harden(partitionProceeds);
+harden(liquidationDetailTerms);
 
-export { makeDefaultLiquidationStrategy, liquidate, partitionProceeds };
+export {
+  makeDefaultLiquidationStrategy,
+  liquidate,
+  partitionProceeds,
+  liquidationDetailTerms,
+};

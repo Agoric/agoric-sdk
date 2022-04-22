@@ -19,8 +19,13 @@ import '@agoric/zoe/src/contracts/exported.js';
 // to satisfy contractGovernor. It needs to return a creatorFacet with
 // { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
+// @ts-ignore
 import { assertElectorateMatches } from '@agoric/governance';
-import { makeElectorateParamManager } from './params.js';
+import {
+  makeVaultDirectorParamManager,
+  LIQUIDATION_INSTALL_KEY,
+  LIQUIDATION_TERMS_KEY,
+} from './params.js';
 import { makeVaultDirector } from './vaultDirector.js';
 
 /**
@@ -43,18 +48,28 @@ export const start = async (zcf, privateArgs) => {
     runIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
+  const {
+    // @ts-expect-error
+    [LIQUIDATION_INSTALL_KEY]: { value: liqInstall },
+    // @ts-expect-error
+    [LIQUIDATION_TERMS_KEY]: { value: liqTerms },
+  } = zcf.getTerms().governedParams;
+  console.log('VFTERMS', zcf.getTerms(), liqInstall, liqTerms);
   /** a powerful object; can modify the invitation */
-  const electorateParamManager = await makeElectorateParamManager(
+  const vaultDirectorParamManager = await makeVaultDirectorParamManager(
     zcf.getZoeService(),
     initialPoserInvitation,
+    liqInstall,
+    liqTerms,
   );
 
+  console.log('V PARAMS', zcf.getTerms().governedParams);
   assertElectorateMatches(
-    electorateParamManager,
+    vaultDirectorParamManager,
     zcf.getTerms().governedParams,
   );
 
-  const factory = makeVaultDirector(zcf, electorateParamManager, debtMint);
+  const factory = makeVaultDirector(zcf, vaultDirectorParamManager, debtMint);
 
   return harden({
     creatorFacet: factory.creator,
