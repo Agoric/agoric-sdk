@@ -205,7 +205,7 @@ export const start = async (
       return makeMakeCollectFeesInvitation(
         zcf,
         rewardPoolSeat,
-        debtMint.getIssuerRecord().brand,
+        debtBrand,
         'RUN',
       ).makeCollectFeesInvitation();
     },
