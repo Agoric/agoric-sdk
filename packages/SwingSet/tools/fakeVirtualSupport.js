@@ -4,6 +4,7 @@ import { assert } from '@agoric/assert';
 import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 
 import { makeVirtualReferenceManager } from '../src/liveslots/virtualReferences.js';
+import { makeWatchedPromiseManager } from '../src/liveslots/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 import { makeFakeCollectionManager } from './fakeCollectionManager.js';
 
@@ -242,6 +243,17 @@ export function makeFakeVirtualReferenceManager(fakeStuff) {
   );
 }
 
+export function makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff) {
+  return makeWatchedPromiseManager(
+    fakeStuff.syscall,
+    vrm,
+    vom,
+    cm,
+    fakeStuff.convertValToSlot,
+    fakeStuff.convertSlotToVal,
+  );
+}
+
 export function makeFakeVirtualStuff(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff);
@@ -249,7 +261,8 @@ export function makeFakeVirtualStuff(options = {}) {
   vom.initializeKindHandleKind();
   fakeStuff.setVrm(vrm);
   const cm = makeFakeCollectionManager(vrm, fakeStuff, options);
-  return { fakeStuff, vrm, vom, cm };
+  const wpm = makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff);
+  return { fakeStuff, vrm, vom, cm, wpm };
 }
 
 export function makeStandaloneFakeVirtualObjectManager(options = {}) {

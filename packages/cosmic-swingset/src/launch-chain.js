@@ -170,12 +170,13 @@ export async function launch({
   slogFile = undefined,
   slogSender,
   mapSize = DEFAULT_LMDB_MAP_SIZE,
+  enableTrace,
 }) {
   console.info('Launching SwingSet kernel');
 
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
-    { mapSize },
+    { mapSize, enableTrace },
   );
   const hostStorage = {
     kvStore,

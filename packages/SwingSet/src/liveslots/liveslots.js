@@ -16,6 +16,7 @@ import { insistMessage } from '../lib/message.js';
 import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
 import { makeCollectionManager } from './collectionManager.js';
+import { makeWatchedPromiseManager } from './watchedPromises.js';
 import { releaseOldState } from './stop-vat.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
@@ -605,6 +606,18 @@ function build(
     unmeteredUnserialize,
   );
 
+  const watchedPromiseManager = makeWatchedPromiseManager(
+    syscall,
+    vrm,
+    vom,
+    collectionManager,
+    // eslint-disable-next-line no-use-before-define
+    convertValToSlot,
+    unmeteredConvertSlotToVal,
+    // eslint-disable-next-line no-use-before-define
+    meterControl.unmetered(revivePromise),
+  );
+
   function convertValToSlot(val) {
     // lsdebug(`serializeToSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
@@ -710,6 +723,7 @@ function build(
         // this is a new import value
         val = makeImportedPresence(slot, iface);
       } else if (type === 'promise') {
+        // XXX note: this assert is the same as the one 5 lines above and therefor pointless
         assert(
           !parseVatSlot(slot).allocatedByVat,
           X`kernel is being presumptuous: vat got unrecognized vatSlot ${slot}`,
@@ -738,6 +752,20 @@ function build(
       result = val;
     }
     return result;
+  }
+
+  function revivePromise(slot) {
+    meterControl.assertNotMetered();
+    const { type } = parseVatSlot(slot);
+    assert(type === 'promise', X`revivePromise called on non-promise ${slot}`);
+    assert(
+      !getValForSlot(slot),
+      X`revivePromise called on pre-existing ${slot}`,
+    );
+    const p = makePipelinablePromise(slot);
+    pendingPromises.add(p);
+    registerValue(slot, p);
+    return p;
   }
 
   function resolutionCollector() {
@@ -1128,6 +1156,8 @@ function build(
       defineDurableKind: vom.defineDurableKind,
       defineDurableKindMulti: vom.defineDurableKindMulti,
       makeKindHandle: vom.makeKindHandle,
+      providePromiseWatcher: watchedPromiseManager.providePromiseWatcher,
+      watchPromise: watchedPromiseManager.watchPromise,
       makeScalarBigMapStore: collectionManager.makeScalarBigMapStore,
       makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
@@ -1225,6 +1255,7 @@ function build(
 
     const vatParameters = m.unserialize(vatParametersCapData);
     baggage = collectionManager.provideBaggage();
+    watchedPromiseManager.preparePromiseWatcherTables();
 
     // Below this point, user-provided code might crash or overrun a meter, so
     // any prior-to-user-code setup that can be done without reference to the
@@ -1258,6 +1289,9 @@ function build(
       getInterfaceOf(rootObject) !== undefined,
       X`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`,
     );
+    // Need to load watched promises *after* buildRootObject() so that handler kindIDs
+    // have a chance to be reassociated with their handlers.
+    watchedPromiseManager.loadWatchedPromiseTable();
 
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);
@@ -1336,6 +1370,7 @@ function build(
     didStopVat = true;
 
     try {
+      watchedPromiseManager.prepareShutdownRejections(deciderVPIDs);
       await releaseOldState({
         m,
         deciderVPIDs,

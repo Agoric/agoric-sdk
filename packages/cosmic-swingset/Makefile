@@ -7,7 +7,7 @@ REPOSITORY = agoric/cosmic-swingset
 CHAIN_ID = agoric
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
-VOTING_PERIOD = 2m
+VOTING_PERIOD = 45s
 
 EVAL_PERMIT = test/gov-permit.json
 EVAL_CODE = test/gov-code.js
@@ -46,14 +46,22 @@ $(EVAL_CLEAN): $(EVAL_CODE)
 	./scripts/clean-core-eval.js $< >$@.t || { rm -f $@.t; exit 1; }
 	mv $@.t $@
 
-start-runStake: test/runStake/gov-start-runStake.js
-	make EVAL_CODE=test/runStake/gov-start-runStake.js \
-		EVAL_PERMIT=test/runStake/gov-start-runStake-permit.json \
+RUN_PROTO=../run-protocol
+
+start-runStake: $(RUN_PROTO)/gov-runStake.js
+	make EVAL_CODE=$(RUN_PROTO)/gov-runStake.js \
+		EVAL_PERMIT=$(RUN_PROTO)/gov-runStake-permit.json \
 		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
 
-start-committee: test/runStake/gov-start-econCommittee.js
-	make EVAL_CODE=test/runStake/gov-start-econCommittee.js \
-		EVAL_PERMIT=test/runStake/gov-start-runStake-permit.json \
+start-committee: $(RUN_PROTO)/gov-econ-committee.js
+	make EVAL_CODE=$(RUN_PROTO)/gov-econ-committee.js \
+		EVAL_PERMIT=$(RUN_PROTO)/gov-econ-committee-permit.json \
+		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
+
+
+start-amm-etc: $(RUN_PROTO)/gov-amm-vaults-etc.js
+	make EVAL_CODE=$(RUN_PROTO)/gov-amm-vaults-etc.js \
+		EVAL_PERMIT=$(RUN_PROTO)/gov-amm-vaults-etc-permit.json \
 		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
 
 gov-q:

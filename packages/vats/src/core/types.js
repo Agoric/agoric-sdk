@@ -131,16 +131,17 @@
 /**
  * @typedef {{
  *   issuer: |
- *     'RUN' | 'BLD' | 'Attestation',
+ *     'RUN' | 'BLD' | 'Attestation' | 'AUSD',
  *   installation: |
  *     'centralSupply' | 'mintHolder' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'amm' | 'VaultFactory' | 'liquidate' | 'runStake' |
- *     'Pegasus' | 'reserve',
+ *     'Pegasus' | 'reserve' | 'psm',
  *   instance: |
  *     'economicCommittee' |
  *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
  *     'runStake' | 'runStakeGovernor' |
+ *     'psm' | 'psmGovernor' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
  *     'USD',

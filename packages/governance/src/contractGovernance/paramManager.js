@@ -71,6 +71,7 @@ const makeParamManagerBuilder = zoe => {
   const buildCopyParam = (name, value, assertion, type) => {
     let current;
     assertKeywordName(name);
+    assert(value !== undefined, `param ${name} must be defined`);
 
     const setParamValue = newValue => {
       assertion(newValue);
@@ -260,6 +261,7 @@ const makeParamManagerBuilder = zoe => {
   /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => Promise<ParamManagerBuilder>} */
   const addInvitation = async (name, value, builder) => {
     assertKeywordName(name);
+    assert(value !== null, `param ${name} must be defined`);
     await Promise.all([
       assertInvitation(value),
       buildInvitationParam(name, value),

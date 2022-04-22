@@ -50,9 +50,17 @@ export const makeCoreProposalBehavior = ({
     const restoreRef = overrideRestoreRef || (x => E(board).getValue(x));
 
     // Get the on-chain installation containing the manifest and behaviors.
+    console.info('restoreRef, evaluateInstallation', {
+      manifestInstallRef,
+      exportedGetManifest,
+    });
     const manifestInstallation = await restoreRef(manifestInstallRef);
     const behaviors = await evaluateInstallation(manifestInstallation);
 
+    console.error('execute', {
+      exportedGetManifest,
+      behaviors: Object.keys(behaviors),
+    });
     const {
       manifest,
       options: rawOptions,

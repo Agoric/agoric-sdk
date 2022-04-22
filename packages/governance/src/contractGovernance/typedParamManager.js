@@ -125,11 +125,14 @@ const makeParamManagerFromTerms = async (
   paramTypesMap,
 ) => {
   const { governedParams } = zcf.getTerms();
-  /** @type {Array<[Keyword, [ParamType, unknown]]>} */
+  /** @type {Array<[Keyword, SyncSpecTuple | AsyncSpecTuple]>} */
   const makerSpecEntries = Object.entries(paramTypesMap).map(
     ([paramKey, paramType]) => [
       paramKey,
-      [paramType, governedParams[paramKey].value],
+      /** @type {SyncSpecTuple} */ ([
+        paramType,
+        governedParams[paramKey].value,
+      ]),
     ],
   );
   // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
@@ -139,7 +142,6 @@ const makeParamManagerFromTerms = async (
   ]);
   // @ts-expect-error cast
   return makeParamManager(
-    // @ts-expect-error cast
     Object.fromEntries(makerSpecEntries),
     zcf.getZoeService(),
   );

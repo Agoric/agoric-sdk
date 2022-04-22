@@ -3,6 +3,8 @@ import chalk from 'chalk';
 import { createHash } from 'crypto';
 import path from 'path';
 
+import { Nat, isNat } from '@agoric/nat';
+
 import {
   CENTRAL_DENOM,
   STAKING_DENOM,
@@ -218,8 +220,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
   async function startLocalChain(profileName, startArgs, popts) {
     const portNum = startArgs[0] === undefined ? CHAIN_PORT : startArgs[0];
-    if (`${portNum}` !== `${Number(portNum)}`) {
-      log.error(`Argument to local-chain must be a port number`);
+    const portNumNat = isNat(Number(portNum)) ? Nat(Number(portNum)) : 0n;
+    if (
+      `${portNum}` !== `${portNumNat}` ||
+      portNumNat <= 0 ||
+      portNumNat > 0xffff
+    ) {
+      log.error(`Argument to local-chain must be a valid port number`);
       return 1;
     }
 
@@ -411,8 +418,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   async function startLocalSolo(profileName, startArgs, popts) {
     const portNum = startArgs[0] === undefined ? PORT : startArgs[0];
     const provisionPowers = startArgs[1] === undefined ? [] : [startArgs[1]];
-    if (`${portNum}` !== `${Number(portNum)}`) {
-      log.error(`Argument to local-solo must be a port number`);
+    const portNumNat = isNat(Number(portNum)) ? Nat(Number(portNum)) : 0n;
+    if (
+      `${portNum}` !== `${portNumNat}` ||
+      portNumNat <= 0 ||
+      portNumNat > 0xffff
+    ) {
+      log.error(`Argument to local-solo must be a valid port number`);
       return 1;
     }
 

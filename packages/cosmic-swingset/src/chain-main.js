@@ -162,7 +162,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // Try to determine the cosmos chain home.
   function getFlagValue(flagName, deflt) {
     let flagValue = deflt;
-    const envValue = env[`AG_CHAIN_COSMOS_${flagName.toUpperCase()}`];
+    const envValue =
+      env[`AG_CHAIN_COSMOS_${flagName.toUpperCase().replace(/-/g, '_')}`];
     if (envValue !== undefined) {
       flagValue = envValue;
     }
@@ -334,7 +335,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE } = env;
+    const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE, SWING_STORE_TRACE } = env;
     const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
       stateDir: stateDBDir,
       env,
@@ -342,6 +343,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     });
 
     const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
+
+    const enableTrace =
+      SWING_STORE_TRACE === '1' || !!getFlagValue('trace-store');
 
     const s = await launch({
       actionQueue,
@@ -355,6 +359,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       slogFile: SLOGFILE,
       slogSender,
       mapSize,
+      enableTrace,
     });
     return s;
   }
