@@ -1,9 +1,7 @@
 // @ts-check
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import '@endo/init';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import rawTest from 'ava';
+import anyTest from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -17,9 +15,8 @@ import { unsafeMakeBundleCache } from '../../bundleTool.js';
 
 const dirname = new URL('.', import.meta.url).pathname;
 
-/** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
-// @ts-expect-error cast
-const test = rawTest;
+/** @type {import('ava').TestFn<{ data: { kernelBundles: any, config: any } }>} */
+const test = anyTest;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
