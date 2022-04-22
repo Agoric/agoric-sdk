@@ -54,7 +54,6 @@ export const start = async (zcf, privateArgs) => {
     // @ts-expect-error
     [LIQUIDATION_TERMS_KEY]: { value: liqTerms },
   } = zcf.getTerms().governedParams;
-  console.log('VFTERMS', zcf.getTerms(), liqInstall, liqTerms);
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
     zcf.getZoeService(),
@@ -63,7 +62,6 @@ export const start = async (zcf, privateArgs) => {
     liqTerms,
   );
 
-  console.log('V PARAMS', zcf.getTerms().governedParams);
   assertElectorateMatches(
     vaultDirectorParamManager,
     zcf.getTerms().governedParams,

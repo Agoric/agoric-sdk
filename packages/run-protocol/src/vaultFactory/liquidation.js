@@ -37,7 +37,7 @@ const partitionProceeds = (proceeds, debt, penaltyPortion) => {
  *
  * @param {ZCF} zcf
  * @param {InnerVault} innerVault
- * @param {(losses: AmountKeywordRecord,
+ * @param {(losses: Amount,
  *             zcfSeat: ZCFSeat
  *            ) => void} burnLosses
  * @param {LiquidationStrategy} strategy
@@ -99,7 +99,7 @@ const liquidate = async (
   );
   zcf.reallocate(penaltyPoolSeat, vaultZcfSeat);
 
-  burnLosses(harden({ RUN: runToBurn }), vaultZcfSeat);
+  burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
   innerVault.liquidated(AmountMath.subtract(debt, debtPaid));

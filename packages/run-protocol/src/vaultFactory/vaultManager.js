@@ -27,7 +27,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM', true);
 
 /**
  * @typedef {{
@@ -240,6 +240,7 @@ const helperBehavior = {
   reschedulePriceCheck: async ({ state, facets }) => {
     const { prioritizedVaults } = state;
     const highestDebtRatio = prioritizedVaults.highestRatio();
+    trace('reschedulePriceCheck', { highestDebtRatio });
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
       trace('no open vaults');
@@ -273,7 +274,11 @@ const helperBehavior = {
         highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
-      trace('updating level for outstandingQuote', triggerPoint);
+      trace(
+        'updating level for outstandingQuote',
+        triggerPoint,
+        highestDebtRatio.denominator,
+      );
       return;
     }
 
@@ -321,9 +326,8 @@ const helperBehavior = {
    * @param {MethodContext} context
    * @param {[key: string, vaultKit: InnerVault]} record
    */
-  liquidateAndRemove: ({ state }, [key, vault]) => {
-    const { debtMint, factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } =
-      state;
+  liquidateAndRemove: ({ state, facets }, [key, vault]) => {
+    const { factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } = state;
     trace('liquidating', vault.getVaultSeat().getProposal());
     state.liquidationInProgress = true;
 
@@ -331,7 +335,7 @@ const helperBehavior = {
     return liquidate(
       zcf,
       vault,
-      debtMint.burnLosses,
+      (amount, seat) => facets.manager.burnAndRecord(amount, seat),
       state.liquidationStrategy,
       state.collateralBrand,
       penaltyPoolSeat,

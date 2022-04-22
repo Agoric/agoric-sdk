@@ -1542,7 +1542,8 @@ test('mutable liquidity triggers and interest', async t => {
   const rates = harden({
     ...defaultRates,
     // charge 5% interest
-    interestRate: makeRatio(5n, runBrand),
+    interestRate: makeRatio(30n, runBrand),
+    liquidationMargin: makeRatio(130n, runBrand),
   });
   t.context.rates = rates;
 
@@ -1567,6 +1568,8 @@ test('mutable liquidity triggers and interest', async t => {
   } = services;
 
   // initial loans /////////////////////////////////////
+
+  // ALICE ////////////////////////////////////////////
 
   // Create a loan for Alice for 5000 RUN with 1000 aeth collateral
   // ratio is 4:1
@@ -1611,9 +1614,11 @@ test('mutable liquidity triggers and interest', async t => {
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
 
+  // BOB //////////////////////////////////////////////
+
   // Create a loan for Bob for 650 RUN with 100 Aeth collateral
   const bobCollateralAmount = AmountMath.make(aethBrand, 100n);
-  const bobLoanAmount = AmountMath.make(runBrand, 650n);
+  const bobLoanAmount = AmountMath.make(runBrand, 512n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
     E(lender).makeVaultInvitation(),
@@ -1691,7 +1696,7 @@ test('mutable liquidity triggers and interest', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATING);
 
   // XXX this causes BOB to get liquidated, which is suspicious. Revisit this test case
-  // await waitForPromisesToSettle();
+  await waitForPromisesToSettle();
   bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(t, 'bob not liquidating?', bobUpdate.value.vaultState);
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
@@ -1728,6 +1733,7 @@ test('mutable liquidity triggers and interest', async t => {
   manualTimer.tick();
   manualTimer.tick();
   await manualTimer.tick();
+  await waitForPromisesToSettle();
 
   bobUpdate = await E(bobNotifier).getUpdateSince();
   trace(

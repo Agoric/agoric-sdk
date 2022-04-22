@@ -163,6 +163,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
           );
           amountIn = coercedAmountIn;
           amountOutLimit = coercedAmountOutLimit;
+          fireTriggers(createQuote);
         },
         getPromise: () => triggerPK.promise,
       });
