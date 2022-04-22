@@ -291,7 +291,6 @@ test('runStake API usage', async (/** @type {RunStakeTestContext} */ t) => {
 
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
-  // @ts-expect-error TODO: add runStakeCreatorFacet to EconomyBootstrapPowers
   const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
   const runBrand = await space.brand.consume.RUN;
   const bldBrand = await space.brand.consume.BLD;
@@ -339,7 +338,6 @@ test('extra offer keywords are rejected', async (/** @type {RunStakeTestContext}
 
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
-  // @ts-expect-error TODO: add runStakeCreatorFacet to EconomyBootstrapPowers
   const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
   const runBrand = await space.brand.consume.RUN;
   const bldBrand = await space.brand.consume.BLD;
