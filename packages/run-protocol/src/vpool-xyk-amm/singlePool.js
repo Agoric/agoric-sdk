@@ -7,36 +7,21 @@ import {
   pricesForStatedOutput,
 } from './constantProduct/calcSwapPrices.js';
 
-/**
- * @param {ZCF} zcf
- * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
- * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
- * @param {ZCFSeat} feeSeat
- */
-export const makeSinglePool = (
-  zcf,
-  getProtocolFeeBP,
-  getPoolFeeBP,
-  feeSeat,
-) => {
-  const getSecondaryBrand = pool => pool.getSecondaryAmount().brand;
-  const getCentralBrand = pool => pool.getCentralAmount().brand;
+const getSecondaryBrand = pool => pool.getSecondaryAmount().brand;
+const getCentralBrand = pool => pool.getCentralAmount().brand;
 
-  const getPools = pool => ({
-    Central: pool.getCentralAmount(),
-    Secondary: pool.getSecondaryAmount(),
-  });
+const getPools = pool => ({
+  Central: pool.getCentralAmount(),
+  Secondary: pool.getSecondaryAmount(),
+});
 
-  const publicPrices = prices => ({
-    amountIn: prices.swapperGives,
-    amountOut: prices.swapperGets,
-  });
-
-  const allocateGainsAndLosses = (pool, prices, seat) => {
-    const poolSeat = pool.getPoolSeat();
+export const singlePool = Far('SinglePool', {
+  allocateGainsAndLosses: (context, seat, prices) => {
+    const { pool } = context.facets;
+    const { poolSeat, zcf, protocolSeat } = context.state;
     seat.decrementBy(harden({ In: prices.swapperGives }));
     seat.incrementBy(harden({ Out: prices.swapperGets }));
-    feeSeat.incrementBy(harden({ RUN: prices.protocolFee }));
+    context.state.protocolSeat.incrementBy(harden({ RUN: prices.protocolFee }));
 
     const inBrand = prices.swapperGives.brand;
     if (inBrand === getSecondaryBrand(pool)) {
@@ -47,78 +32,47 @@ export const makeSinglePool = (
       poolSeat.incrementBy(harden({ Central: prices.xIncrement }));
     }
 
-    zcf.reallocate(poolSeat, seat, feeSeat);
+    zcf.reallocate(poolSeat, seat, protocolSeat);
     seat.exit();
     pool.updateState();
     return `Swap successfully completed.`;
-  };
+  },
 
   /**
    * @param {import('./pool').MethodContext} context
    * @param {Amount} amountIn
    * @param {Amount} amountOut
    */
-  const getPriceForInput = (context, amountIn, amountOut) => {
+  getPriceForInput: ({ state, facets }, amountIn, amountOut) => {
+    const { paramAccessor } = state;
     return pricesForStatedInput(
       amountIn,
-      getPools(context.facets.pool),
+      getPools(facets.pool),
       amountOut,
-      makeFeeRatio(getProtocolFeeBP(), getCentralBrand(context.facets.pool)),
-      makeFeeRatio(getPoolFeeBP(), amountOut.brand),
+      makeFeeRatio(
+        paramAccessor.getProtocolFee(),
+        getCentralBrand(facets.pool),
+      ),
+      makeFeeRatio(paramAccessor.getPoolFee(), amountOut.brand),
     );
-  };
-
-  /**
-   * @param {import('./pool').MethodContext} context
-   * @param {ZCFSeat} seat
-   * @param {Amount} amountIn
-   * @param {Amount} amountOut
-   */
-  const swapIn = (context, seat, amountIn, amountOut) => {
-    const prices = getPriceForInput(context, amountIn, amountOut);
-    return allocateGainsAndLosses(context.facets.pool, prices, seat);
-  };
+  },
 
   /**
    * @param {import('./pool').MethodContext} context
    * @param {Amount} amountIn
    * @param {Amount} amountOut
    */
-  const getPriceForOutput = (context, amountIn, amountOut) => {
+  getPriceForOutput: ({ state, facets }, amountIn, amountOut) => {
+    const { paramAccessor } = state;
     return pricesForStatedOutput(
       amountIn,
-      getPools(context.facets.pool),
+      getPools(facets.pool),
       amountOut,
-      makeFeeRatio(getProtocolFeeBP(), getCentralBrand(context.facets.pool)),
-      makeFeeRatio(getPoolFeeBP(), amountIn.brand),
+      makeFeeRatio(
+        paramAccessor.getProtocolFee(),
+        getCentralBrand(facets.pool),
+      ),
+      makeFeeRatio(paramAccessor.getPoolFee(), amountIn.brand),
     );
-  };
-
-  /**
-   * @param {import('./pool').MethodContext} context
-   * @param {ZCFSeat} seat
-   * @param {Amount} amountIn
-   * @param {Amount} amountOut
-   */
-  const swapOut = (context, seat, amountIn, amountOut) => {
-    const prices = getPriceForOutput(context, amountIn, amountOut);
-    return allocateGainsAndLosses(context.facets.pool, prices, seat);
-  };
-
-  const externalFacet = Far('single pool', {
-    getInputPrice: (context, amountIn, amountOut) =>
-      publicPrices(getPriceForInput(context, amountIn, amountOut)),
-    getOutputPrice: (context, amountIn, amountOut) =>
-      publicPrices(getPriceForOutput(context, amountIn, amountOut)),
-    swapIn,
-    swapOut,
-  });
-
-  const internalFacet = Far('single pool', {
-    getPriceForInput,
-    getPriceForOutput,
-    allocateGainsAndLosses,
-  });
-
-  return { externalFacet, internalFacet };
-};
+  },
+});

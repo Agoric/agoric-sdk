@@ -14,8 +14,7 @@ const { details: X } = assert;
  * @param {Brand} centralBrand
  * @param {ERef<Timer>} timer
  * @param {IssuerKit} quoteIssuerKit
- * @param {() => bigint} getProtocolFeeBP retrieve governed protocol fee value
- * @param {() => bigint} getPoolFeeBP retrieve governed pool fee value
+ * @param {import('./multipoolMarketMaker.js').AMMParamGetters} params retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  */
 export const makeAddPool = (
@@ -25,19 +24,15 @@ export const makeAddPool = (
   centralBrand,
   timer,
   quoteIssuerKit,
-  getProtocolFeeBP,
-  getPoolFeeBP,
+  params,
   protocolSeat,
 ) => {
   const makePool = makePoolMaker(
     zcf,
-    isInSecondaries,
-    initPool,
     centralBrand,
     timer,
     quoteIssuerKit,
-    getProtocolFeeBP,
-    getPoolFeeBP,
+    params,
     protocolSeat,
   );
 
@@ -78,8 +73,8 @@ export const makeAddPool = (
       harden({ decimalPlaces: 6 }),
     );
     const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-    /** @type {PoolFacets} */
     const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
+    // @ts-ignore xxx fix types
     initPool(secondaryBrand, pool);
     return liquidityZCFMint.getIssuerRecord().issuer;
   };

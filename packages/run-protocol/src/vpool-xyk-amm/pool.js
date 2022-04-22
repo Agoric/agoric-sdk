@@ -10,23 +10,32 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';
-import { defineKindMulti } from '@agoric/vat-data/src';
+import { defineKindMulti } from '@agoric/vat-data';
+import { Far } from '@endo/marshal';
 import { makePriceAuthority } from './priceAuthority.js';
-import { makeSinglePool } from './singlePool.js';
+import { singlePool } from './singlePool.js';
 
 // Pools represent a single pool of liquidity. Price calculations and trading
 // happen in a wrapper class that knows whether the proposed trade involves a
 // single pool or multiple hops.
 
+export const publicPrices = prices => {
+  return { amountIn: prices.swapperGives, amountOut: prices.swapperGets };
+};
+
 /**
  * @typedef {Readonly<{
  * liquidityBrand: Brand<'nat'>,
  * secondaryBrand: Brand<'nat'>,
+ * centralBrand: Brand<'nat'>,
  * liquidityZcfMint: ZCFMint,
  * liquidityIssuer: Issuer<any>,
  * toCentralPriceAuthority: PriceAuthority,
  * fromCentralPriceAuthority: PriceAuthority,
+ * quoteIssuerKit: IssuerKit,
  * zcf: ZCF,
+ * timer: TimerService,
+ * paramAccessor,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -41,8 +50,7 @@ import { makeSinglePool } from './singlePool.js';
  *   facets: {
  *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
  *     pool: import('@agoric/vat-data/src/types').KindFacet<any>, // FIXME typeof poolBehavior
- *     vPoolInner: import('@agoric/vat-data/src/types').KindFacet<SinglePoolInternalFacet>,
- *     vPoolOuter: import('@agoric/vat-data/src/types').KindFacet<VPool>,
+ *     singlePool: import('@agoric/vat-data/src/types').KindFacet<VirtualPool>,
  *   },
  * }} MethodContext
  */
@@ -109,26 +117,173 @@ const helperBehavior = {
   },
 };
 
+const poolBehavior = {
+  getLiquiditySupply: ({ state: { liqTokenSupply } }) => liqTokenSupply,
+  getLiquidityIssuer: ({ state: { liquidityIssuer } }) => liquidityIssuer,
+  getPoolSeat: ({ state: { poolSeat } }) => poolSeat,
+  getCentralAmount: ({ state: { poolSeat, centralBrand } }) =>
+    poolSeat.getAmountAllocated('Central', centralBrand),
+  getSecondaryAmount: ({ state }) =>
+    state.poolSeat.getAmountAllocated('Secondary', state.secondaryBrand),
+
+  addLiquidity: ({ state, facets: { helper, pool } }, zcfSeat) => {
+    const centralIn = zcfSeat.getStagedAllocation().Central;
+    assert(isNatValue(centralIn.value), 'User Central');
+    const secondaryIn = zcfSeat.getStagedAllocation().Secondary;
+    assert(isNatValue(secondaryIn.value), 'User Secondary');
+
+    if (state.liqTokenSupply === 0n) {
+      return helper.addLiquidityActual(pool, zcfSeat, secondaryIn, centralIn);
+    }
+
+    const centralPoolAmount = pool.getCentralAmount();
+    const secondaryPoolAmount = pool.getSecondaryAmount();
+    assert(isNatValue(centralPoolAmount.value), 'Pool Central');
+    assert(isNatValue(secondaryPoolAmount.value), 'Pool Secondary');
+
+    // To calculate liquidity, we'll need to calculate alpha from the primary
+    // token's value before, and the value that will be added to the pool
+    const secondaryRequired = AmountMath.make(
+      state.secondaryBrand,
+      calcSecondaryRequired(
+        centralIn.value,
+        centralPoolAmount.value,
+        secondaryPoolAmount.value,
+        secondaryIn.value,
+      ),
+    );
+
+    // Central was specified precisely so offer must provide enough secondary.
+    assert(
+      AmountMath.isGTE(secondaryIn, secondaryRequired),
+      'insufficient Secondary deposited',
+    );
+
+    return helper.addLiquidityActual(
+      pool,
+      zcfSeat,
+      secondaryRequired,
+      centralPoolAmount,
+    );
+  },
+  removeLiquidity: ({ state, facets }, userSeat) => {
+    const { liquidityBrand, poolSeat, secondaryBrand, centralBrand } = state;
+    const liquidityIn = userSeat.getAmountAllocated(
+      'Liquidity',
+      liquidityBrand,
+    );
+    const liquidityValueIn = liquidityIn.value;
+    assert(isNatValue(liquidityValueIn), 'User Liquidity');
+    const centralTokenAmountOut = AmountMath.make(
+      centralBrand,
+      calcValueToRemove(
+        state.liqTokenSupply,
+        facets.pool.getCentralAmount().value,
+        liquidityValueIn,
+      ),
+    );
+
+    const tokenKeywordAmountOut = AmountMath.make(
+      secondaryBrand,
+      calcValueToRemove(
+        state.liqTokenSupply,
+        facets.pool.getSecondaryAmount().value,
+        liquidityValueIn,
+      ),
+    );
+
+    state.liqTokenSupply -= liquidityValueIn;
+
+    poolSeat.incrementBy(
+      userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
+    );
+    userSeat.incrementBy(
+      poolSeat.decrementBy(
+        harden({
+          Central: centralTokenAmountOut,
+          Secondary: tokenKeywordAmountOut,
+        }),
+      ),
+    );
+    state.zcf.reallocate(userSeat, poolSeat);
+
+    userSeat.exit();
+    updateUpdaterState(state.updater, facets.pool);
+    return 'Liquidity successfully removed.';
+  },
+  getNotifier: ({ state: { notifier } }) => notifier,
+  updateState: ({ state: { updater }, facets: { pool } }) => {
+    return updater.updateState(pool);
+  },
+  getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,
+  getFromCentralPriceAuthority: ({ state }) => state.fromCentralPriceAuthority,
+  getVPool: ({ facets }) => facets.singlePool,
+};
+
+/** @param {MethodContext} context */
+const finish = context => {
+  const { notifier, secondaryBrand, centralBrand, timer, zcf } = context.state;
+  const quoteIssuerKit = context.state.quoteIssuerKit;
+
+  const getInputPriceForPA = (amountIn, brandOut) => {
+    return publicPrices(
+      context.facets.singlePool.getPriceForInput(
+        amountIn,
+        // @ts-ignore confused about whether it needs a context
+        AmountMath.makeEmpty(brandOut),
+      ),
+    );
+  };
+  const getOutputPriceForPA = (brandIn, amountout) =>
+    publicPrices(
+      context.facets.singlePool.getPriceForOutput(
+        AmountMath.makeEmpty(brandIn),
+        // @ts-ignore confused about whether it needs a context
+        amountout,
+      ),
+    );
+
+  const toCentralPriceAuthority = makePriceAuthority(
+    getInputPriceForPA,
+    getOutputPriceForPA,
+    secondaryBrand,
+    centralBrand,
+    timer,
+    zcf,
+    notifier,
+    quoteIssuerKit,
+  );
+  const fromCentralPriceAuthority = makePriceAuthority(
+    getInputPriceForPA,
+    getOutputPriceForPA,
+    centralBrand,
+    secondaryBrand,
+    timer,
+    zcf,
+    notifier,
+    quoteIssuerKit,
+  );
+
+  // @ts-ignore declared read-only, set value once
+  context.state.toCentralPriceAuthority = toCentralPriceAuthority;
+  // @ts-ignore declared read-only, set value once
+  context.state.fromCentralPriceAuthority = fromCentralPriceAuthority;
+};
+
 /**
  * @param {ZCF} zcf
- * @param {(brand: Brand) => boolean} isInSecondaries true if brand is known secondary
- * @param {(brand: Brand, pool: PoolFacets) => void} initPool add new pool to store
  * @param {Brand} centralBrand
  * @param {ERef<Timer>} timer
  * @param {IssuerKit} quoteIssuerKit
- * @param {() => bigint} getProtocolFeeBP retrieve governed protocol fee value
- * @param {() => bigint} getPoolFeeBP retrieve governed pool fee value
+ * @param {import('./multipoolMarketMaker.js').AMMParamGetters} paramAccessor retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  */
 export const makePoolMaker = (
   zcf,
-  isInSecondaries,
-  initPool,
   centralBrand,
   timer,
   quoteIssuerKit,
-  getProtocolFeeBP,
-  getPoolFeeBP,
+  paramAccessor,
   protocolSeat,
 ) => {
   const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
@@ -136,10 +291,19 @@ export const makePoolMaker = (
       liquidityZcfMint.getIssuerRecord();
     const { notifier, updater } = makeNotifierKit();
 
+    // XXX why does the paramAccessor have to be repackaged as a Far object?
+    const params = Far('pool param accessor', {
+      // @ts-ignore confused
+      ...paramAccessor,
+    });
+
     return {
+      zcf,
       liqTokenSupply: 0n,
       liquidityIssuer,
       poolSeat,
+      protocolSeat,
+      centralBrand,
       liquidityBrand,
       secondaryBrand,
       liquidityZcfMint,
@@ -147,173 +311,17 @@ export const makePoolMaker = (
       notifier,
       toCentralPriceAuthority: undefined,
       fromCentralPriceAuthority: undefined,
+      quoteIssuerKit,
+      timer,
+      paramAccessor: params,
     };
   };
 
-  const poolBehavior = {
-    getLiquiditySupply: ({ state: { liqTokenSupply } }) => liqTokenSupply,
-    getLiquidityIssuer: ({ state: { liquidityIssuer } }) => liquidityIssuer,
-    getPoolSeat: ({ state: { poolSeat } }) => poolSeat,
-    getCentralAmount: ({ state: { poolSeat } }) =>
-      poolSeat.getAmountAllocated('Central', centralBrand),
-    getSecondaryAmount: ({ state }) =>
-      state.poolSeat.getAmountAllocated('Secondary', state.secondaryBrand),
-
-    addLiquidity: ({ state, facets: { helper, pool } }, zcfSeat) => {
-      const centralIn = zcfSeat.getStagedAllocation().Central;
-      assert(isNatValue(centralIn.value), 'User Central');
-      const secondaryIn = zcfSeat.getStagedAllocation().Secondary;
-      assert(isNatValue(secondaryIn.value), 'User Secondary');
-
-      if (state.liqTokenSupply === 0n) {
-        return helper.addLiquidityActual(pool, zcfSeat, secondaryIn, centralIn);
-      }
-
-      const centralPoolAmount = pool.getCentralAmount();
-      const secondaryPoolAmount = pool.getSecondaryAmount();
-      assert(isNatValue(centralPoolAmount.value), 'Pool Central');
-      assert(isNatValue(secondaryPoolAmount.value), 'Pool Secondary');
-
-      // To calculate liquidity, we'll need to calculate alpha from the primary
-      // token's value before, and the value that will be added to the pool
-      const secondaryRequired = AmountMath.make(
-        state.secondaryBrand,
-        calcSecondaryRequired(
-          centralIn.value,
-          centralPoolAmount.value,
-          secondaryPoolAmount.value,
-          secondaryIn.value,
-        ),
-      );
-
-      // Central was specified precisely so offer must provide enough secondary.
-      assert(
-        AmountMath.isGTE(secondaryIn, secondaryRequired),
-        'insufficient Secondary deposited',
-      );
-
-      return helper.addLiquidityActual(
-        pool,
-        zcfSeat,
-        secondaryRequired,
-        centralPoolAmount,
-      );
-    },
-    removeLiquidity: ({ state, facets }, userSeat) => {
-      const { liquidityBrand, poolSeat, updater, secondaryBrand } = state;
-      const liquidityIn = userSeat.getAmountAllocated(
-        'Liquidity',
-        liquidityBrand,
-      );
-      const liquidityValueIn = liquidityIn.value;
-      assert(isNatValue(liquidityValueIn), 'User Liquidity');
-      const centralTokenAmountOut = AmountMath.make(
-        centralBrand,
-        calcValueToRemove(
-          state.liqTokenSupply,
-          facets.pool.getCentralAmount().value,
-          liquidityValueIn,
-        ),
-      );
-
-      const tokenKeywordAmountOut = AmountMath.make(
-        secondaryBrand,
-        calcValueToRemove(
-          state.liqTokenSupply,
-          facets.pool.getSecondaryAmount().value,
-          liquidityValueIn,
-        ),
-      );
-
-      state.liqTokenSupply -= liquidityValueIn;
-
-      poolSeat.incrementBy(
-        userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
-      );
-      userSeat.incrementBy(
-        poolSeat.decrementBy(
-          harden({
-            Central: centralTokenAmountOut,
-            Secondary: tokenKeywordAmountOut,
-          }),
-        ),
-      );
-      zcf.reallocate(userSeat, poolSeat);
-
-      userSeat.exit();
-      updateUpdaterState(updater, facets.pool);
-      return 'Liquidity successfully removed.';
-    },
-    getNotifier: ({ state: { notifier } }) => notifier,
-    updateState: ({ state: { updater }, facets: { pool } }) => {
-      return updater.updateState(pool);
-    },
-    getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,
-    getFromCentralPriceAuthority: ({ state }) =>
-      state.fromCentralPriceAuthority,
-    getVPool: ({ facets: { vPoolInner, vPoolOuter } }) =>
-      harden({
-        internalFacet: vPoolInner,
-        externalFacet: vPoolOuter,
-      }),
-  };
-
-  const vPool = makeSinglePool(
-    zcf,
-    getProtocolFeeBP,
-    getPoolFeeBP,
-    protocolSeat,
-  );
-
-  const facets = {
+  const facets = harden({
     helper: helperBehavior,
     pool: poolBehavior,
-    vPoolInner: vPool.internalFacet,
-    vPoolOuter: vPool.externalFacet,
-  };
-
-  /** @param {MethodContext} context */
-  const finish = context => {
-    const { notifier, secondaryBrand } = context.state;
-    const getInputPriceForPA = (amountIn, brandOut) =>
-      vPool.externalFacet.getInputPrice(
-        context,
-        amountIn,
-        AmountMath.makeEmpty(brandOut),
-      );
-    const getOutputPriceForPA = (brandIn, amountout) =>
-      vPool.externalFacet.getInputPrice(
-        context,
-        AmountMath.makeEmpty(brandIn),
-        amountout,
-      );
-
-    const toCentralPriceAuthority = makePriceAuthority(
-      getInputPriceForPA,
-      getOutputPriceForPA,
-      secondaryBrand,
-      centralBrand,
-      timer,
-      zcf,
-      notifier,
-      quoteIssuerKit,
-    );
-    const fromCentralPriceAuthority = makePriceAuthority(
-      getInputPriceForPA,
-      getOutputPriceForPA,
-      centralBrand,
-      secondaryBrand,
-      timer,
-      zcf,
-      notifier,
-      quoteIssuerKit,
-    );
-
-    // @ts-ignore declared read-only, set value once
-    context.state.toCentralPriceAuthority = toCentralPriceAuthority;
-    // @ts-ignore declared read-only, set value once
-    context.state.fromCentralPriceAuthority = fromCentralPriceAuthority;
-  };
+    singlePool,
+  });
 
   // @ts-ignore unhappy about finish's type
   return defineKindMulti('pool', poolInit, facets, { finish });

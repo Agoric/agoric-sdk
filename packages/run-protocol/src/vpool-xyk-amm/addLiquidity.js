@@ -105,7 +105,7 @@ export const balancesToReachRatio = (poolX, poolY, giveX, giveY) => {
 /**
  * @param {ZCF} zcf
  * @param {(b: Brand) => PoolFacets['pool']} getPool
- * @param {(i: Brand) => VPoolWrapper<SinglePoolInternalFacet | DoublePoolInternalFacet>} provideVPool
+ * @param {(i: Brand) => VirtualPool} provideVPool
  * @param {ZCFSeat} feeSeat
  * @param {(b: Brand) => PoolFacets['helper']} getPoolHelper
  */
@@ -150,7 +150,7 @@ const makeMakeAddLiquidityAtRateInvitation = (
       giveAlloc.Secondary,
     );
 
-    const vPool = provideVPool(secondaryBrand).internalFacet;
+    const vPool = provideVPool(secondaryBrand);
     const poolSeat = pool.getPoolSeat();
     const transferForTrade = (prices, incrementKey, decrementKey) => {
       seat.decrementBy(harden({ [incrementKey]: prices.swapperGives }));
