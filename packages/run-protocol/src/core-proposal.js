@@ -334,7 +334,7 @@ export const getManifestForPSM = ({ restoreRef }, { installKeys, denom }) => {
   return {
     manifest: PSM_MANIFEST,
     installations: {
-      runStake: restoreRef(installKeys.runStake),
+      psm: restoreRef(installKeys.psm),
     },
     options: {
       denom,
