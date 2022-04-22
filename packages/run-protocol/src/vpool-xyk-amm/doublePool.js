@@ -170,7 +170,7 @@ export const makeDoublePool = (
     });
   };
 
-  return Far('single pool', {
+  return Far('double pool', {
     getPriceForInput,
     getPriceForOutput,
     allocateGainsAndLosses,
