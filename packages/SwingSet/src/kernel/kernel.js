@@ -11,7 +11,7 @@ import makeKernelKeeper from './state/kernelKeeper.js';
 import { kdebug, kdebugEnable, legibilizeMessageArgs } from '../lib/kdebug.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
-import { extractPresenceIfPresent, insistCapData } from '../lib/capdata.js';
+import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../lib/message.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
 import { makeKernelQueueHandler } from './kernelQueue.js';
@@ -768,9 +768,9 @@ export default function buildKernel(
     const kp = kernelKeeper.getKernelPromise(target);
     switch (kp.state) {
       case 'fulfilled': {
-        const presence = extractPresenceIfPresent(kp.data, parseKernelSlot);
-        if (presence) {
-          return send(presence);
+        const targetSlot = extractSingleSlot(kp.data);
+        if (targetSlot && parseKernelSlot(targetSlot).type === 'object') {
+          return send(targetSlot);
         }
         // TODO: maybe mimic (3).foo(): "TypeError: XX.foo is not a function"
         const s = `data is not callable, has no method ${msg.method}`;

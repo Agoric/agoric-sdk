@@ -29,10 +29,9 @@ export function insistCapData(capdata) {
  * of a single presence, `null` otherwise
  *
  * @param {import('@endo/marshal').CapData<unknown>} data
- * @param {(slot: unknown) => {type: 'object' | 'device' | 'promise', id: number}} parseSlot
  * @returns {string | undefined}
  */
-export function extractPresenceIfPresent(data, parseSlot) {
+export function extractSingleSlot(data) {
   const body = JSON.parse(data.body);
   if (
     body &&
@@ -41,11 +40,7 @@ export function extractPresenceIfPresent(data, parseSlot) {
     body.index === 0
   ) {
     if (data.slots.length === 1) {
-      const slot = data.slots[0];
-      const { type } = parseSlot(slot);
-      if (type === 'object') {
-        return slot;
-      }
+      return data.slots[0];
     }
   }
   return null;

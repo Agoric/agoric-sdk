@@ -4,7 +4,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
-import { extractPresenceIfPresent, insistCapData } from '../../lib/capdata.js';
+import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
 
@@ -273,9 +273,9 @@ export function makeDeliveryKit(
       if (status === 'rejected') {
         return { reject: data };
       }
-      const targetPresence = extractPresenceIfPresent(data, parseLocalSlot);
-      if (targetPresence) {
-        return resolveTarget(targetPresence, method);
+      const targetSlot = extractSingleSlot(data);
+      if (targetSlot && parseLocalSlot(targetSlot).type === 'object') {
+        return resolveTarget(targetSlot, method);
       } else {
         return { reject: makeUndeliverableError(method) };
       }
