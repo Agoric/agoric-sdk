@@ -7,7 +7,8 @@ import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeGovernedTerms } from './vaultFactory/params.js';
 import { makeAmmTerms } from './vpool-xyk-amm/params.js';
 import { makeReserveTerms } from './reserve/params.js';
@@ -16,6 +17,7 @@ import '../exported.js';
 
 import * as Collect from './collect.js';
 import { makeRunStakeTerms } from './runStake/params.js';
+import { makeStakeReporter } from './my-lien.js';
 
 const { details: X } = assert;
 
@@ -33,6 +35,8 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   ammCreatorFacet: XYKAMMCreatorFacet,
  *   ammGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
+ *   psmCreatorFacet: unknown,
+ *   psmGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
  *   reservePublicFacet: unknown,
  *   reserveCreatorFacet: GovernedContractFacetAccess<any>,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<any>,
@@ -508,17 +512,28 @@ export const startRewardDistributor = async ({
 harden(startRewardDistributor);
 
 /**
- * TODO: refactor vats/core/types.js like this
- *
- * @template T
- * @typedef {{
- *   consume: { [P in keyof T]: ERef<T[P]> },
- *   produce: { [P in keyof T]: Producer<T[P]> },
- * }} PromiseMarket
+ * @param {BootstrapPowers & PromiseSpaceOf<{
+ *   lienBridge: StakingAuthority,
+ * }>} powers
  */
+export const startLienBridge = async ({
+  consume: { bridgeManager: bridgeOptP },
+  produce: { lienBridge },
+  brand: {
+    consume: { BLD: bldP },
+  },
+}) => {
+  const bridgeManager = await bridgeOptP;
+  if (!bridgeManager) {
+    return;
+  }
+  const bldBrand = await bldP;
+  const reporter = makeStakeReporter(bridgeManager, bldBrand);
+  lienBridge.resolve(reporter);
+};
 
 /**
- * @typedef {EconomyBootstrapPowers & PromiseMarket<{
+ * @typedef {EconomyBootstrapPowers & PromiseSpaceOf<{
  *   client: ClientManager,
  *   lienBridge: StakingAuthority,
  * }>} RunStakeBootstrapPowers
@@ -655,3 +670,153 @@ export const startRunStake = async (
   ]);
 };
 harden(startRunStake);
+
+/**
+ * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
+ * @param {Object} config
+ * @param {bigint} config.WantStableFeeBP
+ * @param {bigint} config.GiveStableFeeBP
+ * @param {bigint} config.MINT_LIMIT
+ */
+export const startPSM = async (
+  {
+    consume: {
+      zoe,
+      feeMintAccess: feeMintAccessP,
+      economicCommitteeCreatorFacet,
+      chainTimerService,
+    },
+    produce: { psmCreatorFacet, psmGovernorCreatorFacet },
+    installation: {
+      consume: { contractGovernor, psm: psmInstallP },
+    },
+    instance: {
+      consume: { economicCommittee },
+      produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
+    },
+    brand: {
+      consume: { AUSD: anchorBrandP, RUN: runBrandP },
+    },
+    issuer: {
+      consume: { AUSD: anchorIssuerP },
+    },
+  },
+  {
+    WantStableFeeBP = 1n,
+    GiveStableFeeBP = 3n,
+    MINT_LIMIT = 20_000_000n * 1_000_000n,
+  },
+) => {
+  const [
+    feeMintAccess,
+    runBrand,
+    anchorBrand,
+    anchorIssuer,
+    governor,
+    psmInstall,
+    timer,
+  ] = await Promise.all([
+    feeMintAccessP,
+    runBrandP,
+    anchorBrandP,
+    anchorIssuerP,
+    contractGovernor,
+    psmInstallP,
+    chainTimerService,
+  ]);
+
+  const poserInvitationP = E(
+    economicCommitteeCreatorFacet,
+  ).getPoserInvitation();
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
+
+  const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
+  const terms = {
+    anchorBrand,
+    anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
+    governedParams: {
+      WantStableFeeBP: { type: ParamTypes.NAT, value: WantStableFeeBP },
+      GiveStableFeeBP: { type: ParamTypes.NAT, value: GiveStableFeeBP },
+      MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
+    },
+    [CONTRACT_ELECTORATE]: {
+      type: ParamTypes.INVITATION,
+      value: electorateInvitationAmount,
+    },
+  };
+
+  const governorFacets = await E(zoe).startInstance(
+    governor,
+    {},
+    {
+      timer,
+      economicCommittee,
+      governedContractInstallation: psmInstall,
+      governed: harden({
+        terms,
+        issuerKeywordRecord: { AUSD: anchorIssuer },
+        privateArgs: { feeMintAccess, initialPoserInvitation },
+      }),
+    },
+    harden({ economicCommitteeCreatorFacet }),
+  );
+
+  const governedInstance = await E(governorFacets.creatorFacet).getInstance();
+  const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
+
+  psmInstanceR.resolve(governedInstance);
+  psmGovernorR.resolve(governorFacets.instance);
+  psmCreatorFacet.resolve(creatorFacet);
+  psmGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
+  psmInstanceR.resolve(governedInstance);
+};
+harden(startPSM);
+
+/**
+ * Make anchor issuer out of a Cosmos asset; presumably
+ * USDC over IBC. Add it to BankManager.
+ *
+ * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
+ * @param {{ options: {
+ *   denom: string,
+ *   name?: string,
+ *   proposedName: string,
+ *   decimalPlaces?: number,
+ * }}} config
+ */
+export const makeAnchorAsset = async (
+  {
+    consume: { bankManager },
+    issuer: {
+      produce: { AUSD: issuerP },
+    },
+    brand: {
+      produce: { AUSD: brandP },
+    },
+  },
+  {
+    options: {
+      denom,
+      proposedName = 'USDC Anchor',
+      name = 'AUSD',
+      decimalPlaces = 6,
+    },
+  },
+) => {
+  // ISSUE: use mintHolder?
+  const kit = makeIssuerKit(name, AssetKind.NAT, { decimalPlaces });
+
+  issuerP.resolve(kit.issuer);
+  brandP.resolve(kit.brand);
+  return E(bankManager).addAsset(
+    denom,
+    name,
+    proposedName,
+    kit, // with mint
+  );
+};
+harden(makeAnchorAsset);
