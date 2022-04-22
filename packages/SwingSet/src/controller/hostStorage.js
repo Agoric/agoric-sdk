@@ -1,5 +1,5 @@
 // @ts-check
-import { initSwingStore, openSwingStore } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 
 /*
 The "Storage API" is a set of functions { has, getKeys, get, set, delete } that
@@ -12,28 +12,10 @@ directly.
 */
 
 /**
- * Helper function to initialize the appropriate storage objects for the kernel
- *
- * @param {boolean} initialize  If true, initialize a new store; if false, open an existing one
- * @param {string|undefined} kernelStateDBDir Pathname to the LMDB database
- *    directory or undefined to create a volatile in-memory store
- *
- * @returns {HostStore} a host store as described by the parameters
+ * Helper function to initialize an ephemeral storage used as fallback or for tests
  */
-export function provideHostStorage(
-  initialize = true,
-  kernelStateDBDir = undefined,
-) {
-  let swingStore;
-  if (kernelStateDBDir) {
-    if (initialize) {
-      swingStore = initSwingStore(kernelStateDBDir);
-    } else {
-      swingStore = openSwingStore(kernelStateDBDir);
-    }
-  } else {
-    swingStore = initSwingStore(null);
-  }
+export function provideHostStorage() {
+  const swingStore = initSwingStore(null);
   return {
     kvStore: swingStore.kvStore,
     streamStore: swingStore.streamStore,

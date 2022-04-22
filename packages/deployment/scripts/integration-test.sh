@@ -47,7 +47,7 @@ then
   cd /usr/src/testnet-load-generator
   SOLO_COINS=40000000000urun \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
-  SDK_BUILD=0 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
+  SDK_BUILD=0 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" SWING_STORE_TRACE=1 ./start.sh \
     --no-stage.save-storage --stages=3 --stage.duration=4 \
     --stage.loadgen.vault.interval=12 --stage.loadgen.vault.limit=2 \
     --stage.loadgen.amm.interval=12 --stage.loadgen.amm.wait=6 --stage.loadgen.amm.limit=2 \
