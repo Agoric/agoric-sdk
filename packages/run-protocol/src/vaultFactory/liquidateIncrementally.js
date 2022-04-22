@@ -4,7 +4,6 @@
 import { E } from '@endo/eventual-send';
 import {
   getAmountOut,
-  makeRatio,
   assertProposalShape,
   offerTo,
   natSafeMath as NatMath,
