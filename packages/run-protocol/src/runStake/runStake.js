@@ -3,6 +3,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { E, Far } from '@endo/far';
+import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
 import { ManagerKW as KW } from './constants.js';
 import { makeRunStakeKit } from './runStakeKit.js';
@@ -71,10 +72,10 @@ const { values } = Object;
  * authorizes placing a lien some of the staked assets in that account.
  * @typedef {{
  *   provideAttestationMaker: (addr: string) => AttestationTool,
- *   getLiened: (address: string, brand: Brand<'nat'>) => Amount<'nat'>,
+ *   makeCollectFeesInvitation: () => Promise<Invitation>,
  * }} RunStakeCreator
  *
- * @type {ContractStartFn<RunStakePublic, RunStakeCreator,
+ * @type {ContractStartFn<RunStakePublic, ERef<GovernedCreatorFacet<RunStakeCreator>>,
  *                        RunStakeTerms, RunStakePrivateArgs>}
  */
 export const start = async (
@@ -197,13 +198,19 @@ export const start = async (
     }),
   );
 
-  const creatorFacet = makeGovernorFacet(
-    Far('runStake creator', {
-      provideAttestationMaker: att.creatorFacet.provideAttestationTool,
-    }),
-  );
+  /** @type {ERef<RunStakeCreator>} */
+  const creatorFacet = Far('runStake creator', {
+    provideAttestationMaker: att.creatorFacet.provideAttestationTool,
+    makeCollectFeesInvitation: () => {
+      return makeMakeCollectFeesInvitation(
+        zcf,
+        rewardPoolSeat,
+        debtBrand,
+        'RUN',
+      ).makeCollectFeesInvitation();
+    },
+  });
 
-  // @ts-expect-error makeGovernorFacet loses type info
-  return { publicFacet, creatorFacet };
+  return { publicFacet, creatorFacet: makeGovernorFacet(creatorFacet) };
 };
 harden(start);

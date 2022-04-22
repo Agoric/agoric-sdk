@@ -40,6 +40,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   reservePublicFacet: unknown,
  *   reserveCreatorFacet: GovernedContractFacetAccess<any>,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<any>,
+ *   runStakeCreatorFacet: import('./runStake/runStake.js').RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
@@ -463,6 +464,7 @@ export const startRewardDistributor = async ({
     loadVat,
     vaultFactoryCreator,
     ammCreatorFacet,
+    runStakeCreatorFacet,
     zoe,
   },
   issuer: {
@@ -496,12 +498,13 @@ export const startRewardDistributor = async ({
   }
 
   const vats = { distributeFees: E(loadVat)('distributeFees') };
-  const [vaultAdmin, ammAdmin] = await Promise.all([
+  const [vaultAdmin, ammAdmin, runStakeAdmin] = await Promise.all([
     vaultFactoryCreator,
     ammCreatorFacet,
+    runStakeCreatorFacet,
   ]);
   await E(vats.distributeFees).buildDistributor(
-    [vaultAdmin, ammAdmin].map(cf =>
+    [vaultAdmin, ammAdmin, runStakeAdmin].map(cf =>
       E(vats.distributeFees).makeFeeCollector(zoe, cf),
     ),
     feeCollectorDepositFacet,
