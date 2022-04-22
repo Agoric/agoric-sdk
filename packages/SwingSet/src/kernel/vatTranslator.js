@@ -241,6 +241,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
   const { mapVatSlotToKernelSlot, clearReachableFlag } = vatKeeper;
+  const { enablePipelining = false } = vatKeeper.getOptions();
 
   function translateSend(targetSlot, msg) {
     assert.typeof(targetSlot, 'string', 'non-string targetSlot');
@@ -257,12 +258,26 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     let result = null;
     if (resultSlot) {
       insistVatType('promise', resultSlot);
-      result = mapVatSlotToKernelSlot(resultSlot);
+      // Require that the promise used by the vat to receive the result of this
+      // send is newly allocated by the vat if it does not support pipelining.
+      // When a promise previously received as the result of a delivery is used
+      // as the result of a send call, it's in effect doing a redirect, which
+      // is currently only supported for pipelining vats.
+      // While we could only require that the promise be allocated by the vat,
+      // aka exported not imported, there is currently no path for liveslots
+      // vats to ever use a promise before it is seen as result, which would be
+      // indicative of something unexpected going on.
+      result = mapVatSlotToKernelSlot(resultSlot, {
+        requireNew: !enablePipelining,
+      });
       insistKernelType('promise', result);
       // The promise must be unresolved, and this Vat must be the decider.
       // The most common case is that 'resultSlot' is a new exported promise
       // (p+NN). But it might be a previously-imported promise (p-NN) that
-      // they got in a deliver() call, which gave them resolution authority.
+      // they got in a deliver() call, which gave them resolution authority,
+      // however only in the case of pipelining vats.
+      // In the case of non-pipelining vats these checks are redundant since
+      // we're guaranteed to have a promise newly allocated by the vat.
       const p = kernelKeeper.getKernelPromise(result);
       assert(
         p.state === 'unresolved',
