@@ -265,21 +265,21 @@ async function setupServices(
   // Cheesy hack for easy use of manual price authority
   const pa = Array.isArray(priceOrList)
     ? makeScriptedPriceAuthority({
-      actualBrandIn: aethBrand,
-      actualBrandOut: runBrand,
-      priceList: priceOrList,
-      timer,
-      quoteMint,
-      unitAmountIn,
-      quoteInterval,
-    })
+        actualBrandIn: aethBrand,
+        actualBrandOut: runBrand,
+        priceList: priceOrList,
+        timer,
+        quoteMint,
+        unitAmountIn,
+        quoteInterval,
+      })
     : makeManualPriceAuthority({
-      actualBrandIn: aethBrand,
-      actualBrandOut: runBrand,
-      initialPrice: priceOrList,
-      timer,
-      quoteMint,
-    });
+        actualBrandIn: aethBrand,
+        actualBrandOut: runBrand,
+        initialPrice: priceOrList,
+        timer,
+        quoteMint,
+      });
   produce.priceAuthority.resolve(pa);
 
   const {

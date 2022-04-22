@@ -404,7 +404,9 @@ const makeDriver = async (t, initialPrice, priceBase) => {
         services.ammFacets.ammPublicFacet,
       ).makeSwapInvitation();
       trace(t, 'AMM sell', { give, want, optStopAfter });
-      const offerArgs = optStopAfter ? harden({ stopAfter: optStopAfter }) : undefined;
+      const offerArgs = optStopAfter
+        ? harden({ stopAfter: optStopAfter })
+        : undefined;
       lastSeat = await E(zoe).offer(
         await swapInvitation,
         harden({ give: { In: give }, want: { Out: want } }),
@@ -589,7 +591,10 @@ test('amm stopAfter - input back', async t => {
   const stopAfter = AmountMath.make(runBrand, 100n);
   const expectedAeth = AmountMath.make(aethBrand, 38n);
   const expectedRUN = stopAfter;
-  await d.sellOnAMM(give, want, stopAfter, { In: expectedAeth, Out: expectedRUN });
+  await d.sellOnAMM(give, want, stopAfter, {
+    In: expectedAeth,
+    Out: expectedRUN,
+  });
 });
 
 // 2) `give` wouldn't have sold for `stopAfter`, so sell it all
@@ -610,7 +615,10 @@ test('amm stopAfter - shortfall', async t => {
   const stopAfter = AmountMath.make(runBrand, 180n);
   const expectedAeth = AmountMath.makeEmpty(aethBrand);
   const expectedRUN = AmountMath.make(runBrand, 164n);
-  await d.sellOnAMM(give, want, stopAfter, { In: expectedAeth, Out: expectedRUN });
+  await d.sellOnAMM(give, want, stopAfter, {
+    In: expectedAeth,
+    Out: expectedRUN,
+  });
 });
 
 // 3) wouldn't have sold for enough, so sold everything,
@@ -631,5 +639,8 @@ test('amm stopAfter - want too much', async t => {
   const stopAfter = AmountMath.make(runBrand, 180n);
   const expectedAeth = give;
   const expectedRUN = AmountMath.makeEmpty(runBrand);
-  await d.sellOnAMM(give, want, stopAfter, { In: expectedAeth, Out: expectedRUN });
+  await d.sellOnAMM(give, want, stopAfter, {
+    In: expectedAeth,
+    Out: expectedRUN,
+  });
 });
