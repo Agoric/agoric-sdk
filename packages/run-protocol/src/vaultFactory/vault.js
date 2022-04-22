@@ -620,6 +620,7 @@ const selfBehavior = {
 
   /**
    * @param {MethodContext} context
+   * @returns {Promise<unknown>}
    */
   makeTransferInvitation: ({ state, facets }) => {
     const { self, helper } = facets;

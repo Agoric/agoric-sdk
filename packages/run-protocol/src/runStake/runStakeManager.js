@@ -9,7 +9,7 @@ import { E } from '@endo/far';
 import { defineKindMulti, partialAssign } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 import { chargeInterest } from '../interest.js';
-import { KW } from './runStakeKit.js';
+import { ManagerKW as KW } from './constants.js';
 import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;

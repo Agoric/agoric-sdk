@@ -85,6 +85,8 @@ async function testForExpectedGlobals(t, workerType) {
     'VatData.defineDurableKind: function',
     'VatData.defineDurableKindMulti: function',
     'VatData.makeKindHandle: function',
+    'VatData.providePromiseWatcher: function',
+    'VatData.watchPromise: function',
     'VatData.makeScalarBigMapStore: function',
     'VatData.makeScalarBigWeakMapStore: function',
     'VatData.makeScalarBigSetStore: function',

@@ -47,8 +47,9 @@ test('bundles', async t => {
   // We save this vat bundle (with 'disk()') to disk, to exercise
   // config.bundles.NAME.bundleSpec
   const diskBundle = await bundleSource(bfile('vat-disk.js'));
-  const diskBundleFilename = bfile('bundle-disk.js');
+  const diskBundleFilename = bfile('bundle-disk.bundle');
   fs.writeFileSync(diskBundleFilename, JSON.stringify(diskBundle));
+  t.teardown(() => fs.unlinkSync(diskBundleFilename));
 
   // We install this vat bundle at runtime, it provides 'runtime()'
   const installableVatBundle = await bundleSource(bfile('vat-install.js'));

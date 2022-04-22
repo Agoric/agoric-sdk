@@ -4,7 +4,8 @@ import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationFacets } from './attestation.js';
-import { makeRunStakeKit, KW } from './runStakeKit.js';
+import { ManagerKW as KW } from './constants.js';
+import { makeRunStakeKit } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager.js';
 
 const { details: X } = assert;
@@ -69,7 +70,7 @@ const { values } = Object;
  * The creator facet can make an `AttestationMaker` for each account, which
  * authorizes placing a lien some of the staked assets in that account.
  * @typedef {{
- *   provideAttestationMaker: (addr: string) => AttestationMaker,
+ *   provideAttestationMaker: (addr: string) => AttestationTool,
  *   getLiened: (address: string, brand: Brand<'nat'>) => Amount<'nat'>,
  * }} RunStakeCreator
  *
@@ -184,7 +185,7 @@ export const start = async (
           zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances'),
         CloseVault: () => zcf.makeInvitation(helper.closeHook, 'CloseVault'),
       }),
-      vault: Far('RUNstake pot', pot),
+      vault: pot,
     });
   };
 

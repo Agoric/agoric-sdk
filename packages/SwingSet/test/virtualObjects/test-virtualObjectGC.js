@@ -187,6 +187,20 @@ const cacheDisplacerVref = thingVref(false, 1);
 const fCacheDisplacerVref = thingVref(true, 1);
 const virtualHolderVref = `${holderKindID}/1`;
 
+const stringSchema = JSON.stringify(
+  capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
+);
+
+const anyScalarSchema = JSON.stringify(
+  capargs([
+    {
+      '@qclass': 'tagged',
+      tag: 'match:scalar',
+      payload: { '@qclass': 'undefined' },
+    },
+  ]),
+);
+
 function buildRootObject(vatPowers) {
   const { VatData, WeakMap, WeakSet } = vatPowers;
 
@@ -443,17 +457,45 @@ function validateFauxCacheDisplacerDeletion(v) {
   validateCheckNoWeakKeys(v, `${fCacheDisplacerVref}:1`);
 }
 
-function validateCreateBaggage(v, idx) {
+function validateCreateBuiltInTable(v, idx, idKey, schema, label) {
+  validate(v, matchVatstoreGet(idKey, NONE));
   validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
   validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
-  const baggageSchema = JSON.stringify(
-    capargs([{ '@qclass': 'tagged', tag: 'match:kind', payload: 'string' }]),
+  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, schema));
+  validate(v, matchVatstoreSet(`vc.${idx}.|label`, label));
+  validate(v, matchVatstoreSet(idKey, `o+6/${idx}`));
+  validate(v, matchVatstoreGet(`vom.rc.o+6/${idx}`, NONE));
+  validate(v, matchVatstoreSet(`vom.rc.o+6/${idx}`, '1'));
+}
+
+function validateCreatePromiseWatcherKindTable(v, idx) {
+  validateCreateBuiltInTable(
+    v,
+    idx,
+    'watcherTableID',
+    anyScalarSchema,
+    'promiseWatcherByKind',
   );
-  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, baggageSchema));
-  validate(v, matchVatstoreSet(`vc.${idx}.|label`, 'baggage'));
-  validate(v, matchVatstoreSet('baggageID', 'o+6/1'));
-  validate(v, matchVatstoreGet(rcKey('o+6/1'), NONE));
-  validate(v, matchVatstoreSet(rcKey('o+6/1'), '1'));
+}
+
+function validateCreateWatchedPromiseTable(v, idx) {
+  validateCreateBuiltInTable(
+    v,
+    idx,
+    'watchedPromiseTableID',
+    stringSchema,
+    'watchedPromises',
+  );
+}
+
+function validateCreateBaggage(v, idx) {
+  validateCreateBuiltInTable(v, idx, 'baggageID', stringSchema, 'baggage');
+}
+
+function validateCreateBuiltInTables(v) {
+  validateCreateBaggage(v, 1);
+  validateCreatePromiseWatcherKindTable(v, 2);
+  validateCreateWatchedPromiseTable(v, 3);
 }
 
 function validateSetup(v) {
@@ -468,10 +510,12 @@ function validateSetup(v) {
       '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
     ),
   );
-  validate(v, matchVatstoreGet('baggageID', NONE));
-  validateCreateBaggage(v, 1);
+  validateCreateBuiltInTables(v);
   validate(v, matchVatstoreSet(stateKey(cacheDisplacerVref), cacheObjValue));
   validate(v, matchVatstoreSet(stateKey(fCacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet('deadPromises', NONE));
+  validate(v, matchVatstoreDelete('deadPromises'));
+  validate(v, matchVatstoreGetAfter('', 'vc.3.', 'vc.3.{', [NONE, NONE]));
   validate(v, matchVatstoreGetAfter('', 'vom.kind.', NONE, [NONE, NONE]));
   validate(
     v,
