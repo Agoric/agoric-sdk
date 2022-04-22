@@ -128,6 +128,7 @@ test('priceAuthority quoteWhenGTE', async t => {
     .quoteWhenGTE(moola(1n), bucks(40n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
+      // @ts-expect-error could be TimestampRecord
       t.is(4n, manualTimer.getCurrentTimestamp());
       t.is(4n, quoteInAmount.timestamp);
       assertAmountsEqual(t, bucks(40n), quoteInAmount.amountOut);
@@ -154,6 +155,7 @@ test('priceAuthority quoteWhenLT', async t => {
     .quoteWhenLT(moola(1n), bucks(30n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
+      // @ts-expect-error could be TimestampRecord
       t.is(3n, manualTimer.getCurrentTimestamp());
       t.is(3n, quoteInAmount.timestamp);
       assertAmountsEqual(t, bucks(29n), quoteInAmount.amountOut);
@@ -179,6 +181,7 @@ test('priceAuthority quoteWhenGT', async t => {
     .quoteWhenGT(moola(1n), bucks(40n))
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
+      // @ts-expect-error could be TimestampRecord
       t.is(3n, manualTimer.getCurrentTimestamp());
       t.is(3n, quoteInAmount.timestamp);
       assertAmountsEqual(t, bucks(41n), quoteInAmount.amountOut);
@@ -205,6 +208,7 @@ test('priceAuthority quoteWhenLTE', async t => {
     .then(quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.is(4n, quoteInAmount.timestamp);
+      // @ts-expect-error could be TimestampRecord
       t.is(4n, manualTimer.getCurrentTimestamp());
       assertAmountsEqual(t, bucks(25n), quoteInAmount.amountOut);
       assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);

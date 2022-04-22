@@ -11,8 +11,7 @@ import { setUpZoeForTest } from './supports.js';
 
 /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
 
-/** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
-// @ts-expect-error cast
+/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
 const contractRoots = {

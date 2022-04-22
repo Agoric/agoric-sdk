@@ -10,15 +10,14 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import rawTest from 'ava';
+import anyTest from 'ava';
 
 // import '../../../src/vaultFactory/vaultFactory.js';
 
 const dirname = new URL('.', import.meta.url).pathname;
 
-/** @type {import('ava').TestInterface<{ data: { kernelBundles: any, config: any } }>} */
-// @ts-expect-error cast
-const test = rawTest;
+/** @type {import('ava').TestFn<{ data: { kernelBundles: any, config: any } }>} */
+const test = anyTest;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

@@ -43,6 +43,7 @@ for (const [debt, collat, vaultId, expectedKey, numberOut] of [
       AmountMath.make(mockBrand, BigInt(collat)),
       String(vaultId),
     );
+    // @ts-expect-error TODO use macros
     t.is(key, expectedKey);
     t.deepEqual(StoreUtils.fromVaultKey(key), [numberOut, vaultId]);
   });

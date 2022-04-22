@@ -61,8 +61,7 @@ import {
  * loanTiming: LoanTiming,
  * zoe: ZoeService,
  * }} Context */
-/** @type {import('ava').TestInterface<Context>} */
-// @ts-expect-error cast
+/** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
 // #region Support
