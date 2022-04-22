@@ -133,7 +133,7 @@ function doResolveSyscall(syscallA, vpid, mode, targets) {
       syscallA.resolve([[vpid, true, capargs('error', [])]]);
       break;
     case 'promise-reject':
-      syscallA.resolve([[vpid, true, capargs([slot0arg], [targets.p1])]]);
+      syscallA.resolve([[vpid, true, capargs(slot0arg, [targets.p1])]]);
       break;
     default:
       assert.fail(X`unknown mode ${mode}`);
@@ -182,11 +182,7 @@ function resolutionOf(vpid, mode, targets) {
     case 'promise-reject':
       return {
         type: 'notify',
-        resolutions: oneResolution(
-          vpid,
-          true,
-          capargs([slot0arg], [targets.p1]),
-        ),
+        resolutions: oneResolution(vpid, true, capargs(slot0arg, [targets.p1])),
       };
     default:
       assert.fail(X`unknown mode ${mode}`);

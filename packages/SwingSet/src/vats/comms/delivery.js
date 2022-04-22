@@ -430,6 +430,19 @@ export function makeDeliveryKit(
       const [lpid, rejected, data] = resolution;
       // rejected: boolean, data: capdata
       insistCapData(data);
+      if (!rejected) {
+        const resolutionSlot = extractSingleSlot(data);
+        if (resolutionSlot) {
+          // Resolving to a promise is not a fulfillment.
+          // It would be a redirect, but that's not currently supported by comms.
+          // Furthermore messages sent to such a promise resolved this way would not
+          // be forwarded but would splat instead.
+          assert(
+            parseLocalSlot(resolutionSlot).type !== 'promise',
+            'cannot resolve to a promise',
+          );
+        }
+      }
       insistLocalType('promise', lpid);
       state.insistPromiseIsUnresolved(lpid);
       state.insistDeciderIsComms(lpid);

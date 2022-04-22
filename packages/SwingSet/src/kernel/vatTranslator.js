@@ -3,7 +3,7 @@ import { assert, details as X } from '@agoric/assert';
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
-import { insistCapData } from '../lib/capdata.js';
+import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import {
   kdebug,
   legibilizeMessageArgs,
@@ -81,6 +81,8 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       ];
     } else if (kp.state === 'redirected') {
       // TODO unimplemented
+      // NOTE: When adding redirection / forwarding, we must handle any
+      // pipelined messages pending in the inbound queue
       throw new Error('not implemented yet');
     } else {
       assert.fail(X`unknown kernelPromise state '${kp.state}'`);
@@ -508,6 +510,20 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       const [vpid, rejected, data] = resolution;
       insistVatType('promise', vpid);
       insistCapData(data);
+      if (!rejected) {
+        const resolutionSlot = extractSingleSlot(data);
+        if (resolutionSlot) {
+          // Resolving to a promise is not a fulfillment.
+          // It would be a redirect, but that's not currently supported by the kernel.
+          // Furthermore messages sent to such a promise resolved this way would not
+          // be forwarded but would splat instead.
+          assert(
+            parseVatSlot(resolutionSlot).type !== 'promise',
+            'cannot resolve to a promise',
+          );
+        }
+      }
+
       const kpid = mapVatSlotToKernelSlot(vpid);
       const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
       const kernelData = harden({ ...data, slots: kernelSlots });
