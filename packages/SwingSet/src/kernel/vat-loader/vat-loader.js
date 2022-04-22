@@ -2,7 +2,6 @@
 import { assert, details as X } from '@agoric/assert';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
-import { makeVatTranslators } from '../vatTranslator.js';
 
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0n);
@@ -20,13 +19,15 @@ export function makeVatLoader(stuff) {
     vatAdminRootKref,
   } = stuff;
 
+  /** @typedef {ReturnType<typeof import('../vatTranslator.js').makeVatTranslators>} Translators */
+
   /**
    * Create a new vat at runtime (called when a 'create-vat' event reaches
    * the top of the run-queue).
    *
    * @param { string } vatID  The pre-allocated vatID
    * @param { SourceOfBundle } source  The source object implementing the vat
-   * @param { ReturnType<makeVatTranslators> } translators
+   * @param { Translators } translators
    * @param {*} dynamicOptions  Options bag governing vat creation
    *
    * @returns {Promise<VatManager>}
@@ -47,7 +48,7 @@ export function makeVatLoader(stuff) {
    *
    * @param {string} vatID  The vatID of the vat to create
    * @param { SourceOfBundle } source  The source object implementing the vat
-   * @param { ReturnType<makeVatTranslators> } translators
+   * @param { Translators } translators
    * @param {*} dynamicOptions  Options bag governing vat creation
    *
    * @returns {Promise<VatManager>} fires when the vat is ready for messages
@@ -69,7 +70,7 @@ export function makeVatLoader(stuff) {
    *
    * @param {string} vatID  The vatID of the vat to create
    * @param { SourceOfBundle } source  The source object implementing the vat
-   * @param { ReturnType<makeVatTranslators> } translators
+   * @param { Translators } translators
    * @param {*} staticOptions  Options bag governing vat creation
    *
    * @returns {Promise<VatManager>} A Promise which fires when the
@@ -125,7 +126,7 @@ export function makeVatLoader(stuff) {
    *    used, it must identify a bundle already known to the kernel (via the
    *    `config.bundles` table) which satisfies these constraints.
    *
-   * @param { ReturnType<makeVatTranslators> } translators
+   * @param { Translators } translators
    *
    * @param {Object} options  an options bag. These options are currently understood:
    *
@@ -263,7 +264,7 @@ export function makeVatLoader(stuff) {
     return manager;
   }
 
-  async function loadTestVat(vatID, setup, creationOptions) {
+  async function loadTestVat(vatID, setup, translators, creationOptions) {
     const managerOptions = {
       ...creationOptions,
       setup,
@@ -272,7 +273,6 @@ export function makeVatLoader(stuff) {
       useTranscript: true,
       ...overrideVatManagerOptions,
     };
-    const translators = makeVatTranslators(vatID, kernelKeeper);
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
     const manager = await vatManagerFactory(
       vatID,

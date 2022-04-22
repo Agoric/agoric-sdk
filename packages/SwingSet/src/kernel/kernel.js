@@ -1273,15 +1273,20 @@ export default function buildKernel(
     vatParameters = {},
     creationOptions = {},
   ) {
+    const {
+      bundleID = 'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+      ...actualCreationOptions
+    } = creationOptions;
     assert.typeof(
       setup,
       'function',
       X`setup is not a function, rather ${setup}`,
     );
-    assertKnownOptions(creationOptions, [
+    assertKnownOptions(actualCreationOptions, [
       'enablePipelining',
       'metered',
       'reapInterval',
+      'managerType',
     ]);
 
     assert(!kernelKeeper.hasVatWithName(name), X`vat ${name} already exists`);
@@ -1289,13 +1294,17 @@ export default function buildKernel(
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
 
-    if (!creationOptions.reapInterval) {
-      creationOptions.reapInterval = 'never';
+    if (!actualCreationOptions.reapInterval) {
+      actualCreationOptions.reapInterval = 'never';
+    }
+    if (!actualCreationOptions.managerType) {
+      actualCreationOptions.managerType = 'local';
     }
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
+    vatKeeper.setSourceAndOptions({ bundleID }, actualCreationOptions);
+    vatKeeper.initializeReapCountdown(actualCreationOptions.reapInterval);
 
-    await vatWarehouse.loadTestVat(vatID, setup, creationOptions);
+    await vatWarehouse.loadTestVat(vatID, setup, actualCreationOptions);
 
     const vpCapData = { body: stringify(harden(vatParameters)), slots: [] };
     /** @type { RunQueueEventStartVat } */
