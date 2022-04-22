@@ -33,6 +33,7 @@ export const publicPrices = prices => {
  * toCentralPriceAuthority: PriceAuthority,
  * fromCentralPriceAuthority: PriceAuthority,
  * quoteIssuerKit: IssuerKit,
+ * protocolSeat: ZCFSeat,
  * zcf: ZCF,
  * timer: TimerService,
  * paramAccessor,
@@ -50,7 +51,7 @@ export const publicPrices = prices => {
  *   facets: {
  *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
  *     pool: import('@agoric/vat-data/src/types').KindFacet<XYKPool>,
- *     singlePool: import('@agoric/vat-data/src/types').KindFacet<VirtualPool>,
+ *     singlePool: VirtualPool,
  *   },
  * }} MethodContext
  */
@@ -126,7 +127,13 @@ const poolBehavior = {
   getSecondaryAmount: ({ state }) =>
     state.poolSeat.getAmountAllocated('Secondary', state.secondaryBrand),
 
-  addLiquidity: ({ state, facets: { helper, pool } }, zcfSeat) => {
+  /**
+   * @param {MethodContext} context
+   * @param {ZCFSeat} zcfSeat
+   * @returns {string}
+   */
+  addLiquidity: ({ state, facets }, zcfSeat) => {
+    const { helper, pool } = facets;
     const centralIn = zcfSeat.getStagedAllocation().Central;
     assert(isNatValue(centralIn.value), 'User Central');
     const secondaryIn = zcfSeat.getStagedAllocation().Secondary;
