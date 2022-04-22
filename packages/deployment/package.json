@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deployment",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Set up Agoric public chain nodes",
   "type": "module",
   "private": true,
@@ -12,14 +12,14 @@
     "test": "exit 0",
     "test:xs": "exit 0",
     "build": "exit 0",
-    "lint-fix": "eslint --fix '**/*.js'",
-    "lint": "eslint '**/*.js'"
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint:eslint": "eslint --ext .js,.ts ."
   },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.3.16",
+    "@agoric/assert": "^0.4.0",
     "@endo/init": "^0.5.41",
     "@endo/marshal": "^0.6.7",
     "chalk": "^2.4.2",

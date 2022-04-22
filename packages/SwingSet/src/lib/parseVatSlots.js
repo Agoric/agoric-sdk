@@ -20,7 +20,8 @@ import { assert, details as X } from '@agoric/assert';
  *      id: Nat,
  *      subid: Nat,
  *      baseRef: STRING,
- *      facet: Nat
+ *      facet: Nat,
+ *      virtual: BOOL, // true=>vref designates a virtual object
  *   }
  *
  * A vref string can take one of the forms:
@@ -80,8 +81,9 @@ import { assert, details as X } from '@agoric/assert';
  * In the current implementation, a vref string may only include decimal digits,
  * the letters 'd', 'o', and 'p', and the punctuation characters '+', '-', '/',
  * and ':'.  Future evolution of the vref syntax might add more characters to
- * this set, but the character '|' is permanently excluded because of its use by
- * the collection manager as delimiter in vatstore keys that include vrefs.
+ * this set, but the characters '|' and ',' are permanently excluded: '|' is
+ * used (notably by the collection manager) as delimiter in vatstore keys that
+ * include vrefs, and ',' is used as a separator in lists of vrefs.
  *
  * `slotToVal` maps a baseRef to a base object (actually to a weakRef that
  *    points to a base object)

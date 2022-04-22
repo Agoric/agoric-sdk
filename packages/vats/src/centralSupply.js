@@ -31,7 +31,10 @@ export const start = async (zcf, { feeMintAccess }) => {
 
   return {
     creatorFacet: Far('creator', {
-      getBootstrapPayment: () => bootstrapPayment,
+      getBootstrapPayment: () => {
+        zcf.shutdown('payment retrieved');
+        return bootstrapPayment;
+      },
     }),
   };
 };

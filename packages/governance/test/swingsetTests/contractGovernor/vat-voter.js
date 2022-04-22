@@ -25,6 +25,15 @@ const build = async (log, zoe) => {
           log(`Voter ${name} voted for ${q(choice)}`);
           return E(voteFacet).castBallotFor(questionHandle, [choice]);
         },
+        /**
+         *
+         * @param {Instance} counterInstance
+         * @param {Instance} governedInstance
+         * @param {Instance} electorateInstance
+         * @param {Instance} governorInstance
+         * @param {Record<string, Installation>} installations
+         * @returns {Promise<void>}
+         */
         validate: async (
           counterInstance,
           governedInstance,
@@ -64,7 +73,10 @@ const build = async (log, zoe) => {
           ]);
 
           assertBallotConcernsParam(
-            { key: 'governedParams', parameterName: MALLEABLE_NUMBER },
+            harden({
+              paramPath: { key: 'governedParams' },
+              parameterName: MALLEABLE_NUMBER,
+            }),
             questionDetails,
           );
           assert(installations.binaryVoteCounter === voteCounterInstallation);
@@ -94,6 +106,10 @@ const build = async (log, zoe) => {
     },
   });
 };
+
+/**
+ * @typedef {ReturnType<Awaited<ReturnType<typeof build>>['createVoter']>} EVatVoter
+ */
 
 export const buildRootObject = vatPowers =>
   Far('root', {

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/notifier",
-  "version": "0.3.35",
+  "version": "0.4.0",
   "description": "Notifier allows services to update clients about state changes using a stream of promises",
   "type": "module",
   "main": "src/index.js",
@@ -14,7 +14,7 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:eslint": "eslint '**/*.js'",
+    "lint:eslint": "eslint --ext .js,.ts .",
     "lint:types": "tsc --maxNodeModuleJsDepth 3 -p jsconfig.json"
   },
   "repository": {
@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.3.16",
+    "@agoric/assert": "^0.4.0",
     "@endo/eventual-send": "^0.15.3",
     "@endo/marshal": "^0.6.7",
     "@endo/promise-kit": "^0.2.41"

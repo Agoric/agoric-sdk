@@ -184,9 +184,10 @@ async function testUpgrade(t, defaultManagerType) {
 
   // the old version's non-durable promises should be rejected
   t.is(c.kpStatus(v1p1Kref), 'rejected');
-  t.deepEqual(c.kpResolution(v1p1Kref), capargs('vat upgraded'));
+  const vatUpgradedError = capargs('vat upgraded');
+  t.deepEqual(c.kpResolution(v1p1Kref), vatUpgradedError);
   t.is(c.kpStatus(v1p2Kref), 'rejected');
-  t.deepEqual(c.kpResolution(v1p2Kref), capargs('vat upgraded'));
+  t.deepEqual(c.kpResolution(v1p2Kref), vatUpgradedError);
 
   // dumpState(hostStorage, vatID);
 

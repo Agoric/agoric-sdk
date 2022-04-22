@@ -1,6 +1,6 @@
 {
   "name": "@agoric/assert",
-  "version": "0.3.16",
+  "version": "0.4.0",
   "description": "Assert expression support that protects sensitive data",
   "type": "module",
   "main": "src/assert.js",
@@ -14,7 +14,7 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
-    "lint:eslint": "eslint '**/*.js'",
+    "lint:eslint": "eslint --ext .js,.ts .",
     "lint:types": "tsc -p jsconfig.json"
   },
   "repository": {

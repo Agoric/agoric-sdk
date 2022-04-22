@@ -66,7 +66,7 @@
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue | ApiInvocationIssue } Issue
+ * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue } Issue
  */
 
 /**
@@ -88,9 +88,10 @@
  */
 
 /**
+ * Specification when requesting creation of a Question
+ *
  * @template {Issue} [I=Issue]
  * @typedef {Object} QuestionSpec
- *   Specification when requesting creation of a Question
  * @property {ChoiceMethod} method
  * @property {I} issue
  * @property {Position[]} positions
@@ -321,9 +322,9 @@
  */
 
 /**
+ * @template [P=StandardParamPath] path for a paramManagerRetriever
  * @typedef {Object} ParamChangeIssue
- * @property {string} key
- * @property {Record<string,ParamValue>} changes
+ * @property {ParamChangesSpec<P>} spec
  * @property {Instance} contract
  */
 
@@ -343,7 +344,7 @@
  * @typedef {Object} ParamChangeIssueDetails
  *    details for a question that can change a contract parameter
  * @property {ChoiceMethod} method
- * @property {ParamChangeIssue} issue
+ * @property {ParamChangeIssue<unknown>} issue
  * @property {ParamChangePositions} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
@@ -454,7 +455,7 @@
  * @property {() => Instance} getGovernedContract
  * @property {(voteCounter: Instance) => Promise<boolean>} validateVoteCounter
  * @property {(regP: ERef<Instance>) => Promise<boolean>} validateElectorate
- * @property {(details: QuestionDetails) => boolean} validateTimer
+ * @property {(closingRule: ClosingRule) => boolean} validateTimer
  */
 
 /**
@@ -465,8 +466,9 @@
 /**
  * Description of a set of coordinated changes for a ParamManager
  *
- * @typedef {Object} ParamChangesSpec
- * @property {string} key Identifies the paramManager within the contract
+ * @template P path for a paramManagerRetriever
+ * @typedef {object} ParamChangesSpec<P>
+ * @property {P} paramPath
  * @property {Record<string, ParamValue>} changes one or more changes to parameters
  */
 
@@ -560,9 +562,7 @@
  */
 
 /**
- * @callback AssertBallotConcernsParam
- * @param {{key: string, parameterName: string}} paramSpec
- * @param {QuestionSpec<ParamChangeIssue>} questionSpec
+ * @typedef {{key: string}} StandardParamPath
  */
 
 /**
@@ -571,10 +571,12 @@
  */
 
 /**
+ * @template [P=StandardParamPath]
+ *
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
- * @param {ParamChangesSpec} paramSpec
+ * @param {ParamChangesSpec<P>} paramSpec
  * @returns {ContractGovernanceVoteResult}
  */
 
@@ -647,32 +649,6 @@
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedElectorate
- */
-
-/**
- * @callback ValidateQuestionDetails
- *
- * Validate that the question details correspond to a parameter change question
- * that the electorate hosts, and that the voteCounter and other details are
- * consistent with it.
- *
- * @param {ERef<ZoeService>} zoe
- * @param {Instance} electorate
- * @param {ParamChangeIssueDetails} details
- * @returns {Promise<*>}
- */
-
-/**
- * @callback ValidateQuestionFromCounter
- *
- * Validate that the questions counted by the voteCounter correspond to a
- * parameter change question that the electorate hosts, and that the
- * voteCounter and other details are consistent.
- *
- * @param {ERef<ZoeService>} zoe
- * @param {Instance} electorate
- * @param {Instance} voteCounter
- * @returns {Promise<*>}
  */
 
 /**

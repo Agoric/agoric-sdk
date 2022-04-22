@@ -3,6 +3,79 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.8.0...@agoric/run-protocol@0.9.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* atomically update multiple parameters via governance (#5063)
+* fix a bug in addLiquidity (#5091)
+* add collateral Reserve to hold collateral and add to AMM under governance control (#4635)
+* add the ability to invoke an API to contract governance (#4869)
+* **run-protocol:** vaults hold liquidation proceeds until closed
+* **run-protocol:** return assetNotifier instead of notifying on uiNotifier
+* **run-protocol:** rename uiNotifier to vaultNotifier
+* consistent Node engine requirement (>=14.15.0)
+* **run-protocol:** remove liquidated flag from vault notifications
+
+### Features
+
+* **bundleTool:** memoize load() ([9624665](https://github.com/Agoric/agoric-sdk/commit/96246659ebe9baef4fbabb02ffe3e74210428537))
+* **run-protocol:** charge penalty for liquidation ([#4996](https://github.com/Agoric/agoric-sdk/issues/4996)) ([5467be4](https://github.com/Agoric/agoric-sdk/commit/5467be4fb5c4cc47f34736eb669e207b26eb711d))
+* **run-protocol:** debt limit for RUNstake ([c6a2b68](https://github.com/Agoric/agoric-sdk/commit/c6a2b6825c40b94e03a2bd5c34be7aad473e54a6))
+* **run-protocol:** debtLimit governed param ([#4948](https://github.com/Agoric/agoric-sdk/issues/4948)) ([161e968](https://github.com/Agoric/agoric-sdk/commit/161e9689ea13fae8559a8915a87a5ec031969d5f))
+* **run-protocol:** expose wrapLienedAmount on attestationTool ([766984e](https://github.com/Agoric/agoric-sdk/commit/766984e5f4265731abbd4ef826f180c568838d91))
+* **run-protocol:** first cut at governance-induced RUN ([7500218](https://github.com/Agoric/agoric-sdk/commit/75002188c106370bc0b3d71ecb8b9a2ecb00ac8d))
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+* split single- and multi-faceted VO definitions into their own functions ([fcf293a](https://github.com/Agoric/agoric-sdk/commit/fcf293a4fcdf64bf30b377c7b3fb8b728efbb4af)), closes [#5093](https://github.com/Agoric/agoric-sdk/issues/5093)
+* yet another overhaul of the `defineKind` API ([3e02d42](https://github.com/Agoric/agoric-sdk/commit/3e02d42312b2963c165623c8cd559b431e5ecdce)), closes [#4905](https://github.com/Agoric/agoric-sdk/issues/4905)
+* **cosmic-swingset:** grant addVaultType based on addr ([#4641](https://github.com/Agoric/agoric-sdk/issues/4641)) ([e439024](https://github.com/Agoric/agoric-sdk/commit/e439024788f27ea668b2ff0c5e486ab901807eb0))
+* **run-protocol:** distinct vault phase for liquidated ([26593e4](https://github.com/Agoric/agoric-sdk/commit/26593e4eca7aa7997d56470c7892c30d6d9b6f93))
+* **run-protocol:** liquidate serially ([#4931](https://github.com/Agoric/agoric-sdk/issues/4931)) ([91a62a5](https://github.com/Agoric/agoric-sdk/commit/91a62a57b34a4967209f1a7f88ea5dd0a085fb46)), closes [#4715](https://github.com/Agoric/agoric-sdk/issues/4715)
+* **run-protocol:** RUNstake contract only, without payoff from rewards ([#4741](https://github.com/Agoric/agoric-sdk/issues/4741)) ([52f60eb](https://github.com/Agoric/agoric-sdk/commit/52f60eb192217ff3e4cf84a5a2ff8ada19fb5dcc))
+* add collateral Reserve to hold collateral and add to AMM under governance control ([#4635](https://github.com/Agoric/agoric-sdk/issues/4635)) ([3e3f55f](https://github.com/Agoric/agoric-sdk/commit/3e3f55f48365d614c2215d8f311f973ff54b6cd0)), closes [#4188](https://github.com/Agoric/agoric-sdk/issues/4188) [#4188](https://github.com/Agoric/agoric-sdk/issues/4188)
+* add the ability to invoke an API to contract governance ([#4869](https://github.com/Agoric/agoric-sdk/issues/4869)) ([3123665](https://github.com/Agoric/agoric-sdk/commit/312366518471238430c79313f79e57aee1c551cd)), closes [#4188](https://github.com/Agoric/agoric-sdk/issues/4188)
+
+
+### Bug Fixes
+
+* **bundleTool:** harden loaded bundles ([d77cea2](https://github.com/Agoric/agoric-sdk/commit/d77cea26f50e46833cd5cbde780f6393e616a4ec))
+* **run-protocol:** more support for governance boot ([711d80d](https://github.com/Agoric/agoric-sdk/commit/711d80d6f4b854ca9dadb0bae764a9a0cc65fa59))
+* **run-protocol:** re-structure vault notifiers to work with wallet ([9ac3f00](https://github.com/Agoric/agoric-sdk/commit/9ac3f00462cff6cfc20ab3325dad6798f3a8560f))
+* **run-protocol:** shuffle around to fix types ([1c06bbd](https://github.com/Agoric/agoric-sdk/commit/1c06bbd71c39b09bb0e8007b0a96febf3bfbd771))
+* **run-protocol:** store Presences, not Promises, in VaultManager ([5aee8af](https://github.com/Agoric/agoric-sdk/commit/5aee8af34fb1fab54633fc9a1acbf2818414de9a)), closes [#5106](https://github.com/Agoric/agoric-sdk/issues/5106) [#5121](https://github.com/Agoric/agoric-sdk/issues/5121) [#5106](https://github.com/Agoric/agoric-sdk/issues/5106)
+* **run-protocol:** use wallet-friendly offer result notifiers ([b08330b](https://github.com/Agoric/agoric-sdk/commit/b08330b5bbb040979a68c19c8609e715e468b905))
+* **vaults:** check args before acting in addVaultType ([12d5cfb](https://github.com/Agoric/agoric-sdk/commit/12d5cfbc9abfa553e40b7b458ce99420c7c54a85))
+* Encode Passables, not just keys ([#4470](https://github.com/Agoric/agoric-sdk/issues/4470)) ([715950d](https://github.com/Agoric/agoric-sdk/commit/715950d6bfcbe6bc778b65a256dc5d26299172db))
+* fix a bug in addLiquidity ([#5091](https://github.com/Agoric/agoric-sdk/issues/5091)) ([512db54](https://github.com/Agoric/agoric-sdk/commit/512db545c4e88fa4126c44a29f3a8775c330264f))
+* renamings [#4470](https://github.com/Agoric/agoric-sdk/issues/4470) missed ([#4896](https://github.com/Agoric/agoric-sdk/issues/4896)) ([98c9f0e](https://github.com/Agoric/agoric-sdk/commit/98c9f0eabf6f0a85581e34ca0adf24f9805d1f0c))
+* two isolated cases where a missing argument did not default ([531d367](https://github.com/Agoric/agoric-sdk/commit/531d367600e97652babff1ee8ffa4e4665f50baa))
+* update types to specify ERef<Issuer> on addPool() ([6c13d99](https://github.com/Agoric/agoric-sdk/commit/6c13d997f89d914516dd6d4821d95364bd715b39)), closes [#4810](https://github.com/Agoric/agoric-sdk/issues/4810)
+* **vats:** move `startPriceAuthority` earlier in the boot sequence ([bf93171](https://github.com/Agoric/agoric-sdk/commit/bf93171c69eb1a19b04c24c9283e0d433ca9d411))
+* **vault:** make vault transfer invitation legible ([#4844](https://github.com/Agoric/agoric-sdk/issues/4844)) ([325ef39](https://github.com/Agoric/agoric-sdk/commit/325ef399cc9b65eedca71c2d2d7c42a4c6ec5191))
+* **zoe:** pass brands (not issuers) to priceAggregator ([5800711](https://github.com/Agoric/agoric-sdk/commit/580071189bb60d83ceaa806bf85035173ae9563c))
+
+
+### Reverts
+
+* Revert "refactor(run-protocol): virtual kind for vault manager (#5052)" ([b08dc58](https://github.com/Agoric/agoric-sdk/commit/b08dc5836e8bea98de4316edc7ac5eef698c7072)), closes [#5052](https://github.com/Agoric/agoric-sdk/issues/5052)
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+* **run-protocol:** remove liquidated flag from vault notifications ([6456af2](https://github.com/Agoric/agoric-sdk/commit/6456af25e154f01820efbdc1afb343902e385384))
+
+
+### Code Refactoring
+
+* atomically update multiple parameters via governance ([#5063](https://github.com/Agoric/agoric-sdk/issues/5063)) ([8921f59](https://github.com/Agoric/agoric-sdk/commit/8921f59bcdf217b311670c509b8500074eafd77a))
+* **run-protocol:** rename uiNotifier to vaultNotifier ([554d41e](https://github.com/Agoric/agoric-sdk/commit/554d41ed9f9b35cd59133818e428d3055006e1ca))
+* **run-protocol:** return assetNotifier instead of notifying on uiNotifier ([35d2d41](https://github.com/Agoric/agoric-sdk/commit/35d2d41f5345f593a647390c6f3dee5ccb44bf15))
+* **run-protocol:** vaults hold liquidation proceeds until closed ([de32be9](https://github.com/Agoric/agoric-sdk/commit/de32be9b27780e75b70f06780872994fce7da02a))
+
+
+
 ## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.7.2...@agoric/run-protocol@0.8.0) (2022-02-24)
 
 

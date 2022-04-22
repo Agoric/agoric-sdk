@@ -1,11 +1,10 @@
 export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
 
-const SHARED_POST_BOOT_MANIFEST = harden({
+const ECON_COMMITTEE_MANIFEST = harden({
   startEconomicCommittee: {
     consume: {
       zoe: true,
-      governanceBundles: true,
     },
     produce: { economicCommitteeCreatorFacet: 'economicCommittee' },
     installation: {
@@ -15,6 +14,9 @@ const SHARED_POST_BOOT_MANIFEST = harden({
       produce: { economicCommittee: 'economicCommittee' },
     },
   },
+});
+
+const SHARED_MAIN_MANIFEST = harden({
   setupAmm: {
     consume: {
       chainTimerService: 'timer',
@@ -111,7 +113,6 @@ const SHARED_POST_BOOT_MANIFEST = harden({
         amm: 'zoe',
         VaultFactory: 'zoe',
         contractGovernor: 'zoe',
-        noActionElectorate: 'zoe',
         binaryVoteCounter: 'zoe',
         liquidate: 'zoe',
       },
@@ -123,8 +124,12 @@ const SHARED_POST_BOOT_MANIFEST = harden({
   },
 });
 
-export const CHAIN_POST_BOOT_MANIFEST = harden({
-  ...SHARED_POST_BOOT_MANIFEST,
+const SHARED_POST_BOOT_MANIFEST = harden({
+  ...ECON_COMMITTEE_MANIFEST,
+  ...SHARED_MAIN_MANIFEST,
+});
+
+const REWARD_MANIFEST = harden({
   startRewardDistributor: {
     consume: {
       chainTimerService: true,
@@ -139,6 +144,90 @@ export const CHAIN_POST_BOOT_MANIFEST = harden({
     },
     issuer: { consume: { RUN: 'zoe' } },
     brand: { consume: { RUN: 'zoe' } },
+  },
+});
+
+const RUN_STAKE_MANIFEST = harden({
+  startLienBridge: {
+    consume: { bridgeManager: true },
+    produce: { lienBridge: true },
+    brand: {
+      consume: { BLD: 'BLD' },
+    },
+  },
+  startRunStake: {
+    consume: {
+      zoe: 'zoe',
+      feeMintAccess: 'zoe',
+      lienBridge: true,
+      client: 'provisioning',
+      chainTimerService: 'timer',
+      economicCommitteeCreatorFacet: 'economicCommittee',
+    },
+    produce: {
+      runStakeCreatorFacet: 'runStake',
+      runStakeGovernorCreatorFacet: 'runStake',
+    },
+    installation: {
+      consume: { contractGovernor: 'zoe', runStake: 'zoe' },
+    },
+    instance: {
+      consume: { economicCommittee: 'economicCommittee' },
+      produce: { runStake: 'runStake' },
+    },
+    brand: {
+      consume: { BLD: 'BLD', RUN: 'zoe' },
+      produce: { Attestation: 'runStake' },
+    },
+    issuer: {
+      consume: { BLD: 'BLD' },
+      produce: { Attestation: 'runStake' },
+    },
+  },
+});
+
+export const CHAIN_POST_BOOT_MANIFEST = harden({
+  ...SHARED_POST_BOOT_MANIFEST,
+  ...REWARD_MANIFEST,
+  ...RUN_STAKE_MANIFEST,
+});
+
+const MAIN_MANIFEST = harden({
+  ...SHARED_MAIN_MANIFEST,
+  ...REWARD_MANIFEST,
+});
+
+const PSM_MANIFEST = harden({
+  makeAnchorAsset: {
+    consume: { bankManager: 'bank' },
+    issuer: {
+      produce: { AUSD: true },
+    },
+    brand: {
+      produce: { AUSD: true },
+    },
+  },
+  startPSM: {
+    consume: {
+      zoe: 'zoe',
+      feeMintAccess: 'zoe',
+      economicCommitteeCreatorFacet: 'economicCommittee',
+      chainTimerService: 'timer',
+    },
+    produce: { psmCreatorFacet: 'psm', psmGovernorCreatorFacet: 'psmGovernor' },
+    installation: {
+      consume: { contractGovernor: 'zoe', psm: 'zoe' },
+    },
+    instance: {
+      consume: { economicCommittee: 'economicCommittee' },
+      produce: { psm: 'psm', psmGovernor: 'psm' },
+    },
+    brand: {
+      consume: { AUSD: 'bank', RUN: 'zoe' },
+    },
+    issuer: {
+      consume: { AUSD: 'bank' },
+    },
   },
 });
 
@@ -186,18 +275,69 @@ export const getManifestForRunProtocol = (
   return {
     manifest: roleToGovernanceActions[ROLE],
     installations: {
-      runStake: restoreRef(installKeys.runStake),
       amm: restoreRef(installKeys.amm),
       VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
-      psm: restoreRef(installKeys.psm),
       contractGovernor: restoreRef(installKeys.contractGovernor),
       committee: restoreRef(installKeys.committee),
       binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
     },
     options: {
       vaultFactoryControllerAddress,
+    },
+  };
+};
+
+export const getManifestForEconCommittee = (
+  { restoreRef },
+  { installKeys },
+) => {
+  return {
+    manifest: ECON_COMMITTEE_MANIFEST,
+    installations: {
+      contractGovernor: restoreRef(installKeys.contractGovernor),
+      committee: restoreRef(installKeys.committee),
+      binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
+    },
+  };
+};
+
+export const getManifestForMain = (
+  { restoreRef },
+  { installKeys, vaultFactoryControllerAddress },
+) => {
+  return {
+    manifest: MAIN_MANIFEST,
+    installations: {
+      amm: restoreRef(installKeys.amm),
+      VaultFactory: restoreRef(installKeys.vaultFactory),
+      liquidate: restoreRef(installKeys.liquidate),
+      reserve: restoreRef(installKeys.reserve),
+    },
+    options: {
+      vaultFactoryControllerAddress,
+    },
+  };
+};
+
+export const getManifestForRunStake = ({ restoreRef }, { installKeys }) => {
+  return {
+    manifest: RUN_STAKE_MANIFEST,
+    installations: {
+      runStake: restoreRef(installKeys.runStake),
+    },
+  };
+};
+
+export const getManifestForPSM = ({ restoreRef }, { installKeys, denom }) => {
+  return {
+    manifest: PSM_MANIFEST,
+    installations: {
+      runStake: restoreRef(installKeys.runStake),
+    },
+    options: {
+      denom,
     },
   };
 };

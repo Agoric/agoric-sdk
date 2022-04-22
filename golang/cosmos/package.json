@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmos",
-  "version": "0.28.0",
+  "version": "0.29.0",
   "description": "Connect JS to the Cosmos blockchain SDK",
   "main": "src/index.cjs",
   "engines": {
@@ -12,7 +12,7 @@
     "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
     "test:xs": "exit 0",
     "build": "exit 0",
-    "lint-fix": "eslint --fix '**/*.{cjs,js}'",
+    "lint-fix": "yarn lint:eslint --fix",
     "lint": "eslint '**/*.{cjs,js}'"
   },
   "dependencies": {
@@ -28,7 +28,7 @@
   "bugs": {
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/Agoric/agoric-sdk/packages/connector-cosmos",
+  "homepage": "https://github.com/Agoric/agoric-sdk/tree/HEAD/golang/cosmos",
   "eslintConfig": {
     "extends": [
       "@agoric"

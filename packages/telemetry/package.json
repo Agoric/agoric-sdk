@@ -1,6 +1,6 @@
 {
   "name": "@agoric/telemetry",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Agoric's telemetry implementation",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -13,7 +13,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc --maxNodeModuleJsDepth 4 -p jsconfig.json",
-    "lint:eslint": "eslint '**/*.js'"
+    "lint:eslint": "eslint --ext .js,.ts ."
   },
   "bin": {
     "frcat": "./src/frcat-entrypoint.js"
@@ -22,7 +22,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/store": "^0.6.10",
+    "@agoric/store": "^0.7.0",
     "@endo/init": "^0.5.41",
     "@opentelemetry/api": "^1.0.0",
     "@opentelemetry/exporter-prometheus": "^0.27.0",

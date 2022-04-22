@@ -140,6 +140,7 @@ test('attestations can be combined and split', async t => {
     const proposal = harden({ give: { Attestation: attestationAmount } });
     const payments = harden({ Attestation: att });
     const userSeat = E(zoe).offer(invitation, proposal, payments);
+    await E(userSeat).getOfferResult();
     const payout = await E(userSeat).getPayouts();
     const amounts = await Promise.all(
       Object.values(payout).map(paymentP => E(issuer).getAmountOf(paymentP)),
@@ -166,11 +167,17 @@ test('attestations can be combined and split', async t => {
   t.deepEqual(await E(creatorFacet).getLiened(address1, uBrand), stake25);
 
   // Return the original attestation for 25
-  await returnAttestation(attest25pmt);
+  const seat = await returnAttestation(attest25pmt);
 
   // Now the liened Amount should be empty
   t.deepEqual(
     await E(creatorFacet).getLiened(address1, uBrand),
     AmountMath.makeEmpty(uBrand),
   );
+
+  // Returning an empty attestation should be a noop.
+  const att0 = await E(seat).getPayout('Attestation');
+  const amt0 = await E(issuer).getAmountOf(att0);
+  await returnAttestation(att0);
+  t.deepEqual(amt0.value.payload, []);
 });

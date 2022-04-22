@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.11.2...@agoric/xsnap@0.12.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **xsnap:** METER_TYPE -> 13
+
+### Features
+
+* **object-inspect:** group bigint digits in threes ([a21d3b4](https://github.com/Agoric/agoric-sdk/commit/a21d3b4d0e12ecd761ba8ec00296df4a42a80c51))
+* **xsnap:** load object-inspect in its own Compartment ([05ceb87](https://github.com/Agoric/agoric-sdk/commit/05ceb873f91a926b344a7be53814345b4aa64cc0))
+* implement the durable kind API ([56bad98](https://github.com/Agoric/agoric-sdk/commit/56bad985275787d18c34ac14b377a4d0348d699b)), closes [#4495](https://github.com/Agoric/agoric-sdk/issues/4495)
+
+
+### Bug Fixes
+
+* **xsnap:** adopt `src/object-inspect.js` ([4f23da2](https://github.com/Agoric/agoric-sdk/commit/4f23da29ae19eefb786bb810e44d7b534de91664))
+* **xsnap:** METER_TYPE -> 13 ([ae8d18f](https://github.com/Agoric/agoric-sdk/commit/ae8d18f76e6463ef7c41d974d28696c66b4dfcb4))
+
+
+
 ### [0.11.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.11.1...@agoric/xsnap@0.11.2) (2022-02-24)
 
 

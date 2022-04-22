@@ -3,6 +3,33 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.28.0...@agoric/cosmos@0.29.0) (2022-04-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* consistent Node engine requirement (>=14.15.0)
+
+### Features
+
+* can only lien vested tokens ([9eea226](https://github.com/Agoric/agoric-sdk/commit/9eea22695b43e899c2dc701a6cdc6b3aa2e5f987))
+* track delegation in lien wrapper account ([05da39f](https://github.com/Agoric/agoric-sdk/commit/05da39fdbaaaeadef52f7eee874517fd1e8c0299))
+
+
+### Bug Fixes
+
+* prevent panic in `BindPort` ([5df86b0](https://github.com/Agoric/agoric-sdk/commit/5df86b0753367af883a2d1563a7267bcb15d1779))
+* **cosmos:** make swingset key cli easier to use ([08f61a3](https://github.com/Agoric/agoric-sdk/commit/08f61a33da95cd2481cbb8bedf88b5f5c0784482))
+* add account wrappers for whole account hierarchy ([633a07f](https://github.com/Agoric/agoric-sdk/commit/633a07f4179e55824ba37b2b341347dd7db83b64))
+* **cosmosswingset:** check negativity before castnig to uint ([db6c3da](https://github.com/Agoric/agoric-sdk/commit/db6c3dab4162e3e52720e81d10b1798064b94817))
+
+
+### Miscellaneous Chores
+
+* consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
+
+
+
 ## [0.28.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.27.3...@agoric/cosmos@0.28.0) (2022-02-24)
 
 

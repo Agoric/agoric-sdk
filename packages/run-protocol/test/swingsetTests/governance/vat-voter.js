@@ -21,18 +21,29 @@ const build = async (log, zoe) => {
           log(`Voter ${name} cast a ballot for ${q(choice)}`);
           return E(voteFacet).castBallotFor(handle, [choice]);
         },
+        /**
+         *
+         * @param {Instance} counterInstance
+         * @param {Instance} governedInstance
+         * @param {Instance} electorateInstance
+         * @param {Instance} governorInstance
+         * @param {{ parameterName: string, paramPath: unknown}} paramSpec
+         * @param {Record<string, Installation>} installations
+         * @returns {Promise<void>}
+         */
         validate: async (
           counterInstance,
           governedInstance,
           electorateInstance,
           governorInstance,
-          issue,
+          paramSpec,
           installations,
         ) => {
           const governedTermsP = E(zoe).getTerms(governedInstance);
           const electionManagerP = E.get(governedTermsP).electionManager;
 
           const counterPublicP = E(zoe).getPublicFacet(counterInstance);
+          /** @type {Promise<QuestionSpec<ParamChangeIssue>>} */
           const ballotDetailsP = E(counterPublicP).getDetails();
 
           const [electionManager, ballotDetails] = await Promise.all([
@@ -53,7 +64,7 @@ const build = async (log, zoe) => {
             } governor instance`,
           );
 
-          assertBallotConcernsParam(issue.paramSpec, ballotDetails);
+          assertBallotConcernsParam(paramSpec, ballotDetails);
 
           await assertContractElectorate(
             zoe,
@@ -93,6 +104,10 @@ const build = async (log, zoe) => {
     },
   });
 };
+
+/**
+ * @typedef {ReturnType<Awaited<ReturnType<typeof build>>['createVoter']>} EVatVoter
+ */
 
 export const buildRootObject = vatPowers =>
   Far('root', {

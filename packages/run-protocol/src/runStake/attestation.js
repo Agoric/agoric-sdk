@@ -1,16 +1,25 @@
 // @ts-check
+// @jessie-check
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { fit, M, makeCopyBag, makeStore } from '@agoric/store';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
+import { AttKW as KW } from './constants.js';
+import { makeAttestationTool } from './attestationTool.js';
 
 const { details: X } = assert;
 
-export const KW = /** @type { const } */ ({
-  /** seat keyword for use in offers to return an attestation. */
-  Attestation: 'Attestation',
-});
+/**
+ * @typedef {{
+ *   mintAttestation: unknown,
+ *   returnAttestation: OfferHandler,
+ *   getLiened: (address: Address, brand: Brand<'nat'>) => Amount<'nat'>,
+ *   getAccountState: unknown,
+ *   wrapLienedAmount: unknown,
+ *   unwrapLienedAmount: unknown,
+ * }} LienMint
+ */
 
 /**
  * Find-or-create value in store.
@@ -174,6 +183,10 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     const {
       give: { [KW.Attestation]: attestationAmount },
     } = seat.getProposal();
+    if (AmountMath.isEmpty(attestationAmount)) {
+      seat.exit();
+      return;
+    }
     const { address, lienedAmount: amountReturned } =
       unwrapLienedAmount(attestationAmount);
 
@@ -187,7 +200,8 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
     seat.exit();
   };
 
-  const lienMint = harden({
+  /** @type {ERef<LienMint>} */
+  const lienMint = Far('LienMint', {
     mintAttestation,
     returnAttestation,
     getLiened,
@@ -207,7 +221,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
  * and get an attestation that the lien is in place.
  *
  * @param {ZCF} zcf
- * @param {Brand} stakeBrand
+ * @param {Brand<'nat'>} stakeBrand
  * @param {ERef<StakingAuthority>} lienBridge
  *
  * NOTE: the liened amount is kept both here in JS and on the
@@ -223,7 +237,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
  * The keyword for use in returnAttestation offers is `Attestation`.
  */
 export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
-  /** @type {Store<Address, AttestationMaker>} */
+  /** @type {Store<Address, AttestationTool>} */
   const attMakerByAddress = makeStore('address');
 
   const { issuer, brand, lienMint } = await makeAttestationIssuerKit(
@@ -231,20 +245,6 @@ export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
     stakeBrand,
     lienBridge,
   );
-
-  /** @param { Address } address */
-  const makeAttestationTool = address =>
-    Far('attestationTool', {
-      /** @param { Amount<'nat'> } lienedDelta */
-      makeAttestation: lienedDelta =>
-        lienMint.mintAttestation(address, lienedDelta),
-      getAccountState: () => lienMint.getAccountState(address, stakeBrand),
-      makeReturnAttInvitation: () =>
-        zcf.makeInvitation(lienMint.returnAttestation, 'returnAttestation'),
-      unwrapLienedAmount: lienMint.unwrapLienedAmount,
-      wrapLienedAmount: lienedAmount =>
-        lienMint.wrapLienedAmount(address, lienedAmount),
-    });
 
   return harden({
     publicFacet: Far('attestation publicFacet', {
@@ -264,7 +264,7 @@ export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
       provideAttestationTool: address => {
         assert.typeof(address, 'string');
         return getOrElse(attMakerByAddress, address, () =>
-          makeAttestationTool(address),
+          makeAttestationTool(address, lienMint, stakeBrand, zcf),
         );
       },
       getLiened: lienMint.getLiened,

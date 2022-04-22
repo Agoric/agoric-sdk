@@ -27,7 +27,7 @@ export const makeOrderedVaultStore = () => {
    * @param {InnerVault} vault
    */
   const addVault = (vaultId, vault) => {
-    const debt = vault.getCurrentDebt();
+    const debt = vault.getNormalizedDebt();
     const collateral = vault.getCollateralAmount();
     const key = toVaultKey(debt, collateral, vaultId);
     store.init(key, vault);

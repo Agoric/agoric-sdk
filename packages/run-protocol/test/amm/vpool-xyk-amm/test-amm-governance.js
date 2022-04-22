@@ -65,7 +65,7 @@ test('amm change param via Governance', async t => {
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
   const paramChangeSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes: { [PROTOCOL_FEE_KEY]: 20n },
   });
 
@@ -168,7 +168,7 @@ test('price check after Governance param change', async t => {
   const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
   const paramChangeSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes: {
       [PROTOCOL_FEE_KEY]: 20n,
     },

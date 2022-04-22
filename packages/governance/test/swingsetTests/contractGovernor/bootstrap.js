@@ -16,7 +16,6 @@ const { quote: q } = assert;
  * @param {Record<string,Installation>} installations
  * @param {ERef<GovernedContractFacetAccess<unknown>>} contractFacetAccess
  * @param {bigint} deadline
- * @returns {Promise<*>}
  */
 const voteToChangeParameter = async (
   zoe,
@@ -25,8 +24,9 @@ const voteToChangeParameter = async (
   contractFacetAccess,
   deadline,
 ) => {
+  /** @type {ParamChangesSpec<StandardParamPath>} */
   const paramChangeSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes: { [MALLEABLE_NUMBER]: 299792458n },
   });
 
@@ -66,6 +66,12 @@ const installContracts = async (zoe, cb) => {
   return installations;
 };
 
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {Record<string, Installation>} installations
+ * @param {Record<string, unknown>} electorateTerms
+ * @returns {Promise<{electorateCreatorFacet: *, electorateInstance: Instance}>}
+ */
 const startElectorate = async (zoe, installations, electorateTerms) => {
   const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
     await E(zoe).startInstance(installations.committee, {}, electorateTerms);
@@ -94,6 +100,16 @@ const votersVote = async (detailsP, votersP, selections) => {
   );
 };
 
+/**
+ *
+ * @param {ERef<import('./vat-voter.js').EVatVoter[]>} votersP
+ * @param {ERef<QuestionDetails>} detailsP
+ * @param {ERef<Instance>} governedInstanceP
+ * @param {Instance} electorateInstance
+ * @param {ERef<Instance>} governorInstanceP
+ * @param {Record<string, Installation>} installations
+ * @returns {Promise<void>}
+ */
 const oneVoterValidate = async (
   votersP,
   detailsP,
@@ -101,7 +117,6 @@ const oneVoterValidate = async (
   electorateInstance,
   governorInstanceP,
   installations,
-  timer,
 ) => {
   const [voters, details, governedInstance, governorInstance] =
     await Promise.all([
@@ -112,13 +127,12 @@ const oneVoterValidate = async (
     ]);
   const { counterInstance } = details;
 
-  E(voters[0]).validate(
+  return E(voters[0]).validate(
     counterInstance,
     governedInstance,
     electorateInstance,
     governorInstance,
     installations,
-    timer,
   );
 };
 
@@ -149,9 +163,10 @@ const setupParameterChanges = async (
   changes = { [CONTRACT_ELECTORATE]: invitation },
 ) => {
   const paramChangeSpec = harden({
-    key: 'governedParams',
+    paramPath: { key: 'governedParams' },
     changes,
   });
+  /** @type {ContractGovernanceVoteResult} */
   const { details, instance, outcomeOfUpdate } = await E(
     governor,
   ).voteOnParamChanges(installations.binaryVoteCounter, 2n, paramChangeSpec);
@@ -199,7 +214,7 @@ const validateElectorateChange = async (
 ) => {
   const electorateValid = E(publicFacet).validateElectorate(electorateInstance);
   const details = await detailsP;
-  const timerValid = E(publicFacet).validateTimer(details);
+  const timerValid = E(publicFacet).validateTimer(details.closingRule);
 
   await assertContractElectorate(zoe, governorInstance, electorateInstance);
 
@@ -274,7 +289,6 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         firstElectorateInstance,
         governorInstance,
         installations,
-        timer,
       );
 
       await E(timer).tick();

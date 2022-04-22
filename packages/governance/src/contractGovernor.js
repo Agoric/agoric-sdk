@@ -12,7 +12,15 @@ import { setupApiGovernance } from './contractGovernance/governApi.js';
 
 const { details: X } = assert;
 
-/** @type {ValidateQuestionDetails} */
+/**
+ * Validate that the question details correspond to a parameter change question
+ * that the electorate hosts, and that the voteCounter and other details are
+ * consistent with it.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Instance} electorate
+ * @param {ParamChangeIssueDetails} details
+ */
 const validateQuestionDetails = async (zoe, electorate, details) => {
   const {
     counterInstance,
@@ -22,16 +30,25 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
 
   const governorInstance = await E.get(E(zoe).getTerms(governedInstance))
     .electionManager;
+  /** @type {Promise<GovernorPublic>} */
   const governorPublic = E(zoe).getPublicFacet(governorInstance);
 
   return Promise.all([
     E(governorPublic).validateVoteCounter(counterInstance),
     E(governorPublic).validateElectorate(electorate),
-    E(governorPublic).validateTimer(details),
+    E(governorPublic).validateTimer(details.closingRule),
   ]);
 };
 
-/** @type {ValidateQuestionFromCounter} */
+/**
+ * Validate that the questions counted by the voteCounter correspond to a
+ * parameter change question that the electorate hosts, and that the
+ * voteCounter and other details are consistent.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Instance} electorate
+ * @param {Instance} voteCounter
+ */
 const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
   const counterPublicP = E(zoe).getPublicFacet(voteCounter);
   const questionDetails = await E(counterPublicP).getDetails();
@@ -210,11 +227,9 @@ const start = async zcf => {
     return true;
   };
 
-  const validateTimer = details => {
-    assert(
-      details.closingRule.timer === timer,
-      X`closing rule must use my timer`,
-    );
+  /** @param {ClosingRule} closingRule */
+  const validateTimer = closingRule => {
+    assert(closingRule.timer === timer, X`closing rule must use my timer`);
     return true;
   };
 

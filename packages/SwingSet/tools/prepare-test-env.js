@@ -11,7 +11,7 @@ import '@endo/init/pre-bundle-source.js';
 import './install-ses-debug.js';
 import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
-const { vom, cm } = makeFakeVirtualStuff({ cacheSize: 3 });
+const { vom, cm, wpm } = makeFakeVirtualStuff({ cacheSize: 3 });
 
 const {
   defineKind,
@@ -28,12 +28,16 @@ const {
   makeScalarBigWeakSetStore,
 } = cm;
 
+const { watchPromise, providePromiseWatcher } = wpm;
+
 const VatData = harden({
   defineKind,
   defineKindMulti,
   defineDurableKind,
   defineDurableKindMulti,
   makeKindHandle,
+  providePromiseWatcher,
+  watchPromise,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
   makeScalarBigSetStore,

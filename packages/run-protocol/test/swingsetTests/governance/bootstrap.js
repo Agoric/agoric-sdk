@@ -5,7 +5,7 @@ import { Far } from '@endo/marshal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { INTEREST_RATE_KEY } from '../../../src/vaultFactory/params';
-import { ONE_DAY, createCommittee, installContracts, makeVats } from '../setup';
+import { createCommittee, installContracts, makeVats, ONE_DAY } from '../setup';
 
 const BASIS_POINTS = 10000n;
 
@@ -24,27 +24,40 @@ const votersVote = async (detailsP, votersP, selections) => {
   );
 };
 
+/**
+ *
+ * @param {ERef<import('./vat-voter.js').EVatVoter[]>} votersP
+ * @param {ERef<QuestionSpec<ParamChangeIssue> & QuestionDetailsExtraProperties>} detailsP
+ * @param {Instance} governedInstanceP
+ * @param {Instance} electorateInstance
+ * @param {Instance} governorInstanceP
+ * @param {Record<string, Installation>} installations
+ * @param {string} parameterName
+ * @returns {Promise<void>}
+ */
 const oneVoterValidate = async (
   votersP,
-  details,
+  detailsP,
   governedInstanceP,
   electorateInstance,
   governorInstanceP,
   installations,
+  parameterName,
 ) => {
+  /** @type {[import('./vat-voter').EVatVoter[], Instance, Instance]} */
   const [voters, governedInstance, governorInstance] = await Promise.all([
     votersP,
     governedInstanceP,
     governorInstanceP,
   ]);
-  const { counterInstance, issue } = await details;
+  const { counterInstance, issue } = await detailsP;
 
-  E(voters[0]).validate(
+  return E(voters[0]).validate(
     counterInstance,
     governedInstance,
     electorateInstance,
     governorInstance,
-    issue,
+    harden({ paramPath: issue.spec.paramPath, parameterName }),
     installations,
   );
 };
@@ -65,6 +78,7 @@ const setUpVote = async (deadline, votersP, votes, contracts, paramChanges) => {
     electorateInstance,
     governor.instance,
     installations,
+    Object.keys(paramChanges.changes)[0],
   );
   return E.get(feeDetails).counterInstance;
 };
@@ -118,12 +132,12 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   };
   const votes = [0, 1, 1, 0, 0];
 
-  const paramChanges = {
-    key: { collateralBrand },
+  const paramChanges = harden({
+    paramPath: { key: { collateralBrand } },
     changes: {
       [INTEREST_RATE_KEY]: makeRatio(4321n, runBrand, BASIS_POINTS),
     },
-  };
+  });
 
   const counter = await setUpVote(
     BigInt(daysForVoting) * ONE_DAY,

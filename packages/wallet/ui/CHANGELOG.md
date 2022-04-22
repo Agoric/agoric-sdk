@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.1.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-ui@0.0.6...@agoric/wallet-ui@0.1.0) (2022-04-18)
+
+
+### Features
+
+* **wallet-ui:** cheap rendering of offer arguments ([192500d](https://github.com/Agoric/agoric-sdk/commit/192500d019bc482437ed5224a12a76b2488cb23b))
+
+
+### Bug Fixes
+
+* **wallet-ui:** don't add or strip `board:` prefix ([55d0a0a](https://github.com/Agoric/agoric-sdk/commit/55d0a0a79057a735076630a7c972ea1dbd327f71))
+
+
+
 ### [0.0.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-ui@0.0.5...@agoric/wallet-ui@0.0.6) (2022-02-24)
 
 **Note:** Version bump only for package @agoric/wallet-ui

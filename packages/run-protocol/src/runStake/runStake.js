@@ -1,9 +1,11 @@
 // @ts-check
+// @jessie-check
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { E, Far } from '@endo/far';
 import { makeAttestationFacets } from './attestation.js';
-import { makeRunStakeKit, KW } from './runStakeKit.js';
+import { ManagerKW as KW } from './constants.js';
+import { makeRunStakeKit } from './runStakeKit.js';
 import { makeRunStakeManager } from './runStakeManager.js';
 
 const { details: X } = assert;
@@ -68,7 +70,7 @@ const { values } = Object;
  * The creator facet can make an `AttestationMaker` for each account, which
  * authorizes placing a lien some of the staked assets in that account.
  * @typedef {{
- *   provideAttestationMaker: (addr: string) => AttestationMaker,
+ *   provideAttestationMaker: (addr: string) => AttestationTool,
  *   getLiened: (address: string, brand: Brand<'nat'>) => Amount<'nat'>,
  * }} RunStakeCreator
  *
@@ -152,24 +154,45 @@ export const start = async (
     debtMint.burnLosses(harden({ [KW.Debt]: toBurn }), seat);
   };
 
+  const mintPowers = Far('mintPowers', {
+    burnDebt,
+    getGovernedParams: () => params, // XXX until governance support is durable
+    mintAndReallocate,
+  });
+
   const startTimeStamp = await E(timerService).getCurrentTimestamp();
-  const manager = makeRunStakeManager(
+  const { manager } = makeRunStakeManager(
     zcf,
     debtMint,
-    { Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand },
-    params,
-    mintAndReallocate,
-    burnDebt,
+    harden({ Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand }),
+    mintPowers,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );
+
+  /**
+   * @param {ZCFSeat} seat
+   */
+  const offerHandler = seat => {
+    const { helper, pot } = makeRunStakeKit(zcf, seat, manager);
+
+    return harden({
+      publicNotifiers: {
+        asset: manager.getAssetNotifier(),
+        vault: pot.getNotifier(),
+      },
+      invitationMakers: Far('invitation makers', {
+        AdjustBalances: () =>
+          zcf.makeInvitation(helper.adjustBalancesHook, 'AdjustBalances'),
+        CloseVault: () => zcf.makeInvitation(helper.closeHook, 'CloseVault'),
+      }),
+      vault: pot,
+    });
+  };
 
   const publicFacet = augmentPublicFacet(
     Far('runStake public', {
       makeLoanInvitation: () =>
-        zcf.makeInvitation(
-          seat => makeRunStakeKit(zcf, seat, manager),
-          'make RUNstake',
-        ),
+        zcf.makeInvitation(offerHandler, 'make RUNstake'),
       makeReturnAttInvitation: att.publicFacet.makeReturnAttInvitation,
     }),
   );

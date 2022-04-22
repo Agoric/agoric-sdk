@@ -24,7 +24,7 @@ import {
 } from '../../src/econ-behaviors.js';
 import * as Collect from '../../src/collect.js';
 import { setUpZoeForTest } from '../supports.js';
-import { KW } from '../../src/runStake/params.js';
+import { ManagerKW as KW } from '../../src/runStake/constants.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
 // 8	Partial repayment from reward stream - TODO
@@ -452,7 +452,7 @@ const makeC1 = async (
   return harden({
     setMintingRatio: async (newValue, deadline) => {
       const paramsSpec = harden({
-        key: 'governedParams',
+        paramPath: { key: 'governedParams' },
         changes: { MintingRatio: newValue },
       });
       /** @type { ContractGovernanceVoteResult } */
@@ -751,7 +751,7 @@ test('borrowing past the debt limit', async (/** @type {RunStakeTestContext} */ 
   await t.throwsAsync(driver.borrowRUN(threshold), {
     message:
       // XXX brittle string to fail if numeric parameters change
-      'Minting {"brand":"[Alleged: RUN brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would exceed total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000000000n]"}',
+      'Minting {"brand":"[Alleged: RUN brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: RUN brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: RUN brand]","value":"[1000000000000n]"}',
   });
 });
 

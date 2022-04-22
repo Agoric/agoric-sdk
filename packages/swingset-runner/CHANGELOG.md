@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.3...@agoric/swingset-runner@0.19.0) (2022-04-18)
+
+
+### Features
+
+* yet another overhaul of the `defineKind` API ([3e02d42](https://github.com/Agoric/agoric-sdk/commit/3e02d42312b2963c165623c8cd559b431e5ecdce)), closes [#4905](https://github.com/Agoric/agoric-sdk/issues/4905)
+* **swingset-runner:** add option to dump out the activityhash after each crank ([5a248ab](https://github.com/Agoric/agoric-sdk/commit/5a248ab152dddb09989e1dd9f54f3bb16177616b))
+* **swingset-runner:** folloup to also include step mode in activityhash output ([ce7387f](https://github.com/Agoric/agoric-sdk/commit/ce7387f8de8d3a5d6d4c0854c050dfc40c1648e3))
+
+
+### Bug Fixes
+
+* **swingset-runner:** update swingset deep-import paths ([1a251f3](https://github.com/Agoric/agoric-sdk/commit/1a251f3fe3592e88bc38eac1e153133bf8d5e17d))
+* **swingset-runner:** update tests copied from zoe ([5a20a2a](https://github.com/Agoric/agoric-sdk/commit/5a20a2a1656af2f90adfa010f6f8c508fddd3dab))
+
+
+
 ### [0.18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.18.2...@agoric/swingset-runner@0.18.3) (2022-02-24)
 
 
