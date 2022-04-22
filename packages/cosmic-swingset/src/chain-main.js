@@ -145,6 +145,7 @@ const makeChainQueue = (call, prefix = '') => {
             if (done) return { done };
             // We're done consuming, so save our state.
             storage.set('head', head);
+            storage.commit();
             done = true;
             return { done };
           },
