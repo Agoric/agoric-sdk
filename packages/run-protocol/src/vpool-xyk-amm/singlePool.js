@@ -1,6 +1,5 @@
 // @ts-check
 
-import { Far } from '@endo/marshal';
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
   pricesForStatedInput,
@@ -15,7 +14,7 @@ const getPools = pool => ({
   Secondary: pool.getSecondaryAmount(),
 });
 
-export const singlePool = Far('SinglePool', {
+export const singlePool = {
   allocateGainsAndLosses: (context, seat, prices) => {
     const { pool } = context.facets;
     const { poolSeat, zcf, protocolSeat } = context.state;
@@ -75,4 +74,4 @@ export const singlePool = Far('SinglePool', {
       makeFeeRatio(paramAccessor.getPoolFee(), amountIn.brand),
     );
   },
-});
+};
