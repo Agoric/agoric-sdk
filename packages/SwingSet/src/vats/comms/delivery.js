@@ -4,7 +4,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
-import { insistCapData } from '../../lib/capdata.js';
+import { extractPresenceIfPresent, insistCapData } from '../../lib/capdata.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
 
@@ -246,27 +246,6 @@ export function makeDeliveryKit(
     handleResolutions(localResolutions);
   }
 
-  function extractPresenceIfPresent(data) {
-    insistCapData(data);
-
-    const body = JSON.parse(data.body);
-    if (
-      body &&
-      typeof body === 'object' &&
-      body['@qclass'] === 'slot' &&
-      body.index === 0
-    ) {
-      if (data.slots.length === 1) {
-        const slot = data.slots[0];
-        const { type } = parseLocalSlot(slot);
-        if (type === 'object') {
-          return slot;
-        }
-      }
-    }
-    return null;
-  }
-
   // helper function for handleSend(): for each message, either figure out
   // the destination (remote machine or kernel), or reject the result because
   // the destination is a brick wall (undeliverable target)
@@ -294,7 +273,7 @@ export function makeDeliveryKit(
       if (status === 'rejected') {
         return { reject: data };
       }
-      const targetPresence = extractPresenceIfPresent(data);
+      const targetPresence = extractPresenceIfPresent(data, parseLocalSlot);
       if (targetPresence) {
         return resolveTarget(targetPresence, method);
       } else {

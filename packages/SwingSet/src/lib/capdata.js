@@ -23,3 +23,30 @@ export function insistCapData(capdata) {
   );
   // TODO check that the .slots array elements are actually strings
 }
+
+/**
+ * Returns the slot of a presence if the provided capdata is composed
+ * of a single presence, `null` otherwise
+ *
+ * @param {import('@endo/marshal').CapData<unknown>} data
+ * @param {(slot: unknown) => {type: 'object' | 'device' | 'promise', id: number}} parseSlot
+ * @returns {string | undefined}
+ */
+export function extractPresenceIfPresent(data, parseSlot) {
+  const body = JSON.parse(data.body);
+  if (
+    body &&
+    typeof body === 'object' &&
+    body['@qclass'] === 'slot' &&
+    body.index === 0
+  ) {
+    if (data.slots.length === 1) {
+      const slot = data.slots[0];
+      const { type } = parseSlot(slot);
+      if (type === 'object') {
+        return slot;
+      }
+    }
+  }
+  return null;
+}
