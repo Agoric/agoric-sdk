@@ -21,7 +21,7 @@ const makeAssertInstallation = name => {
     // TODO(3344): add a better assertion once Zoe validates installations
     assert(
       typeof installation === 'object' &&
-        Object.getOwnPropertyNames(installation).length === 1,
+        Object.getOwnPropertyNames(installation).length === 0,
       X`value for ${name} must be an Installation, was ${installation}`,
     );
   };

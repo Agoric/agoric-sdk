@@ -55,7 +55,7 @@ const start = async zcf => {
     AMMMaxSlippage,
   } = /** @type {LiquidationContractTerms} */ zcf.getTerms();
 
-  trace('terms', zcf.getTerms());
+  // trace('terms', zcf.getTerms());
   const nextBlock = async () => E(timerService).delay(1n);
 
   const SCALE = 1_000_000n;
