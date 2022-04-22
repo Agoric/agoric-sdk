@@ -3,7 +3,7 @@
 import { E } from '@endo/eventual-send';
 import { AssetKind } from '@agoric/ertp';
 
-import { makePoolMaker } from './pool.js';
+import { definePoolKind } from './pool.js';
 
 const { details: X } = assert;
 
@@ -27,7 +27,7 @@ export const makeAddPool = (
   params,
   protocolSeat,
 ) => {
-  const makePool = makePoolMaker(
+  const makePool = definePoolKind(
     zcf,
     centralBrand,
     timer,

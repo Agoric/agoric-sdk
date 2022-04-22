@@ -278,7 +278,7 @@ const finish = context => {
  * @param {import('./multipoolMarketMaker.js').AMMParamGetters} paramAccessor retrieve governed params
  * @param {ZCFSeat} protocolSeat seat that holds collected fees
  */
-export const makePoolMaker = (
+export const definePoolKind = (
   zcf,
   centralBrand,
   timer,
