@@ -46,7 +46,12 @@ function makeEndowments() {
   };
 }
 
-async function buildRawVat(name, kernel, onDispatchCallback = undefined) {
+async function buildRawVat(
+  name,
+  kernel,
+  onDispatchCallback = undefined,
+  options = undefined,
+) {
   const { log, dispatch } = buildDispatch(onDispatchCallback);
   let syscall;
   function setup(s) {
@@ -57,7 +62,7 @@ async function buildRawVat(name, kernel, onDispatchCallback = undefined) {
   function getSyscall() {
     return syscall;
   }
-  await kernel.createTestVat(name, setup);
+  await kernel.createTestVat(name, setup, undefined, options);
   return { log, getSyscall };
 }
 
