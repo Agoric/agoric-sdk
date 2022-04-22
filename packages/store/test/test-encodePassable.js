@@ -10,7 +10,6 @@ import {
   makeDecodePassable,
 } from '../src/patterns/encodePassable.js';
 import { compareRank, makeComparatorKit } from '../src/patterns/rankOrder.js';
-import { assertionPassed } from './test-store.js';
 import { sample } from './test-rankOrder.js';
 
 const { details: X } = assert;
@@ -133,7 +132,7 @@ test('BigInt values round-trip', async t => {
   await fc.assert(
     fc.property(fc.bigInt(), n => {
       const rt = decodeKey(encodeKey(n));
-      return assertionPassed(t.is(rt, n), () => rt === n);
+      return t.is(rt, n);
     }),
   );
 });
@@ -143,10 +142,7 @@ test('BigInt encoding comparison corresponds with numeric comparison', async t =
     fc.property(fc.bigInt(), fc.bigInt(), (a, b) => {
       const ea = encodeKey(a);
       const eb = encodeKey(b);
-      return (
-        assertionPassed(t.is(a < b, ea < eb), () => a < b === ea < eb) &&
-        assertionPassed(t.is(a > b, ea > eb), () => a > b === ea > eb)
-      );
+      return t.is(a < b, ea < eb) && t.is(a > b, ea > eb);
     }),
   );
 });
