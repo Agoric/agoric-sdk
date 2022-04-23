@@ -76,7 +76,6 @@ const makeParamManagerBuilder = zoe => {
     const setParamValue = newValue => {
       assertion(newValue);
       current = newValue;
-      publication.updateState({ name, type, value: current });
       return harden({ [name]: newValue });
     };
     setParamValue(value);
@@ -220,11 +219,6 @@ const makeParamManagerBuilder = zoe => {
     const setInvitation = async ([newInvitation, amount]) => {
       currentAmount = amount;
       currentInvitation = newInvitation;
-      publication.updateState({
-        name,
-        type: ParamTypes.INVITATION,
-        value: currentAmount,
-      });
       return harden({ [name]: currentAmount });
     };
     const inviteAndAmount = await prepareToSetInvitation(invitation);
@@ -312,6 +306,7 @@ const makeParamManagerBuilder = zoe => {
       return [name, setFn(results[i])];
     });
     const newValues = Object.fromEntries(tuples);
+    publication.updateState({ paramNames });
 
     return deeplyFulfilled(harden(newValues));
   };
