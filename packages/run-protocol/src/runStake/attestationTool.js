@@ -48,8 +48,12 @@ const behavior = {
   wrapLienedAmount: ({ state }, lienedAmount) =>
     state.lienMint.wrapLienedAmount(state.address, lienedAmount),
 
-  /** @param {MethodContext} context */
-  unwrapLienedAmount: ({ state }) => state.lienMint.unwrapLienedAmount,
+  /**
+   * @param {MethodContext} context
+   * @param {Amount<'copyBag'>} attAmount
+   */
+  unwrapLienedAmount: ({ state }, attAmount) =>
+    state.lienMint.unwrapLienedAmount(attAmount),
 };
 
 /**
