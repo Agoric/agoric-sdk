@@ -1,5 +1,6 @@
 export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
+export * from './psm/startPSM.js';
 
 const ECON_COMMITTEE_MANIFEST = harden({
   startEconomicCommittee: {
@@ -193,7 +194,7 @@ export const CHAIN_POST_BOOT_MANIFEST = harden({
   ...RUN_STAKE_MANIFEST,
 });
 
-const PSM_MANIFEST = harden({
+export const PSM_MANIFEST = harden({
   makeAnchorAsset: {
     consume: { bankManager: 'bank', zoe: 'zoe' },
     installation: { consume: { mintHolder: 'zoe' } },
