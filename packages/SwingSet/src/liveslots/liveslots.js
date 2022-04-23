@@ -972,6 +972,15 @@ function build(
     let notifySuccess = () => undefined;
     let notifyFailure = () => undefined;
     if (result) {
+      // If this vpid was imported earlier (and we just now became the
+      // decider), we'll have a local Promise object for it, and
+      // importedPromisesByPromiseID will have the resolve/reject
+      // functions to handle a dispatch.notify. If it gets imported
+      // later, we'll wind up in the same state.  TODO: it would be
+      // nice to forward that promise to `res`, so locally-sent
+      // messages are queued locally instead of being sent into the
+      // kernel (and back again after the kernel hears our
+      // syscall.resolve).
       insistVatType('promise', result);
       deciderVPIDs.add(result);
       // eslint-disable-next-line no-use-before-define
