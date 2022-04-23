@@ -14,12 +14,18 @@ import {
   makeBringOutYourDead,
 } from './util.js';
 
-export function buildSyscall() {
+export function buildSyscall(skipLogging) {
   const log = [];
   const fakestore = new Map();
   let sortedKeys;
   let priorKeyReturned;
   let priorKeyIndex;
+
+  function appendLog(s) {
+    if (!skipLogging) {
+      log.push(s);
+    }
+  }
 
   function ensureSorted() {
     if (!sortedKeys) {
@@ -39,40 +45,40 @@ export function buildSyscall() {
 
   const syscall = {
     send(targetSlot, method, args, resultSlot) {
-      log.push({ type: 'send', targetSlot, method, args, resultSlot });
+      appendLog({ type: 'send', targetSlot, method, args, resultSlot });
     },
     subscribe(target) {
-      log.push({ type: 'subscribe', target });
+      appendLog({ type: 'subscribe', target });
     },
     resolve(resolutions) {
-      log.push({ type: 'resolve', resolutions });
+      appendLog({ type: 'resolve', resolutions });
     },
     dropImports(slots) {
-      log.push({ type: 'dropImports', slots });
+      appendLog({ type: 'dropImports', slots });
     },
     retireImports(slots) {
-      log.push({ type: 'retireImports', slots });
+      appendLog({ type: 'retireImports', slots });
     },
     retireExports(slots) {
-      log.push({ type: 'retireExports', slots });
+      appendLog({ type: 'retireExports', slots });
     },
     exit(isFailure, info) {
-      log.push({ type: 'exit', isFailure, info });
+      appendLog({ type: 'exit', isFailure, info });
     },
     vatstoreGet(key) {
       const result = fakestore.get(key);
-      log.push({ type: 'vatstoreGet', key, result });
+      appendLog({ type: 'vatstoreGet', key, result });
       return result;
     },
     vatstoreSet(key, value) {
-      log.push({ type: 'vatstoreSet', key, value });
+      appendLog({ type: 'vatstoreSet', key, value });
       if (!fakestore.has(key)) {
         clearSorted();
       }
       fakestore.set(key, value);
     },
     vatstoreDelete(key) {
-      log.push({ type: 'vatstoreDelete', key });
+      appendLog({ type: 'vatstoreDelete', key });
       if (fakestore.has(key)) {
         clearSorted();
       }
@@ -103,7 +109,7 @@ export function buildSyscall() {
           break;
         }
       }
-      log.push({ type: 'vatstoreGetAfter', priorKey, start, end, result });
+      appendLog({ type: 'vatstoreGetAfter', priorKey, start, end, result });
       return result;
     },
   };
@@ -154,8 +160,14 @@ function makeRPMaker() {
   };
 }
 
-export async function setupTestLiveslots(t, buildRootObject, vatName, forceGC) {
-  const { log, syscall } = buildSyscall();
+export async function setupTestLiveslots(
+  t,
+  buildRootObject,
+  vatName,
+  forceGC,
+  skipLogging,
+) {
+  const { log, syscall } = buildSyscall(skipLogging);
   const nextRP = makeRPMaker();
   const th = [];
   const dispatch = await makeDispatch(
