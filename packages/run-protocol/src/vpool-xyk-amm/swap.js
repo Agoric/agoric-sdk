@@ -1,8 +1,8 @@
 // @ts-check
-
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';
+// @ts-ignore
 import { AmountMath } from '@agoric/ertp';
 
 /**
@@ -42,6 +42,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       prices = pool.getPriceForInput(amountIn, amountOut);
     }
     assert(amountIn.brand === prices.swapperGives.brand);
+    // @ts-ignore
     return pool.allocateGainsAndLosses(seat, prices);
   };
 

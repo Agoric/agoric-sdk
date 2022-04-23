@@ -5,6 +5,7 @@ import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import {
   ceilMultiplyBy,
+  makeRatio,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '../makeTracer.js';
@@ -36,7 +37,7 @@ const partitionProceeds = (proceeds, debt, penaltyPortion) => {
  *
  * @param {ZCF} zcf
  * @param {InnerVault} innerVault
- * @param {(losses: AmountKeywordRecord,
+ * @param {(losses: Amount,
  *             zcfSeat: ZCFSeat
  *            ) => void} burnLosses
  * @param {LiquidationStrategy} strategy
@@ -98,7 +99,7 @@ const liquidate = async (
   );
   zcf.reallocate(penaltyPoolSeat, vaultZcfSeat);
 
-  burnLosses(harden({ RUN: runToBurn }), vaultZcfSeat);
+  burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
   innerVault.liquidated(AmountMath.subtract(debt, debtPaid));
@@ -135,8 +136,21 @@ const makeDefaultLiquidationStrategy = amm => {
   };
 };
 
+const liquidationDetailTerms = debtBrand =>
+  harden({
+    MaxImpactBP: 50n,
+    OracleTolerance: makeRatio(30n, debtBrand),
+    AMMMaxSlippage: makeRatio(30n, debtBrand),
+  });
+
 harden(makeDefaultLiquidationStrategy);
 harden(liquidate);
 harden(partitionProceeds);
+harden(liquidationDetailTerms);
 
-export { makeDefaultLiquidationStrategy, liquidate, partitionProceeds };
+export {
+  makeDefaultLiquidationStrategy,
+  liquidate,
+  partitionProceeds,
+  liquidationDetailTerms,
+};

@@ -20,8 +20,7 @@ const makeAssertInstallation = name => {
   return installation => {
     // TODO(3344): add a better assertion once Zoe validates installations
     assert(
-      typeof installation === 'object' &&
-        Object.getOwnPropertyNames(installation).length === 1,
+      typeof installation === 'object',
       X`value for ${name} must be an Installation, was ${installation}`,
     );
   };
@@ -32,8 +31,7 @@ const makeAssertInstance = name => {
   return instance => {
     // TODO(3344): add a better assertion once Zoe validates instances
     assert(
-      typeof instance === 'object' &&
-        Object.getOwnPropertyNames(instance).length === 0,
+      typeof instance === 'object',
       X`value for ${name} must be an Instance, was ${instance}`,
     );
   };

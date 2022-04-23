@@ -17,6 +17,7 @@ import '../exported.js';
 
 import * as Collect from './collect.js';
 import { makeRunStakeTerms } from './runStake/params.js';
+import { liquidationDetailTerms } from './vaultFactory/liquidation.js';
 import { makeStakeReporter } from './my-lien.js';
 
 const { details: X } = assert;
@@ -297,6 +298,7 @@ export const startVaultFactory = async (
     invitationAmount,
     vaultManagerParams,
     ammPublicFacet,
+    liquidationDetailTerms(centralBrand),
   );
   const governorTerms = harden({
     timer,

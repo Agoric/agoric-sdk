@@ -19,15 +19,31 @@ export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
 export const LIQUIDATION_PENALTY_KEY = 'LiquidationPenalty';
 export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
+export const LIQUIDATION_INSTALL_KEY = 'LiquidationInstall';
+export const LIQUIDATION_TERMS_KEY = 'LiquidationTerms';
 
 /**
  * @param {Amount} electorateInvitationAmount
+ * @param {Installation} liquidationInstall
+ * @param {Object} liquidationTerms
  */
-const makeElectorateParams = electorateInvitationAmount => {
+const makeVaultDirectorParams = (
+  electorateInvitationAmount,
+  liquidationInstall,
+  liquidationTerms,
+) => {
   return harden({
     [CONTRACT_ELECTORATE]: {
       type: ParamTypes.INVITATION,
       value: electorateInvitationAmount,
+    },
+    [LIQUIDATION_INSTALL_KEY]: {
+      type: ParamTypes.INSTALLATION,
+      value: liquidationInstall,
+    },
+    [LIQUIDATION_TERMS_KEY]: {
+      type: ParamTypes.UNKNOWN,
+      value: liquidationTerms,
     },
   });
 };
@@ -59,11 +75,20 @@ export const vaultParamPattern = M.split(
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {Invitation} electorateInvitation
+ * @param {Installation} liquidationInstall
+ * @param {Object} liquidationTerms
  */
-const makeElectorateParamManager = async (zoe, electorateInvitation) => {
+const makeVaultDirectorParamManager = async (
+  zoe,
+  electorateInvitation,
+  liquidationInstall,
+  liquidationTerms,
+) => {
   return makeParamManager(
     {
-      [CONTRACT_ELECTORATE]: ['invitation', electorateInvitation],
+      [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, electorateInvitation],
+      [LIQUIDATION_INSTALL_KEY]: [ParamTypes.INSTALLATION, liquidationInstall],
+      [LIQUIDATION_TERMS_KEY]: [ParamTypes.UNKNOWN, liquidationTerms],
     },
     zoe,
   );
@@ -77,6 +102,7 @@ const makeElectorateParamManager = async (zoe, electorateInvitation) => {
  * @param {Amount} invitationAmount
  * @param {VaultManagerParamValues} vaultManagerParams
  * @param {XYKAMMPublicFacet} ammPublicFacet
+ * @param {Object} liquidationTerms
  * @param {bigint=} bootstrapPaymentValue
  */
 const makeGovernedTerms = (
@@ -87,6 +113,7 @@ const makeGovernedTerms = (
   invitationAmount,
   vaultManagerParams,
   ammPublicFacet,
+  liquidationTerms,
   bootstrapPaymentValue = 0n,
 ) => {
   const timingParamMgr = makeParamManagerSync({
@@ -102,14 +129,21 @@ const makeGovernedTerms = (
     loanParams: vmParamMgr.getParams(),
     loanTimingParams: timingParamMgr.getParams(),
     timerService,
-    liquidationInstall,
-    governedParams: makeElectorateParams(invitationAmount),
+    governedParams: makeVaultDirectorParams(
+      invitationAmount,
+      liquidationInstall,
+      liquidationTerms,
+    ),
     bootstrapPaymentValue,
   });
 };
 
 harden(makeVaultParamManager);
-harden(makeElectorateParamManager);
+harden(makeVaultDirectorParamManager);
 harden(makeGovernedTerms);
 
-export { makeElectorateParamManager, makeVaultParamManager, makeGovernedTerms };
+export {
+  makeVaultDirectorParamManager,
+  makeVaultParamManager,
+  makeGovernedTerms,
+};

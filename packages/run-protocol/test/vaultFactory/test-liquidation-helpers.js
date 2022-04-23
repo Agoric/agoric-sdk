@@ -10,29 +10,11 @@ export const mockBrand = Far('brand');
 
 const amount = n => AmountMath.make(mockBrand, BigInt(n));
 
-for (const [
-  proceeds,
-  debt,
-  penaltyPortion,
-  debtPaid,
-  penaltyProceeds,
-  runToBurn,
-] of [
-  // no proceeds
-  [0, 0, 0, 0, 0, 0],
-  [0, 100, 10, 0, 0, 0],
-  //   proceeds gte debt
-  [100, 100, 10, 100, 10, 90],
-  [200, 100, 10, 100, 10, 90],
-  //   proceeds less than debt
-  [100, 200, 10, 100, 10, 90],
-  [100, 200, 200, 100, 100, 0],
-]) {
-  test(`partitionProceeds: (${proceeds} for ${debt} with ${penaltyPortion} penalty) => ${{
-    debtPaid,
-    penaltyProceeds,
-    runToBurn,
-  }}`, t => {
+const partitionTest = (
+  [proceeds, debt, penaltyPortion],
+  [debtPaid, penaltyProceeds, runToBurn],
+) => {
+  test(`partitionProceeds: (${proceeds} for ${debt} with ${penaltyPortion} penalty)`, t => {
     const result = partitionProceeds(
       amount(proceeds),
       amount(debt),
@@ -44,4 +26,14 @@ for (const [
       runToBurn: amount(runToBurn),
     });
   });
-}
+};
+
+// no proceeds
+partitionTest([0, 0, 0], [0, 0, 0]);
+partitionTest([0, 100, 10], [0, 0, 0]);
+//   proceeds gte debt
+partitionTest([100, 100, 10], [100, 10, 90]);
+partitionTest([200, 100, 10], [100, 10, 90]);
+//   proceeds less than debt
+partitionTest([100, 200, 10], [100, 10, 90]);
+partitionTest([100, 200, 200], [100, 100, 0]);

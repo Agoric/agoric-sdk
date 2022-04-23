@@ -7,6 +7,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer';
 import { makeGovernedTerms } from '../../src/vaultFactory/params';
 import { ammMock } from './mockAmm';
+import { liquidationDetailTerms } from '../../src/vaultFactory/liquidation';
 
 const ONE_DAY = 24n * 60n * 60n;
 const SECONDS_PER_HOUR = 60n * 60n;
@@ -207,6 +208,7 @@ const buildOwner = async (
     rates,
     // @ts-ignore It's not a real AMM public facet
     ammMock,
+    liquidationDetailTerms(runBrand),
   );
 
   const privateVaultFactoryArgs = { feeMintAccess, initialPoserInvitation };

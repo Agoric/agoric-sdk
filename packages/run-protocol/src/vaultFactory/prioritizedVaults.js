@@ -5,6 +5,7 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
+import { keyEQ, keyLT } from '@agoric/store';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
 
@@ -62,24 +63,13 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   // current high-water mark fires, we reschedule at the new (presumably
   // lower) rate.
   // Without this we'd be calling reschedulePriceCheck() unnecessarily
-  /** @type {Ratio=} */
-  let oracleQueryThreshold;
+  /** @type {string=} */
+  let firstKey;
 
   // Check if this ratio of debt to collateral would be the highest known. If
   // so, reset our highest and invoke the callback. This can be called on new
   // vaults and when we get a state update for a vault changing balances.
   /** @param {Ratio} collateralToDebt */
-
-  // Caches and reschedules
-  const rescheduleIfHighest = collateralToDebt => {
-    if (
-      !oracleQueryThreshold ||
-      !ratioGTE(oracleQueryThreshold, collateralToDebt)
-    ) {
-      oracleQueryThreshold = collateralToDebt;
-      reschedulePriceCheck();
-    }
-  };
 
   /**
    *
@@ -106,14 +96,13 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const removeVault = key => {
     const vault = vaults.removeByKey(key);
-    const debtToCollateral = currentDebtToCollateral(vault);
-    if (
-      !oracleQueryThreshold ||
-      ratioGTE(debtToCollateral, oracleQueryThreshold)
-    ) {
-      // don't call reschedulePriceCheck, but do reset the highest.
-      // This could be expensive if we delete individual entries in order. Will know once we have perf data.
-      oracleQueryThreshold = firstDebtRatio();
+    // don't call reschedulePriceCheck, but do reset the highest.
+    // This could be expensive if we delete individual entries in
+    // order. Will know once we have perf data.
+    console.log('removeVault', firstKey, key);
+    if (keyEQ(key, firstKey)) {
+      const [secondKey] = vaults.keys();
+      firstKey = secondKey;
     }
     return vault;
   };
@@ -136,9 +125,11 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    */
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);
-
-    const debtToCollateral = currentDebtToCollateral(vault);
-    rescheduleIfHighest(debtToCollateral);
+    console.log('addVault', firstKey, key);
+    if (!firstKey || keyLT(key, firstKey)) {
+      firstKey = key;
+      reschedulePriceCheck();
+    }
     return key;
   };
 
@@ -183,7 +174,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
     addVault,
     entries: vaults.entries,
     entriesPrioritizedGTE,
-    highestRatio: () => oracleQueryThreshold,
+    highestRatio: firstDebtRatio,
     refreshVaultPriority,
     removeVault,
     removeVaultByAttributes,
