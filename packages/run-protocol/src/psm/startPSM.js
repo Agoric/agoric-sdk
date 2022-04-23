@@ -1,15 +1,17 @@
 // @ts-check
 import { E } from '@endo/far';
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
+const BASIS_POINTS = 10000n;
+
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
- * @param {Object} config
- * @param {bigint} config.WantStableFeeBP
- * @param {bigint} config.GiveStableFeeBP
- * @param {bigint} config.MINT_LIMIT
+ * @param {Object} [config]
+ * @param {bigint} [config.WantStableFeeBP]
+ * @param {bigint} [config.GiveStableFeeBP]
+ * @param {bigint} [config.MINT_LIMIT]
  * @typedef {import('../econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers
  */
 export const startPSM = async (
@@ -39,7 +41,7 @@ export const startPSM = async (
     WantStableFeeBP = 1n,
     GiveStableFeeBP = 3n,
     MINT_LIMIT = 20_000_000n * 1_000_000n,
-  },
+  } = {},
 ) => {
   const [
     feeMintAccess,
@@ -73,8 +75,18 @@ export const startPSM = async (
     anchorBrand,
     anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
     governedParams: {
-      WantStableFeeBP: { type: ParamTypes.NAT, value: WantStableFeeBP },
-      GiveStableFeeBP: { type: ParamTypes.NAT, value: GiveStableFeeBP },
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: electorateInvitationAmount,
+      },
+      WantStableFee: {
+        type: ParamTypes.RATIO,
+        value: makeRatio(WantStableFeeBP, runBrand, BASIS_POINTS),
+      },
+      GiveStableFee: {
+        type: ParamTypes.RATIO,
+        value: makeRatio(GiveStableFeeBP, runBrand, BASIS_POINTS),
+      },
       MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
     },
     [CONTRACT_ELECTORATE]: {
@@ -117,14 +129,17 @@ harden(startPSM);
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
  * @param {{ options: {
  *   denom: string,
- *   name?: string,
- *   proposedName: string,
+ *   keyword?: string,
+ *   proposedName?: string,
  *   decimalPlaces?: number,
  * }}} config
  */
 export const makeAnchorAsset = async (
   {
-    consume: { bankManager },
+    consume: { bankManager, zoe },
+    installation: {
+      consume: { mintHolder },
+    },
     issuer: {
       produce: { AUSD: issuerP },
     },
@@ -136,19 +151,28 @@ export const makeAnchorAsset = async (
     options: {
       denom,
       proposedName = 'USDC Anchor',
-      name = 'AUSD',
+      keyword = 'AUSD',
       decimalPlaces = 6,
     },
   },
 ) => {
-  // ISSUE: use mintHolder?
-  const kit = makeIssuerKit(name, AssetKind.NAT, { decimalPlaces });
+  /** @type {import('@agoric/vats/src/mintHolder.js').AssetTerms} */
+  const terms = {
+    keyword,
+    assetKind: AssetKind.NAT,
+    displayInfo: { decimalPlaces, assetKind: AssetKind.NAT },
+  };
+  const { creatorFacet: mint, publicFacet: issuer } = E.get(
+    E(zoe).startInstance(mintHolder, {}, terms),
+  );
 
+  const brand = await E(issuer).getBrand();
+  const kit = { mint, issuer, brand };
   issuerP.resolve(kit.issuer);
   brandP.resolve(kit.brand);
   return E(bankManager).addAsset(
     denom,
-    name,
+    keyword,
     proposedName,
     kit, // with mint
   );
