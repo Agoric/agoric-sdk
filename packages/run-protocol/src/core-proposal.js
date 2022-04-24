@@ -200,7 +200,8 @@ const MAIN_MANIFEST = harden({
 
 const PSM_MANIFEST = harden({
   makeAnchorAsset: {
-    consume: { bankManager: 'bank' },
+    consume: { bankManager: 'bank', zoe: 'zoe' },
+    installation: { consume: { mintHolder: 'zoe' } },
     issuer: {
       produce: { AUSD: true },
     },
