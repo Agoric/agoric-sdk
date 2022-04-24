@@ -233,7 +233,7 @@ const MAIN_MANIFEST = harden({
   ...SHARED_MAIN_MANIFEST,
   ...RUN_STAKE_MANIFEST,
   ...REWARD_MANIFEST,
-  ...PSM_MANIFEST,
+  // XXX PSM work-around ...PSM_MANIFEST,
 });
 
 export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
