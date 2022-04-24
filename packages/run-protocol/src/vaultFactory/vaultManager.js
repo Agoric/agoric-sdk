@@ -27,7 +27,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', true);
+const trace = makeTracer('VM', false);
 
 /**
  * @typedef {{
@@ -73,7 +73,6 @@ const trace = makeTracer('VM', true);
  * latestInterestUpdate: bigint,
  * liquidationInProgress: boolean,
  * liquidator?: Liquidator
- * liquidatorInstance?: Instance
  * outstandingQuote: Promise<MutableQuote>| null,
  * totalDebt: Amount<'nat'>,
  * vaultCounter: number,
@@ -160,7 +159,6 @@ const initState = (
     vaultCounter: 0,
     liquidationInProgress: false,
     liquidator: undefined,
-    liquidatorInstance: undefined,
     totalDebt,
     compoundedInterest,
     latestInterestUpdate,
@@ -509,11 +507,7 @@ const selfBehavior = {
    * @param {Installation} liquidationInstall
    * @param {object} liquidationTerms
    */
-  setupLiquidator: async (
-    { state, facets },
-    liquidationInstall,
-    liquidationTerms,
-  ) => {
+  setupLiquidator: async ({ state }, liquidationInstall, liquidationTerms) => {
     const { zcf, debtBrand, collateralBrand } = state;
     const { ammPublicFacet, priceAuthority, timerService } = zcf.getTerms();
     const zoe = zcf.getZoeService();
@@ -525,7 +519,7 @@ const selfBehavior = {
       collateralBrand,
       liquidationTerms,
     });
-    const { creatorFacet, instance } = await E(zoe).startInstance(
+    const { creatorFacet } = await E(zoe).startInstance(
       liquidationInstall,
       harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
       harden({
@@ -536,14 +530,7 @@ const selfBehavior = {
         debtBrand,
       }),
     );
-    trace('setup liquidator complete', {
-      instance,
-      old: state.liquidatorInstance,
-      equal: state.liquidatorInstance === instance,
-    });
-    state.liquidatorInstance = instance;
     state.liquidator = creatorFacet;
-    facets.helper.notify();
   },
 
   /** @param {MethodContext} context */
