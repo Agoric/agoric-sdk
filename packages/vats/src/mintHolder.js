@@ -8,12 +8,13 @@ import { makeIssuerKit } from '@agoric/ertp';
  * makeIssuerKit in its own contract, and hence in
  * its own vat.
  *
- * @param {ZCF<{
+ * @typedef {{
  *   keyword: string,
  *   assetKind: AssetKind,
  *   displayInfo: DisplayInfo,
- * }>} zcf
- * @returns {{ publicFacet: Issuer, creatorFacet: Mint }}
+ * }} AssetTerms
+ *
+ * @type {ContractStartFn<Issuer, Mint, AssetTerms>}
  */
 export const start = zcf => {
   const { keyword, assetKind, displayInfo } = zcf.getTerms();
