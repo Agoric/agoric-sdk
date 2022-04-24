@@ -137,6 +137,7 @@ const REWARD_MANIFEST = harden({
       loadVat: true,
       vaultFactoryCreator: true,
       ammCreatorFacet: true,
+      runStakeCreatorFacet: true,
       zoe: true,
     },
     produce: {
