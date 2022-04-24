@@ -193,11 +193,6 @@ export const CHAIN_POST_BOOT_MANIFEST = harden({
   ...RUN_STAKE_MANIFEST,
 });
 
-const MAIN_MANIFEST = harden({
-  ...SHARED_MAIN_MANIFEST,
-  ...REWARD_MANIFEST,
-});
-
 const PSM_MANIFEST = harden({
   makeAnchorAsset: {
     consume: { bankManager: 'bank', zoe: 'zoe' },
@@ -231,6 +226,13 @@ const PSM_MANIFEST = harden({
       consume: { AUSD: 'bank' },
     },
   },
+});
+
+const MAIN_MANIFEST = harden({
+  ...SHARED_MAIN_MANIFEST,
+  ...RUN_STAKE_MANIFEST,
+  ...REWARD_MANIFEST,
+  ...PSM_MANIFEST,
 });
 
 export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
