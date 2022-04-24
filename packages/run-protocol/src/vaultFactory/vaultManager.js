@@ -27,7 +27,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', true);
+const trace = makeTracer('VM', false);
 
 /**
  * @typedef {{
@@ -55,7 +55,6 @@ const trace = makeTracer('VM', true);
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
- * liquidationStrategy: LiquidationStrategy,
  * penaltyPoolSeat: ZCFSeat,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
@@ -72,6 +71,7 @@ const trace = makeTracer('VM', true);
  * compoundedInterest: Ratio,
  * latestInterestUpdate: bigint,
  * liquidationInProgress: boolean,
+ * liquidator?: Liquidator
  * outstandingQuote: Promise<MutableQuote>| null,
  * totalDebt: Amount<'nat'>,
  * vaultCounter: number,
@@ -99,7 +99,6 @@ const trace = makeTracer('VM', true);
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
- * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */
@@ -110,7 +109,6 @@ const initState = (
   priceAuthority,
   factoryPowers,
   timerService,
-  liquidationStrategy,
   penaltyPoolSeat,
   startTimeStamp,
 ) => {
@@ -125,7 +123,6 @@ const initState = (
     debtBrand: debtMint.getIssuerRecord().brand,
     debtMint,
     factoryPowers,
-    liquidationStrategy,
     penaltyPoolSeat,
     periodNotifier,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
@@ -159,6 +156,7 @@ const initState = (
     debtBrand: fixed.debtBrand,
     vaultCounter: 0,
     liquidationInProgress: false,
+    liquidator: undefined,
     totalDebt,
     compoundedInterest,
     latestInterestUpdate,
@@ -332,11 +330,14 @@ const helperBehavior = {
     state.liquidationInProgress = true;
 
     // Start liquidation (vaultState: LIQUIDATING)
+    const liquidator = state.liquidator;
+    assert(liquidator);
+    trace('liquidating 2', vault.getVaultSeat().getProposal());
     return liquidate(
       zcf,
       vault,
       (amount, seat) => facets.manager.burnAndRecord(amount, seat),
-      state.liquidationStrategy,
+      liquidator,
       state.collateralBrand,
       penaltyPoolSeat,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
@@ -493,6 +494,38 @@ const selfBehavior = {
     }
   },
 
+  /**
+   *
+   * @param {MethodContext} param
+   * @param {Installation} liquidationInstall
+   * @param {Object} liquidationTerms
+   */
+  setupLiquidator: async ({ state }, liquidationInstall, liquidationTerms) => {
+    const { zcf, debtBrand, collateralBrand } = state;
+    const { ammPublicFacet, priceAuthority, timerService } = zcf.getTerms();
+    const zoe = zcf.getZoeService();
+    const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
+    const debtIssuer = zcf.getIssuerForBrand(debtBrand);
+    trace('setup liquidator', {
+      debtBrand,
+      debtIssuer,
+      collateralBrand,
+      liquidationTerms,
+    });
+    const { creatorFacet } = await E(zoe).startInstance(
+      liquidationInstall,
+      harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
+      harden({
+        ...liquidationTerms,
+        amm: ammPublicFacet,
+        priceAuthority,
+        timerService,
+        debtBrand,
+      }),
+    );
+    state.liquidator = creatorFacet;
+  },
+
   /** @param {MethodContext} context */
   getCollateralQuote: async ({ state }) => {
     const { debtBrand } = state;
@@ -561,7 +594,6 @@ const makeVaultManagerKit = defineKindMulti(
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
- * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */

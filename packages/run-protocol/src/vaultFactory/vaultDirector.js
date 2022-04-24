@@ -6,7 +6,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { E } from '@endo/eventual-send';
 import '@agoric/governance/src/exported.js';
 
-import { fit, M, makeScalarMap } from '@agoric/store';
+import { fit, keyEQ, M, makeScalarMap } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountOut,
@@ -18,8 +18,8 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { defineKindMulti } from '@agoric/vat-data';
+import { observeIteration } from '@agoric/notifier';
 import { makeVaultManager } from './vaultManager.js';
-import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   makeVaultParamManager,
@@ -143,6 +143,28 @@ const getCollaterals = async ({ state }) => {
   );
 };
 
+const getLiquidationConfig = directorParamManager => ({
+  install: directorParamManager.getInstallation(LIQUIDATION_INSTALL_KEY),
+  terms: directorParamManager.getUnknown(LIQUIDATION_TERMS_KEY),
+});
+
+const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
+  const subscription = govParams.getSubscription();
+  observeIteration(subscription, {
+    updateState(_paramUpdate) {
+      const { install, terms } = getLiquidationConfig(govParams);
+      if (install === oldInstall || keyEQ(terms, oldTerms)) {
+        return;
+      }
+      oldInstall = install;
+      oldTerms = terms;
+      vaultManager
+        .setupLiquidator(install, terms)
+        .catch(e => console.error('Failed to setup liquidator', e));
+    },
+  });
+};
+
 /** @type {import('@agoric/vat-data/src/types').FunctionsPlusContext<VaultFactory>} */
 const machineBehavior = {
   // TODO move this under governance #3924
@@ -183,30 +205,7 @@ const machineBehavior = {
     const vaultParamManager = makeVaultParamManager(initialParamValues);
     vaultParamManagers.init(collateralBrand, vaultParamManager);
 
-    const zoe = zcf.getZoeService();
-    const { ammPublicFacet, priceAuthority, timerService } = zcf.getTerms();
-    const liquidationInstall = directorParamManager.getInstallation(
-      LIQUIDATION_INSTALL_KEY,
-    );
-    const liquidationTerms = directorParamManager.getUnknown(
-      LIQUIDATION_TERMS_KEY,
-    );
-    console.log('vault terms', zcf.getTerms());
-
-    const { issuer: debtIssuer, brand: debtBrand } = debtMint.getIssuerRecord();
-    const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
-      liquidationInstall,
-      harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
-      harden({
-        ...liquidationTerms,
-        amm: ammPublicFacet,
-        priceAuthority,
-        timerService,
-        debtBrand,
-      }),
-    );
-    const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
-
+    const { timerService } = zcf.getTerms();
     const startTimeStamp = await E(timerService).getCurrentTimestamp();
 
     /**
@@ -270,11 +269,14 @@ const machineBehavior = {
       zcf.getTerms().priceAuthority,
       factoryPowers,
       timerService,
-      liquidationStrategy,
       penaltyPoolSeat,
       startTimeStamp,
     );
     collateralTypes.init(collateralBrand, vm);
+    const { install, terms } = getLiquidationConfig(directorParamManager);
+    console.log('PARAM UPDATE', install, terms);
+    await vm.setupLiquidator(install, terms);
+    watchGovernance(directorParamManager, vm, install, terms);
     return vm;
   },
   getCollaterals,
