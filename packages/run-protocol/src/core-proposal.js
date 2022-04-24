@@ -310,7 +310,7 @@ export const getManifestForEconCommittee = (
 
 export const getManifestForMain = (
   { restoreRef },
-  { installKeys, vaultFactoryControllerAddress },
+  { installKeys, vaultFactoryControllerAddress, anchorDenom },
 ) => {
   return {
     manifest: MAIN_MANIFEST,
@@ -319,30 +319,13 @@ export const getManifestForMain = (
       VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
+      runStake: restoreRef(installKeys.runStake),
+      // psm: restoreRef(installKeys.psm),
+      // mintHolder: restoreRef(installKeys.mintHolder),
     },
     options: {
       vaultFactoryControllerAddress,
-    },
-  };
-};
-
-export const getManifestForRunStake = ({ restoreRef }, { installKeys }) => {
-  return {
-    manifest: RUN_STAKE_MANIFEST,
-    installations: {
-      runStake: restoreRef(installKeys.runStake),
-    },
-  };
-};
-
-export const getManifestForPSM = ({ restoreRef }, { installKeys, denom }) => {
-  return {
-    manifest: PSM_MANIFEST,
-    installations: {
-      psm: restoreRef(installKeys.psm),
-    },
-    options: {
-      denom,
+      denom: anchorDenom,
     },
   };
 };
