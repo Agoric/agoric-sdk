@@ -32,7 +32,7 @@ export const getXY = ({ amountGiven, poolAllocation, amountWanted }) => {
   };
 
   if (secondaryBrand === xBrand || centralBrand === yBrand) {
-    // @ts-ignore at least one of amountGiven and amountWanted is non-null
+    // @ts-expect-error at least one of amountGiven and amountWanted is non-null
     return harden({
       x: poolAllocation.Secondary,
       y: poolAllocation.Central,
@@ -40,7 +40,7 @@ export const getXY = ({ amountGiven, poolAllocation, amountWanted }) => {
     });
   }
   if (centralBrand === xBrand || secondaryBrand === yBrand) {
-    // @ts-ignore at least one of amountGiven and amountWanted is non-null
+    // @ts-expect-error at least one of amountGiven and amountWanted is non-null
     return harden({
       x: poolAllocation.Central,
       y: poolAllocation.Secondary,

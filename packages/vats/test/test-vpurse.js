@@ -277,7 +277,7 @@ test('vpurse.deposit promise', async t => {
   const exclusivePaymentP = E(issuer).claim(payment);
 
   await t.throwsAsync(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => E(vpurse).deposit(exclusivePaymentP, fungible25),
     { message: /deposit does not accept promises/ },
     'failed to reject a promise for a payment',

@@ -273,7 +273,7 @@ export const bob = async asyncIterableP => {
  * @returns {Promise<Passable[]>}
  */
 export const carol = async subscriptionP => {
-  // @ts-ignore
+  // @ts-expect-error
   const subscriptionIteratorP = E(subscriptionP)[Symbol.asyncIterator]();
   const { promise: afterA, resolve: afterAResolve } = makePromiseKit();
 

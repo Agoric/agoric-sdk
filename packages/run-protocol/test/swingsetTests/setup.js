@@ -206,7 +206,7 @@ const buildOwner = async (
     timer,
     poserInvitationAmount,
     rates,
-    // @ts-ignore It's not a real AMM public facet
+    // @ts-expect-error It's not a real AMM public facet
     ammMock,
     liquidationDetailTerms(runBrand),
   );

@@ -36,39 +36,39 @@ test('makeInstanceAdminStorage', async t => {
     getInstallationForInstance: () => 'installation2',
   });
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   initInstanceAdmin(mockInstance2, mockInstanceAdmin2);
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   t.is(getInstanceAdmin(mockInstance1), mockInstanceAdmin1);
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   t.is(await getPublicFacet(mockInstance1), 'publicFacet1');
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   t.is(await getBrands(mockInstance2), 'brands2');
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   t.is(await getIssuers(mockInstance1), 'issuers1');
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   t.is(await getTerms(mockInstance1), 'terms1');
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   t.is(await getInstallationForInstance(mockInstance1), 'installation1');
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   deleteInstanceAdmin(mockInstance2);
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   t.throws(() => getInstanceAdmin(mockInstance2), {
     message: '"instance" not found: "[Alleged: mockInstance2]"',
   });
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   await t.throwsAsync(() => getPublicFacet(mockInstance2), {
     message: '"instance" not found: "[Alleged: mockInstance2]"',
   });
@@ -81,10 +81,10 @@ test('add another instance admin for same instance', async t => {
   const mockInstanceAdmin1 = Far('mockInstanceAdmin1', {});
   const mockInstanceAdmin2 = Far('mockInstanceAdmin2', {});
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
 
-  // @ts-ignore instance is mocked
+  // @ts-expect-error instance is mocked
   t.throws(() => initInstanceAdmin(mockInstance1, mockInstanceAdmin2), {
     message: '"instance" already registered: "[Alleged: mockInstance1]"',
   });

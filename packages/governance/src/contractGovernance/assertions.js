@@ -8,7 +8,7 @@ const { details: X } = assert;
 const makeLooksLikeBrand = name => {
   return brand => {
     assert(
-      // @ts-ignore value is undifferentiated to this point
+      // @ts-expect-error value is undifferentiated to this point
       isRemotable(brand),
       X`value for ${name} must be a brand, was ${brand}`,
     );

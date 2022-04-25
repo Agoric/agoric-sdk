@@ -41,9 +41,9 @@ export const stringifyRatioAsPercent = (
   );
   const denomPower = 10n ** BigInt(denomDecimalPlaces);
   const numPower = 10n ** BigInt(numDecimalPlaces);
-  // @ts-ignore value is BigInt
+  // @ts-expect-error value is BigInt
   const numerator = ratio.numerator.value * denomPower * PERCENT_BASE;
-  // @ts-ignore value is BigInt
+  // @ts-expect-error value is BigInt
   const denominator = ratio.denominator.value * numPower;
   const str = `${Number(numerator) / Number(denominator)}`;
   const capturedNum = captureNum(str);

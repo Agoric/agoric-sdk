@@ -149,7 +149,7 @@ const merge = (xbagEntries, ybagEntries) => {
           let value;
           if (xDone && yDone) {
             done = true;
-            // @ts-ignore Because the terminating value does not matter
+            // @ts-expect-error Because the terminating value does not matter
             value = [null, 0n, 0n];
           } else if (xDone) {
             // only ys are left

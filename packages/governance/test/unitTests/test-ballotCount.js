@@ -279,7 +279,7 @@ test('binary question too many', async t => {
 
   const alicePositions = aliceTemplate.getDetails().positions;
   await t.throwsAsync(
-    // @ts-ignore  illegal value for testing
+    // @ts-expect-error  illegal value for testing
     () => E(creatorFacet).submitVote(aliceSeat, alicePositions),
     {
       message: 'only 1 position allowed',

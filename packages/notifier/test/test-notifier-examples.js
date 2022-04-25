@@ -35,7 +35,7 @@ test('notifier for-await-of cannot eat promise', async t => {
   const { updater, notifier } = makeNotifierKit();
   paula(updater);
   const subP = Promise.resolve(notifier);
-  // @ts-ignore We are testing a case which violates the static types
+  // @ts-expect-error We are testing a case which violates the static types
   const log = await alice(subP);
 
   // This TypeError is thrown by JavaScript when a for-await-in loop

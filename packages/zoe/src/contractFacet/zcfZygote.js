@@ -48,7 +48,7 @@ export const makeZCFZygote = (
     E(zoeInstanceAdmin).failAllSeats(reason);
     // eslint-disable-next-line no-use-before-define
     dropAllReferences();
-    // @ts-ignore powers is not typed correctly:
+    // @ts-expect-error powers is not typed correctly:
     // https://github.com/Agoric/agoric-sdk/issues/3239
     powers.exitVatWithFailure(reason);
   };

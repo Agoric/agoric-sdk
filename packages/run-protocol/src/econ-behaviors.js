@@ -567,7 +567,7 @@ export const startRunStake = async (
       chainTimerService,
       economicCommitteeCreatorFacet,
     },
-    // @ts-ignore TODO: add to BootstrapPowers
+    // @ts-expect-error TODO: add to BootstrapPowers
     produce: { runStakeCreatorFacet, runStakeGovernorCreatorFacet },
     installation: {
       consume: { contractGovernor, runStake: installationP },

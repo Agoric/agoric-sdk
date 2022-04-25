@@ -9,7 +9,7 @@ const { details: X, quote: q } = assert;
 
 /** @type { <K extends string, T, U>(obj: Record<K, T>, f: (k: K, v: T) => [K, U]) => Record<K, U>} */
 const mapEntries = (obj, f) =>
-  // @ts-ignore entries() loses key type
+  // @ts-expect-error entries() loses key type
   fromEntries(entries(obj).map(([p, v]) => f(p, v)));
 
 export const CENTRAL_ISSUER_NAME = 'RUN';

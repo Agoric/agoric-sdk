@@ -50,7 +50,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
     'any key is a valid element',
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, 'a'),
     {
       message:
@@ -97,7 +97,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
     'any key is a valid element',
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: 'a' })),
     {
       message:
@@ -133,7 +133,7 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
     `m.isEmpty([]) is true`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty(harden({ brand: mockBrand, value: {} })),
     {
       message:

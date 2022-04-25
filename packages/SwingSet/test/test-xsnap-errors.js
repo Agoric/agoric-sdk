@@ -26,7 +26,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   const startXSnap = makeStartXSnap(bundles, {
     snapstorePath: undefined, // close enough for this test
     env: {},
-    // @ts-ignore we only need one path thru spawn
+    // @ts-expect-error we only need one path thru spawn
     spawn: (command, args, opts) => {
       const noMetering = ['-l', '0'];
       theProc = spawn(command, [args, ...noMetering], opts);
@@ -46,7 +46,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   const xsWorkerFactory = makeXsSubprocessFactory({
     startXSnap,
     kernelKeeper,
-    // @ts-ignore kernelSlog is not used in this test
+    // @ts-expect-error kernelSlog is not used in this test
     kernelSlog: {},
     allVatPowers: undefined,
     testLog: undefined,
@@ -56,7 +56,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   const bundle = await bundleSource(fn);
 
   /** @type { ManagerOptions } */
-  // @ts-ignore close enough for this test
+  // @ts-expect-error close enough for this test
   const managerOptions = { useTranscript: true };
   const schandler = _vso => ['ok', null];
   const m = await xsWorkerFactory.createFromBundle(

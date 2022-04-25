@@ -59,7 +59,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     feeMintAccess,
 
     // Additional ZCF
-    // @ts-ignore zcf2 is accessible before it is set
+    // @ts-expect-error zcf2 is accessible before it is set
     zcf2,
     creatorFacet2,
     instance2,

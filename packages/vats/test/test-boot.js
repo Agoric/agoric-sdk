@@ -175,7 +175,7 @@ test('evaluateInstallation is available to core eval', async t => {
 
   const instId = await prepare();
 
-  // @ts-ignore
+  // @ts-expect-error
   await bridgeCoreEval({ produce, consume });
   t.truthy(handler);
 
@@ -201,10 +201,10 @@ test('evaluateInstallation is available to core eval', async t => {
   };
   t.log({ bridgeMessage });
 
-  // @ts-ignore
+  // @ts-expect-error
   await E(handler).fromBridge('arbitrary srcID', bridgeMessage);
   const actual = await consume.thing;
 
-  // @ts-ignore
+  // @ts-expect-error
   t.deepEqual(typeof actual.extract, 'function');
 });

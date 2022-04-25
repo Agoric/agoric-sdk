@@ -188,7 +188,7 @@ const start = async zcf => {
   // this conditional was extracted so both sides are equally asynchronous
   /** @type {() => Promise<ApiGovernor>} */
   const initApiGovernance = async () => {
-    // @ts-ignore `governedApis` is present on contracts wiht API invocation.
+    // @ts-expect-error `governedApis` is present on contracts wiht API invocation.
 
     const [governedApis, governedNames] = await Promise.all([
       E(governedCF).getGovernedApis(),

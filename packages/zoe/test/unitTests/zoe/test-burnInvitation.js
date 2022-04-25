@@ -31,7 +31,7 @@ test('burnInvitation - not an invitation', async t => {
   const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
 
   await t.throwsAsync(
-    // @ts-ignore invalid payment for the purposes of testing
+    // @ts-expect-error invalid payment for the purposes of testing
     () => burnInvitation(mockInvitationKit.issuer, undefined),
     { message: 'A Zoe invitation is required, not "[undefined]"' },
   );

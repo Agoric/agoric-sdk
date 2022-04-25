@@ -7,7 +7,7 @@ import { TextField } from '@material-ui/core';
 import test from 'ava';
 import enzyme from 'enzyme';
 
-// @ts-ignore path is correct for compiled output
+// @ts-expect-error path is correct for compiled output
 import { makeNatAmountInput } from '../../../dist/index.js'; // eslint-disable-line import/no-unresolved
 
 const { shallow, render } = enzyme; // CJS so no named imports

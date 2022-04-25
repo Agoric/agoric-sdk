@@ -61,13 +61,13 @@ test('connectFaucet produces payments', async t => {
   produce.bldIssuerKit.resolve(bldKit);
   const runIssuer = E(zoe).getFeeIssuer();
   produce.bankManager.resolve(
-    // @ts-ignore never mind other methods
+    // @ts-expect-error never mind other methods
     Promise.resolve(
-      // @ts-ignore never mind other methods
+      // @ts-expect-error never mind other methods
       Far('mockBankManager', {
         getBankForAddress: _a =>
           Far('mockBank', {
-            // @ts-ignore never mind other methods
+            // @ts-expect-error never mind other methods
             getPurse: brand => ({
               deposit: async (pmt, _x) => {
                 const isBLD = brand === bldKit.brand;

@@ -7,12 +7,12 @@ import { Far } from '@endo/marshal';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
 
 test('makeIssuerKit bad allegedName', async t => {
-  // @ts-ignore Intentional wrong type for testing
+  // @ts-expect-error Intentional wrong type for testing
   t.throws(() => makeIssuerKit({}), { message: `{} must be a string` });
 });
 
 test('makeIssuerKit bad assetKind', async t => {
-  // @ts-ignore Intentional wrong type for testing
+  // @ts-expect-error Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
     message:
       /The assetKind "somethingWrong" must be one of \["copyBag","copySet","nat","set"\]/,
@@ -25,7 +25,7 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
       makeIssuerKit(
         'myTokens',
         AssetKind.NAT,
-        // @ts-ignore Intentional wrong type for testing
+        // @ts-expect-error Intentional wrong type for testing
         harden({ decimalPlaces: 'hello' }),
       ),
     {
@@ -40,7 +40,7 @@ test('makeIssuerKit bad displayInfo.assetKind', async t => {
       makeIssuerKit(
         'myTokens',
         AssetKind.NAT,
-        // @ts-ignore Intentional wrong type for testing
+        // @ts-expect-error Intentional wrong type for testing
         harden({
           assetKind: 'something',
         }),
@@ -58,7 +58,7 @@ test('makeIssuerKit bad displayInfo.whatever', async t => {
       makeIssuerKit(
         'myTokens',
         AssetKind.NAT,
-        // @ts-ignore Intentional wrong type for testing
+        // @ts-expect-error Intentional wrong type for testing
         harden({
           whatever: 'something',
         }),
@@ -76,7 +76,7 @@ test('makeIssuerKit malicious displayInfo', async t => {
       makeIssuerKit(
         'myTokens',
         AssetKind.NAT,
-        // @ts-ignore Intentional wrong type for testing
+        // @ts-expect-error Intentional wrong type for testing
         Far('malicious', { doesSomething: () => {} }),
       ),
     {
@@ -90,7 +90,7 @@ test('makeIssuerKit malicious displayInfo', async t => {
 // reached, we can't easily test that pathway.
 test('makeIssuerKit bad optShutdownWithFailure', async t => {
   t.throws(
-    // @ts-ignore Intentional wrong type for testing
+    // @ts-expect-error Intentional wrong type for testing
     () => makeIssuerKit('myTokens', AssetKind.NAT, undefined, 'not a function'),
     {
       message: '"not a function" must be a function',
@@ -100,7 +100,7 @@ test('makeIssuerKit bad optShutdownWithFailure', async t => {
 
 test('brand.isMyIssuer bad issuer', async t => {
   const { brand } = makeIssuerKit('myTokens');
-  // @ts-ignore Intentional wrong type for testing
+  // @ts-expect-error Intentional wrong type for testing
   const result = await brand.isMyIssuer('not an issuer');
   t.false(result);
 });
@@ -146,7 +146,7 @@ test('issuer.combine bad payments array', async t => {
     length: () => 2,
     split: () => {},
   });
-  // @ts-ignore Intentional wrong type for testing
+  // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => E(issuer).combine(notAnArray2), {
     message:
       '"fromPaymentsArray" "[Alleged: notAnArray2]" must be a pass-by-copy array, not "remotable"',

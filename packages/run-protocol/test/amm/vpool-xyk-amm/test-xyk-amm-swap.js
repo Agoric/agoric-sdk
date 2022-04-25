@@ -834,7 +834,7 @@ test('amm jig - swapOut uneven', async t => {
   );
   sPoolState = updatePoolState(sPoolState, initSimLiqExpected);
 
-  // @ts-ignore
+  // @ts-expect-error
   t.deepEqual(await E(publicFacet).getProtocolPoolBalance(), {});
 
   // trade for central specifying 30000 output: moola price 15092

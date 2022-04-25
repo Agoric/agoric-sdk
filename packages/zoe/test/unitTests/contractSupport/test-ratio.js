@@ -95,22 +95,22 @@ test('ratio - multiplyBy non Amount', t => {
     value: 3.5,
     brand,
   });
-  // @ts-ignore Incorrect values for testing
+  // @ts-expect-error Incorrect values for testing
   t.throws(() => floorMultiplyBy(badAmount, makeRatio(25n, brand)), {
     message:
       'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
-  // @ts-ignore Incorrect values for testing
+  // @ts-expect-error Incorrect values for testing
   t.throws(() => ceilMultiplyBy(badAmount, makeRatio(25n, brand)), {
     message:
       'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
-  // @ts-ignore Incorrect values for testing
+  // @ts-expect-error Incorrect values for testing
   t.throws(() => floorDivideBy(badAmount, makeRatio(25n, brand)), {
     message:
       'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
-  // @ts-ignore Incorrect values for testing
+  // @ts-expect-error Incorrect values for testing
   t.throws(() => ceilDivideBy(badAmount, makeRatio(25n, brand)), {
     message:
       'value 3.5 must be a bigint, copySet, copyBag, or an array, not "number"',
@@ -190,7 +190,7 @@ test('ratio - larger than 100%', t => {
 test('ratio - Nats', t => {
   const { brand } = makeIssuerKit('moe');
 
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => makeRatio(10.1, brand), {
     message:
       'value 10.1 must be a bigint, copySet, copyBag, or an array, not "number"',
@@ -229,33 +229,33 @@ test('ratio bad inputs', t => {
   const { brand } = makeIssuerKit('moe');
   /** @param {bigint} value */
   const moe = value => AmountMath.make(brand, value);
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => makeRatio(-3, brand), {
     message:
       'value -3 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => makeRatio(3n, brand, 100.5), {
     message:
       'value 100.5 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => makeRatioFromAmounts(3n, moe(30n)), {
     message: '"brand" "[undefined]" must be a remotable, not "undefined"',
   });
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => floorMultiplyBy(37, makeRatioFromAmounts(moe(3n), moe(5n))), {
     message: '"brand" "[undefined]" must be a remotable, not "undefined"',
   });
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => ceilMultiplyBy(37, makeRatioFromAmounts(moe(3n), moe(5n))), {
     message: '"brand" "[undefined]" must be a remotable, not "undefined"',
   });
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => floorDivideBy(makeRatioFromAmounts(moe(3n), moe(5n)), 37), {
     message: '"brand" "[undefined]" must be a remotable, not "undefined"',
   });
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => ceilDivideBy(makeRatioFromAmounts(moe(3n), moe(5n)), 37), {
     message: '"brand" "[undefined]" must be a remotable, not "undefined"',
   });
@@ -326,7 +326,7 @@ test('ratio - complement', t => {
   amountsEqual(t, floorMultiplyBy(moe(100000n), twoThirds), moe(66666n), brand);
   amountsEqual(t, ceilMultiplyBy(moe(100000n), twoThirds), moe(66667n), brand);
 
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => oneMinus(moe(3n)), {
     message:
       'Parameter must be a Ratio record, but {"brand":"[Alleged: moe brand]","value":"[3n]"} has "brand"',
