@@ -1,3 +1,4 @@
+import path from 'path';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import {
   importMailbox,
@@ -346,8 +347,23 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
 
-    const enableTrace =
-      SWING_STORE_TRACE === '1' || !!getFlagValue('trace-store');
+    const defaultTraceFile = path.resolve(stateDBDir, 'store-trace.log');
+    let swingStoreTraceFile;
+    switch (SWING_STORE_TRACE) {
+      case '0':
+      case 'false':
+        break;
+      case '1':
+      case 'true':
+        swingStoreTraceFile = defaultTraceFile;
+        break;
+      default:
+        if (SWING_STORE_TRACE) {
+          swingStoreTraceFile = path.resolve(SWING_STORE_TRACE);
+        } else if (getFlagValue('trace-store')) {
+          swingStoreTraceFile = defaultTraceFile;
+        }
+    }
 
     const s = await launch({
       actionQueue,
@@ -361,7 +377,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       slogFile: SLOGFILE,
       slogSender,
       mapSize,
-      enableTrace,
+      swingStoreTraceFile,
     });
     return s;
   }
