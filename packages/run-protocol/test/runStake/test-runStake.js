@@ -286,6 +286,67 @@ const mintRunPayment = async (
   return E(ammSupplier).getBootstrapPayment();
 };
 
+test('wrap liened amount', async (/** @type {RunStakeTestContext} */ t) => {
+  const timer = buildManualTimer(t.log, 0n, 1n);
+
+  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { consume, instance } = space;
+  const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
+  const { runStake: runStakeinstance } = instance.consume;
+  const walletMaker = makeWalletMaker(creatorFacet);
+  const bob = chain.provisionAccount('Bob', 'addr1b');
+
+  // Bob introduces himself to the Agoric JS VM.
+  const bobWallet = walletMaker(bob.getAddress());
+
+  const {
+    brands: { [KW.Attestation]: attBrand },
+  } = await E(zoe).getTerms(await runStakeinstance);
+
+  const bldBrand = await space.brand.consume.BLD;
+  const bldValue = 2_000n * micro.unit;
+  const bldAmount = AmountMath.make(bldBrand, bldValue);
+  const attAmount = await E(bobWallet.attMaker).wrapLienedAmount(bldAmount);
+
+  t.deepEqual(
+    attAmount,
+    AmountMath.make(attBrand, makeCopyBag([['addr1b', bldValue]])),
+  );
+});
+
+test('unwrap liened amount', async (/** @type {RunStakeTestContext} */ t) => {
+  const timer = buildManualTimer(t.log, 0n, 1n);
+
+  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { consume, instance } = space;
+  const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
+  const { runStake: runStakeinstance } = instance.consume;
+  const walletMaker = makeWalletMaker(creatorFacet);
+  const bob = chain.provisionAccount('Bob', 'addr1b');
+
+  // Bob introduces himself to the Agoric JS VM.
+  const bobWallet = walletMaker(bob.getAddress());
+
+  const {
+    brands: { [KW.Attestation]: attBrand },
+  } = await E(zoe).getTerms(await runStakeinstance);
+
+  const bldBrand = await space.brand.consume.BLD;
+  const bldValue = 2_000n * micro.unit;
+  const bldAmount = AmountMath.make(bldBrand, bldValue);
+
+  const lienedAmount = AmountMath.make(
+    attBrand,
+    makeCopyBag([['addr1b', bldValue]]),
+  );
+
+  const unwrapped = await E(bobWallet.attMaker).unwrapLienedAmount(
+    lienedAmount,
+  );
+
+  t.deepEqual(unwrapped, bldAmount);
+});
+
 test('runStake API usage', async (/** @type {RunStakeTestContext} */ t) => {
   const timer = buildManualTimer(t.log, 0n, 1n);
 
