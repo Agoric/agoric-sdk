@@ -4,7 +4,7 @@
 import { assert, details as X } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
-import { insistCapData } from '../../lib/capdata.js';
+import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
 
@@ -246,27 +246,6 @@ export function makeDeliveryKit(
     handleResolutions(localResolutions);
   }
 
-  function extractPresenceIfPresent(data) {
-    insistCapData(data);
-
-    const body = JSON.parse(data.body);
-    if (
-      body &&
-      typeof body === 'object' &&
-      body['@qclass'] === 'slot' &&
-      body.index === 0
-    ) {
-      if (data.slots.length === 1) {
-        const slot = data.slots[0];
-        const { type } = parseLocalSlot(slot);
-        if (type === 'object') {
-          return slot;
-        }
-      }
-    }
-    return null;
-  }
-
   // helper function for handleSend(): for each message, either figure out
   // the destination (remote machine or kernel), or reject the result because
   // the destination is a brick wall (undeliverable target)
@@ -294,9 +273,9 @@ export function makeDeliveryKit(
       if (status === 'rejected') {
         return { reject: data };
       }
-      const targetPresence = extractPresenceIfPresent(data);
-      if (targetPresence) {
-        return resolveTarget(targetPresence, method);
+      const targetSlot = extractSingleSlot(data);
+      if (targetSlot && parseLocalSlot(targetSlot).type === 'object') {
+        return resolveTarget(targetSlot, method);
       } else {
         return { reject: makeUndeliverableError(method) };
       }
@@ -451,6 +430,19 @@ export function makeDeliveryKit(
       const [lpid, rejected, data] = resolution;
       // rejected: boolean, data: capdata
       insistCapData(data);
+      if (!rejected) {
+        const resolutionSlot = extractSingleSlot(data);
+        if (resolutionSlot) {
+          // Resolving to a promise is not a fulfillment.
+          // It would be a redirect, but that's not currently supported by comms.
+          // Furthermore messages sent to such a promise resolved this way would not
+          // be forwarded but would splat instead.
+          assert(
+            parseLocalSlot(resolutionSlot).type !== 'promise',
+            'cannot resolve to a promise',
+          );
+        }
+      }
       insistLocalType('promise', lpid);
       state.insistPromiseIsUnresolved(lpid);
       state.insistDeciderIsComms(lpid);

@@ -235,13 +235,24 @@ export function makeVatKeeper(
    * allocate, we insist that the reachable flag was already set.
    *
    * @param {string} vatSlot  The vat slot of interest
-   * @param {{ setReachable?: boolean, required?: boolean }} options  'setReachable' will set the 'reachable' flag on vat exports, while 'required' means we refuse to allocate a missing entry
+   * @param {Object} [options]
+   * @param {boolean} [options.setReachable] set the 'reachable' flag on vat exports
+   * @param {boolean} [options.required] refuse to allocate a missing entry
+   * @param {boolean} [options.requireNew] require that the entry be newly allocated
    * @returns {string} the kernel slot that vatSlot maps to
    * @throws {Error} if vatSlot is not a kind of thing that can be exported by vats
    * or is otherwise invalid.
    */
   function mapVatSlotToKernelSlot(vatSlot, options = {}) {
-    const { setReachable = true, required = false } = options;
+    const {
+      setReachable = true,
+      required = false,
+      requireNew = false,
+    } = options;
+    assert(
+      !(required && requireNew),
+      `'required' and 'requireNew' are mutually exclusive`,
+    );
     assert.typeof(vatSlot, 'string', X`non-string vatSlot: ${vatSlot}`);
     const { type, allocatedByVat } = parseVatSlot(vatSlot);
     const vatKey = `${vatID}.c.${vatSlot}`;
@@ -286,6 +297,8 @@ export function makeVatKeeper(
         // (else it would have been in the c-list), so it must be bogus
         assert.fail(X`unknown vatSlot ${q(vatSlot)}`);
       }
+    } else if (requireNew) {
+      assert.fail(X`vref ${q(vatSlot)} is already allocated`);
     }
     const kernelSlot = getRequired(vatKey);
 
