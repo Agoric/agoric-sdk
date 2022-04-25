@@ -230,7 +230,7 @@ export async function makeSwingsetController(
   function kernelRequire(what) {
     assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
   }
-  // @ts-ignore assume kernelBundle is set
+  // @ts-expect-error assume kernelBundle is set
   const kernelBundle = JSON.parse(kvStore.get('kernelBundle'));
   writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {
@@ -269,9 +269,9 @@ export async function makeSwingsetController(
   }
 
   const bundles = [
-    // @ts-ignore assume lockdownBundle is set
+    // @ts-expect-error assume lockdownBundle is set
     JSON.parse(kvStore.get('lockdownBundle')),
-    // @ts-ignore assume supervisorBundle is set
+    // @ts-expect-error assume supervisorBundle is set
     JSON.parse(kvStore.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, {

@@ -143,7 +143,7 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   // TODO: Port this to makeQuoteNotifier(amountIn, brandOut)
-  // @ts-ignore fix needed
+  // @ts-expect-error fix needed
   const notifier = E(pa).makeQuoteNotifier(
     AmountMath.make(brandIn, 1n),
     brandOut,

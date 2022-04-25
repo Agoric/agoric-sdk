@@ -185,7 +185,7 @@ function makeJSONStore(dirPath, forceReset = false) {
       if (lines) {
         let line = lines.next();
         while (line) {
-          // @ts-ignore JSON.parse can take a Buffer
+          // @ts-expect-error JSON.parse can take a Buffer
           const [key, value] = JSON.parse(line);
           storage.set(key, value);
           line = lines.next();
@@ -289,7 +289,7 @@ export function getAllState(storage) {
   /** @type { Record<string, string> } */
   const stuff = {};
   for (const key of Array.from(storage.getKeys('', ''))) {
-    // @ts-ignore get(key) of key from getKeys() is not undefined
+    // @ts-expect-error get(key) of key from getKeys() is not undefined
     stuff[key] = storage.get(key);
   }
   return stuff;

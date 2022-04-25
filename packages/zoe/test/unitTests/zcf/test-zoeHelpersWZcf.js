@@ -295,7 +295,7 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
     give: { B: simoleans(3n) },
   });
 
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => fit(proposal, harden([])), {
     message: /.* - Must be equivalent to: \[\]/,
   });
@@ -340,7 +340,7 @@ test(`zoeHelper with zcf - assertProposalShape`, async t => {
     { B: simoleanMint.mintPayment(simoleans(3n)) },
   );
 
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   t.throws(() => assertProposalShape(zcfSeat, []), {
     message: 'Expected must be an non-array object',
   });

@@ -6,9 +6,9 @@ import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 const { details: X } = assert;
 
 const makeLooksLikeBrand = name => {
+  /** @param {Brand} brand */
   return brand => {
     assert(
-      // @ts-ignore value is undifferentiated to this point
       isRemotable(brand),
       X`value for ${name} must be a brand, was ${brand}`,
     );

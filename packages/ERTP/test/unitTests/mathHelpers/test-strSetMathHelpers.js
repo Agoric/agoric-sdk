@@ -19,7 +19,7 @@ test('set with strings make', t => {
     `[6] is a valid set even though it isn't a string`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, 'abc'),
     {
       message:
@@ -45,7 +45,7 @@ test('set with strings coerce', t => {
     `[6] is a valid set`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: '6' })),
     {
       message:
@@ -97,7 +97,7 @@ test('set with strings isGTE', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['b'] }),
       ),
-    null,
+    undefined,
     `duplicates in the left of isGTE should throw`,
   );
   t.throws(
@@ -106,7 +106,7 @@ test('set with strings isGTE', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['b', 'b'] }),
       ),
-    null,
+    undefined,
     `duplicates in the right of isGTE should throw`,
   );
   t.assert(

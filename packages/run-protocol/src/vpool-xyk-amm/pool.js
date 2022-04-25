@@ -236,7 +236,6 @@ const finish = context => {
     return publicPrices(
       context.facets.singlePool.getPriceForInput(
         amountIn,
-        // @ts-ignore confused about whether it needs a context
         AmountMath.makeEmpty(brandOut),
       ),
     );
@@ -245,7 +244,6 @@ const finish = context => {
     publicPrices(
       context.facets.singlePool.getPriceForOutput(
         AmountMath.makeEmpty(brandIn),
-        // @ts-ignore confused about whether it needs a context
         amountout,
       ),
     );
@@ -271,9 +269,9 @@ const finish = context => {
     quoteIssuerKit,
   );
 
-  // @ts-ignore declared read-only, set value once
+  // @ts-expect-error declared read-only, set value once
   context.state.toCentralPriceAuthority = toCentralPriceAuthority;
-  // @ts-ignore declared read-only, set value once
+  // @ts-expect-error declared read-only, set value once
   context.state.fromCentralPriceAuthority = fromCentralPriceAuthority;
 };
 
@@ -300,7 +298,6 @@ export const definePoolKind = (
 
     // XXX why does the paramAccessor have to be repackaged as a Far object?
     const params = Far('pool param accessor', {
-      // @ts-ignore confused
       ...paramAccessor,
     });
 
@@ -330,6 +327,6 @@ export const definePoolKind = (
     singlePool,
   });
 
-  // @ts-ignore unhappy about finish's type
+  // @ts-expect-error unhappy about finish's type
   return defineKindMulti('pool', poolInit, facets, { finish });
 };

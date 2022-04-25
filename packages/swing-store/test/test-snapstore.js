@@ -62,7 +62,7 @@ test('snapStore prepare / commit delete is robust', async t => {
 
   t.notThrows(() => store.commitDeletes());
 
-  // @ts-ignore
+  // @ts-expect-error
   t.throws(() => store.prepareToDelete(1));
   t.throws(() => store.prepareToDelete('../../../etc/passwd'));
   t.throws(() => store.prepareToDelete('/etc/passwd'));

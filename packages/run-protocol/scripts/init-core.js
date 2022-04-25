@@ -59,7 +59,7 @@ const { entries, fromEntries } = Object;
 
 /** @type { <K extends string, T, U>(obj: Record<K, T>, f: (t: T) => U) => Record<K, U>} */
 const mapValues = (obj, f) =>
-  // @ts-ignore entries() loses the K type
+  // @ts-expect-error entries() loses the K type
   harden(fromEntries(entries(obj).map(([p, v]) => [p, f(v)])));
 
 const committeeProposalBuilder = async ({ publishRef, install }) => {

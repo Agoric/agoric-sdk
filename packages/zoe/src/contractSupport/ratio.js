@@ -92,7 +92,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   AmountMath.coerce(numeratorAmount.brand, numeratorAmount);
   AmountMath.coerce(denominatorAmount.brand, denominatorAmount);
   return makeRatio(
-    // @ts-ignore value can be any AmountValue but makeRatio() supports only bigint
+    // @ts-expect-error value can be any AmountValue but makeRatio() supports only bigint
     numeratorAmount.value,
     numeratorAmount.brand,
     denominatorAmount.value,
@@ -121,13 +121,11 @@ const multiplyHelper = (amount, ratio, divideOp) => {
 
 /** @type {ScaleAmount} */
 export const floorMultiplyBy = (amount, ratio) => {
-  // @ts-ignore cast
   return multiplyHelper(amount, ratio, floorDivide);
 };
 
 /** @type {ScaleAmount} */
 export const ceilMultiplyBy = (amount, ratio) => {
-  // @ts-ignore cast
   return multiplyHelper(amount, ratio, ceilDivide);
 };
 
@@ -152,13 +150,11 @@ const divideHelper = (amount, ratio, divideOp) => {
 
 /** @type {ScaleAmount} */
 export const floorDivideBy = (amount, ratio) => {
-  // @ts-ignore cast
   return divideHelper(amount, ratio, floorDivide);
 };
 
 /** @type {ScaleAmount} */
 export const ceilDivideBy = (amount, ratio) => {
-  // @ts-ignore cast
   return divideHelper(amount, ratio, ceilDivide);
 };
 
@@ -244,7 +240,6 @@ export const oneMinus = ratio => {
   return makeRatio(
     subtract(ratio.denominator.value, ratio.numerator.value),
     ratio.numerator.brand,
-    // @ts-ignore value can be any AmountValue but makeRatio() supports only bigint
     ratio.denominator.value,
     ratio.numerator.brand,
   );

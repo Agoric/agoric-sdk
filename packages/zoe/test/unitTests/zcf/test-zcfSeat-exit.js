@@ -54,7 +54,7 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
 
   /** @type {OfferHandler} */
   const throwSeatExit = seat => {
-    // @ts-ignore Linting correctly identifies that exit takes no argument.
+    // @ts-expect-error Linting correctly identifies that exit takes no argument.
     throw seat.exit('here is a string');
   };
 
@@ -70,7 +70,7 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
 
   /** @type {OfferHandler} */
   const throwSeatFail = seat => {
-    // @ts-ignore Linting correctly identifies that the argument to
+    // @ts-expect-error Linting correctly identifies that the argument to
     // fail must be an error, not a string.
     throw seat.fail('here is a string');
   };

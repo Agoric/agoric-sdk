@@ -269,7 +269,7 @@ const start = async zcf => {
     makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
   });
 
-  // @ts-ignore
+  // @ts-expect-error
   return harden({ creatorFacet });
 };
 

@@ -324,7 +324,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   function kernelDeliveryToVatDelivery(vatID, kd) {
     const translators = provideTranslators(vatID);
 
-    // @ts-ignore TODO: types for kernelDeliveryToVatDelivery
+    // @ts-expect-error TODO: types for kernelDeliveryToVatDelivery
     return translators.kernelDeliveryToVatDelivery(kd);
   }
 

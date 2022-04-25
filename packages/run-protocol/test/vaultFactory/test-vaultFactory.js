@@ -1758,7 +1758,7 @@ test('bad chargingPeriod', async t => {
   t.throws(
     () =>
       makeParamManagerBuilder()
-        // @ts-ignore It's not a bigint.
+        // @ts-expect-error It's not a bigint.
         .addNat(CHARGING_PERIOD_KEY, loanTiming.chargingPeriod)
         .addNat(RECORDING_PERIOD_KEY, loanTiming.recordingPeriod)
         .build(),
@@ -2244,12 +2244,12 @@ test('addVaultType: invalid args do not modify state', async t => {
       .catch(reason1 => t.throwsAsync(p, { message: reason1.message }));
   await failsForSameReason(
     E(vaultFactory)
-      // @ts-ignore bad args on purpose for test
+      // @ts-expect-error bad args on purpose for test
       .addVaultType(chit.issuer, kw, null),
   );
   await failsForSameReason(
     E(vaultFactory)
-      // @ts-ignore bad args on purpose for test
+      // @ts-expect-error bad args on purpose for test
       .addVaultType(chit.issuer, 'bogus kw', params),
   );
 

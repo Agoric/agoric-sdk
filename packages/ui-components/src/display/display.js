@@ -61,11 +61,10 @@ export const stringifyValue = (
   placesToShow = 2,
 ) => {
   if (assetKind === AssetKind.NAT) {
-    // @ts-ignore AmountValue is a Nat
+    // @ts-expect-error AmountValue is a Nat
     return stringifyNat(value, decimalPlaces, placesToShow);
   }
   if (assetKind === AssetKind.SET) {
-    // @ts-ignore AmountValue is a SetValue
     return stringifySet(value);
   }
   assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);

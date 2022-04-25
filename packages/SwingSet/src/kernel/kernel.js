@@ -561,7 +561,6 @@ export default function buildKernel(
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
     function sendNewVatCallback(args) {
-      // @ts-ignore see assert(...) above
       queueToKref(vatAdminRootKref, 'newVatCallback', args, 'logFailure');
     }
 

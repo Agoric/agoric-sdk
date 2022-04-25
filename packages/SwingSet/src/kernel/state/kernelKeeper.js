@@ -191,7 +191,7 @@ export default function makeKernelKeeper(
    */
   function getRequired(key) {
     assert(kvStore.has(key), X`storage lacks required key ${key}`);
-    // @ts-ignore already checked .has()
+    // @ts-expect-error already checked .has()
     return kvStore.get(key);
   }
 

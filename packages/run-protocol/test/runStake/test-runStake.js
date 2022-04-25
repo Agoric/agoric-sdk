@@ -505,7 +505,6 @@ const makeWorld = async (/** @type {RunStakeTestContext} */ t) => {
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
 
-  // @ts-ignore TODO: runStakeCreatorFacet type in vats
   const { zoe, runStakeCreatorFacet, lienBridge } = consume;
   const { RUN: runIssuer } = space.issuer.consume;
   const [bldBrand, runBrand] = await Promise.all([

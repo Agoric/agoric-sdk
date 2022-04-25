@@ -20,7 +20,7 @@ const start = zcf => {
   );
   // should be makeRefundInvitation(). Intentionally wrong to provoke
   // an error.
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   return { creatorInvitation: makeRefundInvitation };
 };
 

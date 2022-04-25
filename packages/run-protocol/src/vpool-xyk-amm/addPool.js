@@ -74,7 +74,7 @@ export const makeAddPool = (
     );
     const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
     const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
-    // @ts-ignore xxx fix types
+    // @ts-expect-error xxx fix types
     initPool(secondaryBrand, pool);
     return liquidityZCFMint.getIssuerRecord().issuer;
   };

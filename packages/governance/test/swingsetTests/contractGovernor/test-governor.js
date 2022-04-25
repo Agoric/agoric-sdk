@@ -68,7 +68,7 @@ test.before(async t => {
   const ttime = `${(step4 - start) / 1000}s total`;
   console.log(`bundling: ${ktime}, ${ctime}, ${vtime}, ${ttime}`);
 
-  // @ts-ignore
+  // @ts-expect-error
   t.context.data = { kernelBundles, config };
 });
 
