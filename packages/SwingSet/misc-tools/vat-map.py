@@ -20,7 +20,8 @@ abbreviations = {
     "packages/run-protocol/src/vaultFactory/vaultFactory.js": "vaultFactory",
     "packages/pegasus/src/pegasus.js": "pegasus",
     "packages/zoe/src/contracts/multipoolAutoswap/multipoolAutoswap.js": "amm",
-    "packages/run-protocol/src/vaultFactory/liquidateMinimum.js": "liquidate",
+    "packages/run-protocol/src/vaultFactory/liquidateMinimum.js": "liquidateMinimum",
+    "packages/run-protocol/src/vaultFactory/liquidateIncrementally.js": "liquidate",
     }
 
 EPRE = re.compile(r'const entrypoint = "([^"]+)"')

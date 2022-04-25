@@ -46,7 +46,12 @@ function makeEndowments() {
   };
 }
 
-async function buildRawVat(name, kernel, onDispatchCallback = undefined) {
+async function buildRawVat(
+  name,
+  kernel,
+  onDispatchCallback = undefined,
+  options = undefined,
+) {
   const { log, dispatch } = buildDispatch(onDispatchCallback);
   let syscall;
   function setup(s) {
@@ -57,7 +62,7 @@ async function buildRawVat(name, kernel, onDispatchCallback = undefined) {
   function getSyscall() {
     return syscall;
   }
-  await kernel.createTestVat(name, setup);
+  await kernel.createTestVat(name, setup, undefined, options);
   return { log, getSyscall };
 }
 
@@ -128,7 +133,7 @@ function doResolveSyscall(syscallA, vpid, mode, targets) {
       syscallA.resolve([[vpid, true, capargs('error', [])]]);
       break;
     case 'promise-reject':
-      syscallA.resolve([[vpid, true, capargs([slot0arg], [targets.p1])]]);
+      syscallA.resolve([[vpid, true, capargs(slot0arg, [targets.p1])]]);
       break;
     default:
       assert.fail(X`unknown mode ${mode}`);
@@ -177,11 +182,7 @@ function resolutionOf(vpid, mode, targets) {
     case 'promise-reject':
       return {
         type: 'notify',
-        resolutions: oneResolution(
-          vpid,
-          true,
-          capargs([slot0arg], [targets.p1]),
-        ),
+        resolutions: oneResolution(vpid, true, capargs(slot0arg, [targets.p1])),
       };
     default:
       assert.fail(X`unknown mode ${mode}`);
@@ -233,6 +234,12 @@ async function doTest123(t, which, mode) {
   const { log: logB, getSyscall: getSyscallB } = await buildRawVat(
     'vatB',
     kernel,
+    undefined,
+    {
+      // Test 3 sends a promise before using it as result, which only
+      // pipelining vats are allowed to do
+      enablePipelining: which === 3,
+    },
   );
   const syscallA = getSyscallA();
   const syscallB = getSyscallB();
@@ -402,6 +409,11 @@ async function doTest4567(t, which, mode) {
     'vatA',
     kernel,
     odc,
+    {
+      // Test 7 sends a promise before using it as result, which only
+      // pipelining vats are allowed to do
+      enablePipelining: which === 7,
+    },
   );
   // we use vatB when necessary to send messages to vatA
   const { log: logB, getSyscall: getSyscallB } = await buildRawVat(
@@ -846,4 +858,231 @@ test(`kernel vpid handling crossing resolutions`, async t => {
   t.is(inCList(kernel, vatB, genResultBkernel, importedGenResultBvatB), false);
   t.is(inCList(kernel, vatX, genResultBkernel, exportedGenResultBvatX), false);
   // **** end Crank 5 (B) ****
+});
+
+async function doReflectedMessageTest(t, enablePipelining) {
+  const endowments = makeEndowments();
+  initializeKernel({}, endowments.hostStorage);
+  const kernel = buildKernel(endowments, {}, {});
+  await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
+
+  // This is a redux of message pattern a80
+  // We could simplify the case but keep some of the setup ceremony for legibility
+
+  // we use vatA as the sender of messages to B
+  const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
+    'vatA',
+    kernel,
+    undefined,
+  );
+  // Build a pipelining vat which will reflect a message send to a promise
+  const { log: logB, getSyscall: getSyscallB } = await buildRawVat(
+    'vatB',
+    kernel,
+    undefined,
+    { enablePipelining },
+  );
+  const syscallA = getSyscallA();
+  const syscallB = getSyscallB();
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+
+  // B will need a reference to A
+  const rootAvatA = 'o+0';
+  const rootAkernel = kernel.addExport(vatA, rootAvatA);
+  const rootAvatB = kernel.addImport(vatB, rootAkernel);
+
+  // Bob sends a Promise to Alice as argument (leaving Bob as decider)
+  // Alice sends a message to the received promise
+  // Bob resolves the promise to an object in A (Alice itself here) (extraneous for this test)
+  // Bob receives the message from Alice and reflects it back to Alice
+  // B: alice~.one(p)
+  // A: async function one (p) { r = p~.two(); }
+  // B: p::resolve(alice)
+  // B: alice~.two(result=r)
+
+  const exportedPVatB = 'p+1';
+  syscallB.send(rootAvatB, 'one', capargs([slot0arg], [exportedPVatB]));
+  const pKernel = clistVatToKernel(kernel, vatB, exportedPVatB);
+  await kernel.run();
+  const importedPVatA = clistKernelToVat(kernel, vatA, pKernel);
+  t.truthy(importedPVatA);
+  // expect logA to have deliver(one)
+  t.deepEqual(logA.shift(), {
+    type: 'deliver',
+    targetSlot: rootAvatA,
+    method: 'one',
+    args: capargs([slot0arg], [importedPVatA]),
+    resultSlot: null,
+  });
+  t.deepEqual(logA, []);
+  t.deepEqual(logB, []);
+
+  const exportedRPVatA = 'p+2';
+  syscallA.send(importedPVatA, 'two', capargs([], []), exportedRPVatA);
+  syscallA.subscribe(exportedRPVatA);
+  const rpKernel = clistVatToKernel(kernel, vatA, exportedRPVatA);
+  await kernel.run();
+  // Send is queued on the promise
+  if (enablePipelining) {
+    const importedRPVatB = clistKernelToVat(kernel, vatB, rpKernel);
+    t.truthy(importedRPVatB);
+    t.deepEqual(logB.shift(), {
+      type: 'deliver',
+      targetSlot: exportedPVatB,
+      method: 'two',
+      args: capargs([], []),
+      resultSlot: importedRPVatB,
+    });
+    t.deepEqual(logA, []);
+    t.deepEqual(logB, []);
+
+    syscallB.send(rootAvatB, 'two', capargs([], []), importedRPVatB);
+    await kernel.run();
+  } else {
+    // Send is queued to promise
+    t.deepEqual(logA, []);
+    t.deepEqual(logB, []);
+
+    syscallB.resolve([[exportedPVatB, false, capargs(slot0arg, [rootAvatB])]]);
+    await kernel.run();
+  }
+
+  // expect logA to have deliver(two)
+  t.deepEqual(logA.shift(), {
+    type: 'deliver',
+    targetSlot: rootAvatA,
+    method: 'two',
+    args: capargs([], []),
+    resultSlot: exportedRPVatA,
+  });
+  t.deepEqual(logA, []);
+  t.deepEqual(logB, []);
+}
+
+doReflectedMessageTest.title = (_, enablePipelining) =>
+  `kernel vpid handling reflected message (enablePipelining=${enablePipelining})`;
+
+test('', doReflectedMessageTest, true);
+test('', doReflectedMessageTest, false);
+
+test('kernel vpid handling rejects imported result promise', async t => {
+  const endowments = makeEndowments();
+  initializeKernel({}, endowments.hostStorage);
+  const kernel = buildKernel(endowments, {}, {});
+  await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
+
+  // This is negative test checking that non-pipelining vats are prevented
+  // from using an imported promise as result
+
+  // we use vatA as the sender of messages to B
+  const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
+    'vatA',
+    kernel,
+    undefined,
+  );
+  // vatB is non-pipelining
+  const { log: logB, getSyscall: getSyscallB } = await buildRawVat(
+    'vatB',
+    kernel,
+    undefined,
+    { enablePipelining: false },
+  );
+  const syscallA = getSyscallA();
+  const syscallB = getSyscallB();
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+
+  // A will need a reference to B, to send anything, and vice versa
+  const rootBvatB = 'o+0';
+  const rootBkernel = kernel.addExport(vatB, rootBvatB);
+  const rootBvatA = kernel.addImport(vatA, rootBkernel);
+  const rootAvatA = 'o+0';
+  const rootAkernel = kernel.addExport(vatA, rootAvatA);
+  const rootAvatB = kernel.addImport(vatB, rootAkernel);
+
+  // Alice sends a message to Bob (leaving Bob as decider of result promise)
+  // Bob tries to send a message to Alice reusing the result promise from step one
+  // A: r = bob~.one()
+  // B: alice~.two(result=r)
+
+  const exportedPRVatA = 'p+1';
+  syscallA.send(rootBvatA, 'one', capargs([], []), exportedPRVatA);
+  syscallA.subscribe(exportedPRVatA);
+  const prKernel = clistVatToKernel(kernel, vatA, exportedPRVatA);
+  await kernel.run();
+  const importedPRVatB = clistKernelToVat(kernel, vatB, prKernel);
+  t.truthy(importedPRVatB);
+  // expect logB to have deliver(one)
+  t.deepEqual(logB.shift(), {
+    type: 'deliver',
+    targetSlot: rootBvatB,
+    method: 'one',
+    args: capargs([], []),
+    resultSlot: importedPRVatB,
+  });
+  t.deepEqual(logA, []);
+  t.deepEqual(logB, []);
+
+  t.throws(
+    () => syscallB.send(rootAvatB, 'two', capargs([], []), importedPRVatB),
+    undefined,
+    'Send reusing imported promise should throw',
+  );
+  syscallB.subscribe(importedPRVatB);
+  await kernel.run();
+
+  t.deepEqual(logA, []);
+  t.deepEqual(logB, []);
+});
+
+test('kernel vpid handling rejects previously exported result promise', async t => {
+  const endowments = makeEndowments();
+  initializeKernel({}, endowments.hostStorage);
+  const kernel = buildKernel(endowments, {}, {});
+  await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
+
+  // This is negative test checking that non-pipelining vats are prevented
+  // from using a previously exported promise for which they retained
+  // decider-ship as result
+
+  // we use vatA as the non-pipelining sender of messages to B
+  const { log: logA, getSyscall: getSyscallA } = await buildRawVat(
+    'vatA',
+    kernel,
+    undefined,
+    { enablePipelining: false },
+  );
+  // vatB is the placeholder receiver
+  const { log: logB } = await buildRawVat('vatB', kernel, undefined);
+  const syscallA = getSyscallA();
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+
+  // A will need a reference to B, to send anything
+  const rootBvatB = 'o+0';
+  const rootBkernel = kernel.addExport(vatB, rootBvatB);
+  const rootBvatA = kernel.addImport(vatA, rootBkernel);
+
+  // Alice allocates a promise and sends it to Bob in the arguments of a
+  // message as well as using it as the result of the message send
+  // A: p1 = new Promise();
+  // A: bob~.one(result=p1, p1)
+
+  const exportedPRVatA = 'p+1';
+  t.throws(() =>
+    syscallA.send(
+      rootBvatA,
+      'one',
+      capargs(slot0arg, [exportedPRVatA]),
+      exportedPRVatA,
+    ),
+  );
+  syscallA.subscribe(exportedPRVatA);
+  await kernel.run();
+  t.deepEqual(logA, []);
+  t.deepEqual(logB, []);
 });

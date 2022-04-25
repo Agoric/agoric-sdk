@@ -28,7 +28,7 @@ export function makeInbound(state) {
       X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
     );
     remote.deleteRemoteMapping(lpid);
-    cdebug(`comms delete mapping r<->k ${remoteID} {rpid}<=>${lpid}`);
+    cdebug(`comms delete mapping r<->k ${remoteID} ${rpid}<=>${lpid}`);
   }
 
   function beginRemotePromiseIDRetirement(remoteID, rpid) {
@@ -132,6 +132,9 @@ export function makeInbound(state) {
 
   function provideLocalForRemoteResult(remoteID, result) {
     insistRemoteType('promise', result);
+    // Comms is a pipelining vat which means the result may be allocated by
+    // any side, at any time. Unlike the kernel checks, as long as the decider
+    // is correct, and the promise is unresolved, it's valid as a result.
     const lpid = provideLocalForRemote(remoteID, result);
     // this asserts they had control over lpid, and that it wasn't already
     // resolved. TODO: reject somehow rather than crash weirdly, we can't

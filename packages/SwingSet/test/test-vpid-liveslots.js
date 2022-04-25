@@ -97,7 +97,7 @@ function resolvePR(pr, mode, targets) {
       pr.reject('error');
       break;
     case 'promise-reject':
-      pr.reject([targets.p1]);
+      pr.reject(targets.p1);
       break;
     default:
       assert.fail(X`unknown mode ${mode}`);
@@ -143,7 +143,7 @@ function resolutionOf(vpid, mode, targets) {
       break;
     case 'promise-reject':
       resolution.resolutions[0][1] = true;
-      resolution.resolutions[0][2] = capargs([slot0arg], [targets.p1]);
+      resolution.resolutions[0][2] = capargs(slot0arg, [targets.p1]);
       break;
     default:
       assert.fail(X`unknown mode ${mode}`);
@@ -608,7 +608,7 @@ async function doVatResolveCase4(t, mode) {
   } else if (mode === 'reject') {
     r = makeReject(p1, capargs('error', []));
   } else if (mode === 'promise-reject') {
-    r = makeReject(p1, capargs([slot0arg], [p1]));
+    r = makeReject(p1, capargs(slot0arg, [p1]));
   } else {
     assert.fail(X`unknown mode ${mode}`);
   }

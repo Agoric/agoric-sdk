@@ -334,9 +334,14 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
    * @param {ManagerOptions} creationOptions
    */
   async function loadTestVat(vatID, setup, creationOptions) {
-    const manager = await vatLoader.loadTestVat(vatID, setup, creationOptions);
-
     const translators = provideTranslators(vatID);
+
+    const manager = await vatLoader.loadTestVat(
+      vatID,
+      setup,
+      translators,
+      creationOptions,
+    );
 
     const { enablePipelining = false } = creationOptions;
 

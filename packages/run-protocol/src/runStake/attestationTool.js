@@ -40,6 +40,20 @@ const behavior = {
       state.lienMint.returnAttestation,
       'returnAttestation',
     ),
+
+  /**
+   * @param {MethodContext} context
+   * @param {Amount<'nat'>} lienedAmount
+   */
+  wrapLienedAmount: ({ state }, lienedAmount) =>
+    state.lienMint.wrapLienedAmount(state.address, lienedAmount),
+
+  /**
+   * @param {MethodContext} context
+   * @param {Amount<'copyBag'>} attAmount
+   */
+  unwrapLienedAmount: ({ state }, attAmount) =>
+    state.lienMint.unwrapLienedAmount(attAmount),
 };
 
 /**
