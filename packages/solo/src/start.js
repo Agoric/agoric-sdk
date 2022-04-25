@@ -207,7 +207,7 @@ const buildSwingset = async (
 
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
-    { mapSize, swingStoreTraceFile },
+    { mapSize, traceFile: swingStoreTraceFile },
   );
   const hostStorage = {
     kvStore,
