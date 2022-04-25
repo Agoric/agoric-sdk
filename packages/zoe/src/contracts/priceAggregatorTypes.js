@@ -19,7 +19,6 @@
 
 /**
  * @typedef {Object} PriceAggregatorCreatorFacet
- * @property {(quoteMint: Mint) => Promise<void>} initializeQuoteMint
  * @property {PriceAggregatorCreatorFacetInitOracle} initOracle
  * @property {(oracleKey: OracleKey) => Promise<void>} deleteOracle
  */
