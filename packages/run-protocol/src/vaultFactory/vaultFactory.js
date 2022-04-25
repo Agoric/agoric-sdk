@@ -19,7 +19,6 @@ import '@agoric/zoe/src/contracts/exported.js';
 // to satisfy contractGovernor. It needs to return a creatorFacet with
 // { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
-// @ts-expect-error
 import { assertElectorateMatches } from '@agoric/governance';
 import {
   makeVaultDirectorParamManager,

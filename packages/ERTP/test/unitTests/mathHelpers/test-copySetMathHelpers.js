@@ -126,7 +126,7 @@ test('copySet with strings isGTE', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['b']) }),
       ),
-    null,
+    undefined,
     `duplicates in the left of isGTE should throw`,
   );
   t.throws(
@@ -135,7 +135,7 @@ test('copySet with strings isGTE', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['b', 'b']) }),
       ),
-    null,
+    undefined,
     `duplicates in the right of isGTE should throw`,
   );
   t.assert(

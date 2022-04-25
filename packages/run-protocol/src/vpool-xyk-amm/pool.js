@@ -236,7 +236,6 @@ const finish = context => {
     return publicPrices(
       context.facets.singlePool.getPriceForInput(
         amountIn,
-        // @ts-expect-error confused about whether it needs a context
         AmountMath.makeEmpty(brandOut),
       ),
     );
@@ -245,7 +244,6 @@ const finish = context => {
     publicPrices(
       context.facets.singlePool.getPriceForOutput(
         AmountMath.makeEmpty(brandIn),
-        // @ts-expect-error confused about whether it needs a context
         amountout,
       ),
     );
@@ -300,7 +298,6 @@ export const definePoolKind = (
 
     // XXX why does the paramAccessor have to be repackaged as a Far object?
     const params = Far('pool param accessor', {
-      // @ts-expect-error confused
       ...paramAccessor,
     });
 

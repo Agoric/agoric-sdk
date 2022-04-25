@@ -118,6 +118,7 @@ test('error=true', t => {
 });
 
 test('can simulate input - just calls onChange', t => {
+  /** @type {bigint | undefined} */
   let receivedValue;
   const onChange = newValue => {
     receivedValue = newValue;
@@ -188,6 +189,7 @@ test('displays 3 eth correctly', t => {
 });
 
 test('discards negative values', t => {
+  /** @type {bigint | undefined} */
   let receivedValue;
   const onChange = newValue => {
     receivedValue = newValue;

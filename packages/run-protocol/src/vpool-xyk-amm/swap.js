@@ -2,7 +2,6 @@
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';
-// @ts-expect-error
 import { AmountMath } from '@agoric/ertp';
 
 /**
@@ -42,7 +41,6 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       prices = pool.getPriceForInput(amountIn, amountOut);
     }
     assert(amountIn.brand === prices.swapperGives.brand);
-    // @ts-expect-error
     return pool.allocateGainsAndLosses(seat, prices);
   };
 

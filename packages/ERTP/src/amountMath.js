@@ -181,7 +181,6 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
  * @returns {[K, K]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
-  // @ts-expect-error cast (ignore b/c erroring in CI but not my IDE)
   return [h.doCoerce(leftAmount.value), h.doCoerce(rightAmount.value)];
 };
 
@@ -208,7 +207,6 @@ const AmountMath = {
     assertRemotable(brand, 'brand');
     const h = assertValueGetHelpers(allegedValue);
     const value = h.doCoerce(allegedValue);
-    // @ts-expect-error cast (ignore b/c erroring in CI but not my IDE)
     return harden({ brand, value });
   },
   /**
@@ -229,7 +227,6 @@ const AmountMath = {
       X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
     );
     // Will throw on inappropriate value
-    // @ts-expect-error cast (ignore b/c erroring in CI but not my IDE)
     return AmountMath.make(brand, allegedValue);
   },
   /**
@@ -256,7 +253,6 @@ const AmountMath = {
     assertRemotable(brand, 'brand');
     assertAssetKind(assetKind);
     const value = helpers[assetKind].doMakeEmpty();
-    // @ts-expect-error cast (ignore b/c erroring in CI but not my IDE)
     return harden({ brand, value });
   },
   /**

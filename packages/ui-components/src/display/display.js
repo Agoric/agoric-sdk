@@ -65,7 +65,6 @@ export const stringifyValue = (
     return stringifyNat(value, decimalPlaces, placesToShow);
   }
   if (assetKind === AssetKind.SET) {
-    // @ts-expect-error AmountValue is a SetValue
     return stringifySet(value);
   }
   assert.fail(details`AssetKind ${assetKind} must be NAT or SET`);

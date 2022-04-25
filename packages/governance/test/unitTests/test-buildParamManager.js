@@ -218,7 +218,6 @@ test('Invitation', async t => {
     paramManager.getInvitationAmount('Invite').value;
   t.deepEqual(invitationActualAmount, invitationAmount.value);
   t.assert(keyEQ(invitationActualAmount, invitationAmount.value));
-  // @ts-expect-error invitationActualAmount's type is unknown
   t.is(invitationActualAmount[0].description, 'simple');
 
   t.is(await paramManager.getInternalParamValue('Invite'), invitation);
@@ -304,10 +303,8 @@ test('Strings', async t => {
     .build();
   t.is(paramManager.getString('OurWeapons'), 'fear');
 
-  // @ts-expect-error updateOurWeapons is a generated name
   await paramManager.updateParams({ OurWeapons: 'fear,surprise' });
   t.is(paramManager.getString('OurWeapons'), 'fear,surprise');
-  // @ts-expect-error updateOurWeapons is a generated name
   await t.throwsAsync(
     () =>
       paramManager.updateParams({
@@ -330,7 +327,6 @@ test('Unknown', async t => {
     .build();
   t.is(paramManager.getUnknown('Surprise'), 'party');
 
-  // @ts-expect-error updateSurprise is a generated name
   await paramManager.updateParams({ Surprise: 'gift' });
   t.is(paramManager.getUnknown('Surprise'), 'gift');
   await paramManager.updateParams({ Surprise: ['gift', 'party'] });

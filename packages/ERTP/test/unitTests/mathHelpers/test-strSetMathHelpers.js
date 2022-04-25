@@ -97,7 +97,7 @@ test('set with strings isGTE', t => {
         harden({ brand: mockBrand, value: ['a', 'a'] }),
         harden({ brand: mockBrand, value: ['b'] }),
       ),
-    null,
+    undefined,
     `duplicates in the left of isGTE should throw`,
   );
   t.throws(
@@ -106,7 +106,7 @@ test('set with strings isGTE', t => {
         harden({ brand: mockBrand, value: ['a'] }),
         harden({ brand: mockBrand, value: ['b', 'b'] }),
       ),
-    null,
+    undefined,
     `duplicates in the right of isGTE should throw`,
   );
   t.assert(

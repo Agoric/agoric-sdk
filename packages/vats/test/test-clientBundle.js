@@ -61,7 +61,6 @@ test('connectFaucet produces payments', async t => {
   produce.bldIssuerKit.resolve(bldKit);
   const runIssuer = E(zoe).getFeeIssuer();
   produce.bankManager.resolve(
-    // @ts-expect-error never mind other methods
     Promise.resolve(
       // @ts-expect-error never mind other methods
       Far('mockBankManager', {
