@@ -10,7 +10,8 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node ./scripts/build-bundles.js",
-    "deploy:proposal": "agoric deploy ./scripts/init-core.js",
+    "build:eval:main": "agoric deploy ./scripts/init-core.js",
+    "deploy:contracts": "agoric deploy scripts/deploy-contracts.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
