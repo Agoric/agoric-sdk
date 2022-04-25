@@ -1,4 +1,3 @@
-/* global setInterval */
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import {
   importMailbox,
@@ -12,6 +11,9 @@ import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
+
+// eslint-disable-next-line no-unused-vars
+let whenHellFreezesOver = null;
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
@@ -231,7 +233,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   const nodePort = registerPortHandler(toSwingSet);
 
   // Need to keep the process alive until Go exits.
-  setInterval(() => undefined, 30000);
+  whenHellFreezesOver = new Promise(() => {});
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
 
   let savedChainSends = [];

@@ -1,7 +1,9 @@
 #! /bin/bash
 set -e
 
-thisdir=$(dirname -- "$0")
+real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
+thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
+
 FAUCET_HOME=$thisdir/../faucet
 DELEGATES="$thisdir/cosmos-delegates.txt"
 
@@ -9,7 +11,7 @@ MAX_LINES=-1
 STAKE=75000000ubld
 # GIFT=251000000000urun
 GIFT=100000000urun
-# SOLO_COINS=100000000urun
+SOLO_COINS=100000000urun
 # SOLO_COINS=220000000000urun,75000000ubld
 
 
@@ -26,8 +28,14 @@ show-faucet-address)
   ;;
 esac
 
-chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
-IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
+networkName=$(basename "$thisdir")
+if netconfig=$(curl "https://$networkName.agoric.net/network-config"); then
+  chainName=$(echo "$netconfig" | jq -r .chainName)
+  read -r -a origRpcAddrs <<<"$(echo "$netconfig" | jq -r .rpcAddrs[])"
+else
+  chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
+  IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
+fi
 
 read -ra rpcAddrs <<<"${origRpcAddrs[@]}"
 while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
@@ -35,10 +43,15 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
   selected=${rpcAddrs[$r]}
   read -ra rpcAddrs <<<"${rpcAddrs[@]/$selected}"
 
+  case $selected in
+  *://*) node="$selected"; status="$selected/status" ;;
+  *) node="tcp://$selected"; status="http://$selected/status" ;;
+  esac
+
   # echo "Checking if $selected is alive"
-  if [[ $(curl -s http://"$selected"/status | jq .result.sync_info.catching_up) == false ]]; then
-    QUERY="$ACH query --node=tcp://$selected"
-    TX="$ACH tx --node=tcp://$selected --chain-id=$chainName --keyring-backend=test --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=sync --from=$FAUCET_ADDR"
+  if [[ $(curl -s "$status" | jq .result.sync_info.catching_up) == false ]]; then
+    QUERY="$ACH query --node=$node"
+    TX="$ACH tx --node=$node --chain-id=$chainName --keyring-backend=test --yes --gas=auto --gas-adjustment=1.2 --broadcast-mode=sync --from=$FAUCET_ADDR"
     case $OP in
     debug)
       echo "would try $selected"

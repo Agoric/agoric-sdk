@@ -17,8 +17,7 @@ import '../../exported.js';
  */
 
 /** @type {CompareAmount} */
-const isLT = (amountOut, amountLimit) =>
-  !AmountMath.isGTE(amountOut, amountLimit);
+const isLT = (amount, amountLimit) => !AmountMath.isGTE(amount, amountLimit);
 
 /** @type {CompareAmount} */
 const isLTE = (amount, amountLimit) => AmountMath.isGTE(amountLimit, amount);
@@ -145,14 +144,24 @@ export function makeOnewayPriceAuthorityKit(opts) {
       return triggerPK.promise;
     };
 
+  /**
+   * Create a mutableQuoteWhen* function.
+   *
+   * @param {CompareAmount} compareAmountsFn
+   */
   const makeMutableQuote = compareAmountsFn =>
-    async function mutableQuoteWhenOutTrigger(amountInArg, amountOutLimitArg) {
-      let amountIn = AmountMath.coerce(actualBrandIn, amountInArg);
-      let amountOutLimit = AmountMath.coerce(actualBrandOut, amountOutLimitArg);
+    /**
+     * @param {Amount} amountIn
+     * @param {Amount} amountOutLimit
+     */
+    async function mutableQuoteWhenOutTrigger(amountIn, amountOutLimit) {
+      AmountMath.coerce(actualBrandIn, amountIn);
+      AmountMath.coerce(actualBrandOut, amountOutLimit);
 
       /** @type {PromiseRecord<PriceQuote>} */
       const triggerPK = makePromiseKit();
 
+      /** @type {MutableQuote} */
       const mutableQuote = Far('MutableQuote', {
         cancel: e => triggerPK.reject(e),
         updateLevel: (newAmountIn, newAmountOutLimit) => {
