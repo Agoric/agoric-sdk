@@ -142,8 +142,7 @@ const checkContractState = async (zoe, contractInstanceP, log) => {
   let paramValues = await E(contractPublic).getGovernedParams();
   const subscription = await E(contractPublic).getSubscription();
   const paramChangeObserver = Far('param observer', {
-    updateState: update =>
-      log(`${update.name} was ${q(update.value)} after the vote.`),
+    updateState: update => log(`${update.paramNames} changed in a vote.`),
   });
   observeIteration(subscription, paramChangeObserver);
 
@@ -395,6 +394,59 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
         electorateOutcome,
         o => log(`vote (unexpected) successful outcome: ${o} `),
         e => log(`vote rejected outcome: ${e}`),
+      );
+
+      await validateElectorateChange(
+        zoe,
+        log,
+        voters1,
+        details1,
+        governorInstance,
+        // The electorate didn't change
+        firstElectorateInstance,
+        E(zoe).getPublicFacet(governorInstance),
+      );
+
+      await checkContractState(zoe, governedInstance, log);
+
+      break;
+    }
+    case 'changeTwoParams': {
+      const voters1 = createVoters(firstElectorateCreatorFacet, voterCreator);
+
+      const secondElectorateTerms = {
+        committeeName: 'ThirtyCommittee',
+        committeeSize: 5,
+      };
+      const { electorateCreatorFacet: secondElectorateCreatorFacet } =
+        await startElectorate(zoe, installations, secondElectorateTerms);
+
+      const newPoserInvitationP = E(
+        secondElectorateCreatorFacet,
+      ).getPoserInvitation();
+      const [newPoserInvitation] = await Promise.all([newPoserInvitationP]);
+
+      const changes = {
+        [MALLEABLE_NUMBER]: 42n,
+        [CONTRACT_ELECTORATE]: newPoserInvitation,
+      };
+      const { details: details1, outcomeOfUpdate: electorateOutcome } =
+        await setupParameterChanges(
+          zoe,
+          log,
+          governor,
+          installations,
+          newPoserInvitation,
+          changes,
+        );
+      await votersVote(details1, voters1, [1, 0, 0, 0, 1]);
+
+      await E(timer).tick();
+      await E(timer).tick();
+      E.when(
+        electorateOutcome,
+        o => log(`successful outcome: ${q(o)} `),
+        e => log(`vote (unexpected) rejected outcome: ${e}`),
       );
 
       await validateElectorateChange(

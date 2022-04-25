@@ -25,9 +25,11 @@ import '../../src/vaultFactory/types.js';
 import * as Collect from '../../src/collect.js';
 
 import {
+  makeVoterTool,
   setUpZoeForTest,
   setupBootstrap,
   installGovernance,
+  waitForPromisesToSettle,
 } from '../supports.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
@@ -132,6 +134,15 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const governedInstance = E(governorPublicFacet).getGovernedContract();
+
+  const counter = await space.installation.consume.binaryVoteCounter;
+  t.context.committee = makeVoterTool(
+    zoe,
+    space.consume.economicCommitteeCreatorFacet,
+    // @ts-expect-error TODO: add vaultFactoryGovernorCreator to vats/src/types.js
+    space.consume.vaultFactoryGovernorCreator,
+    counter,
+  );
 
   /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
   // @ts-expect-error cast from unknown
@@ -313,16 +324,22 @@ async function setupServices(
 
 // #region driver
 const makeDriver = async (t, initialPrice, priceBase) => {
-  const services = await setupServices(t, initialPrice, priceBase);
+  const timer = buildManualTimer(t.log);
+  const services = await setupServices(t, initialPrice, priceBase, timer);
+
   const {
     zoe,
-    aethKit: { mint: aethMint, issuer: aethIssuer },
+    aethKit: { mint: aethMint, issuer: aethIssuer, brand: aethBrand },
     runKit: { issuer: runIssuer },
   } = t.context;
   const {
     vaultFactory: { lender, vaultFactory },
     priceAuthority,
   } = services;
+  const managerNotifier = await E(
+    E(lender).getCollateralManager(aethBrand),
+  ).getNotifier();
+  let managerNotification = await E(managerNotifier).getUpdateSince();
   /** @type {UserSeat<VaultKit>} */
   let vaultSeat;
   /** @type {VaultKit} */
@@ -336,15 +353,15 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     vault: () => vault,
     vaultSeat: () => vaultSeat,
     notification: () => notification,
+    managerNotification: () => managerNotification,
     lastSeat: () => lastSeat,
     lastOfferResult: () => lastOfferResult,
-    timer: () => t.context.timer,
+    timer: () => timer,
     tick: (ticks = 1) => {
       for (let i = 0; i < ticks; i += 1) {
-        t.context.timer.tick();
+        timer.tick();
       }
     },
-
     makeVault: async (collateral, debt) => {
       vaultSeat = await E(zoe).offer(
         await E(lender).makeVaultInvitation(),
@@ -421,6 +438,28 @@ const makeDriver = async (t, initialPrice, priceBase) => {
       }
     },
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
+    // setLiquidationTerms('MaxImpactBP', 80n)
+    setLiquidationTerms: async (name, newValue) => {
+      const deadline = 3n;
+      const { cast, outcome } = await E(t.context.committee).changeParam(
+        harden({
+          paramPath: { key: 'governedParams' },
+          changes: { [name]: newValue },
+        }),
+        deadline,
+      );
+      await cast;
+      await driver.tick(3);
+      await outcome;
+    },
+    checkManagerNotifier: async (expected, optUpdateSince) => {
+      managerNotification = await E(managerNotifier).getUpdateSince(
+        optUpdateSince,
+      );
+      trace(t, 'manager notifier', managerNotification);
+      expected && t.like(managerNotification.value, expected);
+      return managerNotification;
+    },
   };
   return driver;
 };
@@ -573,6 +612,48 @@ test('price falls precipitously', async t => {
   });
   await d.checkPayouts(debtExpected, collateralExpected);
   await d.checkVault(debtExpected, AmountMath.makeEmpty(aethBrand));
+});
+
+test('update liquidator', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+    runKit: { brand: debtBrand },
+  } = t.context;
+  t.context.runInitialLiquidity = AmountMath.make(debtBrand, 500_000_000n);
+  t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 100_000_000n);
+
+  const d = await makeDriver(
+    t,
+    AmountMath.make(debtBrand, 500n),
+    AmountMath.make(aethBrand, 100n),
+  );
+  const loanAmount = AmountMath.make(debtBrand, 300n);
+  const collateralAmount = AmountMath.make(aethBrand, 100n);
+  /* * @type {UserSeat<VaultKit>} */
+  const vault = await d.makeVault(collateralAmount, loanAmount);
+  const debtAmount = await E(vault).getCurrentDebt();
+  await d.checkVault(debtAmount, collateralAmount);
+
+  let govNotify = await d.checkManagerNotifier();
+  const oldLiquidator = govNotify.value.liquidatorInstance;
+  trace(t, 'gov start', oldLiquidator, govNotify);
+  await d.setLiquidationTerms(
+    'LiquidationTerms',
+    harden({
+      MaxImpactBP: 80n,
+      OracleTolerance: makeRatio(30n, debtBrand),
+      AMMMaxSlippage: makeRatio(30n, debtBrand),
+    }),
+  );
+  await waitForPromisesToSettle();
+  govNotify = await d.checkManagerNotifier();
+  const newLiquidator = govNotify.value.liquidatorInstance;
+  t.not(oldLiquidator, newLiquidator);
+
+  // trigger liquidation
+  await d.setPrice(AmountMath.make(debtBrand, 300n));
+  await waitForPromisesToSettle();
+  await d.checkNotify(Phase.LIQUIDATED);
 });
 
 // 1) `give` sells for more than `stopAfter`, and got some of the input back
