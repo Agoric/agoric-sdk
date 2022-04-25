@@ -1,12 +1,36 @@
+name: Proto merge integration
+
 on:
+  workflow_dispatch:
   push:
+    branches:
+      - master
+    tags:
+      - '@agoric/sdk@*'
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
+      - auto_merge_enabled
 
 jobs:
+  pre_check:
+    uses: ./.github/workflows/pre-check-integration.yml
+
   mergify-merge-queue-test:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: wait for a while on this branch
         shell: bash
         run: |
           echo "$GITHUB_REF"
+          echo 'needs ${{ toJSON(needs) }}'
+          echo 'github ${{ toJSON(github) }}'
+          echo 'job ${{ toJSON(job) }}'
+          echo 'env ${{ toJSON(env) }}'
           sleep 120
