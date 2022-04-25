@@ -167,7 +167,7 @@ const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   observeIteration(subscription, {
     updateState(_paramUpdate) {
       const { install, terms } = getLiquidationConfig(govParams);
-      if (install === oldInstall || keyEQ(terms, oldTerms)) {
+      if (install === oldInstall && keyEQ(terms, oldTerms)) {
         return;
       }
       oldInstall = install;
