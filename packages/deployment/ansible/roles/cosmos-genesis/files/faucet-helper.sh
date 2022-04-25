@@ -29,9 +29,13 @@ show-faucet-address)
 esac
 
 networkName=$(basename "$thisdir")
-netconfig=$(curl "https://$networkName.agoric.net/network-config")
-chainName=$(echo "$netconfig" | jq -r .chainName)
-read -r -a origRpcAddrs <<<"$(echo "$netconfig" | jq -r .rpcAddrs[])"
+if netconfig=$(curl "https://$networkName.agoric.net/network-config"); then
+  chainName=$(echo "$netconfig" | jq -r .chainName)
+  read -r -a origRpcAddrs <<<"$(echo "$netconfig" | jq -r .rpcAddrs[])"
+else
+  chainName=$(cat "$thisdir/ag-chain-cosmos/chain-name.txt")
+  IFS=, read -r -a origRpcAddrs <<<"$(AG_SETUP_COSMOS_HOME=$thisdir ag-setup-cosmos show-rpcaddrs)"
+fi
 
 read -ra rpcAddrs <<<"${origRpcAddrs[@]}"
 while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
