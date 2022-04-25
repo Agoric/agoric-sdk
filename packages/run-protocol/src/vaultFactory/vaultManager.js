@@ -27,7 +27,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM', true);
 
 /**
  * @typedef {{
@@ -35,6 +35,7 @@ const trace = makeTracer('VM', false);
  *  interestRate: Ratio,
  *  latestInterestUpdate: bigint,
  *  totalDebt: Amount<'nat'>,
+ *  liquidatorInstance?: Instance,
  * }} AssetState */
 
 /**
@@ -72,6 +73,7 @@ const trace = makeTracer('VM', false);
  * latestInterestUpdate: bigint,
  * liquidationInProgress: boolean,
  * liquidator?: Liquidator
+ * liquidatorInstance?: Instance
  * outstandingQuote: Promise<MutableQuote>| null,
  * totalDebt: Amount<'nat'>,
  * vaultCounter: number,
@@ -145,6 +147,7 @@ const initState = (
       interestRate: fixed.factoryPowers.getGovernedParams().getInterestRate(),
       latestInterestUpdate,
       totalDebt,
+      liquidationInstance: undefined,
     }),
   );
 
@@ -157,6 +160,7 @@ const initState = (
     vaultCounter: 0,
     liquidationInProgress: false,
     liquidator: undefined,
+    liquidatorInstance: undefined,
     totalDebt,
     compoundedInterest,
     latestInterestUpdate,
@@ -205,19 +209,24 @@ const helperBehavior = {
       updateTime,
     );
     Object.assign(state, stateUpdates);
+    facets.helper.notify();
+    trace('chargeAllVaults complete');
+    facets.helper.reschedulePriceCheck();
+  },
 
+  notify: ({ state }) => {
+    const interestRate = state.factoryPowers
+      .getGovernedParams()
+      .getInterestRate();
     /** @type {AssetState} */
     const payload = harden({
       compoundedInterest: state.compoundedInterest,
       interestRate,
       latestInterestUpdate: state.latestInterestUpdate,
       totalDebt: state.totalDebt,
+      liquidatorInstance: state.liquidatorInstance,
     });
     state.assetUpdater.updateState(payload);
-
-    trace('chargeAllVaults complete', payload);
-
-    facets.helper.reschedulePriceCheck();
   },
 
   /**
@@ -500,7 +509,11 @@ const selfBehavior = {
    * @param {Installation} liquidationInstall
    * @param {Object} liquidationTerms
    */
-  setupLiquidator: async ({ state }, liquidationInstall, liquidationTerms) => {
+  setupLiquidator: async (
+    { state, facets },
+    liquidationInstall,
+    liquidationTerms,
+  ) => {
     const { zcf, debtBrand, collateralBrand } = state;
     const { ammPublicFacet, priceAuthority, timerService } = zcf.getTerms();
     const zoe = zcf.getZoeService();
@@ -512,7 +525,7 @@ const selfBehavior = {
       collateralBrand,
       liquidationTerms,
     });
-    const { creatorFacet } = await E(zoe).startInstance(
+    const { creatorFacet, instance } = await E(zoe).startInstance(
       liquidationInstall,
       harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
       harden({
@@ -523,7 +536,14 @@ const selfBehavior = {
         debtBrand,
       }),
     );
+    trace('setup liquidator complete', {
+      instance,
+      old: state.liquidatorInstance,
+      equal: state.liquidatorInstance === instance,
+    });
+    state.liquidatorInstance = instance;
     state.liquidator = creatorFacet;
+    facets.helper.notify();
   },
 
   /** @param {MethodContext} context */

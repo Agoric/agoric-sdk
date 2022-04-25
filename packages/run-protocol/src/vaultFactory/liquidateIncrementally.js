@@ -93,9 +93,9 @@ const start = async zcf => {
     );
   };
 
-  function computeOracleLimit(oracleQuote, oracleTolerance) {
+  const computeOracleLimit = (oracleQuote, oracleTolerance) => {
     return ceilMultiplyBy(getAmountOut(oracleQuote), oneMinus(oracleTolerance));
-  }
+  };
 
   const getAMMFeeBP = async () => {
     const zoe = zcf.getZoeService();

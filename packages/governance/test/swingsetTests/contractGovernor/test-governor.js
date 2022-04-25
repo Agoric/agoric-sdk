@@ -95,8 +95,9 @@ const expectedcontractGovernorStartLog = [
   '&& running a task scheduled for 3. &&',
   'vote outcome: {"changes":{"MalleableNumber":"[299792458n]"}}',
   'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
-  'MalleableNumber changed in a vote.',
+  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 299792458',
+  'MalleableNumber changed in a vote.',
   'Number after: 299792458',
 ];
 
@@ -130,8 +131,9 @@ const expectedChangeElectorateLog = [
   '&& running a task scheduled for 4. &&',
   'vote outcome: {"changes":{"MalleableNumber":"[299792458n]"}}',
   'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
-  'Electorate changed in a vote.',
+  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 299792458',
+  'Electorate changed in a vote.',
   'MalleableNumber changed in a vote.',
 ];
 
@@ -155,6 +157,7 @@ const expectedBrokenUpdateLog = [
   'Validation complete: true',
   'vote rejected outcome: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   'update failed: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
+  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 602214090000000000000000',
 ];
 
@@ -180,6 +183,7 @@ const changeTwoParamsLog = [
   'successful outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}} ',
   'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 42',
+  'Electorate,MalleableNumber changed in a vote.',
 ];
 
 test.serial('changeTwoParams', async t => {

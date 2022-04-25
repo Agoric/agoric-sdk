@@ -153,7 +153,7 @@ const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   observeIteration(subscription, {
     updateState(_paramUpdate) {
       const { install, terms } = getLiquidationConfig(govParams);
-      if (install === oldInstall || keyEQ(terms, oldTerms)) {
+      if (install === oldInstall && keyEQ(terms, oldTerms)) {
         return;
       }
       oldInstall = install;
@@ -274,7 +274,7 @@ const machineBehavior = {
     );
     collateralTypes.init(collateralBrand, vm);
     const { install, terms } = getLiquidationConfig(directorParamManager);
-    console.log('PARAM UPDATE', install, terms);
+    // console.log('PARAM UPDATE', install, terms);
     await vm.setupLiquidator(install, terms);
     watchGovernance(directorParamManager, vm, install, terms);
     return vm;
