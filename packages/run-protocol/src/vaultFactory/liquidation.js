@@ -40,7 +40,7 @@ const partitionProceeds = (proceeds, debt, penaltyPortion) => {
  * @param {(losses: Amount,
  *             zcfSeat: ZCFSeat
  *            ) => void} burnLosses
- * @param {LiquidationStrategy} strategy
+ * @param {Liquidator}  liquidator
  * @param {Brand} collateralBrand
  * @param {ZCFSeat} penaltyPoolSeat
  * @param {Ratio} penaltyRate
@@ -50,11 +50,12 @@ const liquidate = async (
   zcf,
   innerVault,
   burnLosses,
-  strategy,
+  liquidator,
   collateralBrand,
   penaltyPoolSeat,
   penaltyRate,
 ) => {
+  trace('liquidate start', innerVault);
   innerVault.liquidating();
 
   const debtBeforePenalty = innerVault.getCurrentDebt();
@@ -68,12 +69,16 @@ const liquidate = async (
     'Collateral',
     collateralBrand,
   );
+  trace(`liq prep`, collateralToSell, debtBeforePenalty, debt);
 
   const { deposited, userSeatPromise: liqSeat } = await offerTo(
     zcf,
-    strategy.makeInvitation(debt),
-    strategy.keywordMapping(),
-    strategy.makeProposal(collateralToSell, debt),
+    E(liquidator).makeLiquidateInvitation(),
+    harden({ Collateral: 'In', RUN: 'Out' }),
+    harden({
+      give: { In: collateralToSell },
+      want: { Out: AmountMath.makeEmpty(debt.brand) },
+    }),
     vaultZcfSeat,
     vaultZcfSeat,
     harden({ debt }),
@@ -108,34 +113,6 @@ const liquidate = async (
   return innerVault;
 };
 
-/**
- * The default strategy converts of all the collateral to RUN using autoswap,
- * and refunds any excess RUN.
- *
- * @type {(XYKAMMPublicFacet) => LiquidationStrategy}
- */
-const makeDefaultLiquidationStrategy = amm => {
-  const keywordMapping = () =>
-    harden({
-      Collateral: 'In',
-      RUN: 'Out',
-    });
-
-  const makeProposal = (collateral, run) =>
-    harden({
-      give: { In: collateral },
-      want: { Out: AmountMath.makeEmptyFromAmount(run) },
-    });
-
-  trace(`return from makeDefault`);
-
-  return {
-    makeInvitation: () => E(amm).makeSwapInInvitation(),
-    keywordMapping,
-    makeProposal,
-  };
-};
-
 const liquidationDetailTerms = debtBrand =>
   harden({
     MaxImpactBP: 50n,
@@ -143,14 +120,8 @@ const liquidationDetailTerms = debtBrand =>
     AMMMaxSlippage: makeRatio(30n, debtBrand),
   });
 
-harden(makeDefaultLiquidationStrategy);
 harden(liquidate);
 harden(partitionProceeds);
 harden(liquidationDetailTerms);
 
-export {
-  makeDefaultLiquidationStrategy,
-  liquidate,
-  partitionProceeds,
-  liquidationDetailTerms,
-};
+export { liquidate, partitionProceeds, liquidationDetailTerms };

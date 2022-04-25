@@ -97,7 +97,7 @@ test.serial('vaultFactory', async t => {
     'after vote on (InterestRate), InterestRate numerator is 4321',
     'at 3 days: vote closed',
     'at 3 days: Alice owes {"brand":"[Alleged: RUN brand]","value":"[510105n]"}',
-    'at 3 days: 1 day after votes cast, assetNotifier update #6 has interestRate.numerator 250',
-    'at 4 days: 2 days after votes cast, assetNotifier update #7 has interestRate.numerator 4321',
+    'at 3 days: 1 day after votes cast, assetNotifier update #7 has interestRate.numerator 250',
+    'at 4 days: 2 days after votes cast, assetNotifier update #8 has interestRate.numerator 4321',
   ]);
 });

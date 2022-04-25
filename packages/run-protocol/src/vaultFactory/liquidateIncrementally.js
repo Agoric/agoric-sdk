@@ -15,7 +15,7 @@ import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
 
 const { details: X } = assert;
-const trace = makeTracer('LiqI');
+const trace = makeTracer('LiqI', false);
 
 /**
  * @file
@@ -93,9 +93,9 @@ const start = async zcf => {
     );
   };
 
-  function computeOracleLimit(oracleQuote, oracleTolerance) {
+  const computeOracleLimit = (oracleQuote, oracleTolerance) => {
     return ceilMultiplyBy(getAmountOut(oracleQuote), oneMinus(oracleTolerance));
-  }
+  };
 
   const getAMMFeeBP = async () => {
     const zoe = zcf.getZoeService();
@@ -266,36 +266,12 @@ const start = async zcf => {
   };
 
   const creatorFacet = Far('debtorInvitationCreator', {
-    makeDebtorInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
+    makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
   });
 
   // @ts-ignore
   return harden({ creatorFacet });
 };
 
-const makeLiquidationStrategy = creatorFacet => {
-  const makeInvitation = () => E(creatorFacet).makeDebtorInvitation();
-
-  const keywordMapping = () =>
-    harden({
-      Collateral: 'In',
-      RUN: 'Out',
-    });
-
-  const makeProposal = (collateral, run) =>
-    harden({
-      give: { In: collateral },
-      want: { Out: AmountMath.makeEmptyFromAmount(run) },
-    });
-
-  return {
-    makeInvitation,
-    keywordMapping,
-    makeProposal,
-  };
-};
-
 harden(start);
-harden(makeLiquidationStrategy);
-
-export { start, makeLiquidationStrategy };
+export { start };

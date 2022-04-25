@@ -312,6 +312,8 @@ const makeParamManagerBuilder = zoe => {
   };
 
   const makeParamManager = () => {
+    publication.updateState(harden({ paramNames: [...namesToParams.keys()] }));
+
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by
     // contractGovernor. The getParams method can be shared widely.
