@@ -19,7 +19,7 @@ export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
 
 if [ -d /usr/src/testnet-load-generator ]
 then
-  $thisdir/../../solo/bin/ag-solo init \
+  "$thisdir/../../solo/bin/ag-solo" init \
     /usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000 \
     --webport=8000
   SOLO_ADDR=$(cat /usr/src/testnet-load-generator/_agstate/agoric-servers/testnet-8000/ag-cosmos-helper-address)

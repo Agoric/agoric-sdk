@@ -101,11 +101,6 @@ test.before(
       });
     };
 
-    const quote = makeIssuerKit('quote', AssetKind.SET);
-    /**
-     * @param {RelativeTime} POLL_INTERVAL
-     */
-
     const makeChainlinkAggregator = async (
       maxSubmissionCount,
       minSubmissionCount,
@@ -131,7 +126,6 @@ test.before(
           maxSubmissionValue,
         },
       );
-      await E(aggregator.creatorFacet).initializeQuoteMint(quote.mint);
       return aggregator;
     };
     ot.context.zoe = zoe;
