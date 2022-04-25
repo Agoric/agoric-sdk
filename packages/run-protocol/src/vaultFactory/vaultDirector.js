@@ -158,8 +158,8 @@ const getCollaterals = async ({ state }) => {
 };
 
 const getLiquidationConfig = directorParamManager => ({
-  install: directorParamManager.getInstallation(LIQUIDATION_INSTALL_KEY),
-  terms: directorParamManager.getUnknown(LIQUIDATION_TERMS_KEY),
+  install: directorParamManager.getLiquidationInstall(),
+  terms: directorParamManager.getLiquidationTerms(),
 });
 
 const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
