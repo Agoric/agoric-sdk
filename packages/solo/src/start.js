@@ -235,7 +235,7 @@ const buildSwingset = async (
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogCallbacks, slogFile, slogSender },
+    { env, slogCallbacks, slogFile, slogSender },
   );
 
   const { crankScheduler } = exportKernelStats({

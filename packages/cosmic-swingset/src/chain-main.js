@@ -373,6 +373,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
+      env,
       metricsProvider,
       slogFile: SLOGFILE,
       slogSender,
