@@ -2,6 +2,7 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 
 import fs from 'fs';
+import path from 'path';
 import process from 'process';
 import crypto from 'crypto';
 import { performance } from 'perf_hooks';
@@ -79,7 +80,8 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     console.log('SwingSet xs-worker tracing:', { XSNAP_TEST_RECORD });
     let serial = 0;
     doXSnap = opts => {
-      const workerTrace = `${XSNAP_TEST_RECORD}/${serial}/`;
+      const workerTrace =
+        path.resolve(`${XSNAP_TEST_RECORD}/${serial}`) + path.sep;
       serial += 1;
       fs.mkdirSync(workerTrace, { recursive: true });
       return recordXSnap(opts, workerTrace, {
