@@ -27,7 +27,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', true);
+const trace = makeTracer('VM', false);
 
 /**
  * @typedef {{
@@ -254,79 +254,94 @@ const helperBehavior = {
       return;
     }
 
-    const liquidationMargin = state.factoryPowers
-      .getGovernedParams()
-      .getLiquidationMargin();
-
-    // ask to be alerted when the price level falls enough that the vault
-    // with the highest debt to collateral ratio will no longer be valued at the
-    // liquidationMargin above its debt.
-    const triggerPoint = ceilMultiplyBy(
-      highestDebtRatio.numerator, // debt
-      liquidationMargin,
-    );
-
-    // INTERLOCK NOTE:
-    // The presence of an `outstandingQuote` is used to ensure there's only
-    // one thread of control waiting for a quote from the price authority.
-    // All later callers will just update the threshold for the `outstandingQuote`.
-    // The first invocation will skip the next block and continue to below where
-    // the `outstandingQuote` is assigned. So, if there's an outstanding quote,
-    // reset the level. If there's no current quote (because this is the first
-    // vault, or because a quote just resolved), then make a new request to the
-    // priceAuthority, and when it resolves, liquidate the first vault.
-    if (state.outstandingQuote) {
-      // Safe to call extraneously (lightweight and idempotent)
-      E(state.outstandingQuote).updateLevel(
-        highestDebtRatio.denominator, // collateral
-        triggerPoint,
-      );
-      trace(
-        'updating level for outstandingQuote',
-        triggerPoint,
-        highestDebtRatio.denominator,
-      );
-      return;
-    }
-
+    // INTERLOCK: the first time through falls to the `else` case to process
+    // liquidations. Everything just updates the liquidation threshold.
     if (state.liquidationInProgress) {
-      return;
+      // ask to be alerted when the price level falls enough that the vault
+      // with the highest debt to collateral ratio will no longer be valued
+      // at the liquidationMargin above its debt.
+      const govParams = state.factoryPowers.getGovernedParams();
+      const liquidationMargin = govParams.getLiquidationMargin();
+      const triggerPoint = ceilMultiplyBy(
+        highestDebtRatio.numerator, // debt
+        liquidationMargin,
+      );
+
+      // Update the current in-progress quote if there is one. Otherwise,
+      // the new threshold will be picked up by the next quote request.
+      if (state.outstandingQuote) {
+        // Safe to call extraneously (lightweight and idempotent)
+        E(state.outstandingQuote).updateLevel(
+          highestDebtRatio.denominator, // collateral
+          triggerPoint,
+        );
+        trace('update quote', triggerPoint, highestDebtRatio.denominator);
+      }
+    } else {
+      state.liquidationInProgress = true;
+
+      // eslint-disable-next-line consistent-return
+      return facets.helper
+        .processLiquidations()
+        .catch(e => console.log('Liquidator failed', e))
+        .finally(() => {
+          state.liquidationInProgress = false;
+        });
     }
+  },
 
-    // INTERLOCK NOTE:
-    // Sets the interlock test above. This MUST NOT `await` the quote or
-    // else multiple threads of control could get through the interlock test
-    // above.
-    const { priceAuthority } = state;
-    state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
-      highestDebtRatio.denominator, // collateral
-      triggerPoint,
-    );
-    trace('posted quote request', triggerPoint);
+  processLiquidations: async ({ state, facets }) => {
+    const { prioritizedVaults, priceAuthority } = state;
+    const govParams = state.factoryPowers.getGovernedParams();
 
-    // The rest of this method will not happen until after a quote is received.
-    // This may not happen until much later, when themarket changes.
-    const quote = await E(state.outstandingQuote).getPromise();
-    // When we receive a quote, we check whether the vault with the highest
-    // ratio of debt to collateral is below the liquidationMargin, and if so,
-    // we liquidate it. We use ceilDivide to round up because ratios above
-    // this will be liquidated.
-    const quoteRatioPlusMargin = makeRatioFromAmounts(
-      ceilDivideBy(getAmountOut(quote), liquidationMargin),
-      getAmountIn(quote),
-    );
-    trace('quote', quote, quoteRatioPlusMargin);
+    async function* liquidations() {
+      while (true) {
+        const highestDebtRatio = prioritizedVaults.highestRatio();
+        if (!highestDebtRatio) {
+          return;
+        }
+        const liquidationMargin = govParams.getLiquidationMargin();
 
-    state.outstandingQuote = null;
+        // ask to be alerted when the price level falls enough that the vault
+        // with the highest debt to collateral ratio will no longer be valued at the
+        // liquidationMargin above its debt.
+        const triggerPoint = ceilMultiplyBy(
+          highestDebtRatio.numerator, // debt
+          liquidationMargin,
+        );
+        state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
+          highestDebtRatio.denominator, // collateral
+          triggerPoint,
+        );
+        trace('posted quote request', triggerPoint);
 
-    // Liquidate the head of the queue
-    const [next] =
-      prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
-    await (next ? facets.helper.liquidateAndRemove(next) : null);
-    trace('price check liq', next && next[0]);
+        // The rest of this method will not happen until after a quote is received.
+        // This may not happen until much later, when themarket changes.
+        // eslint-disable-next-line no-await-in-loop
+        const quote = await E(state.outstandingQuote).getPromise();
+        state.outstandingQuote = null;
+        // When we receive a quote, we check whether the vault with the highest
+        // ratio of debt to collateral is below the liquidationMargin, and if so,
+        // we liquidate it. We use ceilDivide to round up because ratios above
+        // this will be liquidated.
+        const quoteRatioPlusMargin = makeRatioFromAmounts(
+          ceilDivideBy(getAmountOut(quote), liquidationMargin),
+          getAmountIn(quote),
+        );
+        trace('quote', quote, quoteRatioPlusMargin);
 
-    // eslint-disable-next-line consistent-return
-    return facets.helper.reschedulePriceCheck();
+        // Liquidate the head of the queue
+        const [next] =
+          prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
+        if (next) {
+          yield next;
+        }
+      }
+    }
+    for await (const next of liquidations()) {
+      await facets.helper.liquidateAndRemove(next);
+      trace('price check liq', next && next[0]);
+    }
   },
 
   /**
