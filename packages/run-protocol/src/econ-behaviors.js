@@ -73,7 +73,7 @@ export const startEconomicCommittee = async (
   },
   electorateTerms = {
     committeeName: 'Initial Economic Committee',
-    committeeSize: 1,
+    committeeSize: 3,
   },
 ) => {
   const { creatorFacet, instance } = await E(zoe).startInstance(

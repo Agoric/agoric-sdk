@@ -119,7 +119,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const {
     zoe,
     aethKit: { issuer: aethIssuer },
-    electorateTerms,
+    electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
     timer,
   } = t.context;
 

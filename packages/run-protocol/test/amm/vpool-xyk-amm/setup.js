@@ -72,7 +72,7 @@ export const setupAMMBootstrap = async (
  */
 export const setupAmmServices = async (
   t,
-  electorateTerms,
+  electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
   centralR,
   timer = buildManualTimer(console.log),
   zoe,
