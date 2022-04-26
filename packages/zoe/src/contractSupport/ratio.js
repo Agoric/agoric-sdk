@@ -8,7 +8,8 @@ import { isNat } from '@agoric/nat';
 
 import { natSafeMath } from './safeMath.js';
 
-const { multiply, floorDivide, ceilDivide, add, subtract } = natSafeMath;
+const { multiply, floorDivide, ceilDivide, bankersDivide, add, subtract } =
+  natSafeMath;
 
 // make a Ratio, which represents a fraction. It is a pass-by-copy record.
 //
@@ -28,10 +29,12 @@ const { multiply, floorDivide, ceilDivide, add, subtract } = natSafeMath;
 //
 // Since the ratios are represented by a numerator and a denominator, every
 // multiplication or division operation that produces an amount ends with a
-// division of the underlying bigints, and bigint division requires that the
-// rounding mode (round up or round down) be specified. It would be a mistake to
-// hide this distinction from the caller, so we make it very visible by using
-// floorMultiplyBy, ceilMultiplyBy, floorDivideBy, and ceilDivideBy.
+// division of the underlying bigints, and integer division requires a mode
+// of [rounding to integer](https://en.wikipedia.org/wiki/Rounding#Rounding_to_integer).
+// Because `Ratio` only work with Natural numbers, just three modes suffice:
+//   - floor rounds down
+//   - ceil rounds up
+//   - default (without prefix) minimizes bias by rounding half to even
 
 const PERCENT = 100n;
 
@@ -129,6 +132,11 @@ export const ceilMultiplyBy = (amount, ratio) => {
   return multiplyHelper(amount, ratio, ceilDivide);
 };
 
+/** @type {ScaleAmount} */
+export const multiplyBy = (amount, ratio) => {
+  return multiplyHelper(amount, ratio, bankersDivide);
+};
+
 const divideHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);
@@ -156,6 +164,11 @@ export const floorDivideBy = (amount, ratio) => {
 /** @type {ScaleAmount} */
 export const ceilDivideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, ceilDivide);
+};
+
+/** @type {ScaleAmount} */
+export const divideBy = (amount, ratio) => {
+  return divideHelper(amount, ratio, bankersDivide);
 };
 
 /**
