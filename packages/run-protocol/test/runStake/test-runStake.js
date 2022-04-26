@@ -249,7 +249,13 @@ const bootstrapRunStake = async (
   });
   produce.client.resolve(mockClient);
 
-  await Promise.all([startEconomicCommittee(space), startRunStake(space)]);
+  await Promise.all([
+    startEconomicCommittee(space, {
+      committeeName: 'Me, myself, and I',
+      committeeSize: 1,
+    }),
+    startRunStake(space),
+  ]);
   return { chain, space };
 };
 
