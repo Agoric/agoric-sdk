@@ -586,7 +586,6 @@ export function makeWallet({
   const getAccountState = async () => E(attMakerPK.promise).getAccountState();
 
   const makeAttestationAmount = async bldAmount =>
-    // @ts-expect-error
     E(attMakerPK.promise).wrapLienedAmount(bldAmount);
 
   async function executeOffer(compiledOfferP) {
