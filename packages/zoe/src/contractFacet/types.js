@@ -43,7 +43,7 @@
  * @property {ZCFRegisterFeeMint} registerFeeMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
- * @property {() => void} stopAcceptingOffers
+ * @property {() => Promise<void>} stopAcceptingOffers
  * @property {() => Instance} getInstance
  */
 
