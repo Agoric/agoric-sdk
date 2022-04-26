@@ -8,10 +8,10 @@ import { defineKind } from '@agoric/vat-data';
  * @param {Brand<K>} brand
  * @returns {() => Payment<K>}
  */
-export const makePaymentMaker = (allegedName, brand) => {
+export const definePaymentKind = (allegedName, brand) => {
   const makePayment = defineKind(`${allegedName} payment`, () => ({}), {
     getAllegedBrand: () => brand,
   });
   return makePayment;
 };
-harden(makePaymentMaker);
+harden(definePaymentKind);
