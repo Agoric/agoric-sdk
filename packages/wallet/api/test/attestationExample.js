@@ -8,9 +8,13 @@ export const start = async zcf => {
   const mint = await zcf.makeZCFMint('Attestation');
   const { brand } = await mint.getIssuerRecord();
   const callHistory = {
+    /** @type Array<string> */
     wantProposals: [],
+    /** @type Array<string> */
     wantAllocations: [],
+    /** @type Array<string> */
     returnProposals: [],
+    /** @type Array<string> */
     returnAllocations: [],
   };
 
@@ -21,11 +25,9 @@ export const start = async zcf => {
     return E(userSeat).getPayout('Attestation');
   };
 
-  const wantAttHandler = seat => {
+  const handleWantAtt = seat => {
     const proposal = seat.getProposal();
-    // @ts-expect-error
     callHistory.wantProposals.push(proposal);
-    // @ts-expect-error
     callHistory.wantAllocations.push(seat.getCurrentAllocation());
     mint.mintGains(
       { Attestation: AmountMath.make(brand, proposal.want.Attestation.value) },
@@ -35,21 +37,19 @@ export const start = async zcf => {
     return 'good job';
   };
 
-  const returnAttHandler = seat => {
+  const handleReturnAtt = seat => {
     const proposal = seat.getProposal();
-    // @ts-expect-error
     callHistory.returnProposals.push(proposal);
-    // @ts-expect-error
     callHistory.returnAllocations.push(seat.getCurrentAllocation());
     seat.exit();
     return 'thank you for that';
   };
 
   const makeWantAttInvitation = () =>
-    zcf.makeInvitation(wantAttHandler, 'WantAtt');
+    zcf.makeInvitation(handleWantAtt, 'WantAtt');
 
   const makeReturnAttInvitation = () =>
-    zcf.makeInvitation(returnAttHandler, 'ReturnAtt');
+    zcf.makeInvitation(handleReturnAtt, 'ReturnAtt');
 
   const getCallHistory = () => callHistory;
 

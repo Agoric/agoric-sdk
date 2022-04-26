@@ -583,7 +583,7 @@ export function makeWallet({
   /** @type import('@endo/promise-kit').PromiseKit<AttestationTool> */
   const attMakerPK = makePromiseKit();
 
-  const getAccountState = async () => E(attMakerPK.promise).getAccountState();
+  const { getAccountState } = E(attMakerPK.promise);
 
   const makeAttestationAmount = async bldAmount =>
     E(attMakerPK.promise).wrapLienedAmount(bldAmount);
