@@ -12,8 +12,6 @@ export const makePaymentMaker = (allegedName, brand) => {
   const makePayment = defineKind(`${allegedName} payment`, () => ({}), {
     getAllegedBrand: () => brand,
   });
-  // XXX the following type cast is meatball surgery to make tsc shut up
-  // somebody who understands this should do it properly
-  return /** @type {() => Payment<K>} */ (makePayment);
+  return makePayment;
 };
 harden(makePaymentMaker);
