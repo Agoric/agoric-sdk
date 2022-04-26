@@ -27,7 +27,7 @@ then
 fi
 
 # Speed up the docker deployment by pre-mounting /usr/src/agoric-sdk.
-DOCKER_VOLUMES="$(cd "$thisdir/../../.." > /dev/null && pwd -P):/usr/src/agoric-sdk" \
+DOCKER_VOLUMES="${AGORIC_SDK_PATH-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}:/usr/src/agoric-sdk" \
   "$thisdir/docker-deployment.cjs" > deployment.json
 
 # Set up the network from our above deployment.json.
