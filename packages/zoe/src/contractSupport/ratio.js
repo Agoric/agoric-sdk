@@ -301,8 +301,7 @@ export const quantize = (ratio, newDen) => {
   const oldDen = ratio.denominator.value;
   const oldNum = ratio.numerator.value;
   const newNum =
-    // TODO adopt banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
-    newDen === oldDen ? oldNum : ceilDivide(oldNum * newDen, oldDen);
+    newDen === oldDen ? oldNum : bankersDivide(oldNum * newDen, oldDen);
   return makeRatio(
     newNum,
     ratio.numerator.brand,
