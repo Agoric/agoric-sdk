@@ -7,7 +7,7 @@ import { Far, assertCopyArray } from '@endo/marshal';
 import { fit } from '@agoric/store';
 import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
-import { makePaymentMaker } from './payment.js';
+import { definePaymentKind } from './payment.js';
 import { makePurseMaker } from './purse.js';
 
 import '@agoric/store/exported.js';
@@ -31,7 +31,7 @@ export const makePaymentLedger = (
   displayInfo,
   optShutdownWithFailure = undefined,
 ) => {
-  const makePayment = makePaymentMaker(allegedName, brand);
+  const makePayment = definePaymentKind(allegedName, brand);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
