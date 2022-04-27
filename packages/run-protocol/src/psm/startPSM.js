@@ -3,6 +3,11 @@ import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  declareBehavior,
+  declareData,
+  defangAndTrim,
+} from '@agoric/deploy-script-support/src/code-gen.js';
 
 const BASIS_POINTS = 10000n;
 
@@ -178,3 +183,37 @@ export const makeAnchorAsset = async (
   );
 };
 harden(makeAnchorAsset);
+
+/**
+ * @returns {string} a script including `startPSM` and `makeAnchorAsset`
+ * (stringified) along with the the things they
+ * require such, as `AssetKind`.
+ */
+export const unevalCoreProposal = () =>
+  defangAndTrim(
+    [
+      // @ts-check is a little bit helpful in some cases,
+      // but getting it exactly right doesn't seem cost-effective,
+      // so we leave it out. Feel free to turn it on for maintenance.
+      // `// @ts-check`,
+      // `/** @type {import('@endo/eventual-send').EProxy} */`,
+      `/* eslint-disable prettier/prettier */`, // don't worry much about formatting
+      `/* eslint-disable quotes */`,
+      `/* global globalThis */`,
+      `const E = globalThis.E;`,
+      ...declareData({ config }),
+      `const { details: X, quote: q } = assert;`,
+      ...declareData({
+        AssetKind,
+        CONTRACT_ELECTORATE,
+        ParamTypes,
+        PERCENT,
+        BASIS_POINTS,
+      }),
+      ...declareBehavior({ makeAmount }),
+      `const AmountMath = harden({ make: makeAmount });`,
+      ...declareBehavior({ makeRatio }),
+      ...declareBehavior({ makeAnchorAsset, startPSM }),
+      `startPSM; // "exported" completion value`,
+    ].join('\n\n'),
+  );

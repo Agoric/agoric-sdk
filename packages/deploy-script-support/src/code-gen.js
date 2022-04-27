@@ -4,7 +4,7 @@ import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
 
 export { deeplyFulfilled } from '@endo/marshal';
 
-const { keys, values, fromEntries } = Object;
+const { keys, values, entries, fromEntries } = Object;
 
 const makeSet = (...args) => new Set(...args);
 
@@ -57,3 +57,14 @@ export const mergePermits = m => {
   };
   return values(m).reduce(merge);
 };
+
+/** @param {Record<string, unknown>} items */
+export const declareData = items =>
+  entries(items).map(
+    ([name, value]) => `const ${name} = ${stringify(value, true)};`,
+  );
+/** @param {Record<string, Function>} items */
+export const declareBehavior = items =>
+  entries(items).map(
+    ([name, fn]) => `const ${name} = ${fn};\nharden(${name});`,
+  );
