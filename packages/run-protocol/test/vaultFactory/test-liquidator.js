@@ -106,7 +106,7 @@ test.before(async t => {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
-    minInitialLoan: AmountMath.make(runBrand, 5_000_000n),
+    minInitialLoan: 5_000_000n,
     rates: defaultParamValues(runBrand),
     aethInitialLiquidity: AmountMath.make(aethKit.brand, 900_000_000n),
     runInitialLiquidity: AmountMath.make(runBrand, 1_500_000_000n),
@@ -480,7 +480,7 @@ test('price drop', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  t.context.minInitialLoan = AmountMath.make(runBrand, 270n);
+  t.context.minInitialLoan = 270n;
 
   const d = await makeDriver(
     t,
@@ -548,7 +548,7 @@ test('price falls precipitously', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  t.context.minInitialLoan = AmountMath.make(runBrand, 370n);
+  t.context.minInitialLoan = 370n;
 
   const d = await makeDriver(
     t,
@@ -626,7 +626,7 @@ test('update liquidator', async t => {
   } = t.context;
   t.context.runInitialLiquidity = AmountMath.make(debtBrand, 500_000_000n);
   t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 100_000_000n);
-  t.context.minInitialLoan = AmountMath.make(debtBrand, 270n);
+  t.context.minInitialLoan = 270n;
 
   const d = await makeDriver(
     t,

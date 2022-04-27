@@ -227,7 +227,7 @@ export const setupReserve = async ({
  * @param { EconomyBootstrapPowers } powers
  * @param { Object } config
  * @param { LoanTiming } [config.loanParams]
- * @param {Amount} minInitialLoan
+ * @param {bigint} minInitialLoan
  */
 export const startVaultFactory = async (
   {
@@ -253,7 +253,7 @@ export const startVaultFactory = async (
       recordingPeriod: SECONDS_PER_DAY,
     },
   } = {},
-  minInitialLoan,
+  minInitialLoan = 5_000_000n,
 ) => {
   const installations = await Collect.allValues({
     VaultFactory,
@@ -301,7 +301,7 @@ export const startVaultFactory = async (
     vaultManagerParams,
     ammPublicFacet,
     liquidationDetailTerms(centralBrand),
-    minInitialLoan,
+    AmountMath.make(centralBrand, minInitialLoan),
   );
 
   const governorTerms = harden({
