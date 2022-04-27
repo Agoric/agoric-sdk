@@ -106,7 +106,7 @@ test.before(async t => {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
-    minInitialLoan: 5_000_000n,
+    minInitialDebt: 5_000_000n,
     rates: defaultParamValues(runBrand),
     aethInitialLiquidity: AmountMath.make(aethKit.brand, 900_000_000n),
     runInitialLiquidity: AmountMath.make(runBrand, 1_500_000_000n),
@@ -232,7 +232,7 @@ async function setupServices(
     runKit: { issuer: runIssuer, brand: runBrand },
     aethKit: { brand: aethBrand, issuer: aethIssuer, mint: aethMint },
     loanTiming,
-    minInitialLoan,
+    minInitialDebt,
     rates,
     aethInitialLiquidity,
     runInitialLiquidity,
@@ -273,7 +273,7 @@ async function setupServices(
   } = space;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
-  await startVaultFactory(space, { loanParams: loanTiming }, minInitialLoan);
+  await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
@@ -480,7 +480,7 @@ test('price drop', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  t.context.minInitialLoan = 270n;
+  t.context.minInitialDebt = 270n;
 
   const d = await makeDriver(
     t,
@@ -548,7 +548,7 @@ test('price falls precipitously', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
-  t.context.minInitialLoan = 370n;
+  t.context.minInitialDebt = 370n;
 
   const d = await makeDriver(
     t,
@@ -626,7 +626,7 @@ test('update liquidator', async t => {
   } = t.context;
   t.context.runInitialLiquidity = AmountMath.make(debtBrand, 500_000_000n);
   t.context.aethInitialLiquidity = AmountMath.make(aethBrand, 100_000_000n);
-  t.context.minInitialLoan = 270n;
+  t.context.minInitialDebt = 270n;
 
   const d = await makeDriver(
     t,
