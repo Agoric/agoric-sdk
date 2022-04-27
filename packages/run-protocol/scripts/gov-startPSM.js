@@ -9,18 +9,18 @@ const E = globalThis.E;
 const config = {
   anchor: {
     denom:
-      'ibc/949E954E05CE9E63E072ABD13A7DAAAB338A1E57FFBC148C50D74451AB5067D1',
+      'ibc/287EE075B7AADDEB240AFE74FA2108CDACA50A7CCD013FA4C1FCD142AFA9CA9A',
   },
   installCache: {
-    boardId: 'board02021',
+    boardId: 'board05736',
   },
   mintHolder: {
     endoZipBase64Sha512:
-      '43835ca139d81851cc4da8b987309ec9f1fd478677ba15fc8e5cc13737fac036d09dd2eb4a7cf6867a0ca92dae6e15bb4d8b339c46cbf30fd053468c1c8fc7bf',
+      '24bf29af13ace1b20b6eb108dfdcb3a888475148924593f9f000e1a7ab985a6250f6ea62a345caef5ee6b493007126c472ab847c47fefb7d203992e184a22e09',
   },
   psm: {
     endoZipBase64Sha512:
-      '24b9336ef4a06c46d041f4ccca6680255aa00ec19fff7ee64ebde388a0f95f863b3bb0eec0ebef8dfe4b8e36f4afe23e7893782e55aa83c3a813ae0124577508',
+      '5e068bd7f3e7b63ec916be60aa8077e8739a6b6871c5c2cece456b9d8be720288fc6254ab544d50adae569ef1936301ae378be5508e58812f2856cbc51a65d2e',
   },
 };
 

@@ -16,6 +16,8 @@ along with supporting governance contracts:
   - binaryVoteCounter
   - committee
 
+It also includes some materials for the Oracle network.
+
 This is a `swingset-core-eval` proposal that includes JavaScript to execute to enact the proposal, as well as a JSON policy to limit the capabilities of the proposal.
 
 See also:
