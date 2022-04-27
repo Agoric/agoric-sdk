@@ -24,7 +24,7 @@ const voPoolTest = async (t, mutation, postTest) => {
     protocolSeatP,
   ]);
 
-  const makeVirtualPoolKind = () => {
+  const defineVirtualPoolKind = () => {
     const timer = buildManualTimer(t.log);
 
     const paramAccessor = paramManager.readonly();
@@ -50,16 +50,16 @@ const voPoolTest = async (t, mutation, postTest) => {
       mutation(context);
     } else if (phase === 'after') {
       const newNotifier = pool.getNotifier();
-      t.is(newNotifier, state.notifier);
-      t.is(pool.getToCentralPriceAuthority(), state.toCentralPA);
-      t.is(singlePool, state.singlePool);
-      t.is(pool.getLiquidityIssuer(), state.liquidityIssuer);
+      t.is(state.notifier, newNotifier);
+      t.is(state.toCentralPA, pool.getToCentralPriceAuthority());
+      t.is(state.singlePool, singlePool);
+      t.is(state.liquidityIssuer, pool.getLiquidityIssuer());
       t.truthy(postTest(context));
     }
   };
 
   const prepare = () => {
-    makePool = makeVirtualPoolKind();
+    makePool = defineVirtualPoolKind();
   };
 
   const makeTestObject = () => {
@@ -83,7 +83,7 @@ test.serial('one update', async t => {
     },
     async context => {
       const notification = await context.pool.getNotifier().getUpdateSince();
-      t.is(2, notification.updateCount);
+      t.is(notification.updateCount, 2);
     },
   );
 });
