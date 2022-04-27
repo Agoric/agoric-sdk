@@ -403,7 +403,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async (
       proposalTemplate: {},
     });
 
-  const rawId = '1588645041696';
+  const rawId = '123-arbitrary';
   const offer = formulateBasicOffer(rawId, inviteHandleBoardId1);
 
   await wallet.addOffer(offer);
@@ -585,8 +585,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async (
   t.deepEqual(
     inboxState1,
     {
-      id: 'unknown#1588645041696',
-      rawId: '1588645041696',
+      id: 'unknown#123-arbitrary',
+      rawId: '123-arbitrary',
       invitationDetails: {
         description: 'getRefund',
         handle: {
@@ -618,7 +618,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async (
   await t.throwsAsync(wallet.lookup('offer', 'bzzt'), {
     message: '"offerId" not found: "bzzt"',
   });
-  await t.notThrowsAsync(wallet.lookup('offer', 'unknown#1588645041696'));
+  await t.notThrowsAsync(wallet.lookup('offer', 'unknown#123-arbitrary'));
 
   t.throws(
     () => wallet.getInstallation('whatever'),
@@ -723,8 +723,8 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async (
   t.deepEqual(
     inboxState2,
     {
-      id: 'unknown#1588645041696',
-      rawId: '1588645041696',
+      id: 'unknown#123-arbitrary',
+      rawId: '123-arbitrary',
       invitationDetails: {
         description: 'getRefund',
         handle: {
@@ -810,7 +810,7 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
       },
     });
 
-  const rawId = '1588645041696';
+  const rawId = '123-arbitrary';
   const id = `unknown#${rawId}`;
   const offer = formulateBasicOffer(rawId, inviteHandleBoardId1);
 
@@ -820,8 +820,8 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
     wallet.getOffers(),
     [
       {
-        id: 'unknown#1588645041696',
-        rawId: '1588645041696',
+        id: 'unknown#123-arbitrary',
+        rawId: '123-arbitrary',
         invitationDetails: {
           description: 'getRefund',
           handle: inviteHandle,
@@ -846,7 +846,7 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
     `offer structure`,
   );
   wallet
-    .lookup('offerResult', 'unknown#1588645041696')
+    .lookup('offerResult', 'unknown#123-arbitrary')
     .then((/** @type {any} */ or) => t.is(or, 'The offer was accepted'));
   const accepted = await wallet.acceptOffer(id);
   assert(accepted);
@@ -860,7 +860,7 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
     AmountMath.make(moolaBundle.brand, 100n),
     `moolaPurse balance`,
   );
-  const rawId2 = '1588645230204';
+  const rawId2 = '456-arbitrary';
   const id2 = `unknown#${rawId2}`;
   /** @type {{ makeInvitation: () => Invitation}} */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
@@ -950,8 +950,8 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
     lastInboxState,
     [
       {
-        id: 'unknown#1588645041696',
-        rawId: '1588645041696',
+        id: 'unknown#123-arbitrary',
+        rawId: '123-arbitrary',
         invitationDetails: {
           description: 'getRefund',
           handle: {
@@ -1002,8 +1002,8 @@ test('lib-wallet offer methods', async (/** @type {LibWalletTestContext} */ t) =
         },
       },
       {
-        id: 'unknown#1588645230204',
-        rawId: '1588645230204',
+        id: 'unknown#456-arbitrary',
+        rawId: '456-arbitrary',
         invitationDetails: {
           description: 'getRefund',
           handle: {
@@ -1139,7 +1139,7 @@ test('lib-wallet addOffer for autoswap swap', async (/** @type {LibWalletTestCon
   // add inviteIssuer and create invite purse
   await wallet.deposit('Default Zoe invite purse', invite);
 
-  const rawId = '1593482020370';
+  const rawId = '123-arbitrary';
   const id = `unknown#${rawId}`;
 
   const offer = {
@@ -1206,7 +1206,7 @@ test('lib-wallet can give attestations in offers', async (/** @type {LibWalletTe
 
   const invitation = await attestationPublicFacet.makeReturnAttInvitation();
 
-  const rawId = '1593482020370';
+  const rawId = '123-arbitrary';
   const id = `unknown#${rawId}`;
   const offer = {
     id: rawId,
@@ -1281,7 +1281,7 @@ test('lib-wallet can want attestations in offers', async (/** @type {LibWalletTe
 
   const invitation = await attestationPublicFacet.makeWantAttInvitation();
 
-  const rawId = '1593482020370';
+  const rawId = '123-arbitrary';
   const id = `unknown#${rawId}`;
   const offer = {
     id: rawId,
@@ -1416,7 +1416,7 @@ test('addOffer invitationQuery', async (/** @type {LibWalletTestContext} */ t) =
 
   await E(zoeInvitePurse).deposit(swapInvitation);
 
-  const rawId = '1593482020370';
+  const rawId = '123-arbitrary';
   const id = `unknown#${rawId}`;
 
   const offer = {
@@ -1540,7 +1540,7 @@ test('addOffer offer.invitation', async (/** @type {LibWalletTestContext} */ t) 
 
   const swapInvitation = await E(publicAPI).makeSwapInvitation();
 
-  const rawId = '1593482020370';
+  const rawId = '123-arbitrary';
   const id = `unknown#${rawId}`;
 
   const offer = {
@@ -1629,7 +1629,7 @@ test('addOffer makeContinuingInvitation', async (/** @type {LibWalletTestContext
   await E(invitationPurse).deposit(creatorInvitation);
 
   // Make the first offer
-  const rawId = '1593482020370';
+  const rawId = '123-arbitrary';
   const id = `unknown#${rawId}`;
 
   const offer = {
