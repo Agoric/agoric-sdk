@@ -22,6 +22,11 @@ import '../src/types.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
+let zoe;
+let automaticRefundInstallation;
+let autoswapInstallation;
+let attestationInstallation;
+
 function makeFakeMyAddressNameAdmin() {
   const { nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
   return Far('fakeMyAddressNameAdmin', {
@@ -32,7 +37,11 @@ function makeFakeMyAddressNameAdmin() {
   });
 }
 
-async function setupTest() {
+async function setupTest({
+  autoswap = false,
+  automaticRefund = false,
+  attestation = false,
+} = {}) {
   const pursesStateChangeLog = [];
   const inboxStateChangeLog = [];
   const pursesStateChangeHandler = data => {
@@ -45,69 +54,74 @@ async function setupTest() {
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
-  // Create AutomaticRefund instance
-  const automaticRefundContractUrl = await importMetaResolve(
-    '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
-  );
-  const automaticRefundContractRoot = new URL(automaticRefundContractUrl)
-    .pathname;
-  const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
-  const installation = await E(zoe).install(automaticRefundBundle);
-  const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
-  const { creatorInvitation: invite, instance } = await E(zoe).startInstance(
-    installation,
-    issuerKeywordRecord,
-  );
-  assert(invite);
+  const automaticRefundP = (automaticRefund &&
+    (async () => {
+      const issuerKeywordRecord = harden({ Contribution: moolaBundle.issuer });
+      const { creatorInvitation, instance } = await E(zoe).startInstance(
+        automaticRefundInstallation,
+        issuerKeywordRecord,
+      );
+      assert(creatorInvitation);
+      return { creatorInvitation, instance };
+    })()) || { creatorInvitation: null, instance: null };
 
-  // Create Autoswap instance
-  const autoswapContractUrl = await importMetaResolve(
-    '@agoric/zoe/src/contracts/autoswap.js',
-    import.meta.url,
-  );
-  const autoswapContractRoot = new URL(autoswapContractUrl).pathname;
-  const autoswapBundle = await bundleSource(autoswapContractRoot);
-  const autoswapInstallationHandle = await E(zoe).install(autoswapBundle);
-  const autoswapIssuerKeywordRecord = harden({
-    Central: moolaBundle.issuer,
-    Secondary: simoleanBundle.issuer,
-  });
-  const { publicFacet: autoswapPublicFacet, instance: autoswapInstanceHandle } =
-    await E(zoe).startInstance(
-      autoswapInstallationHandle,
-      autoswapIssuerKeywordRecord,
-    );
-
-  const addLiquidityInvite =
-    await autoswapPublicFacet.makeAddLiquidityInvitation();
-
-  // Create attestationExample instance
-  const url = await importMetaResolve(
-    './attestationExample.js',
-    import.meta.url,
-  );
-  const path = new URL(url).pathname;
-  const bundle = await bundleSource(path);
-  const attestationInstallation = await E(zoe).install(bundle);
-  const { publicFacet: attestationPublicFacet, instance: attestationInstance } =
-    await E(zoe).startInstance(attestationInstallation);
-  const {
-    issuers: { Attestation: attestationIssuer },
-    brands: { Attestation: attestationBrand },
-  } = await E(zoe).getTerms(attestationInstance);
-
-  const fakeAgoricNames = {
-    lookup: (...namePath) => {
-      if (namePath[0] === 'issuer' && namePath[1] === 'Attestation') {
-        return attestationIssuer;
-      }
-      return null;
-    },
+  const autoswapP = (autoswap &&
+    (async () => {
+      const autoswapIssuerKeywordRecord = harden({
+        Central: moolaBundle.issuer,
+        Secondary: simoleanBundle.issuer,
+      });
+      const { publicFacet: autoswapPublicFacet, instance } = await E(
+        zoe,
+      ).startInstance(autoswapInstallation, autoswapIssuerKeywordRecord);
+      const invite = await autoswapPublicFacet.makeAddLiquidityInvitation();
+      return { invite, instance };
+    })()) || {
+    invite: null,
+    instance: null,
   };
+
+  const attestationP = (attestation &&
+    (async () => {
+      const { publicFacet, instance } = await E(zoe).startInstance(
+        attestationInstallation,
+      );
+      const {
+        issuers: { Attestation: issuer },
+        brands: { Attestation: brand },
+      } = await E(zoe).getTerms(instance);
+
+      const names = {
+        lookup: (...namePath) => {
+          if (namePath[0] === 'issuer' && namePath[1] === 'Attestation') {
+            return issuer;
+          }
+          return null;
+        },
+      };
+      return { names, issuer, brand, publicFacet };
+    })()) || {
+    names: null,
+    issuer: null,
+    brand: null,
+    publicFacet: null,
+  };
+
+  const [
+    {
+      creatorInvitation: automaticRefundInvitation,
+      instance: automaticRefundInstance,
+    },
+    { invite: addLiquidityInvite, instance: autoswapInstanceHandle },
+    {
+      names: fakeAgoricNames,
+      issuer: attestationIssuer,
+      brand: attestationBrand,
+      publicFacet: attestationPublicFacet,
+    },
+  ] = await Promise.all([automaticRefundP, autoswapP, attestationP]);
 
   const { admin: wallet, initialized } = makeWallet({
     zoe,
@@ -120,11 +134,13 @@ async function setupTest() {
   });
   await initialized;
 
-  wallet.resolveAttMaker({
-    makeReturnAttInvitation: attestationPublicFacet.makeReturnAttInvitation,
-    makeAttestation: value => attestationPublicFacet.mintAttestation(value),
-    wrapLienedAmount: ({ value }) => AmountMath.make(attestationBrand, value),
-  });
+  if (attestation) {
+    wallet.resolveAttMaker({
+      makeReturnAttInvitation: attestationPublicFacet.makeReturnAttInvitation,
+      makeAttestation: value => attestationPublicFacet.mintAttestation(value),
+      wrapLienedAmount: ({ value }) => AmountMath.make(attestationBrand, value),
+    });
+  }
 
   return {
     attestationIssuer,
@@ -133,15 +149,12 @@ async function setupTest() {
     moolaBundle,
     simoleanBundle,
     rpgBundle,
-    zoe,
     board,
     wallet,
-    invite,
+    automaticRefundInvitation,
     addLiquidityInvite,
-    installation,
-    instance,
+    automaticRefundInstance,
     autoswapInstanceHandle,
-    autoswapInstallationHandle,
     pursesStateChangeLog,
     inboxStateChangeLog,
   };
@@ -159,10 +172,41 @@ const waitForUpdate = async (notifier, thunk) => {
   return E(notifier).getUpdateSince(updateCount);
 };
 
+test.before(async () => {
+  zoe = makeZoeKit(fakeVatAdmin).zoeService;
+
+  // Create AutomaticRefund instance
+  const automaticRefundContractUrl = await importMetaResolve(
+    '@agoric/zoe/src/contracts/automaticRefund.js',
+    import.meta.url,
+  );
+  const automaticRefundContractRoot = new URL(automaticRefundContractUrl)
+    .pathname;
+  const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
+  automaticRefundInstallation = await E(zoe).install(automaticRefundBundle);
+
+  // Create Autoswap instance
+  const autoswapContractUrl = await importMetaResolve(
+    '@agoric/zoe/src/contracts/autoswap.js',
+    import.meta.url,
+  );
+  const autoswapContractRoot = new URL(autoswapContractUrl).pathname;
+  const autoswapBundle = await bundleSource(autoswapContractRoot);
+  autoswapInstallation = await E(zoe).install(autoswapBundle);
+
+  // Create attestationExample instance
+  const url = await importMetaResolve(
+    './attestationExample.js',
+    import.meta.url,
+  );
+  const path = new URL(url).pathname;
+  const attestationBundle = await bundleSource(path);
+  attestationInstallation = await E(zoe).install(attestationBundle);
+});
+
 test('lib-wallet issuer and purse methods', async t => {
   t.plan(11);
   const {
-    zoe,
     moolaBundle,
     rpgBundle,
     wallet,
@@ -291,14 +335,13 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   t.plan(15);
   const {
     board,
-    zoe,
-    invite,
+    automaticRefundInvitation,
     autoswapInstallationHandle,
-    instance,
+    automaticRefundInstance,
     wallet,
     pursesStateChangeLog,
     inboxStateChangeLog,
-  } = await setupTest();
+  } = await setupTest({ autoswap: true, automaticRefund: true });
 
   const { issuer: bucksIssuer } = makeIssuerKit('bucks');
   const bucksIssuerBoardId = await E(board).getId(bucksIssuer);
@@ -319,12 +362,14 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   // longer in the purse.
   const inviteIssuer = await E(zoe).getInvitationIssuer();
   const zoeInvitePurse = await E(wallet).getPurse('Default Zoe invite purse');
-  const invitationAmount = await E(inviteIssuer).getAmountOf(invite);
+  const invitationAmount = await E(inviteIssuer).getAmountOf(
+    automaticRefundInvitation,
+  );
   const invitationAmountValue = invitationAmount.value;
   assert(Array.isArray(invitationAmountValue));
   const [{ handle: inviteHandle, installation }] = invitationAmountValue;
   const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
-  await wallet.deposit('Default Zoe invite purse', invite);
+  await wallet.deposit('Default Zoe invite purse', automaticRefundInvitation);
 
   const formulateBasicOffer = (id, inviteHandleBoardId) =>
     harden({
@@ -346,7 +391,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   // unnamed first, then the petnames after those are suggested by
   // the dapp.
   /** @type {{ makeInvitation: () => Invitation }} */
-  const publicAPI = await E(zoe).getPublicFacet(instance);
+  const publicAPI = await E(zoe).getPublicFacet(automaticRefundInstance);
   const invite2 = await E(publicAPI).makeInvitation();
   const invitationAmount2 = await E(inviteIssuer).getAmountOf(invite2);
   const invitationAmountValue2 = invitationAmount2.value;
@@ -364,7 +409,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       {
         description: 'getRefund',
         handle: inviteHandle2,
-        instance,
+        instance: automaticRefundInstance,
         installation,
       },
     ],
@@ -420,7 +465,9 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
     `zoeInvitePurseState with no names and invite2`,
   );
 
-  const automaticRefundInstanceBoardId = await E(board).getId(instance);
+  const automaticRefundInstanceBoardId = await E(board).getId(
+    automaticRefundInstance,
+  );
   await wallet.suggestInstance(
     'automaticRefund',
     automaticRefundInstanceBoardId,
@@ -428,7 +475,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
 
   t.is(
     wallet.getInstance('automaticRefund'),
-    instance,
+    automaticRefundInstance,
     `automaticRefund instance stored in wallet`,
   );
 
@@ -582,7 +629,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
       {
         description: 'getRefund',
         handle: inviteHandle2,
-        instance,
+        instance: automaticRefundInstance,
         installation,
       },
     ],
@@ -688,13 +735,12 @@ test('lib-wallet offer methods', async t => {
   const {
     moolaBundle,
     wallet,
-    invite,
-    zoe,
+    automaticRefundInvitation,
     board,
-    instance,
+    automaticRefundInstance,
     pursesStateChangeLog,
     inboxStateChangeLog,
-  } = await setupTest();
+  } = await setupTest({ automaticRefund: true });
 
   await wallet.addIssuer('moola', moolaBundle.issuer);
   await wallet.makeEmptyPurse('moola', 'Fun budget');
@@ -708,12 +754,14 @@ test('lib-wallet offer methods', async t => {
   );
 
   const inviteIssuer = await E(zoe).getInvitationIssuer();
-  const invitationAmount = await E(inviteIssuer).getAmountOf(invite);
+  const invitationAmount = await E(inviteIssuer).getAmountOf(
+    automaticRefundInvitation,
+  );
   const invitationAmountValue = invitationAmount.value;
   assert(Array.isArray(invitationAmountValue));
   const [{ handle: inviteHandle, installation }] = invitationAmountValue;
   const inviteHandleBoardId1 = await E(board).getId(inviteHandle);
-  await wallet.deposit('Default Zoe invite purse', invite);
+  await wallet.deposit('Default Zoe invite purse', automaticRefundInvitation);
 
   const formulateBasicOffer = (id, inviteHandleBoardId) =>
     harden({
@@ -751,10 +799,10 @@ test('lib-wallet offer methods', async t => {
           description: 'getRefund',
           handle: inviteHandle,
           installation,
-          instance,
+          instance: automaticRefundInstance,
         },
         inviteHandleBoardId: 'board0566',
-        instance,
+        instance: automaticRefundInstance,
         installation,
         meta: {
           id: 6,
@@ -788,7 +836,7 @@ test('lib-wallet offer methods', async t => {
   const rawId2 = '1588645230204';
   const id2 = `unknown#${rawId2}`;
   /** @type {{ makeInvitation: () => Invitation}} */
-  const publicAPI = await E(zoe).getPublicFacet(instance);
+  const publicAPI = await E(zoe).getPublicFacet(automaticRefundInstance);
   const invite2 = await E(publicAPI).makeInvitation();
   const invitationAmount2 = await E(inviteIssuer).getAmountOf(invite2);
   const invitationAmountValue2 = invitationAmount2.value;
@@ -931,7 +979,7 @@ test('lib-wallet offer methods', async t => {
           description: 'getRefund',
           handle: {
             kind: 'unnamed',
-            petname: 'unnamed-7',
+            petname: 'unnamed-6',
           },
           installation: {
             kind: 'unnamed',
@@ -944,7 +992,7 @@ test('lib-wallet offer methods', async t => {
         },
         inviteHandleBoardId: 'board0257',
         meta: {
-          id: 9,
+          id: 8,
         },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
@@ -984,14 +1032,13 @@ test('lib-wallet offer methods', async t => {
 test('lib-wallet addOffer for autoswap swap', async t => {
   t.plan(4);
   const {
-    zoe,
     moolaBundle,
     simoleanBundle,
     wallet,
     addLiquidityInvite,
     autoswapInstanceHandle,
     board,
-  } = await setupTest();
+  } = await setupTest({ autoswap: true });
 
   await wallet.addIssuer('moola', moolaBundle.issuer);
   await wallet.makeEmptyPurse('moola', 'Fun budget');
@@ -1114,7 +1161,7 @@ test('lib-wallet can give attestations in offers', async t => {
     attestationPublicFacet,
     attestationBrand,
     attestationIssuer,
-  } = await setupTest();
+  } = await setupTest({ attestation: true });
 
   const issuerManager = wallet.getIssuerManager();
   await issuerManager.add('Attestation', attestationIssuer);
@@ -1187,7 +1234,7 @@ test('lib-wallet can want attestations in offers', async t => {
     attestationPublicFacet,
     attestationBrand,
     attestationIssuer,
-  } = await setupTest();
+  } = await setupTest({ attestation: true });
 
   const issuerManager = wallet.getIssuerManager();
   await issuerManager.add('Attestation', attestationIssuer);
@@ -1257,13 +1304,12 @@ test('lib-wallet can want attestations in offers', async t => {
 
 test('addOffer invitationQuery', async t => {
   const {
-    zoe,
     moolaBundle,
     simoleanBundle,
     wallet,
     addLiquidityInvite,
     autoswapInstanceHandle,
-  } = await setupTest();
+  } = await setupTest({ autoswap: true });
 
   const issuerManager = wallet.getIssuerManager();
   await issuerManager.add('moola', moolaBundle.issuer);
@@ -1380,13 +1426,12 @@ test('addOffer invitationQuery', async t => {
 
 test('addOffer offer.invitation', async t => {
   const {
-    zoe,
     moolaBundle,
     simoleanBundle,
     wallet,
     addLiquidityInvite,
     autoswapInstanceHandle,
-  } = await setupTest();
+  } = await setupTest({ autoswap: true });
 
   const issuerManager = wallet.getIssuerManager();
   await issuerManager.add('moola', moolaBundle.issuer);
@@ -1495,7 +1540,6 @@ test('addOffer offer.invitation', async t => {
 });
 
 test('addOffer makeContinuingInvitation', async t => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   // Create ContinuingInvitationExample instance
@@ -1586,7 +1630,6 @@ test('addOffer makeContinuingInvitation', async t => {
 });
 
 test('getZoe, getBoard', async t => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};
@@ -1606,7 +1649,6 @@ test('getZoe, getBoard', async t => {
 });
 
 test('stamps from dateNow', async t => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   const startDateMS = new Date(2020, 0, 1).valueOf();
