@@ -21,16 +21,19 @@ export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
 export const LIQUIDATION_INSTALL_KEY = 'LiquidationInstall';
 export const LIQUIDATION_TERMS_KEY = 'LiquidationTerms';
+export const MIN_INITIAL_LOAN_KEY = 'MinInitialLoan';
 
 /**
  * @param {Amount} electorateInvitationAmount
  * @param {Installation} liquidationInstall
  * @param {Object} liquidationTerms
+ * @param {Amount} minInitialLoan
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
   liquidationInstall,
   liquidationTerms,
+  minInitialLoan,
 ) => {
   return harden({
     [CONTRACT_ELECTORATE]: {
@@ -44,6 +47,10 @@ const makeVaultDirectorParams = (
     [LIQUIDATION_TERMS_KEY]: {
       type: ParamTypes.UNKNOWN,
       value: liquidationTerms,
+    },
+    [MIN_INITIAL_LOAN_KEY]: {
+      type: ParamTypes.AMOUNT,
+      value: minInitialLoan,
     },
   });
 };
@@ -77,18 +84,21 @@ export const vaultParamPattern = M.split(
  * @param {Invitation} electorateInvitation
  * @param {Installation} liquidationInstall
  * @param {Object} liquidationTerms
+ * @param {Amount} minInitialLoan
  */
 const makeVaultDirectorParamManager = async (
   zoe,
   electorateInvitation,
   liquidationInstall,
   liquidationTerms,
+  minInitialLoan,
 ) => {
   return makeParamManager(
     {
       [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, electorateInvitation],
       [LIQUIDATION_INSTALL_KEY]: [ParamTypes.INSTALLATION, liquidationInstall],
       [LIQUIDATION_TERMS_KEY]: [ParamTypes.UNKNOWN, liquidationTerms],
+      [MIN_INITIAL_LOAN_KEY]: [ParamTypes.AMOUNT, minInitialLoan],
     },
     zoe,
   );
@@ -103,6 +113,7 @@ const makeVaultDirectorParamManager = async (
  * @param {VaultManagerParamValues} vaultManagerParams
  * @param {XYKAMMPublicFacet} ammPublicFacet
  * @param {Object} liquidationTerms
+ * @param {Amount} minInitialLoan
  * @param {bigint=} bootstrapPaymentValue
  */
 const makeGovernedTerms = (
@@ -114,25 +125,27 @@ const makeGovernedTerms = (
   vaultManagerParams,
   ammPublicFacet,
   liquidationTerms,
+  minInitialLoan,
   bootstrapPaymentValue = 0n,
 ) => {
-  const timingParamMgr = makeParamManagerSync({
+  const loanTimingParams = makeParamManagerSync({
     [CHARGING_PERIOD_KEY]: ['nat', loanTiming.chargingPeriod],
     [RECORDING_PERIOD_KEY]: ['nat', loanTiming.recordingPeriod],
-  });
+  }).getParams();
 
-  const vmParamMgr = makeVaultParamManager(vaultManagerParams);
+  const loanParams = makeVaultParamManager(vaultManagerParams).getParams();
 
   return harden({
     ammPublicFacet,
     priceAuthority,
-    loanParams: vmParamMgr.getParams(),
-    loanTimingParams: timingParamMgr.getParams(),
+    loanParams,
+    loanTimingParams,
     timerService,
     governedParams: makeVaultDirectorParams(
       invitationAmount,
       liquidationInstall,
       liquidationTerms,
+      minInitialLoan,
     ),
     bootstrapPaymentValue,
   });

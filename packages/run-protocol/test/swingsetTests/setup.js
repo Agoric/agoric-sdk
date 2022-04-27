@@ -209,6 +209,7 @@ const buildOwner = async (
     // @ts-expect-error It's not a real AMM public facet
     ammMock,
     liquidationDetailTerms(runBrand),
+    AmountMath.make(runBrand, 100n),
   );
 
   const privateVaultFactoryArgs = { feeMintAccess, initialPoserInvitation };

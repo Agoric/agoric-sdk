@@ -24,15 +24,23 @@ import {
   makeVaultDirectorParamManager,
   LIQUIDATION_INSTALL_KEY,
   LIQUIDATION_TERMS_KEY,
+  MIN_INITIAL_LOAN_KEY,
 } from './params.js';
 import { makeVaultDirector } from './vaultDirector.js';
 
 /**
- * @typedef {ZCF<GovernanceTerms<{}> & {
+ * @typedef {{
+ *   LiquidationTerms: ParamRecord<'unknown'>,
+ *   LiquidationInstall: ParamRecord<'installation'>,
+ *   MinInitialLoan: ParamRecord<'amount'>,
+ * }} VaultDirectorParams
+ *
+ * @typedef {ZCF<GovernanceTerms<VaultDirectorParams> & {
  *   ammPublicFacet: AutoswapPublicFacet,
  *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamRecord<'nat'>, RecordingPeriod: ParamRecord<'nat'>},
  *   timerService: TimerService,
+ *   minInitialLoan: Amount,
  *   priceAuthority: ERef<PriceAuthority>}>} VaultFactoryZCF
  */
 
@@ -48,10 +56,9 @@ export const start = async (zcf, privateArgs) => {
   }));
 
   const {
-    // @ts-expect-error
     [LIQUIDATION_INSTALL_KEY]: { value: liqInstall },
-    // @ts-expect-error
     [LIQUIDATION_TERMS_KEY]: { value: liqTerms },
+    [MIN_INITIAL_LOAN_KEY]: { value: minInitialLoan },
   } = zcf.getTerms().governedParams;
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
@@ -59,6 +66,7 @@ export const start = async (zcf, privateArgs) => {
     initialPoserInvitation,
     liqInstall,
     liqTerms,
+    minInitialLoan,
   );
 
   assertElectorateMatches(

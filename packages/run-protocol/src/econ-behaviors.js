@@ -44,6 +44,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
+ *   minInitialLoan: bigint,
  * }>} EconomyBootstrapSpace
  */
 
@@ -226,6 +227,7 @@ export const setupReserve = async ({
  * @param { EconomyBootstrapPowers } powers
  * @param { Object } config
  * @param { LoanTiming } [config.loanParams]
+ * @param {Amount} minInitialLoan
  */
 export const startVaultFactory = async (
   {
@@ -251,6 +253,7 @@ export const startVaultFactory = async (
       recordingPeriod: SECONDS_PER_DAY,
     },
   } = {},
+  minInitialLoan,
 ) => {
   const installations = await Collect.allValues({
     VaultFactory,
@@ -298,7 +301,9 @@ export const startVaultFactory = async (
     vaultManagerParams,
     ammPublicFacet,
     liquidationDetailTerms(centralBrand),
+    minInitialLoan,
   );
+
   const governorTerms = harden({
     timer,
     electorateInstance,
