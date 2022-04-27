@@ -59,7 +59,7 @@ const { details: X } = assert;
 
 /**
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation", LiquidationInstall: "installation", LiquidationTerms: "unknown", MinInitialLoan: "amount"}>} directorParamManager
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation", LiquidationInstall: "installation", LiquidationTerms: "unknown", MinInitialDebt: "amount"}>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
 const initState = (zcf, directorParamManager, debtMint) => {
@@ -101,7 +101,7 @@ const makeVaultInvitation = ({ state }) => {
     });
     const {
       give: { Collateral: collateralAmount },
-      want: { RUN: borrowAmount },
+      want: { RUN: requestedAmount },
     } = seat.getProposal();
     const { brand: brandIn } = collateralAmount;
     assert(
@@ -111,12 +111,14 @@ const makeVaultInvitation = ({ state }) => {
 
     assert(
       AmountMath.isGTE(
-        borrowAmount,
+        requestedAmount,
         // @ts-expect-error VaultDirectoryParams isn't right
-        state.directorParamManager.getMinInitialLoan(),
+        state.directorParamManager.getMinInitialDebt(),
       ),
-      // @ts-expect-error VaultDirectoryParams isn't right
-      X`Minimum loan amount is ${state.directorParamManager.getMinInitialLoan()}, won't lend ${borrowAmount}`,
+      X`The request must be for at least ${
+        // @ts-expect-error VaultDirectoryParams isn't right
+        state.directorParamManager.getMinInitialDebt().value
+      }. ${requestedAmount.value} is too small`,
     );
 
     /** @type {VaultManager} */
