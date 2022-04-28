@@ -39,7 +39,8 @@ const SHARED_MAIN_MANIFEST = harden({
   },
   startVaultFactory: {
     consume: {
-      feeMintAccess: 'zoe',
+      // FIXME no test catch this problem
+      // feeMintAccess: 'zoe',
       chainTimerService: 'timer',
       zoe: 'zoe',
       priceAuthority: 'priceAuthority',

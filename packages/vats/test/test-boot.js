@@ -90,6 +90,11 @@ const argvByRole = {
     hardcodedClientAddresses: ['a1'],
   },
 };
+/**
+ * @typedef {'chain' | 'client' | 'sim-chain'} Role
+ * @param {Role} ROLE - 'chain' is a fresh Cosmos chain and 'sim-chain' mocks Cosmos and a playground (@see demoIssuers.js), 'client' is ag-solo
+ * @param {boolean} governanceActions - whether to run the governance actions
+ */
 const testRole = (ROLE, governanceActions) => {
   test(`test manifest permits: ${ROLE} gov: ${governanceActions}`, async t => {
     const root = buildRootObject(

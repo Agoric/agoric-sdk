@@ -57,6 +57,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
   } = vatParameters;
   console.debug(`${ROLE} bootstrap starting`);
 
+  // XXX turadg take ROLE concern out of core/boot.js
   const bootManifest = bootstrapManifest || roleToManifest[ROLE];
   const bootBehaviors = roleToBehaviors[ROLE] || behaviors;
   assert(bootManifest, X`no configured bootstrapManifest for role ${ROLE}`);
