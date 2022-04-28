@@ -14,6 +14,9 @@ import {
   makeBringOutYourDead,
 } from './util.js';
 
+/**
+ * @param {boolean} [skipLogging = false]
+ */
 export function buildSyscall(skipLogging) {
   const log = [];
   const fakestore = new Map();
@@ -114,7 +117,7 @@ export function buildSyscall(skipLogging) {
     },
   };
 
-  return { log, syscall };
+  return skipLogging ? { syscall } : { log, syscall };
 }
 
 export async function makeDispatch(

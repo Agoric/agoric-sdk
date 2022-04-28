@@ -12,7 +12,7 @@ const { details: X } = assert;
  * @typedef {{
  * notifier: NotifierRecord<VaultUIState>['notifier'],
  * updater: NotifierRecord<VaultUIState>['updater'],
- * vault: InnerVault | null,
+ * vault: Vault | null,
  * }} State
  * @typedef {Readonly<{
  *   state: State,
@@ -25,7 +25,7 @@ const { details: X } = assert;
 
 /**
  *
- * @param {InnerVault} vault
+ * @param {Vault} vault
  * @returns {State}
  */
 const initState = vault => {
@@ -59,8 +59,8 @@ const title = {
   makeCloseInvitation: ({ facets }) =>
     facets.helper.owned().makeCloseInvitation(),
   /**
-   * Starting a transfer revokes the outer vault. The associated updater will
-   * get a special notification the the vault is being transferred.
+   * Starting a transfer revokes the vaultTitle. The associated updater will
+   * get a special notification that the vault is being transferred.
    *
    * @param {MethodContext} context
    */

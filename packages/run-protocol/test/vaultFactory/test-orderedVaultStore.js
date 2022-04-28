@@ -6,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeOrderedVaultStore } from '../../src/vaultFactory/orderedVaultStore.js';
 import { fromVaultKey } from '../../src/vaultFactory/storeUtils.js';
-import { makeFakeInnerVault } from './interestSupport.js';
+import { makeFakeVault } from './interestSupport.js';
 
 const brand = Far('brand');
 
@@ -14,7 +14,7 @@ const mockVault = (vaultId, runCount, collateralCount) => {
   const debtAmount = AmountMath.make(brand, runCount);
   const collateralAmount = AmountMath.make(brand, collateralCount);
 
-  return makeFakeInnerVault(vaultId, debtAmount, collateralAmount);
+  return makeFakeVault(vaultId, debtAmount, collateralAmount);
 };
 
 const BIGGER_INT = BigInt(Number.MAX_VALUE) + 1n;

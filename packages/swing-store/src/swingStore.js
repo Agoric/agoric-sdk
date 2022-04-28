@@ -130,23 +130,23 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const { mapSize = DEFAULT_LMDB_MAP_SIZE, enableTrace } = options;
+  const { mapSize = DEFAULT_LMDB_MAP_SIZE, traceFile } = options;
 
-  let debugOutput = enableTrace
-    ? fs.createWriteStream(path.resolve(dirPath, 'store-trace.log'), {
+  let traceOutput = traceFile
+    ? fs.createWriteStream(path.resolve(traceFile), {
         flags: 'a',
       })
     : null;
 
   function trace(...args) {
-    if (!debugOutput) return;
+    if (!traceOutput) return;
 
-    debugOutput.write(args.join(' '));
-    debugOutput.write('\n');
+    traceOutput.write(args.join(' '));
+    traceOutput.write('\n');
   }
   function stopTrace() {
-    debugOutput && debugOutput.end();
-    debugOutput = null;
+    traceOutput && traceOutput.end();
+    traceOutput = null;
   }
 
   let lmdbEnv = new lmdb.Env();

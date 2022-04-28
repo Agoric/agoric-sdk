@@ -87,12 +87,10 @@ jobs:
         run: |
           IMAGE=agoric/deployment
           for TAG in ${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}; do
-            AMENDS=
             for ARCH in $ALL_ARCHES; do
               ARCHTAG=$(echo "$ARCH" | tr / _)
-              AMENDS="$AMENDS --amend $IMAGE:${{ needs.snapshot.outputs.tag }}-$ARCHTAG"
+              docker manifest create "$IMAGE:$TAG" --amend "$IMAGE:${{ needs.snapshot.outputs.tag }}-$ARCHTAG" || true
             done
-            docker manifest create "$IMAGE:$TAG" $AMENDS || true
             docker manifest push "$IMAGE:$TAG"
           done
       - name: Build and Push sdk
@@ -116,12 +114,10 @@ jobs:
         run: |
           IMAGE=agoric/agoric-sdk
           for TAG in ${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}; do
-            AMENDS=
             for ARCH in $ALL_ARCHES; do
               ARCHTAG=$(echo "$ARCH" | tr / _)
-              AMENDS="$AMENDS --amend $IMAGE:${{ needs.snapshot.outputs.tag }}-$ARCHTAG"
+              docker manifest create "$IMAGE:$TAG" --amend "$IMAGE:${{ needs.snapshot.outputs.tag }}-$ARCHTAG" || true
             done
-            docker manifest create "$IMAGE:$TAG" $AMENDS || true
             docker manifest push "$IMAGE:$TAG"
           done
       - name: Build and Push setup
@@ -138,12 +134,10 @@ jobs:
         run: |
           IMAGE=agoric/cosmic-swingset-setup
           for TAG in ${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}; do
-            AMENDS=
             for ARCH in $ALL_ARCHES; do
               ARCHTAG=$(echo "$ARCH" | tr / _)
-              AMENDS="$AMENDS --amend $IMAGE:${{ needs.snapshot.outputs.tag }}-$ARCHTAG"
+              docker manifest create "$IMAGE:$TAG" --amend "$IMAGE:${{ needs.snapshot.outputs.tag }}-$ARCHTAG" || true
             done
-            docker manifest create "$IMAGE:$TAG" $AMENDS || true
             docker manifest push "$IMAGE:$TAG"
           done
       - name: notify on failure

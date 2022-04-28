@@ -12,11 +12,11 @@ import {
 } from '../../src/vaultFactory/prioritizedVaults.js';
 import { waitForPromisesToSettle } from '../supports.js';
 import {
-  makeFakeInnerVault,
+  makeFakeVault,
   makeCompoundedInterestProvider,
 } from './interestSupport.js';
 
-/** @typedef {import('../../src/vaultFactory/vault.js').InnerVault} InnerVault */
+/** @typedef {import('../../src/vaultFactory/vault.js').Vault} Vault */
 
 const { brand } = makeIssuerKit('ducats');
 const percent = n => makeRatio(BigInt(n), brand);
@@ -27,7 +27,7 @@ function makeCollector() {
 
   /**
    *
-   * @param {[string, InnerVault]} record
+   * @param {[string, Vault]} record
    */
   function lookForRatio([_, vault]) {
     ratios.push(currentDebtToCollateral(vault));
@@ -59,7 +59,7 @@ test('add to vault', async t => {
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
   vaults.addVault(
     'id-fakeVaultKit',
-    makeFakeInnerVault('id-fakeVaultKit', AmountMath.make(brand, 130n)),
+    makeFakeVault('id-fakeVaultKit', AmountMath.make(brand, 130n)),
   );
   const collector = makeCollector();
   // ??? why doesn't this work?
@@ -81,12 +81,12 @@ test('updates', async t => {
 
   vaults.addVault(
     'id-fakeVault1',
-    makeFakeInnerVault('id-fakeVault1', AmountMath.make(brand, 20n)),
+    makeFakeVault('id-fakeVault1', AmountMath.make(brand, 20n)),
   );
 
   vaults.addVault(
     'id-fakeVault2',
-    makeFakeInnerVault('id-fakeVault2', AmountMath.make(brand, 80n)),
+    makeFakeVault('id-fakeVault2', AmountMath.make(brand, 80n)),
   );
 
   await waitForPromisesToSettle();
@@ -104,7 +104,7 @@ test('update changes ratio', async t => {
   const rescheduler = makeRescheduler();
   const vaults = makePrioritizedVaults(rescheduler.fakeReschedule);
 
-  const fakeVault1 = makeFakeInnerVault(
+  const fakeVault1 = makeFakeVault(
     'id-fakeVault1',
     AmountMath.make(brand, 20n),
   );
@@ -112,7 +112,7 @@ test('update changes ratio', async t => {
 
   vaults.addVault(
     'id-fakeVault2',
-    makeFakeInnerVault('id-fakeVault2', AmountMath.make(brand, 80n)),
+    makeFakeVault('id-fakeVault2', AmountMath.make(brand, 80n)),
   );
 
   await waitForPromisesToSettle();
@@ -156,15 +156,15 @@ test('removals', async t => {
   // Add fakes 1,2,3
   vaults.addVault(
     'id-fakeVault1',
-    makeFakeInnerVault('id-fakeVault1', AmountMath.make(brand, 150n)),
+    makeFakeVault('id-fakeVault1', AmountMath.make(brand, 150n)),
   );
   vaults.addVault(
     'id-fakeVault2',
-    makeFakeInnerVault('id-fakeVault2', AmountMath.make(brand, 130n)),
+    makeFakeVault('id-fakeVault2', AmountMath.make(brand, 130n)),
   );
   vaults.addVault(
     'id-fakeVault3',
-    makeFakeInnerVault('id-fakeVault3', AmountMath.make(brand, 140n)),
+    makeFakeVault('id-fakeVault3', AmountMath.make(brand, 140n)),
   );
 
   // remove fake 3
@@ -202,12 +202,12 @@ test('highestRatio', async t => {
 
   vaults.addVault(
     'id-fakeVault1',
-    makeFakeInnerVault('id-fakeVault1', AmountMath.make(brand, 30n)),
+    makeFakeVault('id-fakeVault1', AmountMath.make(brand, 30n)),
   );
   const cr1 = percent(30);
   t.deepEqual(vaults.highestRatio(), cr1);
 
-  const fakeVault6 = makeFakeInnerVault(
+  const fakeVault6 = makeFakeVault(
     'id-fakeVault6',
     AmountMath.make(brand, 50n),
   );
@@ -217,7 +217,7 @@ test('highestRatio', async t => {
 
   vaults.addVault(
     'id-fakeVault3',
-    makeFakeInnerVault('id-fakeVault3', AmountMath.make(brand, 40n)),
+    makeFakeVault('id-fakeVault3', AmountMath.make(brand, 40n)),
   );
 
   // sanity check ordering
@@ -254,13 +254,13 @@ test('stable ordering as interest accrues', async t => {
   // day 0
   // v1: 10 / 100
   // v2: 20 / 100 HIGHEST
-  const v1 = makeFakeInnerVault(
+  const v1 = makeFakeVault(
     'id-fakeVault1',
     AmountMath.make(brand, 10n),
     undefined,
     m,
   );
-  const v2 = makeFakeInnerVault(
+  const v2 = makeFakeVault(
     'id-fakeVault2',
     AmountMath.make(brand, 20n),
     undefined,
@@ -280,7 +280,7 @@ test('stable ordering as interest accrues', async t => {
   // v2: 40 / 100 (first)
   // v3: 30 / 100 (second)
   m.chargeHundredPercentInterest();
-  const v3 = makeFakeInnerVault(
+  const v3 = makeFakeVault(
     'id-fakeVault3',
     AmountMath.make(brand, 30n),
     undefined,

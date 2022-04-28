@@ -1,0 +1,51 @@
+name: Pre-check Integration Test
+
+on:
+  workflow_call:
+    outputs:
+      should_run:
+        description: "'true' if the test should run"
+        value: "${{ jobs.check_and_cancel.outcome != 'skipped' && jobs.check_and_cancel.outputs.should_skip != 'true' }}"
+
+jobs:
+  check_and_cancel:
+    name: Check preconditions and cancel previous jobs
+    if: >-
+      github.event_name != 'pull_request' || (
+        github.event.pull_request.base.ref == 'master' &&
+        github.event.pull_request.draft == false &&
+        (
+          contains(github.event.pull_request.labels.*.name, 'manualmerge') || 
+          contains(github.event.pull_request.labels.*.name, 'automerge:squash') || 
+          contains(github.event.pull_request.labels.*.name, 'automerge:merge') ||
+          contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
+          github.event.pull_request.auto_merge != null
+        ) && 
+        !contains(github.event.pull_request.labels.*.name, 'bypass:integration')
+      )
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ (steps.step2.outcome == 'skipped' || steps.step2.outputs.concurrent_conclusion == 'success') && steps.step1.outputs.should_skip || 'false' }}
+    steps:
+      - id: step1
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          cancel_others: 'true'
+          concurrent_skipping: 'same_content_newer'
+      - id: step2
+        name: Wait for concurrent run conclusion
+        if: >-
+          steps.step1.outputs.should_skip == 'true' && 
+          steps.step1.outputs.reason == 'concurrent_skipping' && 
+          fromJSON(steps.step1.outputs.skipped_by).status != 'completed'
+        run: |
+          while : ; do 
+            conclusion="$(curl --fail --silent \
+              --url https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ fromJSON(steps.step1.outputs.skipped_by).runId }} \
+              --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+              --header 'content-type: application/json' \
+            | jq -r '.conclusion')"
+            [ "$conclusion" != "null" ] && break
+            sleep 10
+          done
+          echo "::set-output name=concurrent_conclusion::$conclusion"

@@ -181,11 +181,33 @@ const buildSwingset = async (
     serviceName: 'solo',
   });
 
-  const { SLOGFILE: slogFile, SLOGSENDER, LMDB_MAP_SIZE } = env;
+  const {
+    SLOGFILE: slogFile,
+    SLOGSENDER,
+    LMDB_MAP_SIZE,
+    SWING_STORE_TRACE,
+  } = env;
   const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
+
+  const defaultTraceFile = path.resolve(kernelStateDBDir, 'store-trace.log');
+  let swingStoreTraceFile;
+  switch (SWING_STORE_TRACE) {
+    case '0':
+    case 'false':
+      break;
+    case '1':
+    case 'true':
+      swingStoreTraceFile = defaultTraceFile;
+      break;
+    default:
+      if (SWING_STORE_TRACE) {
+        swingStoreTraceFile = path.resolve(SWING_STORE_TRACE);
+      }
+  }
+
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
-    { mapSize },
+    { mapSize, traceFile: swingStoreTraceFile },
   );
   const hostStorage = {
     kvStore,
@@ -213,7 +235,7 @@ const buildSwingset = async (
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
-    { slogCallbacks, slogFile, slogSender },
+    { env, slogCallbacks, slogFile, slogSender },
   );
 
   const { crankScheduler } = exportKernelStats({
