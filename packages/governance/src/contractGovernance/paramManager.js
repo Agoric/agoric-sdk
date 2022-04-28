@@ -45,6 +45,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
+ * @property {(name: string, value: string) => ParamManagerBuilder} addJson
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
  * @property {() => AnyParamManager} build
  */
@@ -160,6 +161,21 @@ const makeParamManagerBuilder = zoe => {
   const addString = (name, value, builder) => {
     const assertString = v => assert.typeof(v, 'string');
     buildCopyParam(name, value, assertString, ParamTypes.STRING);
+    return builder;
+  };
+
+  /** @type {(name: string, value: string, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addJson = (name, value, builder) => {
+    const assertJson = v => {
+      try {
+        assert.typeof(v, 'string');
+        JSON.parse(v);
+      } catch (e) {
+        throw Error(`Expected a json string. "${v}" is not valid json.`);
+      }
+      return true;
+    };
+    buildCopyParam(name, value, assertJson, ParamTypes.JSON);
     return builder;
   };
 
@@ -328,6 +344,7 @@ const makeParamManagerBuilder = zoe => {
       getNat: name => getTypedParam(ParamTypes.NAT, name),
       getRatio: name => getTypedParam(ParamTypes.RATIO, name),
       getString: name => getTypedParam(ParamTypes.STRING, name),
+      getJson: name => getTypedParam(ParamTypes.JSON, name),
       getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
       getVisibleValue,
       getInternalParamValue,
@@ -350,6 +367,7 @@ const makeParamManagerBuilder = zoe => {
     addNat: (n, v) => addNat(n, v, builder),
     addRatio: (n, v) => addRatio(n, v, builder),
     addString: (n, v) => addString(n, v, builder),
+    addJson: (n, v) => addJson(n, v, builder),
     build: () => makeParamManager(),
   };
   return builder;

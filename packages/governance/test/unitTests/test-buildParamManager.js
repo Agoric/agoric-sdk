@@ -320,6 +320,41 @@ test('Strings', async t => {
   });
 });
 
+test('JSON blobs', async t => {
+  const paramManager = makeParamManagerBuilder()
+    .addNat('Acres', 50n)
+    .addJson('Blob', '{ "author": "Crockford" }')
+    .build();
+  t.is(paramManager.getJson('Blob'), '{ "author": "Crockford" }');
+
+  await paramManager.updateParams({
+    Blob: '{ "authors": "Crockford,Morningstar" }',
+  });
+  t.is(paramManager.getBlob(), '{ "authors": "Crockford,Morningstar" }');
+  await t.throwsAsync(
+    () =>
+      paramManager.updateParams({
+        Blob: 300000000,
+      }),
+    {
+      message: 'Expected a json string. "300000000" is not valid json.',
+    },
+  );
+  await t.throwsAsync(
+    () =>
+      paramManager.updateParams({
+        Blob: 'author: bob',
+      }),
+    {
+      message: 'Expected a json string. "author: bob" is not valid json.',
+    },
+  );
+
+  t.throws(() => paramManager.getNat('Blob'), {
+    message: '"Blob" is not "nat"',
+  });
+});
+
 test('Unknown', async t => {
   const paramManager = makeParamManagerBuilder()
     .addString('Label', 'birthday')

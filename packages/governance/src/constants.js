@@ -11,6 +11,7 @@ export const ParamTypes = /** @type {const} */ ({
   INSTALLATION: 'installation',
   INSTANCE: 'instance',
   INVITATION: 'invitation',
+  JSON: 'json',
   NAT: 'nat',
   RATIO: 'ratio',
   STRING: 'string',
