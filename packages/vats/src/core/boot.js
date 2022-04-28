@@ -36,32 +36,22 @@ const roleToBehaviors = harden({
  *
  * @param {{
  *   D: DProxy,
- *   logger?: (msg: string) => void,
+ *   logger: (msg: string) => void,
  * }} vatPowers
  * @param {{
- *   argv: { ROLE: string },
- *   bootstrapManifest?: Record<string, Record<string, unknown>>,
+ *   bootstrapManifest: Record<string, Record<string, unknown>>,
+ *   bootBehaviors: Record<string, unknown>,
  *   coreProposalCode?: string,
  * }} vatParameters
  */
-const buildRootObject = (vatPowers, vatParameters) => {
+const buildRootObjectHelper = (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(log);
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
-  const {
-    argv: { ROLE },
-    bootstrapManifest,
-  } = vatParameters;
-  console.debug(`${ROLE} bootstrap starting`);
-
-  // XXX turadg take ROLE concern out of core/boot.js
-  const bootManifest = bootstrapManifest || roleToManifest[ROLE];
-  const bootBehaviors = roleToBehaviors[ROLE] || behaviors;
-  assert(bootManifest, X`no configured bootstrapManifest for role ${ROLE}`);
-  assert(bootBehaviors, X`no configured bootstrapBehaviors for role ${ROLE}`);
+  const { bootstrapManifest, bootBehaviors } = vatParameters;
 
   /**
    * Bootstrap vats and devices.
@@ -107,7 +97,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
       },
     });
 
-    await runBehaviors(bootManifest);
+    await runBehaviors(bootstrapManifest);
 
     const { coreProposalCode } = vatParameters;
     if (!coreProposalCode) {
@@ -139,6 +129,43 @@ const buildRootObject = (vatPowers, vatParameters) => {
         throw e;
       }),
   });
+};
+
+/**
+ * Build root object of the bootstrap vat.
+ *
+ * @param {{
+ *   D: DProxy,
+ *   logger?: (msg: string) => void,
+ * }} vatPowers
+ * @param {{
+ *   argv: { ROLE: string },
+ *   bootstrapManifest?: Record<string, Record<string, unknown>>,
+ *   coreProposalCode?: string,
+ * }} vatParameters
+ */
+const buildRootObject = (vatPowers, vatParameters) => {
+  const logger = vatPowers.logger || console.info;
+
+  const {
+    argv: { ROLE },
+    bootstrapManifest,
+  } = vatParameters;
+  console.debug(`${ROLE} bootstrap building`);
+
+  const bootManifest = bootstrapManifest || roleToManifest[ROLE];
+  const bootBehaviors = roleToBehaviors[ROLE] || behaviors;
+  assert(bootManifest, X`no configured bootstrapManifest for role ${ROLE}`);
+  assert(bootBehaviors, X`no configured bootstrapBehaviors for role ${ROLE}`);
+
+  return buildRootObjectHelper(
+    harden({ ...vatPowers, logger }),
+    harden({
+      ...vatParameters,
+      bootstrapManifest: bootManifest,
+      bootBehaviors,
+    }),
+  );
 };
 
 harden({ buildRootObject });
