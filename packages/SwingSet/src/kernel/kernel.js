@@ -1071,13 +1071,13 @@ export default function buildKernel(
   }
 
   let processQueueRunning;
-  async function tryProcessDeliveryMessage(message) {
+  async function tryProcessMessage(processor, message) {
     if (processQueueRunning) {
       console.error(`We're currently already running at`, processQueueRunning);
       assert.fail(X`Kernel reentrancy is forbidden`);
     }
     processQueueRunning = Error('here');
-    return processDeliveryMessage(message).finally(() => {
+    return processor(message).finally(() => {
       processQueueRunning = undefined;
     });
   }
@@ -1085,32 +1085,24 @@ export default function buildKernel(
   async function processAcceptanceMessage(message) {
     kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
     kdebug(legibilizeMessage(message));
-    if (processQueueRunning) {
-      console.error(`We're currently already running at`, processQueueRunning);
-      assert.fail(X`Kernel reentrancy is forbidden`);
-    }
     kernelSlog.write({ type: 'crank-start', message });
     /** @type { PolicyInput } */
     const policyInput = ['none'];
-    try {
-      processQueueRunning = Error('here');
 
-      kernelKeeper.addToRunQueue(message);
+    kernelKeeper.addToRunQueue(message);
 
-      kernelKeeper.processRefcounts();
-      kernelKeeper.saveStats();
-      const crankNum = kernelKeeper.getCrankNumber();
-      kernelKeeper.incrementCrankNumber();
-      const { crankhash, activityhash } = kernelKeeper.commitCrank();
-      kernelSlog.write({
-        type: 'crank-finish',
-        crankNum,
-        crankhash,
-        activityhash,
-      });
-    } finally {
-      processQueueRunning = undefined;
-    }
+    kernelKeeper.processRefcounts();
+    kernelKeeper.saveStats();
+    const crankNum = kernelKeeper.getCrankNumber();
+    kernelKeeper.incrementCrankNumber();
+    const { crankhash, activityhash } = kernelKeeper.commitCrank();
+    kernelSlog.write({
+      type: 'crank-finish',
+      crankNum,
+      crankhash,
+      activityhash,
+    });
+
     return harden(policyInput);
   }
 
@@ -1426,19 +1418,16 @@ export default function buildKernel(
     return undefined;
   }
 
-  function startProcessingNextMessageIfAny() {
-    /** @type {Promise<PolicyInput> | undefined} */
-    let resultPromise;
+  function getNextMessageAndProcessor() {
     let message = getNextAcceptanceMessage();
-    if (message) {
-      resultPromise = processAcceptanceMessage(message);
-    } else {
+    /** @type {(message:any) => Promise<PolicyInput>} */
+    let processor = processAcceptanceMessage;
+    if (!message) {
       message = getNextDeliveryMessage();
-      if (message) {
-        resultPromise = tryProcessDeliveryMessage(message);
-      }
+      processor = processDeliveryMessage;
     }
-    return { resultPromise };
+
+    return { message, processor };
   }
 
   async function step() {
@@ -1448,10 +1437,10 @@ export default function buildKernel(
     if (!started) {
       throw new Error('must do kernel.start() before step()');
     }
-    const { resultPromise } = startProcessingNextMessageIfAny();
+    const { processor, message } = getNextMessageAndProcessor();
     // process a single message
-    if (resultPromise) {
-      await resultPromise;
+    if (message) {
+      await tryProcessMessage(processor, message);
       if (kernelPanic) {
         throw kernelPanic;
       }
@@ -1480,14 +1469,14 @@ export default function buildKernel(
     }
     let count = 0;
     for (;;) {
-      const { resultPromise } = startProcessingNextMessageIfAny();
-      if (!resultPromise) {
+      const { processor, message } = getNextMessageAndProcessor();
+      if (!message) {
         break;
       }
       count += 1;
       /** @type { PolicyInput } */
       // eslint-disable-next-line no-await-in-loop
-      const policyInput = await resultPromise;
+      const policyInput = await tryProcessMessage(processor, message);
       if (kernelPanic) {
         throw kernelPanic;
       }
