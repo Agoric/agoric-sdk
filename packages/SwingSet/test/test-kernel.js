@@ -1214,8 +1214,8 @@ test('transcript', async t => {
 });
 
 // p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); no pipelining. p1 will have a
-// decider but p2 gets queued in p1 (not pipelined to vat-with-x) so p2 won't
-// have a decider. Make sure p3 gets queued in p2 rather than exploding.
+// decider but bar gets queued in p1 (not pipelined to vat-with-x) so p2 won't
+// have a decider. Make sure urgh gets queued in p2 rather than exploding.
 
 test('non-pipelined promise queueing', async t => {
   const kernel = makeKernel();
@@ -1344,7 +1344,7 @@ test('non-pipelined promise queueing', async t => {
 // p1=x!foo(); p2=p1!bar(); p3=p2!urgh(); with pipelining. All three should
 // get delivered to vat-with-x.
 
-test('pipelined promise queueing', async t => {
+const pipelinedSendTest = async (t, delayed) => {
   const kernel = makeKernel();
   await kernel.start();
   const log = [];
@@ -1377,8 +1377,13 @@ test('pipelined promise queueing', async t => {
   const bobForKernel = kernel.addExport(vatB, bobForB);
   const bobForA = kernel.addImport(vatA, bobForKernel);
 
+  const p0ForA = 'p+0';
+  const p0ForKernel = kernel.addExport(vatA, p0ForA);
+
+  const initialTarget = delayed ? p0ForA : bobForA;
+
   const p1ForA = 'p+1';
-  syscall.send(bobForA, 'foo', capdata('fooargs'), p1ForA);
+  syscall.send(initialTarget, 'foo', capdata('fooargs'), p1ForA);
   const p1ForKernel = kernel.addExport(vatA, p1ForA);
 
   const p2ForA = 'p+2';
@@ -1391,6 +1396,15 @@ test('pipelined promise queueing', async t => {
 
   t.deepEqual(kernel.dump().promises, [
     {
+      id: p0ForKernel,
+      state: 'unresolved',
+      policy: 'ignore',
+      refCount: delayed ? 3 : 2,
+      decider: vatA,
+      subscribers: [],
+      queue: [],
+    },
+    {
       id: p1ForKernel,
       state: 'unresolved',
       policy: 'ignore',
@@ -1419,7 +1433,93 @@ test('pipelined promise queueing', async t => {
     },
   ]);
 
-  await kernel.run();
+  // move foo send from acceptance to run-queue
+  await kernel.step();
+  // move bar send from acceptance to run-queue
+  await kernel.step();
+  // move urgh send from acceptance to run-queue
+  await kernel.step();
+  // deliver/move foo send from run-queue to vatB/p0-queue
+  await kernel.step();
+  // deliver/move bar send from run-queue to vatB/p1-queue
+  await kernel.step();
+  // deliver/move urgh send from run-queue to vatB/p2-queue
+  await kernel.step();
+
+  if (delayed) {
+    t.deepEqual(log, []);
+    t.deepEqual(kernel.dump().promises, [
+      {
+        id: p0ForKernel,
+        state: 'unresolved',
+        policy: 'ignore',
+        refCount: 3,
+        decider: vatA,
+        subscribers: [],
+        queue: [
+          {
+            method: 'foo',
+            args: capdata('fooargs'),
+            result: p1ForKernel,
+          },
+        ],
+      },
+      {
+        id: p1ForKernel,
+        state: 'unresolved',
+        policy: 'ignore',
+        refCount: 4,
+        decider: undefined,
+        subscribers: [],
+        queue: [
+          {
+            method: 'bar',
+            args: capdata('barargs'),
+            result: p2ForKernel,
+          },
+        ],
+      },
+      {
+        id: p2ForKernel,
+        state: 'unresolved',
+        policy: 'ignore',
+        refCount: 4,
+        decider: undefined,
+        subscribers: [],
+        queue: [
+          {
+            method: 'urgh',
+            args: capdata('urghargs'),
+            result: p3ForKernel,
+          },
+        ],
+      },
+      {
+        id: p3ForKernel,
+        state: 'unresolved',
+        policy: 'ignore',
+        refCount: 3,
+        decider: undefined,
+        subscribers: [],
+        queue: [],
+      },
+    ]);
+
+    syscall.resolve([[p0ForA, false, capargs(slot0arg, [bobForA])]]);
+
+    // move foo send from acceptance to run-queue
+    await kernel.step();
+    // deliver foo send from run-queue to vatB
+    await kernel.step();
+    // move bar send from acceptance to run-queue
+    await kernel.step();
+    // deliver bar send from run-queue to vatB
+    await kernel.step();
+    // move urgh send from acceptance to run-queue
+    await kernel.step();
+    // deliver urgh send from run-queue to vatB
+    await kernel.step();
+  }
 
   const p1ForB = kernel.addImport(vatB, p1ForKernel);
   const p2ForB = kernel.addImport(vatB, p2ForKernel);
@@ -1430,6 +1530,22 @@ test('pipelined promise queueing', async t => {
   t.deepEqual(log, []);
 
   t.deepEqual(kernel.dump().promises, [
+    delayed
+      ? {
+          id: p0ForKernel,
+          state: 'fulfilled',
+          refCount: 1,
+          data: capargs(slot0arg, [bobForKernel]),
+        }
+      : {
+          id: p0ForKernel,
+          state: 'unresolved',
+          policy: 'ignore',
+          refCount: 2,
+          decider: vatA,
+          subscribers: [],
+          queue: [],
+        },
     {
       id: p1ForKernel,
       state: 'unresolved',
@@ -1458,7 +1574,10 @@ test('pipelined promise queueing', async t => {
       queue: [],
     },
   ]);
-});
+};
+
+test('pipelined promise queueing', pipelinedSendTest, false);
+test.failing('pipelined promise queueing with delay', pipelinedSendTest, true);
 
 test('xs-worker default manager type', async t => {
   const endowments = makeKernelEndowments();
