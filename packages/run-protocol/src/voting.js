@@ -38,7 +38,7 @@ export const start = async (zcf, privateArgs) => {
   };
 
   const voteOnApiInvocation = (contract, method, amounts, deadline) => {
-    return E(reserve).voteOnApiInvocation(method, amounts, counter, deadline);
+    return E(contract).voteOnApiInvocation(method, amounts, counter, deadline);
   };
 
   const makeNullInvitation = () => {
