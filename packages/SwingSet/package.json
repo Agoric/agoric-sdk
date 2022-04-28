@@ -22,9 +22,7 @@
   },
   "devDependencies": {
     "@agoric/vat-data": "^0.2.0",
-    "@endo/ses-ava": "^0.2.25",
     "@types/tmp": "^0.2.0",
-    "ava": "^3.12.1",
     "tmp": "^0.2.1"
   },
   "dependencies": {
@@ -49,6 +47,10 @@
     "import-meta-resolve": "^1.1.1",
     "node-lmdb": "^0.9.5",
     "semver": "^6.3.0"
+  },
+  "peerDependencies": {
+    "@endo/ses-ava": "^0.2.25",
+    "ava": "^3.12.1"
   },
   "files": [
     "bin/vat",
