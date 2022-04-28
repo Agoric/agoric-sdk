@@ -7,7 +7,6 @@ import { makeParamManagerBuilder } from './paramManager.js';
 /**
  * @typedef {Record<Keyword, ParamType>} ParamTypesMap
  */
-
 /**
  * @template {ParamTypesMap} M
  * @typedef {{
@@ -41,6 +40,10 @@ const isAsync = {
 /**
  * @template {ParamType} [T=ParamType]
  * @typedef {[type: T, value: ParamValueForType<T>]} ParamRecordTuple
+ */
+/**
+ * @template {ParamTypesMap} M
+ * @typedef {{ [K in keyof M]: ParamRecord<M[K]> }} ParamRecordMap
  */
 
 /**

@@ -1,6 +1,14 @@
 // @ts-check
 
 /**
+ * @typedef {import('./contractGovernance/typedParamManager').ParamTypesMap} ParamTypesMap
+ */
+/**
+ * @template {ParamTypesMap} M
+ * @typedef {import('./contractGovernance/typedParamManager').ParamRecordMap<M>} ParamRecordMap
+ */
+
+/**
  * @typedef { 'unranked' | 'order' } ChoiceMethod
  * * UNRANKED: "unranked voting" means that the voter specifies some number of
  *    positions, and is endorsing them equally.
