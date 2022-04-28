@@ -2,6 +2,7 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 
 import fs from 'fs';
+import path from 'path';
 import process from 'process';
 import crypto from 'crypto';
 import { performance } from 'perf_hooks';
@@ -79,7 +80,8 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     console.log('SwingSet xs-worker tracing:', { XSNAP_TEST_RECORD });
     let serial = 0;
     doXSnap = opts => {
-      const workerTrace = `${XSNAP_TEST_RECORD}/${serial}/`;
+      const workerTrace =
+        path.resolve(`${XSNAP_TEST_RECORD}/${serial}`) + path.sep;
       serial += 1;
       fs.mkdirSync(workerTrace, { recursive: true });
       return recordXSnap(opts, workerTrace, {
@@ -230,7 +232,7 @@ export async function makeSwingsetController(
   function kernelRequire(what) {
     assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
   }
-  // @ts-ignore assume kernelBundle is set
+  // @ts-expect-error assume kernelBundle is set
   const kernelBundle = JSON.parse(kvStore.get('kernelBundle'));
   writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {
@@ -269,9 +271,9 @@ export async function makeSwingsetController(
   }
 
   const bundles = [
-    // @ts-ignore assume lockdownBundle is set
+    // @ts-expect-error assume lockdownBundle is set
     JSON.parse(kvStore.get('lockdownBundle')),
-    // @ts-ignore assume supervisorBundle is set
+    // @ts-expect-error assume supervisorBundle is set
     JSON.parse(kvStore.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, {

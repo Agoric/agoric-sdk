@@ -12,13 +12,13 @@ import { mockBrand } from './mockBrand.js';
 
 test('natMathHelpers make', t => {
   t.deepEqual(m.make(mockBrand, 4n), { brand: mockBrand, value: 4n });
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => m.make(mockBrand, 4), {
     message:
       'value 4 must be a bigint, copySet, copyBag, or an array, not "number"',
   });
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, 'abc'),
     {
       message:
@@ -27,7 +27,7 @@ test('natMathHelpers make', t => {
     `'abc' is not a nat`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, -1),
     {
       message:
@@ -39,7 +39,7 @@ test('natMathHelpers make', t => {
 
 test('natMathHelpers make no brand', t => {
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(4n),
     {
       message: '"brand" "[4n]" must be a remotable, not "bigint"',
@@ -77,7 +77,7 @@ test('natMathHelpers coerce', t => {
     `coerce can't take the wrong brand`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(3n, mockBrand),
     {
       message: '"brand" "[3n]" must be a remotable, not "bigint"',
@@ -88,7 +88,7 @@ test('natMathHelpers coerce', t => {
 
 test('natMathHelpers coerce no brand', t => {
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(m.make(4n, mockBrand)),
     {
       message: '"brand" "[4n]" must be a remotable, not "bigint"',
@@ -99,7 +99,7 @@ test('natMathHelpers coerce no brand', t => {
 
 test('natMathHelpers getValue', t => {
   t.is(m.getValue(mockBrand, m.make(mockBrand, 4n)), 4n);
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => m.getValue(mockBrand, m.make(mockBrand, 4)), {
     message:
       'value 4 must be a bigint, copySet, copyBag, or an array, not "number"',
@@ -108,7 +108,7 @@ test('natMathHelpers getValue', t => {
 
 test('natMathHelpers getValue no brand', t => {
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.getValue(m.make(4n, mockBrand)),
     {
       message: '"brand" "[4n]" must be a remotable, not "bigint"',
@@ -125,7 +125,7 @@ test('natMathHelpers makeEmpty', t => {
 
 test('natMathHelpers makeEmpty no brand', t => {
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.makeEmpty(AssetKind.NAT),
     {
       message: '"brand" "nat" must be a remotable, not "string"',
@@ -146,7 +146,7 @@ test('natMathHelpers isEmpty', t => {
   t.assert(m.isEmpty(m.make(mockBrand, 0n)), `isEmpty(0) is true`);
   t.falsy(m.isEmpty(m.make(mockBrand, 6n)), `isEmpty(6) is false`);
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty('abc'),
     {
       message: '"amount" "abc" must be a pass-by-copy record, not "string"',
@@ -154,7 +154,7 @@ test('natMathHelpers isEmpty', t => {
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty(harden({ brand: mockBrand, value: 'abc' })),
     {
       message:
@@ -163,7 +163,7 @@ test('natMathHelpers isEmpty', t => {
     `isEmpty('abc') throws because it cannot be coerced`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.isEmpty(0n),
     {
       message: '"amount" "[0n]" must be a pass-by-copy record, not "bigint"',

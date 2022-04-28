@@ -7,8 +7,7 @@ import '@agoric/governance/exported.js';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { AmountMath } from '@agoric/ertp';
 import { makeGovernedTerms } from './vaultFactory/params.js';
 import { makeAmmTerms } from './vpool-xyk-amm/params.js';
 import { makeReserveTerms } from './reserve/params.js';
@@ -17,6 +16,7 @@ import '../exported.js';
 
 import * as Collect from './collect.js';
 import { makeRunStakeTerms } from './runStake/params.js';
+import { liquidationDetailTerms } from './vaultFactory/liquidation.js';
 import { makeStakeReporter } from './my-lien.js';
 
 const { details: X } = assert;
@@ -40,6 +40,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   reservePublicFacet: unknown,
  *   reserveCreatorFacet: GovernedContractFacetAccess<any>,
  *   reserveGovernorCreatorFacet: GovernedContractFacetAccess<any>,
+ *   runStakeCreatorFacet: import('./runStake/runStake.js').RunStakeCreator,
  *   vaultFactoryCreator: VaultFactory,
  *   vaultFactoryGovernorCreator: GovernedContractFacetAccess<unknown>,
  *   vaultFactoryVoteCreator: unknown,
@@ -72,7 +73,7 @@ export const startEconomicCommittee = async (
   },
   electorateTerms = {
     committeeName: 'Initial Economic Committee',
-    committeeSize: 1,
+    committeeSize: 3,
   },
 ) => {
   const { creatorFacet, instance } = await E(zoe).startInstance(
@@ -296,6 +297,7 @@ export const startVaultFactory = async (
     invitationAmount,
     vaultManagerParams,
     ammPublicFacet,
+    liquidationDetailTerms(centralBrand),
   );
   const governorTerms = harden({
     timer,
@@ -463,6 +465,7 @@ export const startRewardDistributor = async ({
     loadVat,
     vaultFactoryCreator,
     ammCreatorFacet,
+    runStakeCreatorFacet,
     zoe,
   },
   issuer: {
@@ -496,12 +499,13 @@ export const startRewardDistributor = async ({
   }
 
   const vats = { distributeFees: E(loadVat)('distributeFees') };
-  const [vaultAdmin, ammAdmin] = await Promise.all([
+  const [vaultAdmin, ammAdmin, runStakeAdmin] = await Promise.all([
     vaultFactoryCreator,
     ammCreatorFacet,
+    runStakeCreatorFacet,
   ]);
   await E(vats.distributeFees).buildDistributor(
-    [vaultAdmin, ammAdmin].map(cf =>
+    [vaultAdmin, ammAdmin, runStakeAdmin].map(cf =>
       E(vats.distributeFees).makeFeeCollector(zoe, cf),
     ),
     feeCollectorDepositFacet,
@@ -562,7 +566,7 @@ export const startRunStake = async (
       chainTimerService,
       economicCommitteeCreatorFacet,
     },
-    // @ts-ignore TODO: add to BootstrapPowers
+    // @ts-expect-error TODO: add to BootstrapPowers
     produce: { runStakeCreatorFacet, runStakeGovernorCreatorFacet },
     installation: {
       consume: { contractGovernor, runStake: installationP },
@@ -670,153 +674,3 @@ export const startRunStake = async (
   ]);
 };
 harden(startRunStake);
-
-/**
- * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
- * @param {Object} config
- * @param {bigint} config.WantStableFeeBP
- * @param {bigint} config.GiveStableFeeBP
- * @param {bigint} config.MINT_LIMIT
- */
-export const startPSM = async (
-  {
-    consume: {
-      zoe,
-      feeMintAccess: feeMintAccessP,
-      economicCommitteeCreatorFacet,
-      chainTimerService,
-    },
-    produce: { psmCreatorFacet, psmGovernorCreatorFacet },
-    installation: {
-      consume: { contractGovernor, psm: psmInstallP },
-    },
-    instance: {
-      consume: { economicCommittee },
-      produce: { psm: psmInstanceR, psmGovernor: psmGovernorR },
-    },
-    brand: {
-      consume: { AUSD: anchorBrandP, RUN: runBrandP },
-    },
-    issuer: {
-      consume: { AUSD: anchorIssuerP },
-    },
-  },
-  {
-    WantStableFeeBP = 1n,
-    GiveStableFeeBP = 3n,
-    MINT_LIMIT = 20_000_000n * 1_000_000n,
-  },
-) => {
-  const [
-    feeMintAccess,
-    runBrand,
-    anchorBrand,
-    anchorIssuer,
-    governor,
-    psmInstall,
-    timer,
-  ] = await Promise.all([
-    feeMintAccessP,
-    runBrandP,
-    anchorBrandP,
-    anchorIssuerP,
-    contractGovernor,
-    psmInstallP,
-    chainTimerService,
-  ]);
-
-  const poserInvitationP = E(
-    economicCommitteeCreatorFacet,
-  ).getPoserInvitation();
-  const [initialPoserInvitation, electorateInvitationAmount] =
-    await Promise.all([
-      poserInvitationP,
-      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-    ]);
-
-  const mintLimit = AmountMath.make(anchorBrand, MINT_LIMIT);
-  const terms = {
-    anchorBrand,
-    anchorPerStable: makeRatio(100n, anchorBrand, 100n, runBrand),
-    governedParams: {
-      WantStableFeeBP: { type: ParamTypes.NAT, value: WantStableFeeBP },
-      GiveStableFeeBP: { type: ParamTypes.NAT, value: GiveStableFeeBP },
-      MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
-    },
-    [CONTRACT_ELECTORATE]: {
-      type: ParamTypes.INVITATION,
-      value: electorateInvitationAmount,
-    },
-  };
-
-  const governorFacets = await E(zoe).startInstance(
-    governor,
-    {},
-    {
-      timer,
-      economicCommittee,
-      governedContractInstallation: psmInstall,
-      governed: harden({
-        terms,
-        issuerKeywordRecord: { AUSD: anchorIssuer },
-        privateArgs: { feeMintAccess, initialPoserInvitation },
-      }),
-    },
-    harden({ economicCommitteeCreatorFacet }),
-  );
-
-  const governedInstance = await E(governorFacets.creatorFacet).getInstance();
-  const creatorFacet = E(governorFacets.creatorFacet).getCreatorFacet();
-
-  psmInstanceR.resolve(governedInstance);
-  psmGovernorR.resolve(governorFacets.instance);
-  psmCreatorFacet.resolve(creatorFacet);
-  psmGovernorCreatorFacet.resolve(governorFacets.creatorFacet);
-  psmInstanceR.resolve(governedInstance);
-};
-harden(startPSM);
-
-/**
- * Make anchor issuer out of a Cosmos asset; presumably
- * USDC over IBC. Add it to BankManager.
- *
- * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
- * @param {{ options: {
- *   denom: string,
- *   name?: string,
- *   proposedName: string,
- *   decimalPlaces?: number,
- * }}} config
- */
-export const makeAnchorAsset = async (
-  {
-    consume: { bankManager },
-    issuer: {
-      produce: { AUSD: issuerP },
-    },
-    brand: {
-      produce: { AUSD: brandP },
-    },
-  },
-  {
-    options: {
-      denom,
-      proposedName = 'USDC Anchor',
-      name = 'AUSD',
-      decimalPlaces = 6,
-    },
-  },
-) => {
-  // ISSUE: use mintHolder?
-  const kit = makeIssuerKit(name, AssetKind.NAT, { decimalPlaces });
-
-  issuerP.resolve(kit.issuer);
-  brandP.resolve(kit.brand);
-  return E(bankManager).addAsset(
-    denom,
-    name,
-    proposedName,
-    kit, // with mint
-  );
-};
-harden(makeAnchorAsset);

@@ -191,7 +191,7 @@ export default function makeKernelKeeper(
    */
   function getRequired(key) {
     assert(kvStore.has(key), X`storage lacks required key ${key}`);
-    // @ts-ignore already checked .has()
+    // @ts-expect-error already checked .has()
     return kvStore.get(key);
   }
 
@@ -865,6 +865,7 @@ export default function makeKernelKeeper(
   function clearDecider(kpid) {
     const p = getKernelPromise(kpid);
     assert(p.state === 'unresolved', X`${kpid} was already resolved`);
+    assert(p.decider, X`${kpid} does not have a decider`);
     kvStore.set(`${kpid}.decider`, '');
   }
 

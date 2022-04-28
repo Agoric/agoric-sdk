@@ -97,7 +97,9 @@ export const makeStartInstance = (
           acceptingOffers = false;
           zoeSeatAdmins.forEach(zoeSeatAdmin => zoeSeatAdmin.fail(reason));
         },
-        stopAcceptingOffers: () => (acceptingOffers = false),
+        stopAcceptingOffers: () => {
+          acceptingOffers = false;
+        },
         makeUserSeat: (
           invitationHandle,
           initialAllocation,

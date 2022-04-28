@@ -10,8 +10,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
  * @param {ZCF} zcf
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
-export async function start(zcf, privateArgs) {
-  const { feeMintAccess } = privateArgs;
+export async function start(zcf, { feeMintAccess }) {
   const runMint = await zcf.registerFeeMint('RUN', feeMintAccess);
 
   function makeFaucetInvitation() {

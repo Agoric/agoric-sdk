@@ -16,10 +16,6 @@ const { details: X } = assert;
 // input price, that brand will be the inPool; when they specify the output
 // price that brand is the outPool.
 
-const publicPrices = prices => {
-  return { amountIn: prices.swapperGives, amountOut: prices.swapperGets };
-};
-
 /**
  * @param {ZCF} zcf
  * @param {XYKPool} collateralInPool
@@ -27,7 +23,6 @@ const publicPrices = prices => {
  * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
  * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
  * @param {ZCFSeat} feeSeat
- * @returns {VPoolWrapper<DoublePoolInternalFacet>}
  */
 export const makeDoublePool = (
   zcf,
@@ -123,10 +118,6 @@ export const makeDoublePool = (
     });
   };
 
-  const getInputPrice = (amountIn, amountOut) => {
-    return publicPrices(getPriceForInput(amountIn, amountOut));
-  };
-
   const getPriceForOutput = (amountIn, amountOut) => {
     const protocolFeeRatio = makeFeeRatio(getProtocolFeeBP(), centralBrand);
     const poolFeeRatioCentral = makeFeeRatio(getPoolFeeBP(), centralBrand);
@@ -179,20 +170,9 @@ export const makeDoublePool = (
     });
   };
 
-  const getOutputPrice = (amountIn, amountOut) => {
-    return publicPrices(getPriceForOutput(amountIn, amountOut));
-  };
-
-  const externalFacet = Far('double pool', {
-    getInputPrice,
-    getOutputPrice,
-  });
-
-  const internalFacet = Far('single pool', {
+  return Far('double pool', {
     getPriceForInput,
     getPriceForOutput,
     allocateGainsAndLosses,
   });
-
-  return { externalFacet, internalFacet };
 };

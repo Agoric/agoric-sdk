@@ -6,9 +6,9 @@ import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 const { details: X } = assert;
 
 const makeLooksLikeBrand = name => {
+  /** @param {Brand} brand */
   return brand => {
     assert(
-      // @ts-ignore value is undifferentiated to this point
       isRemotable(brand),
       X`value for ${name} must be a brand, was ${brand}`,
     );
@@ -20,8 +20,7 @@ const makeAssertInstallation = name => {
   return installation => {
     // TODO(3344): add a better assertion once Zoe validates installations
     assert(
-      typeof installation === 'object' &&
-        Object.getOwnPropertyNames(installation).length === 1,
+      typeof installation === 'object',
       X`value for ${name} must be an Installation, was ${installation}`,
     );
   };
@@ -32,8 +31,7 @@ const makeAssertInstance = name => {
   return instance => {
     // TODO(3344): add a better assertion once Zoe validates instances
     assert(
-      typeof instance === 'object' &&
-        Object.getOwnPropertyNames(instance).length === 0,
+      typeof instance === 'object',
       X`value for ${name} must be an Instance, was ${instance}`,
     );
   };

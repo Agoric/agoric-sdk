@@ -377,7 +377,7 @@ export const checkZCF = (zcf, assertFn) => {
     ...zcf,
     reallocate: (...seats) => {
       assertFn(seats);
-      // @ts-ignore The types aren't right for spreading
+      // @ts-expect-error The types aren't right for spreading
       zcf.reallocate(...seats);
     },
   });

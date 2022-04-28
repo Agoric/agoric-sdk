@@ -111,6 +111,11 @@
  */
 
 /**
+ * @typedef {Object} Liquidator
+ * @property {() => Promise<Invitation>} makeLiquidateInvitation
+ */
+
+/**
  * @typedef {Object} DebtStatus
  * @property {Timestamp} latestInterestUpdate
  * @property {NatValue} interest interest accrued since latestInterestUpdate

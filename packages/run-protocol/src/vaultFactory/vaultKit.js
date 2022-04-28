@@ -1,7 +1,7 @@
 // @ts-check
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
-import { makeVaultTitle } from './vaultTitle';
+import { makeVaultTitle } from './vaultTitle.js';
 
 /**
  * Create a kit of utilities for use of the (inner) vault.

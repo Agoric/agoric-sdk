@@ -1,5 +1,4 @@
 // @ts-check
-
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';
@@ -7,7 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 
 /**
  * @param {ZCF} zcf
- * @param {(brandIn: Brand, brandOut: Brand) => VPoolWrapper<DoublePoolInternalFacet>} provideVPool
+ * @param {(brandIn: Brand, brandOut: Brand) => VirtualPool} provideVPool
  */
 export const makeMakeSwapInvitation = (zcf, provideVPool) => {
   /**
@@ -30,7 +29,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       // TODO check that there are no other keys
     }
 
-    const pool = provideVPool(amountIn.brand, amountOut.brand).internalFacet;
+    const pool = provideVPool(amountIn.brand, amountOut.brand);
     let prices;
     const stopAfter = args && args.stopAfter;
     if (stopAfter) {
@@ -55,7 +54,7 @@ export const makeMakeSwapInvitation = (zcf, provideVPool) => {
       give: { In: amountIn },
       want: { Out: amountOut },
     } = seat.getProposal();
-    const pool = provideVPool(amountIn.brand, amountOut.brand).internalFacet;
+    const pool = provideVPool(amountIn.brand, amountOut.brand);
     const prices = pool.getPriceForOutput(amountIn, amountOut);
     return pool.allocateGainsAndLosses(seat, prices);
   };

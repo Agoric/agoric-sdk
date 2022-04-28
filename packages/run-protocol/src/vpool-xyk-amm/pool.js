@@ -1,301 +1,332 @@
 // @ts-check
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { AssetKind, AmountMath, isNatValue } from '@agoric/ertp';
+import { AmountMath, isNatValue } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 
 import {
   calcLiqValueToMint,
-  calcValueToRemove,
   calcSecondaryRequired,
+  calcValueToRemove,
 } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';
+import { defineKindMulti } from '@agoric/vat-data';
+import { Far } from '@endo/marshal';
 import { makePriceAuthority } from './priceAuthority.js';
-import { makeSinglePool } from './singlePool.js';
-
-const { details: X } = assert;
+import { singlePool } from './singlePool.js';
 
 // Pools represent a single pool of liquidity. Price calculations and trading
 // happen in a wrapper class that knows whether the proposed trade involves a
 // single pool or multiple hops.
 
+export const publicPrices = prices => {
+  return { amountIn: prices.swapperGives, amountOut: prices.swapperGets };
+};
+
+/**
+ * @typedef {Readonly<{
+ * liquidityBrand: Brand<'nat'>,
+ * secondaryBrand: Brand<'nat'>,
+ * centralBrand: Brand<'nat'>,
+ * liquidityZcfMint: ZCFMint,
+ * liquidityIssuer: Issuer<any>,
+ * toCentralPriceAuthority: PriceAuthority,
+ * fromCentralPriceAuthority: PriceAuthority,
+ * quoteIssuerKit: IssuerKit,
+ * protocolSeat: ZCFSeat,
+ * zcf: ZCF,
+ * timer: TimerService,
+ * paramAccessor,
+ * }>} ImmutableState
+ *
+ * @typedef {{
+ * updater: IterationObserver<any>,
+ * notifier: Notifier<any>,
+ * poolSeat: ZCFSeat,
+ * liqTokenSupply: bigint,
+ * }} MutableState
+ *
+ * @typedef {{
+ *   state: ImmutableState & MutableState,
+ *   facets: {
+ *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
+ *     pool: import('@agoric/vat-data/src/types').KindFacet<XYKPool>,
+ *     singlePool: VirtualPool,
+ *   },
+ * }} MethodContext
+ */
+
+const updateUpdaterState = (updater, pool) =>
+  // TODO: when governance can change the interest rate, include it here
+  updater.updateState({
+    central: pool.getCentralAmount(),
+    secondary: pool.getSecondaryAmount(),
+  });
+
+const helperBehavior = {
+  /** @type {import('@agoric/vat-data/src/types').PlusContext<MethodContext, AddLiquidityActual>} */
+  addLiquidityActual: (
+    { state },
+    pool,
+    zcfSeat,
+    secondaryAmount,
+    poolCentralAmount,
+    feeSeat,
+  ) => {
+    const { poolSeat, liquidityBrand, liquidityZcfMint, updater, zcf } = state;
+
+    // addLiquidity can't be called until the pool has been created. We verify
+    // that the asset is NAT before creating a pool.
+
+    const liquidityValueOut = calcLiqValueToMint(
+      state.liqTokenSupply,
+      // @ts-expect-error NatValue cast
+      zcfSeat.getStagedAllocation().Central.value,
+      poolCentralAmount.value,
+    );
+
+    const liquidityAmountOut = AmountMath.make(
+      liquidityBrand,
+      liquidityValueOut,
+    );
+    liquidityZcfMint.mintGains(
+      harden({ Liquidity: liquidityAmountOut }),
+      poolSeat,
+    );
+    state.liqTokenSupply += liquidityValueOut;
+
+    poolSeat.incrementBy(
+      zcfSeat.decrementBy(
+        harden({
+          Central: zcfSeat.getStagedAllocation().Central,
+          Secondary: secondaryAmount,
+        }),
+      ),
+    );
+
+    zcfSeat.incrementBy(
+      poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
+    );
+    if (feeSeat) {
+      zcf.reallocate(poolSeat, zcfSeat, feeSeat);
+    } else {
+      zcf.reallocate(poolSeat, zcfSeat);
+    }
+    zcfSeat.exit();
+    updateUpdaterState(updater, pool);
+    return 'Added liquidity.';
+  },
+};
+
+const poolBehavior = {
+  getLiquiditySupply: ({ state: { liqTokenSupply } }) => liqTokenSupply,
+  getLiquidityIssuer: ({ state: { liquidityIssuer } }) => liquidityIssuer,
+  getPoolSeat: ({ state: { poolSeat } }) => poolSeat,
+  getCentralAmount: ({ state: { poolSeat, centralBrand } }) =>
+    poolSeat.getAmountAllocated('Central', centralBrand),
+  getSecondaryAmount: ({ state }) =>
+    state.poolSeat.getAmountAllocated('Secondary', state.secondaryBrand),
+
+  /**
+   * @param {MethodContext} context
+   * @param {ZCFSeat} zcfSeat
+   * @returns {string}
+   */
+  addLiquidity: ({ state, facets }, zcfSeat) => {
+    const { helper, pool } = facets;
+    const centralIn = zcfSeat.getStagedAllocation().Central;
+    assert(isNatValue(centralIn.value), 'User Central');
+    const secondaryIn = zcfSeat.getStagedAllocation().Secondary;
+    assert(isNatValue(secondaryIn.value), 'User Secondary');
+
+    if (state.liqTokenSupply === 0n) {
+      return helper.addLiquidityActual(pool, zcfSeat, secondaryIn, centralIn);
+    }
+
+    const centralPoolAmount = pool.getCentralAmount();
+    const secondaryPoolAmount = pool.getSecondaryAmount();
+    assert(isNatValue(centralPoolAmount.value), 'Pool Central');
+    assert(isNatValue(secondaryPoolAmount.value), 'Pool Secondary');
+
+    // To calculate liquidity, we'll need to calculate alpha from the primary
+    // token's value before, and the value that will be added to the pool
+    const secondaryRequired = AmountMath.make(
+      state.secondaryBrand,
+      calcSecondaryRequired(
+        centralIn.value,
+        centralPoolAmount.value,
+        secondaryPoolAmount.value,
+        secondaryIn.value,
+      ),
+    );
+
+    // Central was specified precisely so offer must provide enough secondary.
+    assert(
+      AmountMath.isGTE(secondaryIn, secondaryRequired),
+      'insufficient Secondary deposited',
+    );
+
+    return helper.addLiquidityActual(
+      pool,
+      zcfSeat,
+      secondaryRequired,
+      centralPoolAmount,
+    );
+  },
+  removeLiquidity: ({ state, facets }, userSeat) => {
+    const { liquidityBrand, poolSeat, secondaryBrand, centralBrand } = state;
+    const liquidityIn = userSeat.getAmountAllocated(
+      'Liquidity',
+      liquidityBrand,
+    );
+    const liquidityValueIn = liquidityIn.value;
+    assert(isNatValue(liquidityValueIn), 'User Liquidity');
+    const centralTokenAmountOut = AmountMath.make(
+      centralBrand,
+      calcValueToRemove(
+        state.liqTokenSupply,
+        facets.pool.getCentralAmount().value,
+        liquidityValueIn,
+      ),
+    );
+
+    const tokenKeywordAmountOut = AmountMath.make(
+      secondaryBrand,
+      calcValueToRemove(
+        state.liqTokenSupply,
+        facets.pool.getSecondaryAmount().value,
+        liquidityValueIn,
+      ),
+    );
+
+    state.liqTokenSupply -= liquidityValueIn;
+
+    poolSeat.incrementBy(
+      userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
+    );
+    userSeat.incrementBy(
+      poolSeat.decrementBy(
+        harden({
+          Central: centralTokenAmountOut,
+          Secondary: tokenKeywordAmountOut,
+        }),
+      ),
+    );
+    state.zcf.reallocate(userSeat, poolSeat);
+
+    userSeat.exit();
+    updateUpdaterState(state.updater, facets.pool);
+    return 'Liquidity successfully removed.';
+  },
+  getNotifier: ({ state: { notifier } }) => notifier,
+  updateState: ({ state: { updater }, facets: { pool } }) => {
+    return updater.updateState(pool);
+  },
+  getToCentralPriceAuthority: ({ state }) => state.toCentralPriceAuthority,
+  getFromCentralPriceAuthority: ({ state }) => state.fromCentralPriceAuthority,
+  getVPool: ({ facets }) => facets.singlePool,
+};
+
+/** @param {MethodContext} context */
+const finish = context => {
+  const { notifier, secondaryBrand, centralBrand, timer, zcf } = context.state;
+  const quoteIssuerKit = context.state.quoteIssuerKit;
+
+  const getInputPriceForPA = (amountIn, brandOut) => {
+    return publicPrices(
+      context.facets.singlePool.getPriceForInput(
+        amountIn,
+        AmountMath.makeEmpty(brandOut),
+      ),
+    );
+  };
+  const getOutputPriceForPA = (brandIn, amountout) =>
+    publicPrices(
+      context.facets.singlePool.getPriceForOutput(
+        AmountMath.makeEmpty(brandIn),
+        amountout,
+      ),
+    );
+
+  const toCentralPriceAuthority = makePriceAuthority(
+    getInputPriceForPA,
+    getOutputPriceForPA,
+    secondaryBrand,
+    centralBrand,
+    timer,
+    zcf,
+    notifier,
+    quoteIssuerKit,
+  );
+  const fromCentralPriceAuthority = makePriceAuthority(
+    getInputPriceForPA,
+    getOutputPriceForPA,
+    centralBrand,
+    secondaryBrand,
+    timer,
+    zcf,
+    notifier,
+    quoteIssuerKit,
+  );
+
+  // @ts-expect-error declared read-only, set value once
+  context.state.toCentralPriceAuthority = toCentralPriceAuthority;
+  // @ts-expect-error declared read-only, set value once
+  context.state.fromCentralPriceAuthority = fromCentralPriceAuthority;
+};
+
 /**
  * @param {ZCF} zcf
- * @param {(brand: Brand) => boolean} isInSecondaries
- * @param {(brand: Brand, pool: XYKPool) => void} initPool
  * @param {Brand} centralBrand
  * @param {ERef<Timer>} timer
  * @param {IssuerKit} quoteIssuerKit
- * @param {() => bigint} getProtocolFeeBP - retrieve governed protocol fee value
- * @param {() => bigint} getPoolFeeBP - retrieve governed pool fee value
- * @param {ZCFSeat} protocolSeat
+ * @param {import('./multipoolMarketMaker.js').AMMParamGetters} paramAccessor retrieve governed params
+ * @param {ZCFSeat} protocolSeat seat that holds collected fees
  */
-export const makeAddPool = (
+export const definePoolKind = (
   zcf,
-  isInSecondaries,
-  initPool,
   centralBrand,
   timer,
   quoteIssuerKit,
-  getProtocolFeeBP,
-  getPoolFeeBP,
+  paramAccessor,
   protocolSeat,
 ) => {
-  const makePool = (liquidityZcfMint, poolSeat, secondaryBrand) => {
-    let liqTokenSupply = 0n;
-
+  const poolInit = (liquidityZcfMint, poolSeat, secondaryBrand) => {
     const { brand: liquidityBrand, issuer: liquidityIssuer } =
       liquidityZcfMint.getIssuerRecord();
     const { notifier, updater } = makeNotifierKit();
 
-    const updateState = pool =>
-      // TODO: when governance can change the interest rate, include it here
-      updater.updateState({
-        central: pool.getCentralAmount(),
-        secondary: pool.getSecondaryAmount(),
-      });
-
-    /** @type {AddLiquidityActual} */
-    const addLiquidityActual = (
-      pool,
-      zcfSeat,
-      secondaryAmount,
-      poolCentralAmount,
-      feeSeat,
-    ) => {
-      // addLiquidity can't be called until the pool has been created. We verify
-      // that the asset is NAT before creating a pool.
-
-      const liquidityValueOut = calcLiqValueToMint(
-        liqTokenSupply,
-        // @ts-expect-error could be non-scalar
-        zcfSeat.getStagedAllocation().Central.value,
-        poolCentralAmount.value,
-      );
-
-      const liquidityAmountOut = AmountMath.make(
-        liquidityBrand,
-        liquidityValueOut,
-      );
-      liquidityZcfMint.mintGains(
-        harden({ Liquidity: liquidityAmountOut }),
-        poolSeat,
-      );
-      liqTokenSupply += liquidityValueOut;
-
-      poolSeat.incrementBy(
-        zcfSeat.decrementBy(
-          harden({
-            Central: zcfSeat.getStagedAllocation().Central,
-            Secondary: secondaryAmount,
-          }),
-        ),
-      );
-
-      zcfSeat.incrementBy(
-        poolSeat.decrementBy(harden({ Liquidity: liquidityAmountOut })),
-      );
-      if (feeSeat) {
-        zcf.reallocate(poolSeat, zcfSeat, feeSeat);
-      } else {
-        zcf.reallocate(poolSeat, zcfSeat);
-      }
-      zcfSeat.exit();
-      updateState(pool);
-      return 'Added liquidity.';
-    };
-
-    /** @type {XYKPool} */
-    const pool = Far('pool', {
-      getLiquiditySupply: () => liqTokenSupply,
-      getLiquidityIssuer: () => liquidityIssuer,
-      getPoolSeat: () => poolSeat,
-      getCentralAmount: () =>
-        poolSeat.getAmountAllocated('Central', centralBrand),
-      getSecondaryAmount: () =>
-        poolSeat.getAmountAllocated('Secondary', secondaryBrand),
-
-      addLiquidity: zcfSeat => {
-        const centralIn = zcfSeat.getStagedAllocation().Central;
-        assert(isNatValue(centralIn.value), 'User Central');
-        const secondaryIn = zcfSeat.getStagedAllocation().Secondary;
-        assert(isNatValue(secondaryIn.value), 'User Secondary');
-
-        if (liqTokenSupply === 0n) {
-          return addLiquidityActual(pool, zcfSeat, secondaryIn, centralIn);
-        }
-
-        const centralPoolAmount = pool.getCentralAmount();
-        const secondaryPoolAmount = pool.getSecondaryAmount();
-        assert(isNatValue(centralPoolAmount.value), 'Pool Central');
-        assert(isNatValue(secondaryPoolAmount.value), 'Pool Secondary');
-
-        // To calculate liquidity, we'll need to calculate alpha from the primary
-        // token's value before, and the value that will be added to the pool
-        const secondaryRequired = AmountMath.make(
-          secondaryBrand,
-          calcSecondaryRequired(
-            centralIn.value,
-            centralPoolAmount.value,
-            secondaryPoolAmount.value,
-            secondaryIn.value,
-          ),
-        );
-
-        // Central was specified precisely so offer must provide enough secondary.
-        assert(
-          AmountMath.isGTE(secondaryIn, secondaryRequired),
-          'insufficient Secondary deposited',
-        );
-
-        return addLiquidityActual(
-          pool,
-          zcfSeat,
-          secondaryRequired,
-          centralPoolAmount,
-        );
-      },
-      removeLiquidity: userSeat => {
-        const liquidityIn = userSeat.getAmountAllocated(
-          'Liquidity',
-          liquidityBrand,
-        );
-        const liquidityValueIn = liquidityIn.value;
-        assert(isNatValue(liquidityValueIn), 'User Liquidity');
-        const centralTokenAmountOut = AmountMath.make(
-          centralBrand,
-          calcValueToRemove(
-            liqTokenSupply,
-            pool.getCentralAmount().value,
-            liquidityValueIn,
-          ),
-        );
-
-        const tokenKeywordAmountOut = AmountMath.make(
-          secondaryBrand,
-          calcValueToRemove(
-            liqTokenSupply,
-            pool.getSecondaryAmount().value,
-            liquidityValueIn,
-          ),
-        );
-
-        liqTokenSupply -= liquidityValueIn;
-
-        poolSeat.incrementBy(
-          userSeat.decrementBy(harden({ Liquidity: liquidityIn })),
-        );
-        userSeat.incrementBy(
-          poolSeat.decrementBy(
-            harden({
-              Central: centralTokenAmountOut,
-              Secondary: tokenKeywordAmountOut,
-            }),
-          ),
-        );
-        zcf.reallocate(userSeat, poolSeat);
-
-        userSeat.exit();
-        updateState(pool);
-        return 'Liquidity successfully removed.';
-      },
-      getNotifier: () => notifier,
-      updateState: () => updateState(pool),
-      // eslint-disable-next-line no-use-before-define
-      getToCentralPriceAuthority: () => toCentralPriceAuthority,
-      // eslint-disable-next-line no-use-before-define
-      getFromCentralPriceAuthority: () => fromCentralPriceAuthority,
-      // eslint-disable-next-line no-use-before-define
-      getVPool: () => vPool,
+    // XXX why does the paramAccessor have to be repackaged as a Far object?
+    const params = Far('pool param accessor', {
+      ...paramAccessor,
     });
 
-    const vPool = makeSinglePool(
+    return {
       zcf,
-      pool,
-      getProtocolFeeBP,
-      getPoolFeeBP,
+      liqTokenSupply: 0n,
+      liquidityIssuer,
+      poolSeat,
       protocolSeat,
-      addLiquidityActual,
-    );
-
-    const getInputPriceForPA = (amountIn, brandOut) =>
-      vPool.externalFacet.getInputPrice(
-        amountIn,
-        AmountMath.makeEmpty(brandOut),
-      );
-    const getOutputPriceForPA = (brandIn, amountout) =>
-      vPool.externalFacet.getInputPrice(
-        AmountMath.makeEmpty(brandIn),
-        amountout,
-      );
-
-    const toCentralPriceAuthority = makePriceAuthority(
-      getInputPriceForPA,
-      getOutputPriceForPA,
-      secondaryBrand,
       centralBrand,
-      timer,
-      zcf,
-      notifier,
-      quoteIssuerKit,
-    );
-    const fromCentralPriceAuthority = makePriceAuthority(
-      getInputPriceForPA,
-      getOutputPriceForPA,
-      centralBrand,
+      liquidityBrand,
       secondaryBrand,
-      timer,
-      zcf,
+      liquidityZcfMint,
+      updater,
       notifier,
+      toCentralPriceAuthority: undefined,
+      fromCentralPriceAuthority: undefined,
       quoteIssuerKit,
-    );
-
-    return pool;
+      timer,
+      paramAccessor: params,
+    };
   };
 
-  /**
-   * Allows users to add new liquidity pools. `secondaryIssuer` and
-   * its keyword must not have been already used
-   *
-   * @param {ERef<Issuer>} secondaryIssuer
-   * @param {Keyword} keyword - will be used in the
-   * terms.issuers for the contract, but not used otherwise
-   */
-  const addPool = async (secondaryIssuer, keyword) => {
-    const liquidityKeyword = `${keyword}Liquidity`;
-    zcf.assertUniqueKeyword(liquidityKeyword);
+  const facets = harden({
+    helper: helperBehavior,
+    pool: poolBehavior,
+    singlePool,
+  });
 
-    const [secondaryAssetKind, secondaryBrand] = await Promise.all([
-      E(secondaryIssuer).getAssetKind(),
-      E(secondaryIssuer).getBrand(),
-    ]);
-
-    assert(
-      !isInSecondaries(secondaryBrand),
-      X`issuer ${secondaryIssuer} already has a pool`,
-    );
-    assert(
-      secondaryAssetKind === AssetKind.NAT,
-      X`${keyword} asset not fungible (must use NAT math)`,
-    );
-
-    // COMMIT POINT
-    // We've checked all the foreseeable exceptions (except
-    // zcf.assertUniqueKeyword(keyword), which will be checked by saveIssuer()
-    // before proceeding), so we can do the work now.
-    await zcf.saveIssuer(secondaryIssuer, keyword);
-    const liquidityZCFMint = await zcf.makeZCFMint(
-      liquidityKeyword,
-      AssetKind.NAT,
-      harden({ decimalPlaces: 6 }),
-    );
-    const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-    const pool = makePool(liquidityZCFMint, poolSeat, secondaryBrand);
-    initPool(secondaryBrand, pool);
-    return liquidityZCFMint.getIssuerRecord().issuer;
-  };
-
-  return addPool;
+  // @ts-expect-error unhappy about finish's type
+  return defineKindMulti('pool', poolInit, facets, { finish });
 };

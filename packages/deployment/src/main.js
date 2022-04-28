@@ -469,6 +469,8 @@ show-config      display the client connection parameters
       for (const envName of [
         'VAULT_FACTORY_CONTROLLER_ADDR',
         'CHAIN_BOOTSTRAP_VAT_CONFIG',
+        'XSNAP_TEST_RECORD',
+        'SWING_STORE_TRACE',
       ]) {
         if (env[envName]) {
           serviceLines.push(`Environment="${envName}=${env[envName]}"`);

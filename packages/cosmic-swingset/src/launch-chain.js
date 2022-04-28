@@ -38,6 +38,7 @@ async function buildSwingset(
   hostStorage,
   vatconfig,
   argv,
+  env,
   { debugName = undefined, slogCallbacks, slogFile, slogSender },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
@@ -50,6 +51,7 @@ async function buildSwingset(
   if (config.coreProposals) {
     // FIXME: Find a better way to propagate the role.
     process.env.ROLE = argv.ROLE;
+    env.ROLE = argv.ROLE;
     const { bundles, code } = await extractCoreProposalBundles(
       config.coreProposals,
       vatconfig,
@@ -98,6 +100,7 @@ async function buildSwingset(
     hostStorage,
     deviceEndowments,
     {
+      env,
       slogCallbacks,
       slogFile,
       slogSender,
@@ -165,17 +168,19 @@ export async function launch({
   bridgeOutbound,
   vatconfig,
   argv,
+  env = process.env,
   debugName = undefined,
   metricsProvider = DEFAULT_METER_PROVIDER,
   slogFile = undefined,
   slogSender,
   mapSize = DEFAULT_LMDB_MAP_SIZE,
+  swingStoreTraceFile,
 }) {
   console.info('Launching SwingSet kernel');
 
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
-    { mapSize },
+    { mapSize, traceFile: swingStoreTraceFile },
   );
   const hostStorage = {
     kvStore,
@@ -196,6 +201,7 @@ export async function launch({
     hostStorage,
     vatconfig,
     argv,
+    env,
     {
       debugName,
       slogCallbacks,

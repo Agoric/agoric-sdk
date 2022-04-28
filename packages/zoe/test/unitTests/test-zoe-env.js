@@ -3,13 +3,13 @@
 import { test, VatData } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 test('harden from SES is in the zoe contract environment', t => {
-  // @ts-ignore testing existence of function only
+  // @ts-expect-error testing existence of function only
   harden();
   t.pass();
 });
 
 test('(mock) kind makers from SwingSet are in the zoe contract environment', t => {
-  // @ts-ignore testing existence of function only
+  // @ts-expect-error testing existence of function only
   VatData.defineKind('x', () => {}, {});
   VatData.defineKindMulti('x', () => {}, { x: {}, y: {} });
   const kh = VatData.makeKindHandle();
@@ -19,7 +19,7 @@ test('(mock) kind makers from SwingSet are in the zoe contract environment', t =
 });
 
 test('(mock) store makers from SwingSet are in the zoe contract environment', t => {
-  // @ts-ignore testing existence of function only
+  // @ts-expect-error testing existence of function only
   VatData.makeScalarBigMapStore();
   VatData.makeScalarBigWeakMapStore();
   VatData.makeScalarBigSetStore();

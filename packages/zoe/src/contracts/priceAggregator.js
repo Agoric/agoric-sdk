@@ -1,11 +1,11 @@
 // @ts-check
 
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
-import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
@@ -28,8 +28,13 @@ const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * brandOut: Brand,
  * unitAmountIn: Amount,
  * }>} zcf
+ * @param {object} root0
+ * @param {ERef<Mint>} [root0.quoteMint]
  */
-const start = async zcf => {
+const start = async (
+  zcf,
+  { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
+) => {
   const {
     timer,
     POLL_INTERVAL,
@@ -40,14 +45,14 @@ const start = async zcf => {
 
   const unitIn = AmountMath.getValue(brandIn, unitAmountIn);
 
-  /** @type {IssuerRecord & { mint: ERef<Mint> }} */
-  let quoteKit;
-
-  /** @type {PriceAuthority} */
-  let priceAuthority;
-
-  /** @type {PriceAuthorityAdmin} */
-  let priceAuthorityAdmin;
+  const quoteIssuerRecord = await zcf.saveIssuer(
+    E(quoteMint).getIssuer(),
+    'Quote',
+  );
+  const quoteKit = {
+    ...quoteIssuerRecord,
+    mint: quoteMint,
+  };
 
   /** @type {bigint} */
   let lastValueOutForUnitIn;
@@ -175,6 +180,16 @@ const start = async zcf => {
         );
     };
 
+  const { priceAuthority, adminFacet: priceAuthorityAdmin } =
+    makeOnewayPriceAuthorityKit({
+      createQuote: makeCreateQuote(),
+      notifier,
+      quoteIssuer: quoteKit.issuer,
+      timer,
+      actualBrandIn: brandIn,
+      actualBrandOut: brandOut,
+    });
+
   /**
    * @param {Timestamp} timestamp
    */
@@ -226,26 +241,6 @@ const start = async zcf => {
 
   /** @type {PriceAggregatorCreatorFacet} */
   const creatorFacet = Far('PriceAggregatorCreatorFacet', {
-    async initializeQuoteMint(quoteMint) {
-      const quoteIssuerRecord = await zcf.saveIssuer(
-        E(quoteMint).getIssuer(),
-        'Quote',
-      );
-      quoteKit = {
-        ...quoteIssuerRecord,
-        mint: quoteMint,
-      };
-
-      const paKit = makeOnewayPriceAuthorityKit({
-        createQuote: makeCreateQuote(),
-        notifier,
-        quoteIssuer: quoteKit.issuer,
-        timer,
-        actualBrandIn: brandIn,
-        actualBrandOut: brandOut,
-      });
-      ({ priceAuthority, adminFacet: priceAuthorityAdmin } = paKit);
-    },
     /**
      * An "oracle invitation" is an invitation to be able to submit data to
      * include in the priceAggregator's results.
@@ -343,8 +338,6 @@ const start = async zcf => {
       await updateQuote(deletedNow);
     },
     initOracle: async (oracleInstance, query) => {
-      assert(quoteKit, X`Must initializeQuoteMint before adding an oracle`);
-
       /** @type {OracleKey} */
       const oracleKey = oracleInstance || Far('fresh key', {});
 

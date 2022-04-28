@@ -8,12 +8,10 @@ import { defineKind } from '@agoric/vat-data';
  * @param {Brand<K>} brand
  * @returns {() => Payment<K>}
  */
-export const makePaymentMaker = (allegedName, brand) => {
+export const definePaymentKind = (allegedName, brand) => {
   const makePayment = defineKind(`${allegedName} payment`, () => ({}), {
     getAllegedBrand: () => brand,
   });
-  // XXX the following type cast is meatball surgery to make tsc shut up
-  // somebody who understands this should do it properly
-  return /** @type {() => Payment<K>} */ (makePayment);
+  return makePayment;
 };
-harden(makePaymentMaker);
+harden(definePaymentKind);

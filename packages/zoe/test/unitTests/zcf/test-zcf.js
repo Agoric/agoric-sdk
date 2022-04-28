@@ -191,7 +191,7 @@ test(`zcf.saveIssuer & zoe.getTerms`, async t => {
 test(`zcf.saveIssuer - bad issuer`, async t => {
   const { moolaKit } = setup();
   const { zcf } = await setupZCFTest();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.saveIssuer(moolaKit.brand, 'A'), {
     // TODO: improve error message
     // https://github.com/Agoric/agoric-sdk/issues/1701
@@ -214,7 +214,7 @@ test(`zcf.saveIssuer - bad issuer, makeEmptyPurse throws`, async t => {
     getBrand: () => brand,
   });
   await t.throwsAsync(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => zcf.saveIssuer(badIssuer, 'A'),
     {
       message:
@@ -245,7 +245,7 @@ test(`zcf.saveIssuer - args reversed`, async t => {
   const { zcf } = await setupZCFTest();
   // TODO: improve error message
   // https://github.com/Agoric/agoric-sdk/issues/1702
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(async () => zcf.saveIssuer('A', moolaKit.issuer), {
     message: /.* must be a string/,
   });
@@ -290,7 +290,7 @@ test(`zcf.makeInvitation - throwing offerHandler`, async t => {
 
 test(`zcf.makeInvitation - no description`, async t => {
   const { zcf } = await setupZCFTest();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}), {
     message: /invitations must have a description string: "\[undefined\]"/,
   });
@@ -300,7 +300,7 @@ test(`zcf.makeInvitation - non-string description`, async t => {
   const { zcf } = await setupZCFTest();
   // TODO: improve error message
   // https://github.com/Agoric/agoric-sdk/issues/1704
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}, { something: 'a' }), {
     message: /invitations must have a description string: .*/,
   });
@@ -355,7 +355,7 @@ test(`zcf.makeInvitation - customProperties overwritten`, async t => {
 
 test(`zcf.makeZCFMint - no keyword`, async t => {
   const { zcf } = await setupZCFTest();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint(), {
     message:
       // Should be able to use more informative error once SES double
@@ -390,7 +390,7 @@ test(`zcf.makeZCFMint - bad keyword`, async t => {
 
 test(`zcf.makeZCFMint - not a math kind`, async t => {
   const { zcf } = await setupZCFTest();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
     message:
       /The assetKind "whatever" must be one of \["copyBag","copySet","nat","set"\]/,
@@ -427,7 +427,7 @@ test(`zcf.makeZCFMint - SET`, async t => {
 test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
     message:
       '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
@@ -453,7 +453,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // TODO: create seat if one is not provided
   // https://github.com/Agoric/agoric-sdk/issues/1696
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(undefined, zcfSeat), {
     message:
       '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
@@ -463,7 +463,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
 test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
     message:
       '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
@@ -474,7 +474,7 @@ test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   const { zcf } = await setupZCFTest();
   const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
   const { zcfSeat } = zcf.makeEmptySeatKit();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
     message:
       '"keywordRecord" "[undefined]" must be a pass-by-copy record, not "undefined"',
@@ -710,7 +710,7 @@ test(`zcfSeat.isOfferSafe from zcf.makeEmptySeatKit`, async t => {
   const { moola } = setup();
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // Anything is offer safe with no want or give
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.truthy(zcfSeat.isOfferSafe());
   t.truthy(zcfSeat.isOfferSafe({ Moola: moola(0n) }));
   t.truthy(zcfSeat.isOfferSafe({ Moola: moola(10n) }));
@@ -1090,7 +1090,7 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
 test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { userSeat } = zcf.makeEmptySeatKit();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(userSeat).getPayout(), {
     message: 'A keyword must be provided',
   });
@@ -1098,7 +1098,7 @@ test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
 
 test(`zcf.reallocate < 2 seats`, async t => {
   const { zcf } = await setupZCFTest();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.reallocate(), {
     message: 'reallocating must be done over two or more seats',
   });

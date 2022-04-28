@@ -1,4 +1,4 @@
-/* global setInterval */
+import path from 'path';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import {
   importMailbox,
@@ -12,6 +12,9 @@ import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import makeBlockManager from './block-manager.js';
 import { getTelemetryProviders } from './kernel-stats.js';
+
+// eslint-disable-next-line no-unused-vars
+let whenHellFreezesOver = null;
 
 const AG_COSMOS_INIT = 'AG_COSMOS_INIT';
 
@@ -171,7 +174,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // Try to determine the cosmos chain home.
   function getFlagValue(flagName, deflt) {
     let flagValue = deflt;
-    const envValue = env[`AG_CHAIN_COSMOS_${flagName.toUpperCase()}`];
+    const envValue =
+      env[`AG_CHAIN_COSMOS_${flagName.toUpperCase().replace(/-/g, '_')}`];
     if (envValue !== undefined) {
       flagValue = envValue;
     }
@@ -239,7 +243,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   const nodePort = registerPortHandler(toSwingSet);
 
   // Need to keep the process alive until Go exits.
-  setInterval(() => undefined, 30000);
+  whenHellFreezesOver = new Promise(() => {});
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
 
   let savedChainSends = [];
@@ -343,7 +347,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE } = env;
+    const { SLOGFILE, SLOGSENDER, LMDB_MAP_SIZE, SWING_STORE_TRACE } = env;
     const slogSender = await makeSlogSenderFromModule(SLOGSENDER, {
       stateDir: stateDBDir,
       env,
@@ -351,6 +355,24 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     });
 
     const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
+
+    const defaultTraceFile = path.resolve(stateDBDir, 'store-trace.log');
+    let swingStoreTraceFile;
+    switch (SWING_STORE_TRACE) {
+      case '0':
+      case 'false':
+        break;
+      case '1':
+      case 'true':
+        swingStoreTraceFile = defaultTraceFile;
+        break;
+      default:
+        if (SWING_STORE_TRACE) {
+          swingStoreTraceFile = path.resolve(SWING_STORE_TRACE);
+        } else if (getFlagValue('trace-store')) {
+          swingStoreTraceFile = defaultTraceFile;
+        }
+    }
 
     const s = await launch({
       actionQueue,
@@ -360,10 +382,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
+      env,
       metricsProvider,
       slogFile: SLOGFILE,
       slogSender,
       mapSize,
+      swingStoreTraceFile,
     });
     return s;
   }

@@ -27,7 +27,7 @@ import { checkDebtLimit } from '../contractSupport.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM', true);
 
 /**
  * @typedef {{
@@ -35,6 +35,7 @@ const trace = makeTracer('VM', false);
  *  interestRate: Ratio,
  *  latestInterestUpdate: bigint,
  *  totalDebt: Amount<'nat'>,
+ *  liquidatorInstance?: Instance,
  * }} AssetState */
 
 /**
@@ -55,7 +56,6 @@ const trace = makeTracer('VM', false);
  * debtBrand: Brand<'nat'>,
  * debtMint: ZCFMint<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
- * liquidationStrategy: LiquidationStrategy,
  * penaltyPoolSeat: ZCFSeat,
  * periodNotifier: ERef<Notifier<bigint>>,
  * poolIncrementSeat: ZCFSeat,
@@ -72,7 +72,9 @@ const trace = makeTracer('VM', false);
  * compoundedInterest: Ratio,
  * latestInterestUpdate: bigint,
  * liquidationInProgress: boolean,
- * outstandingQuote: MutableQuote| null,
+ * liquidator?: Liquidator
+ * liquidatorInstance?: Instance
+ * outstandingQuote: Promise<MutableQuote>| null,
  * totalDebt: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
@@ -99,7 +101,6 @@ const trace = makeTracer('VM', false);
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
- * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */
@@ -110,7 +111,6 @@ const initState = (
   priceAuthority,
   factoryPowers,
   timerService,
-  liquidationStrategy,
   penaltyPoolSeat,
   startTimeStamp,
 ) => {
@@ -125,7 +125,6 @@ const initState = (
     debtBrand: debtMint.getIssuerRecord().brand,
     debtMint,
     factoryPowers,
-    liquidationStrategy,
     penaltyPoolSeat,
     periodNotifier,
     poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
@@ -148,6 +147,7 @@ const initState = (
       interestRate: fixed.factoryPowers.getGovernedParams().getInterestRate(),
       latestInterestUpdate,
       totalDebt,
+      liquidationInstance: undefined,
     }),
   );
 
@@ -159,6 +159,8 @@ const initState = (
     debtBrand: fixed.debtBrand,
     vaultCounter: 0,
     liquidationInProgress: false,
+    liquidator: undefined,
+    liquidatorInstance: undefined,
     totalDebt,
     compoundedInterest,
     latestInterestUpdate,
@@ -207,19 +209,24 @@ const helperBehavior = {
       updateTime,
     );
     Object.assign(state, stateUpdates);
+    facets.helper.notify();
+    trace('chargeAllVaults complete');
+    facets.helper.reschedulePriceCheck();
+  },
 
+  notify: ({ state }) => {
+    const interestRate = state.factoryPowers
+      .getGovernedParams()
+      .getInterestRate();
     /** @type {AssetState} */
     const payload = harden({
       compoundedInterest: state.compoundedInterest,
       interestRate,
       latestInterestUpdate: state.latestInterestUpdate,
       totalDebt: state.totalDebt,
+      liquidatorInstance: state.liquidatorInstance,
     });
     state.assetUpdater.updateState(payload);
-
-    trace('chargeAllVaults complete', payload);
-
-    facets.helper.reschedulePriceCheck();
   },
 
   /**
@@ -235,10 +242,12 @@ const helperBehavior = {
    * level.
    *
    * @param {MethodContext} context
+   * @returns {Promise<void>}
    */
   reschedulePriceCheck: async ({ state, facets }) => {
     const { prioritizedVaults } = state;
     const highestDebtRatio = prioritizedVaults.highestRatio();
+    trace('reschedulePriceCheck', { highestDebtRatio });
     if (!highestDebtRatio) {
       // if there aren't any open vaults, we don't need an outstanding RFQ.
       trace('no open vaults');
@@ -257,17 +266,26 @@ const helperBehavior = {
       liquidationMargin,
     );
 
-    // if there's an outstanding quote, reset the level. If there's no current
-    // quote (because this is the first loan, or because a quote just resolved)
-    // then make a new request to the priceAuthority, and when it resolves,
-    // liquidate anything that's above the price level.
+    // INTERLOCK NOTE:
+    // The presence of an `outstandingQuote` is used to ensure there's only
+    // one thread of control waiting for a quote from the price authority.
+    // All later callers will just update the threshold for the `outstandingQuote`.
+    // The first invocation will skip the next block and continue to below where
+    // the `outstandingQuote` is assigned. So, if there's an outstanding quote,
+    // reset the level. If there's no current quote (because this is the first
+    // vault, or because a quote just resolved), then make a new request to the
+    // priceAuthority, and when it resolves, liquidate the first vault.
     if (state.outstandingQuote) {
       // Safe to call extraneously (lightweight and idempotent)
       E(state.outstandingQuote).updateLevel(
         highestDebtRatio.denominator, // collateral
         triggerPoint,
       );
-      trace('updating level for outstandingQuote');
+      trace(
+        'updating level for outstandingQuote',
+        triggerPoint,
+        highestDebtRatio.denominator,
+      );
       return;
     }
 
@@ -275,25 +293,29 @@ const helperBehavior = {
       return;
     }
 
-    // There are two awaits in a row here. The first gets a mutableQuote object
-    // relatively quickly from the PriceAuthority. The second schedules a
-    // callback that may not fire until much later.
-    // Callers shouldn't expect a response from this function.
+    // INTERLOCK NOTE:
+    // Sets the interlock test above. This MUST NOT `await` the quote or
+    // else multiple threads of control could get through the interlock test
+    // above.
     const { priceAuthority } = state;
-    state.outstandingQuote = await E(priceAuthority).mutableQuoteWhenLT(
+    state.outstandingQuote = E(priceAuthority).mutableQuoteWhenLT(
       highestDebtRatio.denominator, // collateral
       triggerPoint,
     );
+    trace('posted quote request', triggerPoint);
 
+    // The rest of this method will not happen until after a quote is received.
+    // This may not happen until much later, when themarket changes.
     const quote = await E(state.outstandingQuote).getPromise();
-    // When we receive a quote, we liquidate all the vaults that don't have
-    // sufficient collateral, (even if the trigger was set for a different
-    // level) because we use the actual price ratio plus margin here. Use
-    // ceilDivide to round up because ratios above this will be liquidated.
+    // When we receive a quote, we check whether the vault with the highest
+    // ratio of debt to collateral is below the liquidationMargin, and if so,
+    // we liquidate it. We use ceilDivide to round up because ratios above
+    // this will be liquidated.
     const quoteRatioPlusMargin = makeRatioFromAmounts(
       ceilDivideBy(getAmountOut(quote), liquidationMargin),
       getAmountIn(quote),
     );
+    trace('quote', quote, quoteRatioPlusMargin);
 
     state.outstandingQuote = null;
 
@@ -301,26 +323,30 @@ const helperBehavior = {
     const [next] =
       prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
     await (next ? facets.helper.liquidateAndRemove(next) : null);
+    trace('price check liq', next && next[0]);
 
-    facets.helper.reschedulePriceCheck();
+    // eslint-disable-next-line consistent-return
+    return facets.helper.reschedulePriceCheck();
   },
 
   /**
    * @param {MethodContext} context
    * @param {[key: string, vaultKit: InnerVault]} record
    */
-  liquidateAndRemove: ({ state }, [key, vault]) => {
-    const { debtMint, factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } =
-      state;
+  liquidateAndRemove: ({ state, facets }, [key, vault]) => {
+    const { factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } = state;
     trace('liquidating', vault.getVaultSeat().getProposal());
     state.liquidationInProgress = true;
 
     // Start liquidation (vaultState: LIQUIDATING)
+    const liquidator = state.liquidator;
+    assert(liquidator);
+    trace('liquidating 2', vault.getVaultSeat().getProposal());
     return liquidate(
       zcf,
       vault,
-      debtMint.burnLosses,
-      state.liquidationStrategy,
+      (amount, seat) => facets.manager.burnAndRecord(amount, seat),
+      liquidator,
       state.collateralBrand,
       penaltyPoolSeat,
       factoryPowers.getGovernedParams().getLiquidationPenalty(),
@@ -328,6 +354,7 @@ const helperBehavior = {
       .then(() => {
         prioritizedVaults.removeVault(key);
         state.liquidationInProgress = false;
+        trace('liquidated');
       })
       .catch(e => {
         state.liquidationInProgress = false;
@@ -476,6 +503,49 @@ const selfBehavior = {
     }
   },
 
+  /**
+   *
+   * @param {MethodContext} param
+   * @param {Installation} liquidationInstall
+   * @param {Object} liquidationTerms
+   */
+  setupLiquidator: async (
+    { state, facets },
+    liquidationInstall,
+    liquidationTerms,
+  ) => {
+    const { zcf, debtBrand, collateralBrand } = state;
+    const { ammPublicFacet, priceAuthority, timerService } = zcf.getTerms();
+    const zoe = zcf.getZoeService();
+    const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
+    const debtIssuer = zcf.getIssuerForBrand(debtBrand);
+    trace('setup liquidator', {
+      debtBrand,
+      debtIssuer,
+      collateralBrand,
+      liquidationTerms,
+    });
+    const { creatorFacet, instance } = await E(zoe).startInstance(
+      liquidationInstall,
+      harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
+      harden({
+        ...liquidationTerms,
+        amm: ammPublicFacet,
+        priceAuthority,
+        timerService,
+        debtBrand,
+      }),
+    );
+    trace('setup liquidator complete', {
+      instance,
+      old: state.liquidatorInstance,
+      equal: state.liquidatorInstance === instance,
+    });
+    state.liquidatorInstance = instance;
+    state.liquidator = creatorFacet;
+    facets.helper.notify();
+  },
+
   /** @param {MethodContext} context */
   getCollateralQuote: async ({ state }) => {
     const { debtBrand } = state;
@@ -544,7 +614,6 @@ const makeVaultManagerKit = defineKindMulti(
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
- * @param {LiquidationStrategy} liquidationStrategy
  * @param {ZCFSeat} penaltyPoolSeat
  * @param {Timestamp} startTimeStamp
  */

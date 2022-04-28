@@ -938,6 +938,64 @@ test('promise resolveToPresence', async t => {
   t.deepEqual(kernel.dump().acceptanceQueue, []);
 });
 
+test('promise fails when resolve to promise', async t => {
+  const kernel = makeKernel();
+  await kernel.start();
+  const log = [];
+
+  let syscallA;
+  function setupA(s) {
+    syscallA = s;
+    function dispatch(vatDeliverObject) {
+      if (vatDeliverObject[0] === 'startVat') {
+        return; // skip startVat
+      }
+      log.push(vatDeliverObject);
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vatA', setupA);
+
+  let syscallB;
+  function setupB(s) {
+    syscallB = s;
+    function dispatch() {}
+    return dispatch;
+  }
+  await kernel.createTestVat('vatB', setupB);
+
+  const vatA = kernel.vatNameToID('vatA');
+  const vatB = kernel.vatNameToID('vatB');
+
+  const p1ForB = 'p+5';
+  const p1ForKernel = kernel.addExport(vatB, p1ForB);
+  const p1ForA = kernel.addImport(vatA, p1ForKernel);
+
+  const p2ForB = 'p+6';
+
+  syscallA.subscribe(p1ForA);
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: p1ForKernel,
+      state: 'unresolved',
+      policy: 'ignore',
+      refCount: 3,
+      decider: vatB,
+      subscribers: [vatA],
+      queue: [],
+    },
+  ]);
+
+  t.throws(
+    () => syscallB.resolve([[p1ForB, false, capargs(slot0arg, [p2ForB])]]),
+    undefined,
+    `Should throw when resolving to promise`,
+  );
+  t.deepEqual(log, []);
+  t.deepEqual(kernel.dump().runQueue, []);
+  t.deepEqual(kernel.dump().acceptanceQueue, []);
+});
+
 test('promise reject', async t => {
   const kernel = makeKernel();
   await kernel.start();
@@ -967,7 +1025,6 @@ test('promise reject', async t => {
   const vatA = kernel.vatNameToID('vatA');
   const vatB = kernel.vatNameToID('vatB');
 
-  const aliceForA = 'o+6';
   const pForB = 'p+5';
   const pForKernel = kernel.addExport(vatB, pForB);
   const pForA = kernel.addImport(vatA, pForKernel);
@@ -989,7 +1046,8 @@ test('promise reject', async t => {
     },
   ]);
 
-  syscallB.resolve([[pForB, true, capdata('"args"', [aliceForA])]]);
+  // Reject the promise with itself
+  syscallB.resolve([[pForB, true, capargs(slot0arg, [pForB])]]);
   // this causes a notify message to be queued
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().acceptanceQueue, [
@@ -1007,7 +1065,7 @@ test('promise reject', async t => {
   // the kernelPromiseID gets mapped back to the vat PromiseID
   t.deepEqual(log.shift(), [
     'notify',
-    oneResolution(pForA, true, capdata('"args"', ['o-50'])),
+    oneResolution(pForA, true, capargs(slot0arg, [pForA])),
   ]);
   t.deepEqual(log, []); // no other dispatch calls
   t.deepEqual(kernel.dump().runQueue, []);

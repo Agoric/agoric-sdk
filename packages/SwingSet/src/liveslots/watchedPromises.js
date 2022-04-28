@@ -124,9 +124,9 @@ export function makeWatchedPromiseManager(
     assert.typeof(rejectHandler, 'function');
 
     const makeWatcher = defineDurableKind(kindHandle, () => ({}), {
-      // @ts-ignore  TS is confused by the spread operator
+      // @ts-expect-error  TS is confused by the spread operator
       onFulfilled: (_context, res, ...args) => fulfillHandler(res, ...args),
-      // @ts-ignore
+      // @ts-expect-error
       onRejected: (_context, rej, ...args) => rejectHandler(rej, ...args),
     });
 

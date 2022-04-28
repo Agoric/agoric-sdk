@@ -11,7 +11,7 @@ import makeKernelKeeper from './state/kernelKeeper.js';
 import { kdebug, kdebugEnable, legibilizeMessageArgs } from '../lib/kdebug.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
-import { insistCapData } from '../lib/capdata.js';
+import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../lib/message.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
 import { makeKernelQueueHandler } from './kernelQueue.js';
@@ -406,25 +406,6 @@ export default function buildKernel(
     return deliverAndLogToVat(vatID, kd, vd);
   }
 
-  function extractPresenceIfPresent(data) {
-    const body = JSON.parse(data.body);
-    if (
-      body &&
-      typeof body === 'object' &&
-      body['@qclass'] === 'slot' &&
-      body.index === 0
-    ) {
-      if (data.slots.length === 1) {
-        const slot = data.slots[0];
-        const { type } = parseKernelSlot(slot);
-        if (type === 'object') {
-          return slot;
-        }
-      }
-    }
-    return null;
-  }
-
   /**
    *
    * @param { RunQueueEventNotify } message
@@ -580,7 +561,6 @@ export default function buildKernel(
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
     function sendNewVatCallback(args) {
-      // @ts-ignore see assert(...) above
       queueToKref(vatAdminRootKref, 'newVatCallback', args, 'logFailure');
     }
 
@@ -787,9 +767,9 @@ export default function buildKernel(
     const kp = kernelKeeper.getKernelPromise(target);
     switch (kp.state) {
       case 'fulfilled': {
-        const presence = extractPresenceIfPresent(kp.data);
-        if (presence) {
-          return send(presence);
+        const targetSlot = extractSingleSlot(kp.data);
+        if (targetSlot && parseKernelSlot(targetSlot).type === 'object') {
+          return send(targetSlot);
         }
         // TODO: maybe mimic (3).foo(): "TypeError: XX.foo is not a function"
         const s = `data is not callable, has no method ${msg.method}`;
@@ -1273,15 +1253,20 @@ export default function buildKernel(
     vatParameters = {},
     creationOptions = {},
   ) {
+    const {
+      bundleID = 'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+      ...actualCreationOptions
+    } = creationOptions;
     assert.typeof(
       setup,
       'function',
       X`setup is not a function, rather ${setup}`,
     );
-    assertKnownOptions(creationOptions, [
+    assertKnownOptions(actualCreationOptions, [
       'enablePipelining',
       'metered',
       'reapInterval',
+      'managerType',
     ]);
 
     assert(!kernelKeeper.hasVatWithName(name), X`vat ${name} already exists`);
@@ -1289,13 +1274,17 @@ export default function buildKernel(
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
 
-    if (!creationOptions.reapInterval) {
-      creationOptions.reapInterval = 'never';
+    if (!actualCreationOptions.reapInterval) {
+      actualCreationOptions.reapInterval = 'never';
+    }
+    if (!actualCreationOptions.managerType) {
+      actualCreationOptions.managerType = 'local';
     }
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
+    vatKeeper.setSourceAndOptions({ bundleID }, actualCreationOptions);
+    vatKeeper.initializeReapCountdown(actualCreationOptions.reapInterval);
 
-    await vatWarehouse.loadTestVat(vatID, setup, creationOptions);
+    await vatWarehouse.loadTestVat(vatID, setup, actualCreationOptions);
 
     const vpCapData = { body: stringify(harden(vatParameters)), slots: [] };
     /** @type { RunQueueEventStartVat } */

@@ -1,11 +1,11 @@
 // @ts-check
 
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
-import { AmountMath } from '@agoric/ertp';
 import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
@@ -31,8 +31,13 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * maxSubmissionValue: number,
  * unitAmountIn: Amount,
  * }>} zcf
+ * @param {object} root0
+ * @param {ERef<Mint>} [root0.quoteMint]
  */
-const start = async zcf => {
+const start = async (
+  zcf,
+  { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
+) => {
   const {
     timer,
     brands: { In: brandIn, Out: brandOut },
@@ -51,11 +56,14 @@ const start = async zcf => {
   // Get the timer's identity.
   const timerPresence = await timer;
 
-  /** @type {IssuerRecord & { mint: ERef<Mint> }} */
-  let quoteKit;
-
-  /** @type {PriceAuthority} */
-  let priceAuthority;
+  const quoteIssuerRecord = await zcf.saveIssuer(
+    E(quoteMint).getIssuer(),
+    'Quote',
+  );
+  const quoteKit = {
+    ...quoteIssuerRecord,
+    mint: quoteMint,
+  };
 
   /** @type {bigint} */
   let lastValueOutForUnitIn;
@@ -245,6 +253,15 @@ const start = async zcf => {
           ]),
         );
     };
+
+  const { priceAuthority } = makeOnewayPriceAuthorityKit({
+    createQuote: makeCreateQuote(),
+    notifier,
+    quoteIssuer: quoteKit.issuer,
+    timer,
+    actualBrandIn: brandIn,
+    actualBrandOut: brandOut,
+  });
 
   /**
    * @param {bigint} _roundId
@@ -568,27 +585,6 @@ const start = async zcf => {
    * }}
    */
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
-    async initializeQuoteMint(quoteMint) {
-      const quoteIssuerRecord = await zcf.saveIssuer(
-        E(quoteMint).getIssuer(),
-        'Quote',
-      );
-      quoteKit = {
-        ...quoteIssuerRecord,
-        mint: quoteMint,
-      };
-
-      const paKit = makeOnewayPriceAuthorityKit({
-        createQuote: makeCreateQuote(),
-        notifier,
-        quoteIssuer: quoteKit.issuer,
-        timer,
-        actualBrandIn: brandIn,
-        actualBrandOut: brandOut,
-      });
-      ({ priceAuthority } = paKit);
-    },
-
     deleteOracle: async oracleKey => {
       const records = keyToRecords.get(oracleKey);
       for (const record of records) {
@@ -603,8 +599,6 @@ const start = async zcf => {
 
     // unlike the median case, no query argument is passed, since polling behavior is undesired
     async initOracle(oracleInstance) {
-      assert(quoteKit, X`Must initializeQuoteMint before adding an oracle`);
-
       /** @type {OracleKey} */
       const oracleKey = oracleInstance || Far('oracleKey', {});
 

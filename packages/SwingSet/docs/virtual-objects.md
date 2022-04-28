@@ -51,7 +51,16 @@ where `context` describes the invocation context of the method and `...args` are
 
 The `options` parameter is optional. It provides additional parameters to characterize the VDO.  Currently there is only one supported option, `finish`, though we anticipate more options may be added in future versions of the API.
 
-The `finish` option is a function that, if present, will be called at the end of instance initialization.  It will be invoked after the VDO is created but before it is returned from the maker function.  `finish` is passed one parameters, a `context` object identical to that passed to method behaviors.  The `finish` function can modify the object's state at a time when the object's identity is known (or its facets' identies are known), and thus can be used in cases where a validly initialized instance requires it to participate in some kind of cyclical object graph with other VDOs.  It can also be used, for example, to register the object with outside tracking data structures, or do whatever other post-creation setup is needed for the object to do its job.
+The `finish` option is a function that, if present, will be called at the end of
+instance initialization.  It will be invoked after the VDO is created but before
+it is returned from the maker function.  `finish` is passed one parameter, a
+`context` object identical to that passed to method behaviors.  The `finish`
+function can modify the object's state at a time when the object's identity is
+known (or its facets' identies are known), and thus can be used in cases where a
+validly initialized instance requires it to participate in some kind of cyclical
+object graph with other VDOs.  It can also be used, for example, to register the
+object with outside tracking data structures, or do whatever other post-creation
+setup is needed for the object to do its job.
 
 For example:
 

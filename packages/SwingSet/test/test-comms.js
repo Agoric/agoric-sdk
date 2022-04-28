@@ -1304,12 +1304,12 @@ function nestedPromisesTestLarryOuter(t, larryInner) {
   if (larryInner) {
     pPromiseInner = newImportPromise('k');
   }
-  _('k>r', [pPromiseOuter, false, pPromiseInner]);
+  _('k>r', [pPromiseOuter, false, [pPromiseInner]]);
   if (larryInner) {
     _('k<s', pPromiseInner);
     paPromiseInner = newExportPromise('a');
   }
-  _('a<r', [paPromiseOuter, false, paPromiseInner]);
+  _('a<r', [paPromiseOuter, false, [paPromiseInner]]);
   const plPromiseInner = state.mapFromKernel(refOf(pPromiseInner));
 
   // Outer promise is fulfilled, inner is still unresolved
@@ -1340,13 +1340,17 @@ function nestedPromisesTestLarryOuter(t, larryInner) {
   done();
 }
 
-test('Nested promises, Larry outer, Larry inner', t => {
-  nestedPromisesTestLarryOuter(t, true);
-});
+test(
+  'Nested promises, Larry outer, Larry inner',
+  nestedPromisesTestLarryOuter,
+  true,
+);
 
-test('Nested promises, Larry outer, Alice inner', t => {
-  nestedPromisesTestLarryOuter(t, false);
-});
+test(
+  'Nested promises, Larry outer, Alice inner',
+  nestedPromisesTestLarryOuter,
+  false,
+);
 
 function nestedPromisesTestAliceOuter(t, larryInner) {
   const {
@@ -1389,11 +1393,11 @@ function nestedPromisesTestAliceOuter(t, larryInner) {
   if (!larryInner) {
     paPromiseInner = newImportPromise('a');
   }
-  _('a>r', [paPromiseOuter, false, paPromiseInner]);
+  _('a>r', [paPromiseOuter, false, [paPromiseInner]]);
   if (!larryInner) {
     pPromiseInner = newExportPromise('k');
   }
-  _('k<r', [pPromiseOuter, false, pPromiseInner]);
+  _('k<r', [pPromiseOuter, false, [pPromiseInner]]);
   const plPromiseInner = state.mapFromKernel(refOf(pPromiseInner));
 
   // Outer promise is gone, inner is still unresolved
@@ -1422,10 +1426,100 @@ function nestedPromisesTestAliceOuter(t, larryInner) {
   done();
 }
 
-test('Nested promises, Alice outer, Larry inner', t => {
-  nestedPromisesTestAliceOuter(t, true);
+test(
+  'Nested promises, Alice outer, Larry inner',
+  nestedPromisesTestAliceOuter,
+  true,
+);
+
+test(
+  'Nested promises, Alice outer, Alice inner',
+  nestedPromisesTestAliceOuter,
+  false,
+);
+
+test('Nested promises, reject with promise', async t => {
+  const {
+    _,
+    done,
+    state,
+    setupRemote,
+    exportToRemote,
+    newImportObject,
+    newImportPromise,
+    newExportPromise,
+    refOf,
+    flipRefOf,
+  } = commsVatDriver(t);
+
+  setupRemote('a');
+  const remoteA = state.getRemote(state.getRemoteIDForName('a'));
+  const oLarry = newImportObject('k');
+  const oaLarry = exportToRemote('a', 11, oLarry);
+
+  const paPromise = newImportPromise('a');
+  const pPromise = newExportPromise('k');
+
+  // Alice sends a message to Larry containing the promise
+  _('a>m', oaLarry, 'hello', undefined, paPromise);
+  _('k<m', oLarry, 'hello', undefined, pPromise);
+
+  // There should be appropriate c-list entries for the promise
+  const plPromise = state.mapFromKernel(refOf(pPromise));
+  t.truthy(plPromise);
+  t.is(state.mapToKernel(plPromise), refOf(pPromise));
+  t.is(remoteA.mapToRemote(plPromise), flipRefOf(paPromise));
+  t.is(remoteA.mapFromRemote(refOf(paPromise)), plPromise);
+  t.is(state.getPromiseStatus(plPromise), 'unresolved');
+
+  // Alice rejects the promise to the promise itself
+  _('a>r', [paPromise, true, paPromise]);
+  _('k<r', [pPromise, true, pPromise]);
+
+  // promise is rejected
+  t.is(state.getPromiseStatus(plPromise), 'rejected');
+
+  done();
 });
 
-test('Nested promises, Alice outer, Alice inner', t => {
-  nestedPromisesTestAliceOuter(t, false);
+test('Disallow resolving a promise with another promise', async t => {
+  const {
+    _,
+    done,
+    state,
+    setupRemote,
+    exportToRemote,
+    newImportObject,
+    newImportPromise,
+    newExportPromise,
+    refOf,
+    flipRefOf,
+  } = commsVatDriver(t);
+
+  setupRemote('a');
+  const remoteA = state.getRemote(state.getRemoteIDForName('a'));
+  const oLarry = newImportObject('k');
+  const oaLarry = exportToRemote('a', 11, oLarry);
+
+  // Alice sends a message to Larry
+  const paResult = newImportPromise('a');
+  _('a>m', oaLarry, 'hello', paResult);
+  const pResult = newExportPromise('k');
+  _('k<m', oLarry, 'hello', pResult);
+  _('k<s', pResult);
+
+  // There should be appropriate c-list entries for the promise
+  const plResult = state.mapFromKernel(refOf(pResult));
+  t.truthy(plResult);
+  t.is(state.mapToKernel(plResult), refOf(pResult));
+  t.is(remoteA.mapToRemote(plResult), flipRefOf(paResult));
+  t.is(remoteA.mapFromRemote(refOf(paResult)), plResult);
+  t.is(state.getPromiseStatus(plResult), 'unresolved');
+
+  // Try to resolve/redirect the result promise to another promise
+  const pPromise = newImportPromise('k');
+  t.throws(() => _('k>r', [pResult, false, pPromise]));
+  _('k<s', pPromise);
+
+  done();
 });

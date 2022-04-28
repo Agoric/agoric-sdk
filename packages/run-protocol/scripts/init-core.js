@@ -1,31 +1,40 @@
 /* global process */
 // @ts-check
+import { E } from '@endo/far';
 import { makeHelpers } from '@agoric/deploy-script-support';
 
+import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import {
   getManifestForRunProtocol,
   getManifestForEconCommittee,
   getManifestForMain,
-  getManifestForRunStake,
-  getManifestForPSM,
 } from '../src/core-proposal.js';
 
-const { details: X } = assert;
+/** @type {<T>(store: any, key: string, make: () => T) => Promise<T>} */
+const provide = async (store, key, make) => {
+  const found = await E(store).get(key);
+  if (found) {
+    return found;
+  }
+  const value = make();
+  await E(store).set(key, value);
+  return value;
+};
 
 /** @type {Record<string, Record<string, [string, string]>>} */
 const installKeyGroups = {
   econCommittee: {
     contractGovernor: [
       '@agoric/governance/src/contractGovernor.js',
-      '../bundles/bundle-contractGovernor.js',
+      '../../governance/bundles/bundle-contractGovernor.js',
     ],
     committee: [
       '@agoric/governance/src/committee.js',
-      '../bundles/bundle-committee.js',
+      '../../governance/bundles/bundle-committee.js',
     ],
     binaryVoteCounter: [
       '@agoric/governance/src/binaryVoteCounter.js',
-      '../bundles/bundle-binaryVoteCounter.js',
+      '../../governance/bundles/bundle-binaryVoteCounter.js',
     ],
   },
   runStake: {
@@ -40,14 +49,22 @@ const installKeyGroups = {
       '../src/vaultFactory/vaultFactory.js',
       '../bundles/bundle-vaultFactory.js',
     ],
-    liquidate: [
+    liquidateMinimum: [
       '../src/vaultFactory/liquidateMinimum.js',
       '../bundles/bundle-liquidateMinimum.js',
+    ],
+    liquidate: [
+      '../src/vaultFactory/liquidateIncrementally.js',
+      '../bundles/bundle-liquidateIncrementally.js',
     ],
     reserve: ['../src/reserve/assetReserve.js', '../bundles/bundle-reserve.js'],
   },
   psm: {
     psm: ['../src/psm/psm.js', '../bundles/bundle-psm.js'],
+    mintHolder: [
+      '@agoric/vats/src/mintHolder.js',
+      '../../vats/bundles/bundle-mintHolder.js',
+    ],
   },
 };
 
@@ -55,98 +72,110 @@ const { entries, fromEntries } = Object;
 
 /** @type { <K extends string, T, U>(obj: Record<K, T>, f: (t: T) => U) => Record<K, U>} */
 const mapValues = (obj, f) =>
-  // @ts-ignore entries() loses the K type
+  // @ts-expect-error entries() loses the K type
   harden(fromEntries(entries(obj).map(([p, v]) => [p, f(v)])));
 
-const committeeProposalBuilder = async ({ publishRef, install }) => {
-  const { ROLE = 'chain' } = process.env;
+const makeTool = async (homeP, installCacheKey = 'installCache') => {
+  /** @type {CopyMap<string, {installation: Installation, boardId: string, path?: string}>} */
+  const initial = await provide(E.get(homeP).scratch, installCacheKey, () =>
+    makeCopyMap([]),
+  );
+  // ISSUE: getCopyMapEntries of CopyMap<K, V> loses K, V.
+  /** @type {Map<string, {installation: Installation, boardId: string, path?: string}>} */
+  const working = new Map(getCopyMapEntries(initial));
 
-  // preload ERTP, marshal, store, etc.
-  const [mod0, bundle0] = installKeyGroups.econCommittee.binaryVoteCounter;
-  const install0 = await install(mod0, bundle0, { persist: true });
+  const saveCache = async () => {
+    const final = makeCopyMap(working);
+    assert.equal(final.payload.keys.length, working.size);
+    await E(E.get(homeP).scratch).set('installCache', final);
+    console.log({
+      initial: initial.payload.keys.length,
+      total: working.size,
+    });
+  };
 
-  /** @param { Record<string, [string, string]> } group */
-  const publishGroup = group =>
-    mapValues(group, ([mod, bundle]) =>
-      publishRef(
-        mod === mod0 && bundle === bundle0 ? install0 : install(mod, bundle),
-      ),
+  const wrapInstall = install => async (mPath, bPath, opts) => {
+    const { endoZipBase64Sha512: sha512 } = await import(bPath).then(
+      m => m.default,
     );
-  return harden({
-    sourceSpec: '../src/core-proposal.js',
-    getManifestCall: [
-      getManifestForEconCommittee.name,
-      {
-        ROLE,
-        installKeys: {
-          ...publishGroup(installKeyGroups.econCommittee),
+    const detail = await provide(working, sha512, () =>
+      install(mPath, bPath, opts).then(installation => ({
+        installation,
+        sha512,
+        path: bPath,
+      })),
+    );
+    return detail.installation;
+  };
+
+  const committeeProposalBuilder = async ({
+    publishRef,
+    install: install0,
+  }) => {
+    const { ROLE = 'chain' } = process.env;
+
+    const install = wrapInstall(install0);
+
+    /** @param { Record<string, [string, string]> } group */
+    const publishGroup = group =>
+      mapValues(group, ([mod, bundle]) =>
+        publishRef(install(mod, bundle, { persist: true })),
+      );
+    return harden({
+      sourceSpec: '../src/core-proposal.js',
+      getManifestCall: [
+        getManifestForEconCommittee.name,
+        {
+          ROLE,
+          installKeys: {
+            ...publishGroup(installKeyGroups.econCommittee),
+          },
         },
-      },
-    ],
-  });
-};
+      ],
+    });
+  };
 
-const mainProposalBuilder = async ({ publishRef, install }) => {
-  const { ROLE = 'chain', VAULT_FACTORY_CONTROLLER_ADDR } = process.env;
+  const mainProposalBuilder = async ({ publishRef, install: install0 }) => {
+    const {
+      ROLE = 'chain',
+      VAULT_FACTORY_CONTROLLER_ADDR,
+      ANCHOR_DENOM,
+    } = process.env;
 
-  /** @param { Record<string, [string, string]> } group */
-  const publishGroup = group =>
-    mapValues(group, ([mod, bundle]) => publishRef(install(mod, bundle)));
-  return harden({
-    sourceSpec: '../src/core-proposal.js',
-    getManifestCall: [
-      getManifestForMain.name,
-      {
-        ROLE,
-        vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
-        installKeys: {
-          ...publishGroup(installKeyGroups.main),
+    const install = wrapInstall(install0);
+
+    const persist = true;
+    /** @param { Record<string, [string, string]> } group */
+    const publishGroup = group =>
+      mapValues(group, ([mod, bundle]) =>
+        publishRef(install(mod, bundle, { persist })),
+      );
+    return harden({
+      sourceSpec: '../src/core-proposal.js',
+      getManifestCall: [
+        getManifestForMain.name,
+        {
+          ROLE,
+          vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
+          installKeys: {
+            ...publishGroup(installKeyGroups.main),
+            ...publishGroup(installKeyGroups.runStake),
+            ...(ANCHOR_DENOM ? publishGroup(installKeyGroups.psm) : {}),
+          },
         },
-      },
-    ],
-  });
-};
-
-const runStakeProposalBuilder = async ({ publishRef, install }) => {
-  const [mod0, bundle0] = installKeyGroups.runStake.runStake;
-
-  return harden({
-    sourceSpec: '../src/core-proposal.js',
-    getManifestCall: [
-      getManifestForRunStake.name,
-      {
-        installKeys: {
-          runStake: publishRef(install(mod0, bundle0)),
-        },
-      },
-    ],
-  });
-};
-
-const psmProposalBuilder = async ({ publishRef, install }) => {
-  const { ROLE = 'chain', ANCHOR_DENOM } = process.env;
-
-  assert.typeof(ANCHOR_DENOM, 'string', X`missing ANCHOR_DENOM`);
-  const [mod0, bundle0] = installKeyGroups.psm.psm;
-
-  return harden({
-    sourceSpec: '../src/core-proposal.js',
-    getManifestCall: [
-      getManifestForPSM.name,
-      {
-        ROLE,
-        installKeys: {
-          psm: publishRef(install(mod0, bundle0)),
-        },
-      },
-    ],
-    options: { denom: ANCHOR_DENOM },
-  });
+      ],
+    });
+  };
+  return { committeeProposalBuilder, mainProposalBuilder, saveCache };
 };
 
 // Build proposal for sim-chain etc.
 export const defaultProposalBuilder = async ({ publishRef, install }) => {
-  const { ROLE = 'chain', VAULT_FACTORY_CONTROLLER_ADDR } = process.env;
+  const {
+    ROLE = 'chain',
+    VAULT_FACTORY_CONTROLLER_ADDR,
+    ANCHOR_DENOM,
+  } = process.env;
 
   /** @param { Record<string, [string, string]> } group */
   const publishGroup = group =>
@@ -159,11 +188,12 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
       {
         ROLE,
         vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
+        anchorDenom: ANCHOR_DENOM,
         installKeys: {
           ...publishGroup(installKeyGroups.econCommittee),
           ...publishGroup(installKeyGroups.runStake),
           ...publishGroup(installKeyGroups.main),
-          ...publishGroup(installKeyGroups.psm),
+          ...(ANCHOR_DENOM ? publishGroup(installKeyGroups.psm) : {}),
         },
       },
     ],
@@ -173,15 +203,10 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
 
+  const tool = await makeTool(homeP);
   await Promise.all([
-    writeCoreProposal('gov-econ-committee', committeeProposalBuilder),
-    writeCoreProposal('gov-runStake', runStakeProposalBuilder),
-    writeCoreProposal('gov-amm-vaults-etc', mainProposalBuilder),
+    writeCoreProposal('gov-econ-committee', tool.committeeProposalBuilder),
+    writeCoreProposal('gov-amm-vaults-etc', tool.mainProposalBuilder),
   ]);
-
-  if (!process.env.ANCHOR_DENOM) {
-    console.warn('SKIP psm proposal: missing ANCHOR_DENOM');
-    return;
-  }
-  await writeCoreProposal('gov-psm', psmProposalBuilder);
+  await tool.saveCache();
 };

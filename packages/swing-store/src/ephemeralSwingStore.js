@@ -263,7 +263,7 @@ export function getAllState(swingStore) {
   /** @type { Record<string, string> } */
   const kvStuff = {};
   for (const key of Array.from(kvStore.getKeys('', ''))) {
-    // @ts-ignore get(key) of key from getKeys() is not undefined
+    // @ts-expect-error get(key) of key from getKeys() is not undefined
     kvStuff[key] = kvStore.get(key);
   }
   const streamStuff = new Map();

@@ -36,7 +36,7 @@ test('bad Question', t => {
   t.throws(
     () =>
       coerceQuestionSpec(
-        // @ts-ignore Illegal Question
+        // @ts-expect-error Illegal Question
         harden({
           method: ChoiceMethod.UNRANKED,
           issue: 'will it blend?',
@@ -58,7 +58,7 @@ test('bad timer', t => {
   t.throws(
     () =>
       coerceQuestionSpec(
-        // @ts-ignore Illegal timer
+        // @ts-expect-error Illegal timer
         harden({
           method: ChoiceMethod.UNRANKED,
           issue,
@@ -78,7 +78,7 @@ test('bad method', t => {
   t.throws(
     () =>
       coerceQuestionSpec(
-        // @ts-ignore Illegal Method
+        // @ts-expect-error Illegal Method
         harden({
           method: 'choose',
           issue,
@@ -98,7 +98,7 @@ test('bad Quorum', t => {
   t.throws(
     () =>
       coerceQuestionSpec(
-        // @ts-ignore Illegal Quorum
+        // @ts-expect-error Illegal Quorum
         harden({
           method: ChoiceMethod.ORDER,
           issue,
@@ -118,7 +118,7 @@ test('bad tieOutcome', t => {
   t.throws(
     () =>
       coerceQuestionSpec(
-        // @ts-ignore Illegal tieOutcome
+        // @ts-expect-error Illegal tieOutcome
         harden({
           method: ChoiceMethod.ORDER,
           issue,

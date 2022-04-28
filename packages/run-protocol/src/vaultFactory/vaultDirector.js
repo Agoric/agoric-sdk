@@ -6,7 +6,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { E } from '@endo/eventual-send';
 import '@agoric/governance/src/exported.js';
 
-import { fit, M, makeScalarMap } from '@agoric/store';
+import { fit, keyEQ, M, makeScalarMap } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountOut,
@@ -18,14 +18,16 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { defineKindMulti } from '@agoric/vat-data';
+import { observeIteration } from '@agoric/notifier';
 import { makeVaultManager } from './vaultManager.js';
-import { makeLiquidationStrategy } from './liquidateMinimum.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   makeVaultParamManager,
   RECORDING_PERIOD_KEY,
   CHARGING_PERIOD_KEY,
   vaultParamPattern,
+  LIQUIDATION_INSTALL_KEY,
+  LIQUIDATION_TERMS_KEY,
 } from './params.js';
 
 const { details: X } = assert;
@@ -35,7 +37,7 @@ const { details: X } = assert;
  * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
- * electorateParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>,
+ * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>,
  * mintSeat: ZCFSeat,
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
@@ -57,10 +59,10 @@ const { details: X } = assert;
 
 /**
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} electorateParamManager
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
-const initState = (zcf, electorateParamManager, debtMint) => {
+const initState = (zcf, directorParamManager, debtMint) => {
   /** For temporary staging of newly minted tokens */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
@@ -73,7 +75,7 @@ const initState = (zcf, electorateParamManager, debtMint) => {
   return {
     collateralTypes,
     debtMint,
-    electorateParamManager,
+    directorParamManager,
     mintSeat,
     rewardPoolSeat,
     penaltyPoolSeat,
@@ -141,6 +143,28 @@ const getCollaterals = async ({ state }) => {
   );
 };
 
+const getLiquidationConfig = directorParamManager => ({
+  install: directorParamManager.getInstallation(LIQUIDATION_INSTALL_KEY),
+  terms: directorParamManager.getUnknown(LIQUIDATION_TERMS_KEY),
+});
+
+const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
+  const subscription = govParams.getSubscription();
+  observeIteration(subscription, {
+    updateState(_paramUpdate) {
+      const { install, terms } = getLiquidationConfig(govParams);
+      if (install === oldInstall && keyEQ(terms, oldTerms)) {
+        return;
+      }
+      oldInstall = install;
+      oldTerms = terms;
+      vaultManager
+        .setupLiquidator(install, terms)
+        .catch(e => console.error('Failed to setup liquidator', e));
+    },
+  });
+};
+
 /** @type {import('@agoric/vat-data/src/types').FunctionsPlusContext<VaultFactory>} */
 const machineBehavior = {
   // TODO move this under governance #3924
@@ -163,6 +187,7 @@ const machineBehavior = {
       penaltyPoolSeat,
       rewardPoolSeat,
       vaultParamManagers,
+      directorParamManager,
       zcf,
     } = state;
     fit(collateralIssuer, M.remotable());
@@ -180,22 +205,7 @@ const machineBehavior = {
     const vaultParamManager = makeVaultParamManager(initialParamValues);
     vaultParamManagers.init(collateralBrand, vaultParamManager);
 
-    const zoe = zcf.getZoeService();
-    const { liquidationInstall, ammPublicFacet, priceAuthority, timerService } =
-      zcf.getTerms();
-    const { issuer: debtIssuer, brand: debtBrand } = debtMint.getIssuerRecord();
-    const { creatorFacet: liquidationFacet } = await E(zoe).startInstance(
-      liquidationInstall,
-      harden({ RUN: debtIssuer, Collateral: collateralIssuer }),
-      harden({
-        amm: ammPublicFacet,
-        priceAuthority,
-        timerService,
-        debtBrand,
-      }),
-    );
-    const liquidationStrategy = makeLiquidationStrategy(liquidationFacet);
-
+    const { timerService } = zcf.getTerms();
     const startTimeStamp = await E(timerService).getCurrentTimestamp();
 
     /**
@@ -259,11 +269,14 @@ const machineBehavior = {
       zcf.getTerms().priceAuthority,
       factoryPowers,
       timerService,
-      liquidationStrategy,
       penaltyPoolSeat,
       startTimeStamp,
     );
     collateralTypes.init(collateralBrand, vm);
+    const { install, terms } = getLiquidationConfig(directorParamManager);
+    // console.log('PARAM UPDATE', install, terms);
+    await vm.setupLiquidator(install, terms);
+    watchGovernance(directorParamManager, vm, install, terms);
     return vm;
   },
   getCollaterals,
@@ -292,13 +305,13 @@ const machineBehavior = {
 const creatorBehavior = {
   /** @param {MethodContext} context */
   getParamMgrRetriever: ({
-    state: { electorateParamManager, vaultParamManagers },
+    state: { directorParamManager, vaultParamManagers },
   }) =>
     Far('paramManagerRetriever', {
       /** @param {VaultFactoryParamPath} paramPath */
       get: paramPath => {
         if (paramPath.key === 'governedParams') {
-          return electorateParamManager;
+          return directorParamManager;
         } else if (paramPath.key.collateralBrand) {
           return vaultParamManagers.get(paramPath.key.collateralBrand);
         } else {
@@ -311,7 +324,7 @@ const creatorBehavior = {
    * @param {string} name
    */
   getInvitation: ({ state }, name) =>
-    state.electorateParamManager.getInternalParamValue(name),
+    state.directorParamManager.getInternalParamValue(name),
   /** @param {MethodContext} context */
   getLimitedCreatorFacet: context => context.facets.machine,
   getGovernedApis: () => harden({}),
@@ -354,7 +367,7 @@ const publicBehavior = {
    * @param {MethodContext} context
    */
   getElectorateSubscription: ({ state }) =>
-    state.electorateParamManager.getSubscription(),
+    state.directorParamManager.getSubscription(),
   /**
    * @param {MethodContext} context
    * @param {{ collateralBrand: Brand }} selector
@@ -374,7 +387,7 @@ const publicBehavior = {
    * @param {string} name
    */
   getInvitationAmount: ({ state }, name) =>
-    state.electorateParamManager.getInvitationAmount(name),
+    state.directorParamManager.getInvitationAmount(name),
 };
 
 const behavior = {
@@ -393,7 +406,7 @@ const behavior = {
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>
  * }>} zcf
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} electorateParamManager
+ * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{Electorate: "invitation"}>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
 const makeVaultDirector = defineKindMulti('VaultDirector', initState, behavior);

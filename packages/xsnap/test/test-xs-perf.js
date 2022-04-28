@@ -185,7 +185,7 @@ test('metering switch - start compartment only', async t => {
 function dataStructurePerformance(logn) {
   // eslint-disable-next-line no-bitwise
   const n = 1 << logn;
-  // @ts-ignore
+  // @ts-expect-error
   const send = it => {
     // eslint-disable-next-line no-undef
     return issueCommand(new TextEncoder().encode(JSON.stringify(it)).buffer);

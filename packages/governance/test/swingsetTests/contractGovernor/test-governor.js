@@ -68,7 +68,7 @@ test.before(async t => {
   const ttime = `${(step4 - start) / 1000}s total`;
   console.log(`bundling: ${ktime}, ${ctime}, ${vtime}, ${ttime}`);
 
-  // @ts-ignore
+  // @ts-expect-error
   t.context.data = { kernelBundles, config };
 });
 
@@ -95,11 +95,10 @@ const expectedcontractGovernorStartLog = [
   '&& running a task scheduled for 3. &&',
   'vote outcome: {"changes":{"MalleableNumber":"[299792458n]"}}',
   'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
-  'MalleableNumber was "[602214090000000000000000n]" after the vote.',
+  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 299792458',
-  'Electorate was {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]} after the vote.',
+  'MalleableNumber changed in a vote.',
   'Number after: 299792458',
-  'MalleableNumber was "[299792458n]" after the vote.',
 ];
 
 test.serial('contract governance', async t => {
@@ -132,11 +131,10 @@ const expectedChangeElectorateLog = [
   '&& running a task scheduled for 4. &&',
   'vote outcome: {"changes":{"MalleableNumber":"[299792458n]"}}',
   'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
-  'MalleableNumber was "[602214090000000000000000n]" after the vote.',
+  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 299792458',
-  'Electorate was {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]} after the vote.',
-  'Electorate was {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]} after the vote.',
-  'MalleableNumber was "[299792458n]" after the vote.',
+  'Electorate changed in a vote.',
+  'MalleableNumber changed in a vote.',
 ];
 
 test.serial('change electorate', async t => {
@@ -159,14 +157,38 @@ const expectedBrokenUpdateLog = [
   'Validation complete: true',
   'vote rejected outcome: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   'update failed: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
-  'MalleableNumber was "[602214090000000000000000n]" after the vote.',
+  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 602214090000000000000000',
-  'Electorate was {"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]} after the vote.',
 ];
 
 test.serial('brokenUpdateStart', async t => {
   const dump = await main(t, ['brokenUpdateStart']);
   t.deepEqual(dump.log, expectedBrokenUpdateLog);
+});
+
+const changeTwoParamsLog = [
+  '=> voter and electorate vats are set up',
+  '@@ schedule task for:2, currently: 0 @@',
+  'Voter Alice voted for {"noChange":["Electorate","MalleableNumber"]}',
+  'Voter Bob voted for {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}}',
+  'Voter Carol voted for {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}}',
+  'Voter Dave voted for {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}}',
+  'Voter Emma voted for {"noChange":["Electorate","MalleableNumber"]}',
+  '@@ tick:1 @@',
+  '@@ tick:2 @@',
+  '&& running a task scheduled for 2. &&',
+  'vote outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}}',
+  'Validation complete: true',
+  'updated to ({"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}})',
+  'successful outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}} ',
+  'Electorate,MalleableNumber changed in a vote.',
+  'current value of MalleableNumber is 42',
+  'Electorate,MalleableNumber changed in a vote.',
+];
+
+test.serial('changeTwoParams', async t => {
+  const dump = await main(t, ['changeTwoParams']);
+  t.deepEqual(dump.log, changeTwoParamsLog);
 });
 
 const expectedApiGovernanceLog = [

@@ -77,7 +77,7 @@ export const makeICS20TransferPacket = async ({
   depositAddress,
 }) => {
   // We're using Nat as a dynamic check for overflow.
-  // @ts-ignore - this causes errors on some versions of TS, but not others.
+  // @ts-expect-error - this causes errors on some versions of TS, but not others.
   const stringValue = String(Nat(value));
 
   // Generate the ics20-1 packet.

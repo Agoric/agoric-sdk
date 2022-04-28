@@ -5,10 +5,9 @@ import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { defineKind } from '@agoric/vat-data';
 import { makeTracer } from '../makeTracer.js';
 
-const trace = makeTracer('LiqMin');
+const trace = makeTracer('LiqMin', false);
 
 /**
  * This contract liquidates the minimum amount of vault's collateral necessary
@@ -23,6 +22,7 @@ const trace = makeTracer('LiqMin');
  */
 const start = async zcf => {
   const { amm } = zcf.getTerms();
+  trace('start', zcf.getTerms());
 
   /**
    * @param {ZCFSeat} debtorSeat
@@ -60,7 +60,7 @@ const start = async zcf => {
   };
 
   const creatorFacet = Far('debtorInvitationCreator', {
-    makeDebtorInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
+    makeLiquidateInvitation: () => zcf.makeInvitation(debtorHook, 'Liquidate'),
   });
 
   return harden({ creatorFacet });
@@ -68,34 +68,5 @@ const start = async zcf => {
 
 /** @typedef {ContractOf<typeof start>} LiquidationContract */
 
-/**
- * @param {LiquidationContract['creatorFacet']} creatorFacet
- */
-const makeLiquidationStrategy = defineKind(
-  'liquidation strategy',
-  /**
-   * @param {LiquidationContract['creatorFacet']} creatorFacet
-   */
-  creatorFacet => ({ creatorFacet }),
-  {
-    makeInvitation: async ({ state }) =>
-      E(state.creatorFacet).makeDebtorInvitation(),
-
-    keywordMapping: () =>
-      harden({
-        Collateral: 'In',
-        RUN: 'Out',
-      }),
-
-    makeProposal: (_context, collateral, run) =>
-      harden({
-        give: { In: collateral },
-        want: { Out: AmountMath.makeEmptyFromAmount(run) },
-      }),
-  },
-);
-
 harden(start);
-harden(makeLiquidationStrategy);
-
-export { start, makeLiquidationStrategy };
+export { start };

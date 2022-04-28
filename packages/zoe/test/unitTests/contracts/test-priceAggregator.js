@@ -8,7 +8,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { assert } from '@agoric/assert';
@@ -104,7 +104,6 @@ test.before(
       });
     };
 
-    const quote = makeIssuerKit('quote', AssetKind.SET);
     /**
      * @param {RelativeTime} POLL_INTERVAL
      */
@@ -115,7 +114,6 @@ test.before(
         undefined,
         { timer, POLL_INTERVAL, brandIn: atomBrand, brandOut: usdBrand },
       );
-      await E(aggregator.creatorFacet).initializeQuoteMint(quote.mint);
       return aggregator;
     };
     ot.context.zoe = zoe;
@@ -145,7 +143,7 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   // TODO: Port this to makeQuoteNotifier(amountIn, brandOut)
-  // @ts-ignore fix needed
+  // @ts-expect-error fix needed
   const notifier = E(pa).makeQuoteNotifier(
     AmountMath.make(brandIn, 1n),
     brandOut,

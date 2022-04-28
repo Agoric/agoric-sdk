@@ -35,7 +35,7 @@ test(`zoe.getInvitationIssuer`, async t => {
 
 test(`E(zoe).install bad bundle`, async t => {
   const { zoe } = setup();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).install(), {
     message: 'a bundle must be provided',
   });
@@ -51,7 +51,7 @@ test(`E(zoe).install(bundle)`, async t => {
 
 test(`E(zoe).installBundleID bad id`, async t => {
   const { zoe } = setup();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).installBundleID(), {
     message: 'a bundle ID must be provided',
   });
@@ -73,7 +73,7 @@ test(`E(zoe).installBundleID(bundleID)`, async t => {
 
 test(`E(zoe).startInstance bad installation`, async t => {
   const { zoe } = setup();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).startInstance(), {
     message:
       // Should be able to use more informative error once SES double
@@ -146,7 +146,7 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
     () =>
       E(zoe).startInstance(
         installation,
-        // @ts-ignore deliberate invalid arguments for testing
+        // @ts-expect-error deliberate invalid arguments for testing
         { something: 2 },
         { Moola: moolaKit.issuer },
       ),
@@ -176,7 +176,7 @@ test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
     getBrand: () => brand,
   });
   await t.throwsAsync(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => E(zoe).startInstance(installation, { Money: badIssuer }),
     {
       message:
@@ -194,7 +194,7 @@ test(`E(zoe).offer`, async t => {
 
 test(`E(zoe).offer - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(), {
     message: /A Zoe invitation is required, not "\[undefined\]"/,
   });
@@ -208,7 +208,7 @@ test(`E(zoe).offer - payment instead of paymentKeywordRecord`, async t => {
   const proposal = harden({ give: { Keyword: amount } });
   const payment = mint.mintPayment(amount);
   const invitation = zcf.makeInvitation(() => {}, 'noop');
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(invitation, proposal, payment), {
     message:
       '"keywordRecord" "[Alleged: Token payment]" must be a pass-by-copy record, not "remotable"',
@@ -250,7 +250,7 @@ test(`E(zoe).getPublicFacet promise for instance`, async t => {
 
 test(`E(zoe).getPublicFacet - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore deliberate invalid arguments for testing
+  // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
     message:
       // Should be able to use more informative error once SES double
@@ -286,7 +286,7 @@ test(`zoe.getIssuers - none`, async t => {
 
 test(`zoe.getIssuers - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
     message:
       // Should be able to use more informative error once SES double
@@ -322,7 +322,7 @@ test(`zoe.getBrands - none`, async t => {
 
 test(`zoe.getBrands - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
     message:
       // Should be able to use more informative error once SES double
@@ -380,7 +380,7 @@ test(`zoe.getTerms`, async t => {
 
 test(`zoe.getTerms - no instance`, async t => {
   const { zoe } = setup();
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
     message:
       // Should be able to use more informative error once SES double
@@ -423,7 +423,7 @@ test(`zoe.getInstance`, async t => {
 
 test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstance(), {
     message: /A Zoe invitation is required, not "\[undefined\]"/,
   });
@@ -438,7 +438,7 @@ test(`zoe.getInstallation`, async t => {
 
 test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstallation(), {
     message: /A Zoe invitation is required, not "\[undefined\]"/,
   });
@@ -458,7 +458,7 @@ test(`zoe.getInvitationDetails`, async t => {
 
 test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
-  // @ts-ignore invalid arguments for testing
+  // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
     message: /A Zoe invitation is required, not "\[undefined\]"/,
   });

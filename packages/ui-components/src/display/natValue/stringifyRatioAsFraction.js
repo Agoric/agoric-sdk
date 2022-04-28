@@ -38,13 +38,11 @@ export const stringifyRatioAsFraction = (
     `decimalPlaces for denominator ${ratio.denominator} must be provided`,
   );
   const numeratorString = stringifyNat(
-    // @ts-ignore value is BigInt
     ratio.numerator.value,
     numDecimalPlaces,
     numPlacesToShow,
   );
   const denominatorString = stringifyNat(
-    // @ts-ignore value is BigInt
     ratio.denominator.value,
     denomDecimalPlaces,
     denomPlacesToShow,

@@ -23,7 +23,7 @@ import {
   startRunStake,
 } from '../../src/econ-behaviors.js';
 import * as Collect from '../../src/collect.js';
-import { setUpZoeForTest } from '../supports.js';
+import { makeVoterTool, setUpZoeForTest } from '../supports.js';
 import { ManagerKW as KW } from '../../src/runStake/constants.js';
 import { unsafeMakeBundleCache } from '../bundleTool.js';
 
@@ -249,7 +249,13 @@ const bootstrapRunStake = async (
   });
   produce.client.resolve(mockClient);
 
-  await Promise.all([startEconomicCommittee(space), startRunStake(space)]);
+  await Promise.all([
+    startEconomicCommittee(space, {
+      committeeName: 'Me, myself, and I',
+      committeeSize: 1,
+    }),
+    startRunStake(space),
+  ]);
   return { chain, space };
 };
 
@@ -286,12 +292,72 @@ const mintRunPayment = async (
   return E(ammSupplier).getBootstrapPayment();
 };
 
+test('wrap liened amount', async (/** @type {RunStakeTestContext} */ t) => {
+  const timer = buildManualTimer(t.log, 0n, 1n);
+
+  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { consume, instance } = space;
+  const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
+  const { runStake: runStakeinstance } = instance.consume;
+  const walletMaker = makeWalletMaker(creatorFacet);
+  const bob = chain.provisionAccount('Bob', 'addr1b');
+
+  // Bob introduces himself to the Agoric JS VM.
+  const bobWallet = walletMaker(bob.getAddress());
+
+  const {
+    brands: { [KW.Attestation]: attBrand },
+  } = await E(zoe).getTerms(await runStakeinstance);
+
+  const bldBrand = await space.brand.consume.BLD;
+  const bldValue = 2_000n * micro.unit;
+  const bldAmount = AmountMath.make(bldBrand, bldValue);
+  const attAmount = await E(bobWallet.attMaker).wrapLienedAmount(bldAmount);
+
+  t.deepEqual(
+    attAmount,
+    AmountMath.make(attBrand, makeCopyBag([['addr1b', bldValue]])),
+  );
+});
+
+test('unwrap liened amount', async (/** @type {RunStakeTestContext} */ t) => {
+  const timer = buildManualTimer(t.log, 0n, 1n);
+
+  const { chain, space } = await bootstrapRunStake(t, timer);
+  const { consume, instance } = space;
+  const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
+  const { runStake: runStakeinstance } = instance.consume;
+  const walletMaker = makeWalletMaker(creatorFacet);
+  const bob = chain.provisionAccount('Bob', 'addr1b');
+
+  // Bob introduces himself to the Agoric JS VM.
+  const bobWallet = walletMaker(bob.getAddress());
+
+  const {
+    brands: { [KW.Attestation]: attBrand },
+  } = await E(zoe).getTerms(await runStakeinstance);
+
+  const bldBrand = await space.brand.consume.BLD;
+  const bldValue = 2_000n * micro.unit;
+  const bldAmount = AmountMath.make(bldBrand, bldValue);
+
+  const lienedAmount = AmountMath.make(
+    attBrand,
+    makeCopyBag([['addr1b', bldValue]]),
+  );
+
+  const unwrapped = await E(bobWallet.attMaker).unwrapLienedAmount(
+    lienedAmount,
+  );
+
+  t.deepEqual(unwrapped, bldAmount);
+});
+
 test('runStake API usage', async (/** @type {RunStakeTestContext} */ t) => {
   const timer = buildManualTimer(t.log, 0n, 1n);
 
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
-  // @ts-expect-error TODO: add runStakeCreatorFacet to EconomyBootstrapPowers
   const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
   const runBrand = await space.brand.consume.RUN;
   const bldBrand = await space.brand.consume.BLD;
@@ -339,7 +405,6 @@ test('extra offer keywords are rejected', async (/** @type {RunStakeTestContext}
 
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
-  // @ts-expect-error TODO: add runStakeCreatorFacet to EconomyBootstrapPowers
   const { zoe, runStakeCreatorFacet: creatorFacet } = consume;
   const runBrand = await space.brand.consume.RUN;
   const bldBrand = await space.brand.consume.BLD;
@@ -432,42 +497,6 @@ test('forged Attestation fails', async (/** @type {RunStakeTestContext} */ t) =>
   await t.throwsAsync(E(seat).getOfferResult());
 });
 
-/**
- * Economic Committee of one.
- *
- * @param {ERef<ZoeService>} zoe
- * @param {ERef<CommitteeElectorateCreatorFacet>} electorateCreator
- * @param {ERef<GovernedContractFacetAccess<unknown>>} runStakeGovernorCreatorFacet
- * @param {Installation} counter
- */
-const makeC1 = async (
-  zoe,
-  electorateCreator,
-  runStakeGovernorCreatorFacet,
-  counter,
-) => {
-  const [invitation] = await E(electorateCreator).getVoterInvitations();
-  const seat = E(zoe).offer(invitation);
-  const voteFacet = E(seat).getOfferResult();
-  return harden({
-    setMintingRatio: async (newValue, deadline) => {
-      const paramsSpec = harden({
-        paramPath: { key: 'governedParams' },
-        changes: { MintingRatio: newValue },
-      });
-      /** @type { ContractGovernanceVoteResult } */
-      const { details, instance } = await E(
-        runStakeGovernorCreatorFacet,
-      ).voteOnParamChanges(counter, deadline, paramsSpec);
-      const { questionHandle, positions } = await details;
-      const cast = E(voteFacet).castBallotFor(questionHandle, [positions[0]]);
-      const count = E(zoe).getPublicFacet(instance);
-      const outcome = E(count).getOutcome();
-      return { cast, outcome };
-    },
-  });
-};
-
 const approxEqual = (t, actual, expected, epsilon) => {
   const { min, max, subtract, isGTE } = AmountMath;
   if (isGTE(epsilon, subtract(max(actual, expected), min(actual, expected)))) {
@@ -482,7 +511,6 @@ const makeWorld = async (/** @type {RunStakeTestContext} */ t) => {
   const { chain, space } = await bootstrapRunStake(t, timer);
   const { consume } = space;
 
-  // @ts-ignore TODO: runStakeCreatorFacet type in vats
   const { zoe, runStakeCreatorFacet, lienBridge } = consume;
   const { RUN: runIssuer } = space.issuer.consume;
   const [bldBrand, runBrand] = await Promise.all([
@@ -497,7 +525,7 @@ const makeWorld = async (/** @type {RunStakeTestContext} */ t) => {
   };
 
   const counter = await space.installation.consume.binaryVoteCounter;
-  const committee = makeC1(
+  const committee = makeVoterTool(
     zoe,
     space.consume.economicCommitteeCreatorFacet,
     // @ts-expect-error TODO: add runStakeGovernorCreatorFacet to vats/src/types.js
@@ -722,8 +750,11 @@ const makeWorld = async (/** @type {RunStakeTestContext} */ t) => {
       const newValue = pairToRatio(newRunToBld, bldBrand);
 
       const deadline = 3n * SECONDS_PER_DAY;
-      const { cast, outcome } = await E(committee).setMintingRatio(
-        newValue,
+      const { cast, outcome } = await E(committee).changeParam(
+        harden({
+          paramPath: { key: 'governedParams' },
+          changes: { MintingRatio: newValue },
+        }),
         deadline,
       );
       await cast;

@@ -1,5 +1,6 @@
 export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
+export * from './psm/startPSM.js';
 
 const ECON_COMMITTEE_MANIFEST = harden({
   startEconomicCommittee: {
@@ -137,6 +138,7 @@ const REWARD_MANIFEST = harden({
       loadVat: true,
       vaultFactoryCreator: true,
       ammCreatorFacet: true,
+      runStakeCreatorFacet: true,
       zoe: true,
     },
     produce: {
@@ -192,14 +194,10 @@ export const CHAIN_POST_BOOT_MANIFEST = harden({
   ...RUN_STAKE_MANIFEST,
 });
 
-const MAIN_MANIFEST = harden({
-  ...SHARED_MAIN_MANIFEST,
-  ...REWARD_MANIFEST,
-});
-
-const PSM_MANIFEST = harden({
+export const PSM_MANIFEST = harden({
   makeAnchorAsset: {
-    consume: { bankManager: 'bank' },
+    consume: { bankManager: 'bank', zoe: 'zoe' },
+    installation: { consume: { mintHolder: 'zoe' } },
     issuer: {
       produce: { AUSD: true },
     },
@@ -229,6 +227,13 @@ const PSM_MANIFEST = harden({
       consume: { AUSD: 'bank' },
     },
   },
+});
+
+const MAIN_MANIFEST = harden({
+  ...SHARED_MAIN_MANIFEST,
+  ...RUN_STAKE_MANIFEST,
+  ...REWARD_MANIFEST,
+  // XXX PSM work-around ...PSM_MANIFEST,
 });
 
 export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
@@ -305,7 +310,7 @@ export const getManifestForEconCommittee = (
 
 export const getManifestForMain = (
   { restoreRef },
-  { installKeys, vaultFactoryControllerAddress },
+  { installKeys, vaultFactoryControllerAddress, anchorDenom },
 ) => {
   return {
     manifest: MAIN_MANIFEST,
@@ -314,30 +319,13 @@ export const getManifestForMain = (
       VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
+      runStake: restoreRef(installKeys.runStake),
+      // psm: restoreRef(installKeys.psm),
+      // mintHolder: restoreRef(installKeys.mintHolder),
     },
     options: {
       vaultFactoryControllerAddress,
-    },
-  };
-};
-
-export const getManifestForRunStake = ({ restoreRef }, { installKeys }) => {
-  return {
-    manifest: RUN_STAKE_MANIFEST,
-    installations: {
-      runStake: restoreRef(installKeys.runStake),
-    },
-  };
-};
-
-export const getManifestForPSM = ({ restoreRef }, { installKeys, denom }) => {
-  return {
-    manifest: PSM_MANIFEST,
-    installations: {
-      runStake: restoreRef(installKeys.runStake),
-    },
-    options: {
-      denom,
+      denom: anchorDenom,
     },
   };
 };

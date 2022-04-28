@@ -13,7 +13,7 @@ test('createInvitationKit', async t => {
   const mockInstance = harden({});
   const mockInstallation = harden({});
 
-  // @ts-ignore mockInstance is mocked
+  // @ts-expect-error mockInstance is mocked
   const makeInvitation = setupMakeInvitation(mockInstance, mockInstallation);
 
   const mockInvitationHandle = harden({});
@@ -23,7 +23,7 @@ test('createInvitationKit', async t => {
   });
 
   const invitation = makeInvitation(
-    // @ts-ignore mockInvitationHandle is mocked
+    // @ts-expect-error mockInvitationHandle is mocked
     mockInvitationHandle,
     description,
     customProperties,
@@ -55,7 +55,7 @@ test('description is omitted, wrongly', async t => {
   const mockInstance = harden({});
   const mockInstallation = harden({});
 
-  // @ts-ignore mockInstance is mocked
+  // @ts-expect-error mockInstance is mocked
   const makeInvitation = setupMakeInvitation(mockInstance, mockInstallation);
 
   const mockInvitationHandle = harden({});
@@ -67,7 +67,7 @@ test('description is omitted, wrongly', async t => {
   await t.throwsAsync(
     () =>
       makeInvitation(
-        // @ts-ignore mockInvitationHandle is mocked
+        // @ts-expect-error mockInvitationHandle is mocked
         mockInvitationHandle,
         description,
         customProperties,
@@ -82,14 +82,14 @@ test('customProperties ok to omit', async t => {
   const mockInstance = harden({});
   const mockInstallation = harden({});
 
-  // @ts-ignore mockInstance is mocked
+  // @ts-expect-error mockInstance is mocked
   const makeInvitation = setupMakeInvitation(mockInstance, mockInstallation);
 
   const mockInvitationHandle = harden({});
   const description = 'myInvitation';
 
   const invitation = makeInvitation(
-    // @ts-ignore mockInvitationHandle is mocked
+    // @ts-expect-error mockInvitationHandle is mocked
     mockInvitationHandle,
     description,
   );

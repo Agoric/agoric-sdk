@@ -19,7 +19,7 @@ test('copySet with strings make', t => {
     `[6] is a valid set even though it isn't a string`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.make(mockBrand, 'abc'),
     {
       message:
@@ -52,7 +52,7 @@ test('copySet with strings coerce', t => {
     `[6] is a valid set`,
   );
   t.throws(
-    // @ts-ignore deliberate invalid arguments for testing
+    // @ts-expect-error deliberate invalid arguments for testing
     () => m.coerce(mockBrand, harden({ brand: mockBrand, value: '6' })),
     {
       message:
@@ -126,7 +126,7 @@ test('copySet with strings isGTE', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['b']) }),
       ),
-    null,
+    undefined,
     `duplicates in the left of isGTE should throw`,
   );
   t.throws(
@@ -135,7 +135,7 @@ test('copySet with strings isGTE', t => {
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
         harden({ brand: mockBrand, value: makeCopySet(['b', 'b']) }),
       ),
-    null,
+    undefined,
     `duplicates in the right of isGTE should throw`,
   );
   t.assert(
