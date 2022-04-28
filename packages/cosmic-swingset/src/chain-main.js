@@ -124,31 +124,40 @@ const makeChainQueue = (call, prefix = '') => {
     /** @type {Iterable<unknown>} */
     consumeAll: () => ({
       [Symbol.iterator]: () => {
+        let done = false;
         let head = storage.get('head') || 0;
         const tail = storage.get('tail') || 0;
         return {
           next: () => {
+            if (done) return { done };
             if (head < tail) {
               // Still within the queue.
               const value = storage.get(head);
               storage.delete(head);
               head += 1;
-              return { value, done: false };
+              return { value, done };
             }
             // Reached the end, so clean up our indices.
             storage.delete('head');
             storage.delete('tail');
             storage.commit();
-            return { done: true };
+            done = true;
+            return { done };
           },
           return: () => {
+            if (done) return { done };
             // We're done consuming, so save our state.
             storage.set('head', head);
             storage.commit();
+            done = true;
+            return { done };
           },
-          throw: () => {
+          throw: err => {
+            if (done) return { done };
             // Don't change our state.
             storage.abort();
+            done = true;
+            throw err;
           },
         };
       },
