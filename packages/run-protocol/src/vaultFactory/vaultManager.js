@@ -18,7 +18,7 @@ import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 
 import { defineKindMulti, pickFacet } from '@agoric/vat-data';
-import { makeInnerVault } from './vault.js';
+import { makeVault } from './vault.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { liquidate } from './liquidation.js';
 import { makeTracer } from '../makeTracer.js';
@@ -331,7 +331,7 @@ const helperBehavior = {
 
   /**
    * @param {MethodContext} context
-   * @param {[key: string, vaultKit: InnerVault]} record
+   * @param {[key: string, vaultKit: Vault]} record
    */
   liquidateAndRemove: ({ state, facets }, [key, vault]) => {
     const { factoryPowers, penaltyPoolSeat, prioritizedVaults, zcf } = state;
@@ -484,15 +484,15 @@ const selfBehavior = {
     state.vaultCounter += 1;
     const vaultId = String(state.vaultCounter);
 
-    const innerVault = makeInnerVault(zcf, manager, vaultId);
+    const vault = makeVault(zcf, manager, vaultId);
 
     // TODO Don't record the vault until it gets opened
-    const addedVaultKey = prioritizedVaults.addVault(vaultId, innerVault);
+    const addedVaultKey = prioritizedVaults.addVault(vaultId, vault);
 
     try {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
-      const vaultKit = await innerVault.initVaultKit(seat);
+      const vaultKit = await vault.initVaultKit(seat);
       seat.exit();
       return vaultKit;
     } catch (err) {
