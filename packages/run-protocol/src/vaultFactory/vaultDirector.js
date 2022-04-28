@@ -33,11 +33,17 @@ import {
 const { details: X } = assert;
 
 /**
+ * @typedef {{
+ *   LiquidationTerms: 'unknown',
+ *   LiquidationInstall: 'installation',
+ *   MinInitialDebt: 'amount',
+ * }} VaultDirectorParams
+ *
  * @typedef {Readonly<{
  * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManager>,
  * electionManager: Instance,
- * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<{VaultDirectorParams}>,
+ * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<VaultDirectorParams>,
  * mintSeat: ZCFSeat,
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
@@ -112,11 +118,9 @@ const makeVaultInvitation = ({ state }) => {
     assert(
       AmountMath.isGTE(
         requestedAmount,
-        // @ts-expect-error VaultDirectoryParams isn't right
         state.directorParamManager.getMinInitialDebt(),
       ),
       X`The request must be for at least ${
-        // @ts-expect-error VaultDirectoryParams isn't right
         state.directorParamManager.getMinInitialDebt().value
       }. ${requestedAmount.value} is too small`,
     );
@@ -419,7 +423,7 @@ const behavior = {
  *   timerService: TimerService,
  *   priceAuthority: ERef<PriceAuthority>
  * }>} zcf
- * @param {import('./vaultFactory.js').VaultDirectorParams} directorParamManager
+ * @param {VaultDirectorParams} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
 const makeVaultDirector = defineKindMulti('VaultDirector', initState, behavior);
