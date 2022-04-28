@@ -672,18 +672,12 @@ export default function makeKernelKeeper(
     kvStore.delete(`${kpid}.refCount`);
   }
 
-  function resolveKernelPromise(kernelSlot, rejected, capdata) {
+  function requeueKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
-    insistCapData(capdata);
 
-    let idx = 0;
-    for (const dataSlot of capdata.slots) {
-      // eslint-disable-next-line no-use-before-define
-      incrementRefCount(dataSlot, `resolve|${kernelSlot}|s${idx}`);
-      idx += 1;
-    }
-
-    // Re-queue all messages, so they can be delivered to the resolution.
+    // Re-queue all messages, so they can be delivered to the resolution if the
+    // promise was resolved, or to the pipelining vat if the decider was
+    // updated.
     // This is a lateral move, so we retain their original refcounts. TODO:
     // this is slightly lazy, sending the message back to the same promise
     // that just got resolved. When this message makes it to the front of the
@@ -698,6 +692,23 @@ export default function makeKernelKeeper(
     }
     kvStore.set('acceptanceQueue', JSON.stringify(acceptanceQueue));
     incStat('acceptanceQueueLength', p.queue.length);
+
+    kvStore.deletePrefixedKeys(`${kernelSlot}.queue.`);
+    kvStore.set(`${kernelSlot}.queue.nextID`, `0`);
+  }
+
+  function resolveKernelPromise(kernelSlot, rejected, capdata) {
+    insistKernelType('promise', kernelSlot);
+    insistCapData(capdata);
+
+    let idx = 0;
+    for (const dataSlot of capdata.slots) {
+      // eslint-disable-next-line no-use-before-define
+      incrementRefCount(dataSlot, `resolve|${kernelSlot}|s${idx}`);
+      idx += 1;
+    }
+
+    requeueKernelPromise(kernelSlot);
 
     deleteKernelPromiseState(kernelSlot);
     decStat('kpUnresolved');
@@ -1525,6 +1536,7 @@ export default function makeKernelKeeper(
     getKernelPromise,
     getResolveablePromise,
     hasKernelPromise,
+    requeueKernelPromise,
     resolveKernelPromise,
     addMessageToPromiseQueue,
     addSubscriberToPromise,

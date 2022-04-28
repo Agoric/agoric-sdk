@@ -1577,7 +1577,7 @@ const pipelinedSendTest = async (t, delayed) => {
 };
 
 test('pipelined promise queueing', pipelinedSendTest, false);
-test.failing('pipelined promise queueing with delay', pipelinedSendTest, true);
+test('pipelined promise queueing with delay', pipelinedSendTest, true);
 
 test('xs-worker default manager type', async t => {
   const endowments = makeKernelEndowments();

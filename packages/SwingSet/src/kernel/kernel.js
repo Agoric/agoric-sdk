@@ -390,8 +390,10 @@ export default function buildKernel(
     insistMessage(msg);
     kernelKeeper.incStat('dispatches');
     kernelKeeper.incStat('dispatchDeliver');
+
     // eslint-disable-next-line no-use-before-define
-    if (!vatWarehouse.lookup(vatID)) {
+    const vatInfo = vatWarehouse.lookup(vatID);
+    if (!vatInfo) {
       // splat
       if (msg.result) {
         resolveToError(msg.result, VAT_TERMINATION_ERROR);
@@ -403,6 +405,11 @@ export default function buildKernel(
     const kd = harden(['message', target, msg]);
     // eslint-disable-next-line no-use-before-define
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
+
+    if (vatInfo.enablePipelining && msg.result) {
+      kernelKeeper.requeueKernelPromise(msg.result);
+    }
+
     return deliverAndLogToVat(vatID, kd, vd);
   }
 
