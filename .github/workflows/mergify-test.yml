@@ -29,8 +29,16 @@ jobs:
         shell: bash
         run: |
           echo "$GITHUB_REF"
-          echo 'needs ${{ toJSON(needs) }}'
-          echo 'github ${{ toJSON(github) }}'
-          echo 'job ${{ toJSON(job) }}'
-          echo 'env ${{ toJSON(env) }}'
+          cat <<EOF
+            needs ${{ toJSON(needs) }}
+          EOF
+          cat <<EOF
+            github ${{ toJSON(github) }}
+          EOF
+          cat <<EOF
+            job ${{ toJSON(job) }}
+          EOF
+          cat <<EOF
+            env ${{ toJSON(env) }}
+          EOF
           sleep 120
