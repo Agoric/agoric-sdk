@@ -3,6 +3,7 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 import { readFile } from 'fs/promises';
 import { E, Far } from '@endo/far';
 import {
+  addBankAssets,
   makeAddressNameHubs,
   startPriceAuthority,
 } from '@agoric/vats/src/core/basic-behaviors.js';
@@ -10,9 +11,11 @@ import {
   bridgeCoreEval,
   makeClientManager,
 } from '@agoric/vats/src/core/chain-behaviors.js';
+import { buildRootObject as bankRoot } from '@agoric/vats/src/vat-bank.js';
 import { buildRootObject as priceAuthorityRoot } from '@agoric/vats/src/vat-priceAuthority.js';
 import { defangAndTrim } from '@agoric/deploy-script-support/src/code-gen.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
   setupAmm,
   startEconomicCommittee,
@@ -24,6 +27,11 @@ import {
   setupBootstrap,
   setUpZoeForTest,
 } from './supports.js';
+import {
+  addAssetToVault,
+  addInterchainAsset,
+  registerScaledPriceAuthority,
+} from '../src/vaultFactory/addAssetToVault.js';
 
 const asset = path => readFile(path, 'utf-8');
 
@@ -32,6 +40,7 @@ const asset = path => readFile(path, 'utf-8');
 const test = anyTest;
 
 const vatRoots = {
+  bank: bankRoot,
   priceAuthority: priceAuthorityRoot,
 };
 
@@ -39,6 +48,7 @@ const contractRoots = {
   liquidate: './src/vaultFactory/liquidateMinimum.js',
   VaultFactory: './src/vaultFactory/vaultFactory.js',
   amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
+  mintHolder: '../vats/src/mintHolder.js',
 };
 
 const govScript = {
@@ -64,6 +74,7 @@ const makeTestContext = async () => {
     liquidate: install(contractRoots.liquidate, 'liquidateMinimum'),
     VaultFactory: install(contractRoots.VaultFactory, 'VaultFactory'),
     amm: install(contractRoots.amm, 'amm'),
+    mintHolder: install(contractRoots.mintHolder, 'mintHolder'),
   };
 
   return {
@@ -86,12 +97,28 @@ const makeScenario = async t => {
 
   const loadVat = name => {
     switch (name) {
-      case 'priceAuthority': {
+      case 'priceAuthority':
         return vatRoots.priceAuthority();
-      }
+      case 'bank':
+        return vatRoots.bank();
       default:
         throw Error(`not implemented ${name}`);
     }
+  };
+  space.produce.loadVat.resolve(loadVat);
+
+  const emptyRunPayment = async () => {
+    const {
+      issuer: {
+        consume: { RUN: runIssuer },
+      },
+      brand: {
+        consume: { RUN: runBrand },
+      },
+    } = space;
+    return E(E(runIssuer).makeEmptyPurse()).withdraw(
+      AmountMath.make(await runBrand, 0n),
+    );
   };
 
   const startDevNet = async () => {
@@ -105,18 +132,23 @@ const makeScenario = async t => {
     };
     space.produce.bridgeManager.resolve(bridgeManager);
 
+    space.installation.produce.mintHolder.resolve(
+      t.context.installation.mintHolder,
+    );
+
+    space.produce.initialSupply.resolve(emptyRunPayment());
+
     return Promise.all([
+      // @ts-expect-error TODO: align types better
+      addBankAssets(space),
       // @ts-expect-error TODO: align types better
       makeClientManager(space),
       // @ts-expect-error TODO: align types better
       makeAddressNameHubs(space),
       // @ts-expect-error TODO: align types better
       bridgeCoreEval(space),
-      startPriceAuthority({
-        ...space,
-        // @ts-expect-error TODO: align types better
-        consume: { ...space.consume, loadVat },
-      }),
+      // @ts-expect-error TODO: align types better
+      startPriceAuthority(space),
     ]);
   };
 
@@ -153,7 +185,15 @@ const makeScenario = async t => {
     iProduce.liquidate.resolve(t.context.installation.liquidate);
     iProduce.amm.resolve(t.context.installation.amm);
 
+    const USD = makeIssuerKit('USD');
+    const ATOM = makeIssuerKit('ATOM');
+    space.oracleBrand.produce.USD.resolve(USD.brand);
+
     await Promise.all([
+      E(E(space.consume.agoricNamesAdmin).lookupAdmin('oracleBrand')).update(
+        'ATOM',
+        ATOM.brand,
+      ),
       installGovernance(space.consume.zoe, space.installation.produce),
       startEconomicCommittee(space),
       setupAmm(space),
@@ -178,13 +218,25 @@ const makeScenario = async t => {
       'arbitrary srcID',
       coreEvalMessage,
     );
+
+    await Promise.all([
+      addInterchainAsset(space, { options: { denom: 'ibc/abc123' } }),
+      registerScaledPriceAuthority(space),
+      addAssetToVault(space),
+    ]);
   };
 
-  return { startDevNet, provisionMembers, startRunPreview, enactProposal };
+  return {
+    startDevNet,
+    provisionMembers,
+    startRunPreview,
+    enactProposal,
+    space,
+  };
 };
 
 test('voters get invitations', async t => {
-  const s = await makeScenario();
+  const s = await makeScenario(t);
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
@@ -201,4 +253,31 @@ test('voters get invitations', async t => {
   );
 });
 
-test.todo('users can open vaults');
+test('assets are in AMM, Vaults', async t => {
+  const s = await makeScenario(t);
+  await s.startDevNet();
+  await s.provisionMembers();
+  await s.startRunPreview();
+
+  await s.enactProposal();
+
+  const {
+    consume: { zoe, agoricNames },
+    instance: { consume: instanceP },
+  } = s.space;
+  const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
+
+  /** @type { ERef<XYKAMMPublicFacet> } */
+  const ammAPI = instanceP.amm.then(i => E(zoe).getPublicFacet(i));
+  const ammStuff = await E(ammAPI).getAllPoolBrands();
+  t.deepEqual(ammStuff, [brand]);
+
+  // TODO:
+  //   /** @type {ERef<import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']>} */
+  //   const vaultsAPI = instanceP.VaultFactory.then(i => E(zoe).getPublicFacet(i));
+
+  //   const vaultStuff = await E(vaultsAPI).getGovernedParams(brand);
+  //   t.deepEqual(vaultStuff, '@@');
+});
+
+// test.todo('users can open vaults');
