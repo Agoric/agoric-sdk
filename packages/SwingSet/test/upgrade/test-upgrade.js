@@ -13,39 +13,37 @@ import { capargs, capdataOneSlot } from '../util.js';
 
 import { NUM_SENSORS } from './num-sensors.js';
 
-function bfile(name) {
-  return new URL(name, import.meta.url).pathname;
-}
+const bfile = name => new URL(name, import.meta.url).pathname;
 
-function get(capdata, propname) {
+const get = (capdata, propname) => {
   const body = JSON.parse(capdata.body);
   const value = body[propname];
   if (typeof value === 'object' && value['@qclass'] === 'slot') {
     return ['slot', capdata.slots[value.index]];
   }
   return value;
-}
+};
 
-function getRetained(capdata, propname) {
+const getRetained = (capdata, propname) => {
   const body = JSON.parse(capdata.body);
   const value = body.retain[propname];
   if (typeof value === 'object' && value['@qclass'] === 'slot') {
     return ['slot', capdata.slots[value.index]];
   }
   return value;
-}
+};
 
-function getImportSensorKref(impcapdata, i) {
+const getImportSensorKref = (impcapdata, i) => {
   const body = JSON.parse(impcapdata.body);
   const value = body[i];
   if (typeof value === 'object' && value['@qclass'] === 'slot') {
     return ['slot', impcapdata.slots[value.index]];
   }
   return value;
-}
+};
 
 // eslint-disable-next-line no-unused-vars
-function dumpState(hostStorage, vatID) {
+const dumpState = (hostStorage, vatID) => {
   const s = getAllState(hostStorage).kvStuff;
   const keys = Array.from(Object.keys(s)).sort();
   for (const k of keys) {
@@ -53,9 +51,9 @@ function dumpState(hostStorage, vatID) {
       console.log(k, s[k]);
     }
   }
-}
+};
 
-async function testUpgrade(t, defaultManagerType) {
+const testUpgrade = async (t, defaultManagerType) => {
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType,
@@ -78,14 +76,14 @@ async function testUpgrade(t, defaultManagerType) {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  async function run(name, args = []) {
+  const run = async (name, args = []) => {
     assert(Array.isArray(args));
     const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
     await c.run();
     const status = c.kpStatus(kpid);
     const capdata = c.kpResolution(kpid);
     return [status, capdata];
-  }
+  };
 
   const mcd = await run('getMarker');
   t.is(mcd[0], 'fulfilled');
@@ -124,19 +122,19 @@ async function testUpgrade(t, defaultManagerType) {
   const vir7Kref = getRetained(v1capdata, 'vir7')[1];
 
   const vatID = kvStore.get(`${dur1Kref}.owner`); // probably v6
-  function getVref(kref) {
+  const getVref = kref => {
     const s = kvStore.get(`${vatID}.c.${kref}`);
     return parseReachableAndVatSlot(s).vatSlot;
-  }
-  function krefReachable(kref) {
+  };
+  const krefReachable = kref => {
     const s = kvStore.get(`${vatID}.c.${kref}`);
     return !!(s && parseReachableAndVatSlot(s).isReachable);
-  }
+  };
   // We look in the vat's vatstore to see if the virtual/durable
   // object exists or not (as a state record).
-  function vomHas(vref) {
+  const vomHas = vref => {
     return kvStore.has(`${vatID}.vs.vom.${vref}`);
-  }
+  };
 
   // dumpState(hostStorage, vatID);
 
@@ -145,15 +143,15 @@ async function testUpgrade(t, defaultManagerType) {
   const dur1Vref = getVref(dur1Kref);
   t.is(parseVatSlot(dur1Vref).subid, 1n);
   const durBase = dur1Vref.slice(0, dur1Vref.length - 2);
-  function durVref(i) {
+  const durVref = i => {
     return `${durBase}/${i}`;
-  }
+  };
   const vir2Vref = getVref(vir2Kref);
   t.is(parseVatSlot(vir2Vref).subid, 2n);
   const virBase = vir2Vref.slice(0, vir2Vref.length - 2);
-  function virVref(i) {
+  const virVref = i => {
     return `${virBase}/${i}`;
-  }
+  };
 
   t.true(vomHas(durVref(1)));
   t.true(vomHas(virVref(2)));
@@ -254,7 +252,7 @@ async function testUpgrade(t, defaultManagerType) {
   t.false(kvStore.has(`${vir2Kref}.owner`));
   t.false(kvStore.has(`${vir5Kref}.owner`));
   t.false(kvStore.has(`${vir7Kref}.owner`));
-}
+};
 
 test('vat upgrade - local', async t => {
   return testUpgrade(t, 'local');
@@ -285,14 +283,14 @@ test('failed upgrade - lost kind', async t => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  async function run(name, args = []) {
+  const run = async (name, args = []) => {
     assert(Array.isArray(args));
     const kpid = c.queueToVatRoot('bootstrap', name, capargs(args));
     await c.run();
     const status = c.kpStatus(kpid);
     const capdata = c.kpResolution(kpid);
     return [status, capdata];
-  }
+  };
 
   // create initial version
   const [v1status] = await run('buildV1WithLostKind', []);
