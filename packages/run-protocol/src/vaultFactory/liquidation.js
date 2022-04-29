@@ -36,7 +36,7 @@ const partitionProceeds = (proceeds, debt, penaltyPortion) => {
  * necessary to cover the debt and return the remainder.
  *
  * @param {ZCF} zcf
- * @param {InnerVault} innerVault
+ * @param {Vault} vault
  * @param {(losses: Amount,
  *             zcfSeat: ZCFSeat
  *            ) => void} burnLosses
@@ -44,26 +44,26 @@ const partitionProceeds = (proceeds, debt, penaltyPortion) => {
  * @param {Brand} collateralBrand
  * @param {ZCFSeat} penaltyPoolSeat
  * @param {Ratio} penaltyRate
- * @returns {Promise<InnerVault>}
+ * @returns {Promise<Vault>}
  */
 const liquidate = async (
   zcf,
-  innerVault,
+  vault,
   burnLosses,
   liquidator,
   collateralBrand,
   penaltyPoolSeat,
   penaltyRate,
 ) => {
-  trace('liquidate start', innerVault);
-  innerVault.liquidating();
+  trace('liquidate start', vault);
+  vault.liquidating();
 
-  const debtBeforePenalty = innerVault.getCurrentDebt();
+  const debtBeforePenalty = vault.getCurrentDebt();
   const penalty = ceilMultiplyBy(debtBeforePenalty, penaltyRate);
 
   const debt = AmountMath.add(debtBeforePenalty, penalty);
 
-  const vaultZcfSeat = innerVault.getVaultSeat();
+  const vaultZcfSeat = vault.getVaultSeat();
 
   const collateralToSell = vaultZcfSeat.getAmountAllocated(
     'Collateral',
@@ -107,10 +107,10 @@ const liquidate = async (
   burnLosses(runToBurn, vaultZcfSeat);
 
   // Accounting complete. Update the vault state.
-  innerVault.liquidated(AmountMath.subtract(debt, debtPaid));
+  vault.liquidated(AmountMath.subtract(debt, debtPaid));
 
   // remaining funds are left on the vault for the user to close and claim
-  return innerVault;
+  return vault;
 };
 
 const liquidationDetailTerms = debtBrand =>

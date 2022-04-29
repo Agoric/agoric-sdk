@@ -13,18 +13,18 @@ import { fromVaultKey, toVaultKey } from './storeUtils.js';
  * first.)
  */
 
-/** @typedef {import('./vault').InnerVault} InnerVault */
+/** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./storeUtils').CompositeKey} CompositeKey */
 
 export const makeOrderedVaultStore = () => {
   // TODO make it work durably https://github.com/Agoric/agoric-sdk/issues/4550
-  /** @type {MapStore<string, InnerVault>} */
+  /** @type {MapStore<string, Vault>} */
   const store = makeScalarBigMapStore('orderedVaultStore', { durable: false });
 
   /**
    *
    * @param {string} vaultId
-   * @param {InnerVault} vault
+   * @param {Vault} vault
    */
   const addVault = (vaultId, vault) => {
     const debt = vault.getNormalizedDebt();
@@ -37,7 +37,7 @@ export const makeOrderedVaultStore = () => {
   /**
    *
    * @param {string} key
-   * @returns {InnerVault}
+   * @returns {Vault}
    */
   const removeByKey = key => {
     try {
