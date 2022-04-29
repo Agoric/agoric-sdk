@@ -5,17 +5,23 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
-import { Nat, isNat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
 import {
   calculateMedian,
-  natSafeMath,
   makeOnewayPriceAuthorityKit,
 } from '../contractSupport/index.js';
+import {
+  makeRatio,
+  makeRatioFromAmounts,
+  parseRatio,
+  addRatios,
+  ratioGTE,
+  floorMultiplyBy,
+  ceilDivideBy,
+  multiplyRatios,
+} from '../contractSupport/ratio.js';
 
 import '../../tools/types.js';
-
-const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /**
  * This contract aggregates price values from a set of oracles and provides a
@@ -26,7 +32,6 @@ const { add, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * POLL_INTERVAL: bigint,
  * brandIn: Brand,
  * brandOut: Brand,
- * unitAmountIn: Amount,
  * }>} zcf
  * @param {object} root0
  * @param {ERef<Mint>} [root0.quoteMint]
@@ -35,15 +40,17 @@ const start = async (
   zcf,
   { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
 ) => {
-  const {
-    timer,
-    POLL_INTERVAL,
-    brandIn,
-    brandOut,
-    unitAmountIn = AmountMath.make(brandIn, 1n),
-  } = zcf.getTerms();
+  const { timer, POLL_INTERVAL, brandIn, brandOut } = zcf.getTerms();
 
-  const unitIn = AmountMath.getValue(brandIn, unitAmountIn);
+  /** @param {ERef<Brand>} brand */
+  const getDecimalP = async brand => {
+    const displayInfo = E(brand).getDisplayInfo();
+    return E.get(displayInfo).decimalPlaces;
+  };
+  const [decimalPlacesIn = 0, decimalPlacesOut = 0] = await Promise.all([
+    getDecimalP(brandIn),
+    getDecimalP(brandOut),
+  ]);
 
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
@@ -54,8 +61,8 @@ const start = async (
     mint: quoteMint,
   };
 
-  /** @type {bigint} */
-  let lastValueOutForUnitIn;
+  /** @type {Ratio} */
+  let lastPrice;
 
   /**
    *
@@ -75,7 +82,7 @@ const start = async (
   /**
    * @typedef {Object} OracleRecord
    * @property {(timestamp: Timestamp) => Promise<void>=} querier
-   * @property {bigint} lastSample
+   * @property {Ratio} lastSample
    * @property {OracleKey} oracleKey
    */
 
@@ -112,21 +119,21 @@ const start = async (
 
   /**
    * @param {Object} param0
-   * @param {bigint} [param0.overrideValueOut]
+   * @param {Ratio} [param0.overridePrice]
    * @param {Timestamp} [param0.timestamp]
    */
-  const makeCreateQuote = ({ overrideValueOut, timestamp } = {}) =>
+  const makeCreateQuote = ({ overridePrice, timestamp } = {}) =>
     /**
      * @param {PriceQuery} priceQuery
      * @returns {ERef<PriceQuote>=}
      */
     function createQuote(priceQuery) {
-      // Sniff the current baseValueOut.
-      const valueOutForUnitIn =
-        overrideValueOut === undefined
-          ? lastValueOutForUnitIn // Use the latest value.
-          : overrideValueOut; // Override the value.
-      if (valueOutForUnitIn === undefined) {
+      // Use the current price.
+      const price =
+        overridePrice === undefined
+          ? lastPrice // Use the latest value.
+          : overridePrice; // Override the value.
+      if (price === undefined) {
         // We don't have a quote, so abort.
         return undefined;
       }
@@ -136,11 +143,7 @@ const start = async (
        * @returns {Amount} the amountOut that will be received
        */
       const calcAmountOut = amountIn => {
-        const valueIn = AmountMath.getValue(brandIn, amountIn);
-        return AmountMath.make(
-          brandOut,
-          floorDivide(multiply(valueIn, valueOutForUnitIn), unitIn),
-        );
+        return floorMultiplyBy(amountIn, price);
       };
 
       /**
@@ -148,11 +151,7 @@ const start = async (
        * @returns {Amount} the amountIn needed to give
        */
       const calcAmountIn = amountOut => {
-        const valueOut = AmountMath.getValue(brandOut, amountOut);
-        return AmountMath.make(
-          brandIn,
-          ceilDivide(multiply(valueOut, unitIn), valueOutForUnitIn),
-        );
+        return ceilDivideBy(amountOut, price);
       };
 
       // Calculate the quote.
@@ -191,29 +190,47 @@ const start = async (
     });
 
   /**
+   * @param {Ratio} r
+   * @param {bigint} n
+   */
+  const divide = (r, n) =>
+    makeRatio(
+      r.numerator.value,
+      r.numerator.brand,
+      r.denominator.value * n,
+      r.denominator.brand,
+    );
+
+  /**
    * @param {Timestamp} timestamp
    */
   const updateQuote = async timestamp => {
     const submitted = [...oracleRecords.values()].map(
-      ({ oracleKey, lastSample }) => [oracleKey, lastSample],
+      ({ oracleKey, lastSample }) =>
+        /** @type {[OracleKey, Ratio]} */ ([oracleKey, lastSample]),
     );
     const median = calculateMedian(
       submitted
         .map(([_k, v]) => v)
-        .filter(sample => isNat(sample) && sample > 0n),
-      { add, divide: floorDivide, isGTE },
+        .filter(
+          sample =>
+            sample.numerator.value > 0n && sample.denominator.value > 0n,
+        ),
+      {
+        add: addRatios,
+        divide,
+        isGTE: ratioGTE,
+      },
     );
 
     if (median === undefined) {
       return;
     }
 
-    const amountOut = AmountMath.make(brandOut, median);
-
     /** @type {PriceDescription} */
     const quote = {
-      amountIn: unitAmountIn,
-      amountOut,
+      amountIn: median.denominator,
+      amountOut: median.numerator,
       timer,
       timestamp,
     };
@@ -225,7 +242,7 @@ const start = async (
     // Fire any triggers now; we don't care if the timestamp is fully ordered,
     // only if the limit has ever been met.
     await priceAuthorityAdmin.fireTriggers(
-      makeCreateQuote({ overrideValueOut: median, timestamp }),
+      makeCreateQuote({ overridePrice: median, timestamp }),
     );
 
     if (timestamp < publishedTimestamp) {
@@ -235,8 +252,19 @@ const start = async (
 
     // Publish a new authenticated quote.
     publishedTimestamp = timestamp;
-    lastValueOutForUnitIn = median;
+    lastPrice = median;
     updater.updateState(authenticatedQuote);
+  };
+
+  const outScale = makeRatio(
+    10n ** BigInt(Math.max(decimalPlacesOut - decimalPlacesIn, 0)),
+    brandOut,
+    10n ** BigInt(Math.max(decimalPlacesIn - decimalPlacesOut, 0)),
+    brandOut,
+  );
+  const makeRatioFromData = numericData => {
+    const unscaled = parseRatio(numericData, brandOut, brandIn);
+    return multiplyRatios(unscaled, outScale);
   };
 
   /** @type {PriceAggregatorCreatorFacet} */
@@ -255,13 +283,13 @@ const start = async (
       /**
        * If custom arguments are supplied to the `zoe.offer` call, they can
        * indicate an OraclePriceSubmission notifier and a corresponding
-       * `scaleValueOut` that should be adapted as part of the priceAuthority's
+       * `shiftValueOut` that should be adapted as part of the priceAuthority's
        * reported data.
        *
        * @param {ZCFSeat} seat
        * @param {Object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
-       * @param {number} [param1.scaleValueOut] scale used to multiply the notifier price submissions
+       * @param {number} [param1.scaleValueOut]
        * @returns {Promise<OracleAdmin>}
        */
       const offerHandler = async (
@@ -274,6 +302,14 @@ const start = async (
           // No notifier to track, just let them have the direct admin.
           return admin;
         }
+
+        // Support for notifiers that don't produce ratios, but need scaling for
+        // their numeric data.
+        const priceScale = parseRatio(scaleValueOut, brandOut);
+        const makeScaledRatioFromData = numericData => {
+          const ratio = makeRatioFromData(numericData);
+          return multiplyRatios(ratio, priceScale);
+        };
 
         /**
          * Adapt the notifier to push results.
@@ -289,21 +325,24 @@ const start = async (
           // Queue the next update.
           E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
 
-          // Push the current scaled result.
-          const scaleData = numericData =>
-            BigInt(Math.floor(parseInt(numericData, 10) * scaleValueOut));
-
           // See if we have associated parameters or just a raw value.
           let result;
           switch (typeof value) {
             case 'number':
             case 'bigint':
             case 'string': {
-              result = scaleData(value);
+              result = makeScaledRatioFromData(value);
               break;
             }
             default: {
-              result = { ...value, data: scaleData(value.data) };
+              if (value && value.data !== undefined) {
+                result = {
+                  ...value,
+                  data: makeScaledRatioFromData(value.data),
+                };
+              } else {
+                result = value;
+              }
             }
           }
 
@@ -342,7 +381,10 @@ const start = async (
       const oracleKey = oracleInstance || Far('fresh key', {});
 
       /** @type {OracleRecord} */
-      const record = { oracleKey, lastSample: 0n };
+      const record = {
+        oracleKey,
+        lastSample: makeRatio(0n, brandOut, 1n, brandIn),
+      };
 
       /** @type {Set<OracleRecord>} */
       let records;
@@ -355,11 +397,19 @@ const start = async (
       records.add(record);
       oracleRecords.add(record);
 
+      // Push the current price ratio.
       const pushResult = result => {
         // Sample of NaN, 0, or negative numbers get culled in the median
         // calculation.
-        const sample = Nat(parseInt(result, 10));
-        record.lastSample = sample;
+        let ratio;
+        if (result && result.numerator && result.denominator) {
+          ratio = makeRatioFromAmounts(result.numerator, result.denominator);
+          AmountMath.coerce(brandOut, ratio.numerator);
+          AmountMath.coerce(brandIn, ratio.denominator);
+        } else {
+          ratio = makeRatioFromData(result);
+        }
+        record.lastSample = ratio;
       };
 
       /** @type {OracleAdmin} */

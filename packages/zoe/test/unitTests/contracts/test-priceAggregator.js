@@ -12,12 +12,21 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { assert } from '@agoric/assert';
+import { makeNotifierKit } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 
 import '../../../exported.js';
 import '../../../src/contracts/exported.js';
+import {
+  addRatios,
+  floorDivideBy,
+  makeRatio,
+  multiplyBy,
+  multiplyRatios,
+  parseRatio,
+} from '../../../src/contractSupport/ratio.js';
 
 /**
  * @callback MakeFakePriceOracle
@@ -142,8 +151,6 @@ test('median aggregator', /** @param {ExecutionContext} t */ async t => {
   const pricePush = await makeFakePriceOracle(t);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
-  // TODO: Port this to makeQuoteNotifier(amountIn, brandOut)
-  // @ts-expect-error fix needed
   const notifier = E(pa).makeQuoteNotifier(
     AmountMath.make(brandIn, 1n),
     brandOut,
@@ -342,6 +349,104 @@ test('median aggregator - push only', /** @param {ExecutionContext} t */ async t
   t.deepEqual(quote2, { amountOut: 1073n, timestamp: 2n });
 
   await E(pricePushAdmin).delete();
+});
+
+test('oracle invitation', /** @param {ExecutionContext} t */ async t => {
+  const { zoe } = t.context;
+
+  const aggregator = await t.context.makeMedianAggregator(1n);
+  const {
+    timer: oracleTimer,
+    brandIn,
+    brandOut,
+  } = await E(zoe).getTerms(aggregator.instance);
+
+  const inv1 = await E(aggregator.creatorFacet).makeOracleInvitation('oracle1');
+  const { notifier: oracle1, updater: updater1 } = makeNotifierKit();
+  const or1 = E(zoe).offer(inv1, undefined, undefined, { notifier: oracle1 });
+  const oracleAdmin1 = E(or1).getOfferResult();
+
+  const amountIn = AmountMath.make(brandIn, 1000000n);
+  const makeQuoteValue = (timestamp, valueOut) => [
+    {
+      timer: oracleTimer,
+      timestamp,
+      amountIn,
+      amountOut: AmountMath.make(brandOut, valueOut),
+    },
+  ];
+
+  const notifier = E(
+    E(aggregator.publicFacet).getPriceAuthority(),
+  ).makeQuoteNotifier(amountIn, brandOut);
+
+  updater1.updateState('1234');
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  const { value: value1, updateCount: uc1 } = await E(
+    notifier,
+  ).getUpdateSince();
+  t.deepEqual(value1.quoteAmount.value, makeQuoteValue(2n, 1_234_000_000n));
+
+  updater1.updateState('1234.567');
+  await E(oracleTimer).tick();
+  const { value: value2, updateCount: uc2 } = await E(notifier).getUpdateSince(
+    uc1,
+  );
+  t.deepEqual(value2.quoteAmount.value, makeQuoteValue(3n, 1_234_567_000n));
+
+  const inv2 = await E(aggregator.creatorFacet).makeOracleInvitation('oracle2');
+  const { notifier: oracle2, updater: updater2 } = makeNotifierKit();
+  const or2 = E(zoe).offer(inv2, undefined, undefined, {
+    notifier: oracle2,
+    scaleValueOut: 0.001,
+  });
+  const oracleAdmin2 = E(or2).getOfferResult();
+
+  updater2.updateState('1234');
+  await E(oracleTimer).tick();
+  await E(oracleTimer).tick();
+  const { value: value3, updateCount: uc3 } = await E(notifier).getUpdateSince(
+    uc2,
+  );
+
+  // Check median calculation of two oracles.
+  const price1 = parseRatio('1234.567', brandOut, brandIn);
+  const price2 = parseRatio('1.234', brandOut, brandIn);
+  const medianPrice = multiplyRatios(
+    addRatios(price1, price2),
+    parseRatio('0.5', brandOut),
+  );
+  t.deepEqual(
+    value3.quoteAmount.value,
+    makeQuoteValue(5n, multiplyBy(amountIn, medianPrice).value),
+  );
+
+  await E(oracleAdmin1).delete();
+
+  updater2.updateState('1234');
+  await E(oracleTimer).tick();
+  const { value: value4, updateCount: uc4 } = await E(notifier).getUpdateSince(
+    uc3,
+  );
+  t.deepEqual(value4.quoteAmount.value, makeQuoteValue(6n, 1_234_000n));
+
+  updater2.updateState('1234.567890');
+  await E(oracleTimer).tick();
+  const { value: value5, updateCount: uc5 } = await E(notifier).getUpdateSince(
+    uc4,
+  );
+  t.deepEqual(value5.quoteAmount.value, makeQuoteValue(7n, 1_234_567n));
+
+  updater2.updateState(makeRatio(987_654n, brandOut, 500_000n, brandIn));
+  await E(oracleTimer).tick();
+  const { value: value6, updateCount: uc6 } = await E(notifier).getUpdateSince(
+    uc5,
+  );
+  t.deepEqual(value6.quoteAmount.value, makeQuoteValue(8n, 987_654n * 2n));
+
+  uc6;
+  await E(oracleAdmin2).delete();
 });
 
 test('quoteAtTime', /** @param {ExecutionContext} t */ async t => {
