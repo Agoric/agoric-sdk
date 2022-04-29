@@ -1433,17 +1433,11 @@ const pipelinedSendTest = async (t, delayed) => {
     },
   ]);
 
-  // move foo send from acceptance to run-queue
+  // move foo send from acceptance to run-queue/p0-queue
   await kernel.step();
-  // move bar send from acceptance to run-queue
+  // move bar send from acceptance to p1-queue
   await kernel.step();
-  // move urgh send from acceptance to run-queue
-  await kernel.step();
-  // deliver/move foo send from run-queue to vatB/p0-queue
-  await kernel.step();
-  // deliver/move bar send from run-queue to vatB/p1-queue
-  await kernel.step();
-  // deliver/move urgh send from run-queue to vatB/p2-queue
+  // move urgh send from acceptance to p2-queue
   await kernel.step();
 
   if (delayed) {
@@ -1509,17 +1503,19 @@ const pipelinedSendTest = async (t, delayed) => {
 
     // move foo send from acceptance to run-queue
     await kernel.step();
-    // deliver foo send from run-queue to vatB
-    await kernel.step();
-    // move bar send from acceptance to run-queue
-    await kernel.step();
-    // deliver bar send from run-queue to vatB
-    await kernel.step();
-    // move urgh send from acceptance to run-queue
-    await kernel.step();
-    // deliver urgh send from run-queue to vatB
-    await kernel.step();
   }
+  // deliver foo send from run-queue to vatB
+  // move bar send from p1-queue to acceptance queue
+  await kernel.step();
+  // move bar send from acceptance to run-queue
+  await kernel.step();
+  // deliver bar send from run-queue to vatB
+  // move urgh send from p2-queue to acceptance queue
+  await kernel.step();
+  // move urgh send from acceptance to run-queue
+  await kernel.step();
+  // deliver urgh send from run-queue to vatB
+  await kernel.step();
 
   const p1ForB = kernel.addImport(vatB, p1ForKernel);
   const p2ForB = kernel.addImport(vatB, p2ForKernel);

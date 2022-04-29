@@ -737,7 +737,7 @@ export default function buildKernel(
    * This does not decrement any refcounts. The caller should do that.
    *
    * @param { RunQueueEventSend } message
-   * @returns { { vatID: VatID, targetObject: string } | null }
+   * @returns { { vatID: VatID | null, target: string } | null }
    */
   function routeSendEvent(message) {
     const { target, msg } = message;
@@ -759,12 +759,12 @@ export default function buildKernel(
       if (!vatID) {
         return splat(VAT_TERMINATION_ERROR);
       }
-      return { vatID, targetObject };
+      return { vatID, target: targetObject };
     }
 
-    function enqueue() {
-      kernelKeeper.addMessageToPromiseQueue(target, msg);
-      return null; // message is queued, not sent to a vat right now
+    function requeue() {
+      // message will be requeued, not sent to a vat right now
+      return { vatID: null, target };
     }
 
     if (type === 'object') {
@@ -788,7 +788,7 @@ export default function buildKernel(
       }
       case 'unresolved': {
         if (!kp.decider) {
-          return enqueue();
+          return requeue();
         } else {
           insistVatID(kp.decider);
           // eslint-disable-next-line no-use-before-define
@@ -798,9 +798,9 @@ export default function buildKernel(
             return splat(VAT_TERMINATION_ERROR);
           }
           if (deciderVat.enablePipelining) {
-            return { vatID: kp.decider, targetObject: target };
+            return { vatID: kp.decider, target };
           }
-          return enqueue();
+          return requeue();
         }
       }
       default:
@@ -878,13 +878,25 @@ export default function buildKernel(
     let useMeter = false;
     let deliverP = null;
 
+    // The common action should be delivering events to the vat. Any references
+    // in the events should no longer be the kernel's responsibility and the
+    // refcounts should be decremented
     if (message.type === 'send') {
       useMeter = true;
       const route = routeSendEvent(message);
-      decrementSendEventRefCount(message);
-      if (route) {
+      if (!route) {
+        // Message went splat
+        decrementSendEventRefCount(message);
+      } else {
         vatID = route.vatID;
-        deliverP = processSend(vatID, route.targetObject, message.msg);
+        if (vatID) {
+          decrementSendEventRefCount(message);
+          deliverP = processSend(vatID, route.target, message.msg);
+        } else {
+          // Message is requeued and stays the kernel's responsibility, do not
+          // decrement refcounts in this case
+          kernelKeeper.addMessageToPromiseQueue(route.target, message.msg);
+        }
       }
     } else if (message.type === 'notify') {
       useMeter = true;
@@ -1089,7 +1101,32 @@ export default function buildKernel(
     /** @type { PolicyInput } */
     const policyInput = ['none'];
 
-    kernelKeeper.addToRunQueue(message);
+    // By default we're moving events from one queue to another. Any references
+    // in the events remain the kernel's responsibility and the refcounts persist
+    if (message.type === 'send') {
+      const route = routeSendEvent(message);
+      if (!route) {
+        // Message went splat, no longer the kernel's responsibility
+        decrementSendEventRefCount(message);
+      } else {
+        const { vatID, target } = route;
+        if (target !== message.target) {
+          // Message has been re-targeted, other refcounts stay intact
+          kernelKeeper.decrementRefCount(message.target, `deq|msg|t`);
+          kernelKeeper.incrementRefCount(target, `enq|msg|t`);
+        }
+        if (vatID) {
+          kernelKeeper.addToRunQueue({
+            ...message,
+            target,
+          });
+        } else {
+          kernelKeeper.addMessageToPromiseQueue(target, message.msg);
+        }
+      }
+    } else {
+      kernelKeeper.addToRunQueue(message);
+    }
 
     kernelKeeper.processRefcounts();
     kernelKeeper.saveStats();

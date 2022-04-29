@@ -837,22 +837,22 @@ export default function makeKernelKeeper(
     // itself. This isn't strictly necessary (the promise will be kept alive
     // by the deciding vat's clist, or the queued message that holds this
     // promise as its result), but it matches our policy with run-queue
-    // messages (each holds a refcount on its target), and makes it easier to
-    // transfer these messages back to the run-queue in
-    // resolveKernelPromise() (which doesn't touch any of the refcounts).
-
-    // eslint-disable-next-line no-use-before-define
-    incrementRefCount(kernelSlot, `pq|${kernelSlot}|t`);
-    if (msg.result) {
-      // eslint-disable-next-line no-use-before-define
-      incrementRefCount(msg.result, `pq|${kernelSlot}|r`);
-    }
-    let idx = 0;
-    for (const kref of msg.args.slots) {
-      // eslint-disable-next-line no-use-before-define
-      incrementRefCount(kref, `pq|${kernelSlot}|s${idx}`);
-      idx += 1;
-    }
+    // messages (each holds a refcount on its target).
+    //
+    // Messages are enqueued on a promise queue in 2 cases:
+    // - A message routed from the acceptance queue
+    // - A pipelined message had a decider change while in the run-queue
+    // Messages are dequeued from a promise queue in 2 cases:
+    // - The promise is resolved
+    // - The promise's decider is changed to a pipelining vat
+    // In all cases the messages are just moved from one queue to another so
+    // the caller should not need to change the refcounts when moving messages
+    // sent to promises between queues. Only when re-targeting after resolution
+    // would the targets refcount be updated (but not the result or slots).
+    //
+    // Since messages are moved from queue to queue, the tag describing the ref
+    // does not designate which current queue the message sits on, but that
+    // there is some kernel queue holding the message and its content.
 
     const p = getKernelPromise(kernelSlot);
     assert(
