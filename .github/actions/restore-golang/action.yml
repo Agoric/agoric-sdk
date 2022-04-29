@@ -5,6 +5,11 @@ inputs:
   go-version:
     description: 'The version of Go to use'
     required: true
+  cache-key:
+    description: pkg/mod cache key
+    required: false
+    type: string
+    default: latest
 
 runs:
   using: composite
@@ -20,13 +25,14 @@ runs:
       with:
         go-version: ${{ inputs.go-version }}
     - name: cache Go modules
+      id: cache
       uses: actions/cache@v1
       with:
         path: ${{ env.GOPATH }}/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('packages/cosmic-swingset/go.sum') }}
+        key: ${{ runner.os }}-${{ inputs.cache-key }}-go-${{ hashFiles('go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-
+          ${{ runner.os }}-${{ inputs.cache-key }}-go-
     - name: go mod download
       run: go mod download
       shell: bash
-      if: steps.built.outputs.cache-hit != 'true'
+      if: steps.cache.outputs.cache-hit != 'true'
