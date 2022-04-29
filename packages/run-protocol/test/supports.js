@@ -76,8 +76,9 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
-  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { brand, issuer } = spaces;
   brand.produce.RUN.resolve(runBrand);
