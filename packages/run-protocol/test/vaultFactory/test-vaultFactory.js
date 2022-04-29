@@ -293,12 +293,12 @@ async function setupServices(
 
   const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
   /** @type {Promise<VaultFactory & LimitedCreatorFacet<any>>} */
-  const vaultFactoryCreatorFacet = /** @type { any } */ (
+  const vaultFactoryCreatorFacetP = /** @type { any } */ (
     E(governorCreatorFacet).getCreatorFacet()
   );
 
   // Add a vault that will lend on aeth collateral
-  const aethVaultManagerP = E(vaultFactoryCreatorFacet).addVaultType(
+  const aethVaultManagerP = E(vaultFactoryCreatorFacetP).addVaultType(
     aethIssuer,
     'AEth',
     rates,
@@ -307,18 +307,23 @@ async function setupServices(
   // @ts-expect-error cast
   const [
     governorInstance,
-    vaultFactory,
+    vaultFactoryCreator,
     lender,
     aethVaultManager,
     priceAuthority,
   ] = await Promise.all([
     E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
-    vaultFactoryCreatorFacet,
+    vaultFactoryCreatorFacetP,
     E(governorCreatorFacet).getPublicFacet(),
     aethVaultManagerP,
     pa,
   ]);
-  trace(t, 'pa', { governorInstance, vaultFactory, lender, priceAuthority });
+  trace(t, 'pa', {
+    governorInstance,
+    vaultFactory: vaultFactoryCreator,
+    lender,
+    priceAuthority,
+  });
 
   const { g, v } = {
     g: {
@@ -327,7 +332,7 @@ async function setupServices(
       governorCreatorFacet,
     },
     v: {
-      vaultFactory,
+      vaultFactoryCreator,
       lender,
       aethVaultManager,
     },
@@ -364,7 +369,11 @@ test('first', async t => {
     undefined,
     500n,
   );
-  const { vaultFactory, lender, aethVaultManager } = services.vaultFactory;
+  const {
+    vaultFactoryCreator: vaultFactory,
+    lender,
+    aethVaultManager,
+  } = services.vaultFactory;
   trace(t, 'services', { services, vaultFactory, lender });
 
   // Create a loan for 470 RUN with 1100 aeth collateral
@@ -496,7 +505,7 @@ test('price drop', async t => {
   trace(t, 'setup');
 
   const {
-    vaultFactory: { vaultFactory, lender },
+    vaultFactory: { vaultFactoryCreator: vaultFactory, lender },
     priceAuthority,
   } = services;
 
@@ -636,7 +645,7 @@ test('price falls precipitously', async t => {
     undefined,
     1500n,
   );
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactoryCreator: vaultFactory, lender } = services.vaultFactory;
 
   // Create a loan for 370 RUN with 400 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 400n);
@@ -784,7 +793,7 @@ test('vaultFactory display collateral', async t => {
     500n,
   );
 
-  const { vaultFactory } = services.vaultFactory;
+  const { vaultFactoryCreator: vaultFactory } = services.vaultFactory;
   const collaterals = await E(vaultFactory).getCollaterals();
   t.deepEqual(collaterals[0], {
     brand: aethBrand,
@@ -823,7 +832,7 @@ test('interest on multiple vaults', async t => {
     SECONDS_PER_DAY,
     500n,
   );
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactoryCreator: vaultFactory, lender } = services.vaultFactory;
 
   // Create a loan for Alice for 4700 RUN with 1100 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1100n);
@@ -1413,7 +1422,7 @@ test('overdeposit', async t => {
     undefined,
     500n,
   );
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactoryCreator: vaultFactory, lender } = services.vaultFactory;
 
   // Alice's loan /////////////////////////////////////
 
@@ -1792,7 +1801,7 @@ test('collect fees from loan and AMM', async t => {
     undefined,
     500n,
   );
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactoryCreator: vaultFactory, lender } = services.vaultFactory;
 
   // Create a loan for 470 RUN with 1100 aeth collateral
   const collateralAmount = AmountMath.make(aethBrand, 1100n);
@@ -2279,7 +2288,7 @@ test('addVaultType: invalid args do not modify state', async t => {
     500n,
   );
 
-  const { vaultFactory } = services.vaultFactory;
+  const { vaultFactoryCreator: vaultFactory } = services.vaultFactory;
 
   const failsForSameReason = async p =>
     p
@@ -2316,7 +2325,7 @@ test('addVaultType: extra, unexpected params', async t => {
     500n,
   );
 
-  const { vaultFactory } = services.vaultFactory;
+  const { vaultFactoryCreator: vaultFactory } = services.vaultFactory;
 
   const params = { ...defaultParamValues(aethBrand), shoeSize: 10 };
   const extraParams = { ...params, shoeSize: 10 };
@@ -2336,4 +2345,46 @@ test('addVaultType: extra, unexpected params', async t => {
     extraParams,
   );
   t.true(matches(actual, M.remotable()), 'unexpected params are ignored');
+});
+
+test('director notifiers', async t => {
+  const {
+    aethKit: { brand: aethBrand },
+  } = t.context;
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    AmountMath.make(aethBrand, 900n),
+    undefined,
+    undefined,
+    500n,
+  );
+
+  const { lender, vaultFactoryCreator } = services.vaultFactory;
+
+  const { econ } = await E(lender).getPublicNotifiers();
+
+  let state = await E(econ).getUpdateSince();
+  t.deepEqual(state.value, {
+    collaterals: [aethBrand],
+    penaltyPoolAllocation: {},
+    rewardPoolAllocation: {},
+  });
+
+  // add a vault type
+  const chit = makeIssuerKit('chit');
+  await E(vaultFactoryCreator).addVaultType(
+    chit.issuer,
+    'Chit',
+    defaultParamValues(chit.brand),
+  );
+  state = await E(econ).getUpdateSince(state.updateCount);
+  t.deepEqual(state.value, {
+    collaterals: [aethBrand, chit.brand],
+    penaltyPoolAllocation: {},
+    rewardPoolAllocation: {},
+  });
+
+  // Not testing penaltyPoolAllocation and rewardPoolAllocation contents because those are simply those values.
+  // We could refactor the tests of those allocations to use the data now exposed by a notifier.
 });

@@ -18,7 +18,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { defineKindMulti } from '@agoric/vat-data';
-import { observeIteration } from '@agoric/notifier';
+import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { makeVaultManager } from './vaultManager.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
@@ -31,6 +31,12 @@ import {
 const { details: X } = assert;
 
 /**
+ * @typedef {{
+ * collaterals: Brand[],
+ * penaltyPoolAllocation: AmountKeywordRecord,
+ * rewardPoolAllocation: AmountKeywordRecord,
+ * }} EconState
+ *
  * @typedef {Readonly<{
  * debtMint: ZCFMint<'nat'>,
  * collateralTypes: Store<Brand,VaultManagerObject>,
@@ -40,6 +46,8 @@ const { details: X } = assert;
  * penaltyPoolSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
+ * econNotifier: Notifier<EconState>
+ * econUpdater: IterationObserver<EconState>
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }>} ImmutableState
  *
@@ -70,13 +78,17 @@ const initState = (zcf, directorParamManager, debtMint) => {
 
   const vaultParamManagers = makeScalarMap('brand');
 
+  const { notifier: econNotifier, updater: econUpdater } = makeNotifierKit();
+
   return {
     collateralTypes,
     debtMint,
     directorParamManager,
+    econNotifier,
+    econUpdater,
     mintSeat,
-    rewardPoolSeat,
     penaltyPoolSeat,
+    rewardPoolSeat,
     vaultParamManagers,
     zcf,
   };
@@ -154,7 +166,9 @@ const getCollaterals = async ({ state }) => {
     ),
   );
 };
-
+/**
+ * @param {ImmutableState['directorParamManager']} directorParamManager
+ */
 const getLiquidationConfig = directorParamManager => ({
   install: directorParamManager.getLiquidationInstall(),
   terms: directorParamManager.getLiquidationTerms(),
@@ -194,7 +208,7 @@ const machineBehavior = {
    * @param {VaultManagerParamValues} initialParamValues
    */
   addVaultType: async (
-    { state },
+    { state, facets },
     collateralIssuer,
     collateralKeyword,
     initialParamValues,
@@ -259,6 +273,7 @@ const machineBehavior = {
       }
       // TODO add aggregate debt tracking at the vaultFactory level #4482
       // totalDebt = AmountMath.add(totalDebt, toMint);
+      facets.machine.notifyEcon();
     };
 
     /**
@@ -295,6 +310,7 @@ const machineBehavior = {
     const { install, terms } = getLiquidationConfig(directorParamManager);
     await vm.setupLiquidator(install, terms);
     watchGovernance(directorParamManager, vm, install, terms);
+    facets.machine.notifyEcon();
     return vm;
   },
   getCollaterals,
@@ -310,6 +326,16 @@ const machineBehavior = {
   },
   /** @param {MethodContext} context */
   getContractGovernor: ({ state }) => state.zcf.getTerms().electionManager,
+  /** @param {MethodContext} context */
+  notifyEcon: ({ state }) => {
+    /** @type {EconState} */
+    const econState = harden({
+      collaterals: Array.from(state.collateralTypes.keys()),
+      penaltyPoolAllocation: state.penaltyPoolSeat.getCurrentAllocation(),
+      rewardPoolAllocation: state.rewardPoolSeat.getCurrentAllocation(),
+    });
+    state.econUpdater.updateState(econState);
+  },
 
   // XXX accessors for tests
   /** @param {MethodContext} context */
@@ -362,6 +388,13 @@ const publicBehavior = {
     );
     /** @type {VaultManagerObject} */
     return collateralTypes.get(brandIn).getPublicFacet();
+  },
+  /**
+   * @param {MethodContext} context
+   */
+  getPublicNotifiers: ({ state }) => {
+    const { econNotifier } = state;
+    return { econ: econNotifier };
   },
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeLoanInvitation: makeVaultInvitation,
