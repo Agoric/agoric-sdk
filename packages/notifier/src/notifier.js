@@ -30,24 +30,25 @@ export const makeNotifier = sharableInternalsP => {
   });
 };
 
+const deferInitialState = Symbol('defer initial NotifierKit state');
+
 /**
  * Produces a pair of objects, which allow a service to produce a stream of
  * update promises.
  *
  * The initial state argument has to be truly optional even though it can
- * be any first class value including `undefined`. We need to distinguish the
- * presence vs the absence of it, which we cannot do with the optional argument
- * syntax. Rather we use the arity of the `args` array.
+ * be any first class value including `undefined`. We distinguish the
+ * absence of an argument by using the default value of `deferInitialState`.
  *
  * If no initial state is provided to `makeNotifierKit`, then it starts without
  * an initial state. Its initial state will instead be the state of the first
  * update.
  *
  * @template T
- * @param {[] | [T]} args the first state to be returned
+ * @param {T | deferInitialState} initialState the first state to be returned
  * @returns {NotifierRecord<T>} the notifier and updater
  */
-export const makeNotifierKit = (...args) => {
+export const makeNotifierKit = (initialState = deferInitialState) => {
   /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
   let optNextPromiseKit;
   /** @type {UpdateCount} */
@@ -138,8 +139,8 @@ export const makeNotifierKit = (...args) => {
     },
   });
 
-  if (args.length >= 1) {
-    updater.updateState(args[0]);
+  if (initialState !== deferInitialState) {
+    updater.updateState(deferInitialState);
   }
 
   // notifier facet is separate so it can be handed out while updater
