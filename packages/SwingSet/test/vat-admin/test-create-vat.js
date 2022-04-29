@@ -30,6 +30,9 @@ test.before(async t => {
   const brokenRootVatBundle = await bundleSource(
     new URL('broken-root-vat.js', import.meta.url).pathname,
   );
+  const brokenHangVatBundle = await bundleSource(
+    new URL('broken-hang-vat.js', import.meta.url).pathname,
+  );
   const vatRefcountBundle = await bundleSource(
     new URL('new-vat-refcount.js', import.meta.url).pathname,
   );
@@ -39,6 +42,7 @@ test.before(async t => {
     vat44Bundle,
     brokenModuleVatBundle,
     brokenRootVatBundle,
+    brokenHangVatBundle,
     vatRefcountBundle,
     nonBundle,
   };
@@ -53,6 +57,7 @@ async function doTestSetup(t, enableSlog = false) {
     new13: { bundle: bundles.vat13Bundle },
     brokenModule: { bundle: bundles.brokenModuleVatBundle },
     brokenRoot: { bundle: bundles.brokenRootVatBundle },
+    brokenHang: { bundle: bundles.brokenHangVatBundle },
   };
   const hostStorage = provideHostStorage();
   await initializeSwingset(config, [], hostStorage, { kernelBundles });
@@ -123,7 +128,7 @@ test('counter test', async t => {
   t.deepEqual(JSON.parse(c.kpResolution(kpid).body), [4, 9, 2, 8]);
 });
 
-async function brokenVatTest(t, bundleName) {
+async function brokenVatTest(t, bundleName, expected) {
   const { c } = await doTestSetup(t);
   const kpid = c.queueToVatRoot(
     'bootstrap',
@@ -136,15 +141,19 @@ async function brokenVatTest(t, bundleName) {
   t.truthy(res instanceof Error);
   // 'Vat Creation Error: Error: missing is not defined'
   t.regex(res.message, /Vat Creation Error/);
-  t.regex(res.message, /missing/);
+  t.regex(res.message, expected);
 }
 
 test('broken vat creation fails (bad module)', async t => {
-  await brokenVatTest(t, 'brokenModule');
+  await brokenVatTest(t, 'brokenModule', /missing/);
 });
 
 test('broken vat creation fails (bad buildRootObject)', async t => {
-  await brokenVatTest(t, 'brokenRoot');
+  await brokenVatTest(t, 'brokenRoot', /missing/);
+});
+
+test('broken vat creation fails (buildRootObject hangs)', async t => {
+  await brokenVatTest(t, 'brokenHang', /buildRootObject unresolved/);
 });
 
 test('error creating vat from non-bundle', async t => {
