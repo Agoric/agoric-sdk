@@ -2,7 +2,7 @@
  * @template T
  * @typedef {Object} TypedMath
  * @property {(a: T, b: T) => T} add
- * @property {(a: T, b: T) => T} divide
+ * @property {(a: T, b: bigint) => T} divide
  * @property {(a: T, b: T) => boolean} isGTE
  */
 
@@ -37,5 +37,5 @@ export const calculateMedian = (samples, math) => {
   // Even length, take the mean of the two middle values.
   const secondIndex = sorted.length / 2;
   const sum = math.add(sorted[secondIndex - 1], sorted[secondIndex]);
-  return math.divide(sum, 2);
+  return math.divide(sum, 2n);
 };
