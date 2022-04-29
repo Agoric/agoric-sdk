@@ -17,8 +17,16 @@ import {
   multiplyRatios,
   addRatios,
   quantize,
+  multiplyBy,
 } from '../../../src/contractSupport/ratio.js';
 
+/**
+ *
+ * @param {*} t
+ * @param {Amount<'nat'>} a1
+ * @param {Amount<'nat'>} a2
+ * @param {Brand} brand
+ */
 function amountsEqual(t, a1, a2, brand) {
   const brandEqual = a1.brand === a2.brand;
   const valueEqual = a1.value === a2.value;
@@ -313,18 +321,37 @@ test('add ratios', t => {
   );
 });
 
-test('ratio - complement', t => {
+test('ratio - rounding', t => {
   const { brand } = makeIssuerKit('moe');
   const moe = value => AmountMath.make(brand, value);
 
+  /**
+   * @param {bigint} numerator
+   * @param {bigint} divisor
+   * @param {bigint} expected
+   * @param {*} method
+   */
+  const assertRounding = (numerator, divisor, expected, method) => {
+    const ratio = makeRatioFromAmounts(moe(1n), moe(divisor));
+    amountsEqual(t, method(moe(numerator), ratio), moe(expected), brand);
+  };
+
+  // from table in https://en.wikipedia.org/wiki/IEEE_754#Rounding_rules
+  assertRounding(23n, 2n, 11n, floorMultiplyBy);
+  assertRounding(23n, 2n, 12n, multiplyBy);
+  assertRounding(23n, 2n, 12n, ceilMultiplyBy);
+  assertRounding(25n, 2n, 12n, floorMultiplyBy);
+  assertRounding(25n, 2n, 12n, multiplyBy);
+  assertRounding(25n, 2n, 13n, ceilMultiplyBy);
+});
+
+test('ratio - oneMinus', t => {
+  const { brand } = makeIssuerKit('moe');
+  const moe = value => AmountMath.make(brand, value);
   const oneThird = makeRatioFromAmounts(moe(1n), moe(3n));
   const twoThirds = oneMinus(oneThird);
 
   t.deepEqual(twoThirds, makeRatio(2n, brand, 3n));
-  amountsEqual(t, floorMultiplyBy(moe(100000n), oneThird), moe(33333n), brand);
-  amountsEqual(t, ceilMultiplyBy(moe(100000n), oneThird), moe(33334n), brand);
-  amountsEqual(t, floorMultiplyBy(moe(100000n), twoThirds), moe(66666n), brand);
-  amountsEqual(t, ceilMultiplyBy(moe(100000n), twoThirds), moe(66667n), brand);
 
   // @ts-expect-error invalid arguments for testing
   t.throws(() => oneMinus(moe(3n)), {
@@ -351,12 +378,12 @@ test('ratio - quantize', t => {
     [12345n, 12345n, 10n ** 15n, 10n ** 15n],
 
     [12345n, 123n, 100365854n, 10n ** 6n],
-    [12345n, 123n, 10036586n, 10n ** 5n],
+    [12345n, 123n, 10036585n, 10n ** 5n],
     [12345n, 123n, 1003659n, 10n ** 4n],
     [12345n, 123n, 100366n, 10n ** 3n],
     [12345n, 123n, 10037n, 10n ** 2n],
     [12345n, 123n, 1004n, 10n ** 1n],
-    [12345n, 123n, 101n, 10n ** 0n],
+    [12345n, 123n, 100n, 10n ** 0n],
   ];
 
   for (const [numBefore, denBefore, numAfter, denAfter] of cases) {
