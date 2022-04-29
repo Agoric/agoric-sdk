@@ -2,43 +2,29 @@ import { Far } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { defineDurableKind } from '@agoric/vat-data';
 
-function initialize(name, imp, value) {
+const initialize = (name, imp, value) => {
   return harden({ name, imp, value });
-}
+};
 
 const behavior = {
-  get({ state }) {
-    return { new: 'new', ...state.value };
-  },
-  getImport({ state }) {
-    return state.imp;
-  },
-  set({ state }, value) {
+  get: ({ state }) => ({ new: 'new', ...state.value }),
+  getImport: ({ state }) => state.imp,
+  set: ({ state }, value) => {
     state.value = value;
   },
 };
 
-export function buildRootObject(_vatPowers, vatParameters, baggage) {
+export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const durandalHandle = baggage.get('durandalHandle');
   defineDurableKind(durandalHandle, initialize, behavior);
 
   return Far('root', {
-    getVersion() {
-      return 'v2';
-    },
-    getParameters() {
-      return vatParameters;
-    },
-    getPresence() {
-      return baggage.get('presence');
-    },
-    getData() {
-      return baggage.get('data');
-    },
-    getEntries(collection) {
-      return Array.from(collection.entries());
-    },
-    checkBaggage(imp32, imp36) {
+    getVersion: () => 'v2',
+    getParameters: () => vatParameters,
+    getPresence: () => baggage.get('presence'),
+    getData: () => baggage.get('data'),
+    getEntries: collection => Array.from(collection.entries()),
+    checkBaggage: (imp32, imp36) => {
       // console.log(`baggage:`, Array.from(baggage.keys()));
       const dc5 = baggage.get('dc5');
       const dc6 = baggage.get('dc6');
@@ -56,4 +42,4 @@ export function buildRootObject(_vatPowers, vatParameters, baggage) {
       return { imp33, imp35, imp37, imp38 };
     },
   });
-}
+};

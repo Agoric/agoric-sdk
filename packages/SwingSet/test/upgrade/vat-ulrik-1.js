@@ -10,15 +10,13 @@ import {
 import { NUM_SENSORS } from './num-sensors.js';
 
 const durandalHandle = makeKindHandle('durandal');
-function initialize(name, imp, value) {
+const initialize = (name, imp, value) => {
   return harden({ name, imp, value });
-}
+};
 
 const behavior = {
-  get({ state }) {
-    return state.value;
-  },
-  set({ state }, value) {
+  get: ({ state }) => state.value,
+  set: ({ state }, value) => {
     state.value = value;
   },
 };
@@ -34,11 +32,11 @@ let modRetains;
 // we set up a lot of virtual and durable objects to test what gets
 // deleted vs retained (see object-graph.pdf for the test plan)
 
-function makeRemotable(name, held) {
+const makeRemotable = (name, held) => {
   return Far(name, { get: () => held });
-}
+};
 
-function buildExports(baggage, imp) {
+const buildExports = (baggage, imp) => {
   // each virtual/durable object has a unique import, some of which
   // should be dropped during upgrade
 
@@ -133,9 +131,9 @@ function buildExports(baggage, imp) {
     rem2,
     rem3,
   };
-}
+};
 
-export function buildRootObject(_vatPowers, vatParameters, baggage) {
+export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const { promise: p1 } = makePromiseKit();
   const { promise: p2 } = makePromiseKit();
   let heldPromise;
@@ -144,45 +142,29 @@ export function buildRootObject(_vatPowers, vatParameters, baggage) {
   baggage.init('durandalHandle', durandalHandle);
 
   return Far('root', {
-    getVersion() {
-      return 'v1';
-    },
-    getParameters() {
-      return vatParameters;
-    },
+    getVersion: () => 'v1',
+    getParameters: () => vatParameters,
 
-    acceptPresence(pres) {
+    acceptPresence: pres => {
       baggage.init('presence', pres);
     },
-    getPresence() {
-      return baggage.get('presence');
-    },
-    getData() {
-      return baggage.get('data');
-    },
-    getDurandal(arg) {
-      return makeDurandal('durandal', 0, arg);
-    },
-    getExports(imp) {
-      return buildExports(baggage, imp);
-    },
+    getPresence: () => baggage.get('presence'),
+    getData: () => baggage.get('data'),
+    getDurandal: arg => makeDurandal('durandal', 0, arg),
+    getExports: imp => buildExports(baggage, imp),
 
-    acceptPromise(p) {
+    acceptPromise: p => {
       // stopVat will reject the promises that we decide, but should
       // not touch the ones we don't decide, so we hold onto this
       // until upgrade, to probe for bugs in that loop
       heldPromise = p;
       heldPromise.catch(() => 'hush');
     },
-    getEternalPromise() {
-      return { p1 };
-    },
-    returnEternalPromise() {
-      return p2;
-    },
+    getEternalPromise: () => ({ p1 }),
+    returnEternalPromise: () => p2,
 
-    makeLostKind() {
+    makeLostKind: () => {
       makeKindHandle('unhandled', []);
     },
   });
-}
+};

@@ -5,7 +5,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { NUM_SENSORS } from './num-sensors.js';
 
-function insistMissing(ref, isCollection = false) {
+const insistMissing = (ref, isCollection = false) => {
   let p;
   if (isCollection) {
     p = E(ref).set(1, 2);
@@ -20,9 +20,9 @@ function insistMissing(ref, isCollection = false) {
       assert.equal(err.message, 'vat terminated');
     },
   );
-}
+};
 
-export function buildRootObject() {
+export const buildRootObject = () => {
   let vatAdmin;
   let ulrikRoot;
   let ulrikAdmin;
@@ -37,19 +37,15 @@ export function buildRootObject() {
   let retain;
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    bootstrap: async (vats, devices) => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     },
 
-    getMarker() {
-      return marker;
-    },
+    getMarker: () => marker,
 
-    getImportSensors() {
-      return importSensors;
-    },
+    getImportSensors: () => importSensors,
 
-    async buildV1() {
+    buildV1: async () => {
       // build Ulrik, the upgrading vat
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik1');
       const vatParameters = { youAre: 'v1', marker };
@@ -80,7 +76,7 @@ export function buildRootObject() {
       return { version, data, p1, p2, retain, ...parameters };
     },
 
-    async upgradeV2() {
+    upgradeV2: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
       const vatParameters = { youAre: 'v2', marker };
       await E(ulrikAdmin).upgrade(bcap, vatParameters);
@@ -140,7 +136,7 @@ export function buildRootObject() {
       return { version, data, remoerr, ...parameters };
     },
 
-    async buildV1WithLostKind() {
+    buildV1WithLostKind: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik1');
       const vatParameters = { youAre: 'v1', marker };
       const options = { vatParameters };
@@ -150,10 +146,10 @@ export function buildRootObject() {
       await E(ulrikRoot).makeLostKind();
     },
 
-    async upgradeV2WhichLosesKind() {
+    upgradeV2WhichLosesKind: async () => {
       const bcap = await E(vatAdmin).getNamedBundleCap('ulrik2');
       const vatParameters = { youAre: 'v2', marker };
       await E(ulrikAdmin).upgrade(bcap, vatParameters); // throws
     },
   });
-}
+};
