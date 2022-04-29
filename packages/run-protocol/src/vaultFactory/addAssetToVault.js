@@ -110,8 +110,7 @@ export const addAssetToVault = async ({
 
   /** @type {ERef<XYKAMMPublicFacet>} */
   const ammPub = E(zoe).getPublicFacet(amm);
-  const brand = await E(ibcAtomIssuer).getBrand();
-  E(ammPub).addPool(brand, 'IbcATOM');
+  E(ammPub).addPool(ibcAtomIssuer, 'IbcATOM');
 
   const RUN = await runP;
   await E(vaultFactoryCreator).addVaultType(ibcAtomIssuer, 'ATOM', {
