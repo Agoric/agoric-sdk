@@ -112,7 +112,7 @@ const makeParamManagerBuilder = zoe => {
   const addAmount = (name, value, builder) => {
     const assertAmount = a => {
       assert(a.brand, `Expected an Amount for ${name}, got "${a}"`);
-      return AmountMath.coerce(value.brand, a);
+      AmountMath.coerce(value.brand, a);
     };
     buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT);
     return builder;
@@ -144,7 +144,6 @@ const makeParamManagerBuilder = zoe => {
     const assertNat = v => {
       assert.typeof(v, 'bigint');
       Nat(v);
-      return true;
     };
     buildCopyParam(name, value, assertNat, ParamTypes.NAT);
     return builder;
@@ -173,7 +172,6 @@ const makeParamManagerBuilder = zoe => {
       } catch (e) {
         throw Error(`Expected a json string. "${v}" is not valid json.`);
       }
-      return true;
     };
     buildCopyParam(name, value, assertJson, ParamTypes.JSON);
     return builder;

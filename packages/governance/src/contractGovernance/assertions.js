@@ -49,7 +49,6 @@ const makeAssertBrandedRatio = (name, modelRatio) => {
       ratio.denominator.brand === modelRatio.denominator.brand,
       X`Denominator brand for ${name} must be ${modelRatio.denominator.brand}`,
     );
-    return true;
   };
 };
 harden(makeAssertBrandedRatio);
