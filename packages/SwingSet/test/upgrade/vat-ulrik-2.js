@@ -22,7 +22,7 @@ export function buildRootObject(_vatPowers, vatParameters, baggage) {
   const durandalHandle = baggage.get('durandalHandle');
   defineDurableKind(durandalHandle, initialize, behavior);
 
-  return Far('root', {
+  const root = Far('root', {
     getVersion() {
       return 'v2';
     },
@@ -56,4 +56,6 @@ export function buildRootObject(_vatPowers, vatParameters, baggage) {
       return { imp33, imp35, imp37, imp38 };
     },
   });
+  // exercise async return
+  return Promise.resolve(root);
 }

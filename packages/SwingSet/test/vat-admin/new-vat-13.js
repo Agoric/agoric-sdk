@@ -20,7 +20,7 @@ export function buildRootObject(_vatPowers, vatParameters) {
       },
     });
   }
-  return Far('root', {
+  const root = Far('root', {
     getANumber() {
       return 13;
     },
@@ -31,4 +31,6 @@ export function buildRootObject(_vatPowers, vatParameters) {
       return rcvrMaker(init);
     },
   });
+  // exercise async return
+  return Promise.resolve(root);
 }
