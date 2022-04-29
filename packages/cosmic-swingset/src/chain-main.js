@@ -288,6 +288,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // instance, and we update the 'portNums.storage' value each time toSwingSet is called
   async function launchAndInitializeSwingSet(bootMsg) {
     // this object is used to store the mailbox state.
+    // TODO: Generalize StorageAPI caching for both makeChainStorage and buildCrankBuffer?
+    // const sendToSwingset = msg => chainSend(portNums.storage, msg);
+    // const decodeGet = rawVal => rawVal && JSON.parse(rawVal);
+    // const transformers = { decodeGet, encodeSet: exportMailbox };
+    // const rawMailboxStorage = makeChainStorage(sendToSwingset, 'mailbox.', transformers);
+    // const mailboxStorage = makeCachingStorage(rawMailboxStorage, { onSet(key, val){} });
     const mailboxStorage = makeChainStorage(
       msg => chainSend(portNums.storage, msg),
       'mailbox.',

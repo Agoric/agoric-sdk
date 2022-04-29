@@ -1,7 +1,7 @@
 import { assert } from '@agoric/assert';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
 
-// We manage a host-realm Storage object with a has/getKeys/get/set/del API.
+// We manage a host-realm Storage object with a has/getKeys/get/set/delete API.
 // We must protect against cross-realm contamination, and add some
 // convenience methods.
 
@@ -14,8 +14,10 @@ import { insistStorageAPI } from '../../lib/storageAPI.js';
 // xenophobia.
 
 /**
- * Given two iterators over ordered sequences, produce a new iterator that will
- * iterate in order over the merged output of the two iterators.
+ * Given two iterators over sequences of comparable unique elements
+ * sorted in ascending order,
+ * produce a new iterator that will output the ascending sequence of unique elements
+ * from their merged output.
  *
  * @param { Iterator } it1
  * @param { Iterator } it2
@@ -36,6 +38,7 @@ function* mergeSortedIterators(it1, it2) {
       v2 = it2.next();
       yield result;
     } else {
+      // TODO? assert(v1.value > v2.value);
       const result = v2.value;
       v2 = it2.next();
       yield result;
@@ -74,7 +77,8 @@ export function buildCrankBuffer(
     crankhasher = createSHA256();
   }
 
-  // to avoid confusion, additions and deletions should never share a key
+  // To avoid confusion, additions and deletions are prevented from sharing
+  // the same key at any given time.
   const additions = new Map();
   const deletions = new Set();
   resetCrankhash();
@@ -124,6 +128,7 @@ export function buildCrankBuffer(
         added.values(),
         kvStore.getKeys(start, end),
       )) {
+        // TODO: Remove this redundant range verification?
         if ((start === '' || start <= k) && (end === '' || k < end)) {
           if (!deletions.has(k)) {
             yield k;
@@ -193,7 +198,9 @@ export function buildCrankBuffer(
     if (oldActivityhash === undefined) {
       oldActivityhash = '';
     }
-    const hasher = createSHA256('activityhash\n');
+    const hasher = createSHA256();
+    hasher.add('activityhash');
+    hasher.add('\n');
     hasher.add(oldActivityhash);
     hasher.add('\n');
     hasher.add(crankhash);
