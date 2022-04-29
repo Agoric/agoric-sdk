@@ -331,6 +331,13 @@ test('JSON blobs', async t => {
     Blob: '{ "authors": "Crockford,Morningstar" }',
   });
   t.is(paramManager.getBlob(), '{ "authors": "Crockford,Morningstar" }');
+
+  await paramManager.updateParams({
+    // trailing whitespace is preserved
+    Blob: '{ "authors": "Crockford,Morningstar" }    ',
+  });
+  t.is(paramManager.getBlob(), '{ "authors": "Crockford,Morningstar" }    ');
+
   await t.throwsAsync(
     () =>
       paramManager.updateParams({
@@ -347,6 +354,17 @@ test('JSON blobs', async t => {
       }),
     {
       message: 'Expected a json string. "author: bob" is not valid json.',
+    },
+  );
+
+  await t.throwsAsync(
+    () =>
+      paramManager.updateParams({
+        Blob: '{ author: "bob" };',
+      }),
+    {
+      message:
+        'Expected a json string. "{ author: "bob" };" is not valid json.',
     },
   );
 
