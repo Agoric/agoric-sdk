@@ -95,10 +95,10 @@ const expectedcontractGovernorStartLog = [
   '&& running a task scheduled for 3. &&',
   'vote outcome: {"changes":{"MalleableNumber":"[299792458n]"}}',
   'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
-  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 299792458',
-  'MalleableNumber changed in a vote.',
+  'Electorate,MalleableNumber changed in a vote.',
   'Number after: 299792458',
+  'MalleableNumber changed in a vote.',
 ];
 
 test.serial('contract governance', async t => {
@@ -131,8 +131,8 @@ const expectedChangeElectorateLog = [
   '&& running a task scheduled for 4. &&',
   'vote outcome: {"changes":{"MalleableNumber":"[299792458n]"}}',
   'updated to {"changes":{"MalleableNumber":"[299792458n]"}}',
-  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 299792458',
+  'Electorate,MalleableNumber changed in a vote.',
   'Electorate changed in a vote.',
   'MalleableNumber changed in a vote.',
 ];
@@ -155,10 +155,18 @@ const expectedBrokenUpdateLog = [
   '&& running a task scheduled for 2. &&',
   'vote outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}}',
   'Validation complete: true',
-  'vote rejected outcome: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
-  'update failed: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
-  'Electorate,MalleableNumber changed in a vote.',
+  // [`prepareToSetInvitation`](https://github.com/Agoric/agoric-sdk/blob/c6570b015fd23c411e48981bec309b32eedd3a28/packages/governance/src/contractGovernance/paramManager.js#L199-L212)
+  // does a `Promise.all` on 2 calls using the `invite` promise. If that promise
+  // is rejected, this will result in a rejection race between the 2 paths. The
+  // following 2 entries may come back as the commented out lines if the kernel
+  // changes the order in which messages are processed.
+  // TODO: allow either message
+  // 'vote rejected outcome: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
+  // 'update failed: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
+  'vote rejected outcome: Error: A Zoe invitation is required, not (an object)',
+  'update failed: Error: A Zoe invitation is required, not (an object)',
   'current value of MalleableNumber is 602214090000000000000000',
+  'Electorate,MalleableNumber changed in a vote.',
 ];
 
 test.serial('brokenUpdateStart', async t => {
@@ -181,8 +189,8 @@ const changeTwoParamsLog = [
   'Validation complete: true',
   'updated to ({"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}})',
   'successful outcome: {"changes":{"Electorate":{"brand":"[Alleged: Zoe Invitation brand]","value":[{"description":"questionPoser","handle":"[Alleged: InvitationHandle]","installation":"[Alleged: Installation]","instance":"[Alleged: InstanceHandle]"}]},"MalleableNumber":"[42n]"}} ',
-  'Electorate,MalleableNumber changed in a vote.',
   'current value of MalleableNumber is 42',
+  'Electorate,MalleableNumber changed in a vote.',
   'Electorate,MalleableNumber changed in a vote.',
 ];
 
