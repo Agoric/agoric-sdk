@@ -21,8 +21,34 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /** @param { import('../src/econ-behaviors').EconomyBootstrapPowers } powers */
 const inviteCommitteeMembers = async ({
-  consume: { namesByAddress, economicCommitteeCreatorFacet },
+  consume: {
+    zoe,
+    namesByAddress,
+    economicCommitteeCreatorFacet,
+    reserveCreatorFacet: reserve,
+    ammCreatorFacet: amm,
+    vaultFactoryCreator: vaults,
+  },
+  installation: {
+    consume: { voting: votingP, binaryVoteCounter: counterP },
+  },
 }) => {
+  /** @type {[Installation, Installation]} */
+  const [votingInstall, counterInstall] = await Promise.all([
+    votingP,
+    counterP,
+  ]);
+  const terms = {
+    binaryVoteCounterInstallation: counterInstall,
+  };
+  const privateFacets = {
+    reserve,
+    amm,
+    vaults,
+  };
+  const { publicFacet: votingAPI } = E.get(
+    E(zoe).startInstance(votingInstall, undefined, terms, privateFacets),
+  );
   const invitations = await E(
     economicCommitteeCreatorFacet,
   ).getVoterInvitations();
@@ -30,18 +56,15 @@ const inviteCommitteeMembers = async ({
 
   /** @param {[string, Promise<Invitation>]} entry */
   const distributeInvitation = async ([addr, invitationP]) => {
-    const [invitation, depositFacet] = await Promise.all([
+    const [voterInvitation, depositFacet] = await Promise.all([
       invitationP,
       E(namesByAddress).lookup(addr, DEPOSIT_FACET),
     ]);
 
-    // for now, everybody gets the full poser invitation
-    const poserInvitation = await E(
-      economicCommitteeCreatorFacet,
-    ).getPoserInvitation();
+    const nullInvitation = await E(votingAPI).makeNullInvitation();
     await Promise.all([
-      E(depositFacet).receive(invitation),
-      E(depositFacet).receive(poserInvitation),
+      E(depositFacet).receive(voterInvitation),
+      E(depositFacet).receive(nullInvitation),
     ]);
   };
 
