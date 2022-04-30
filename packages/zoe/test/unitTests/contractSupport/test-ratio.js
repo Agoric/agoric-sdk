@@ -528,6 +528,7 @@ test('ratio - parse', t => {
     parseRatio(1024.93803, moeBrand),
     makeRatio(102493803n, moeBrand, 10n ** 5n, moeBrand),
   );
+
   t.deepEqual(
     parseRatio(1024.93803, moeBrand, larryBrand),
     makeRatio(102493803n, moeBrand, 10n ** 5n, larryBrand),
@@ -560,4 +561,19 @@ test('ratio - parse', t => {
   t.throws(() => parseRatio('abc', moeBrand), {
     message: /Invalid numeric data/,
   });
+
+  // It's floats that have roundoff errors, but we properly parse and propagate
+  // those errors.
+  t.deepEqual(
+    parseRatio(0.1 + 0.2, moeBrand),
+    makeRatio(30000000000000004n, moeBrand, 100000000000000000n, moeBrand),
+  );
+  t.deepEqual(
+    parseRatio(Number.MAX_SAFE_INTEGER + 1, moeBrand),
+    makeRatio(9007199254740992n, moeBrand, 1n, moeBrand),
+  );
+  t.deepEqual(
+    parseRatio(Number.MAX_SAFE_INTEGER + 2, moeBrand),
+    makeRatio(9007199254740992n, moeBrand, 1n, moeBrand),
+  );
 });
