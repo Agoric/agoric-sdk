@@ -32,7 +32,7 @@ export const start = async (zcf, privateArgs) => {
     deadline,
   ) => {
     return E(target).voteOnParamChanges(counter, deadline, {
-      paramPath: path,
+      ...path,
       changes: params,
     });
   };
@@ -50,8 +50,13 @@ export const start = async (zcf, privateArgs) => {
     voteOnAmmParamChanges: params => voteOnParamChanges(amm, params),
     voteOnReserveParamChanges: params => voteOnParamChanges(reserve, params),
     // vote on param changes for a vaultManager
-    voteOnVaultParamChanges: (params, brand) =>
-      voteOnParamChanges(vaults, params, { paramPath: { key: brand } }),
+    voteOnVaultParamChanges: (params, brand, deadline) =>
+      voteOnParamChanges(
+        vaults,
+        params,
+        { paramPath: { key: brand } },
+        deadline,
+      ),
     // vote on param changes across the vaultFactory
     voteOnVaultFactoryParamChanges: params =>
       voteOnParamChanges(vaults, params),
@@ -60,5 +65,5 @@ export const start = async (zcf, privateArgs) => {
     makeNullInvitation,
   });
 
-  return { publicFacet };
+  return harden({ publicFacet });
 };
