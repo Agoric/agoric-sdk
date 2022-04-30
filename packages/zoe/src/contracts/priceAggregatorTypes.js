@@ -21,6 +21,7 @@
  * @typedef {Object} PriceAggregatorCreatorFacet
  * @property {PriceAggregatorCreatorFacetInitOracle} initOracle
  * @property {(oracleKey: OracleKey) => Promise<void>} deleteOracle
+ * @property {(oracleKey?: OracleKey) => Promise<Invitation>} makeOracleInvitation
  */
 
 /**
