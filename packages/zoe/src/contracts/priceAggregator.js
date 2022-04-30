@@ -42,16 +42,6 @@ const start = async (
 ) => {
   const { timer, POLL_INTERVAL, brandIn, brandOut } = zcf.getTerms();
 
-  /** @param {ERef<Brand>} brand */
-  const getDecimalP = async brand => {
-    const displayInfo = E(brand).getDisplayInfo();
-    return E.get(displayInfo).decimalPlaces;
-  };
-  const [decimalPlacesIn = 0, decimalPlacesOut = 0] = await Promise.all([
-    getDecimalP(brandIn),
-    getDecimalP(brandOut),
-  ]);
-
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -129,10 +119,7 @@ const start = async (
      */
     function createQuote(priceQuery) {
       // Use the current price.
-      const price =
-        overridePrice === undefined
-          ? lastPrice // Use the latest value.
-          : overridePrice; // Override the value.
+      const price = overridePrice || lastPrice;
       if (price === undefined) {
         // We don't have a quote, so abort.
         return undefined;
@@ -256,7 +243,34 @@ const start = async (
     updater.updateState(authenticatedQuote);
   };
 
-  const outScale = makeRatio(
+  /** @param {ERef<Brand>} brand */
+  const getDecimalP = async brand => {
+    const displayInfo = E(brand).getDisplayInfo();
+    return E.get(displayInfo).decimalPlaces;
+  };
+  const [decimalPlacesIn = 0, decimalPlacesOut = 0] = await Promise.all([
+    getDecimalP(brandIn),
+    getDecimalP(brandOut),
+  ]);
+
+  /**
+   * We typically don't rely on decimal places in contract code, but if an
+   * oracle price source supplies a single dimensionless price, we need to
+   * interpret it as a ratio for units of brandOut per units of brandIn.  If we
+   * don't do this, then our quoted prices (i.e. `amountOut`) would not be
+   * correct for brands with different decimalPlaces.
+   *
+   * This isn't really an abuse: we are using these decimalPlaces correctly to
+   * interpret the price source's "display output" as an actual
+   * amountOut:amountIn ratio used in calculations.
+   *
+   * If a price source wishes to supply an amountOut:amountIn ratio explicitly,
+   * it is free to do so, and that is the preferred way.  We leave this
+   * unitPriceScale implementation intact, however, since price sources may be
+   * outside the distributed object fabric and unable to convey brand references
+   * (since they can communicate only plain data).
+   */
+  const unitPriceScale = makeRatio(
     10n ** BigInt(Math.max(decimalPlacesOut - decimalPlacesIn, 0)),
     brandOut,
     10n ** BigInt(Math.max(decimalPlacesIn - decimalPlacesOut, 0)),
@@ -264,7 +278,7 @@ const start = async (
   );
   const makeRatioFromData = numericData => {
     const unscaled = parseRatio(numericData, brandOut, brandIn);
-    return multiplyRatios(unscaled, outScale);
+    return multiplyRatios(unscaled, unitPriceScale);
   };
 
   /** @type {PriceAggregatorCreatorFacet} */

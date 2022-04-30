@@ -21,7 +21,6 @@ import '../../../exported.js';
 import '../../../src/contracts/exported.js';
 import {
   addRatios,
-  floorDivideBy,
   makeRatio,
   multiplyBy,
   multiplyRatios,
