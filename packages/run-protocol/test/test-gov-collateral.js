@@ -49,6 +49,7 @@ const contractRoots = {
   VaultFactory: './src/vaultFactory/vaultFactory.js',
   amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
   mintHolder: '../vats/src/mintHolder.js',
+  voting: './src/voting.js',
 };
 
 const govScript = {
@@ -75,6 +76,7 @@ const makeTestContext = async () => {
     VaultFactory: install(contractRoots.VaultFactory, 'VaultFactory'),
     amm: install(contractRoots.amm, 'amm'),
     mintHolder: install(contractRoots.mintHolder, 'mintHolder'),
+    voting: install(contractRoots.voting, 'voting'),
   };
 
   return {
@@ -202,6 +204,8 @@ const makeScenario = async t => {
   };
 
   const enactProposal = async () => {
+    space.installation.produce.voting.resolve(t.context.installation.voting);
+
     // Start the governance from the core proposals.
     const coreEvalMessage = {
       type: 'CORE_EVAL',
@@ -247,7 +251,10 @@ test('voters get invitations', async t => {
   await Promise.all(
     [...purses].map(async ([_addr, purse]) => {
       const amt = await E(purse).getCurrentAmount();
-      t.deepEqual(amt.value[0].description, 'questionPoser');
+      t.deepEqual(
+        amt.value[0].description,
+        'identifies the voting contract instance',
+      );
       t.true(amt.value[1].description.startsWith('Voter'));
     }),
   );
