@@ -1,6 +1,5 @@
 // @ts-check
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
@@ -75,6 +74,7 @@ const makeContext = async t => {
 
 test.before(async t => {
   const properties = await makeContext(t);
+  // @ts-expect-error t.context is unknown so could be null
   Object.assign(t.context, properties);
 });
 
