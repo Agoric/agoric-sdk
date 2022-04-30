@@ -1,3 +1,4 @@
+import path from 'path';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import {
   importMailbox,
@@ -123,31 +124,40 @@ const makeChainQueue = (call, prefix = '') => {
     /** @type {Iterable<unknown>} */
     consumeAll: () => ({
       [Symbol.iterator]: () => {
+        let done = false;
         let head = storage.get('head') || 0;
         const tail = storage.get('tail') || 0;
         return {
           next: () => {
+            if (done) return { done };
             if (head < tail) {
               // Still within the queue.
               const value = storage.get(head);
               storage.delete(head);
               head += 1;
-              return { value, done: false };
+              return { value, done };
             }
             // Reached the end, so clean up our indices.
             storage.delete('head');
             storage.delete('tail');
             storage.commit();
-            return { done: true };
+            done = true;
+            return { done };
           },
           return: () => {
+            if (done) return { done };
             // We're done consuming, so save our state.
             storage.set('head', head);
             storage.commit();
+            done = true;
+            return { done };
           },
-          throw: () => {
+          throw: err => {
+            if (done) return { done };
             // Don't change our state.
             storage.abort();
+            done = true;
+            throw err;
           },
         };
       },
@@ -346,8 +356,23 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
 
-    const enableTrace =
-      SWING_STORE_TRACE === '1' || !!getFlagValue('trace-store');
+    const defaultTraceFile = path.resolve(stateDBDir, 'store-trace.log');
+    let swingStoreTraceFile;
+    switch (SWING_STORE_TRACE) {
+      case '0':
+      case 'false':
+        break;
+      case '1':
+      case 'true':
+        swingStoreTraceFile = defaultTraceFile;
+        break;
+      default:
+        if (SWING_STORE_TRACE) {
+          swingStoreTraceFile = path.resolve(SWING_STORE_TRACE);
+        } else if (getFlagValue('trace-store')) {
+          swingStoreTraceFile = defaultTraceFile;
+        }
+    }
 
     const s = await launch({
       actionQueue,
@@ -357,11 +382,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
+      env,
       metricsProvider,
       slogFile: SLOGFILE,
       slogSender,
       mapSize,
-      enableTrace,
+      swingStoreTraceFile,
     });
     return s;
   }

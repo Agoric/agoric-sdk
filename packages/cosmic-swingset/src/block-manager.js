@@ -199,12 +199,9 @@ export default function makeBlockManager({
           // This is necessary only after a restart when Tendermint is reevaluating the
           // block that was interrupted and not committed.
           //
-          // We assert that the return values are identical, which allows us not
-          // to resave our state.
-          for (const _ of actionQueue.consumeAll()) {
-            // Just short-circuit the action queue to fully consume it.
-            break;
-          }
+          // We assert that the return values are identical, which allows us to silently
+          // clear the queue.
+          for (const _ of actionQueue.consumeAll());
           try {
             flushChainSends(true);
           } catch (e) {

@@ -1,6 +1,6 @@
 // @ts-check
 
-import { deeplyFulfilled, Far } from '@endo/marshal';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
@@ -308,7 +308,7 @@ const makeParamManagerBuilder = zoe => {
     const newValues = Object.fromEntries(tuples);
     publication.updateState({ paramNames });
 
-    return deeplyFulfilled(harden(newValues));
+    return harden(newValues);
   };
 
   const makeParamManager = () => {

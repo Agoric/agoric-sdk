@@ -80,3 +80,20 @@ after a PR had been approved and tests were passing, then landed the stack with
 "Rebase and merge" or "Create merge commit".
 
 [CC]: https://www.conventionalcommits.org/en/v1.0.0/
+
+### Integration tests
+
+Some tests take time to complete and will not run by default on every PR push.
+However once a PR is ready for review and flagged for merging through one of
+the `automerge` labels, these integrations tests will run and be required
+before the PR can land.
+
+If you believe your PR may impact the result of the integration tests, you can
+force them to run unconditionally by using the label `force:integration`. If
+you know your PR has no impact on integration tests, you can use the label
+`bypass:integration` to prevent them from running at all.
+
+If a commit was merged without going through the merge queue (`automerge`
+label), or if the integration tests were bypassed in the PR, the tests will
+run on the merge commit instead. While the PR has landed at that point, it is
+still the responsibility of the PR author to fix any breakage.

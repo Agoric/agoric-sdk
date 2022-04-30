@@ -19,5 +19,26 @@ export const natSafeMath = harden({
     y = Nat(y);
     return Nat(Nat(x) + y - 1n) / y;
   },
-  isGTE: (x, y) => x >= y,
+  /**
+   * Divide using half-to-even (aka Banker's Rounding) as in IEEE 774 default rounding
+   *
+   * @param {NatValue} a
+   * @param {NatValue} b
+   */
+  bankersDivide: (a, b) => {
+    a = Nat(a);
+    b = Nat(b);
+
+    const div = a / b;
+    const rem = a % b;
+    // if remainder > half divisor, should have rounded up instead of down, so add 1
+    if (rem * 2n > b) {
+      return div + 1n;
+    } else if (rem * 2n === b) {
+      // Add 1 if result is odd to get an even return value
+      if (div % 2n === 1n) return div + 1n;
+    }
+    return div;
+  },
+  isGTE: (x, y) => Nat(x) >= Nat(y),
 });

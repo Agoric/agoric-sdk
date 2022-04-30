@@ -4,13 +4,13 @@ import { Far } from '@endo/marshal';
 import { makeVaultTitle } from './vaultTitle.js';
 
 /**
- * Create a kit of utilities for use of the (inner) vault.
+ * Create a kit of utilities for use of the vault.
  *
- * @param {InnerVault} inner
+ * @param {Vault} vault
  * @param {Notifier<import('./vaultManager').AssetState>} assetNotifier
  */
-export const makeVaultKit = (inner, assetNotifier) => {
-  const { title, helper } = makeVaultTitle(inner);
+export const makeVaultKit = (vault, assetNotifier) => {
+  const { title, helper } = makeVaultTitle(vault);
   const vaultKit = harden({
     publicNotifiers: {
       vault: title.getNotifier(),

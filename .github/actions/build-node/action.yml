@@ -5,6 +5,11 @@ inputs:
   node-version:
     description: 'The version of Node.js to use'
     required: true
+  cache-built:
+    description: 'Cache the result of the build'
+    type: boolean
+    required: false
+    default: true
 
 runs:
   using: composite
@@ -40,5 +45,6 @@ runs:
       run: yarn build
 
     - uses: ./.github/actions/save-node
+      if: inputs.cache-built == true
       with:
         node-version: ${{ inputs.node-version }}

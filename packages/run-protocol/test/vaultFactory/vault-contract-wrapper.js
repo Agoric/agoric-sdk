@@ -17,7 +17,7 @@ import { Far } from '@endo/marshal';
 import { makeNotifierKit } from '@agoric/notifier';
 import { getAmountOut } from '@agoric/zoe/src/contractSupport';
 import { E } from '@endo/eventual-send';
-import { makeInnerVault } from '../../src/vaultFactory/vault.js';
+import { makeVault } from '../../src/vaultFactory/vault.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 
 const BASIS_POINTS = 10000n;
@@ -100,7 +100,7 @@ export async function start(zcf, privateArgs) {
     runMint.burnLosses(harden({ RUN: toBurn }), seat);
   };
 
-  /** @type {Parameters<typeof makeInnerVault>[1]} */
+  /** @type {Parameters<typeof makeVault>[1]} */
   const managerMock = Far('vault manager mock', {
     getGovernedParams() {
       return {
@@ -148,7 +148,7 @@ export async function start(zcf, privateArgs) {
     },
   });
 
-  const innerVault = await makeInnerVault(
+  const vault = await makeVault(
     zcf,
     managerMock,
     // eslint-disable-next-line no-plusplus
@@ -178,13 +178,13 @@ export async function start(zcf, privateArgs) {
     collateralKit,
     runMint,
     setInterestRate,
-    vault: innerVault,
+    vault,
   }));
 
   async function makeHook(seat) {
-    const vaultKit = await innerVault.initVaultKit(seat);
+    const vaultKit = await vault.initVaultKit(seat);
     return {
-      vault: innerVault,
+      vault,
       runMint,
       collateralKit,
       actions: Far('vault actions', {
@@ -200,7 +200,7 @@ export async function start(zcf, privateArgs) {
 
   const vaultAPI = Far('vaultAPI', {
     makeAdjustBalancesInvitation() {
-      return innerVault.makeAdjustBalancesInvitation();
+      return vault.makeAdjustBalancesInvitation();
     },
     mintRun(amount) {
       return paymentFromZCFMint(zcf, runMint, amount);

@@ -131,6 +131,9 @@ export function makeXsSubprocessFactory({
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);
       const result = await worker.issueStringCommand(JSON.stringify(item));
+      // note: if 'result.reply' is empty, that probably means the
+      // worker reached end-of-crank (idle) without seeing the
+      // `dispatch()` promise resolve
       const reply = JSON.parse(result.reply);
       assert(Array.isArray(reply));
       const [tag, ...rest] = reply;

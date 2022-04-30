@@ -9,7 +9,7 @@ import { keyEQ, keyLT } from '@agoric/store';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
 
-/** @typedef {import('./vault').InnerVault} InnerVault */
+/** @typedef {import('./vault').Vault} Vault */
 
 /**
  *
@@ -29,7 +29,7 @@ const calculateDebtToCollateral = (debtAmount, collateralAmount) => {
 
 /**
  *
- * @param {InnerVault} vault
+ * @param {Vault} vault
  * @returns {Ratio}
  */
 export const currentDebtToCollateral = vault =>
@@ -39,7 +39,7 @@ export const currentDebtToCollateral = vault =>
   );
 
 /**
- * InnerVaults, ordered by their liquidation ratio so that all the
+ * Vaults, ordered by their liquidation ratio so that all the
  * vaults below a threshold can be quickly found and liquidated.
  *
  * @param {() => void} reschedulePriceCheck called when there is a new
@@ -92,7 +92,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
 
   /**
    * @param {string} key
-   * @returns {InnerVault}
+   * @returns {Vault}
    */
   const removeVault = key => {
     const vault = vaults.removeByKey(key);
@@ -121,7 +121,7 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
   /**
    *
    * @param {VaultId} vaultId
-   * @param {InnerVault} vault
+   * @param {Vault} vault
    */
   const addVault = (vaultId, vault) => {
     const key = vaults.addVault(vaultId, vault);
@@ -141,8 +141,8 @@ export const makePrioritizedVaults = (reschedulePriceCheck = () => {}) => {
    * Redundant tags until https://github.com/Microsoft/TypeScript/issues/23857
    *
    * @param {Ratio} ratio
-   * @yields {[string, InnerVault]>}
-   * @returns {IterableIterator<[string, InnerVault]>}
+   * @yields {[string, Vault]>}
+   * @returns {IterableIterator<[string, Vault]>}
    */
   // Allow generator function
   // eslint-disable-next-line func-names

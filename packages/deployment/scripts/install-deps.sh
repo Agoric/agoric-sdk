@@ -28,9 +28,29 @@ TERRAFORM_URL=https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${TE
   unzip -od /usr/local/bin/ "$terraform_zip"
 )
 
+VERSION_CODENAME_RAW="$(cat /etc/os-release | grep VERSION_CODENAME)"
+VERSION_CODENAME=${VERSION_CODENAME_RAW#VERSION_CODENAME=}
+
+# Debian version match
+# See https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-debian
+case $VERSION_CODENAME in
+  jessie)
+    VERSION_CODENAME=trusty
+    ;;
+  stretch)
+    VERSION_CODENAME=xenial
+    ;;
+  buster)
+    VERSION_CODENAME=bionic
+    ;;
+  bullseye)
+    VERSION_CODENAME=focal
+    ;;
+esac
+
 # Install Ansible.
 if test -d /etc/apt; then
-  echo 'deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main' >> /etc/apt/sources.list
+  echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu $VERSION_CODENAME main" >> /etc/apt/sources.list
   apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
   apt-get update --allow-releaseinfo-change -y
   apt-get install -y ansible rsync curl sudo gnupg2 jq

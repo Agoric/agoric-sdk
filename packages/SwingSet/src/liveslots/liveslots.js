@@ -1275,7 +1275,7 @@ function build(
     );
 
     // here we finally invoke the vat code, and get back the root object
-    const rootObject = buildRootObject(
+    const rootObject = await buildRootObject(
       harden(vpow),
       harden(vatParameters),
       baggage,
@@ -1447,18 +1447,26 @@ function build(
     } else if (delivery[0] === 'stopVat') {
       return meterControl.runWithoutMeteringAsync(stopVat);
     } else {
+      let complete = false;
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for
       // any promise it returns to fire.
       const p = Promise.resolve(delivery).then(unmeteredDispatch);
+      p.finally(() => (complete = true));
 
-      // Instead, we wait for userspace to become idle by draining the promise
-      // queue. We clean up and then return 'p' so any bugs in liveslots that
-      // cause an error during unmeteredDispatch will be reported to the
-      // supervisor (but only after userspace is idle).
+      // Instead, we wait for userspace to become idle by draining the
+      // promise queue. We clean up and then examine/return 'p' so any
+      // bugs in liveslots that cause an error during
+      // unmeteredDispatch (or a 'buildRootObject' that fails to
+      // complete in time) will be reported to the supervisor (but
+      // only after userspace is idle).
       return gcTools.waitUntilQuiescent().then(() => {
         afterDispatchActions();
-        return p;
+        // eslint-disable-next-line prefer-promise-reject-errors
+        return complete ? p : Promise.reject('buildRootObject unresolved');
+        // the only delivery that pays attention to a user-provided
+        // Promise is startVat, so the error message is specialized to
+        // the only user problem that could cause complete===false
       });
     }
   }

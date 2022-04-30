@@ -37,7 +37,7 @@ function makeSupervisorDispatch(dispatch) {
         err => {
           // TODO react more thoughtfully, maybe terminate the vat
           console.log(`error ${err} during vat dispatch() of ${delivery}`);
-          return harden(['error', `${err.message}`, null]);
+          return harden(['error', `${err}`, null]);
         },
       );
   }
