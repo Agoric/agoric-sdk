@@ -18,6 +18,7 @@ import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
   setupAmm,
+  setupReserve,
   startEconomicCommittee,
   startVaultFactory,
 } from '../src/econ-behaviors.js';
@@ -48,6 +49,7 @@ const contractRoots = {
   liquidate: './src/vaultFactory/liquidateMinimum.js',
   VaultFactory: './src/vaultFactory/vaultFactory.js',
   amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
+  reserve: './src/reserve/assetReserve.js',
   mintHolder: '../vats/src/mintHolder.js',
   voting: './src/voting.js',
 };
@@ -75,6 +77,7 @@ const makeTestContext = async () => {
     liquidate: install(contractRoots.liquidate, 'liquidateMinimum'),
     VaultFactory: install(contractRoots.VaultFactory, 'VaultFactory'),
     amm: install(contractRoots.amm, 'amm'),
+    reserve: install(contractRoots.reserve, 'reserve'),
     mintHolder: install(contractRoots.mintHolder, 'mintHolder'),
     voting: install(contractRoots.voting, 'voting'),
   };
@@ -186,6 +189,7 @@ const makeScenario = async t => {
     iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
     iProduce.liquidate.resolve(t.context.installation.liquidate);
     iProduce.amm.resolve(t.context.installation.amm);
+    iProduce.reserve.resolve(t.context.installation.reserve);
 
     const USD = makeIssuerKit('USD');
     const ATOM = makeIssuerKit('ATOM');
@@ -200,11 +204,15 @@ const makeScenario = async t => {
       startEconomicCommittee(space),
       setupAmm(space),
       startVaultFactory(space),
+      setupReserve(space),
     ]);
   };
 
   const enactProposal = async () => {
-    space.installation.produce.voting.resolve(t.context.installation.voting);
+    E(E(space.consume.agoricNamesAdmin).lookupAdmin('installation')).update(
+      'voting',
+      t.context.installation.voting,
+    ); // kludge
 
     // Start the governance from the core proposals.
     const coreEvalMessage = {
@@ -223,6 +231,7 @@ const makeScenario = async t => {
       coreEvalMessage,
     );
 
+    // TODO: integrate with writeCoreProposal or whatever
     await Promise.all([
       addInterchainAsset(space, { options: { denom: 'ibc/abc123' } }),
       registerScaledPriceAuthority(space),
@@ -230,14 +239,47 @@ const makeScenario = async t => {
     ]);
   };
 
+  const benefactorDeposit = async (qty = 10_000n) => {
+    const { ibcAtomMintForTesting, agoricNames, zoe } = space.consume;
+    const ibcAtomBrand = await E(agoricNames).lookup('brand', 'IbcATOM');
+    /** @type {ERef<import('../src/reserve/assetReserve').AssetReservePublicFacet>} */
+    const reserveAPI = E(zoe).getPublicFacet(
+      E(agoricNames).lookup('instance', 'reserve'),
+    );
+    const proposal = harden({
+      give: { Collateral: AmountMath.make(ibcAtomBrand, qty * 1_000_000n) },
+    });
+
+    const atom10k = await E(ibcAtomMintForTesting).mintPayment(
+      proposal.give.Collateral,
+    );
+    const seat = E(zoe).offer(
+      await E(reserveAPI).makeAddCollateralInvitation(),
+      proposal,
+      harden({ Collateral: atom10k }),
+    );
+    return E(seat).getOfferResult();
+  };
+
   return {
     startDevNet,
     provisionMembers,
     startRunPreview,
     enactProposal,
+    benefactorDeposit,
     space,
   };
 };
+
+test('Benefactor can add to reserve', async t => {
+  const s = await makeScenario(t);
+  await s.startDevNet();
+  await s.provisionMembers();
+  await s.startRunPreview();
+  await s.enactProposal();
+  const result = await s.benefactorDeposit();
+  t.deepEqual(result, 'added Collateral to the Reserve');
+});
 
 test('voters get invitations', async t => {
   const s = await makeScenario(t);
@@ -289,6 +331,52 @@ test('assets are in AMM, Vaults', async t => {
   t.deepEqual(params.DebtLimit, {
     type: 'amount',
     value: { brand: runBrand, value: 0n },
+  });
+});
+
+test('Committee can raise debt limit', async t => {
+  const s = await makeScenario(t);
+  await s.startDevNet();
+  const purses = await s.provisionMembers();
+  await s.startRunPreview();
+
+  await s.enactProposal();
+
+  const { agoricNames } = s.space.consume;
+  const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
+  const runBrand = await E(agoricNames).lookup('brand', 'RUN');
+
+  const { zoe } = s.space.consume;
+  t.log({ purses });
+
+  const billsPurse = purses.get(voterAddresses.Bill);
+  assert(billsPurse);
+
+  const amt = await E(billsPurse).getCurrentAmount();
+  t.log('amt.value', amt.value);
+
+  const votingInv = /** @type {SetValue} */ (amt.value).find(
+    ({ description }) =>
+      description === 'identifies the voting contract instance',
+  );
+  t.assert(votingInv);
+
+  const pf = await E(zoe).getPublicFacet(votingInv.instance);
+  const params = { DebtLimit: AmountMath.make(runBrand, 100n) };
+  const deadline = 1232n;
+  const actual = await E(pf).voteOnVaultParamChanges(
+    params,
+    {
+      collateralBrand: brand,
+    },
+    deadline,
+  );
+
+  t.log('@@@ continue testing here');
+  t.deepEqual(actual, {
+    details: actual.details,
+    instance: votingInv.instance,
+    outcomeOfUpdate: actual.outcomeOfUpdate,
   });
 });
 
