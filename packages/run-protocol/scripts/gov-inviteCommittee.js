@@ -23,32 +23,34 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const inviteCommitteeMembers = async ({
   consume: {
     zoe,
+    agoricNames,
     namesByAddress,
     economicCommitteeCreatorFacet,
-    reserveCreatorFacet: reserve,
-    ammCreatorFacet: amm,
-    vaultFactoryCreator: vaults,
+    reserveGovernorCreatorFacet,
+    ammGovernorCreatorFacet,
+    vaultFactoryGovernorCreator,
   },
   installation: {
-    consume: { voting: votingP, binaryVoteCounter: counterP },
+    consume: { binaryVoteCounter: counterP },
   },
 }) => {
   /** @type {[Installation, Installation]} */
   const [votingInstall, counterInstall] = await Promise.all([
-    votingP,
+    E(agoricNames).lookup('installation', 'voting'),
     counterP,
   ]);
   const terms = {
     binaryVoteCounterInstallation: counterInstall,
   };
   const privateFacets = {
-    reserve,
-    amm,
-    vaults,
+    reserve: reserveGovernorCreatorFacet,
+    amm: ammGovernorCreatorFacet,
+    vaults: vaultFactoryGovernorCreator,
   };
   const { publicFacet: votingAPI } = E.get(
     E(zoe).startInstance(votingInstall, undefined, terms, privateFacets),
   );
+
   const invitations = await E(
     economicCommitteeCreatorFacet,
   ).getVoterInvitations();
