@@ -4,12 +4,28 @@ on:
   # Use the following to explicitly start this workflow.
   # packages/deployment/scripts/start-deployment-test.sh <BRANCH-OR-TAG>
   workflow_dispatch:
-  # Otherwise, run on default branch.
   push:
-    branches: [master] # $default-branch
+    branches:
+      - master
+      - beta
+    tags:
+      - '@agoric/sdk@*'
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
+      - auto_merge_enabled
 
 jobs:
+  pre_check:
+    uses: ./.github/workflows/pre-check-integration.yml
+
   deployment-test:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-18.04 # trusty
     steps:
       - uses: actions/checkout@v2
@@ -18,6 +34,7 @@ jobs:
       - uses: ./.github/actions/restore-golang
         with:
           go-version: 1.17
+          cache-key: trusty
       - uses: ./.github/actions/restore-node
         with:
           node-version: 14.x
