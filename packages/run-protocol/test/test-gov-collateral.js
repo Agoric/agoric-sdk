@@ -266,18 +266,23 @@ test('assets are in AMM, Vaults', async t => {
     instance: { consume: instanceP },
   } = s.space;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
+  const runBrand = await E(agoricNames).lookup('brand', 'RUN');
 
   /** @type { ERef<XYKAMMPublicFacet> } */
   const ammAPI = instanceP.amm.then(i => E(zoe).getPublicFacet(i));
   const ammStuff = await E(ammAPI).getAllPoolBrands();
   t.deepEqual(ammStuff, [brand]);
 
-  // TODO:
-  //   /** @type {ERef<import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']>} */
-  //   const vaultsAPI = instanceP.VaultFactory.then(i => E(zoe).getPublicFacet(i));
+  /** @type {ERef<import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']>} */
+  const vaultsAPI = instanceP.VaultFactory.then(i => E(zoe).getPublicFacet(i));
 
-  //   const vaultStuff = await E(vaultsAPI).getGovernedParams(brand);
-  //   t.deepEqual(vaultStuff, '@@');
+  const params = await E(vaultsAPI).getGovernedParams({
+    collateralBrand: brand,
+  });
+  t.deepEqual(params.DebtLimit, {
+    type: 'amount',
+    value: { brand: runBrand, value: 0n },
+  });
 });
 
 // test.todo('users can open vaults');
