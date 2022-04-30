@@ -11,9 +11,14 @@ const reserveThenGetNames = async (nameAdmin, names) => {
   return Promise.all(names.map(name => E(nameHub).lookup(name)));
 };
 
+/**
+ * @param { BootstrapPowers } powers
+ * @param {*} config
+ */
 export const addInterchainAsset = async (
   {
     consume: { zoe, bankManager, agoricNamesAdmin },
+    produce: { ibcAtomMintForTesting },
     installation: {
       consume: { mintHolder },
     },
@@ -42,6 +47,7 @@ export const addInterchainAsset = async (
 
   E(E(agoricNamesAdmin).lookupAdmin('issuer')).update('IbcATOM', issuer);
   E(E(agoricNamesAdmin).lookupAdmin('brand')).update('IbcATOM', brand);
+  ibcAtomMintForTesting.resolve(mint);
 
   return E(bankManager).addAsset(
     denom,
@@ -95,7 +101,7 @@ export const registerScaledPriceAuthority = async ({
 
 /** @param {EconomyBootstrapPowers} powers */
 export const addAssetToVault = async ({
-  consume: { vaultFactoryCreator, agoricNamesAdmin, zoe },
+  consume: { vaultFactoryCreator, reserveCreatorFacet, agoricNamesAdmin, zoe },
   brand: {
     consume: { RUN: runP },
   },
@@ -110,7 +116,8 @@ export const addAssetToVault = async ({
 
   /** @type {ERef<XYKAMMPublicFacet>} */
   const ammPub = E(zoe).getPublicFacet(amm);
-  E(ammPub).addPool(ibcAtomIssuer, 'IbcATOM');
+  await E(ammPub).addPool(ibcAtomIssuer, 'IbcATOM');
+  await E(reserveCreatorFacet).addIssuer(ibcAtomIssuer, 'IbcATOM');
 
   const RUN = await runP;
   await E(vaultFactoryCreator).addVaultType(ibcAtomIssuer, 'ATOM', {
