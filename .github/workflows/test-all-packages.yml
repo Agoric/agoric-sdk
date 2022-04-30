@@ -4,6 +4,9 @@ name: Test all Packages
 
 on:
   pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
@@ -18,20 +21,16 @@ jobs:
           submodules: 'true'
       - uses: ./.github/actions/build-node
         with:
-          node-version: ${{ matrix.node-version}}
+          node-version: ${{ matrix.node-version }}
 
   lint:
     needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version
-        node-version: ['14.x']
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '14.x'
 
       - name: lint check
         run: yarn lint
@@ -44,12 +43,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
 
       # We run separate steps for each package, to make it easier to drill down
@@ -59,43 +63,43 @@ jobs:
       # This list should include all packages, except ones that are in another
       #  category here, or that don't have a package.json.
       #- name: yarn test (everything)
-      #  run: yarn test
+      #  run: yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (access-token)
-        run: cd packages/access-token && yarn test
+        run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (agoric-cli)
-        run: cd packages/agoric-cli && yarn test
+        run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (assert)
-        run: cd packages/assert && yarn test
+        run: cd packages/assert && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (wallet/api)
-        run: cd packages/wallet/api && yarn test
+        run: cd packages/wallet/api && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (deployment)
-        run: cd packages/deployment && yarn test
+        run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (ERTP)
-        run: cd packages/ERTP && yarn test
+        run: cd packages/ERTP && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (governance)
-        run: cd packages/governance && yarn test
+        run: cd packages/governance && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (import-manager)
-        run: cd packages/import-manager && yarn test
+        run: cd packages/import-manager && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (notifier)
-        run: cd packages/notifier && yarn test
+        run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (same-structure)
-        run: cd packages/same-structure && yarn test
+        run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (sharing-service)
-        run: cd packages/sharing-service && yarn test
+        run: cd packages/sharing-service && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (sparse-ints)
-        run: cd packages/sparse-ints && yarn test
+        run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (spawner)
-        run: cd packages/spawner && yarn test
+        run: cd packages/spawner && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (stat-logger)
-        run: cd packages/stat-logger && yarn test
+        run: cd packages/stat-logger && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (store)
-        run: cd packages/store && yarn test
+        run: cd packages/store && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (swing-store)
-        run: cd packages/swing-store && yarn test
+        run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (web-components)
-        run: cd packages/web-components && yarn test
+        run: cd packages/web-components && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (wallet-connection)
-        run: cd packages/wallet-connection && yarn test
+        run: cd packages/wallet-connection && yarn ${{ steps.vars.outputs.test }}
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
@@ -103,37 +107,42 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (cosmos)
-        run: cd golang/cosmos && yarn test
+        run: cd golang/cosmos && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (run-protocol)
-        run: cd packages/run-protocol && yarn test
+        run: cd packages/run-protocol && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (pegasus)
-        run: cd packages/pegasus && yarn test
+        run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (vats)
-        run: cd packages/vats && yarn test
+        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (swingset-runner)
-        run: cd packages/swingset-runner && yarn test
+        run: cd packages/swingset-runner && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (telemetry)
-        run: cd packages/telemetry && yarn test
+        run: cd packages/telemetry && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (deploy-script-support)
-        run: cd packages/deploy-script-support && yarn test
+        run: cd packages/deploy-script-support && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (ui-components)
-        run: cd packages/ui-components && yarn test
+        run: cd packages/ui-components && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (wallet/ui)
-        run: cd packages/wallet/ui && yarn test
+        run: cd packages/wallet/ui && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (wallet)
-        run: cd packages/wallet && yarn test
+        run: cd packages/wallet && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (eslint-config)
-        run: cd packages/eslint-config && yarn test
+        run: cd packages/eslint-config && yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (vat-data)
-        run: cd packages/vat-data && yarn test
+        run: cd packages/vat-data && yarn ${{ steps.vars.outputs.test }}
 
         # The meta-test!
       - name: Check for untested packages
@@ -147,16 +156,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (solo)
         timeout-minutes: 20
-        run: cd packages/solo && yarn test
+        run: cd packages/solo && yarn ${{ steps.vars.outputs.test }}
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -164,18 +178,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
           go-version: 1.17
       - name: yarn test (cosmic-swingset)
-        run: cd packages/cosmic-swingset && yarn test
+        run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }}
 
   # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
@@ -184,15 +203,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn test 'test/**/test-[A-Da-d]*.js'
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[A-Da-d]*.js'
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -200,19 +224,25 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn test 'test/**/test-[E-Ie-i]*.js'
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[E-Ie-i]*.js'
       - name: yarn test (xsnap)
-        run: cd packages/xsnap && yarn test
+        run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }}
       # explicitly test the XS worker, for visibility
       - name: yarn test (SwingSet XS Worker)
+        if: matrix.engine != 'xs'
         run: cd packages/SwingSet && yarn test:xs-worker
 
   test-swingset3:
@@ -221,15 +251,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn test 'test/**/test-[J-Rj-r]*.js'
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[J-Rj-r]*.js'
 
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
@@ -237,16 +272,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
 
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn test 'test/**/test-[S-Zs-z0-9]*.js'
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[S-Zs-z0-9]*.js'
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -254,16 +294,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        # END-TEST-BOILERPLATE
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}
+        # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         timeout-minutes: 30
-        run: cd packages/zoe && yarn test:unit
+        run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }}
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -271,86 +318,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['14.x', '16.x']
+        engine: ['14.x', '16.x', 'xs']
     steps:
+      - name: set vars
+        id: vars
+        # END-TEST-BOILERPLATE
+        run: |
+          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
+          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}
+        # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         timeout-minutes: 30
-        run: cd packages/zoe && yarn test:swingset
-
-  # The test-xs* tests are split by alphabetical test name.
-  test-xs:
-    # BEGIN-TEST-BOILERPLATE
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version, maybe
-        node-version: ['14.x']
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.node-version }}
-      # END-TEST-BOILERPLATE
-      - name: yarn test (xs)
-        timeout-minutes: 30
-        run: yarn test:xs 'test/**/test-[A-Da-d]*.js'
-
-  test-xs2:
-    # BEGIN-TEST-BOILERPLATE
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version, maybe
-        node-version: ['14.x']
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.node-version }}
-      # END-TEST-BOILERPLATE
-      - name: yarn test (xs)
-        timeout-minutes: 30
-        run: yarn test:xs 'test/**/test-[E-Ie-i]*.js'
-
-  test-xs3:
-    # BEGIN-TEST-BOILERPLATE
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version, maybe
-        node-version: ['14.x']
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.node-version }}
-      # END-TEST-BOILERPLATE
-      - name: yarn test (xs)
-        timeout-minutes: 30
-        run: yarn test:xs 'test/**/test-[J-Rj-r]*.js'
-
-  test-xs4:
-    # BEGIN-TEST-BOILERPLATE
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # note: only use one node-version, maybe
-        node-version: ['14.x']
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.node-version }}
-      # END-TEST-BOILERPLATE
-      - name: yarn test (xs)
-        timeout-minutes: 30
-        run: yarn test:xs 'test/**/test-[S-Zs-z0-9]*.js'
+        run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }}
