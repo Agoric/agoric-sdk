@@ -4,7 +4,7 @@ import '@agoric/governance/src/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
-import { E } from '@endo/eventual-send';
+import { E, Far } from '@endo/far';
 
 /**
  * @file
@@ -46,7 +46,7 @@ export const start = async (zcf, privateArgs) => {
     'identifies the voting contract instance');
   };
 
-  const publicFacet = harden({
+  const publicFacet = Far('votingAPI', {
     voteOnAmmParamChanges: params => voteOnParamChanges(amm, params),
     voteOnReserveParamChanges: params => voteOnParamChanges(reserve, params),
     // vote on param changes for a vaultManager
