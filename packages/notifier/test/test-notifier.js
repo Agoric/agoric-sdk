@@ -16,6 +16,16 @@ test('notifier - initial state', async t => {
   t.deepEqual(updateDeNovo, updateFromNonExistent, 'no param same as unknown');
 });
 
+test('notifier - initial state is "undefined"', async t => {
+  const { notifier } = makeNotifierKit(undefined);
+
+  const updateDeNovo = await notifier.getUpdateSince();
+  const updateFromNonExistent = await notifier.getUpdateSince();
+
+  t.is(updateDeNovo.value, undefined, 'state is "undefined"');
+  t.deepEqual(updateDeNovo, updateFromNonExistent, 'no param same as unknown');
+});
+
 test('notifier - single update', async t => {
   t.plan(3);
   /** @type {NotifierRecord<number>} */
