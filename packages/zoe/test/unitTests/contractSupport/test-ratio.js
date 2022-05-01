@@ -18,6 +18,8 @@ import {
   addRatios,
   quantize,
   multiplyBy,
+  subtractRatios,
+  parseRatio,
 } from '../../../src/contractSupport/ratio.js';
 
 /**
@@ -294,31 +296,152 @@ test('ratio bad inputs w/brand names', t => {
 });
 
 test('multiply ratios', t => {
-  const { brand } = makeIssuerKit('moe');
+  const { brand: moeBrand } = makeIssuerKit('moe');
 
   /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
+  const moe = value => AmountMath.make(moeBrand, value);
 
-  const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
-  const fiveSixths = makeRatioFromAmounts(moe(5n), moe(6n));
+  const twoFifthsMM = makeRatioFromAmounts(moe(2n), moe(5n));
+  const fiveSixthsMM = makeRatioFromAmounts(moe(5n), moe(6n));
   t.deepEqual(
-    makeRatio(10n, brand, 30n, brand),
-    multiplyRatios(fiveSixths, twoFifths),
+    makeRatio(10n, moeBrand, 30n, moeBrand),
+    multiplyRatios(fiveSixthsMM, twoFifthsMM),
   );
+
+  const { brand: larryBrand } = makeIssuerKit('larry');
+
+  /** @param {bigint} value */
+  const larry = value => AmountMath.make(larryBrand, value);
+
+  const twoFifthsML = makeRatioFromAmounts(moe(2n), larry(5n));
+  const fiveSixthsML = makeRatioFromAmounts(moe(5n), larry(6n));
+
+  const twoFifthsLM = makeRatioFromAmounts(larry(2n), moe(5n));
+  const fiveSixthsLM = makeRatioFromAmounts(larry(5n), moe(6n));
+
+  const twoFifthsLL = makeRatioFromAmounts(larry(2n), larry(5n));
+  const fiveSixthsLL = makeRatioFromAmounts(larry(5n), larry(6n));
+
+  t.deepEqual(
+    makeRatio(10n, moeBrand, 30n, moeBrand),
+    multiplyRatios(fiveSixthsML, twoFifthsLM),
+  );
+  t.deepEqual(
+    makeRatio(10n, larryBrand, 30n, larryBrand),
+    multiplyRatios(fiveSixthsLM, twoFifthsML),
+  );
+  t.deepEqual(
+    makeRatio(10n, moeBrand, 30n, moeBrand),
+    multiplyRatios(fiveSixthsMM, twoFifthsLL),
+  );
+  t.deepEqual(
+    makeRatio(10n, larryBrand, 30n, larryBrand),
+    multiplyRatios(fiveSixthsLL, twoFifthsMM),
+  );
+
+  t.deepEqual(
+    makeRatio(10n, moeBrand, 30n, larryBrand),
+    multiplyRatios(fiveSixthsML, twoFifthsMM),
+  );
+  t.deepEqual(
+    makeRatio(10n, moeBrand, 30n, larryBrand),
+    multiplyRatios(fiveSixthsML, twoFifthsLL),
+  );
+  t.deepEqual(
+    makeRatio(10n, larryBrand, 30n, moeBrand),
+    multiplyRatios(fiveSixthsLM, twoFifthsLL),
+  );
+  t.deepEqual(
+    makeRatio(10n, larryBrand, 30n, moeBrand),
+    multiplyRatios(fiveSixthsLM, twoFifthsMM),
+  );
+
+  t.throws(() => multiplyRatios(fiveSixthsML, twoFifthsML), {
+    message: /must cancel out/,
+  });
+  t.throws(() => multiplyRatios(fiveSixthsLM, twoFifthsLM), {
+    message: /must cancel out/,
+  });
 });
 
 test('add ratios', t => {
-  const { brand } = makeIssuerKit('moe');
+  const { brand: moeBrand } = makeIssuerKit('moe');
 
   /** @param {bigint} value */
-  const moe = value => AmountMath.make(brand, value);
+  const moe = value => AmountMath.make(moeBrand, value);
 
-  const twoFifths = makeRatioFromAmounts(moe(2n), moe(5n));
-  const fiveSixths = makeRatioFromAmounts(moe(5n), moe(6n));
+  const twoFifthsMM = makeRatioFromAmounts(moe(2n), moe(5n));
+  const fiveSixthsMM = makeRatioFromAmounts(moe(5n), moe(6n));
   t.deepEqual(
-    makeRatio(37n, brand, 30n, brand),
-    addRatios(fiveSixths, twoFifths),
+    makeRatio(37n, moeBrand, 30n, moeBrand),
+    addRatios(fiveSixthsMM, twoFifthsMM),
   );
+
+  const { brand: larryBrand } = makeIssuerKit('larry');
+
+  /** @param {bigint} value */
+  const larry = value => AmountMath.make(larryBrand, value);
+
+  const twoFifthsLL = makeRatioFromAmounts(larry(2n), larry(5n));
+  const fiveSixthsLL = makeRatioFromAmounts(larry(5n), larry(6n));
+  t.deepEqual(
+    makeRatio(37n, larryBrand, 30n, larryBrand),
+    addRatios(fiveSixthsLL, twoFifthsLL),
+  );
+
+  const twoFifthsLM = makeRatioFromAmounts(larry(2n), moe(5n));
+  const fiveSixthsLM = makeRatioFromAmounts(larry(5n), moe(6n));
+  t.deepEqual(
+    makeRatio(37n, larryBrand, 30n, moeBrand),
+    addRatios(fiveSixthsLM, twoFifthsLM),
+  );
+
+  t.throws(() => addRatios(fiveSixthsMM, twoFifthsLL), {
+    message: /numerator brands must match/,
+  });
+  t.throws(() => addRatios(fiveSixthsLM, twoFifthsLL), {
+    message: /denominator brands must match/,
+  });
+});
+
+test('subtract ratios', t => {
+  const { brand: moeBrand } = makeIssuerKit('moe');
+
+  /** @param {bigint} value */
+  const moe = value => AmountMath.make(moeBrand, value);
+
+  const twoFifthsMM = makeRatioFromAmounts(moe(2n), moe(5n));
+  const fiveSixthsMM = makeRatioFromAmounts(moe(5n), moe(6n));
+  t.deepEqual(
+    makeRatio(13n, moeBrand, 30n, moeBrand),
+    subtractRatios(fiveSixthsMM, twoFifthsMM),
+  );
+
+  const { brand: larryBrand } = makeIssuerKit('larry');
+
+  /** @param {bigint} value */
+  const larry = value => AmountMath.make(larryBrand, value);
+
+  const twoFifthsLL = makeRatioFromAmounts(larry(2n), larry(5n));
+  const fiveSixthsLL = makeRatioFromAmounts(larry(5n), larry(6n));
+  t.deepEqual(
+    makeRatio(13n, larryBrand, 30n, larryBrand),
+    subtractRatios(fiveSixthsLL, twoFifthsLL),
+  );
+
+  const twoFifthsLM = makeRatioFromAmounts(larry(2n), moe(5n));
+  const fiveSixthsLM = makeRatioFromAmounts(larry(5n), moe(6n));
+  t.deepEqual(
+    makeRatio(13n, larryBrand, 30n, moeBrand),
+    subtractRatios(fiveSixthsLM, twoFifthsLM),
+  );
+
+  t.throws(() => subtractRatios(fiveSixthsMM, twoFifthsLL), {
+    message: /numerator brands must match/,
+  });
+  t.throws(() => subtractRatios(fiveSixthsLM, twoFifthsLL), {
+    message: /denominator brands must match/,
+  });
 });
 
 test('ratio - rounding', t => {
@@ -395,4 +518,62 @@ test('ratio - quantize', t => {
       `${numBefore}/${denBefore} quantized to ${denAfter} should be ${numAfter}/${denAfter}`,
     );
   }
+});
+
+test('ratio - parse', t => {
+  const { brand: moeBrand } = makeIssuerKit('moe');
+  const { brand: larryBrand } = makeIssuerKit('larry');
+
+  t.deepEqual(
+    parseRatio(1024.93803, moeBrand),
+    makeRatio(102493803n, moeBrand, 10n ** 5n, moeBrand),
+  );
+
+  t.deepEqual(
+    parseRatio(1024.93803, moeBrand, larryBrand),
+    makeRatio(102493803n, moeBrand, 10n ** 5n, larryBrand),
+  );
+  t.deepEqual(parseRatio('123400', moeBrand), makeRatio(123400n, moeBrand, 1n));
+
+  t.deepEqual(
+    parseRatio('123.456', larryBrand),
+    makeRatio(123456n, larryBrand, 10n ** 3n),
+  );
+
+  t.deepEqual(
+    parseRatio(1, moeBrand, larryBrand),
+    makeRatio(1n, moeBrand, 1n, larryBrand),
+  );
+
+  t.deepEqual(
+    parseRatio('0.000039', moeBrand),
+    makeRatio(39n, moeBrand, 10n ** 6n),
+  );
+
+  t.deepEqual(
+    parseRatio('0.000039100', larryBrand, moeBrand),
+    makeRatio(39100n, larryBrand, 10n ** 9n, moeBrand),
+  );
+
+  t.throws(() => parseRatio(-1024.93803, moeBrand), {
+    message: /Invalid numeric data/,
+  });
+  t.throws(() => parseRatio('abc', moeBrand), {
+    message: /Invalid numeric data/,
+  });
+
+  // It's floats that have roundoff errors, but we properly parse and propagate
+  // those errors.
+  t.deepEqual(
+    parseRatio(0.1 + 0.2, moeBrand),
+    makeRatio(30000000000000004n, moeBrand, 100000000000000000n, moeBrand),
+  );
+  t.deepEqual(
+    parseRatio(Number.MAX_SAFE_INTEGER + 1, moeBrand),
+    makeRatio(9007199254740992n, moeBrand, 1n, moeBrand),
+  );
+  t.deepEqual(
+    parseRatio(Number.MAX_SAFE_INTEGER + 2, moeBrand),
+    makeRatio(9007199254740992n, moeBrand, 1n, moeBrand),
+  );
 });
