@@ -15,13 +15,20 @@ export const importPattern = new RegExp(
   'g',
 );
 
-// Neutralize HTML comments and import expressions.
+/**
+ * Neutralize HTML comments and import expressions.
+ *
+ * @param {string} code
+ */
 export const defangEvaluableCode = code =>
   code
     .replace(importPattern, '$1import\\$2') // avoid SES_IMPORT_REJECTED
     .replace(htmlStartCommentPattern, '$1\\$2') // avoid SES_HTML_COMMENT_REJECTED
     .replace(htmlEndCommentPattern, '$1\\$2'); // avoid SES_HTML_COMMENT_REJECTED
 
+/**
+ * @param {string} code
+ */
 export const defangAndTrim = code => {
   // Remove SES evaluation hazards.
   const defanged = defangEvaluableCode(code);
@@ -36,6 +43,9 @@ const { serialize } = makeMarshal();
 export const stringify = (x, pretty = false) =>
   decodeToJustin(JSON.parse(serialize(harden(x)).body), pretty);
 
+/**
+ * @param {Record<string, unknown>} m
+ */
 export const mergePermits = m => {
   const isObj = o => o !== null && typeof o === 'object';
   const merge = (left, right) => {

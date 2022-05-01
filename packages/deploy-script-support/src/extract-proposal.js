@@ -3,15 +3,11 @@ import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
 
-import {
-  deeplyFulfilled,
-  defangAndTrim,
-  stringify,
-} from '@agoric/deploy-script-support/src/code-gen.js';
+import { deeplyFulfilled, defangAndTrim, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,
-  makeEnactCoreProposals,
-} from '@agoric/deploy-script-support/src/coreProposalBehavior.js';
+  makeEnactCoreProposalsFromBundleCap,
+} from './coreProposalBehavior.js';
 
 const { details: X } = assert;
 
@@ -48,10 +44,12 @@ const pathResolve = (...paths) => {
  * @param {(ModuleSpecifier | FilePath)[]} coreProposals - governance
  * proposals to run at chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
+ * @param {typeof makeEnactCoreProposalsFromBundleCap} [makeEnactCoreProposals]
  */
 export const extractCoreProposalBundles = async (
   coreProposals,
   dirname = '.',
+  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleCap,
 ) => {
   dirname = pathResolve(dirname);
   dirname = await fs.promises
@@ -61,6 +59,7 @@ export const extractCoreProposalBundles = async (
   const bundleToSource = new Map();
   const extracted = await Promise.all(
     coreProposals.map(async (initCore, i) => {
+      /** @type {Set<{ source: string, bundle?: string, bundleID?: string }>} */
       const bundleHandles = new Set();
 
       console.log(`Parsing core proposal:`, initCore);
@@ -99,7 +98,7 @@ export const extractCoreProposalBundles = async (
       const proposal = await ns.defaultProposalBuilder({ publishRef, install });
 
       // Add the proposal bundle handles in sorted order.
-      const bundleSpecs = [...bundleHandles.values()]
+      const bundleSpecEntries = [...bundleHandles.values()]
         .sort(({ source: a }, { source: b }) => {
           if (a < b) {
             return -1;
@@ -112,7 +111,9 @@ export const extractCoreProposalBundles = async (
         .map((handle, j) => {
           handle.bundleID = `coreProposal${i}_${j}`;
           harden(handle);
-          return [handle.bundleID, { sourceSpec: handle.source }];
+          /** @type {[string, { sourceSpec: string }]} */
+          const specEntry = [handle.bundleID, { sourceSpec: handle.source }];
+          return specEntry;
         });
 
       // Now that we've assigned all the bundleIDs and hardened the handles, we
@@ -126,7 +127,7 @@ export const extractCoreProposalBundles = async (
         source: absSrc,
       });
 
-      bundleSpecs.unshift([
+      bundleSpecEntries.unshift([
         behaviorBundleHandle.bundleID,
         { sourceSpec: behaviorBundleHandle.source },
       ]);
@@ -134,7 +135,7 @@ export const extractCoreProposalBundles = async (
       return harden({
         ref: behaviorBundleHandle,
         call: getManifestCall,
-        bundleSpecs,
+        bundleSpecs: bundleSpecEntries,
       });
     }),
   );
