@@ -12,13 +12,13 @@ const reserveThenGetNames = async (nameAdmin, names) => {
 };
 
 /**
- * @param { BootstrapPowers } powers
+ * @param { EconomyBootstrapPowers } powers
  * @param {*} config
  */
 export const addInterchainAsset = async (
   {
-    consume: { zoe, bankManager, agoricNamesAdmin },
-    produce: { ibcAtomMintForTesting },
+    consume: { zoe, bankManager, agoricNamesAdmin, interchainMints },
+    produce: { interchainMints: produceInterchainMints },
     installation: {
       consume: { mintHolder },
     },
@@ -45,9 +45,15 @@ export const addInterchainAsset = async (
   const brand = await E(issuer).getBrand();
   const kit = { mint, issuer, brand };
 
+  // Create the mint list if it doesn't exist and wasn't already rejected.
+  produceInterchainMints.resolve([]);
+  Promise.resolve(interchainMints).then(
+    mints => mints.push(mint),
+    () => {}, // If the interchainMints list was rejected, ignore the error.
+  );
+
   E(E(agoricNamesAdmin).lookupAdmin('issuer')).update('IbcATOM', issuer);
   E(E(agoricNamesAdmin).lookupAdmin('brand')).update('IbcATOM', brand);
-  ibcAtomMintForTesting.resolve(mint);
 
   return E(bankManager).addAsset(
     denom,
@@ -137,8 +143,13 @@ export const getManifestForAddAssetToVault = (
   return {
     manifest: {
       addInterchainAsset: {
-        consume: { zoe: true, bankManager: true, agoricNamesAdmin: true },
-        produce: { ibcAtomMintForTesting: true },
+        consume: {
+          zoe: true,
+          bankManager: true,
+          agoricNamesAdmin: true,
+          interchainMints: true,
+        },
+        produce: { interchainMints: true },
         installation: { consume: { mintHolder: true } },
       },
       registerScaledPriceAuthority: {

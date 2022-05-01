@@ -78,7 +78,10 @@
  */
 
 /**
- * @typedef {{ resolve: (v: ERef<T>) => void, reset: () => void}} Producer<T>
+ * @typedef {Object} Producer<T>
+ * @property {(v: ERef<T>) => void} resolve
+ * @property {(r: any) => void} reject
+ * @property {() => void} reset
  * @template T
  */
 /**
