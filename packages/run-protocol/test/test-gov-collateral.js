@@ -1,6 +1,5 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { readFile } from 'fs/promises';
 import process from 'process';
 import url from 'url';
 import path from 'path';
@@ -16,7 +15,6 @@ import {
   bridgeCoreEval,
   makeClientManager,
 } from '@agoric/vats/src/core/chain-behaviors.js';
-import { defangAndTrim } from '@agoric/deploy-script-support/src/code-gen.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/coreProposalBehavior.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
@@ -25,8 +23,6 @@ import { makeNodeBundleCache } from './bundleTool.js';
 import { setupBootstrap, setUpZoeForTest } from './supports.js';
 
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
-
-const asset = filename => readFile(filename, 'utf-8');
 
 /** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
 // @ts-expect-error cast
@@ -37,8 +33,10 @@ const contractRoots = {
   voting: './src/voting.js',
 };
 
-const govScript = {
-  inviteCommittee: './scripts/gov-inviteCommittee.js',
+const coreProposals = {
+  addCollateral: '../scripts/add-collateral-core.js',
+  startRunPreview: '../scripts/init-core.js',
+  inviteCommittee: '../scripts/invite-committee-core.js',
 };
 
 const voterAddresses = {
@@ -81,9 +79,6 @@ const makeTestContext = async () => {
     feeMintAccess: await feeMintAccess,
     runKit: { brand: runBrand, issuer: runIssuer },
     installation,
-    govScript: {
-      inviteCommittee: await asset(govScript.inviteCommittee),
-    },
   };
 };
 
@@ -195,11 +190,11 @@ const makeScenario = async t => {
     };
 
   /**
-   * @param {string[]} coreProposals
+   * @param {string[]} proposals
    */
-  const evalProposals = async coreProposals => {
+  const evalProposals = async proposals => {
     const { code } = await extractCoreProposalBundles(
-      coreProposals,
+      proposals,
       dirname,
       makeEnactCoreProposalsFromSource,
     );
@@ -233,35 +228,19 @@ const makeScenario = async t => {
         'ATOM',
         atomBrand,
       ),
-      evalProposals(['../scripts/init-core.js']),
+      evalProposals([coreProposals.startRunPreview]),
     ]);
   };
 
-  const enactProposal = async () => {
-    E(E(space.consume.agoricNamesAdmin).lookupAdmin('installation')).update(
-      'voting',
-      t.context.installation.voting,
-    ); // kludge
-
-    process.env.INTERCHAIN_DENOM = 'ibc/abc123';
-
+  const enactVaultAssetProposal = async (denom = 'ibc/abc123') => {
     // Start the governance from the core proposals.
-    const coreEvalMessage = {
-      type: 'CORE_EVAL',
-      evals: [
-        {
-          json_permits: 'true',
-          js_code: defangAndTrim(t.context.govScript.inviteCommittee),
-        },
-      ],
-    };
-    /** @type {any} */
-    const { coreEvalBridgeHandler } = space.consume;
+    process.env.INTERCHAIN_DENOM = denom;
+    await evalProposals([coreProposals.addCollateral]);
+  };
 
-    await Promise.all([
-      E(coreEvalBridgeHandler).fromBridge('arbitrary srcID', coreEvalMessage),
-      evalProposals(['../scripts/add-collateral-core.js']),
-    ]);
+  const enactInviteEconCommitteeProposal = async () => {
+    process.env.ECON_COMMITTEE_ADDRESSES = JSON.stringify(voterAddresses);
+    await evalProposals([coreProposals.inviteCommittee]);
   };
 
   const benefactorDeposit = async (qty = 10_000n) => {
@@ -290,7 +269,8 @@ const makeScenario = async t => {
     startDevNet,
     provisionMembers,
     startRunPreview,
-    enactProposal,
+    enactVaultAssetProposal,
+    enactInviteEconCommitteeProposal,
     benefactorDeposit,
     space,
   };
@@ -301,7 +281,9 @@ test('Benefactor can add to reserve', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  await s.enactProposal();
+  await s.enactInviteEconCommitteeProposal();
+  await s.enactVaultAssetProposal();
+
   const result = await s.benefactorDeposit();
   t.deepEqual(result, 'added Collateral to the Reserve');
 });
@@ -311,18 +293,27 @@ test('voters get invitations', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
-
-  await s.enactProposal();
+  await s.enactInviteEconCommitteeProposal();
+  await s.enactVaultAssetProposal();
 
   t.is(purses.size, 3);
   await Promise.all(
     [...purses].map(async ([_addr, purse]) => {
       const amt = await E(purse).getCurrentAmount();
-      t.deepEqual(
-        amt.value[0].description,
-        'identifies the voting contract instance',
+      const value = amt.value;
+      assert(Array.isArray(value));
+
+      const instanceInv = value.find(
+        ({ description }) =>
+          description === 'identifies the voting contract instance',
       );
-      t.true(amt.value[1].description.startsWith('Voter'));
+      t.assert(instanceInv);
+
+      const voterInv = value.find(({ description }) =>
+        description.startsWith('Voter'),
+      );
+      t.assert(voterInv);
+      t.not(instanceInv, voterInv);
     }),
   );
 });
@@ -333,7 +324,8 @@ test('assets are in AMM, Vaults', async t => {
   await s.provisionMembers();
   await s.startRunPreview();
 
-  await s.enactProposal();
+  await s.enactVaultAssetProposal();
+  await s.enactInviteEconCommitteeProposal();
 
   const {
     consume: { zoe, agoricNames },
@@ -363,9 +355,13 @@ test('Committee can raise debt limit', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   const purses = await s.provisionMembers();
-  await s.startRunPreview();
 
-  await s.enactProposal();
+  // For variety, try launching it all at once.
+  await Promise.all([
+    s.startRunPreview(),
+    s.enactVaultAssetProposal(),
+    s.enactInviteEconCommitteeProposal(),
+  ]);
 
   const { agoricNames } = s.space.consume;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
