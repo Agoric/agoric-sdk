@@ -233,7 +233,13 @@ const makeScenario = async t => {
   };
 
   const enactVaultAssetProposal = async (denom = 'ibc/abc123') => {
-    // Start the governance from the core proposals.
+    // If necessary, this is how to hobble interchainMints in production:
+    /*
+      space.produce.interchainMints.reject(
+        Error('no interchain mints in production'),
+      );
+      space.consume.interchainMints.catch(() => {});
+    */
     process.env.INTERCHAIN_DENOM = denom;
     await evalProposals([coreProposals.addCollateral]);
   };
@@ -244,7 +250,7 @@ const makeScenario = async t => {
   };
 
   const benefactorDeposit = async (qty = 10_000n) => {
-    const { ibcAtomMintForTesting, agoricNames, zoe } = space.consume;
+    const { interchainMints, agoricNames, zoe } = space.consume;
     const ibcAtomBrand = await E(agoricNames).lookup('brand', 'IbcATOM');
     /** @type {ERef<import('../src/reserve/assetReserve').AssetReservePublicFacet>} */
     const reserveAPI = E(zoe).getPublicFacet(
@@ -254,7 +260,7 @@ const makeScenario = async t => {
       give: { Collateral: AmountMath.make(ibcAtomBrand, qty * 1_000_000n) },
     });
 
-    const atom10k = await E(ibcAtomMintForTesting).mintPayment(
+    const atom10k = await E(E.get(interchainMints)[0]).mintPayment(
       proposal.give.Collateral,
     );
     const seat = E(zoe).offer(

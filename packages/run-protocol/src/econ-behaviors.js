@@ -35,6 +35,7 @@ const CENTRAL_DENOM_NAME = 'urun';
  *   ammCreatorFacet: XYKAMMCreatorFacet,
  *   ammGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
  *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet,
+ *   interchainMints: Mint[],
  *   psmCreatorFacet: unknown,
  *   psmGovernorCreatorFacet: GovernedContractFacetAccess<unknown>,
  *   reservePublicFacet: AssetReservePublicFacet,
