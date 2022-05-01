@@ -8,6 +8,7 @@ import {
   makeAgoricNamesAccess,
   makePromiseSpace,
 } from '@agoric/vats/src/core/utils.js';
+import * as utils from '@agoric/vats/src/core/utils.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -61,7 +62,7 @@ harden(setUpZoeForTest);
 export const setupBootstrap = (t, optTimer = undefined) => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
   const { produce, consume } =
-    /** @type { import('../src/econ-behaviors.js').EconomyBootstrapPowers } */ (
+    /** @type { import('../src/econ-behaviors.js').EconomyBootstrapPowers & BootstrapPowers } */ (
       space
     );
 
@@ -84,7 +85,7 @@ export const setupBootstrap = (t, optTimer = undefined) => {
   brand.produce.RUN.resolve(runBrand);
   issuer.produce.RUN.resolve(runIssuer);
 
-  return { produce, consume, ...spaces };
+  return { produce, consume, modules: { utils: { ...utils } }, ...spaces };
 };
 
 export const installGovernance = (zoe, produce) => {

@@ -62,5 +62,7 @@ export async function buildDistributor(
   };
 
   const epochNotifier = E(epochTimer).makeNotifier(0n, epochInterval);
-  return observeNotifier(epochNotifier, timeObserver);
+  observeNotifier(epochNotifier, timeObserver).catch(e => {
+    console.error('fee distributor failed with', e);
+  });
 }

@@ -38,7 +38,7 @@ export const makeCoreProposalBehavior = ({
 
   const behavior = async allPowers => {
     const {
-      consume: { board },
+      consume: { board, agoricNamesAdmin },
       evaluateInstallation,
       installation: { produce: produceInstallations },
       modules: {
@@ -76,9 +76,13 @@ export const makeCoreProposalBehavior = ({
     );
 
     // Publish the installations for behavior dependencies.
-    entries(installations || {}).forEach(([key, value]) => {
-      produceInstallations[key].resolve(value);
-    });
+    const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
+    await Promise.all(
+      entries(installations || {}).map(([key, value]) => {
+        produceInstallations[key].resolve(value);
+        return E(installAdmin).update(key, value);
+      }),
+    );
 
     // Evaluate the manifest for our behaviors.
     return runModuleBehaviors({

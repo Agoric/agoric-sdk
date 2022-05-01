@@ -60,15 +60,12 @@ export const addInterchainAsset = async (
 /** @param {BootstrapPowers} powers */
 export const registerScaledPriceAuthority = async ({
   consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority },
-  installation: {
-    // @ts-expect-error bootstrap types are out of sync
-    consume: { scaledPriceAuthority },
-  },
 }) => {
   const [
     sourcePriceAuthority,
     [ibcAtomBrand, runBrand],
     [usdBrand, atomBrand],
+    [scaledPriceAuthority],
   ] = await Promise.all([
     priceAuthority,
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('brand'), [
@@ -78,6 +75,9 @@ export const registerScaledPriceAuthority = async ({
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
       'USD',
       'ATOM',
+    ]),
+    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
+      'scaledPriceAuthority',
     ]),
   ]);
 
@@ -130,14 +130,15 @@ export const addAssetToVault = async ({
   });
 };
 
-export const getManifestForStep2 = (
+export const getManifestForAddAssetToVault = (
   { restoreRef },
-  { denom, scaledPriceAuthority },
+  { denom, scaledPriceAuthorityRef },
 ) => {
   return {
     manifest: {
       addInterchainAsset: {
         consume: { zoe: true, bankManager: true, agoricNamesAdmin: true },
+        produce: { ibcAtomMintForTesting: true },
         installation: { consume: { mintHolder: true } },
       },
       registerScaledPriceAuthority: {
@@ -152,14 +153,22 @@ export const getManifestForStep2 = (
         },
       },
       addAssetToVault: {
-        consume: { vaultFactoryCreator: true, agoricNamesAdmin: true },
+        consume: {
+          vaultFactoryCreator: true,
+          reserveCreatorFacet: true,
+          agoricNamesAdmin: true,
+          zoe: true,
+        },
         brand: {
           consume: { RUN: true },
+        },
+        instance: {
+          consume: { amm: true },
         },
       },
     },
     installations: {
-      scaledPriceAuthority: restoreRef(scaledPriceAuthority),
+      scaledPriceAuthority: restoreRef(scaledPriceAuthorityRef),
     },
     options: {
       denom,

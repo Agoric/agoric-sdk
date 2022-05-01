@@ -141,9 +141,6 @@ const REWARD_MANIFEST = harden({
       runStakeCreatorFacet: true,
       zoe: true,
     },
-    produce: {
-      distributor: 'distributeFees',
-    },
     issuer: { consume: { RUN: 'zoe' } },
     brand: { consume: { RUN: 'zoe' } },
   },
@@ -270,6 +267,10 @@ export const SIM_CHAIN_POST_BOOT_MANIFEST = harden({
 const roleToGovernanceActions = harden({
   chain: CHAIN_POST_BOOT_MANIFEST,
   'sim-chain': SIM_CHAIN_POST_BOOT_MANIFEST,
+  'run-preview': {
+    ...ECON_COMMITTEE_MANIFEST,
+    ...CHAIN_POST_BOOT_MANIFEST,
+  },
   client: {},
 });
 
@@ -284,6 +285,7 @@ export const getManifestForRunProtocol = (
       VaultFactory: restoreRef(installKeys.vaultFactory),
       liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
+      runStake: restoreRef(installKeys.runStake),
       contractGovernor: restoreRef(installKeys.contractGovernor),
       committee: restoreRef(installKeys.committee),
       binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
