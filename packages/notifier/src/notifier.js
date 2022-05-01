@@ -30,25 +30,24 @@ export const makeNotifier = sharableInternalsP => {
   });
 };
 
-const deferInitialState = Symbol('defer initial NotifierKit state');
-
 /**
  * Produces a pair of objects, which allow a service to produce a stream of
  * update promises.
  *
  * The initial state argument has to be truly optional even though it can
- * be any first class value including `undefined`. We distinguish the
- * absence of an argument by using the default value of `deferInitialState`.
+ * be any first class value including `undefined`. We need to distinguish the
+ * presence vs the absence of it, which we cannot do with the optional argument
+ * syntax. Rather we use the arity of the `initialStateArr` array.
  *
  * If no initial state is provided to `makeNotifierKit`, then it starts without
  * an initial state. Its initial state will instead be the state of the first
  * update.
  *
  * @template T
- * @param {T | deferInitialState} initialState the first state to be returned
+ * @param {[] | [T]} initialStateArr the first state to be returned (typed as rest array to permit 'undefined')
  * @returns {NotifierRecord<T>} the notifier and updater
  */
-export const makeNotifierKit = (initialState = deferInitialState) => {
+export const makeNotifierKit = (...initialStateArr) => {
   /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
   let optNextPromiseKit;
   /** @type {UpdateCount} */
@@ -139,8 +138,9 @@ export const makeNotifierKit = (initialState = deferInitialState) => {
     },
   });
 
-  if (initialState !== deferInitialState) {
-    updater.updateState(deferInitialState);
+  assert(initialStateArr.length <= 1, 'too many arguments');
+  if (initialStateArr.length === 1) {
+    updater.updateState(initialStateArr[0]);
   }
 
   // notifier facet is separate so it can be handed out while updater
