@@ -66,7 +66,7 @@ RUN \
 # Remove dev dependencies.
 RUN rm -rf packages/xsnap/moddable
 # FIXME: This causes bundling differences.  https://github.com/endojs/endo/issues/919
-# RUN yarn install --frozen-lockfile --production --network-timeout 100000
+RUN yarn install --frozen-lockfile --production --network-timeout 100000
 
 ###############################
 # The install container.

@@ -14,6 +14,9 @@ import {
 } from '@agoric/swingset-vat';
 import { assert, details as X } from '@agoric/assert';
 import { openSwingStore, DEFAULT_LMDB_MAP_SIZE } from '@agoric/swing-store';
+
+import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
+
 import {
   DEFAULT_METER_PROVIDER,
   exportKernelStats,
@@ -25,8 +28,6 @@ import {
   BeansPerVatCreation,
   BeansPerXsnapComputron,
 } from './sim-params.js';
-
-import { extractCoreProposalBundles } from './extract-proposal.js';
 
 const console = anylogger('launch-chain');
 

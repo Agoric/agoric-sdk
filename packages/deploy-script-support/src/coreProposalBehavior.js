@@ -96,7 +96,7 @@ export const makeCoreProposalBehavior = ({
   return behavior;
 };
 
-export const makeEnactCoreProposals =
+export const makeEnactCoreProposalsFromBundleCap =
   ({ makeCoreProposalArgs, E }) =>
   allPowers => {
     const {
