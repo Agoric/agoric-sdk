@@ -1,55 +1,38 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { readFile } from 'fs/promises';
+import process from 'process';
+import url from 'url';
+import path from 'path';
 import { E, Far } from '@endo/far';
 import {
   addBankAssets,
   makeAddressNameHubs,
+  makeOracleBrands,
+  makeBoard,
   startPriceAuthority,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import {
   bridgeCoreEval,
   makeClientManager,
 } from '@agoric/vats/src/core/chain-behaviors.js';
-import { buildRootObject as bankRoot } from '@agoric/vats/src/vat-bank.js';
-import { buildRootObject as priceAuthorityRoot } from '@agoric/vats/src/vat-priceAuthority.js';
 import { defangAndTrim } from '@agoric/deploy-script-support/src/code-gen.js';
+import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
+import { makeCoreProposalBehavior } from '@agoric/deploy-script-support/src/coreProposalBehavior.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import {
-  setupAmm,
-  setupReserve,
-  startEconomicCommittee,
-  startVaultFactory,
-} from '../src/econ-behaviors.js';
 import { makeNodeBundleCache } from './bundleTool.js';
-import {
-  installGovernance,
-  setupBootstrap,
-  setUpZoeForTest,
-} from './supports.js';
-import {
-  addAssetToVault,
-  addInterchainAsset,
-  registerScaledPriceAuthority,
-} from '../src/vaultFactory/addAssetToVault.js';
+import { setupBootstrap, setUpZoeForTest } from './supports.js';
 
-const asset = path => readFile(path, 'utf-8');
+const dirname = url.fileURLToPath(new URL('.', import.meta.url));
+
+const asset = filename => readFile(filename, 'utf-8');
 
 /** @type {import('ava').TestInterface<Awaited<ReturnType<makeTestContext>>>} */
 // @ts-expect-error cast
 const test = anyTest;
 
-const vatRoots = {
-  bank: bankRoot,
-  priceAuthority: priceAuthorityRoot,
-};
-
 const contractRoots = {
-  liquidate: './src/vaultFactory/liquidateMinimum.js',
-  VaultFactory: './src/vaultFactory/vaultFactory.js',
-  amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
-  reserve: './src/reserve/assetReserve.js',
   mintHolder: '../vats/src/mintHolder.js',
   voting: './src/voting.js',
 };
@@ -74,15 +57,26 @@ const makeTestContext = async () => {
   const install = (src, dest) =>
     bundleCache.load(src, dest).then(b => E(zoe).install(b));
   const installation = {
-    liquidate: install(contractRoots.liquidate, 'liquidateMinimum'),
-    VaultFactory: install(contractRoots.VaultFactory, 'VaultFactory'),
-    amm: install(contractRoots.amm, 'amm'),
-    reserve: install(contractRoots.reserve, 'reserve'),
     mintHolder: install(contractRoots.mintHolder, 'mintHolder'),
     voting: install(contractRoots.voting, 'voting'),
   };
 
+  const bundlePathToInstallP = new Map();
+  const cachedInstall = (src, dest) => {
+    if (!dest) {
+      dest = src.replace(/(\\|\/|:)/g, '_');
+    }
+    if (!bundlePathToInstallP.has(dest)) {
+      const match = path.basename(dest).match(/^bundle-(.*)\.js$/);
+      const bundle = match ? match[1] : dest;
+      bundlePathToInstallP.set(dest, install(src, bundle));
+    }
+    return bundlePathToInstallP.get(dest);
+  };
+
   return {
+    cachedInstall,
+    cleanups: [],
     zoe: await zoe,
     feeMintAccess: await feeMintAccess,
     runKit: { brand: runBrand, issuer: runIssuer },
@@ -100,16 +94,8 @@ test.before(async t => {
 const makeScenario = async t => {
   const space = await setupBootstrap(t);
 
-  const loadVat = name => {
-    switch (name) {
-      case 'priceAuthority':
-        return vatRoots.priceAuthority();
-      case 'bank':
-        return vatRoots.bank();
-      default:
-        throw Error(`not implemented ${name}`);
-    }
-  };
+  const loadVat = name =>
+    import(`@agoric/vats/src/vat-${name}.js`).then(ns => ns.buildRootObject());
   space.produce.loadVat.resolve(loadVat);
 
   const emptyRunPayment = async () => {
@@ -127,12 +113,9 @@ const makeScenario = async t => {
   };
 
   const startDevNet = async () => {
-    let handler;
     const bridgeManager = {
       toBridge: () => {},
-      register: (name, fn) => {
-        handler = fn;
-      },
+      register: () => {},
       unregister: () => {},
     };
     space.produce.bridgeManager.resolve(bridgeManager);
@@ -146,10 +129,12 @@ const makeScenario = async t => {
     return Promise.all([
       // @ts-expect-error TODO: align types better
       addBankAssets(space),
-      // @ts-expect-error TODO: align types better
       makeClientManager(space),
-      // @ts-expect-error TODO: align types better
       makeAddressNameHubs(space),
+      // @ts-expect-error TODO: align types better
+      makeBoard(space),
+      // @ts-expect-error TODO: align types better
+      makeOracleBrands(space),
       // @ts-expect-error TODO: align types better
       bridgeCoreEval(space),
       // @ts-expect-error TODO: align types better
@@ -182,29 +167,73 @@ const makeScenario = async t => {
     return purses;
   };
 
+  /** @type {any} */
+  const { cachedInstall: produceCachedInstall } = space.produce;
+  produceCachedInstall.resolve(t.context.cachedInstall);
+  const makeEnactCoreProposalsFromSource =
+    ({ makeCoreProposalArgs, E: cpE }) =>
+    allPowers => {
+      const {
+        consume: { cachedInstall },
+      } = allPowers;
+      const restoreRef = async ref => {
+        const { source, bundle } = ref;
+        return cpE(cachedInstall)(source, bundle);
+      };
+
+      return Promise.all(
+        makeCoreProposalArgs.map(async ({ ref, call }) => {
+          const subBehavior = makeCoreProposalBehavior({
+            manifestInstallRef: ref,
+            getManifestCall: call,
+            E: cpE,
+            restoreRef,
+          });
+          await subBehavior(allPowers);
+        }),
+      );
+    };
+
+  /**
+   * @param {string[]} coreProposals
+   */
+  const evalProposals = async coreProposals => {
+    const { code } = await extractCoreProposalBundles(
+      coreProposals,
+      dirname,
+      makeEnactCoreProposalsFromSource,
+    );
+
+    const coreEvalMessage = {
+      type: 'CORE_EVAL',
+      evals: [
+        {
+          json_permits: 'true',
+          js_code: code,
+        },
+      ],
+    };
+
+    /** @type {any} */
+    const { coreEvalBridgeHandler } = space.consume;
+    await E(coreEvalBridgeHandler).fromBridge(
+      'arbitrary srcID',
+      coreEvalMessage,
+    );
+  };
+
   const startRunPreview = async () => {
-    const {
-      installation: { produce: iProduce },
-    } = space;
-    iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
-    iProduce.liquidate.resolve(t.context.installation.liquidate);
-    iProduce.amm.resolve(t.context.installation.amm);
-    iProduce.reserve.resolve(t.context.installation.reserve);
-
-    const USD = makeIssuerKit('USD');
-    const ATOM = makeIssuerKit('ATOM');
-    space.oracleBrand.produce.USD.resolve(USD.brand);
-
+    const { brand: atomBrand } = makeIssuerKit(
+      'ATOM',
+      undefined,
+      harden({ decimalPlaces: 6 }),
+    );
     await Promise.all([
       E(E(space.consume.agoricNamesAdmin).lookupAdmin('oracleBrand')).update(
         'ATOM',
-        ATOM.brand,
+        atomBrand,
       ),
-      installGovernance(space.consume.zoe, space.installation.produce),
-      startEconomicCommittee(space),
-      setupAmm(space),
-      startVaultFactory(space),
-      setupReserve(space),
+      evalProposals(['../scripts/init-core.js']),
     ]);
   };
 
@@ -213,6 +242,8 @@ const makeScenario = async t => {
       'voting',
       t.context.installation.voting,
     ); // kludge
+
+    process.env.INTERCHAIN_DENOM = 'ibc/abc123';
 
     // Start the governance from the core proposals.
     const coreEvalMessage = {
@@ -226,16 +257,10 @@ const makeScenario = async t => {
     };
     /** @type {any} */
     const { coreEvalBridgeHandler } = space.consume;
-    await E(coreEvalBridgeHandler).fromBridge(
-      'arbitrary srcID',
-      coreEvalMessage,
-    );
 
-    // TODO: integrate with writeCoreProposal or whatever
     await Promise.all([
-      addInterchainAsset(space, { options: { denom: 'ibc/abc123' } }),
-      registerScaledPriceAuthority(space),
-      addAssetToVault(space),
+      E(coreEvalBridgeHandler).fromBridge('arbitrary srcID', coreEvalMessage),
+      evalProposals(['../scripts/add-collateral-core.js']),
     ]);
   };
 
